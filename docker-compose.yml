@@ -1,0 +1,115 @@
+# =============================================================================
+# ACRA — Docker Compose
+# =============================================================================
+#
+# Pré-requis : un fichier .env doit exister avec les secrets configurés.
+# Créez-le en exécutant : ./scripts/setup.sh  (ou : make setup)
+#
+# Démarrage :  docker compose up -d
+# Logs :       docker compose logs -f app
+# Arrêt :      docker compose down
+# =============================================================================
+
+x-buildkit: &buildkit
+  DOCKER_BUILDKIT: "1"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ebios_db
+    restart: unless-stopped
+    environment:
+      # Ces variables sont lues depuis le fichier .env
+      # Générez .env avec : ./scripts/setup.sh
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Service de migration Prisma — s'exécute une fois puis se termine (exit 0)
+  # L'app attend que ce service soit "service_completed_successfully"
+  # Cela élimine la race condition migrate/startup du service app.
+  # ---------------------------------------------------------------------------
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ebios_migrator
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "node node_modules/prisma/build/index.js migrate deploy"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ebios_app
+    restart: unless-stopped
+    environment:
+      # Connexion à la base — doit correspondre aux variables du service "db" ci-dessus
+      DATABASE_URL: ${DATABASE_URL}
+      # Secret JWT pour NextAuth — générez avec : openssl rand -base64 48
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # URL publique de l'application (ex: https://votre-domaine.com en prod)
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # Clé API Anthropic (optionnel — laisser vide pour désactiver l'IA)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      # 127.0.0.1 (et non localhost) : dans le conteneur, localhost résout en IPv6
+      # ::1, sur lequel le serveur Next standalone n'écoute pas → connection refused.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    command: ["node", "server.js"]
+
+  # ---------------------------------------------------------------------------
+  # Service de backup — pg_dump quotidien avec rotation 7 jours
+  # Lancer manuellement : docker compose run --rm backup
+  # En prod, déclencher via cron host ou un scheduler (ex: ofelia, supercronic)
+  # ---------------------------------------------------------------------------
+  backup:
+    image: postgres:16-alpine
+    container_name: ebios_backup
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: db
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-7}
+    volumes:
+      - ./scripts/backup.sh:/backup.sh:ro
+      - backup_data:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["/bin/sh", "/backup.sh"]
+
+volumes:
+  postgres_data:
+    driver: local
+  backup_data:
+    driver: local

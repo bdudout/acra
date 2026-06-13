@@ -1,0 +1,297 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* color-scheme : aligne les CONTRÔLES NATIFS (barres de défilement, sélecteurs
+   * de date, spinners, cases/radios natives, focus) sur le thème — sinon ils
+   * restent clairs en mode sombre (barres blanches visibles sur Windows/Ubuntu,
+   * tous navigateurs). Standard, supporté Chrome/Edge/Firefox/Safari. */
+  html       { color-scheme: light; }
+  html.dark,
+  .dark html { color-scheme: dark; }
+
+  html { @apply text-gray-900; }
+  body { @apply bg-gray-50; }
+
+  /* ── Dark mode — base ─────────────────────────────────────────────────────── */
+  .dark html,
+  html.dark       { @apply text-gray-100; }
+  .dark body,
+  html.dark body  { @apply bg-gray-950; }
+
+  /* ── Focus visible global (RGAA 10.7) ─────────────────────────────────────
+   * Tous les éléments interactifs doivent avoir un focus clairement visible. */
+  *:focus { outline: none; }
+  *:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .dark *:focus-visible {
+    outline-color: #818cf8;
+  }
+
+  /* ── Contraste des placeholders (WCAG 1.4.3 — audit UX #4) ────────────────
+   * Le gris par défaut (gray-400 ≈ 2.8:1 sur blanc) est insuffisant.
+   * gray-500 (#6b7280) atteint 4.6:1 sur blanc ; gray-300 sur fond sombre. */
+  ::placeholder { color: #6b7280; opacity: 1; }
+  .dark ::placeholder { color: #cbd5e1 !important; }
+
+  /* Meilleure lisibilité des liens dans le contenu */
+  main a:not([class]) {
+    @apply underline text-ebios-700;
+  }
+  main a:not([class]):hover {
+    @apply text-ebios-900;
+  }
+  .dark main a:not([class]) {
+    @apply text-ebios-300;
+  }
+  .dark main a:not([class]):hover {
+    @apply text-ebios-200;
+  }
+}
+
+@layer components {
+  /* ── Boutons ──────────────────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply bg-ebios-600 hover:bg-ebios-700 text-white font-medium px-4 py-2 rounded-lg
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+           focus-visible:ring-2 focus-visible:ring-ebios-600 focus-visible:ring-offset-2;
+  }
+  .dark .btn-primary {
+    /* ebios-600 (et non 500) : blanc sur ebios-500 ≈ 4.47:1 (sous le seuil AA 4.5).
+     * ebios-600 monte à ≈ 6.3:1 tout en restant un indigo vif sur fond sombre. */
+    @apply bg-ebios-600 hover:bg-ebios-500 focus-visible:ring-offset-gray-900;
+  }
+
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg
+           border border-gray-300 transition-colors
+           focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2;
+  }
+  .dark .btn-secondary {
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 border-gray-600
+           focus-visible:ring-offset-gray-900;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg
+           transition-colors
+           focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2;
+  }
+  .dark .btn-danger {
+    @apply bg-red-700 hover:bg-red-600 focus-visible:ring-offset-gray-900;
+  }
+
+  /* ── Carte ────────────────────────────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+  .dark .card {
+    @apply bg-gray-800 border-gray-700 shadow-gray-900/40;
+  }
+
+  /* ── Champ de saisie ──────────────────────────────────────────────────────── */
+  .input {
+    @apply w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm
+           focus:outline-none focus:ring-2 focus:ring-ebios-500 focus:border-transparent;
+  }
+  .dark .input {
+    @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400
+           focus:ring-ebios-400;
+  }
+
+  /* ── Label ────────────────────────────────────────────────────────────────── */
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .dark .label {
+    @apply text-gray-300;
+  }
+
+  /* ── Texte secondaire ─────────────────────────────────────────────────────── */
+  .text-muted {
+    @apply text-gray-500 text-sm;
+  }
+  .dark .text-muted {
+    @apply text-gray-400;
+  }
+
+  /* ── Badges de risque ──────────────────────────────────────────────────────── */
+  .badge-risk-critique  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100    text-red-800; }
+  .badge-risk-eleve     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800; }
+  .badge-risk-modere    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800; }
+  .badge-risk-faible    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100  text-green-800; }
+
+  .dark .badge-risk-critique  { @apply bg-red-900/50    text-red-300; }
+  .dark .badge-risk-eleve     { @apply bg-orange-900/50 text-orange-300; }
+  .dark .badge-risk-modere    { @apply bg-yellow-900/50 text-yellow-300; }
+  .dark .badge-risk-faible    { @apply bg-green-900/50  text-green-300; }
+
+  /* ── Lien d'évitement (skip to content) — RGAA 12.6 ──────────────────────── */
+  .skip-link {
+    @apply absolute -top-full left-4 z-[9999] px-4 py-2 bg-ebios-700 text-white text-sm font-medium
+           rounded-b-lg transition-all;
+  }
+  .skip-link:focus {
+    @apply top-0;
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+  }
+}
+
+/* ── Dark mode — overrides sémantiques globaux ─────────────────────────────────
+ * Ces règles couvrent les classes Tailwind inline qui ne passent pas par
+ * les composants partagés (.card, .input…). Elles sont intentionnellement
+ * hors @layer pour avoir la priorité maximale. */
+
+/* Surfaces principales */
+.dark .bg-white          { background-color: #1f2937 !important; } /* gray-800 */
+/* Blanc translucide (pastilles de compteur dans les filtres) : la surcharge
+ * .bg-white ne matche pas la variante d'opacité .bg-white\/60, qui restait donc
+ * blanche → texte clair illisible. On la rend translucide-sombre. */
+.dark .bg-white\/60      { background-color: rgba(0,0,0,0.25) !important; }
+.dark .bg-gray-50        { background-color: #111827 !important; } /* gray-900 */
+.dark .bg-gray-100       { background-color: #1f2937 !important; }
+.dark .bg-gray-200       { background-color: #374151 !important; }
+
+/* Texte */
+.dark .text-gray-900     { color: #f9fafb !important; }
+.dark .text-gray-800     { color: #f3f4f6 !important; }
+.dark .text-gray-700     { color: #e5e7eb !important; }
+.dark .text-gray-600     { color: #d1d5db !important; }
+.dark .text-gray-500     { color: #9ca3af !important; }
+
+/* Bordures */
+.dark .border-gray-100   { border-color: #374151 !important; }
+.dark .border-gray-200   { border-color: #4b5563 !important; }
+.dark .border-gray-300   { border-color: #6b7280 !important; }
+
+/* Fond hover + dividers */
+.dark .hover\:bg-gray-50:hover  { background-color: #1f2937 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #374151 !important; }
+.dark .divide-gray-100 > * + *  { border-color: #374151 !important; }
+.dark .divide-gray-200 > * + *  { border-color: #4b5563 !important; }
+
+/* Tableaux */
+.dark thead, .dark .bg-gray-50 thead { background-color: #1f2937 !important; }
+.dark tbody tr:hover { background-color: #1f2937 !important; }
+
+/* ── Dark mode — fonds ebios clairs ────────────────────────────────────────────
+ * Sans ces overrides, bg-ebios-50/100/200 restent très clairs (#f0f4ff…) alors
+ * que le texte (text-gray-*) est forcé en quasi-blanc → texte blanc sur fond blanc.
+ * Même problème pour les états hover dans GlobalSearch, Ateliers, etc.           */
+.dark .bg-ebios-50               { background-color: #1e1b4b !important; } /* ebios-950 */
+.dark .bg-ebios-100              { background-color: #312e81 !important; } /* ebios-900 */
+.dark .bg-ebios-200              { background-color: #3730a3 !important; } /* ebios-800 */
+.dark .hover\:bg-ebios-50:hover  { background-color: #312e81 !important; } /* ebios-900 */
+.dark .hover\:bg-ebios-100:hover { background-color: #3730a3 !important; } /* ebios-800 */
+.dark .hover\:bg-ebios-200:hover { background-color: #4338ca !important; } /* ebios-700 */
+
+/* Texte ebios foncé → version claire pour rester lisible sur fond ebios sombre */
+.dark .text-ebios-600  { color: #8191f8 !important; } /* ebios-400 */
+.dark .text-ebios-700  { color: #a5b8fc !important; } /* ebios-300 */
+.dark .text-ebios-800  { color: #c7d6fe !important; } /* ebios-200 */
+
+/* ── Dark mode — fonds sémantiques clairs (KPI, badges, alertes, hovers) ───────
+ * bg-*-50  : cartes KPI, boîtes d'alerte, states hover de liens
+ * bg-*-100 : badges de statut (audit, rôles, priorités, statuts analyses)
+ * Sans ces overrides : îlots clairs dans l'UI sombre OU texte foncé sur fond
+ * foncé (si bg-*-100 overridé mais text-*-800 non overridé).                    */
+
+/* Fonds -50 (cartes, alertes, hover de liens) */
+.dark .bg-blue-50    { background-color: #172554 !important; } /* blue-950   */
+.dark .bg-orange-50  { background-color: #431407 !important; } /* orange-950 */
+.dark .bg-green-50   { background-color: #052e16 !important; } /* green-950  */
+.dark .bg-red-50     { background-color: #450a0a !important; } /* red-950    */
+.dark .bg-amber-50   { background-color: #451a03 !important; } /* amber-950  */
+.dark .bg-teal-50    { background-color: #042f2e !important; } /* teal-950   */
+.dark .bg-indigo-50  { background-color: #1e1b4b !important; } /* indigo-950 */
+.dark .bg-purple-50  { background-color: #2e1065 !important; } /* purple-950 */
+.dark .bg-yellow-50  { background-color: #422006 !important; } /* yellow-950 */
+
+/* Fonds -100 (badges de statut, pills) */
+.dark .bg-red-100    { background-color: #7f1d1d !important; } /* red-900    */
+.dark .bg-green-100  { background-color: #14532d !important; } /* green-900  */
+.dark .bg-blue-100   { background-color: #1e3a8a !important; } /* blue-900   */
+.dark .bg-orange-100 { background-color: #7c2d12 !important; } /* orange-900 */
+.dark .bg-yellow-100 { background-color: #713f12 !important; } /* yellow-900 */
+.dark .bg-amber-100  { background-color: #78350f !important; } /* amber-900  */
+.dark .bg-purple-100 { background-color: #3b0764 !important; } /* purple-900 */
+.dark .bg-indigo-100 { background-color: #312e81 !important; } /* indigo-900 */
+.dark .bg-teal-100   { background-color: #134e4a !important; } /* teal-900   */
+
+/* Hovers sémantiques */
+.dark .hover\:bg-blue-50:hover   { background-color: #1e3a8a !important; } /* blue-900   */
+.dark .hover\:bg-red-50:hover    { background-color: #7f1d1d !important; } /* red-900    */
+.dark .hover\:bg-red-100:hover   { background-color: #991b1b !important; } /* red-800    */
+
+/* Texte sémantique foncé → version claire pour contraste sur fond sombre
+ * Couvre les patterns bg-*-50 + text-*-600 (KPI) et bg-*-100 + text-*-700/800 (badges) */
+.dark .text-blue-600    { color: #93c5fd !important; } /* blue-300   */
+.dark .text-blue-700    { color: #bfdbfe !important; } /* blue-200   */
+.dark .text-blue-800    { color: #dbeafe !important; } /* blue-100   */
+.dark .text-orange-600  { color: #fdba74 !important; } /* orange-300 */
+.dark .text-orange-700  { color: #fed7aa !important; } /* orange-200 */
+.dark .text-orange-800  { color: #ffedd5 !important; } /* orange-100 */
+.dark .text-green-600   { color: #86efac !important; } /* green-300  */
+.dark .text-green-700   { color: #bbf7d0 !important; } /* green-200  */
+.dark .text-green-800   { color: #dcfce7 !important; } /* green-100  */
+.dark .text-red-600     { color: #fca5a5 !important; } /* red-300    */
+.dark .text-red-700     { color: #fecaca !important; } /* red-200    */
+.dark .text-red-800     { color: #fee2e2 !important; } /* red-100    */
+.dark .text-red-900     { color: #fecaca !important; } /* red-200    */
+.dark .text-amber-600   { color: #fcd34d !important; } /* amber-300  */
+.dark .text-amber-700   { color: #fde68a !important; } /* amber-200  */
+.dark .text-amber-800   { color: #fef3c7 !important; } /* amber-100  */
+.dark .text-yellow-600  { color: #fde047 !important; } /* yellow-300 */
+.dark .text-yellow-700  { color: #fef08a !important; } /* yellow-200 */
+.dark .text-yellow-800  { color: #fef9c3 !important; } /* yellow-100 */
+.dark .text-purple-600  { color: #d8b4fe !important; } /* purple-300 */
+.dark .text-purple-700  { color: #e9d5ff !important; } /* purple-200 */
+.dark .text-purple-800  { color: #f3e8ff !important; } /* purple-100 */
+.dark .text-purple-900  { color: #f3e8ff !important; } /* purple-100 — titres sur bg-purple-50 assombri */
+.dark .text-indigo-500  { color: #a5b4fc !important; } /* indigo-300 */
+.dark .text-indigo-600  { color: #a5b4fc !important; } /* indigo-300 */
+.dark .text-indigo-700  { color: #c7d6fe !important; } /* indigo-200 */
+.dark .text-indigo-800  { color: #e0e9ff !important; } /* indigo-100 */
+.dark .text-indigo-900  { color: #e0e9ff !important; } /* indigo-100 — titres sur bg-indigo-50 assombri */
+.dark .text-ebios-500   { color: #a5b8fc !important; } /* ebios-300 — accents/indices lisibles sur fond sombre */
+.dark .text-teal-600    { color: #5eead4 !important; } /* teal-300   */
+.dark .text-teal-700    { color: #99f6e4 !important; } /* teal-200   */
+.dark .text-teal-800    { color: #ccfbf1 !important; } /* teal-100   */
+.dark .text-amber-900   { color: #fde68a !important; } /* amber-200  */
+
+/* ── Dark mode — éléments de formulaire sans classe de texte explicite ────────
+ * Les <select> natifs ignorent l'héritage de couleur des parents.
+ * Sans override explicite, ils affichent du texte sombre sur fond sombre. */
+.dark select { color: #f3f4f6 !important; background-color: #374151 !important; border-color: #4b5563 !important; }
+.dark select option { background-color: #374151; color: #f3f4f6; }
+
+/* Champs texte natifs (input/textarea) NON stylés via .input : sans override, le
+ * navigateur leur applique son fond système BLANC → texte clair hérité illisible
+ * (ex. page de connexion). On force un fond sombre, comme .dark .input et .dark select.
+ * Exclut les types non-texte (cases, radios, sliders, color, fichier, boutons)
+ * qui ont leur propre rendu. */
+.dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
+.dark textarea {
+  color: #f3f4f6 !important;            /* gray-100 */
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #4b5563 !important;     /* gray-600 */
+}
+
+/* Autocomplétion du navigateur (Chrome/Safari) : par défaut elle force un fond
+ * BLANC sur les champs autoremplis, cassant le thème sombre. On neutralise via
+ * box-shadow inset (seule technique fiable contre le fond d'autofill). */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f3f4f6 !important;
+  -webkit-box-shadow: 0 0 0 1000px #374151 inset !important;
+  box-shadow: 0 0 0 1000px #374151 inset !important;
+  caret-color: #f3f4f6;
+  transition: background-color 9999s ease-in-out 0s;
+}

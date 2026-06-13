@@ -1,0 +1,129 @@
+name: Security & Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ── Audit des dépendances (OWASP A06) ──────────────────────────────────────
+  npm-audit:
+    name: npm audit (CVE scan)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ebios-rm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ebios-rm/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit — bloquer high/critical
+        run: npm audit --audit-level=high
+        # Génère aussi un rapport JSON pour archivage
+        continue-on-error: false
+
+      - name: npm audit report (JSON)
+        run: npm audit --json > npm-audit-report.json || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-report
+          path: ebios-rm/npm-audit-report.json
+          retention-days: 30
+
+  # ── TypeScript strict (éviter les erreurs de typage silencieuses) ──────────
+  typecheck:
+    name: TypeScript check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ebios-rm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ebios-rm/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: TypeScript — vérification stricte
+        run: npx tsc --noEmit
+
+  # ── Tests unitaires ────────────────────────────────────────────────────────
+  unit-tests:
+    name: Tests unitaires (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ebios-rm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ebios-rm/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Générer le client Prisma
+        run: npx prisma generate
+
+      - name: Lancer les tests
+        run: npm test -- --run
+
+  # ── Vérification variables d'environnement critiques ──────────────────────
+  env-check:
+    name: Vérification config sécurité
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ebios-rm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier l'absence de secrets hardcodés
+        run: |
+          # Chercher des patterns de secrets potentiellement exposés
+          if grep -rn "NEXTAUTH_SECRET=changeme\|password=secret\|password=1234\|api_key=" \
+            --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=.next .; then
+            echo "::error::Secret hardcodé détecté dans le code source !"
+            exit 1
+          fi
+          echo "✓ Aucun secret hardcodé détecté"
+
+      - name: Vérifier la présence du .env.example
+        run: |
+          if [ ! -f .env.example ]; then
+            echo "::error::.env.example manquant"
+            exit 1
+          fi
+          echo "✓ .env.example présent"
