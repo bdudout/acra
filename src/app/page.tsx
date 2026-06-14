@@ -238,9 +238,8 @@ export default function HomePage() {
 
       <footer className="text-center py-8 text-white/30 text-sm border-t border-white/10 mt-20">
         <p>
-          ACRA — Augmented Cyber Risk Analysis. {t.landing.footerMethod.replace('ANSSI', '')}{' '}
-          <a href="https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/" target="_blank" rel="noopener" className="underline">EBIOS RM</a>{' '}
-          ANSSI.
+          ACRA — Augmented Cyber Risk Analysis. {t.landing.footerMethod}{' '}
+          <a href="https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/" target="_blank" rel="noopener" className="underline">{t.landing.footerGuideLink}</a>
         </p>
         <p className="mt-1">{t.landing.footerDisclaim}</p>
       </footer>
