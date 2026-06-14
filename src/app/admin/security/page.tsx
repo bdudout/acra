@@ -93,6 +93,16 @@ function formatCountdown(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+/**
+ * Option (a) — la configuration MFA est masquée dans le panel admin tant que
+ * l'application du MFA au login n'est pas implémentée (les fondations
+ * lib/mfa.ts, lib/sms.ts, lib/mfa-service.ts sont prêtes ; l'intégration à
+ * authorize() reste à faire). On évite ainsi qu'un admin active un MFA qui ne
+ * serait pas réellement appliqué (faux sentiment de sécurité).
+ * Repasser à `true` une fois l'enforcement branché.
+ */
+const MFA_UI_VISIBLE = false
+
 export default function AdminSecurityPage() {
   const { t } = useTranslation()
   const [policy, setPolicy]           = useState<Policy>(DEFAULT)
@@ -224,7 +234,7 @@ export default function AdminSecurityPage() {
         <p className="text-gray-500 text-sm mb-8">{t.passwordPolicy.subtitle}</p>
 
         {/* ── Bandeau confirmation MFA — visible admins uniquement ─────────── */}
-        {policy.mfaPendingConfirmation && countdown !== null && countdown > 0 && (
+        {MFA_UI_VISIBLE && policy.mfaPendingConfirmation && countdown !== null && countdown > 0 && (
           <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 px-5 py-4 space-y-3">
             {/* En-tête */}
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -282,7 +292,7 @@ export default function AdminSecurityPage() {
         )}
 
         {/* Bandeau MFA auto-désactivé (fenêtre expirée) */}
-        {policy.mfaPendingConfirmation && countdown === 0 && (
+        {MFA_UI_VISIBLE && policy.mfaPendingConfirmation && countdown === 0 && (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
             🔴 {t.mfa.autoDisabledWarning}
           </div>
@@ -451,7 +461,8 @@ export default function AdminSecurityPage() {
               )}
             </div>
 
-            {/* ── Authentification forte (MFA) ────────────────────────────── */}
+            {/* ── Authentification forte (MFA) — masquée tant que non appliquée au login (option a) ── */}
+            {MFA_UI_VISIBLE && (
             <div className="border-t border-gray-100 pt-5">
               <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.mfa.sectionTitle}</h2>
               <p className="text-xs text-gray-500 mb-3">{t.mfa.sectionDesc}</p>
@@ -605,6 +616,7 @@ export default function AdminSecurityPage() {
                 </div>
               )}
             </div>
+            )}
 
             <div className="pt-2">
               <button
