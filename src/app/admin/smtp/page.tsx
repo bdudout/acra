@@ -85,9 +85,10 @@ export default function SmtpConfigPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
+      <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
         <AdminNav active="smtp" />
 
+        <div className="max-w-3xl">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">{t.smtp.title}</h1>
         <p className="text-gray-500 text-sm mb-2">{t.smtp.subtitle}</p>
         <p className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mb-6 inline-block">
@@ -173,6 +174,7 @@ export default function SmtpConfigPage() {
             </div>
           </form>
         )}
+        </div>
       </main>
     </div>
   )
