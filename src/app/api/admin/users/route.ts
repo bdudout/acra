@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { generateCompliantPassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
 import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
+import { sendEmail } from '@/lib/email'
 
 const createSchema = z.object({
   name:  z.string().min(2).max(100),
@@ -158,7 +159,20 @@ export async function PATCH(req: NextRequest) {
       details: { targetEmail: target.email, reason: 'admin_reset' },
     })
 
-    return NextResponse.json({ user: updated, tempPassword })
+    // Envoi du mot de passe temporaire par e-mail si le SMTP est configuré (sinon ignoré silencieusement)
+    const mail = await sendEmail({
+      to: target.email,
+      subject: 'ACRA — Réinitialisation de votre mot de passe',
+      text: `Votre mot de passe ACRA a été réinitialisé par un administrateur.\n\nMot de passe temporaire : ${tempPassword}\n\nVous devrez le changer à votre prochaine connexion.`,
+      html: `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
+        <h2 style="color:#4f46e5">Réinitialisation de votre mot de passe</h2>
+        <p>Votre mot de passe ACRA a été réinitialisé par un administrateur.</p>
+        <p>Mot de passe temporaire : <strong style="font-family:monospace;font-size:16px">${tempPassword}</strong></p>
+        <p style="color:#6b7280;font-size:12px">Vous devrez le changer à votre prochaine connexion.</p>
+      </div>`,
+    })
+
+    return NextResponse.json({ user: updated, tempPassword, emailed: mail.ok })
   }
 
   // ── Suspend / Activate ──

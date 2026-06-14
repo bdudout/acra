@@ -172,6 +172,27 @@ export const fr = {
   },
 
   // ─── SSO ──────────────────────────────────────────────────────────────────
+  smtp: {
+    title:            '🔑 Administration — Serveur SMTP',
+    subtitle:         "Configurez le serveur d'envoi d'e-mails (réinitialisation de mot de passe, notifications). Désactivé par défaut.",
+    adminOnlyNotice:  'Réservé aux administrateurs.',
+    secretsWarning:   'Le mot de passe est chiffré au repos. Ne le partagez pas.',
+    enableLabel:      "Activer l'envoi d'e-mails",
+    hostLabel:        'Serveur (hôte)',
+    portLabel:        'Port',
+    secureLabel:      'Connexion sécurisée (SSL/TLS)',
+    secureHint:       'Activé = SSL/TLS implicite (port 465). Désactivé = STARTTLS (port 587).',
+    usernameLabel:    'Identifiant',
+    passwordLabel:    'Mot de passe',
+    fromAddressLabel: 'Adresse expéditeur',
+    fromNameLabel:    'Nom expéditeur',
+    saveBtn:          '💾 Enregistrer',
+    savedMsg:         'Configuration SMTP enregistrée',
+    testBtn:          '✉️ Envoyer un e-mail de test',
+    testSending:      'Envoi…',
+    testOkMsg:        'E-mail de test envoyé à',
+    testErrMsg:       "Échec de l'envoi",
+  },
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Permettez à vos utilisateurs de se connecter via votre fournisseur d\'identité d\'entreprise (IdP). Désactivé par défaut.',
@@ -597,6 +618,8 @@ export const fr = {
       count:        'exemple(s)',
       impactsHint:  'Un impact par ligne',
       atelier:      'Atelier',
+      backToCategories: 'Toutes les catégories',
+      editTitle:    'Modifier les exemples',
       cats: {
         valeursMetier:      'Valeurs métier',
         biensSupports:      'Biens supports',
@@ -749,6 +772,7 @@ export const fr = {
     navUsers:       'Utilisateurs',
     navSecurity:    'Sécurité',
     navAudit:       'Journal d\'audit',
+    navSmtp:        'SMTP',
     // Création de compte
     createBtn:      'Créer un compte',
     createPwdAutoHint: 'Un mot de passe temporaire conforme à la politique sera généré automatiquement et affiché après création. L\'utilisateur devra le changer à sa première connexion.',

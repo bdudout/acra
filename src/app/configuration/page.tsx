@@ -134,6 +134,7 @@ export default function ConfigurationPage() {
   const [exOverride, setExOverride] = useState<Record<string, boolean>>({})
   const [savingEx, setSavingEx] = useState<string | null>(null)
   const [savedEx, setSavedEx] = useState<string | null>(null)
+  const [selectedEx, setSelectedEx] = useState<string | null>(null) // catégorie ouverte (null = damier)
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; action: () => void } | null>(null)
 
   useEffect(() => {
@@ -1188,72 +1189,110 @@ export default function ConfigurationPage() {
             <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.config.examplesTitle}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t.config.examplesIntro}</p>
           </div>
-          {[1, 2, 3, 4, 5].map(atelier => {
-            const cats = EXEMPLES_CATEGORIES.filter(c => c.atelier === atelier)
-            if (!cats.length) return null
-            return (
-              <div key={atelier} className="mt-5">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-ebios-700 dark:text-ebios-300 mb-2">
-                  {t.config.exEditor.atelier} {atelier}
-                </h3>
-                {cats.map(def => {
-                  const rows = exRows[def.key] ?? []
-                  const catLabel = (t.config.exEditor.cats as Record<string, string>)[def.key] ?? def.labelDefault
-                  return (
-                    <section key={def.key} className="card p-5 mb-4">
-                      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-gray-800 dark:text-gray-100">{catLabel}</h4>
-                          <span className="text-xs text-gray-400">{rows.length} {t.config.exEditor.count}</span>
-                          {exOverride[def.key] && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-700 dark:bg-ebios-900/40 dark:text-ebios-200 font-medium">
-                              {t.config.exEditor.customized}
-                            </span>
-                          )}
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        {rows.map((row, idx) => (
-                          <div key={idx} className="relative border border-gray-200 dark:border-gray-700 rounded-xl p-3 pr-10 bg-gray-50/50 dark:bg-gray-800/40">
-                            <button type="button" onClick={() => removeEx(def.key, idx)} title={t.config.exEditor.remove}
-                              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">
-                              ✕
-                            </button>
-                            <div className="flex flex-wrap gap-3">
-                              {def.fields.map(f => (
-                                <div key={f.key} className={exFieldWidth(f)}>
-                                  <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">{fieldLabel(f.key)}</label>
-                                  {renderExField(def.key, idx, row, f)}
-                                </div>
-                              ))}
+          {selectedEx === null ? (
+            /* ── Damier des catégories (groupées par atelier) ── */
+            <>
+              {[1, 2, 3, 4, 5].map(atelier => {
+                const cats = EXEMPLES_CATEGORIES.filter(c => c.atelier === atelier)
+                if (!cats.length) return null
+                return (
+                  <div key={atelier} className="mt-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-ebios-700 dark:text-ebios-300 mb-2">
+                      {t.config.exEditor.atelier} {atelier}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {cats.map(def => {
+                        const rows = exRows[def.key] ?? []
+                        const catLabel = (t.config.exEditor.cats as Record<string, string>)[def.key] ?? def.labelDefault
+                        return (
+                          <button key={def.key} type="button"
+                            onClick={() => { setSelectedEx(def.key); setSavedEx(null) }}
+                            className="text-left card p-4 hover:shadow-md hover:border-ebios-300 dark:hover:border-ebios-600 transition-all group">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-100">{catLabel}</h4>
+                              <span className="text-ebios-500 group-hover:translate-x-0.5 transition-transform" aria-hidden="true">→</span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs text-gray-400">{rows.length} {t.config.exEditor.count}</span>
+                              {exOverride[def.key] && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-700 dark:bg-ebios-900/40 dark:text-ebios-200 font-medium">
+                                  {t.config.exEditor.customized}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </>
+          ) : (() => {
+            /* ── Vue dédiée : édition d'une seule catégorie ── */
+            const def = getCategoryDef(selectedEx as never)
+            if (!def) return null
+            const rows = exRows[def.key] ?? []
+            const catLabel = (t.config.exEditor.cats as Record<string, string>)[def.key] ?? def.labelDefault
+            return (
+              <div className="mt-6">
+                <button type="button" onClick={() => setSelectedEx(null)}
+                  className="text-sm text-ebios-600 hover:text-ebios-800 dark:text-ebios-300 font-medium mb-3 inline-flex items-center gap-1">
+                  ← {t.config.exEditor.backToCategories}
+                </button>
+                <section className="card p-5">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-100">{catLabel}</h4>
+                      <span className="text-xs text-gray-400">{rows.length} {t.config.exEditor.count}</span>
+                      {exOverride[def.key] && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-700 dark:bg-ebios-900/40 dark:text-ebios-200 font-medium">
+                          {t.config.exEditor.customized}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                      <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
-                        <button type="button" onClick={() => addEx(def.key)}
-                          className="text-sm text-ebios-600 hover:text-ebios-800 dark:text-ebios-300 font-medium">
-                          {t.config.exEditor.add}
+                  <div className="space-y-2">
+                    {rows.map((row, idx) => (
+                      <div key={idx} className="relative border border-gray-200 dark:border-gray-700 rounded-xl p-3 pr-10 bg-gray-50/50 dark:bg-gray-800/40">
+                        <button type="button" onClick={() => removeEx(def.key, idx)} title={t.config.exEditor.remove}
+                          className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">
+                          ✕
                         </button>
-                        <div className="flex items-center gap-3">
-                          {savedEx === def.key && <span className="text-sm text-green-600 font-medium">{t.config.exEditor.saved}</span>}
-                          <button type="button" onClick={() => resetEx(def.key)}
-                            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
-                            {t.config.exEditor.reset}
-                          </button>
-                          <button type="button" onClick={() => saveEx(def.key)} disabled={savingEx === def.key} className="btn-primary text-sm">
-                            {savingEx === def.key ? t.config.exEditor.saving : t.config.exEditor.save}
-                          </button>
+                        <div className="flex flex-wrap gap-3">
+                          {def.fields.map(f => (
+                            <div key={f.key} className={exFieldWidth(f)}>
+                              <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">{fieldLabel(f.key)}</label>
+                              {renderExField(def.key, idx, row, f)}
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </section>
-                  )
-                })}
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+                    <button type="button" onClick={() => addEx(def.key)}
+                      className="text-sm text-ebios-600 hover:text-ebios-800 dark:text-ebios-300 font-medium">
+                      {t.config.exEditor.add}
+                    </button>
+                    <div className="flex items-center gap-3">
+                      {savedEx === def.key && <span className="text-sm text-green-600 font-medium">{t.config.exEditor.saved}</span>}
+                      <button type="button" onClick={() => resetEx(def.key)}
+                        className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                        {t.config.exEditor.reset}
+                      </button>
+                      <button type="button" onClick={() => saveEx(def.key)} disabled={savingEx === def.key} className="btn-primary text-sm">
+                        {savingEx === def.key ? t.config.exEditor.saving : t.config.exEditor.save}
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
             )
-          })}
+          })()}
         </div>
 
         {/* Bouton sauvegarde bas de page (échelles) */}

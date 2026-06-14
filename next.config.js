@@ -8,7 +8,7 @@ const nextConfig = {
   // pré-compilé avec esbuild (.pdf-runtime/, voir scripts/compile-pdf-template.mjs)
   // chargé au runtime. L'entrée ici garantit que react-pdf est tracé dans le
   // standalone (présent dans node_modules au runtime).
-  serverExternalPackages: ['@prisma/client', 'bcryptjs', '@react-pdf/renderer'],
+  serverExternalPackages: ['@prisma/client', 'bcryptjs', '@react-pdf/renderer', 'nodemailer'],
   experimental: {
     instrumentationHook: true,
   },

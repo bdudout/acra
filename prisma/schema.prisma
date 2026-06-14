@@ -538,6 +538,24 @@ model SMTPConfig {
   updatedAt   DateTime @updatedAt
 }
 
+// ─── Challenge MFA (OTP à usage unique, TTL court) ───────────────────────────
+// Un code à usage unique est généré à la connexion quand le MFA est requis.
+// Le code n'est jamais stocké en clair (HMAC-SHA256, cf. mfa.ts). Expiration
+// courte (~5 min) + nombre de tentatives borné.
+model MfaChallenge {
+  id          String    @id @default(cuid())
+  userId      String
+  codeHash    String
+  channel     String    // "SMS" | "EMAIL"
+  destination String?   // destination masquée (pour affichage : ***@ex.com, +33•••89)
+  expiresAt   DateTime
+  attempts    Int       @default(0)
+  consumedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
 // ─── Configuration des échelles (singleton global de l'organisation) ─────────
 // Échelle commune définie par l'ADMIN, partagée par toutes les analyses.
 
