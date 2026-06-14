@@ -185,7 +185,8 @@ function AnalysesContent() {
         ) : (
           <div className="space-y-3">
             {filtered.map(a => {
-              const atelier = ATELIERS_META[Math.min(a.atelierCourant - 1, 4)]
+              const _ai = Math.min(a.atelierCourant - 1, 4)
+              const atelier = { ...ATELIERS_META[_ai], ...((t.ateliersMeta as any)[_ai] ?? {}) }
               const pct = Math.round((a.atelierCourant / 5) * 100)
               const maxRisk = a.risques?.length ? Math.max(...a.risques.map((r: any) => r.niveauRisque)) : 0
               const critiques = a.risques?.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique').length ?? 0

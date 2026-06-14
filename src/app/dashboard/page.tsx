@@ -151,7 +151,8 @@ export default async function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {recent.map(a => {
-                    const atelier = ATELIERS_META[a.atelierCourant - 1]
+                    const _ai = a.atelierCourant - 1
+                    const atelier = { ...ATELIERS_META[_ai], ...((t.ateliersMeta as any)[_ai] ?? {}) }
                     const critiques = a.risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique').length
                     const mesuresP1 = a.mesures.filter((m: any) => m.priorite === 1 && m.statut !== 'REALISE').length
                     return (

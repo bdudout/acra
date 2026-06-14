@@ -71,7 +71,9 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const isOwner = analyse.userId === userId
 
   const pct = analyse.statut === 'TERMINE' ? 100 : Math.round(((analyse.atelierCourant - 1) / 5) * 100)
-  const currentAtelier = ATELIERS_META[analyse.atelierCourant - 1]
+  // Ateliers localisés : structure (num, icône, couleur) de ATELIERS_META + texte traduit (t.ateliersMeta)
+  const ateliersL = ATELIERS_META.map((a, i) => ({ ...a, ...(t.ateliersMeta[i] ?? {}) }))
+  const currentAtelier = ateliersL[analyse.atelierCourant - 1]
   const statutInfo = STATUT_APPROBATION_LABELS[analyse.statut] ?? STATUT_APPROBATION_LABELS.EN_COURS
 
   return (
@@ -162,7 +164,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             <div className={`h-3 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-ebios-500'}`} style={{ width: `${pct}%` }} />
           </div>
           <div className="grid grid-cols-5 gap-2">
-            {ATELIERS_META.map(a => {
+            {ateliersL.map(a => {
               const done = analyse.atelierCourant > a.num || analyse.statut === 'TERMINE'
               const active = analyse.atelierCourant === a.num && analyse.statut !== 'TERMINE'
               const accessible = analyse.atelierCourant >= a.num || analyse.statut === 'TERMINE'
