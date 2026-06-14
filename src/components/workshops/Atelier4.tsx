@@ -22,13 +22,15 @@
  *  - analyse     : parent Analyse (used for strategic scenario names in dropdowns)
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import { ACTIONS_ELEMENTAIRES_EXEMPLES, TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } from '@/lib/ebios-data'
+import { TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } from '@/lib/ebios-data'
+import { resolveExemples } from '@/lib/exemples-ateliers'
+import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
   analyseId: string
@@ -48,6 +50,14 @@ function getNiveauRisqueColor(score: number) {
 export default function Atelier4({ analyseId, initialData, analyse }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
+  // Exemples : override organisation si présent, sinon défauts (ebios-data)
+  const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
+  useEffect(() => {
+    fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
+    }).catch(() => {})
+  }, [])
+  const aeExamples = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   // Reconstruire scenarioStrategiqueNom depuis scenarioStrategiqueId au chargement depuis DB
@@ -298,7 +308,7 @@ export default function Atelier4({ analyseId, initialData, analyse }: Props) {
                     <div className="mb-3">
                       <p className="text-xs text-gray-500 mb-2">{t.workshop.a4.aeTypesHint}</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {ACTIONS_ELEMENTAIRES_EXEMPLES.map((a, i) => {
+                        {aeExamples.map((a, i) => {
                           const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                           return (
                             <button key={i} onClick={() => addAction(s.id, a)}

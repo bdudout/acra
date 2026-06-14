@@ -15,6 +15,18 @@ describe('exemples-ateliers — registre', () => {
     expect(keys).toContain('evenementsRedoutes')
   })
 
+  it('couvre les catégories des ateliers 2 à 5', () => {
+    const keys = EXEMPLES_CATEGORIES.map((c) => c.key)
+    for (const k of ['sourcesRisque', 'objectifsVises', 'scenariosStrategiques', 'partiesPrenantes', 'actionsElementaires', 'mesuresEcosysteme']) {
+      expect(keys).toContain(k)
+    }
+    // répartition par atelier (mesuresEcosysteme = Atelier 3)
+    expect(getCategoryDef('sourcesRisque')?.atelier).toBe(2)
+    expect(getCategoryDef('partiesPrenantes')?.atelier).toBe(3)
+    expect(getCategoryDef('mesuresEcosysteme')?.atelier).toBe(3)
+    expect(getCategoryDef('actionsElementaires')?.atelier).toBe(4)
+  })
+
   it('chaque catégorie a une clé unique, un atelier et au moins un champ', () => {
     const seen = new Set<string>()
     for (const c of EXEMPLES_CATEGORIES) {

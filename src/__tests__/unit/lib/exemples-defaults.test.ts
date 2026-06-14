@@ -32,6 +32,22 @@ describe('defaultExemplesFor', () => {
     expect(d[0].graviteDefaut).toBe(EVENEMENTS_REDOUTES_EXEMPLES[0].graviteDefaut)
   })
 
+  it('ateliers 2 à 5 : défauts non vides + champ primary présent', () => {
+    const cases: [string, string][] = [
+      ['sourcesRisque', 'nom'],
+      ['objectifsVises', 'nom'],
+      ['scenariosStrategiques', 'nom'],
+      ['partiesPrenantes', 'nom'],
+      ['actionsElementaires', 'nom'],
+      ['mesuresEcosysteme', 'mesure'],
+    ]
+    for (const [key, primary] of cases) {
+      const d = defaultExemplesFor(key as never, t)
+      expect(d.length, key).toBeGreaterThan(0)
+      expect(String(d[0][primary] ?? ''), `${key}.${primary}`).not.toBe('')
+    }
+  })
+
   it('catégorie sans défaut connu -> tableau vide', () => {
     expect(defaultExemplesFor('inconnue' as never, t)).toEqual([])
   })

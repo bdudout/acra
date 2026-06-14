@@ -23,15 +23,15 @@
  *  - expressMode : if true, "Valider" navigates to atelier/5 (skipping A3/A4)
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import {
-  SOURCES_RISQUE_EXEMPLES, OBJECTIFS_VISES_EXEMPLES, NIVEAUX_VRAISEMBLANCE
-} from '@/lib/ebios-data'
+import { NIVEAUX_VRAISEMBLANCE } from '@/lib/ebios-data'
+import { resolveExemples } from '@/lib/exemples-ateliers'
+import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
   analyseId: string
@@ -81,6 +81,17 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   const [sources, setSources] = useState<any[]>(initialData?.sourcesRisque || [])
+
+  // Exemples : override organisation si présent, sinon défauts (ebios-data)
+  const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
+  useEffect(() => {
+    fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
+    }).catch(() => {})
+  }, [])
+  const tEx = t as unknown as ExemplesTranslations
+  const srExamples = useMemo(() => resolveExemples(exOverride.sourcesRisque, defaultExemplesFor('sourcesRisque', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,7 +279,7 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
             </div>
             {showSrExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                {SOURCES_RISQUE_EXEMPLES.map((s, i) => {
+                {srExamples.map((s, i) => {
                   const cat = CATEGORIES.find(c => c.value === s.categorie)
                   const added = sources.some((x: any) => x.nom === s.nom)
                   return (
@@ -434,7 +445,7 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
                           </div>
                           <p className="text-xs text-gray-500 mb-2">{t.workshop.a2.ovP1Hint}</p>
                           <div className="flex flex-wrap gap-2 mb-3">
-                            {OBJECTIFS_VISES_EXEMPLES.map((ov, i) => {
+                            {ovExamples.map((ov, i) => {
                               const added = (s.objectifsVises || []).some((x: any) => x.nom === ov.nom)
                               return (
                               <button key={i} onClick={() => { if (!added) addOV(s.id, ov) }}

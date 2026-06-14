@@ -238,6 +238,19 @@ export default function ConfigurationPage() {
     })
   }
   // Libellés des valeurs enum (par catégorie+champ)
+  // Libellés (FR) des valeurs enum des ateliers 2 à 5 — affichage dans les menus de l'éditeur
+  const ENUM_LABELS: Record<string, string> = {
+    CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / groupe étatique', CONCURRENT: 'Concurrent',
+    ACTIVISTE: 'Hacktiviste', EMPLOYE_MALVEILLANT: 'Employé malveillant', PRESTATAIRE: 'Prestataire',
+    AMATEUR: 'Amateur', TERRORISTE: 'Terroriste', AUTRE: 'Autre',
+    D: 'Disponibilité (D)', I: 'Intégrité (I)', C: 'Confidentialité (C)', T: 'Traçabilité (T)',
+    FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire', SOUS_TRAITANT: 'Sous-traitant',
+    ORGANISME_REGULATION: 'Organisme de régulation',
+    RECONNAISSANCE: 'Reconnaissance', ACCES_INITIAL: 'Accès initial', PERSISTANCE: 'Persistance',
+    ESCALADE_PRIVILEGES: 'Escalade de privilèges', MOUVEMENT_LATERAL: 'Mouvement latéral',
+    EXFILTRATION: 'Exfiltration', IMPACT: 'Impact / Destruction',
+    ORGANISATIONNELLE: 'Organisationnelle', TECHNIQUE: 'Technique', DETECTIVE: 'Détective', PHYSIQUE: 'Physique',
+  }
   const enumLabel = (cat: string, key: string, value: string): string => {
     if (cat === 'biensSupports' && key === 'type') {
       const c = CATEGORIES_BIENS_SUPPORTS.find(x => x.value === value); return c ? `${c.emoji} ${c.label}` : value
@@ -246,7 +259,7 @@ export default function ConfigurationPage() {
       if (value === 'PROCESSUS') return t.workshop.a1.vmTypeProcess
       if (value === 'INFORMATION') return t.workshop.a1.vmTypeInfo
     }
-    return value
+    return ENUM_LABELS[value] ?? value
   }
   const fieldLabel = (key: string): string => (t.config.exEditor.fields as Record<string, string>)[key] ?? key
   const exInputCls = 'w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-ebios-500 focus:border-ebios-500'

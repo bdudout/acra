@@ -36,6 +36,12 @@ export type ExempleCategoryKey =
   | 'valeursMetier'
   | 'biensSupports'
   | 'evenementsRedoutes'
+  | 'sourcesRisque'
+  | 'objectifsVises'
+  | 'scenariosStrategiques'
+  | 'partiesPrenantes'
+  | 'actionsElementaires'
+  | 'mesuresEcosysteme'
 
 export interface CategoryDef {
   key: ExempleCategoryKey
@@ -53,6 +59,17 @@ const TYPES_BIEN_SUPPORT = [
   'MATERIEL', 'LOGICIEL', 'RESEAU', 'DONNEES',
   'PERSONNEL', 'SITE', 'ORGANISATION', 'SOUS_TRAITANCE',
 ] as const
+const CATEGORIES_SOURCE = [
+  'CYBERCRIMINEL', 'ETAT_NATION', 'CONCURRENT', 'ACTIVISTE',
+  'EMPLOYE_MALVEILLANT', 'PRESTATAIRE', 'AMATEUR', 'TERRORISTE', 'AUTRE',
+] as const
+const CRITERES_DICT = ['D', 'I', 'C', 'T'] as const
+const TYPES_PARTIE_PRENANTE = ['PRESTATAIRE', 'FOURNISSEUR', 'CLIENT', 'PARTENAIRE', 'SOUS_TRAITANT', 'ORGANISME_REGULATION', 'AUTRE'] as const
+const TYPES_ACTION = [
+  'RECONNAISSANCE', 'ACCES_INITIAL', 'PERSISTANCE', 'ESCALADE_PRIVILEGES',
+  'MOUVEMENT_LATERAL', 'EXFILTRATION', 'IMPACT',
+] as const
+const TYPES_MESURE = ['ORGANISATIONNELLE', 'TECHNIQUE', 'DETECTIVE', 'PHYSIQUE'] as const
 
 export const EXEMPLES_CATEGORIES: CategoryDef[] = [
   {
@@ -90,6 +107,81 @@ export const EXEMPLES_CATEGORIES: CategoryDef[] = [
       { key: 'description', kind: 'longtext', max: 240 },
       { key: 'impacts', kind: 'stringList', max: 12, itemMax: 160 },
       { key: 'graviteDefaut', kind: 'score' },
+    ],
+  },
+  // ── Atelier 2 ──────────────────────────────────────────────────────────────
+  {
+    key: 'sourcesRisque',
+    atelier: 2,
+    primary: 'nom',
+    labelDefault: 'Sources de risque',
+    fields: [
+      { key: 'nom', kind: 'text', max: 120 },
+      { key: 'categorie', kind: 'enum', options: CATEGORIES_SOURCE },
+      { key: 'description', kind: 'longtext', max: 400 },
+      { key: 'motivation', kind: 'text', max: 200 },
+      { key: 'ressources', kind: 'text', max: 200 },
+      { key: 'pertinenceDefaut', kind: 'score' },
+    ],
+  },
+  {
+    key: 'objectifsVises',
+    atelier: 2,
+    primary: 'nom',
+    labelDefault: 'Objectifs visés',
+    fields: [
+      { key: 'nom', kind: 'text', max: 150 },
+      { key: 'description', kind: 'longtext', max: 400 },
+    ],
+  },
+  // ── Atelier 3 ──────────────────────────────────────────────────────────────
+  {
+    key: 'scenariosStrategiques',
+    atelier: 3,
+    primary: 'nom',
+    labelDefault: 'Scénarios stratégiques',
+    fields: [
+      { key: 'critere', kind: 'enum', options: CRITERES_DICT },
+      { key: 'nom', kind: 'text', max: 160 },
+      { key: 'description', kind: 'longtext', max: 500 },
+      { key: 'vraisemblanceDefaut', kind: 'score' },
+      { key: 'graviteDefaut', kind: 'score' },
+    ],
+  },
+  {
+    key: 'partiesPrenantes',
+    atelier: 3,
+    primary: 'nom',
+    labelDefault: 'Parties prenantes',
+    fields: [
+      { key: 'nom', kind: 'text', max: 120 },
+      { key: 'type', kind: 'enum', options: TYPES_PARTIE_PRENANTE },
+      { key: 'exposition', kind: 'score' },
+      { key: 'fiabilite', kind: 'score' },
+    ],
+  },
+  // ── Atelier 4 ──────────────────────────────────────────────────────────────
+  {
+    key: 'actionsElementaires',
+    atelier: 4,
+    primary: 'nom',
+    labelDefault: 'Actions élémentaires',
+    fields: [
+      { key: 'type', kind: 'enum', options: TYPES_ACTION },
+      { key: 'nom', kind: 'text', max: 160 },
+      { key: 'description', kind: 'longtext', max: 400 },
+    ],
+  },
+  {
+    key: 'mesuresEcosysteme',
+    atelier: 3,
+    primary: 'mesure',
+    labelDefault: 'Mesures d’écosystème',
+    fields: [
+      { key: 'mesure', kind: 'text', max: 160 },
+      { key: 'type', kind: 'enum', options: TYPES_MESURE },
+      { key: 'iso27005', kind: 'text', max: 20 },
+      { key: 'description', kind: 'longtext', max: 400 },
     ],
   },
 ]

@@ -13,6 +13,12 @@ import {
   VALEURS_METIER_EXEMPLES,
   BIENS_SUPPORTS_EXEMPLES,
   EVENEMENTS_REDOUTES_EXEMPLES,
+  SOURCES_RISQUE_EXEMPLES,
+  OBJECTIFS_VISES_EXEMPLES,
+  SCENARIOS_STRATEGIQUES_EXEMPLES,
+  PARTIES_PRENANTES_EXEMPLES,
+  ACTIONS_ELEMENTAIRES_EXEMPLES,
+  MESURES_ECOSYSTEME_EXEMPLES,
 } from '@/lib/ebios-data'
 import type { ExempleCategoryKey } from '@/lib/exemples-ateliers'
 
@@ -54,6 +60,30 @@ export function defaultExemplesFor(
         description: a1?.erExamples?.[i]?.description ?? e.description,
         impacts: a1?.erExamples?.[i]?.impacts ?? e.impacts,
         graviteDefaut: e.graviteDefaut,
+      }))
+    // Ateliers 2 à 5 — exemples structurels (les ateliers les affichent en FR ;
+    // un override organisation est dans la langue saisie par l'admin).
+    case 'sourcesRisque':
+      return SOURCES_RISQUE_EXEMPLES.map((s) => ({
+        nom: s.nom, categorie: s.categorie, description: s.description,
+        motivation: s.motivation, ressources: s.ressources, pertinenceDefaut: s.pertinenceDefaut,
+      }))
+    case 'objectifsVises':
+      return OBJECTIFS_VISES_EXEMPLES.map((o) => ({ nom: o.nom, description: o.description }))
+    case 'scenariosStrategiques':
+      return SCENARIOS_STRATEGIQUES_EXEMPLES.map((s) => ({
+        critere: s.critere, nom: s.nom, description: s.description,
+        vraisemblanceDefaut: s.vraisemblanceDefaut, graviteDefaut: s.graviteDefaut,
+      }))
+    case 'partiesPrenantes':
+      return PARTIES_PRENANTES_EXEMPLES.map((p) => ({
+        nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+      }))
+    case 'actionsElementaires':
+      return ACTIONS_ELEMENTAIRES_EXEMPLES.map((a) => ({ type: a.type, nom: a.nom, description: a.description }))
+    case 'mesuresEcosysteme':
+      return MESURES_ECOSYSTEME_EXEMPLES.map((m) => ({
+        mesure: m.mesure, type: m.type, iso27005: m.iso27005, description: m.description,
       }))
     default:
       return []

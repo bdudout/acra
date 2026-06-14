@@ -20,14 +20,16 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useAddedFeedback } from '@/lib/useAddedFeedback'
-import { PARTIES_PRENANTES_EXEMPLES, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE, SCENARIOS_STRATEGIQUES_EXEMPLES, MESURES_ECOSYSTEME_EXEMPLES } from '@/lib/ebios-data'
+import { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } from '@/lib/ebios-data'
+import { resolveExemples } from '@/lib/exemples-ateliers'
+import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
@@ -81,6 +83,18 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
     if (v >= 2) return { label: t.workshop.a3.vulnLabels.moderate, ...colors }
     return { label: t.workshop.a3.vulnLabels.low, ...colors }
   }
+
+  // Exemples : override organisation si présent, sinon défauts (ebios-data)
+  const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
+  useEffect(() => {
+    fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
+    }).catch(() => {})
+  }, [])
+  const tEx = t as unknown as ExemplesTranslations
+  const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
@@ -324,7 +338,7 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
             </div>
             {showPpExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                {PARTIES_PRENANTES_EXEMPLES.map((p: any, i) => {
+                {ppExamples.map((p: any, i) => {
                   const vuln = Math.max(1, Math.min(4, Math.ceil((p.exposition * (5 - p.fiabilite)) / 4)))
                   const { color } = getVulnerabiliteLabel(vuln)
                   const added = parties.some((x: any) => x.nom === p.nom)
@@ -469,7 +483,7 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
                     C: '🔴 C — Confidentialité',
                     T: '🟡 T — Traçabilité',
                   }
-                  const exemples = SCENARIOS_STRATEGIQUES_EXEMPLES.filter(e => e.critere === critere)
+                  const exemples = scExamples.filter(e => e.critere === critere)
                   const alreadyHas = scenarios.some(s => s.nom && exemples.some(e => e.nom === s.nom))
                   return (
                     <div key={critere} className={`mb-3 border rounded-lg p-3 ${critColors[critere]}`}>
@@ -670,7 +684,7 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
                             <>
                               <p className="text-xs text-blue-700 px-3 py-1.5 border-b border-blue-100">{t.workshop.a3.measEcoExInfo}</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-2">
-                                {MESURES_ECOSYSTEME_EXEMPLES.map((ex, i) => {
+                                {meExamples.map((ex, i) => {
                                   const added = (s.mesuresEcosysteme || []).some((x: any) => x.mesure === ex.mesure)
                                   return (
                                   <button key={i}
