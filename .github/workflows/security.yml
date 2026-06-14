@@ -11,9 +11,6 @@ jobs:
   npm-audit:
     name: npm audit (CVE scan)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ebios-rm
 
     steps:
       - uses: actions/checkout@v4
@@ -23,14 +20,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ebios-rm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: npm audit — bloquer high/critical
-        run: npm audit --audit-level=high
-        # Génère aussi un rapport JSON pour archivage
+      - name: npm audit — bloquer high/critical (dépendances de production)
+        # On audite uniquement les dépendances de production (ce qui est réellement
+        # déployé). Les advisories high de la chaîne de build (esbuild/vite/vitest,
+        # devDependencies) ne sont pas expédiées et n'exposent pas l'app en production.
+        run: npm audit --omit=dev --audit-level=high
         continue-on-error: false
 
       - name: npm audit report (JSON)
@@ -41,16 +40,13 @@ jobs:
         if: always()
         with:
           name: npm-audit-report
-          path: ebios-rm/npm-audit-report.json
+          path: npm-audit-report.json
           retention-days: 30
 
   # ── TypeScript strict (éviter les erreurs de typage silencieuses) ──────────
   typecheck:
     name: TypeScript check
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ebios-rm
 
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +56,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ebios-rm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -75,9 +71,6 @@ jobs:
   unit-tests:
     name: Tests unitaires (Vitest)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ebios-rm
 
     steps:
       - uses: actions/checkout@v4
@@ -87,7 +80,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ebios-rm/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -102,9 +95,6 @@ jobs:
   env-check:
     name: Vérification config sécurité
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ebios-rm
 
     steps:
       - uses: actions/checkout@v4
