@@ -4,10 +4,14 @@ import {
   hashCode,
   verifyCode,
   isExpired,
+  isMfaRequired,
+  resolveChannel,
   MFA_CODE_DIGITS,
   MFA_TTL_MS,
   MFA_MAX_ATTEMPTS,
 } from '@/lib/mfa'
+
+const POL = { mfaEnabled: true, mfaPendingConfirmation: false, mfaScope: 'ALL', mfaMethodEmail: true, mfaMethodSms: false }
 
 const SECRET = 'test-secret-key-1234567890'
 
@@ -69,6 +73,40 @@ describe('mfa — expiration', () => {
   it('accepte une Date comme échéance', () => {
     const now = Date.now()
     expect(isExpired(new Date(now + 1000), now)).toBe(false)
+  })
+})
+
+describe('mfa — isMfaRequired', () => {
+  it('faux si MFA désactivé ou en attente de confirmation', () => {
+    expect(isMfaRequired({ ...POL, mfaEnabled: false }, 'ADMIN')).toBe(false)
+    expect(isMfaRequired({ ...POL, mfaPendingConfirmation: true }, 'ADMIN')).toBe(false)
+  })
+  it('scope ALL : requis pour tous les rôles', () => {
+    expect(isMfaRequired({ ...POL, mfaScope: 'ALL' }, 'ANALYSTE')).toBe(true)
+    expect(isMfaRequired({ ...POL, mfaScope: 'ALL' }, 'ADMIN')).toBe(true)
+  })
+  it('scope ADMIN_ONLY : requis seulement pour les ADMIN', () => {
+    expect(isMfaRequired({ ...POL, mfaScope: 'ADMIN_ONLY' }, 'ANALYSTE')).toBe(false)
+    expect(isMfaRequired({ ...POL, mfaScope: 'ADMIN_ONLY' }, 'ADMIN')).toBe(true)
+  })
+})
+
+describe('mfa — resolveChannel', () => {
+  it('respecte le canal demandé si disponible', () => {
+    expect(resolveChannel({ ...POL, mfaMethodSms: true }, true, 'SMS')).toBe('SMS')
+    expect(resolveChannel({ ...POL, mfaMethodEmail: true }, false, 'EMAIL')).toBe('EMAIL')
+  })
+  it('SMS demandé mais sans téléphone -> repli email', () => {
+    expect(resolveChannel({ ...POL, mfaMethodEmail: true, mfaMethodSms: true }, false, 'SMS')).toBe('EMAIL')
+  })
+  it('défaut email si disponible', () => {
+    expect(resolveChannel({ ...POL, mfaMethodEmail: true, mfaMethodSms: true }, true)).toBe('EMAIL')
+  })
+  it('SMS seul + téléphone', () => {
+    expect(resolveChannel({ ...POL, mfaMethodEmail: false, mfaMethodSms: true }, true)).toBe('SMS')
+  })
+  it('SMS seul sans téléphone -> null (aucun canal)', () => {
+    expect(resolveChannel({ ...POL, mfaMethodEmail: false, mfaMethodSms: true }, false)).toBe(null)
   })
 })
 

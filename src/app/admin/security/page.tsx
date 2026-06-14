@@ -101,7 +101,7 @@ function formatCountdown(seconds: number): string {
  * serait pas réellement appliqué (faux sentiment de sécurité).
  * Repasser à `true` une fois l'enforcement branché.
  */
-const MFA_UI_VISIBLE = false
+const MFA_UI_VISIBLE = true
 
 export default function AdminSecurityPage() {
   const { t } = useTranslation()
@@ -467,11 +467,6 @@ export default function AdminSecurityPage() {
               <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.mfa.sectionTitle}</h2>
               <p className="text-xs text-gray-500 mb-3">{t.mfa.sectionDesc}</p>
 
-              {/* Bandeau "fonctionnalité à venir" */}
-              <div className="mb-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                <span className="text-blue-500 mt-0.5">ℹ️</span>
-                <p className="text-xs text-blue-700">{t.mfa.comingSoonNotice}</p>
-              </div>
 
               {/* Activer/désactiver le MFA */}
               <label className="flex items-center gap-3 cursor-pointer select-none group mb-4">

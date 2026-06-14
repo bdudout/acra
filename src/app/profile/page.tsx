@@ -47,6 +47,7 @@ export default function ProfilePage() {
   // ── État profil ──────────────────────────────────────────────────────
   const [name,        setName]        = useState('')
   const [email,       setEmail]       = useState('')
+  const [phone,       setPhone]       = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [profileError,   setProfileError]   = useState('')
@@ -70,6 +71,7 @@ export default function ProfilePage() {
         if (d.user) {
           setName(d.user.name || '')
           setEmail(d.user.email || '')
+          setPhone(d.user.phone || '')
         }
       })
       .catch(() => {})
@@ -93,7 +95,7 @@ export default function ProfilePage() {
     const res = await fetch('/api/user/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, phone }),
     })
     setSavingProfile(false)
     if (res.ok) {
@@ -184,6 +186,19 @@ export default function ProfilePage() {
                 title="L'adresse e-mail ne peut pas être modifiée ici."
               />
               <p className="text-xs text-gray-500 mt-1">{t.profile.emailHint}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.profile.phoneLabel}
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="input w-full"
+                placeholder="+33 6 12 34 56 78"
+              />
+              <p className="text-xs text-gray-500 mt-1">{t.profile.phoneHint}</p>
             </div>
             <button
               type="submit"

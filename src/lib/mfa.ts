@@ -45,3 +45,37 @@ export function isExpired(expiresAt: Date | number, now: number = Date.now()): b
   const ts = expiresAt instanceof Date ? expiresAt.getTime() : expiresAt
   return now >= ts
 }
+
+export interface MfaPolicyView {
+  mfaEnabled: boolean
+  mfaPendingConfirmation: boolean
+  mfaScope: string // 'ALL' | 'ADMIN_ONLY'
+  mfaMethodEmail: boolean
+  mfaMethodSms: boolean
+}
+
+export type MfaChannel = 'EMAIL' | 'SMS'
+
+/** Le MFA doit-il être exigé à la connexion pour ce rôle ? (logique pure) */
+export function isMfaRequired(p: MfaPolicyView, role: string): boolean {
+  if (!p.mfaEnabled || p.mfaPendingConfirmation) return false
+  return p.mfaScope === 'ALL' || role === 'ADMIN'
+}
+
+/**
+ * Détermine le canal d'envoi du code, en tenant compte des méthodes activées,
+ * de la présence d'un téléphone et d'un éventuel canal demandé. `null` si aucun
+ * canal exploitable (ex. SMS seul mais pas de téléphone).
+ */
+export function resolveChannel(
+  p: MfaPolicyView,
+  hasPhone: boolean,
+  requested?: string | null,
+): MfaChannel | null {
+  if (requested === 'SMS' && p.mfaMethodSms && hasPhone) return 'SMS'
+  if (requested === 'EMAIL' && p.mfaMethodEmail) return 'EMAIL'
+  // Défaut : e-mail si disponible, sinon SMS si un téléphone est renseigné.
+  if (p.mfaMethodEmail) return 'EMAIL'
+  if (p.mfaMethodSms && hasPhone) return 'SMS'
+  return null
+}

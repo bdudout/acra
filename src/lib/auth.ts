@@ -8,6 +8,8 @@ import { auditLog } from '@/lib/logger'
 import { checkLockout, recordFailure, recordSuccess, type LockoutPolicy } from '@/lib/login-lockout'
 import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
+import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
+import { createAndSendChallenge, verifyChallenge } from '@/lib/mfa-service'
 
 // 🔴 Cookie de session aligné sur le défaut de getToken (middleware) : sa
 // sécurité dépend du SCHÉMA de NEXTAUTH_URL, pas de NODE_ENV. Sans cet
@@ -18,11 +20,18 @@ const sessionCookie = resolveSessionCookie()
 
 interface LoginPolicy extends LockoutPolicy {
   maxAgeDays: number
+  mfa: MfaPolicyView
+}
+
+const MFA_DISABLED: MfaPolicyView = {
+  mfaEnabled: false, mfaPendingConfirmation: false, mfaScope: 'ALL',
+  mfaMethodEmail: true, mfaMethodSms: false,
 }
 
 /**
- * Charge la politique (verrouillage + expiration) configurée par l'administrateur.
- * Retourne des valeurs neutres si la table est absente.
+ * Charge la politique (verrouillage + expiration + MFA) configurée par
+ * l'administrateur. Retourne des valeurs neutres (MFA désactivé) si la table
+ * est absente.
  */
 async function loadLoginPolicy(): Promise<LoginPolicy> {
   try {
@@ -33,10 +42,17 @@ async function loadLoginPolicy(): Promise<LoginPolicy> {
         maxFailedAttempts:      stored.maxFailedAttempts ?? 0,
         lockoutDurationMinutes: stored.lockoutDurationMinutes ?? 15,
         maxAgeDays:             stored.maxAgeDays ?? 0,
+        mfa: {
+          mfaEnabled:             stored.mfaEnabled === true,
+          mfaPendingConfirmation: stored.mfaPendingConfirmation === true,
+          mfaScope:               stored.mfaScope ?? 'ALL',
+          mfaMethodEmail:         stored.mfaMethodEmail !== false,
+          mfaMethodSms:           stored.mfaMethodSms === true,
+        },
       }
     }
   } catch { /* table absente */ }
-  return { maxFailedAttempts: 0, lockoutDurationMinutes: 15, maxAgeDays: 0 }
+  return { maxFailedAttempts: 0, lockoutDurationMinutes: 15, maxAgeDays: 0, mfa: MFA_DISABLED }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -65,8 +81,10 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email:    { label: 'Email',        type: 'email' },
-        password: { label: 'Mot de passe', type: 'password' },
+        email:      { label: 'Email',        type: 'email' },
+        password:   { label: 'Mot de passe', type: 'password' },
+        mfaCode:    { label: 'Code MFA',     type: 'text' },
+        mfaChannel: { label: 'Canal MFA',    type: 'text' },
       },
       async authorize(credentials: Record<string, string> | undefined) {
         if (!credentials?.email || !credentials.password) return null
@@ -102,7 +120,7 @@ export const authOptions: NextAuthOptions = {
         const user = await (prisma.user as any).findUnique({
           where: { email: credentials.email.toLowerCase().trim() },
           select: {
-            id: true, email: true, name: true, role: true,
+            id: true, email: true, name: true, role: true, phone: true,
             passwordHash: true, isActive: true,
             passwordChangedAt: true, mustChangePassword: true,
           },
@@ -135,6 +153,36 @@ export const authOptions: NextAuthOptions = {
 
         // Connexion réussie : on réinitialise le compteur d'échecs
         if (lockoutEnabled) recordSuccess(credentials.email)
+
+        // ── Authentification multi-facteurs (si exigée par la politique) ──────────
+        // Pattern next-auth « credentials 2 étapes » : 1re soumission (sans code) →
+        // on génère et envoie un code, puis on lève MFA_REQUIRED ; 2e soumission
+        // (avec mfaCode) → on vérifie le code avant d'émettre la session.
+        if (isMfaRequired(loginPolicy.mfa, user.role)) {
+          const code = (credentials.mfaCode ?? '').trim()
+          if (!code) {
+            const channel = resolveChannel(loginPolicy.mfa, !!user.phone, credentials.mfaChannel)
+            if (!channel) {
+              await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'mfa_no_channel' } })
+              throw new Error('MFA_NO_METHOD')
+            }
+            const destination = channel === 'SMS' ? (user.phone as string) : user.email
+            const sent = await createAndSendChallenge({ userId: user.id, channel, destination })
+            if (!sent.ok) {
+              await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'mfa_send_failed', error: sent.error } })
+              throw new Error('MFA_SEND_FAILED')
+            }
+            await auditLog('MFA_CHALLENGE_SENT', { userId: user.id, userEmail: user.email, details: { channel } })
+            // Encode canal + destination masquée pour l'UI (séparateur ::)
+            throw new Error(`MFA_REQUIRED::${channel}::${sent.masked ?? ''}`)
+          }
+          const verified = await verifyChallenge(user.id, code)
+          if (!verified.ok) {
+            await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'mfa_invalid', mfa: verified.error } })
+            throw new Error(`MFA_INVALID::${verified.error ?? 'invalid'}`)
+          }
+          await auditLog('MFA_VERIFIED', { userId: user.id, userEmail: user.email })
+        }
 
         // #11 — expiration du mot de passe : force le changement à la connexion
         const expired = isPasswordExpired(user.passwordChangedAt, loginPolicy.maxAgeDays)

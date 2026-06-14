@@ -30,6 +30,8 @@ model User {
   emailVerified DateTime?
   passwordHash  String?
   image         String?
+  // Numéro de téléphone (format E.164, ex. +33612345678) — utilisé pour le MFA par SMS
+  phone         String?
   role               UserRole  @default(ANALYSTE)
   isActive           Boolean   @default(true)
   passwordChangedAt  DateTime?
