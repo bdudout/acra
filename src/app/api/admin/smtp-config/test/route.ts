@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
+import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
@@ -26,6 +27,13 @@ export async function POST(req: NextRequest) {
       <p style="color:#6b7280;font-size:12px">Envoyé depuis le panneau d'administration ACRA.</p>
     </div>`,
   })
+
+  // Enregistre le statut du test (garde-fou MFA e-mail + vérification d'e-mail)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma as any).sMTPConfig.update({
+    where: { id: 'global' },
+    data: { lastTestOk: result.ok, lastTestAt: new Date() },
+  }).catch(() => { /* best-effort */ })
 
   await auditLog('SMTP_TEST_SENT', {
     userId: (session.user as any).id, userRole: (session.user as any).role,

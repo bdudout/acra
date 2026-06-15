@@ -137,6 +137,8 @@ export const en: Translations = {
     sectionDesc:       'Configure email or SMS OTP to strengthen login security.',
     comingSoonNotice:  'OTP verification at login will be available in a future release. This configuration will be applied automatically once the feature is activated.',
     enableLabel:       'Enable multi-factor authentication',
+    smtpRequired:      'Requires a configured and tested SMTP server.',
+    smtpConfigLink:    'Configure the SMTP server →',
     methodsLabel:      'Allowed OTP methods',
     methodEmail:       'Email OTP',
     methodSms:         'SMS OTP',

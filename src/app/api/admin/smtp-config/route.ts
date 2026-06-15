@@ -59,7 +59,8 @@ export async function PUT(req: NextRequest) {
   const data = { ...parsed.data, fromAddress: parsed.data.fromAddress || null }
 
   const auditData = { ...data, password: data.password ? '[REDACTED]' : null }
-  const toStore = { ...data, password: encryptSecret(data.password) }
+  // Toute modification de config invalide le dernier test (re-test requis avant usage).
+  const toStore = { ...data, password: encryptSecret(data.password), lastTestOk: false, lastTestAt: null }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const config = await (prisma as any).sMTPConfig.upsert({

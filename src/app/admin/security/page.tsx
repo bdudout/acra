@@ -103,6 +103,13 @@ function formatCountdown(seconds: number): string {
  */
 const MFA_UI_VISIBLE = true
 
+/**
+ * Le MFA par SMS est masqué tant que l'envoi de SMS n'est pas réellement
+ * exploitable/configurable en production (fournisseur non branché de bout en
+ * bout). Repasser à `true` une fois le canal SMS opérationnel.
+ */
+const SMS_MFA_AVAILABLE = false
+
 export default function AdminSecurityPage() {
   const { t } = useTranslation()
   const [policy, setPolicy]           = useState<Policy>(DEFAULT)
@@ -113,6 +120,8 @@ export default function AdminSecurityPage() {
   const [confirmed, setConfirmed]     = useState(false)
   const [error, setError]             = useState('')
   const [countdown, setCountdown]     = useState<number | null>(null)
+  // SMTP : le MFA e-mail et la vérification d'e-mail exigent un SMTP activé ET testé.
+  const [smtpReady, setSmtpReady]     = useState(false)
   // SSO
   const [sso, setSso]                 = useState<SSOConfig>(SSO_DEFAULT)
   const [ssoLoading, setSsoLoading]   = useState(true)
@@ -130,6 +139,14 @@ export default function AdminSecurityPage() {
   }, [])
 
   useEffect(() => { loadPolicy() }, [loadPolicy])
+
+  // Statut SMTP (activé + dernier test réussi) — garde-fou MFA / vérification d'e-mail
+  useEffect(() => {
+    fetch('/api/admin/smtp-config')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setSmtpReady(!!(d && d.enabled && d.lastTestOk)))
+      .catch(() => {})
+  }, [])
 
   // Chargement de la config SSO
   useEffect(() => {
@@ -180,6 +197,11 @@ export default function AdminSecurityPage() {
       if (updated.id) setPolicy(updated)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+      // Si l'activation du MFA ouvre la fenêtre de confirmation, remonter pour
+      // que le bandeau (sticky, en haut) soit immédiatement visible.
+      if (updated.mfaPendingConfirmation) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     } else {
       const d = await res.json()
       setError(d.error || t.error)
@@ -235,7 +257,7 @@ export default function AdminSecurityPage() {
 
         {/* ── Bandeau confirmation MFA — visible admins uniquement ─────────── */}
         {MFA_UI_VISIBLE && policy.mfaPendingConfirmation && countdown !== null && countdown > 0 && (
-          <div className="mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 px-5 py-4 space-y-3">
+          <div className="sticky top-4 z-30 mb-4 rounded-xl border-2 border-amber-400 bg-amber-50 px-5 py-4 space-y-3 shadow-xl shadow-amber-200/60 ring-1 ring-amber-300">
             {/* En-tête */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
@@ -441,12 +463,12 @@ export default function AdminSecurityPage() {
             <div className="border-t border-gray-100 pt-5">
               <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.passwordPolicy.emailVerifTitle}</h2>
               <p className="text-xs text-gray-500 mb-3">{t.passwordPolicy.emailVerifDesc}</p>
-              <label className="flex items-center gap-3 cursor-pointer select-none group">
+              <label className={`flex items-center gap-3 select-none group ${smtpReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                 <div
-                  onClick={() => toggle('requireEmailVerification')}
+                  onClick={() => { if (!smtpReady && !policy.requireEmailVerification) return; toggle('requireEmailVerification') }}
                   className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
                     policy.requireEmailVerification ? 'bg-ebios-500' : 'bg-gray-300'
-                  }`}
+                  } ${!smtpReady && !policy.requireEmailVerification ? 'opacity-50' : ''}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
                     policy.requireEmailVerification ? 'translate-x-5' : 'translate-x-1'
@@ -454,6 +476,12 @@ export default function AdminSecurityPage() {
                 </div>
                 <span className="text-sm text-gray-700 group-hover:text-gray-900">{t.passwordPolicy.emailVerifLabel}</span>
               </label>
+              {!smtpReady && (
+                <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  ⚠️ {t.mfa.smtpRequired}{' '}
+                  <a href="/admin/smtp" className="underline font-medium">{t.mfa.smtpConfigLink}</a>
+                </p>
+              )}
               {policy.requireEmailVerification && (
                 <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   ⚠️ {t.passwordPolicy.emailVerifWarning}
@@ -468,13 +496,13 @@ export default function AdminSecurityPage() {
               <p className="text-xs text-gray-500 mb-3">{t.mfa.sectionDesc}</p>
 
 
-              {/* Activer/désactiver le MFA */}
-              <label className="flex items-center gap-3 cursor-pointer select-none group mb-4">
+              {/* Activer/désactiver le MFA — exige un SMTP activé ET testé (seul canal disponible) */}
+              <label className={`flex items-center gap-3 select-none group mb-1 ${smtpReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                 <div
-                  onClick={() => setPolicy(p => ({ ...p, mfaEnabled: !p.mfaEnabled }))}
+                  onClick={() => { if (!smtpReady && !policy.mfaEnabled) return; setPolicy(p => ({ ...p, mfaEnabled: !p.mfaEnabled })) }}
                   className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
                     policy.mfaEnabled ? 'bg-ebios-500' : 'bg-gray-300'
-                  }`}
+                  } ${!smtpReady && !policy.mfaEnabled ? 'opacity-50' : ''}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
                     policy.mfaEnabled ? 'translate-x-5' : 'translate-x-1'
@@ -482,6 +510,12 @@ export default function AdminSecurityPage() {
                 </div>
                 <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.mfa.enableLabel}</span>
               </label>
+              {!smtpReady && (
+                <p className="mb-4 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  ⚠️ {t.mfa.smtpRequired}{' '}
+                  <a href="/admin/smtp" className="underline font-medium">{t.mfa.smtpConfigLink}</a>
+                </p>
+              )}
 
               {policy.mfaEnabled && (
                 <div className="space-y-5 pl-2 border-l-2 border-ebios-100">
@@ -499,6 +533,7 @@ export default function AdminSecurityPage() {
                         />
                         <span className="text-sm text-gray-700">📧 {t.mfa.methodEmail}</span>
                       </label>
+                      {SMS_MFA_AVAILABLE && (
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -508,6 +543,7 @@ export default function AdminSecurityPage() {
                         />
                         <span className="text-sm text-gray-700">📱 {t.mfa.methodSms}</span>
                       </label>
+                      )}
                     </div>
                     {!policy.mfaMethodEmail && !policy.mfaMethodSms && (
                       <p className="mt-2 text-xs text-red-600">{t.mfa.atLeastOneMethod}</p>
@@ -537,7 +573,7 @@ export default function AdminSecurityPage() {
                   </div>
 
                   {/* Config SMS — visible uniquement si SMS coché */}
-                  {policy.mfaMethodSms && (
+                  {SMS_MFA_AVAILABLE && policy.mfaMethodSms && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-200">
                       <p className="text-xs font-semibold text-gray-800">📱 {t.mfa.smsProviderTitle}</p>
 

@@ -537,6 +537,10 @@ model SMTPConfig {
   password    String?
   fromAddress String?
   fromName    String? @default("ACRA")
+  // Dernier test d'envoi réussi — réinitialisé à false à chaque modification de config.
+  // Sert de garde-fou : le MFA e-mail et la vérification d'e-mail exigent enabled && lastTestOk.
+  lastTestOk  Boolean @default(false)
+  lastTestAt  DateTime?
   updatedAt   DateTime @updatedAt
 }
 

@@ -140,6 +140,8 @@ export const fr = {
     sectionDesc:       'Configurez l\'OTP par e-mail ou SMS pour renforcer la sécurité des connexions.',
     comingSoonNotice:  'La vérification OTP lors de la connexion sera disponible dans une prochaine version. Cette configuration sera appliquée automatiquement dès l\'activation de la fonctionnalité.',
     enableLabel:       'Activer l\'authentification forte',
+    smtpRequired:      'Nécessite un serveur SMTP configuré et testé.',
+    smtpConfigLink:    'Configurer le serveur SMTP →',
     methodsLabel:      'Méthodes OTP autorisées',
     methodEmail:       'OTP par e-mail',
     methodSms:         'OTP par SMS',

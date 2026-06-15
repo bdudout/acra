@@ -137,6 +137,8 @@ export const it: Translations = {
     sectionDesc:       'Configura l\'OTP via e-mail o SMS per rafforzare la sicurezza degli accessi.',
     comingSoonNotice:  'La verifica OTP al login sarà disponibile in una prossima versione. Questa configurazione verrà applicata automaticamente all\'attivazione della funzionalità.',
     enableLabel:       'Attiva l\'autenticazione a più fattori',
+    smtpRequired:      'Richiede un server SMTP configurato e testato.',
+    smtpConfigLink:    'Configura il server SMTP →',
     methodsLabel:      'Metodi OTP consentiti',
     methodEmail:       'OTP via e-mail',
     methodSms:         'OTP via SMS',

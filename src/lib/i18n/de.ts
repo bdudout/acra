@@ -137,6 +137,8 @@ export const de: Translations = {
     sectionDesc:       'Konfigurieren Sie E-Mail- oder SMS-OTP, um die Anmeldesicherheit zu stärken.',
     comingSoonNotice:  'Die OTP-Verifizierung beim Login wird in einer zukünftigen Version verfügbar sein. Diese Konfiguration wird automatisch angewendet, sobald die Funktion aktiviert wird.',
     enableLabel:       'Multi-Faktor-Authentifizierung aktivieren',
+    smtpRequired:      'Erfordert einen konfigurierten und getesteten SMTP-Server.',
+    smtpConfigLink:    'SMTP-Server konfigurieren →',
     methodsLabel:      'Erlaubte OTP-Methoden',
     methodEmail:       'OTP per E-Mail',
     methodSms:         'OTP per SMS',

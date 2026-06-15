@@ -137,6 +137,8 @@ export const es: Translations = {
     sectionDesc:       'Configure OTP por correo o SMS para reforzar la seguridad del inicio de sesión.',
     comingSoonNotice:  'La verificación OTP al iniciar sesión estará disponible en una próxima versión. Esta configuración se aplicará automáticamente cuando se active la funcionalidad.',
     enableLabel:       'Activar autenticación multifactor',
+    smtpRequired:      'Requiere un servidor SMTP configurado y probado.',
+    smtpConfigLink:    'Configurar el servidor SMTP →',
     methodsLabel:      'Métodos OTP permitidos',
     methodEmail:       'OTP por correo electrónico',
     methodSms:         'OTP por SMS',
