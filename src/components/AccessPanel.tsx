@@ -285,32 +285,34 @@ export default function AccessPanel({
           {/* Formulaire d'invitation */}
           <div className="border-t border-gray-100 pt-4">
             <div className="text-sm font-medium text-gray-700 mb-2">{t.access.inviteTitle}</div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-col gap-2">
               <input
                 type="email"
                 placeholder={t.access.inviteEmailPh}
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleInvite()}
-                className="input flex-1 min-w-0 text-sm"
+                className="input w-full text-sm"
               />
-              <select
-                value={invitePerm}
-                onChange={e => setInvitePerm(e.target.value as AnalysePermission)}
-                className="text-sm border border-gray-300 rounded-lg px-2 py-2 bg-white focus:ring-2 focus:ring-ebios-500"
-                title={permDesc(invitePerm)}
-              >
-                {(['LECTURE', 'EDITION', 'APPROBATION'] as AnalysePermission[]).map(p => (
-                  <option key={p} value={p}>{permLabel(p)}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleInvite}
-                disabled={inviting || !inviteEmail.trim()}
-                className="btn-primary text-sm disabled:opacity-50 flex-shrink-0"
-              >
-                {inviting ? t.access.inviting : t.access.inviteBtn}
-              </button>
+              <div className="flex gap-2">
+                <select
+                  value={invitePerm}
+                  onChange={e => setInvitePerm(e.target.value as AnalysePermission)}
+                  className="text-sm border border-gray-300 rounded-lg px-2 py-2 bg-white focus:ring-2 focus:ring-ebios-500 flex-1 min-w-0"
+                  title={permDesc(invitePerm)}
+                >
+                  {(['LECTURE', 'EDITION', 'APPROBATION'] as AnalysePermission[]).map(p => (
+                    <option key={p} value={p}>{permLabel(p)}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || !inviteEmail.trim()}
+                  className="btn-primary text-sm disabled:opacity-50 flex-shrink-0"
+                >
+                  {inviting ? t.access.inviting : t.access.inviteBtn}
+                </button>
+              </div>
             </div>
             {inviteError && <p className="text-sm text-red-600 mt-2">⚠️ {inviteError}</p>}
             {inviteSuccess && <p className="text-sm text-green-600 mt-2">✅ {inviteSuccess}</p>}
