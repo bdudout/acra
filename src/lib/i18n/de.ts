@@ -809,6 +809,12 @@ export const de: Translations = {
 
   access: {
     statusTitle:         'Analysestatus',
+    permLabels: { LECTURE: 'Nur Lesen', EDITION: 'Bearbeiten', APPROBATION: 'Genehmigung' } as Record<string, string>,
+    permDescs: {
+      LECTURE:     'Kann die Analyse einsehen, aber nicht bearbeiten',
+      EDITION:     'Kann die Workshops der Analyse bearbeiten',
+      APPROBATION: 'Kann die Analyse einreichen, genehmigen oder ablehnen',
+    } as Record<string, string>,
     commentRM:           '💬 Kommentar des Risk Managers',
     submitRejected:      '⚠️ Die Analyse wurde abgelehnt. Beheben Sie die genannten Probleme und reichen Sie sie erneut ein.',
     submitHint:          'Sobald die Analyse abgeschlossen ist, reichen Sie sie zur Genehmigung bei einem Risk Manager ein.',
@@ -1419,6 +1425,10 @@ export const de: Translations = {
     legendAria: 'Legende der Risikostufen',
     labelsAria: 'Risikobezeichnungen',
   },
+  statusLabels: {
+    EN_COURS: 'In Bearbeitung', SOUMIS: 'Eingereicht', APPROUVE: 'Genehmigt',
+    REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Rahmenbedingungen und Sicherheitsbasis',

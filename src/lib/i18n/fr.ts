@@ -829,6 +829,12 @@ export const fr = {
   // ─── Panel d'accès / approbation ─────────────────────────────────────────
   access: {
     statusTitle:         "Statut de l'analyse",
+    permLabels: { LECTURE: 'Lecture seule', EDITION: 'Édition', APPROBATION: 'Approbation' } as Record<string, string>,
+    permDescs: {
+      LECTURE:     "Peut consulter l'analyse mais pas la modifier",
+      EDITION:     "Peut modifier les ateliers de l'analyse",
+      APPROBATION: "Peut soumettre, approuver ou rejeter l'analyse",
+    } as Record<string, string>,
     commentRM:           '💬 Commentaire du Risk Manager',
     submitRejected:      "⚠️ L'analyse a été rejetée. Corrigez les points soulevés puis soumettez à nouveau.",
     submitHint:          "Une fois l'analyse complète, soumettez-la pour approbation par un Risk Manager.",
@@ -1448,6 +1454,10 @@ export const fr = {
     legendAria: 'Légende des niveaux de risque',
     labelsAria: 'Libellés des risques',
   },
+  statusLabels: {
+    EN_COURS: 'En cours', SOUMIS: 'Soumise', APPROUVE: 'Approuvée',
+    REJETE: 'Rejetée', TERMINE: 'Terminée', ARCHIVE: 'Archivée',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Cadrage et socle de sécurité',

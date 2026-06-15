@@ -125,6 +125,10 @@ export default function AccessPanel({
   }
 
   const statutInfo = STATUT_APPROBATION_LABELS[statut] ?? STATUT_APPROBATION_LABELS.EN_COURS
+  // Libellés localisés (repli sur les constantes FR de permissions.ts)
+  const statusLabel = (s: string) => (t.statusLabels as Record<string, string>)[s] ?? (STATUT_APPROBATION_LABELS[s]?.label ?? s)
+  const permLabel = (p: string) => (t.access.permLabels as Record<string, string>)[p] ?? (PERMISSION_LABELS as Record<string, string>)[p]
+  const permDesc = (p: string) => (t.access.permDescs as Record<string, string>)[p] ?? (PERMISSION_DESCRIPTIONS as Record<string, string>)[p]
 
   return (
     <div className="space-y-6">
@@ -134,7 +138,7 @@ export default function AccessPanel({
         <h3 className="font-semibold text-gray-800 mb-3">📋 {t.access.statusTitle}</h3>
         <div className="flex items-center gap-3 mb-4">
           <span className={`text-sm px-3 py-1 rounded-full font-medium ${statutInfo.color}`}>
-            {statutInfo.icon} {statutInfo.label}
+            {statutInfo.icon} {statusLabel(statut)}
           </span>
           {approuveLe && (
             <span className="text-xs text-gray-500">
@@ -261,7 +265,7 @@ export default function AccessPanel({
                     {ROLE_LABELS[a.user.role]}
                   </span>
                   <span className="text-xs text-gray-500 flex-shrink-0">
-                    {PERMISSION_LABELS[a.permission]}
+                    {permLabel(a.permission)}
                   </span>
                   <button
                     onClick={() => handleRemove(a.userId)}
@@ -294,10 +298,10 @@ export default function AccessPanel({
                 value={invitePerm}
                 onChange={e => setInvitePerm(e.target.value as AnalysePermission)}
                 className="text-sm border border-gray-300 rounded-lg px-2 py-2 bg-white focus:ring-2 focus:ring-ebios-500"
-                title={PERMISSION_DESCRIPTIONS[invitePerm]}
+                title={permDesc(invitePerm)}
               >
                 {(['LECTURE', 'EDITION', 'APPROBATION'] as AnalysePermission[]).map(p => (
-                  <option key={p} value={p}>{PERMISSION_LABELS[p]}</option>
+                  <option key={p} value={p}>{permLabel(p)}</option>
                 ))}
               </select>
               <button
@@ -313,7 +317,7 @@ export default function AccessPanel({
             <div className="mt-2 grid grid-cols-1 gap-1">
               {(['LECTURE', 'EDITION', 'APPROBATION'] as AnalysePermission[]).map(p => (
                 <div key={p} className="text-xs text-gray-500">
-                  <span className="font-medium text-gray-600">{PERMISSION_LABELS[p]}</span> — {PERMISSION_DESCRIPTIONS[p]}
+                  <span className="font-medium text-gray-600">{permLabel(p)}</span> — {permDesc(p)}
                 </div>
               ))}
             </div>

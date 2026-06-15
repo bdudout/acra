@@ -21,13 +21,22 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // 1) Essaie localStorage
+    // 1) Cookie `acra-locale` — source de vérité partagée avec les Server Components
+    //    (getServerLocale). Le lire en premier évite toute divergence client/serveur.
+    const cookieLocale = document.cookie.split('; ').find(c => c.startsWith('acra-locale='))?.split('=')[1] as Locale
+    if (cookieLocale && LOCALES.includes(cookieLocale)) {
+      setLocaleState(cookieLocale)
+      localStorage.setItem('acra-locale', cookieLocale)
+      return
+    }
+    // 2) Essaie localStorage (sessions antérieures)
     const stored = localStorage.getItem('acra-locale') as Locale
     if (stored && LOCALES.includes(stored)) {
       setLocaleState(stored)
+      document.cookie = `acra-locale=${stored}; path=/; max-age=31536000; SameSite=Lax`
       return
     }
-    // 2) Détection navigateur
+    // 3) Détection navigateur
     const lang = navigator.language.split('-')[0] as Locale
     if (LOCALES.includes(lang)) setLocaleState(lang)
   }, [])

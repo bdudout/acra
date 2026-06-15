@@ -809,6 +809,12 @@ export const en: Translations = {
 
   access: {
     statusTitle:         'Analysis status',
+    permLabels: { LECTURE: 'Read-only', EDITION: 'Edit', APPROBATION: 'Approval' } as Record<string, string>,
+    permDescs: {
+      LECTURE:     'Can view the analysis but not edit it',
+      EDITION:     'Can edit the analysis workshops',
+      APPROBATION: 'Can submit, approve or reject the analysis',
+    } as Record<string, string>,
     commentRM:           '💬 Risk Manager comment',
     submitRejected:      '⚠️ The analysis was rejected. Fix the issues raised and resubmit.',
     submitHint:          'Once the analysis is complete, submit it for approval by a Risk Manager.',
@@ -1419,6 +1425,10 @@ export const en: Translations = {
     legendAria: 'Risk level legend',
     labelsAria: 'Risk labels',
   },
+  statusLabels: {
+    EN_COURS: 'In progress', SOUMIS: 'Submitted', APPROUVE: 'Approved',
+    REJETE: 'Rejected', TERMINE: 'Completed', ARCHIVE: 'Archived',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Scoping and Security Baseline',

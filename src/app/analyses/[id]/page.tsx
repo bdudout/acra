@@ -93,7 +93,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             )}
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statutInfo.color}`}>
-                {statutInfo.icon} {statutInfo.label}
+                {statutInfo.icon} {(t.statusLabels as Record<string, string>)[analyse.statut] ?? statutInfo.label}
               </span>
               {!isOwner && (
                 <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
