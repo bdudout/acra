@@ -14,6 +14,8 @@ import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { getFrameworkControles } from '@/lib/frameworks-data'
+import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
 
 export default async function AtelierPage({
   params,
@@ -97,6 +99,25 @@ export default async function AtelierPage({
       break
   }
 
+  // Catalogue de vulnérabilités issu du socle (fiche Club EBIOS) — affiché en
+  // ateliers 3/4 (vecteurs/actions candidats) et 5 (garde-fou tunnel de conformité).
+  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { conformiteActive: true } })
+  const conformiteActive = Boolean(orgConfig?.conformiteActive)
+  let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
+  if (conformiteActive && analyse.cadrage) {
+    const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[])
+    const ctlByRef = new Map(controles.map(c => [c.ref, c]))
+    const entries = sanitizeConformite((analyse.cadrage as any).socleSecurite)
+    nonConfItems = deriveNonConformites(entries).map(nc => ({
+      ref: nc.ref,
+      nom: ctlByRef.get(nc.ref)?.nom ?? nc.ref,
+      statut: nc.statut,
+      commentaire: nc.commentaire,
+    }))
+  }
+  const showCatalogue = conformiteActive && (atelierNum === 3 || atelierNum === 4)
+  const showTunnelWarning = conformiteActive && atelierNum === 5
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -152,6 +173,38 @@ export default async function AtelierPage({
               <span className="font-semibold text-amber-900 text-sm">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</span>
               <span className="text-amber-700 text-sm ml-2">{t.analyses.expressInfo}</span>
             </div>
+          </div>
+        )}
+
+        {/* Catalogue de vulnérabilités issu du socle (ateliers 3 & 4) */}
+        {showCatalogue && (
+          <div className="card p-5 mb-6 border-l-4 border-l-red-400">
+            <h2 className="font-semibold text-gray-800 mb-1">🛡️ {t.conformite.vulnPanelTitle}</h2>
+            <p className="text-xs text-gray-500 mb-3">{t.conformite.vulnPanelIntro}</p>
+            {nonConfItems.length === 0 ? (
+              <p className="text-sm text-gray-500">{t.conformite.vulnPanelEmpty}</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {nonConfItems.map(it => (
+                  <li key={it.ref} className="text-sm text-gray-700 flex gap-2">
+                    <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${it.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                    <span>
+                      <span className="text-gray-400 mr-1">{it.ref}</span>{it.nom}
+                      <span className="ml-1 text-xs text-gray-400">({(t.conformite.statuts as Record<string, string>)[it.statut]})</span>
+                      {it.commentaire && <span className="text-gray-500"> — {it.commentaire}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Garde-fou « tunnel de conformité » (atelier 5) */}
+        {showTunnelWarning && (
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-6">
+            <p className="text-sm font-semibold text-amber-800 mb-1">{t.conformite.tunnelWarningTitle}</p>
+            <p className="text-sm text-amber-800">{t.conformite.tunnelWarning}</p>
           </div>
         )}
 

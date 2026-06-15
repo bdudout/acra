@@ -1524,6 +1524,31 @@ export const it: Translations = {
       ANALYSE_APPROFONDIE: "Vista la criticità, si raccomanda un'analisi approfondita (tutti i workshop).",
     },
   },
+  // ─── Analisi di conformità al livello base (workshop 1) ───────────────────
+  conformite: {
+    gridTitle:     'Conformità al riferimento',
+    gridIntro:     'Valuta la conformità di ogni controllo. Le non conformità (parziali o confermate) alimentano un catalogo di vulnerabilità sfruttato nei workshop successivi.',
+    searchPh:      'Cerca un controllo…',
+    comment:       'Commento',
+    commentPh:     'Giustificazione, scostamento rilevato, controllo compensativo…',
+    statuts: {
+      conforme:     'Conforme',
+      partiel:      'Parziale',
+      non_conforme: 'Non conforme',
+      na:           'N/D',
+    },
+    statTaux:        'Tasso di conformità',
+    statEvalues:     'Controlli valutati',
+    statNonConf:     'Non conformità',
+    catalogueTitle:  'Catalogo delle vulnerabilità',
+    catalogueIntro:  'Scostamenti dal livello base sfruttabili come vulnerabilità nei workshop 3 e 4.',
+    catalogueEmpty:  'Nessuna non conformità inserita per ora.',
+    vulnPanelTitle:  'Vulnerabilità derivanti dal livello base',
+    vulnPanelIntro:  'Non conformità identificate nel workshop 1, da considerare come vettori o azioni elementari se pertinenti a uno scenario.',
+    vulnPanelEmpty:  'Nessuna non conformità al livello base. Attiva e completa la griglia di conformità nel workshop 1.',
+    tunnelWarningTitle: '⚠️ Evitare il «tunnel di conformità»',
+    tunnelWarning:   'Una non conformità non è un rischio di per sé: inseriscila nella sintesi solo se è collegata a uno scenario di rischio pertinente (cfr. scheda metodologica Club EBIOS).',
+  },
   // ─── Pagine legali ────────────────────────────────────────────────────────
   legal: {
     back:    '← Indietro',

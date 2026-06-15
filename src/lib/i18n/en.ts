@@ -1524,6 +1524,31 @@ export const en: Translations = {
       ANALYSE_APPROFONDIE: 'A thorough analysis (all workshops) is recommended given the criticality.',
     },
   },
+  // ─── Compliance analysis against the baseline (workshop 1) ────────────────
+  conformite: {
+    gridTitle:     'Compliance with the framework',
+    gridIntro:     'Assess the compliance of each control. Non-conformities (partial or confirmed) feed a vulnerability catalogue exploited in the following workshops.',
+    searchPh:      'Search for a control…',
+    comment:       'Comment',
+    commentPh:     'Justification, observed gap, compensating control…',
+    statuts: {
+      conforme:     'Compliant',
+      partiel:      'Partial',
+      non_conforme: 'Non-compliant',
+      na:           'N/A',
+    },
+    statTaux:        'Compliance rate',
+    statEvalues:     'Assessed controls',
+    statNonConf:     'Non-conformities',
+    catalogueTitle:  'Vulnerability catalogue',
+    catalogueIntro:  'Baseline gaps exploitable as vulnerabilities in workshops 3 and 4.',
+    catalogueEmpty:  'No non-conformity entered yet.',
+    vulnPanelTitle:  'Vulnerabilities from the baseline',
+    vulnPanelIntro:  'Non-conformities identified in workshop 1, to be considered as vectors or elementary actions where relevant to a scenario.',
+    vulnPanelEmpty:  'No baseline non-conformity. Enable and complete the compliance grid in workshop 1.',
+    tunnelWarningTitle: '⚠️ Avoid the "compliance tunnel"',
+    tunnelWarning:   'A non-conformity is not a risk in itself: only include it in the synthesis if it is tied to a relevant risk scenario (see the Club EBIOS method sheet).',
+  },
   // ─── Legal pages ──────────────────────────────────────────────────────────
   legal: {
     back:    '← Back',

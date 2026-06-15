@@ -1524,6 +1524,31 @@ export const de: Translations = {
       ANALYSE_APPROFONDIE: 'Angesichts der Kritikalität wird eine umfassende Analyse (alle Workshops) empfohlen.',
     },
   },
+  // ─── Konformitätsanalyse gegenüber dem Grundniveau (Workshop 1) ───────────
+  conformite: {
+    gridTitle:     'Konformität mit dem Rahmenwerk',
+    gridIntro:     'Bewerten Sie die Konformität jedes Kontrollziels. Nichtkonformitäten (teilweise oder bestätigt) speisen einen Schwachstellenkatalog, der in den folgenden Workshops genutzt wird.',
+    searchPh:      'Kontrollziel suchen…',
+    comment:       'Kommentar',
+    commentPh:     'Begründung, festgestellte Abweichung, kompensierende Maßnahme…',
+    statuts: {
+      conforme:     'Konform',
+      partiel:      'Teilweise',
+      non_conforme: 'Nicht konform',
+      na:           'N/V',
+    },
+    statTaux:        'Konformitätsgrad',
+    statEvalues:     'Bewertete Kontrollziele',
+    statNonConf:     'Nichtkonformitäten',
+    catalogueTitle:  'Schwachstellenkatalog',
+    catalogueIntro:  'Abweichungen vom Grundniveau, in den Workshops 3 und 4 als Schwachstellen nutzbar.',
+    catalogueEmpty:  'Noch keine Nichtkonformität erfasst.',
+    vulnPanelTitle:  'Schwachstellen aus dem Grundniveau',
+    vulnPanelIntro:  'In Workshop 1 identifizierte Nichtkonformitäten, die als Vektoren oder Elementaraktionen zu betrachten sind, sofern für ein Szenario relevant.',
+    vulnPanelEmpty:  'Keine Nichtkonformität zum Grundniveau. Aktivieren und vervollständigen Sie das Konformitätsraster in Workshop 1.',
+    tunnelWarningTitle: '⚠️ Den „Konformitätstunnel“ vermeiden',
+    tunnelWarning:   'Eine Nichtkonformität ist an sich kein Risiko: Nehmen Sie sie nur in die Synthese auf, wenn sie mit einem relevanten Risikoszenario verknüpft ist (siehe Club-EBIOS-Methodenblatt).',
+  },
   // ─── Rechtliche Seiten ────────────────────────────────────────────────────
   legal: {
     back:    '← Zurück',

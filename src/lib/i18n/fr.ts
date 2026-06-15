@@ -1552,6 +1552,31 @@ export const fr = {
       ANALYSE_APPROFONDIE: 'Une analyse approfondie (tous les ateliers) est recommandée vu la criticité.',
     },
   },
+  // ─── Analyse de conformité au socle (atelier 1) ──────────────────────────
+  conformite: {
+    gridTitle:     'Conformité au référentiel',
+    gridIntro:     "Évaluez la conformité de chaque contrôle. Les non-conformités (partielles ou avérées) alimentent un catalogue de vulnérabilités exploité dans les ateliers suivants.",
+    searchPh:      'Rechercher un contrôle…',
+    comment:       'Commentaire',
+    commentPh:     'Justification, écart constaté, contrôle compensatoire…',
+    statuts: {
+      conforme:     'Conforme',
+      partiel:      'Partiel',
+      non_conforme: 'Non conforme',
+      na:           'N/A',
+    },
+    statTaux:        'Taux de conformité',
+    statEvalues:     'Contrôles évalués',
+    statNonConf:     'Non-conformités',
+    catalogueTitle:  'Catalogue de vulnérabilités',
+    catalogueIntro:  'Écarts au socle exploitables comme vulnérabilités dans les ateliers 3 et 4.',
+    catalogueEmpty:  'Aucune non-conformité saisie pour le moment.',
+    vulnPanelTitle:  'Vulnérabilités issues du socle',
+    vulnPanelIntro:  "Non-conformités identifiées en atelier 1, à examiner comme vecteurs ou actions élémentaires si pertinent pour un scénario.",
+    vulnPanelEmpty:  "Aucune non-conformité au socle. Activez et complétez la grille de conformité en atelier 1.",
+    tunnelWarningTitle: '⚠️ Éviter le « tunnel de conformité »',
+    tunnelWarning:   "Une non-conformité n'est pas un risque en soi : ne l'inscrivez dans la synthèse que si elle est rattachée à un scénario de risque pertinent (cf. fiche méthode Club EBIOS).",
+  },
   // ─── Pages légales ───────────────────────────────────────────────────────
   legal: {
     back:    '← Retour',

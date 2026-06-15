@@ -1524,6 +1524,31 @@ export const es: Translations = {
       ANALYSE_APPROFONDIE: 'Se recomienda un análisis exhaustivo (todos los talleres) dada la criticidad.',
     },
   },
+  // ─── Análisis de conformidad con la base (taller 1) ───────────────────────
+  conformite: {
+    gridTitle:     'Conformidad con el marco',
+    gridIntro:     'Evalúe la conformidad de cada control. Las no conformidades (parciales o confirmadas) alimentan un catálogo de vulnerabilidades explotado en los talleres siguientes.',
+    searchPh:      'Buscar un control…',
+    comment:       'Comentario',
+    commentPh:     'Justificación, brecha observada, control compensatorio…',
+    statuts: {
+      conforme:     'Conforme',
+      partiel:      'Parcial',
+      non_conforme: 'No conforme',
+      na:           'N/A',
+    },
+    statTaux:        'Tasa de conformidad',
+    statEvalues:     'Controles evaluados',
+    statNonConf:     'No conformidades',
+    catalogueTitle:  'Catálogo de vulnerabilidades',
+    catalogueIntro:  'Brechas de la base explotables como vulnerabilidades en los talleres 3 y 4.',
+    catalogueEmpty:  'Ninguna no conformidad registrada por ahora.',
+    vulnPanelTitle:  'Vulnerabilidades procedentes de la base',
+    vulnPanelIntro:  'No conformidades identificadas en el taller 1, a considerar como vectores o acciones elementales cuando sean pertinentes para un escenario.',
+    vulnPanelEmpty:  'Ninguna no conformidad con la base. Active y complete la cuadrícula de conformidad en el taller 1.',
+    tunnelWarningTitle: '⚠️ Evitar el «túnel de conformidad»',
+    tunnelWarning:   'Una no conformidad no es un riesgo en sí: inclúyala en la síntesis solo si está vinculada a un escenario de riesgo pertinente (véase la ficha de método del Club EBIOS).',
+  },
   // ─── Páginas legales ──────────────────────────────────────────────────────
   legal: {
     back:    '← Volver',

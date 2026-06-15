@@ -31,7 +31,9 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
-import { FRAMEWORK_IDS, FRAMEWORK_META, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
+import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
+import ConformiteGrid from '@/components/ConformiteGrid'
+import type { ConformiteEntry } from '@/lib/conformite'
 
 interface Props {
   analyseId: string
@@ -77,6 +79,7 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
         if (d.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) {
           setExOverride(d.exemplesAteliers)
         }
+        setConformiteActive(Boolean(d.conformiteActive))
       })
       .catch(() => {})
   }, [])
@@ -138,6 +141,12 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
   // Socle
   const [referentiels, setReferentiels] = useState<any[]>(initialData?.referentiels || [])
 
+  // Conformité au socle (fonctionnalité optionnelle) — stockée dans Cadrage.socleSecurite
+  const [conformiteActive, setConformiteActive] = useState(false)
+  const [socleSecurite, setSocleSecurite] = useState<ConformiteEntry[]>(
+    Array.isArray(initialData?.socleSecurite) ? initialData.socleSecurite : []
+  )
+
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
 
@@ -149,8 +158,8 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   const autoSaveData = useMemo(
-    () => ({ perimetre, objectifsEtude: objectifs, missions, valeursMetier: vms, biensSupports: biens, evenementsRedoutes: ers, referentiels, referentielMesures, customControles }),
-    [perimetre, objectifs, missions, vms, biens, ers, referentiels, referentielMesures, customControles]
+    () => ({ perimetre, objectifsEtude: objectifs, missions, valeursMetier: vms, biensSupports: biens, evenementsRedoutes: ers, referentiels, referentielMesures, customControles, socleSecurite }),
+    [perimetre, objectifs, missions, vms, biens, ers, referentiels, referentielMesures, customControles, socleSecurite]
   )
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
@@ -889,6 +898,17 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
               </div>
             )}
           </div>
+
+          {/* ── Grille de conformité au référentiel (fonctionnalité optionnelle) ── */}
+          {conformiteActive && (
+            <div className="card p-5">
+              <ConformiteGrid
+                controles={getFrameworkControles(referentielMesures, customControles)}
+                entries={socleSecurite}
+                onChange={setSocleSecurite}
+              />
+            </div>
+          )}
 
           {/* ── Socle de sécurité existant ───────────────────────────────── */}
           <div className="card p-5">
