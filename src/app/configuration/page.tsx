@@ -15,7 +15,7 @@ import {
 import type { TypeImpact, ReferentielActif, StrategieTraitement } from '@/lib/org-config-defaults'
 import { EXEMPLES_CATEGORIES, getCategoryDef, type CategoryDef, type FieldSchema } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
-import { CATEGORIES_BIENS_SUPPORTS } from '@/lib/ebios-data'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -99,7 +99,8 @@ const DEFAUT_5: Config = {
 
 export default function ConfigurationPage() {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
+  const { CATEGORIES_BIENS_SUPPORTS } = useEbiosData()
   const { data: session } = useSession()
   const isAdmin = (session?.user as any)?.role === 'ADMIN'
   const [loading, setLoading] = useState(true)
@@ -166,7 +167,7 @@ export default function ConfigurationPage() {
         for (const c of EXEMPLES_CATEGORIES) {
           const o = Array.isArray(ov[c.key]) ? ov[c.key] : null
           hasOv[c.key] = !!(o && o.length)
-          rows[c.key] = (o && o.length) ? o : defaultExemplesFor(c.key, t as unknown as ExemplesTranslations)
+          rows[c.key] = (o && o.length) ? o : defaultExemplesFor(c.key, t as unknown as ExemplesTranslations, locale)
         }
         setExRows(rows); setExOverride(hasOv)
       })
@@ -232,7 +233,7 @@ export default function ConfigurationPage() {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ exemplesAteliers: { [cat]: [] } }),
         })
-        setExRows(p => ({ ...p, [cat]: defaultExemplesFor(cat as never, t as unknown as ExemplesTranslations) }))
+        setExRows(p => ({ ...p, [cat]: defaultExemplesFor(cat as never, t as unknown as ExemplesTranslations, locale) }))
         setExOverride(p => ({ ...p, [cat]: false })); setSavedEx(null)
       },
     })

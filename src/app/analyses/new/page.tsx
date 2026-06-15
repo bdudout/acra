@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { SECTEURS_ACTIVITE } from '@/lib/ebios-data'
 import { useTranslation } from '@/lib/i18n/context'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
+  const { SECTEURS_ACTIVITE } = useEbiosData()
   const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '' })
   const [socleId, setSocleId] = useState('')
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])

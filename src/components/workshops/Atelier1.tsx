@@ -28,11 +28,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import {
-  CATEGORIES_BIENS_SUPPORTS,
-  NIVEAUX_GRAVITE, REFERENTIELS_SECURITE, TYPES_BIEN_SUPPORT,
-  NIVEAUX_DICT,
-} from '@/lib/ebios-data'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { FRAMEWORK_IDS, FRAMEWORK_META, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
@@ -57,7 +53,11 @@ function getDictColor(v: number) {
 
 export default function Atelier1({ analyseId, initialData, analyse, expressMode }: Props) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
+  const {
+    CATEGORIES_BIENS_SUPPORTS, NIVEAUX_GRAVITE, REFERENTIELS_SECURITE,
+    TYPES_BIEN_SUPPORT, NIVEAUX_DICT,
+  } = useEbiosData()
 
   // Translated arrays (derived from t so they re-render on locale change)
   // Config organisation (#8) — types d'impacts + référentiels actifs ; null tant que non chargé
@@ -101,15 +101,15 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
   // Exemples : override organisation si présent, sinon défauts traduits (ebios-data + i18n)
   const tEx = t as unknown as ExemplesTranslations
   const vmExamples = useMemo(
-    () => resolveExemples(exOverride.valeursMetier, defaultExemplesFor('valeursMetier', tEx)) as any[],
+    () => resolveExemples(exOverride.valeursMetier, defaultExemplesFor('valeursMetier', tEx, locale)) as any[],
     [t, exOverride] // eslint-disable-line react-hooks/exhaustive-deps
   )
   const erExamples = useMemo(
-    () => resolveExemples(exOverride.evenementsRedoutes, defaultExemplesFor('evenementsRedoutes', tEx)) as any[],
+    () => resolveExemples(exOverride.evenementsRedoutes, defaultExemplesFor('evenementsRedoutes', tEx, locale)) as any[],
     [t, exOverride] // eslint-disable-line react-hooks/exhaustive-deps
   )
   const bsExamples = useMemo(
-    () => resolveExemples(exOverride.biensSupports, defaultExemplesFor('biensSupports', tEx)) as any[],
+    () => resolveExemples(exOverride.biensSupports, defaultExemplesFor('biensSupports', tEx, locale)) as any[],
     [t, exOverride] // eslint-disable-line react-hooks/exhaustive-deps
   )
 

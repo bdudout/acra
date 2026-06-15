@@ -27,7 +27,7 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useAddedFeedback } from '@/lib/useAddedFeedback'
-import { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } from '@/lib/ebios-data'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
@@ -62,7 +62,8 @@ function getNiveauRisqueColor(score: number) {
 
 export default function Atelier3({ analyseId, initialData, analyse }: Props) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
+  const { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
 
   // Translated arrays (re-derived on locale change)
   const TYPES_PP = [
@@ -92,9 +93,9 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
     }).catch(() => {})
   }, [])
   const tEx = t as unknown as ExemplesTranslations
-  const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
-  const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
-  const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)

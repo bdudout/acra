@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ISO27001_ANNEXE_A, ISO27001_CATEGORIES, type ISO27001Controle } from '@/lib/ebios-data'
+import { type ISO27001Controle } from '@/lib/ebios-data'
 import { useTranslation } from '@/lib/i18n/context'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 
 interface Props {
   /** Appelé quand l'utilisateur clique sur un contrôle pour l'ajouter */
@@ -20,6 +21,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default function ISO27001Panel({ onSelect, actionLabel = 'Ajouter' }: Props) {
   const { t } = useTranslation()
+  const { ISO27001_ANNEXE_A, ISO27001_CATEGORIES } = useEbiosData()
   const [search, setSearch] = useState('')
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({ '5': true, '6': false, '7': false, '8': true })
 
@@ -31,7 +33,7 @@ export default function ISO27001Panel({ onSelect, actionLabel = 'Ajouter' }: Pro
       c.nom.toLowerCase().includes(q) ||
       c.description.toLowerCase().includes(q)
     )
-  }, [search])
+  }, [search, ISO27001_ANNEXE_A])
 
   const byCategory = useMemo(() => {
     const map: Record<string, ISO27001Controle[]> = { '5': [], '6': [], '7': [], '8': [] }

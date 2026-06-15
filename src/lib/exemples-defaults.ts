@@ -9,17 +9,8 @@
  * `resolveExemples` (cf. exemples-ateliers.ts).
  */
 
-import {
-  VALEURS_METIER_EXEMPLES,
-  BIENS_SUPPORTS_EXEMPLES,
-  EVENEMENTS_REDOUTES_EXEMPLES,
-  SOURCES_RISQUE_EXEMPLES,
-  OBJECTIFS_VISES_EXEMPLES,
-  SCENARIOS_STRATEGIQUES_EXEMPLES,
-  PARTIES_PRENANTES_EXEMPLES,
-  ACTIONS_ELEMENTAIRES_EXEMPLES,
-  MESURES_ECOSYSTEME_EXEMPLES,
-} from '@/lib/ebios-data'
+import { getEbiosData } from '@/lib/ebios-data-i18n'
+import type { Locale } from '@/lib/i18n'
 import type { ExempleCategoryKey } from '@/lib/exemples-ateliers'
 
 /** Sous-ensemble des traductions nécessaire au calcul des défauts. */
@@ -36,8 +27,20 @@ export interface ExemplesTranslations {
 export function defaultExemplesFor(
   category: ExempleCategoryKey,
   t: ExemplesTranslations,
+  locale: Locale = 'fr',
 ): Record<string, unknown>[] {
   const a1 = t?.workshop?.a1
+  const {
+    VALEURS_METIER_EXEMPLES,
+    BIENS_SUPPORTS_EXEMPLES,
+    EVENEMENTS_REDOUTES_EXEMPLES,
+    SOURCES_RISQUE_EXEMPLES,
+    OBJECTIFS_VISES_EXEMPLES,
+    SCENARIOS_STRATEGIQUES_EXEMPLES,
+    PARTIES_PRENANTES_EXEMPLES,
+    ACTIONS_ELEMENTAIRES_EXEMPLES,
+    MESURES_ECOSYSTEME_EXEMPLES,
+  } = getEbiosData(locale)
   switch (category) {
     case 'valeursMetier':
       return VALEURS_METIER_EXEMPLES.map((v, i) => ({
@@ -61,8 +64,8 @@ export function defaultExemplesFor(
         impacts: a1?.erExamples?.[i]?.impacts ?? e.impacts,
         graviteDefaut: e.graviteDefaut,
       }))
-    // Ateliers 2 à 5 — exemples structurels (les ateliers les affichent en FR ;
-    // un override organisation est dans la langue saisie par l'admin).
+    // Ateliers 2 à 5 — textes localisés via getEbiosData(locale) (repli FR) ;
+    // un override organisation reste dans la langue saisie par l'admin.
     case 'sourcesRisque':
       return SOURCES_RISQUE_EXEMPLES.map((s) => ({
         nom: s.nom, categorie: s.categorie, description: s.description,

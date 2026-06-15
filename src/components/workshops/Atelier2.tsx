@@ -29,7 +29,6 @@ import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import { NIVEAUX_VRAISEMBLANCE } from '@/lib/ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
@@ -57,7 +56,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Atelier2({ analyseId, initialData, analyse, expressMode }: Props) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
   // Translated arrays (re-derived on locale change)
   const CATEGORIES = [
@@ -90,8 +89,8 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
     }).catch(() => {})
   }, [])
   const tEx = t as unknown as ExemplesTranslations
-  const srExamples = useMemo(() => resolveExemples(exOverride.sourcesRisque, defaultExemplesFor('sourcesRisque', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
-  const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const srExamples = useMemo(() => resolveExemples(exOverride.sourcesRisque, defaultExemplesFor('sourcesRisque', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps

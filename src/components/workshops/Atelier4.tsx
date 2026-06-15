@@ -28,7 +28,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import { TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } from '@/lib/ebios-data'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
@@ -49,7 +49,8 @@ function getNiveauRisqueColor(score: number) {
 
 export default function Atelier4({ analyseId, initialData, analyse }: Props) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
+  const { TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
   // Exemples : override organisation si présent, sinon défauts (ebios-data)
   const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function Atelier4({ analyseId, initialData, analyse }: Props) {
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
     }).catch(() => {})
   }, [])
-  const aeExamples = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const aeExamples = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   // Reconstruire scenarioStrategiqueNom depuis scenarioStrategiqueId au chargement depuis DB

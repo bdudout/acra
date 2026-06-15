@@ -36,10 +36,8 @@ import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
-import {
-  STRATEGIES_TRAITEMENT,
-  NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE, getNiveauRisqueLabel,
-} from '@/lib/ebios-data'
+import { getNiveauRisqueLabel } from '@/lib/ebios-data'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import RiskMatrix from '@/components/RiskMatrix'
 import { getRiskTier, type ScaleConfig } from '@/lib/risk-scale'
 import ExportButtons from '@/components/ExportButtons'
@@ -78,6 +76,7 @@ const stratColors: Record<string, string> = {
 export default function Atelier5({ analyseId, initialData, analyse, initialTab, expressMode, scaleConfig }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
+  const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
 
   const TYPES_MESURE = [
     { value: 'PREVENTIVE',        label: t.workshop.a5.measureTypes.PREVENTIVE },
