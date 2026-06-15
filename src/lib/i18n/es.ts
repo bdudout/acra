@@ -1441,6 +1441,10 @@ export const es: Translations = {
     EN_COURS: 'En curso', SOUMIS: 'Enviada', APPROUVE: 'Aprobada',
     REJETE: 'Rechazada', TERMINE: 'Completada', ARCHIVE: 'Archivada',
   } as Record<string, string>,
+  strategyLabels: {
+    REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir',
+    REFUSER: 'Rechazar', SURVEILLER: 'Vigilar',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Encuadre y base de seguridad',

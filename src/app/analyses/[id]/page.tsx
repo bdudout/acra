@@ -250,7 +250,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                             r.strategie === 'TRANSFERER' ? 'bg-yellow-100 text-yellow-700' :
                             'bg-red-100 text-red-700'
                           }`}>
-                            {r.strategie}
+                            {(t.strategyLabels as Record<string, string>)[r.strategie] ?? r.strategie}
                           </span>
                         </Link>
                       )

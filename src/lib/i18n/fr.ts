@@ -1470,6 +1470,10 @@ export const fr = {
     EN_COURS: 'En cours', SOUMIS: 'Soumise', APPROUVE: 'Approuvée',
     REJETE: 'Rejetée', TERMINE: 'Terminée', ARCHIVE: 'Archivée',
   } as Record<string, string>,
+  strategyLabels: {
+    REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer',
+    REFUSER: 'Refuser', SURVEILLER: 'Surveiller',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Cadrage et socle de sécurité',

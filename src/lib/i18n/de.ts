@@ -1441,6 +1441,10 @@ export const de: Translations = {
     EN_COURS: 'In Bearbeitung', SOUMIS: 'Eingereicht', APPROUVE: 'Genehmigt',
     REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert',
   } as Record<string, string>,
+  strategyLabels: {
+    REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen',
+    REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Rahmenbedingungen und Sicherheitsbasis',

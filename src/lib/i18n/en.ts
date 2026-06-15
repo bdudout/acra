@@ -1441,6 +1441,10 @@ export const en: Translations = {
     EN_COURS: 'In progress', SOUMIS: 'Submitted', APPROUVE: 'Approved',
     REJETE: 'Rejected', TERMINE: 'Completed', ARCHIVE: 'Archived',
   } as Record<string, string>,
+  strategyLabels: {
+    REDUIRE: 'Reduce', ACCEPTER: 'Accept', TRANSFERER: 'Transfer',
+    REFUSER: 'Refuse', SURVEILLER: 'Monitor',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Scoping and Security Baseline',

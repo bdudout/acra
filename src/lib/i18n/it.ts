@@ -1441,6 +1441,10 @@ export const it: Translations = {
     EN_COURS: 'In corso', SOUMIS: 'Inviata', APPROUVE: 'Approvata',
     REJETE: 'Rifiutata', TERMINE: 'Completata', ARCHIVE: 'Archiviata',
   } as Record<string, string>,
+  strategyLabels: {
+    REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire',
+    REFUSER: 'Rifiutare', SURVEILLER: 'Monitorare',
+  } as Record<string, string>,
   ateliersMeta: [
     {
       titre:       'Inquadramento e baseline di sicurezza',

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n/context'
 
 // Couleur badge selon score de risque
 function niveauColor(score: number) {
@@ -11,12 +12,9 @@ function niveauColor(score: number) {
   return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', label: 'Faible' }
 }
 
-const STRATEGIES_LABELS: Record<string, string> = {
-  REDUIRE:    '🔽 Réduire',
-  ACCEPTER:   '✅ Accepter',
-  TRANSFERER: '↗️ Transférer',
-  REFUSER:    '🚫 Refuser',
-  SURVEILLER: '👁️ Surveiller',
+// Icônes des stratégies (le libellé texte vient de l'i18n t.strategyLabels)
+const STRATEGY_ICONS: Record<string, string> = {
+  REDUIRE: '🔽', ACCEPTER: '✅', TRANSFERER: '↗️', REFUSER: '🚫', SURVEILLER: '👁️',
 }
 
 export interface RisqueRow {
@@ -55,6 +53,8 @@ export default function RisquesClient({
   colAnalyse, colRisque, colScore, colStrategie, colResiduel, colMesures,
   goToAtelier, noRisks, searchPh, countShown, countShownFor,
 }: Props) {
+  const { t } = useTranslation()
+  const trL = (l: string) => (t.scaleDefaults as Record<string, string>)[l] ?? l
   const [search, setSearch] = useState('')
 
   const filtered = search.trim()
@@ -131,10 +131,10 @@ export default function RisquesClient({
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${c.bg} ${c.text} ${c.border}`}>
                         {r.niveauRisque}/16
                       </span>
-                      <div className="text-xs text-gray-500 mt-0.5">{c.label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{trL(c.label)}</div>
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
-                      <span className="text-xs text-gray-600">{STRATEGIES_LABELS[r.strategie] ?? r.strategie}</span>
+                      <span className="text-xs text-gray-600">{`${STRATEGY_ICONS[r.strategie] ?? ''} ${(t.strategyLabels as Record<string, string>)[r.strategie] ?? r.strategie}`.trim()}</span>
                     </td>
                     <td className="px-4 py-3 text-center hidden md:table-cell">
                       {cRes ? (
