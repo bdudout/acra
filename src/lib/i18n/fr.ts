@@ -1433,6 +1433,19 @@ export const fr = {
     isoSearch:    'Rechercher par référence (ex : 8.5) ou mot-clé (ex : MFA, chiffrement)…',
     userEmail:    'prenom.nom@organisation.fr',
   },
+  // Traduction des libellés d'échelle/seuil PAR DÉFAUT (clé = libellé FR par défaut).
+  // Appliquée au rendu de la matrice : un libellé personnalisé (non listé) reste inchangé.
+  scaleDefaults: {
+    'Négligeable': 'Négligeable', 'Mineure': 'Mineure', 'Limitée': 'Limitée', 'Importante': 'Importante',
+    'Critique': 'Critique', 'Significative': 'Significative', 'Grave': 'Grave', 'Catastrophique': 'Catastrophique',
+    'Minime': 'Minime', 'Forte': 'Forte', 'Maximale': 'Maximale', 'Très improbable': 'Très improbable',
+    'Faible': 'Faible', 'Modéré': 'Modéré', 'Élevé': 'Élevé',
+  } as Record<string, string>,
+  matrix: {
+    axis:       'Vraisemblance ↕ / Gravité →',
+    legendAria: 'Légende des niveaux de risque',
+    labelsAria: 'Libellés des risques',
+  },
   ateliersMeta: [
     {
       titre:       'Cadrage et socle de sécurité',

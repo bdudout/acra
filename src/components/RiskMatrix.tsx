@@ -2,6 +2,7 @@
 
 import { buildRiskMatrixModel, resolveScaleConfig, type ScaleConfig } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
+import { useTranslation } from '@/lib/i18n/context'
 
 interface RiskItem {
   nom: string
@@ -43,6 +44,9 @@ export default function RiskMatrix({
   risks: RiskItem[]
   config?: Partial<ScaleConfig> | null
 }) {
+  const { t } = useTranslation()
+  // Traduit un libellé d'échelle/seuil PAR DÉFAUT ; un libellé personnalisé reste inchangé.
+  const trL = (l: string) => (t.scaleDefaults as Record<string, string>)[l] ?? l
   const model = buildRiskMatrixModel(config)
   const { graviteLevels } = model
 
@@ -71,26 +75,26 @@ export default function RiskMatrix({
         <thead>
           <tr>
             <th scope="col" className="p-2 text-gray-500 text-left">
-              <span className="sr-only">Vraisemblance / Gravité</span>
-              <span aria-hidden="true">Vraisemblance ↕ / Gravité →</span>
+              <span className="sr-only">{t.matrix.axis}</span>
+              <span aria-hidden="true">{t.matrix.axis}</span>
             </th>
             {graviteLevels.map(g => (
               <th key={g.niveau} scope="col" className="p-2 text-center text-gray-600 font-medium w-24">
-                {g.label}
+                {trL(g.label)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {model.cells.map((row, ri) => {
-            const vLabel = model.vraisemblanceLevels.find(v => v.niveau === row[0]?.vraisemblance)?.label ?? ''
+            const vLabel = trL(model.vraisemblanceLevels.find(v => v.niveau === row[0]?.vraisemblance)?.label ?? '')
             return (
               <tr key={ri}>
                 <th scope="row" className="p-2 text-gray-600 font-medium text-right pr-4">
                   {vLabel}
                 </th>
                 {row.map(cell => {
-                  const gLabel = graviteLevels.find(g => g.niveau === cell.gravite)?.label ?? ''
+                  const gLabel = trL(graviteLevels.find(g => g.niveau === cell.gravite)?.label ?? '')
                   const inCell = numbered.filter(r => r.vraisemblance === cell.vraisemblance && r.gravite === cell.gravite)
                   return (
                     <td
@@ -114,17 +118,17 @@ export default function RiskMatrix({
         </tbody>
       </table>
 
-      <div className="flex items-center gap-3 flex-wrap mt-2" role="list" aria-label="Légende des niveaux de risque">
+      <div className="flex items-center gap-3 flex-wrap mt-2" role="list" aria-label={t.matrix.legendAria}>
         {legend.map(({ couleur, label }) => (
           <div key={label} role="listitem" className="flex items-center gap-1 text-xs text-gray-500">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: couleur }} aria-hidden="true" />
-            {label}
+            {trL(label)}
           </div>
         ))}
       </div>
 
       {numbered.length > 0 && (
-        <ol className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1" aria-label="Libellés des risques">
+        <ol className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1" aria-label={t.matrix.labelsAria}>
           {numbered.map(r => (
             <li key={r.ref} className="flex items-start gap-2 text-xs text-gray-600">
               <RiskBadge refId={r.ref} couleur={r.couleur} />

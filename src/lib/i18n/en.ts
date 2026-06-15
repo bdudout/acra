@@ -1406,6 +1406,17 @@ export const en: Translations = {
     isoSearch:    'Search by reference (e.g. 8.5) or keyword (e.g. MFA, encryption)…',
     userEmail:    'first.last@organisation.com',
   },
+  scaleDefaults: {
+    'Négligeable': 'Negligible', 'Mineure': 'Minor', 'Limitée': 'Limited', 'Importante': 'Major',
+    'Critique': 'Critical', 'Significative': 'Significant', 'Grave': 'Serious', 'Catastrophique': 'Catastrophic',
+    'Minime': 'Minimal', 'Forte': 'High', 'Maximale': 'Maximum', 'Très improbable': 'Very unlikely',
+    'Faible': 'Low', 'Modéré': 'Moderate', 'Élevé': 'High',
+  } as Record<string, string>,
+  matrix: {
+    axis:       'Likelihood ↕ / Severity →',
+    legendAria: 'Risk level legend',
+    labelsAria: 'Risk labels',
+  },
   ateliersMeta: [
     {
       titre:       'Scoping and Security Baseline',

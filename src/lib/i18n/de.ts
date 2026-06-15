@@ -1406,6 +1406,17 @@ export const de: Translations = {
     isoSearch:    'Suche nach Referenz (z. B. 8.5) oder Stichwort (z. B. MFA, Verschlüsselung)…',
     userEmail:    'vorname.nachname@organisation.de',
   },
+  scaleDefaults: {
+    'Négligeable': 'Vernachlässigbar', 'Mineure': 'Geringfügig', 'Limitée': 'Begrenzt', 'Importante': 'Erheblich',
+    'Critique': 'Kritisch', 'Significative': 'Signifikant', 'Grave': 'Schwerwiegend', 'Catastrophique': 'Katastrophal',
+    'Minime': 'Minimal', 'Forte': 'Hoch', 'Maximale': 'Maximal', 'Très improbable': 'Sehr unwahrscheinlich',
+    'Faible': 'Niedrig', 'Modéré': 'Mittel', 'Élevé': 'Hoch',
+  } as Record<string, string>,
+  matrix: {
+    axis:       'Wahrscheinlichkeit ↕ / Schweregrad →',
+    legendAria: 'Legende der Risikostufen',
+    labelsAria: 'Risikobezeichnungen',
+  },
   ateliersMeta: [
     {
       titre:       'Rahmenbedingungen und Sicherheitsbasis',
