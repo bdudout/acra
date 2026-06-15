@@ -130,6 +130,11 @@ export default function ConfigurationPage() {
   const [strategies, setStrategies] = useState<StrategieTraitement[]>([])
   const [savingStrat, setSavingStrat] = useState(false)
   const [savedStrat, setSavedStrat] = useState(false)
+
+  // Fonctionnalités optionnelles (toggles)
+  const [qualificationActive, setQualificationActive] = useState(false)
+  const [conformiteActive, setConformiteActive] = useState(false)
+  const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
   const [exOverride, setExOverride] = useState<Record<string, boolean>>({})
@@ -161,6 +166,8 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.typesImpacts)) setTypesImpacts(data.typesImpacts)
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
+        setQualificationActive(Boolean(data.qualificationActive))
+        setConformiteActive(Boolean(data.conformiteActive))
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -186,6 +193,24 @@ export default function ConfigurationPage() {
     })
     setSavingStrat(false)
     if (res.ok) { const d = await res.json(); if (Array.isArray(d.strategiesTraitement)) setStrategies(d.strategiesTraitement); setSavedStrat(true) }
+  }
+
+  // ── Fonctionnalités optionnelles (toggles) ───────────────────────────────
+  async function saveFeature(field: 'qualificationActive' | 'conformiteActive', value: boolean) {
+    // Mise à jour optimiste
+    if (field === 'qualificationActive') setQualificationActive(value)
+    else setConformiteActive(value)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    setSavingFeatures(false)
+    if (!res.ok) {
+      // Rollback en cas d'échec
+      if (field === 'qualificationActive') setQualificationActive(!value)
+      else setConformiteActive(!value)
+    }
   }
 
   // ── Helpers exemples des ateliers ────────────────────────────────────────
@@ -1003,6 +1028,38 @@ export default function ConfigurationPage() {
 
         {/* ═══ Section 2 — Référentiels et options ════════════════════════════ */}
         <div className={section === 'options' ? '' : 'hidden'}>
+
+        {/* ── Fonctionnalités optionnelles (ADMIN uniquement) ──────────────── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.features.sectionDesc}</p>
+            <div className="space-y-3">
+              {([
+                { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc },
+                { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc },
+              ]).map(f => (
+                <div key={f.field} className="flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800">{f.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={f.value}
+                    aria-label={f.title}
+                    disabled={savingFeatures}
+                    onClick={() => saveFeature(f.field, !f.value)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${f.value ? 'bg-ebios-600' : 'bg-gray-300'} ${savingFeatures ? 'opacity-60' : ''}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${f.value ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Section entités responsables (ADMIN uniquement) ─────────────── */}
         {isAdmin && (

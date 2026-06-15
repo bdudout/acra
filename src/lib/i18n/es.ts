@@ -1480,6 +1480,50 @@ export const es: Translations = {
     ['Resumen de riesgos', 'Estrategia de tratamiento', 'Medidas de seguridad', 'Riesgos residuales', 'Plan de acción'],
   ],
 
+  // ─── Funcionalidades opcionales (interruptores admin) ─────────────────────
+  features: {
+    sectionTitle:  'Funcionalidades opcionales',
+    sectionDesc:   'Active pasos adicionales inspirados en las fichas de método del Club EBIOS. Desactivados, no aparecen en los análisis.',
+    qualificationTitle: 'Cuestionario de cualificación al inicio de un análisis',
+    qualificationDesc:  'Ofrece un breve cuestionario (externalización, criticidad, datos personales…) para enmarcar cada nuevo análisis y sugerir orientaciones.',
+    conformiteTitle:    'Análisis de conformidad con un marco de referencia (taller 1)',
+    conformiteDesc:     'Permite evaluar la conformidad con la base de seguridad desde la fase de encuadre y explotar las brechas (no conformidades) en los talleres siguientes.',
+    enabled:       'Activada',
+    disabled:      'Desactivada',
+  },
+  // ─── Cuestionario de cualificación ────────────────────────────────────────
+  qualification: {
+    navTitle:      'Cualificación',
+    title:         'Cualificar el análisis',
+    intro:         'Algunas preguntas opcionales para enmarcar su análisis y sugerir orientaciones. Puede modificarlas en cualquier momento o saltar este paso.',
+    yes:           'Sí',
+    no:            'No',
+    save:          'Guardar la cualificación',
+    skip:          'Saltar este paso',
+    saved:         'Cualificación guardada',
+    edit:          'Editar la cualificación',
+    orientationsTitle: 'Orientaciones sugeridas',
+    orientationsIntro: 'Según sus respuestas, ACRA sugiere prestar especial atención a:',
+    noOrientation: 'Ninguna orientación particular — un análisis estándar es adecuado.',
+    questions: {
+      externalisation:     '¿El perímetro externaliza funciones SI críticas (nube, servicios gestionados, SaaS)?',
+      criticite:           '¿Cuál es el nivel de criticidad de negocio del objeto estudiado?',
+      donneesPersonnelles: '¿Se tratan datos personales o sensibles (salud)?',
+      expositionInternet:  '¿El sistema está expuesto a Internet?',
+      reglementation:      '¿El sistema está sujeto a una regulación específica (NIS2, DORA, HDS, PCI-DSS…)?',
+      systemeIndustriel:   '¿El perímetro incluye sistemas industriales / OT?',
+    },
+    criticiteOptions: { faible: 'Baja', modere: 'Moderada', eleve: 'Alta' },
+    orientations: {
+      ECOSYSTEME:          'El ecosistema y las partes interesadas (taller 3) — riesgos relacionados con la externalización.',
+      CONFIDENTIALITE:     'La confidencialidad de los datos — eventos temidos e impactos (taller 1).',
+      EXPOSITION:          'La superficie de exposición externa — caminos de ataque desde Internet (talleres 3-4).',
+      CONFORMITE:          'La conformidad reglamentaria — refuerce la base de seguridad (taller 1).',
+      DISPONIBILITE_OT:    'La disponibilidad de los sistemas industriales / OT — impactos de negocio críticos.',
+      ANALYSE_ALLEGEE:     'Un análisis ligero centrado en la base puede ser suficiente para este perímetro.',
+      ANALYSE_APPROFONDIE: 'Se recomienda un análisis exhaustivo (todos los talleres) dada la criticidad.',
+    },
+  },
   // ─── Páginas legales ──────────────────────────────────────────────────────
   legal: {
     back:    '← Volver',

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canViewAnalyse, canEditAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { sanitizeQualification } from '@/lib/qualification'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -76,6 +77,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {
     data.statut = body.statut
+  }
+  // Questionnaire de qualification (optionnel) — filtré aux questions connues
+  if ('qualification' in body) {
+    data.qualification = sanitizeQualification(body.qualification)
   }
 
   const updated = await prisma.analyse.update({ where: { id }, data })

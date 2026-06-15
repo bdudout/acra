@@ -14,6 +14,7 @@ import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import SocleToggle from '@/components/SocleToggle'
+import QualificationPanel from '@/components/QualificationPanel'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
 import {
@@ -65,6 +66,10 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
 
   // Échelle/seuils configurés (admin) pour piloter la matrice des risques
   const scaleConfig = await getEffectiveScaleConfig()
+
+  // Fonctionnalité optionnelle : questionnaire de qualification (cf. OrganizationConfig)
+  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { qualificationActive: true } })
+  const qualificationActive = Boolean(orgConfig?.qualificationActive)
 
   // Verrouillage si analyse approuvée (sauf ADMIN)
   const locked = analyse.statut === 'APPROUVE' && userRole !== 'ADMIN'
@@ -186,6 +191,17 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             })}
           </div>
         </div>
+
+        {/* Questionnaire de qualification optionnel (cf. fiche Club EBIOS — cadrage) */}
+        {qualificationActive && (
+          <div className="mb-6">
+            <QualificationPanel
+              analyseId={analyse.id}
+              initial={(analyse as any).qualification ?? null}
+              canEdit={editable && !locked}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colonne principale */}

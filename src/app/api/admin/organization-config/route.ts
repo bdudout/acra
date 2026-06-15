@@ -51,6 +51,8 @@ export async function GET(_req: NextRequest) {
     referentielsActifs: referentielsActifs?.length ? referentielsActifs : DEFAULT_REFERENTIELS,
     strategiesTraitement: strategies?.length ? strategies : DEFAULT_STRATEGIES,
     exemplesAteliers: (exemples && typeof exemples === 'object' && !Array.isArray(exemples)) ? exemples : {},
+    qualificationActive: Boolean((config as any).qualificationActive),
+    conformiteActive: Boolean((config as any).conformiteActive),
   })
 }
 
@@ -134,6 +136,9 @@ export async function PUT(req: NextRequest) {
     data.exemplesAteliers = merged
   }
 
+  if (typeof body.qualificationActive === 'boolean') data.qualificationActive = body.qualificationActive
+  if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Aucune donnée à mettre à jour' }, { status: 400 })
   }
@@ -155,5 +160,7 @@ export async function PUT(req: NextRequest) {
     referentielsActifs: (config.referentielsActifs as unknown as ReferentielActif[]) ?? [],
     strategiesTraitement: ((config as any).strategiesTraitement as unknown as StrategieTraitement[]) ?? DEFAULT_STRATEGIES,
     exemplesAteliers: (config as any).exemplesAteliers ?? {},
+    qualificationActive: Boolean((config as any).qualificationActive),
+    conformiteActive: Boolean((config as any).conformiteActive),
   })
 }

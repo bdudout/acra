@@ -97,6 +97,9 @@ model Analyse {
   atelierCourant Int @default(1)
   referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | CUSTOM
 
+  // Questionnaire de qualification optionnel (cf. lib/qualification.ts) — { <questionId>: bool | optionValue }
+  qualification Json?
+
   // Analyse socle — héritage de risques mutualisés
   isSocle   Boolean @default(false) // Cette analyse sert de référence partagée
   socleId   String?                 // Analyse socle dont celle-ci hérite (optionnel)
@@ -436,6 +439,10 @@ model OrganizationConfig {
   // categorie = valeursMetier | biensSupports | evenementsRedoutes | ... (cf. exemples-ateliers.ts)
   // Une catégorie présente (tableau non vide) remplace les défauts ; sinon repli sur les défauts i18n.
   exemplesAteliers Json @default("{}")
+  // Fonctionnalité optionnelle : questionnaire de qualification au début d'une analyse (cf. lib/qualification.ts)
+  qualificationActive Boolean @default(false)
+  // Fonctionnalité optionnelle : grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle)
+  conformiteActive    Boolean @default(false)
   updatedAt      DateTime @updatedAt
 }
 

@@ -1480,6 +1480,50 @@ export const en: Translations = {
     ['Risk summary', 'Treatment strategy', 'Security measures', 'Residual risks', 'Action plan'],
   ],
 
+  // ─── Optional features (admin toggles) ───────────────────────────────────
+  features: {
+    sectionTitle:  'Optional features',
+    sectionDesc:   "Enable additional steps inspired by the Club EBIOS method sheets. When disabled, they do not appear in analyses.",
+    qualificationTitle: 'Qualification questionnaire at the start of an analysis',
+    qualificationDesc:  'Offers a short questionnaire (outsourcing, criticality, personal data…) to frame each new analysis and suggest orientations.',
+    conformiteTitle:    'Compliance analysis against a framework (workshop 1)',
+    conformiteDesc:     "Lets you assess compliance with the security baseline from the scoping stage and exploit the gaps (non-conformities) in the following workshops.",
+    enabled:       'Enabled',
+    disabled:      'Disabled',
+  },
+  // ─── Qualification questionnaire ──────────────────────────────────────────
+  qualification: {
+    navTitle:      'Qualification',
+    title:         'Qualify the analysis',
+    intro:         'A few optional questions to frame your analysis and suggest orientations. You can change them at any time or skip this step.',
+    yes:           'Yes',
+    no:            'No',
+    save:          'Save qualification',
+    skip:          'Skip this step',
+    saved:         'Qualification saved',
+    edit:          'Edit qualification',
+    orientationsTitle: 'Suggested orientations',
+    orientationsIntro: 'Based on your answers, ACRA suggests paying particular attention to:',
+    noOrientation: 'No particular orientation — a standard analysis is appropriate.',
+    questions: {
+      externalisation:     'Does the scope outsource critical IS functions (cloud, managed services, SaaS)?',
+      criticite:           'What is the business criticality level of the object under study?',
+      donneesPersonnelles: 'Do you process personal or sensitive (health) data?',
+      expositionInternet:  'Is the system exposed to the Internet?',
+      reglementation:      'Is the system subject to a specific regulation (NIS2, DORA, HDS, PCI-DSS…)?',
+      systemeIndustriel:   'Does the scope include industrial / OT systems?',
+    },
+    criticiteOptions: { faible: 'Low', modere: 'Moderate', eleve: 'High' },
+    orientations: {
+      ECOSYSTEME:          'The ecosystem and stakeholders (workshop 3) — risks related to outsourcing.',
+      CONFIDENTIALITE:     'Data confidentiality — feared events and impacts (workshop 1).',
+      EXPOSITION:          'The external exposure surface — attack paths from the Internet (workshops 3-4).',
+      CONFORMITE:          'Regulatory compliance — strengthen the security baseline (workshop 1).',
+      DISPONIBILITE_OT:    'Availability of industrial / OT systems — critical business impacts.',
+      ANALYSE_ALLEGEE:     'A lightweight analysis focused on the baseline may be enough for this scope.',
+      ANALYSE_APPROFONDIE: 'A thorough analysis (all workshops) is recommended given the criticality.',
+    },
+  },
   // ─── Legal pages ──────────────────────────────────────────────────────────
   legal: {
     back:    '← Back',

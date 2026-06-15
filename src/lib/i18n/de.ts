@@ -1480,6 +1480,50 @@ export const de: Translations = {
     ['Risikoübersicht', 'Behandlungsstrategie', 'Sicherheitsmaßnahmen', 'Restrisiken', 'Aktionsplan'],
   ],
 
+  // ─── Optionale Funktionen (Admin-Schalter) ───────────────────────────────
+  features: {
+    sectionTitle:  'Optionale Funktionen',
+    sectionDesc:   'Aktivieren Sie zusätzliche Schritte, inspiriert von den Methodenblättern des Club EBIOS. Deaktiviert erscheinen sie nicht in den Analysen.',
+    qualificationTitle: 'Qualifizierungsfragebogen zu Beginn einer Analyse',
+    qualificationDesc:  'Bietet einen kurzen Fragebogen (Auslagerung, Kritikalität, personenbezogene Daten…), um jede neue Analyse einzugrenzen und Orientierungen vorzuschlagen.',
+    conformiteTitle:    'Konformitätsanalyse gegenüber einem Rahmenwerk (Workshop 1)',
+    conformiteDesc:     'Ermöglicht die Bewertung der Konformität mit dem Sicherheits-Grundniveau bereits in der Abgrenzungsphase und die Nutzung der Abweichungen (Nichtkonformitäten) in den folgenden Workshops.',
+    enabled:       'Aktiviert',
+    disabled:      'Deaktiviert',
+  },
+  // ─── Qualifizierungsfragebogen ────────────────────────────────────────────
+  qualification: {
+    navTitle:      'Qualifizierung',
+    title:         'Die Analyse qualifizieren',
+    intro:         'Einige optionale Fragen, um Ihre Analyse einzugrenzen und Orientierungen vorzuschlagen. Sie können sie jederzeit ändern oder diesen Schritt überspringen.',
+    yes:           'Ja',
+    no:            'Nein',
+    save:          'Qualifizierung speichern',
+    skip:          'Diesen Schritt überspringen',
+    saved:         'Qualifizierung gespeichert',
+    edit:          'Qualifizierung bearbeiten',
+    orientationsTitle: 'Vorgeschlagene Orientierungen',
+    orientationsIntro: 'Basierend auf Ihren Antworten empfiehlt ACRA, besonders auf Folgendes zu achten:',
+    noOrientation: 'Keine besondere Orientierung — eine Standardanalyse ist angemessen.',
+    questions: {
+      externalisation:     'Lagert der Geltungsbereich kritische IS-Funktionen aus (Cloud, Managed Services, SaaS)?',
+      criticite:           'Wie hoch ist die geschäftliche Kritikalität des untersuchten Objekts?',
+      donneesPersonnelles: 'Werden personenbezogene oder sensible (Gesundheits-)Daten verarbeitet?',
+      expositionInternet:  'Ist das System dem Internet ausgesetzt?',
+      reglementation:      'Unterliegt das System einer spezifischen Regulierung (NIS2, DORA, HDS, PCI-DSS…)?',
+      systemeIndustriel:   'Umfasst der Geltungsbereich industrielle / OT-Systeme?',
+    },
+    criticiteOptions: { faible: 'Gering', modere: 'Mäßig', eleve: 'Hoch' },
+    orientations: {
+      ECOSYSTEME:          'Das Ökosystem und die Stakeholder (Workshop 3) — Risiken im Zusammenhang mit der Auslagerung.',
+      CONFIDENTIALITE:     'Die Vertraulichkeit der Daten — befürchtete Ereignisse und Auswirkungen (Workshop 1).',
+      EXPOSITION:          'Die externe Angriffsfläche — Angriffspfade aus dem Internet (Workshops 3-4).',
+      CONFORMITE:          'Die regulatorische Konformität — stärken Sie das Sicherheits-Grundniveau (Workshop 1).',
+      DISPONIBILITE_OT:    'Die Verfügbarkeit industrieller / OT-Systeme — kritische geschäftliche Auswirkungen.',
+      ANALYSE_ALLEGEE:     'Eine schlanke, auf das Grundniveau fokussierte Analyse kann für diesen Geltungsbereich ausreichen.',
+      ANALYSE_APPROFONDIE: 'Angesichts der Kritikalität wird eine umfassende Analyse (alle Workshops) empfohlen.',
+    },
+  },
   // ─── Rechtliche Seiten ────────────────────────────────────────────────────
   legal: {
     back:    '← Zurück',
