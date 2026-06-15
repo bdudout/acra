@@ -788,6 +788,18 @@ export const de: Translations = {
     navSmtp:        'SMTP',
     // Konto erstellen
     createBtn:      'Konto erstellen',
+    bulkImport: {
+      btn: 'Import (CSV)',
+      title: 'Massenimport aus einer CSV',
+      desc: 'Format: Nachname,Vorname,E-Mail,Rolle — ein Konto pro Zeile. Standardrolle: Analyst. Bestehende Konten werden übersprungen. Trennzeichen „,“ oder „;“.',
+      placeholder: 'Müller,Maria,maria@beispiel.de,ANALYSTE\nSchmidt,Paul,paul@beispiel.de,RSSI',
+      file: 'oder eine .csv-Datei importieren',
+      run: 'Importieren', running: 'Import läuft…',
+      download: 'Zugangsdaten herunterladen (CSV)',
+      created: 'erstellt', exists: 'bereits vorhanden', invalid: 'ungültig',
+      colEmail: 'E-Mail', colStatus: 'Status', colPwd: 'Temporäres Passwort',
+      stCreated: 'Erstellt', stExists: 'Vorhanden', stInvalid: 'Ungültig',
+    },
     createPwdAutoHint: 'Ein richtlinienkonformes temporäres Passwort wird automatisch generiert und nach der Erstellung angezeigt. Der Benutzer muss es bei der ersten Anmeldung ändern.',
     tempPwdTitle:   'Konto erstellt — temporäres Passwort',
     tempPwdHint:    'Teilen Sie diese Zugangsdaten über einen sicheren Kanal mit. Dieses Passwort wird nicht erneut angezeigt.',

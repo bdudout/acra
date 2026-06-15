@@ -788,6 +788,18 @@ export const es: Translations = {
     navSmtp:        'SMTP',
     // Creación de cuenta
     createBtn:      'Crear cuenta',
+    bulkImport: {
+      btn: 'Importar (CSV)',
+      title: 'Importación masiva desde un CSV',
+      desc: 'Formato: apellido,nombre,email,rol — una cuenta por línea. Rol por defecto: analista. Las cuentas existentes se omiten. Separador «,» o «;».',
+      placeholder: 'García,María,maria@ejemplo.com,ANALYSTE\nMartín,Pablo,pablo@ejemplo.com,RSSI',
+      file: 'o importar un archivo .csv',
+      run: 'Importar', running: 'Importando…',
+      download: 'Descargar credenciales (CSV)',
+      created: 'creada(s)', exists: 'ya existen', invalid: 'no válida(s)',
+      colEmail: 'Correo', colStatus: 'Estado', colPwd: 'Contraseña temporal',
+      stCreated: 'Creada', stExists: 'Existe', stInvalid: 'No válida',
+    },
     createPwdAutoHint: 'Se generará automáticamente una contraseña temporal conforme a la política y se mostrará tras la creación. El usuario deberá cambiarla en el primer inicio de sesión.',
     tempPwdTitle:   'Cuenta creada — contraseña temporal',
     tempPwdHint:    'Comparte estas credenciales con el usuario por un canal seguro. Esta contraseña no se volverá a mostrar.',

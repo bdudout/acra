@@ -807,6 +807,18 @@ export const fr = {
     navSmtp:        'SMTP',
     // Création de compte
     createBtn:      'Créer un compte',
+    bulkImport: {
+      btn: 'Importer (CSV)',
+      title: 'Import en masse depuis un CSV',
+      desc: 'Format : nom,prénom,email,rôle — un compte par ligne. Rôle par défaut : analyste. Les comptes déjà existants sont ignorés. Séparateur « , » ou « ; ».',
+      placeholder: 'Dupont,Marie,marie@exemple.fr,ANALYSTE\nMartin,Paul,paul@exemple.fr,RSSI',
+      file: 'ou importer un fichier .csv',
+      run: 'Importer', running: 'Import en cours…',
+      download: 'Télécharger les identifiants (CSV)',
+      created: 'créé(s)', exists: 'déjà existant(s)', invalid: 'invalide(s)',
+      colEmail: 'E-mail', colStatus: 'Statut', colPwd: 'Mot de passe temporaire',
+      stCreated: 'Créé', stExists: 'Existant', stInvalid: 'Invalide',
+    },
     createPwdAutoHint: 'Un mot de passe temporaire conforme à la politique sera généré automatiquement et affiché après création. L\'utilisateur devra le changer à sa première connexion.',
     tempPwdTitle:   'Compte créé — mot de passe temporaire',
     tempPwdHint:    'Communiquez ces identifiants à l\'utilisateur par un canal sûr. Ce mot de passe ne sera plus affiché.',

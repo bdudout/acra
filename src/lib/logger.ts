@@ -72,6 +72,7 @@ export type AuditAction =
   | 'ROLE_CHANGED'
   | 'USER_DELETED'
   | 'USER_CREATED'
+  | 'USERS_BULK_IMPORTED'
   | 'USER_SUSPENDED'
   | 'USER_ACTIVATED'
   | 'ANALYSE_CREATED'

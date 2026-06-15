@@ -788,6 +788,18 @@ export const en: Translations = {
     navSmtp:        'SMTP',
     // Account creation
     createBtn:      'Create account',
+    bulkImport: {
+      btn: 'Import (CSV)',
+      title: 'Bulk import from a CSV',
+      desc: 'Format: last name,first name,email,role — one account per line. Default role: analyst. Existing accounts are skipped. Separator "," or ";".',
+      placeholder: 'Smith,Mary,mary@example.com,ANALYSTE\nJones,Paul,paul@example.com,RSSI',
+      file: 'or import a .csv file',
+      run: 'Import', running: 'Importing…',
+      download: 'Download credentials (CSV)',
+      created: 'created', exists: 'already exist', invalid: 'invalid',
+      colEmail: 'Email', colStatus: 'Status', colPwd: 'Temporary password',
+      stCreated: 'Created', stExists: 'Exists', stInvalid: 'Invalid',
+    },
     createPwdAutoHint: 'A policy-compliant temporary password will be generated automatically and shown after creation. The user must change it at first login.',
     tempPwdTitle:   'Account created — temporary password',
     tempPwdHint:    'Share these credentials with the user via a secure channel. This password will not be shown again.',

@@ -53,6 +53,13 @@ export default function AdminUsersPage() {
   // Identifiants temporaires affichés une seule fois après création (#10)
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  // Import CSV en masse
+  const [showImport, setShowImport] = useState(false)
+  const [csvText, setCsvText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [importResults, setImportResults] = useState<{ summary: any; results: any[] } | null>(null)
 
   const currentUserId = (session?.user as any)?.id
   const currentRole = (session?.user as any)?.role ?? 'ANALYSTE'
@@ -101,6 +108,44 @@ export default function AdminUsersPage() {
     } finally {
       setCreating(false)
     }
+  }
+
+  async function importCsv() {
+    if (!csvText.trim()) return
+    setImporting(true); setImportError(null); setImportResults(null)
+    try {
+      const res = await fetch('/api/admin/users/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: csvText }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setImportError(data.error || t.networkError); return }
+      setImportResults(data)
+      // Recharger la liste des utilisateurs
+      fetch('/api/admin/users').then(r => r.json()).then(d => setUsers(d.users ?? [])).catch(() => {})
+    } catch { setImportError(t.networkError) } finally { setImporting(false) }
+  }
+
+  function onCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCsvText(String(reader.result || ''))
+    reader.readAsText(file)
+  }
+
+  function downloadImportedCreds() {
+    if (!importResults) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const created = importResults.results.filter((r: any) => r.status === 'created')
+    if (!created.length) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lines = created.map((r: any) => `${r.email},${r.tempPassword},${r.role}`)
+    const blob = new Blob(['email,mot_de_passe_temporaire,role\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'acra-comptes-importes.csv'; a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function changeRole(userId: string, role: UserRole) {
@@ -295,8 +340,9 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        {/* Créer un compte */}
+        {/* Créer un compte / Importer */}
         <div className="mb-6">
+          <div className="flex gap-3 flex-wrap">
           <button
             type="button"
             onClick={() => { setShowCreate(v => !v); setCreateError(null) }}
@@ -305,6 +351,14 @@ export default function AdminUsersPage() {
             {showCreate ? <X size={16} aria-hidden="true" /> : <UserPlus size={16} aria-hidden="true" />}
             {showCreate ? t.admin.createCancel : t.admin.createBtn}
           </button>
+          <button
+            type="button"
+            onClick={() => { setShowImport(v => !v); setImportError(null) }}
+            className="btn-secondary flex items-center gap-2"
+          >
+            📥 {t.admin.bulkImport.btn}
+          </button>
+          </div>
 
           {showCreate && (
             <div className="mt-4 card p-5">
@@ -367,6 +421,70 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {showImport && (
+            <div className="mt-4 card p-5">
+              <h2 className="font-semibold text-gray-800 mb-1">{t.admin.bulkImport.title}</h2>
+              <p className="text-xs text-gray-500 mb-3">{t.admin.bulkImport.desc}</p>
+              {importError && (
+                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">⚠️ {importError}</div>
+              )}
+              <textarea
+                value={csvText}
+                onChange={e => setCsvText(e.target.value)}
+                rows={6}
+                placeholder={t.admin.bulkImport.placeholder}
+                className="input w-full font-mono text-xs"
+              />
+              <div className="flex items-center gap-3 flex-wrap mt-3">
+                <label className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                  <input type="file" accept=".csv,text/csv" onChange={onCsvFile} className="hidden" />
+                  📄 {t.admin.bulkImport.file}
+                </label>
+                <button type="button" onClick={importCsv} disabled={importing || !csvText.trim()} className="btn-primary ml-auto disabled:opacity-50">
+                  {importing ? t.admin.bulkImport.running : t.admin.bulkImport.run}
+                </button>
+              </div>
+
+              {importResults && (
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="flex items-center gap-2 flex-wrap text-sm mb-3">
+                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">{importResults.summary.created} {t.admin.bulkImport.created}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">{importResults.summary.exists} {t.admin.bulkImport.exists}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{importResults.summary.invalid} {t.admin.bulkImport.invalid}</span>
+                    {importResults.summary.created > 0 && (
+                      <button type="button" onClick={downloadImportedCreds} className="ml-auto text-ebios-600 hover:underline text-sm font-medium">⬇️ {t.admin.bulkImport.download}</button>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-left text-gray-500 border-b border-gray-200">
+                          <th className="py-1 pr-3 font-medium">{t.admin.bulkImport.colEmail}</th>
+                          <th className="py-1 pr-3 font-medium">{t.admin.bulkImport.colStatus}</th>
+                          <th className="py-1 font-medium">{t.admin.bulkImport.colPwd}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {importResults.results.map((r: any, i: number) => (
+                          <tr key={i} className="border-b border-gray-50">
+                            <td className="py-1 pr-3">{r.email || `(ligne ${r.line})`}</td>
+                            <td className="py-1 pr-3">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${r.status === 'created' ? 'bg-green-100 text-green-700' : r.status === 'exists' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'}`}>
+                                {r.status === 'created' ? t.admin.bulkImport.stCreated : r.status === 'exists' ? t.admin.bulkImport.stExists : t.admin.bulkImport.stInvalid}
+                              </span>
+                            </td>
+                            <td className="py-1 font-mono text-gray-700">{r.tempPassword ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
