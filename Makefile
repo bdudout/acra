@@ -4,7 +4,7 @@
 # Usage : make <cible>
 # =============================================================================
 
-.PHONY: help setup up down logs restart build test db-reset db-migrate
+.PHONY: help setup setup-auto up down logs restart build test db-reset db-migrate check-env
 
 # Affiche l'aide par défaut
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  ACRA — Commandes disponibles"
 	@echo "  ─────────────────────────────────────────────────────"
 	@echo "  make setup      Configurer l'environnement (génère .env)"
+	@echo "  make setup-auto Générer .env sans interaction (secrets aléatoires)"
 	@echo "  make up         Démarrer l'application"
 	@echo "  make down       Arrêter l'application"
 	@echo "  make restart    Redémarrer l'application"
@@ -26,6 +27,10 @@ help:
 # ── Premier démarrage ─────────────────────────────────────────────────────────
 setup:
 	@bash scripts/setup.sh
+
+# Génère le .env sans interaction (secrets aléatoires) — idéal CI / prod scriptée
+setup-auto:
+	@bash scripts/setup.sh --auto
 
 # ── Docker Compose ─────────────────────────────────────────────────────────────
 up: check-env

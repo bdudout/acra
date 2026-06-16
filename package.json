@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "setup:auto": "bash scripts/setup.sh --auto",
     "dev": "next dev",
     "build": "node scripts/compile-pdf-template.mjs && prisma generate && next build",
     "start": "next start",
@@ -46,6 +48,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.20",
+    "esbuild": "^0.27.7",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.2.7",
     "jsdom": "^25.0.1",

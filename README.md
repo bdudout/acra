@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="../logo_acra.png" alt="ACRA Logo" width="120" />
+<img src="public/logo-acra.png" alt="ACRA Logo" width="120" />
 
 # ACRA — Augmented Cyber Risk Analysis
 
 **La plateforme open-source qui rend l'analyse de risques EBIOS RM accessible à tous**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -134,24 +134,34 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ## 🚀 Quick Start (Docker)
 
-La façon la plus rapide de lancer ACRA :
+**Aucune installation locale de Node, npm ou Prisma n'est requise** : l'image Docker
+embarque toutes les dépendances et le client Prisma, et applique les migrations
+automatiquement au démarrage (service `migrator`).
 
 ```bash
 git clone https://github.com/votre-org/acra.git
-cd acra/ebios-rm
-cp .env.example .env
-# Éditer .env : renseigner NEXTAUTH_SECRET (voir ci-dessous)
+cd acra
+make setup        # génère .env + secrets aléatoires (interactif)
 docker compose up -d
 ```
 
-**L'application est disponible sur http://localhost:3000**
+> Pas de `make` ? Utilisez directement : `./scripts/setup.sh` (ou `npm run setup`).
+> Installation automatisée / CI (aucune question posée) : `./scripts/setup.sh --auto`.
 
-Pour charger les données de démonstration (optionnel) :
+`setup.sh` génère pour vous des secrets forts (`NEXTAUTH_SECRET`, mot de passe
+PostgreSQL, `SECRETS_ENCRYPTION_KEY`) et **ne régénère que les valeurs manquantes**
+s'il est relancé (détails en section « Installation détaillée » ci-dessous).
+
+**L'application est disponible sur http://localhost:3000.**
+Créez votre compte sur `/auth/register` — **le premier compte créé devient
+automatiquement ADMINISTRATEUR**.
+
+Pour charger les données de démonstration (optionnel, jamais en production) :
 
 ```bash
 docker compose exec app npx prisma db seed
-# Compte créé : admin@chu-metropole.fr / Acra@Admin2024!
-# ⚠️ À utiliser uniquement pour les tests — ne pas utiliser en production
+# Compte démo créé : admin@chu-metropole.fr / Acra@Admin2024!
+# ⚠️ Tests uniquement — changez/supprimez ce compte avant toute mise en production
 ```
 
 ---
@@ -174,38 +184,41 @@ docker compose exec app npx prisma db seed
 
 ```bash
 git clone https://github.com/votre-org/acra.git
-cd acra/ebios-rm
+cd acra
 ```
 
 ---
 
-### Étape 2 — Configurer l'environnement
+### Étape 2 — Configurer l'environnement (automatisé)
+
+Le script de setup crée le fichier `.env` et **génère des secrets forts**. Il est
+**idempotent** : relancé, il conserve les valeurs déjà définies et ne complète que
+ce qui manque.
 
 ```bash
-cp .env.example .env
+./scripts/setup.sh          # interactif (demande l'URL publique et la clé IA)
+# ou, sans aucune interaction (secrets aléatoires, URL par défaut) :
+./scripts/setup.sh --auto
 ```
 
-Ouvrir `.env` et renseigner les variables :
+Le script renseigne automatiquement :
 
-#### Variables obligatoires
+| Variable | Rôle | Généré par setup.sh |
+|----------|------|:---:|
+| `NEXTAUTH_SECRET` | Signature des sessions JWT | ✅ aléatoire (48 o) |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | ✅ aléatoire (32 car.) |
+| `SECRETS_ENCRYPTION_KEY` | Chiffrement AES-256-GCM des secrets en base (OIDC, SMS, SMTP) | ✅ aléatoire (48 o) |
+| `DATABASE_URL` | Connexion Prisma | ✅ dérivée des variables PostgreSQL |
+| `POSTGRES_USER` / `POSTGRES_DB` | Identité de la base | `acra_user` / `acra_rm` |
+| `NEXTAUTH_URL` | URL publique | demandée (défaut `http://localhost:3000`) |
+| `ANTHROPIC_API_KEY` | Clé IA (optionnelle) | jamais générée — laissée vide si absente |
 
-| Variable | Description | Exemple / Commande |
-|----------|-------------|-------------------|
-| `NEXTAUTH_SECRET` | Secret JWT (min. 32 caractères) | `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | URL publique de l'application | `http://localhost:3000` |
-| `DATABASE_URL` | Connexion PostgreSQL | Pré-remplie pour Docker |
-
-#### Variables optionnelles
-
-| Variable | Description | Défaut |
-|----------|-------------|--------|
-| `ANTHROPIC_API_KEY` | Clé API Claude (fonctionnalités IA) | *(désactivé si absent)* |
-| `POSTGRES_USER` | Utilisateur PostgreSQL | `ebios` |
-| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | `ebios_secret` |
-| `POSTGRES_DB` | Nom de la base | `ebios_rm` |
-| `LOG_LEVEL` | Niveau de log Winston | `info` |
-
-> ⚠️ **En production** : changer impérativement `NEXTAUTH_SECRET` et `POSTGRES_PASSWORD`. Ne jamais committer `.env`.
+> **Configuration manuelle** (alternative) : `cp .env.example .env` puis remplacez
+> toutes les valeurs `CHANGEZ_MOI`. Générez un secret avec `openssl rand -base64 48`.
+>
+> ⚠️ **Production** : `NEXTAUTH_URL` doit être en **HTTPS**. Ne committez jamais `.env`
+> (déjà dans `.gitignore`). Si `SECRETS_ENCRYPTION_KEY` change, les secrets déjà
+> chiffrés en base devront être ressaisis dans l'interface d'administration.
 
 ---
 
@@ -247,8 +260,8 @@ docker compose down -v
 # Rebuild après modification du code
 docker compose up -d --build
 
-# Accéder à la base de données via psql
-docker compose exec db psql -U ebios ebios_rm
+# Accéder à la base de données via psql (utilise les identifiants du conteneur)
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"'
 
 # Exécuter un seed de données de démonstration
 docker compose exec app npx prisma db seed
@@ -275,10 +288,10 @@ Les sauvegardes PostgreSQL sont automatisées dans `docker-compose.yml` (rotatio
 
 ```bash
 # Sauvegarde manuelle
-docker compose exec db pg_dump -U ebios ebios_rm > backup_$(date +%Y%m%d).sql
+docker compose exec db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup_$(date +%Y%m%d).sql
 
 # Restauration
-docker compose exec -T db psql -U ebios ebios_rm < backup_20240115.sql
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup_20240115.sql
 ```
 
 ---
@@ -298,21 +311,22 @@ Pour contribuer ou personnaliser ACRA sans Docker :
 ```bash
 # 1. Cloner le dépôt
 git clone https://github.com/votre-org/acra.git
-cd acra/ebios-rm
+cd acra
 
-# 2. Installer les dépendances
+# 2. Installer les dépendances (génère aussi le client Prisma via postinstall)
 npm install
 
 # 3. Démarrer PostgreSQL via Docker (option la plus simple)
 docker run -d --name acra-db \
-  -e POSTGRES_USER=ebios \
-  -e POSTGRES_PASSWORD=ebios_secret \
-  -e POSTGRES_DB=ebios_rm \
+  -e POSTGRES_USER=acra_user \
+  -e POSTGRES_PASSWORD=acra_secret \
+  -e POSTGRES_DB=acra_rm \
   -p 5432:5432 postgres:16-alpine
 
-# 4. Configurer l'environnement local
-cp .env.example .env.local
-# Éditer .env.local : DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL
+# 4. Configurer l'environnement (génère .env avec des secrets)
+./scripts/setup.sh --auto
+# En local sans Docker pour l'app, pointez la base sur localhost :
+sed -i 's/@db:5432/@localhost:5432/' .env
 
 # 5. Appliquer les migrations et générer le client Prisma
 npx prisma migrate deploy
@@ -333,7 +347,7 @@ L'application est disponible sur **http://localhost:3000**
 npm run dev          # Serveur de développement (hot reload)
 npm run build        # Build de production
 npm run start        # Serveur de production (après build)
-npm run lint         # ESLint
+npm run setup        # (Ré)génère le fichier .env (secrets manquants)
 npm test             # Tests unitaires Vitest (run once)
 npm run test:watch   # Tests en mode watch
 npm run test:coverage # Rapport de couverture
@@ -408,7 +422,7 @@ ebios-rm/
 
 | Couche | Technologie | Version |
 |--------|-------------|---------|
-| Framework | Next.js App Router (Server + Client Components) | 14 |
+| Framework | Next.js App Router (Server + Client Components) | 16 |
 | Langage | TypeScript strict | 5 |
 | Base de données | PostgreSQL | 16 |
 | ORM | Prisma | 5 |
@@ -441,21 +455,27 @@ ebios-rm/
 ### Checklist production
 
 ```bash
-# 1. Générer un secret fort (obligatoire)
-openssl rand -base64 32   # → NEXTAUTH_SECRET dans .env
+# 1. Générer tous les secrets (NEXTAUTH_SECRET, mot de passe PostgreSQL,
+#    SECRETS_ENCRYPTION_KEY) en une commande — idempotent :
+./scripts/setup.sh --auto
 
-# 2. Changer le mot de passe PostgreSQL
-# Dans docker-compose.yml : POSTGRES_PASSWORD (et DATABASE_URL)
+# 2. Définir l'URL publique HTTPS dans .env
+#    NEXTAUTH_URL=https://acra.mondomaine.fr   (HTTPS obligatoire)
 
-# 3. Si le seed a été chargé, changer le mot de passe admin de démo
-# Connexion sur /admin/users → modifier admin@chu-metropole.fr
+# 3. Placer derrière un reverse proxy HTTPS (Nginx, Caddy, Traefik + TLS)
 
-# 4. Placer derrière un reverse proxy HTTPS
-# Nginx, Caddy ou Traefik avec certificat TLS/SSL
+# 4. Ne PAS charger le seed de démo en production. S'il l'a été par erreur :
+#    connectez-vous sur /admin/users et supprimez/réinitialisez admin@chu-metropole.fr
 
-# 5. Vérifier le health check
+# 5. Démarrer et vérifier le health check
+docker compose up -d
 curl https://votre-domaine.com/api/health
+# {"status":"ok","db":"connected",...}
 ```
+
+> Le **premier compte** créé sur `/auth/register` devient **ADMINISTRATEUR**.
+> Créez-le immédiatement après le déploiement pour éviter qu'un tiers ne s'attribue
+> ce rôle (l'inscription est ouverte par défaut).
 
 > Un audit de sécurité OWASP/WSTG complet a été conduit sur l'application. Voir le rapport dans [docs/](./docs/).
 
@@ -570,16 +590,19 @@ ACRA (Augmented Cyber Risk Analysis) is an open-source web application that guid
 
 ### Quick start
 
+No local Node, npm or Prisma install required — the Docker image bundles everything
+and runs migrations automatically on startup.
+
 ```bash
 git clone https://github.com/votre-org/acra.git
-cd acra/ebios-rm
-cp .env.example .env
-# Edit .env: set NEXTAUTH_SECRET (openssl rand -base64 32) and NEXTAUTH_URL
+cd acra
+./scripts/setup.sh --auto    # generates .env with strong random secrets
 docker compose up -d
 # App available at http://localhost:3000
-# Optional: load demo data
+# Create your account at /auth/register — the FIRST account becomes ADMIN.
+# Optional: load demo data (tests only)
 # docker compose exec app npx prisma db seed
-# Demo account: admin@chu-metropole.fr / Acra@Admin2024! (tests only)
+# Demo account: admin@chu-metropole.fr / Acra@Admin2024!
 ```
 
 ### Key features
