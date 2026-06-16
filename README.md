@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo-acra.png" alt="ACRA Logo" width="120" />
+<img src="public/logo-mark.png" alt="ACRA Logo" width="120" />
 
 # ACRA — Augmented Cyber Risk Analysis
 
