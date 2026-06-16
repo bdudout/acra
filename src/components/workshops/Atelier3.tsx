@@ -32,6 +32,7 @@ import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
+import EcosystemRadar from '@/components/EcosystemRadar'
 import { FRAMEWORK_META, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 
 interface Props {
@@ -100,6 +101,18 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   const [tab, setTab] = useState<'pp' | 'scenarios' | 'mesures'>('pp')
+  // Partie prenante mise en évidence après un clic sur le radar (surlignage temporaire)
+  const [highlightPP, setHighlightPP] = useState<string | null>(null)
+
+  // Clic sur un point du radar → défile vers la carte de la PP et la surligne brièvement
+  function focusPartiePrenante(id: string) {
+    setTab('pp')
+    setHighlightPP(id)
+    requestAnimationFrame(() => {
+      document.getElementById(`pp-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    window.setTimeout(() => setHighlightPP(prev => (prev === id ? null : prev)), 2000)
+  }
 
   const { flash: flashMesEco, isAdded: isMesEcoAdded } = useAddedFeedback()
 
@@ -364,6 +377,13 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
             <button onClick={() => addPP()} className="btn-secondary text-sm py-1.5">{t.workshop.a3.ppAddManual}</button>
           </div>
 
+          {/* Radar de menace de l'écosystème (vue polaire) */}
+          {parties.length > 0 && (
+            <div className="mb-4">
+              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} />
+            </div>
+          )}
+
           {/* Cartographie des zones de dangerosité FM5 */}
           {parties.length > 0 && (
             <div className="card p-5">
@@ -412,7 +432,8 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
               {parties.map(p => {
                 const { label, color } = getVulnerabiliteLabel(p.vulnerabilite)
                 return (
-                  <div key={p.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg">
+                  <div key={p.id} id={`pp-${p.id}`}
+                    className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${highlightPP === p.id ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
                     <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-2">
                       <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}
                         className="input text-sm col-span-2 sm:col-span-1" placeholder="Nom" />

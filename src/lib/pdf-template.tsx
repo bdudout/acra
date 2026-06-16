@@ -29,8 +29,21 @@ import {
   StyleSheet,
   Font,
   renderToBuffer,
+  Svg,
+  G,
+  Circle,
+  Line,
 } from '@react-pdf/renderer'
 import { getRiskTier } from '@/lib/risk-scale'
+import {
+  layoutStakeholders,
+  zoneRadii,
+  presentTypes,
+  polarToXY,
+  menace,
+  zoneOf,
+  type EcosystemZone,
+} from '@/lib/ecosystem-radar'
 
 // ─── Colour palette ────────────────────────────────────────────────────────────
 const C = {
@@ -567,6 +580,74 @@ function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
   )
 }
 
+// ─── Écosystème (Atelier 3) — radar de menace + tableau parties prenantes ──────
+
+const ZONE_PDF: Record<EcosystemZone, { fill: string; label: string }> = {
+  danger:   { fill: C.red,    label: 'Danger' },
+  controle: { fill: C.yellow, label: 'Contrôle' },
+  veille:   { fill: C.green,  label: 'Veille' },
+}
+
+const TYPE_LABELS_FR: Record<string, string> = {
+  FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire',
+  PRESTATAIRE: 'Prestataire', SOUS_TRAITANT: 'Sous-traitant',
+  ORGANISME_REGULATION: 'Organisme de régulation', AUTRE: 'Autre',
+}
+
+// Radar SVG (primitives @react-pdf) — réutilise la MÊME géométrie que la vue web
+// (src/lib/ecosystem-radar.ts) : rayon = menace (centre = max), zones danger/contrôle/veille.
+function EcosystemRadarPdf({ parties }: { parties: any[] }) {
+  const CXr = 100, CYr = 100, R = 88
+  const geom = { cx: CXr, cy: CYr, rMax: R }
+  const pts = layoutStakeholders(
+    parties.map((p: any) => ({ id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite })),
+    geom,
+  )
+  const rings = zoneRadii(R)
+  const types = presentTypes(parties)
+  const sectorW = 360 / Math.max(1, types.length)
+  const counts = {
+    danger:   pts.filter(p => p.zone === 'danger').length,
+    controle: pts.filter(p => p.zone === 'controle').length,
+    veille:   pts.filter(p => p.zone === 'veille').length,
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+      <Svg width={CXr * 2} height={CYr * 2}>
+        <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.green}  fillOpacity={0.10} stroke={C.green}  strokeOpacity={0.30} />
+        <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.yellow} fillOpacity={0.16} stroke={C.yellow} strokeOpacity={0.40} />
+        <Circle cx={CXr} cy={CYr} r={rings.danger}   fill={C.red}    fillOpacity={0.18} stroke={C.red}    strokeOpacity={0.45} />
+        {types.length > 1 && (
+          <G>
+            {types.map((ty, i) => {
+              const [bx, by] = polarToXY(R, (i - 0.5) * sectorW, CXr, CYr)
+              return <Line key={ty} x1={CXr} y1={CYr} x2={bx} y2={by} stroke={C.gray500} strokeOpacity={0.25} strokeWidth={0.5} />
+            })}
+          </G>
+        )}
+        {pts.map(p => (
+          <Circle key={p.id} cx={p.x} cy={p.y} r={4.5}
+            fill={ZONE_PDF[p.zone].fill} stroke={C.white} strokeWidth={1} />
+        ))}
+      </Svg>
+
+      <View style={{ marginLeft: 16 }}>
+        {(['danger', 'controle', 'veille'] as EcosystemZone[]).map(z => (
+          <View key={z} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: ZONE_PDF[z].fill, marginRight: 6 }} />
+            <Text style={{ fontSize: 8.5, color: C.gray800, width: 70 }}>{ZONE_PDF[z].label}</Text>
+            <Text style={{ fontSize: 8.5, color: C.gray500 }}>{counts[z]}</Text>
+          </View>
+        ))}
+        <Text style={{ fontSize: 7, color: C.gray500, marginTop: 4, width: 150 }}>
+          Rayon = niveau de menace · centre = menace maximale
+        </Text>
+      </View>
+    </View>
+  )
+}
+
 // ─── Atelier 3 — Scénarios stratégiques ───────────────────────────────────────
 
 function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
@@ -620,6 +701,30 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
               />
             </View>
           )}
+        </View>
+      )}
+
+      {(analyse.partiesPrenantes || []).length > 0 && (
+        <View>
+          <SectionBar title={`Écosystème — parties prenantes (${analyse.partiesPrenantes.length})`} color={C.teal} />
+          <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
+          <DataTable
+            color={C.teal}
+            headers={['Partie prenante', 'Type', 'Exposition', 'Fiabilité', 'Menace', 'Zone']}
+            colFlex={[3, 2, 1.2, 1.2, 1, 1.3]}
+            rows={analyse.partiesPrenantes.map((pp: any) => {
+              const m = menace(pp.exposition, pp.fiabilite)
+              const z = zoneOf(m)
+              return [
+                pp.nom,
+                TYPE_LABELS_FR[pp.type] || pp.type,
+                `${pp.exposition}/4`,
+                `${pp.fiabilite}/4`,
+                `${m}/16`,
+                { text: ZONE_PDF[z].label, color: ZONE_PDF[z].fill, bold: true },
+              ]
+            })}
+          />
         </View>
       )}
 
