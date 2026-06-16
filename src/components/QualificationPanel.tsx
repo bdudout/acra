@@ -30,6 +30,26 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
   const qLabels = t.qualification.questions as Record<string, string>
   const critLabels = t.qualification.criticiteOptions as Record<string, string>
   const oLabels = t.qualification.orientations as Record<string, string>
+  const shortLabels = t.qualification.short as Record<string, string>
+
+  // Synthèse des points saillants pour la vue repliée (booléens « Oui » + criticité)
+  const summaryChips = useMemo(() => {
+    const chips: { key: string; label: string; tone: 'pos' | 'warn' | 'neutral' }[] = []
+    for (const q of QUALIFICATION_QUESTIONS) {
+      const v = answers[q.id]
+      if (q.type === 'bool') {
+        if (v === true) chips.push({ key: q.id, label: shortLabels[q.id] ?? q.id, tone: 'pos' })
+      } else if (q.type === 'choice' && typeof v === 'string') {
+        chips.push({ key: q.id, label: `${shortLabels[q.id] ?? q.id} : ${critLabels[v] ?? v}`, tone: v === 'eleve' ? 'warn' : 'neutral' })
+      }
+    }
+    return chips
+  }, [answers]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const chipClass = (tone: 'pos' | 'warn' | 'neutral') =>
+    tone === 'warn' ? 'bg-amber-100 text-amber-800 border-amber-200'
+    : tone === 'pos' ? 'bg-ebios-50 text-ebios-700 border-ebios-100'
+    : 'bg-gray-100 text-gray-600 border-gray-200'
 
   function setAnswer(id: string, value: boolean | string) {
     setAnswers(prev => ({ ...prev, [id]: value }))
@@ -49,18 +69,29 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
 
   if (collapsed) {
     return (
-      <div className="card p-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <span>🧭</span>
-          <span className="font-medium">{t.qualification.title}</span>
-          {orientations.length > 0 && (
-            <span className="text-xs text-gray-500">· {orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</span>
+      <div className="card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>🧭</span>
+            <span className="text-sm font-medium text-gray-800">{t.qualification.title}</span>
+          </div>
+          {canEdit && (
+            <button onClick={() => setCollapsed(false)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline flex-shrink-0">
+              {t.qualification.edit}
+            </button>
           )}
         </div>
-        {canEdit && (
-          <button onClick={() => setCollapsed(false)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline">
-            {t.qualification.edit}
-          </button>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {summaryChips.length === 0 ? (
+            <span className="text-xs text-gray-500">{t.qualification.summaryEmpty}</span>
+          ) : (
+            summaryChips.map(c => (
+              <span key={c.key} className={`text-xs px-2 py-0.5 rounded-full border font-medium ${chipClass(c.tone)}`}>{c.label}</span>
+            ))
+          )}
+        </div>
+        {orientations.length > 0 && (
+          <p className="text-xs text-gray-400 mt-2">{orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</p>
         )}
       </div>
     )
@@ -139,9 +170,6 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
         <div className="mt-5 flex items-center gap-3">
           <button onClick={save} disabled={saving} className="btn-primary text-sm">
             {saving ? '…' : t.qualification.save}
-          </button>
-          <button onClick={() => setCollapsed(true)} className="text-sm text-gray-500 hover:text-gray-700">
-            {t.qualification.skip}
           </button>
           {saved && <span className="text-sm text-green-600">✓ {t.qualification.saved}</span>}
         </div>

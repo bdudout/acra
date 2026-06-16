@@ -1494,8 +1494,17 @@ export const de: Translations = {
   // ─── Qualifizierungsfragebogen ────────────────────────────────────────────
   qualification: {
     navTitle:      'Qualifizierung',
-    title:         'Die Analyse qualifizieren',
-    intro:         'Einige optionale Fragen, um Ihre Analyse einzugrenzen und Orientierungen vorzuschlagen. Sie können sie jederzeit ändern oder diesen Schritt überspringen.',
+    title:         'Qualifizierung der Analyse',
+    intro:         'Einige optionale Fragen, um Ihre Analyse einzugrenzen und Orientierungen vorzuschlagen. Sie können sie jederzeit ändern.',
+    summaryEmpty:  'Qualifizierung abgeschlossen — kein besonderer Punkt gemeldet.',
+    short: {
+      externalisation:     'Auslagerung',
+      criticite:           'Kritikalität',
+      donneesPersonnelles: 'Personenbezogene Daten',
+      expositionInternet:  'Internet-Exposition',
+      reglementation:      'Regulierung',
+      systemeIndustriel:   'OT-Systeme',
+    },
     yes:           'Ja',
     no:            'Nein',
     save:          'Qualifizierung speichern',

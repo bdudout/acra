@@ -1494,8 +1494,17 @@ export const it: Translations = {
   // ─── Questionario di qualificazione ───────────────────────────────────────
   qualification: {
     navTitle:      'Qualificazione',
-    title:         "Qualificare l'analisi",
-    intro:         'Alcune domande opzionali per inquadrare la tua analisi e suggerire orientamenti. Puoi modificarle in qualsiasi momento o saltare questo passaggio.',
+    title:         "Qualificazione dell'analisi",
+    intro:         'Alcune domande opzionali per inquadrare la tua analisi e suggerire orientamenti. Puoi modificarle in qualsiasi momento.',
+    summaryEmpty:  'Qualificazione completata — nessun punto particolare segnalato.',
+    short: {
+      externalisation:     'Esternalizzazione',
+      criticite:           'Criticità',
+      donneesPersonnelles: 'Dati personali',
+      expositionInternet:  'Esposizione a Internet',
+      reglementation:      'Normativa',
+      systemeIndustriel:   'Sistemi OT',
+    },
     yes:           'Sì',
     no:            'No',
     save:          'Salva la qualificazione',

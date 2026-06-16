@@ -54,6 +54,9 @@ export default function AccessPanel({
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
+  // Autocomplétion : recherche dans les comptes inscrits
+  const [suggestions, setSuggestions] = useState<{ id: string; name: string | null; email: string }[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Workflow approbation
   const [commentaire, setCommentaire] = useState('')
@@ -68,6 +71,24 @@ export default function AccessPanel({
       .then(d => { setAccès(Array.isArray(d) ? d : []); setLoadingAccès(false) })
       .catch(() => setLoadingAccès(false))
   }, [analyseId, canManage])
+
+  // Autocomplétion débouncée sur les comptes inscrits (≥ 2 caractères)
+  useEffect(() => {
+    if (!canManage) return
+    const q = inviteEmail.trim()
+    if (q.length < 2) { setSuggestions([]); return }
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => {
+      fetch(`/api/users/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then(r => r.ok ? r.json() : { users: [] })
+        .then(d => {
+          const taken = new Set([ownerId, ...accès.map(a => a.userId)])
+          setSuggestions((d.users ?? []).filter((u: { id: string }) => !taken.has(u.id)))
+        })
+        .catch(() => {})
+    }, 250)
+    return () => { clearTimeout(timer); ctrl.abort() }
+  }, [inviteEmail, canManage, accès, ownerId])
 
   async function handleInvite() {
     if (!inviteEmail.trim()) return
@@ -286,14 +307,38 @@ export default function AccessPanel({
           <div className="border-t border-gray-100 pt-4">
             <div className="text-sm font-medium text-gray-700 mb-2">{t.access.inviteTitle}</div>
             <div className="flex flex-col gap-2">
-              <input
-                type="email"
-                placeholder={t.access.inviteEmailPh}
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleInvite()}
-                className="input w-full text-sm"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  placeholder={t.access.inviteEmailPh}
+                  value={inviteEmail}
+                  onChange={e => { setInviteEmail(e.target.value); setShowSuggestions(true) }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={e => e.key === 'Enter' && handleInvite()}
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={showSuggestions && suggestions.length > 0}
+                  aria-autocomplete="list"
+                  className="input w-full text-sm"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul role="listbox" className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {suggestions.map(u => (
+                      <li key={u.id} role="option" aria-selected={inviteEmail === u.email}>
+                        <button
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); setInviteEmail(u.email); setShowSuggestions(false) }}
+                          className="w-full text-left px-3 py-2 hover:bg-ebios-50 transition-colors"
+                        >
+                          <div className="text-sm font-medium text-gray-800 truncate">{u.name || u.email}</div>
+                          {u.name && <div className="text-xs text-gray-500 truncate">{u.email}</div>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <div className="flex gap-2">
                 <select
                   value={invitePerm}

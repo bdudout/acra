@@ -1522,8 +1522,17 @@ export const fr = {
   // ─── Questionnaire de qualification ───────────────────────────────────────
   qualification: {
     navTitle:      'Qualification',
-    title:         "Qualifier l'analyse",
-    intro:         "Quelques questions optionnelles pour cadrer votre analyse et suggérer des orientations. Vous pouvez les modifier à tout moment ou passer cette étape.",
+    title:         "Qualification de l'analyse",
+    intro:         "Quelques questions optionnelles pour cadrer votre analyse et suggérer des orientations. Vous pouvez les modifier à tout moment.",
+    summaryEmpty:  'Qualification complétée — aucun point particulier signalé.',
+    short: {
+      externalisation:     'Externalisation',
+      criticite:           'Criticité',
+      donneesPersonnelles: 'Données personnelles',
+      expositionInternet:  'Exposition Internet',
+      reglementation:      'Réglementation',
+      systemeIndustriel:   'Systèmes OT',
+    },
     yes:           'Oui',
     no:            'Non',
     save:          'Enregistrer la qualification',

@@ -1494,8 +1494,17 @@ export const en: Translations = {
   // ─── Qualification questionnaire ──────────────────────────────────────────
   qualification: {
     navTitle:      'Qualification',
-    title:         'Qualify the analysis',
-    intro:         'A few optional questions to frame your analysis and suggest orientations. You can change them at any time or skip this step.',
+    title:         'Analysis qualification',
+    intro:         'A few optional questions to frame your analysis and suggest orientations. You can change them at any time.',
+    summaryEmpty:  'Qualification completed — no specific point flagged.',
+    short: {
+      externalisation:     'Outsourcing',
+      criticite:           'Criticality',
+      donneesPersonnelles: 'Personal data',
+      expositionInternet:  'Internet exposure',
+      reglementation:      'Regulation',
+      systemeIndustriel:   'OT systems',
+    },
     yes:           'Yes',
     no:            'No',
     save:          'Save qualification',
