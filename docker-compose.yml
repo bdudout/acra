@@ -66,8 +66,8 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       # URL publique de l'application (ex: https://votre-domaine.com en prod)
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      # Clé API Anthropic (optionnel — laisser vide pour désactiver l'IA)
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # [IA — désactivé] Module IA retiré — plus de clé API Anthropic.
+      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "3000:3000"
     depends_on:

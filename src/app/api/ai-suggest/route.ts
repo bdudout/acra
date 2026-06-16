@@ -1,4 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+
+// [IA — désactivé] Module de suggestions IA (Anthropic Claude) retiré.
+// L'endpoint ne lit plus ANTHROPIC_API_KEY et n'appelle plus d'API externe : il
+// répond systématiquement « fonctionnalité non disponible ». L'implémentation
+// d'origine est conservée en commentaire ci-dessous pour une éventuelle
+// réactivation (nécessiterait de réimporter rateLimit/LIMIT_AI et getServerSession).
+export async function POST(_req: NextRequest) {
+  return NextResponse.json(
+    { error: 'Fonctionnalité IA désactivée' },
+    { status: 404 }
+  )
+}
+
+/* [IA — désactivé] Implémentation d'origine (suggestions via Anthropic Claude) :
+
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { rateLimit, rateLimitHeaders, LIMIT_AI } from '@/lib/rate-limit'
@@ -28,11 +43,6 @@ export async function POST(req: NextRequest) {
   const atelier  = String(body.atelier  ?? '').slice(0, 20)
   const question = String(body.question ?? '').slice(0, 300)
 
-  // [F007 atténué] LLM01 — Injection de prompt
-  // Le system prompt ne contient PLUS de données utilisateur : contexte/atelier/question
-  // sont passés dans des blocs balisés <…> côté message utilisateur, et le system prompt
-  // instruit explicitement le modèle de traiter ces blocs comme des DONNÉES non fiables
-  // (jamais comme des instructions). Atténue le détournement ("ignore les instructions…").
   const systemPrompt = `Tu es un expert en cybersécurité spécialisé dans la méthode EBIOS Risk Manager de l'ANSSI.
 Tu assistes un analyste qui utilise ACRA (Augmented Cyber Risk Analysis) pour réaliser son analyse de risques.
 Tu réponds en français, de manière concise et pratique, en t'appuyant sur la méthode EBIOS RM.
@@ -87,3 +97,5 @@ Réponds sous forme JSON avec une clé "suggestions" contenant un tableau d'obje
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
+
+*/

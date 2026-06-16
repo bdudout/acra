@@ -16,9 +16,8 @@ const schema = z.object({
 // CVSS: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N)
 // EVIDENCE: ce endpoint POST est public (voir lib/public-paths.ts → "/api/auth" est
 //   en accès libre). N'importe quel anonyme peut créer un compte ANALYSTE, accéder
-//   à l'app, consommer le budget IA (/api/ai-suggest) et la base. Pour un outil
-//   d'analyse de risques d'entreprise, l'auto-inscription ouverte est probablement
-//   non désirée.
+//   à l'app et à la base. Pour un outil d'analyse de risques d'entreprise,
+//   l'auto-inscription ouverte est probablement non désirée.
 // FIX: gater l'inscription (invitation ADMIN obligatoire / domaine email autorisé /
 //   feature-flag REGISTRATION_OPEN), ou supprimer ce endpoint au profit de la
 //   création par /api/admin/users.

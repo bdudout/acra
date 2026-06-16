@@ -138,5 +138,5 @@ export const LIMIT_IMPORT   = { limit: 10,  windowMs: 60 * 60_000 } as const
 export const LIMIT_SEARCH   = { limit: 60,  windowMs: 60_000 }       as const
 /** Rate limit pour les écritures API (auto-save workshop) : 200 / minute par userId */
 export const LIMIT_API_WRITE = { limit: 200, windowMs: 60_000 }      as const
-/** Rate limit pour les suggestions IA (coût API Anthropic) : 20 / heure par userId */
-export const LIMIT_AI       = { limit: 20,  windowMs: 60 * 60_000 } as const
+// [IA — désactivé] Rate limit des suggestions IA (coût API Anthropic) — module IA retiré.
+// export const LIMIT_AI       = { limit: 20,  windowMs: 60 * 60_000 } as const
