@@ -37,6 +37,7 @@ import {
 import { getRiskTier } from '@/lib/risk-scale'
 import {
   layoutStakeholders,
+  stakeholderRef,
   zoneRadii,
   presentTypes,
   polarToXY,
@@ -694,6 +695,13 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
           <Circle key={p.id} cx={p.x} cy={p.y} r={4.5}
             fill={ZONE_PDF[p.zone].fill} stroke={C.white} strokeWidth={1} />
         ))}
+        {/* Références T1, T2, … à côté des points (croisent avec le tableau ci-dessous) */}
+        {pts.map(p => (
+          <Text key={`l-${p.id}`} x={p.x + 6} y={p.y + 2.5} fill={C.gray800}
+            style={{ fontSize: 6, fontFamily: 'Helvetica-Bold' }}>
+            {p.ref}
+          </Text>
+        ))}
       </Svg>
 
       <View style={{ marginLeft: 16 }}>
@@ -774,12 +782,13 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
           <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
           <DataTable
             color={C.teal}
-            headers={['Partie prenante', 'Type', 'Exposition', 'Fiabilité', 'Menace', 'Zone']}
-            colFlex={[3, 2, 1.2, 1.2, 1, 1.3]}
-            rows={analyse.partiesPrenantes.map((pp: any) => {
+            headers={['Réf', 'Partie prenante', 'Type', 'Exposition', 'Fiabilité', 'Menace', 'Zone']}
+            colFlex={[0.7, 3, 2, 1.2, 1.2, 1, 1.3]}
+            rows={analyse.partiesPrenantes.map((pp: any, i: number) => {
               const m = menace(pp.exposition, pp.fiabilite)
               const z = zoneOf(m)
               return [
+                { text: stakeholderRef(i), bold: true },
                 pp.nom,
                 TYPE_LABELS_FR[pp.type] || pp.type,
                 `${pp.exposition}/4`,

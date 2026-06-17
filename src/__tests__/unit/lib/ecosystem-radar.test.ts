@@ -7,6 +7,7 @@ import {
   polarToXY,
   presentTypes,
   layoutStakeholders,
+  stakeholderRef,
   MENACE_MIN,
   MENACE_MAX,
 } from '@/lib/ecosystem-radar'
@@ -146,5 +147,24 @@ describe('layoutStakeholders', () => {
 
   it('ne plante pas sur un écosystème vide', () => {
     expect(layoutStakeholders([], geom)).toEqual([])
+  })
+
+  it('attribue une référence T1, T2, … selon l\'ordre des parties prenantes', () => {
+    const parties = [
+      { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 3, fiabilite: 2 },
+      { id: 'b', nom: 'B', type: 'CLIENT', exposition: 3, fiabilite: 2 },
+      { id: 'c', nom: 'C', type: 'FOURNISSEUR', exposition: 3, fiabilite: 2 },
+    ]
+    const pts = layoutStakeholders(parties, geom)
+    expect(pts.find(p => p.id === 'a')!.ref).toBe('T1')
+    expect(pts.find(p => p.id === 'b')!.ref).toBe('T2')
+    expect(pts.find(p => p.id === 'c')!.ref).toBe('T3')
+  })
+})
+
+describe('stakeholderRef', () => {
+  it('numérote à partir de 1 (T1, T2, …)', () => {
+    expect(stakeholderRef(0)).toBe('T1')
+    expect(stakeholderRef(4)).toBe('T5')
   })
 })

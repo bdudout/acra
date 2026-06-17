@@ -30,6 +30,8 @@ export interface RadarGeometry {
 
 export interface RadarPoint {
   id: string
+  /** Référence courte stable affichée sur le diagramme (T1, T2, …) pour croiser avec le tableau. */
+  ref: string
   nom: string
   type: string
   exposition: number
@@ -113,6 +115,11 @@ export function presentTypes(parties: Array<{ type?: string }>): string[] {
  *  - angle ← secteur de la catégorie ; les PP d'une même catégorie sont étalées
  *    angulairement (jitter déterministe) pour éviter le chevauchement.
  */
+/** Référence courte stable d'une partie prenante par son rang : T1, T2, … */
+export function stakeholderRef(index: number): string {
+  return `T${index + 1}`
+}
+
 export function layoutStakeholders(
   parties: StakeholderInput[],
   geom: RadarGeometry,
@@ -132,7 +139,7 @@ export function layoutStakeholders(
   }
 
   const points: RadarPoint[] = []
-  for (const p of parties) {
+  parties.forEach((p, originalIdx) => {
     const ty = p.type || 'AUTRE'
     const sectorIndex = types.indexOf(ty)
     const sectorCenter = sectorIndex * sectorWidth
@@ -155,6 +162,7 @@ export function layoutStakeholders(
 
     points.push({
       id: String(p.id ?? ''),
+      ref: stakeholderRef(originalIdx),
       nom: String(p.nom ?? ''),
       type: ty,
       exposition: clamp(Math.round(p.exposition ?? 1) || 1, 1, 4),
@@ -165,6 +173,6 @@ export function layoutStakeholders(
       x,
       y,
     })
-  }
+  })
   return points
 }

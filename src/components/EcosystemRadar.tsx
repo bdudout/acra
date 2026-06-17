@@ -111,25 +111,39 @@ export default function EcosystemRadar({ parties, onSelect }: Props) {
             )
           })}
 
-          {/* Points = parties prenantes */}
+          {/* Points = parties prenantes (avec référence T1, T2, … visible) */}
           {points.map(p => {
             const isActive = active?.id === p.id
             return (
-              <circle
+              <g
                 key={p.id}
-                cx={p.x} cy={p.y} r={isActive ? 9 : 6.5}
-                fill={ZONE_COLOR[p.zone]}
-                stroke="#ffffff" strokeWidth={1.5}
-                className="cursor-pointer transition-all"
+                className="cursor-pointer"
                 tabIndex={0}
                 role="button"
-                aria-label={`${p.nom} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace}/16`}
+                aria-label={`${p.ref} — ${p.nom} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace}/16`}
                 onMouseEnter={() => setActive(p)}
                 onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(p)}
                 onBlur={() => setActive(null)}
                 onClick={() => onSelect?.(p.id)}
-              />
+              >
+                <circle
+                  cx={p.x} cy={p.y} r={isActive ? 9 : 6.5}
+                  fill={ZONE_COLOR[p.zone]}
+                  stroke="#ffffff" strokeWidth={1.5}
+                  className="transition-all"
+                />
+                {/* Référence à côté du point — halo blanc pour rester lisible sur les zones */}
+                <text
+                  x={p.x + 9} y={p.y + 3.5}
+                  fontSize={isActive ? 11 : 9.5} fontWeight={700}
+                  fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
+                  paintOrder="stroke"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {p.ref}
+                </text>
+              </g>
             )
           })}
         </svg>
@@ -155,7 +169,10 @@ export default function EcosystemRadar({ parties, onSelect }: Props) {
 
           {active && (
             <div className="mt-4 rounded-md border border-gray-100 bg-gray-50 p-2.5 text-xs">
-              <div className="font-semibold text-gray-800">{active.nom}</div>
+              <div className="font-semibold text-gray-800">
+                <span className="mr-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-700">{active.ref}</span>
+                {active.nom}
+              </div>
               <div className="text-gray-500">{typeLabel(active.type)}</div>
               <div className="mt-1 text-gray-600">
                 {t.workshop.a3.ppExpLabel}: {active.exposition}/4 · {t.workshop.a3.ppFiabLabel}: {active.fiabilite}/4
