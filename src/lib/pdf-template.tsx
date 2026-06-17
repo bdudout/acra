@@ -280,7 +280,44 @@ function CoverPage({ analyse, date }: { analyse: any; date: string }) {
 
 // ─── Executive summary page ────────────────────────────────────────────────────
 
-function SummaryPage({ analyse, date }: { analyse: any; date: string }) {
+// Matrice des risques (grille react-pdf) avec les risques positionnés (R1, R2…).
+// `points` = [{ ref, g, v }] ; la couleur de cellule suit les seuils configurés.
+function RiskMatrixPdf({ points, config, title, color }: { points: { ref: string; g: number; v: number }[]; config?: any; title: string; color: string }) {
+  const gravite: any[] = config?.echelleGravite?.length ? config.echelleGravite : DEFAULT_GRAVITE
+  const vrais: any[]   = config?.echelleVraisemblance?.length ? config.echelleVraisemblance : DEFAULT_VRAIS
+  const seuils: any[]  = config?.seuilsMatrice?.length ? config.seuilsMatrice : DEFAULT_SEUILS
+  const gravValues  = [...gravite].map((g: any) => g.niveau).sort((a, b) => b - a)
+  const vraisValues = [...vrais].map((v: any) => v.niveau).sort((a, b) => a - b)
+  return (
+    <View>
+      <SectionBar title={title} color={color} />
+      <View style={{ flexDirection: 'row', marginLeft: 20, marginBottom: 2 }}>
+        {vraisValues.map(v => (
+          <View key={v} style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 6, color: C.gray500 }}>V{v}</Text></View>
+        ))}
+      </View>
+      {gravValues.map(g => (
+        <View key={g} style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 1 }}>
+          <View style={{ width: 20, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 3 }}>
+            <Text style={{ fontSize: 6, color: C.gray500 }}>G{g}</Text>
+          </View>
+          {vraisValues.map(v => {
+            const inCell = points.filter(p => p.g === g && p.v === v)
+            return (
+              <View key={v} style={{ flex: 1, minHeight: 19, backgroundColor: matrixColor(g * v, seuils), marginHorizontal: 1, borderRadius: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', padding: 1 }}>
+                {inCell.map(p => (
+                  <Text key={p.ref} style={{ fontSize: 6, color: C.white, fontFamily: 'Helvetica-Bold', marginHorizontal: 1 }}>{p.ref}</Text>
+                ))}
+              </View>
+            )
+          })}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+function SummaryPage({ analyse, date, config }: { analyse: any; date: string; config?: any }) {
   const risques          = analyse.risques       || []
   const mesures          = analyse.mesures        || []
   const critiques        = risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique')
@@ -315,8 +352,15 @@ function SummaryPage({ analyse, date }: { analyse: any; date: string }) {
     { label: 'Reporté',  count: mesures.filter((m: any) => m.statut === 'REPORTE').length, color: C.gray500 },
   ].filter(s => s.count > 0)
 
+  // Risques numérotés R1, R2… (par score brut décroissant) — refs communes aux 2 matrices
+  const numbered = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque).map((r: any, i: number) => ({ ...r, ref: `R${i + 1}` }))
+  const grossPts = numbered.map((r: any) => ({ ref: r.ref, g: r.gravite, v: r.vraisemblance }))
+  const residualPts = numbered
+    .filter((r: any) => r.graviteResiduelle != null && r.vraisemblanceResiduelle != null)
+    .map((r: any) => ({ ref: r.ref, g: r.graviteResiduelle, v: r.vraisemblanceResiduelle }))
+
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="A4" style={s.page} wrap>
       <Banner title="SYNTHÈSE EXÉCUTIVE" color={C.indigo} />
 
       {/* Intro text */}
@@ -350,6 +394,26 @@ function SummaryPage({ analyse, date }: { analyse: any; date: string }) {
           <Text style={s.kpiLbl}>{p(mesuresRealisees.length, 'Mesure réalisée', 'Mesures réalisées')}</Text>
         </View>
       </View>
+
+      {/* Vue d'ensemble visuelle : matrices brute & résiduelle + radar écosystème */}
+      {risques.length > 0 && (
+        <View wrap={false} style={{ marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', gap: 14 }}>
+            <View style={{ flex: 1 }}>
+              <RiskMatrixPdf points={grossPts} config={config} title="Matrice des risques bruts" color={C.indigo} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <RiskMatrixPdf points={residualPts} config={config} title="Matrice des risques résiduels" color={C.green} />
+            </View>
+          </View>
+        </View>
+      )}
+      {(analyse.partiesPrenantes || []).length > 0 && (
+        <View wrap={false} style={{ marginBottom: 6 }}>
+          <SectionBar title="Écosystème — radar de menace" color={C.teal} />
+          <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
+        </View>
+      )}
 
       {/* Risk distribution */}
       {risques.length > 0 && (
@@ -992,7 +1056,7 @@ export function AnalysePDF({ analyse, config }: AnalysePDFProps) {
       producer="@react-pdf/renderer"
     >
       <CoverPage   analyse={analyse} date={date} />
-      <SummaryPage analyse={analyse} date={date} />
+      <SummaryPage analyse={analyse} date={date} config={config} />
       {analyse.cadrage && <Atelier1Page analyse={analyse} date={date} />}
       <Atelier2Page analyse={analyse} date={date} />
       <Atelier3Page analyse={analyse} date={date} />

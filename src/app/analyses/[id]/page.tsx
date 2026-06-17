@@ -10,6 +10,7 @@ import { ATELIERS_META, getNiveauRisqueLabel } from '@/lib/ebios-data'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import RiskMatrix from '@/components/RiskMatrix'
+import EcosystemRadar from '@/components/EcosystemRadar'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
@@ -224,19 +225,44 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               ))}
             </div>
 
-            {/* Matrice des risques */}
+            {/* Matrices des risques : brute & résiduelle côte à côte */}
             {analyse.risques.length > 0 && (
-              <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-4">{t.analysis.riskMatrix}</h2>
-                <RiskMatrix
-                  config={scaleConfig}
-                  risks={analyse.risques.map((r: { nom: string; vraisemblance: number; gravite: number }) => ({
-                    nom: r.nom,
-                    vraisemblance: r.vraisemblance,
-                    gravite: r.gravite,
-                  }))}
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="card p-5">
+                  <h2 className="font-semibold text-gray-800 mb-4">{t.analysis.riskMatrixGross}</h2>
+                  <RiskMatrix
+                    config={scaleConfig}
+                    risks={analyse.risques.map((r: { nom: string; vraisemblance: number; gravite: number }) => ({
+                      nom: r.nom,
+                      vraisemblance: r.vraisemblance,
+                      gravite: r.gravite,
+                    }))}
+                  />
+                </div>
+                <div className="card p-5">
+                  <h2 className="font-semibold text-gray-800 mb-4">{t.analysis.riskMatrixResidual}</h2>
+                  <RiskMatrix
+                    config={scaleConfig}
+                    risks={analyse.risques
+                      .filter((r: { graviteResiduelle: number | null; vraisemblanceResiduelle: number | null }) =>
+                        r.graviteResiduelle != null && r.vraisemblanceResiduelle != null)
+                      .map((r: { nom: string; graviteResiduelle: number; vraisemblanceResiduelle: number }) => ({
+                        nom: r.nom,
+                        vraisemblance: r.vraisemblanceResiduelle,
+                        gravite: r.graviteResiduelle,
+                      }))}
+                  />
+                </div>
               </div>
+            )}
+
+            {/* Radar de menace de l'écosystème */}
+            {analyse.partiesPrenantes.length > 0 && (
+              <EcosystemRadar
+                parties={analyse.partiesPrenantes.map((p: { id: string; nom: string; type: string; exposition: number; fiabilite: number }) => ({
+                  id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+                }))}
+              />
             )}
 
             {/* Risques top 5 */}

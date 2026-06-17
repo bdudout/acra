@@ -171,11 +171,18 @@ export default async function AtelierPage({
 
         {/* Bandeau mode Flash */}
         {flashMode && (
-          <div className="mb-6 bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-center gap-3">
+          <div className="mb-6 bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-start gap-3">
             <span className="text-xl">⚡</span>
             <div className="flex-1">
               <span className="font-semibold text-amber-900 text-sm">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</span>
               <span className="text-amber-700 text-sm ml-2">{t.analyses.expressInfo}</span>
+              {/* Conseil de dimensionnement spécifique à l'atelier en mode Flash */}
+              {(t.analyses.flashTips as Record<string, string>)[`a${atelierNum}`] && (
+                <p className="mt-2 text-sm text-amber-900">
+                  <span className="font-semibold">💡 {t.analyses.flashTipLabel} :</span>{' '}
+                  {(t.analyses.flashTips as Record<string, string>)[`a${atelierNum}`]}
+                </p>
+              )}
             </div>
           </div>
         )}
