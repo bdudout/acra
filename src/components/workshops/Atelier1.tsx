@@ -13,13 +13,13 @@
  *  - Socle de sécurité : applicable security standards and compliance references
  *
  * Auto-saves via `useAutoSave` on every state change (1.5 s debounce).
- * Navigates to Atelier 2 (or Atelier 2 with `?mode=express`) on validate.
+ * Navigates to Atelier 2 (or Atelier 2 with `?mode=flash`) on validate.
  *
  * Props:
  *  - analyseId   : Prisma cuid of the parent Analyse
  *  - initialData : Cadrage record from the DB (may be null on first visit)
  *  - analyse     : parent Analyse object (used for referentielMesures)
- *  - expressMode : if true, navigation skips A3/A4 (⚡ Analyse express)
+ *  - flashMode   : mode « Flash » (Club EBIOS) — parcours rapide guidé, conserve le flag dans l'URL
  */
 
 import { useMemo, useState, useEffect } from 'react'
@@ -39,7 +39,7 @@ interface Props {
   analyseId: string
   initialData?: any
   analyse: any
-  expressMode?: boolean
+  flashMode?: boolean
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -53,7 +53,7 @@ function getDictColor(v: number) {
   return 'bg-red-100 text-red-700'
 }
 
-export default function Atelier1({ analyseId, initialData, analyse, expressMode }: Props) {
+export default function Atelier1({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const {
@@ -257,7 +257,7 @@ export default function Atelier1({ analyseId, initialData, analyse, expressMode 
     setSaving(true)
     await saveNow()
     setSaving(false)
-    router.push(`/analyses/${analyseId}/atelier/2${expressMode ? '?mode=express' : ''}`)
+    router.push(`/analyses/${analyseId}/atelier/2${flashMode ? '?mode=flash' : ''}`)
   }
 
   const tabs = [

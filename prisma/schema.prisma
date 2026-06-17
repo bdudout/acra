@@ -276,7 +276,10 @@ model ScenarioStrategique {
   description     String? @db.Text
 
   // Traçabilité vers Atelier 1
-  evenementRedouteRef String? // id ou libellé de l'ER associé
+  evenementRedouteRef String? // id ou libellé de l'ER associé (legacy, ER primaire)
+  // Héritage de gravité (fiche Club EBIOS A3) : ids des ER liés à l'objectif visé.
+  // La gravité du scénario = max des gravités de ces ER. null/[] = pas d'héritage.
+  evenementsRedoutesIds Json? // string[] d'ids d'événements redoutés
 
   // Chemin d'attaque (parties prenantes impliquées)
   cheminAttaque   Json? // [{etape, partiePrenante, action, evenementIntermediaire}]
@@ -443,6 +446,8 @@ model OrganizationConfig {
   qualificationActive Boolean @default(false)
   // Fonctionnalité optionnelle : grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle)
   conformiteActive    Boolean @default(false)
+  // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
+  conseilsAteliersActive Boolean @default(true)
   updatedAt      DateTime @updatedAt
 }
 

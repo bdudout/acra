@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
+import AtelierGuidancePanel from '@/components/AtelierGuidancePanel'
 import { ATELIERS_META } from '@/lib/ebios-data'
 import { getServerT } from '@/lib/i18n'
 import Atelier1 from '@/components/workshops/Atelier1'
@@ -65,7 +66,9 @@ export default async function AtelierPage({
   }
 
   const meta = ATELIERS_META[atelierNum - 1]
-  const expressMode = resolvedSearchParams.mode === 'express'
+  // Mode « Flash » (démarche Club EBIOS) : parcours rapide guidé A1→A2→A3→A4→A5,
+  // appuyé sur la capitalisation, en se limitant aux scénarios les plus pertinents.
+  const flashMode = resolvedSearchParams.mode === 'flash'
 
   // Préparer les initialData selon l'atelier
   let initialData: any = undefined
@@ -101,8 +104,9 @@ export default async function AtelierPage({
 
   // Catalogue de vulnérabilités issu du socle (fiche Club EBIOS) — affiché en
   // ateliers 3/4 (vecteurs/actions candidats) et 5 (garde-fou tunnel de conformité).
-  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { conformiteActive: true } })
+  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { conformiteActive: true, conseilsAteliersActive: true } })
   const conformiteActive = Boolean(orgConfig?.conformiteActive)
+  const conseilsActive = orgConfig?.conseilsAteliersActive !== false // activé par défaut
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
   if (conformiteActive && analyse.cadrage) {
     const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[])
@@ -127,7 +131,7 @@ export default async function AtelierPage({
         completed={analyse.atelierCourant}
       />
 
-      <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+      <main id="main-content" className={`${conseilsActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 py-8`}>
         {/* Header atelier */}
         <header className="mb-8">
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
@@ -165,8 +169,8 @@ export default async function AtelierPage({
           </ol>
         )} */}
 
-        {/* Bandeau mode express */}
-        {expressMode && (
+        {/* Bandeau mode Flash */}
+        {flashMode && (
           <div className="mb-6 bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-center gap-3">
             <span className="text-xl">⚡</span>
             <div className="flex-1">
@@ -208,42 +212,49 @@ export default async function AtelierPage({
           </div>
         )}
 
-        {/* Composant atelier */}
-        {atelierNum === 1 && (
-          <Atelier1 analyseId={analyse.id} initialData={initialData} analyse={analyse} expressMode={expressMode} />
-        )}
-        {atelierNum === 2 && (
-          <Atelier2
-            analyseId={analyse.id}
-            initialData={initialData}
-            analyse={analyse}
-            expressMode={expressMode}
-          />
-        )}
-        {atelierNum === 3 && (
-          <Atelier3
-            analyseId={analyse.id}
-            initialData={initialData}
-            analyse={analyse}
-          />
-        )}
-        {atelierNum === 4 && (
-          <Atelier4
-            analyseId={analyse.id}
-            initialData={initialData}
-            analyse={analyse}
-          />
-        )}
-        {atelierNum === 5 && (
-          <Atelier5
-            analyseId={analyse.id}
-            initialData={initialData}
-            analyse={analyse}
-            initialTab={resolvedSearchParams.tab}
-            expressMode={expressMode}
-            scaleConfig={await getEffectiveScaleConfig()}
-          />
-        )}
+        {/* Composant atelier (+ panneau conseils latéral optionnel) */}
+        <div className="flex items-start gap-6">
+          <div className="min-w-0 flex-1">
+            {atelierNum === 1 && (
+              <Atelier1 analyseId={analyse.id} initialData={initialData} analyse={analyse} flashMode={flashMode} />
+            )}
+            {atelierNum === 2 && (
+              <Atelier2
+                analyseId={analyse.id}
+                initialData={initialData}
+                analyse={analyse}
+                flashMode={flashMode}
+              />
+            )}
+            {atelierNum === 3 && (
+              <Atelier3
+                analyseId={analyse.id}
+                initialData={initialData}
+                analyse={analyse}
+                flashMode={flashMode}
+              />
+            )}
+            {atelierNum === 4 && (
+              <Atelier4
+                analyseId={analyse.id}
+                initialData={initialData}
+                analyse={analyse}
+                flashMode={flashMode}
+              />
+            )}
+            {atelierNum === 5 && (
+              <Atelier5
+                analyseId={analyse.id}
+                initialData={initialData}
+                analyse={analyse}
+                initialTab={resolvedSearchParams.tab}
+                flashMode={flashMode}
+                scaleConfig={await getEffectiveScaleConfig()}
+              />
+            )}
+          </div>
+          {conseilsActive && <AtelierGuidancePanel num={atelierNum} />}
+        </div>
       </main>
     </div>
   )

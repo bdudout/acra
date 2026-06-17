@@ -53,6 +53,7 @@ export async function GET(_req: NextRequest) {
     exemplesAteliers: (exemples && typeof exemples === 'object' && !Array.isArray(exemples)) ? exemples : {},
     qualificationActive: Boolean((config as any).qualificationActive),
     conformiteActive: Boolean((config as any).conformiteActive),
+    conseilsAteliersActive: (config as any).conseilsAteliersActive !== false, // activé par défaut
   })
 }
 
@@ -138,6 +139,7 @@ export async function PUT(req: NextRequest) {
 
   if (typeof body.qualificationActive === 'boolean') data.qualificationActive = body.qualificationActive
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
+  if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Aucune donnée à mettre à jour' }, { status: 400 })
@@ -162,5 +164,6 @@ export async function PUT(req: NextRequest) {
     exemplesAteliers: (config as any).exemplesAteliers ?? {},
     qualificationActive: Boolean((config as any).qualificationActive),
     conformiteActive: Boolean((config as any).conformiteActive),
+    conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
   })
 }

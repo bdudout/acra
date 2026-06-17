@@ -15,7 +15,7 @@
 [![EBIOS RM](https://img.shields.io/badge/Méthode-EBIOS%20RM-red)](https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/)
 [![ANSSI](https://img.shields.io/badge/Compatible-ISO%2027005-green)](https://www.iso.org/standard/75281.html)
 
-[🇫🇷 Français](#-présentation) · [🇬🇧 English](#-english) · [🚀 Installation rapide](#-quick-start-docker) · [📖 Documentation](#-les-5-ateliers-ebios-rm)
+**🌐 Langue / Language :** 🇫🇷 Français · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇪🇸 Español](README.es.md) · [🇮🇹 Italiano](README.it.md)
 
 </div>
 
@@ -584,44 +584,8 @@ Voir [CONTRIBUTING.md](./CONTRIBUTING.md) pour le guide complet.
 
 ---
 
-## 🇬🇧 English
-
-ACRA (Augmented Cyber Risk Analysis) is an open-source web application that guides security teams through the **EBIOS Risk Manager** methodology (French ANSSI standard, compatible with ISO 27005). It makes risk analysis accessible to non-specialists without sacrificing methodological rigour.
-
-### Quick start
-
-No local Node, npm or Prisma install required — the Docker image bundles everything
-and runs migrations automatically on startup.
-
-```bash
-git clone https://github.com/votre-org/acra.git
-cd acra
-./scripts/setup.sh --auto    # generates .env with strong random secrets
-docker compose up -d
-# App available at http://localhost:3000
-# Create your account at /auth/register — the FIRST account becomes ADMIN.
-# Optional: load demo data (tests only)
-# docker compose exec app npx prisma db seed
-# Demo account: admin@chu-metropole.fr / Acra@Admin2024!
-```
-
-### Key features
-
-- **Complete EBIOS RM** — all 5 workshops with hundreds of pre-filled examples and interactive guidance
-- **Express mode** — fast A1+A2+A5 workflow to get a risk list and action plan in under 30 minutes
-- **7 security frameworks** — ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI, HDS, PCI-DSS + custom controls
-- **5 UI languages** — FR / EN / DE / ES / IT
-- **RBAC** — 5 roles with approval workflow and per-analysis sharing
-- **Full PDF + Excel export** — structured multi-page reports
-- **MFA & SSO** — configurable TOTP/SMS, SAML 2.0 or OIDC
-- **Docker-ready** — single command deployment, automated backups
-
----
-
-## 📄 Licence / License
+## 📄 Licence
 
 MIT — voir [LICENSE](./LICENSE)
 
 La méthode EBIOS RM est développée et maintenue par l'[ANSSI](https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/). Cette application n'est pas affiliée à l'ANSSI.
-
-The EBIOS RM methodology is developed and maintained by [ANSSI](https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/). This application is not affiliated with ANSSI.

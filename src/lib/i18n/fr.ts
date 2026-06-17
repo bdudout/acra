@@ -354,7 +354,7 @@ export const fr = {
     quickTitle:     'Accès rapide',
     quickAll:       'Toutes mes analyses',
     quickNew:       'Nouvelle analyse',
-    quickExpress:   'Analyse express',
+    quickExpress:   'Analyse Flash',
     quickApprove:   'analyse(s) à approuver',
     quickConfig:    'Configuration des échelles',
     quickAdmin:     'Gestion des utilisateurs',
@@ -495,10 +495,10 @@ export const fr = {
     workshop:     'Atelier',
     inProgStatus: 'En cours',
     doneStatus:   'Terminée',
-    expressBtn:      '⚡ Analyse express',
-    expressTitle:    'Analyse express',
-    expressSubtitle: 'Parcours rapide : A1 Cadrage → A2 Sources → A5 Risques & Mesures',
-    expressInfo:     "Le mode express vous permet d'obtenir rapidement une liste de risques et un plan d'action en remplissant uniquement les ateliers essentiels. Les ateliers A3 (Scénarios écosystème) et A4 (Scénarios opérationnels) sont ignorés — vous pouvez les compléter plus tard.",
+    expressBtn:      '⚡ Analyse Flash',
+    expressTitle:    'Analyse Flash',
+    expressSubtitle: 'Parcours rapide guidé : A1 → A2 → A3 → A4 → A5',
+    expressInfo:     "La démarche « Flash » (Club EBIOS) déroule tous les ateliers en une passe rapide en s'appuyant sur la capitalisation (exemples, socle). Concentrez-vous sur les scénarios les plus pertinents (≈ 5 max) avec au moins un scénario opérationnel chacun. L'échelle et la matrice restent celles configurées par l'administrateur.",
     expressNamePh:   'Ex : Analyse risques SI RH — Q3 2026',
     expressRequired: 'Le nom est requis',
     expressStart:    '⚡ Démarrer',
@@ -1235,7 +1235,12 @@ export const fr = {
       traceTitle:   '🔗 Traçabilité — Couple SR/OV (Atelier 2)',
       selectCouplePh: '— Sélectionner un couple SR/OV —',
       scenCompleteA2: 'Complétez l\'atelier 2 pour lier ce scénario à un couple SR/OV.',
-      erLinkLabel:  'Événement redouté associé (Atelier 1)',
+      erLinkLabel:  'Événements redoutés associés (Atelier 1)',
+      graviteHeriteeHint: 'La gravité est héritée des ER liés (valeur la plus élevée).',
+      graviteHeriteeBadge: 'héritée',
+      surevalTitle: 'Risque de surévaluation',
+      surevalDesc: 'Les ER liés couvrent plusieurs valeurs métier de gravités différentes ({vms}). Retenir le maximum peut surévaluer ce scénario.',
+      scinderBtn: 'Scinder par valeur métier',
       selectErPh:   '— Sélectionner un événement redouté —',
       attackPathLabel: 'Description du chemin d\'attaque',
       vraisLabel:   'Vraisemblance',
@@ -1264,6 +1269,7 @@ export const fr = {
     // Atelier 4
     a4: {
       title:        'Atelier 4 — Scénarios opérationnels',
+      flashHint:    'Mode Flash : décrivez au moins un scénario opérationnel par scénario stratégique retenu — cela suffit à évaluer la vraisemblance. Restez macro, sans vous perdre dans les détails techniques.',
       tabScen:      'Scénarios opérationnels',
       desc:         "Chaque scénario opérationnel est la déclinaison technique d'un scénario stratégique (atelier 3). Décrivez la séquence d'actions élémentaires sur les biens supports, en vous inspirant de MITRE ATT&CK. Évaluez la vraisemblance technique.",
       stratPanelTitle: "📋 Scénarios stratégiques retenus (Atelier 3) — créez un scénario opérationnel pour chacun",
@@ -1525,6 +1531,8 @@ export const fr = {
     qualificationDesc:  'Propose un court questionnaire (externalisation, criticité, données personnelles…) pour cadrer chaque nouvelle analyse et suggérer des orientations.',
     conformiteTitle:    'Analyse de conformité à un référentiel (atelier 1)',
     conformiteDesc:     "Permet d'évaluer la conformité au socle de sécurité dès le cadrage et d'exploiter les écarts (non-conformités) dans les ateliers suivants.",
+    conseilsTitle:      'Panneau de conseils & participants par atelier',
+    conseilsDesc:       "Affiche, à côté de chaque atelier, les participants recommandés (Métier, DSI, RSSI…) et des conseils essentiels (EBIOS RM / Club EBIOS). Masquable par chaque utilisateur.",
     enabled:       'Activée',
     disabled:      'Désactivée',
   },
@@ -1594,6 +1602,60 @@ export const fr = {
     vulnPanelEmpty:  "Aucune non-conformité au socle. Activez et complétez la grille de conformité en atelier 1.",
     tunnelWarningTitle: '⚠️ Éviter le « tunnel de conformité »',
     tunnelWarning:   "Une non-conformité n'est pas un risque en soi : ne l'inscrivez dans la synthèse que si elle est rattachée à un scénario de risque pertinent (cf. fiche méthode Club EBIOS).",
+  },
+  // ─── Conseils & participants par atelier (panneau latéral) ────────────────
+  atelierGuidance: {
+    panelTitle:        'Conseils & participants',
+    participantsTitle: 'Participants recommandés',
+    tipsTitle:         'Conseils essentiels',
+    tipsSource:        'Bonnes pratiques EBIOS RM / Club EBIOS',
+    learnMore:         'En savoir plus',
+    hide:              'Masquer',
+    showAria:          "Afficher les conseils de l'atelier",
+    links: {
+      anssi:     'Guide ANSSI — EBIOS Risk Manager',
+      clubEbios: 'Club EBIOS — fiches méthode',
+    },
+    a1: {
+      participants: ['Direction / Métier', 'RSSI', 'DSI / Architectes', 'Risk Manager', 'DPO (si données personnelles)'],
+      tips: [
+        "Délimitez précisément le périmètre métier et technique de l'étude.",
+        'Identifiez les valeurs métier puis les biens supports qui les portent.',
+        'Le socle de sécurité traite les risques courants : ne le rejouez pas sous forme de scénarios.',
+      ],
+    },
+    a2: {
+      participants: ['RSSI', 'Métier', 'Veille / Threat Intelligence', 'Direction'],
+      tips: [
+        'Caractérisez chaque source de risque : motivation, ressources, activité.',
+        'Associez à chaque source ses objectifs visés (couples SR/OV).',
+        "Sélectionnez les couples les plus pertinents — inutile d'être exhaustif.",
+      ],
+    },
+    a3: {
+      participants: ['RSSI', 'Métier', 'Achats / Juridique', 'Responsables des tiers'],
+      tips: [
+        "Cartographiez l'écosystème : une partie prenante peut devenir un vecteur d'attaque.",
+        'Un scénario stratégique relie une source à une valeur métier via un chemin de haut niveau.',
+        'Évaluez la gravité au regard des impacts sur les missions.',
+      ],
+    },
+    a4: {
+      participants: ['RSSI', 'DSI / Experts techniques', 'SOC / Équipe sécurité', 'Pentesters'],
+      tips: [
+        'Déclinez les scénarios stratégiques en modes opératoires techniques concrets.',
+        "Appuyez-vous sur un référentiel d'attaque (ex. MITRE ATT&CK).",
+        "Évaluez la vraisemblance technique de chaque chemin d'attaque.",
+      ],
+    },
+    a5: {
+      participants: ['Direction', 'Risk Manager', 'RSSI', 'DSI', 'Métier (arbitrage)'],
+      tips: [
+        'Priorisez le traitement selon le niveau de risque (gravité × vraisemblance).',
+        'Rattachez chaque mesure du plan de traitement à un scénario de risque.',
+        'Faites arbitrer et valider les risques résiduels par la direction.',
+      ],
+    },
   },
   // ─── Pages légales ───────────────────────────────────────────────────────
   legal: {

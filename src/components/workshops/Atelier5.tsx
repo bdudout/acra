@@ -50,8 +50,8 @@ interface Props {
   analyse: any
   /** Onglet à afficher au chargement (ex: "mesures" depuis un deep-link /actions) */
   initialTab?: string
-  /** Mode express A1+A2+A5 — masque les dépendances A4 (scénarios opérationnels) */
-  expressMode?: boolean
+  /** Mode « Flash » (Club EBIOS) — parcours rapide complet (A4 réalisé) */
+  flashMode?: boolean
   /** Échelle/seuils configurés (admin) pour la matrice des risques */
   scaleConfig?: ScaleConfig | null
 }
@@ -73,7 +73,7 @@ const stratColors: Record<string, string> = {
   SURVEILLER: 'bg-purple-100 text-purple-700',
 }
 
-export default function Atelier5({ analyseId, initialData, analyse, initialTab, expressMode, scaleConfig }: Props) {
+export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
@@ -327,8 +327,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       {/* ── RISQUES ─────────────────────────────────────────────────────── */}
       {tab === 'risques' && (
         <div className="space-y-4">
-          {/* Import depuis scénarios opérationnels — masqué en mode express (A4 non réalisé) */}
-          {scenariosOp.length > 0 && !expressMode && (
+          {/* Import depuis scénarios opérationnels (A4 réalisé, y compris en mode Flash) */}
+          {scenariosOp.length > 0 && (
             <div className="card p-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
                 {t.workshop.a5.soImportTitle}
@@ -409,8 +409,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                     {expandedId === r.id && (
                       <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-4">
                         {/* Traçabilité */}
-                        <div className={`grid gap-3 border border-green-200 rounded-lg p-3 bg-green-50 ${expressMode ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
-                          {!expressMode && (
+                        <div className="grid gap-3 border border-green-200 rounded-lg p-3 bg-green-50 grid-cols-1 sm:grid-cols-2">
                           <div>
                             <label className="label text-xs" htmlFor={`r-so-${r.id}`}>{t.workshop.a5.traceSOLabel}</label>
                             {scenariosOp.length > 0 ? (
@@ -424,7 +423,6 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                               </select>
                             ) : null}
                           </div>
-                          )}
                           <div>
                             <label className="label text-xs" htmlFor={`r-er-${r.id}`}>{t.workshop.a5.traceERLabel}</label>
                             {evenementsRedoutes.length > 0 ? (

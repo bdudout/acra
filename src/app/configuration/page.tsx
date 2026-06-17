@@ -134,6 +134,7 @@ export default function ConfigurationPage() {
   // Fonctionnalités optionnelles (toggles)
   const [qualificationActive, setQualificationActive] = useState(false)
   const [conformiteActive, setConformiteActive] = useState(false)
+  const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
@@ -168,6 +169,7 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
         setConformiteActive(Boolean(data.conformiteActive))
+        setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -196,21 +198,20 @@ export default function ConfigurationPage() {
   }
 
   // ── Fonctionnalités optionnelles (toggles) ───────────────────────────────
-  async function saveFeature(field: 'qualificationActive' | 'conformiteActive', value: boolean) {
-    // Mise à jour optimiste
-    if (field === 'qualificationActive') setQualificationActive(value)
-    else setConformiteActive(value)
+  const FEATURE_SETTERS: Record<string, (v: boolean) => void> = {
+    qualificationActive: setQualificationActive,
+    conformiteActive: setConformiteActive,
+    conseilsAteliersActive: setConseilsAteliersActive,
+  }
+  async function saveFeature(field: 'qualificationActive' | 'conformiteActive' | 'conseilsAteliersActive', value: boolean) {
+    FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
     })
     setSavingFeatures(false)
-    if (!res.ok) {
-      // Rollback en cas d'échec
-      if (field === 'qualificationActive') setQualificationActive(!value)
-      else setConformiteActive(!value)
-    }
+    if (!res.ok) FEATURE_SETTERS[field]?.(!value) // rollback
   }
 
   // ── Helpers exemples des ateliers ────────────────────────────────────────
@@ -1038,6 +1039,7 @@ export default function ConfigurationPage() {
               {([
                 { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc },
                 { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc },
+                { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc },
               ]).map(f => (
                 <div key={f.field} className="flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
                   <div className="min-w-0">

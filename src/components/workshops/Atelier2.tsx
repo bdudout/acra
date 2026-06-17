@@ -13,14 +13,15 @@
  * Auto-saves via `useAutoSave`. Example suggestions are drawn from
  * `SOURCES_RISQUE_EXEMPLES` and `OBJECTIFS_VISES_EXEMPLES` in ebios-data.ts.
  *
- * In express mode (`expressMode=true`), the validate button jumps to A5
- * instead of A3, and a banner explains the shortcut.
+ * En mode « Flash » (`flashMode=true`, démarche Club EBIOS), le parcours reste
+ * complet (A1→A2→A3→A4→A5) ; le flag est seulement conservé dans l'URL et un
+ * bandeau rappelle le cadrage rapide.
  *
  * Props:
  *  - analyseId   : Prisma cuid of the parent Analyse
  *  - initialData : { sourcesRisque: SourceRisque[] } from DB
  *  - analyse     : parent Analyse (used for sector/context in suggestions)
- *  - expressMode : if true, "Valider" navigates to atelier/5 (skipping A3/A4)
+ *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
 import { useMemo, useState, useEffect } from 'react'
@@ -36,7 +37,7 @@ interface Props {
   analyseId: string
   initialData?: { sourcesRisque: any[] }
   analyse: any
-  expressMode?: boolean
+  flashMode?: boolean
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -54,7 +55,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   AUTRE:               'bg-gray-100 text-gray-600',
 }
 
-export default function Atelier2({ analyseId, initialData, analyse, expressMode }: Props) {
+export default function Atelier2({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
 
@@ -205,7 +206,8 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
     setSaving(true)
     await saveNow()
     setSaving(false)
-    router.push(`/analyses/${analyseId}/atelier/${expressMode ? 5 : 3}${expressMode ? '?mode=express' : ''}`)
+    // Mode Flash : parcours complet conservé (→ A3), on propage juste le flag
+    router.push(`/analyses/${analyseId}/atelier/3${flashMode ? '?mode=flash' : ''}`)
   }
 
   const retained = sources.filter(s => s.retenu)
@@ -591,7 +593,7 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
         </p>
       </div>
 
-      {expressMode && (
+      {flashMode && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <span className="text-xl flex-shrink-0">⚡</span>
           <div>
@@ -607,7 +609,7 @@ export default function Atelier2({ analyseId, initialData, analyse, expressMode 
         </button>
       ) : (
         <button onClick={save} disabled={saving} className="btn-primary w-full text-base py-3">
-          {saving ? t.workshop.saving : expressMode ? t.workshop.a2.expressSaveA5 : t.workshop.saveNext}
+          {saving ? t.workshop.saving : t.workshop.saveNext}
         </button>
       )}
 

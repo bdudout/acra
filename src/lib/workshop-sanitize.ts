@@ -77,6 +77,7 @@ export function cleanScenarioStrategique(s: Dict, analyseId: string) {
     objectifVise:        str(s.objectifVise, 500),
     description:         str(s.description, 5000),
     evenementRedouteRef: str(s.evenementRedouteRef, 255),
+    evenementsRedoutesIds: json(s.evenementsRedoutesIds) as never,
     cheminAttaque:       json(s.cheminAttaque) as never,
     mesuresEcosysteme:   json(s.mesuresEcosysteme) as never,
     vraisemblance:       num(s.vraisemblance, 2),

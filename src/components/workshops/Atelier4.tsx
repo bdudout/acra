@@ -36,6 +36,8 @@ interface Props {
   analyseId: string
   initialData?: { scenariosOperationnels: any[] }
   analyse: any
+  /** Mode « Flash » (Club EBIOS) — A4 réduit : ≥1 scénario opérationnel par scénario stratégique */
+  flashMode?: boolean
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -47,7 +49,7 @@ function getNiveauRisqueColor(score: number) {
   return 'bg-green-100 text-green-700 border-green-200'
 }
 
-export default function Atelier4({ analyseId, initialData, analyse }: Props) {
+export default function Atelier4({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
@@ -170,7 +172,7 @@ export default function Atelier4({ analyseId, initialData, analyse }: Props) {
     setSaving(true)
     await saveNow()
     setSaving(false)
-    router.push(`/analyses/${analyseId}/atelier/5`)
+    router.push(`/analyses/${analyseId}/atelier/5${flashMode ? '?mode=flash' : ''}`)
   }
 
   // Grouper les scénarios opérationnels par scénario stratégique
@@ -182,6 +184,12 @@ export default function Atelier4({ analyseId, initialData, analyse }: Props) {
 
   return (
     <div className="space-y-6">
+      {flashMode && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-start gap-3">
+          <span className="text-xl flex-shrink-0" aria-hidden="true">⚡</span>
+          <p className="text-sm text-amber-800">{t.workshop.a4.flashHint}</p>
+        </div>
+      )}
       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
         <div className="flex gap-3">
           <span className="text-2xl">⚙️</span>

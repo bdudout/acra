@@ -1,11 +1,12 @@
 'use client'
 
 /**
- * ExpressAnalyseButton — bouton + modal de création d'une analyse express.
+ * ExpressAnalyseButton — bouton + modal de création d'une analyse « Flash ».
  *
- * Mode express : crée une analyse et passe directement en atelier 1
- * avec accès débridé à tous les ateliers (atelierCourant = 5).
- * L'utilisateur n'est guidé que par A1 → A2 → A5.
+ * Mode Flash (démarche Club EBIOS) : crée une analyse et débloque d'emblée tous
+ * les ateliers (atelierCourant = 5) pour un parcours rapide guidé
+ * A1 → A2 → A3 → A4 (réduit) → A5, appuyé sur la capitalisation et limité aux
+ * scénarios les plus pertinents. La matrice reste celle configurée par l'admin.
  *
  * Utilisé sur : /dashboard, /analyses
  */
@@ -57,7 +58,7 @@ export default function ExpressAnalyseButton({ variant = 'button' }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ atelierCourant: 5 }),
       })
-      router.push(`/analyses/${id}/atelier/1?mode=express`)
+      router.push(`/analyses/${id}/atelier/1?mode=flash`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur')
       setLoading(false)

@@ -33,12 +33,15 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import EcosystemRadar from '@/components/EcosystemRadar'
+import { graviteHeritee, risqueSurevaluation, valeursMetierConcernees } from '@/lib/ebios-gravite'
 import { FRAMEWORK_META, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 
 interface Props {
   analyseId: string
   initialData?: { partiesPrenantes: any[]; scenariosStrategiques: any[] }
   analyse: any
+  /** Mode « Flash » (Club EBIOS) — parcours rapide guidé, propage le flag */
+  flashMode?: boolean
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -61,7 +64,7 @@ function getNiveauRisqueColor(score: number) {
   return NIVEAU_RISQUE_COLOR[getRiskTier(score)]
 }
 
-export default function Atelier3({ analyseId, initialData, analyse }: Props) {
+export default function Atelier3({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
@@ -169,6 +172,12 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
 
   // Événements redoutés disponibles depuis l'atelier 1
   const evenementsRedoutes: any[] = analyse?.cadrage?.evenementsRedoutes || []
+  const valeursMetier: any[] = analyse?.cadrage?.valeursMetier || []
+  const vmLabel = (id: string) => valeursMetier.find((v: any) => v.id === id)?.nom || id
+  // Liste d'ids ER liés à un scénario (nouveau champ ; repli sur l'ancien ref unique)
+  const erIdsOf = (s: any): string[] =>
+    Array.isArray(s.evenementsRedoutesIds) ? s.evenementsRedoutesIds
+    : (s.evenementRedouteRef ? [s.evenementRedouteRef] : [])
 
   function addPP(exemple?: any) {
     setParties(prev => [...prev, {
@@ -204,7 +213,10 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
       objectifVise:   exemple?.objectifVise   || defaultCouple?.ovNom || '',
       coupleLabel:    exemple?.coupleLabel    || defaultCouple?.label || '',
       description: exemple?.description || '',
-      evenementRedouteRef: exemple?.evenementRedouteRef || defaultEr?.description || '',
+      // Lien ER id-based (fiche Club EBIOS) ; pas d'auto-lien à la création :
+      // l'analyste relie les ER de l'objectif visé → la gravité s'hérite alors.
+      evenementRedouteRef: exemple?.evenementRedouteRef || '',
+      evenementsRedoutesIds: Array.isArray(exemple?.evenementsRedoutesIds) ? exemple.evenementsRedoutesIds : [],
       cheminAttaque: [],
       mesuresEcosysteme: [],
       vraisemblance: vr, gravite: gr, niveauRisque: vr * gr, retenu: true,
@@ -221,6 +233,16 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
       if (field === 'vraisemblance' || field === 'gravite') {
         up.niveauRisque = up.vraisemblance * up.gravite
       }
+      // Héritage de gravité (fiche Club EBIOS A3) : quand les ER liés changent,
+      // la gravité = max des gravités des ER liés (sinon on garde la valeur courante).
+      if (field === 'evenementsRedoutesIds') {
+        const ids: string[] = Array.isArray(value) ? value : []
+        up.evenementRedouteRef = ids[0] || '' // garde l'ancien champ synchronisé (ER primaire)
+        if (ids.length > 0) {
+          up.gravite = graviteHeritee(ids, evenementsRedoutes, up.gravite)
+          up.niveauRisque = up.vraisemblance * up.gravite
+        }
+      }
       // Si on choisit un couple SR/OV, pré-remplir sourceRisqueId et objectifVise
       if (field === 'coupleLabel') {
         const couple = couplesDisponibles.find(c => c.label === value)
@@ -231,6 +253,42 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
       }
       return up
     }))
+  }
+
+  // Coche/décoche un ER lié à un scénario (multi-sélection → héritage du max)
+  function toggleEr(scenarioId: string, erId: string) {
+    const sc = scenarios.find(s => s.id === scenarioId)
+    const current = erIdsOf(sc)
+    const next = current.includes(erId) ? current.filter(x => x !== erId) : [...current, erId]
+    updateScenario(scenarioId, 'evenementsRedoutesIds', next)
+  }
+
+  // Garde-fou anti-surévaluation : scinder un SS en un scénario par valeur métier ciblée,
+  // chacun héritant de la gravité (max) de SES ER. Évite de retenir un max trop élevé.
+  function scinderScenario(id: string) {
+    const sc = scenarios.find(s => s.id === id)
+    if (!sc) return
+    const ids = erIdsOf(sc)
+    const byVm = new Map<string, string[]>()
+    for (const er of evenementsRedoutes) {
+      if (ids.includes(er.id) && er.valeurMetierId) {
+        if (!byVm.has(er.valeurMetierId)) byVm.set(er.valeurMetierId, [])
+        byVm.get(er.valeurMetierId)!.push(er.id)
+      }
+    }
+    if (byVm.size < 2) return
+    const fragments = [...byVm.entries()].map(([vmId, erIds]) => {
+      const g = graviteHeritee(erIds, evenementsRedoutes, sc.gravite)
+      return {
+        ...sc, id: uid(),
+        nom: `${sc.nom} — ${vmLabel(vmId)}`,
+        evenementsRedoutesIds: erIds,
+        evenementRedouteRef: erIds[0] || '',
+        gravite: g, niveauRisque: sc.vraisemblance * g,
+      }
+    })
+    setScenarios(prev => prev.flatMap(s => (s.id === id ? fragments : [s])))
+    setExpanded(fragments[0]?.id ?? null)
   }
 
   function addMesureEcosysteme(scenarioId: string, ppNom?: string, mesure?: string) {
@@ -291,7 +349,7 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
     setSaving(true)
     await saveNow()
     setSaving(false)
-    router.push(`/analyses/${analyseId}/atelier/4`)
+    router.push(`/analyses/${analyseId}/atelier/4${flashMode ? '?mode=flash' : ''}`)
   }
 
   const retained = scenarios.filter(s => s.retenu)
@@ -624,19 +682,35 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
                         </div>
                       </div>
 
-                      {/* Lien vers Atelier 1 — ER */}
+                      {/* Lien vers Atelier 1 — ER (multi-sélection → gravité héritée = max, fiche Club EBIOS) */}
                       {evenementsRedoutes.length > 0 && (
                         <div>
-                          <label className="label" htmlFor={`ss-er-${s.id}`}>{t.workshop.a3.erLinkLabel}</label>
-                          <select value={s.evenementRedouteRef || ''}
-                        id={`ss-er-${s.id}`}
-                            onChange={e => updateScenario(s.id, 'evenementRedouteRef', e.target.value)}
-                            className="input text-sm">
-                            <option value="">{t.workshop.a3.selectErPh}</option>
-                            {evenementsRedoutes.map((er: any) => (
-                              <option key={er.id} value={er.id}>{er.description}</option>
-                            ))}
-                          </select>
+                          <label className="label">{t.workshop.a3.erLinkLabel}</label>
+                          <div className="space-y-1 rounded-lg border border-gray-200 p-2">
+                            {evenementsRedoutes.map((er: any) => {
+                              const checked = erIdsOf(s).includes(er.id)
+                              const g = er.graviteDefaut ?? er.gravite
+                              return (
+                                <label key={er.id} className="flex items-start gap-2 text-sm cursor-pointer">
+                                  <input type="checkbox" checked={checked}
+                                    onChange={() => toggleEr(s.id, er.id)} className="mt-0.5 accent-ebios-600" />
+                                  <span className="flex-1">{er.description}</span>
+                                  {g != null && <span className="text-xs text-gray-500 shrink-0">G{g}</span>}
+                                </label>
+                              )
+                            })}
+                          </div>
+                          {erIdsOf(s).length > 0 && (
+                            <p className="text-xs text-gray-500 mt-1">{t.workshop.a3.graviteHeriteeHint}</p>
+                          )}
+                          {risqueSurevaluation(erIdsOf(s), evenementsRedoutes) && (
+                            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+                              <p className="font-medium">{t.workshop.a3.surevalTitle}</p>
+                              <p className="mt-0.5">{t.workshop.a3.surevalDesc.replace('{vms}', valeursMetierConcernees(erIdsOf(s), evenementsRedoutes).map(vmLabel).join(', '))}</p>
+                              <button type="button" onClick={() => scinderScenario(s.id)}
+                                className="mt-1.5 underline font-medium text-amber-900">{t.workshop.a3.scinderBtn}</button>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -658,7 +732,7 @@ export default function Atelier3({ analyseId, initialData, analyse }: Props) {
                           <p className="text-xs text-gray-500 mt-1">{NIVEAUX_VRAISEMBLANCE[s.vraisemblance - 1]?.description}</p>
                         </div>
                         <div>
-                          <label className="label" htmlFor={`ss-grav-${s.id}`}>{t.workshop.a3.scenGLabel} G{s.gravite} — {NIVEAUX_GRAVITE[s.gravite - 1]?.label}</label>
+                          <label className="label" htmlFor={`ss-grav-${s.id}`}>{t.workshop.a3.scenGLabel} G{s.gravite} — {NIVEAUX_GRAVITE[s.gravite - 1]?.label}{erIdsOf(s).length > 0 && <span className="ml-1 text-xs text-ebios-600">({t.workshop.a3.graviteHeriteeBadge})</span>}</label>
                           <input type="range" min={1} max={4} value={s.gravite}
                           aria-label={`ss-grav-${s.id}`}
                             onChange={e => updateScenario(s.id, 'gravite', parseInt(e.target.value))}

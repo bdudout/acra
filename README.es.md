@@ -1,0 +1,570 @@
+<div align="center">
+
+<img src="public/logo-mark.png" alt="ACRA Logo" width="120" />
+
+# ACRA — Augmented Cyber Risk Analysis
+
+**La plataforma open-source que hace accesible el análisis de riesgos EBIOS RM a todos**
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![EBIOS RM](https://img.shields.io/badge/M%C3%A9todo-EBIOS%20RM-red)](https://cyber.gouv.fr/la-methode-ebios-risk-manager)
+[![ANSSI](https://img.shields.io/badge/Compatible-ISO%2027005-green)](https://www.iso.org/standard/75281.html)
+
+**🌐 Langue / Language:** [🇫🇷 Français](README.md) · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · 🇪🇸 Español · [🇮🇹 Italiano](README.it.md)
+
+</div>
+
+---
+
+## 🎯 Presentación
+
+**ACRA (Augmented Cyber Risk Analysis)** es una aplicación web guiada que permite a cualquier equipo de seguridad — incluso sin gran experiencia — llevar a cabo un análisis de riesgos completo según el método **EBIOS Risk Manager** de la ANSSI francesa, compatible con **ISO 27005**.
+
+### El problema que resuelve ACRA
+
+Los análisis de riesgos EBIOS RM son exigentes: el método consta de 5 talleres interconectados, decenas de conceptos que dominar, y el menor error de coherencia puede invalidar todo el estudio. En la práctica, los equipos recurren a hojas de cálculo Excel complejas, a consultores caros, o renuncian al rigor metodológico.
+
+ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a paso, propone ejemplos clicables en cada etapa, mantiene la coherencia entre los talleres y produce automáticamente un informe PDF estructurado.
+
+### ¿Para quién?
+
+| Perfil | Uso |
+|--------|-----|
+| 🔒 CISO y Risk Managers | Dirigir los análisis, aprobar, supervisar la cartera de riesgos |
+| 🔍 Analistas de seguridad | Realizar los talleres, documentar los escenarios, planificar las medidas |
+| 🏢 TI y Dirección | Leer las síntesis, seguir el tratamiento, validar los presupuestos de medidas |
+| 🎓 Estudiantes y formadores | Aprender el método EBIOS RM con una herramienta concreta |
+
+### Lo que diferencia a ACRA
+
+- **Guía metodológica integrada**: cada campo dispone de un tooltip, un enlace a la guía ANSSI y ejemplos contextuales
+- **Coherencia automática**: los elementos de un taller alimentan automáticamente los siguientes
+- **7 marcos de medidas**: ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, Higiene ANSSI, HDS, PCI-DSS — desde una única interfaz
+- **Modo Express**: un análisis completo (T1+T2+T5) en menos de 30 minutos para contextos urgentes
+- **100 % autoalojado**: tus datos nunca salen de tu infraestructura
+
+---
+
+## ✨ Funcionalidades
+
+### 📋 Método EBIOS RM completo
+
+- **5 talleres guiados** con biblioteca de ejemplos clicables (valores de negocio, fuentes de riesgo, escenarios, medidas…)
+- **Modo de análisis Express** (T1 + T2 + T5) para obtener rápidamente una lista de riesgos y un plan de acción
+- **Guía EBIOS RM interactiva** integrada con enlaces directos a las páginas de la guía oficial de la ANSSI
+- **Matriz de riesgos** visual (gravedad × probabilidad) con niveles residuales y comparación antes/después de las medidas
+- Criterios **DICT** (Disponibilidad, Integridad, Confidencialidad, Trazabilidad) sobre valores de negocio y activos de soporte
+- Enlaces MITRE ATT&CK en los escenarios operativos
+
+### 🔐 Seguridad y marcos
+
+- Medidas de seguridad de **7 marcos**: ISO 27001:2022 · NIST CSF · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS + controles personalizados
+- Política de contraseñas configurable (longitud, complejidad, caducidad, historial, bloqueo)
+- **MFA** configurable (TOTP, SMS) con ventana de confirmación de 60 min para evitar bloqueos accidentales
+- **SSO** configurable (SAML 2.0 u OIDC) — aprovisionamiento automático de cuentas
+- Pista de auditoría completa exportable (CSV)
+
+### 👥 Colaboración y gobernanza
+
+- **RBAC de 5 niveles**: ADMIN · CISO · RISK_MANAGER · ANALISTA · LECTOR
+- Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager)
+- Compartición de acceso por análisis con permisos individuales
+- Panel de administración: gestión de usuarios, creación de cuentas, suspensión, registros de auditoría
+
+### 📊 Exportación y reporting
+
+- Exportación **PDF** estructurada de varias páginas (resumen ejecutivo, KPIs, talleres, medidas, anexos metodológicos)
+- Exportación **Excel (.xlsx)** con todos los datos tabulares por pestaña
+- Exportación **JSON** (copia de seguridad completa, reimportable) y **CSV** (datos tabulares)
+- Importación de análisis desde JSON o CSV
+
+### 🌐 UX y accesibilidad
+
+- Interfaz en **5 idiomas**: Français · English · Deutsch · Español · Italiano
+- **Autoguardado** en cada modificación (sin pérdida de datos)
+- Panel con KPIs, gráficos, alertas de riesgos críticos, búsqueda global
+- Tema claro / oscuro / automático
+- Conforme a RGAA: navegación por teclado, ARIA, contrastes accesibles
+
+---
+
+## 🎬 Demo
+
+![Demo ACRA — recorrido completo de un análisis de riesgos](docs/screenshots/acra-demo.gif)
+
+## 📸 Vista previa de la interfaz
+
+| | Tema claro | Tema oscuro |
+|---|---|---|
+| **Panel** | ![](docs/screenshots/dashboard-light.png) | ![](docs/screenshots/dashboard-dark.png) |
+| **Mis análisis** | ![](docs/screenshots/analyses-light.png) | ![](docs/screenshots/analyses-dark.png) |
+| **Taller 1 — Encuadre y base** | ![](docs/screenshots/atelier1-light.png) | ![](docs/screenshots/atelier1-dark.png) |
+| **Taller 5 — Tratamiento del riesgo** | ![](docs/screenshots/atelier5-light.png) | ![](docs/screenshots/atelier5-dark.png) |
+| **Mapa de riesgos** | ![](docs/screenshots/risques-light.png) | ![](docs/screenshots/risques-dark.png) |
+| **Configuración (escalas y matriz)** | ![](docs/screenshots/configuration-light.png) | ![](docs/screenshots/configuration-dark.png) |
+| **Administración** | ![](docs/screenshots/admin-light.png) | ![](docs/screenshots/admin-dark.png) |
+| **Registro de auditoría** | ![](docs/screenshots/admin-audit-light.png) | ![](docs/screenshots/admin-audit-dark.png) |
+
+---
+
+## 🚀 Inicio rápido (Docker)
+
+**No se requiere ninguna instalación local de Node, npm o Prisma**: la imagen Docker
+incluye todas las dependencias y el cliente Prisma, y aplica las migraciones
+automáticamente al arrancar (servicio `migrator`).
+
+```bash
+git clone https://github.com/votre-org/acra.git
+cd acra
+make setup        # genera .env + secretos aleatorios (interactivo)
+docker compose up -d
+```
+
+> ¿Sin `make`? Usa directamente: `./scripts/setup.sh` (o `npm run setup`).
+> Instalación automatizada / CI (sin preguntas): `./scripts/setup.sh --auto`.
+
+`setup.sh` genera por ti secretos fuertes (`NEXTAUTH_SECRET`, contraseña de
+PostgreSQL, `SECRETS_ENCRYPTION_KEY`) y **solo regenera los valores que faltan**
+si se vuelve a ejecutar (detalles en la sección «Instalación detallada» más abajo).
+
+**La aplicación está disponible en http://localhost:3000.**
+Crea tu cuenta en `/auth/register` — **la primera cuenta creada se convierte
+automáticamente en ADMINISTRADOR**.
+
+Para cargar los datos de demostración (opcional, nunca en producción):
+
+```bash
+docker compose exec app npx prisma db seed
+# Cuenta demo creada: admin@chu-metropole.fr / Acra@Admin2024!
+# ⚠️ Solo para pruebas — cambia/elimina esta cuenta antes de cualquier puesta en producción
+```
+
+---
+
+## 📦 Instalación detallada
+
+### Requisitos previos
+
+| Herramienta | Versión mínima | Notas |
+|-------------|----------------|-------|
+| Docker Desktop | 4.x | o Docker Engine + Compose v2 |
+| RAM disponible | 512 MB | 1 GB recomendado |
+| Puertos libres | 3000, 5432 | configurables en `docker-compose.yml` |
+
+> **Sin Docker** (desarrollo local): se requieren Node.js 20+ y PostgreSQL 14+ — ver [Desarrollo local](#-desarrollo-local).
+
+---
+
+### Paso 1 — Clonar el repositorio
+
+```bash
+git clone https://github.com/votre-org/acra.git
+cd acra
+```
+
+---
+
+### Paso 2 — Configurar el entorno (automatizado)
+
+El script de setup crea el archivo `.env` y **genera secretos fuertes**. Es
+**idempotente**: al reejecutarlo, conserva los valores ya definidos y solo completa lo que falta.
+
+```bash
+./scripts/setup.sh          # interactivo (pide la URL pública y la clave de IA)
+# o, sin ninguna interacción (secretos aleatorios, URL por defecto):
+./scripts/setup.sh --auto
+```
+
+El script rellena automáticamente:
+
+| Variable | Función | Generado por setup.sh |
+|----------|---------|:---:|
+| `NEXTAUTH_SECRET` | Firma de las sesiones JWT | ✅ aleatorio (48 B) |
+| `POSTGRES_PASSWORD` | Contraseña de PostgreSQL | ✅ aleatorio (32 car.) |
+| `SECRETS_ENCRYPTION_KEY` | Cifrado AES-256-GCM de los secretos en BD (OIDC, SMS, SMTP) | ✅ aleatorio (48 B) |
+| `DATABASE_URL` | Conexión Prisma | ✅ derivada de las variables PostgreSQL |
+| `POSTGRES_USER` / `POSTGRES_DB` | Identidad de la base | `acra_user` / `acra_rm` |
+| `NEXTAUTH_URL` | URL pública | solicitada (por defecto `http://localhost:3000`) |
+| `ANTHROPIC_API_KEY` | Clave de IA (opcional) | nunca generada — vacía si ausente |
+
+> **Configuración manual** (alternativa): `cp .env.example .env` y luego reemplaza
+> todos los valores `CHANGEZ_MOI`. Genera un secreto con `openssl rand -base64 48`.
+>
+> ⚠️ **Producción**: `NEXTAUTH_URL` debe ser **HTTPS**. Nunca hagas commit de `.env`
+> (ya está en `.gitignore`). Si cambia `SECRETS_ENCRYPTION_KEY`, los secretos ya
+> cifrados en la base deberán reintroducirse en la interfaz de administración.
+
+---
+
+### Paso 3 — Arrancar los servicios
+
+```bash
+docker compose up -d
+```
+
+Docker lanza 3 servicios:
+- **`db`** — PostgreSQL 16 (puerto 5432)
+- **`migrator`** — ejecuta `prisma migrate deploy` al arrancar (luego se detiene)
+- **`app`** — Aplicación Next.js (puerto 3000)
+
+Comprobar que todo funciona:
+
+```bash
+docker compose ps
+# Todos los servicios deben estar en estado "running" (excepto migrator: "exited 0")
+
+curl http://localhost:3000/api/health
+# {"status":"ok","db":"connected","timestamp":"..."}
+```
+
+---
+
+### Comandos útiles
+
+```bash
+# Ver los logs en tiempo real
+docker compose logs -f app
+
+# Detener los servicios
+docker compose down
+
+# Detener Y eliminar los volúmenes (borra la base de datos)
+docker compose down -v
+
+# Recompilar tras modificar el código
+docker compose up -d --build
+
+# Acceder a la base de datos vía psql (usa las credenciales del contenedor)
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"'
+
+# Ejecutar un seed de datos de demostración
+docker compose exec app npx prisma db seed
+
+# Lanzar las migraciones manualmente
+docker compose exec app npx prisma migrate deploy
+```
+
+---
+
+### Actualización
+
+```bash
+git pull origin main
+docker compose up -d --build
+# Las migraciones se aplican automáticamente al arrancar
+```
+
+---
+
+### Copia de seguridad y restauración
+
+Las copias de PostgreSQL están automatizadas en `docker-compose.yml` (rotación de 7 días):
+
+```bash
+# Copia manual
+docker compose exec db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup_$(date +%Y%m%d).sql
+
+# Restauración
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup_20240115.sql
+```
+
+---
+
+## 🔧 Desarrollo local
+
+Para contribuir o personalizar ACRA sin Docker:
+
+### Requisitos previos
+
+- **Node.js** 20+ (`node --version`)
+- **PostgreSQL** 14+ (o Docker solo para la BD)
+- **npm** 10+
+
+### Instalación
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/votre-org/acra.git
+cd acra
+
+# 2. Instalar las dependencias (también genera el cliente Prisma vía postinstall)
+npm install
+
+# 3. Arrancar PostgreSQL vía Docker (la opción más simple)
+docker run -d --name acra-db \
+  -e POSTGRES_USER=acra_user \
+  -e POSTGRES_PASSWORD=acra_secret \
+  -e POSTGRES_DB=acra_rm \
+  -p 5432:5432 postgres:16-alpine
+
+# 4. Configurar el entorno (genera .env con secretos)
+./scripts/setup.sh --auto
+# En local sin Docker para la app, apunta la base a localhost:
+sed -i 's/@db:5432/@localhost:5432/' .env
+
+# 5. Aplicar las migraciones y generar el cliente Prisma
+npx prisma migrate deploy
+npx prisma generate
+
+# 6. (Opcional) Cargar los datos de demostración
+npx prisma db seed
+
+# 7. Arrancar en modo desarrollo (hot reload)
+npm run dev
+```
+
+La aplicación está disponible en **http://localhost:3000**
+
+### Scripts disponibles
+
+```bash
+npm run dev          # Servidor de desarrollo (hot reload)
+npm run build        # Build de producción
+npm run start        # Servidor de producción (tras el build)
+npm run setup        # (Re)genera el archivo .env (secretos faltantes)
+npm test             # Pruebas unitarias Vitest (una vez)
+npm run test:watch   # Pruebas en modo watch
+npm run test:coverage # Informe de cobertura
+npx tsc --noEmit     # Verificación TypeScript sin compilación
+```
+
+### Flujo TDD
+
+> **TDD obligatorio**: cada nueva funcionalidad debe ir acompañada de una prueba escrita *antes* de la implementación. Ver [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+```bash
+# 1. Escribir la prueba (debe fallar)
+# → src/__tests__/unit/lib/mi-feature.test.ts
+
+# 2. Lanzar en watch para ver el rojo
+npm run test:watch
+
+# 3. Implementar hasta el verde
+# 4. Refactorizar
+```
+
+---
+
+## 🏗️ Arquitectura
+
+```
+ebios-rm/
+├── src/
+│   ├── app/                          # Páginas Next.js (App Router)
+│   │   ├── page.tsx                  # Landing page
+│   │   ├── dashboard/                # Panel de KPIs
+│   │   ├── analyses/                 # Lista, creación, detalle
+│   │   │   └── [id]/atelier/[num]/  # Los 5 talleres EBIOS RM
+│   │   ├── risques/                  # Vista global de riesgos
+│   │   ├── actions/                  # Plan de acción global (filtros)
+│   │   ├── auth/                     # Login / Register / Reset
+│   │   ├── admin/                    # Administración (solo ADMIN)
+│   │   │   ├── users/                # Gestión de usuarios
+│   │   │   ├── security/             # Política MFA, SSO, contraseña
+│   │   │   ├── audit/                # Registro de auditoría
+│   │   │   └── config/               # Configuración de la organización
+│   │   ├── configuration/            # Escalas, matriz, marcos
+│   │   └── profile/                  # Perfil, idioma, tema
+│   │   └── api/                      # Rutas API REST (Next.js)
+│   ├── components/
+│   │   ├── workshops/                # Atelier1.tsx → Atelier5.tsx
+│   │   ├── Navbar.tsx                # Navegación principal + búsqueda
+│   │   ├── RiskMatrix.tsx            # Matriz de riesgos interactiva
+│   │   ├── WorkshopProgress.tsx      # Barra de progreso de talleres
+│   │   ├── EbiosGuide.tsx            # Guía interactiva EBIOS RM
+│   │   ├── FrameworkControlsPanel.tsx # Panel de medidas multi-marco
+│   │   └── AnalysesChart.tsx         # Gráficos del panel
+│   └── lib/
+│       ├── ebios-data.ts             # Biblioteca EBIOS RM (sugerencias)
+│       ├── frameworks-data.ts        # Controles ISO 27001, NIST, CIS…
+│       ├── permissions.ts            # Matriz RBAC centralizada
+│       ├── logger.ts                 # Logs estructurados Winston + audit trail
+│       ├── useAutoSave.ts            # Hook React de autoguardado
+│       ├── password-policy.ts        # Validación de política de contraseñas
+│       ├── prisma.ts                 # Cliente Prisma singleton
+│       └── i18n/                     # Traducciones (fr/en/de/es/it)
+├── prisma/
+│   ├── schema.prisma                 # Modelo de datos PostgreSQL
+│   └── migrations/                   # Migraciones SQL versionadas
+├── src/__tests__/                    # Pruebas unitarias Vitest
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
+```
+
+### Stack técnico
+
+| Capa | Tecnología | Versión |
+|------|------------|---------|
+| Framework | Next.js App Router (Server + Client Components) | 16 |
+| Lenguaje | TypeScript strict | 5 |
+| Base de datos | PostgreSQL | 16 |
+| ORM | Prisma | 5 |
+| Autenticación | NextAuth.js (credentials + JWT) | 4 |
+| UI | Tailwind CSS | 3 |
+| Exportación PDF | @react-pdf/renderer (servidor) | — |
+| Exportación Excel | ExcelJS | — |
+| Pruebas | Vitest + Testing Library | — |
+| Logs | Winston (JSON estructurado) | — |
+| IA (opcional) | Claude API (Anthropic) | — |
+| Despliegue | Docker + Docker Compose | — |
+
+---
+
+## 🔒 Seguridad
+
+### Medidas implementadas
+
+- Contraseñas con hash **bcrypt** (coste 12)
+- Sesiones **JWT** firmadas (`NEXTAUTH_SECRET`)
+- Middleware de autenticación Next.js en todas las rutas protegidas
+- **Cabeceras HTTP de seguridad**: X-Frame-Options, CSP, X-Content-Type-Options, Referrer-Policy, HSTS
+- Validación de entradas del lado servidor con **Zod** en todas las rutas API
+- Aislamiento de datos por usuario + RBAC por análisis
+- **Pista de auditoría completa** (tabla `AuditLog`) para todas las acciones sensibles, exportable a CSV
+- Rate limiting en las rutas de autenticación
+- **MFA** configurable con ventana de seguridad (autodesactivación si no se confirma en 60 min)
+- **SSO** SAML 2.0 / OIDC configurable
+
+### Checklist de producción
+
+```bash
+# 1. Generar todos los secretos (NEXTAUTH_SECRET, contraseña de PostgreSQL,
+#    SECRETS_ENCRYPTION_KEY) con un solo comando — idempotente:
+./scripts/setup.sh --auto
+
+# 2. Definir la URL pública HTTPS en .env
+#    NEXTAUTH_URL=https://acra.midominio.es   (HTTPS obligatorio)
+
+# 3. Colocar detrás de un proxy inverso HTTPS (Nginx, Caddy, Traefik + TLS)
+
+# 4. NO cargar el seed de demo en producción. Si se hizo por error:
+#    inicia sesión en /admin/users y elimina/reinicia admin@chu-metropole.fr
+
+# 5. Arrancar y comprobar el health check
+docker compose up -d
+curl https://tu-dominio.com/api/health
+# {"status":"ok","db":"connected",...}
+```
+
+> La **primera cuenta** creada en `/auth/register` se convierte en **ADMINISTRADOR**.
+> Créala inmediatamente tras el despliegue para evitar que un tercero se atribuya
+> ese rol (el registro está abierto por defecto).
+
+> Se ha realizado una auditoría de seguridad OWASP/WSTG completa de la aplicación. Ver el informe en [docs/](./docs/).
+
+---
+
+## 📖 Los 5 talleres EBIOS RM
+
+| # | Taller | Descripción |
+|---|--------|-------------|
+| **T1** | Encuadre y base de seguridad | Alcance, misiones, valores de negocio (criterios DICT), activos de soporte, eventos temidos, marcos de seguridad |
+| **T2** | Fuentes de riesgo | Identificación de atacantes, objetivos perseguidos (pares FR/OP), niveles de pertinencia P1/P2 |
+| **T3** | Escenarios estratégicos | Ecosistema, partes interesadas, caminos de ataque, medidas de seguridad del ecosistema |
+| **T4** | Escenarios operativos | Acciones técnicas de los atacantes, probabilidad, enlaces MITRE ATT&CK |
+| **T5** | Tratamiento del riesgo | Estrategias de tratamiento (reducción, transferencia, rechazo, aceptación), medidas por marco, riesgos residuales, plan de acción |
+
+> **🚀 Modo Express**: un recorrido rápido T1 → T2 → T5, disponible desde el panel, para obtener una lista de riesgos y un plan de acción en menos de 30 minutos. Ideal para contextos urgentes o primeros análisis.
+
+---
+
+## 🌐 Internacionalización
+
+La interfaz está disponible en **5 idiomas**, seleccionables en cualquier momento en el perfil:
+
+| Código | Idioma | Completitud |
+|--------|--------|-------------|
+| `fr` | Français | ✅ 100 % (referencia) |
+| `en` | English | ✅ 100 % |
+| `de` | Deutsch | ✅ 100 % |
+| `es` | Español | ✅ 100 % |
+| `it` | Italiano | ✅ 100 % |
+
+Para añadir un idioma, copia `src/lib/i18n/fr.ts`, traduce todas las claves y guarda el archivo con el código ISO 639-1 correspondiente. TypeScript verifica automáticamente que todas las claves estén presentes.
+
+---
+
+## 👥 Roles de usuario (RBAC)
+
+| Rol | Crear análisis | Editar | Aprobar | Admin |
+|-----|:---:|:---:|:---:|:---:|
+| `ADMIN` | ✅ | ✅ todos | ✅ | ✅ |
+| `RSSI` (CISO) | ✅ | ✅ propios + compartidos | ✅ | ❌ |
+| `RISK_MANAGER` | ✅ | ✅ propios + compartidos | ✅ | ❌ |
+| `ANALYSTE` (Analista) | ✅ | ✅ propios + compartidos | ❌ | ❌ |
+| `LECTEUR` (Lector) | ❌ | ❌ | ❌ | ❌ |
+
+Los accesos también pueden concederse **análisis por análisis** (compartición puntual con cualquier usuario).
+
+---
+
+## 🛠️ Resolución de problemas
+
+### La aplicación no arranca
+
+```bash
+# Comprobar el estado de los contenedores
+docker compose ps
+
+# Ver los logs detallados
+docker compose logs app
+docker compose logs migrator
+
+# Comprobar que los puertos están libres
+lsof -i :3000
+lsof -i :5432
+```
+
+### Error de migración Prisma
+
+```bash
+# Forzar la resolución de la migración
+docker compose exec app npx prisma migrate resolve --applied "nombre_migracion"
+docker compose exec app npx prisma migrate deploy
+```
+
+### Problema de conexión a la base de datos
+
+```bash
+# Comprobar la conectividad
+docker compose exec app npx prisma db execute --stdin <<< "SELECT 1;"
+
+# Comprobar la variable DATABASE_URL en .env
+docker compose exec app env | grep DATABASE
+```
+
+### Reiniciar completamente la aplicación
+
+```bash
+# ⚠️ Borra todos los datos
+docker compose down -v
+docker compose up -d
+```
+
+---
+
+## 🤝 Contribuir
+
+Ver [CONTRIBUTING.md](./CONTRIBUTING.md) para la guía completa.
+
+**TL;DR:**
+1. Hacer fork del repo y crear una rama `feature/mi-feature`
+2. Escribir las pruebas primero (**TDD obligatorio** — ver CLAUDE.md)
+3. Implementar y asegurarse de que `npm test` esté en verde
+4. Añadir las traducciones en los **5 archivos i18n** si se añaden cadenas de UI
+5. Ejecutar `npx tsc --noEmit` — cero errores TypeScript
+6. Abrir una Pull Request con una descripción clara
+
+---
+
+## 📄 Licencia
+
+MIT — ver [LICENSE](./LICENSE)
+
+El método EBIOS RM es desarrollado y mantenido por la [ANSSI](https://cyber.gouv.fr/la-methode-ebios-risk-manager). Esta aplicación no está afiliada a la ANSSI.
