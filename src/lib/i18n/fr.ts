@@ -360,7 +360,7 @@ export const fr = {
     overview:       "Vue d'ensemble des analyses",
     recent:         'Analyses récentes',
     viewAll:        'Voir tout',
-    ecosystemTitle:    "Radar de menace de l'écosystème",
+    ecosystemTitle:    "Cartographie de menace de l'écosystème",
     ecosystemSubtitle: 'Tous les tiers de toutes vos analyses',
     noAnalyses:     'Aucune analyse pour l\'instant',
     noAnalysesDesc: 'Créez votre première analyse de risques cyber guidée avec ACRA.',
@@ -1238,7 +1238,7 @@ export const fr = {
       ppDangLabel:  'Dangerosité',
       ppMapTitle:   'Cartographie de dangerosité — 3 zones (FM5)',
       radar: {
-        title:        'Radar de menace de l\'écosystème',
+        title:        'Cartographie de menace de l\'écosystème',
         hint:         'Rayon = niveau de menace · centre = menace maximale · secteur = catégorie',
         empty:        'Ajoutez des parties prenantes pour afficher le radar',
         menaceLabel:  'Menace',

@@ -411,7 +411,7 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
       )}
       {(analyse.partiesPrenantes || []).length > 0 && (
         <View wrap={false} style={{ marginBottom: 6 }}>
-          <SectionBar title="Écosystème — radar de menace" color={C.teal} />
+          <SectionBar title="Écosystème — cartographie de menace" color={C.teal} />
           <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
         </View>
       )}

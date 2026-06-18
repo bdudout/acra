@@ -350,7 +350,7 @@ export const en: Translations = {
     overview:       'Analyses overview',
     recent:         'Recent analyses',
     viewAll:        'View all',
-    ecosystemTitle:    'Ecosystem threat radar',
+    ecosystemTitle:    'Ecosystem threat map',
     ecosystemSubtitle: 'All third parties across all your analyses',
     noAnalyses:     'No analyses yet',
     noAnalysesDesc: 'Create your first guided cyber risk analysis with ACRA.',
@@ -1213,7 +1213,7 @@ export const en: Translations = {
       ppDangLabel:  'Threat level',
       ppMapTitle:   'Threat mapping — 3 zones (FM5)',
       radar: {
-        title:        'Ecosystem threat radar',
+        title:        'Ecosystem threat map',
         hint:         'Radius = threat level · centre = maximum threat · sector = category',
         empty:        'Add stakeholders to display the radar',
         menaceLabel:  'Threat',

@@ -350,7 +350,7 @@ export const de: Translations = {
     overview:       'Analysenübersicht',
     recent:         'Aktuelle Analysen',
     viewAll:        'Alle anzeigen',
-    ecosystemTitle:    'Bedrohungsradar des Ökosystems',
+    ecosystemTitle:    'Bedrohungskarte des Ökosystems',
     ecosystemSubtitle: 'Alle Dritten aus allen Ihren Analysen',
     noAnalyses:     'Noch keine Analysen',
     noAnalysesDesc: 'Erstellen Sie Ihre erste geführte Cyber-Risikoanalyse mit ACRA.',
@@ -1213,7 +1213,7 @@ export const de: Translations = {
       ppDangLabel:  'Gefährdungsniveau',
       ppMapTitle:   'Gefährdungskartierung — 3 Zonen (FM5)',
       radar: {
-        title:        'Bedrohungsradar des Ökosystems',
+        title:        'Bedrohungskarte des Ökosystems',
         hint:         'Radius = Bedrohungsgrad · Zentrum = maximale Bedrohung · Sektor = Kategorie',
         empty:        'Fügen Sie Beteiligte hinzu, um das Radar anzuzeigen',
         menaceLabel:  'Bedrohung',

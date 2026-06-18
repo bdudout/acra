@@ -350,7 +350,7 @@ export const it: Translations = {
     overview:       'Panoramica delle analisi',
     recent:         'Analisi recenti',
     viewAll:        'Visualizza tutto',
-    ecosystemTitle:    'Radar delle minacce dell\'ecosistema',
+    ecosystemTitle:    'Mappa delle minacce dell\'ecosistema',
     ecosystemSubtitle: 'Tutte le terze parti di tutte le tue analisi',
     noAnalyses:     'Nessuna analisi ancora',
     noAnalysesDesc: 'Crea la tua prima analisi dei rischi cyber guidata con ACRA.',
@@ -1213,7 +1213,7 @@ export const it: Translations = {
       ppDangLabel:  'Pericolosità',
       ppMapTitle:   'Mappa della pericolosità — 3 zone (FM5)',
       radar: {
-        title:        'Radar di minaccia dell\'ecosistema',
+        title:        'Mappa di minaccia dell\'ecosistema',
         hint:         'Raggio = livello di minaccia · centro = minaccia massima · settore = categoria',
         empty:        'Aggiungi parti interessate per visualizzare il radar',
         menaceLabel:  'Minaccia',
