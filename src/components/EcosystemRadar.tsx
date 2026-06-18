@@ -36,6 +36,8 @@ interface Props {
   /** Affiche les références T1, T2… à côté des points (défaut true). À désactiver
    *  pour un radar dense sans tableau de correspondance (ex. dashboard). */
   showRefs?: boolean
+  /** Masque le titre interne du composant (ex. quand la carte parente l'affiche déjà). */
+  hideHeader?: boolean
 }
 
 const CX = 240, CY = 240, R_MAX = 190
@@ -45,7 +47,7 @@ const ZONE_COLOR: Record<EcosystemZone, string> = {
   veille:   '#16a34a', // green-600
 }
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false }: Props) {
   const { t } = useTranslation()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
@@ -72,8 +74,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true }: P
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="mb-1 font-semibold text-gray-800">{r.title}</h3>
-      <p className="mb-3 text-xs text-gray-500">{r.hint}</p>
+      {!hideHeader && <h3 className="mb-3 font-semibold text-gray-800">{r.title}</h3>}
 
       <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
         <svg
@@ -189,6 +190,9 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true }: P
           )}
         </div>
       </div>
+
+      {/* Légende de lecture — sous le radar */}
+      <p className="mt-3 text-xs text-gray-500">{r.hint}</p>
     </div>
   )
 }
