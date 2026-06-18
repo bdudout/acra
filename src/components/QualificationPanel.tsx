@@ -5,6 +5,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import {
   QUALIFICATION_QUESTIONS,
   deriveOrientations,
+  isQualificationComplete,
   type QualificationAnswers,
 } from '@/lib/qualification'
 
@@ -24,9 +25,12 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [collapsed, setCollapsed] = useState<boolean>(!!initial && Object.keys(initial ?? {}).length > 0)
+  // Toujours afficher la vue synthétique repliée par défaut, que la qualification
+  // soit réalisée ou non (si non réalisée, la synthèse l'indique + bouton « Modifier »).
+  const [collapsed, setCollapsed] = useState<boolean>(true)
 
   const orientations = useMemo(() => deriveOrientations(answers), [answers])
+  const complete = useMemo(() => isQualificationComplete(answers), [answers])
   const qLabels = t.qualification.questions as Record<string, string>
   const critLabels = t.qualification.criticiteOptions as Record<string, string>
   const oLabels = t.qualification.orientations as Record<string, string>
@@ -82,7 +86,9 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {summaryChips.length === 0 ? (
+          {!complete ? (
+            <span className="text-xs text-gray-500 italic">{t.qualification.notRealized}</span>
+          ) : summaryChips.length === 0 ? (
             <span className="text-xs text-gray-500">{t.qualification.summaryEmpty}</span>
           ) : (
             summaryChips.map(c => (
@@ -90,7 +96,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
             ))
           )}
         </div>
-        {orientations.length > 0 && (
+        {complete && orientations.length > 0 && (
           <p className="text-xs text-gray-400 mt-2">{orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</p>
         )}
       </div>

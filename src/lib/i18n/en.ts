@@ -551,6 +551,13 @@ export const en: Translations = {
     riskMatrix:       'Risk matrix',
     riskMatrixGross:    'Gross risk matrix',
     riskMatrixResidual: 'Residual risk matrix',
+    riskTabs: {
+      gross:        'Gross',
+      current:      'Current',
+      residual:     'Residual',
+      currentHint:  'Current position based on the measures already implemented.',
+      residualHint: 'Target position once all action plans are implemented.',
+    },
     topRisks:         'Top identified risks',
     editRiskTreatment: 'Click to edit the risk treatment (Workshop 5)',
     editMeasure:      'Click to edit the measure (Workshop 5)',
@@ -1524,6 +1531,7 @@ export const en: Translations = {
     title:         'Analysis qualification',
     intro:         'A few optional questions to frame your analysis and suggest orientations. You can change them at any time.',
     summaryEmpty:  'Qualification completed — no specific point flagged.',
+    notRealized:   'Qualification not completed.',
     short: {
       externalisation:     'Outsourcing',
       criticite:           'Criticality',

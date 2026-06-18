@@ -551,6 +551,13 @@ export const de: Translations = {
     riskMatrix:       'Risikomatrix',
     riskMatrixGross:    'Brutto-Risikomatrix',
     riskMatrixResidual: 'Restrisiko-Matrix',
+    riskTabs: {
+      gross:        'Brutto',
+      current:      'Aktuell',
+      residual:     'Restrisiko',
+      currentHint:  'Aktuelle Position auf Basis der bereits umgesetzten Maßnahmen.',
+      residualHint: 'Zielposition, sobald alle Aktionspläne umgesetzt sind.',
+    },
     topRisks:         'Top identifizierte Risiken',
     editRiskTreatment: 'Klicken, um die Risikobehandlung zu bearbeiten (Workshop 5)',
     editMeasure:      'Klicken, um die Maßnahme zu bearbeiten (Workshop 5)',
@@ -1524,6 +1531,7 @@ export const de: Translations = {
     title:         'Qualifizierung der Analyse',
     intro:         'Einige optionale Fragen, um Ihre Analyse einzugrenzen und Orientierungen vorzuschlagen. Sie können sie jederzeit ändern.',
     summaryEmpty:  'Qualifizierung abgeschlossen — kein besonderer Punkt gemeldet.',
+    notRealized:   'Qualifizierung nicht durchgeführt.',
     short: {
       externalisation:     'Auslagerung',
       criticite:           'Kritikalität',

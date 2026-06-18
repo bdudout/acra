@@ -551,6 +551,13 @@ export const es: Translations = {
     riskMatrix:       'Matriz de riesgos',
     riskMatrixGross:    'Matriz de riesgos brutos',
     riskMatrixResidual: 'Matriz de riesgos residuales',
+    riskTabs: {
+      gross:        'Brutos',
+      current:      'A la fecha',
+      residual:     'Residuales',
+      currentHint:  'Posición actual según las medidas ya implementadas.',
+      residualHint: 'Posición objetivo una vez implementados todos los planes de acción.',
+    },
     topRisks:         'Principales riesgos identificados',
     editRiskTreatment: 'Haz clic para editar el tratamiento del riesgo (Taller 5)',
     editMeasure:      'Haz clic para editar la medida (Taller 5)',
@@ -1524,6 +1531,7 @@ export const es: Translations = {
     title:         'Cualificación del análisis',
     intro:         'Algunas preguntas opcionales para enmarcar su análisis y sugerir orientaciones. Puede modificarlas en cualquier momento.',
     summaryEmpty:  'Cualificación completada — ningún punto particular señalado.',
+    notRealized:   'Cualificación no realizada.',
     short: {
       externalisation:     'Externalización',
       criticite:           'Criticidad',

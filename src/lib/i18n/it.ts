@@ -551,6 +551,13 @@ export const it: Translations = {
     riskMatrix:       'Matrice dei rischi',
     riskMatrixGross:    'Matrice dei rischi lordi',
     riskMatrixResidual: 'Matrice dei rischi residui',
+    riskTabs: {
+      gross:        'Lordi',
+      current:      'Ad oggi',
+      residual:     'Residui',
+      currentHint:  'Posizione attuale in base alle misure già attuate.',
+      residualHint: 'Posizione obiettivo una volta attuati tutti i piani d\'azione.',
+    },
     topRisks:         'Principali rischi identificati',
     editRiskTreatment: 'Clicca per modificare il trattamento del rischio (Workshop 5)',
     editMeasure:      'Clicca per modificare la misura (Workshop 5)',
@@ -1524,6 +1531,7 @@ export const it: Translations = {
     title:         "Qualificazione dell'analisi",
     intro:         'Alcune domande opzionali per inquadrare la tua analisi e suggerire orientamenti. Puoi modificarle in qualsiasi momento.',
     summaryEmpty:  'Qualificazione completata — nessun punto particolare segnalato.',
+    notRealized:   'Qualificazione non effettuata.',
     short: {
       externalisation:     'Esternalizzazione',
       criticite:           'Criticità',

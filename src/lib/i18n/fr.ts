@@ -566,6 +566,13 @@ export const fr = {
     riskMatrix:       'Matrice des risques',
     riskMatrixGross:    'Matrice des risques bruts',
     riskMatrixResidual: 'Matrice des risques résiduels',
+    riskTabs: {
+      gross:        'Bruts',
+      current:      'À date',
+      residual:     'Résiduels',
+      currentHint:  'Position actuelle selon les mesures déjà réalisées.',
+      residualHint: 'Position cible une fois tous les plans d\'action mis en œuvre.',
+    },
     topRisks:         'Top risques identifiés',
     editRiskTreatment: 'Cliquer pour modifier le traitement du risque (Atelier 5)',
     editMeasure:      'Cliquer pour modifier la mesure (Atelier 5)',
@@ -1552,6 +1559,7 @@ export const fr = {
     title:         "Qualification de l'analyse",
     intro:         "Quelques questions optionnelles pour cadrer votre analyse et suggérer des orientations. Vous pouvez les modifier à tout moment.",
     summaryEmpty:  'Qualification complétée — aucun point particulier signalé.',
+    notRealized:   'Qualification non réalisée.',
     short: {
       externalisation:     'Externalisation',
       criticite:           'Criticité',
