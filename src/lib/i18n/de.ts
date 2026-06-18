@@ -60,11 +60,29 @@ export const de: Translations = {
     analyses:       'Meine Analysen',
     analysesReader: 'Analysen',
     risks:          'Risiken',
+    tiers:          'Dritte',
     actions:        'Maßnahmen',
     configuration:  'Konfiguration',
     admin:          'Admin',
     logout:         'Abmelden',
     profile:        'Mein Profil',
+  },
+
+  // ─── Seite Dritte (aggregiertes Ökosystem) ────────────────────────────────
+  tiers: {
+    title:        'Dritte',
+    subtitle:     'In Ihren Risikoanalysen identifizierte Stakeholder (Ökosystem)',
+    zoneLabel:    'Zone',
+    searchPh:     'Dritte, Typ, Analyse suchen…',
+    filterAll:    'Alle',
+    colTiers:     'Dritter',
+    colType:      'Typ',
+    colAnalyse:   'Analyse',
+    colZone:      'Zone',
+    goToAtelier:  'In Workshop 3 anzeigen →',
+    noTiers:      'Noch kein Dritter identifiziert. Fügen Sie Stakeholder in Workshop 3 hinzu.',
+    noMatch:      'Kein passender Dritter.',
+    countLabel:   'Dritte',
   },
 
   profile: {

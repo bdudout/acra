@@ -60,11 +60,29 @@ export const es: Translations = {
     analyses:       'Mis análisis',
     analysesReader: 'Análisis',
     risks:          'Riesgos',
+    tiers:          'Terceros',
     actions:        'Acciones',
     configuration:  'Configuración',
     admin:          'Admin',
     logout:         'Cerrar sesión',
     profile:        'Mi perfil',
+  },
+
+  // ─── Página Terceros (ecosistema agregado) ────────────────────────────────
+  tiers: {
+    title:        'Terceros',
+    subtitle:     'Partes interesadas (ecosistema) identificadas en sus análisis de riesgo',
+    zoneLabel:    'Zona',
+    searchPh:     'Buscar un tercero, un tipo, un análisis…',
+    filterAll:    'Todos',
+    colTiers:     'Tercero',
+    colType:      'Tipo',
+    colAnalyse:   'Análisis',
+    colZone:      'Zona',
+    goToAtelier:  'Ver en el taller 3 →',
+    noTiers:      'Ningún tercero identificado por ahora. Añada partes interesadas en el taller 3.',
+    noMatch:      'Ningún tercero coincidente.',
+    countLabel:   'terceros',
   },
 
   profile: {

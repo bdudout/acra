@@ -60,11 +60,29 @@ export const en: Translations = {
     analyses:       'My analyses',
     analysesReader: 'Analyses',
     risks:          'Risks',
+    tiers:          'Third parties',
     actions:        'Actions',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Sign out',
     profile:        'My profile',
+  },
+
+  // ─── Third parties page (aggregated ecosystem) ────────────────────────────
+  tiers: {
+    title:        'Third parties',
+    subtitle:     'Stakeholders (ecosystem) identified across your risk analyses',
+    zoneLabel:    'Zone',
+    searchPh:     'Search a third party, a type, an analysis…',
+    filterAll:    'All',
+    colTiers:     'Third party',
+    colType:      'Type',
+    colAnalyse:   'Analysis',
+    colZone:      'Zone',
+    goToAtelier:  'View in workshop 3 →',
+    noTiers:      'No third party identified yet. Add stakeholders in workshop 3.',
+    noMatch:      'No matching third party.',
+    countLabel:   'third parties',
   },
 
   profile: {

@@ -60,11 +60,29 @@ export const it: Translations = {
     analyses:       'Le mie analisi',
     analysesReader: 'Analisi',
     risks:          'Rischi',
+    tiers:          'Terze parti',
     actions:        'Azioni',
     configuration:  'Configurazione',
     admin:          'Admin',
     logout:         'Disconnetti',
     profile:        'Il mio profilo',
+  },
+
+  // ─── Pagina Terze parti (ecosistema aggregato) ────────────────────────────
+  tiers: {
+    title:        'Terze parti',
+    subtitle:     'Parti interessate (ecosistema) identificate nelle tue analisi del rischio',
+    zoneLabel:    'Zona',
+    searchPh:     'Cerca una terza parte, un tipo, un\'analisi…',
+    filterAll:    'Tutte',
+    colTiers:     'Terza parte',
+    colType:      'Tipo',
+    colAnalyse:   'Analisi',
+    colZone:      'Zona',
+    goToAtelier:  'Vedi nel workshop 3 →',
+    noTiers:      'Nessuna terza parte identificata per ora. Aggiungi parti interessate nel workshop 3.',
+    noMatch:      'Nessuna terza parte corrispondente.',
+    countLabel:   'terze parti',
   },
 
   profile: {

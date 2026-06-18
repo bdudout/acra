@@ -61,11 +61,29 @@ export const fr = {
     analyses:       'Mes analyses',
     analysesReader: 'Analyses',
     risks:          'Risques',
+    tiers:          'Tiers',
     actions:        'Actions',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Déconnexion',
     profile:        'Mon profil',
+  },
+
+  // ─── Page Tiers (écosystème agrégé) ───────────────────────────────────────
+  tiers: {
+    title:        'Tiers',
+    subtitle:     'Parties prenantes (écosystème) identifiées dans vos analyses de risque',
+    zoneLabel:    'Zone',
+    searchPh:     'Rechercher un tiers, un type, une analyse…',
+    filterAll:    'Tous',
+    colTiers:     'Tiers',
+    colType:      'Type',
+    colAnalyse:   'Analyse',
+    colZone:      'Zone',
+    goToAtelier:  "Voir dans l'atelier 3 →",
+    noTiers:      "Aucun tiers identifié pour l'instant. Ajoutez des parties prenantes en atelier 3.",
+    noMatch:      'Aucun tiers correspondant.',
+    countLabel:   'tiers',
   },
 
   // ─── Profil utilisateur ───────────────────────────────────────────────────

@@ -9,7 +9,7 @@ import { ROLE_LABELS, ROLE_COLORS, type UserRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import GlobalSearch from './GlobalSearch'
 import {
-  LayoutDashboard, FolderKanban, AlertTriangle, Shield,
+  LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network,
   User, ChevronDown, Settings, KeyRound, LogOut,
 } from 'lucide-react'
 
@@ -101,6 +101,15 @@ export default function Navbar() {
           >
             <AlertTriangle size={16} aria-hidden="true" />
             <span className="hidden sm:inline">{t.nav.risks}</span>
+          </Link>
+
+          <Link
+            href="/tiers"
+            className={`${navClass(pathname === '/tiers')} inline-flex items-center gap-1.5`}
+            aria-current={pathname === '/tiers' ? 'page' : undefined}
+          >
+            <Network size={16} aria-hidden="true" />
+            <span className="hidden sm:inline">{t.nav.tiers}</span>
           </Link>
 
           <Link
