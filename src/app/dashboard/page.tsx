@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar'
 import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import AnalysesChart from '@/components/AnalysesChart'
+import EcosystemRadar from '@/components/EcosystemRadar'
 import EbiosGuide from '@/components/EbiosGuide'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
@@ -34,10 +35,30 @@ export default async function DashboardPage() {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
+      partiesPrenantes: { select: { id: true, nom: true, type: true, exposition: true, fiabilite: true } },
     },
   })
 
-  const recent = analyses.slice(0, 5)
+  // Liste des analyses récentes (par date) — limitée à 3
+  const recent = analyses.slice(0, 3)
+
+  // Vue d'ensemble : max 6 analyses, classées par criticité (critiques, puis majeurs…)
+  const tierCount = (a: typeof analyses[number], tier: string) =>
+    a.risques.filter(r => getRiskTier(r.niveauRisque) === tier).length
+  const overviewAnalyses = [...analyses].sort((a, b) =>
+    tierCount(b, 'critique') - tierCount(a, 'critique') ||
+    tierCount(b, 'eleve')    - tierCount(a, 'eleve') ||
+    tierCount(b, 'modere')   - tierCount(a, 'modere') ||
+    tierCount(b, 'faible')   - tierCount(a, 'faible') ||
+    b._count.risques         - a._count.risques
+  ).slice(0, 6)
+
+  // Tous les tiers de toutes les analyses, pour le radar global de l'écosystème
+  const allTiers = analyses.flatMap(a =>
+    a.partiesPrenantes.map(pp => ({
+      id: pp.id, nom: pp.nom, type: pp.type, exposition: pp.exposition, fiabilite: pp.fiabilite,
+    }))
+  )
 
   const stats = {
     total: analyses.length,
@@ -126,8 +147,24 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             {analyses.length > 0 && (
               <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-4">📊 {t.dashboard.overview}</h2>
-                <AnalysesChart analyses={analyses} />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-800">📊 {t.dashboard.overview}</h2>
+                  {analyses.length > 6 && (
+                    <Link href="/analyses" className="text-sm text-ebios-600 hover:underline">
+                      {t.dashboard.viewAll} ({stats.total}) →
+                    </Link>
+                  )}
+                </div>
+                <AnalysesChart analyses={overviewAnalyses} />
+              </div>
+            )}
+
+            {/* Radar global de la menace de l'écosystème — tous les tiers de toutes les analyses */}
+            {allTiers.length > 0 && (
+              <div className="card p-5">
+                <h2 className="font-semibold text-gray-800 mb-1">🌐 {t.dashboard.ecosystemTitle}</h2>
+                <p className="text-xs text-gray-500 mb-3">{t.dashboard.ecosystemSubtitle}</p>
+                <EcosystemRadar parties={allTiers} showRefs={false} />
               </div>
             )}
 

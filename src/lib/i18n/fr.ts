@@ -58,7 +58,7 @@ export const fr = {
   // ─── Navigation ──────────────────────────────────────────────────────────
   nav: {
     dashboard:      'Tableau de bord',
-    analyses:       'Mes analyses',
+    analyses:       'Analyses',
     analysesReader: 'Analyses',
     risks:          'Risques',
     tiers:          'Tiers',
@@ -360,6 +360,8 @@ export const fr = {
     overview:       "Vue d'ensemble des analyses",
     recent:         'Analyses récentes',
     viewAll:        'Voir tout',
+    ecosystemTitle:    "Radar de menace de l'écosystème",
+    ecosystemSubtitle: 'Tous les tiers de toutes vos analyses',
     noAnalyses:     'Aucune analyse pour l\'instant',
     noAnalysesDesc: 'Créez votre première analyse de risques cyber guidée avec ACRA.',
     createFirst:    'Créer ma première analyse',

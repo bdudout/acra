@@ -57,7 +57,7 @@ export const es: Translations = {
 
   nav: {
     dashboard:      'Panel de control',
-    analyses:       'Mis análisis',
+    analyses:       'Análisis',
     analysesReader: 'Análisis',
     risks:          'Riesgos',
     tiers:          'Terceros',
@@ -350,6 +350,8 @@ export const es: Translations = {
     overview:       'Visión general de análisis',
     recent:         'Análisis recientes',
     viewAll:        'Ver todo',
+    ecosystemTitle:    'Radar de amenazas del ecosistema',
+    ecosystemSubtitle: 'Todos los terceros de todos sus análisis',
     noAnalyses:     'Aún no hay análisis',
     noAnalysesDesc: 'Crea tu primer análisis de riesgos cibernéticos guiado con ACRA.',
     createFirst:    'Crear mi primer análisis',

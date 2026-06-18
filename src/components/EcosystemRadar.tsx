@@ -33,6 +33,9 @@ interface Props {
   parties: PartieLike[]
   /** Optionnel : notifié au clic sur un point (ex. faire défiler vers la carte PP). */
   onSelect?: (id: string) => void
+  /** Affiche les références T1, T2… à côté des points (défaut true). À désactiver
+   *  pour un radar dense sans tableau de correspondance (ex. dashboard). */
+  showRefs?: boolean
 }
 
 const CX = 240, CY = 240, R_MAX = 190
@@ -42,7 +45,7 @@ const ZONE_COLOR: Record<EcosystemZone, string> = {
   veille:   '#16a34a', // green-600
 }
 
-export default function EcosystemRadar({ parties, onSelect }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true }: Props) {
   const { t } = useTranslation()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
@@ -134,15 +137,17 @@ export default function EcosystemRadar({ parties, onSelect }: Props) {
                   className="transition-all"
                 />
                 {/* Référence à côté du point — halo blanc pour rester lisible sur les zones */}
-                <text
-                  x={p.x + 9} y={p.y + 3.5}
-                  fontSize={isActive ? 11 : 9.5} fontWeight={700}
-                  fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
-                  paintOrder="stroke"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {p.ref}
-                </text>
+                {showRefs && (
+                  <text
+                    x={p.x + 9} y={p.y + 3.5}
+                    fontSize={isActive ? 11 : 9.5} fontWeight={700}
+                    fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
+                    paintOrder="stroke"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {p.ref}
+                  </text>
+                )}
               </g>
             )
           })}
