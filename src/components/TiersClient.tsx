@@ -15,15 +15,20 @@ export interface TiersRow {
   description: string | null
   exposition:  number
   fiabilite:   number
+  dependance?:  number
+  penetration?: number
+  maturite?:    number
+  confiance?:   number
   menace:      number
   zone:        EcosystemZone
+  critique?:   boolean
 }
 
-// Couleurs de zone (alignées sur le radar d'écosystème)
+// Couleurs de zone (alignées sur le radar d'écosystème — 3 zones)
 const ZONE_STYLE: Record<EcosystemZone, { badge: string; dot: string }> = {
   danger:   { badge: 'bg-red-100 text-red-700 border-red-200',       dot: 'bg-red-500' },
-  controle: { badge: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-  veille:   { badge: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
+  controle: { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  veille:   { badge: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500' },
 }
 
 export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
@@ -59,8 +64,8 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
   const filters: { key: EcosystemZone | 'all'; label: string; count: number; active: string }[] = [
     { key: 'all',      label: t.tiers.filterAll, count: counts.all,      active: 'bg-gray-100 text-gray-800' },
     { key: 'danger',   label: radar.zoneDanger,  count: counts.danger,   active: 'bg-red-100 text-red-800' },
-    { key: 'controle', label: radar.zoneControle, count: counts.controle, active: 'bg-amber-100 text-amber-800' },
-    { key: 'veille',   label: radar.zoneVeille,  count: counts.veille,   active: 'bg-green-100 text-green-800' },
+    { key: 'controle', label: radar.zoneControle, count: counts.controle, active: 'bg-orange-100 text-orange-800' },
+    { key: 'veille',   label: radar.zoneVeille,  count: counts.veille,   active: 'bg-yellow-100 text-yellow-800' },
   ]
 
   return (
@@ -112,7 +117,10 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
                 {[...filtered].sort((a, b) => b.menace - a.menace).map(x => (
                   <tr key={x.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 max-w-xs">
-                      <div className="font-medium text-gray-800">{x.nom}</div>
+                      <div className="font-medium text-gray-800">
+                        {x.critique && <span className="text-amber-500 mr-1" title={t.workshop.a3.ppCritiqueLabel}>★</span>}
+                        {x.nom}
+                      </div>
                       {x.description && <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{x.description}</div>}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
@@ -123,7 +131,7 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
                       {x.analyseOrg && <div className="text-gray-500 text-xs">{x.analyseOrg}</div>}
                     </td>
                     <td className="px-4 py-3 text-center hidden md:table-cell">
-                      <span className="text-sm font-bold text-gray-800">{x.menace}/16</span>
+                      <span className="text-sm font-bold text-gray-800">{x.menace.toFixed(2)}</span>
                       <div className="text-[10px] text-gray-400">{t.workshop.a3.ppExpLabel} {x.exposition} · {t.workshop.a3.ppFiabLabel} {x.fiabilite}</div>
                     </td>
                     <td className="px-4 py-3 text-center">

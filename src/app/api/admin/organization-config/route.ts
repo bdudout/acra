@@ -9,6 +9,7 @@ import {
   type TypeImpact, type ReferentielActif, type StrategieTraitement,
 } from '@/lib/org-config-defaults'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
+import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
 
 const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
 
@@ -54,7 +55,13 @@ export async function GET(_req: NextRequest) {
     qualificationActive: Boolean((config as any).qualificationActive),
     conformiteActive: Boolean((config as any).conformiteActive),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false, // activé par défaut
+    echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
   })
+}
+
+/** Override d'échelles stocké, ou {} (le client résout avec les défauts lib). */
+function echellesOut(v: unknown): Record<string, unknown> {
+  return (v && typeof v === 'object' && !Array.isArray(v)) ? v as Record<string, unknown> : {}
 }
 
 // PUT /api/admin/organization-config — ADMIN uniquement
@@ -141,6 +148,11 @@ export async function PUT(req: NextRequest) {
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
 
+  if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
+    // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.
+    data.echellesEcosysteme = sanitizeEchelles(body.echellesEcosysteme)
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Aucune donnée à mettre à jour' }, { status: 400 })
   }
@@ -165,5 +177,6 @@ export async function PUT(req: NextRequest) {
     qualificationActive: Boolean((config as any).qualificationActive),
     conformiteActive: Boolean((config as any).conformiteActive),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
+    echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
   })
 }

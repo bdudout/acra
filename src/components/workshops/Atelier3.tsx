@@ -33,6 +33,8 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import EcosystemRadar from '@/components/EcosystemRadar'
+import { menace as menaceOf, zoneOf, type EcosystemZone } from '@/lib/ecosystem-radar'
+import { resolveEchelles, maxValeur, nomNiveau, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
 import { graviteHeritee, risqueSurevaluation, valeursMetierConcernees } from '@/lib/ebios-gravite'
 import { FRAMEWORK_META, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 
@@ -46,12 +48,45 @@ interface Props {
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
 
-// Vulnerability color map (static — labels are translated inside component)
-function getVulnerabiliteColor(v: number) {
-  if (v >= 4) return { color: 'text-red-600', bg: 'bg-red-50 border-red-200' }
-  if (v >= 3) return { color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' }
-  if (v >= 2) return { color: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' }
-  return { color: 'text-green-600', bg: 'bg-green-50 border-green-200' }
+// Couleur par zone de dangerosité (statique, 3 zones — libellés traduits dans le composant).
+const ZONE_COLOR: Record<EcosystemZone, { color: string; dot: string }> = {
+  danger:   { color: 'text-red-600',    dot: 'bg-red-500' },
+  controle: { color: 'text-orange-600', dot: 'bg-orange-500' },
+  veille:   { color: 'text-yellow-600', dot: 'bg-yellow-500' },
+}
+
+/**
+ * Valeurs dérivées d'une partie prenante (méthode Club EBIOS) :
+ *   exposition = dépendance × pénétration · fiabilité = maturité × confiance
+ *   menace     = exposition / fiabilité   → zone.
+ * Tolère les anciens objets (sans sous-critères) via des défauts.
+ */
+function ppDerived(p: any) {
+  const dependance  = Number(p?.dependance  ?? 2)
+  const penetration = Number(p?.penetration ?? 2)
+  const maturite    = Number(p?.maturite    ?? 3)
+  const confiance   = Number(p?.confiance   ?? 3)
+  const exposition  = dependance * penetration
+  const fiabilite   = maturite * confiance
+  const m           = menaceOf(exposition, fiabilite)
+  return { dependance, penetration, maturite, confiance, exposition, fiabilite, menace: m, zone: zoneOf(m) }
+}
+
+// Curseur d'un sous-critère sur son échelle (1..max, pas fin) ; affiche le nom du niveau.
+function CritereSlider({ label, value, max, levelName, accent, onChange }: {
+  label: string; value: number; max: number; levelName: string; accent: string; onChange: (v: number) => void
+}) {
+  return (
+    <div>
+      <div className="text-xs text-gray-500 mb-0.5">
+        {label} <span className="font-medium text-gray-700">{levelName}</span>
+        <span className="text-gray-400"> ({Number(value).toFixed(1)})</span>
+      </div>
+      <input type="range" min={1} max={max} step={0.1} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className={`w-full ${accent}`} />
+    </div>
+  )
 }
 
 const NIVEAU_RISQUE_COLOR: Record<RiskTier, string> = {
@@ -75,25 +110,23 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     { value: 'CLIENT',               label: t.workshop.a3.ppTypes.CLIENT },
     { value: 'PARTENAIRE',           label: t.workshop.a3.ppTypes.PARTENAIRE },
     { value: 'PRESTATAIRE',          label: t.workshop.a3.ppTypes.PRESTATAIRE },
-    { value: 'SOUS_TRAITANT',        label: t.workshop.a3.ppTypes.SOUS_TRAITANT },
     { value: 'ORGANISME_REGULATION', label: t.workshop.a3.ppTypes.ORGANISME_REGULATION },
     { value: 'AUTRE',                label: t.workshop.a3.ppTypes.AUTRE },
   ]
   const MESURES_ECOSYSTEME_TYPES: string[] = t.workshop.a3.measTypesList as unknown as string[]
 
-  function getVulnerabiliteLabel(v: number) {
-    const colors = getVulnerabiliteColor(v)
-    if (v >= 4) return { label: t.workshop.a3.vulnLabels.veryHigh, ...colors }
-    if (v >= 3) return { label: t.workshop.a3.vulnLabels.high, ...colors }
-    if (v >= 2) return { label: t.workshop.a3.vulnLabels.moderate, ...colors }
-    return { label: t.workshop.a3.vulnLabels.low, ...colors }
+  function getZoneLabel(zone: EcosystemZone) {
+    return { label: t.workshop.a3.zoneLabels[zone], ...ZONE_COLOR[zone] }
   }
 
   // Exemples : override organisation si présent, sinon défauts (ebios-data)
   const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
+  // Échelles de cotation des 4 sous-critères (configurables) — défauts si non personnalisées.
+  const [echelles, setEchelles] = useState<EchellesEcosysteme>(() => resolveEchelles(null))
   useEffect(() => {
     fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
+      setEchelles(resolveEchelles(d?.echellesEcosysteme))
     }).catch(() => {})
   }, [])
   const tEx = t as unknown as ExemplesTranslations
@@ -180,14 +213,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     : (s.evenementRedouteRef ? [s.evenementRedouteRef] : [])
 
   function addPP(exemple?: any) {
+    const dependance  = exemple?.dependance  ?? 2
+    const penetration = exemple?.penetration ?? 2
+    const maturite    = exemple?.maturite    ?? 3
+    const confiance   = exemple?.confiance   ?? 3
     setParties(prev => [...prev, {
       id: uid(),
       nom: exemple?.nom || '',
       type: exemple?.type || 'PRESTATAIRE',
       description: exemple?.description || '',
-      exposition: exemple?.exposition || 2,
-      fiabilite: exemple?.fiabilite || 3,
-      vulnerabilite: Math.ceil(((exemple?.exposition || 2) * (5 - (exemple?.fiabilite || 3))) / 4),
+      dependance, penetration, maturite, confiance,
+      exposition: dependance * penetration, // dérivé (1-N²)
+      fiabilite:  maturite * confiance,      // dérivé (1-N²)
+      critique:   !!exemple?.critique,
     }])
   }
 
@@ -195,7 +233,9 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     setParties(prev => prev.map(p => {
       if (p.id !== id) return p
       const up = { ...p, [field]: value }
-      up.vulnerabilite = Math.max(1, Math.min(4, Math.ceil((up.exposition * (5 - up.fiabilite)) / 4)))
+      // Recalcule les dérivés depuis les 4 sous-critères.
+      up.exposition = (Number(up.dependance) || 2) * (Number(up.penetration) || 2)
+      up.fiabilite  = (Number(up.maturite) || 3)   * (Number(up.confiance) || 3)
       return up
     }))
   }
@@ -355,11 +395,25 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const retained = scenarios.filter(s => s.retenu)
 
   // Zones de dangerosité (FM5)
-  const ppByZone = {
-    danger: parties.filter(p => p.vulnerabilite >= 4),
-    controle: parties.filter(p => p.vulnerabilite === 3),
-    veille: parties.filter(p => p.vulnerabilite <= 2),
+  const ppByZone: Record<EcosystemZone, any[]> = {
+    danger:   parties.filter(p => ppDerived(p).zone === 'danger'),
+    controle: parties.filter(p => ppDerived(p).zone === 'controle'),
+    veille:   parties.filter(p => ppDerived(p).zone === 'veille'),
   }
+  // Métadonnées d'affichage des 3 zones de dangerosité (cartographie FM5).
+  const ZONE_INFO: Record<EcosystemZone, { title: string; desc: string; border: string; bg: string; titleColor: string; dot: string }> = {
+    danger:   { title: t.workshop.a3.zoneDangerTitle,   desc: t.workshop.a3.zoneDangerDesc,   border: 'border-red-200',    bg: 'bg-red-50',    titleColor: 'text-red-800',    dot: 'bg-red-500' },
+    controle: { title: t.workshop.a3.zoneControleTitle, desc: t.workshop.a3.zoneControleDesc, border: 'border-orange-200', bg: 'bg-orange-50', titleColor: 'text-orange-800', dot: 'bg-orange-500' },
+    veille:   { title: t.workshop.a3.zoneVeilleTitle,   desc: t.workshop.a3.zoneVeilleDesc,   border: 'border-yellow-200', bg: 'bg-yellow-50', titleColor: 'text-yellow-800', dot: 'bg-yellow-500' },
+  }
+  const ZONE_ORDER: EcosystemZone[] = ['danger', 'controle', 'veille']
+  // Libellés/échelles des 4 sous-critères (échelle configurable).
+  const CRIT_META = [
+    { key: 'dependance',  label: t.workshop.a3.ppDependanceLabel,  accent: 'accent-ebios-600', echelle: echelles.dependance },
+    { key: 'penetration', label: t.workshop.a3.ppPenetrationLabel, accent: 'accent-ebios-600', echelle: echelles.penetration },
+    { key: 'maturite',    label: t.workshop.a3.ppMaturiteLabel,    accent: 'accent-green-600', echelle: echelles.maturite },
+    { key: 'confiance',   label: t.workshop.a3.ppConfianceLabel,   accent: 'accent-green-600', echelle: echelles.confiance },
+  ] as const
 
   return (
     <div className="space-y-6">
@@ -411,8 +465,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             {showPpExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                 {ppExamples.map((p: any, i) => {
-                  const vuln = Math.max(1, Math.min(4, Math.ceil((p.exposition * (5 - p.fiabilite)) / 4)))
-                  const { color } = getVulnerabiliteLabel(vuln)
+                  const d = ppDerived(p)
+                  const { label, color } = getZoneLabel(d.zone)
                   const added = parties.some((x: any) => x.nom === p.nom)
                   return (
                     <button key={i} onClick={() => { if (!added) addPP(p) }}
@@ -424,9 +478,9 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                       {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-gray-700">{p.nom}</span>
-                        <span className={`text-xs font-bold ${color}`}>{vuln}/4</span>
+                        <span className={`text-xs font-bold ${color}`}>{label}</span>
                       </div>
-                      <div className="text-xs text-gray-500">{t.workshop.a3.ppExpLabel} : {p.exposition}/4 · {t.workshop.a3.ppFiabLabel} : {p.fiabilite}/4</div>
+                      <div className="text-xs text-gray-500">{t.workshop.a3.ppExpLabel} : {d.exposition} · {t.workshop.a3.ppFiabLabel} : {d.fiabilite} · {t.workshop.a3.ppMenaceLabel} : {d.menace.toFixed(2)}</div>
                     </button>
                   )
                 })}
@@ -438,7 +492,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* Radar de menace de l'écosystème (vue polaire) */}
           {parties.length > 0 && (
             <div className="mb-4">
-              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} />
+              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} echelles={echelles} />
             </div>
           )}
 
@@ -447,36 +501,21 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             <div className="card p-5">
               <h3 className="font-semibold text-gray-800 mb-3">🗺️ {t.workshop.a3.ppMapTitle}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="border border-red-200 rounded-lg p-3 bg-red-50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                    <span className="text-sm font-semibold text-red-800">{t.workshop.a3.zoneDangerTitle}</span>
-                  </div>
-                  <p className="text-xs text-red-600 mb-2">{t.workshop.a3.zoneDangerDesc}</p>
-                  {ppByZone.danger.length === 0 ? <p className="text-xs text-gray-500 italic">{t.workshop.a3.zoneEmpty}</p> :
-                    ppByZone.danger.map(p => <PPZoneCard key={p.id} pp={p} getVulLabel={getVulnerabiliteLabel} />)
-                  }
-                </div>
-                <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-                    <span className="text-sm font-semibold text-yellow-800">{t.workshop.a3.zoneControleTitle}</span>
-                  </div>
-                  <p className="text-xs text-yellow-600 mb-2">{t.workshop.a3.zoneControleDesc}</p>
-                  {ppByZone.controle.length === 0 ? <p className="text-xs text-gray-500 italic">{t.workshop.a3.zoneEmpty}</p> :
-                    ppByZone.controle.map(p => <PPZoneCard key={p.id} pp={p} getVulLabel={getVulnerabiliteLabel} />)
-                  }
-                </div>
-                <div className="border border-green-200 rounded-lg p-3 bg-green-50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                    <span className="text-sm font-semibold text-green-800">{t.workshop.a3.zoneVeilleTitle}</span>
-                  </div>
-                  <p className="text-xs text-green-600 mb-2">{t.workshop.a3.zoneVeilleDesc}</p>
-                  {ppByZone.veille.length === 0 ? <p className="text-xs text-gray-500 italic">{t.workshop.a3.zoneEmpty}</p> :
-                    ppByZone.veille.map(p => <PPZoneCard key={p.id} pp={p} getVulLabel={getVulnerabiliteLabel} />)
-                  }
-                </div>
+                {ZONE_ORDER.map(zone => {
+                  const info = ZONE_INFO[zone]
+                  return (
+                    <div key={zone} className={`border ${info.border} rounded-lg p-3 ${info.bg}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`w-3 h-3 rounded-full ${info.dot}`}></span>
+                        <span className={`text-sm font-semibold ${info.titleColor}`}>{info.title}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">{info.desc}</p>
+                      {ppByZone[zone].length === 0 ? <p className="text-xs text-gray-500 italic">{t.workshop.a3.zoneEmpty}</p> :
+                        ppByZone[zone].map(p => <PPZoneCard key={p.id} pp={p} getZoneLabel={getZoneLabel} />)
+                      }
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -488,31 +527,41 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             )}
             <div className="space-y-2">
               {parties.map(p => {
-                const { label, color } = getVulnerabiliteLabel(p.vulnerabilite)
+                const d = ppDerived(p)
+                const { label, color } = getZoneLabel(d.zone)
                 return (
                   <div key={p.id} id={`pp-${p.id}`}
                     className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${highlightPP === p.id ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
-                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-2">
-                      <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}
-                        className="input text-sm col-span-2 sm:col-span-1" placeholder="Nom" />
-                      <select value={p.type} onChange={e => updatePP(p.id, 'type', e.target.value)} className="input text-sm">
-                        {TYPES_PP.map(tp => <option key={tp.value} value={tp.value}>{tp.label}</option>)}
-                      </select>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-0.5">{t.workshop.a3.ppExpLabel} <span className="font-medium text-gray-700">{p.exposition}/4</span></div>
-                        <input type="range" min={1} max={4} value={p.exposition}
-                          onChange={e => updatePP(p.id, 'exposition', parseInt(e.target.value))}
-                          className="w-full accent-ebios-600" />
+                    <div className="flex-1 space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}
+                          className="input text-sm" placeholder="Nom" />
+                        <select value={p.type} onChange={e => updatePP(p.id, 'type', e.target.value)} className="input text-sm">
+                          {TYPES_PP.map(tp => <option key={tp.value} value={tp.value}>{tp.label}</option>)}
+                        </select>
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-0.5">{t.workshop.a3.ppFiabLabel} <span className="font-medium text-gray-700">{p.fiabilite}/4</span></div>
-                        <input type="range" min={1} max={4} value={p.fiabilite}
-                          onChange={e => updatePP(p.id, 'fiabilite', parseInt(e.target.value))}
-                          className="w-full accent-green-600" />
+                      {/* Exposition = dépendance × pénétration · Fiabilité = maturité × confiance */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {CRIT_META.map(cm => (
+                          <CritereSlider key={cm.key}
+                            label={cm.label}
+                            value={d[cm.key]}
+                            max={maxValeur(cm.echelle)}
+                            levelName={nomNiveau(cm.echelle, d[cm.key])}
+                            accent={cm.accent}
+                            onChange={v => updatePP(p.id, cm.key, v)} />
+                        ))}
                       </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-0.5">{t.workshop.a3.ppDangLabel}</div>
-                        <div className={`text-sm font-bold ${color}`}>{label} ({p.vulnerabilite}/4)</div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 pt-1 border-t border-gray-100">
+                        <span>{t.workshop.a3.ppExpLabel} <span className="font-semibold text-gray-800">{d.exposition.toFixed(1)}</span></span>
+                        <span>{t.workshop.a3.ppFiabLabel} <span className="font-semibold text-gray-800">{d.fiabilite.toFixed(1)}</span></span>
+                        <span>{t.workshop.a3.ppMenaceLabel} <span className="font-semibold text-gray-800">{d.menace.toFixed(2)}</span></span>
+                        <span className={`font-bold ${color}`}>{label}</span>
+                        <label className="ml-auto flex items-center gap-1.5 cursor-pointer text-gray-600">
+                          <input type="checkbox" checked={!!p.critique} onChange={e => updatePP(p.id, 'critique', e.target.checked)}
+                            className="accent-red-600" />
+                          <span className={p.critique ? 'font-semibold text-red-600' : ''}>★ {t.workshop.a3.ppCritiqueLabel}</span>
+                        </label>
                       </div>
                     </div>
                     <button aria-label="Supprimer" onClick={() => setPendingDelete({ msg: t.deleteDialog.pp, action: () => setParties(prev => prev.filter(x => x.id !== p.id)) })}
@@ -942,12 +991,13 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   )
 }
 
-function PPZoneCard({ pp, getVulLabel }: { pp: any; getVulLabel: (v: number) => { color: string } }) {
-  const { color } = getVulLabel(pp.vulnerabilite)
+function PPZoneCard({ pp, getZoneLabel }: { pp: any; getZoneLabel: (z: EcosystemZone) => { color: string } }) {
+  const d = ppDerived(pp)
+  const { color } = getZoneLabel(d.zone)
   return (
     <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-100 mb-1">
       <span className="text-xs font-medium text-gray-700">{pp.nom}</span>
-      <span className={`text-xs font-bold ${color}`}>{pp.vulnerabilite}/4</span>
+      <span className={`text-xs font-bold ${color}`}>{d.menace.toFixed(2)}</span>
     </div>
   )
 }

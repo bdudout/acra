@@ -33,6 +33,7 @@ import {
   G,
   Circle,
   Line,
+  Path,
 } from '@react-pdf/renderer'
 import { getRiskTier } from '@/lib/risk-scale'
 import {
@@ -43,6 +44,8 @@ import {
   polarToXY,
   menace,
   zoneOf,
+  fiabiliteLevel,
+  expositionLevel,
   type EcosystemZone,
 } from '@/lib/ecosystem-radar'
 
@@ -648,14 +651,29 @@ function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
 // ─── Écosystème (Atelier 3) — radar de menace + tableau parties prenantes ──────
 
 const ZONE_PDF: Record<EcosystemZone, { fill: string; label: string }> = {
-  danger:   { fill: C.red,    label: 'Danger' },
-  controle: { fill: C.yellow, label: 'Contrôle' },
-  veille:   { fill: C.green,  label: 'Veille' },
+  danger:   { fill: C.red,     label: 'Danger' },
+  controle: { fill: C.orange,  label: 'Contrôle' },
+  veille:   { fill: C.yellow,  label: 'Veille' },
+}
+// Point : couleur = fiabilité (0..3 rouge→vert) · rayon = exposition (0..3 croissant).
+const FIAB_PDF = [C.red, C.orange, C.yellow, C.green]
+const EXPO_PDF = [3.5, 4.5, 5.5, 7]
+const STAR_PDF = '#F59E0B' // tiers critique
+
+// Chemin SVG d'une étoile à 5 branches centrée (cx,cy), rayon extérieur R.
+function starPath(cx: number, cy: number, R: number): string {
+  const pts: string[] = []
+  for (let i = 0; i < 10; i++) {
+    const ang = (-90 + i * 36) * Math.PI / 180
+    const rad = i % 2 === 0 ? R : R * 0.45
+    pts.push(`${(cx + rad * Math.cos(ang)).toFixed(2)},${(cy + rad * Math.sin(ang)).toFixed(2)}`)
+  }
+  return `M${pts.join(' L')} Z`
 }
 
 const TYPE_LABELS_FR: Record<string, string> = {
   FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire',
-  PRESTATAIRE: 'Prestataire', SOUS_TRAITANT: 'Sous-traitant',
+  PRESTATAIRE: 'Prestataire',
   ORGANISME_REGULATION: 'Organisme de régulation', AUTRE: 'Autre',
 }
 
@@ -665,23 +683,29 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
   const CXr = 100, CYr = 100, R = 88
   const geom = { cx: CXr, cy: CYr, rMax: R }
   const pts = layoutStakeholders(
-    parties.map((p: any) => ({ id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite })),
+    parties.map((p: any) => ({
+      id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+      dependance: p.dependance, penetration: p.penetration, maturite: p.maturite, confiance: p.confiance,
+      critique: p.critique,
+    })),
     geom,
   )
   const rings = zoneRadii(R)
   const types = presentTypes(parties)
   const sectorW = 360 / Math.max(1, types.length)
-  const counts = {
+  const counts: Record<EcosystemZone, number> = {
     danger:   pts.filter(p => p.zone === 'danger').length,
     controle: pts.filter(p => p.zone === 'controle').length,
     veille:   pts.filter(p => p.zone === 'veille').length,
   }
+  const short = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
       <Svg width={CXr * 2} height={CYr * 2}>
-        <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.green}  fillOpacity={0.10} stroke={C.green}  strokeOpacity={0.30} />
-        <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.yellow} fillOpacity={0.16} stroke={C.yellow} strokeOpacity={0.40} />
+        {/* 3 anneaux : veille (bord) → contrôle → danger (du plus grand au plus petit) */}
+        <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.yellow} fillOpacity={0.10} stroke={C.yellow} strokeOpacity={0.30} />
+        <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.orange} fillOpacity={0.14} stroke={C.orange} strokeOpacity={0.40} />
         <Circle cx={CXr} cy={CYr} r={rings.danger}   fill={C.red}    fillOpacity={0.18} stroke={C.red}    strokeOpacity={0.45} />
         {types.length > 1 && (
           <G>
@@ -691,15 +715,21 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
             })}
           </G>
         )}
+        {pts.map(p => {
+          const baseR = EXPO_PDF[expositionLevel(p.exposition)]
+          return (
+            <G key={p.id}>
+              <Circle cx={p.x} cy={p.y} r={baseR}
+                fill={FIAB_PDF[fiabiliteLevel(p.fiabilite)]} stroke={C.white} strokeWidth={1} />
+              {p.critique && <Path d={starPath(p.x, p.y, baseR * 1.15)} fill={STAR_PDF} stroke={C.white} strokeWidth={0.4} />}
+            </G>
+          )
+        })}
+        {/* Libellé à côté du point : nom si critique/danger/contrôle, sinon réf T1… */}
         {pts.map(p => (
-          <Circle key={p.id} cx={p.x} cy={p.y} r={4.5}
-            fill={ZONE_PDF[p.zone].fill} stroke={C.white} strokeWidth={1} />
-        ))}
-        {/* Références T1, T2, … à côté des points (croisent avec le tableau ci-dessous) */}
-        {pts.map(p => (
-          <Text key={`l-${p.id}`} x={p.x + 6} y={p.y + 2.5} fill={C.gray800}
+          <Text key={`l-${p.id}`} x={p.x + EXPO_PDF[expositionLevel(p.exposition)] + 2} y={p.y + 2.5} fill={C.gray800}
             style={{ fontSize: 6, fontFamily: 'Helvetica-Bold' }}>
-            {p.ref}
+            {p.showLabel ? short(p.nom) : p.ref}
           </Text>
         ))}
       </Svg>
@@ -708,12 +738,12 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
         {(['danger', 'controle', 'veille'] as EcosystemZone[]).map(z => (
           <View key={z} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: ZONE_PDF[z].fill, marginRight: 6 }} />
-            <Text style={{ fontSize: 8.5, color: C.gray800, width: 70 }}>{ZONE_PDF[z].label}</Text>
+            <Text style={{ fontSize: 8.5, color: C.gray800, width: 75 }}>{ZONE_PDF[z].label}</Text>
             <Text style={{ fontSize: 8.5, color: C.gray500 }}>{counts[z]}</Text>
           </View>
         ))}
-        <Text style={{ fontSize: 7, color: C.gray500, marginTop: 4, width: 150 }}>
-          Rayon = niveau de menace · centre = menace maximale
+        <Text style={{ fontSize: 7, color: C.gray500, marginTop: 4, width: 155 }}>
+          Anneaux = zones de menace · couleur du point = fiabilité (rouge→vert) · taille = exposition · ★ = tiers critique
         </Text>
       </View>
     </View>
@@ -782,19 +812,29 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
           <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
           <DataTable
             color={C.teal}
-            headers={['Réf', 'Partie prenante', 'Type', 'Exposition', 'Fiabilité', 'Menace', 'Zone']}
-            colFlex={[0.7, 3, 2, 1.2, 1.2, 1, 1.3]}
+            headers={['Réf', 'Partie prenante', 'Type', 'Dép.', 'Pén.', 'Mat.', 'Conf.', 'Expo.', 'Fiab.', 'Menace', 'Zone', 'Crit.']}
+            colFlex={[0.55, 2.4, 1.5, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.85, 1.2, 0.6]}
             rows={analyse.partiesPrenantes.map((pp: any, i: number) => {
-              const m = menace(pp.exposition, pp.fiabilite)
+              const dep = Number(pp.dependance ?? 2), pen = Number(pp.penetration ?? 2)
+              const mat = Number(pp.maturite ?? 3), conf = Number(pp.confiance ?? 3)
+              const exposition = pp.exposition ?? dep * pen
+              const fiabilite  = pp.fiabilite ?? mat * conf
+              const m = menace(exposition, fiabilite)
               const z = zoneOf(m)
+              const fmt = (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(1)
               return [
                 { text: stakeholderRef(i), bold: true },
                 pp.nom,
                 TYPE_LABELS_FR[pp.type] || pp.type,
-                `${pp.exposition}/4`,
-                `${pp.fiabilite}/4`,
-                `${m}/16`,
+                fmt(dep),
+                fmt(pen),
+                fmt(mat),
+                fmt(conf),
+                fmt(exposition),
+                fmt(fiabilite),
+                m.toFixed(2),
                 { text: ZONE_PDF[z].label, color: ZONE_PDF[z].fill, bold: true },
+                pp.critique ? { text: '★', color: STAR_PDF, bold: true } : '—',
               ]
             })}
           />

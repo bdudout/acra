@@ -245,9 +245,24 @@ model PartiePrenante {
   nom         String
   type        TypePartiePrenante
   description String? @db.Text
-  exposition  Int @default(1) // 1-4 (cyber dépendance)
-  fiabilite   Int @default(3) // 1-4 (fiabilité cyber)
-  vulnerabilite Int @default(2) // calculée
+
+  // Méthode Club EBIOS « dangerosité des PP » — 4 sous-critères cotés 1..4 (Float
+  // pour une cotation fine ; alimentera un futur module de third-party management).
+  dependance  Float @default(2) // 1-4
+  penetration Float @default(2) // 1-4
+  maturite    Float @default(3) // 1-4
+  confiance   Float @default(3) // 1-4
+
+  // Valeurs dérivées stockées (recalculées à la sauvegarde) :
+  //   exposition = dependance × penetration  (1..16)
+  //   fiabilite  = maturite × confiance        (1..16)
+  //   menace     = exposition / fiabilite (calculée à la volée)
+  exposition  Float @default(4) // = dep × pen
+  fiabilite   Float @default(9) // = mat × conf
+
+  // Tiers qualifié de critique (marquage manuel par l'analyste) : étoile + nom
+  // affichés sur le radar ; à inclure prioritairement dans les scénarios stratégiques.
+  critique    Boolean @default(false)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -260,7 +275,6 @@ enum TypePartiePrenante {
   CLIENT
   PARTENAIRE
   PRESTATAIRE
-  SOUS_TRAITANT
   ORGANISME_REGULATION
   AUTRE
 }
@@ -448,6 +462,10 @@ model OrganizationConfig {
   conformiteActive    Boolean @default(false)
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
   conseilsAteliersActive Boolean @default(true)
+  // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
+  // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
+  // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).
+  echellesEcosysteme Json @default("{}")
   updatedAt      DateTime @updatedAt
 }
 

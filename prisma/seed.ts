@@ -422,9 +422,9 @@ async function main() {
         nom: 'Prestataire de maintenance biomédicale',
         type: 'PRESTATAIRE',
         description: 'Société externe assurant la maintenance des équipements biomédicaux connectés (moniteurs, pompes, robots chirurgicaux).',
-        exposition: 3,
-        fiabilite: 2,
-        vulnerabilite: 3,
+        dependance: 3, penetration: 3, maturite: 2, confiance: 2, // expo 9 / fiab 4 → contrôle
+        exposition: 9,
+        fiabilite: 4,
       },
       {
         id: PP_EDITEUR,
@@ -432,9 +432,9 @@ async function main() {
         nom: 'Éditeur SIH (MediSoft)',
         type: 'FOURNISSEUR',
         description: 'Éditeur du logiciel DPI principal — accès à distance pour télémaintenance et mises à jour.',
-        exposition: 4,
-        fiabilite: 3,
-        vulnerabilite: 2,
+        dependance: 4, penetration: 4, maturite: 3, confiance: 2, // expo 16 / fiab 6 → contrôle
+        exposition: 16,
+        fiabilite: 6,
       },
       {
         id: PP_LABO,
@@ -442,9 +442,9 @@ async function main() {
         nom: 'Laboratoires d\'analyses extérieurs',
         type: 'PARTENAIRE',
         description: 'Labos partenaires qui échangent des résultats d\'analyses via messagerie sécurisée de santé (MSSanté).',
-        exposition: 2,
-        fiabilite: 3,
-        vulnerabilite: 2,
+        dependance: 2, penetration: 2, maturite: 3, confiance: 3, // expo 4 / fiab 9 → hors-périmètre
+        exposition: 4,
+        fiabilite: 9,
       },
     ],
   })

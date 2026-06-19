@@ -17,6 +17,7 @@ import { EXEMPLES_CATEGORIES, getCategoryDef, type CategoryDef, type FieldSchema
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -107,8 +108,8 @@ export default function ConfigurationPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'gravite' | 'vraisemblance' | 'matrice' | 'apercu'>('gravite')
-  // Onglet principal de la configuration (3 sections)
-  const [section, setSection] = useState<'echelles' | 'options' | 'exemples'>('echelles')
+  // Onglet principal de la configuration (4 sections)
+  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme'>('echelles')
 
   const [config, setConfig] = useState<Config>(DEFAUT_4)
 
@@ -271,7 +272,7 @@ export default function ConfigurationPage() {
     ACTIVISTE: 'Hacktiviste', EMPLOYE_MALVEILLANT: 'Employé malveillant', PRESTATAIRE: 'Prestataire',
     AMATEUR: 'Amateur', TERRORISTE: 'Terroriste', AUTRE: 'Autre',
     D: 'Disponibilité (D)', I: 'Intégrité (I)', C: 'Confidentialité (C)', T: 'Traçabilité (T)',
-    FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire', SOUS_TRAITANT: 'Sous-traitant',
+    FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire',
     ORGANISME_REGULATION: 'Organisme de régulation',
     RECONNAISSANCE: 'Reconnaissance', ACCES_INITIAL: 'Accès initial', PERSISTANCE: 'Persistance',
     ESCALADE_PRIVILEGES: 'Escalade de privilèges', MOUVEMENT_LATERAL: 'Mouvement latéral',
@@ -547,6 +548,7 @@ export default function ConfigurationPage() {
             ['echelles', t.config.tabScales],
             ['options',  t.config.tabOptions],
             ['exemples', t.config.tabExamples],
+            ['ecosysteme', t.config.tabEcosysteme],
           ] as const).map(([key, label]) => (
             <button
               key={key}
@@ -1381,6 +1383,11 @@ export default function ConfigurationPage() {
               </button>
             </div>
           )}
+        </div>{/* ═══ fin Section 3 — Exemples des ateliers ═══ */}
+
+        {/* ═══ Section 4 — Écosystème (échelles de dangerosité des PP) ═════════ */}
+        <div className={section === 'ecosysteme' ? '' : 'hidden'}>
+          <EchellesEcosystemeEditor isAdmin={isAdmin} />
         </div>
       </main>
 

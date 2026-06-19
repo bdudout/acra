@@ -80,7 +80,9 @@ export function defaultExemplesFor(
       }))
     case 'partiesPrenantes':
       return PARTIES_PRENANTES_EXEMPLES.map((p) => ({
-        nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+        nom: p.nom, type: p.type,
+        dependance: p.dependance, penetration: p.penetration,
+        maturite: p.maturite, confiance: p.confiance,
       }))
     case 'actionsElementaires':
       return ACTIONS_ELEMENTAIRES_EXEMPLES.map((a) => ({ type: a.type, nom: a.nom, description: a.description }))

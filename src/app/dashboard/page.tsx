@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
-      partiesPrenantes: { select: { id: true, nom: true, type: true, exposition: true, fiabilite: true } },
+      partiesPrenantes: { select: { id: true, nom: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true } },
     },
   })
 
@@ -57,6 +57,8 @@ export default async function DashboardPage() {
   const allTiers = analyses.flatMap(a =>
     a.partiesPrenantes.map(pp => ({
       id: pp.id, nom: pp.nom, type: pp.type, exposition: pp.exposition, fiabilite: pp.fiabilite,
+      dependance: pp.dependance, penetration: pp.penetration, maturite: pp.maturite, confiance: pp.confiance,
+      critique: pp.critique,
     }))
   )
 

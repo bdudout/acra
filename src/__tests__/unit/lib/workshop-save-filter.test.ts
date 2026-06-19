@@ -111,19 +111,37 @@ describe('cleanPartiePrenante', () => {
     id: 'pp123',
     nom: 'Prestataire IT',
     type: 'PRESTATAIRE',
-    exposition: 3,
-    fiabilite: 2,
-    vulnerabilite: 3,
+    dependance: 3,
+    penetration: 4,
+    maturite: 2,
+    confiance: 2,
   }
 
-  it('écarte l\'id client, injecte analyseId, conserve le schéma', () => {
+  it('écarte l\'id client, injecte analyseId, dérive exposition/fiabilité', () => {
     const result = cleanPartiePrenante(raw, 'analyse1')
     expect(result).not.toHaveProperty('id')
+    expect(result).not.toHaveProperty('vulnerabilite')
     expect(result.analyseId).toBe('analyse1')
     expect(result).toMatchObject({
       nom: 'Prestataire IT', type: 'PRESTATAIRE',
-      exposition: 3, fiabilite: 2, vulnerabilite: 3,
+      dependance: 3, penetration: 4, maturite: 2, confiance: 2,
+      exposition: 12, fiabilite: 4, // dép×pén · mat×conf
     })
+  })
+
+  it('borne les sous-critères à [1,100] (échelles configurables, cotation flottante) et calcule les dérivés', () => {
+    const result = cleanPartiePrenante({ nom: 'X', type: 'CLIENT', dependance: 150, penetration: 2.5, maturite: 0, confiance: 3, critique: true }, 'a1')
+    expect(result.dependance).toBe(100)    // clampé haut
+    expect(result.penetration).toBe(2.5)   // flottant conservé
+    expect(result.maturite).toBe(1)        // clampé bas
+    expect(result.exposition).toBe(250)    // 100 × 2,5
+    expect(result.fiabilite).toBe(3)       // 1 × 3
+    expect(result.critique).toBe(true)     // marquage manuel propagé
+  })
+
+  it('applique les défauts 2/2/3/3 (+ critique=false) en l\'absence de sous-critères', () => {
+    const result = cleanPartiePrenante({ nom: 'Y', type: 'AUTRE' }, 'a1')
+    expect(result).toMatchObject({ dependance: 2, penetration: 2, maturite: 3, confiance: 3, exposition: 4, fiabilite: 9, critique: false })
   })
 })
 

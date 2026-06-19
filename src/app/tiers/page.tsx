@@ -28,7 +28,12 @@ export default async function TiersPage() {
       nom: true,
       organisation: true,
       partiesPrenantes: {
-        select: { id: true, nom: true, type: true, description: true, exposition: true, fiabilite: true },
+        select: {
+          id: true, nom: true, type: true, description: true,
+          exposition: true, fiabilite: true,
+          dependance: true, penetration: true, maturite: true, confiance: true,
+          critique: true,
+        },
       },
     },
     orderBy: { updatedAt: 'desc' },
@@ -47,6 +52,11 @@ export default async function TiersPage() {
         description: pp.description,
         exposition:  pp.exposition,
         fiabilite:   pp.fiabilite,
+        dependance:  pp.dependance,
+        penetration: pp.penetration,
+        maturite:    pp.maturite,
+        confiance:   pp.confiance,
+        critique:    pp.critique,
         menace:      m,
         zone:        zoneOf(m),
       }

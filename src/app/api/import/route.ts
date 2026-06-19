@@ -40,12 +40,21 @@ function cleanSourceRisque(obj: any): any {
 }
 
 function cleanPartiePrenante(obj: any): any {
+  // Méthode Club EBIOS : 4 sous-critères 1-4 → exposition = dép×pén · fiabilité = mat×conf.
+  const clamp14 = (v: any, def: number) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? Math.max(1, Math.min(4, n)) : def
+  }
+  const dependance  = clamp14(obj.dependance, 2)
+  const penetration = clamp14(obj.penetration, 2)
+  const maturite    = clamp14(obj.maturite, 3)
+  const confiance   = clamp14(obj.confiance, 3)
   return {
     nom:             String(obj.nom         ?? '').slice(0, 255),
     type:            String(obj.type        ?? 'FOURNISSEUR').slice(0, 50),
-    exposition:      Number(obj.exposition)  || 3,
-    fiabilite:       Number(obj.fiabilite)   || 3,
-    vulnerabilite:   Number(obj.vulnerabilite) || 3,
+    dependance, penetration, maturite, confiance,
+    exposition:      dependance * penetration,
+    fiabilite:       maturite * confiance,
     description:     obj.description != null ? String(obj.description).slice(0, 2000) : undefined,
   }
 }

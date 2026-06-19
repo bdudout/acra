@@ -433,17 +433,29 @@ export const OBJECTIFS_VISES_EXEMPLES = [
 
 // ─── Atelier 3 : Parties prenantes ───────────────────────────────────────────
 
+// Méthode Club EBIOS : exposition = dépendance × pénétration · fiabilité = maturité × confiance
+// (sous-critères 1-4) ; menace = exposition / fiabilité.
 export const PARTIES_PRENANTES_EXEMPLES = [
-  { nom: 'Prestataire informatique / ESN',      type: 'PRESTATAIRE',    exposition: 4, fiabilite: 3 },
-  { nom: 'Hébergeur cloud (AWS/Azure/GCP)',     type: 'FOURNISSEUR',    exposition: 4, fiabilite: 3 },
-  { nom: 'Fournisseur SaaS (Office 365, etc.)', type: 'FOURNISSEUR',    exposition: 3, fiabilite: 3 },
-  { nom: 'Clients (accès portail)',             type: 'CLIENT',         exposition: 2, fiabilite: 2 },
-  { nom: 'Partenaires métier',                  type: 'PARTENAIRE',     exposition: 3, fiabilite: 3 },
-  { nom: 'Sous-traitant industriel',            type: 'SOUS_TRAITANT',  exposition: 3, fiabilite: 2 },
-  { nom: 'Filiales / Groupe',                  type: 'PARTENAIRE',     exposition: 4, fiabilite: 3 },
-  { nom: 'Télémaintenance industrielle',        type: 'PRESTATAIRE',    exposition: 4, fiabilite: 2 },
-  { nom: 'Cabinet comptable / Audit',           type: 'PRESTATAIRE',    exposition: 2, fiabilite: 3 },
-  { nom: 'Opérateur télécom',                  type: 'FOURNISSEUR',    exposition: 3, fiabilite: 3 },
+  // Prestataires (incluent sous-traitants, fournisseurs) ──────────────────────
+  { nom: 'Prestataire informatique / ESN',      type: 'PRESTATAIRE',          dependance: 3, penetration: 4, maturite: 2, confiance: 2 }, // 12/4 → danger
+  { nom: 'Hébergeur cloud (AWS/Azure/GCP)',     type: 'FOURNISSEUR',          dependance: 4, penetration: 3, maturite: 4, confiance: 3 }, // 12/12 → veille
+  { nom: 'Fournisseur SaaS (Office 365, etc.)', type: 'FOURNISSEUR',          dependance: 3, penetration: 2, maturite: 4, confiance: 3 }, // 6/12 → veille
+  { nom: 'Sous-traitant industriel',            type: 'PRESTATAIRE',          dependance: 3, penetration: 3, maturite: 2, confiance: 2 }, // 9/4 → contrôle
+  { nom: 'Télémaintenance industrielle',        type: 'PRESTATAIRE',          dependance: 2, penetration: 4, maturite: 2, confiance: 1 }, // 8/2 → danger
+  { nom: 'Cabinet comptable / Audit',           type: 'PRESTATAIRE',          dependance: 2, penetration: 2, maturite: 3, confiance: 3 }, // 4/9 → veille
+  { nom: 'Opérateur télécom',                  type: 'FOURNISSEUR',          dependance: 3, penetration: 2, maturite: 3, confiance: 3 }, // 6/9 → veille
+  // Clients ───────────────────────────────────────────────────────────────────
+  { nom: 'Clients (accès portail)',             type: 'CLIENT',               dependance: 1, penetration: 2, maturite: 2, confiance: 2 }, // 2/4 → veille
+  { nom: 'Établissements de santé',             type: 'CLIENT',               dependance: 1, penetration: 1, maturite: 1, confiance: 3 }, // 1/3 → veille
+  { nom: 'Pharmacies / Officines',              type: 'CLIENT',               dependance: 1, penetration: 1, maturite: 2, confiance: 3 }, // 1/6 → veille
+  { nom: 'Grossistes / Distributeurs',          type: 'CLIENT',               dependance: 1, penetration: 2, maturite: 2, confiance: 3 }, // 2/6 → veille
+  // Partenaires ─────────────────────────────────────────────────────────────
+  { nom: 'Partenaires métier',                  type: 'PARTENAIRE',           dependance: 2, penetration: 2, maturite: 3, confiance: 3 }, // 4/9 → veille
+  { nom: 'Filiales / Groupe',                  type: 'PARTENAIRE',           dependance: 3, penetration: 3, maturite: 3, confiance: 3 }, // 9/9 → veille
+  { nom: 'Universités / Laboratoires',          type: 'PARTENAIRE',           dependance: 2, penetration: 1, maturite: 1, confiance: 2 }, // 2/2 → contrôle
+  // Régulateurs ─────────────────────────────────────────────────────────────
+  { nom: 'Régulateur sectoriel (ANSSI, etc.)',  type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 2, confiance: 4 }, // 2/8 → veille
+  { nom: 'CNIL / Autorité de protection',       type: 'ORGANISME_REGULATION', dependance: 1, penetration: 1, maturite: 2, confiance: 4 }, // 1/8 → veille
 ]
 
 // ─── Atelier 4 : Actions élémentaires (inspirées MITRE ATT&CK) ───────────────

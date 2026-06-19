@@ -64,7 +64,8 @@ const CATEGORIES_SOURCE = [
   'EMPLOYE_MALVEILLANT', 'PRESTATAIRE', 'AMATEUR', 'TERRORISTE', 'AUTRE',
 ] as const
 const CRITERES_DICT = ['D', 'I', 'C', 'T'] as const
-const TYPES_PARTIE_PRENANTE = ['PRESTATAIRE', 'FOURNISSEUR', 'CLIENT', 'PARTENAIRE', 'SOUS_TRAITANT', 'ORGANISME_REGULATION', 'AUTRE'] as const
+// Sous-traitants fusionnés dans PRESTATAIRE (cf. guide EBIOS RM : « prestataires (sous-traitants, fournisseurs) »).
+const TYPES_PARTIE_PRENANTE = ['PRESTATAIRE', 'FOURNISSEUR', 'CLIENT', 'PARTENAIRE', 'ORGANISME_REGULATION', 'AUTRE'] as const
 const TYPES_ACTION = [
   'RECONNAISSANCE', 'ACCES_INITIAL', 'PERSISTANCE', 'ESCALADE_PRIVILEGES',
   'MOUVEMENT_LATERAL', 'EXFILTRATION', 'IMPACT',
@@ -156,8 +157,11 @@ export const EXEMPLES_CATEGORIES: CategoryDef[] = [
     fields: [
       { key: 'nom', kind: 'text', max: 120 },
       { key: 'type', kind: 'enum', options: TYPES_PARTIE_PRENANTE },
-      { key: 'exposition', kind: 'score' },
-      { key: 'fiabilite', kind: 'score' },
+      // Méthode Club EBIOS : exposition = dépendance × pénétration · fiabilité = maturité × confiance
+      { key: 'dependance', kind: 'score' },
+      { key: 'penetration', kind: 'score' },
+      { key: 'maturite', kind: 'score' },
+      { key: 'confiance', kind: 'score' },
     ],
   },
   // ── Atelier 4 ──────────────────────────────────────────────────────────────

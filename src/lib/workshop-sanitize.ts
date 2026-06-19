@@ -26,6 +26,12 @@ function num(v: unknown, def: number): number {
 function optNum(v: unknown): number | undefined {
   return v != null ? Number(v) : undefined
 }
+/** Flottant borné à [min,max] ; retombe sur `def` si non numérique. Cotation fine (décimales conservées). */
+function numFloat(v: unknown, min: number, max: number, def: number): number {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return def
+  return Math.max(min, Math.min(max, n))
+}
 /** Booléen explicite ; undefined si absent (laisse le défaut Prisma jouer). */
 function optBool(v: unknown): boolean | undefined {
   return typeof v === 'boolean' ? v : undefined
@@ -56,15 +62,27 @@ export function cleanSourceRisque(s: Dict, analyseId: string) {
 }
 
 // ── Atelier 3 : Parties prenantes ─────────────────────────────────────────────
+// Méthode Club EBIOS : 4 sous-critères flottants (échelles configurables, 1-4 par
+// défaut) → exposition = dépendance × pénétration · fiabilité = maturité × confiance.
+// Clamp défensif large [1,100] (l'UI borne à l'échelle réelle) pour ne pas tronquer
+// une échelle étendue (ex. 1-5, 1-10).
 export function cleanPartiePrenante(p: Dict, analyseId: string) {
+  const dependance  = numFloat(p.dependance, 1, 100, 2)
+  const penetration = numFloat(p.penetration, 1, 100, 2)
+  const maturite    = numFloat(p.maturite, 1, 100, 3)
+  const confiance   = numFloat(p.confiance, 1, 100, 3)
   return {
     analyseId,
-    nom:           String(p.nom ?? '').slice(0, 255),
-    type:          p.type as never, // enum TypePartiePrenante — validé par Prisma
-    description:   str(p.description, 5000),
-    exposition:    num(p.exposition, 1),
-    fiabilite:     num(p.fiabilite, 3),
-    vulnerabilite: num(p.vulnerabilite, 2),
+    nom:         String(p.nom ?? '').slice(0, 255),
+    type:        p.type as never, // enum TypePartiePrenante — validé par Prisma
+    description: str(p.description, 5000),
+    dependance,
+    penetration,
+    maturite,
+    confiance,
+    exposition:  dependance * penetration, // 1-N²
+    fiabilite:   maturite * confiance,      // 1-N²
+    critique:    optBool(p.critique) ?? false, // marquage manuel tiers critique
   }
 }
 

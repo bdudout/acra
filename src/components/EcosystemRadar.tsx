@@ -17,9 +17,12 @@ import {
   presentTypes,
   zoneRadii,
   polarToXY,
+  fiabiliteLevel,
+  expositionLevel,
   type RadarPoint,
   type EcosystemZone,
 } from '@/lib/ecosystem-radar'
+import { resolveEchelles, bornesMenace, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
 
 interface PartieLike {
   id: string
@@ -27,6 +30,11 @@ interface PartieLike {
   type: string
   exposition: number
   fiabilite: number
+  dependance?: number
+  penetration?: number
+  maturite?: number
+  confiance?: number
+  critique?: boolean
 }
 
 interface Props {
@@ -38,16 +46,24 @@ interface Props {
   showRefs?: boolean
   /** Masque le titre interne du composant (ex. quand la carte parente l'affiche déjà). */
   hideHeader?: boolean
+  /** Échelles de cotation (pour adapter le rayon/les seuils) ; défauts 1→4 si absent. */
+  echelles?: EchellesEcosysteme
 }
 
 const CX = 240, CY = 240, R_MAX = 190
+// Couleur des ANNEAUX de zone (rayon = niveau de menace) — 3 zones.
 const ZONE_COLOR: Record<EcosystemZone, string> = {
   danger:   '#dc2626', // red-600
-  controle: '#d97706', // amber-600
-  veille:   '#16a34a', // green-600
+  controle: '#ea580c', // orange-600
+  veille:   '#eab308', // yellow-500
 }
+// Couleur d'un POINT selon sa fiabilité cyber (niveau 0..3 : rouge → vert).
+const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
+// Rayon d'un POINT selon son exposition (niveau 0..3 : croissant).
+const EXPO_RADIUS = [4.5, 6, 7.5, 9.5]
+const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles }: Props) {
   const { t } = useTranslation()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
@@ -61,12 +77,15 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
     )
   }
 
+  // Bornes de menace dérivées des échelles (rayon adapté à l'échelle).
+  const bornes = bornesMenace(echelles ?? resolveEchelles(null))
   const geom = { cx: CX, cy: CY, rMax: R_MAX }
-  const points = layoutStakeholders(parties, geom)
+  const points = layoutStakeholders(parties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax })
   const types = presentTypes(parties)
-  const rings = zoneRadii(R_MAX)
+  const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
   const n = types.length
   const sectorWidth = 360 / n
+  const shortName = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
 
   const typeLabel = (ty: string) => ppTypes[ty] ?? ty
   // Libellé de secteur tronqué pour ne pas déborder du SVG (nom complet en <title>).
@@ -86,8 +105,9 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           <title>{r.title}</title>
           <desc>{r.hint}</desc>
 
-          {/* Zones concentriques : veille (extérieur) → contrôle → danger (centre) */}
-          <circle cx={CX} cy={CY} r={rings.rim} fill={ZONE_COLOR.veille} fillOpacity={0.1}
+          {/* 3 anneaux concentriques : veille (extérieur, = bord) → contrôle → danger (centre).
+              Tracés du plus grand au plus petit (le plus petit recouvre). */}
+          <circle cx={CX} cy={CY} r={rings.rim} fill={ZONE_COLOR.veille} fillOpacity={0.10}
             stroke={ZONE_COLOR.veille} strokeOpacity={0.3} />
           <circle cx={CX} cy={CY} r={rings.controle} fill={ZONE_COLOR.controle} fillOpacity={0.14}
             stroke={ZONE_COLOR.controle} strokeOpacity={0.35} />
@@ -115,16 +135,21 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             )
           })}
 
-          {/* Points = parties prenantes (avec référence T1, T2, … visible) */}
+          {/* Points = parties prenantes. Couleur = fiabilité · taille = exposition ·
+              ★ = tiers critique · nom affiché si critique ou zone danger/contrôle. */}
           {points.map(p => {
             const isActive = active?.id === p.id
+            const baseR = EXPO_RADIUS[expositionLevel(p.exposition, bornes.maxExpo)]
+            const fill = FIAB_COLOR[fiabiliteLevel(p.fiabilite, bornes.maxFiab)]
+            // Libellé à droite du point : nom (tronqué) si pertinent, sinon référence T1…
+            const sideLabel = p.showLabel ? shortName(p.nom) : (showRefs ? p.ref : '')
             return (
               <g
                 key={p.id}
                 className="cursor-pointer"
                 tabIndex={0}
                 role="button"
-                aria-label={`${p.ref} — ${p.nom} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace}/16`}
+                aria-label={`${p.ref} — ${p.nom}${p.critique ? ' ★' : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
                 onMouseEnter={() => setActive(p)}
                 onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(p)}
@@ -132,21 +157,32 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 onClick={() => onSelect?.(p.id)}
               >
                 <circle
-                  cx={p.x} cy={p.y} r={isActive ? 9 : 6.5}
-                  fill={ZONE_COLOR[p.zone]}
+                  cx={p.x} cy={p.y} r={isActive ? baseR + 2.5 : baseR}
+                  fill={fill}
                   stroke="#ffffff" strokeWidth={1.5}
                   className="transition-all"
                 />
-                {/* Référence à côté du point — halo blanc pour rester lisible sur les zones */}
-                {showRefs && (
+                {/* Étoile centrée sur le point pour un tiers critique */}
+                {p.critique && (
                   <text
-                    x={p.x + 9} y={p.y + 3.5}
-                    fontSize={isActive ? 11 : 9.5} fontWeight={700}
+                    x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central"
+                    fontSize={baseR * 1.7} fill={STAR_COLOR}
+                    stroke="#ffffff" strokeWidth={0.8} paintOrder="stroke"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    ★
+                  </text>
+                )}
+                {/* Libellé à côté du point — halo blanc pour rester lisible sur les zones */}
+                {sideLabel && (
+                  <text
+                    x={p.x + baseR + 3} y={p.y + 3.5}
+                    fontSize={isActive ? 11 : (p.showLabel ? 9 : 9.5)} fontWeight={700}
                     fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
                     paintOrder="stroke"
                     style={{ pointerEvents: 'none' }}
                   >
-                    {p.ref}
+                    {sideLabel}
                   </text>
                 )}
               </g>
@@ -155,8 +191,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
         </svg>
 
         {/* Légende + détail du point survolé */}
-        <div className="w-full md:w-48">
+        <div className="w-full md:w-52">
+          {/* Anneaux = zones de menace (3 zones) */}
           <div className="space-y-1.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendZonesTitle}</div>
             {([
               ['danger', r.zoneDanger],
               ['controle', r.zoneControle],
@@ -173,6 +211,27 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             ))}
           </div>
 
+          {/* Points : couleur = fiabilité · taille = exposition · ★ = critique */}
+          <div className="mt-3 space-y-1 border-t border-gray-100 pt-2 text-[11px] text-gray-500">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendPointsTitle}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex gap-0.5" aria-hidden="true">
+                {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
+              </span>
+              {r.colorLegend}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex items-end gap-0.5" aria-hidden="true">
+                {EXPO_RADIUS.map((rr, i) => <span key={i} className="inline-block rounded-full bg-gray-400" style={{ width: rr, height: rr }} />)}
+              </span>
+              {r.sizeLegend}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 text-center" style={{ color: STAR_COLOR }} aria-hidden="true">★</span>
+              {r.critiqueLegend}
+            </div>
+          </div>
+
           {active && (
             <div className="mt-4 rounded-md border border-gray-100 bg-gray-50 p-2.5 text-xs">
               <div className="font-semibold text-gray-800">
@@ -181,10 +240,13 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               </div>
               <div className="text-gray-500">{typeLabel(active.type)}</div>
               <div className="mt-1 text-gray-600">
-                {t.workshop.a3.ppExpLabel}: {active.exposition}/4 · {t.workshop.a3.ppFiabLabel}: {active.fiabilite}/4
+                {t.workshop.a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {t.workshop.a3.ppPenetrationLabel} {active.penetration.toFixed(1)} · {t.workshop.a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {t.workshop.a3.ppConfianceLabel} {active.confiance.toFixed(1)}
+              </div>
+              <div className="mt-0.5 text-gray-600">
+                {t.workshop.a3.ppExpLabel}: {active.exposition.toFixed(1)} · {t.workshop.a3.ppFiabLabel}: {active.fiabilite.toFixed(1)}
               </div>
               <div className="font-medium" style={{ color: ZONE_COLOR[active.zone] }}>
-                {r.menaceLabel}: {active.menace}/16
+                {r.menaceLabel}: {active.menace.toFixed(2)}
               </div>
             </div>
           )}

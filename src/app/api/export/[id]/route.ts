@@ -300,13 +300,23 @@ export async function GET(
       wsPP.columns = [
         { header: 'Nom',          key: 'nom',  width: 42 },
         { header: 'Type',         key: 'type', width: 18 },
-        { header: 'Exposition',   key: 'exp',  width: 13 },
-        { header: 'Fiabilité',    key: 'fid',  width: 13 },
-        { header: 'Vulnérabilité',key: 'vuln', width: 15 },
+        { header: 'Dépendance',   key: 'dep',  width: 12 },
+        { header: 'Pénétration',  key: 'pen',  width: 12 },
+        { header: 'Maturité',     key: 'mat',  width: 12 },
+        { header: 'Confiance',    key: 'conf', width: 12 },
+        { header: 'Exposition',   key: 'exp',  width: 12 },
+        { header: 'Fiabilité',    key: 'fid',  width: 12 },
+        { header: 'Menace',       key: 'men',  width: 10 },
       ]
       analyse.partiesPrenantes.forEach((pp: {
-        nom: string; type: string; exposition: number; fiabilite: number; vulnerabilite: number
-      }) => wsPP.addRow({ nom: S(pp.nom), type: S(pp.type), exp: pp.exposition, fid: pp.fiabilite, vuln: pp.vulnerabilite }))
+        nom: string; type: string; exposition: number; fiabilite: number
+        dependance: number; penetration: number; maturite: number; confiance: number
+      }) => wsPP.addRow({
+        nom: S(pp.nom), type: S(pp.type),
+        dep: pp.dependance, pen: pp.penetration, mat: pp.maturite, conf: pp.confiance,
+        exp: pp.exposition, fid: pp.fiabilite,
+        men: Number((pp.exposition / pp.fiabilite).toFixed(2)),
+      }))
       styleHeaderRow(wsPP)
     }
 
