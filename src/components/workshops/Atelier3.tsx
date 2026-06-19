@@ -492,7 +492,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* Radar de menace de l'écosystème (vue polaire) */}
           {parties.length > 0 && (
             <div className="mb-4">
-              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} echelles={echelles} />
+              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} echelles={echelles}
+                onEditShortName={(id, v) => updatePP(id, 'nomCourt', v)} />
             </div>
           )}
 

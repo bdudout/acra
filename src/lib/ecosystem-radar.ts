@@ -26,6 +26,8 @@ export interface MenaceBounds {
 export interface StakeholderInput {
   id?: string
   nom?: string
+  /** Nom court affiché sur le radar (≤ 12 car.) ; sinon réf T1, T2… */
+  nomCourt?: string
   type?: string
   exposition?: number // 1..N² (= dépendance × pénétration)
   fiabilite?: number  // 1..N² (= maturité × confiance)
@@ -49,6 +51,8 @@ export interface RadarPoint {
   /** Référence courte stable affichée sur le diagramme (T1, T2, …) pour croiser avec le tableau. */
   ref: string
   nom: string
+  /** Nom court (≤ 12 car.) ; vide ⇒ le composant affiche la réf. */
+  nomCourt: string
   type: string
   exposition: number   // 1..N²
   fiabilite: number    // 1..N²
@@ -252,6 +256,7 @@ export function layoutStakeholders(
       id: String(p.id ?? ''),
       ref: stakeholderRef(originalIdx),
       nom: String(p.nom ?? ''),
+      nomCourt: String(p.nomCourt ?? '').slice(0, 12),
       type: ty,
       exposition: clamp(p.exposition ?? 1, 1, maxComposite),
       fiabilite: clamp(p.fiabilite ?? 1, 1, maxComposite),

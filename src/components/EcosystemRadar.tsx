@@ -27,6 +27,7 @@ import { resolveEchelles, bornesMenace, type EchellesEcosysteme } from '@/lib/ec
 interface PartieLike {
   id: string
   nom: string
+  nomCourt?: string
   type: string
   exposition: number
   fiabilite: number
@@ -48,6 +49,10 @@ interface Props {
   hideHeader?: boolean
   /** Échelles de cotation (pour adapter le rayon/les seuils) ; défauts 1→4 si absent. */
   echelles?: EchellesEcosysteme
+  /** Si fourni, le libellé d'un point devient éditable au clic (nom court ≤ 12 car.). */
+  onEditShortName?: (id: string, nomCourt: string) => void
+  /** Radar agrégé (plusieurs analyses) : affiche la note « un tiers peut apparaître plusieurs fois ». */
+  aggregated?: boolean
 }
 
 const CX = 240, CY = 240, R_MAX = 190
@@ -63,11 +68,12 @@ const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
 const EXPO_RADIUS = [7, 9, 11.5, 14]
 const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false }: Props) {
   const { t } = useTranslation()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const [active, setActive] = useState<RadarPoint | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
 
   if (!parties.length) {
     return (
@@ -85,11 +91,16 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
   const n = types.length
   const sectorWidth = 360 / n
-  const shortName = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
-
   const typeLabel = (ty: string) => ppTypes[ty] ?? ty
   // Libellé de secteur tronqué pour ne pas déborder du SVG (nom complet en <title>).
   const shortLabel = (s: string) => (s.length > 14 ? s.slice(0, 13) + '…' : s)
+  const editable = !!onEditShortName
+  // Libellé d'un point : nom court (≤12) si défini, sinon réf T1, T2…
+  const pointLabel = (p: RadarPoint) => (p.nomCourt || (showRefs ? p.ref : ''))
+  function commitShortName(id: string, value: string) {
+    onEditShortName?.(id, value.trim().slice(0, 12))
+    setEditing(null)
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
@@ -136,20 +147,21 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           })}
 
           {/* Points = parties prenantes. Couleur = fiabilité · taille = exposition ·
-              ★ = tiers critique · nom affiché si critique ou zone danger/contrôle. */}
+              ★ (avant le libellé) = tiers critique · libellé = nom court ou réf T1… */}
           {points.map(p => {
             const isActive = active?.id === p.id
             const baseR = EXPO_RADIUS[expositionLevel(p.exposition, bornes.maxExpo)]
             const fill = FIAB_COLOR[fiabiliteLevel(p.fiabilite, bornes.maxFiab)]
-            // Libellé à droite du point : nom (tronqué) si pertinent, sinon référence T1…
-            const sideLabel = p.showLabel ? shortName(p.nom) : (showRefs ? p.ref : '')
+            const labelX = p.x + baseR + 4
+            const label = pointLabel(p)
+            const isEditing = editing === p.id
             return (
               <g
                 key={p.id}
                 className="cursor-pointer"
                 tabIndex={0}
                 role="button"
-                aria-label={`${p.ref} — ${p.nom}${p.critique ? ' ★' : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
+                aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ' ★' : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
                 onMouseEnter={() => setActive(p)}
                 onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(p)}
@@ -162,32 +174,68 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                   stroke="#ffffff" strokeWidth={1.5}
                   className="transition-all"
                 />
-                {/* Étoile centrée sur le point pour un tiers critique */}
-                {p.critique && (
+                {isEditing ? (
+                  // Édition inline du nom court (sans changer de page)
+                  <foreignObject x={labelX - 2} y={p.y - 9} width={118} height={22}>
+                    <input
+                      autoFocus
+                      defaultValue={p.nomCourt}
+                      maxLength={12}
+                      placeholder={r.shortNamePlaceholder}
+                      onClick={e => e.stopPropagation()}
+                      onBlur={e => commitShortName(p.id, e.currentTarget.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                        else if (e.key === 'Escape') setEditing(null)
+                      }}
+                      style={{ width: '100%', height: 18, fontSize: 10, padding: '0 3px', border: '1px solid #9ca3af', borderRadius: 3, outline: 'none' }}
+                    />
+                  </foreignObject>
+                ) : (
+                  // ★ (si critique) juste avant le libellé, à droite du point — halo blanc.
                   <text
-                    x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central"
-                    fontSize={baseR * 1.7} fill={STAR_COLOR}
-                    stroke="#ffffff" strokeWidth={0.8} paintOrder="stroke"
-                    style={{ pointerEvents: 'none' }}
-                  >
-                    ★
-                  </text>
-                )}
-                {/* Libellé à côté du point — halo blanc pour rester lisible sur les zones */}
-                {sideLabel && (
-                  <text
-                    x={p.x + baseR + 3} y={p.y + 3.5}
-                    fontSize={isActive ? 11 : (p.showLabel ? 9 : 9.5)} fontWeight={700}
+                    x={labelX} y={p.y + 3.5}
+                    fontSize={isActive ? 11 : 9.5} fontWeight={700}
                     fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
                     paintOrder="stroke"
-                    style={{ pointerEvents: 'none' }}
+                    onClick={editable ? (e => { e.stopPropagation(); setEditing(p.id) }) : undefined}
+                    style={{ cursor: editable ? 'text' : 'default', pointerEvents: editable ? 'auto' : 'none' }}
                   >
-                    {sideLabel}
+                    {p.critique && <tspan fill={STAR_COLOR}>★ </tspan>}
+                    <tspan>{label}</tspan>
                   </text>
                 )}
               </g>
             )
           })}
+
+          {/* Détail au survol — bulle en haut à droite du point survolé */}
+          {active && editing === null && (() => {
+            const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
+            const tipW = 176, tipH = 96
+            const tx = Math.max(-58, Math.min(active.x + aR + 2, 538 - tipW))
+            const ty = Math.max(2, active.y - tipH - 2)
+            return (
+              <foreignObject x={tx} y={ty} width={tipW} height={tipH} style={{ pointerEvents: 'none' }}>
+                <div className="rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-tight shadow-sm">
+                  <div className="font-semibold text-gray-800">
+                    <span className="mr-1 rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700">{active.nomCourt || active.ref}</span>
+                    {active.nom}
+                  </div>
+                  <div className="text-gray-500">{typeLabel(active.type)}</div>
+                  <div className="mt-1 text-gray-600">
+                    {t.workshop.a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {t.workshop.a3.ppPenetrationLabel} {active.penetration.toFixed(1)} · {t.workshop.a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {t.workshop.a3.ppConfianceLabel} {active.confiance.toFixed(1)}
+                  </div>
+                  <div className="text-gray-600">
+                    {t.workshop.a3.ppExpLabel} {active.exposition.toFixed(1)} · {t.workshop.a3.ppFiabLabel} {active.fiabilite.toFixed(1)}
+                  </div>
+                  <div className="font-semibold" style={{ color: ZONE_COLOR[active.zone] }}>
+                    {r.menaceLabel} {active.menace.toFixed(2)}
+                  </div>
+                </div>
+              </foreignObject>
+            )
+          })()}
         </svg>
 
         {/* Légende (sous le radar) + détail du point survolé */}
@@ -232,31 +280,18 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 {r.critiqueLegend}
               </div>
             </div>
-          </div>
 
-          {active && (
-            <div className="mt-4 rounded-md border border-gray-100 bg-gray-50 p-2.5 text-xs">
-              <div className="font-semibold text-gray-800">
-                <span className="mr-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-700">{active.ref}</span>
-                {active.nom}
-              </div>
-              <div className="text-gray-500">{typeLabel(active.type)}</div>
-              <div className="mt-1 text-gray-600">
-                {t.workshop.a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {t.workshop.a3.ppPenetrationLabel} {active.penetration.toFixed(1)} · {t.workshop.a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {t.workshop.a3.ppConfianceLabel} {active.confiance.toFixed(1)}
-              </div>
-              <div className="mt-0.5 text-gray-600">
-                {t.workshop.a3.ppExpLabel}: {active.exposition.toFixed(1)} · {t.workshop.a3.ppFiabLabel}: {active.fiabilite.toFixed(1)}
-              </div>
-              <div className="font-medium" style={{ color: ZONE_COLOR[active.zone] }}>
-                {r.menaceLabel}: {active.menace.toFixed(2)}
-              </div>
+            {/* Lecture du diagramme (mêmes formats que les autres groupes) */}
+            <div className="max-w-[230px] space-y-1 text-[11px] text-gray-500">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendReadTitle}</div>
+              <div>{r.radiusLegend}</div>
+              <div>{r.sectorLegend}</div>
+              {editable && <div className="text-gray-400 italic">{r.editHint}</div>}
+              {aggregated && <div className="text-gray-400 italic">{r.multiLegend}</div>}
             </div>
-          )}
+          </div>
         </div>
       </div>
-
-      {/* Légende de lecture — sous le radar */}
-      <p className="mt-3 text-xs text-gray-500">{r.hint}</p>
     </div>
   )
 }

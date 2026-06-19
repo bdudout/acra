@@ -71,9 +71,11 @@ export function cleanPartiePrenante(p: Dict, analyseId: string) {
   const penetration = numFloat(p.penetration, 1, 100, 2)
   const maturite    = numFloat(p.maturite, 1, 100, 3)
   const confiance   = numFloat(p.confiance, 1, 100, 3)
+  const nomCourt = String(p.nomCourt ?? '').trim().slice(0, 12)
   return {
     analyseId,
     nom:         String(p.nom ?? '').slice(0, 255),
+    nomCourt:    nomCourt || null, // nom court radar (≤12) ; null ⇒ réf T1…
     type:        p.type as never, // enum TypePartiePrenante — validé par Prisma
     description: str(p.description, 5000),
     dependance,

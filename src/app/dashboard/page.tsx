@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
-      partiesPrenantes: { select: { id: true, nom: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true } },
+      partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true } },
     },
   })
 
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   // Tous les tiers de toutes les analyses, pour le radar global de l'écosystème
   const allTiers = analyses.flatMap(a =>
     a.partiesPrenantes.map(pp => ({
-      id: pp.id, nom: pp.nom, type: pp.type, exposition: pp.exposition, fiabilite: pp.fiabilite,
+      id: pp.id, nom: pp.nom, nomCourt: pp.nomCourt ?? undefined, type: pp.type, exposition: pp.exposition, fiabilite: pp.fiabilite,
       dependance: pp.dependance, penetration: pp.penetration, maturite: pp.maturite, confiance: pp.confiance,
       critique: pp.critique,
     }))
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
               <div className="card p-5">
                 <h2 className="font-semibold text-gray-800 mb-1">🌐 {t.dashboard.ecosystemTitle}</h2>
                 <p className="text-xs text-gray-500 mb-3">{t.dashboard.ecosystemSubtitle}</p>
-                <EcosystemRadar parties={allTiers} showRefs={false} hideHeader />
+                <EcosystemRadar parties={allTiers} showRefs={false} hideHeader aggregated />
               </div>
             )}
 

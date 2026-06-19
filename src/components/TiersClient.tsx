@@ -111,7 +111,8 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-500 mb-2">{filtered.length} / {tiers.length} {t.tiers.countLabel}</p>
+          <p className="text-xs text-gray-500 mb-1">{filtered.length} / {tiers.length} {t.tiers.countLabel}</p>
+          <p className="text-xs text-gray-400 italic mb-3">{t.workshop.a3.radar.multiLegend}</p>
           <div className="card overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
