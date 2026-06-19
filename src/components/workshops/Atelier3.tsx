@@ -48,11 +48,11 @@ interface Props {
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
 
-// Couleur par zone de dangerosité (statique, 3 zones — libellés traduits dans le composant).
+// Couleur par zone de dangerosité (statique, 3 zones : danger=orange, contrôle=jaune, veille=vert).
 const ZONE_COLOR: Record<EcosystemZone, { color: string; dot: string }> = {
-  danger:   { color: 'text-red-600',    dot: 'bg-red-500' },
-  controle: { color: 'text-orange-600', dot: 'bg-orange-500' },
-  veille:   { color: 'text-yellow-600', dot: 'bg-yellow-500' },
+  danger:   { color: 'text-orange-600', dot: 'bg-orange-500' },
+  controle: { color: 'text-yellow-600', dot: 'bg-yellow-500' },
+  veille:   { color: 'text-green-600',  dot: 'bg-green-500' },
 }
 
 /**
@@ -402,9 +402,9 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   }
   // Métadonnées d'affichage des 3 zones de dangerosité (cartographie FM5).
   const ZONE_INFO: Record<EcosystemZone, { title: string; desc: string; border: string; bg: string; titleColor: string; dot: string }> = {
-    danger:   { title: t.workshop.a3.zoneDangerTitle,   desc: t.workshop.a3.zoneDangerDesc,   border: 'border-red-200',    bg: 'bg-red-50',    titleColor: 'text-red-800',    dot: 'bg-red-500' },
-    controle: { title: t.workshop.a3.zoneControleTitle, desc: t.workshop.a3.zoneControleDesc, border: 'border-orange-200', bg: 'bg-orange-50', titleColor: 'text-orange-800', dot: 'bg-orange-500' },
-    veille:   { title: t.workshop.a3.zoneVeilleTitle,   desc: t.workshop.a3.zoneVeilleDesc,   border: 'border-yellow-200', bg: 'bg-yellow-50', titleColor: 'text-yellow-800', dot: 'bg-yellow-500' },
+    danger:   { title: t.workshop.a3.zoneDangerTitle,   desc: t.workshop.a3.zoneDangerDesc,   border: 'border-orange-200', bg: 'bg-orange-50', titleColor: 'text-orange-800', dot: 'bg-orange-500' },
+    controle: { title: t.workshop.a3.zoneControleTitle, desc: t.workshop.a3.zoneControleDesc, border: 'border-yellow-200', bg: 'bg-yellow-50', titleColor: 'text-yellow-800', dot: 'bg-yellow-500' },
+    veille:   { title: t.workshop.a3.zoneVeilleTitle,   desc: t.workshop.a3.zoneVeilleDesc,   border: 'border-green-200',  bg: 'bg-green-50',  titleColor: 'text-green-800',  dot: 'bg-green-500' },
   }
   const ZONE_ORDER: EcosystemZone[] = ['danger', 'controle', 'veille']
   // Libellés/échelles des 4 sous-critères (échelle configurable).
@@ -560,7 +560,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                         <label className="ml-auto flex items-center gap-1.5 cursor-pointer text-gray-600">
                           <input type="checkbox" checked={!!p.critique} onChange={e => updatePP(p.id, 'critique', e.target.checked)}
                             className="accent-red-600" />
-                          <span className={p.critique ? 'font-semibold text-red-600' : ''}>★ {t.workshop.a3.ppCritiqueLabel}</span>
+                          <span className={p.critique ? 'font-semibold text-amber-600' : ''}><span className="text-amber-500">★</span> {t.workshop.a3.ppCritiqueLabel}</span>
                         </label>
                       </div>
                     </div>

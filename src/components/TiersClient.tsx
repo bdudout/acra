@@ -24,17 +24,19 @@ export interface TiersRow {
   critique?:   boolean
 }
 
-// Couleurs de zone (alignées sur le radar d'écosystème — 3 zones)
+// Couleurs de zone (alignées sur le radar d'écosystème — 3 zones : danger=orange, contrôle=jaune, veille=vert)
 const ZONE_STYLE: Record<EcosystemZone, { badge: string; dot: string }> = {
-  danger:   { badge: 'bg-red-100 text-red-700 border-red-200',       dot: 'bg-red-500' },
-  controle: { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
-  veille:   { badge: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500' },
+  danger:   { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  controle: { badge: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-500' },
+  veille:   { badge: 'bg-green-100 text-green-700 border-green-200',     dot: 'bg-green-500' },
 }
 
 export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [zone, setZone] = useState<EcosystemZone | 'all'>('all')
+  const [onlyCritique, setOnlyCritique] = useState(false)
+  const critiqueCount = useMemo(() => tiers.filter(x => x.critique).length, [tiers])
 
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const radar = t.workshop.a3.radar
@@ -52,6 +54,7 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return tiers.filter(x => {
+      if (onlyCritique && !x.critique) return false
       if (zone !== 'all' && x.zone !== zone) return false
       if (!q) return true
       return x.nom.toLowerCase().includes(q)
@@ -59,13 +62,13 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
         || x.analyseNom.toLowerCase().includes(q)
         || (ppTypes[x.type] ?? x.type).toLowerCase().includes(q)
     })
-  }, [tiers, search, zone, ppTypes])
+  }, [tiers, search, zone, onlyCritique, ppTypes])
 
   const filters: { key: EcosystemZone | 'all'; label: string; count: number; active: string }[] = [
     { key: 'all',      label: t.tiers.filterAll, count: counts.all,      active: 'bg-gray-100 text-gray-800' },
-    { key: 'danger',   label: radar.zoneDanger,  count: counts.danger,   active: 'bg-red-100 text-red-800' },
-    { key: 'controle', label: radar.zoneControle, count: counts.controle, active: 'bg-orange-100 text-orange-800' },
-    { key: 'veille',   label: radar.zoneVeille,  count: counts.veille,   active: 'bg-yellow-100 text-yellow-800' },
+    { key: 'danger',   label: radar.zoneDanger,  count: counts.danger,   active: 'bg-orange-100 text-orange-800' },
+    { key: 'controle', label: radar.zoneControle, count: counts.controle, active: 'bg-yellow-100 text-yellow-800' },
+    { key: 'veille',   label: radar.zoneVeille,  count: counts.veille,   active: 'bg-green-100 text-green-800' },
   ]
 
   return (
@@ -82,6 +85,14 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
             {f.label} <span className="opacity-70">({f.count})</span>
           </button>
         ))}
+        {/* Filtre indépendant : uniquement les tiers critiques */}
+        <button
+          onClick={() => setOnlyCritique(v => !v)}
+          aria-pressed={onlyCritique}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${onlyCritique ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+        >
+          <span className="text-amber-500">★</span> {t.tiers.filterCritique} <span className="opacity-70">({critiqueCount})</span>
+        </button>
       </div>
 
       {/* Recherche */}
@@ -95,8 +106,8 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
 
       {filtered.length === 0 ? (
         <div className="card p-10 text-center">
-          <div className="text-4xl mb-3">{search || zone !== 'all' ? '🔍' : '🤝'}</div>
-          <p className="text-gray-500">{search || zone !== 'all' ? t.tiers.noMatch : t.tiers.noTiers}</p>
+          <div className="text-4xl mb-3">{search || zone !== 'all' || onlyCritique ? '🔍' : '🤝'}</div>
+          <p className="text-gray-500">{search || zone !== 'all' || onlyCritique ? t.tiers.noMatch : t.tiers.noTiers}</p>
         </div>
       ) : (
         <>

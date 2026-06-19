@@ -651,9 +651,9 @@ function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
 // ─── Écosystème (Atelier 3) — radar de menace + tableau parties prenantes ──────
 
 const ZONE_PDF: Record<EcosystemZone, { fill: string; label: string }> = {
-  danger:   { fill: C.red,     label: 'Danger' },
-  controle: { fill: C.orange,  label: 'Contrôle' },
-  veille:   { fill: C.yellow,  label: 'Veille' },
+  danger:   { fill: C.orange, label: 'Danger' },
+  controle: { fill: C.yellow, label: 'Contrôle' },
+  veille:   { fill: C.green,  label: 'Veille' },
 }
 // Point : couleur = fiabilité (0..3 rouge→vert) · rayon = exposition (0..3 croissant).
 const FIAB_PDF = [C.red, C.orange, C.yellow, C.green]
@@ -703,10 +703,10 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
       <Svg width={CXr * 2} height={CYr * 2}>
-        {/* 3 anneaux : veille (bord) → contrôle → danger (du plus grand au plus petit) */}
-        <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.yellow} fillOpacity={0.10} stroke={C.yellow} strokeOpacity={0.30} />
-        <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.orange} fillOpacity={0.14} stroke={C.orange} strokeOpacity={0.40} />
-        <Circle cx={CXr} cy={CYr} r={rings.danger}   fill={C.red}    fillOpacity={0.18} stroke={C.red}    strokeOpacity={0.45} />
+        {/* 3 anneaux : veille=vert (bord) → contrôle=jaune → danger=orange (centre) */}
+        <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.green}  fillOpacity={0.10} stroke={C.green}  strokeOpacity={0.30} />
+        <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.yellow} fillOpacity={0.16} stroke={C.yellow} strokeOpacity={0.40} />
+        <Circle cx={CXr} cy={CYr} r={rings.danger}   fill={C.orange} fillOpacity={0.18} stroke={C.orange} strokeOpacity={0.45} />
         {types.length > 1 && (
           <G>
             {types.map((ty, i) => {

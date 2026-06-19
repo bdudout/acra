@@ -51,16 +51,16 @@ interface Props {
 }
 
 const CX = 240, CY = 240, R_MAX = 190
-// Couleur des ANNEAUX de zone (rayon = niveau de menace) — 3 zones.
+// Couleur des ANNEAUX de zone (du centre vers le bord) : danger=orange, contrôle=jaune, veille=vert.
 const ZONE_COLOR: Record<EcosystemZone, string> = {
-  danger:   '#dc2626', // red-600
-  controle: '#ea580c', // orange-600
-  veille:   '#eab308', // yellow-500
+  danger:   '#ea580c', // orange-600
+  controle: '#eab308', // yellow-500
+  veille:   '#16a34a', // green-600
 }
 // Couleur d'un POINT selon sa fiabilité cyber (niveau 0..3 : rouge → vert).
 const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
-// Rayon d'un POINT selon son exposition (niveau 0..3 : croissant).
-const EXPO_RADIUS = [4.5, 6, 7.5, 9.5]
+// Rayon d'un POINT selon son exposition (niveau 0..3 : croissant) — grossis (méthodologie).
+const EXPO_RADIUS = [7, 9, 11.5, 14]
 const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
 export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles }: Props) {
@@ -95,10 +95,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       {!hideHeader && <h3 className="mb-3 font-semibold text-gray-800">{r.title}</h3>}
 
-      <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
+      <div className="flex flex-col items-center gap-4">
         <svg
           viewBox="-58 0 596 480"
-          className="w-full max-w-[480px] shrink-0"
+          className="w-full max-w-[520px] mx-auto"
           role="img"
           aria-label={r.title}
         >
@@ -124,7 +124,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               <g key={ty}>
                 {n > 1 && (
                   <line x1={CX} y1={CY} x2={bx} y2={by}
-                    stroke="#9ca3af" strokeOpacity={0.3} strokeDasharray="3 3" />
+                    stroke="#6b7280" strokeOpacity={0.6} strokeWidth={1.3} strokeDasharray="5 3" />
                 )}
                 <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle"
                   className="fill-gray-500" fontSize={10.5}>
@@ -190,45 +190,47 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           })}
         </svg>
 
-        {/* Légende + détail du point survolé */}
-        <div className="w-full md:w-52">
-          {/* Anneaux = zones de menace (3 zones) */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendZonesTitle}</div>
-            {([
-              ['danger', r.zoneDanger],
-              ['controle', r.zoneControle],
-              ['veille', r.zoneVeille],
-            ] as [EcosystemZone, string][]).map(([z, label]) => (
-              <div key={z} className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: ZONE_COLOR[z] }} aria-hidden="true" />
-                {label}
-                <span className="ml-auto text-gray-400">
-                  {points.filter(p => p.zone === z).length}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Légende (sous le radar) + détail du point survolé */}
+        <div className="w-full border-t border-gray-100 pt-3">
+          <div className="flex flex-wrap justify-center gap-x-10 gap-y-3">
+            {/* Anneaux = zones de menace (3 zones) */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendZonesTitle}</div>
+              {([
+                ['danger', r.zoneDanger],
+                ['controle', r.zoneControle],
+                ['veille', r.zoneVeille],
+              ] as [EcosystemZone, string][]).map(([z, label]) => (
+                <div key={z} className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: ZONE_COLOR[z] }} aria-hidden="true" />
+                  {label}
+                  <span className="ml-auto pl-3 text-gray-400">
+                    {points.filter(p => p.zone === z).length}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-          {/* Points : couleur = fiabilité · taille = exposition · ★ = critique */}
-          <div className="mt-3 space-y-1 border-t border-gray-100 pt-2 text-[11px] text-gray-500">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendPointsTitle}</div>
-            <div className="flex items-center gap-1.5">
-              <span className="flex gap-0.5" aria-hidden="true">
-                {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
-              </span>
-              {r.colorLegend}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="flex items-end gap-0.5" aria-hidden="true">
-                {EXPO_RADIUS.map((rr, i) => <span key={i} className="inline-block rounded-full bg-gray-400" style={{ width: rr, height: rr }} />)}
-              </span>
-              {r.sizeLegend}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 text-center" style={{ color: STAR_COLOR }} aria-hidden="true">★</span>
-              {r.critiqueLegend}
+            {/* Points : couleur = fiabilité · taille = exposition · ★ = critique */}
+            <div className="space-y-1 text-[11px] text-gray-500">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendPointsTitle}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="flex gap-0.5" aria-hidden="true">
+                  {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
+                </span>
+                {r.colorLegend}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-end gap-0.5" aria-hidden="true">
+                  {EXPO_RADIUS.map((rr, i) => <span key={i} className="inline-block rounded-full bg-gray-400" style={{ width: rr, height: rr }} />)}
+                </span>
+                {r.sizeLegend}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 text-center" style={{ color: STAR_COLOR }} aria-hidden="true">★</span>
+                {r.critiqueLegend}
+              </div>
             </div>
           </div>
 
