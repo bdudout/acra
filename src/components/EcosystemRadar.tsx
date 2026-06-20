@@ -23,6 +23,7 @@ import {
   type EcosystemZone,
 } from '@/lib/ecosystem-radar'
 import { resolveEchelles, bornesMenace, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
+import MenaceFormulaDiagram from '@/components/MenaceFormulaDiagram'
 
 interface PartieLike {
   id: string
@@ -74,6 +75,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const [active, setActive] = useState<RadarPoint | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
+  const [showHelp, setShowHelp] = useState(false)
 
   if (!parties.length) {
     return (
@@ -238,58 +240,60 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           })()}
         </svg>
 
-        {/* Légende (sous le radar) + détail du point survolé */}
+        {/* Légende compacte (sous le radar) + aide dépliable */}
         <div className="w-full border-t border-gray-100 pt-3">
-          <div className="flex flex-wrap justify-center gap-x-10 gap-y-3">
-            {/* Anneaux = zones de menace (3 zones) */}
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendZonesTitle}</div>
-              {([
-                ['danger', r.zoneDanger],
-                ['controle', r.zoneControle],
-                ['veille', r.zoneVeille],
-              ] as [EcosystemZone, string][]).map(([z, label]) => (
-                <div key={z} className="flex items-center gap-2 text-xs text-gray-600">
-                  <span className="inline-block h-3 w-3 rounded-full"
-                    style={{ backgroundColor: ZONE_COLOR[z] }} aria-hidden="true" />
-                  {label}
-                  <span className="ml-auto pl-3 text-gray-400">
-                    {points.filter(p => p.zone === z).length}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Points : couleur = fiabilité · taille = exposition · ★ = critique */}
-            <div className="space-y-1 text-[11px] text-gray-500">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendPointsTitle}</div>
-              <div className="flex items-center gap-1.5">
-                <span className="flex gap-0.5" aria-hidden="true">
-                  {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
-                </span>
-                {r.colorLegend}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="flex items-end gap-0.5" aria-hidden="true">
-                  {EXPO_RADIUS.map((rr, i) => <span key={i} className="inline-block rounded-full bg-gray-400" style={{ width: rr, height: rr }} />)}
-                </span>
-                {r.sizeLegend}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 text-center" style={{ color: STAR_COLOR }} aria-hidden="true">★</span>
-                {r.critiqueLegend}
-              </div>
-            </div>
-
-            {/* Lecture du diagramme (mêmes formats que les autres groupes) */}
-            <div className="max-w-[230px] space-y-1 text-[11px] text-gray-500">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{r.legendReadTitle}</div>
-              <div>{r.radiusLegend}</div>
-              <div>{r.sectorLegend}</div>
-              {editable && <div className="text-gray-400 italic">{r.editHint}</div>}
-              {aggregated && <div className="text-gray-400 italic">{r.multiLegend}</div>}
-            </div>
+          {/* Ligne 1 — zones de menace (anneaux) */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-600">
+            {([
+              ['danger', r.zoneDanger],
+              ['controle', r.zoneControle],
+              ['veille', r.zoneVeille],
+            ] as [EcosystemZone, string][]).map(([z, label]) => (
+              <span key={z} className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: ZONE_COLOR[z] }} aria-hidden="true" />
+                {label}
+                <span className="text-gray-400">({points.filter(p => p.zone === z).length})</span>
+              </span>
+            ))}
           </div>
+          {/* Ligne 2 — encodage des points */}
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="flex gap-0.5" aria-hidden="true">
+                {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
+              </span>
+              {r.colorLegend}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="flex items-end gap-0.5" aria-hidden="true">
+                {EXPO_RADIUS.map((rr, i) => <span key={i} className="inline-block rounded-full bg-gray-400" style={{ width: rr, height: rr }} />)}
+              </span>
+              {r.sizeLegend}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span style={{ color: STAR_COLOR }} aria-hidden="true">★</span>
+              {r.critiqueLegend}
+            </span>
+          </div>
+          {/* Lien d'aide — notes de lecture + schéma de calcul (masqués par défaut) */}
+          <div className="mt-2 text-center">
+            <button type="button" onClick={() => setShowHelp(v => !v)}
+              aria-expanded={showHelp}
+              className="text-xs text-blue-600 underline hover:text-blue-800">
+              {showHelp ? r.helpHide : r.helpToggle}
+            </button>
+          </div>
+          {showHelp && (
+            <div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div className="space-y-0.5 text-center text-[11px] text-gray-500">
+                <div>{r.radiusLegend}</div>
+                <div>{r.sectorLegend}</div>
+                {editable && <div className="italic text-gray-400">{r.editHint}</div>}
+                {aggregated && <div className="italic text-gray-400">{r.multiLegend}</div>}
+              </div>
+              <MenaceFormulaDiagram />
+            </div>
+          )}
         </div>
       </div>
     </div>
