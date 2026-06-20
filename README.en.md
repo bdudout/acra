@@ -60,12 +60,14 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - Visual **risk matrix** (severity × likelihood) with residual levels and before/after comparison
 - **DICT** criteria (Availability, Integrity, Confidentiality, Traceability) on business values and supporting assets
 - MITRE ATT&CK links on operational scenarios
+- **Ecosystem threat cartography** (Workshop 3, ANSSI method sheet 5): stakeholder dangerousness computed on 4 sub-criteria, polar radar with 3 zones, configurable scales, critical-third-party flagging — [see details](#️-ecosystem-threat-cartography-workshop-3)
+- Cross-cutting **Third parties** view: organization-wide *third-party management*, aggregated across all analyses, filterable by zone and criticality
 
 ### 🔐 Security & frameworks
 
 - Security measures from **7 frameworks**: ISO 27001:2022 · NIST CSF · NIST 800-53 · CIS Controls v8 · ANSSI Hygiene · HDS · PCI-DSS + custom controls
 - Configurable password policy (length, complexity, expiry, history, lockout)
-- Configurable **MFA** (TOTP, SMS) with a 60-min confirmation window to avoid accidental lockout
+- Configurable **MFA** (one-time passcode by **email** or **SMS**) with a 60-min confirmation window to avoid accidental lockout
 - Configurable **SSO** (SAML 2.0 or OIDC) — automatic account provisioning
 - Full, exportable audit trail (CSV)
 
@@ -75,6 +77,7 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - Approval workflow: submission → review → approval (CISO or Risk Manager)
 - Per-analysis access sharing with individual permissions
 - Admin dashboard: user management, account creation, suspension, audit logs
+- **Recovery (trash)**: an analysis deleted by a user remains restorable by an administrator for **30 days** before permanent purge
 
 ### 📊 Export & reporting
 
@@ -424,7 +427,7 @@ ebios-rm/
 - Signed **JWT** sessions (`NEXTAUTH_SECRET`)
 - Next.js authentication middleware on all protected routes
 - **Security HTTP headers**: X-Frame-Options, CSP, X-Content-Type-Options, Referrer-Policy, HSTS
-- Server-side input validation with **Zod** on all API routes
+- Server-side input validation: **Zod** schemas (authentication, admin policies) and **allowlist sanitizers** on workshops and imports (anti mass-assignment, CWE-915)
 - Per-user data isolation + per-analysis RBAC
 - **Full audit trail** (`AuditLog` table) for all sensitive actions, exportable to CSV
 - Rate limiting on authentication routes
@@ -466,11 +469,116 @@ curl https://your-domain.com/api/health
 |---|----------|-------------|
 | **W1** | Scope & security baseline | Scope, missions, business values (DICT criteria), supporting assets, feared events, security frameworks |
 | **W2** | Risk sources | Identify attackers, targeted objectives (RS/TO couples), P1/P2 relevance levels |
-| **W3** | Strategic scenarios | Ecosystem, stakeholders, attack paths, ecosystem security measures |
+| **W3** | Strategic scenarios | Ecosystem, **stakeholder threat cartography** (dangerousness radar), attack paths, ecosystem security measures |
 | **W4** | Operational scenarios | Attackers' technical actions, likelihood, MITRE ATT&CK links |
 | **W5** | Risk treatment | Treatment strategies (reduce, transfer, refuse, accept), per-framework measures, residual risks, action plan |
 
 > **🚀 Express mode**: a fast pass W1 → W2 → W5, available from the dashboard, to obtain a risk list and an action plan in under 30 minutes. Ideal for urgent contexts or first analyses.
+
+---
+
+## 🗺️ Ecosystem threat cartography (Workshop 3)
+
+ACRA implements **ANSSI / Club EBIOS method sheet 5** ("estimating the dangerousness of stakeholders") to prioritize ecosystem third parties: suppliers, service providers, clients, partners, regulators.
+
+A third party's threat level is computed from **4 sub-criteria** rated on configurable qualitative scales:
+
+```text
+              Dependency × Penetration              (exposure, ↑ threat)
+threat  =  ───────────────────────────────────
+              Cyber maturity × Trust                 (reliability, ↓ threat)
+```
+
+Third parties are placed on a **polar radar**: the closer to the centre, the higher the threat. Three **equal-width** zones — danger / control / watch — drive prioritization (third parties in danger or control are *critical* and feed the strategic scenarios).
+
+| Threat radar | Calculation diagram (built-in help) |
+|---|---|
+| ![Ecosystem threat radar](docs/screenshots/ecosystem-radar-light.png) | ![Threat level calculation](docs/screenshots/ecosystem-formula-light.png) |
+
+**Reading the radar:**
+
+- **Colour** of a point = cyber reliability (red low → green high)
+- **Size** of a point = exposure (bigger = more exposed)
+- **Rings** = threat zones (danger orange · control yellow · watch green)
+- **★** = third party manually flagged *critical*
+- **Label** = editable short name (click directly on the point's label) or ref `T1, T2…`
+- Hovering a point → details of the 4 sub-criteria, exposure/reliability and threat
+
+**Configurable scales** — each level of the 4 criteria (1→4 by default) can be renamed in `Configuration → Ecosystem`, with levels added/removed (ADMIN only). The radar adapts automatically to the scale.
+
+![Configurable dangerousness scales](docs/screenshots/ecosystem-scales-light.png)
+
+**Cross-cutting Third parties view** — the **Third parties** page aggregates stakeholders from **all** analyses, filterable by zone and criticality (★), for organization-wide *third-party management*. A same third party may appear several times (its dangerousness depends on the analysed scope).
+
+![Cross-cutting third parties view](docs/screenshots/tiers-light.png)
+
+The radar, criticality stars and the stakeholder table (4 sub-criteria + *Critical* column) are also present in the **PDF export**.
+
+---
+
+## 🏛️ Recommended secure architecture (ANSSI best practices)
+
+ACRA handles sensitive data (risk analyses, ecosystem cartography). Deployment should follow the **ANSSI IT hygiene guide** principles: segmentation, defence in depth, least privilege, strong authentication, logging.
+
+### Case 1 — Internal *on-premises* hosting (recommended)
+
+Host **in your datacenter**, behind a firewall, with no direct Internet exposure. Preferred scenario for the most sensitive data.
+
+```mermaid
+flowchart LR
+  U["Internal workstations<br/>(LAN / VPN)"] -->|HTTPS / TLS 1.2+| FW["Firewall + WAF"]
+  subgraph DC["Internal datacenter — segmented trust zone"]
+    FW --> RP["Reverse proxy TLS<br/>Nginx / Caddy / Traefik<br/>HSTS, security headers"]
+    RP --> APP["ACRA (Next.js)<br/>Docker container"]
+    IDP["SSO IdP<br/>SAML 2.0 / OIDC<br/>+ MFA admins"] -.->|federation| APP
+    APP --> DB[("PostgreSQL<br/>private network<br/>encrypted at rest")]
+    APP --> BK[("Backups<br/>encrypted, offline")]
+    APP --> SIEM["Logs / SIEM"]
+  end
+```
+
+**Key measures:**
+- **Segmented** network (dedicated VLAN), application **not exposed** to the Internet; access via LAN or **VPN**.
+- **Firewall** + WAF upstream; reverse proxy terminating HTTPS in **TLS 1.2+** (`NEXTAUTH_URL=https://…`), **HSTS** enabled.
+- **SSO** (SAML/OIDC) + **mandatory MFA for administrators** (email/SMS OTP).
+- PostgreSQL **never publicly exposed**, **encrypted at rest**, access restricted to the app.
+- **Encrypted backups**, regular and tested; secrets via a vault (`SECRETS_ENCRYPTION_KEY`).
+- Centralized **logging** (ACRA audit trail + Winston logs → SIEM); periodic access reviews.
+
+### Case 2 — External *PaaS / IaaS* hosting (cloud)
+
+If hosting on an external cloud (IaaS/PaaS), **reduce the attack surface** and strengthen authentication for **all** accounts.
+
+```mermaid
+flowchart LR
+  U["Users"] -->|"SSL VPN **or** IP allowlist"| GW["Gateway<br/>WAF + TLS"]
+  subgraph CL["PaaS / IaaS cloud — exposed zone"]
+    GW --> APP["Containerized ACRA"]
+    IDP["SSO IdP + MFA<br/>for ALL accounts"] -.->|federation| APP
+    APP --> DB[("Managed PostgreSQL<br/>private access, encrypted")]
+    APP --> SIEM["Logs exported<br/>to SIEM"]
+  end
+```
+
+**Key measures (in addition to case 1):**
+- Restricted access via **IP allowlist** **or** **SSL VPN** — no open public access.
+- **SSO + MFA for ALL users** (not just admins).
+- **Managed database on a private network** (never a public IP), encryption in transit and at rest.
+- Secrets in a **managed vault** (KMS / Secrets Manager); regular rotation.
+- Logs exported to a **SIEM**; alerting on sensitive events (logins, exports, deletions).
+
+### What ACRA provides to apply these best practices
+
+| ANSSI best practice | ACRA feature |
+|---|---|
+| Strong authentication | **MFA** email/SMS OTP, `ALL` or `ADMIN_ONLY` scope |
+| Federated identity | **SSO** SAML 2.0 / OIDC with auto-provisioning |
+| Least privilege | **RBAC** 5 roles + per-analysis sharing |
+| Traceability | Full **audit trail**, CSV-exportable |
+| Confidentiality in transit | Enforced HTTPS + **security headers** (CSP, HSTS, X-Frame-Options…) |
+| Secret protection | Encrypted secrets (`SECRETS_ENCRYPTION_KEY`), bcrypt (cost 12) |
+| Reversibility / error tolerance | **30-day trash** (soft delete + admin recovery) |
+| Input robustness | Zod + **allowlist sanitizers** (anti mass-assignment) |
 
 ---
 

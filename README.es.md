@@ -60,12 +60,14 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 - **Matriz de riesgos** visual (gravedad × probabilidad) con niveles residuales y comparación antes/después de las medidas
 - Criterios **DICT** (Disponibilidad, Integridad, Confidencialidad, Trazabilidad) sobre valores de negocio y activos de soporte
 - Enlaces MITRE ATT&CK en los escenarios operativos
+- **Cartografía de amenaza del ecosistema** (Taller 3, ficha de método 5 de ANSSI): peligrosidad de las partes interesadas calculada con 4 subcriterios, radar polar de 3 zonas, escalas configurables, marcado de terceros críticos — [ver detalle](#️-cartografía-de-amenaza-del-ecosistema-taller-3)
+- Vista transversal de **Terceros**: gestión de terceros (*third-party management*) a escala de la organización, agregada sobre todos los análisis, filtrable por zona y criticidad
 
 ### 🔐 Seguridad y marcos
 
 - Medidas de seguridad de **7 marcos**: ISO 27001:2022 · NIST CSF · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS + controles personalizados
 - Política de contraseñas configurable (longitud, complejidad, caducidad, historial, bloqueo)
-- **MFA** configurable (TOTP, SMS) con ventana de confirmación de 60 min para evitar bloqueos accidentales
+- **MFA** configurable (código de un solo uso por **correo electrónico** o **SMS**) con ventana de confirmación de 60 min para evitar bloqueos accidentales
 - **SSO** configurable (SAML 2.0 u OIDC) — aprovisionamiento automático de cuentas
 - Pista de auditoría completa exportable (CSV)
 
@@ -75,6 +77,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 - Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager)
 - Compartición de acceso por análisis con permisos individuales
 - Panel de administración: gestión de usuarios, creación de cuentas, suspensión, registros de auditoría
+- **Recuperación (papelera)**: un análisis eliminado por un usuario sigue siendo restaurable por un administrador durante **30 días** antes de su purga definitiva
 
 ### 📊 Exportación y reporting
 
@@ -424,7 +427,7 @@ ebios-rm/
 - Sesiones **JWT** firmadas (`NEXTAUTH_SECRET`)
 - Middleware de autenticación Next.js en todas las rutas protegidas
 - **Cabeceras HTTP de seguridad**: X-Frame-Options, CSP, X-Content-Type-Options, Referrer-Policy, HSTS
-- Validación de entradas del lado servidor con **Zod** en todas las rutas API
+- Validación de entradas del lado servidor: esquemas **Zod** (autenticación, políticas de administración) y **sanitizadores por lista blanca** en talleres e importaciones (anti asignación masiva, CWE-915)
 - Aislamiento de datos por usuario + RBAC por análisis
 - **Pista de auditoría completa** (tabla `AuditLog`) para todas las acciones sensibles, exportable a CSV
 - Rate limiting en las rutas de autenticación
@@ -466,11 +469,116 @@ curl https://tu-dominio.com/api/health
 |---|--------|-------------|
 | **T1** | Encuadre y base de seguridad | Alcance, misiones, valores de negocio (criterios DICT), activos de soporte, eventos temidos, marcos de seguridad |
 | **T2** | Fuentes de riesgo | Identificación de atacantes, objetivos perseguidos (pares FR/OP), niveles de pertinencia P1/P2 |
-| **T3** | Escenarios estratégicos | Ecosistema, partes interesadas, caminos de ataque, medidas de seguridad del ecosistema |
+| **T3** | Escenarios estratégicos | Ecosistema, **cartografía de amenaza de las partes interesadas** (radar de peligrosidad), caminos de ataque, medidas de seguridad del ecosistema |
 | **T4** | Escenarios operativos | Acciones técnicas de los atacantes, probabilidad, enlaces MITRE ATT&CK |
 | **T5** | Tratamiento del riesgo | Estrategias de tratamiento (reducción, transferencia, rechazo, aceptación), medidas por marco, riesgos residuales, plan de acción |
 
 > **🚀 Modo Express**: un recorrido rápido T1 → T2 → T5, disponible desde el panel, para obtener una lista de riesgos y un plan de acción en menos de 30 minutos. Ideal para contextos urgentes o primeros análisis.
+
+---
+
+## 🗺️ Cartografía de amenaza del ecosistema (Taller 3)
+
+ACRA implementa la **ficha de método 5 de ANSSI / Club EBIOS** («estimar la peligrosidad de las partes interesadas») para priorizar los terceros del ecosistema: proveedores, prestadores, clientes, socios, reguladores.
+
+El nivel de amenaza de un tercero se calcula a partir de **4 subcriterios** valorados en escalas cualitativas configurables:
+
+```text
+              Dependencia × Penetración             (exposición, ↑ amenaza)
+amenaza  =  ───────────────────────────────────
+              Madurez cibernética × Confianza        (fiabilidad, ↓ amenaza)
+```
+
+Los terceros se sitúan en un **radar polar**: cuanto más cerca del centro, mayor es la amenaza. Tres zonas de **igual anchura** — peligro / control / vigilancia — guían la priorización (los terceros en peligro o control son *críticos* y alimentan los escenarios estratégicos).
+
+| Radar de amenaza | Esquema de cálculo (ayuda integrada) |
+|---|---|
+| ![Radar de amenaza del ecosistema](docs/screenshots/ecosystem-radar-light.png) | ![Cálculo del nivel de amenaza](docs/screenshots/ecosystem-formula-light.png) |
+
+**Lectura del radar:**
+
+- **Color** del punto = fiabilidad cibernética (rojo baja → verde alta)
+- **Tamaño** del punto = exposición (mayor = más expuesto)
+- **Anillos** = zonas de amenaza (peligro naranja · control amarillo · vigilancia verde)
+- **★** = tercero marcado como *crítico* (manual)
+- **Etiqueta** = nombre corto editable (clic directo en la etiqueta del punto) o ref. `T1, T2…`
+- Al pasar el cursor sobre un punto → detalle de los 4 subcriterios, exposición/fiabilidad y amenaza
+
+**Escalas configurables** — cada nivel de los 4 criterios (1→4 por defecto) puede renombrarse en `Configuración → Ecosistema`, con adición/eliminación de niveles (solo ADMIN). El radar se adapta automáticamente a la escala.
+
+![Escalas de peligrosidad configurables](docs/screenshots/ecosystem-scales-light.png)
+
+**Vista transversal de Terceros** — la página **Terceros** agrega las partes interesadas de **todos** los análisis, filtrables por zona y criticidad (★), para una gestión de terceros (*third-party management*) a escala de la organización. Un mismo tercero puede aparecer varias veces (su peligrosidad depende del alcance analizado).
+
+![Vista transversal de terceros](docs/screenshots/tiers-light.png)
+
+El radar, las estrellas de criticidad y la tabla de partes interesadas (4 subcriterios + columna *Crítico*) también están presentes en la **exportación PDF**.
+
+---
+
+## 🏛️ Arquitectura segura recomendada (buenas prácticas ANSSI)
+
+ACRA trata datos sensibles (análisis de riesgos, cartografía del ecosistema). El despliegue debe seguir los principios de la **guía de higiene informática de ANSSI**: segmentación, defensa en profundidad, mínimo privilegio, autenticación fuerte, registro.
+
+### Caso 1 — Alojamiento interno *on-premises* (recomendado)
+
+Alojamiento **en su centro de datos**, detrás de un cortafuegos, sin exposición directa a Internet. Escenario preferente para los datos más sensibles.
+
+```mermaid
+flowchart LR
+  U["Puestos internos<br/>(LAN / VPN)"] -->|HTTPS / TLS 1.2+| FW["Cortafuegos + WAF"]
+  subgraph DC["Centro de datos interno — zona de confianza segmentada"]
+    FW --> RP["Reverse proxy TLS<br/>Nginx / Caddy / Traefik<br/>HSTS, cabeceras de seguridad"]
+    RP --> APP["ACRA (Next.js)<br/>contenedor Docker"]
+    IDP["IdP SSO<br/>SAML 2.0 / OIDC<br/>+ MFA admins"] -.->|federación| APP
+    APP --> DB[("PostgreSQL<br/>red privada<br/>cifrado en reposo")]
+    APP --> BK[("Copias de seguridad<br/>cifradas, fuera de línea")]
+    APP --> SIEM["Registros / SIEM"]
+  end
+```
+
+**Medidas clave:**
+- Red **segmentada** (VLAN dedicada), aplicación **no expuesta** a Internet; acceso vía LAN o **VPN**.
+- **Cortafuegos** + WAF en cabeza; reverse proxy terminando HTTPS en **TLS 1.2+** (`NEXTAUTH_URL=https://…`), **HSTS** activado.
+- **SSO** (SAML/OIDC) + **MFA obligatoria para los administradores** (OTP correo/SMS).
+- PostgreSQL **nunca expuesto públicamente**, **cifrado en reposo**, acceso restringido a la app.
+- **Copias de seguridad cifradas**, regulares y probadas; secretos mediante una bóveda (`SECRETS_ENCRYPTION_KEY`).
+- **Registro** centralizado (pista de auditoría de ACRA + registros Winston → SIEM); revisiones periódicas de acceso.
+
+### Caso 2 — Alojamiento externo *PaaS / IaaS* (nube)
+
+Si el alojamiento se hace en una nube externa (IaaS/PaaS), **reduzca la superficie de ataque** y refuerce la autenticación para **todas** las cuentas.
+
+```mermaid
+flowchart LR
+  U["Usuarios"] -->|"VPN SSL **o** lista blanca de IP"| GW["Pasarela<br/>WAF + TLS"]
+  subgraph CL["Nube PaaS / IaaS — zona expuesta"]
+    GW --> APP["ACRA en contenedor"]
+    IDP["IdP SSO + MFA<br/>para TODAS las cuentas"] -.->|federación| APP
+    APP --> DB[("PostgreSQL gestionado<br/>acceso privado, cifrado")]
+    APP --> SIEM["Registros exportados<br/>al SIEM"]
+  end
+```
+
+**Medidas clave (además del caso 1):**
+- Acceso restringido mediante **lista blanca de IP** **o** **VPN SSL** — sin acceso público abierto.
+- **SSO + MFA para TODOS los usuarios** (no solo los administradores).
+- **Base de datos gestionada en red privada** (nunca una IP pública), cifrado en tránsito y en reposo.
+- Secretos en una **bóveda gestionada** (KMS / Secrets Manager); rotación regular.
+- Registros exportados a un **SIEM**; alertas sobre eventos sensibles (inicios de sesión, exportaciones, eliminaciones).
+
+### Lo que ACRA aporta para aplicar estas buenas prácticas
+
+| Buena práctica ANSSI | Función de ACRA |
+|---|---|
+| Autenticación fuerte | **MFA** OTP correo/SMS, ámbito `ALL` o `ADMIN_ONLY` |
+| Identidad federada | **SSO** SAML 2.0 / OIDC con aprovisionamiento automático |
+| Mínimo privilegio | **RBAC** 5 roles + compartición por análisis |
+| Trazabilidad | **Pista de auditoría** completa, exportable a CSV |
+| Confidencialidad en tránsito | HTTPS forzado + **cabeceras de seguridad** (CSP, HSTS, X-Frame-Options…) |
+| Protección de secretos | Secretos cifrados (`SECRETS_ENCRYPTION_KEY`), bcrypt (coste 12) |
+| Reversibilidad / tolerancia a errores | **Papelera de 30 días** (soft delete + recuperación admin) |
+| Robustez de entradas | Zod + **sanitizadores por lista blanca** (anti asignación masiva) |
 
 ---
 
