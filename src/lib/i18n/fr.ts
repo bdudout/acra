@@ -851,6 +851,23 @@ export const fr = {
     navSecurity:    'Sécurité',
     navAudit:       'Journal d\'audit',
     navSmtp:        'SMTP',
+    navRecovery:    'Récupération',
+    recovery: {
+      title:          'Récupération des analyses',
+      subtitle:       'Analyses supprimées par leurs propriétaires, récupérables pendant {days} jours avant purge définitive.',
+      empty:          'Aucune analyse dans la corbeille.',
+      colName:        'Analyse',
+      colOwner:       'Propriétaire',
+      colDeleted:     'Supprimée le',
+      colRemaining:   'Jours restants',
+      restore:        'Restaurer',
+      purge:          'Supprimer définitivement',
+      restoreConfirm: 'Restaurer cette analyse ? Elle redeviendra accessible à son propriétaire.',
+      purgeConfirm:   'Supprimer DÉFINITIVEMENT cette analyse ? Cette action est irréversible.',
+      restored:       'Analyse restaurée.',
+      purged:         'Analyse supprimée définitivement.',
+      expiringSoon:   'Bientôt purgée',
+    },
     // Création de compte
     createBtn:      'Créer un compte',
     bulkImport: {

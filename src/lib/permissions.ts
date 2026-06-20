@@ -127,11 +127,15 @@ export function canManageAccess(user: SessionUser, analyse: AnalyseOwnership): b
  * auxquelles l'utilisateur a accès.
  */
 export function analyseWhereClause(userId: string, role: UserRole) {
+  // Les analyses en corbeille (soft delete) sont masquées de toutes les vues
+  // courantes — seul le module admin « Récupération » les requête séparément.
+  const notDeleted = { deletedAt: null }
   if (role === 'ADMIN') {
-    return {} // tout
+    return notDeleted // tout, sauf la corbeille
   }
   if (role === 'RISK_MANAGER' || role === 'RSSI') {
     return {
+      ...notDeleted,
       OR: [
         { userId },
         { accesUtilisateurs: { some: { userId } } },
@@ -144,6 +148,7 @@ export function analyseWhereClause(userId: string, role: UserRole) {
   }
   // LECTEUR et ANALYSTE : propres analyses + partagées
   return {
+    ...notDeleted,
     OR: [
       { userId },
       { accesUtilisateurs: { some: { userId } } },

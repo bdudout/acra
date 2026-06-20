@@ -832,6 +832,23 @@ export const de: Translations = {
     navSecurity:    'Sicherheit',
     navAudit:       'Prüfprotokoll',
     navSmtp:        'SMTP',
+    navRecovery:    'Wiederherstellung',
+    recovery: {
+      title:          'Analysen-Wiederherstellung',
+      subtitle:       'Von ihren Eigentümern gelöschte Analysen, {days} Tage lang wiederherstellbar vor endgültiger Löschung.',
+      empty:          'Keine Analyse im Papierkorb.',
+      colName:        'Analyse',
+      colOwner:       'Eigentümer',
+      colDeleted:     'Gelöscht am',
+      colRemaining:   'Verbleibende Tage',
+      restore:        'Wiederherstellen',
+      purge:          'Endgültig löschen',
+      restoreConfirm: 'Diese Analyse wiederherstellen? Sie wird für ihren Eigentümer wieder zugänglich.',
+      purgeConfirm:   'Diese Analyse ENDGÜLTIG löschen? Diese Aktion ist unwiderruflich.',
+      restored:       'Analyse wiederhergestellt.',
+      purged:         'Analyse endgültig gelöscht.',
+      expiringSoon:   'Wird bald gelöscht',
+    },
     // Konto erstellen
     createBtn:      'Konto erstellen',
     bulkImport: {

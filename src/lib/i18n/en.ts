@@ -832,6 +832,23 @@ export const en: Translations = {
     navSecurity:    'Security',
     navAudit:       'Audit log',
     navSmtp:        'SMTP',
+    navRecovery:    'Recovery',
+    recovery: {
+      title:          'Analysis recovery',
+      subtitle:       'Analyses deleted by their owners, recoverable for {days} days before permanent purge.',
+      empty:          'No analysis in the trash.',
+      colName:        'Analysis',
+      colOwner:       'Owner',
+      colDeleted:     'Deleted on',
+      colRemaining:   'Days left',
+      restore:        'Restore',
+      purge:          'Delete permanently',
+      restoreConfirm: 'Restore this analysis? It will become accessible to its owner again.',
+      purgeConfirm:   'PERMANENTLY delete this analysis? This action is irreversible.',
+      restored:       'Analysis restored.',
+      purged:         'Analysis permanently deleted.',
+      expiringSoon:   'Purging soon',
+    },
     // Account creation
     createBtn:      'Create account',
     bulkImport: {

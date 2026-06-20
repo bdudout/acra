@@ -832,6 +832,23 @@ export const it: Translations = {
     navSecurity:    'Sicurezza',
     navAudit:       'Registro di audit',
     navSmtp:        'SMTP',
+    navRecovery:    'Recupero',
+    recovery: {
+      title:          'Recupero delle analisi',
+      subtitle:       'Analisi eliminate dai proprietari, recuperabili per {days} giorni prima della cancellazione definitiva.',
+      empty:          'Nessuna analisi nel cestino.',
+      colName:        'Analisi',
+      colOwner:       'Proprietario',
+      colDeleted:     'Eliminata il',
+      colRemaining:   'Giorni rimanenti',
+      restore:        'Ripristina',
+      purge:          'Elimina definitivamente',
+      restoreConfirm: 'Ripristinare questa analisi? Tornerà accessibile al suo proprietario.',
+      purgeConfirm:   'Eliminare DEFINITIVAMENTE questa analisi? L\'azione è irreversibile.',
+      restored:       'Analisi ripristinata.',
+      purged:         'Analisi eliminata definitivamente.',
+      expiringSoon:   'In cancellazione',
+    },
     // Creazione account
     createBtn:      'Crea account',
     bulkImport: {

@@ -111,6 +111,11 @@ model Analyse {
   approuveLe             DateTime?
   commentaireApprobation String?  @db.Text
 
+  // Suppression douce (corbeille) : récupérable par un ADMIN pendant 30 jours,
+  // cf. lib/recovery.ts. deletedAt null = analyse active.
+  deletedAt   DateTime?
+  deletedById String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -131,6 +136,7 @@ model Analyse {
   @@index([userId])
   @@index([statut])
   @@index([socleId])
+  @@index([deletedAt])
 }
 
 enum StatutAnalyse {

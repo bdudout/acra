@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
-import { Home, Users, Shield, ClipboardList, Mail } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Mail, Trash2 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit'
+type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery'
 
 /**
  * Navigation interne de l'espace d'administration (composant partagé).
@@ -19,6 +19,7 @@ export default function AdminNav({ active }: { active: AdminTab }) {
     { key: 'security',  href: '/admin/security', Icon: Shield,        label: t.admin.navSecurity },
     { key: 'smtp',      href: '/admin/smtp',     Icon: Mail,          label: t.admin.navSmtp },
     { key: 'audit',     href: '/admin/audit',    Icon: ClipboardList, label: t.admin.navAudit },
+    { key: 'recovery',  href: '/admin/recovery', Icon: Trash2,        label: t.admin.navRecovery },
   ] as const
 
   return (

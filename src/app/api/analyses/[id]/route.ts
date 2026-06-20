@@ -40,7 +40,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     },
   })
 
-  if (!analyse) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  // Une analyse en corbeille (soft delete) est introuvable pour tous (récupérable via /admin/recovery).
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   if (!canViewAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
@@ -62,7 +63,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
   const existing = await loadAnalyse(id)
-  if (!existing) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   if (!canEditAnalyse({ id: userId, role: userRole }, { userId: existing.userId, accesUtilisateurs: existing.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
@@ -97,19 +98,21 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
   const existing = await loadAnalyse(id)
-  if (!existing) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   // Seul le propriétaire ou un ADMIN peut supprimer
   if (existing.userId !== userId && userRole !== 'ADMIN') {
     return NextResponse.json({ error: 'Seul le propriétaire peut supprimer cette analyse' }, { status: 403 })
   }
 
-  await prisma.analyse.delete({ where: { id } })
+  // Suppression DOUCE : l'analyse disparaît des vues mais reste récupérable par un
+  // ADMIN pendant 30 jours (module Récupération). cf. lib/recovery.ts.
+  await prisma.analyse.update({ where: { id }, data: { deletedAt: new Date(), deletedById: userId } })
   await auditLog('ANALYSE_DELETED', {
     userId, userRole,
     targetId: id, targetType: 'analyse',
     ip: getClientIp(req),
-    details: { nom: existing.nom },
+    details: { nom: existing.nom, soft: true },
   })
   return NextResponse.json({ ok: true })
 }
