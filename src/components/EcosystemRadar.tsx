@@ -142,14 +142,14 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700">
       <div className="mb-3 flex items-center justify-between gap-2">
-        {!hideHeader ? <h3 className="font-semibold text-gray-800">{r.title}</h3> : <span />}
+        {!hideHeader ? <h3 className="font-semibold text-gray-800 dark:text-gray-100">{r.title}</h3> : <span />}
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={exportPNG}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">{r.exportPng}</button>
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportPng}</button>
           <button type="button" onClick={exportSVG}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">{r.exportSvg}</button>
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportSvg}</button>
         </div>
       </div>
 
@@ -186,13 +186,43 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                     stroke="#6b7280" strokeOpacity={0.6} strokeWidth={1.3} strokeDasharray="5 3" />
                 )}
                 <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle"
-                  className="fill-gray-500" fontSize={10.5}>
+                  className="fill-gray-500 dark:fill-gray-400" fontSize={10.5}>
                   {shortLabel(typeLabel(ty))}
                   <title>{typeLabel(ty)}</title>
                 </text>
               </g>
             )
           })}
+
+          {/* Détail au survol — rendu AVANT les points pour ne pas intercepter le clic
+              d'édition du libellé (foreignObject bloque parfois pointer-events). */}
+          {active && editing === null && (() => {
+            const a3 = t.workshop.a3
+            const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
+            const tipW = 210, tipH = 140
+            const VB_L = -58, VB_R = 538, VB_B = 480
+            let tx = active.x + aR + 2
+            if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
+            tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
+            let ty = active.y - tipH - 2
+            if (ty < 2) ty = active.y + aR + 2
+            ty = Math.max(2, Math.min(ty, VB_B - tipH))
+            return (
+              <foreignObject x={tx} y={ty} width={tipW} height={tipH} style={{ pointerEvents: 'none', overflow: 'visible' }}>
+                <div className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
+                  <div className="flex items-center gap-1">
+                    <span className="rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.nomCourt || active.ref}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{typeLabel(active.type)}</span>
+                  </div>
+                  <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-100">{active.nom}</div>
+                  <div className="mt-1 text-gray-600 dark:text-gray-300">{a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {a3.ppPenetrationLabel} {active.penetration.toFixed(1)}</div>
+                  <div className="text-gray-600 dark:text-gray-300">{a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {a3.ppConfianceLabel} {active.confiance.toFixed(1)}</div>
+                  <div className="mt-0.5 text-gray-600 dark:text-gray-300">{a3.ppExpLabel} {active.exposition.toFixed(1)} · {a3.ppFiabLabel} {active.fiabilite.toFixed(1)}</div>
+                  <div className="font-semibold" style={{ color: ZONE_COLOR[active.zone] }}>{r.menaceLabel} {active.menace.toFixed(2)}</div>
+                </div>
+              </foreignObject>
+            )
+          })()}
 
           {/* Points = parties prenantes. Couleur = fiabilité · taille = exposition ·
               ★ (avant le libellé) = tiers critique · libellé = nom court ou réf T1… */}
@@ -240,12 +270,13 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                     />
                   </foreignObject>
                 ) : (
-                  // ★ (si critique) juste avant le libellé, à droite du point — halo blanc.
+                  // ★ (si critique) juste avant le libellé, à droite du point — halo
+                  // (blanc en clair, sombre en thème sombre) pour rester lisible sur les zones.
                   <text
                     x={labelX} y={p.y + 3.5}
                     fontSize={isActive ? 11 : 9.5} fontWeight={700}
-                    fill="#1f2937" stroke="#ffffff" strokeWidth={2.5}
-                    paintOrder="stroke"
+                    strokeWidth={2.5} paintOrder="stroke"
+                    className="fill-gray-900 [stroke:#fff] dark:fill-gray-50 dark:[stroke:#0f172a]"
                     onClick={editable ? (e => { e.stopPropagation(); setEditing(p.id) }) : undefined}
                     style={{ cursor: editable ? 'text' : 'default', pointerEvents: editable ? 'auto' : 'none' }}
                   >
@@ -256,47 +287,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               </g>
             )
           })}
-
-          {/* Détail au survol — bulle au coin du point, qui bascule pour rester dans le cadre */}
-          {active && editing === null && (() => {
-            const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
-            const tipW = 176, tipH = 96
-            const VB_L = -58, VB_R = 538, VB_B = 480
-            // Par défaut à droite ; bascule à gauche si ça déborderait.
-            let tx = active.x + aR + 2
-            if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
-            tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
-            // Par défaut au-dessus ; bascule en dessous si ça déborderait en haut.
-            let ty = active.y - tipH - 2
-            if (ty < 2) ty = active.y + aR + 2
-            ty = Math.max(2, Math.min(ty, VB_B - tipH))
-            return (
-              <foreignObject x={tx} y={ty} width={tipW} height={tipH} style={{ pointerEvents: 'none' }}>
-                <div className="rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-tight shadow-sm">
-                  <div className="font-semibold text-gray-800">
-                    <span className="mr-1 rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700">{active.nomCourt || active.ref}</span>
-                    {active.nom}
-                  </div>
-                  <div className="text-gray-500">{typeLabel(active.type)}</div>
-                  <div className="mt-1 text-gray-600">
-                    {t.workshop.a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {t.workshop.a3.ppPenetrationLabel} {active.penetration.toFixed(1)} · {t.workshop.a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {t.workshop.a3.ppConfianceLabel} {active.confiance.toFixed(1)}
-                  </div>
-                  <div className="text-gray-600">
-                    {t.workshop.a3.ppExpLabel} {active.exposition.toFixed(1)} · {t.workshop.a3.ppFiabLabel} {active.fiabilite.toFixed(1)}
-                  </div>
-                  <div className="font-semibold" style={{ color: ZONE_COLOR[active.zone] }}>
-                    {r.menaceLabel} {active.menace.toFixed(2)}
-                  </div>
-                </div>
-              </foreignObject>
-            )
-          })()}
         </svg>
 
         {/* Légende compacte (sous le radar) + aide dépliable */}
-        <div className="w-full border-t border-gray-100 pt-3">
+        <div className="w-full border-t border-gray-100 pt-3 dark:border-gray-700">
           {/* Ligne 1 — zones de menace (anneaux) */}
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-600">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
             {([
               ['danger', r.zoneDanger],
               ['controle', r.zoneControle],
@@ -305,12 +301,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               <span key={z} className="inline-flex items-center gap-1.5">
                 <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: ZONE_COLOR[z] }} aria-hidden="true" />
                 {label}
-                <span className="text-gray-400">({points.filter(p => p.zone === z).length})</span>
+                <span className="text-gray-400 dark:text-gray-500">({points.filter(p => p.zone === z).length})</span>
               </span>
             ))}
           </div>
           {/* Ligne 2 — encodage des points */}
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
             <span className="inline-flex items-center gap-1.5">
               <span className="flex gap-0.5" aria-hidden="true">
                 {FIAB_COLOR.map(c => <span key={c} className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c }} />)}
@@ -332,17 +328,17 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           <div className="mt-2 text-center">
             <button type="button" onClick={() => setShowHelp(v => !v)}
               aria-expanded={showHelp}
-              className="text-xs text-blue-600 underline hover:text-blue-800">
+              className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
               {showHelp ? r.helpHide : r.helpToggle}
             </button>
           </div>
           {showHelp && (
-            <div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <div className="space-y-0.5 text-center text-[11px] text-gray-500">
+            <div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
+              <div className="space-y-0.5 text-center text-[11px] text-gray-500 dark:text-gray-400">
                 <div>{r.radiusLegend}</div>
                 <div>{r.sectorLegend}</div>
-                {editable && <div className="italic text-gray-400">{r.editHint}</div>}
-                {aggregated && <div className="italic text-gray-400">{r.multiLegend}</div>}
+                {editable && <div className="italic text-gray-400 dark:text-gray-500">{r.editHint}</div>}
+                {aggregated && <div className="italic text-gray-400 dark:text-gray-500">{r.multiLegend}</div>}
               </div>
               <MenaceFormulaDiagram />
             </div>
