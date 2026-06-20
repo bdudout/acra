@@ -37,6 +37,9 @@ interface PartieLike {
   maturite?: number
   confiance?: number
   critique?: boolean
+  rang?: number
+  cle?: string
+  parentCle?: string
 }
 
 interface Props {
@@ -78,7 +81,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const [active, setActive] = useState<RadarPoint | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [showRanks, setShowRanks] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
+  // Présence de PP connexes (rang ≥ 2) → propose le basculement d'affichage.
+  const hasRanks = parties.some(p => (p.rang ?? 1) >= 2)
 
   // Survol d'un point : MAJ de l'état local + notification parent (surlignage tableau).
   const enter = (p: RadarPoint) => { setActive(p); onHover?.(p.id) }
@@ -125,8 +131,11 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   // Bornes de menace dérivées des échelles (rayon adapté à l'échelle).
   const bornes = bornesMenace(echelles ?? resolveEchelles(null))
   const geom = { cx: CX, cy: CY, rMax: R_MAX }
-  const points = layoutStakeholders(parties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax })
-  const types = presentTypes(parties)
+  // Rang 1 par défaut (recommandation du guide) ; rangs 2/3 affichés sur demande.
+  const shownParties = showRanks ? parties : parties.filter(p => (p.rang ?? 1) <= 1)
+  const points = layoutStakeholders(shownParties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax })
+  const byCle = new Map(points.filter(p => p.cle).map(p => [p.cle, p]))
+  const types = presentTypes(shownParties)
   const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
   const n = types.length
   const sectorWidth = 360 / n
@@ -146,6 +155,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
       <div className="mb-3 flex items-center justify-between gap-2">
         {!hideHeader ? <h3 className="font-semibold text-gray-800 dark:text-gray-100">{r.title}</h3> : <span />}
         <div className="flex items-center gap-1.5">
+          {hasRanks && (
+            <label className="mr-1 inline-flex cursor-pointer items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300">
+              <input type="checkbox" checked={showRanks} onChange={e => setShowRanks(e.target.checked)} className="accent-ebios-600" />
+              {r.showRanks}
+            </label>
+          )}
           <button type="button" onClick={exportPNG}
             className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportPng}</button>
           <button type="button" onClick={exportSVG}
@@ -172,6 +187,15 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             stroke={ZONE_COLOR.controle} strokeOpacity={0.35} />
           <circle cx={CX} cy={CY} r={rings.danger} fill={ZONE_COLOR.danger} fillOpacity={0.18}
             stroke={ZONE_COLOR.danger} strokeOpacity={0.45} />
+
+          {/* Liens des PP connexes (rang 2/3) vers leur PP parente — trait pointillé. */}
+          {showRanks && points.map(p => {
+            const parent = p.parentCle ? byCle.get(p.parentCle) : undefined
+            if (!parent) return null
+            return <line key={`lnk-${p.id}`} x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
+              className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
+              strokeOpacity={0.85} strokeWidth={1.3} strokeDasharray="4 2" />
+          })}
 
           {/* Séparateurs de secteurs + libellés de catégorie au bord */}
           {types.map((ty, i) => {
@@ -239,7 +263,8 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 className="cursor-pointer"
                 tabIndex={0}
                 role="button"
-                aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ` (${r.critiqueLegend})` : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
+                opacity={p.rang > 1 ? 0.78 : 1}
+                aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ` (${r.critiqueLegend})` : ''}${p.rang > 1 ? ` — ${r.rangLabel} ${p.rang}` : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
                 onMouseEnter={() => enter(p)}
                 onMouseLeave={leave}
                 onFocus={() => enter(p)}

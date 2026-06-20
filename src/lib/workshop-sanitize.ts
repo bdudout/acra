@@ -85,6 +85,10 @@ export function cleanPartiePrenante(p: Dict, analyseId: string) {
     exposition:  dependance * penetration, // 1-N²
     fiabilite:   maturite * confiance,      // 1-N²
     critique:    optBool(p.critique) ?? false, // marquage manuel tiers critique
+    // Profondeur d'écosystème (rangs 2/3) — clés stables côté client.
+    rang:        Math.max(1, Math.min(3, Math.round(num(p.rang, 1)))),
+    cle:         str(p.cle, 40) ?? null,
+    parentCle:   str(p.parentCle, 40) ?? null,
   }
 }
 

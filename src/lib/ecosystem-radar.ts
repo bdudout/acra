@@ -33,6 +33,11 @@ export interface StakeholderInput {
   fiabilite?: number  // 1..N² (= maturité × confiance)
   /** Tiers qualifié de critique (marquage manuel) — étoile + nom affichés sur le radar. */
   critique?: boolean
+  /** Profondeur d'écosystème : rang 1 (direct), 2 ou 3 (PP connexe d'un tiers critique). */
+  rang?: number
+  /** Clé stable de la PP et de sa parente (pour relier les rangs 2/3 sur le radar). */
+  cle?: string
+  parentCle?: string
   // Sous-critères (1..N, flottants) — optionnels, propagés pour l'affichage au survol
   dependance?: number
   penetration?: number
@@ -63,6 +68,9 @@ export interface RadarPoint {
   menace: number       // ratio exposition/fiabilité
   zone: EcosystemZone
   critique: boolean     // tiers qualifié de critique (marquage manuel)
+  rang: number          // 1 (direct) · 2 · 3 (PP connexe)
+  cle: string           // clé stable
+  parentCle: string     // clé stable de la PP parente (vide si rang 1)
   /** Afficher le nom à côté du point ? (critique OU zone danger/contrôle, cf. guide). */
   showLabel: boolean
   angleDeg: number      // depuis le haut, sens horaire
@@ -268,6 +276,9 @@ export function layoutStakeholders(
       menace: m,
       zone,
       critique,
+      rang: clamp(Math.round(p.rang ?? 1), 1, 3),
+      cle: String(p.cle ?? ''),
+      parentCle: String(p.parentCle ?? ''),
       showLabel: critique || zone === 'danger' || zone === 'controle',
       angleDeg,
       x,

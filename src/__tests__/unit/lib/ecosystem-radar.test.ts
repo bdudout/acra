@@ -227,6 +227,20 @@ describe('layoutStakeholders', () => {
     expect(pts[0].x).not.toBeNaN()
   })
 
+  it('propage rang / cle / parentCle (profondeur d\'écosystème, rangs 2/3)', () => {
+    const parties = [
+      { id: 'a', nom: 'Parent', type: 'PRESTATAIRE', exposition: 12, fiabilite: 4, cle: 'k1' },
+      { id: 'b', nom: 'Connexe', type: 'PRESTATAIRE', exposition: 6, fiabilite: 6, cle: 'k2', parentCle: 'k1', rang: 2 },
+    ]
+    const pts = layoutStakeholders(parties, geom)
+    const a = pts.find(p => p.id === 'a')!
+    const b = pts.find(p => p.id === 'b')!
+    expect(a.rang).toBe(1)
+    expect(a.cle).toBe('k1')
+    expect(b.rang).toBe(2)
+    expect(b.parentCle).toBe('k1') // relie l'enfant à sa parente
+  })
+
   it('attribue une référence T1, T2, … selon l\'ordre des parties prenantes', () => {
     const parties = [
       { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 3, fiabilite: 2 },

@@ -161,7 +161,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const [showMesEcoEx, setShowMesEcoEx] = useState(false)
   const [showISO27001Eco, setShowISO27001Eco] = useState<string | null>(null) // stores scenario id
 
-  const [parties, setParties] = useState<any[]>(initialData?.partiesPrenantes || [])
+  // Chaque PP reçoit une clé stable (cle) — générée si absente (legacy) — pour relier
+  // les PP connexes (rangs 2/3) indépendamment de l'id DB régénéré à chaque sauvegarde.
+  const [parties, setParties] = useState<any[]>(() =>
+    (initialData?.partiesPrenantes || []).map((p: any) => ({ ...p, cle: p.cle || uid(), rang: p.rang || 1 })))
   // Reconstruire coupleLabel depuis sourceRisqueId + objectifVise au chargement depuis DB
   // (coupleLabel est un champ UI-only non persisté en base)
   const [scenarios, setScenarios] = useState<any[]>(() => {
@@ -214,21 +217,32 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     Array.isArray(s.evenementsRedoutesIds) ? s.evenementsRedoutesIds
     : (s.evenementRedouteRef ? [s.evenementRedouteRef] : [])
 
-  function addPP(exemple?: any) {
+  function addPP(exemple?: any, parent?: any) {
     const dependance  = exemple?.dependance  ?? 2
     const penetration = exemple?.penetration ?? 2
     const maturite    = exemple?.maturite    ?? 3
     const confiance   = exemple?.confiance   ?? 3
-    setParties(prev => [...prev, {
+    const nouvelle = {
       id: uid(),
+      cle: uid(),
       nom: exemple?.nom || '',
-      type: exemple?.type || 'PRESTATAIRE',
+      type: exemple?.type || (parent ? parent.type : 'PRESTATAIRE'),
       description: exemple?.description || '',
       dependance, penetration, maturite, confiance,
       exposition: dependance * penetration, // dérivé (1-N²)
       fiabilite:  maturite * confiance,      // dérivé (1-N²)
       critique:   !!exemple?.critique,
-    }])
+      // PP connexe (rang 2/3) si créée depuis une PP parente.
+      rang:       parent ? Math.min(3, (parent.rang || 1) + 1) : 1,
+      parentCle:  parent ? parent.cle : undefined,
+    }
+    // Insère une PP connexe juste après sa parente (regroupement visuel).
+    setParties(prev => {
+      if (!parent) return [...prev, nouvelle]
+      const i = prev.findIndex(x => x.id === parent.id)
+      if (i < 0) return [...prev, nouvelle]
+      return [...prev.slice(0, i + 1), nouvelle, ...prev.slice(i + 1)]
+    })
   }
 
   function updatePP(id: string, field: string, value: any) {
@@ -532,9 +546,14 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
               {parties.map(p => {
                 const d = ppDerived(p)
                 const { label, color } = getZoneLabel(d.zone)
+                const rang = p.rang || 1
+                // Guide ANSSI : on n'approfondit (PP connexes) que les tiers critiques
+                // ou en zone danger/contrôle, jusqu'au rang 3.
+                const peutConnexe = (d.zone !== 'veille' || p.critique) && rang < 3
                 return (
                   <div key={p.id} id={`pp-${p.id}`}
-                    className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${(highlightPP === p.id || hoverPP === p.id) ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
+                    style={rang > 1 ? { marginLeft: (rang - 1) * 20 } : undefined}
+                    className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${rang > 1 ? 'border-l-2 border-ebios-200 ' : ''}${(highlightPP === p.id || hoverPP === p.id) ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
                     <div className="flex-1 space-y-2">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}
@@ -556,10 +575,15 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 pt-1 border-t border-gray-100">
+                        {rang > 1 && <span className="rounded bg-ebios-100 text-ebios-700 px-1.5 py-0.5 font-medium">{t.workshop.a3.rangBadge} {rang}</span>}
                         <span>{t.workshop.a3.ppExpLabel} <span className="font-semibold text-gray-800">{d.exposition.toFixed(1)}</span></span>
                         <span>{t.workshop.a3.ppFiabLabel} <span className="font-semibold text-gray-800">{d.fiabilite.toFixed(1)}</span></span>
                         <span>{t.workshop.a3.ppMenaceLabel} <span className="font-semibold text-gray-800">{d.menace.toFixed(2)}</span></span>
                         <span className={`font-bold ${color}`}>{label}</span>
+                        {peutConnexe && (
+                          <button type="button" onClick={() => addPP(undefined, p)}
+                            className="text-ebios-600 hover:text-ebios-800 underline">+ {t.workshop.a3.addConnexe} ({t.workshop.a3.rangBadge} {rang + 1})</button>
+                        )}
                         <label className="ml-auto flex items-center gap-1.5 cursor-pointer text-gray-600">
                           <input type="checkbox" checked={!!p.critique} onChange={e => updatePP(p.id, 'critique', e.target.checked)}
                             className="accent-red-600" />

@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
-      partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true } },
+      partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true, rang: true, cle: true, parentCle: true } },
     },
   })
 
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
     a.partiesPrenantes.map(pp => ({
       id: pp.id, nom: pp.nom, nomCourt: pp.nomCourt ?? undefined, type: pp.type, exposition: pp.exposition, fiabilite: pp.fiabilite,
       dependance: pp.dependance, penetration: pp.penetration, maturite: pp.maturite, confiance: pp.confiance,
-      critique: pp.critique,
+      critique: pp.critique, rang: pp.rang, cle: pp.cle ?? undefined, parentCle: pp.parentCle ?? undefined,
     }))
   )
 

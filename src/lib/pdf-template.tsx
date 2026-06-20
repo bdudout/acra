@@ -682,14 +682,16 @@ const TYPE_LABELS_FR: Record<string, string> = {
 function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; withList?: boolean }) {
   const CXr = 138, CYr = 132, R = 116   // radar agrandi
   const geom = { cx: CXr, cy: CYr, rMax: R }
-  const input = parties.map((p: any) => ({
+  // PDF = vue de synthèse : on n'affiche que les PP de rang 1 (recommandation du guide).
+  const rang1 = parties.filter((p: any) => (p.rang ?? 1) <= 1)
+  const input = rang1.map((p: any) => ({
     id: p.id, nom: p.nom, nomCourt: p.nomCourt ?? undefined, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
     dependance: p.dependance, penetration: p.penetration, maturite: p.maturite, confiance: p.confiance,
     critique: p.critique,
   }))
   const pts = layoutStakeholders(input, geom)
   const rings = zoneRadii(R)
-  const types = presentTypes(parties)
+  const types = presentTypes(rang1)
   const sectorW = 360 / Math.max(1, types.length)
   const counts: Record<EcosystemZone, number> = {
     danger:   pts.filter(p => p.zone === 'danger').length,

@@ -254,6 +254,14 @@ model PartiePrenante {
   type        TypePartiePrenante
   description String? @db.Text
 
+  // Profondeur d'écosystème (fiche méthode 5 ANSSI) : rang 1 = lien direct avec l'objet
+  // de l'étude ; rang 2/3 = parties prenantes connexes d'un tiers critique.
+  rang        Int     @default(1)
+  // Clé STABLE côté client (survit au delete+recreate de la sauvegarde de l'atelier 3)
+  // permettant de relier une PP connexe à sa PP parente. parentCle = cle de la parente.
+  cle         String?
+  parentCle   String?
+
   // Méthode Club EBIOS « dangerosité des PP » — 4 sous-critères cotés 1..4 (Float
   // pour une cotation fine ; alimentera un futur module de third-party management).
   dependance  Float @default(2) // 1-4
