@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     include: { accesUtilisateurs: true },
   })
-  if (!analyse) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   const { action, commentaire } = await req.json() as {
     action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER'

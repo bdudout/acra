@@ -48,7 +48,8 @@ export async function GET(
     },
   })
 
-  if (!analyse) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  // Analyse en corbeille (soft delete) = introuvable : pas d'export.
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   if (!canViewAnalyse(
     { id: userId, role: userRole },

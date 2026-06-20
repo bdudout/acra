@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     where: { id },
     include: { accesUtilisateurs: { include: { user: { select: { id: true, name: true, email: true, role: true } } } } },
   })
-  if (!analyse) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     include: { accesUtilisateurs: true },
   })
-  if (!analyse) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     where: { id },
     include: { accesUtilisateurs: true },
   })
-  if (!analyse) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })

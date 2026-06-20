@@ -54,7 +54,8 @@ export async function PUT(
     where: { id: analyseId },
     include: { accesUtilisateurs: true },
   })
-  if (!analyse) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  // Analyse en corbeille (soft delete) = introuvable : interdit de sauvegarder dessus.
+  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })

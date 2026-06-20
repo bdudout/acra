@@ -52,7 +52,8 @@ export default async function AtelierPage({
     },
   })
 
-  if (!analyse) notFound()
+  // Analyse en corbeille (soft delete) = introuvable (récupérable via /admin/recovery).
+  if (!analyse || analyse.deletedAt) notFound()
 
   // Vérifier les droits (propriétaire OU accès partagé en lecture/édition)
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }

@@ -9,6 +9,7 @@ import {
   canSubmitAnalyse,
   canApproveAnalyse,
   canManageAccess,
+  analyseWhereClause,
   type SessionUser,
   type AnalyseOwnership,
 } from '@/lib/permissions'
@@ -18,6 +19,24 @@ const userWith = (role: SessionUser['role'] | 'RSSI', id = 'u1'): SessionUser =>
 const ownedBy = (userId: string, accesUtilisateurs?: AnalyseOwnership['accesUtilisateurs']): AnalyseOwnership => ({
   userId,
   accesUtilisateurs,
+})
+
+// ─── analyseWhereClause — exclusion de la corbeille (soft delete) ─────────────
+describe('analyseWhereClause exclut toujours les analyses en corbeille', () => {
+  it('ajoute deletedAt: null pour tous les rôles (ADMIN inclus)', () => {
+    for (const role of ['ADMIN', 'RSSI', 'RISK_MANAGER', 'ANALYSTE', 'LECTEUR'] as const) {
+      const w = analyseWhereClause('u1', role) as Record<string, unknown>
+      expect(w.deletedAt).toBe(null)
+    }
+  })
+  it('ADMIN voit tout sauf la corbeille (pas de restriction de propriété)', () => {
+    expect(analyseWhereClause('u1', 'ADMIN')).toEqual({ deletedAt: null })
+  })
+  it('ANALYSTE est restreint à ses analyses + partagées, hors corbeille', () => {
+    const w = analyseWhereClause('u1', 'ANALYSTE') as Record<string, unknown>
+    expect(w.deletedAt).toBe(null)
+    expect(Array.isArray(w.OR)).toBe(true)
+  })
 })
 
 // ─── canCreateAnalyse ─────────────────────────────────────────────────────────

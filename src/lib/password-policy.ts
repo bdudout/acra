@@ -61,15 +61,21 @@ const POOL_UPPER   = 'ABCDEFGHJKLMNPQRSTUVWXYZ'   // sans I/O ambigus
 const POOL_NUMBER  = '23456789'                   // sans 0/1 ambigus
 const POOL_SPECIAL = '!@#$%^&*-_=+?'
 
-/** Entier aléatoire cryptographiquement sûr dans [0, max) (repli Math.random). */
+/**
+ * Entier aléatoire cryptographiquement sûr dans [0, max), sans biais de modulo
+ * (rejection sampling sur Web Crypto). Aucun repli sur Math.random (CWE-338).
+ */
 function secureRandomInt(max: number): number {
   const cryptoObj = (globalThis as { crypto?: Crypto }).crypto
-  if (cryptoObj?.getRandomValues) {
-    const arr = new Uint32Array(1)
-    cryptoObj.getRandomValues(arr)
-    return arr[0] % max
+  if (!cryptoObj?.getRandomValues) {
+    // En environnement Node/Edge moderne, Web Crypto est toujours présent.
+    throw new Error('Web Crypto indisponible : génération de secret impossible')
   }
-  return Math.floor(Math.random() * max)
+  const arr = new Uint32Array(1)
+  const limit = Math.floor(0xFFFFFFFF / max) * max // borne anti-biais
+  let v: number
+  do { cryptoObj.getRandomValues(arr); v = arr[0] } while (v >= limit)
+  return v % max
 }
 
 function pick(pool: string): string {
