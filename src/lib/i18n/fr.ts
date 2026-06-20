@@ -1286,6 +1286,8 @@ export const fr = {
         shortNamePlaceholder: 'Nom court…',
         helpToggle: 'Comment lire ce radar ?',
         helpHide: 'Masquer l\'aide',
+        exportPng: 'Export PNG',
+        exportSvg: 'Export SVG',
         formulaExpoTitle: 'Exposition numérique',
         formulaFiabTitle: 'Fiabilité numérique',
         formulaMenaceTitle: 'Niveau de menace',

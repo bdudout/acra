@@ -139,6 +139,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const [tab, setTab] = useState<'pp' | 'scenarios' | 'mesures'>('pp')
   // Partie prenante mise en évidence après un clic sur le radar (surlignage temporaire)
   const [highlightPP, setHighlightPP] = useState<string | null>(null)
+  // PP survolée sur le radar → surlignage temporaire de la ligne du tableau
+  const [hoverPP, setHoverPP] = useState<string | null>(null)
 
   // Clic sur un point du radar → défile vers la carte de la PP et la surligne brièvement
   function focusPartiePrenante(id: string) {
@@ -493,7 +495,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {parties.length > 0 && (
             <div className="mb-4">
               <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} echelles={echelles}
-                onEditShortName={(id, v) => updatePP(id, 'nomCourt', v)} />
+                onEditShortName={(id, v) => updatePP(id, 'nomCourt', v)} onHover={setHoverPP} />
             </div>
           )}
 
@@ -532,7 +534,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                 const { label, color } = getZoneLabel(d.zone)
                 return (
                   <div key={p.id} id={`pp-${p.id}`}
-                    className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${highlightPP === p.id ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
+                    className={`flex gap-3 items-start p-3 rounded-lg transition-colors ${(highlightPP === p.id || hoverPP === p.id) ? 'bg-ebios-50 ring-2 ring-ebios-400' : 'bg-gray-50'}`}>
                     <div className="flex-1 space-y-2">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}

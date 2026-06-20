@@ -1261,6 +1261,8 @@ export const de: Translations = {
         shortNamePlaceholder: 'Kurzname…',
         helpToggle: 'Wie liest man dieses Radar?',
         helpHide: 'Hilfe ausblenden',
+        exportPng: 'PNG-Export',
+        exportSvg: 'SVG-Export',
         formulaExpoTitle: 'Digitale Exposition',
         formulaFiabTitle: 'Digitale Zuverlässigkeit',
         formulaMenaceTitle: 'Bedrohungsniveau',

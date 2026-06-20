@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Afficher seulement si l'utilisateur n'a pas déjà fermé le bandeau
@@ -12,10 +13,16 @@ export default function CookieBanner() {
     if (!ack) setVisible(true)
   }, [])
 
-  // Réserve l'espace du bandeau fixe pour ne pas recouvrir le bas de page (UX #5)
+  // Réserve EXACTEMENT la hauteur réelle du bandeau (qui varie selon le viewport,
+  // 1 à 3 lignes) pour ne jamais recouvrir le bas de page (UX #5).
   useEffect(() => {
-    document.body.style.paddingBottom = visible ? '5.5rem' : ''
-    return () => { document.body.style.paddingBottom = '' }
+    const el = ref.current
+    if (!visible || !el) { document.body.style.paddingBottom = ''; return }
+    const apply = () => { document.body.style.paddingBottom = `${el.offsetHeight}px` }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => { ro.disconnect(); document.body.style.paddingBottom = '' }
   }, [visible])
 
   function dismiss() {
@@ -26,7 +33,7 @@ export default function CookieBanner() {
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 bg-gray-900 text-white shadow-2xl" role="region" aria-label="Information sur les cookies">
+    <div ref={ref} className="fixed bottom-0 inset-x-0 z-50 bg-gray-900 text-white shadow-2xl" role="region" aria-label="Information sur les cookies">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <span className="text-lg flex-shrink-0" aria-hidden="true">🍪</span>
         <p className="text-sm flex-1 text-gray-200">

@@ -10,7 +10,7 @@
  *
  * Cohérence : zones et menace identiques au calcul vulnerabilite déjà affiché en listes.
  */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import {
   layoutStakeholders,
@@ -54,6 +54,8 @@ interface Props {
   onEditShortName?: (id: string, nomCourt: string) => void
   /** Radar agrégé (plusieurs analyses) : affiche la note « un tiers peut apparaître plusieurs fois ». */
   aggregated?: boolean
+  /** Notifié au survol d'un point (id) ou à la sortie (null) — ex. surligner la ligne du tableau. */
+  onHover?: (id: string | null) => void
 }
 
 const CX = 240, CY = 240, R_MAX = 190
@@ -69,13 +71,48 @@ const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
 const EXPO_RADIUS = [7, 9, 11.5, 14]
 const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false, onHover }: Props) {
   const { t } = useTranslation()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const [active, setActive] = useState<RadarPoint | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  // Survol d'un point : MAJ de l'état local + notification parent (surlignage tableau).
+  const enter = (p: RadarPoint) => { setActive(p); onHover?.(p.id) }
+  const leave = () => { setActive(null); onHover?.(null) }
+
+  // Export du radar — SVG vectoriel, ou PNG rasterisé (2×) via canvas.
+  function exportSvgString(): string {
+    if (!svgRef.current) return ''
+    const clone = svgRef.current.cloneNode(true) as SVGSVGElement
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    clone.querySelectorAll('foreignObject').forEach(el => el.remove()) // retire bulle/édition
+    return new XMLSerializer().serializeToString(clone)
+  }
+  function download(href: string, name: string) {
+    const a = document.createElement('a'); a.href = href; a.download = name
+    document.body.appendChild(a); a.click(); a.remove()
+  }
+  function exportSVG() {
+    const blob = new Blob([exportSvgString()], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob); download(url, 'cartographie-ecosysteme.svg'); URL.revokeObjectURL(url)
+  }
+  function exportPNG() {
+    const svgStr = exportSvgString(); if (!svgStr) return
+    const scale = 2, w = 596, h = 480
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas'); canvas.width = w * scale; canvas.height = h * scale
+      const ctx = canvas.getContext('2d'); if (!ctx) return
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(scale, scale); ctx.drawImage(img, 0, 0, w, h)
+      download(canvas.toDataURL('image/png'), 'cartographie-ecosysteme.png')
+    }
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)))
+  }
 
   if (!parties.length) {
     return (
@@ -106,10 +143,19 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      {!hideHeader && <h3 className="mb-3 font-semibold text-gray-800">{r.title}</h3>}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {!hideHeader ? <h3 className="font-semibold text-gray-800">{r.title}</h3> : <span />}
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={exportPNG}
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">{r.exportPng}</button>
+          <button type="button" onClick={exportSVG}
+            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">{r.exportSvg}</button>
+        </div>
+      </div>
 
       <div className="flex flex-col items-center gap-4">
         <svg
+          ref={svgRef}
           viewBox="-58 0 596 480"
           className="w-full max-w-[520px] mx-auto"
           role="img"
@@ -164,10 +210,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 tabIndex={0}
                 role="button"
                 aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ` (${r.critiqueLegend})` : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
-                onMouseEnter={() => setActive(p)}
-                onMouseLeave={() => setActive(null)}
-                onFocus={() => setActive(p)}
-                onBlur={() => setActive(null)}
+                onMouseEnter={() => enter(p)}
+                onMouseLeave={leave}
+                onFocus={() => enter(p)}
+                onBlur={leave}
                 onClick={() => onSelect?.(p.id)}
               >
                 <circle
@@ -211,12 +257,19 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             )
           })}
 
-          {/* Détail au survol — bulle en haut à droite du point survolé */}
+          {/* Détail au survol — bulle au coin du point, qui bascule pour rester dans le cadre */}
           {active && editing === null && (() => {
             const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
             const tipW = 176, tipH = 96
-            const tx = Math.max(-58, Math.min(active.x + aR + 2, 538 - tipW))
-            const ty = Math.max(2, active.y - tipH - 2)
+            const VB_L = -58, VB_R = 538, VB_B = 480
+            // Par défaut à droite ; bascule à gauche si ça déborderait.
+            let tx = active.x + aR + 2
+            if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
+            tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
+            // Par défaut au-dessus ; bascule en dessous si ça déborderait en haut.
+            let ty = active.y - tipH - 2
+            if (ty < 2) ty = active.y + aR + 2
+            ty = Math.max(2, Math.min(ty, VB_B - tipH))
             return (
               <foreignObject x={tx} y={ty} width={tipW} height={tipH} style={{ pointerEvents: 'none' }}>
                 <div className="rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-tight shadow-sm">
