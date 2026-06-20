@@ -109,6 +109,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 | **Taller 1 — Encuadre y base** | ![](docs/screenshots/atelier1-light.png) | ![](docs/screenshots/atelier1-dark.png) |
 | **Taller 5 — Tratamiento del riesgo** | ![](docs/screenshots/atelier5-light.png) | ![](docs/screenshots/atelier5-dark.png) |
 | **Mapa de riesgos** | ![](docs/screenshots/risques-light.png) | ![](docs/screenshots/risques-dark.png) |
+| **Taller 3 — Cartografía del ecosistema** | ![](docs/screenshots/ecosystem-radar-light.png) | ![](docs/screenshots/ecosystem-radar-dark.png) |
 | **Configuración (escalas y matriz)** | ![](docs/screenshots/configuration-light.png) | ![](docs/screenshots/configuration-dark.png) |
 | **Administración** | ![](docs/screenshots/admin-light.png) | ![](docs/screenshots/admin-dark.png) |
 | **Registro de auditoría** | ![](docs/screenshots/admin-audit-light.png) | ![](docs/screenshots/admin-audit-dark.png) |

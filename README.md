@@ -109,6 +109,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 | **Atelier 1 — Cadrage & socle** | ![](docs/screenshots/atelier1-light.png) | ![](docs/screenshots/atelier1-dark.png) |
 | **Atelier 5 — Traitement du risque** | ![](docs/screenshots/atelier5-light.png) | ![](docs/screenshots/atelier5-dark.png) |
 | **Cartographie des risques** | ![](docs/screenshots/risques-light.png) | ![](docs/screenshots/risques-dark.png) |
+| **Atelier 3 — Cartographie de l'écosystème** | ![](docs/screenshots/ecosystem-radar-light.png) | ![](docs/screenshots/ecosystem-radar-dark.png) |
 | **Configuration (échelles & matrice)** | ![](docs/screenshots/configuration-light.png) | ![](docs/screenshots/configuration-dark.png) |
 | **Administration** | ![](docs/screenshots/admin-light.png) | ![](docs/screenshots/admin-dark.png) |
 | **Journal d'audit** | ![](docs/screenshots/admin-audit-light.png) | ![](docs/screenshots/admin-audit-dark.png) |

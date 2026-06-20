@@ -109,6 +109,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 | **Workshop 1 — Rahmen & Basis** | ![](docs/screenshots/atelier1-light.png) | ![](docs/screenshots/atelier1-dark.png) |
 | **Workshop 5 — Risikobehandlung** | ![](docs/screenshots/atelier5-light.png) | ![](docs/screenshots/atelier5-dark.png) |
 | **Risiko-Mapping** | ![](docs/screenshots/risques-light.png) | ![](docs/screenshots/risques-dark.png) |
+| **Workshop 3 — Ökosystem-Kartierung** | ![](docs/screenshots/ecosystem-radar-light.png) | ![](docs/screenshots/ecosystem-radar-dark.png) |
 | **Konfiguration (Skalen & Matrix)** | ![](docs/screenshots/configuration-light.png) | ![](docs/screenshots/configuration-dark.png) |
 | **Administration** | ![](docs/screenshots/admin-light.png) | ![](docs/screenshots/admin-dark.png) |
 | **Audit-Protokoll** | ![](docs/screenshots/admin-audit-light.png) | ![](docs/screenshots/admin-audit-dark.png) |
