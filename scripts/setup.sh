@@ -143,15 +143,6 @@ case "$NEXTAUTH_URL" in
 esac
 success "NEXTAUTH_URL : $NEXTAUTH_URL"
 
-# ANTHROPIC_API_KEY (optionnelle — jamais générée)
-ANTHROPIC_API_KEY="$(read_env ANTHROPIC_API_KEY)"
-if [ "$AUTO" -eq 0 ] && is_unset "$ANTHROPIC_API_KEY"; then
-  header "Clé API Anthropic (IA — optionnelle)"
-  echo "  Active les suggestions de scénarios IA. Vide = fonctionnalité désactivée."
-  read -rp "  Clé API Anthropic [vide pour ignorer] : " ANTHROPIC_API_KEY
-fi
-[ -n "$ANTHROPIC_API_KEY" ] && success "ANTHROPIC_API_KEY : configurée" || info "ANTHROPIC_API_KEY : non configurée (IA désactivée)"
-
 # ── Écriture du .env ─────────────────────────────────────────────────────────
 [ "$EXISTING" -eq 1 ] && cp "$ENV_FILE" "$ENV_FILE.backup.$(date +%Y%m%d%H%M%S)"
 
@@ -180,10 +171,6 @@ NEXTAUTH_URL=${NEXTAUTH_URL}
 # Chiffre en base les secrets configurés via l'admin (OIDC client secret, SMS, SMTP).
 # ⚠️ Si cette clé change, les secrets déjà chiffrés deviennent indéchiffrables.
 SECRETS_ENCRYPTION_KEY=${SECRETS_ENCRYPTION_KEY}
-
-# ── Fonctionnalité IA — Anthropic (optionnel) ────────────────────────────────
-# Vide = suggestions IA désactivées. Clé : https://console.anthropic.com
-ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 EOF
 
 chmod 600 "$ENV_FILE" 2>/dev/null || true

@@ -178,7 +178,7 @@ Lo script di setup crea il file `.env` e **genera secret robusti**. È
 **idempotente**: rilanciato, conserva i valori già definiti e completa solo ciò che manca.
 
 ```bash
-./scripts/setup.sh          # interattivo (chiede l'URL pubblico e la chiave IA)
+./scripts/setup.sh          # interattivo (chiede l'URL pubblico)
 # oppure, senza alcuna interazione (secret casuali, URL predefinito):
 ./scripts/setup.sh --auto
 ```
@@ -193,7 +193,6 @@ Lo script compila automaticamente:
 | `DATABASE_URL` | Connessione Prisma | ✅ derivata dalle variabili PostgreSQL |
 | `POSTGRES_USER` / `POSTGRES_DB` | Identità del database | `acra_user` / `acra_rm` |
 | `NEXTAUTH_URL` | URL pubblico | richiesto (predefinito `http://localhost:3000`) |
-| `ANTHROPIC_API_KEY` | Chiave IA (facoltativa) | mai generata — lasciata vuota se assente |
 
 > **Configurazione manuale** (alternativa): `cp .env.example .env` poi sostituisci
 > tutti i valori `CHANGEZ_MOI`. Genera un secret con `openssl rand -base64 48`.
@@ -414,7 +413,6 @@ ebios-rm/
 | Esportazione Excel | ExcelJS | — |
 | Test | Vitest + Testing Library | — |
 | Log | Winston (JSON strutturato) | — |
-| IA (facoltativa) | Claude API (Anthropic) | — |
 | Deployment | Docker + Docker Compose | — |
 
 ---
