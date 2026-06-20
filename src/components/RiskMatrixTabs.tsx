@@ -47,8 +47,8 @@ export default function RiskMatrixTabs({
 
   return (
     <div className="card p-5">
-      <h2 className="text-sm font-medium text-gray-500 mb-3">{t.analysis.riskMatrix}</h2>
-      <div role="tablist" aria-label={t.analysis.riskMatrix} className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">
+      <h2 className="text-sm font-medium text-gray-500 mb-3 dark:text-gray-400">{t.analysis.riskMatrix}</h2>
+      <div role="tablist" aria-label={t.analysis.riskMatrix} className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 dark:bg-gray-900">
         {TAB_DEFS.map(([key, label]) => (
           <button
             key={key}
@@ -56,7 +56,9 @@ export default function RiskMatrixTabs({
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === key ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
+              tab === key
+                ? 'bg-white shadow-sm text-ebios-700 dark:bg-gray-700 dark:text-ebios-300'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
             }`}
           >
             {label}
@@ -64,8 +66,8 @@ export default function RiskMatrixTabs({
         ))}
       </div>
 
-      {tab === 'current' && <p className="text-xs text-gray-500 mb-3">{tabs.currentHint}</p>}
-      {tab === 'residual' && <p className="text-xs text-gray-500 mb-3">{tabs.residualHint}</p>}
+      {tab === 'current' && <p className="text-xs text-gray-500 mb-3 dark:text-gray-400">{tabs.currentHint}</p>}
+      {tab === 'residual' && <p className="text-xs text-gray-500 mb-3 dark:text-gray-400">{tabs.residualHint}</p>}
 
       <RiskMatrix config={config} risks={active} />
     </div>

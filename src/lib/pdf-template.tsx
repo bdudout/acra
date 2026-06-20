@@ -415,7 +415,7 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
       {(analyse.partiesPrenantes || []).length > 0 && (
         <View wrap={false} style={{ marginBottom: 6 }}>
           <SectionBar title="Écosystème — cartographie de menace" color={C.teal} />
-          <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
+          <EcosystemRadarPdf parties={analyse.partiesPrenantes} withList />
         </View>
       )}
 
@@ -679,17 +679,15 @@ const TYPE_LABELS_FR: Record<string, string> = {
 
 // Radar SVG (primitives @react-pdf) — réutilise la MÊME géométrie que la vue web
 // (src/lib/ecosystem-radar.ts) : rayon = menace (centre = max), zones danger/contrôle/veille.
-function EcosystemRadarPdf({ parties }: { parties: any[] }) {
-  const CXr = 100, CYr = 100, R = 88
+function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; withList?: boolean }) {
+  const CXr = 138, CYr = 132, R = 116   // radar agrandi
   const geom = { cx: CXr, cy: CYr, rMax: R }
-  const pts = layoutStakeholders(
-    parties.map((p: any) => ({
-      id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
-      dependance: p.dependance, penetration: p.penetration, maturite: p.maturite, confiance: p.confiance,
-      critique: p.critique,
-    })),
-    geom,
-  )
+  const input = parties.map((p: any) => ({
+    id: p.id, nom: p.nom, nomCourt: p.nomCourt ?? undefined, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+    dependance: p.dependance, penetration: p.penetration, maturite: p.maturite, confiance: p.confiance,
+    critique: p.critique,
+  }))
+  const pts = layoutStakeholders(input, geom)
   const rings = zoneRadii(R)
   const types = presentTypes(parties)
   const sectorW = 360 / Math.max(1, types.length)
@@ -699,10 +697,12 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
     veille:   pts.filter(p => p.zone === 'veille').length,
   }
   const short = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
+  const sectorLabel = (ty: string) => (TYPE_LABELS_FR[ty] || ty)
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-      <Svg width={CXr * 2} height={CYr * 2}>
+    <View style={{ alignItems: 'center', marginBottom: 8 }}>
+      {/* Radar centré, plus grand */}
+      <Svg width={CXr * 2} height={CYr * 2 + 6}>
         {/* 3 anneaux : veille=vert (bord) → contrôle=jaune → danger=orange (centre) */}
         <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.green}  fillOpacity={0.10} stroke={C.green}  strokeOpacity={0.30} />
         <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.yellow} fillOpacity={0.16} stroke={C.yellow} strokeOpacity={0.40} />
@@ -715,6 +715,17 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
             })}
           </G>
         )}
+        {/* Libellés de catégorie (secteurs) au bord — alignés sur le radar HTML */}
+        {types.map((ty, i) => {
+          const [lx, ly] = polarToXY(R + 8, i * sectorW, CXr, CYr)
+          return (
+            <Text key={`s-${ty}`} x={lx} y={ly} fill={C.gray500}
+              textAnchor={Math.abs(lx - CXr) < 6 ? 'middle' : lx < CXr ? 'end' : 'start'}
+              style={{ fontSize: 6 }}>
+              {short(sectorLabel(ty))}
+            </Text>
+          )
+        })}
         {pts.map(p => {
           const baseR = EXPO_PDF[expositionLevel(p.exposition)]
           return (
@@ -725,27 +736,49 @@ function EcosystemRadarPdf({ parties }: { parties: any[] }) {
             </G>
           )
         })}
-        {/* Libellé à côté du point : nom si critique/danger/contrôle, sinon réf T1… */}
         {pts.map(p => (
           <Text key={`l-${p.id}`} x={p.x + EXPO_PDF[expositionLevel(p.exposition)] + 2} y={p.y + 2.5} fill={C.gray800}
             style={{ fontSize: 6, fontFamily: 'Helvetica-Bold' }}>
-            {p.showLabel ? short(p.nom) : p.ref}
+            {p.nomCourt || p.ref}
           </Text>
         ))}
       </Svg>
 
-      <View style={{ marginLeft: 16 }}>
+      {/* Légende SOUS le radar (alignée sur le radar HTML) */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
         {(['danger', 'controle', 'veille'] as EcosystemZone[]).map(z => (
-          <View key={z} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: ZONE_PDF[z].fill, marginRight: 6 }} />
-            <Text style={{ fontSize: 8.5, color: C.gray800, width: 75 }}>{ZONE_PDF[z].label}</Text>
-            <Text style={{ fontSize: 8.5, color: C.gray500 }}>{counts[z]}</Text>
+          <View key={z} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, marginVertical: 1 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: ZONE_PDF[z].fill, marginRight: 4 }} />
+            <Text style={{ fontSize: 7.5, color: C.gray800 }}>{ZONE_PDF[z].label} ({counts[z]})</Text>
           </View>
         ))}
-        <Text style={{ fontSize: 7, color: C.gray500, marginTop: 4, width: 155 }}>
-          Anneaux = zones de menace · couleur du point = fiabilité (rouge→vert) · taille = exposition · ★ = tiers critique
-        </Text>
       </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
+          {FIAB_PDF.map((c, i) => <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c, marginRight: 1.5 }} />)}
+          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>Couleur = fiabilité (rouge→vert)</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
+          {EXPO_PDF.map((rr, i) => <View key={i} style={{ width: rr * 1.3, height: rr * 1.3, borderRadius: rr, backgroundColor: C.gray500, marginRight: 1.5 }} />)}
+          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>Taille = exposition</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
+          <Text style={{ fontSize: 8, color: STAR_PDF, marginRight: 2 }}>★</Text>
+          <Text style={{ fontSize: 7, color: C.gray500 }}>Tiers critique</Text>
+        </View>
+      </View>
+
+      {/* Liste réf → nom (synthèse exécutive : sinon on ne sait pas ce qu'est T1, T2…) */}
+      {withList && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, width: '100%' }}>
+          {pts.map(p => (
+            <View key={`r-${p.id}`} style={{ flexDirection: 'row', width: '50%', paddingRight: 8, marginBottom: 2 }}>
+              <Text style={{ fontSize: 7, color: C.gray800, fontFamily: 'Helvetica-Bold', width: 54 }}>{p.nomCourt || p.ref}</Text>
+              <Text style={{ fontSize: 7, color: C.gray500, flex: 1 }}>{short(p.nom)}{p.critique ? ' ★' : ''}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
