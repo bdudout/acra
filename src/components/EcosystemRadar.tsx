@@ -163,7 +163,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 className="cursor-pointer"
                 tabIndex={0}
                 role="button"
-                aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ' ★' : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
+                aria-label={`${p.nomCourt || p.ref} — ${p.nom}${p.critique ? ` (${r.critiqueLegend})` : ''} — ${typeLabel(p.type)} — ${r.menaceLabel} ${p.menace.toFixed(2)}`}
                 onMouseEnter={() => setActive(p)}
                 onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(p)}
