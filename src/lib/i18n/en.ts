@@ -1270,6 +1270,7 @@ export const en: Translations = {
       ppFiabLabel:  'Reliability',
       ppMenaceLabel:'Threat',
       ppCritiqueLabel: 'Critical',
+      ppNomCourtPlaceholder: 'Short name on radar (≤12)',
       rangBadge: 'Rank',
       addConnexe: 'Connected SH',
       ppDangLabel:  'Threat level',

@@ -1270,6 +1270,7 @@ export const de: Translations = {
       ppFiabLabel:  'Zuverlässigkeit',
       ppMenaceLabel:'Bedrohung',
       ppCritiqueLabel: 'Kritisch',
+      ppNomCourtPlaceholder: 'Kurzname im Radar (≤12)',
       rangBadge: 'Rang',
       addConnexe: 'Verbundene PP',
       ppDangLabel:  'Gefährdungsniveau',

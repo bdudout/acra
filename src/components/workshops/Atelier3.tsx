@@ -572,6 +572,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                         <select value={p.type} onChange={e => updatePP(p.id, 'type', e.target.value)} className="input text-sm">
                           {TYPES_PP.map(tp => <option key={tp.value} value={tp.value}>{tp.label}</option>)}
                         </select>
+                        {/* Nom court : libellé affiché sur le radar (sinon réf T1, T2…). */}
+                        <input value={p.nomCourt ?? ''} onChange={e => updatePP(p.id, 'nomCourt', e.target.value.slice(0, 12))}
+                          maxLength={12} className="input text-sm sm:col-span-2"
+                          placeholder={t.workshop.a3.ppNomCourtPlaceholder} />
                       </div>
                       {/* Exposition = dépendance × pénétration · Fiabilité = maturité × confiance */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -1270,6 +1270,7 @@ export const es: Translations = {
       ppFiabLabel:  'Fiabilidad',
       ppMenaceLabel:'Amenaza',
       ppCritiqueLabel: 'Crítico',
+      ppNomCourtPlaceholder: 'Nombre corto en el radar (≤12)',
       rangBadge: 'Rango',
       addConnexe: 'PI conexa',
       ppDangLabel:  'Peligrosidad',

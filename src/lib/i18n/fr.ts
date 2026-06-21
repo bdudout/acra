@@ -1295,6 +1295,7 @@ export const fr = {
       ppFiabLabel:  'Fiabilité',
       ppMenaceLabel:'Menace',
       ppCritiqueLabel: 'Critique',
+      ppNomCourtPlaceholder: 'Nom court sur le radar (≤12)',
       rangBadge: 'Rang',
       addConnexe: 'PP connexe',
       ppDangLabel:  'Dangerosité',
