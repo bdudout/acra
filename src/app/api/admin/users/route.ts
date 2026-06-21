@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdmin } from '@/lib/permissions'
+import { canAdmin, isAdminRole } from '@/lib/permissions'
 import type { UserRole } from '@/lib/permissions'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -208,18 +208,36 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Paramètre manquant : role ou action requis' }, { status: 400 })
   }
 
-  const validRoles: UserRole[] = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
+  // Le rôle SUPER_ADMIN (niveau instance) n'est gérable que par un SUPER_ADMIN.
+  const isSuper = userRole === 'SUPER_ADMIN'
+  const validRoles: UserRole[] = isSuper
+    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN']
+    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
   if (!validRoles.includes(role)) {
     return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
   }
 
-  // Empêcher de se retirer ses propres droits admin
-  if (targetId === currentUserId && role !== 'ADMIN') {
+  // Empêcher de se retirer ses propres droits administrateur (ADMIN ou SUPER_ADMIN)
+  if (targetId === currentUserId && !isAdminRole(role)) {
     return NextResponse.json({ error: 'Vous ne pouvez pas retirer vos propres droits administrateur' }, { status: 400 })
   }
 
-  // Récupérer l'ancien rôle pour l'audit
+  // Récupérer l'ancien rôle pour l'audit + garde-fous
   const target = await prisma.user.findUnique({ where: { id: targetId }, select: { role: true, email: true } })
+  if (!target) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+
+  // Un administrateur d'organisation ne peut ni créer un SUPER_ADMIN ni en modifier un.
+  if (!isSuper && (target.role === 'SUPER_ADMIN' || role === 'SUPER_ADMIN')) {
+    return NextResponse.json({ error: 'Seul un super-administrateur peut gérer ce rôle' }, { status: 403 })
+  }
+
+  // Garde-fou : toujours conserver au moins un super-administrateur actif.
+  if (target.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+    const remaining = await prisma.user.count({ where: { role: 'SUPER_ADMIN', isActive: true, id: { not: targetId } } })
+    if (remaining < 1) {
+      return NextResponse.json({ error: 'Au moins un super-administrateur doit subsister' }, { status: 400 })
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updated = await (prisma.user as any).update({

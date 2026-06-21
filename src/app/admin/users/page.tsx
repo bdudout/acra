@@ -64,15 +64,21 @@ export default function AdminUsersPage() {
   const currentUserId = (session?.user as any)?.id
   const currentRole = (session?.user as any)?.role ?? 'ANALYSTE'
 
+  // Rôles assignables : un SUPER_ADMIN peut aussi promouvoir/rétrograder un SUPER_ADMIN.
+  const isSuperAdmin = currentRole === 'SUPER_ADMIN'
+  const assignableRoles: UserRole[] = isSuperAdmin
+    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN']
+    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
+
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || currentRole !== 'ADMIN') {
+    if (!session?.user || (currentRole !== 'ADMIN' && currentRole !== 'SUPER_ADMIN')) {
       router.replace('/dashboard')
     }
   }, [session, status, currentRole, router])
 
   useEffect(() => {
-    if (currentRole !== 'ADMIN') return
+    if (currentRole !== 'ADMIN' && currentRole !== 'SUPER_ADMIN') return
     fetch('/api/admin/users')
       .then(r => r.json())
       .then(d => { setUsers(d.users ?? []); setLoading(false) })
@@ -557,10 +563,13 @@ export default function AdminUsersPage() {
                       <select
                         value={u.role}
                         onChange={e => changeRole(u.id, e.target.value as UserRole)}
-                        disabled={saving === u.id || !u.isActive}
+                        disabled={saving === u.id || !u.isActive || (!isSuperAdmin && u.role === 'SUPER_ADMIN')}
                         className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-ebios-500 focus:border-transparent disabled:opacity-50"
                       >
-                        {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN'] as UserRole[]).map(r => (
+                        {(u.role === 'SUPER_ADMIN' && !assignableRoles.includes('SUPER_ADMIN')
+                          ? [...assignableRoles, 'SUPER_ADMIN' as UserRole]
+                          : assignableRoles
+                        ).map(r => (
                           <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                         ))}
                       </select>
