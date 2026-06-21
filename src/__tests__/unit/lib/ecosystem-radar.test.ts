@@ -241,6 +241,30 @@ describe('layoutStakeholders', () => {
     expect(b.parentCle).toBe('k1') // relie l'enfant à sa parente
   })
 
+  it('écarte une PP connexe (rang 2) qui recouvrirait un point existant', () => {
+    // Connexe placée au même menace/secteur que sa parente → position d'origine identique.
+    const parties = [
+      { id: 'a', nom: 'Parent', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4, cle: 'k1' },
+      { id: 'b', nom: 'Connexe', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4, cle: 'k2', parentCle: 'k1', rang: 2 },
+    ]
+    const pts = layoutStakeholders(parties, geom)
+    const a = pts.find(p => p.id === 'a')!
+    const b = pts.find(p => p.id === 'b')!
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    expect(d).toBeGreaterThan(16) // déplacée d'au moins un cran (ne se recouvrent plus)
+  })
+
+  it('ne déplace pas les points de rang 1 (cartographie primaire fixe)', () => {
+    const parties = [
+      { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
+      { id: 'b', nom: 'B', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
+    ]
+    const before = layoutStakeholders(parties, geom)
+    // Mêmes entrées (sans rang 2) → positions stables et déterministes.
+    const after = layoutStakeholders(parties, geom)
+    expect(after.map(p => [p.x, p.y])).toEqual(before.map(p => [p.x, p.y]))
+  })
+
   it('attribue une référence T1, T2, … selon l\'ordre des parties prenantes', () => {
     const parties = [
       { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 3, fiabilite: 2 },

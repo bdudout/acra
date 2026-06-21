@@ -1258,7 +1258,7 @@ export const de: Translations = {
         legendReadTitle: 'Lesen',
         radiusLegend: 'Radius = Bedrohungsgrad (Zentrum = max)',
         sectorLegend: 'Sektor = Kategorie des Dritten',
-        editHint: 'Klicken Sie ein Label zum Umbenennen',
+        editHint: 'Punkt klicken oder doppelklicken zum Umbenennen',
         multiLegend: 'Ein Dritter kann mehrfach erscheinen (Auswirkung/Abhängigkeit je nach Umfang oder Analyse)',
         shortNamePlaceholder: 'Kurzname…',
         helpToggle: 'Wie liest man dieses Radar?',

@@ -1283,7 +1283,7 @@ export const fr = {
         legendReadTitle: 'Lecture',
         radiusLegend: 'Rayon = niveau de menace (centre = max)',
         sectorLegend: 'Secteur = catégorie de tiers',
-        editHint: 'Cliquez un libellé pour le renommer',
+        editHint: 'Cliquez ou double-cliquez un point pour le renommer',
         multiLegend: 'Un même tiers peut apparaître plusieurs fois (impact/dépendance variables selon le périmètre ou l\'analyse)',
         shortNamePlaceholder: 'Nom court…',
         helpToggle: 'Comment lire ce radar ?',

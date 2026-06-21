@@ -1258,7 +1258,7 @@ export const it: Translations = {
         legendReadTitle: 'Lettura',
         radiusLegend: 'Raggio = livello di minaccia (centro = max)',
         sectorLegend: 'Settore = categoria del terzo',
-        editHint: 'Clicca un\'etichetta per rinominarla',
+        editHint: 'Clicca o doppio clic su un punto per rinominarlo',
         multiLegend: 'Uno stesso terzo può apparire più volte (impatto/dipendenza variabili per perimetro o analisi)',
         shortNamePlaceholder: 'Nome breve…',
         helpToggle: 'Come leggere questo radar?',

@@ -1258,7 +1258,7 @@ export const en: Translations = {
         legendReadTitle: 'Reading',
         radiusLegend: 'Radius = threat level (centre = max)',
         sectorLegend: 'Sector = third-party category',
-        editHint: 'Click a label to rename it',
+        editHint: 'Click or double-click a point to rename it',
         multiLegend: 'A third party may appear several times (impact/dependency vary by scope or analysis)',
         shortNamePlaceholder: 'Short name…',
         helpToggle: 'How to read this radar?',

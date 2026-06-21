@@ -218,36 +218,6 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             )
           })}
 
-          {/* Détail au survol — rendu AVANT les points pour ne pas intercepter le clic
-              d'édition du libellé (foreignObject bloque parfois pointer-events). */}
-          {active && editing === null && (() => {
-            const a3 = t.workshop.a3
-            const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
-            const tipW = 210, tipH = 140
-            const VB_L = -58, VB_R = 538, VB_B = 480
-            let tx = active.x + aR + 2
-            if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
-            tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
-            let ty = active.y - tipH - 2
-            if (ty < 2) ty = active.y + aR + 2
-            ty = Math.max(2, Math.min(ty, VB_B - tipH))
-            return (
-              <foreignObject x={tx} y={ty} width={tipW} height={tipH} style={{ pointerEvents: 'none', overflow: 'visible' }}>
-                <div className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
-                  <div className="flex items-center gap-1">
-                    <span className="rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.nomCourt || active.ref}</span>
-                    <span className="text-gray-500 dark:text-gray-400">{typeLabel(active.type)}</span>
-                  </div>
-                  <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-100">{active.nom}</div>
-                  <div className="mt-1 text-gray-600 dark:text-gray-300">{a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {a3.ppPenetrationLabel} {active.penetration.toFixed(1)}</div>
-                  <div className="text-gray-600 dark:text-gray-300">{a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {a3.ppConfianceLabel} {active.confiance.toFixed(1)}</div>
-                  <div className="mt-0.5 text-gray-600 dark:text-gray-300">{a3.ppExpLabel} {active.exposition.toFixed(1)} · {a3.ppFiabLabel} {active.fiabilite.toFixed(1)}</div>
-                  <div className="font-semibold" style={{ color: ZONE_COLOR[active.zone] }}>{r.menaceLabel} {active.menace.toFixed(2)}</div>
-                </div>
-              </foreignObject>
-            )
-          })()}
-
           {/* Points = parties prenantes. Couleur = fiabilité · taille = exposition ·
               ★ (avant le libellé) = tiers critique · libellé = nom court ou réf T1… */}
           {points.map(p => {
@@ -270,6 +240,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 onFocus={() => enter(p)}
                 onBlur={leave}
                 onClick={() => onSelect?.(p.id)}
+                onDoubleClick={editable ? (e => { e.stopPropagation(); setEditing(p.id) }) : undefined}
               >
                 <circle
                   cx={p.x} cy={p.y} r={isActive ? baseR + 2.5 : baseR}
@@ -312,6 +283,37 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               </g>
             )
           })}
+
+          {/* Détail au survol — rendu APRÈS les points (z-order au-dessus) mais NON
+              interactif (pointer-events:none sur le foreignObject ET son contenu) pour
+              ne jamais intercepter le clic/double-clic d'édition du libellé. */}
+          {active && editing === null && (() => {
+            const a3 = t.workshop.a3
+            const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
+            const tipW = 210, tipH = 140
+            const VB_L = -58, VB_R = 538, VB_B = 480
+            let tx = active.x + aR + 2
+            if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
+            tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
+            let ty = active.y - tipH - 2
+            if (ty < 2) ty = active.y + aR + 2
+            ty = Math.max(2, Math.min(ty, VB_B - tipH))
+            return (
+              <foreignObject x={tx} y={ty} width={tipW} height={tipH} pointerEvents="none" style={{ pointerEvents: 'none', overflow: 'visible' }}>
+                <div style={{ pointerEvents: 'none' }} className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
+                  <div className="flex items-center gap-1">
+                    <span className="rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.nomCourt || active.ref}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{typeLabel(active.type)}</span>
+                  </div>
+                  <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-100">{active.nom}</div>
+                  <div className="mt-1 text-gray-600 dark:text-gray-300">{a3.ppDependanceLabel} {active.dependance.toFixed(1)} · {a3.ppPenetrationLabel} {active.penetration.toFixed(1)}</div>
+                  <div className="text-gray-600 dark:text-gray-300">{a3.ppMaturiteLabel} {active.maturite.toFixed(1)} · {a3.ppConfianceLabel} {active.confiance.toFixed(1)}</div>
+                  <div className="mt-0.5 text-gray-600 dark:text-gray-300">{a3.ppExpLabel} {active.exposition.toFixed(1)} · {a3.ppFiabLabel} {active.fiabilite.toFixed(1)}</div>
+                  <div className="font-semibold" style={{ color: ZONE_COLOR[active.zone] }}>{r.menaceLabel} {active.menace.toFixed(2)}</div>
+                </div>
+              </foreignObject>
+            )
+          })()}
         </svg>
 
         {/* Légende compacte (sous le radar) + aide dépliable */}

@@ -97,6 +97,12 @@ const TYPE_ORDER = [
 /** Fraction du secteur sur laquelle les PP d'une même catégorie sont étalées. */
 const SECTOR_SPREAD = 0.35
 
+// Empreinte approximative d'un point pour l'anti-chevauchement des PP connexes :
+// cercle (rayon max) + libellé texte à droite. Aligné sur EXPO_RADIUS du composant.
+const POINT_R = 14    // rayon max d'un point
+const CHAR_W = 5.6    // largeur moyenne d'un caractère de libellé (fontSize ~9.5)
+const LABEL_PAD = 6   // marge autour du libellé
+
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 /** Menace = exposition / fiabilité, entrées bornées à [1..N²] (N² par défaut = 16). */
@@ -212,6 +218,60 @@ export function stakeholderRef(index: number): string {
   return `T${index + 1}`
 }
 
+/** Boîte englobante d'un point (cercle + libellé à droite) à une position donnée. */
+function footprintAt(p: RadarPoint, x: number, y: number) {
+  const label = p.nomCourt || p.ref
+  const hasLabel = p.showLabel || !!p.nomCourt || !!p.ref
+  const labelW = hasLabel ? (label.length + (p.critique ? 2 : 0)) * CHAR_W + LABEL_PAD : 0
+  return { left: x - POINT_R, right: x + POINT_R + labelW, top: y - POINT_R - 2, bottom: y + POINT_R + 2 }
+}
+
+function boxesOverlap(a: ReturnType<typeof footprintAt>, b: ReturnType<typeof footprintAt>): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+// Décalages candidats : position d'origine d'abord, puis spirale (anneaux × 12 angles).
+function candidateOffsets(): [number, number][] {
+  const out: [number, number][] = [[0, 0]]
+  const step = 18
+  for (let ring = 1; ring <= 5; ring++) {
+    for (let a = 0; a < 360; a += 30) {
+      const rad = (a * Math.PI) / 180
+      out.push([Math.cos(rad) * step * ring, Math.sin(rad) * step * ring])
+    }
+  }
+  return out
+}
+
+/**
+ * Anti-chevauchement des PP connexes (rang ≥ 2) : déplace UNIQUEMENT les points
+ * de rang 2/3 pour qu'ils ne recouvrent ni un autre point ni son libellé. Les
+ * points de rang 1 (cartographie primaire, testée) restent fixes. Le lien
+ * pointillé vers la parente suit la position finale (relation préservée).
+ */
+export function deOverlapConnexe(points: RadarPoint[], geom: RadarGeometry): void {
+  const movers = points.filter(p => p.rang >= 2)
+  if (!movers.length) return
+  // Boîtes à éviter : tous les points fixes (rang 1) + les connexes déjà placés.
+  const placed: RadarPoint[] = points.filter(p => p.rang <= 1)
+  const offsets = candidateOffsets()
+  for (const c of movers) {
+    let best: [number, number] | null = null
+    let bestCollisions = Infinity
+    for (const [dx, dy] of offsets) {
+      const nx = c.x + dx, ny = c.y + dy
+      // Ne pas sortir du disque du radar.
+      if (Math.hypot(nx - geom.cx, ny - geom.cy) > geom.rMax) continue
+      const box = footprintAt(c, nx, ny)
+      const collisions = placed.reduce((acc, q) => acc + (boxesOverlap(box, footprintAt(q, q.x, q.y)) ? 1 : 0), 0)
+      if (collisions === 0) { best = [nx, ny]; bestCollisions = 0; break }
+      if (collisions < bestCollisions) { bestCollisions = collisions; best = [nx, ny] }
+    }
+    if (best) { c.x = best[0]; c.y = best[1] }
+    placed.push(c)
+  }
+}
+
 export function layoutStakeholders(
   parties: StakeholderInput[],
   geom: RadarGeometry,
@@ -285,5 +345,7 @@ export function layoutStakeholders(
       y,
     })
   })
+  // Écarte les PP connexes (rang ≥ 2) des points/libellés existants (no-op si aucune).
+  deOverlapConnexe(points, geom)
   return points
 }
