@@ -251,7 +251,7 @@ export interface SectorSpan {
 // Largeur angulaire minimale d'un secteur (assez pour son libellé), bornée à 360/n.
 // Volontairement basse : une catégorie à 1–2 PP n'a pas besoin de beaucoup d'angle,
 // ce qui laisse davantage de place aux catégories denses (ex. prestataires).
-const SECTOR_MIN_DEG = 22
+const SECTOR_MIN_DEG = 15
 
 /**
  * Découpe le cercle en secteurs dont la largeur est PROPORTIONNELLE au nombre de
@@ -310,26 +310,7 @@ function boxesOverlap(a: ReturnType<typeof footprintAt>, b: ReturnType<typeof fo
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
-// Décalages candidats : position d'origine d'abord, puis spirale (anneaux × 12 angles).
-function candidateOffsets(): [number, number][] {
-  const out: [number, number][] = [[0, 0]]
-  const step = 18
-  for (let ring = 1; ring <= 5; ring++) {
-    for (let a = 0; a < 360; a += 30) {
-      const rad = (a * Math.PI) / 180
-      out.push([Math.cos(rad) * step * ring, Math.sin(rad) * step * ring])
-    }
-  }
-  return out
-}
-
-/**
- * Anti-chevauchement des PP connexes (rang ≥ 2) : déplace UNIQUEMENT les points
- * de rang 2/3 pour qu'ils ne recouvrent ni un autre point ni son libellé. Les
- * points de rang 1 (cartographie primaire, testée) restent fixes. Le lien
- * pointillé vers la parente suit la position finale (relation préservée).
- */
-// Positions candidates pour un point de RANG 1 : rotations autour du centre à
+// Positions candidates pour un point : rotations autour du centre à
 // rayon ~constant (préserve la menace = le rayon), bornées à la zone « sûre » du
 // secteur [centerDeg ± safeHalfDeg] (n'empiète pas sur les séparateurs) ; en
 // dernier recours, léger décalage radial à angle (clampé) constant.
@@ -345,13 +326,14 @@ function angularCandidates(p: RadarPoint, geom: RadarGeometry, centerDeg: number
   for (let step = 3; step <= maxRot + 3; step += 3) {
     out.push(at(cur + step)); out.push(at(cur - step))
   }
-  // Repli radial : essentiel pour les points proches du centre (rotation quasi nulle
-  // en absolu). On élargit l'amplitude pour séparer les amas du cœur (zone danger).
-  for (const dr of [12, 24, 36, 48, -12, -24, 60]) {
-    if (r + dr > 6) {
-      out.push(at(cur, r + dr))
+  // Repli radial VERS L'EXTÉRIEUR uniquement (jamais vers le centre) : sépare les amas
+  // du cœur (zone danger) sans rendre un point plus central que sa menace ne l'exige.
+  for (const dr of [12, 24, 36, 48, 60, 72]) {
+    const nr = r + dr
+    if (nr <= geom.rMax) {
+      out.push(at(cur, nr))
       // Combine rotation + décalage radial pour davantage de positions distinctes.
-      out.push(at(cur + 8, r + dr)); out.push(at(cur - 8, r + dr))
+      out.push(at(cur + 8, nr)); out.push(at(cur - 8, nr))
     }
   }
   return out
@@ -360,8 +342,9 @@ function angularCandidates(p: RadarPoint, geom: RadarGeometry, centerDeg: number
 /**
  * Dé-collision des points : déplace ceux qui se recouvrent (point OU libellé).
  * Ordre : rang croissant puis menace décroissante (les plus centraux d'abord).
- *  - RANG 1 : rotation à rayon ~constant dans son secteur (préserve la menace).
- *  - RANG ≥ 2 (PP connexes) : déplacement libre en spirale.
+ * TOUS les points : rotation à rayon ~constant dans leur secteur (préserve la menace,
+ * jamais vers le centre) + repli radial VERS L'EXTÉRIEUR. Les connexes (rang ≥ 2)
+ * disposent d'une amplitude angulaire plus large (secondaires).
  * Le lien pointillé vers la parente suit la position finale (relation préservée).
  */
 export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: SectorSpan[]): void {
@@ -372,9 +355,11 @@ export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: Sect
   for (const c of order) {
     const span = spanByType.get(c.type)
     const rNow = Math.hypot(c.x - geom.cx, c.y - geom.cy)
-    const cands: [number, number][] = c.rang >= 2
-      ? candidateOffsets().map(([dx, dy]) => [c.x + dx, c.y + dy] as [number, number])
-      : angularCandidates(c, geom, span ? span.centerDeg : 0, span ? usableHalfAngle(rNow, span.widthDeg) : 30)
+    // Amplitude angulaire : large marge sûre pour les connexes, fraction du secteur sinon.
+    const half = span
+      ? (c.rang >= 2 ? safeHalfAngle(rNow, span.widthDeg) : usableHalfAngle(rNow, span.widthDeg))
+      : 30
+    const cands = angularCandidates(c, geom, span ? span.centerDeg : 0, half)
     let best: [number, number] | null = null
     let bestCollisions = Infinity
     for (const [nx, ny] of cands) {
@@ -393,6 +378,7 @@ export function layoutStakeholders(
   parties: StakeholderInput[],
   geom: RadarGeometry,
   bounds?: MenaceBounds,
+  spanParties?: StakeholderInput[],
 ): RadarPoint[] {
   if (!parties.length) return []
 
@@ -401,8 +387,10 @@ export function layoutStakeholders(
   // Borne de clamp des composites = menace max (= exposition max d'une fiabilité de 1).
   const maxComposite = menaceMax
 
-  // Secteurs proportionnels au nombre de PP de chaque catégorie.
-  const spans = sectorSpans(parties)
+  // Secteurs proportionnels au nombre de PP de chaque catégorie. La référence peut être
+  // un sur-ensemble STABLE (ex. toutes les PP, rangs 2/3 inclus) pour que basculer
+  // l'affichage des connexes ne redimensionne pas les secteurs.
+  const spans = sectorSpans(spanParties ?? parties)
   const spanByType = new Map(spans.map(s => [s.type, s]))
 
   // Index des PP au sein de leur secteur (pour le jitter).

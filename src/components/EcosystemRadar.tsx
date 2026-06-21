@@ -139,10 +139,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const geom = { cx: CX, cy: CY, rMax: R_MAX }
   // Rang 1 par défaut (recommandation du guide) ; rangs 2/3 affichés sur demande.
   const shownParties = showRanks ? parties : parties.filter(p => (p.rang ?? 1) <= 1)
-  const points = layoutStakeholders(shownParties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax })
+  // Secteurs calculés sur TOUTES les PP (rangs 2/3 inclus) → stables au basculement.
+  const points = layoutStakeholders(shownParties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax }, parties)
   const byCle = new Map(points.filter(p => p.cle).map(p => [p.cle, p]))
-  // Secteurs proportionnels au nombre de PP de chaque catégorie.
-  const spans = sectorSpans(shownParties)
+  const spans = sectorSpans(parties)
   const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
   const n = spans.length
   const typeLabel = (ty: string) => ppTypes[ty] ?? ty
@@ -216,24 +216,14 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           <circle cx={CX} cy={CY} r={rings.danger} fill={ZONE_COLOR.danger} fillOpacity={0.18}
             stroke={ZONE_COLOR.danger} strokeOpacity={0.45} />
 
-          {/* Liens des PP connexes (rang 2/3) vers leur PP parente — pointillé + pastille
-              de RANG au milieu du lien (1 = direct, 2/3 = profondeur du sous-traitant). */}
+          {/* Liens des PP connexes (rang 2/3) vers leur PP parente — pointillé rond
+              (le numéro de rang est porté par chaque point, cf. plus bas). */}
           {showRanks && points.map(p => {
             const parent = p.parentCle ? byCle.get(p.parentCle) : undefined
             if (!parent) return null
-            const mx = (parent.x + p.x) / 2, my = (parent.y + p.y) / 2
-            return (
-              <g key={`lnk-${p.id}`}>
-                {/* Pointillés ronds (et non tirets, réservés aux séparateurs de secteurs). */}
-                <line x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
-                  className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
-                  strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
-                <circle cx={mx} cy={my} r={6.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1.2} />
-                <text x={mx} y={my + 2.8} textAnchor="middle" fontSize={8.5} fontWeight={700} fill="#ffffff" style={{ pointerEvents: 'none' }}>
-                  {p.rang}
-                </text>
-              </g>
-            )
+            return <line key={`lnk-${p.id}`} x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
+              className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
+              strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
           })}
 
           {/* Séparateurs de secteurs (au bord initial) + libellés de catégorie (au centre,
@@ -293,6 +283,14 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                   stroke="#ffffff" strokeWidth={1.5}
                   className="transition-all"
                 />
+                {/* Numéro de profondeur de sous-traitance (rang 1/2/3) sur le point,
+                    visible seulement quand l'affichage des rangs 2/3 est activé. */}
+                {showRanks && (
+                  <g style={{ pointerEvents: 'none' }}>
+                    <circle cx={p.x + baseR * 0.72} cy={p.y - baseR * 0.72} r={5.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1} />
+                    <text x={p.x + baseR * 0.72} y={p.y - baseR * 0.72 + 2.5} textAnchor="middle" fontSize={7.5} fontWeight={700} fill="#ffffff">{p.rang}</text>
+                  </g>
+                )}
                 {isEditing ? (
                   // Édition inline du nom court (sans changer de page) — côté du libellé
                   <foreignObject x={labelLeft ? labelX - 116 : labelX - 2} y={p.y - 9} width={118} height={22}>
