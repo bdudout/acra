@@ -856,6 +856,12 @@ export const de: Translations = {
       empty: 'Keine Organisation.',
       selectHint: 'Wählen Sie eine Organisation, um ihre Mitglieder zu verwalten.',
       removeConfirm: 'Dieses Mitglied aus der Organisation entfernen?',
+      scalesTitle: 'Risikoskalen (Schweregrad, Wahrscheinlichkeit, Matrix)',
+      scalesShared: 'Gemeinsam (Gruppenmodus)',
+      scalesSharedDesc: 'Gleiche Skala und Matrix für alle Organisationen.',
+      scalesPerOrg: 'Pro Organisation (Beratermodus)',
+      scalesPerOrgDesc: 'Jede Organisation kann eigene Skalen und Matrix festlegen.',
+      scalesNote: 'Hier jederzeit änderbar.',
     },
     recovery: {
       title:          'Analysen-Wiederherstellung',

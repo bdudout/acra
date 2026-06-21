@@ -38,6 +38,7 @@ export default function OrganizationsAdminPage() {
   const [mScope, setMScope] = useState<'NODE' | 'SUBTREE'>('NODE')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [scalesScope, setScalesScope] = useState<'SHARED' | 'PER_ORG'>('SHARED')
 
   // Garde : réservé au SUPER_ADMIN.
   useEffect(() => {
@@ -58,6 +59,20 @@ export default function OrganizationsAdminPage() {
 
   useEffect(() => { loadOrgs() }, [loadOrgs])
   useEffect(() => { if (selected) loadMembers(selected) }, [selected, loadMembers])
+  useEffect(() => {
+    fetch('/api/admin/scales-scope', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.scalesScope) setScalesScope(d.scalesScope) })
+      .catch(() => {})
+  }, [])
+
+  async function changeScalesScope(mode: 'SHARED' | 'PER_ORG') {
+    setScalesScope(mode)
+    await fetch('/api/admin/scales-scope', {
+      method: 'PUT', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scalesScope: mode }),
+    }).catch(() => {})
+  }
 
   async function createOrg(e: React.FormEvent) {
     e.preventDefault()
@@ -208,6 +223,26 @@ export default function OrganizationsAdminPage() {
             )}
           </section>
         </div>
+
+        {/* Mode des échelles de risque : communes (groupe) ou par organisation (consultant) */}
+        <section className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="mb-1 font-semibold text-gray-800">{o.scalesTitle}</h2>
+          <p className="mb-3 text-xs text-gray-500">{o.scalesNote}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {([
+              ['SHARED', o.scalesShared, o.scalesSharedDesc],
+              ['PER_ORG', o.scalesPerOrg, o.scalesPerOrgDesc],
+            ] as const).map(([val, label, desc]) => (
+              <label key={val} className={`flex cursor-pointer gap-3 rounded-md border p-3 text-sm ${scalesScope === val ? 'border-ebios-400 bg-ebios-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="scalesScope" checked={scalesScope === val} onChange={() => changeScalesScope(val)} className="mt-0.5 accent-ebios-600" />
+                <span>
+                  <span className="block font-medium text-gray-800">{label}</span>
+                  <span className="block text-xs text-gray-500">{desc}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   )

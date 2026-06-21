@@ -259,7 +259,7 @@ export default async function AtelierPage({
                 analyse={analyse}
                 initialTab={resolvedSearchParams.tab}
                 flashMode={flashMode}
-                scaleConfig={await getEffectiveScaleConfig()}
+                scaleConfig={await getEffectiveScaleConfig((analyse as any).organizationId)}
               />
             )}
           </div>

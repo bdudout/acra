@@ -856,6 +856,12 @@ export const en: Translations = {
       empty: 'No organization.',
       selectHint: 'Select an organization to manage its members.',
       removeConfirm: 'Remove this member from the organization?',
+      scalesTitle: 'Risk scales (severity, likelihood, matrix)',
+      scalesShared: 'Shared (group mode)',
+      scalesSharedDesc: 'Same scale and matrix for all organizations.',
+      scalesPerOrg: 'Per organization (consultant mode)',
+      scalesPerOrgDesc: 'Each organization can define its own scales and matrix.',
+      scalesNote: 'Editable here at any time.',
     },
     recovery: {
       title:          'Analysis recovery',

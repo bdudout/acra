@@ -537,6 +537,10 @@ model OrganizationConfig {
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).
   echellesEcosysteme Json @default("{}")
+  // Portée des échelles gravité/vraisemblance/matrice (réglage INSTANCE, lu sur la racine) :
+  //  - SHARED  : même échelle/matrice pour toutes les organisations (mode « groupe ») ;
+  //  - PER_ORG : chaque organisation peut avoir ses propres échelles (mode « consultant »).
+  scalesScope    String   @default("SHARED")
   updatedAt      DateTime @updatedAt
 }
 

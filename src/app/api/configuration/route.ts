@@ -4,17 +4,26 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { buildDefaultConfig } from '@/lib/configuration-defaults'
 import { canEditConfig, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { resolveScaleConfigTargetId } from '@/lib/configuration-server'
 
-const GLOBAL_ID = 'global'
+// Id de la Configuration à manipuler selon le mode (SHARED → racine ; PER_ORG → org active).
+async function scaleTarget(session: any): Promise<string> {
+  const userId = (session.user as any).id
+  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const { activeOrgId } = await getAnalyseScope(userId, userRole)
+  return resolveScaleConfigTargetId(activeOrgId)
+}
 
-// GET /api/configuration — récupérer l'échelle commune de l'organisation
-// (singleton global). Accessible à tout utilisateur authentifié ; renvoie les
-// valeurs par défaut tant qu'aucune configuration n'a été enregistrée.
+// GET /api/configuration — récupérer l'échelle de l'organisation active (selon le
+// mode de portée). Accessible à tout utilisateur authentifié ; renvoie les valeurs
+// par défaut tant qu'aucune configuration n'a été enregistrée pour la cible.
 export async function GET(_req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const config = await prisma.configuration.findUnique({ where: { id: GLOBAL_ID } })
+  const targetId = await scaleTarget(session)
+  const config = await prisma.configuration.findUnique({ where: { id: targetId } })
   if (!config) {
     return NextResponse.json({ ...buildDefaultConfig(4), isDefault: true })
   }
@@ -48,9 +57,10 @@ export async function PUT(req: NextRequest) {
     matriceQualitative: mode === 'QUALITATIVE' ? (matriceQualitative ?? null) : null,
   }
 
+  const targetId = await scaleTarget(session)
   const config = await prisma.configuration.upsert({
-    where: { id: GLOBAL_ID },
-    create: { id: GLOBAL_ID, ...data },
+    where: { id: targetId },
+    create: { id: targetId, ...data },
     update: data,
   })
 
@@ -67,6 +77,7 @@ export async function DELETE(_req: NextRequest) {
     return NextResponse.json({ error: 'Seul un administrateur peut réinitialiser les échelles' }, { status: 403 })
   }
 
-  await prisma.configuration.deleteMany({ where: { id: GLOBAL_ID } })
+  const targetId = await scaleTarget(session)
+  await prisma.configuration.deleteMany({ where: { id: targetId } })
   return NextResponse.json({ ok: true })
 }

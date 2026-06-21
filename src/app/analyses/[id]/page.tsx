@@ -67,7 +67,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const canManage = canManageAccess(sessionUser, ownership)
 
   // Échelle/seuils configurés (admin) pour piloter la matrice des risques
-  const scaleConfig = await getEffectiveScaleConfig()
+  const scaleConfig = await getEffectiveScaleConfig((analyse as any).organizationId)
 
   // Fonctionnalité optionnelle : questionnaire de qualification (cf. OrganizationConfig)
   // Config résolue par l'organisation de l'analyse (héritage des ancêtres).

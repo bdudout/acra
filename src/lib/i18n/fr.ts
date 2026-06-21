@@ -875,6 +875,12 @@ export const fr = {
       empty: 'Aucune organisation.',
       selectHint: 'Sélectionnez une organisation pour gérer ses membres.',
       removeConfirm: 'Retirer ce membre de l\'organisation ?',
+      scalesTitle: 'Échelles de risque (gravité, vraisemblance, matrice)',
+      scalesShared: 'Communes (mode groupe)',
+      scalesSharedDesc: 'Même échelle et même matrice pour toutes les organisations.',
+      scalesPerOrg: 'Par organisation (mode consultant)',
+      scalesPerOrgDesc: 'Chaque organisation peut définir ses propres échelles et matrice.',
+      scalesNote: 'Modifiable à tout moment ici.',
     },
     recovery: {
       title:          'Récupération des analyses',
