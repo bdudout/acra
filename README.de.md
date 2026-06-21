@@ -45,7 +45,8 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - **Integrierte methodische Anleitung**: Jedes Feld hat einen Tooltip, einen Link zum ANSSI-Leitfaden und kontextbezogene Beispiele
 - **Automatische Konsistenz**: Elemente eines Workshops fließen automatisch in die folgenden ein
 - **7 Maßnahmen-Frameworks**: ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI-Hygiene, HDS, PCI-DSS — aus einer einzigen Oberfläche
-- **Express-Modus**: eine vollständige Analyse (W1+W2+W5) in unter 30 Minuten für dringende Kontexte
+- **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
+- **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
 - **100 % selbst gehostet**: Ihre Daten verlassen niemals Ihre Infrastruktur
 
 ---
@@ -55,7 +56,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 ### 📋 Vollständige EBIOS-RM-Methode
 
 - **5 geführte Workshops** mit einer Bibliothek anklickbarer Beispiele (Geschäftswerte, Risikoquellen, Szenarien, Maßnahmen…)
-- **Express-Analysemodus** (W1 + W2 + W5), um schnell eine Risikoliste und einen Aktionsplan zu erhalten
+- **Flash-Methode (Club EBIOS)**: ein schneller Durchlauf W1 → W2 → W3 → W4 → W5 in einem Zug, gestützt auf Beispiele und den Sicherheitssockel, um schnell eine Risikoliste und einen Aktionsplan zu erstellen
 - **Interaktiver EBIOS-RM-Leitfaden** mit Direktlinks zu den Seiten des offiziellen ANSSI-Leitfadens
 - Visuelle **Risikomatrix** (Schweregrad × Wahrscheinlichkeit) mit Restrisikoniveaus und Vorher/Nachher-Vergleich
 - **DICT**-Kriterien (Verfügbarkeit, Integrität, Vertraulichkeit, Nachvollziehbarkeit) für Geschäftswerte und unterstützende Güter
@@ -472,7 +473,7 @@ curl https://ihre-domain.de/api/health
 | **W4** | Operative Szenarien | Technische Aktionen der Angreifer, Wahrscheinlichkeit, MITRE-ATT&CK-Links |
 | **W5** | Risikobehandlung | Behandlungsstrategien (reduzieren, übertragen, ablehnen, akzeptieren), Maßnahmen je Framework, Restrisiken, Aktionsplan |
 
-> **🚀 Express-Modus**: ein schneller Durchlauf W1 → W2 → W5, vom Dashboard aus verfügbar, um in unter 30 Minuten eine Risikoliste und einen Aktionsplan zu erhalten. Ideal für dringende Kontexte oder erste Analysen.
+> **⚡ Flash-Methode (Club EBIOS)**: ein schneller Durchlauf W1 → W2 → W3 → W4 → W5, vom Dashboard aus verfügbar. Gemäß dem „Flash“-Ansatz des Club EBIOS werden alle Workshops in einem Durchgang absolviert, indem auf Beispiele und den Sicherheitssockel zurückgegriffen wird, mit Fokus auf die relevantesten Szenarien (≈ 5 max). Skala und Matrix bleiben die vom Administrator konfigurierten. Ideal für eine erste Analyse oder einen eingeschränkten Kontext.
 
 ---
 
@@ -500,8 +501,10 @@ Die Dritten werden auf einem **Polarradar** platziert: je näher am Zentrum, des
 - **Größe** eines Punkts = Exposition (größer = stärker exponiert)
 - **Ringe** = Bedrohungszonen (Gefahr orange · Kontrolle gelb · Beobachtung grün)
 - **★** = manuell als *kritisch* markierter Dritter
-- **Beschriftung** = bearbeitbarer Kurzname (direkt auf die Punktbeschriftung klicken) oder Ref. `T1, T2…`
+- **Beschriftung** = bearbeitbarer Kurzname (Punkt klicken oder **doppelklicken**) oder Ref. `T1, T2…`
 - Beim Überfahren eines Punkts → Details der 4 Teilkriterien, Exposition/Zuverlässigkeit und Bedrohung
+
+**Tiers von Rang 2 / 3 (Ökosystem-Tiefe)** — gemäß Methodenblatt 5 des Club EBIOS kann ein kritischer Tier in **verbundene Stakeholder** zerlegt werden (z. B. der Hoster eines Dienstleisters, der Subunternehmer eines Partners). ACRA verwaltet drei Tiefenränge: Von einem kritischen Tier aus fügt die Schaltfläche **„+ verbundener Stakeholder“** einen Stakeholder vom **Rang 2** hinzu, der selbst in **Rang 3** zerlegbar ist. Im Radar blendet ein Kontrollkästchen **„Ränge 2/3“** diese verbundenen Tiers ein (standardmäßig ausgeblendet), abgeschwächt und **durch eine gestrichelte Linie mit ihrem übergeordneten Tier verbunden**, mit automatischer Vermeidung von Punkt-/Beschriftungsüberlappungen. Die Management-Zusammenfassung (PDF) bleibt aus Gründen der Lesbarkeit auf Tiers vom Rang 1 fokussiert.
 
 **Konfigurierbare Skalen** — jede Stufe der 4 Kriterien (standardmäßig 1→4) kann unter `Konfiguration → Ökosystem` umbenannt werden, mit Hinzufügen/Entfernen von Stufen (nur ADMIN). Das Radar passt sich automatisch an die Skala an.
 

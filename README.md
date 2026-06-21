@@ -45,7 +45,8 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - **Guidage méthodologique intégré** : chaque champ dispose d'un tooltip, d'un lien vers le guide ANSSI, et d'exemples contextuels
 - **Cohérence automatique** : les éléments d'un atelier alimentent automatiquement les ateliers suivants
 - **7 référentiels de mesures** : ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS — depuis une seule interface
-- **Mode Express** : une analyse complète (A1+A2+A5) en moins de 30 minutes pour les contextes urgents
+- **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
+- **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
 - **100% auto-hébergé** : vos données ne quittent jamais votre infrastructure
 
 ---
@@ -55,8 +56,8 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 ### 📋 Méthode EBIOS RM complète
 
 - **5 ateliers guidés** avec bibliothèque d'exemples cliquables (valeurs métier, sources de risque, scénarios, mesures…)
-- **Mode Analyse express** (A1 + A2 + A5) pour obtenir rapidement une liste de risques et un plan d'action
-- **Guide EBIOS RM interactif** intégré avec liens directs vers les pages du guide officiel ANSSI
+- **Méthode Flash (Club EBIOS)** : parcours rapide A1 → A2 → A3 → A4 → A5 en une passe, en capitalisant sur les exemples et le socle de sécurité, pour produire rapidement une liste de risques et un plan d'action
+- **Guide EBIOS RM interactif** intégré avec liens directs vers les pages du guide officiel ANSSI, et **intégration des guides du Club EBIOS** (méthode Flash, dangerosité des parties prenantes)
 - **Matrice des risques** visuelle (gravité × vraisemblance) avec niveaux résiduels et comparaison avant/après mesures
 - Critères **DICT** (Disponibilité, Intégrité, Confidentialité, Traçabilité) sur valeurs métier et biens supports
 - Liens MITRE ATT&CK sur les scénarios opérationnels
@@ -568,7 +569,7 @@ flowchart LR
 | **A4** | Scénarios opérationnels | Actions techniques des attaquants, vraisemblance, liens MITRE ATT&CK |
 | **A5** | Traitement du risque | Stratégies de traitement (réduction, transfert, refus, acceptation), mesures par référentiel, risques résiduels, plan d'action |
 
-> **🚀 Mode Express** : parcours rapide A1 → A2 → A5 disponible depuis le dashboard pour obtenir une liste de risques et un plan d'action en moins de 30 minutes. Idéal pour les contextes urgents ou les premières analyses.
+> **⚡ Méthode Flash (Club EBIOS)** : parcours rapide A1 → A2 → A3 → A4 → A5 disponible depuis le dashboard. Conformément à la démarche « Flash » du Club EBIOS, tous les ateliers sont déroulés en une seule passe en capitalisant sur les exemples et le socle de sécurité, en se concentrant sur les scénarios les plus pertinents (≈ 5 max). L'échelle et la matrice restent celles configurées par l'administrateur. Idéal pour une première analyse ou un contexte contraint.
 
 ---
 
@@ -596,8 +597,15 @@ Les tiers sont positionnés sur un **radar polaire** : plus un point est proche 
 - **Taille** du point = exposition (plus gros = plus exposé)
 - **Anneaux** = zones de menace (danger orange · contrôle jaune · veille vert)
 - **★** = tiers marqué *critique* (manuel)
-- **Libellé** = nom court éditable (clic direct sur le libellé du point) ou réf `T1, T2…`
-- Survol d'un point → détail des 4 sous-critères, exposition/fiabilité et menace
+- **Libellé** = nom court éditable (clic ou **double-clic** sur le point) ou réf `T1, T2…`
+- Survol d'un point → détail des 4 sous-critères, exposition/fiabilité et menace (info-bulle au-dessus des points)
+- **Export PNG / SVG** du radar depuis son en-tête
+
+**Tiers de rang 2 / 3 (profondeur d'écosystème)** — conformément à la fiche méthode 5 du Club EBIOS, un tiers critique peut être décomposé en **parties prenantes connexes** (ex. l'hébergeur d'un prestataire, le sous-traitant d'un partenaire). ACRA gère trois rangs de profondeur :
+
+- depuis un tiers critique, le bouton **« + PP connexe »** ajoute une partie prenante de **rang 2**, elle-même décomposable en **rang 3** ;
+- sur le radar, une case **« Rangs 2/3 »** affiche ces tiers connexes (masqués par défaut), atténués et **reliés à leur tiers parent par un trait pointillé**, avec évitement automatique des chevauchements de points et de libellés ;
+- la synthèse exécutive (PDF) reste centrée sur les tiers de rang 1 pour la lisibilité.
 
 **Échelles configurables** — chaque niveau des 4 critères (1→4 par défaut) est renommable dans `Configuration → Écosystème`, avec ajout/suppression de niveaux (réservé ADMIN). Le calcul du radar s'adapte automatiquement à l'échelle.
 

@@ -45,7 +45,8 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - **Built-in methodological guidance**: every field has a tooltip, a link to the ANSSI guide, and contextual examples
 - **Automatic consistency**: items from one workshop automatically feed the next
 - **7 control frameworks**: ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI Hygiene, HDS, PCI-DSS — from a single interface
-- **Express mode**: a complete analysis (W1+W2+W5) in under 30 minutes for urgent contexts
+- **Flash method (Club EBIOS)**: a guided single pass through the 5 workshops, leveraging capitalization (examples, security baseline) — ideal for a first analysis or a constrained context
+- **Club EBIOS guides integrated**: the Flash method and method sheet 5 (stakeholder threat level) are implemented directly in the workflow
 - **100% self-hosted**: your data never leaves your infrastructure
 
 ---
@@ -55,7 +56,7 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 ### 📋 Complete EBIOS RM method
 
 - **5 guided workshops** with a library of clickable examples (business values, risk sources, scenarios, measures…)
-- **Express analysis mode** (W1 + W2 + W5) to quickly obtain a risk list and an action plan
+- **Flash method (Club EBIOS)**: a quick pass W1 → W2 → W3 → W4 → W5 in one go, capitalizing on examples and the security baseline, to quickly produce a risk list and an action plan
 - **Interactive EBIOS RM guide** with direct links to the official ANSSI guide pages
 - Visual **risk matrix** (severity × likelihood) with residual levels and before/after comparison
 - **DICT** criteria (Availability, Integrity, Confidentiality, Traceability) on business values and supporting assets
@@ -472,7 +473,7 @@ curl https://your-domain.com/api/health
 | **W4** | Operational scenarios | Attackers' technical actions, likelihood, MITRE ATT&CK links |
 | **W5** | Risk treatment | Treatment strategies (reduce, transfer, refuse, accept), per-framework measures, residual risks, action plan |
 
-> **🚀 Express mode**: a fast pass W1 → W2 → W5, available from the dashboard, to obtain a risk list and an action plan in under 30 minutes. Ideal for urgent contexts or first analyses.
+> **⚡ Flash method (Club EBIOS)**: a fast pass W1 → W2 → W3 → W4 → W5, available from the dashboard. Following the Club EBIOS "Flash" approach, all workshops are run in a single pass by capitalizing on examples and the security baseline, focusing on the most relevant scenarios (≈ 5 max). The scale and matrix remain those configured by the administrator. Ideal for a first analysis or a constrained context.
 
 ---
 
@@ -500,8 +501,10 @@ Third parties are placed on a **polar radar**: the closer to the centre, the hig
 - **Size** of a point = exposure (bigger = more exposed)
 - **Rings** = threat zones (danger orange · control yellow · watch green)
 - **★** = third party manually flagged *critical*
-- **Label** = editable short name (click directly on the point's label) or ref `T1, T2…`
+- **Label** = editable short name (click or **double-click** the point) or ref `T1, T2…`
 - Hovering a point → details of the 4 sub-criteria, exposure/reliability and threat
+
+**Rank 2 / 3 tiers (ecosystem depth)** — following Club EBIOS method sheet 5, a critical tier can be broken down into **connected stakeholders** (e.g. a provider's host, a partner's subcontractor). ACRA handles three depth ranks: from a critical tier, the **"+ connected stakeholder"** button adds a **rank-2** stakeholder, itself divisible into **rank 3**. On the radar, a **"Ranks 2/3"** checkbox reveals these connected tiers (hidden by default), dimmed and **linked to their parent tier by a dashed line**, with automatic avoidance of point/label overlaps. The executive summary (PDF) stays focused on rank-1 tiers for readability.
 
 **Configurable scales** — each level of the 4 criteria (1→4 by default) can be renamed in `Configuration → Ecosystem`, with levels added/removed (ADMIN only). The radar adapts automatically to the scale.
 

@@ -45,7 +45,8 @@ ACRA cambia tutto questo: è un **assistente metodologico interattivo** che guid
 - **Guida metodologica integrata**: ogni campo dispone di un tooltip, un link alla guida ANSSI ed esempi contestuali
 - **Coerenza automatica**: gli elementi di un workshop alimentano automaticamente i successivi
 - **7 framework di misure**: ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, Igiene ANSSI, HDS, PCI-DSS — da un'unica interfaccia
-- **Modalità Express**: un'analisi completa (W1+W2+W5) in meno di 30 minuti per contesti urgenti
+- **Metodo Flash (Club EBIOS)**: un percorso guidato dei 5 workshop in un'unica passata, basandosi sulla capitalizzazione (esempi, base di sicurezza) — ideale per una prima analisi o un contesto vincolato
+- **Guide del Club EBIOS integrate**: il metodo Flash e la scheda metodo 5 (pericolosità delle parti interessate) sono implementati direttamente nel percorso
 - **100% self-hosted**: i tuoi dati non lasciano mai la tua infrastruttura
 
 ---
@@ -55,7 +56,7 @@ ACRA cambia tutto questo: è un **assistente metodologico interattivo** che guid
 ### 📋 Metodo EBIOS RM completo
 
 - **5 workshop guidati** con libreria di esempi cliccabili (valori di business, fonti di rischio, scenari, misure…)
-- **Modalità analisi Express** (W1 + W2 + W5) per ottenere rapidamente un elenco di rischi e un piano d'azione
+- **Metodo Flash (Club EBIOS)**: un percorso rapido W1 → W2 → W3 → W4 → W5 in un'unica passata, capitalizzando gli esempi e la base di sicurezza, per produrre rapidamente un elenco di rischi e un piano d'azione
 - **Guida EBIOS RM interattiva** integrata con link diretti alle pagine della guida ufficiale ANSSI
 - **Matrice dei rischi** visiva (gravità × probabilità) con livelli residui e confronto prima/dopo le misure
 - Criteri **DICT** (Disponibilità, Integrità, Riservatezza, Tracciabilità) su valori di business e beni di supporto
@@ -472,7 +473,7 @@ curl https://tuo-dominio.com/api/health
 | **W4** | Scenari operativi | Azioni tecniche degli attaccanti, probabilità, link MITRE ATT&CK |
 | **W5** | Trattamento del rischio | Strategie di trattamento (riduzione, trasferimento, rifiuto, accettazione), misure per framework, rischi residui, piano d'azione |
 
-> **🚀 Modalità Express**: un percorso rapido W1 → W2 → W5, disponibile dalla dashboard, per ottenere un elenco di rischi e un piano d'azione in meno di 30 minuti. Ideale per contesti urgenti o per le prime analisi.
+> **⚡ Metodo Flash (Club EBIOS)**: un percorso rapido W1 → W2 → W3 → W4 → W5, disponibile dalla dashboard. Conformemente all'approccio «Flash» del Club EBIOS, tutti i workshop vengono svolti in un'unica passata capitalizzando gli esempi e la base di sicurezza, concentrandosi sugli scenari più pertinenti (≈ 5 max). La scala e la matrice restano quelle configurate dall'amministratore. Ideale per una prima analisi o un contesto vincolato.
 
 ---
 
@@ -500,8 +501,10 @@ I terzi sono posizionati su un **radar polare**: più un punto è vicino al cent
 - **Dimensione** del punto = esposizione (più grande = più esposto)
 - **Anelli** = zone di minaccia (pericolo arancione · controllo giallo · sorveglianza verde)
 - **★** = terzo contrassegnato come *critico* (manuale)
-- **Etichetta** = nome breve modificabile (clic diretto sull'etichetta del punto) o rif. `T1, T2…`
+- **Etichetta** = nome breve modificabile (clic o **doppio clic** sul punto) o rif. `T1, T2…`
 - Passando sopra un punto → dettaglio dei 4 sotto-criteri, esposizione/affidabilità e minaccia
+
+**Terze parti di rango 2 / 3 (profondità dell'ecosistema)** — conformemente alla scheda metodo 5 del Club EBIOS, una terza parte critica può essere scomposta in **parti interessate connesse** (es. l'host di un fornitore, il subappaltatore di un partner). ACRA gestisce tre ranghi di profondità: da una terza parte critica, il pulsante **«+ PP connessa»** aggiunge una parte interessata di **rango 2**, a sua volta divisibile in **rango 3**. Nel radar, una casella **«Ranghi 2/3»** mostra queste terze parti connesse (nascoste per impostazione predefinita), attenuate e **collegate alla terza parte padre da una linea tratteggiata**, con prevenzione automatica delle sovrapposizioni di punti ed etichette. La sintesi esecutiva (PDF) resta focalizzata sulle terze parti di rango 1 per la leggibilità.
 
 **Scale configurabili** — ogni livello dei 4 criteri (1→4 per impostazione predefinita) può essere rinominato in `Configurazione → Ecosistema`, con aggiunta/rimozione di livelli (solo ADMIN). Il radar si adatta automaticamente alla scala.
 
