@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { isAdminRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -83,7 +84,7 @@ export default function AuditLogPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/login')
-    if (status === 'authenticated' && userRole !== 'ADMIN') router.push('/dashboard')
+    if (status === 'authenticated' && !isAdminRole(userRole)) router.push('/dashboard')
   }, [status, userRole, router])
 
   const fetchLogs = useCallback(async () => {
@@ -106,7 +107,7 @@ export default function AuditLogPage() {
   }, [page, filterAction, filterFrom, filterTo])
 
   useEffect(() => {
-    if (status === 'authenticated' && userRole === 'ADMIN') {
+    if (status === 'authenticated' && isAdminRole(userRole)) {
       fetchLogs()
     }
   }, [fetchLogs, status, userRole])
@@ -118,7 +119,7 @@ export default function AuditLogPage() {
     setPage(1)
   }
 
-  if (status !== 'authenticated' || userRole !== 'ADMIN') return null
+  if (status !== 'authenticated' || !isAdminRole(userRole)) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

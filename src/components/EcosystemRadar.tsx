@@ -11,6 +11,7 @@
  * Cohérence : zones et menace identiques au calcul vulnerabilite déjà affiché en listes.
  */
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import {
   layoutStakeholders,
@@ -59,6 +60,10 @@ interface Props {
   aggregated?: boolean
   /** Notifié au survol d'un point (id) ou à la sortie (null) — ex. surligner la ligne du tableau. */
   onHover?: (id: string | null) => void
+  /** Lien « Modifier les tiers » : page atelier 3 (analyse) ou /tiers (radar agrégé). */
+  manageTiersHref?: string
+  /** Si vrai, un clic sur un point navigue vers `manageTiersHref#pp-<cle>` (scroll vers le tiers). */
+  manageTiersPerPoint?: boolean
 }
 
 const CX = 240, CY = 240, R_MAX = 190
@@ -74,8 +79,9 @@ const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
 const EXPO_RADIUS = [7, 9, 11.5, 14]
 const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false, onHover }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false, onHover, manageTiersHref, manageTiersPerPoint }: Props) {
   const { t } = useTranslation()
+  const router = useRouter()
   const r = t.workshop.a3.radar
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const [active, setActive] = useState<RadarPoint | null>(null)
@@ -159,6 +165,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
     onEditShortName?.(id, value.trim().slice(0, 12))
     setEditing(null)
   }
+  // Clic sur un point : naviguer vers l'édition du tiers (atelier 3, scroll) si demandé,
+  // sinon notifier le parent (surlignage / défilement interne).
+  function handlePointClick(p: RadarPoint) {
+    if (manageTiersPerPoint && manageTiersHref) router.push(`${manageTiersHref}#pp-${p.id}`)
+    else onSelect?.(p.id)
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700">
@@ -170,6 +182,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               <input type="checkbox" checked={showRanks} onChange={e => setShowRanks(e.target.checked)} className="accent-ebios-600" />
               {r.showRanks}
             </label>
+          )}
+          {manageTiersHref && (
+            <a href={manageTiersHref}
+              className="rounded border border-ebios-200 bg-ebios-50 px-2 py-1 text-[11px] font-medium text-ebios-700 hover:bg-ebios-100 dark:border-ebios-700 dark:bg-ebios-900/30 dark:text-ebios-300">
+              {r.manageTiers}
+            </a>
           )}
           <button type="button" onClick={exportPNG}
             className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportPng}</button>
@@ -198,14 +216,24 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           <circle cx={CX} cy={CY} r={rings.danger} fill={ZONE_COLOR.danger} fillOpacity={0.18}
             stroke={ZONE_COLOR.danger} strokeOpacity={0.45} />
 
-          {/* Liens des PP connexes (rang 2/3) vers leur PP parente — trait pointillé. */}
+          {/* Liens des PP connexes (rang 2/3) vers leur PP parente — pointillé + pastille
+              de RANG au milieu du lien (1 = direct, 2/3 = profondeur du sous-traitant). */}
           {showRanks && points.map(p => {
             const parent = p.parentCle ? byCle.get(p.parentCle) : undefined
             if (!parent) return null
-            // Pointillés ronds (et non tirets, réservés aux séparateurs de secteurs).
-            return <line key={`lnk-${p.id}`} x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
-              className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
-              strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
+            const mx = (parent.x + p.x) / 2, my = (parent.y + p.y) / 2
+            return (
+              <g key={`lnk-${p.id}`}>
+                {/* Pointillés ronds (et non tirets, réservés aux séparateurs de secteurs). */}
+                <line x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
+                  className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
+                  strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
+                <circle cx={mx} cy={my} r={6.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1.2} />
+                <text x={mx} y={my + 2.8} textAnchor="middle" fontSize={8.5} fontWeight={700} fill="#ffffff" style={{ pointerEvents: 'none' }}>
+                  {p.rang}
+                </text>
+              </g>
+            )
           })}
 
           {/* Séparateurs de secteurs (au bord initial) + libellés de catégorie (au centre,
@@ -237,7 +265,11 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             const isActive = active?.id === p.id
             const baseR = EXPO_RADIUS[expositionLevel(p.exposition, bornes.maxExpo)]
             const fill = FIAB_COLOR[fiabiliteLevel(p.fiabilite, bornes.maxFiab)]
-            const labelX = p.x + baseR + 4
+            // Libellé du côté EXTÉRIEUR (gauche si le point est à gauche du centre) pour
+            // ne pas s'étendre vers le cœur du radar — réduit fortement les chevauchements.
+            const labelLeft = p.x < CX
+            const labelX = labelLeft ? p.x - baseR - 4 : p.x + baseR + 4
+            const labelAnchor = labelLeft ? 'end' : 'start'
             const label = pointLabel(p)
             const isEditing = editing === p.id
             return (
@@ -252,7 +284,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                 onMouseLeave={leave}
                 onFocus={() => enter(p)}
                 onBlur={leave}
-                onClick={() => onSelect?.(p.id)}
+                onClick={() => handlePointClick(p)}
                 onDoubleClick={editable ? (e => { e.stopPropagation(); setEditing(p.id) }) : undefined}
               >
                 <circle
@@ -262,8 +294,8 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                   className="transition-all"
                 />
                 {isEditing ? (
-                  // Édition inline du nom court (sans changer de page)
-                  <foreignObject x={labelX - 2} y={p.y - 9} width={118} height={22}>
+                  // Édition inline du nom court (sans changer de page) — côté du libellé
+                  <foreignObject x={labelLeft ? labelX - 116 : labelX - 2} y={p.y - 9} width={118} height={22}>
                     <input
                       autoFocus
                       defaultValue={p.nomCourt}
@@ -282,7 +314,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                   // ★ (si critique) juste avant le libellé, à droite du point — halo
                   // (blanc en clair, sombre en thème sombre) pour rester lisible sur les zones.
                   <text
-                    x={labelX} y={p.y + 3.5}
+                    x={labelX} y={p.y + 3.5} textAnchor={labelAnchor}
                     fontSize={isActive ? 11 : 9.5} fontWeight={700}
                     strokeWidth={2.5} paintOrder="stroke"
                     className="fill-gray-900 [stroke:#fff] dark:fill-gray-50 dark:[stroke:#0f172a]"

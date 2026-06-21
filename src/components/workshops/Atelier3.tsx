@@ -152,6 +152,17 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     window.setTimeout(() => setHighlightPP(prev => (prev === id ? null : prev)), 2000)
   }
 
+  // Arrivée depuis le radar de la synthèse (lien « Modifier les tiers ») avec un hash
+  // #pp-<id> → défile et surligne le tiers concerné.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const m = window.location.hash.match(/^#pp-(.+)$/)
+    if (!m) return
+    const tid = window.setTimeout(() => focusPartiePrenante(decodeURIComponent(m[1])), 350)
+    return () => window.clearTimeout(tid)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const { flash: flashMesEco, isAdded: isMesEcoAdded } = useAddedFeedback()
 
   // ── Auto-save (defined after state declarations below) ───────────────────

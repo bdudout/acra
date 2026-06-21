@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { isAdminRole } from '@/lib/permissions'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -36,7 +37,7 @@ export default function RecoveryPage() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || currentRole !== 'ADMIN') router.replace('/dashboard')
+    if (!session?.user || !isAdminRole(currentRole)) router.replace('/dashboard')
   }, [session, status, currentRole, router])
 
   const load = useCallback(() => {
@@ -49,7 +50,7 @@ export default function RecoveryPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => { if (currentRole === 'ADMIN') load() }, [currentRole, load])
+  useEffect(() => { if (isAdminRole(currentRole)) load() }, [currentRole, load])
 
   async function act(id: string, method: 'PATCH' | 'DELETE') {
     setBusy(id)

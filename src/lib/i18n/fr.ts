@@ -1320,6 +1320,7 @@ export const fr = {
         helpHide: 'Masquer l\'aide',
         exportPng: 'Export PNG',
         exportSvg: 'Export SVG',
+        manageTiers: 'Modifier les tiers',
         showRanks: 'Rangs 2/3',
         rangLabel: 'Rang',
         formulaExpoTitle: 'Exposition numérique',

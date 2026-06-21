@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { isAdminRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Navbar from '@/components/Navbar'
@@ -103,7 +104,7 @@ export default function ConfigurationPage() {
   const { t, locale } = useTranslation()
   const { CATEGORIES_BIENS_SUPPORTS } = useEbiosData()
   const { data: session } = useSession()
-  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const isAdmin = isAdminRole((session?.user as any)?.role)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)

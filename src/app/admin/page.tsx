@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
-import { ROLE_LABELS, ROLE_COLORS, type UserRole } from '@/lib/permissions'
+import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
 
@@ -51,13 +51,13 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (!session?.user || currentRole !== 'ADMIN') {
+    if (!session?.user || !isAdminRole(currentRole)) {
       router.replace('/dashboard')
     }
   }, [session, status, currentRole, router])
 
   useEffect(() => {
-    if (currentRole !== 'ADMIN') return
+    if (!isAdminRole(currentRole)) return
 
     // Fetch users + audit log in parallel
     Promise.all([

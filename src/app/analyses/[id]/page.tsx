@@ -252,9 +252,14 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             {/* Radar de menace de l'écosystème */}
             {analyse.partiesPrenantes.length > 0 && (
               <EcosystemRadar
-                parties={analyse.partiesPrenantes.map((p: { id: string; nom: string; type: string; exposition: number; fiabilite: number }) => ({
-                  id: p.id, nom: p.nom, type: p.type, exposition: p.exposition, fiabilite: p.fiabilite,
+                parties={analyse.partiesPrenantes.map((p: any) => ({
+                  id: p.id, nom: p.nom, nomCourt: p.nomCourt ?? undefined, type: p.type,
+                  exposition: p.exposition, fiabilite: p.fiabilite,
+                  dependance: p.dependance, penetration: p.penetration, maturite: p.maturite, confiance: p.confiance,
+                  critique: p.critique, rang: p.rang, cle: p.cle ?? undefined, parentCle: p.parentCle ?? undefined,
                 }))}
+                manageTiersHref={`/analyses/${analyse.id}/atelier/3`}
+                manageTiersPerPoint
               />
             )}
 

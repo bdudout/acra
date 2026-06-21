@@ -249,7 +249,9 @@ export interface SectorSpan {
 }
 
 // Largeur angulaire minimale d'un secteur (assez pour son libellé), bornée à 360/n.
-const SECTOR_MIN_DEG = 34
+// Volontairement basse : une catégorie à 1–2 PP n'a pas besoin de beaucoup d'angle,
+// ce qui laisse davantage de place aux catégories denses (ex. prestataires).
+const SECTOR_MIN_DEG = 22
 
 /**
  * Découpe le cercle en secteurs dont la largeur est PROPORTIONNELLE au nombre de
@@ -289,12 +291,19 @@ export function stakeholderRef(index: number): string {
   return `T${index + 1}`
 }
 
-/** Boîte englobante d'un point (cercle + libellé à droite) à une position donnée. */
-function footprintAt(p: RadarPoint, x: number, y: number) {
+/**
+ * Boîte englobante d'un point (cercle + libellé) à une position donnée. Le libellé est
+ * placé du côté EXTÉRIEUR (vers la gauche si le point est à gauche du centre, sinon à
+ * droite) — cohérent avec le rendu — pour éviter qu'il s'étende vers le cœur du radar.
+ */
+function footprintAt(p: RadarPoint, x: number, y: number, cx: number) {
   const label = p.nomCourt || p.ref
   const hasLabel = p.showLabel || !!p.nomCourt || !!p.ref
   const labelW = hasLabel ? (label.length + (p.critique ? 2 : 0)) * CHAR_W + LABEL_PAD : 0
-  return { left: x - POINT_R, right: x + POINT_R + labelW, top: y - POINT_R - 2, bottom: y + POINT_R + 2 }
+  const top = y - POINT_R - 2, bottom = y + POINT_R + 2
+  return x < cx
+    ? { left: x - POINT_R - labelW, right: x + POINT_R, top, bottom }
+    : { left: x - POINT_R, right: x + POINT_R + labelW, top, bottom }
 }
 
 function boxesOverlap(a: ReturnType<typeof footprintAt>, b: ReturnType<typeof footprintAt>): boolean {
@@ -333,12 +342,17 @@ function angularCandidates(p: RadarPoint, geom: RadarGeometry, centerDeg: number
   const at = (aDeg: number, rad = r): [number, number] => polarToXY(rad, clamp(aDeg, lo, hi), geom.cx, geom.cy)
   const out: [number, number][] = [at(cur)]
   const maxRot = Math.max(0, safeHalfDeg * 2)
-  for (let step = 4; step <= maxRot + 4; step += 4) {
+  for (let step = 3; step <= maxRot + 3; step += 3) {
     out.push(at(cur + step)); out.push(at(cur - step))
   }
-  // Repli radial léger (les points proches du centre tournent peu en absolu).
-  for (const dr of [10, 20, -10, 30]) {
-    if (r + dr > 6) out.push(at(cur, r + dr))
+  // Repli radial : essentiel pour les points proches du centre (rotation quasi nulle
+  // en absolu). On élargit l'amplitude pour séparer les amas du cœur (zone danger).
+  for (const dr of [12, 24, 36, 48, -12, -24, 60]) {
+    if (r + dr > 6) {
+      out.push(at(cur, r + dr))
+      // Combine rotation + décalage radial pour davantage de positions distinctes.
+      out.push(at(cur + 8, r + dr)); out.push(at(cur - 8, r + dr))
+    }
   }
   return out
 }
@@ -365,8 +379,8 @@ export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: Sect
     let bestCollisions = Infinity
     for (const [nx, ny] of cands) {
       if (Math.hypot(nx - geom.cx, ny - geom.cy) > geom.rMax) continue
-      const box = footprintAt(c, nx, ny)
-      const collisions = placed.reduce((acc, q) => acc + (boxesOverlap(box, footprintAt(q, q.x, q.y)) ? 1 : 0), 0)
+      const box = footprintAt(c, nx, ny, geom.cx)
+      const collisions = placed.reduce((acc, q) => acc + (boxesOverlap(box, footprintAt(q, q.x, q.y, geom.cx)) ? 1 : 0), 0)
       if (collisions === 0) { best = [nx, ny]; bestCollisions = 0; break }
       if (collisions < bestCollisions) { bestCollisions = collisions; best = [nx, ny] }
     }

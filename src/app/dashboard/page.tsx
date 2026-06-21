@@ -173,7 +173,7 @@ export default async function DashboardPage() {
               <div className="card p-5">
                 <h2 className="font-semibold text-gray-800 mb-1">🌐 {t.dashboard.ecosystemTitle}</h2>
                 <p className="text-xs text-gray-500 mb-3">{t.dashboard.ecosystemSubtitle}</p>
-                <EcosystemRadar parties={allTiers} hideHeader aggregated />
+                <EcosystemRadar parties={allTiers} hideHeader aggregated manageTiersHref="/tiers" />
               </div>
             )}
 

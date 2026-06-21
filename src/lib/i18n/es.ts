@@ -1295,6 +1295,7 @@ export const es: Translations = {
         helpHide: 'Ocultar la ayuda',
         exportPng: 'Exportar PNG',
         exportSvg: 'Exportar SVG',
+        manageTiers: 'Editar terceros',
         showRanks: 'Rangos 2/3',
         rangLabel: 'Rango',
         formulaExpoTitle: 'Exposición digital',

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { isAdminRole } from '@/lib/permissions'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Navbar from '@/components/Navbar'
@@ -43,11 +44,11 @@ export default function SmtpConfigPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/login')
-    if (status === 'authenticated' && userRole !== 'ADMIN') router.push('/dashboard')
+    if (status === 'authenticated' && !isAdminRole(userRole)) router.push('/dashboard')
   }, [status, userRole, router])
 
   useEffect(() => {
-    if (status !== 'authenticated' || userRole !== 'ADMIN') return
+    if (status !== 'authenticated' || !isAdminRole(userRole)) return
     fetch('/api/admin/smtp-config')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setCfg({ ...DEFAULTS, ...d, host: d.host ?? '', username: d.username ?? '', password: d.password ?? '', fromAddress: d.fromAddress ?? '', fromName: d.fromName ?? 'ACRA' }) })
@@ -80,7 +81,7 @@ export default function SmtpConfigPage() {
     } finally { setTesting(false) }
   }
 
-  if (status !== 'authenticated' || userRole !== 'ADMIN') return null
+  if (status !== 'authenticated' || !isAdminRole(userRole)) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

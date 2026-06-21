@@ -1295,6 +1295,7 @@ export const it: Translations = {
         helpHide: 'Nascondi l\'aiuto',
         exportPng: 'Esporta PNG',
         exportSvg: 'Esporta SVG',
+        manageTiers: 'Modifica terze parti',
         showRanks: 'Ranghi 2/3',
         rangLabel: 'Rango',
         formulaExpoTitle: 'Esposizione digitale',
