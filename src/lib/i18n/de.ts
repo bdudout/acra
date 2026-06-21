@@ -601,6 +601,7 @@ export const de: Translations = {
     RISK_MANAGER: 'Risk Manager',
     RSSI:         'CISO',
     ADMIN:        'Administrator',
+    SUPER_ADMIN:  'Super-Administrator',
   },
 
   config: {

@@ -21,7 +21,7 @@
  *  - APPROBATION → peut approuver (utilisé pour les Risk Managers sur une analyse spécifique)
  */
 
-export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN'
+export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN'
 export type AnalysePermission = 'LECTURE' | 'EDITION' | 'APPROBATION'
 
 export interface SessionUser {
@@ -39,24 +39,34 @@ export interface AnalyseOwnership {
 
 // ─── Droits globaux ──────────────────────────────────────────────────────────
 
+/** Rôle « administrateur » (d'organisation OU d'instance). */
+export function isAdminRole(role: UserRole): boolean {
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
+}
+
 /** L'utilisateur peut créer de nouvelles analyses */
 export function canCreateAnalyse(user: SessionUser): boolean {
-  return user.role === 'ANALYSTE' || user.role === 'ADMIN'
+  return user.role === 'ANALYSTE' || isAdminRole(user.role)
 }
 
 /** L'utilisateur peut administrer les comptes (page /admin) */
 export function canAdmin(user: SessionUser): boolean {
-  return user.role === 'ADMIN'
+  return isAdminRole(user.role)
+}
+
+/** L'utilisateur peut gérer les organisations (niveau instance) — SUPER_ADMIN uniquement */
+export function canManageOrganizations(user: SessionUser): boolean {
+  return user.role === 'SUPER_ADMIN'
 }
 
 /** L'utilisateur peut accéder à la page de configuration (lecture) */
 export function canConfigurer(user: SessionUser): boolean {
-  return user.role === 'ANALYSTE' || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || user.role === 'ADMIN'
+  return user.role === 'ANALYSTE' || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || isAdminRole(user.role)
 }
 
 /** L'utilisateur peut modifier les échelles (gravité, vraisemblance, matrice) — ADMIN uniquement */
 export function canEditConfig(user: SessionUser): boolean {
-  return user.role === 'ADMIN'
+  return isAdminRole(user.role)
 }
 
 // ─── Droits sur une analyse spécifique ───────────────────────────────────────
@@ -66,8 +76,8 @@ function getEffectivePermission(
   user: SessionUser,
   analyse: AnalyseOwnership
 ): AnalysePermission | null {
-  // Admin : accès total
-  if (user.role === 'ADMIN') return 'APPROBATION'
+  // Admin (organisation ou instance) : accès total
+  if (isAdminRole(user.role)) return 'APPROBATION'
 
   // Propriétaire : accès total (sauf approbation de sa propre analyse)
   if (analyse.userId === user.id) return 'EDITION'
@@ -84,13 +94,13 @@ function getEffectivePermission(
 
 /** L'utilisateur peut visualiser l'analyse */
 export function canViewAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (user.role === 'ADMIN' || user.role === 'RISK_MANAGER' || user.role === 'RSSI') return true
+  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI') return true
   return getEffectivePermission(user, analyse) !== null
 }
 
 /** L'utilisateur peut modifier les ateliers de l'analyse */
 export function canEditAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (user.role === 'ADMIN') return true
+  if (isAdminRole(user.role)) return true
   // Le propriétaire peut éditer
   if (analyse.userId === user.id) return user.role === 'ANALYSTE'
   // Accès granulaire EDITION
@@ -100,13 +110,13 @@ export function canEditAnalyse(user: SessionUser, analyse: AnalyseOwnership): bo
 
 /** L'utilisateur peut soumettre l'analyse pour approbation */
 export function canSubmitAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (user.role === 'ADMIN') return true
+  if (isAdminRole(user.role)) return true
   return analyse.userId === user.id && user.role === 'ANALYSTE'
 }
 
 /** L'utilisateur peut approuver ou rejeter l'analyse */
 export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (user.role === 'ADMIN') return true
+  if (isAdminRole(user.role)) return true
   if (user.role !== 'RISK_MANAGER' && user.role !== 'RSSI') return false
   // Risk Manager / RSSI : peut approuver s'il a un accès APPROBATION ou s'il a accès global
   const acces = analyse.accesUtilisateurs?.find(a => a.userId === user.id)
@@ -116,7 +126,7 @@ export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership):
 
 /** L'utilisateur peut gérer les accès (inviter des collaborateurs) */
 export function canManageAccess(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (user.role === 'ADMIN') return true
+  if (isAdminRole(user.role)) return true
   return analyse.userId === user.id
 }
 
@@ -126,16 +136,33 @@ export function canManageAccess(user: SessionUser, analyse: AnalyseOwnership): b
  * Retourne la clause WHERE Prisma pour ne récupérer que les analyses
  * auxquelles l'utilisateur a accès.
  */
-export function analyseWhereClause(userId: string, role: UserRole) {
+/** Contexte d'organisation pour le filtrage multi-organisation. */
+export interface OrgScopeContext {
+  /** Organisations visibles (nœud actif + descendants si portée SUBTREE). */
+  visibleOrgIds: string[]
+  /** Niveau instance : aucune restriction d'organisation. */
+  isSuperAdmin?: boolean
+}
+
+export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgScopeContext) {
   // Les analyses en corbeille (soft delete) sont masquées de toutes les vues
   // courantes — seul le module admin « Récupération » les requête séparément.
   const notDeleted = { deletedAt: null }
-  if (role === 'ADMIN') {
-    return notDeleted // tout, sauf la corbeille
+  // Filtre d'organisation (multi-organisation) : restreint au périmètre visible.
+  // SUPER_ADMIN ⇒ aucune restriction. Absent ⇒ pas de filtre (mono-org / rétrocompat).
+  const orgFilter =
+    orgCtx && !orgCtx.isSuperAdmin && role !== 'SUPER_ADMIN'
+      ? { organizationId: { in: orgCtx.visibleOrgIds } }
+      : {}
+
+  if (isAdminRole(role)) {
+    // Admin d'organisation : tout son périmètre. SUPER_ADMIN : tout (orgFilter vide).
+    return { ...notDeleted, ...orgFilter }
   }
   if (role === 'RISK_MANAGER' || role === 'RSSI') {
     return {
       ...notDeleted,
+      ...orgFilter,
       OR: [
         { userId },
         { accesUtilisateurs: { some: { userId } } },
@@ -149,6 +176,7 @@ export function analyseWhereClause(userId: string, role: UserRole) {
   // LECTEUR et ANALYSTE : propres analyses + partagées
   return {
     ...notDeleted,
+    ...orgFilter,
     OR: [
       { userId },
       { accesUtilisateurs: { some: { userId } } },
@@ -164,6 +192,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   RISK_MANAGER: 'Risk Manager',
   RSSI:         'RSSI',
   ADMIN:        'Administrateur',
+  SUPER_ADMIN:  'Super-administrateur',
 }
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -171,7 +200,8 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   ANALYSTE:     'Création et édition de ses propres analyses de risques',
   RISK_MANAGER: 'Approbation et validation des analyses soumises',
   RSSI:         'Responsable SSI — approbation et validation des analyses soumises',
-  ADMIN:        'Administration complète — accès à tous les comptes et analyses',
+  ADMIN:        'Administration complète d\'une organisation (comptes et analyses)',
+  SUPER_ADMIN:  'Niveau instance — gère les organisations et traverse tous les périmètres',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -180,6 +210,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   RISK_MANAGER: 'bg-amber-100 text-amber-800',
   RSSI:         'bg-purple-100 text-purple-800',
   ADMIN:        'bg-red-100 text-red-700',
+  SUPER_ADMIN:  'bg-slate-800 text-white',
 }
 
 export const PERMISSION_LABELS: Record<AnalysePermission, string> = {

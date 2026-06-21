@@ -14,7 +14,14 @@ enum UserRole {
   ANALYSTE      // Création et édition de ses analyses
   RISK_MANAGER  // Approbation des analyses soumises
   RSSI          // Responsable SSI — approbation et validation (comme RISK_MANAGER)
-  ADMIN         // Administration complète de l'application
+  ADMIN         // Administration complète d'une organisation
+  SUPER_ADMIN   // Niveau instance : gère les organisations et traverse tous les périmètres
+}
+
+// Portée d'une appartenance à une organisation (cf. multi-organisation hiérarchique).
+enum OrgScope {
+  NODE     // ce nœud d'organisation uniquement
+  SUBTREE  // ce nœud ET tous ses descendants (vision consolidée, ex. RSSI groupe)
 }
 
 enum AnalysePermission {
@@ -44,6 +51,7 @@ model User {
   sessions      Session[]
   analyses      Analyse[]
   accesAnalyses AnalyseAcces[]
+  memberships   OrgMembership[]
 }
 
 model Account {
@@ -82,6 +90,45 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ─── Multi-organisation (arbre + appartenances) ──────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  nom       String
+  slug      String   @unique
+  parentId  String?
+  parent    Organization?  @relation("OrgArbre", fields: [parentId], references: [id])
+  enfants   Organization[] @relation("OrgArbre")
+  // Chemin matérialisé "/<racineId>/…/<id>/" : sous-arbre = orgs dont path startsWith O.path.
+  path      String   @default("/")
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  membres   OrgMembership[]
+  analyses  Analyse[]
+  config    OrganizationConfig?
+
+  @@index([parentId])
+  @@index([path])
+}
+
+model OrgMembership {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           UserRole @default(ANALYSTE) // rôle DANS cette organisation
+  scope          OrgScope @default(NODE)     // NODE = ce nœud · SUBTREE = nœud + descendants
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
 // ─── EBIOS RM ────────────────────────────────────────────────────────────────
 
 model Analyse {
@@ -96,6 +143,9 @@ model Analyse {
   statut      StatutAnalyse @default(EN_COURS)
   atelierCourant Int @default(1)
   referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | CUSTOM
+
+  // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
+  organizationId String?
 
   // Questionnaire de qualification optionnel (cf. lib/qualification.ts) — { <questionId>: bool | optionValue }
   qualification Json?
@@ -120,6 +170,7 @@ model Analyse {
   updatedAt   DateTime @updatedAt
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id])
 
   // Ateliers
   cadrage     Cadrage?
@@ -137,6 +188,7 @@ model Analyse {
   @@index([statut])
   @@index([socleId])
   @@index([deletedAt])
+  @@index([organizationId])
 }
 
 enum StatutAnalyse {
@@ -458,7 +510,10 @@ model AuditLog {
 // ─── Configuration organisation (singleton global) ──────────────────────────
 
 model OrganizationConfig {
+  // Multi-organisation : une ligne par organisation (id = organizationId). La ligne
+  // historique "global" devient celle de l'organisation racine lors de la migration.
   id             String   @id @default("global")
+  organization   Organization? @relation(fields: [id], references: [id], onDelete: Cascade)
   // Liste des entités responsables de mesures (ex: ["DSI", "Métier", "Risques"])
   entitesMesures Json     @default("[]")
   // Types d'impacts configurables (événements redoutés) — [{id, label, icon}]

@@ -618,6 +618,7 @@ export const fr = {
     RISK_MANAGER: 'Risk Manager',
     RSSI:         'RSSI',
     ADMIN:        'Administrateur',
+    SUPER_ADMIN:  'Super-administrateur',
   },
 
   // ─── Configuration ────────────────────────────────────────────────────────
