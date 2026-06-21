@@ -99,11 +99,28 @@ const SECTOR_SPREAD = 0.46
 
 // Empreinte approximative d'un point pour l'anti-chevauchement des PP connexes :
 // cercle (rayon max) + libellé texte à droite. Aligné sur EXPO_RADIUS du composant.
-const POINT_R = 14    // rayon max d'un point
-const CHAR_W = 5.6    // largeur moyenne d'un caractère de libellé (fontSize ~9.5)
-const LABEL_PAD = 6   // marge autour du libellé
+const POINT_R = 14      // rayon max d'un point
+const CHAR_W = 5.6      // largeur moyenne d'un caractère de libellé (fontSize ~9.5)
+const LABEL_PAD = 6     // marge autour du libellé
+const BOUNDARY_GAP = 2  // marge supplémentaire entre le cercle et le bord du secteur
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+/** Demi-angle (deg) qu'occupe un cercle de rayon pr à la distance radiale r du centre. */
+function angularRadiusDeg(r: number, pr: number): number {
+  if (r <= pr) return 90
+  return (Math.asin(Math.min(1, pr / r)) * 180) / Math.PI
+}
+
+/**
+ * Demi-ouverture angulaire utilisable au sein d'un secteur pour qu'un point situé
+ * à la distance radiale r (et de rayon ~POINT_R) ne déborde PAS sur les traits de
+ * séparation des catégories. Un point proche du centre occupe un angle plus large,
+ * il est donc davantage contraint vers le centre du secteur.
+ */
+function safeHalfAngle(r: number, widthDeg: number): number {
+  return Math.max(0, widthDeg / 2 - angularRadiusDeg(r, POINT_R + BOUNDARY_GAP))
+}
 
 /** Menace = exposition / fiabilité, entrées bornées à [1..N²] (N² par défaut = 16). */
 export function menace(exposition: number, fiabilite: number, maxComposite = MENACE_MAX): number {
@@ -291,23 +308,24 @@ function candidateOffsets(): [number, number][] {
  * pointillé vers la parente suit la position finale (relation préservée).
  */
 // Positions candidates pour un point de RANG 1 : rotations autour du centre à
-// rayon ~constant (préserve la menace = le rayon), bornées au demi-secteur ; en
-// dernier recours, léger décalage radial dans la même zone.
-function angularCandidates(p: RadarPoint, geom: RadarGeometry, maxRotDeg: number): [number, number][] {
+// rayon ~constant (préserve la menace = le rayon), bornées à la zone « sûre » du
+// secteur [centerDeg ± safeHalfDeg] (n'empiète pas sur les séparateurs) ; en
+// dernier recours, léger décalage radial à angle (clampé) constant.
+function angularCandidates(p: RadarPoint, geom: RadarGeometry, centerDeg: number, safeHalfDeg: number): [number, number][] {
   const dx = p.x - geom.cx, dy = p.y - geom.cy
   const r = Math.hypot(dx, dy)
-  const a0 = Math.atan2(dy, dx)
-  const out: [number, number][] = [[p.x, p.y]]
-  const maxRot = Math.max(0, maxRotDeg)
-  for (let step = 4; step <= maxRot; step += 4) {
-    const da = (step * Math.PI) / 180
-    out.push([geom.cx + r * Math.cos(a0 + da), geom.cy + r * Math.sin(a0 + da)])
-    out.push([geom.cx + r * Math.cos(a0 - da), geom.cy + r * Math.sin(a0 - da)])
+  // Angle courant exprimé « depuis le haut, sens horaire » (cohérent avec polarToXY).
+  const cur = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+  const lo = centerDeg - safeHalfDeg, hi = centerDeg + safeHalfDeg
+  const at = (aDeg: number, rad = r): [number, number] => polarToXY(rad, clamp(aDeg, lo, hi), geom.cx, geom.cy)
+  const out: [number, number][] = [at(cur)]
+  const maxRot = Math.max(0, safeHalfDeg * 2)
+  for (let step = 4; step <= maxRot + 4; step += 4) {
+    out.push(at(cur + step)); out.push(at(cur - step))
   }
   // Repli radial léger (les points proches du centre tournent peu en absolu).
   for (const dr of [10, 20, -10, 30]) {
-    const nr = r + dr
-    if (nr > 6) out.push([geom.cx + nr * Math.cos(a0), geom.cy + nr * Math.sin(a0)])
+    if (r + dr > 6) out.push(at(cur, r + dr))
   }
   return out
 }
@@ -321,13 +339,15 @@ function angularCandidates(p: RadarPoint, geom: RadarGeometry, maxRotDeg: number
  */
 export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: SectorSpan[]): void {
   if (points.length < 2) return
-  const halfWidth = new Map(spans.map(s => [s.type, s.widthDeg / 2]))
+  const spanByType = new Map(spans.map(s => [s.type, s]))
   const order = [...points].sort((a, b) => a.rang - b.rang || b.menace - a.menace)
   const placed: RadarPoint[] = []
   for (const c of order) {
+    const span = spanByType.get(c.type)
+    const rNow = Math.hypot(c.x - geom.cx, c.y - geom.cy)
     const cands: [number, number][] = c.rang >= 2
       ? candidateOffsets().map(([dx, dy]) => [c.x + dx, c.y + dy] as [number, number])
-      : angularCandidates(c, geom, halfWidth.get(c.type) ?? 30)
+      : angularCandidates(c, geom, span ? span.centerDeg : 0, span ? safeHalfAngle(rNow, span.widthDeg) : 30)
     let best: [number, number] | null = null
     let bestCollisions = Infinity
     for (const [nx, ny] of cands) {
@@ -375,16 +395,19 @@ export function layoutStakeholders(
     const k = group.length
     const posInGroup = group.indexOf(p)
 
+    const m = menace(p.exposition ?? 1, p.fiabilite ?? 1, maxComposite)
+    const r = radiusFor(m, geom.rMax, menaceMin, menaceMax)
+
     // Étalement symétrique autour du centre du secteur : une seule PP → centre exact.
+    // L'étalement est borné par la marge « sûre » (fonction du diamètre du point et
+    // de sa distance au centre) pour ne pas recouvrir les séparateurs de catégories.
     let angleDeg = span.centerDeg
     if (k > 1) {
-      const halfSpread = span.widthDeg * SECTOR_SPREAD
+      const halfSpread = Math.min(span.widthDeg * SECTOR_SPREAD, safeHalfAngle(r, span.widthDeg))
       const ratio = posInGroup / (k - 1) // 0..1
       angleDeg = span.centerDeg - halfSpread + ratio * (2 * halfSpread)
     }
 
-    const m = menace(p.exposition ?? 1, p.fiabilite ?? 1, maxComposite)
-    const r = radiusFor(m, geom.rMax, menaceMin, menaceMax)
     const [x, y] = polarToXY(r, angleDeg, geom.cx, geom.cy)
     const zone = zoneOf(m)
     const critique = !!p.critique
