@@ -584,6 +584,27 @@ flowchart LR
 
 ---
 
+## 🏢 Multi-Organisation (hierarchisch)
+
+ACRA verwaltet **mehrere Organisationen in einer Instanz**, als **Baum** angeordnet. Eine Installation deckt vier Anwendungsfälle ab:
+
+| Anwendungsfall | Mechanismus |
+|---|---|
+| **Beratungsfirma** mit mehreren Kunden | **Isolierte Wurzel**-Organisationen; ein Berater ist **Mitglied mehrerer** Organisationen mit je einer Rolle |
+| **Großkonzern** (Einheit + Gruppe) | **Hierarchie**; der Einheits-CISO hat eine *Einheits*-Sicht, der Gruppen-CISO eine **konsolidierte** Teilbaum-Sicht |
+| **Unternehmen mit mehreren Standorten/Ländern** | Hierarchie Unternehmen → Standorte |
+| **Tochter- und Enkelgesellschaften** | Baum **beliebiger Tiefe** |
+
+Jedes Mitglied hat eine Rolle **pro Organisation** und einen Bereich `NODE` oder `SUBTREE`. Die Isolation ist zentralisiert: jede Ansicht filtert nach der **aktiven** Organisation (Umschalter in der Kopfzeile). Erstreckt sich ein Bereich über mehrere Organisationen, zeigen Dashboard/Risiken/Dritte die **Ursprungs-Einheit** jedes Elements.
+
+**Konfiguration pro Organisation** — jede Organisation kann eigene Ökosystem-Skalen, Beispiele, Frameworks und Optionen haben; ohne Wert **erbt** sie von den Vorfahren. **Risikoskalen** sind eine Instanzeinstellung (Super-Admin): **gemeinsam** (Gruppenmodus) oder **pro Organisation** (Beratermodus).
+
+**Rollen** — eine Instanzrolle **`SUPER_ADMIN`** verwaltet Organisationen; `ADMIN` wird Organisationsadministrator. Das erste Konto einer Neuinstallation ist SUPER_ADMIN; auf einer bestehenden Instanz wird der älteste Admin beim ersten Start befördert. Jede Organisation erhält ein **automatisch generiertes Logo**.
+
+Verwaltung: `Admin → Organisationen` (nur Super-Admin).
+
+---
+
 ## 🌐 Internationalisierung
 
 Die Oberfläche ist in **5 Sprachen** verfügbar, jederzeit im Profil wählbar:

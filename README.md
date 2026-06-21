@@ -47,6 +47,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - **7 référentiels de mesures** : ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS — depuis une seule interface
 - **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
 - **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
+- **Multi-organisation hiérarchique** : cabinets de conseil (clients isolés), grands groupes (vision entité + consolidée), multi-sites, filiales — dans une seule instance — [voir le détail](#-multi-organisation-hiérarchique)
 - **100% auto-hébergé** : vos données ne quittent jamais votre infrastructure
 
 ---
@@ -619,6 +620,35 @@ Le radar, les étoiles de criticité et le tableau des parties prenantes (4 sous
 
 ---
 
+## 🏢 Multi-organisation (hiérarchique)
+
+ACRA gère **plusieurs organisations dans une seule instance**, organisées en **arbre** (chemin matérialisé). Une seule installation couvre quatre cas d'usage :
+
+| Cas d'usage | Mécanisme |
+|---|---|
+| **Cabinet de conseil** servant plusieurs clients | Organisations **racines isolées** ; le consultant est **membre de plusieurs** organisations, avec un rôle propre dans chacune |
+| **Grand groupe** (entité + groupe) | **Hiérarchie** ; le RSSI d'entité a une vision *entité*, le RSSI groupe une **vision consolidée** du sous-arbre |
+| **Entreprise multi-sites / multi-pays** | Hiérarchie société → sites |
+| **Filiales et sous-filiales** | Arbre de **profondeur quelconque** |
+
+**Appartenances & portée** — chaque membre a un rôle **par organisation** et une portée `NODE` (cette organisation) ou `SUBTREE` (organisation + descendants, pour la vision consolidée). L'**isolation** est centralisée : toutes les vues filtrent les analyses sur le périmètre de l'organisation **active** (sélecteur d'organisation dans l'en-tête).
+
+**Vue consolidée** — lorsqu'un périmètre couvre plusieurs organisations (RSSI groupe), le tableau de bord, les risques et les tiers indiquent l'**entité d'origine** de chaque élément.
+
+**Configuration par organisation** — chaque organisation peut avoir ses propres échelles d'écosystème, exemples, référentiels et options ; une organisation sans valeur **hérite** de ses ancêtres, puis des défauts.
+
+**Échelles de risque** — réglage d'instance modifiable par le super-administrateur :
+- **Communes (mode groupe)** : même échelle gravité/vraisemblance/matrice pour tous ;
+- **Par organisation (mode consultant)** : chaque organisation définit ses propres échelles.
+
+**Rôles** — un rôle d'instance **`SUPER_ADMIN`** gère les organisations et traverse tous les périmètres ; l'`ADMIN` devient administrateur d'une organisation. Le 1ᵉʳ compte d'une nouvelle installation est SUPER_ADMIN ; sur une instance existante, le plus ancien administrateur est promu automatiquement au premier démarrage. Un super-administrateur peut promouvoir d'autres comptes (au moins un super-administrateur est toujours préservé).
+
+**Logos** — chaque organisation reçoit par défaut un **logo généré automatiquement** (dégradé déterministe + monogramme), affiché dans le sélecteur d'organisation et l'administration.
+
+Administration : `Admin → Organisations` (réservé au super-administrateur) — arbre, création d'organisations, gestion des appartenances, mode des échelles.
+
+---
+
 ## 🌐 Internationalisation
 
 L'interface est disponible en **5 langues**, sélectionnable à tout moment dans le profil :
@@ -639,13 +669,14 @@ Pour ajouter une langue, copier `src/lib/i18n/fr.ts`, traduire toutes les clés 
 
 | Rôle | Créer analyse | Modifier | Approuver | Admin |
 |------|:---:|:---:|:---:|:---:|
-| `ADMIN` | ✅ | ✅ toutes | ✅ | ✅ |
+| `SUPER_ADMIN` | ✅ | ✅ toutes organisations | ✅ | ✅ instance + organisations |
+| `ADMIN` | ✅ | ✅ toutes (de son organisation) | ✅ | ✅ son organisation |
 | `RSSI` | ✅ | ✅ siennes + partagées | ✅ | ❌ |
 | `RISK_MANAGER` | ✅ | ✅ siennes + partagées | ✅ | ❌ |
 | `ANALYSTE` | ✅ | ✅ siennes + partagées | ❌ | ❌ |
 | `LECTEUR` | ❌ | ❌ | ❌ | ❌ |
 
-Les accès peuvent également être accordés **analyse par analyse** (partage ponctuel avec n'importe quel utilisateur).
+En **multi-organisation**, le rôle est porté **par organisation** (un même compte peut être ADMIN d'un client et ANALYSTE d'un autre) et limité au périmètre de l'organisation active. Les accès peuvent également être accordés **analyse par analyse** (partage ponctuel avec n'importe quel utilisateur).
 
 ---
 

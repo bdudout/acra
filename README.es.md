@@ -584,6 +584,27 @@ flowchart LR
 
 ---
 
+## 🏢 Multiorganización (jerárquica)
+
+ACRA gestiona **varias organizaciones en una sola instancia**, en **árbol**. Una instalación cubre cuatro casos de uso:
+
+| Caso de uso | Mecanismo |
+|---|---|
+| **Consultora** con varios clientes | Organizaciones **raíz aisladas**; un consultor es **miembro de varias** con un rol en cada una |
+| **Gran grupo** (entidad + grupo) | **Jerarquía**; el RSSI de entidad tiene vista *entidad*, el de grupo una vista **consolidada** del subárbol |
+| **Empresa multisede / multipaís** | Jerarquía empresa → sedes |
+| **Filiales y subfiliales** | Árbol de **profundidad arbitraria** |
+
+Cada miembro tiene un rol **por organización** y un alcance `NODE` o `SUBTREE`. El aislamiento está centralizado: cada vista filtra por la organización **activa** (selector en la cabecera). Cuando un alcance abarca varias organizaciones, el panel/riesgos/terceros muestran la **entidad de origen** de cada elemento.
+
+**Configuración por organización** — cada una puede tener sus escalas de ecosistema, ejemplos, marcos y opciones; sin valor **hereda** de sus ancestros. Las **escalas de riesgo** son un ajuste de instancia (superadministrador): **comunes** (modo grupo) o **por organización** (modo consultor).
+
+**Roles** — un rol de instancia **`SUPER_ADMIN`** gestiona las organizaciones; `ADMIN` pasa a ser administrador de una organización. La primera cuenta de una instalación nueva es SUPER_ADMIN; en una instancia existente el administrador más antiguo se promueve automáticamente al primer arranque. Cada organización recibe un **logotipo generado automáticamente**.
+
+Administración: `Admin → Organizaciones` (solo superadministrador).
+
+---
+
 ## 🌐 Internacionalización
 
 La interfaz está disponible en **5 idiomas**, seleccionables en cualquier momento en el perfil:

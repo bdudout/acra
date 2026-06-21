@@ -584,6 +584,27 @@ flowchart LR
 
 ---
 
+## 🏢 Multi-organizzazione (gerarchica)
+
+ACRA gestisce **più organizzazioni in una sola istanza**, disposte ad **albero**. Un'installazione copre quattro casi d'uso:
+
+| Caso d'uso | Meccanismo |
+|---|---|
+| **Società di consulenza** con più clienti | Organizzazioni **radice isolate**; un consulente è **membro di più** organizzazioni con un ruolo in ciascuna |
+| **Grande gruppo** (entità + gruppo) | **Gerarchia**; il RSSI di entità ha una vista *entità*, quello di gruppo una vista **consolidata** del sottoalbero |
+| **Azienda multi-sede / multi-paese** | Gerarchia azienda → sedi |
+| **Filiali e sotto-filiali** | Albero di **profondità arbitraria** |
+
+Ogni membro ha un ruolo **per organizzazione** e un ambito `NODE` o `SUBTREE`. L'isolamento è centralizzato: ogni vista filtra per l'organizzazione **attiva** (selettore nell'intestazione). Quando un ambito copre più organizzazioni, dashboard/rischi/terze parti mostrano l'**entità d'origine** di ogni elemento.
+
+**Configurazione per organizzazione** — ognuna può avere proprie scale dell'ecosistema, esempi, framework e opzioni; senza valore **eredita** dagli antenati. Le **scale di rischio** sono un'impostazione di istanza (super-amministratore): **comuni** (modalità gruppo) o **per organizzazione** (modalità consulente).
+
+**Ruoli** — un ruolo di istanza **`SUPER_ADMIN`** gestisce le organizzazioni; `ADMIN` diventa amministratore di un'organizzazione. Il primo account di una nuova installazione è SUPER_ADMIN; su un'istanza esistente l'amministratore più anziano viene promosso automaticamente al primo avvio. Ogni organizzazione riceve un **logo generato automaticamente**.
+
+Amministrazione: `Admin → Organizzazioni` (solo super-amministratore).
+
+---
+
 ## 🌐 Internazionalizzazione
 
 L'interfaccia è disponibile in **5 lingue**, selezionabili in qualsiasi momento nel profilo:

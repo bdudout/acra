@@ -584,6 +584,27 @@ flowchart LR
 
 ---
 
+## 🏢 Multi-organization (hierarchical)
+
+ACRA manages **several organizations in a single instance**, arranged as a **tree**. One install covers four use cases:
+
+| Use case | Mechanism |
+|---|---|
+| **Consulting firm** serving several clients | **Isolated root** organizations; a consultant is a **member of several** orgs with a role in each |
+| **Large group** (entity + group) | **Hierarchy**; the entity CISO has an *entity* view, the group CISO a **consolidated** sub-tree view |
+| **Multi-site / multi-country company** | Hierarchy company → sites |
+| **Subsidiaries and sub-subsidiaries** | Tree of **any depth** |
+
+Each member has a role **per organization** and a scope `NODE` (this org) or `SUBTREE` (org + descendants, for consolidated view). Isolation is centralized: every view filters analyses by the **active** organization (org switcher in the header). When a scope spans several orgs, the dashboard/risks/tiers show each item's **source entity**.
+
+**Per-organization configuration** — each org may have its own ecosystem scales, examples, frameworks and options; an org without a value **inherits** from its ancestors, then defaults. **Risk scales** are an instance setting editable by the super-admin: **shared** (group mode) or **per organization** (consultant mode).
+
+**Roles** — an instance role **`SUPER_ADMIN`** manages organizations and crosses all scopes; `ADMIN` becomes an organization admin. The first account of a fresh install is SUPER_ADMIN; on an existing instance the oldest admin is promoted automatically on first boot. Each organization gets an **auto-generated logo** (deterministic gradient + monogram).
+
+Administration: `Admin → Organizations` (super-admin only).
+
+---
+
 ## 🌐 Internationalization
 
 The interface is available in **5 languages**, selectable at any time in the profile:
