@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
 import { ROLE_LABELS } from '@/lib/permissions'
+import OrgLogo from '@/components/OrgLogo'
 import { Building2, Plus, X, Users } from 'lucide-react'
 
 interface OrgRow {
@@ -128,9 +129,10 @@ export default function OrganizationsAdminPage() {
                       style={{ marginLeft: depth(org) * 18 }}
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${selected === org.id ? 'bg-ebios-50 text-ebios-700' : 'hover:bg-gray-50 text-gray-700'}`}
                     >
-                      <span className="truncate font-medium">
-                        {org.nom}
-                        {!org.parentId && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}
+                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                        <OrgLogo id={org.id} nom={org.nom} size={20} className="shrink-0 rounded" />
+                        <span className="truncate">{org.nom}</span>
+                        {!org.parentId && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}
                       </span>
                       <span className="shrink-0 text-xs text-gray-400">
                         {org._count.membres} <Users size={11} className="inline" /> · {org._count.analyses} {o.analyses}
