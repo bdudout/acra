@@ -12,6 +12,7 @@ export const revalidate = 0
 import RiskMatrixTabs from '@/components/RiskMatrixTabs'
 import EcosystemRadar from '@/components/EcosystemRadar'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { getOrgConfig } from '@/lib/org-config.server'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import SocleToggle from '@/components/SocleToggle'
@@ -69,8 +70,9 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const scaleConfig = await getEffectiveScaleConfig()
 
   // Fonctionnalité optionnelle : questionnaire de qualification (cf. OrganizationConfig)
-  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { qualificationActive: true } })
-  const qualificationActive = Boolean(orgConfig?.qualificationActive)
+  // Config résolue par l'organisation de l'analyse (héritage des ancêtres).
+  const orgConfig = await getOrgConfig((analyse as any).organizationId)
+  const qualificationActive = orgConfig.qualificationActive
 
   // Verrouillage si analyse approuvée (sauf ADMIN)
   const locked = analyse.statut === 'APPROUVE' && userRole !== 'ADMIN'

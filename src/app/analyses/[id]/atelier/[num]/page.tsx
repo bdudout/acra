@@ -15,6 +15,7 @@ import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
 
@@ -105,9 +106,10 @@ export default async function AtelierPage({
 
   // Catalogue de vulnérabilités issu du socle (fiche Club EBIOS) — affiché en
   // ateliers 3/4 (vecteurs/actions candidats) et 5 (garde-fou tunnel de conformité).
-  const orgConfig = await (prisma.organizationConfig as any).findUnique({ where: { id: 'global' }, select: { conformiteActive: true, conseilsAteliersActive: true } })
-  const conformiteActive = Boolean(orgConfig?.conformiteActive)
-  const conseilsActive = orgConfig?.conseilsAteliersActive !== false // activé par défaut
+  // Config résolue par l'organisation de l'analyse (héritage des ancêtres).
+  const orgConfig = await getOrgConfig((analyse as any).organizationId)
+  const conformiteActive = orgConfig.conformiteActive
+  const conseilsActive = orgConfig.conseilsAteliersActive
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
   if (conformiteActive && analyse.cadrage) {
     const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[])
