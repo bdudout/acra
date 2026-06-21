@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import { canViewAnalyse } from '@/lib/permissions'
 import { rateLimit, rateLimitHeaders, LIMIT_EXPORT } from '@/lib/rate-limit'
 import { sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
@@ -34,8 +35,8 @@ export async function GET(
   const format = searchParams.get('format') || 'json'
 
   // A01: utiliser canViewAnalyse — inclut propriétaire ET accès partagés
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: {
       accesUtilisateurs: true,
       cadrage: true,

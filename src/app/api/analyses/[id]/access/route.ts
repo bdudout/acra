@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canManageAccess } from '@/lib/permissions'
 import type { AnalysePermission } from '@/lib/permissions'
@@ -16,8 +17,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: { accesUtilisateurs: { include: { user: { select: { id: true, name: true, email: true, role: true } } } } },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
@@ -38,8 +39,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: { accesUtilisateurs: true },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
@@ -84,8 +85,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: { accesUtilisateurs: true },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })

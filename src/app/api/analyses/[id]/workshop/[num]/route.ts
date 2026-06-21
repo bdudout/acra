@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import { canEditAnalyse } from '@/lib/permissions'
 import {
   cleanSourceRisque,
@@ -50,8 +51,8 @@ export async function PUT(
   const userRole = (session.user as any).role ?? 'ANALYSTE'
   const atelierNum = parseInt(num)
 
-  const analyse = await prisma.analyse.findUnique({
-    where: { id: analyseId },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, analyseId),
     include: { accesUtilisateurs: true },
   })
   // Analyse en corbeille (soft delete) = introuvable : interdit de sauvegarder dessus.

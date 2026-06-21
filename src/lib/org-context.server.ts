@@ -97,6 +97,46 @@ export async function resolveOrgContext(
 }
 
 /**
+ * Ensemble des organisations accessibles à un utilisateur, UNION de toutes ses
+ * appartenances (NODE → l'org ; SUBTREE → l'org + descendants). Sert au contrôle
+ * d'accès à une analyse par id (au-delà de la seule organisation active).
+ * SUPER_ADMIN → `all: true` (toutes).
+ */
+export async function getAccessibleOrgIds(userId: string, instanceRole: UserRole): Promise<{ all: boolean; ids: string[] }> {
+  if (instanceRole === 'SUPER_ADMIN') return { all: true, ids: [] }
+  const [memberRows, allOrgs] = await Promise.all([
+    prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, scope: true } }),
+    prisma.organization.findMany({ select: { id: true, path: true, parentId: true } }),
+  ])
+  const orgs: OrgNode[] = allOrgs.map(o => ({ id: o.id, path: o.path, parentId: o.parentId }))
+  const set = new Set<string>()
+  for (const m of memberRows) {
+    visibleOrgIds({ organizationId: m.organizationId, role: 'ANALYSTE', scope: m.scope as Membership['scope'] }, orgs)
+      .forEach(id => set.add(id))
+  }
+  return { all: false, ids: [...set] }
+}
+
+/**
+ * Clause WHERE pour charger UNE analyse par id en respectant l'isolation
+ * multi-organisation : l'analyse doit appartenir à une organisation accessible,
+ * OU être détenue/partagée explicitement avec l'utilisateur (collaboration
+ * inter-organisations volontaire). SUPER_ADMIN : aucun filtre d'organisation.
+ */
+export async function analyseAccessWhere(userId: string, instanceRole: UserRole, id: string): Promise<Record<string, unknown>> {
+  const { all, ids } = await getAccessibleOrgIds(userId, instanceRole)
+  if (all) return { id }
+  return {
+    id,
+    OR: [
+      { organizationId: { in: ids } },
+      { userId },
+      { accesUtilisateurs: { some: { userId } } },
+    ],
+  }
+}
+
+/**
  * Raccourci pour les vues : rôle EFFECTIF (dans l'org active) + portée prête pour
  * `analyseWhereClause(userId, role, scope)`, et organisation active (pour créer).
  */

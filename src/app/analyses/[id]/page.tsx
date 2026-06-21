@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { ATELIERS_META, getNiveauRisqueLabel } from '@/lib/ebios-data'
@@ -36,8 +37,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const analyse = await (prisma.analyse as any).findUnique({
-    where: { id },
+  const analyse = await (prisma.analyse as any).findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: {
       cadrage: true,
       sourcesRisque: true,

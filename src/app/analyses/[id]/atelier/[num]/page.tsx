@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
@@ -39,8 +40,8 @@ export default async function AtelierPage({
   if (isNaN(atelierNum) || atelierNum < 1 || atelierNum > 5) notFound()
 
   // Charger l'analyse sans restriction d'ownership pour vérifier les accès partagés
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: {
       cadrage: true,
       sourcesRisque: true,

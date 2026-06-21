@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canViewAnalyse, canEditAnalyse, analyseWhereClause } from '@/lib/permissions'
+import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 
 type Params = { params: Promise<{ id: string }> }
 
-async function loadAnalyse(id: string) {
-  return prisma.analyse.findUnique({
-    where: { id },
+// Charge une analyse en respectant l'isolation multi-organisation (filtre d'org).
+async function loadAnalyse(id: string, userId: string, userRole: UserRole) {
+  return prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: { accesUtilisateurs: true },
   })
 }
@@ -24,8 +26,8 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const analyse = await prisma.analyse.findUnique({
-    where: { id },
+  const analyse = await prisma.analyse.findFirst({
+    where: await analyseAccessWhere(userId, userRole, id),
     include: {
       cadrage: true,
       sourcesRisque: true,
@@ -62,7 +64,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const existing = await loadAnalyse(id)
+  const existing = await loadAnalyse(id, userId, userRole)
   if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   if (!canEditAnalyse({ id: userId, role: userRole }, { userId: existing.userId, accesUtilisateurs: existing.accesUtilisateurs })) {
@@ -97,11 +99,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const existing = await loadAnalyse(id)
+  const existing = await loadAnalyse(id, userId, userRole)
   if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   // Seul le propriétaire ou un ADMIN peut supprimer
-  if (existing.userId !== userId && userRole !== 'ADMIN') {
+  if (existing.userId !== userId && !isAdminRole(userRole)) {
     return NextResponse.json({ error: 'Seul le propriétaire peut supprimer cette analyse' }, { status: 403 })
   }
 
