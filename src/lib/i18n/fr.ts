@@ -1225,7 +1225,7 @@ export const fr = {
         CLIENT:               'Client',
         PARTENAIRE:           'Partenaire',
         PRESTATAIRE:          'Prestataire',
-        ORGANISME_REGULATION: 'Organisme de régulation',
+        ORGANISME_REGULATION: 'Régulateur',
         AUTRE:                'Autre',
       },
       vulnLabels: {

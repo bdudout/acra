@@ -202,9 +202,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           {showRanks && points.map(p => {
             const parent = p.parentCle ? byCle.get(p.parentCle) : undefined
             if (!parent) return null
+            // Pointillés ronds (et non tirets, réservés aux séparateurs de secteurs).
             return <line key={`lnk-${p.id}`} x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
               className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
-              strokeOpacity={0.85} strokeWidth={1.3} strokeDasharray="4 2" />
+              strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
           })}
 
           {/* Séparateurs de secteurs (au bord initial) + libellés de catégorie (au centre,

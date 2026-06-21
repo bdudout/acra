@@ -674,7 +674,7 @@ function starPath(cx: number, cy: number, R: number): string {
 const TYPE_LABELS_FR: Record<string, string> = {
   FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire',
   PRESTATAIRE: 'Prestataire',
-  ORGANISME_REGULATION: 'Organisme de régulation', AUTRE: 'Autre',
+  ORGANISME_REGULATION: 'Régulateur', AUTRE: 'Autre',
 }
 
 // Radar SVG (primitives @react-pdf) — réutilise la MÊME géométrie que la vue web

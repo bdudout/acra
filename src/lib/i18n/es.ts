@@ -1200,7 +1200,7 @@ export const es: Translations = {
         CLIENT:               'Cliente',
         PARTENAIRE:           'Socio',
         PRESTATAIRE:          'Prestador de servicios',
-        ORGANISME_REGULATION: 'Organismo regulador',
+        ORGANISME_REGULATION: 'Regulador',
         AUTRE:                'Otro',
       },
       vulnLabels: {
