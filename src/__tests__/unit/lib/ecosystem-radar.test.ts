@@ -295,28 +295,23 @@ describe('layoutStakeholders', () => {
     expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(16)
   })
 
-  it('ne fait pas déborder les points sur les séparateurs de secteurs (marge = diamètre)', () => {
+  it('garde chaque point (avec son diamètre) à l\'intérieur de son secteur de catégorie', () => {
     const parties = [
       ...Array.from({ length: 6 }, (_, i) => ({ id: 'p' + i, type: 'PRESTATAIRE', exposition: 6 + i, fiabilite: 3 })),
       { id: 'f', type: 'FOURNISSEUR', exposition: 4, fiabilite: 4 },
+      { id: 'c', type: 'CLIENT', exposition: 3, fiabilite: 4 },
     ]
     const pts = layoutStakeholders(parties, geom)
     const spans = sectorSpans(parties)
-    // Distance perpendiculaire d'un point à un rayon-frontière (angle « depuis le haut »).
-    const distToRay = (p: { x: number; y: number }, angleDeg: number) => {
-      const a = ((angleDeg - 90) * Math.PI) / 180
-      const dx = p.x - geom.cx, dy = p.y - geom.cy
-      return Math.abs(dx * Math.sin(a) - dy * Math.cos(a))
-    }
     for (const p of pts) {
       const s = spans.find(sp => sp.type === p.type)!
       const r = Math.hypot(p.x - geom.cx, p.y - geom.cy)
+      // Écart angulaire (deg) au centre du secteur, normalisé dans [-180, 180].
+      const angle = (Math.atan2(p.y - geom.cy, p.x - geom.cx) * 180) / Math.PI + 90
+      const off = Math.abs(((angle - s.centerDeg + 540) % 360) - 180)
       const angRadius = (Math.asin(Math.min(1, 14 / Math.max(r, 1))) * 180) / Math.PI
-      // Seulement là où le secteur est assez large pour le point (sinon il est au centre).
-      if (s.widthDeg / 2 > angRadius + 2) {
-        const d = Math.min(distToRay(p, s.startDeg), distToRay(p, s.startDeg + s.widthDeg))
-        expect(d).toBeGreaterThan(14 - 4) // le cercle (rayon ≤14) ne franchit pas le bord
-      }
+      // Le bord du cercle (offset + rayon angulaire) reste dans le demi-secteur.
+      expect(off + angRadius).toBeLessThan(s.widthDeg / 2 + 2)
     }
   })
 

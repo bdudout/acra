@@ -94,8 +94,12 @@ const TYPE_ORDER = [
   'ORGANISME_REGULATION', 'AUTRE',
 ]
 
-/** Fraction du secteur sur laquelle les PP d'une même catégorie sont étalées. */
-const SECTOR_SPREAD = 0.46
+/**
+ * Fraction du DEMI-secteur réellement utilisée pour étaler les PP (le reste = marge
+ * vers les bords). < 1 garantit que les points restent visiblement au cœur de leur
+ * catégorie et ne jouxtent pas le secteur voisin, même dans un secteur étroit.
+ */
+const SECTOR_FILL = 0.66
 
 // Empreinte approximative d'un point pour l'anti-chevauchement des PP connexes :
 // cercle (rayon max) + libellé texte à droite. Aligné sur EXPO_RADIUS du composant.
@@ -120,6 +124,15 @@ function angularRadiusDeg(r: number, pr: number): number {
  */
 function safeHalfAngle(r: number, widthDeg: number): number {
   return Math.max(0, widthDeg / 2 - angularRadiusDeg(r, POINT_R + BOUNDARY_GAP))
+}
+
+/**
+ * Demi-ouverture angulaire réellement utilisée : le minimum entre la marge sûre
+ * (diamètre du point) et la fraction du demi-secteur (marge vers les bords). Garantit
+ * que les points restent au cœur de leur catégorie, dans un secteur large comme étroit.
+ */
+function usableHalfAngle(r: number, widthDeg: number): number {
+  return Math.min(safeHalfAngle(r, widthDeg), (widthDeg / 2) * SECTOR_FILL)
 }
 
 /** Menace = exposition / fiabilité, entrées bornées à [1..N²] (N² par défaut = 16). */
@@ -347,7 +360,7 @@ export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: Sect
     const rNow = Math.hypot(c.x - geom.cx, c.y - geom.cy)
     const cands: [number, number][] = c.rang >= 2
       ? candidateOffsets().map(([dx, dy]) => [c.x + dx, c.y + dy] as [number, number])
-      : angularCandidates(c, geom, span ? span.centerDeg : 0, span ? safeHalfAngle(rNow, span.widthDeg) : 30)
+      : angularCandidates(c, geom, span ? span.centerDeg : 0, span ? usableHalfAngle(rNow, span.widthDeg) : 30)
     let best: [number, number] | null = null
     let bestCollisions = Infinity
     for (const [nx, ny] of cands) {
@@ -403,7 +416,7 @@ export function layoutStakeholders(
     // de sa distance au centre) pour ne pas recouvrir les séparateurs de catégories.
     let angleDeg = span.centerDeg
     if (k > 1) {
-      const halfSpread = Math.min(span.widthDeg * SECTOR_SPREAD, safeHalfAngle(r, span.widthDeg))
+      const halfSpread = usableHalfAngle(r, span.widthDeg)
       const ratio = posInGroup / (k - 1) // 0..1
       angleDeg = span.centerDeg - halfSpread + ratio * (2 * halfSpread)
     }
