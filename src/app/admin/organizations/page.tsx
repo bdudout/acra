@@ -175,10 +175,9 @@ export default function OrganizationsAdminPage() {
                   <li key={org.id}>
                     <button
                       onClick={() => setSelected(org.id)}
-                      style={{ marginLeft: depth(org) * 18 }}
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${selected === org.id ? 'bg-ebios-50 text-ebios-700' : 'hover:bg-gray-50 text-gray-700'}`}
                     >
-                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                      <span className="flex min-w-0 items-center gap-2 font-medium" style={{ paddingLeft: depth(org) * 16 }}>
                         <OrgLogo id={org.id} nom={org.nom} logo={org.logo} size={20} className="shrink-0 rounded" />
                         <span className="truncate">{org.nom}</span>
                         {!org.parentId && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}

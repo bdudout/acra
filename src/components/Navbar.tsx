@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
-import { ROLE_LABELS, ROLE_COLORS, type UserRole } from '@/lib/permissions'
+import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
@@ -23,7 +23,7 @@ export default function Navbar() {
   const menuBtnRef = useRef<HTMLButtonElement>(null)
 
   const userRole: UserRole = (session?.user as any)?.role ?? 'ANALYSTE'
-  const isAdmin      = userRole === 'ADMIN'
+  const isAdmin      = isAdminRole(userRole)
   const isLecteur    = userRole === 'LECTEUR'
 
   // Fermer le menu sur clic extérieur
@@ -60,6 +60,7 @@ export default function Navbar() {
       className="bg-white border-b border-gray-200 sticky top-0 z-40"
       aria-label="Navigation principale"
     >
+      {/* Rangée du haut : logo + recherche, sélecteur d'organisation et menu utilisateur */}
       <div className="max-w-6xl mx-auto px-4 flex items-center h-14 gap-4">
 
         {/* Logo */}
@@ -75,53 +76,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Liens de navigation */}
-        <div className="flex items-center gap-1 flex-1" role="list">
-          <Link
-            href="/dashboard"
-            className={`${navClass(pathname === '/dashboard')} inline-flex items-center gap-1.5`}
-            aria-current={pathname === '/dashboard' ? 'page' : undefined}
-          >
-            <LayoutDashboard size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">{t.nav.dashboard}</span>
-          </Link>
-
-          <Link
-            href="/analyses"
-            className={`${navClass(pathname.startsWith('/analyses'))} inline-flex items-center gap-1.5`}
-            aria-current={pathname.startsWith('/analyses') ? 'page' : undefined}
-          >
-            <FolderKanban size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">{isLecteur ? t.nav.analysesReader : t.nav.analyses}</span>
-          </Link>
-
-          <Link
-            href="/risques"
-            className={`${navClass(pathname === '/risques')} inline-flex items-center gap-1.5`}
-            aria-current={pathname === '/risques' ? 'page' : undefined}
-          >
-            <AlertTriangle size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">{t.nav.risks}</span>
-          </Link>
-
-          <Link
-            href="/tiers"
-            className={`${navClass(pathname === '/tiers')} inline-flex items-center gap-1.5`}
-            aria-current={pathname === '/tiers' ? 'page' : undefined}
-          >
-            <Network size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">{t.nav.tiers}</span>
-          </Link>
-
-          <Link
-            href="/actions"
-            className={`${navClass(pathname === '/actions')} inline-flex items-center gap-1.5`}
-            aria-current={pathname === '/actions' ? 'page' : undefined}
-          >
-            <Shield size={16} aria-hidden="true" />
-            <span className="hidden sm:inline">{t.nav.actions}</span>
-          </Link>
-        </div>
+        {/* Pousse la zone droite au bout de la rangée */}
+        <div className="flex-1" />
 
         {/* Recherche globale */}
         <GlobalSearch />
@@ -223,6 +179,56 @@ export default function Navbar() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Rangée du bas : liens de navigation principaux (pleine largeur) */}
+      <div className="border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto" role="list">
+          <Link
+            href="/dashboard"
+            className={`${navClass(pathname === '/dashboard')} inline-flex items-center gap-1.5 flex-shrink-0`}
+            aria-current={pathname === '/dashboard' ? 'page' : undefined}
+          >
+            <LayoutDashboard size={16} aria-hidden="true" />
+            <span>{t.nav.dashboard}</span>
+          </Link>
+
+          <Link
+            href="/analyses"
+            className={`${navClass(pathname.startsWith('/analyses'))} inline-flex items-center gap-1.5 flex-shrink-0`}
+            aria-current={pathname.startsWith('/analyses') ? 'page' : undefined}
+          >
+            <FolderKanban size={16} aria-hidden="true" />
+            <span>{isLecteur ? t.nav.analysesReader : t.nav.analyses}</span>
+          </Link>
+
+          <Link
+            href="/risques"
+            className={`${navClass(pathname === '/risques')} inline-flex items-center gap-1.5 flex-shrink-0`}
+            aria-current={pathname === '/risques' ? 'page' : undefined}
+          >
+            <AlertTriangle size={16} aria-hidden="true" />
+            <span>{t.nav.risks}</span>
+          </Link>
+
+          <Link
+            href="/tiers"
+            className={`${navClass(pathname === '/tiers')} inline-flex items-center gap-1.5 flex-shrink-0`}
+            aria-current={pathname === '/tiers' ? 'page' : undefined}
+          >
+            <Network size={16} aria-hidden="true" />
+            <span>{t.nav.tiers}</span>
+          </Link>
+
+          <Link
+            href="/actions"
+            className={`${navClass(pathname === '/actions')} inline-flex items-center gap-1.5 flex-shrink-0`}
+            aria-current={pathname === '/actions' ? 'page' : undefined}
+          >
+            <Shield size={16} aria-hidden="true" />
+            <span>{t.nav.actions}</span>
+          </Link>
         </div>
       </div>
     </nav>

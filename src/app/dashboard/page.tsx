@@ -10,7 +10,7 @@ import AnalysesChart from '@/components/AnalysesChart'
 import EcosystemRadar from '@/components/EcosystemRadar'
 import EbiosGuide from '@/components/EbiosGuide'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
-import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { analyseWhereClause, canCreateAnalyse, isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
               {userRole === 'RSSI' && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">{t.roles.RSSI}</span>
               )}
-              {userRole === 'ADMIN' && (
+              {isAdminRole(userRole) && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{t.roles.ADMIN}</span>
               )}
               {userRole === 'LECTEUR' && (
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
                 </Link>
               </>
             )}
-            {userRole === 'ADMIN' && (
+            {isAdminRole(userRole) && (
               <Link href="/admin/users" className="btn-secondary hidden sm:inline-flex items-center gap-2">
                 <KeyRound size={16} aria-hidden="true" /> {t.nav.admin}
               </Link>
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
           {[
             { label: t.dashboard.kpi.total,      value: stats.total,             Icon: ClipboardList, color: 'text-ebios-600',  bg: 'bg-ebios-50',  href: '/analyses' },
-            ...(userRole === 'RISK_MANAGER' || userRole === 'RSSI' || userRole === 'ADMIN'
+            ...(userRole === 'RISK_MANAGER' || userRole === 'RSSI' || isAdminRole(userRole)
               ? [{ label: t.dashboard.kpi.toApprove,  value: stats.soumises,      Icon: Send,     color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/analyses?filter=soumis' }]
               : [{ label: t.dashboard.kpi.inProgress, value: stats.enCours,       Icon: Settings, color: 'text-orange-600', bg: 'bg-orange-50', href: '/analyses?filter=en_cours' }]
             ),
@@ -327,7 +327,7 @@ export default async function DashboardPage() {
                   <ExpressAnalyseButton variant="link" />
                 </>
               )}
-              {stats.soumises > 0 && (userRole === 'RISK_MANAGER' || userRole === 'RSSI' || userRole === 'ADMIN') && (
+              {stats.soumises > 0 && (userRole === 'RISK_MANAGER' || userRole === 'RSSI' || isAdminRole(userRole)) && (
                 <Link href="/analyses?filter=soumis" className="flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 text-sm text-blue-700 font-medium">
                   📤 {stats.soumises} {t.dashboard.quickApprove}
                 </Link>
@@ -337,7 +337,7 @@ export default async function DashboardPage() {
                   ⚙️ {t.dashboard.quickConfig}
                 </Link>
               )}
-              {userRole === 'ADMIN' && (
+              {isAdminRole(userRole) && (
                 <Link href="/admin/users" className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-sm text-red-700">
                   🔑 {t.dashboard.quickAdmin}
                 </Link>
