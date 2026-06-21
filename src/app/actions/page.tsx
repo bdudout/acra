@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT } from '@/lib/i18n'
 import ActionsClient, { type MesureRow } from '@/components/ActionsClient'
 
@@ -23,6 +24,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
   const t = await getServerT()
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   const { priorite, filtre } = await searchParams
   const now = new Date()
@@ -30,7 +32,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
   // Récupérer toutes les analyses accessibles avec leurs mesures
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const analyses = await (prisma.analyse.findMany as any)({
-    where: analyseWhereClause(userId, userRole),
+    where: analyseWhereClause(userId, __org.role, __org.scope),
     select: {
       id: true,
       nom: true,

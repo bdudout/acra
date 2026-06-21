@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { rateLimit, rateLimitHeaders, LIMIT_SEARCH } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
 
   const userId   = (session.user as any).id as string
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   // Rate limiting : 60 requêtes / minute par utilisateur
   const rl = rateLimit(`search:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
   // Limiter la longueur de la recherche pour éviter les requêtes abusives
   if (q.length > 100) return NextResponse.json({ error: 'Requête trop longue' }, { status: 400 })
 
-  const where = analyseWhereClause(userId, userRole)
+  const where = analyseWhereClause(userId, __org.role, __org.scope)
 
   const [analyses, risques, actions] = await Promise.all([
     // Analyses

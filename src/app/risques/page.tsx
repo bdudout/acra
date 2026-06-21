@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT } from '@/lib/i18n'
 import { getRiskTier } from '@/lib/risk-scale'
 import RisquesClient, { type RisqueRow } from '@/components/RisquesClient'
@@ -24,12 +25,13 @@ export default async function RisquesPage({ searchParams }: PageProps) {
   const t = await getServerT()
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   const { niveau } = await searchParams
 
   // Récupérer toutes les analyses accessibles avec leurs risques et mesures
   const analyses = await prisma.analyse.findMany({
-    where: analyseWhereClause(userId, userRole),
+    where: analyseWhereClause(userId, __org.role, __org.scope),
     select: {
       id: true,
       nom: true,

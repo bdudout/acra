@@ -11,6 +11,7 @@ import EcosystemRadar from '@/components/EcosystemRadar'
 import EbiosGuide from '@/components/EbiosGuide'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
 import { ClipboardList, Send, Settings, CheckCircle2, AlertCircle, AlertTriangle, KeyRound } from 'lucide-react'
@@ -27,9 +28,10 @@ export default async function DashboardPage() {
   const locale = await getServerLocale()
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   const analyses = await prisma.analyse.findMany({
-    where: analyseWhereClause(userId, userRole),
+    where: analyseWhereClause(userId, __org.role, __org.scope),
     orderBy: { updatedAt: 'desc' },
     include: {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },

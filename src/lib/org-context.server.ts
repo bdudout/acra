@@ -12,7 +12,7 @@
 
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import type { UserRole, OrgScopeContext } from '@/lib/permissions'
 import {
   resolveActiveMembership,
   visibleOrgIds,
@@ -93,5 +93,24 @@ export async function resolveOrgContext(
     role: active.role,
     visibleOrgIds: visibleOrgIds(active, orgs),
     isSuperAdmin: false,
+  }
+}
+
+/**
+ * Raccourci pour les vues : rôle EFFECTIF (dans l'org active) + portée prête pour
+ * `analyseWhereClause(userId, role, scope)`, et organisation active (pour créer).
+ */
+export async function getAnalyseScope(userId: string, instanceRole: UserRole): Promise<{
+  role: UserRole
+  activeOrgId: string | null
+  scope: OrgScopeContext
+  memberships: (Membership & { nom: string })[]
+}> {
+  const ctx = await resolveOrgContext(userId, instanceRole)
+  return {
+    role: (ctx.role ?? instanceRole),
+    activeOrgId: ctx.activeOrgId,
+    scope: { visibleOrgIds: ctx.visibleOrgIds, isSuperAdmin: ctx.isSuperAdmin },
+    memberships: ctx.memberships,
   }
 }

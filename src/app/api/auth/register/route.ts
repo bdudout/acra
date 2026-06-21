@@ -93,10 +93,27 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         email: email.toLowerCase().trim(),
+        // Le 1ᵉʳ compte est l'administrateur d'instance (gère les organisations).
         passwordHash,
-        role: isFirstUser ? 'ADMIN' : 'ANALYSTE',
+        role: isFirstUser ? 'SUPER_ADMIN' : 'ANALYSTE',
       },
       select: { id: true, email: true, name: true, role: true },
+    })
+
+    // Multi-organisation : rattacher le nouvel utilisateur à l'organisation racine.
+    // (upsert défensif de la racine — normalement créée par la migration.)
+    await prisma.organization.upsert({
+      where: { id: 'global' },
+      create: { id: 'global', nom: 'Organisation principale', slug: 'principale', path: '/global/' },
+      update: {},
+    })
+    await prisma.orgMembership.create({
+      data: {
+        userId: user.id,
+        organizationId: 'global',
+        role: isFirstUser ? 'ADMIN' : 'ANALYSTE',
+        scope: isFirstUser ? 'SUBTREE' : 'NODE',
+      },
     })
 
     await auditLog('REGISTER', {

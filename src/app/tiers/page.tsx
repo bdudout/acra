@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT } from '@/lib/i18n'
 import { menace, zoneOf } from '@/lib/ecosystem-radar'
 import TiersClient, { type TiersRow } from '@/components/TiersClient'
@@ -19,10 +20,11 @@ export default async function TiersPage() {
   const t = await getServerT()
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   // Parties prenantes (écosystème) de toutes les analyses accessibles
   const analyses = await prisma.analyse.findMany({
-    where: analyseWhereClause(userId, userRole),
+    where: analyseWhereClause(userId, __org.role, __org.scope),
     select: {
       id: true,
       nom: true,

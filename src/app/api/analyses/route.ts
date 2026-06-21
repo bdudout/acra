@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 const createSchema = z.object({
@@ -23,10 +24,11 @@ export async function GET(req: NextRequest) {
 
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const analyses = await (prisma.analyse as any).findMany({
-    where: analyseWhereClause(userId, userRole),
+    where: analyseWhereClause(userId, __org.role, __org.scope),
     orderBy: { updatedAt: 'desc' },
     select: {
       id: true, nom: true, description: true, organisation: true,
@@ -50,9 +52,14 @@ export async function POST(req: NextRequest) {
 
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
+  const __org = await getAnalyseScope(userId, userRole)
 
-  if (!canCreateAnalyse({ id: userId, role: userRole })) {
+  // Le rôle EFFECTIF dans l'organisation active gouverne le droit de créer.
+  if (!canCreateAnalyse({ id: userId, role: __org.role })) {
     return NextResponse.json({ error: 'Votre rôle ne permet pas de créer des analyses' }, { status: 403 })
+  }
+  if (!__org.activeOrgId) {
+    return NextResponse.json({ error: 'Aucune organisation active' }, { status: 403 })
   }
 
   try {
@@ -87,6 +94,7 @@ export async function POST(req: NextRequest) {
     const analyse = await (prisma.analyse as any).create({
       data: {
         userId,
+        organizationId: __org.activeOrgId,
         nom: data.nom,
         description: data.description,
         organisation: data.organisation,
