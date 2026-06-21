@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 
@@ -10,6 +11,7 @@ export interface TiersRow {
   analyseId:   string
   analyseNom:  string
   analyseOrg:  string | null
+  entite?:     string | null  // organisation (multi-org), en vue consolidée uniquement
   nom:         string
   type:        string
   description: string | null
@@ -140,6 +142,11 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800 text-xs">{x.analyseNom}</div>
+                      {x.entite && (
+                        <div className="mt-0.5 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
+                          <Building2 size={10} aria-hidden="true" /> {x.entite}
+                        </div>
+                      )}
                       {x.analyseOrg && <div className="text-gray-500 text-xs">{x.analyseOrg}</div>}
                     </td>
                     <td className="px-4 py-3 text-center hidden md:table-cell">

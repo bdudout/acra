@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 // Couleur badge selon score de risque
@@ -21,6 +22,7 @@ export interface RisqueRow {
   analyseId:    string
   analyseNom:   string
   analyseOrg:   string | null
+  entite?:      string | null  // organisation (multi-org), en vue consolidée uniquement
   risqueId:     string
   nom:          string
   description:  string | null
@@ -119,6 +121,11 @@ export default function RisquesClient({
                   <tr key={r.risqueId} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800 text-xs">{r.analyseNom}</div>
+                      {r.entite && (
+                        <div className="mt-0.5 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
+                          <Building2 size={10} aria-hidden="true" /> {r.entite}
+                        </div>
+                      )}
                       {r.analyseOrg && <div className="text-gray-500 text-xs">{r.analyseOrg}</div>}
                     </td>
                     <td className="px-4 py-3 max-w-xs">

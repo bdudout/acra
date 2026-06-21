@@ -36,6 +36,7 @@ export default async function RisquesPage({ searchParams }: PageProps) {
       id: true,
       nom: true,
       organisation: true,
+      organization: { select: { nom: true } },
       risques: {
         select: {
           id: true,
@@ -56,12 +57,16 @@ export default async function RisquesPage({ searchParams }: PageProps) {
     orderBy: { updatedAt: 'desc' },
   })
 
+  // Vue consolidée : périmètre couvrant plusieurs organisations → entité d'origine.
+  const consolidated = (__org.scope.visibleOrgIds?.length ?? 0) > 1
+
   // Aplatir tous les risques avec leur contexte d'analyse
   const allRisques: RisqueRow[] = analyses.flatMap(a =>
     a.risques.map(r => ({
       analyseId:     a.id,
       analyseNom:    a.nom,
       analyseOrg:    a.organisation,
+      entite:        consolidated ? (a.organization?.nom ?? null) : null,
       risqueId:      r.id,
       nom:           r.nom,
       description:   r.description,

@@ -14,7 +14,7 @@ import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permi
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
-import { ClipboardList, Send, Settings, CheckCircle2, AlertCircle, AlertTriangle, KeyRound } from 'lucide-react'
+import { ClipboardList, Send, Settings, CheckCircle2, AlertCircle, AlertTriangle, KeyRound, Building2 } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -37,9 +37,14 @@ export default async function DashboardPage() {
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
+      organization: { select: { nom: true } },
       partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true, rang: true, cle: true, parentCle: true } },
     },
   })
+
+  // Vue consolidée : le périmètre couvre plusieurs organisations (ex. RSSI groupe)
+  // → on indique l'entité d'origine de chaque analyse.
+  const consolidated = (__org.scope.visibleOrgIds?.length ?? 0) > 1
 
   // Liste des analyses récentes (par date) — limitée à 3
   const recent = analyses.slice(0, 3)
@@ -202,6 +207,11 @@ export default async function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium text-gray-900 truncate">{a.nom}</span>
+                            {consolidated && (a as any).organization?.nom && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium flex-shrink-0 inline-flex items-center gap-1" title={t.nav.organization}>
+                                <Building2 size={11} aria-hidden="true" /> {(a as any).organization.nom}
+                              </span>
+                            )}
                             {(a as any).isSocle && (
                               <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>
                             )}

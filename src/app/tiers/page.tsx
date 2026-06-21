@@ -29,6 +29,7 @@ export default async function TiersPage() {
       id: true,
       nom: true,
       organisation: true,
+      organization: { select: { nom: true } },
       partiesPrenantes: {
         select: {
           id: true, nom: true, type: true, description: true,
@@ -41,6 +42,9 @@ export default async function TiersPage() {
     orderBy: { updatedAt: 'desc' },
   })
 
+  // Vue consolidée : périmètre couvrant plusieurs organisations → entité d'origine.
+  const consolidated = (__org.scope.visibleOrgIds?.length ?? 0) > 1
+
   const tiers: TiersRow[] = analyses.flatMap(a =>
     a.partiesPrenantes.map(pp => {
       const m = menace(pp.exposition, pp.fiabilite)
@@ -49,6 +53,7 @@ export default async function TiersPage() {
         analyseId:   a.id,
         analyseNom:  a.nom,
         analyseOrg:  a.organisation,
+        entite:      consolidated ? (a.organization?.nom ?? null) : null,
         nom:         pp.nom,
         type:        pp.type,
         description: pp.description,
