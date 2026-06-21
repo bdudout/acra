@@ -5,7 +5,7 @@
 
 ![Démo ACRA](docs/screenshots/acra-demo.gif)
 
-<!-- Variante plus légère (1,7 Mo) : docs/screenshots/acra-demo-compact.gif -->
+<!-- Variante plus légère (~145 Ko) : docs/screenshots/acra-demo-compact.gif -->
 
 ## 📸 Aperçu
 
