@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/context'
-import { Home, Users, Shield, ClipboardList, Mail, Trash2 } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery'
+type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery' | 'organizations'
 
 /**
  * Navigation interne de l'espace d'administration (composant partagé).
@@ -12,10 +13,14 @@ type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recover
  */
 export default function AdminNav({ active }: { active: AdminTab }) {
   const { t } = useTranslation()
+  const { data: session } = useSession()
+  const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN'
 
   const items = [
     { key: 'dashboard', href: '/admin',          Icon: Home,          label: t.admin.navDashboard },
     { key: 'users',     href: '/admin/users',    Icon: Users,         label: t.admin.navUsers },
+    // Gestion des organisations — réservée au super-administrateur (multi-organisation).
+    ...(isSuperAdmin ? [{ key: 'organizations', href: '/admin/organizations', Icon: Building2, label: t.admin.navOrganizations }] : []),
     { key: 'security',  href: '/admin/security', Icon: Shield,        label: t.admin.navSecurity },
     { key: 'smtp',      href: '/admin/smtp',     Icon: Mail,          label: t.admin.navSmtp },
     { key: 'audit',     href: '/admin/audit',    Icon: ClipboardList, label: t.admin.navAudit },

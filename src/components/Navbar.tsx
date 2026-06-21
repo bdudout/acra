@@ -8,6 +8,7 @@ import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, type UserRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import GlobalSearch from './GlobalSearch'
+import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network,
   User, ChevronDown, Settings, KeyRound, LogOut,
@@ -127,6 +128,8 @@ export default function Navbar() {
 
         {/* Zone droite */}
         <div className="flex items-center gap-2">
+          {/* Sélecteur d'organisation (masqué si une seule organisation accessible) */}
+          <OrgSwitcher />
           {/* Menu utilisateur (le badge de rôle est dans l'en-tête du menu) */}
           <div className="relative" ref={menuRef}>
             <button

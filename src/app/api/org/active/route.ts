@@ -3,9 +3,33 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { ACTIVE_ORG_COOKIE } from '@/lib/org-context.server'
+import { ACTIVE_ORG_COOKIE, resolveOrgContext } from '@/lib/org-context.server'
 
 const schema = z.object({ orgId: z.string().min(1).max(40) })
+
+/**
+ * GET /api/org/active — organisations sélectionnables par l'utilisateur + org active.
+ * Pour un SUPER_ADMIN : toutes les organisations. Sinon : ses appartenances.
+ */
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  const userId = (session.user as any).id as string
+  const role = (session.user as any).role ?? 'ANALYSTE'
+
+  const ctx = await resolveOrgContext(userId, role)
+
+  let options: { id: string; nom: string }[]
+  if (role === 'SUPER_ADMIN') {
+    const orgs = await prisma.organization.findMany({ select: { id: true, nom: true }, orderBy: { path: 'asc' } })
+    options = orgs
+  } else {
+    options = ctx.memberships.map(m => ({ id: m.organizationId, nom: m.nom }))
+  }
+
+  return NextResponse.json({ activeOrgId: ctx.activeOrgId, options })
+}
 
 /**
  * POST /api/org/active — change l'organisation active (cookie `acra_org`).

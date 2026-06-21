@@ -98,6 +98,9 @@ export type AuditAction =
   | 'PROFILE_UPDATED'
   | 'SOCLE_TOGGLED'
   | 'ORGANIZATION_CONFIG_UPDATED'
+  | 'ORG_CREATED'
+  | 'ORG_MEMBER_ADDED'
+  | 'ORG_MEMBER_REMOVED'
 
 export interface AuditContext {
   userId?:      string
