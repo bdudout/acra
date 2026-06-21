@@ -873,6 +873,8 @@ export const fr = {
       remove: 'Retirer',
       analyses: 'analyses',
       empty: 'Aucune organisation.',
+      selectHint: 'Sélectionnez une organisation pour gérer ses membres.',
+      removeConfirm: 'Retirer ce membre de l\'organisation ?',
     },
     recovery: {
       title:          'Récupération des analyses',

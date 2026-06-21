@@ -854,6 +854,8 @@ export const de: Translations = {
       remove: 'Entfernen',
       analyses: 'Analysen',
       empty: 'Keine Organisation.',
+      selectHint: 'Wählen Sie eine Organisation, um ihre Mitglieder zu verwalten.',
+      removeConfirm: 'Dieses Mitglied aus der Organisation entfernen?',
     },
     recovery: {
       title:          'Analysen-Wiederherstellung',

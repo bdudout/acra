@@ -20,12 +20,17 @@ export async function GET() {
 
   const ctx = await resolveOrgContext(userId, role)
 
-  let options: { id: string; nom: string }[]
+  // Options triées par chemin (ordre hiérarchique) avec `path` → indentation du switcher.
+  let options: { id: string; nom: string; path: string }[]
   if (role === 'SUPER_ADMIN') {
-    const orgs = await prisma.organization.findMany({ select: { id: true, nom: true }, orderBy: { path: 'asc' } })
-    options = orgs
+    options = await prisma.organization.findMany({ select: { id: true, nom: true, path: true }, orderBy: { path: 'asc' } })
   } else {
-    options = ctx.memberships.map(m => ({ id: m.organizationId, nom: m.nom }))
+    const ids = ctx.memberships.map(m => m.organizationId)
+    options = await prisma.organization.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nom: true, path: true },
+      orderBy: { path: 'asc' },
+    })
   }
 
   return NextResponse.json({ activeOrgId: ctx.activeOrgId, options })

@@ -36,6 +36,7 @@ export default function OrganizationsAdminPage() {
   const [mRole, setMRole] = useState<typeof ASSIGNABLE_ROLES[number]>('ANALYSTE')
   const [mScope, setMScope] = useState<'NODE' | 'SUBTREE'>('NODE')
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   // Garde : réservé au SUPER_ADMIN.
   useEffect(() => {
@@ -59,29 +60,38 @@ export default function OrganizationsAdminPage() {
 
   async function createOrg(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
-    const res = await fetch('/api/admin/organizations', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ nom: newName, parentId: newParent || null }),
-    })
-    if (res.ok) { setNewName(''); setNewParent(''); await loadOrgs() }
-    else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    if (busy) return
+    setError(null); setBusy(true)
+    try {
+      const res = await fetch('/api/admin/organizations', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ nom: newName, parentId: newParent || null }),
+      })
+      if (res.ok) {
+        const created = (await res.json()).organization
+        setNewName(''); setNewParent(''); await loadOrgs()
+        if (created?.id) setSelected(created.id) // sélection auto de l'org créée
+      } else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    } finally { setBusy(false) }
   }
 
   async function addMember(e: React.FormEvent) {
     e.preventDefault()
-    if (!selected) return
-    setError(null)
-    const res = await fetch(`/api/admin/organizations/${selected}/members`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: mEmail, role: mRole, scope: mScope }),
-    })
-    if (res.ok) { setMEmail(''); await loadMembers(selected); await loadOrgs() }
-    else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    if (!selected || busy) return
+    setError(null); setBusy(true)
+    try {
+      const res = await fetch(`/api/admin/organizations/${selected}/members`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: mEmail, role: mRole, scope: mScope }),
+      })
+      if (res.ok) { setMEmail(''); await loadMembers(selected); await loadOrgs() }
+      else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    } finally { setBusy(false) }
   }
 
   async function removeMember(mid: string) {
     if (!selected) return
+    if (!window.confirm(o.removeConfirm)) return
     const res = await fetch(`/api/admin/organizations/${selected}/members?membershipId=${mid}`, { method: 'DELETE' })
     if (res.ok) { await loadMembers(selected); await loadOrgs() }
   }
@@ -142,7 +152,7 @@ export default function OrganizationsAdminPage() {
                 <option value="">{o.noParent}</option>
                 {orgs.map(org => <option key={org.id} value={org.id}>{org.nom}</option>)}
               </select>
-              <button type="submit" className="inline-flex items-center gap-1.5 rounded-md bg-ebios-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-ebios-700">
+              <button type="submit" disabled={busy} className="inline-flex items-center gap-1.5 rounded-md bg-ebios-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-ebios-700 disabled:opacity-50">
                 <Plus size={15} /> {o.create}
               </button>
             </form>
@@ -154,7 +164,7 @@ export default function OrganizationsAdminPage() {
               {o.members}{selectedOrg ? ` — ${selectedOrg.nom}` : ''}
             </h2>
             {!selectedOrg ? (
-              <p className="text-sm text-gray-400">{o.title} →</p>
+              <p className="text-sm text-gray-400">{o.selectHint}</p>
             ) : (
               <>
                 <ul className="mb-4 space-y-1">
@@ -166,7 +176,7 @@ export default function OrganizationsAdminPage() {
                           {m.user.email} · {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS] ?? m.role} · {m.scope === 'SUBTREE' ? o.scopeSubtree : o.scopeNode}
                         </span>
                       </span>
-                      <button onClick={() => removeMember(m.id)} title={o.remove} className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
+                      <button onClick={() => removeMember(m.id)} title={o.remove} aria-label={o.remove} className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
                         <X size={15} />
                       </button>
                     </li>
@@ -188,7 +198,7 @@ export default function OrganizationsAdminPage() {
                       <option value="SUBTREE">{o.scopeSubtree}</option>
                     </select>
                   </div>
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-md bg-ebios-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-ebios-700">
+                  <button type="submit" disabled={busy} className="inline-flex items-center gap-1.5 rounded-md bg-ebios-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-ebios-700 disabled:opacity-50">
                     <Plus size={15} /> {o.addMember}
                   </button>
                 </form>

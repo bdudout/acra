@@ -9,7 +9,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 
-interface OrgOption { id: string; nom: string }
+interface OrgOption { id: string; nom: string; path?: string }
+
+/** Profondeur d'une organisation déduite de son chemin matérialisé (racine = 0). */
+function orgDepth(path?: string): number {
+  if (!path) return 0
+  return Math.max(0, path.split('/').filter(Boolean).length - 1)
+}
 
 export default function OrgSwitcher() {
   const { t } = useTranslation()
@@ -86,7 +92,7 @@ export default function OrgSwitcher() {
               onClick={() => choose(o.id)}
               className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${o.id === active?.id ? 'font-semibold text-ebios-700 dark:text-ebios-300' : 'text-gray-700 dark:text-gray-200'}`}
             >
-              <span className="truncate">{o.nom}</span>
+              <span className="truncate" style={{ paddingLeft: orgDepth(o.path) * 14 }}>{o.nom}</span>
               {o.id === active?.id && (
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0l-3.5-3.5a1 1 0 111.4-1.4l2.8 2.79 6.8-6.79a1 1 0 011.4 0z" clipRule="evenodd" />

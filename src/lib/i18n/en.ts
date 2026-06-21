@@ -854,6 +854,8 @@ export const en: Translations = {
       remove: 'Remove',
       analyses: 'analyses',
       empty: 'No organization.',
+      selectHint: 'Select an organization to manage its members.',
+      removeConfirm: 'Remove this member from the organization?',
     },
     recovery: {
       title:          'Analysis recovery',
