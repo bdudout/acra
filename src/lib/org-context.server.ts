@@ -14,8 +14,9 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import type { UserRole, OrgScopeContext } from '@/lib/permissions'
 import {
-  resolveActiveMembership,
   visibleOrgIds,
+  subtreeIds,
+  isInSubtree,
   type Membership,
   type OrgNode,
 } from '@/lib/org-context'
@@ -69,29 +70,49 @@ export async function resolveOrgContext(
   const cookieStore = await cookies()
   const cookieOrg = requestedOrgId ?? cookieStore.get(ACTIVE_ORG_COOKIE)?.value ?? null
 
-  // SUPER_ADMIN : voit toutes les organisations (pas de restriction).
+  // SUPER_ADMIN : « toutes les organisations » par défaut, ou FOCALISE une org (drill-down)
+  // si le cookie pointe vers une organisation valide → périmètre = sous-arbre de cette org.
   if (isSuperAdmin) {
-    const active = cookieOrg && orgs.some(o => o.id === cookieOrg) ? cookieOrg : (orgs[0]?.id ?? null)
+    const active = cookieOrg && orgs.some(o => o.id === cookieOrg) ? cookieOrg : null
+    const node = active ? orgs.find(o => o.id === active) : null
     return {
       memberships,
       activeOrgId: active,
       role: 'SUPER_ADMIN',
-      visibleOrgIds: orgs.map(o => o.id),
+      visibleOrgIds: node ? subtreeIds(orgs, node.path) : orgs.map(o => o.id),
       isSuperAdmin: true,
     }
   }
 
-  const active = resolveActiveMembership(memberships, cookieOrg)
-  if (!active) {
+  if (memberships.length === 0) {
     // Aucune appartenance : ne voit rien (sécurité).
     return { memberships, activeOrgId: null, role: null, visibleOrgIds: [], isSuperAdmin: false }
   }
 
+  // Ensemble ACCESSIBLE = union des portées des appartenances (NODE ou SUBTREE).
+  const accessible = new Set<string>()
+  for (const m of memberships) visibleOrgIds(m, orgs).forEach(id => accessible.add(id))
+
+  // Organisation active : cookie si accessible (permet la focalisation d'une sous-entité
+  // par un membre « groupe » SUBTREE), sinon l'appartenance principale.
+  const activeId = cookieOrg && accessible.has(cookieOrg) ? cookieOrg : memberships[0].organizationId
+  const activeNode = orgs.find(o => o.id === activeId)
+  // Périmètre = sous-arbre de l'org active, restreint à l'accessible.
+  const visible = activeNode ? subtreeIds(orgs, activeNode.path).filter(id => accessible.has(id)) : [activeId]
+
+  // Rôle effectif : appartenance directe sur l'org active, sinon appartenance SUBTREE
+  // ancêtre qui la couvre, sinon repli sur la principale.
+  const direct = memberships.find(m => m.organizationId === activeId)
+  const covering = direct ?? memberships.find(m => {
+    const n = orgs.find(o => o.id === m.organizationId)
+    return m.scope === 'SUBTREE' && n && activeNode ? isInSubtree(activeNode.path, n.path) : false
+  })
+
   return {
     memberships,
-    activeOrgId: active.organizationId,
-    role: active.role,
-    visibleOrgIds: visibleOrgIds(active, orgs),
+    activeOrgId: activeId,
+    role: (covering?.role ?? memberships[0].role),
+    visibleOrgIds: visible,
     isSuperAdmin: false,
   }
 }
@@ -147,10 +168,13 @@ export async function getAnalyseScope(userId: string, instanceRole: UserRole): P
   memberships: (Membership & { nom: string })[]
 }> {
   const ctx = await resolveOrgContext(userId, instanceRole)
+  // Un SUPER_ADMIN FOCALISÉ sur une organisation (activeOrgId non nul) voit son
+  // périmètre restreint (drill-down) ; sans focalisation, il voit tout (isSuperAdmin).
+  const noOrgRestriction = ctx.isSuperAdmin && ctx.activeOrgId == null
   return {
     role: (ctx.role ?? instanceRole),
     activeOrgId: ctx.activeOrgId,
-    scope: { visibleOrgIds: ctx.visibleOrgIds, isSuperAdmin: ctx.isSuperAdmin },
+    scope: { visibleOrgIds: ctx.visibleOrgIds, isSuperAdmin: noOrgRestriction },
     memberships: ctx.memberships,
   }
 }

@@ -149,9 +149,11 @@ export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgS
   // courantes — seul le module admin « Récupération » les requête séparément.
   const notDeleted = { deletedAt: null }
   // Filtre d'organisation (multi-organisation) : restreint au périmètre visible.
-  // SUPER_ADMIN ⇒ aucune restriction. Absent ⇒ pas de filtre (mono-org / rétrocompat).
+  // `isSuperAdmin` du contexte ⇒ aucune restriction (vue « toutes organisations »).
+  // Un SUPER_ADMIN qui FOCALISE une organisation a isSuperAdmin=false + visibleOrgIds
+  // ciblés → le filtre s'applique (drill-down). Absent ⇒ pas de filtre (mono-org).
   const orgFilter =
-    orgCtx && !orgCtx.isSuperAdmin && role !== 'SUPER_ADMIN'
+    orgCtx && !orgCtx.isSuperAdmin
       ? { organizationId: { in: orgCtx.visibleOrgIds } }
       : {}
 

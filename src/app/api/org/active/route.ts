@@ -3,9 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { ACTIVE_ORG_COOKIE, resolveOrgContext } from '@/lib/org-context.server'
+import { ACTIVE_ORG_COOKIE, resolveOrgContext, getAccessibleOrgIds } from '@/lib/org-context.server'
 
-const schema = z.object({ orgId: z.string().min(1).max(40) })
+// orgId vide ⇒ retour à la vue par défaut (toutes organisations pour un super-admin).
+const schema = z.object({ orgId: z.string().max(40) })
 
 /**
  * GET /api/org/active — organisations sélectionnables par l'utilisateur + org active.
@@ -20,20 +21,16 @@ export async function GET() {
 
   const ctx = await resolveOrgContext(userId, role)
 
-  // Options triées par chemin (ordre hiérarchique) avec `path` → indentation du switcher.
-  let options: { id: string; nom: string; path: string }[]
-  if (role === 'SUPER_ADMIN') {
-    options = await prisma.organization.findMany({ select: { id: true, nom: true, path: true }, orderBy: { path: 'asc' } })
-  } else {
-    const ids = ctx.memberships.map(m => m.organizationId)
-    options = await prisma.organization.findMany({
-      where: { id: { in: ids } },
-      select: { id: true, nom: true, path: true },
-      orderBy: { path: 'asc' },
-    })
-  }
+  // Options = organisations ACCESSIBLES (sous-arbre inclus pour un membre « groupe »
+  // SUBTREE → drill-down), triées par chemin (ordre hiérarchique) avec `path`/`logo`.
+  const { all, ids } = await getAccessibleOrgIds(userId, role)
+  const where = all ? {} : { id: { in: ids } }
+  const options = await prisma.organization.findMany({
+    where, select: { id: true, nom: true, path: true, logo: true }, orderBy: { path: 'asc' },
+  })
 
-  return NextResponse.json({ activeOrgId: ctx.activeOrgId, options })
+  // canSelectAll : le super-admin peut revenir à la vue « toutes organisations ».
+  return NextResponse.json({ activeOrgId: ctx.activeOrgId, options, canSelectAll: role === 'SUPER_ADMIN' })
 }
 
 /**
@@ -55,14 +52,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
   }
 
-  // Validation du périmètre.
-  const allowed =
-    role === 'SUPER_ADMIN'
-      ? !!(await prisma.organization.findUnique({ where: { id: orgId }, select: { id: true } }))
-      : !!(await prisma.orgMembership.findUnique({
-          where: { userId_organizationId: { userId, organizationId: orgId } },
-          select: { id: true },
-        }))
+  // orgId vide ⇒ effacer la focalisation (retour vue par défaut / toutes orgs).
+  if (orgId === '') {
+    const res = NextResponse.json({ ok: true, orgId: '' })
+    res.cookies.set(ACTIVE_ORG_COOKIE, '', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 })
+    return res
+  }
+
+  // Validation du périmètre : l'organisation doit être ACCESSIBLE (sous-arbre inclus
+  // pour un membre « groupe » SUBTREE → drill-down ; toute org pour un super-admin).
+  const { all, ids } = await getAccessibleOrgIds(userId, role)
+  const allowed = all
+    ? !!(await prisma.organization.findUnique({ where: { id: orgId }, select: { id: true } }))
+    : ids.includes(orgId)
 
   if (!allowed) return NextResponse.json({ error: 'Organisation non autorisée' }, { status: 403 })
 

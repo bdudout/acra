@@ -10,15 +10,18 @@ import {
 } from '@/lib/org-config-defaults'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { getOrgConfig } from '@/lib/org-config.server'
 
 const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
 
-async function getOrCreate() {
-  return prisma.organizationConfig.upsert({
-    where: { id: 'global' },
-    create: { id: 'global', entitesMesures: DEFAULT_ENTITES },
-    update: {},
-  })
+// Organisation active (multi-organisation) : la config éditée/lue lui est rattachée.
+async function activeOrgId(session: any): Promise<string> {
+  const userId = (session.user as any).id
+  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const { activeOrgId } = await getAnalyseScope(userId, userRole)
+  return activeOrgId ?? 'global'
 }
 
 function slugify(s: string): string {
@@ -41,21 +44,18 @@ export async function GET(_req: NextRequest) {
     )
   }
 
-  const config = await getOrCreate()
-  const typesImpacts = config.typesImpacts as unknown as TypeImpact[]
-  const referentielsActifs = config.referentielsActifs as unknown as ReferentielActif[]
-  const strategies = (config as any).strategiesTraitement as unknown as StrategieTraitement[]
-  const exemples = (config as any).exemplesAteliers
+  // Config EFFECTIVE de l'organisation active (héritage des ancêtres + défauts).
+  const cfg = await getOrgConfig(await activeOrgId(session))
   return NextResponse.json({
-    entitesMesures: (config.entitesMesures as string[]) ?? DEFAULT_ENTITES,
-    typesImpacts: typesImpacts?.length ? typesImpacts : DEFAULT_TYPES_IMPACTS,
-    referentielsActifs: referentielsActifs?.length ? referentielsActifs : DEFAULT_REFERENTIELS,
-    strategiesTraitement: strategies?.length ? strategies : DEFAULT_STRATEGIES,
-    exemplesAteliers: (exemples && typeof exemples === 'object' && !Array.isArray(exemples)) ? exemples : {},
-    qualificationActive: Boolean((config as any).qualificationActive),
-    conformiteActive: Boolean((config as any).conformiteActive),
-    conseilsAteliersActive: (config as any).conseilsAteliersActive !== false, // activé par défaut
-    echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
+    entitesMesures: cfg.entitesMesures,
+    typesImpacts: cfg.typesImpacts,
+    referentielsActifs: cfg.referentielsActifs,
+    strategiesTraitement: cfg.strategiesTraitement,
+    exemplesAteliers: cfg.exemplesAteliers,
+    qualificationActive: cfg.qualificationActive,
+    conformiteActive: cfg.conformiteActive,
+    conseilsAteliersActive: cfg.conseilsAteliersActive,
+    echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
 
@@ -72,9 +72,10 @@ export async function PUT(req: NextRequest) {
   const userId   = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  if (userRole !== 'ADMIN') {
+  if (!isAdminRole(userRole)) {
     return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
   }
+  const orgId = await activeOrgId(session)
 
   const body = await req.json()
 
@@ -132,8 +133,8 @@ export async function PUT(req: NextRequest) {
 
   if (body.exemplesAteliers && typeof body.exemplesAteliers === 'object' && !Array.isArray(body.exemplesAteliers)) {
     // Merge par catégorie : une catégorie vidée revient aux défauts (clé supprimée).
-    const current = await getOrCreate()
-    const stored = (current as any).exemplesAteliers
+    const current = await prisma.organizationConfig.findUnique({ where: { id: orgId } })
+    const stored = (current as any)?.exemplesAteliers
     const merged: Record<string, unknown> = (stored && typeof stored === 'object' && !Array.isArray(stored)) ? { ...stored } : {}
     for (const [cat, value] of Object.entries(body.exemplesAteliers)) {
       if (!getCategoryDef(cat as ExempleCategoryKey)) continue // ignore les catégories inconnues
@@ -158,8 +159,8 @@ export async function PUT(req: NextRequest) {
   }
 
   const config = await prisma.organizationConfig.upsert({
-    where: { id: 'global' },
-    create: { id: 'global', entitesMesures: [], ...data },
+    where: { id: orgId },
+    create: { id: orgId, entitesMesures: [], ...data },
     update: data,
   })
 

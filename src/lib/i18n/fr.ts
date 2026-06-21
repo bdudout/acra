@@ -59,6 +59,7 @@ export const fr = {
   nav: {
     dashboard:      'Tableau de bord',
     organization:   'Organisation',
+    allOrganizations: 'Toutes les organisations',
     analyses:       'Analyses',
     analysesReader: 'Analyses',
     risks:          'Risques',
@@ -881,6 +882,8 @@ export const fr = {
       scalesPerOrg: 'Par organisation (mode consultant)',
       scalesPerOrgDesc: 'Chaque organisation peut définir ses propres échelles et matrice.',
       scalesNote: 'Modifiable à tout moment ici.',
+      logoChange: 'Changer le logo',
+      logoReset: 'Revenir au logo auto',
     },
     recovery: {
       title:          'Récupération des analyses',

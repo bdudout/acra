@@ -40,7 +40,7 @@ export async function GET() {
   const orgs = await prisma.organization.findMany({
     orderBy: { path: 'asc' },
     select: {
-      id: true, nom: true, slug: true, parentId: true, path: true, actif: true,
+      id: true, nom: true, slug: true, parentId: true, path: true, actif: true, logo: true,
       _count: { select: { membres: true, analyses: true } },
     },
   })

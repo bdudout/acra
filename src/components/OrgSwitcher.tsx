@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import OrgLogo from './OrgLogo'
 
-interface OrgOption { id: string; nom: string; path?: string }
+interface OrgOption { id: string; nom: string; path?: string; logo?: string | null }
 
 /** Profondeur d'une organisation déduite de son chemin matérialisé (racine = 0). */
 function orgDepth(path?: string): number {
@@ -23,6 +23,7 @@ export default function OrgSwitcher() {
   const router = useRouter()
   const [options, setOptions] = useState<OrgOption[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [canSelectAll, setCanSelectAll] = useState(false)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -31,7 +32,7 @@ export default function OrgSwitcher() {
     let alive = true
     fetch('/api/org/active', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (alive && d) { setOptions(d.options ?? []); setActiveId(d.activeOrgId ?? null) } })
+      .then(d => { if (alive && d) { setOptions(d.options ?? []); setActiveId(d.activeOrgId ?? null); setCanSelectAll(!!d.canSelectAll) } })
       .catch(() => {})
     return () => { alive = false }
   }, [])
@@ -42,13 +43,19 @@ export default function OrgSwitcher() {
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
-  // Masqué tant qu'il n'y a qu'une seule organisation accessible.
-  if (options.length < 2) return null
+  // Option « Toutes les organisations » (super-admin) en tête, sinon les orgs accessibles.
+  const displayOptions: OrgOption[] = canSelectAll
+    ? [{ id: '', nom: t.nav.allOrganizations, path: '/' }, ...options]
+    : options
 
-  const active = options.find(o => o.id === activeId) ?? options[0]
+  // Masqué tant qu'il n'y a qu'une seule organisation sélectionnable.
+  if (displayOptions.length < 2) return null
+
+  const curActive = activeId ?? ''
+  const active = displayOptions.find(o => o.id === curActive) ?? displayOptions[0]
 
   async function choose(id: string) {
-    if (id === activeId) { setOpen(false); return }
+    if (id === curActive) { setOpen(false); return }
     setBusy(true)
     try {
       const res = await fetch('/api/org/active', {
@@ -73,7 +80,7 @@ export default function OrgSwitcher() {
         title={t.nav.organization}
         className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
       >
-        {active && <OrgLogo id={active.id} nom={active.nom} size={18} className="shrink-0 rounded" />}
+        {active && <OrgLogo id={active.id || 'all'} nom={active.nom} logo={active.logo} size={18} className="shrink-0 rounded" />}
         <span className="max-w-[140px] truncate font-medium">{active?.nom}</span>
         <svg className="h-3.5 w-3.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -83,16 +90,16 @@ export default function OrgSwitcher() {
       {open && (
         <div role="listbox" className="absolute right-0 z-50 mt-1 max-h-72 w-64 overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
           <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t.nav.organization}</div>
-          {options.map(o => (
+          {displayOptions.map(o => (
             <button
-              key={o.id}
+              key={o.id || 'all'}
               role="option"
               aria-selected={o.id === active?.id}
               onClick={() => choose(o.id)}
               className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${o.id === active?.id ? 'font-semibold text-ebios-700 dark:text-ebios-300' : 'text-gray-700 dark:text-gray-200'}`}
             >
               <span className="flex min-w-0 items-center gap-2" style={{ paddingLeft: orgDepth(o.path) * 14 }}>
-                <OrgLogo id={o.id} nom={o.nom} size={18} className="shrink-0 rounded" />
+                <OrgLogo id={o.id || 'all'} nom={o.nom} logo={o.logo} size={18} className="shrink-0 rounded" />
                 <span className="truncate">{o.nom}</span>
               </span>
               {o.id === active?.id && (

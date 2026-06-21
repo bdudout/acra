@@ -58,6 +58,7 @@ export const de: Translations = {
   nav: {
     dashboard:      'Dashboard',
     organization:   'Organisation',
+    allOrganizations: 'Alle Organisationen',
     analyses:       'Analysen',
     analysesReader: 'Analysen',
     risks:          'Risiken',
@@ -862,6 +863,8 @@ export const de: Translations = {
       scalesPerOrg: 'Pro Organisation (Beratermodus)',
       scalesPerOrgDesc: 'Jede Organisation kann eigene Skalen und Matrix festlegen.',
       scalesNote: 'Hier jederzeit änderbar.',
+      logoChange: 'Logo ändern',
+      logoReset: 'Auto-Logo wiederherstellen',
     },
     recovery: {
       title:          'Analysen-Wiederherstellung',

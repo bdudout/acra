@@ -5,8 +5,13 @@ import { orgInitials, orgLogoColors, hashSeed } from '@/lib/org-logo'
  * (dérivé de l'id) + monogramme. Aucune dépendance réseau, rendu serveur ou client.
  */
 export default function OrgLogo({
-  id, nom, size = 24, className = '',
-}: { id: string; nom: string; size?: number; className?: string }) {
+  id, nom, logo, size = 24, className = '',
+}: { id: string; nom: string; logo?: string | null; size?: number; className?: string }) {
+  // Logo personnalisé (data URL) prioritaire sur le logo auto-généré.
+  if (logo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={logo} alt="" width={size} height={size} className={`object-cover ${className}`} aria-hidden="true" />
+  }
   const seed = id || nom || '?'
   const { from, to } = orgLogoColors(seed)
   const initials = orgInitials(nom)

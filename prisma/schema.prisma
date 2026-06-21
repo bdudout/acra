@@ -101,6 +101,8 @@ model Organization {
   enfants   Organization[] @relation("OrgArbre")
   // Chemin matérialisé "/<racineId>/…/<id>/" : sous-arbre = orgs dont path startsWith O.path.
   path      String   @default("/")
+  // Logo personnalisé (data URL, optionnel). Absent ⇒ logo auto-généré (cf. lib/org-logo).
+  logo      String?  @db.Text
   actif     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

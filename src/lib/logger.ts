@@ -99,6 +99,7 @@ export type AuditAction =
   | 'SOCLE_TOGGLED'
   | 'ORGANIZATION_CONFIG_UPDATED'
   | 'ORG_CREATED'
+  | 'ORG_UPDATED'
   | 'ORG_MEMBER_ADDED'
   | 'ORG_MEMBER_REMOVED'
 

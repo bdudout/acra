@@ -12,6 +12,7 @@ import { Building2, Plus, X, Users } from 'lucide-react'
 
 interface OrgRow {
   id: string; nom: string; slug: string; parentId: string | null; path: string; actif: boolean
+  logo?: string | null
   _count: { membres: number; analyses: number }
 }
 interface Member {
@@ -112,6 +113,39 @@ export default function OrganizationsAdminPage() {
     if (res.ok) { await loadMembers(selected); await loadOrgs() }
   }
 
+  // Logo : redimensionne l'image choisie en 64×64 (data URL) puis l'enregistre.
+  function resizeImage(file: File, size: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = size; canvas.height = size
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return reject(new Error('no ctx'))
+        const scale = Math.max(size / img.width, size / img.height)
+        const w = img.width * scale, h = img.height * scale
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
+  }
+  async function setLogo(logo: string | null) {
+    if (!selected) return
+    const res = await fetch(`/api/admin/organizations/${selected}`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ logo }),
+    })
+    if (res.ok) await loadOrgs()
+    else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+  }
+  async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) { try { await setLogo(await resizeImage(f, 64)) } catch { /* ignore */ } }
+    e.target.value = ''
+  }
+
   const depth = (org: OrgRow) => Math.max(0, org.path.split('/').filter(Boolean).length - 1)
   const selectedOrg = orgs.find(x => x.id === selected) ?? null
 
@@ -145,7 +179,7 @@ export default function OrganizationsAdminPage() {
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${selected === org.id ? 'bg-ebios-50 text-ebios-700' : 'hover:bg-gray-50 text-gray-700'}`}
                     >
                       <span className="flex min-w-0 items-center gap-2 font-medium">
-                        <OrgLogo id={org.id} nom={org.nom} size={20} className="shrink-0 rounded" />
+                        <OrgLogo id={org.id} nom={org.nom} logo={org.logo} size={20} className="shrink-0 rounded" />
                         <span className="truncate">{org.nom}</span>
                         {!org.parentId && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}
                       </span>
@@ -184,6 +218,19 @@ export default function OrganizationsAdminPage() {
               <p className="text-sm text-gray-400">{o.selectHint}</p>
             ) : (
               <>
+                {/* Logo de l'organisation : auto-généré, remplaçable par un logo personnalisé. */}
+                <div className="mb-4 flex items-center gap-3 border-b border-gray-100 pb-3">
+                  <OrgLogo id={selectedOrg.id} nom={selectedOrg.nom} logo={selectedOrg.logo} size={40} className="rounded-md" />
+                  <div className="flex flex-col gap-1">
+                    <label className="cursor-pointer text-xs font-medium text-ebios-700 hover:underline">
+                      {o.logoChange}
+                      <input type="file" accept="image/*" onChange={onLogoFile} className="hidden" />
+                    </label>
+                    {selectedOrg.logo && (
+                      <button onClick={() => setLogo(null)} className="text-left text-xs text-gray-400 hover:text-red-600">{o.logoReset}</button>
+                    )}
+                  </div>
+                </div>
                 <ul className="mb-4 space-y-1">
                   {members.map(m => (
                     <li key={m.id} className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-gray-50">
