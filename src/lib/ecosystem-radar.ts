@@ -95,7 +95,7 @@ const TYPE_ORDER = [
 ]
 
 /** Fraction du secteur sur laquelle les PP d'une même catégorie sont étalées. */
-const SECTOR_SPREAD = 0.35
+const SECTOR_SPREAD = 0.46
 
 // Empreinte approximative d'un point pour l'anti-chevauchement des PP connexes :
 // cercle (rayon max) + libellé texte à droite. Aligné sur EXPO_RADIUS du composant.
@@ -207,11 +207,52 @@ export function presentTypes(parties: Array<{ type?: string }>): string[] {
   })
 }
 
+/** Secteur angulaire d'une catégorie sur le radar. */
+export interface SectorSpan {
+  type: string
+  /** Angle du bord initial (sens horaire, depuis le haut) — pour les séparateurs. */
+  startDeg: number
+  /** Largeur angulaire (proportionnelle au nombre de PP de la catégorie). */
+  widthDeg: number
+  /** Angle central — pour positionner le libellé de catégorie. */
+  centerDeg: number
+}
+
+// Largeur angulaire minimale d'un secteur (assez pour son libellé), bornée à 360/n.
+const SECTOR_MIN_DEG = 34
+
+/**
+ * Découpe le cercle en secteurs dont la largeur est PROPORTIONNELLE au nombre de
+ * parties prenantes de chaque catégorie (avec un minimum pour rester lisible),
+ * le premier secteur étant centré en haut (12 h). Évite l'entassement des
+ * catégories denses (ex. beaucoup de prestataires).
+ */
+export function sectorSpans(parties: Array<{ type?: string }>): SectorSpan[] {
+  const types = presentTypes(parties)
+  const n = types.length
+  if (n === 0) return []
+  const counts = types.map(ty => parties.filter(p => (p.type || 'AUTRE') === ty).length || 1)
+  const total = counts.reduce((a, b) => a + b, 0)
+  const minDeg = Math.min(SECTOR_MIN_DEG, 360 / n)
+  const remaining = 360 - minDeg * n
+  const widths = counts.map(c => minDeg + remaining * (c / total))
+  // Décalage global : centrer le 1er secteur en haut (0°).
+  const offset = -widths[0] / 2
+  const spans: SectorSpan[] = []
+  let cum = 0
+  for (let i = 0; i < n; i++) {
+    const startDeg = offset + cum
+    spans.push({ type: types[i], startDeg, widthDeg: widths[i], centerDeg: startDeg + widths[i] / 2 })
+    cum += widths[i]
+  }
+  return spans
+}
+
 /**
  * Calcule la position de chaque PP sur le radar.
  *  - rayon ← menace (centre = max)
- *  - angle ← secteur de la catégorie ; les PP d'une même catégorie sont étalées
- *    angulairement (jitter déterministe) pour éviter le chevauchement.
+ *  - angle ← secteur (proportionnel) de la catégorie ; les PP d'une même catégorie
+ *    sont étalées angulairement (jitter déterministe) pour éviter le chevauchement.
  */
 /** Référence courte stable d'une partie prenante par son rang : T1, T2, … */
 export function stakeholderRef(index: number): string {
@@ -249,18 +290,47 @@ function candidateOffsets(): [number, number][] {
  * points de rang 1 (cartographie primaire, testée) restent fixes. Le lien
  * pointillé vers la parente suit la position finale (relation préservée).
  */
-export function deOverlapConnexe(points: RadarPoint[], geom: RadarGeometry): void {
-  const movers = points.filter(p => p.rang >= 2)
-  if (!movers.length) return
-  // Boîtes à éviter : tous les points fixes (rang 1) + les connexes déjà placés.
-  const placed: RadarPoint[] = points.filter(p => p.rang <= 1)
-  const offsets = candidateOffsets()
-  for (const c of movers) {
+// Positions candidates pour un point de RANG 1 : rotations autour du centre à
+// rayon ~constant (préserve la menace = le rayon), bornées au demi-secteur ; en
+// dernier recours, léger décalage radial dans la même zone.
+function angularCandidates(p: RadarPoint, geom: RadarGeometry, maxRotDeg: number): [number, number][] {
+  const dx = p.x - geom.cx, dy = p.y - geom.cy
+  const r = Math.hypot(dx, dy)
+  const a0 = Math.atan2(dy, dx)
+  const out: [number, number][] = [[p.x, p.y]]
+  const maxRot = Math.max(0, maxRotDeg)
+  for (let step = 4; step <= maxRot; step += 4) {
+    const da = (step * Math.PI) / 180
+    out.push([geom.cx + r * Math.cos(a0 + da), geom.cy + r * Math.sin(a0 + da)])
+    out.push([geom.cx + r * Math.cos(a0 - da), geom.cy + r * Math.sin(a0 - da)])
+  }
+  // Repli radial léger (les points proches du centre tournent peu en absolu).
+  for (const dr of [10, 20, -10, 30]) {
+    const nr = r + dr
+    if (nr > 6) out.push([geom.cx + nr * Math.cos(a0), geom.cy + nr * Math.sin(a0)])
+  }
+  return out
+}
+
+/**
+ * Dé-collision des points : déplace ceux qui se recouvrent (point OU libellé).
+ * Ordre : rang croissant puis menace décroissante (les plus centraux d'abord).
+ *  - RANG 1 : rotation à rayon ~constant dans son secteur (préserve la menace).
+ *  - RANG ≥ 2 (PP connexes) : déplacement libre en spirale.
+ * Le lien pointillé vers la parente suit la position finale (relation préservée).
+ */
+export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: SectorSpan[]): void {
+  if (points.length < 2) return
+  const halfWidth = new Map(spans.map(s => [s.type, s.widthDeg / 2]))
+  const order = [...points].sort((a, b) => a.rang - b.rang || b.menace - a.menace)
+  const placed: RadarPoint[] = []
+  for (const c of order) {
+    const cands: [number, number][] = c.rang >= 2
+      ? candidateOffsets().map(([dx, dy]) => [c.x + dx, c.y + dy] as [number, number])
+      : angularCandidates(c, geom, halfWidth.get(c.type) ?? 30)
     let best: [number, number] | null = null
     let bestCollisions = Infinity
-    for (const [dx, dy] of offsets) {
-      const nx = c.x + dx, ny = c.y + dy
-      // Ne pas sortir du disque du radar.
+    for (const [nx, ny] of cands) {
       if (Math.hypot(nx - geom.cx, ny - geom.cy) > geom.rMax) continue
       const box = footprintAt(c, nx, ny)
       const collisions = placed.reduce((acc, q) => acc + (boxesOverlap(box, footprintAt(q, q.x, q.y)) ? 1 : 0), 0)
@@ -284,9 +354,9 @@ export function layoutStakeholders(
   // Borne de clamp des composites = menace max (= exposition max d'une fiabilité de 1).
   const maxComposite = menaceMax
 
-  const types = presentTypes(parties)
-  const n = types.length
-  const sectorWidth = 360 / n
+  // Secteurs proportionnels au nombre de PP de chaque catégorie.
+  const spans = sectorSpans(parties)
+  const spanByType = new Map(spans.map(s => [s.type, s]))
 
   // Index des PP au sein de leur secteur (pour le jitter).
   const perType = new Map<string, StakeholderInput[]>()
@@ -299,19 +369,18 @@ export function layoutStakeholders(
   const points: RadarPoint[] = []
   parties.forEach((p, originalIdx) => {
     const ty = p.type || 'AUTRE'
-    const sectorIndex = types.indexOf(ty)
-    const sectorCenter = sectorIndex * sectorWidth
+    const span = spanByType.get(ty)!
 
     const group = perType.get(ty)!
     const k = group.length
     const posInGroup = group.indexOf(p)
 
     // Étalement symétrique autour du centre du secteur : une seule PP → centre exact.
-    let angleDeg = sectorCenter
+    let angleDeg = span.centerDeg
     if (k > 1) {
-      const halfSpread = sectorWidth * SECTOR_SPREAD
+      const halfSpread = span.widthDeg * SECTOR_SPREAD
       const ratio = posInGroup / (k - 1) // 0..1
-      angleDeg = sectorCenter - halfSpread + ratio * (2 * halfSpread)
+      angleDeg = span.centerDeg - halfSpread + ratio * (2 * halfSpread)
     }
 
     const m = menace(p.exposition ?? 1, p.fiabilite ?? 1, maxComposite)
@@ -345,7 +414,8 @@ export function layoutStakeholders(
       y,
     })
   })
-  // Écarte les PP connexes (rang ≥ 2) des points/libellés existants (no-op si aucune).
-  deOverlapConnexe(points, geom)
+  // Écarte les points qui se recouvrent (rang 1 : rotation à rayon ~constant pour
+  // préserver la menace ; rang ≥ 2 : déplacement libre).
+  deOverlap(points, geom, spans)
   return points
 }

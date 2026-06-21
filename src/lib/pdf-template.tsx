@@ -40,7 +40,7 @@ import {
   layoutStakeholders,
   stakeholderRef,
   zoneRadii,
-  presentTypes,
+  sectorSpans,
   polarToXY,
   menace,
   zoneOf,
@@ -691,15 +691,27 @@ function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; with
   }))
   const pts = layoutStakeholders(input, geom)
   const rings = zoneRadii(R)
-  const types = presentTypes(rang1)
-  const sectorW = 360 / Math.max(1, types.length)
+  // Secteurs proportionnels au nombre de PP (alignés sur le radar HTML).
+  const spans = sectorSpans(rang1)
   const counts: Record<EcosystemZone, number> = {
     danger:   pts.filter(p => p.zone === 'danger').length,
     controle: pts.filter(p => p.zone === 'controle').length,
     veille:   pts.filter(p => p.zone === 'veille').length,
   }
-  const short = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
   const sectorLabel = (ty: string) => (TYPE_LABELS_FR[ty] || ty)
+  const short = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
+  // Libellé de secteur sur 2 lignes (mots équilibrés) si trop long.
+  const wrapLbl = (s: string): string[] => {
+    if (s.length <= 16) return [s]
+    const w = s.split(' ')
+    if (w.length === 1) return [s]
+    let cut = 1, best = Infinity
+    for (let i = 1; i < w.length; i++) {
+      const d = Math.abs(w.slice(0, i).join(' ').length - w.slice(i).join(' ').length)
+      if (d < best) { best = d; cut = i }
+    }
+    return [w.slice(0, cut).join(' '), w.slice(cut).join(' ')]
+  }
 
   return (
     <View style={{ alignItems: 'center', marginBottom: 8 }}>
@@ -709,23 +721,28 @@ function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; with
         <Circle cx={CXr} cy={CYr} r={rings.rim}      fill={C.green}  fillOpacity={0.10} stroke={C.green}  strokeOpacity={0.30} />
         <Circle cx={CXr} cy={CYr} r={rings.controle} fill={C.yellow} fillOpacity={0.16} stroke={C.yellow} strokeOpacity={0.40} />
         <Circle cx={CXr} cy={CYr} r={rings.danger}   fill={C.orange} fillOpacity={0.18} stroke={C.orange} strokeOpacity={0.45} />
-        {types.length > 1 && (
+        {spans.length > 1 && (
           <G>
-            {types.map((ty, i) => {
-              const [bx, by] = polarToXY(R, (i - 0.5) * sectorW, CXr, CYr)
-              return <Line key={ty} x1={CXr} y1={CYr} x2={bx} y2={by} stroke={C.gray500} strokeOpacity={0.25} strokeWidth={0.5} />
+            {spans.map((s) => {
+              const [bx, by] = polarToXY(R, s.startDeg, CXr, CYr)
+              return <Line key={s.type} x1={CXr} y1={CYr} x2={bx} y2={by} stroke={C.gray500} strokeOpacity={0.25} strokeWidth={0.5} />
             })}
           </G>
         )}
-        {/* Libellés de catégorie (secteurs) au bord — alignés sur le radar HTML */}
-        {types.map((ty, i) => {
-          const [lx, ly] = polarToXY(R + 8, i * sectorW, CXr, CYr)
+        {/* Libellés de catégorie (centre du secteur, sur 2 lignes si besoin) — alignés sur le radar HTML */}
+        {spans.map((s) => {
+          const [lx, ly] = polarToXY(R + 8, s.centerDeg, CXr, CYr)
+          const lines = wrapLbl(sectorLabel(s.type))
+          const anchor = Math.abs(lx - CXr) < 6 ? 'middle' : lx < CXr ? 'end' : 'start'
           return (
-            <Text key={`s-${ty}`} x={lx} y={ly} fill={C.gray500}
-              textAnchor={Math.abs(lx - CXr) < 6 ? 'middle' : lx < CXr ? 'end' : 'start'}
-              style={{ fontSize: 6 }}>
-              {short(sectorLabel(ty))}
-            </Text>
+            <G key={`s-${s.type}`}>
+              {lines.map((ln, j) => (
+                <Text key={j} x={lx} y={ly - (lines.length - 1) * 3.5 + j * 7} fill={C.gray500}
+                  textAnchor={anchor} style={{ fontSize: 6 }}>
+                  {ln}
+                </Text>
+              ))}
+            </G>
           )
         })}
         {pts.map(p => {

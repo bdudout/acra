@@ -14,7 +14,7 @@ import { useState, useRef } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import {
   layoutStakeholders,
-  presentTypes,
+  sectorSpans,
   zoneRadii,
   polarToXY,
   fiabiliteLevel,
@@ -135,13 +135,23 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const shownParties = showRanks ? parties : parties.filter(p => (p.rang ?? 1) <= 1)
   const points = layoutStakeholders(shownParties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax })
   const byCle = new Map(points.filter(p => p.cle).map(p => [p.cle, p]))
-  const types = presentTypes(shownParties)
+  // Secteurs proportionnels au nombre de PP de chaque catégorie.
+  const spans = sectorSpans(shownParties)
   const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
-  const n = types.length
-  const sectorWidth = 360 / n
+  const n = spans.length
   const typeLabel = (ty: string) => ppTypes[ty] ?? ty
-  // Libellé de secteur tronqué pour ne pas déborder du SVG (nom complet en <title>).
-  const shortLabel = (s: string) => (s.length > 14 ? s.slice(0, 13) + '…' : s)
+  // Libellé de secteur : sur 2 lignes (mots équilibrés) au lieu d'être tronqué.
+  const wrapLabel = (s: string): string[] => {
+    if (s.length <= 14) return [s]
+    const words = s.split(' ')
+    if (words.length === 1) return [s]
+    let cut = 1, bestDiff = Infinity
+    for (let i = 1; i < words.length; i++) {
+      const d = Math.abs(words.slice(0, i).join(' ').length - words.slice(i).join(' ').length)
+      if (d < bestDiff) { bestDiff = d; cut = i }
+    }
+    return [words.slice(0, cut).join(' '), words.slice(cut).join(' ')]
+  }
   const editable = !!onEditShortName
   // Libellé d'un point : nom court (≤12) si défini, sinon réf T1, T2…
   const pointLabel = (p: RadarPoint) => (p.nomCourt || (showRefs ? p.ref : ''))
@@ -197,22 +207,24 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               strokeOpacity={0.85} strokeWidth={1.3} strokeDasharray="4 2" />
           })}
 
-          {/* Séparateurs de secteurs + libellés de catégorie au bord */}
-          {types.map((ty, i) => {
-            const boundary = (i - 0.5) * sectorWidth
-            const [bx, by] = polarToXY(R_MAX, boundary, CX, CY)
-            const [lx, ly] = polarToXY(R_MAX + 20, i * sectorWidth, CX, CY)
+          {/* Séparateurs de secteurs (au bord initial) + libellés de catégorie (au centre,
+              sur 2 lignes si nécessaire). Secteurs proportionnels au nombre de PP. */}
+          {spans.map((s) => {
+            const [bx, by] = polarToXY(R_MAX, s.startDeg, CX, CY)
+            const [lx, ly] = polarToXY(R_MAX + 20, s.centerDeg, CX, CY)
             const anchor = Math.abs(lx - CX) < 8 ? 'middle' : lx < CX ? 'end' : 'start'
+            const lines = wrapLabel(typeLabel(s.type))
+            const y0 = ly - (lines.length - 1) * 6
             return (
-              <g key={ty}>
+              <g key={s.type}>
                 {n > 1 && (
                   <line x1={CX} y1={CY} x2={bx} y2={by}
                     stroke="#6b7280" strokeOpacity={0.6} strokeWidth={1.3} strokeDasharray="5 3" />
                 )}
-                <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle"
+                <text x={lx} y={y0} textAnchor={anchor} dominantBaseline="middle"
                   className="fill-gray-500 dark:fill-gray-400" fontSize={10.5}>
-                  {shortLabel(typeLabel(ty))}
-                  <title>{typeLabel(ty)}</title>
+                  {lines.map((ln, j) => <tspan key={j} x={lx} dy={j === 0 ? 0 : 12}>{ln}</tspan>)}
+                  <title>{typeLabel(s.type)}</title>
                 </text>
               </g>
             )

@@ -9,6 +9,7 @@ import {
   expositionLevel,
   polarToXY,
   presentTypes,
+  sectorSpans,
   layoutStakeholders,
   stakeholderRef,
   MENACE_MIN,
@@ -160,6 +161,32 @@ describe('presentTypes — ordre canonique stable', () => {
   })
 })
 
+describe('sectorSpans — largeur proportionnelle au nombre de PP', () => {
+  it('donne un secteur plus large à la catégorie la plus peuplée', () => {
+    const parties = [
+      ...Array.from({ length: 8 }, (_, i) => ({ type: 'PRESTATAIRE', id: 'p' + i })),
+      { type: 'FOURNISSEUR' }, { type: 'CLIENT' },
+    ]
+    const spans = sectorSpans(parties)
+    const w = (t: string) => spans.find(s => s.type === t)!.widthDeg
+    expect(w('PRESTATAIRE')).toBeGreaterThan(w('FOURNISSEUR'))
+    expect(w('PRESTATAIRE')).toBeGreaterThan(w('CLIENT'))
+    // Les largeurs couvrent 360°.
+    expect(spans.reduce((a, s) => a + s.widthDeg, 0)).toBeCloseTo(360, 5)
+  })
+
+  it('centre le premier secteur en haut (0°) et respecte un minimum par secteur', () => {
+    const parties = [
+      ...Array.from({ length: 10 }, () => ({ type: 'PRESTATAIRE' })),
+      { type: 'FOURNISSEUR' },
+    ]
+    const spans = sectorSpans(parties)
+    expect(spans[0].centerDeg).toBeCloseTo(0, 5)
+    // Même une catégorie à 1 PP garde une largeur minimale lisible.
+    expect(spans.find(s => s.type === 'FOURNISSEUR')!.widthDeg).toBeGreaterThanOrEqual(20)
+  })
+})
+
 describe('layoutStakeholders', () => {
   const geom = { cx: 200, cy: 200, rMax: 180 }
 
@@ -254,15 +281,29 @@ describe('layoutStakeholders', () => {
     expect(d).toBeGreaterThan(16) // déplacée d'au moins un cran (ne se recouvrent plus)
   })
 
-  it('ne déplace pas les points de rang 1 (cartographie primaire fixe)', () => {
+  it('dé-collisionne aussi deux points de rang 1 de même menace, de façon déterministe', () => {
     const parties = [
       { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
       { id: 'b', nom: 'B', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
     ]
     const before = layoutStakeholders(parties, geom)
-    // Mêmes entrées (sans rang 2) → positions stables et déterministes.
     const after = layoutStakeholders(parties, geom)
+    // Déterministe : deux calculs identiques donnent les mêmes positions.
     expect(after.map(p => [p.x, p.y])).toEqual(before.map(p => [p.x, p.y]))
+    // … et les deux points ne sont plus confondus.
+    const [a, b] = before
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(16)
+  })
+
+  it('préserve approximativement le rayon (menace) lors de la dé-collision de rang 1', () => {
+    const parties = [
+      { id: 'a', nom: 'A', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
+      { id: 'b', nom: 'B', type: 'PRESTATAIRE', exposition: 9, fiabilite: 4 },
+    ]
+    const pts = layoutStakeholders(parties, geom)
+    const r = (p: { x: number; y: number }) => Math.hypot(p.x - geom.cx, p.y - geom.cy)
+    // Rotation à rayon constant ⇒ rayons quasi identiques (tolérance pour le repli radial).
+    expect(Math.abs(r(pts[0]) - r(pts[1]))).toBeLessThan(12)
   })
 
   it('attribue une référence T1, T2, … selon l\'ordre des parties prenantes', () => {
