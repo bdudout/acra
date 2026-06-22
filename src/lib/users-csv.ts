@@ -28,7 +28,12 @@ const ROLE_ALIASES: Record<string, UserRole> = {
   'rssi': 'RSSI', 'ciso': 'RSSI',
   'admin': 'ADMIN', 'administrateur': 'ADMIN', 'administrator': 'ADMIN',
 }
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Regex linéaire (anti-ReDoS) : chaque classe exclut son délimiteur (@ et .) pour
+// éviter tout retour-arrière polynomial (js/polynomial-redos). Domaine = labels
+// séparés par des points, sans ambiguïté entre le quantificateur et le « . ».
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/
+// Longueur maximale d'une adresse e-mail (RFC 5321) — garde-fou défensif amont.
+const EMAIL_MAX_LEN = 254
 
 function normalizeRole(raw: string): UserRole {
   const trimmed = raw.trim()
@@ -66,7 +71,7 @@ export function parseUsersCsv(csv: string): ParsedUserRow[] {
 
     let valid = true
     let error: ParsedUserRow['error']
-    if (!EMAIL_RE.test(email)) { valid = false; error = 'email_invalid' }
+    if (email.length > EMAIL_MAX_LEN || !EMAIL_RE.test(email)) { valid = false; error = 'email_invalid' }
     else if (seen.has(email)) { valid = false; error = 'duplicate' }
     else seen.add(email)
 

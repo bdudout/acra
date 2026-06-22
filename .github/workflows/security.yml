@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Principe de moindre privilège du GITHUB_TOKEN (actions/missing-workflow-permissions) :
+# tous les jobs sont en lecture seule (checkout + npm). Aucun n'écrit dans le dépôt ;
+# l'upload d'artefact n'exige pas de permission supplémentaire.
+permissions:
+  contents: read
+
 jobs:
   # ── Audit des dépendances (OWASP A06) ──────────────────────────────────────
   npm-audit:

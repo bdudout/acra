@@ -13,13 +13,16 @@
 
 import { PrismaClient, UserRole } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
 
 const prisma = new PrismaClient()
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Identifiant de seed aléatoire cryptographiquement sûr (évite js/insecure-randomness ;
+// Math.random() n'est pas adapté à la génération d'identifiants).
 function id() {
-  return Math.random().toString(36).slice(2, 11)
+  return randomBytes(8).toString('hex')
 }
 
 // ─── Configuration par défaut (échelles 4 niveaux) ────────────────────────────
