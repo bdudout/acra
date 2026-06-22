@@ -393,37 +393,61 @@ export function layoutStakeholders(
   const spans = sectorSpans(spanParties ?? parties)
   const spanByType = new Map(spans.map(s => [s.type, s]))
 
-  // Index des PP au sein de leur secteur (pour le jitter).
-  const perType = new Map<string, StakeholderInput[]>()
-  for (const p of parties) {
+  // Menace + rayon de chaque PP (le rayon encode la menace : centre = max).
+  const menaces = parties.map(p => menace(p.exposition ?? 1, p.fiabilite ?? 1, maxComposite))
+  const radii = menaces.map(m => radiusFor(m, geom.rMax, menaceMin, menaceMax))
+
+  // Regroupement des liens de sous-traitance : on n'étale angulairement que les PP
+  // « ancres » (celles sans parente présente dans le jeu) ; chaque PP connexe se greffe
+  // sur l'angle de SA parente → traits de sous-traitance COURTS plutôt qu'éparpillés.
+  const cleToIdx = new Map<string, number>()
+  parties.forEach((p, i) => { if (p.cle) cleToIdx.set(String(p.cle), i) })
+  const hasParentIn = (p: StakeholderInput) => !!(p.parentCle && cleToIdx.has(String(p.parentCle)))
+  const anchorsByType = new Map<string, number[]>()
+  parties.forEach((p, i) => {
+    if (hasParentIn(p)) return
     const ty = p.type || 'AUTRE'
-    if (!perType.has(ty)) perType.set(ty, [])
-    perType.get(ty)!.push(p)
+    if (!anchorsByType.has(ty)) anchorsByType.set(ty, [])
+    anchorsByType.get(ty)!.push(i)
+  })
+
+  // Angles assignés en traitant les parentes AVANT les connexes (ancres d'abord, puis
+  // par rang croissant) pour que chaque connexe puisse hériter de l'angle de sa parente.
+  const angleByIdx = new Array<number>(parties.length)
+  const angleByCle = new Map<string, number>()
+  const sortKey = (i: number) => (hasParentIn(parties[i]) ? (parties[i].rang ?? 2) : 0)
+  const orderIdx = parties.map((_, i) => i).sort((a, b) => sortKey(a) - sortKey(b))
+  for (const i of orderIdx) {
+    const p = parties[i]
+    const ty = p.type || 'AUTRE'
+    const span = spanByType.get(ty)!
+    const r = radii[i]
+    let angleDeg = span.centerDeg
+    if (hasParentIn(p)) {
+      // Connexe : se cale sur l'angle de sa parente, borné à la marge sûre du secteur.
+      const pa = angleByCle.get(String(p.parentCle))
+      const hs = usableHalfAngle(r, span.widthDeg)
+      angleDeg = clamp(pa ?? span.centerDeg, span.centerDeg - hs, span.centerDeg + hs)
+    } else {
+      // Ancre : étalement symétrique autour du centre du secteur (parmi les ancres).
+      const anchors = anchorsByType.get(ty)!
+      const k = anchors.length
+      const pos = anchors.indexOf(i)
+      if (k > 1) {
+        const halfSpread = usableHalfAngle(r, span.widthDeg)
+        angleDeg = span.centerDeg - halfSpread + (pos / (k - 1)) * (2 * halfSpread)
+      }
+    }
+    angleByIdx[i] = angleDeg
+    if (p.cle) angleByCle.set(String(p.cle), angleDeg)
   }
 
   const points: RadarPoint[] = []
   parties.forEach((p, originalIdx) => {
     const ty = p.type || 'AUTRE'
-    const span = spanByType.get(ty)!
-
-    const group = perType.get(ty)!
-    const k = group.length
-    const posInGroup = group.indexOf(p)
-
-    const m = menace(p.exposition ?? 1, p.fiabilite ?? 1, maxComposite)
-    const r = radiusFor(m, geom.rMax, menaceMin, menaceMax)
-
-    // Étalement symétrique autour du centre du secteur : une seule PP → centre exact.
-    // L'étalement est borné par la marge « sûre » (fonction du diamètre du point et
-    // de sa distance au centre) pour ne pas recouvrir les séparateurs de catégories.
-    let angleDeg = span.centerDeg
-    if (k > 1) {
-      const halfSpread = usableHalfAngle(r, span.widthDeg)
-      const ratio = posInGroup / (k - 1) // 0..1
-      angleDeg = span.centerDeg - halfSpread + ratio * (2 * halfSpread)
-    }
-
-    const [x, y] = polarToXY(r, angleDeg, geom.cx, geom.cy)
+    const m = menaces[originalIdx]
+    const angleDeg = angleByIdx[originalIdx]
+    const [x, y] = polarToXY(radii[originalIdx], angleDeg, geom.cx, geom.cy)
     const zone = zoneOf(m)
     const critique = !!p.critique
 

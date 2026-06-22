@@ -142,6 +142,11 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   // Secteurs calculés sur TOUTES les PP (rangs 2/3 inclus) → stables au basculement.
   const points = layoutStakeholders(shownParties, geom, { menaceMin: bornes.menaceMin, menaceMax: bornes.menaceMax }, parties)
   const byCle = new Map(points.filter(p => p.cle).map(p => [p.cle, p]))
+  // Clés des PP qui ONT au moins un sous-traitant (parente d'un lien) → le numéro de
+  // rang n'est utile que sur la chaîne de sous-traitance (parente OU connexe), pas sur
+  // les tiers isolés sans sous-traitant.
+  const parentCles = new Set(points.filter(p => p.parentCle && byCle.has(p.parentCle)).map(p => p.parentCle))
+  const inChain = (p: RadarPoint) => (!!p.parentCle && byCle.has(p.parentCle)) || (!!p.cle && parentCles.has(p.cle))
   const spans = sectorSpans(parties)
   const rings = zoneRadii(R_MAX, bornes.menaceMin, bornes.menaceMax)
   const n = spans.length
@@ -283,12 +288,14 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                   stroke="#ffffff" strokeWidth={1.5}
                   className="transition-all"
                 />
-                {/* Numéro de profondeur de sous-traitance (rang 1/2/3) sur le point,
-                    visible seulement quand l'affichage des rangs 2/3 est activé. */}
-                {showRanks && (
+                {/* Numéro de profondeur de sous-traitance (rang 1/2/3), CENTRÉ sur le point.
+                    Affiché seulement quand les rangs 2/3 sont activés ET que le tiers
+                    appartient à une chaîne de sous-traitance (parente ou connexe) — inutile
+                    sur les tiers isolés sans sous-traitant. */}
+                {showRanks && inChain(p) && (
                   <g style={{ pointerEvents: 'none' }}>
-                    <circle cx={p.x + baseR * 0.72} cy={p.y - baseR * 0.72} r={5.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1} />
-                    <text x={p.x + baseR * 0.72} y={p.y - baseR * 0.72 + 2.5} textAnchor="middle" fontSize={7.5} fontWeight={700} fill="#ffffff">{p.rang}</text>
+                    <circle cx={p.x} cy={p.y} r={5.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1} />
+                    <text x={p.x} y={p.y + 2.5} textAnchor="middle" fontSize={7.5} fontWeight={700} fill="#ffffff">{p.rang}</text>
                   </g>
                 )}
                 {isEditing ? (
