@@ -48,15 +48,20 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.4.20",
-    "esbuild": "^0.27.7",
+    "esbuild": "^0.28.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.2.7",
     "jsdom": "^25.0.1",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.10",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.22.4",
     "typescript": "^5.7.3",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "postcss": "^8.5.10",
+    "esbuild": "^0.28.1"
   }
 }

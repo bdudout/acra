@@ -25,11 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: npm audit — bloquer high/critical (dépendances de production)
+      - name: npm audit — bloquer moderate+ (dépendances de production)
         # On audite uniquement les dépendances de production (ce qui est réellement
-        # déployé). Les advisories high de la chaîne de build (esbuild/vite/vitest,
+        # déployé). Les advisories de la chaîne de build (esbuild/vite/vitest,
         # devDependencies) ne sont pas expédiées et n'exposent pas l'app en production.
-        run: npm audit --omit=dev --audit-level=high
+        # Seuil « moderate » : l'arbre de prod est tenu à 0 advisory (cf. overrides
+        # uuid/postcss dans package.json) — toute régression moderate+ doit être traitée.
+        run: npm audit --omit=dev --audit-level=moderate
         continue-on-error: false
 
       - name: npm audit report (JSON)
