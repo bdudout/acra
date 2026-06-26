@@ -31,7 +31,7 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
-import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
+import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
 
@@ -149,6 +149,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
+  // Référentiels recommandés selon le secteur (suggestion non bloquante)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur)
 
   // Contrôles custom (si référentiel CUSTOM) — stockés dans Cadrage.customControles
   const [customControles, setCustomControles] = useState<FrameworkControl[]>(
@@ -794,21 +796,32 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           <div className="card p-5">
             <h3 className="font-semibold text-gray-800 mb-1">{t.workshop.a1.referentielMesTitle}</h3>
             <p className="text-xs text-gray-500 mb-3">{t.workshop.a1.referentielMesDesc}</p>
+            {analyse?.secteur && recommendedFw.length > 0 && (
+              <p className="text-xs text-indigo-700 mb-3">
+                ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {FRAMEWORK_IDS.map(fid => {
                 const m = FRAMEWORK_META[fid]
                 const selected = referentielMesures === fid
+                const isReco = recommendedFw.includes(fid)
                 return (
                   <button
                     key={fid}
                     type="button"
                     onClick={() => setReferentielMesures(fid)}
-                    className={`text-left p-3 rounded-xl border-2 transition-all ${
+                    className={`relative text-left p-3 rounded-xl border-2 transition-all ${
                       selected
                         ? 'border-indigo-500 bg-indigo-50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                        : isReco
+                          ? 'border-indigo-200 hover:border-indigo-300 bg-white'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
+                    {isReco && !selected && (
+                      <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold text-indigo-700" title={t.workshop.a1.recommendedBadge}>⭐</span>
+                    )}
                     <div className="text-lg mb-0.5">{m.icon}</div>
                     <div className={`text-xs font-semibold leading-tight ${selected ? 'text-indigo-800' : 'text-gray-800'}`}>
                       {m.nom}

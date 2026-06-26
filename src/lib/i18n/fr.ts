@@ -1072,6 +1072,7 @@ export const fr = {
       socleInfoText:  "🔒 Socle de sécurité : Listez les référentiels et normes que votre organisation applique déjà. Cela permet d'identifier les mesures en place et les écarts à combler.",
       referentielMesTitle: 'Référentiel de mesures de sécurité',
       referentielMesDesc:  "Choisissez le référentiel utilisé pour proposer des mesures dans les Ateliers 3 & 5. Ce choix peut être modifié à tout moment.",
+      recommendedBadge:    'Recommandé pour le secteur',
       customTitle:         '⚙️ Contrôles personnalisés',
       customRefPh:         'Référence (ex : CTL-01)',
       customNamePh:        'Nom du contrôle',
@@ -1749,6 +1750,7 @@ export const fr = {
     links: {
       anssi:     'Guide ANSSI — EBIOS Risk Manager',
       clubEbios: 'Club EBIOS — fiches méthode',
+      mooc: 'MOOC EBIOS RM (SecNumacadémie ANSSI)',
     },
     a1: {
       participants: ['Direction / Métier', 'RSSI', 'DSI / Architectes', 'Risk Manager', 'DPO (si données personnelles)'],

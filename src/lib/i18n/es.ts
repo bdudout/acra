@@ -1050,6 +1050,7 @@ export const es: Translations = {
       socleInfoText:  '🔒 Línea base de seguridad: Lista los marcos y normas que tu organización ya aplica. Esto ayuda a identificar las medidas existentes y las brechas a cubrir.',
       referentielMesTitle:    'Referencial de medidas de seguridad',
       referentielMesDesc:     'Elige el referencial utilizado para proponer medidas en los Talleres 3 y 5. Esta elección puede modificarse en cualquier momento.',
+      recommendedBadge:       'Recomendado para el sector',
       customTitle:            '⚙️ Controles personalizados',
       customRefPh:            'Referencia (p. ej. CTL-01)',
       customNamePh:           'Nombre del control',
@@ -1720,6 +1721,7 @@ export const es: Translations = {
     links: {
       anssi:     'Guía ANSSI — EBIOS Risk Manager',
       clubEbios: 'Club EBIOS — fichas de método',
+      mooc: 'MOOC EBIOS RM (SecNumacadémie, ANSSI)',
     },
     a1: {
       participants: ['Dirección / Negocio', 'CISO', 'Dpto. TI / Arquitectos', 'Risk Manager', 'DPO (si hay datos personales)'],

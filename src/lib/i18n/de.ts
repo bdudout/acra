@@ -1050,6 +1050,7 @@ export const de: Translations = {
       socleInfoText:  '🔒 Sicherheits-Baseline: Listen Sie die Frameworks und Normen auf, die Ihre Organisation bereits anwendet. So lassen sich bestehende Maßnahmen und Lücken identifizieren.',
       referentielMesTitle:    'Referenz für Sicherheitsmaßnahmen',
       referentielMesDesc:     'Wählen Sie das Referenzwerk für Maßnahmenvorschläge in Workshop 3 & 5. Diese Auswahl kann jederzeit geändert werden.',
+      recommendedBadge:       'Für die Branche empfohlen',
       customTitle:            '⚙️ Benutzerdefinierte Kontrollen',
       customRefPh:            'Referenz (z. B. CTL-01)',
       customNamePh:           'Name der Kontrolle',
@@ -1720,6 +1721,7 @@ export const de: Translations = {
     links: {
       anssi:     'ANSSI-Leitfaden — EBIOS Risk Manager',
       clubEbios: 'Club EBIOS — Methodenblätter',
+      mooc: 'EBIOS-RM-MOOC (SecNumacadémie, ANSSI)',
     },
     a1: {
       participants: ['Leitung / Fachbereich', 'CISO', 'IT-Abteilung / Architekten', 'Risk Manager', 'DSB (bei personenbezogenen Daten)'],

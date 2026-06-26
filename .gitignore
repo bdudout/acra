@@ -44,3 +44,6 @@ Thumbs.db
 .vscode/settings.json
 .vscode/launch.json
 .pdf-runtime/
+
+# ── ACRA test memory — NEVER COMMIT ───────────────────────────────────────────
+.acra-test-memory/

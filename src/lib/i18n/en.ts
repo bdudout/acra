@@ -1050,6 +1050,7 @@ export const en: Translations = {
       socleInfoText:  '🔒 Security baseline: List the frameworks and standards your organisation already applies. This helps identify existing measures and gaps to address.',
       referentielMesTitle:    'Security measures referential',
       referentielMesDesc:     'Choose the referential used to suggest measures in Workshops 3 & 5. This choice can be changed at any time.',
+      recommendedBadge:       'Recommended for the sector',
       customTitle:            '⚙️ Custom controls',
       customRefPh:            'Reference (e.g. CTL-01)',
       customNamePh:           'Control name',
@@ -1720,6 +1721,7 @@ export const en: Translations = {
     links: {
       anssi:     'ANSSI guide — EBIOS Risk Manager',
       clubEbios: 'Club EBIOS — method sheets',
+      mooc: 'EBIOS RM MOOC (SecNumacadémie, ANSSI)',
     },
     a1: {
       participants: ['Management / Business', 'CISO', 'IT dept / Architects', 'Risk Manager', 'DPO (if personal data)'],

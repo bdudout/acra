@@ -144,7 +144,7 @@ model Analyse {
   dateEcheance DateTime?
   statut      StatutAnalyse @default(EN_COURS)
   atelierCourant Int @default(1)
-  referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | CUSTOM
+  referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | CUSTOM
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?

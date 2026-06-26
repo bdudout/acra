@@ -11,6 +11,7 @@
  *  • ANSSI Guide d'hygiène v2      (42 mesures)
  *  • HDS (Hébergeur Données Santé) (30 exigences)
  *  • PCI-DSS v4.0                  (12 exigences × contrôles clés)
+ *  • DORA (UE 2022/2554)           (5 piliers — banque/assurance/fintech)
  *  • CUSTOM                        (contrôles définis par l'analyste)
  */
 
@@ -45,7 +46,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -56,6 +57,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   ANSSI_HYG:  { nom: 'ANSSI Guide d\'hygiène', version: 'v2',     icon: '🇫🇷', cible: 'Organisations françaises — ANSSI' },
   HDS:        { nom: 'HDS',                  version: '2024',     icon: '🏥', cible: 'Hébergeurs de données de santé (France)' },
   PCI_DSS:    { nom: 'PCI-DSS',              version: 'v4.0',     icon: '💳', cible: 'Organisations traitant des paiements' },
+  DORA:       { nom: 'DORA',                 version: 'UE 2022/2554', icon: '🏦', cible: 'Banque, assurance, fintech, marchés financiers (UE)' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -540,6 +542,51 @@ export const NIST_800_53_CONTROLES: FrameworkControl[] = [
 // Catalogue central — map par framework ID
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DORA — Digital Operational Resilience Act
+// Source : Règlement (UE) 2022/2554 (applicable depuis le 17 janvier 2025).
+// 5 piliers : gestion du risque ICT, gestion/notification des incidents, tests de
+// résilience, gestion du risque lié aux prestataires ICT (registre d'information),
+// partage d'informations sur les cybermenaces.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const DORA_CATEGORIES: Record<string, FrameworkCategory> = {
+  ICT:  { label: 'Gestion du risque ICT',        icon: '🏛️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  INC:  { label: 'Incidents & notification',     icon: '🚨', color: 'text-orange-700', bg: 'bg-orange-50' },
+  TEST: { label: 'Tests de résilience',          icon: '🔬', color: 'text-red-700',    bg: 'bg-red-50'    },
+  TPP:  { label: 'Risque prestataires ICT',      icon: '🤝', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  INFO: { label: 'Partage d\'informations',      icon: '📡', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+}
+
+export const DORA_CONTROLES: FrameworkControl[] = [
+  // Pilier 1 — Gestion du risque ICT (art. 5-16)
+  { ref:'DORA-ICT-1', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Cadre de gestion du risque ICT approuvé par l\'organe de direction', description:'Un cadre de gestion du risque ICT documenté est défini, approuvé et revu au moins annuellement par l\'organe de direction, qui en porte la responsabilité finale (art. 5).' },
+  { ref:'DORA-ICT-2', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Cartographie des fonctions critiques ou importantes', description:'Les fonctions opérationnelles critiques ou importantes, les actifs ICT qui les supportent et leurs interdépendances sont identifiés et tenus à jour (art. 8).' },
+  { ref:'DORA-ICT-3', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Protection et prévention (sécurité ICT)', description:'Des politiques, procédures et outils assurent la sécurité des moyens ICT : gestion des accès, chiffrement, durcissement, segmentation réseau (art. 9).' },
+  { ref:'DORA-ICT-4', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Détection des activités anormales', description:'Des mécanismes de détection rapide des anomalies et incidents ICT sont en place, avec alertes et seuils définis (art. 10).' },
+  { ref:'DORA-ICT-5', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Politique de continuité d\'activité ICT', description:'Une politique de continuité des activités ICT et des plans de réponse et de rétablissement sont établis, incluant des objectifs RTO/RPO (art. 11).' },
+  { ref:'DORA-ICT-6', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Sauvegardes et restauration éprouvées', description:'Des politiques de sauvegarde et des procédures de restauration sont définies et testées périodiquement, sur des environnements isolés (art. 12).' },
+  { ref:'DORA-ICT-7', type:'HUMAINE',          categorie:'ICT', nom:'Sensibilisation et formation à la résilience numérique', description:'Des programmes de sensibilisation à la sécurité et de formation à la résilience opérationnelle numérique sont déployés, y compris pour l\'organe de direction (art. 13).' },
+
+  // Pilier 2 — Gestion, classification et notification des incidents (art. 17-23)
+  { ref:'DORA-INC-1', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Processus de gestion des incidents liés aux ICT', description:'Un processus de détection, gestion et notification des incidents liés aux ICT est défini, avec rôles, procédures d\'escalade et journalisation (art. 17).' },
+  { ref:'DORA-INC-2', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Classification des incidents et cybermenaces', description:'Les incidents et cybermenaces sont classés selon les critères DORA (clients affectés, durée, perte de données, criticité des services, impact économique) (art. 18).' },
+  { ref:'DORA-INC-3', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Notification des incidents majeurs à l\'autorité compétente', description:'Les incidents majeurs liés aux ICT sont notifiés à l\'autorité compétente selon les délais réglementaires (notification initiale, intermédiaire, finale) (art. 19).' },
+
+  // Pilier 3 — Tests de résilience opérationnelle numérique (art. 24-27)
+  { ref:'DORA-TEST-1', type:'TECHNOLOGIQUE',   categorie:'TEST', nom:'Programme de tests de résilience opérationnelle numérique', description:'Un programme de tests proportionné est établi : analyses de vulnérabilités, tests d\'intrusion, tests de continuité, au moins annuels sur les systèmes critiques (art. 24-25).' },
+  { ref:'DORA-TEST-2', type:'TECHNOLOGIQUE',   categorie:'TEST', nom:'Tests de pénétration fondés sur la menace (TLPT)', description:'Les entités significatives réalisent des tests de pénétration fondés sur la menace (TLPT, type TIBER-EU) au moins tous les 3 ans, couvrant les fonctions critiques (art. 26-27).' },
+
+  // Pilier 4 — Gestion du risque lié aux prestataires tiers ICT (art. 28-44)
+  { ref:'DORA-TPP-1', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Registre d\'information des prestataires ICT', description:'Un registre d\'information recensant tous les accords contractuels avec les prestataires de services ICT est tenu à jour et transmis aux autorités sur demande (art. 28).' },
+  { ref:'DORA-TPP-2', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Évaluation du risque avant contractualisation ICT', description:'Le risque lié à un prestataire ICT (notamment pour les fonctions critiques) est évalué avant la conclusion du contrat, y compris le risque de concentration (art. 28-29).' },
+  { ref:'DORA-TPP-3', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Clauses contractuelles obligatoires ICT', description:'Les contrats ICT incluent les clauses obligatoires DORA : niveaux de service, accès/audit, localisation des données, coopération, stratégie de sortie et réversibilité (art. 30).' },
+  { ref:'DORA-TPP-4', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Stratégie de sortie des prestataires critiques', description:'Une stratégie de sortie et des plans de transition sont définis pour les prestataires ICT supportant des fonctions critiques ou importantes (art. 28).' },
+
+  // Pilier 5 — Partage d'informations (art. 45)
+  { ref:'DORA-INFO-1', type:'ORGANISATIONNELLE', categorie:'INFO', nom:'Accords de partage d\'informations sur les cybermenaces', description:'L\'entité peut adhérer à des dispositifs de partage d\'informations et de renseignements sur les cybermenaces (IoC, TTP) au sein de communautés de confiance (art. 45).' },
+]
+
 export function getFrameworkControles(frameworkId: string, customControles?: any[]): FrameworkControl[] {
   switch (frameworkId) {
     case 'ISO27001': {
@@ -553,6 +600,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'ANSSI_HYG':   return ANSSI_HYG_CONTROLES
     case 'HDS':         return HDS_CONTROLES
     case 'PCI_DSS':     return PCI_DSS_CONTROLES
+    case 'DORA':        return DORA_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -570,7 +618,30 @@ export function getFrameworkCategories(frameworkId: string): Record<string, Fram
     case 'ANSSI_HYG':   return ANSSI_HYG_CATEGORIES
     case 'HDS':         return HDS_CATEGORIES
     case 'PCI_DSS':     return PCI_DSS_CATEGORIES
+    case 'DORA':        return DORA_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
+}
+
+/**
+ * Référentiels recommandés selon le secteur d'activité (le 1er = prioritaire).
+ * Heuristique par mots-clés, robuste aux variantes et traductions. CUSTOM exclu.
+ * Sert à guider le choix du référentiel (badge « recommandé ») sans l'imposer.
+ */
+export function recommendedFrameworksForSector(secteur?: string | null): FrameworkId[] {
+  const s = (secteur ?? '').toLowerCase()
+  const has = (...kw: string[]) => kw.some(k => s.includes(k))
+  if (has('banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ')) return ['DORA', 'PCI_DSS', 'ISO27001']
+  if (has('santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health')) return ['HDS', 'ISO27001']
+  if (has('défense', 'defense', 'national', 'militaire', 'defence')) return ['NIST_800_53', 'ANSSI_HYG']
+  if (has('administration', 'public', 'collectivit', 'état', 'etat', 'government')) return ['ANSSI_HYG', 'ISO27001']
+  if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
+  if (has('télécom', 'telecom', 'communication')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
+  if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['ANSSI_HYG', 'ISO27001']
+  if (has('commerce', 'distribution', 'retail', 'e-commerce', 'paiement', 'payment')) return ['PCI_DSS', 'ISO27001']
+  if (has('industrie', 'manufactur', 'usine', 'scada', 'industry')) return ['CIS_V8', 'ISO27001']
+  if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'NIST_CSF', 'CIS_V8']
+  if (has('éducation', 'education', 'recherche', 'université', 'universite', 'research')) return ['ISO27001', 'ANSSI_HYG']
+  return ['ISO27001']
 }
