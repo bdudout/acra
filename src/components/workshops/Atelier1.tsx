@@ -119,6 +119,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
+  // Confirmation non bloquante avant de passer à l'Atelier 2 si données minimales manquantes
+  const [pendingProceed, setPendingProceed] = useState(false)
   const [activeTab, setActiveTab] = useState<'perimetre' | 'vm' | 'biens' | 'er' | 'socle'>('perimetre')
   const [showVmExamples, setShowVmExamples] = useState(true)
   const [showBsExamples, setShowBsExamples] = useState(true)
@@ -255,11 +257,18 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
     })
   }
 
-  async function save() {
+  async function doSave() {
     setSaving(true)
     await saveNow()
     setSaving(false)
     router.push(`/analyses/${analyseId}/atelier/2${flashMode ? '?mode=flash' : ''}`)
+  }
+
+  // Garde-fou : sans valeur métier ni bien support, les scénarios des ateliers
+  // suivants seront incohérents → on demande confirmation (non bloquant).
+  function save() {
+    if (vms.length === 0 || biens.length === 0) { setPendingProceed(true); return }
+    doSave()
   }
 
   const tabs = [
@@ -979,6 +988,17 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           message={pendingDelete.msg}
           onConfirm={() => { pendingDelete.action(); setPendingDelete(null) }}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {pendingProceed && (
+        <ConfirmDialog
+          title={t.workshop.a1.proceedWarnTitle}
+          message={t.workshop.a1.proceedWarnMsg}
+          confirmLabel={t.workshop.a1.proceedAnyway}
+          icon="⚠️"
+          variant="warning"
+          onConfirm={() => { setPendingProceed(false); doSave() }}
+          onCancel={() => setPendingProceed(false)}
         />
       )}
     </div>

@@ -14,10 +14,11 @@ import { useTranslation } from '@/lib/i18n/context'
  */
 
 // Liens externes (URL neutres ; libellés via i18n t.atelierGuidance.links)
-const GUIDANCE_LINKS: { key: 'anssi' | 'clubEbios' | 'mooc'; url: string }[] = [
+const GUIDANCE_LINKS: { key: 'anssi' | 'clubEbios' | 'mooc' | 'gip'; url: string }[] = [
   { key: 'anssi', url: 'https://cyber.gouv.fr/la-methode-ebios-risk-manager' },
   { key: 'clubEbios', url: 'https://club-ebios.org/site/' },
   { key: 'mooc', url: 'https://secnumacademie.gouv.fr/' },
+  { key: 'gip', url: 'https://www.cybermalveillance.gouv.fr/' },
 ]
 
 const STORAGE_KEY = 'acra-guidance-collapsed'

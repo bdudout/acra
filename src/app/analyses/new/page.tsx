@@ -86,6 +86,12 @@ export default function NewAnalysePage() {
               {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.sectorHint}</p>
+            {/* Note de périmètre OT/IT pour les secteurs industriels */}
+            {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(form.secteur) && (
+              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+                🏭 {t.newAnalysis.otNote}
+              </div>
+            )}
           </div>
 
           <div>
