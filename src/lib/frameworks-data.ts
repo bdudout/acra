@@ -12,6 +12,7 @@
  *  • HDS (Hébergeur Données Santé) (30 exigences)
  *  • PCI-DSS v4.0                  (12 exigences × contrôles clés)
  *  • DORA (UE 2022/2554)           (5 piliers — banque/assurance/fintech)
+ *  • IEC 62443 (+ ANSSI-PA-107)    (7 exigences fond. + zones/conduits — OT/ICS)
  *  • CUSTOM                        (contrôles définis par l'analyste)
  */
 
@@ -46,7 +47,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -58,6 +59,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   HDS:        { nom: 'HDS',                  version: '2024',     icon: '🏥', cible: 'Hébergeurs de données de santé (France)' },
   PCI_DSS:    { nom: 'PCI-DSS',              version: 'v4.0',     icon: '💳', cible: 'Organisations traitant des paiements' },
   DORA:       { nom: 'DORA',                 version: 'UE 2022/2554', icon: '🏦', cible: 'Banque, assurance, fintech, marchés financiers (UE)' },
+  IEC_62443:  { nom: 'IEC 62443',            version: '+ ANSSI-PA-107', icon: '🏭', cible: 'Systèmes industriels OT/ICS (usine, énergie, transport, eau)' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -587,6 +589,65 @@ export const DORA_CONTROLES: FrameworkControl[] = [
   { ref:'DORA-INFO-1', type:'ORGANISATIONNELLE', categorie:'INFO', nom:'Accords de partage d\'informations sur les cybermenaces', description:'L\'entité peut adhérer à des dispositifs de partage d\'informations et de renseignements sur les cybermenaces (IoC, TTP) au sein de communautés de confiance (art. 45).' },
 ]
 
+// ─────────────────────────────────────────────────────────────────────────────
+// IEC 62443 — Sécurité des systèmes d'automatisation et de contrôle industriels (IACS/OT)
+// Source : série IEC 62443 (zones & conduits, niveaux de sécurité SL) + guide ANSSI-PA-107
+// (mars 2025) qui articule IEC 62443 avec EBIOS RM. Structuré par les 7 exigences
+// fondamentales (FR1-FR7) + zones/conduits + gouvernance OT.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const IEC_62443_CATEGORIES: Record<string, FrameworkCategory> = {
+  GOV: { label: 'Gouvernance OT', icon: '🏛️', color: 'text-gray-700',   bg: 'bg-gray-50'   },
+  ZC:  { label: 'Zones & conduits (SL)', icon: '🧩', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  FR1: { label: 'FR1 — Identification & authentification', icon: '🪪', color: 'text-blue-700', bg: 'bg-blue-50' },
+  FR2: { label: 'FR2 — Contrôle d\'usage', icon: '🔑', color: 'text-purple-700', bg: 'bg-purple-50' },
+  FR3: { label: 'FR3 — Intégrité du système', icon: '🛡️', color: 'text-green-700', bg: 'bg-green-50' },
+  FR4: { label: 'FR4 — Confidentialité des données', icon: '🔒', color: 'text-teal-700', bg: 'bg-teal-50' },
+  FR5: { label: 'FR5 — Restriction des flux', icon: '🚧', color: 'text-amber-700', bg: 'bg-amber-50' },
+  FR6: { label: 'FR6 — Réponse aux événements', icon: '🚨', color: 'text-orange-700', bg: 'bg-orange-50' },
+  FR7: { label: 'FR7 — Disponibilité des ressources', icon: '♻️', color: 'text-cyan-700', bg: 'bg-cyan-50' },
+}
+
+export const IEC_62443_CONTROLES: FrameworkControl[] = [
+  // Gouvernance OT (articulation EBIOS RM / ANSSI-PA-107)
+  { ref:'IEC-GOV-1', type:'ORGANISATIONNELLE', categorie:'GOV', nom:'Inventaire des actifs OT/ICS', description:'Inventaire exhaustif et tenu à jour des composants industriels (automates, IHM, capteurs, réseaux OT, postes d\'ingénierie), base de l\'analyse de risque.' },
+  { ref:'IEC-GOV-2', type:'ORGANISATIONNELLE', categorie:'GOV', nom:'Politique de sécurité OT distincte de l\'IT', description:'Une politique de cybersécurité spécifique aux systèmes industriels est définie, distincte de l\'IT (contraintes de sûreté, disponibilité, cycles longs) — cf. ANSSI-PA-107.' },
+  { ref:'IEC-GOV-3', type:'HUMAINE',           categorie:'GOV', nom:'Sensibilisation des équipes OT (automaticiens, exploitation)', description:'Les personnels d\'exploitation et de maintenance industrielle sont sensibilisés aux risques cyber et aux procédures sécurisées.' },
+
+  // Zones & conduits / niveaux de sécurité
+  { ref:'IEC-ZC-1', type:'TECHNOLOGIQUE',     categorie:'ZC', nom:'Découpage en zones et conduits', description:'Le SI industriel est découpé en zones de sécurité homogènes reliées par des conduits maîtrisés, selon la criticité et les besoins de sûreté.' },
+  { ref:'IEC-ZC-2', type:'ORGANISATIONNELLE', categorie:'ZC', nom:'Niveau de sécurité cible (SL-T) par zone', description:'Un niveau de sécurité cible (SL-T 1 à 4) est défini pour chaque zone en fonction du risque, et les écarts avec le SL atteint sont traités.' },
+  { ref:'IEC-ZC-3', type:'TECHNOLOGIQUE',     categorie:'ZC', nom:'Cloisonnement IT/OT (DMZ industrielle)', description:'Les réseaux IT et OT sont segmentés via une DMZ industrielle ; aucun flux direct entre bureautique et automates.' },
+
+  // FR1 — Identification & authentification (IAC)
+  { ref:'IEC-FR1-1', type:'TECHNOLOGIQUE', categorie:'FR1', nom:'Identification & authentification sur l\'OT', description:'Tous les utilisateurs, processus et dispositifs sont identifiés et authentifiés avant d\'accéder aux composants de contrôle.' },
+  { ref:'IEC-FR1-2', type:'TECHNOLOGIQUE', categorie:'FR1', nom:'Authentification renforcée des accès distants OT', description:'Les accès distants (télémaintenance fournisseur) sont soumis à authentification forte, traçabilité et validation par l\'exploitant.' },
+
+  // FR2 — Contrôle d'usage (UC)
+  { ref:'IEC-FR2-1', type:'TECHNOLOGIQUE', categorie:'FR2', nom:'Moindre privilège sur les composants de commande', description:'Les droits d\'usage sont restreints au strict nécessaire (rôles d\'exploitation, d\'ingénierie, de maintenance) sur les automates et IHM.' },
+  { ref:'IEC-FR2-2', type:'TECHNOLOGIQUE', categorie:'FR2', nom:'Journalisation des actions sur les systèmes de commande', description:'Les actions sur les systèmes de commande (modifications de programme, consignes) sont journalisées et horodatées.' },
+
+  // FR3 — Intégrité du système (SI)
+  { ref:'IEC-FR3-1', type:'TECHNOLOGIQUE', categorie:'FR3', nom:'Intégrité des firmwares et programmes automates', description:'L\'intégrité et l\'authenticité des firmwares et programmes des automates sont vérifiées (signatures, contrôles avant chargement).' },
+  { ref:'IEC-FR3-2', type:'TECHNOLOGIQUE', categorie:'FR3', nom:'Protection contre les codes malveillants adaptée à l\'OT', description:'Des mesures anti-malware compatibles avec les contraintes industrielles (liste blanche applicative, postes d\'ingénierie durcis) sont déployées.' },
+
+  // FR4 — Confidentialité des données (DC)
+  { ref:'IEC-FR4-1', type:'TECHNOLOGIQUE', categorie:'FR4', nom:'Confidentialité des données de procédé sensibles', description:'Les données de procédé sensibles (recettes, paramètres de production, savoir-faire) sont protégées en confidentialité.' },
+
+  // FR5 — Restriction des flux (RDF)
+  { ref:'IEC-FR5-1', type:'TECHNOLOGIQUE', categorie:'FR5', nom:'Filtrage des flux inter-zones via les conduits', description:'Les flux entre zones transitent uniquement par des conduits filtrés (pare-feux industriels, diodes de données si requis).' },
+  { ref:'IEC-FR5-2', type:'TECHNOLOGIQUE', categorie:'FR5', nom:'Détection d\'intrusion réseau industrielle (IDS OT)', description:'Les flux OT sont surveillés par une sonde de détection adaptée aux protocoles industriels (Modbus, OPC-UA, S7…).' },
+
+  // FR6 — Réponse aux événements (TRE)
+  { ref:'IEC-FR6-1', type:'ORGANISATIONNELLE', categorie:'FR6', nom:'Détection et réponse aux incidents OT', description:'Un processus de détection, qualification et réponse aux incidents de sécurité industriels est en place, articulé avec la sûreté de fonctionnement.' },
+  { ref:'IEC-FR6-2', type:'TECHNOLOGIQUE', categorie:'FR6', nom:'Capacité d\'investigation sur les systèmes industriels', description:'Les journaux et capacités d\'analyse permettent d\'investiguer un incident sur l\'OT sans perturber la production.' },
+
+  // FR7 — Disponibilité des ressources (RA)
+  { ref:'IEC-FR7-1', type:'TECHNOLOGIQUE', categorie:'FR7', nom:'Redondance des systèmes de production critiques', description:'Les composants critiques (automates, réseaux, alimentation) sont redondés pour garantir la continuité de la production.' },
+  { ref:'IEC-FR7-2', type:'TECHNOLOGIQUE', categorie:'FR7', nom:'Sauvegarde et restauration des configurations automates', description:'Les programmes et configurations des automates sont sauvegardés et leur restauration est testée régulièrement.' },
+  { ref:'IEC-FR7-3', type:'ORGANISATIONNELLE', categorie:'FR7', nom:'Gestion des obsolescences OT (cycles de vie longs)', description:'Les composants industriels en fin de support sont identifiés et un plan de gestion des obsolescences / mesures compensatoires est défini.' },
+]
+
 export function getFrameworkControles(frameworkId: string, customControles?: any[]): FrameworkControl[] {
   switch (frameworkId) {
     case 'ISO27001': {
@@ -601,6 +662,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'HDS':         return HDS_CONTROLES
     case 'PCI_DSS':     return PCI_DSS_CONTROLES
     case 'DORA':        return DORA_CONTROLES
+    case 'IEC_62443':   return IEC_62443_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -619,6 +681,7 @@ export function getFrameworkCategories(frameworkId: string): Record<string, Fram
     case 'HDS':         return HDS_CATEGORIES
     case 'PCI_DSS':     return PCI_DSS_CATEGORIES
     case 'DORA':        return DORA_CATEGORIES
+    case 'IEC_62443':   return IEC_62443_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -636,11 +699,11 @@ export function recommendedFrameworksForSector(secteur?: string | null): Framewo
   if (has('santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health')) return ['HDS', 'ISO27001']
   if (has('défense', 'defense', 'national', 'militaire', 'defence')) return ['NIST_800_53', 'ANSSI_HYG']
   if (has('administration', 'public', 'collectivit', 'état', 'etat', 'government')) return ['ANSSI_HYG', 'ISO27001']
-  if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
+  if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('télécom', 'telecom', 'communication')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
-  if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['ANSSI_HYG', 'ISO27001']
+  if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('commerce', 'distribution', 'retail', 'e-commerce', 'paiement', 'payment')) return ['PCI_DSS', 'ISO27001']
-  if (has('industrie', 'manufactur', 'usine', 'scada', 'industry')) return ['CIS_V8', 'ISO27001']
+  if (has('industrie', 'manufactur', 'usine', 'scada', 'industry')) return ['IEC_62443', 'CIS_V8', 'ISO27001']
   if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'NIST_CSF', 'CIS_V8']
   if (has('éducation', 'education', 'recherche', 'université', 'universite', 'research')) return ['ISO27001', 'ANSSI_HYG']
   return ['ISO27001']

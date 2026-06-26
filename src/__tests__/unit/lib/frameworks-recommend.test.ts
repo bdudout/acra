@@ -24,6 +24,12 @@ describe('recommendedFrameworksForSector', () => {
     expect(recommendedFrameworksForSector('Commerce / Distribution')).toContain('PCI_DSS')
   })
 
+  it('Industrie / Énergie / Transports → IEC 62443 en priorité (OT/ICS)', () => {
+    expect(recommendedFrameworksForSector('Industrie / Manufacturing')[0]).toBe('IEC_62443')
+    expect(recommendedFrameworksForSector('Énergie / Utilities')[0]).toBe('IEC_62443')
+    expect(recommendedFrameworksForSector('Transports / Logistique')[0]).toBe('IEC_62443')
+  })
+
   it('insensible à la casse et aux variantes (mots-clés)', () => {
     expect(recommendedFrameworksForSector('banque de détail')[0]).toBe('DORA')
     expect(recommendedFrameworksForSector('Healthcare')[0]).toBe('HDS')
