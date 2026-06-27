@@ -153,6 +153,16 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
     [bsExamples, analyse?.secteur, vms]
   )
 
+  // Exemples contextuels : événements redoutés pertinents selon le secteur et
+  // les valeurs métier déjà saisies.
+  const erExamplesRanked = useMemo(
+    () => rankExemples(erExamples, {
+      secteur: analyse?.secteur,
+      extraKeywords: keywordsFromAnswers(vms),
+    }),
+    [erExamples, analyse?.secteur, vms]
+  )
+
   // Événements redoutés
   const [ers, setErs] = useState<any[]>(initialData?.evenementsRedoutes || [])
 
@@ -684,7 +694,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
             </div>
             {showErExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {erExamples.map((er, i) => {
+                {erExamplesRanked.map((er, i) => {
                   const added = ers.some((x: any) => x.description === er.description)
                   return (
                   <button
@@ -697,6 +707,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                    {!added && er.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                     <div className="text-xs font-medium text-gray-700">{er.description}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${

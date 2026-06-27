@@ -31,6 +31,7 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { rankExemples } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
@@ -92,6 +93,11 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
   const tEx = t as unknown as ExemplesTranslations
   const srExamples = useMemo(() => resolveExemples(exOverride.sourcesRisque, defaultExemplesFor('sourcesRisque', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
+  const srExamplesRanked = useMemo(
+    () => rankExemples(srExamples, { secteur: analyse?.secteur }),
+    [srExamples, analyse?.secteur]
+  )
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,7 +286,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
             </div>
             {showSrExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                {srExamples.map((s, i) => {
+                {srExamplesRanked.map((s, i) => {
                   const cat = CATEGORIES.find(c => c.value === s.categorie)
                   const added = sources.some((x: any) => x.nom === s.nom)
                   return (
@@ -292,6 +298,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                       }`}
                     >
                       {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                      {!added && s.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat?.color}`}>{cat?.label}</span>
                         <span className="text-xs font-medium text-gray-700">{s.nom}</span>
