@@ -1040,14 +1040,17 @@ export default function ConfigurationPage() {
             <p className="text-sm text-gray-500 mb-4">{t.features.sectionDesc}</p>
             <div className="space-y-3">
               {([
-                { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc },
-                { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc },
-                { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc },
+                { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/' },
+                { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/' },
+                { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/' },
               ]).map(f => (
                 <div key={f.field} className="flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800">{f.title}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
+                    <a href={f.href} target="_blank" rel="noopener noreferrer" className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline mt-1 inline-block">
+                      {t.features.learnMore}
+                    </a>
                   </div>
                   <button
                     type="button"
