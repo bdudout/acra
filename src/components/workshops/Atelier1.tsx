@@ -31,6 +31,7 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
+import { rankExemples } from '@/lib/exemples-context'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
@@ -106,6 +107,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const vmExamples = useMemo(
     () => resolveExemples(exOverride.valeursMetier, defaultExemplesFor('valeursMetier', tEx, locale)) as any[],
     [t, exOverride] // eslint-disable-line react-hooks/exhaustive-deps
+  )
+  // Exemples contextuels : remonter les valeurs métier pertinentes pour le secteur
+  const vmExamplesRanked = useMemo(
+    () => rankExemples(vmExamples, { secteur: analyse?.secteur }),
+    [vmExamples, analyse?.secteur]
   )
   const erExamples = useMemo(
     () => resolveExemples(exOverride.evenementsRedoutes, defaultExemplesFor('evenementsRedoutes', tEx, locale)) as any[],
@@ -389,7 +395,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
             </div>
             {showVmExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                {vmExamples.map((vm, i) => {
+                {vmExamplesRanked.map((vm, i) => {
                   const added = vms.some((x: any) => x.nom === vm.nom)
                   return (
                   <button
@@ -398,10 +404,13 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                     className={`text-left p-3 border rounded-lg transition-all ${
                       added
                         ? 'border-green-400 bg-green-50 opacity-70 cursor-default'
-                        : 'border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                        : vm.pertinent
+                          ? 'border-ebios-300 bg-ebios-50/40 hover:border-ebios-400 hover:bg-ebios-50'
+                          : 'border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                         vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
