@@ -31,7 +31,7 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
-import { rankExemples } from '@/lib/exemples-context'
+import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
@@ -142,6 +142,16 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // Biens supports
   const [biens, setBiens] = useState<any[]>(initialData?.biensSupports || [])
+
+  // Exemples contextuels : biens supports pertinents selon le secteur ET les
+  // valeurs métier déjà saisies (réponses précédentes → mots-clés).
+  const bsExamplesRanked = useMemo(
+    () => rankExemples(bsExamples, {
+      secteur: analyse?.secteur,
+      extraKeywords: keywordsFromAnswers(vms),
+    }),
+    [bsExamples, analyse?.secteur, vms]
+  )
 
   // Événements redoutés
   const [ers, setErs] = useState<any[]>(initialData?.evenementsRedoutes || [])
@@ -567,7 +577,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
             {showBsExamples && (
               <div className="space-y-4">
                 {CATEGORIES_BIENS_SUPPORTS.map(cat => {
-                  const items = bsExamples.filter((b: any) => b.type === cat.value)
+                  const items = bsExamplesRanked.filter((b: any) => b.type === cat.value)
                   if (!items.length) return null
                   return (
                     <div key={cat.value}>
@@ -591,6 +601,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                             }`}
                           >
                             {added && <div className="text-xs text-green-600 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
+                            {!added && b.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
                             <div className="text-xs font-medium">{b.nom}</div>
                             <div className="text-xs opacity-60 mt-0.5 line-clamp-1">{b.description}</div>
                           </button>

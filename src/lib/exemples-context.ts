@@ -52,6 +52,37 @@ const SECTOR_VOCAB: { match: string[]; vocab: string[] }[] = [
     vocab: ['client', 'commande', 'panier', 'stock', 'livraison', 'paiement', 'caisse', 'fidélité', 'fidelite', 'catalogue', 'e-commerce'] },
 ]
 
+// Mots-clés non significatifs (articles, prépositions…) écartés du scoring.
+const STOPWORDS = new Set([
+  'avec', 'dans', 'pour', 'sans', 'sous', 'leur', 'leurs', 'cette', 'cet', 'des',
+  'les', 'une', 'aux', 'par', 'sur', 'que', 'qui', 'son', 'ses', 'nos', 'vos',
+  'the', 'and', 'for', 'with', 'from', 'this', 'that',
+])
+
+/** Retire les accents et passe en minuscules (comparaison robuste). */
+function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+/**
+ * Extrait des mots-clés significatifs des réponses déjà saisies (valeurs métier,
+ * biens supports…) pour alimenter `extraKeywords` → volet « selon les réponses
+ * précédentes ». Tokenise nom + description, normalise (sans accents), déduplique,
+ * écarte les mots trop courts (< 4 lettres) et les mots vides.
+ */
+export function keywordsFromAnswers(
+  answers: { nom?: string; description?: string }[],
+): string[] {
+  const out = new Set<string>()
+  for (const a of answers ?? []) {
+    const text = `${a?.nom ?? ''} ${a?.description ?? ''}`
+    for (const raw of normalize(text).split(/[^a-z0-9]+/)) {
+      if (raw.length >= 4 && !STOPWORDS.has(raw)) out.add(raw)
+    }
+  }
+  return [...out]
+}
+
 /** Vocabulaire de mots-clés pour un secteur donné (par famille ; [] si inconnu). */
 export function vocabForSecteur(secteur?: string | null): string[] {
   const s = (secteur ?? '').toLowerCase()

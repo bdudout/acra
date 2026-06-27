@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { vocabForSecteur, scoreExemple, rankExemples } from '@/lib/exemples-context'
+import { vocabForSecteur, scoreExemple, rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exemples contextuels : réordonner les exemples proposés dans les ateliers selon
@@ -69,5 +69,41 @@ describe('rankExemples — réordonne (pertinents en tête), non destructif', ()
     const copy = [...exemples]
     rankExemples(exemples, { secteur: 'Santé' })
     expect(exemples).toEqual(copy)
+  })
+})
+
+describe('keywordsFromAnswers — mots-clés issus des réponses précédentes', () => {
+  it('tokenise nom + description, garde les mots significatifs (≥ 4 lettres)', () => {
+    const kw = keywordsFromAnswers([
+      { nom: 'Gestion de la paie', description: 'Bulletins salariés' },
+    ])
+    expect(kw).toContain('gestion')
+    expect(kw).toContain('paie') // 4 lettres
+    expect(kw).toContain('bulletins')
+    expect(kw).toContain('salaries')
+    expect(kw).not.toContain('de') // stopword / trop court
+    expect(kw).not.toContain('la')
+  })
+  it('déduplique, met en minuscules et retire les accents', () => {
+    const kw = keywordsFromAnswers([
+      { nom: 'Données médicales' },
+      { nom: 'données MÉDICALES' },
+    ])
+    expect(kw.filter(k => k === 'donnees')).toHaveLength(1)
+    expect(kw).toContain('medicales')
+  })
+  it('ignore les entrées vides / champs absents', () => {
+    expect(keywordsFromAnswers([])).toEqual([])
+    expect(keywordsFromAnswers([{}, { nom: '' }])).toEqual([])
+  })
+  it('alimente extraKeywords pour rankExemples (réponses → exemples liés)', () => {
+    const exemples = [
+      { nom: 'Serveur de fichiers' },
+      { nom: 'Logiciel de paie', description: 'RH' },
+    ]
+    const extraKeywords = keywordsFromAnswers([{ nom: 'Gestion de la paie' }])
+    const r = rankExemples(exemples, { secteur: '', extraKeywords })
+    expect(r[0].nom).toBe('Logiciel de paie')
+    expect(r[0].pertinent).toBe(true)
   })
 })
