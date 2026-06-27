@@ -12,12 +12,23 @@
  * Module pur → testé unitairement (exemples-sectoriels.test.ts).
  */
 
+import type { Locale } from '@/lib/i18n'
+import en from '@/lib/i18n/exemples-sectoriels/en'
+import de from '@/lib/i18n/exemples-sectoriels/de'
+import es from '@/lib/i18n/exemples-sectoriels/es'
+import it from '@/lib/i18n/exemples-sectoriels/it'
+
 export type SectorExempleCategory =
   | 'valeursMetier'
   | 'biensSupports'
   | 'evenementsRedoutes'
   | 'sourcesRisque'
   | 'scenariosStrategiques'
+
+// Dictionnaires de traduction (FR = source dans les données ci-dessous, donc absent).
+// Clé : `${famille}.${categorie}.${index}.${champ}` (+ `.impacts.${j}` pour les tableaux).
+const DICTS: Partial<Record<Locale, Record<string, string>>> = { en, de, es, it }
+const TEXT_FIELDS = ['nom', 'description', 'motivation', 'ressources']
 
 export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
@@ -173,11 +184,34 @@ export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLI
 export function sectorExemplesFor(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
+  locale: Locale = 'fr',
 ): Record<string, unknown>[] {
   const s = (secteur ?? '').toLowerCase()
   if (!s) return []
   const fam = SECTOR_FAMILIES.find(f => f.match.some(m => s.includes(m)))
-  return fam ? (fam.exemples[category] ?? []) : []
+  if (!fam) return []
+  const items = fam.exemples[category] ?? []
+  const dict = DICTS[locale]
+  if (!dict) return items // FR (source) ou locale sans dictionnaire
+  return items.map((item, idx) => localizeItem(item, `${fam.key}.${category}.${idx}`, dict))
+}
+
+/** Applique les traductions à un exemple (repli sur le texte FR source si clé absente). */
+function localizeItem(
+  item: Record<string, unknown>,
+  prefix: string,
+  dict: Record<string, string>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...item }
+  for (const field of TEXT_FIELDS) {
+    if (typeof out[field] === 'string') {
+      out[field] = dict[`${prefix}.${field}`] ?? out[field]
+    }
+  }
+  if (Array.isArray(out.impacts)) {
+    out.impacts = (out.impacts as string[]).map((s, j) => dict[`${prefix}.impacts.${j}`] ?? s)
+  }
+  return out
 }
 
 /**
@@ -189,8 +223,9 @@ export function withSectorExemples<T extends Record<string, unknown>>(
   generic: T[],
   secteur: string | null | undefined,
   category: SectorExempleCategory,
+  locale: Locale = 'fr',
 ): T[] {
-  const sector = sectorExemplesFor(secteur, category) as T[]
+  const sector = sectorExemplesFor(secteur, category, locale) as T[]
   if (!sector.length) return generic
   const keyOf = (e: T) =>
     String((e as { nom?: unknown }).nom ?? (e as { description?: unknown }).description ?? '')

@@ -96,8 +96,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
   const srExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque'), { secteur: analyse?.secteur }),
-    [srExamples, analyse?.secteur]
+    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale), { secteur: analyse?.secteur }),
+    [srExamples, analyse?.secteur, locale]
   )
 
   // ── Auto-save ─────────────────────────────────────────────────────────────

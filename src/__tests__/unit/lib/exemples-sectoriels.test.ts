@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { sectorExemplesFor, withSectorExemples, SECTOR_FAMILIES } from '@/lib/exemples-sectoriels'
+import { sectorExemplesFor, withSectorExemples, SECTOR_FAMILIES, type SectorExempleCategory } from '@/lib/exemples-sectoriels'
 import { rankExemples } from '@/lib/exemples-context'
 import { CATEGORIES_BIENS_SUPPORTS } from '@/lib/ebios-data'
+import enDict from '@/lib/i18n/exemples-sectoriels/en'
+import deDict from '@/lib/i18n/exemples-sectoriels/de'
+import esDict from '@/lib/i18n/exemples-sectoriels/es'
+import itDict from '@/lib/i18n/exemples-sectoriels/it'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Packs d'exemples sectoriels : contenu spécifique injecté selon le secteur de
@@ -97,6 +101,67 @@ describe('withSectorExemples — fusion + déduplication', () => {
     const g = [{ nom: 'Dossier Patient Informatisé (DPI)', description: 'doublon' }]
     const merged = withSectorExemples(g, 'Santé', 'valeursMetier')
     expect(merged.filter(m => m.nom === 'Dossier Patient Informatisé (DPI)')).toHaveLength(1)
+  })
+})
+
+describe('i18n des packs sectoriels', () => {
+  const CATEGORIES: SectorExempleCategory[] = ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques']
+
+  it('locale=fr renvoie la donnée source (FR)', () => {
+    expect(sectorExemplesFor('Santé', 'valeursMetier', 'fr')[0].nom).toBe('Prise en charge des patients aux urgences')
+  })
+  it('locale=en traduit nom + description', () => {
+    const vm = sectorExemplesFor('Santé', 'valeursMetier', 'en')
+    expect(vm[0].nom).toBe('Emergency patient care')
+    expect(String(vm[0].description)).toMatch(/emergency/i)
+  })
+  it('locale=de/es/it traduisent (différent du FR)', () => {
+    expect(sectorExemplesFor('Banque', 'biensSupports', 'de')[1].nom).toBe('SWIFT-Gateway')
+    expect(sectorExemplesFor('Énergie', 'valeursMetier', 'es')[1].nom).toMatch(/SCADA/)
+    expect(sectorExemplesFor('Administration', 'valeursMetier', 'it')[0].nom).toMatch(/cittadini/i)
+  })
+  it('traduit aussi les impacts (tableaux)', () => {
+    const er = sectorExemplesFor('Santé', 'evenementsRedoutes', 'en')
+    expect((er[0].impacts as string[])[1]).toMatch(/life-threatening/i)
+  })
+  it('repli sur le FR si une clé de traduction est absente', () => {
+    // 'tracabilite' / champs enum non traduits : type reste l'enum d'origine
+    expect(sectorExemplesFor('Santé', 'valeursMetier', 'en')[0].type).toBe('PROCESSUS')
+  })
+
+  it('parité des clés : en/de/es/it couvrent exactement les mêmes clés', () => {
+    const keys = (d: Record<string, string>) => Object.keys(d).sort()
+    const ref = keys(enDict)
+    expect(keys(deDict)).toEqual(ref)
+    expect(keys(esDict)).toEqual(ref)
+    expect(keys(itDict)).toEqual(ref)
+  })
+  it('chaque champ FR traduisible a une clé dans tous les dictionnaires', () => {
+    const TEXT_FIELDS = ['nom', 'description', 'motivation', 'ressources']
+    const missing: string[] = []
+    for (const fam of SECTOR_FAMILIES) {
+      for (const cat of CATEGORIES) {
+        const items = sectorExemplesFor(fam.match[0], cat, 'fr')
+        items.forEach((item, idx) => {
+          const prefix = `${fam.key}.${cat}.${idx}`
+          for (const f of TEXT_FIELDS) {
+            if (typeof item[f] === 'string') {
+              for (const [name, d] of [['en', enDict], ['de', deDict], ['es', esDict], ['it', itDict]] as const) {
+                if (!(`${prefix}.${f}` in d)) missing.push(`${name}:${prefix}.${f}`)
+              }
+            }
+          }
+          if (Array.isArray(item.impacts)) {
+            (item.impacts as string[]).forEach((_, j) => {
+              for (const [name, d] of [['en', enDict], ['de', deDict], ['es', esDict], ['it', itDict]] as const) {
+                if (!(`${prefix}.impacts.${j}` in d)) missing.push(`${name}:${prefix}.impacts.${j}`)
+              }
+            })
+          }
+        })
+      }
+    }
+    expect(missing).toEqual([])
   })
 })
 

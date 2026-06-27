@@ -111,8 +111,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   )
   // Exemples contextuels : remonter les valeurs métier pertinentes pour le secteur
   const vmExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier'), { secteur: analyse?.secteur }),
-    [vmExamples, analyse?.secteur]
+    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier', locale), { secteur: analyse?.secteur }),
+    [vmExamples, analyse?.secteur, locale]
   )
   const erExamples = useMemo(
     () => resolveExemples(exOverride.evenementsRedoutes, defaultExemplesFor('evenementsRedoutes', tEx, locale)) as any[],
@@ -147,21 +147,21 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Exemples contextuels : biens supports pertinents selon le secteur ET les
   // valeurs métier déjà saisies (réponses précédentes → mots-clés).
   const bsExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports'), {
+    () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports', locale), {
       secteur: analyse?.secteur,
       extraKeywords: keywordsFromAnswers(vms),
     }),
-    [bsExamples, analyse?.secteur, vms]
+    [bsExamples, analyse?.secteur, vms, locale]
   )
 
   // Exemples contextuels : événements redoutés pertinents selon le secteur et
   // les valeurs métier déjà saisies.
   const erExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes'), {
+    () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes', locale), {
       secteur: analyse?.secteur,
       extraKeywords: keywordsFromAnswers(vms),
     }),
-    [erExamples, analyse?.secteur, vms]
+    [erExamples, analyse?.secteur, vms, locale]
   )
 
   // Événements redoutés
