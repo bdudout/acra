@@ -30,6 +30,7 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
@@ -97,6 +98,17 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
 
   // Biens supports de l'atelier 1
   const biensSupports: any[] = analyse?.cadrage?.biensSupports || []
+
+  // Exemples contextuels : techniques (actions élémentaires) remontées selon les
+  // biens supports déjà saisis (ex. cloud → upload cloud, VPN/RDP → accès distant)
+  // et le secteur. Techniques cross-secteur → l'apport vient surtout des réponses.
+  const aeExamplesRanked = useMemo(
+    () => rankExemples(aeExamples, {
+      secteur: analyse?.secteur,
+      extraKeywords: keywordsFromAnswers(biensSupports),
+    }),
+    [aeExamples, analyse?.secteur, analyse?.cadrage?.biensSupports] // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   function addScenario(scenarioStratRef?: any) {
     const id = uid()
@@ -317,12 +329,13 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                     <div className="mb-3">
                       <p className="text-xs text-gray-500 mb-2">{t.workshop.a4.aeTypesHint}</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {aeExamples.map((a, i) => {
+                        {aeExamplesRanked.map((a, i) => {
                           const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                           return (
                             <button key={i} onClick={() => addAction(s.id, a)}
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color} hover:opacity-80 transition-opacity`}>
-                              + {a.nom}
+                              title={a.pertinent ? t.workshop.relevantLabel : undefined}
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color} hover:opacity-80 transition-opacity ${a.pertinent ? 'ring-1 ring-ebios-400' : ''}`}>
+                              {a.pertinent && <span aria-hidden>⭐ </span>}+ {a.nom}
                             </button>
                           )
                         })}

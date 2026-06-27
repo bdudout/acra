@@ -42,7 +42,7 @@ import RiskMatrix from '@/components/RiskMatrix'
 import { getRiskTier, type ScaleConfig } from '@/lib/risk-scale'
 import ExportButtons from '@/components/ExportButtons'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
-import { FRAMEWORK_META, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
+import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 
 interface Props {
   analyseId: string
@@ -123,6 +123,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const [activeFramework, setActiveFramework] = useState<FrameworkId | null>(
     () => (analyse?.referentielMesures as FrameworkId) ?? null
   )
+  // Référentiels recommandés selon le secteur (suggestion non bloquante, cf. Atelier 1)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur)
   // Reconstruire scenarioOpNom depuis scenarioOpId au chargement depuis DB
   const [risques, setRisques] = useState<any[]>(() => {
     const allSO = analyse?.scenariosOperationnels || []
@@ -599,12 +601,18 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
             {/* ── Onglets référentiels multi-frameworks ── */}
             <div className="mb-3">
               <p className="text-xs text-gray-500 mb-2">{t.workshop.a5.chooseRef}</p>
+              {analyse?.secteur && recommendedFw.length > 0 && (
+                <p className="text-xs text-indigo-700 mb-2">
+                  ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
+                </p>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {(Object.keys(FRAMEWORK_META) as FrameworkId[])
                   .filter(id => id !== 'CUSTOM')
                   .map(fid => {
                     const meta = FRAMEWORK_META[fid]
                     const isActive = activeFramework === fid
+                    const isReco = recommendedFw.includes(fid)
                     return (
                       <button
                         key={fid}
@@ -612,9 +620,12 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                           isActive
                             ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-400 hover:text-indigo-600'
+                            : isReco
+                              ? 'bg-white text-indigo-700 border-indigo-300 hover:border-indigo-400'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-400 hover:text-indigo-600'
                         }`}
                       >
+                        {isReco && !isActive && <span title={t.workshop.a1.recommendedBadge}>⭐</span>}
                         <span>{meta.icon}</span>
                         <span>{meta.nom}</span>
                       </button>
