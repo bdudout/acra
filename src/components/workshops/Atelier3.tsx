@@ -29,6 +29,8 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { useAddedFeedback } from '@/lib/useAddedFeedback'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { rankExemples } from '@/lib/exemples-context'
+import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
@@ -132,6 +134,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const tEx = t as unknown as ExemplesTranslations
   const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Exemples contextuels : scénarios stratégiques sectoriels remontés en tête
+  const scExamplesRanked = useMemo(
+    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques'), { secteur: analyse?.secteur }),
+    [scExamples, analyse?.secteur]
+  )
   const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [saving, setSaving] = useState(false)
@@ -654,7 +661,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                     C: '🔴 C — Confidentialité',
                     T: '🟡 T — Traçabilité',
                   }
-                  const exemples = scExamples.filter(e => e.critere === critere)
+                  const exemples = scExamplesRanked.filter(e => e.critere === critere)
                   const alreadyHas = scenarios.some(s => s.nom && exemples.some(e => e.nom === s.nom))
                   return (
                     <div key={critere} className={`mb-3 border rounded-lg p-3 ${critColors[critere]}`}>
@@ -676,6 +683,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                                   : 'border-dashed border-gray-300 bg-white hover:border-ebios-400 hover:bg-ebios-50 cursor-pointer'
                               }`}
                             >
+                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
                               <div className="font-medium text-gray-700 mb-1 leading-tight">{ex.nom}</div>
                               <div className="text-gray-500 leading-tight">{ex.description.slice(0, 80)}…</div>
                               <div className="flex gap-2 mt-1.5">

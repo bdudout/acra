@@ -32,6 +32,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
+import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
@@ -110,7 +111,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   )
   // Exemples contextuels : remonter les valeurs métier pertinentes pour le secteur
   const vmExamplesRanked = useMemo(
-    () => rankExemples(vmExamples, { secteur: analyse?.secteur }),
+    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier'), { secteur: analyse?.secteur }),
     [vmExamples, analyse?.secteur]
   )
   const erExamples = useMemo(
@@ -146,7 +147,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Exemples contextuels : biens supports pertinents selon le secteur ET les
   // valeurs métier déjà saisies (réponses précédentes → mots-clés).
   const bsExamplesRanked = useMemo(
-    () => rankExemples(bsExamples, {
+    () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports'), {
       secteur: analyse?.secteur,
       extraKeywords: keywordsFromAnswers(vms),
     }),
@@ -156,7 +157,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Exemples contextuels : événements redoutés pertinents selon le secteur et
   // les valeurs métier déjà saisies.
   const erExamplesRanked = useMemo(
-    () => rankExemples(erExamples, {
+    () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes'), {
       secteur: analyse?.secteur,
       extraKeywords: keywordsFromAnswers(vms),
     }),

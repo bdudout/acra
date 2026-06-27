@@ -32,6 +32,7 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
+import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
@@ -95,7 +96,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
   const srExamplesRanked = useMemo(
-    () => rankExemples(srExamples, { secteur: analyse?.secteur }),
+    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque'), { secteur: analyse?.secteur }),
     [srExamples, analyse?.secteur]
   )
 
