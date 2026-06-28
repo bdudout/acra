@@ -89,7 +89,10 @@ export function defaultExemplesFor(
         maturite: p.maturite, confiance: p.confiance,
       }))
     case 'actionsElementaires':
-      return ACTIONS_ELEMENTAIRES_EXEMPLES.map((a) => ({ type: a.type, nom: a.nom, description: a.description }))
+      return ACTIONS_ELEMENTAIRES_EXEMPLES.map((a) => ({
+        type: a.type, nom: a.nom, description: a.description,
+        vulnerabiliteDefaut: (a as { vulnerabiliteDefaut?: string }).vulnerabiliteDefaut,
+      }))
     case 'mesuresEcosysteme':
       return MESURES_ECOSYSTEME_EXEMPLES.map((m) => ({
         mesure: m.mesure, type: m.type, iso27005: m.iso27005, description: m.description,

@@ -486,27 +486,27 @@ export const PARTIES_PRENANTES_EXEMPLES = [
 
 export const ACTIONS_ELEMENTAIRES_EXEMPLES = [
   // Reconnaissance
-  { type: 'RECONNAISSANCE', nom: 'Reconnaissance passive (OSINT)', description: 'Collecte d\'informations publiques : LinkedIn, WHOIS, Shodan, jobboards' },
-  { type: 'RECONNAISSANCE', nom: 'Scan réseau / détection des services exposés', description: 'Nmap, Shodan pour identifier les ports et services ouverts' },
+  { type: 'RECONNAISSANCE', nom: 'Reconnaissance passive (OSINT)', description: 'Collecte d\'informations publiques : LinkedIn, WHOIS, Shodan, jobboards', vulnerabiliteDefaut: 'Exposition d\'informations sensibles publiquement accessibles' },
+  { type: 'RECONNAISSANCE', nom: 'Scan réseau / détection des services exposés', description: 'Nmap, Shodan pour identifier les ports et services ouverts', vulnerabiliteDefaut: 'Services exposés non nécessaires / surface d\'attaque non maîtrisée' },
   // Accès initial
-  { type: 'ACCES_INITIAL', nom: 'Phishing ciblé (spear-phishing)', description: 'Email frauduleux avec pièce jointe malveillante ou lien vers faux site' },
-  { type: 'ACCES_INITIAL', nom: 'Exploitation d\'une vulnérabilité web', description: 'Exploitation de failles (SQLi, XSS, RCE) sur une application exposée' },
-  { type: 'ACCES_INITIAL', nom: 'Credential stuffing / brute force', description: 'Utilisation de listes de credentials divulguées sur des services exposés' },
-  { type: 'ACCES_INITIAL', nom: 'Compromission de la supply chain', description: 'Injection de code malveillant via un prestataire ou une mise à jour logicielle' },
-  { type: 'ACCES_INITIAL', nom: 'VPN/RDP exposé non patché', description: 'Exploitation d\'une vulnérabilité sur un accès distant (Citrix, Pulse, ProxyLogon)' },
+  { type: 'ACCES_INITIAL', nom: 'Phishing ciblé (spear-phishing)', description: 'Email frauduleux avec pièce jointe malveillante ou lien vers faux site', vulnerabiliteDefaut: 'Sensibilisation insuffisante / absence de filtrage email (anti-phishing, DMARC)' },
+  { type: 'ACCES_INITIAL', nom: 'Exploitation d\'une vulnérabilité web', description: 'Exploitation de failles (SQLi, XSS, RCE) sur une application exposée', vulnerabiliteDefaut: 'Application web non corrigée / défaut de validation des entrées' },
+  { type: 'ACCES_INITIAL', nom: 'Credential stuffing / brute force', description: 'Utilisation de listes de credentials divulguées sur des services exposés', vulnerabiliteDefaut: 'Absence de MFA / mots de passe faibles ou réutilisés' },
+  { type: 'ACCES_INITIAL', nom: 'Compromission de la supply chain', description: 'Injection de code malveillant via un prestataire ou une mise à jour logicielle', vulnerabiliteDefaut: 'Dépendance non vérifiée / absence de contrôle d\'intégrité des composants' },
+  { type: 'ACCES_INITIAL', nom: 'VPN/RDP exposé non patché', description: 'Exploitation d\'une vulnérabilité sur un accès distant (Citrix, Pulse, ProxyLogon)', vulnerabiliteDefaut: 'Accès distant exposé non corrigé / absence de MFA' },
   // Persistance
-  { type: 'PERSISTANCE', nom: 'Installation d\'un backdoor / RAT', description: 'Mise en place d\'un accès persistant (Cobalt Strike, Meterpreter)' },
-  { type: 'PERSISTANCE', nom: 'Création de comptes privilégiés', description: 'Ajout de comptes administrateurs locaux ou AD' },
+  { type: 'PERSISTANCE', nom: 'Installation d\'un backdoor / RAT', description: 'Mise en place d\'un accès persistant (Cobalt Strike, Meterpreter)', vulnerabiliteDefaut: 'Absence d\'EDR / exécution non maîtrisée sur les postes' },
+  { type: 'PERSISTANCE', nom: 'Création de comptes privilégiés', description: 'Ajout de comptes administrateurs locaux ou AD', vulnerabiliteDefaut: 'Gestion des comptes à privilèges insuffisante / pas de revue des accès' },
   // Mouvement latéral
-  { type: 'MOUVEMENT_LATERAL', nom: 'Pass-the-Hash / Pass-the-Ticket', description: 'Réutilisation des hashes NTLM ou tickets Kerberos pour se déplacer' },
-  { type: 'MOUVEMENT_LATERAL', nom: 'Exploitation de shares réseau', description: 'Accès aux partages réseau pour pivoter ou exfiltrer' },
+  { type: 'MOUVEMENT_LATERAL', nom: 'Pass-the-Hash / Pass-the-Ticket', description: 'Réutilisation des hashes NTLM ou tickets Kerberos pour se déplacer', vulnerabiliteDefaut: 'Absence de segmentation / réutilisation des comptes administrateurs' },
+  { type: 'MOUVEMENT_LATERAL', nom: 'Exploitation de shares réseau', description: 'Accès aux partages réseau pour pivoter ou exfiltrer', vulnerabiliteDefaut: 'Partages réseau trop permissifs / droits excessifs' },
   // Exfiltration
-  { type: 'EXFILTRATION', nom: 'Exfiltration via HTTPS/DNS', description: 'Envoi de données chiffrées vers un serveur C2 externe' },
-  { type: 'EXFILTRATION', nom: 'Upload vers service cloud (OneDrive, Mega)', description: 'Copie de données vers un espace cloud personnel' },
+  { type: 'EXFILTRATION', nom: 'Exfiltration via HTTPS/DNS', description: 'Envoi de données chiffrées vers un serveur C2 externe', vulnerabiliteDefaut: 'Absence de filtrage sortant / pas de détection d\'exfiltration (DLP)' },
+  { type: 'EXFILTRATION', nom: 'Upload vers service cloud (OneDrive, Mega)', description: 'Copie de données vers un espace cloud personnel', vulnerabiliteDefaut: 'Absence de contrôle des services cloud non autorisés (shadow IT)' },
   // Impact
-  { type: 'IMPACT', nom: 'Chiffrement ransomware', description: 'Déploiement d\'un ransomware (Ryuk, LockBit, BlackCat) sur l\'ensemble du SI' },
-  { type: 'IMPACT', nom: 'Destruction de sauvegardes', description: 'Effacement des backups pour empêcher la restauration' },
-  { type: 'IMPACT', nom: 'Déni de service distribué (DDoS)', description: 'Saturation de la bande passante ou des ressources serveur' },
+  { type: 'IMPACT', nom: 'Chiffrement ransomware', description: 'Déploiement d\'un ransomware (Ryuk, LockBit, BlackCat) sur l\'ensemble du SI', vulnerabiliteDefaut: 'Sauvegardes non isolées / absence de cloisonnement réseau' },
+  { type: 'IMPACT', nom: 'Destruction de sauvegardes', description: 'Effacement des backups pour empêcher la restauration', vulnerabiliteDefaut: 'Sauvegardes accessibles depuis le SI / pas de copie hors ligne' },
+  { type: 'IMPACT', nom: 'Déni de service distribué (DDoS)', description: 'Saturation de la bande passante ou des ressources serveur', vulnerabiliteDefaut: 'Absence de protection anti-DDoS / dimensionnement insuffisant' },
 ]
 
 export const TYPES_ACTION_ELEMENTAIRE = [

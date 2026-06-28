@@ -154,7 +154,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
             nom: exemple?.nom || '',
             description: exemple?.description || '',
             bienSupport: '',
-            vulnerabilite: '',
+            vulnerabilite: exemple?.vulnerabiliteDefaut || '',
           },
         ],
       }
