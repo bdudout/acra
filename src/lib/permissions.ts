@@ -200,8 +200,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   LECTEUR:      'Consultation en lecture seule des analyses partagées',
   ANALYSTE:     'Création et édition de ses propres analyses de risques',
-  RISK_MANAGER: 'Approbation et validation des analyses soumises',
-  RSSI:         'Responsable SSI — approbation et validation des analyses soumises',
+  RISK_MANAGER: 'Valide le périmètre métier et le niveau de risque — approuve les analyses (sans expertise technique SSI requise)',
+  RSSI:         'Responsable SSI — apporte l\'expertise technique sécurité et approuve les analyses',
   ADMIN:        'Administration complète d\'une organisation (comptes et analyses)',
   SUPER_ADMIN:  'Niveau instance — gère les organisations et traverse tous les périmètres',
 }
