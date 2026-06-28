@@ -34,6 +34,13 @@ describe('sectorExemplesFor — sélection par famille de secteur', () => {
     const sc = sectorExemplesFor('Administration / Collectivité', 'scenariosStrategiques')
     expect(sc.length).toBeGreaterThan(0)
   })
+  it('juridique : valeurs métier spécifiques (secret professionnel / CARPA)', () => {
+    const vm = sectorExemplesFor("Professions juridiques / Cabinet d'avocats", 'valeursMetier')
+    expect(vm.length).toBeGreaterThan(0)
+    expect(vm.some(v => /secret professionnel|carpa|dossier|m&a/i.test(`${v.nom} ${v.description}`))).toBe(true)
+    // localisation EN
+    expect(sectorExemplesFor('avocat', 'valeursMetier', 'en')[1].nom).toMatch(/professional secrecy/i)
+  })
   it('secteur inconnu ou vide → []', () => {
     expect(sectorExemplesFor('', 'valeursMetier')).toEqual([])
     expect(sectorExemplesFor(null, 'valeursMetier')).toEqual([])

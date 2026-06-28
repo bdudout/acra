@@ -34,7 +34,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -310,7 +310,41 @@ const COMMERCE: SectorFamily = {
   },
 }
 
-export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE]
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFESSIONS JURIDIQUES / CABINET D'AVOCATS
+// ─────────────────────────────────────────────────────────────────────────────
+const JURIDIQUE: SectorFamily = {
+  key: 'juridique',
+  match: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Gestion des dossiers clients', type: 'PROCESSUS', description: 'Suivi des affaires, pièces et échéances des dossiers clients', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Correspondances et secret professionnel', type: 'INFORMATION', description: 'Échanges confidentiels avocat-client couverts par le secret professionnel', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Maniement de fonds clients (CARPA)', type: 'PROCESSUS', description: 'Gestion des fonds des clients via la CARPA', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Dossiers sensibles (M&A, contentieux)', type: 'INFORMATION', description: 'Données confidentielles d’opérations M&A, due diligence et contentieux', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+    ],
+    biensSupports: [
+      { nom: 'Logiciel de gestion de cabinet', type: 'LOGICIEL', description: 'Application métier de gestion des dossiers, du temps et de la facturation' },
+      { nom: 'Coffre-fort électronique / GED', type: 'LOGICIEL', description: 'Stockage sécurisé et archivage des actes et pièces' },
+      { nom: 'Plateformes e-procédure (RPVA, Télérecours)', type: 'RESEAU', description: 'Accès aux juridictions et dépôt dématérialisé des actes' },
+      { nom: 'Data room sécurisée', type: 'SOUS_TRAITANCE', description: 'Espace cloud de partage de pièces pour les opérations sensibles' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Divulgation de pièces couvertes par le secret professionnel', impacts: ['Violation du secret professionnel', 'Sanction déontologique', 'Préjudice grave au client'], graviteDefaut: 4 },
+      { description: 'Indisponibilité des dossiers et de l’e-procédure', impacts: ['Forclusion / délais procéduraux manqués', 'Interruption de l’activité du cabinet'], graviteDefaut: 4 },
+      { description: 'Détournement de fonds clients (CARPA)', impacts: ['Perte financière pour les clients', 'Sanction de l’Ordre', 'Atteinte à la réputation'], graviteDefaut: 4 },
+    ],
+    sourcesRisque: [
+      { nom: 'Cybercriminel ciblant les cabinets d’avocats', categorie: 'CYBERCRIMINEL', description: 'Attaquants visant les données confidentielles et les fonds des cabinets (rançongiciel, fraude au virement)', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'C', nom: 'Fuite de dossiers confidentiels clients (C)', description: 'Exfiltration de pièces couvertes par le secret professionnel par un cybercriminel', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Blocage du cabinet par rançongiciel (D)', description: 'Un rançongiciel chiffre les dossiers et bloque l’accès à l’e-procédure', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+    ],
+  },
+}
+
+export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
