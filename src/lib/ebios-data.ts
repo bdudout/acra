@@ -29,7 +29,13 @@ export const SECTEURS_ACTIVITE = [
   'Administration publique', 'Banque / Finance', 'Défense / Sécurité nationale',
   'Éducation / Recherche', 'Énergie / Utilities', 'Industrie / Manufacturing',
   'Informatique / Numérique', 'Santé / Médico-social', 'Télécommunications',
-  'Transports / Logistique', 'Commerce / Distribution', 'Autre',
+  'Transports / Logistique', 'Commerce / Distribution',
+  // Secteurs ajoutés (couverture NIS2 + compléments FR) — toujours avant « Autre »
+  'Professions juridiques / Cabinet d\'avocats', 'E-commerce / Marketplace',
+  'Agriculture / Agroalimentaire', 'Immobilier / Construction',
+  'Médias / Culture', 'Eau / Assainissement',
+  'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
+  'Autre',
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

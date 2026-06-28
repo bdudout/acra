@@ -50,6 +50,18 @@ const SECTOR_VOCAB: { match: string[]; vocab: string[] }[] = [
     vocab: ['étudiant', 'etudiant', 'élève', 'eleve', 'recherche', 'université', 'universite', 'scolaire', 'cours', 'note', 'diplôme', 'diplome'] },
   { match: ['commerce', 'distribution', 'retail', 'e-commerce'],
     vocab: ['client', 'commande', 'panier', 'stock', 'livraison', 'paiement', 'caisse', 'fidélité', 'fidelite', 'catalogue', 'e-commerce'] },
+  { match: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal'],
+    vocab: ['dossier', 'client', 'confidentialité', 'confidentialite', 'procédure', 'procedure', 'contentieux', 'contrat', 'honoraires', 'carpa', 'correspondance'] },
+  { match: ['agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'ferme'],
+    vocab: ['exploitation', 'récolte', 'recolte', 'élevage', 'elevage', 'traçabilité', 'tracabilite', 'coopérative', 'cooperative', 'phytosanitaire', 'irrigation', 'capteur'] },
+  { match: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp'],
+    vocab: ['bail', 'locataire', 'copropriété', 'copropriete', 'chantier', 'permis', 'transaction', 'mandat', 'gestion locative', 'bim'] },
+  { match: ['média', 'media', 'presse', 'culture', 'audiovisuel', 'édition', 'edition'],
+    vocab: ['rédaction', 'redaction', 'article', 'diffusion', 'audience', 'abonné', 'abonne', 'contenu', 'source', 'publication', 'droits'] },
+  { match: ['tourisme', 'hôtel', 'hotel', 'hôtellerie', 'hotellerie', 'restauration', 'hospitality'],
+    vocab: ['réservation', 'reservation', 'client', 'séjour', 'sejour', 'chambre', 'paiement', 'fidélité', 'fidelite', 'pms', 'check-in'] },
+  { match: ['association', 'économie sociale', 'economie sociale', 'non-profit', 'nonprofit'],
+    vocab: ['adhérent', 'adherent', 'don', 'donateur', 'bénévole', 'benevole', 'cotisation', 'membre', 'subvention', 'rgpd'] },
 ]
 
 // Mots-clés non significatifs (articles, prépositions…) écartés du scoring.

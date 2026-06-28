@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { recommendedFrameworksForSector, FRAMEWORK_IDS } from '@/lib/frameworks-data'
+import { SECTEURS_ACTIVITE } from '@/lib/ebios-data'
 
 // Suggestion automatique du référentiel selon le secteur (improvements-priority.md 🔴).
 
@@ -46,6 +47,44 @@ describe('recommendedFrameworksForSector', () => {
       for (const fid of recommendedFrameworksForSector(sec)) {
         expect(FRAMEWORK_IDS).toContain(fid)
         expect(fid).not.toBe('CUSTOM')
+      }
+    }
+  })
+
+  // ── Secteurs ajoutés (expansion NIS2 + compléments FR) ──────────────────────
+  it('Professions juridiques → ANSSI Hygiène + ISO 27001', () => {
+    const r = recommendedFrameworksForSector("Professions juridiques / Cabinet d'avocats")
+    expect(r).toEqual(['ANSSI_HYG', 'ISO27001'])
+  })
+  it('E-commerce → PCI-DSS (paiement)', () => {
+    expect(recommendedFrameworksForSector('E-commerce / Marketplace')).toContain('PCI_DSS')
+  })
+  it('Eau / Assainissement → IEC 62443 (OT)', () => {
+    expect(recommendedFrameworksForSector('Eau / Assainissement')[0]).toBe('IEC_62443')
+  })
+  it('Tourisme / Hôtellerie → PCI-DSS', () => {
+    expect(recommendedFrameworksForSector('Tourisme / Hôtellerie-restauration')).toContain('PCI_DSS')
+  })
+  it('Agriculture / Immobilier / Médias / Associations → ANSSI Hygiène', () => {
+    for (const s of ['Agriculture / Agroalimentaire', 'Immobilier / Construction', 'Médias / Culture', 'Associations / ESS']) {
+      expect(recommendedFrameworksForSector(s)).toContain('ANSSI_HYG')
+    }
+  })
+
+  // Garde-fou : chaque secteur du référentiel reçoit une recommandation valide,
+  // et seul « Autre » tombe sur le repli générique ISO 27001 seul.
+  it('chaque secteur de SECTEURS_ACTIVITE renvoie des frameworks valides', () => {
+    for (const sec of SECTEURS_ACTIVITE) {
+      const r = recommendedFrameworksForSector(sec)
+      expect(r.length).toBeGreaterThan(0)
+      for (const fid of r) {
+        expect(FRAMEWORK_IDS).toContain(fid)
+        expect(fid).not.toBe('CUSTOM')
+      }
+      if (sec !== 'Autre') {
+        // un secteur connu doit matcher une branche dédiée (≠ repli ISO seul),
+        // sauf cas où la reco dédiée est précisément ISO seul — ici aucun.
+        expect(r).not.toEqual(['ISO27001'])
       }
     }
   })
