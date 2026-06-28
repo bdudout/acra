@@ -534,17 +534,29 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
         </View>
       )}
 
-      {biensSupports.length > 0 && (
-        <View>
-          <SectionBar title={`Biens supports (${biensSupports.length})`} color={C.teal} />
-          <DataTable
-            color={C.teal}
-            headers={['Nom', 'Type', 'Description']}
-            colFlex={[1.5, 1, 3]}
-            rows={biensSupports.map((b: any) => [b.nom || '—', b.type || '—', b.description || '—'])}
-          />
-        </View>
-      )}
+      {biensSupports.length > 0 && (() => {
+        // Lien N‑N bien support ↔ valeurs métier (issue #1) : affiche les VM liées
+        // pour mettre en évidence les biens transverses (multi-VM = critiques).
+        const vmNameById = new Map<string, string>(valeursMetier.map((v: any) => [v.id, v.nom]))
+        const vmLinks = (b: any): string => {
+          const ids: string[] = Array.isArray(b.valeurMetierIds)
+            ? b.valeurMetierIds
+            : (b.valeurMetierId ? [b.valeurMetierId] : [])
+          const noms = ids.map(id => vmNameById.get(id)).filter(Boolean)
+          return noms.length ? noms.join(', ') : '—'
+        }
+        return (
+          <View>
+            <SectionBar title={`Biens supports (${biensSupports.length})`} color={C.teal} />
+            <DataTable
+              color={C.teal}
+              headers={['Nom', 'Type', 'Description', 'Valeurs métier liées']}
+              colFlex={[1.5, 1, 2.2, 1.8]}
+              rows={biensSupports.map((b: any) => [b.nom || '—', b.type || '—', b.description || '—', vmLinks(b)])}
+            />
+          </View>
+        )
+      })()}
 
       {evenementsRedoutes.length > 0 && (
         <View>

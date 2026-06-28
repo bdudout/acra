@@ -34,6 +34,7 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
@@ -143,7 +144,9 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const [vms, setVms] = useState<any[]>(initialData?.valeursMetier || [])
 
   // Biens supports
-  const [biens, setBiens] = useState<any[]>(initialData?.biensSupports || [])
+  // Biens supports : normalisés au format N‑N (valeurMetierIds) — absorbe l'ancien
+  // champ singulier valeurMetierId des analyses existantes (issue #1).
+  const [biens, setBiens] = useState<any[]>(() => (initialData?.biensSupports || []).map(normalizeBienVmLinks))
 
   // Exemples contextuels : biens supports pertinents selon le secteur ET les
   // valeurs métier déjà saisies (réponses précédentes → mots-clés).
@@ -247,13 +250,25 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // ── Biens supports ────────────────────────────────────────────────────────
   function addBien(exemple?: any) {
+    const exIds = bienValeurMetierIds(exemple)
     setBiens(prev => [...prev, {
       id: uid(),
       nom: exemple?.nom || '',
       type: exemple?.type || 'MATERIEL',
       description: exemple?.description || '',
-      valeurMetierId: exemple?.valeurMetierId || vms[0]?.id || '',
+      // N‑N : rattachement à plusieurs valeurs métier ; défaut = la 1re VM si dispo
+      valeurMetierIds: exIds.length ? exIds : (vms[0]?.id ? [vms[0].id] : []),
     }])
+  }
+
+  /** Bascule le rattachement d'un bien support à une valeur métier (N‑N). */
+  function toggleBienVm(bienId: string, vmId: string) {
+    setBiens(prev => prev.map(b => {
+      if (b.id !== bienId) return b
+      const ids = bienValeurMetierIds(b)
+      const next = ids.includes(vmId) ? ids.filter(x => x !== vmId) : [...ids, vmId]
+      return { ...b, valeurMetierIds: next }
+    }))
   }
 
   function updateBien(id: string, field: string, value: string) {
@@ -708,18 +723,34 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                         <option key={tbs.value} value={tbs.value}>{tbs.emoji} {tbs.label}</option>
                       ))}
                     </select>
-                    {vms.length > 0 && (
-                      <select
-                        value={b.valeurMetierId || ''}
-                        onChange={e => updateBien(b.id, 'valeurMetierId', e.target.value)}
-                        className="input text-sm"
-                      >
-                        <option value="">{t.workshop.a1.bsVmSelect}</option>
-                        {vms.map(vm => (
-                          <option key={vm.id} value={vm.id}>{vm.nom}</option>
-                        ))}
-                      </select>
-                    )}
+                    {vms.length > 0 && (() => {
+                      const linked = bienValeurMetierIds(b)
+                      return (
+                        <div className="sm:col-span-1">
+                          <div className="text-[11px] text-gray-400 mb-0.5">{t.workshop.a1.bsVmSelect}</div>
+                          <div className="flex flex-wrap gap-1">
+                            {vms.map(vm => {
+                              const on = linked.includes(vm.id)
+                              return (
+                                <button
+                                  key={vm.id}
+                                  type="button"
+                                  onClick={() => toggleBienVm(b.id, vm.id)}
+                                  title={vm.nom}
+                                  className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors max-w-[140px] truncate ${
+                                    on
+                                      ? 'bg-ebios-100 border-ebios-300 text-ebios-800 font-medium'
+                                      : 'bg-white border-gray-200 text-gray-500 hover:border-ebios-300'
+                                  }`}
+                                >
+                                  {on ? '✓ ' : ''}{vm.nom}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })()}
                     <input
                       value={b.description} onChange={e => updateBien(b.id, 'description', e.target.value)}
                       className="input text-sm" placeholder={t.workshop.a1.bsDescPh}
