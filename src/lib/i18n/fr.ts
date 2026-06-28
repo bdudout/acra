@@ -1037,6 +1037,8 @@ export const fr = {
       vmTypeProcess:  '⚙️ Processus',
       vmTypeInfo:     '📊 Information',
       vmInfoText:     "💼 Valeurs métier (FM1) : Ce sont les processus et informations qui ont de la valeur pour l'organisation et qu'il faut protéger. Elles sont directement liées à vos missions. Exemples : processus de vente, données clients, savoir-faire R&D, service de production, données financières...",
+      rgpdArt9Title:  'Données sensibles détectées (RGPD Art. 9)',
+      rgpdArt9Text:   "Vos valeurs métier semblent contenir des données particulières (santé, biométrie, opinions…). Documentez une base légale adaptée, renforcez le critère de confidentialité et envisagez une analyse d'impact (AIPD/DPIA).",
       vmDictTitle:    'Critères de sécurité',
       vmDictInfo:     "Niveaux d'exigence (0=Nul → 4=Critique). Informatif — aide à orienter les événements redoutés. La gravité reste saisie manuellement.",
       vmDictD:        'Disponibilité',

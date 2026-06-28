@@ -1015,6 +1015,8 @@ export const en: Translations = {
       vmTypeProcess:  '⚙️ Process',
       vmTypeInfo:     '📊 Information',
       vmInfoText:     '💼 Business values (FM1): These are the processes and information that have value for the organisation and must be protected. They are directly linked to your missions. Examples: sales process, customer data, R&D know-how, production service, financial data...',
+      rgpdArt9Title:  'Sensitive data detected (GDPR Art. 9)',
+      rgpdArt9Text:   'Your business values appear to contain special-category data (health, biometrics, opinions…). Document an appropriate legal basis, strengthen the confidentiality criterion and consider a data protection impact assessment (DPIA).',
       vmDictTitle:    'Security criteria',
       vmDictInfo:     'Requirement levels (0=None → 4=Critical). Informative — helps orient feared events. Severity is still entered manually.',
       vmDictD:        'Availability',

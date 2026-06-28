@@ -1015,6 +1015,8 @@ export const es: Translations = {
       vmTypeProcess:  '⚙️ Proceso',
       vmTypeInfo:     '📊 Información',
       vmInfoText:     '💼 Valores de negocio (FM1): Son los procesos e información que tienen valor para la organización y deben protegerse. Están directamente vinculados a tus misiones.',
+      rgpdArt9Title:  'Datos sensibles detectados (RGPD Art. 9)',
+      rgpdArt9Text:   'Tus valores de negocio parecen contener datos de categorías especiales (salud, biometría, opiniones…). Documenta una base jurídica adecuada, refuerza el criterio de confidencialidad y considera una evaluación de impacto (EIPD).',
       vmDictTitle:    'Criterios de seguridad',
       vmDictInfo:     'Niveles de exigencia (0=Ninguno → 4=Crítico). Informativo — ayuda a orientar los eventos temidos. La gravedad se introduce manualmente.',
       vmDictD:        'Disponibilidad',

@@ -1015,6 +1015,8 @@ export const it: Translations = {
       vmTypeProcess:  '⚙️ Processo',
       vmTypeInfo:     '📊 Informazione',
       vmInfoText:     "💼 Valori aziendali (FM1): Sono i processi e le informazioni che hanno valore per l'organizzazione e devono essere protetti. Sono direttamente collegati alle tue missioni.",
+      rgpdArt9Title:  'Dati sensibili rilevati (GDPR Art. 9)',
+      rgpdArt9Text:   "I tuoi valori aziendali sembrano contenere categorie particolari di dati (salute, biometria, opinioni…). Documenta una base giuridica adeguata, rafforza il criterio di riservatezza e valuta una valutazione d'impatto (DPIA).",
       vmDictTitle:    'Criteri di sicurezza',
       vmDictInfo:     'Livelli di requisito (0=Nessuno → 4=Critico). Informativo — aiuta a orientare gli eventi temuti. La gravità viene inserita manualmente.',
       vmDictD:        'Disponibilità',

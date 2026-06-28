@@ -1015,6 +1015,8 @@ export const de: Translations = {
       vmTypeProcess:  '⚙️ Prozess',
       vmTypeInfo:     '📊 Information',
       vmInfoText:     '💼 Geschäftswerte (FM1): Dies sind die Prozesse und Informationen, die für die Organisation wertvoll sind und geschützt werden müssen. Sie sind direkt mit Ihren Aufgaben verknüpft.',
+      rgpdArt9Title:  'Sensible Daten erkannt (DSGVO Art. 9)',
+      rgpdArt9Text:   'Ihre Geschäftswerte scheinen besondere Kategorien von Daten zu enthalten (Gesundheit, Biometrie, Meinungen…). Dokumentieren Sie eine geeignete Rechtsgrundlage, verstärken Sie das Vertraulichkeitskriterium und erwägen Sie eine Datenschutz-Folgenabschätzung (DSFA).',
       vmDictTitle:    'Sicherheitskriterien',
       vmDictInfo:     'Anforderungsstufen (0=Keine → 4=Kritisch). Informativ — hilft bei der Ausrichtung gefürchteter Ereignisse. Der Schweregrad wird weiterhin manuell eingegeben.',
       vmDictD:        'Verfügbarkeit',

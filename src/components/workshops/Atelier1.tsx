@@ -33,6 +33,7 @@ import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
@@ -156,6 +157,9 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // Exemples contextuels : événements redoutés pertinents selon le secteur et
   // les valeurs métier déjà saisies.
+  // Alerte RGPD Art. 9 : données particulières détectées dans les valeurs métier
+  const rgpdArt9 = useMemo(() => detectRgpdArt9(vms), [vms])
+
   const erExamplesRanked = useMemo(
     () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes', locale), {
       secteur: analyse?.secteur,
@@ -412,6 +416,13 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm text-blue-800">{t.workshop.a1.vmInfoText}</p>
           </div>
+
+          {rgpdArt9.length > 0 && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-amber-900">⚠️ {t.workshop.a1.rgpdArt9Title}</p>
+              <p className="text-sm text-amber-800 mt-1">{t.workshop.a1.rgpdArt9Text}</p>
+            </div>
+          )}
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3">
