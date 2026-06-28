@@ -69,6 +69,10 @@ describe('recommendedFrameworksForSector', () => {
     expect(recommendedFrameworksForSector('Informatique / Numérique')).toContain('SOC2')
     expect(recommendedFrameworksForSector('E-commerce / Marketplace')).toContain('SOC2')
   })
+  it('Informatique / Numérique et E-commerce → NIST SSDF (DevSecOps) recommandé', () => {
+    expect(recommendedFrameworksForSector('Informatique / Numérique')).toContain('NIST_SSDF')
+    expect(recommendedFrameworksForSector('E-commerce / Marketplace')).toContain('NIST_SSDF')
+  })
   it('Agriculture / Immobilier / Médias / Associations → ANSSI Hygiène', () => {
     for (const s of ['Agriculture / Agroalimentaire', 'Immobilier / Construction', 'Médias / Culture', 'Associations / ESS']) {
       expect(recommendedFrameworksForSector(s)).toContain('ANSSI_HYG')
@@ -85,6 +89,18 @@ describe('recommendedFrameworksForSector', () => {
     expect(Object.keys(cats).sort()).toEqual(['A', 'C', 'CC', 'P', 'PI'])
     // chaque contrôle pointe vers une catégorie déclarée
     for (const c of ctrls) expect(cats[c.categorie]).toBeTruthy()
+  })
+
+  it('NIST SSDF : méta + contrôles + 4 groupes de pratiques (PO/PS/PW/RV)', () => {
+    expect(FRAMEWORK_META.NIST_SSDF.nom).toMatch(/SSDF/)
+    const ctrls = getFrameworkControles('NIST_SSDF')
+    expect(ctrls.length).toBeGreaterThanOrEqual(12)
+    const cats = getFrameworkCategories('NIST_SSDF')
+    expect(Object.keys(cats).sort()).toEqual(['PO', 'PS', 'PW', 'RV'])
+    for (const c of ctrls) expect(cats[c.categorie]).toBeTruthy()
+    // couvre les pratiques DevSecOps clés
+    const txt = ctrls.map(c => `${c.nom} ${c.description}`).join(' ').toLowerCase()
+    for (const kw of ['sast', 'dast', 'sbom', 'sca', 'secret']) expect(txt).toContain(kw)
   })
 
   // Garde-fou : chaque secteur du référentiel reçoit une recommandation valide,

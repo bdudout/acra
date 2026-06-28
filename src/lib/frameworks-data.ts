@@ -47,7 +47,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -61,6 +61,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   DORA:       { nom: 'DORA',                 version: 'UE 2022/2554', icon: '🏦', cible: 'Banque, assurance, fintech, marchés financiers (UE)' },
   IEC_62443:  { nom: 'IEC 62443',            version: '+ ANSSI-PA-107', icon: '🏭', cible: 'Systèmes industriels OT/ICS (usine, énergie, transport, eau)' },
   SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },
+  NIST_SSDF:  { nom: 'NIST SSDF',             version: 'SP 800-218', icon: '🧬', cible: 'Développement logiciel sécurisé / DevSecOps (CI/CD)' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -680,6 +681,35 @@ export const SOC2_CONTROLES: FrameworkControl[] = [
   { ref:'SOC2-P-1', type:'ORGANISATIONNELLE', categorie:'P',  nom:'Gestion de la vie privée (cycle de vie des données personnelles)', description:'Notice, consentement, collecte, utilisation, conservation, divulgation et destruction des données personnelles conformes aux engagements (P1-P8).' },
 ]
 
+// ─── NIST SSDF (SP 800-218) — développement logiciel sécurisé / DevSecOps ────
+export const NIST_SSDF_CATEGORIES: Record<string, FrameworkCategory> = {
+  PO: { label: 'Préparer l’organisation (PO)',     icon: '🏗️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  PS: { label: 'Protéger le logiciel (PS)',         icon: '🛡️', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  PW: { label: 'Produire un logiciel sûr (PW)',     icon: '⚙️', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  RV: { label: 'Répondre aux vulnérabilités (RV)',  icon: '🚨', color: 'text-red-700',    bg: 'bg-red-50'    },
+}
+
+export const NIST_SSDF_CONTROLES: FrameworkControl[] = [
+  // PO — Prepare the Organization
+  { ref:'SSDF-PO-1', type:'ORGANISATIONNELLE', categorie:'PO', nom:'Exigences de sécurité du développement', description:'Définir et tenir à jour les exigences de sécurité pour le développement logiciel et son infrastructure (PO.1).' },
+  { ref:'SSDF-PO-2', type:'HUMAINE',           categorie:'PO', nom:'Rôles, responsabilités et formation', description:'Attribuer les rôles de sécurité et former les équipes de développement aux pratiques de code sécurisé (PO.2).' },
+  { ref:'SSDF-PO-3', type:'TECHNOLOGIQUE',     categorie:'PO', nom:'Chaîne d’outils sécurisée (CI/CD)', description:'Mettre en place et sécuriser la chaîne d’outils (CI/CD) ; intégrer SAST/DAST et l’automatisation de sécurité dans le pipeline (PO.3).' },
+  // PS — Protect the Software
+  { ref:'SSDF-PS-1', type:'TECHNOLOGIQUE',     categorie:'PS', nom:'Protection du code et gestion des secrets', description:'Protéger le code contre les accès et modifications non autorisés ; gérer les secrets hors du code (coffre / secrets manager) (PS.1).' },
+  { ref:'SSDF-PS-2', type:'TECHNOLOGIQUE',     categorie:'PS', nom:'Intégrité et signature des artefacts', description:'Fournir un mécanisme de vérification d’intégrité des releases (signature des artefacts, provenance) (PS.2).' },
+  { ref:'SSDF-PS-3', type:'ORGANISATIONNELLE', categorie:'PS', nom:'Archivage et SBOM des versions publiées', description:'Archiver et protéger chaque version publiée ; produire et tenir à jour une nomenclature logicielle (SBOM) (PS.3).' },
+  // PW — Produce Well-Secured Software
+  { ref:'SSDF-PW-1', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Conception sécurisée et analyse des risques', description:'Concevoir le logiciel pour respecter les exigences de sécurité et atténuer les risques (threat modeling) (PW.1).' },
+  { ref:'SSDF-PW-2', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Revue de sécurité du code (SAST, revue par les pairs)', description:'Vérifier la conformité aux pratiques de code sécurisé par revue par les pairs et analyse statique (SAST) (PW.7).' },
+  { ref:'SSDF-PW-3', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Tests de sécurité (DAST, fuzzing, tests d’intrusion)', description:'Tester le code exécutable pour identifier les vulnérabilités (DAST, fuzzing, pentest) (PW.8).' },
+  { ref:'SSDF-PW-4', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Sécurité des composants tiers (SCA / dépendances)', description:'Acquérir et maintenir des composants tiers sûrs ; analyser les dépendances (SCA) et appliquer une politique de mise à jour (PW.4).' },
+  { ref:'SSDF-PW-5', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Configuration sécurisée par défaut', description:'Configurer le logiciel avec des paramètres de sécurité par défaut et durcir les environnements (dev/staging/prod séparés) (PW.9).' },
+  // RV — Respond to Vulnerabilities
+  { ref:'SSDF-RV-1', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Détection et politique de divulgation des vulnérabilités', description:'Identifier en continu les vulnérabilités (veille, scanning) et disposer d’une politique de divulgation responsable (RV.1).' },
+  { ref:'SSDF-RV-2', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Remédiation et correctifs', description:'Évaluer, prioriser et corriger les vulnérabilités, puis diffuser les correctifs aux clients (RV.2).' },
+  { ref:'SSDF-RV-3', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Analyse des causes racines', description:'Analyser les vulnérabilités pour en identifier les causes racines et améliorer le processus de développement (RV.3).' },
+]
+
 export function getFrameworkControles(frameworkId: string, customControles?: any[]): FrameworkControl[] {
   switch (frameworkId) {
     case 'ISO27001': {
@@ -696,6 +726,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'DORA':        return DORA_CONTROLES
     case 'IEC_62443':   return IEC_62443_CONTROLES
     case 'SOC2':        return SOC2_CONTROLES
+    case 'NIST_SSDF':   return NIST_SSDF_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -716,6 +747,7 @@ export function getFrameworkCategories(frameworkId: string): Record<string, Fram
     case 'DORA':        return DORA_CATEGORIES
     case 'IEC_62443':   return IEC_62443_CATEGORIES
     case 'SOC2':        return SOC2_CATEGORIES
+    case 'NIST_SSDF':   return NIST_SSDF_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -736,10 +768,10 @@ export function recommendedFrameworksForSector(secteur?: string | null): Framewo
   if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('télécom', 'telecom', 'communication')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
   if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
-  if (has('e-commerce', 'ecommerce', 'marketplace')) return ['PCI_DSS', 'ISO27001', 'SOC2']
+  if (has('e-commerce', 'ecommerce', 'marketplace')) return ['PCI_DSS', 'ISO27001', 'SOC2', 'NIST_SSDF']
   if (has('commerce', 'distribution', 'retail', 'paiement', 'payment')) return ['PCI_DSS', 'ISO27001']
   if (has('industrie', 'manufactur', 'usine', 'scada', 'industry')) return ['IEC_62443', 'CIS_V8', 'ISO27001']
-  if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'SOC2', 'NIST_CSF', 'CIS_V8']
+  if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'SOC2', 'NIST_SSDF', 'NIST_CSF', 'CIS_V8']
   if (has('éducation', 'education', 'recherche', 'université', 'universite', 'research')) return ['ISO27001', 'ANSSI_HYG']
   if (has('juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal', 'law firm')) return ['ANSSI_HYG', 'ISO27001']
   if (has('agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'farming', 'agri-food')) return ['ANSSI_HYG', 'ISO27001']
