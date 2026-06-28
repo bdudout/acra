@@ -47,6 +47,7 @@ export function defaultExemplesFor(
         nom: a1?.vmExamples?.[i]?.nom ?? v.nom,
         type: v.type,
         description: a1?.vmExamples?.[i]?.description ?? v.description,
+        responsable: (v as { responsable?: string }).responsable ?? '',
         disponibilite: v.disponibilite,
         integrite: v.integrite,
         confidentialite: v.confidentialite,

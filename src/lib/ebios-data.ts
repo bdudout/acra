@@ -203,51 +203,61 @@ export const VALEURS_METIER_EXEMPLES = [
   {
     nom: 'Gestion des commandes clients', type: 'PROCESSUS',
     description: 'Processus de prise de commande, facturation et livraison',
+    responsable: 'Direction commerciale',
     disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3,
   },
   {
     nom: 'Base de données clients', type: 'INFORMATION',
     description: 'Données personnelles et historiques achats des clients',
+    responsable: 'Direction marketing / DPO',
     disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3,
   },
   {
     nom: 'Processus de paie', type: 'PROCESSUS',
     description: 'Calcul et versement des salaires et charges sociales',
+    responsable: 'Direction des ressources humaines',
     disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4,
   },
   {
     nom: 'Données RH et contrats', type: 'INFORMATION',
     description: 'Dossiers employés, contrats, évaluations',
+    responsable: 'Direction des ressources humaines',
     disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3,
   },
   {
     nom: 'Service de production', type: 'PROCESSUS',
     description: 'Lignes de production, contrôle qualité, maintenance',
+    responsable: 'Direction des opérations / production',
     disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 3,
   },
   {
     nom: 'Propriété intellectuelle / R&D', type: 'INFORMATION',
     description: 'Brevets, formules, secrets industriels, résultats de recherche',
+    responsable: 'Direction R&D',
     disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3,
   },
   {
     nom: 'Service de vente en ligne', type: 'PROCESSUS',
     description: 'Plateforme e-commerce, catalogue, paiements',
+    responsable: 'Direction e-commerce / digitale',
     disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3,
   },
   {
     nom: 'Stratégie et plans d\'affaires', type: 'INFORMATION',
     description: 'Plans stratégiques, offres commerciales, partenariats confidentiels',
+    responsable: 'Direction générale',
     disponibilite: 2, integrite: 3, confidentialite: 4, tracabilite: 3,
   },
   {
     nom: 'Service support client', type: 'PROCESSUS',
     description: 'Helpdesk, gestion des incidents, réclamations',
+    responsable: 'Direction de la relation client',
     disponibilite: 3, integrite: 3, confidentialite: 2, tracabilite: 3,
   },
   {
     nom: 'Données financières et comptables', type: 'INFORMATION',
     description: 'Comptes, bilan, flux financiers, données bancaires',
+    responsable: 'Direction administrative et financière',
     disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4,
   },
 ]

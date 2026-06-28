@@ -46,10 +46,10 @@ const SANTE: SectorFamily = {
   match: ['santé', 'sante', 'hôpital', 'hopital', 'health', 'soin', 'clinique', 'médico', 'medico', 'ehpad', 'médical', 'medical'],
   exemples: {
     valeursMetier: [
-      { nom: 'Prise en charge des patients aux urgences', type: 'PROCESSUS', description: 'Accueil, tri, soins et orientation des patients en situation d’urgence', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Dossier Patient Informatisé (DPI)', type: 'INFORMATION', description: 'Données de santé, antécédents, prescriptions et comptes rendus des patients', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Circuit du médicament', type: 'PROCESSUS', description: 'Prescription, dispensation et administration des traitements', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Imagerie médicale (PACS)', type: 'INFORMATION', description: 'Images radiologiques et comptes rendus d’examens des patients', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Prise en charge des patients aux urgences', type: 'PROCESSUS', description: 'Accueil, tri, soins et orientation des patients en situation d’urgence', responsable: 'Direction des soins / service des urgences', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Dossier Patient Informatisé (DPI)', type: 'INFORMATION', description: 'Données de santé, antécédents, prescriptions et comptes rendus des patients', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Circuit du médicament', type: 'PROCESSUS', description: 'Prescription, dispensation et administration des traitements', responsable: 'Pharmacie à usage intérieur', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Imagerie médicale (PACS)', type: 'INFORMATION', description: 'Images radiologiques et comptes rendus d’examens des patients', responsable: 'Service d’imagerie médicale', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
     ],
     biensSupports: [
       { nom: 'Système d’information hospitalier (SIH / DPI)', type: 'LOGICIEL', description: 'Application centrale hébergeant les dossiers patients' },
@@ -80,10 +80,10 @@ const FINANCE: SectorFamily = {
   match: ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech'],
   exemples: {
     valeursMetier: [
-      { nom: 'Exécution des paiements et virements', type: 'PROCESSUS', description: 'Traitement des ordres de paiement, virements SEPA et SWIFT', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Core banking (tenue des comptes)', type: 'INFORMATION', description: 'Soldes, opérations et référentiel clients du système central', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Octroi de crédit et scoring', type: 'PROCESSUS', description: 'Évaluation du risque et décision d’octroi de crédit', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Lutte anti-fraude et conformité (LCB-FT)', type: 'PROCESSUS', description: 'Détection de fraude, blanchiment et financement du terrorisme', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Exécution des paiements et virements', type: 'PROCESSUS', description: 'Traitement des ordres de paiement, virements SEPA et SWIFT', responsable: 'Direction des opérations / back-office', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Core banking (tenue des comptes)', type: 'INFORMATION', description: 'Soldes, opérations et référentiel clients du système central', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Octroi de crédit et scoring', type: 'PROCESSUS', description: 'Évaluation du risque et décision d’octroi de crédit', responsable: 'Direction des risques crédit', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Lutte anti-fraude et conformité (LCB-FT)', type: 'PROCESSUS', description: 'Détection de fraude, blanchiment et financement du terrorisme', responsable: 'Direction de la conformité (LCB-FT)', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Plateforme core banking', type: 'LOGICIEL', description: 'Progiciel central de tenue des comptes et des opérations' },
@@ -114,10 +114,10 @@ const INDUSTRIE: SectorFamily = {
   match: ['industrie', 'industry', 'manufactur', 'usine', 'énergie', 'energie', 'energy', 'utilities', 'nucléaire', 'nucleaire', 'eau', 'production'],
   exemples: {
     valeursMetier: [
-      { nom: 'Conduite de la production industrielle', type: 'PROCESSUS', description: 'Pilotage des lignes de production et des procédés via le système OT', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 3 },
-      { nom: 'Supervision et conduite du procédé (SCADA)', type: 'INFORMATION', description: 'Données temps réel de supervision et de commande des installations', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
-      { nom: 'Sûreté de fonctionnement des installations', type: 'PROCESSUS', description: 'Systèmes instrumentés de sécurité protégeant personnes et environnement', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
-      { nom: 'Maintenance et télégestion', type: 'PROCESSUS', description: 'Télémaintenance et exploitation à distance des équipements industriels', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Conduite de la production industrielle', type: 'PROCESSUS', description: 'Pilotage des lignes de production et des procédés via le système OT', responsable: 'Direction de la production', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 3 },
+      { nom: 'Supervision et conduite du procédé (SCADA)', type: 'INFORMATION', description: 'Données temps réel de supervision et de commande des installations', responsable: 'Responsable OT / automatismes', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Sûreté de fonctionnement des installations', type: 'PROCESSUS', description: 'Systèmes instrumentés de sécurité protégeant personnes et environnement', responsable: 'Direction HSE / sûreté de fonctionnement', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Maintenance et télégestion', type: 'PROCESSUS', description: 'Télémaintenance et exploitation à distance des équipements industriels', responsable: 'Direction de la maintenance', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Automates programmables (PLC)', type: 'MATERIEL', description: 'Contrôleurs pilotant les équipements de production' },
@@ -148,10 +148,10 @@ const PUBLIC: SectorFamily = {
   match: ['administration', 'public', 'collectivit', 'état', 'etat', 'government', 'mairie', 'commune', 'ministère', 'ministere', 'préfecture', 'prefecture'],
   exemples: {
     valeursMetier: [
-      { nom: 'Services en ligne aux usagers', type: 'PROCESSUS', description: 'Téléservices et démarches administratives dématérialisées', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
-      { nom: 'État civil et registres', type: 'INFORMATION', description: 'Actes d’état civil, listes électorales et registres officiels', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Gestion des délibérations et actes', type: 'PROCESSUS', description: 'Préparation, vote et publication des délibérations et arrêtés', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
-      { nom: 'Données fiscales et sociales des administrés', type: 'INFORMATION', description: 'Données fiscales, sociales et personnelles des usagers', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Services en ligne aux usagers', type: 'PROCESSUS', description: 'Téléservices et démarches administratives dématérialisées', responsable: 'DSI / Direction du numérique', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
+      { nom: 'État civil et registres', type: 'INFORMATION', description: 'Actes d’état civil, listes électorales et registres officiels', responsable: 'Service de l’état civil', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Gestion des délibérations et actes', type: 'PROCESSUS', description: 'Préparation, vote et publication des délibérations et arrêtés', responsable: 'Secrétariat général', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Données fiscales et sociales des administrés', type: 'INFORMATION', description: 'Données fiscales, sociales et personnelles des usagers', responsable: 'Direction des finances / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Portail de téléservices', type: 'LOGICIEL', description: 'Plateforme d’accès des usagers aux démarches en ligne' },
@@ -182,10 +182,10 @@ const TRANSPORT: SectorFamily = {
   match: ['transport', 'logistique', 'logistics', 'fret', 'ferroviaire', 'aérien', 'aerien', 'maritime', 'livraison'],
   exemples: {
     valeursMetier: [
-      { nom: 'Planification et suivi des expéditions', type: 'PROCESSUS', description: 'Organisation, suivi et traçabilité des livraisons et du fret', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
-      { nom: 'Gestion de la flotte et du transport', type: 'PROCESSUS', description: 'Affectation, géolocalisation et maintenance des véhicules', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
-      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Planification et suivi des expéditions', type: 'PROCESSUS', description: 'Organisation, suivi et traçabilité des livraisons et du fret', responsable: 'Direction logistique / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Gestion de la flotte et du transport', type: 'PROCESSUS', description: 'Affectation, géolocalisation et maintenance des véhicules', responsable: 'Direction de flotte / parc', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
+      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', responsable: 'Direction commerciale', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', responsable: 'Poste de commandement / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Système de gestion d’entrepôt (WMS)', type: 'LOGICIEL', description: 'Pilotage des stocks, préparation et expédition des commandes' },
@@ -221,10 +221,10 @@ const TELECOM: SectorFamily = {
   match: ['télécom', 'telecom', 'télécommunication', 'telecommunication', 'opérateur', 'operateur', 'telco', 'fai'],
   exemples: {
     valeursMetier: [
-      { nom: 'Fourniture des services de communication', type: 'PROCESSUS', description: 'Acheminement de la voix, des données et de l’accès internet des abonnés', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Gestion des abonnés et facturation', type: 'INFORMATION', description: 'Données d’abonnés, contrats et facturation', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
-      { nom: 'Interconnexion et roaming', type: 'PROCESSUS', description: 'Échanges de trafic avec les autres opérateurs et itinérance', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Fourniture des services de communication', type: 'PROCESSUS', description: 'Acheminement de la voix, des données et de l’accès internet des abonnés', responsable: 'Direction réseau / production', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Gestion des abonnés et facturation', type: 'INFORMATION', description: 'Données d’abonnés, contrats et facturation', responsable: 'Direction commerciale / BSS', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', responsable: 'Centre de supervision réseau (NOC)', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Interconnexion et roaming', type: 'PROCESSUS', description: 'Échanges de trafic avec les autres opérateurs et itinérance', responsable: 'Direction des interconnexions', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
     ],
     biensSupports: [
       { nom: 'Cœur de réseau (core network)', type: 'MATERIEL', description: 'Équipements centraux d’acheminement du trafic' },
@@ -255,10 +255,10 @@ const EDUCATION: SectorFamily = {
   match: ['éducation', 'education', 'enseign', 'université', 'universite', 'école', 'ecole', 'scolaire', 'recherche', 'academ', 'formation', 'school'],
   exemples: {
     valeursMetier: [
-      { nom: 'Gestion de la scolarité et des examens', type: 'PROCESSUS', description: 'Inscriptions, notes, examens et délivrance des diplômes', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Dossiers des étudiants et personnels', type: 'INFORMATION', description: 'Données personnelles, scolaires et RH des étudiants et personnels', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
-      { nom: 'Travaux et données de recherche', type: 'INFORMATION', description: 'Résultats de recherche, données expérimentales et propriété intellectuelle', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
-      { nom: 'Plateforme pédagogique (ENT / e-learning)', type: 'PROCESSUS', description: 'Accès aux cours, ressources et services numériques en ligne', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
+      { nom: 'Gestion de la scolarité et des examens', type: 'PROCESSUS', description: 'Inscriptions, notes, examens et délivrance des diplômes', responsable: 'Direction des études / scolarité', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Dossiers des étudiants et personnels', type: 'INFORMATION', description: 'Données personnelles, scolaires et RH des étudiants et personnels', responsable: 'DSI / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Travaux et données de recherche', type: 'INFORMATION', description: 'Résultats de recherche, données expérimentales et propriété intellectuelle', responsable: 'Direction de la recherche', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Plateforme pédagogique (ENT / e-learning)', type: 'PROCESSUS', description: 'Accès aux cours, ressources et services numériques en ligne', responsable: 'DSI / Direction du numérique', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
     ],
     biensSupports: [
       { nom: 'Environnement numérique de travail (ENT)', type: 'LOGICIEL', description: 'Portail d’accès aux services numériques pédagogiques' },
@@ -289,10 +289,10 @@ const COMMERCE: SectorFamily = {
   match: ['commerce', 'distribution', 'retail', 'e-commerce', 'ecommerce', 'magasin', 'vente', 'grande distribution'],
   exemples: {
     valeursMetier: [
-      { nom: 'Vente en ligne (e-commerce)', type: 'PROCESSUS', description: 'Catalogue, panier, commande et paiement en ligne', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Encaissement et caisses (point de vente)', type: 'PROCESSUS', description: 'Encaissement, paiement et gestion des transactions en magasin', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Gestion des stocks et approvisionnement', type: 'PROCESSUS', description: 'Suivi des stocks, réassort et logistique amont', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 3 },
-      { nom: 'Programme de fidélité et données clients', type: 'INFORMATION', description: 'Données clients, historique d’achats et fidélité', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Vente en ligne (e-commerce)', type: 'PROCESSUS', description: 'Catalogue, panier, commande et paiement en ligne', responsable: 'Direction e-commerce', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Encaissement et caisses (point de vente)', type: 'PROCESSUS', description: 'Encaissement, paiement et gestion des transactions en magasin', responsable: 'Direction des magasins / exploitation', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Gestion des stocks et approvisionnement', type: 'PROCESSUS', description: 'Suivi des stocks, réassort et logistique amont', responsable: 'Direction supply chain', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 3 },
+      { nom: 'Programme de fidélité et données clients', type: 'INFORMATION', description: 'Données clients, historique d’achats et fidélité', responsable: 'Direction marketing / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
     ],
     biensSupports: [
       { nom: 'Plateforme e-commerce', type: 'LOGICIEL', description: 'Site marchand et back-office de gestion des commandes' },
@@ -323,10 +323,10 @@ const JURIDIQUE: SectorFamily = {
   match: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal'],
   exemples: {
     valeursMetier: [
-      { nom: 'Gestion des dossiers clients', type: 'PROCESSUS', description: 'Suivi des affaires, pièces et échéances des dossiers clients', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Correspondances et secret professionnel', type: 'INFORMATION', description: 'Échanges confidentiels avocat-client couverts par le secret professionnel', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Maniement de fonds clients (CARPA)', type: 'PROCESSUS', description: 'Gestion des fonds des clients via la CARPA', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Dossiers sensibles (M&A, contentieux)', type: 'INFORMATION', description: 'Données confidentielles d’opérations M&A, due diligence et contentieux', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Gestion des dossiers clients', type: 'PROCESSUS', description: 'Suivi des affaires, pièces et échéances des dossiers clients', responsable: 'Associé / avocat responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Correspondances et secret professionnel', type: 'INFORMATION', description: 'Échanges confidentiels avocat-client couverts par le secret professionnel', responsable: 'Associé / avocat responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Maniement de fonds clients (CARPA)', type: 'PROCESSUS', description: 'Gestion des fonds des clients via la CARPA', responsable: 'Direction financière du cabinet', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Dossiers sensibles (M&A, contentieux)', type: 'INFORMATION', description: 'Données confidentielles d’opérations M&A, due diligence et contentieux', responsable: 'Associé en charge du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
     ],
     biensSupports: [
       { nom: 'Logiciel de gestion de cabinet', type: 'LOGICIEL', description: 'Application métier de gestion des dossiers, du temps et de la facturation' },
@@ -357,10 +357,10 @@ const NUMERIQUE: SectorFamily = {
   match: ['informatique', 'numérique', 'numerique', 'saas', 'startup', 'logiciel', 'éditeur', 'editeur', 'digital'],
   exemples: {
     valeursMetier: [
-      { nom: 'Plateforme SaaS (service rendu aux clients)', type: 'PROCESSUS', description: 'Disponibilité et intégrité du service applicatif fourni aux clients', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Code source et propriété intellectuelle', type: 'INFORMATION', description: 'Dépôts de code, secrets et savoir-faire technique', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Données clients hébergées (multi-tenant)', type: 'INFORMATION', description: 'Données des clients traitées et stockées dans la plateforme', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Chaîne de build et de déploiement (CI/CD)', type: 'PROCESSUS', description: 'Intégration et livraison continues vers la production', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
+      { nom: 'Plateforme SaaS (service rendu aux clients)', type: 'PROCESSUS', description: 'Disponibilité et intégrité du service applicatif fourni aux clients', responsable: 'Direction technique (CTO)', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Code source et propriété intellectuelle', type: 'INFORMATION', description: 'Dépôts de code, secrets et savoir-faire technique', responsable: 'Direction technique (CTO)', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Données clients hébergées (multi-tenant)', type: 'INFORMATION', description: 'Données des clients traitées et stockées dans la plateforme', responsable: 'RSSI / DPO', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Chaîne de build et de déploiement (CI/CD)', type: 'PROCESSUS', description: 'Intégration et livraison continues vers la production', responsable: 'Équipe DevOps / plateforme', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Pipeline CI/CD (GitHub Actions, GitLab CI)', type: 'LOGICIEL', description: 'Chaîne d’intégration et de déploiement continus' },

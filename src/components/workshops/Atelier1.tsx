@@ -225,7 +225,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
       nom: exemple?.nom || '',
       type: exemple?.type || 'PROCESSUS',
       description: exemple?.description || '',
-      responsable: '',
+      responsable: exemple?.responsable || '',
       disponibilite:   exemple?.disponibilite   ?? 2,
       integrite:       exemple?.integrite       ?? 2,
       confidentialite: exemple?.confidentialite ?? 2,
