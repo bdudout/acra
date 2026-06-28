@@ -124,6 +124,7 @@ const INDUSTRIE: SectorFamily = {
       { nom: 'Système SCADA / poste de supervision', type: 'LOGICIEL', description: 'Supervision et commande centralisée du procédé industriel' },
       { nom: 'Réseau OT / bus de terrain', type: 'RESEAU', description: 'Réseau industriel reliant capteurs, automates et supervision' },
       { nom: 'Accès de télémaintenance fournisseur', type: 'SOUS_TRAITANCE', description: 'Connexion distante d’un fournisseur pour la maintenance des équipements' },
+      { nom: 'Logiciel d’ingénierie automate (Siemens STEP 7, Schneider Unity Pro)', type: 'LOGICIEL', description: 'Poste d’ingénierie de programmation et de configuration des automates' },
     ],
     evenementsRedoutes: [
       { description: 'Arrêt ou sabotage de la production industrielle', impacts: ['Perte de production', 'Atteinte à la sécurité des personnes', 'Dommages matériels'], graviteDefaut: 4 },
@@ -158,6 +159,7 @@ const PUBLIC: SectorFamily = {
       { nom: 'Application métier d’état civil', type: 'LOGICIEL', description: 'Logiciel de gestion des actes et registres d’état civil' },
       { nom: 'Téléphonie et messagerie de la collectivité', type: 'RESEAU', description: 'Moyens de communication internes et avec les usagers' },
       { nom: 'Hébergement cloud qualifié (SecNumCloud)', type: 'SOUS_TRAITANCE', description: 'Prestataire qualifié hébergeant les services publics numériques' },
+      { nom: 'Suite collaborative de l’État (Tchap, Resana, Osmose)', type: 'LOGICIEL', description: 'Messagerie et espaces de travail collaboratifs souverains de l’administration' },
     ],
     evenementsRedoutes: [
       { description: 'Indisponibilité des services publics numériques', impacts: ['Usagers privés de démarches essentielles', 'Continuité du service public rompue'], graviteDefaut: 3 },
@@ -299,6 +301,8 @@ const COMMERCE: SectorFamily = {
       { nom: 'Terminaux de paiement et caisses', type: 'MATERIEL', description: 'TPE et systèmes d’encaissement en magasin' },
       { nom: 'Système de gestion des stocks (ERP / WMS)', type: 'LOGICIEL', description: 'Gestion des stocks, commandes et approvisionnement' },
       { nom: 'Base de données clients / CRM', type: 'DONNEES', description: 'Données clients, fidélité et historique d’achats' },
+      { nom: 'Solution e-commerce SaaS (Shopify, WooCommerce, PrestaShop)', type: 'SOUS_TRAITANCE', description: 'Plateforme marchande hébergée en SaaS et ses extensions' },
+      { nom: 'Prestataire de paiement (Stripe, PayPal)', type: 'SOUS_TRAITANCE', description: 'Service tiers de traitement des paiements en ligne' },
     ],
     evenementsRedoutes: [
       { description: 'Indisponibilité du site marchand / des caisses', impacts: ['Perte de chiffre d’affaires', 'Atteinte à l’image', 'Clients mécontents'], graviteDefaut: 4 },
