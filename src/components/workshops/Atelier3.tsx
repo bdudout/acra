@@ -31,6 +31,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import { PRIORITES_MESURE, comparePriorite } from '@/lib/ecosystem-measures'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
@@ -372,7 +373,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
         ...s,
         mesuresEcosysteme: [
           ...(s.mesuresEcosysteme || []),
-          { id: uid(), partiePrenante: ppNom || '', mesure: mesure || '', type: 'ORGANISATIONNELLE', statut: 'A_FAIRE' },
+          { id: uid(), partiePrenante: ppNom || '', mesure: mesure || '', description: '', priorite: 'P2', type: 'ORGANISATIONNELLE', statut: 'A_FAIRE' },
         ],
       }
     }))
@@ -389,6 +390,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             id: uid(),
             partiePrenante: '',
             mesure: `[${controle.ref}] ${controle.nom}`,
+            description: controle.description || '',
+            priorite: 'P2',
             type: controle.type === 'HUMAINE'       ? 'ORGANISATIONNELLE'
                 : controle.type === 'PHYSIQUE'       ? 'ORGANISATIONNELLE'
                 : controle.type === 'TECHNOLOGIQUE'  ? 'TECHNIQUE'
@@ -938,24 +941,49 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                         </div>
                         {(s.mesuresEcosysteme || []).length > 0 && (
                           <div className="space-y-1">
-                            {s.mesuresEcosysteme.map((m: any) => (
-                              <div key={m.id} className="flex gap-2 items-center p-2 bg-white border border-gray-100 rounded">
-                                <input value={m.mesure}
-                                  onChange={e => updateMesure(s.id, m.id, 'mesure', e.target.value)}
-                                  className="input text-xs flex-1" placeholder={t.workshop.a3.measPh} />
-                                <input value={m.partiePrenante}
-                                  onChange={e => updateMesure(s.id, m.id, 'partiePrenante', e.target.value)}
-                                  className="input text-xs w-36" placeholder={t.workshop.a3.measPPPh} />
-                                <select value={m.statut}
-                                  onChange={e => updateMesure(s.id, m.id, 'statut', e.target.value)}
-                                  className="input text-xs w-28">
-                                  <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
-                                  <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
-                                  <option value="REALISE">{t.workshop.a3.statutRealise}</option>
-                                </select>
-                                <button aria-label="Supprimer" onClick={() => setPendingDelete({ msg: t.deleteDialog.mesureEco, action: () => removeMesure(s.id, m.id) })} className="text-gray-500 hover:text-red-500"><span aria-hidden="true">✕</span></button>
+                            {s.mesuresEcosysteme.map((m: any) => {
+                              const ppKnown = parties.some((p: any) => p.nom === m.partiePrenante)
+                              return (
+                              <div key={m.id} className="p-2 bg-white border border-gray-100 rounded space-y-1">
+                                <div className="flex gap-2 items-center">
+                                  <input value={m.mesure}
+                                    onChange={e => updateMesure(s.id, m.id, 'mesure', e.target.value)}
+                                    className="input text-xs flex-1" placeholder={t.workshop.a3.measPh} />
+                                  <select value={m.priorite || 'P2'}
+                                    onChange={e => updateMesure(s.id, m.id, 'priorite', e.target.value)}
+                                    className="input text-xs w-32" title={t.workshop.a3.measPrioriteLabel}>
+                                    {PRIORITES_MESURE.map(pr => (
+                                      <option key={pr} value={pr}>{t.workshop.a3.measPriorites[pr]}</option>
+                                    ))}
+                                  </select>
+                                  <select value={m.statut}
+                                    onChange={e => updateMesure(s.id, m.id, 'statut', e.target.value)}
+                                    className="input text-xs w-28">
+                                    <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
+                                    <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
+                                    <option value="REALISE">{t.workshop.a3.statutRealise}</option>
+                                  </select>
+                                  <button aria-label="Supprimer" onClick={() => setPendingDelete({ msg: t.deleteDialog.mesureEco, action: () => removeMesure(s.id, m.id) })} className="text-gray-500 hover:text-red-500"><span aria-hidden="true">✕</span></button>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                  <input value={m.description || ''}
+                                    onChange={e => updateMesure(s.id, m.id, 'description', e.target.value)}
+                                    className="input text-xs flex-1" placeholder={t.workshop.a3.measDescPh} />
+                                  <select value={ppKnown ? m.partiePrenante : (m.partiePrenante ? '__legacy__' : '')}
+                                    onChange={e => updateMesure(s.id, m.id, 'partiePrenante', e.target.value === '__legacy__' ? m.partiePrenante : e.target.value)}
+                                    className="input text-xs w-44" title={t.workshop.a3.measPPPh}>
+                                    <option value="">{t.workshop.a3.measPPPh}</option>
+                                    {parties.map((p: any) => (
+                                      <option key={p.id} value={p.nom}>{p.nom}</option>
+                                    ))}
+                                    {m.partiePrenante && !ppKnown && (
+                                      <option value="__legacy__">{m.partiePrenante}</option>
+                                    )}
+                                  </select>
+                                </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -999,14 +1027,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left p-2 text-xs font-medium text-gray-600">{t.workshop.a3.measThMesure}</th>
+                    <th className="text-left p-2 text-xs font-medium text-gray-600">{t.workshop.a3.measThPriorite}</th>
                     <th className="text-left p-2 text-xs font-medium text-gray-600">{t.workshop.a3.measThPP}</th>
                     <th className="text-left p-2 text-xs font-medium text-gray-600">{t.workshop.a3.measThStatut}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {s.mesuresEcosysteme.map((m: any) => (
+                  {[...s.mesuresEcosysteme].sort(comparePriorite).map((m: any) => (
                     <tr key={m.id} className="border-t border-gray-100">
-                      <td className="p-2 text-gray-800">{m.mesure}</td>
+                      <td className="p-2 text-gray-800">
+                        {m.mesure}
+                        {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
+                      </td>
+                      <td className="p-2 text-gray-600">{m.priorite ? t.workshop.a3.measPriorites[m.priorite as 'P1'] : '—'}</td>
                       <td className="p-2 text-gray-600">{m.partiePrenante || '—'}</td>
                       <td className="p-2">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
