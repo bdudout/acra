@@ -1053,6 +1053,8 @@ export const es: Translations = {
       referentielMesTitle:    'Referencial de medidas de seguridad',
       referentielMesDesc:     'Elige el referencial utilizado para proponer medidas en los Talleres 3 y 5. Esta elección puede modificarse en cualquier momento.',
       recommendedBadge:       'Recomendado para el sector',
+      showAllFrameworks:      'Mostrar todos los referenciales',
+      showRecommendedFrameworks: 'Mostrar solo los referenciales del sector',
       proceedWarnTitle:       'Faltan datos mínimos',
       proceedWarnMsg:         'No se ha definido ningún valor de negocio ni activo de soporte. Los escenarios de los siguientes talleres podrían ser incoherentes. ¿Continuar de todos modos?',
       proceedAnyway:          'Continuar de todos modos',

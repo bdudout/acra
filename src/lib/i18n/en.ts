@@ -1053,6 +1053,8 @@ export const en: Translations = {
       referentielMesTitle:    'Security measures referential',
       referentielMesDesc:     'Choose the referential used to suggest measures in Workshops 3 & 5. This choice can be changed at any time.',
       recommendedBadge:       'Recommended for the sector',
+      showAllFrameworks:      'Show all frameworks',
+      showRecommendedFrameworks: 'Show only sector frameworks',
       proceedWarnTitle:       'Minimum data missing',
       proceedWarnMsg:         'No business value and/or supporting asset has been defined. The scenarios in the next workshops may be inconsistent. Continue anyway?',
       proceedAnyway:          'Continue anyway',

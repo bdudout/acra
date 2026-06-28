@@ -1075,6 +1075,8 @@ export const fr = {
       referentielMesTitle: 'Référentiel de mesures de sécurité',
       referentielMesDesc:  "Choisissez le référentiel utilisé pour proposer des mesures dans les Ateliers 3 & 5. Ce choix peut être modifié à tout moment.",
       recommendedBadge:    'Recommandé pour le secteur',
+      showAllFrameworks:   'Afficher tous les référentiels',
+      showRecommendedFrameworks: 'Afficher seulement les référentiels du secteur',
       proceedWarnTitle:    'Données minimales manquantes',
       proceedWarnMsg:      "Aucune valeur métier et/ou aucun bien support n'a été défini. Les scénarios des ateliers suivants risquent d'être incohérents. Continuer quand même ?",
       proceedAnyway:       'Continuer quand même',

@@ -1053,6 +1053,8 @@ export const de: Translations = {
       referentielMesTitle:    'Referenz für Sicherheitsmaßnahmen',
       referentielMesDesc:     'Wählen Sie das Referenzwerk für Maßnahmenvorschläge in Workshop 3 & 5. Diese Auswahl kann jederzeit geändert werden.',
       recommendedBadge:       'Für die Branche empfohlen',
+      showAllFrameworks:      'Alle Frameworks anzeigen',
+      showRecommendedFrameworks: 'Nur Branchen-Frameworks anzeigen',
       proceedWarnTitle:       'Mindestdaten fehlen',
       proceedWarnMsg:         'Es wurde kein Geschäftswert und/oder kein Unterstützungswert definiert. Die Szenarien der nächsten Workshops könnten inkonsistent sein. Trotzdem fortfahren?',
       proceedAnyway:          'Trotzdem fortfahren',

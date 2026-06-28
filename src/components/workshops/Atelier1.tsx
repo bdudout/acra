@@ -180,6 +180,15 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur (suggestion non bloquante)
   const recommendedFw = recommendedFrameworksForSector(analyse?.secteur)
+  // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
+  // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la
+  // sélection courante ; « Afficher tous » dévoile le catalogue complet.
+  const [showAllFw, setShowAllFw] = useState(false)
+  const filterFw = !!analyse?.secteur && recommendedFw.length > 0 && !showAllFw
+  const visibleFw = filterFw
+    ? FRAMEWORK_IDS.filter(fid => recommendedFw.includes(fid) || fid === referentielMesures || fid === 'CUSTOM')
+    : FRAMEWORK_IDS
+  const hiddenFwCount = FRAMEWORK_IDS.length - visibleFw.length
 
   // Contrôles custom (si référentiel CUSTOM) — stockés dans Cadrage.customControles
   const [customControles, setCustomControles] = useState<FrameworkControl[]>(
@@ -842,8 +851,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                 ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
               </p>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              {FRAMEWORK_IDS.map(fid => {
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+              {visibleFw.map(fid => {
                 const m = FRAMEWORK_META[fid]
                 const selected = referentielMesures === fid
                 const isReco = recommendedFw.includes(fid)
@@ -875,6 +884,24 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                 )
               })}
             </div>
+            {/* Afficher tous / seulement les référentiels du secteur */}
+            {(filterFw && hiddenFwCount > 0) ? (
+              <button
+                type="button"
+                onClick={() => setShowAllFw(true)}
+                className="text-xs text-indigo-600 hover:text-indigo-800 underline mb-4"
+              >
+                {t.workshop.a1.showAllFrameworks} ({hiddenFwCount})
+              </button>
+            ) : (!!analyse?.secteur && recommendedFw.length > 0 && showAllFw) ? (
+              <button
+                type="button"
+                onClick={() => setShowAllFw(false)}
+                className="text-xs text-indigo-600 hover:text-indigo-800 underline mb-4"
+              >
+                {t.workshop.a1.showRecommendedFrameworks}
+              </button>
+            ) : <div className="mb-4" />}
 
             {/* Custom controls management */}
             {referentielMesures === 'CUSTOM' && (

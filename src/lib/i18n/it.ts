@@ -1053,6 +1053,8 @@ export const it: Translations = {
       referentielMesTitle:    'Referenziale delle misure di sicurezza',
       referentielMesDesc:     'Scegli il referenziale utilizzato per suggerire misure nei Workshop 3 e 5. Questa scelta può essere modificata in qualsiasi momento.',
       recommendedBadge:       'Consigliato per il settore',
+      showAllFrameworks:      'Mostra tutti i riferimenti',
+      showRecommendedFrameworks: 'Mostra solo i riferimenti del settore',
       proceedWarnTitle:       'Dati minimi mancanti',
       proceedWarnMsg:         'Nessun valore di business e/o bene di supporto è stato definito. Gli scenari dei workshop successivi potrebbero essere incoerenti. Continuare comunque?',
       proceedAnyway:          'Continua comunque',
