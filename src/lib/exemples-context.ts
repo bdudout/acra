@@ -52,6 +52,8 @@ const SECTOR_VOCAB: { match: string[]; vocab: string[] }[] = [
     vocab: ['client', 'commande', 'panier', 'stock', 'livraison', 'paiement', 'caisse', 'fidélité', 'fidelite', 'catalogue', 'e-commerce'] },
   { match: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal'],
     vocab: ['dossier', 'client', 'confidentialité', 'confidentialite', 'procédure', 'procedure', 'contentieux', 'contrat', 'honoraires', 'carpa', 'correspondance'] },
+  { match: ['informatique', 'numérique', 'numerique', 'saas', 'startup', 'logiciel', 'éditeur', 'editeur', 'digital'],
+    vocab: ['ci/cd', 'pipeline', 'conteneur', 'container', 'cloud', 'api', 'secret', 'dépendance', 'dependance', 'iac', 'terraform', 'kubernetes', 'registre', 'déploiement', 'deploiement', 'code source', 'sast'] },
   { match: ['agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'ferme'],
     vocab: ['exploitation', 'récolte', 'recolte', 'élevage', 'elevage', 'traçabilité', 'tracabilite', 'coopérative', 'cooperative', 'phytosanitaire', 'irrigation', 'capteur'] },
   { match: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp'],

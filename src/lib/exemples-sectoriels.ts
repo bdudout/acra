@@ -34,7 +34,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -344,7 +344,42 @@ const JURIDIQUE: SectorFamily = {
   },
 }
 
-export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE]
+// ─────────────────────────────────────────────────────────────────────────────
+// INFORMATIQUE / NUMÉRIQUE — éditeurs SaaS, startups, cloud-native
+// ─────────────────────────────────────────────────────────────────────────────
+const NUMERIQUE: SectorFamily = {
+  key: 'numerique',
+  match: ['informatique', 'numérique', 'numerique', 'saas', 'startup', 'logiciel', 'éditeur', 'editeur', 'digital'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Plateforme SaaS (service rendu aux clients)', type: 'PROCESSUS', description: 'Disponibilité et intégrité du service applicatif fourni aux clients', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Code source et propriété intellectuelle', type: 'INFORMATION', description: 'Dépôts de code, secrets et savoir-faire technique', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Données clients hébergées (multi-tenant)', type: 'INFORMATION', description: 'Données des clients traitées et stockées dans la plateforme', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Chaîne de build et de déploiement (CI/CD)', type: 'PROCESSUS', description: 'Intégration et livraison continues vers la production', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
+    ],
+    biensSupports: [
+      { nom: 'Pipeline CI/CD (GitHub Actions, GitLab CI)', type: 'LOGICIEL', description: 'Chaîne d’intégration et de déploiement continus' },
+      { nom: 'Registre de conteneurs (Docker Hub, ECR)', type: 'LOGICIEL', description: 'Stockage des images de conteneurs déployées' },
+      { nom: 'Gestionnaire de secrets (Vault, Secrets Manager)', type: 'LOGICIEL', description: 'Stockage centralisé des secrets et clés d’API' },
+      { nom: 'Infrastructure as Code (Terraform, Pulumi)', type: 'LOGICIEL', description: 'Provisionnement et configuration déclaratifs du cloud' },
+      { nom: 'Hébergement cloud (IaaS/PaaS) et API Gateway', type: 'SOUS_TRAITANCE', description: 'Infrastructure cloud d’exécution et exposition des API' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Compromission de la chaîne logicielle (supply chain)', impacts: ['Code malveillant en production', 'Atteinte à tous les clients', 'Perte de confiance'], graviteDefaut: 4 },
+      { description: 'Fuite de secrets ou de clés d’API', impacts: ['Accès non autorisé à l’infrastructure', 'Exfiltration de données clients'], graviteDefaut: 4 },
+      { description: 'Indisponibilité prolongée de la plateforme SaaS', impacts: ['Rupture de service pour tous les clients', 'Pénalités SLA', 'Atteinte à la réputation'], graviteDefaut: 4 },
+    ],
+    sourcesRisque: [
+      { nom: 'Attaquant ciblant la chaîne d’approvisionnement logicielle', categorie: 'CYBERCRIMINEL', description: 'Acteur compromettant une dépendance, un build ou un registre pour atteindre les clients en aval', motivation: 'Lucratif / sabotage', ressources: 'Élevées', pertinenceDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'I', nom: 'Injection de code via le pipeline CI/CD (I)', description: 'Un attaquant compromet le pipeline et injecte du code malveillant en production', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+      { critere: 'C', nom: 'Exfiltration de données clients via secrets fuités (C)', description: 'Des secrets exposés permettent l’accès et l’exfiltration des données clients', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+    ],
+  },
+}
+
+export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
