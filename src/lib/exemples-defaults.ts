@@ -71,6 +71,9 @@ export function defaultExemplesFor(
       return SOURCES_RISQUE_EXEMPLES.map((s) => ({
         nom: s.nom, categorie: s.categorie, description: s.description,
         motivation: s.motivation, ressources: s.ressources, pertinenceDefaut: s.pertinenceDefaut,
+        motivationScoreDefaut: (s as { motivationScoreDefaut?: number }).motivationScoreDefaut,
+        ressourcesScoreDefaut: (s as { ressourcesScoreDefaut?: number }).ressourcesScoreDefaut,
+        activiteScoreDefaut: (s as { activiteScoreDefaut?: number }).activiteScoreDefaut,
       }))
     case 'objectifsVises':
       return OBJECTIFS_VISES_EXEMPLES.map((o) => ({ nom: o.nom, description: o.description }))

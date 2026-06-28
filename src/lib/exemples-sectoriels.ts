@@ -63,7 +63,7 @@ const SANTE: SectorFamily = {
       { description: 'Altération de prescriptions ou de paramètres de dispositifs médicaux', impacts: ['Erreur de traitement', 'Risque vital pour les patients'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
-      { nom: 'Groupe de rançongiciel ciblant les hôpitaux', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels exploitant la criticité vitale des soins pour maximiser la pression au paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Groupe de rançongiciel ciblant les hôpitaux', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels exploitant la criticité vitale des soins pour maximiser la pression au paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4 },
@@ -97,7 +97,7 @@ const FINANCE: SectorFamily = {
       { description: 'Fuite des données bancaires et personnelles des clients', impacts: ['Usurpation d’identité', 'Sanction RGPD', 'Préjudice client'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
-      { nom: 'Groupe spécialisé en fraude bancaire (type Carbanak)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels organisés ciblant les systèmes de paiement et SWIFT', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Groupe spécialisé en fraude bancaire (type Carbanak)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels organisés ciblant les systèmes de paiement et SWIFT', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'I', nom: 'Manipulation frauduleuse des virements (I)', description: 'Un attaquant détourne des ordres de paiement via la passerelle SWIFT', vraisemblanceDefaut: 2, graviteDefaut: 4 },
@@ -131,7 +131,7 @@ const INDUSTRIE: SectorFamily = {
       { description: 'Compromission via un accès de télémaintenance', impacts: ['Prise de contrôle des installations', 'Propagation IT → OT'], graviteDefaut: 3 },
     ],
     sourcesRisque: [
-      { nom: 'Acteur étatique ciblant les infrastructures (type Sandworm)', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à perturber ou saboter des systèmes industriels critiques', motivation: 'Déstabilisation / sabotage', ressources: 'Très élevées', pertinenceDefaut: 3 },
+      { nom: 'Acteur étatique ciblant les infrastructures (type Sandworm)', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à perturber ou saboter des systèmes industriels critiques', motivation: 'Déstabilisation / sabotage', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Sabotage de la production via le réseau OT (D)', description: 'Un attaquant atteint les automates et arrête les installations', vraisemblanceDefaut: 2, graviteDefaut: 4 },
@@ -165,7 +165,7 @@ const PUBLIC: SectorFamily = {
       { description: 'Défiguration ou désinformation sur les canaux officiels', impacts: ['Atteinte à l’image de l’institution', 'Diffusion de fausses informations'], graviteDefaut: 3 },
     ],
     sourcesRisque: [
-      { nom: 'Hacktiviste visant l’institution publique', categorie: 'ACTIVISTE', description: 'Acteur idéologique cherchant à défigurer les sites ou divulguer des données pour porter un message politique', motivation: 'Idéologique', ressources: 'Moyennes', pertinenceDefaut: 2 },
+      { nom: 'Hacktiviste visant l’institution publique', categorie: 'ACTIVISTE', description: 'Acteur idéologique cherchant à défigurer les sites ou divulguer des données pour porter un message politique', motivation: 'Idéologique', ressources: 'Moyennes', pertinenceDefaut: 2, motivationScoreDefaut: 3, ressourcesScoreDefaut: 2, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Blocage des téléservices par rançongiciel (D)', description: 'Un rançongiciel rend indisponibles les services en ligne aux usagers', vraisemblanceDefaut: 3, graviteDefaut: 3 },
@@ -202,7 +202,7 @@ const TRANSPORT: SectorFamily = {
       { description: 'Fuite de données voyageurs / clients', impacts: ['Atteinte à la vie privée', 'Sanction RGPD', 'Perte de confiance'], graviteDefaut: 3 },
     ],
     sourcesRisque: [
-      { nom: 'Cybercriminel ciblant la chaîne logistique', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels visant les opérateurs logistiques pour rançon ou détournement de marchandises', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Cybercriminel ciblant la chaîne logistique', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels visant les opérateurs logistiques pour rançon ou détournement de marchandises', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Blocage de l’exploitation par rançongiciel (D)', description: 'Un rançongiciel paralyse les systèmes d’exploitation et de livraison', vraisemblanceDefaut: 3, graviteDefaut: 4 },
@@ -238,7 +238,7 @@ const TELECOM: SectorFamily = {
       { description: 'Fuite de données d’abonnés', impacts: ['Atteinte à la vie privée', 'Sanction RGPD', 'Perte de confiance'], graviteDefaut: 3 },
     ],
     sourcesRisque: [
-      { nom: 'Acteur étatique d’espionnage des communications', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à intercepter ou perturber les communications', motivation: 'Renseignement', ressources: 'Très élevées', pertinenceDefaut: 3 },
+      { nom: 'Acteur étatique d’espionnage des communications', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à intercepter ou perturber les communications', motivation: 'Renseignement', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Panne généralisée du réseau par sabotage (D)', description: 'Un attaquant provoque l’indisponibilité du cœur de réseau', vraisemblanceDefaut: 2, graviteDefaut: 4 },
@@ -272,7 +272,7 @@ const EDUCATION: SectorFamily = {
       { description: 'Vol de travaux de recherche / propriété intellectuelle', impacts: ['Perte d’avantage scientifique', 'Espionnage économique', 'Atteinte à la confidentialité'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
-      { nom: 'Acteur d’espionnage académique et scientifique', categorie: 'ETAT_NATION', description: 'Attaquant cherchant à dérober des travaux de recherche sensibles', motivation: 'Espionnage', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Acteur d’espionnage académique et scientifique', categorie: 'ETAT_NATION', description: 'Attaquant cherchant à dérober des travaux de recherche sensibles', motivation: 'Espionnage', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'I', nom: 'Falsification des résultats académiques (I)', description: 'Un attaquant modifie notes ou diplômes via un compte compromis', vraisemblanceDefaut: 2, graviteDefaut: 4 },
@@ -306,7 +306,7 @@ const COMMERCE: SectorFamily = {
       { description: 'Fuite de la base de données clients', impacts: ['Atteinte à la vie privée', 'Sanction RGPD', 'Perte de confiance'], graviteDefaut: 3 },
     ],
     sourcesRisque: [
-      { nom: 'Groupe de vol de données de paiement (Magecart)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels ciblant les sites marchands et caisses pour voler des données de paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Groupe de vol de données de paiement (Magecart)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels ciblant les sites marchands et caisses pour voler des données de paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Indisponibilité du site marchand par DDoS (D)', description: 'Une attaque par déni de service rend le site marchand indisponible', vraisemblanceDefaut: 3, graviteDefaut: 4 },
@@ -340,7 +340,7 @@ const JURIDIQUE: SectorFamily = {
       { description: 'Détournement de fonds clients (CARPA)', impacts: ['Perte financière pour les clients', 'Sanction de l’Ordre', 'Atteinte à la réputation'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
-      { nom: 'Cybercriminel ciblant les cabinets d’avocats', categorie: 'CYBERCRIMINEL', description: 'Attaquants visant les données confidentielles et les fonds des cabinets (rançongiciel, fraude au virement)', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Cybercriminel ciblant les cabinets d’avocats', categorie: 'CYBERCRIMINEL', description: 'Attaquants visant les données confidentielles et les fonds des cabinets (rançongiciel, fraude au virement)', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'C', nom: 'Fuite de dossiers confidentiels clients (C)', description: 'Exfiltration de pièces couvertes par le secret professionnel par un cybercriminel', vraisemblanceDefaut: 3, graviteDefaut: 4 },
@@ -375,7 +375,7 @@ const NUMERIQUE: SectorFamily = {
       { description: 'Indisponibilité prolongée de la plateforme SaaS', impacts: ['Rupture de service pour tous les clients', 'Pénalités SLA', 'Atteinte à la réputation'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
-      { nom: 'Attaquant ciblant la chaîne d’approvisionnement logicielle', categorie: 'CYBERCRIMINEL', description: 'Acteur compromettant une dépendance, un build ou un registre pour atteindre les clients en aval', motivation: 'Lucratif / sabotage', ressources: 'Élevées', pertinenceDefaut: 3 },
+      { nom: 'Attaquant ciblant la chaîne d’approvisionnement logicielle', categorie: 'CYBERCRIMINEL', description: 'Acteur compromettant une dépendance, un build ou un registre pour atteindre les clients en aval', motivation: 'Lucratif / sabotage', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
       { critere: 'I', nom: 'Injection de code via le pipeline CI/CD (I)', description: 'Un attaquant compromet le pipeline et injecte du code malveillant en production', vraisemblanceDefaut: 2, graviteDefaut: 4 },

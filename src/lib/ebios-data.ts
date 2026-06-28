@@ -375,6 +375,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Gain financier',
     ressources: 'Moyens importants, outils sophistiqués, accès au dark web',
     pertinenceDefaut: 3,
+    motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3,
   },
   {
     nom: 'État / groupe étatique',
@@ -383,6 +384,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Espionnage, sabotage, déstabilisation politique',
     ressources: 'Ressources illimitées, 0-day, accès privilégiés',
     pertinenceDefaut: 2,
+    motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3,
   },
   {
     nom: 'Concurrent déloyal',
@@ -391,6 +393,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Espionnage industriel, vol de propriété intellectuelle',
     ressources: 'Moyens limités à importants selon la taille',
     pertinenceDefaut: 2,
+    motivationScoreDefaut: 3, ressourcesScoreDefaut: 2, activiteScoreDefaut: 2,
   },
   {
     nom: 'Hacktiviste',
@@ -399,6 +402,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Idéologique, nuire à l\'image, dénoncer',
     ressources: 'Outils publics, faibles à moyens',
     pertinenceDefaut: 2,
+    motivationScoreDefaut: 3, ressourcesScoreDefaut: 2, activiteScoreDefaut: 3,
   },
   {
     nom: 'Employé malveillant',
@@ -407,6 +411,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Revanche, appât du gain, coercition',
     ressources: 'Accès internes légitimes, connaissance du SI',
     pertinenceDefaut: 3,
+    motivationScoreDefaut: 3, ressourcesScoreDefaut: 3, activiteScoreDefaut: 2,
   },
   {
     nom: 'Prestataire / sous-traitant compromis',
@@ -415,6 +420,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Vecteur d\'attaque par rebond',
     ressources: 'Accès VPN, comptes de service, outils de gestion',
     pertinenceDefaut: 3,
+    motivationScoreDefaut: 2, ressourcesScoreDefaut: 3, activiteScoreDefaut: 2,
   },
   {
     nom: 'Amateur / Script kiddie',
@@ -423,6 +429,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Défi personnel, curiosité, reconnaissance',
     ressources: 'Outils disponibles gratuitement, compétences limitées',
     pertinenceDefaut: 2,
+    motivationScoreDefaut: 2, ressourcesScoreDefaut: 1, activiteScoreDefaut: 2,
   },
   {
     nom: 'Terroriste cyber',
@@ -431,6 +438,7 @@ export const SOURCES_RISQUE_EXEMPLES = [
     motivation: 'Déstabilisation, terreur, cause extrémiste',
     ressources: 'Variables, généralement limités techniquement',
     pertinenceDefaut: 1,
+    motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 1,
   },
 ]
 
