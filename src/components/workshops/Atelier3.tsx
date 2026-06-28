@@ -31,7 +31,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
-import { PRIORITES_MESURE, comparePriorite } from '@/lib/ecosystem-measures'
+import { PRIORITES_MESURE, comparePriorite, measuresApplyingTo } from '@/lib/ecosystem-measures'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
@@ -411,6 +411,21 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
       return {
         ...s,
         mesuresEcosysteme: s.mesuresEcosysteme.map((m: any) => m.id === mesureId ? { ...m, [field]: value } : m),
+      }
+    }))
+  }
+
+  /** Mutualise/retire une mesure vers un autre scénario stratégique (issue #2). */
+  function toggleMesureScenario(scenarioId: string, mesureId: string, targetScenarioId: string) {
+    setScenarios(prev => prev.map(s => {
+      if (s.id !== scenarioId) return s
+      return {
+        ...s,
+        mesuresEcosysteme: s.mesuresEcosysteme.map((m: any) => {
+          if (m.id !== mesureId) return m
+          const ids: string[] = Array.isArray(m.scenarioIds) ? m.scenarioIds : []
+          return { ...m, scenarioIds: ids.includes(targetScenarioId) ? ids.filter(x => x !== targetScenarioId) : [...ids, targetScenarioId] }
+        }),
       }
     }))
   }
@@ -981,6 +996,27 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                                     )}
                                   </select>
                                 </div>
+                                {scenarios.length > 1 && (
+                                  <div className="flex flex-wrap gap-1 items-center">
+                                    <span className="text-[11px] text-gray-400">{t.workshop.a3.measAlsoApply}</span>
+                                    {scenarios.filter((sc: any) => sc.id !== s.id).map((sc: any) => {
+                                      const on = Array.isArray(m.scenarioIds) && m.scenarioIds.includes(sc.id)
+                                      return (
+                                        <button
+                                          key={sc.id}
+                                          type="button"
+                                          onClick={() => toggleMesureScenario(s.id, m.id, sc.id)}
+                                          title={sc.nom}
+                                          className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors max-w-[160px] truncate ${
+                                            on ? 'bg-ebios-100 border-ebios-300 text-ebios-800 font-medium' : 'bg-white border-gray-200 text-gray-500 hover:border-ebios-300'
+                                          }`}
+                                        >
+                                          {on ? '✓ ' : ''}{sc.nom || '—'}
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
                               </div>
                               )
                             })}
@@ -1019,7 +1055,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             </div>
           )}
 
-          {scenarios.filter(s => (s.mesuresEcosysteme || []).length > 0).map(s => (
+          {scenarios.filter(s => measuresApplyingTo(scenarios, s.id).length > 0).map(s => (
             <div key={s.id} className="card p-5">
               <h3 className="font-semibold text-gray-800 mb-1">{s.nom || t.workshop.a3.scenNoTitle}</h3>
               {s.coupleLabel && <p className="text-xs text-gray-500 mb-3">{t.workshop.a3.coupleLabel} {s.coupleLabel}</p>}
@@ -1033,10 +1069,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                   </tr>
                 </thead>
                 <tbody>
-                  {[...s.mesuresEcosysteme].sort(comparePriorite).map((m: any) => (
+                  {measuresApplyingTo(scenarios, s.id).sort((a, b) => comparePriorite(a, b)).map((m: any) => (
                     <tr key={m.id} className="border-t border-gray-100">
                       <td className="p-2 text-gray-800">
                         {m.mesure}
+                        {m._mutualisee ? <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-ebios-100 text-ebios-700 align-middle">{t.workshop.a3.measMutualisee}</span> : null}
                         {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
                       </td>
                       <td className="p-2 text-gray-600">{m.priorite ? t.workshop.a3.measPriorites[m.priorite as 'P1'] : '—'}</td>

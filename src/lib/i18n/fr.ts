@@ -1407,6 +1407,8 @@ export const fr = {
       measPrioriteLabel: 'Priorité',
       measThPriorite: 'Priorité',
       measPriorites: { P1: 'P1 — Immédiat', P2: 'P2 — Court terme', P3: 'P3 — Moyen terme', P4: 'P4 — Long terme' },
+      measAlsoApply: 'Aussi appliquer à :',
+      measMutualisee: 'mutualisée',
       measPh:       'Mesure de sécurité',
       statutFaire:  'À faire',
       statutEnCours:'En cours',

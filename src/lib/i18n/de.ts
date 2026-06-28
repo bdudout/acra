@@ -1382,6 +1382,8 @@ export const de: Translations = {
       measPrioriteLabel: 'Priorität',
       measThPriorite: 'Priorität',
       measPriorites: { P1: 'P1 — Sofort', P2: 'P2 — Kurzfristig', P3: 'P3 — Mittelfristig', P4: 'P4 — Langfristig' },
+      measAlsoApply: 'Auch anwenden auf:',
+      measMutualisee: 'gemeinsam',
       measPh:       'Sicherheitsmaßnahme',
       statutFaire:  'Zu erledigen',
       statutEnCours:'In Bearbeitung',
