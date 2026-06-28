@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { recommendedFrameworksForSector, FRAMEWORK_IDS } from '@/lib/frameworks-data'
+import { recommendedFrameworksForSector, FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, getFrameworkCategories } from '@/lib/frameworks-data'
 import { SECTEURS_ACTIVITE } from '@/lib/ebios-data'
 
 // Suggestion automatique du référentiel selon le secteur (improvements-priority.md 🔴).
@@ -65,10 +65,26 @@ describe('recommendedFrameworksForSector', () => {
   it('Tourisme / Hôtellerie → PCI-DSS', () => {
     expect(recommendedFrameworksForSector('Tourisme / Hôtellerie-restauration')).toContain('PCI_DSS')
   })
+  it('Informatique / Numérique et E-commerce → SOC 2 recommandé', () => {
+    expect(recommendedFrameworksForSector('Informatique / Numérique')).toContain('SOC2')
+    expect(recommendedFrameworksForSector('E-commerce / Marketplace')).toContain('SOC2')
+  })
   it('Agriculture / Immobilier / Médias / Associations → ANSSI Hygiène', () => {
     for (const s of ['Agriculture / Agroalimentaire', 'Immobilier / Construction', 'Médias / Culture', 'Associations / ESS']) {
       expect(recommendedFrameworksForSector(s)).toContain('ANSSI_HYG')
     }
+  })
+
+  // ── SOC 2 : contenu du référentiel ──────────────────────────────────────────
+  it('SOC 2 : méta + contrôles + catégories cohérents', () => {
+    expect(FRAMEWORK_META.SOC2.nom).toMatch(/SOC 2/)
+    const ctrls = getFrameworkControles('SOC2')
+    expect(ctrls.length).toBeGreaterThan(10)
+    const cats = getFrameworkCategories('SOC2')
+    // les 5 Trust Services Criteria
+    expect(Object.keys(cats).sort()).toEqual(['A', 'C', 'CC', 'P', 'PI'])
+    // chaque contrôle pointe vers une catégorie déclarée
+    for (const c of ctrls) expect(cats[c.categorie]).toBeTruthy()
   })
 
   // Garde-fou : chaque secteur du référentiel reçoit une recommandation valide,

@@ -47,7 +47,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -60,6 +60,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   PCI_DSS:    { nom: 'PCI-DSS',              version: 'v4.0',     icon: '💳', cible: 'Organisations traitant des paiements' },
   DORA:       { nom: 'DORA',                 version: 'UE 2022/2554', icon: '🏦', cible: 'Banque, assurance, fintech, marchés financiers (UE)' },
   IEC_62443:  { nom: 'IEC 62443',            version: '+ ANSSI-PA-107', icon: '🏭', cible: 'Systèmes industriels OT/ICS (usine, énergie, transport, eau)' },
+  SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -648,6 +649,37 @@ export const IEC_62443_CONTROLES: FrameworkControl[] = [
   { ref:'IEC-FR7-3', type:'ORGANISATIONNELLE', categorie:'FR7', nom:'Gestion des obsolescences OT (cycles de vie longs)', description:'Les composants industriels en fin de support sont identifiés et un plan de gestion des obsolescences / mesures compensatoires est défini.' },
 ]
 
+// ─── SOC 2 Type II — Trust Services Criteria (AICPA) ─────────────────────────
+export const SOC2_CATEGORIES: Record<string, FrameworkCategory> = {
+  CC: { label: 'Sécurité (critères communs)',  icon: '🔒', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  A:  { label: 'Disponibilité',                 icon: '⏱️', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  PI: { label: 'Intégrité du traitement',       icon: '✅', color: 'text-green-700',  bg: 'bg-green-50'  },
+  C:  { label: 'Confidentialité',               icon: '🔐', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  P:  { label: 'Vie privée',                    icon: '👤', color: 'text-rose-700',   bg: 'bg-rose-50'   },
+}
+
+export const SOC2_CONTROLES: FrameworkControl[] = [
+  // Critères communs (Sécurité) — CC1 à CC9, socle obligatoire de tout rapport SOC 2
+  { ref:'SOC2-CC-1', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Environnement de contrôle et gouvernance', description:'Politiques de sécurité approuvées par la direction, intégrité et valeurs éthiques, rôles et responsabilités définis (CC1).' },
+  { ref:'SOC2-CC-2', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Communication et information', description:'Les objectifs et obligations de sécurité sont communiqués en interne et aux parties prenantes externes (CC2).' },
+  { ref:'SOC2-CC-3', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Évaluation des risques', description:'Identification, analyse et traitement des risques pesant sur l’atteinte des objectifs, y compris le risque de fraude (CC3).' },
+  { ref:'SOC2-CC-4', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Activités de supervision', description:'Surveillance continue et évaluations indépendantes permettant de détecter et corriger les déficiences de contrôle (CC4).' },
+  { ref:'SOC2-CC-5', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Gestion des accès logiques', description:'Authentification, autorisations au moindre privilège, provisioning/déprovisioning et revue périodique des accès (CC6).' },
+  { ref:'SOC2-CC-6', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Opérations de sécurité et détection', description:'Journalisation, surveillance, détection des anomalies et réponse aux incidents de sécurité (CC7).' },
+  { ref:'SOC2-CC-7', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Gestion des changements', description:'Processus maîtrisé de gestion des changements applicatifs et d’infrastructure (revue, test, approbation) (CC8).' },
+  { ref:'SOC2-CC-8', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Gestion des risques fournisseurs', description:'Évaluation et suivi des prestataires et sous-traitants susceptibles d’affecter les engagements de service (CC9).' },
+  // Disponibilité (A)
+  { ref:'SOC2-A-1', type:'TECHNOLOGIQUE',    categorie:'A',  nom:'Supervision de la capacité et de la disponibilité', description:'Surveillance des capacités, performances et disponibilité au regard des engagements (SLA) (A1.1).' },
+  { ref:'SOC2-A-2', type:'TECHNOLOGIQUE',    categorie:'A',  nom:'Sauvegarde et reprise après sinistre', description:'Sauvegardes, redondance et plan de reprise (DRP) testés périodiquement (A1.2/A1.3).' },
+  // Intégrité du traitement (PI)
+  { ref:'SOC2-PI-1', type:'TECHNOLOGIQUE',   categorie:'PI', nom:'Intégrité des traitements', description:'Contrôles d’entrée, de traitement et de sortie garantissant des traitements complets, exacts et autorisés (PI1).' },
+  // Confidentialité (C)
+  { ref:'SOC2-C-1', type:'TECHNOLOGIQUE',    categorie:'C',  nom:'Protection des informations confidentielles', description:'Chiffrement au repos et en transit, contrôle d’accès des informations désignées confidentielles (C1.1).' },
+  { ref:'SOC2-C-2', type:'ORGANISATIONNELLE', categorie:'C',  nom:'Conservation et destruction sécurisées', description:'Politiques de conservation et de destruction sécurisée des informations confidentielles en fin de cycle de vie (C1.2).' },
+  // Vie privée (P)
+  { ref:'SOC2-P-1', type:'ORGANISATIONNELLE', categorie:'P',  nom:'Gestion de la vie privée (cycle de vie des données personnelles)', description:'Notice, consentement, collecte, utilisation, conservation, divulgation et destruction des données personnelles conformes aux engagements (P1-P8).' },
+]
+
 export function getFrameworkControles(frameworkId: string, customControles?: any[]): FrameworkControl[] {
   switch (frameworkId) {
     case 'ISO27001': {
@@ -663,6 +695,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'PCI_DSS':     return PCI_DSS_CONTROLES
     case 'DORA':        return DORA_CONTROLES
     case 'IEC_62443':   return IEC_62443_CONTROLES
+    case 'SOC2':        return SOC2_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -682,6 +715,7 @@ export function getFrameworkCategories(frameworkId: string): Record<string, Fram
     case 'PCI_DSS':     return PCI_DSS_CATEGORIES
     case 'DORA':        return DORA_CATEGORIES
     case 'IEC_62443':   return IEC_62443_CATEGORIES
+    case 'SOC2':        return SOC2_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -702,9 +736,10 @@ export function recommendedFrameworksForSector(secteur?: string | null): Framewo
   if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('télécom', 'telecom', 'communication')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
   if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
-  if (has('commerce', 'distribution', 'retail', 'e-commerce', 'paiement', 'payment')) return ['PCI_DSS', 'ISO27001']
+  if (has('e-commerce', 'ecommerce', 'marketplace')) return ['PCI_DSS', 'ISO27001', 'SOC2']
+  if (has('commerce', 'distribution', 'retail', 'paiement', 'payment')) return ['PCI_DSS', 'ISO27001']
   if (has('industrie', 'manufactur', 'usine', 'scada', 'industry')) return ['IEC_62443', 'CIS_V8', 'ISO27001']
-  if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'NIST_CSF', 'CIS_V8']
+  if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'SOC2', 'NIST_CSF', 'CIS_V8']
   if (has('éducation', 'education', 'recherche', 'université', 'universite', 'research')) return ['ISO27001', 'ANSSI_HYG']
   if (has('juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal', 'law firm')) return ['ANSSI_HYG', 'ISO27001']
   if (has('agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'farming', 'agri-food')) return ['ANSSI_HYG', 'ISO27001']
