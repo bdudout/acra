@@ -180,6 +180,10 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
     Array.isArray(initialData?.socleSecurite) ? initialData.socleSecurite : []
   )
 
+  // Secteur OT/ICS → glossaire contextuel (ICS, SCADA, PLC…) pour non-experts
+  const isOtSector = /(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(analyse?.secteur || '')
+  const [showOtGlossary, setShowOtGlossary] = useState(false)
+
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur (suggestion non bloquante)
@@ -594,6 +598,40 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
               {vms.length === 0 && <strong> {t.workshop.a1.bsNoVmWarning}</strong>}
             </p>
           </div>
+
+          {/* Glossaire OT contextuel (secteurs industriels) */}
+          {isOtSector && (
+            <div className="border border-amber-200 rounded-xl bg-amber-50/50 p-3">
+              <button
+                type="button"
+                onClick={() => setShowOtGlossary(v => !v)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="text-sm font-semibold text-amber-900">🏭 {t.workshop.a1.otGlossaryTitle}</span>
+                <span className="text-xs text-amber-700 underline">
+                  {showOtGlossary ? t.workshop.hideExamples : t.workshop.showExamples}
+                </span>
+              </button>
+              {showOtGlossary && (
+                <dl className="mt-2 space-y-1.5">
+                  {[
+                    ['OT', t.workshop.a1.otGlossaryOT],
+                    ['ICS', t.workshop.a1.otGlossaryICS],
+                    ['SCADA', t.workshop.a1.otGlossarySCADA],
+                    ['Automate (PLC)', t.workshop.a1.otGlossaryPLC],
+                    ['IHM (HMI)', t.workshop.a1.otGlossaryHMI],
+                    ['Bus de terrain', t.workshop.a1.otGlossaryFieldbus],
+                    ['SIS', t.workshop.a1.otGlossarySIS],
+                  ].map(([term, def]) => (
+                    <div key={term} className="text-xs">
+                      <dt className="inline font-semibold text-amber-900">{term} — </dt>
+                      <dd className="inline text-amber-800">{def}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          )}
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3">
