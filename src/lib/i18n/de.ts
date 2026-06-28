@@ -1527,6 +1527,8 @@ export const de: Translations = {
       thStatut:        'Status',
       measRefHide:     '▲ Referenzwerk ausblenden',
       chooseRef:       'Referenzwerk auswählen:',
+      nis2Title:       'NIS2-Abdeckung (Art. 21)',
+      nis2Intro:       'Indikatives Mapping: durch dieses Rahmenwerk abgedeckte NIS2-Mindestmaßnahmen (Art. 21 Abs. 2). Nützlich für wesentliche/wichtige Einrichtungen.',
       frameworkAddDesc: 'Klicken Sie auf ein Steuerelement, um es dem Behandlungsplan hinzuzufügen. Die Referenz ist im Namen enthalten.',
       frameworkSearch: 'Steuerung suchen…',
       frameworkCount:  'Steuerung',

@@ -1532,6 +1532,8 @@ export const fr = {
       measRecoShow:    'Afficher les propositions ISO 27005',
       measRefHide:     '▲ Masquer le référentiel',
       chooseRef:       'Choisir un référentiel :',
+      nis2Title:       'Couverture NIS2 Art. 21',
+      nis2Intro:       'Mapping indicatif : mesures minimales NIS2 (Art. 21 §2) couvertes par ce référentiel. Utile pour les entités essentielles/importantes (EEI/OSE).',
       frameworkAddDesc:"Cliquez sur un contrôle pour l'ajouter au plan de traitement. La référence est incluse dans le nom.",
       frameworkSearch: 'Rechercher un contrôle…',
       frameworkCount:  'contrôle',

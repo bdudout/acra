@@ -1527,6 +1527,8 @@ export const it: Translations = {
       thStatut:        'Stato',
       measRefHide:     '▲ Nascondi il referenziale',
       chooseRef:       'Scegli un referenziale:',
+      nis2Title:       'Copertura NIS2 Art. 21',
+      nis2Intro:       'Mapping indicativo: misure minime NIS2 (Art. 21 §2) coperte da questo referenziale. Utile per i soggetti essenziali/importanti.',
       frameworkAddDesc: 'Clicca su un controllo per aggiungerlo al piano di trattamento. Il riferimento è incluso nel nome.',
       frameworkSearch: 'Cerca un controllo…',
       frameworkCount:  'controllo',

@@ -43,6 +43,7 @@ import { getRiskTier, type ScaleConfig } from '@/lib/risk-scale'
 import ExportButtons from '@/components/ExportButtons'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
+import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 
 interface Props {
   analyseId: string
@@ -125,6 +126,13 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   )
   // Référentiels recommandés selon le secteur (suggestion non bloquante, cf. Atelier 1)
   const recommendedFw = recommendedFrameworksForSector(analyse?.secteur)
+  // Couverture NIS2 Art. 21 du référentiel actif (différenciateur EEI/OSE)
+  const nis2Coverage = useMemo(
+    () => (activeFramework ? nis2CoverageForFramework(activeFramework) : []),
+    [activeFramework],
+  )
+  const nis2CoveredCnt = nis2Coverage.filter(m => m.covered).length
+  const [showNis2, setShowNis2] = useState(false)
   // Reconstruire scenarioOpNom depuis scenarioOpId au chargement depuis DB
   const [risques, setRisques] = useState<any[]>(() => {
     const allSO = analyse?.scenariosOperationnels || []
@@ -652,6 +660,41 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                   onSelect={addMesureISO27001}
                   actionLabel={t.workshop.addExample}
                 />
+              </div>
+            )}
+
+            {/* Couverture NIS2 Art. 21 — mapping indicatif du référentiel actif */}
+            {activeFramework && activeFramework !== 'CUSTOM' && (
+              <div className="mt-4 border border-emerald-200 rounded-lg bg-emerald-50/50 p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowNis2(v => !v)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <span className="text-sm font-semibold text-emerald-900">
+                    🇪🇺 {t.workshop.a5.nis2Title} — {nis2CoveredCnt}/10
+                  </span>
+                  <span className="text-xs text-emerald-700 underline">
+                    {showNis2 ? t.workshop.hideExamples : t.workshop.showExamples}
+                  </span>
+                </button>
+                {showNis2 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-emerald-800 mb-2">{t.workshop.a5.nis2Intro}</p>
+                    <ul className="space-y-1">
+                      {nis2Coverage.map(m => (
+                        <li key={m.id} className="flex items-start gap-2 text-xs">
+                          <span className={m.covered ? 'text-emerald-600' : 'text-gray-400'}>
+                            {m.covered ? '✓' : '○'}
+                          </span>
+                          <span className={m.covered ? 'text-gray-700' : 'text-gray-400'}>
+                            <span className="font-semibold uppercase">{m.id})</span> {m.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 

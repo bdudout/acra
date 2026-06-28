@@ -1527,6 +1527,8 @@ export const es: Translations = {
       thStatut:        'Estado',
       measRefHide:     '▲ Ocultar el referencial',
       chooseRef:       'Elegir un referencial:',
+      nis2Title:       'Cobertura NIS2 Art. 21',
+      nis2Intro:       'Mapeo indicativo: medidas mínimas NIS2 (Art. 21.2) cubiertas por este referencial. Útil para entidades esenciales/importantes.',
       frameworkAddDesc: 'Haz clic en un control para añadirlo al plan de tratamiento. La referencia está incluida en el nombre.',
       frameworkSearch: 'Buscar un control…',
       frameworkCount:  'control',
