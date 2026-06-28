@@ -192,6 +192,9 @@ const TRANSPORT: SectorFamily = {
       { nom: 'Télématique embarquée / géolocalisation', type: 'MATERIEL', description: 'Boîtiers GPS et capteurs embarqués sur les véhicules' },
       { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport' },
       { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel' },
+      { nom: 'Système de gestion du transport (TMS)', type: 'LOGICIEL', description: 'Planification, optimisation et suivi des transports et tournées' },
+      { nom: 'Chronotachygraphe numérique', type: 'MATERIEL', description: 'Enregistrement réglementaire des temps de conduite et de repos' },
+      { nom: 'Échanges de données informatisées (EDI)', type: 'RESEAU', description: 'Interfaces d’échange avec clients, transporteurs et douanes' },
     ],
     evenementsRedoutes: [
       { description: 'Interruption de l’exploitation et des livraisons', impacts: ['Retards et ruptures d’approvisionnement', 'Perte de chiffre d’affaires', 'Atteinte aux engagements clients'], graviteDefaut: 4 },
@@ -204,6 +207,8 @@ const TRANSPORT: SectorFamily = {
     scenariosStrategiques: [
       { critere: 'D', nom: 'Blocage de l’exploitation par rançongiciel (D)', description: 'Un rançongiciel paralyse les systèmes d’exploitation et de livraison', vraisemblanceDefaut: 3, graviteDefaut: 4 },
       { critere: 'I', nom: 'Détournement de marchandises via altération du suivi (I)', description: 'Un attaquant modifie les données de suivi pour détourner du fret', vraisemblanceDefaut: 2, graviteDefaut: 3 },
+      { critere: 'I', nom: 'Sabotage GPS / routage frauduleux (I)', description: 'Un attaquant falsifie les données GPS pour détourner ou retarder des livraisons', vraisemblanceDefaut: 2, graviteDefaut: 3 },
+      { critere: 'I', nom: 'Manipulation des chronotachygraphes (I)', description: 'Altération des données de temps de conduite (fraude réglementaire et risque pour la sécurité routière)', vraisemblanceDefaut: 2, graviteDefaut: 3 },
     ],
   },
 }

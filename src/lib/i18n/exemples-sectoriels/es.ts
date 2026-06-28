@@ -165,6 +165,12 @@ const es: Record<string, string> = {
   'transport.biensSupports.2.description': 'Venta y validación de los títulos de transporte',
   'transport.biensSupports.3.nom': 'Puesto de mando / supervisión del tráfico',
   'transport.biensSupports.3.description': 'Supervisión y regulación de las circulaciones en tiempo real',
+  'transport.biensSupports.4.nom': 'Sistema de gestión del transporte (TMS)',
+  'transport.biensSupports.4.description': 'Planificación, optimización y seguimiento de los transportes y rutas',
+  'transport.biensSupports.5.nom': 'Tacógrafo digital',
+  'transport.biensSupports.5.description': 'Registro reglamentario de los tiempos de conducción y de descanso',
+  'transport.biensSupports.6.nom': 'Intercambio electrónico de datos (EDI)',
+  'transport.biensSupports.6.description': 'Interfaces de intercambio con clientes, transportistas y aduanas',
   'transport.evenementsRedoutes.0.description': 'Interrupción de la explotación y de las entregas',
   'transport.evenementsRedoutes.0.impacts.0': 'Retrasos y rupturas de aprovisionamiento',
   'transport.evenementsRedoutes.0.impacts.1': 'Pérdida de facturación',
@@ -185,6 +191,10 @@ const es: Record<string, string> = {
   'transport.scenariosStrategiques.0.description': 'Un ransomware paraliza los sistemas de explotación y de entrega',
   'transport.scenariosStrategiques.1.nom': 'Desvío de mercancías mediante alteración del seguimiento (I)',
   'transport.scenariosStrategiques.1.description': 'Un atacante modifica los datos de seguimiento para desviar carga',
+  'transport.scenariosStrategiques.2.nom': 'Sabotaje GPS / enrutamiento fraudulento (I)',
+  'transport.scenariosStrategiques.2.description': 'Un atacante falsifica los datos GPS para desviar o retrasar entregas',
+  'transport.scenariosStrategiques.3.nom': 'Manipulación de los tacógrafos (I)',
+  'transport.scenariosStrategiques.3.description': 'Alteración de los datos de tiempos de conducción (fraude regulatorio y riesgo para la seguridad vial)',
 
   // ── Telecomunicaciones ─────────────────────────────────────────────────────────
   'telecom.valeursMetier.0.nom': 'Prestación de los servicios de comunicación',

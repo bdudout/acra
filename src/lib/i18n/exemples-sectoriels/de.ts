@@ -165,6 +165,12 @@ const de: Record<string, string> = {
   'transport.biensSupports.2.description': 'Verkauf und Validierung der Fahrkarten',
   'transport.biensSupports.3.nom': 'Leitzentrale / Verkehrsüberwachung',
   'transport.biensSupports.3.description': 'Echtzeitüberwachung und -steuerung des Verkehrs',
+  'transport.biensSupports.4.nom': 'Transportmanagementsystem (TMS)',
+  'transport.biensSupports.4.description': 'Planung, Optimierung und Verfolgung von Transporten und Touren',
+  'transport.biensSupports.5.nom': 'Digitaler Fahrtenschreiber',
+  'transport.biensSupports.5.description': 'Gesetzlich vorgeschriebene Aufzeichnung der Lenk- und Ruhezeiten',
+  'transport.biensSupports.6.nom': 'Elektronischer Datenaustausch (EDI)',
+  'transport.biensSupports.6.description': 'Austauschschnittstellen mit Kunden, Spediteuren und Zoll',
   'transport.evenementsRedoutes.0.description': 'Unterbrechung des Betriebs und der Lieferungen',
   'transport.evenementsRedoutes.0.impacts.0': 'Verzögerungen und Versorgungsengpässe',
   'transport.evenementsRedoutes.0.impacts.1': 'Umsatzverlust',
@@ -185,6 +191,10 @@ const de: Record<string, string> = {
   'transport.scenariosStrategiques.0.description': 'Ransomware legt die Betriebs- und Liefersysteme lahm',
   'transport.scenariosStrategiques.1.nom': 'Warenumleitung durch Veränderung der Verfolgungsdaten (I)',
   'transport.scenariosStrategiques.1.description': 'Ein Angreifer ändert die Verfolgungsdaten, um Fracht umzuleiten',
+  'transport.scenariosStrategiques.2.nom': 'GPS-Sabotage / betrügerisches Routing (I)',
+  'transport.scenariosStrategiques.2.description': 'Ein Angreifer fälscht GPS-Daten, um Lieferungen umzuleiten oder zu verzögern',
+  'transport.scenariosStrategiques.3.nom': 'Manipulation der Fahrtenschreiber (I)',
+  'transport.scenariosStrategiques.3.description': 'Veränderung der Lenkzeitdaten (regulatorischer Betrug und Risiko für die Verkehrssicherheit)',
 
   // ── Telekommunikation ─────────────────────────────────────────────────────────
   'telecom.valeursMetier.0.nom': 'Bereitstellung der Kommunikationsdienste',

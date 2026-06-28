@@ -166,6 +166,12 @@ const en: Record<string, string> = {
   'transport.biensSupports.2.description': 'Sale and validation of transport tickets',
   'transport.biensSupports.3.nom': 'Control center / traffic supervision',
   'transport.biensSupports.3.description': 'Real-time supervision and control of traffic',
+  'transport.biensSupports.4.nom': 'Transport management system (TMS)',
+  'transport.biensSupports.4.description': 'Planning, optimization and tracking of transport and rounds',
+  'transport.biensSupports.5.nom': 'Digital tachograph',
+  'transport.biensSupports.5.description': 'Regulatory recording of driving and rest times',
+  'transport.biensSupports.6.nom': 'Electronic data interchange (EDI)',
+  'transport.biensSupports.6.description': 'Exchange interfaces with customers, carriers and customs',
   'transport.evenementsRedoutes.0.description': 'Interruption of operations and deliveries',
   'transport.evenementsRedoutes.0.impacts.0': 'Delays and supply disruptions',
   'transport.evenementsRedoutes.0.impacts.1': 'Loss of revenue',
@@ -186,6 +192,10 @@ const en: Record<string, string> = {
   'transport.scenariosStrategiques.0.description': 'Ransomware paralyzes operations and delivery systems',
   'transport.scenariosStrategiques.1.nom': 'Goods diversion via tracking-data alteration (I)',
   'transport.scenariosStrategiques.1.description': 'An attacker modifies tracking data to divert freight',
+  'transport.scenariosStrategiques.2.nom': 'GPS sabotage / fraudulent routing (I)',
+  'transport.scenariosStrategiques.2.description': 'An attacker falsifies GPS data to divert or delay deliveries',
+  'transport.scenariosStrategiques.3.nom': 'Tachograph manipulation (I)',
+  'transport.scenariosStrategiques.3.description': 'Alteration of driving-time data (regulatory fraud and road-safety risk)',
 
   // ── Telecom ───────────────────────────────────────────────────────────────────
   'telecom.valeursMetier.0.nom': 'Provision of communication services',
