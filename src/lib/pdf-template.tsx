@@ -36,6 +36,7 @@ import {
   Path,
 } from '@react-pdf/renderer'
 import { getRiskTier } from '@/lib/risk-scale'
+import { execGlobalLevel, execTopRisks, execMeasuresToEngage } from '@/lib/pdf-exec-summary'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
   layoutStakeholders,
@@ -320,6 +321,53 @@ function RiskMatrixPdf({ points, config, title, color }: { points: { ref: string
         </View>
       ))}
     </View>
+  )
+}
+
+// ─── Résumé exécutif non technique (issue #76) ──────────────────────────────────
+function ExecutiveSummaryPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
+  const risques = analyse.risques || []
+  const mesures = analyse.mesures || []
+
+  // Niveau de risque global (couleur + libellé non technique)
+  const levelKey = execGlobalLevel(risques)
+  const levelColor = levelKey === 'high' ? C.red : levelKey === 'medium' ? C.orange : levelKey === 'low' ? C.green : C.gray500
+  const top3 = execTopRisks(risques)
+  const topMeasures = execMeasuresToEngage(mesures)
+
+  return (
+    <Page size="A4" style={s.page}>
+      <Banner title={tp.execSummary.banner} color={C.indigo} />
+      <Text style={s.body}>{tp.execSummary.intro}</Text>
+
+      {/* Niveau de risque global */}
+      <View style={{ backgroundColor: levelColor, borderRadius: 3, padding: 12, marginBottom: 12 }}>
+        <Text style={{ fontSize: 8, color: C.white }}>{tp.execSummary.globalLabel}</Text>
+        <Text style={{ fontSize: 20, fontFamily: 'Helvetica-Bold', color: C.white, marginVertical: 2 }}>{tp.execSummary.levels[levelKey]}</Text>
+        <Text style={{ fontSize: 9, color: C.white, lineHeight: 1.4 }}>{tp.execSummary.levelTexts[levelKey]}</Text>
+      </View>
+
+      {/* 3 principaux risques (langage clair) */}
+      <Text style={s.h2}>{tp.execSummary.topRisksTitle}</Text>
+      {top3.length > 0 ? top3.map((r: any, i: number) => (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: riskColor(r.niveauRisque), marginRight: 6 }} />
+          <Text style={{ fontSize: 9, color: C.gray800, flex: 1 }}>{r.nom}</Text>
+          <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: riskColor(r.niveauRisque) }}>{riskLabel(r.niveauRisque, tp)}</Text>
+        </View>
+      )) : <Text style={s.italic}>{tp.execSummary.noRisk}</Text>}
+
+      {/* 5 premières actions à engager */}
+      <Text style={[s.h2, { marginTop: 12 }]}>{tp.execSummary.topMeasuresTitle}</Text>
+      {topMeasures.length > 0 ? topMeasures.map((m: any, i: number) => (
+        <View key={i} style={{ flexDirection: 'row', marginBottom: 4 }}>
+          <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.indigo, width: 14 }}>{i + 1}.</Text>
+          <Text style={{ fontSize: 9, color: C.gray800, flex: 1 }}>{m.nom || m.mesure || m.description}</Text>
+        </View>
+      )) : <Text style={s.italic}>{tp.execSummary.noMeasure}</Text>}
+
+      <Footer nom={analyse.nom} date={date} tp={tp} />
+    </Page>
   )
 }
 
@@ -1168,6 +1216,7 @@ export function AnalysePDF({ analyse, config, locale }: AnalysePDFProps) {
       producer="@react-pdf/renderer"
     >
       <CoverPage   analyse={analyse} date={date} tp={tp} />
+      <ExecutiveSummaryPage analyse={analyse} date={date} tp={tp} />
       <SummaryPage analyse={analyse} date={date} config={config} tp={tp} />
       {analyse.cadrage && <Atelier1Page analyse={analyse} date={date} tp={tp} />}
       <Atelier2Page analyse={analyse} date={date} tp={tp} />

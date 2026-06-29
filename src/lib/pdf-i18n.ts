@@ -41,6 +41,14 @@ export interface PdfStrings {
     taux: (pct: number, done: number, total: number, enCours: number) => string
     noMesure: string
   }
+  /** Résumé exécutif non technique en tête de rapport (issue #76). */
+  execSummary: {
+    banner: string; intro: string; globalLabel: string
+    levels: { high: string; medium: string; low: string; none: string }
+    levelTexts: { high: string; medium: string; low: string; none: string }
+    topRisksTitle: string; topMeasuresTitle: string
+    noRisk: string; noMeasure: string
+  }
   a1: {
     banner: string; perimetre: string; objectifs: string
     classifHeader: string; classifications: Record<string, string>
@@ -104,6 +112,13 @@ const fr: PdfStrings = {
     statutRealise: 'Réalisé', statutEnCours: 'En cours', statutAFaire: 'À faire', statutReporte: 'Reporté',
     taux: (pct, done, total, enCours) => `Taux de réalisation : ${pct}% (${done} sur ${total} mesures réalisées).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'mesure en cours de déploiement' : 'mesures en cours de déploiement'}.` : ''),
     noMesure: 'Aucune mesure de sécurité définie dans cette analyse.',
+  },
+  execSummary: {
+    banner: "Résumé exécutif", intro: "Cette synthèse en une page s'adresse à un lecteur non spécialiste (direction, assureur, ordre professionnel, partenaire). Elle résume le niveau de risque et les actions prioritaires.", globalLabel: "Niveau de risque global",
+    levels: { high: "Élevé", medium: "Modéré", low: "Maîtrisé", none: "À évaluer" },
+    levelTexts: { high: "Des risques majeurs nécessitent une action rapide de la direction.", medium: "Des risques notables sont à traiter selon le plan d'action.", low: "Les risques identifiés sont sous contrôle ; maintenir la vigilance.", none: "Analyse en cours : les risques ne sont pas encore évalués." },
+    topRisksTitle: "Principaux risques", topMeasuresTitle: "Premières actions à engager",
+    noRisk: "Aucun risque évalué pour le moment.", noMeasure: "Aucune action définie pour le moment.",
   },
   a1: {
     banner: 'ATELIER 1 — CADRAGE ET SOCLE DE SÉCURITÉ', perimetre: "Périmètre de l'étude", objectifs: 'Objectifs :',
@@ -188,6 +203,13 @@ const en: PdfStrings = {
     taux: (pct, done, total, enCours) => `Completion rate: ${pct}% (${done} of ${total} measures completed).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'measure being deployed' : 'measures being deployed'}.` : ''),
     noMesure: 'No security measure defined in this analysis.',
   },
+  execSummary: {
+    banner: "Executive summary", intro: "This one-page summary is intended for a non-specialist reader (management, insurer, professional body, partner). It outlines the risk level and the priority actions.", globalLabel: "Overall risk level",
+    levels: { high: "High", medium: "Moderate", low: "Under control", none: "To be assessed" },
+    levelTexts: { high: "Major risks require prompt action from management.", medium: "Significant risks should be addressed according to the action plan.", low: "Identified risks are under control; maintain vigilance.", none: "Analysis in progress: risks have not yet been assessed." },
+    topRisksTitle: "Main risks", topMeasuresTitle: "First actions to take",
+    noRisk: "No risk assessed yet.", noMeasure: "No action defined yet.",
+  },
   a1: {
     banner: 'WORKSHOP 1 — SCOPE AND SECURITY BASELINE', perimetre: 'Scope of the study', objectifs: 'Objectives:',
     classifHeader: 'Classification', classifications: { NP: 'Unclassified', DR: 'Restricted', S: 'Secret', TS: 'Top Secret' },
@@ -270,6 +292,13 @@ const de: PdfStrings = {
     statutRealise: 'Umgesetzt', statutEnCours: 'In Bearbeitung', statutAFaire: 'Zu erledigen', statutReporte: 'Verschoben',
     taux: (pct, done, total, enCours) => `Umsetzungsgrad: ${pct}% (${done} von ${total} Maßnahmen umgesetzt).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'Maßnahme in Umsetzung' : 'Maßnahmen in Umsetzung'}.` : ''),
     noMesure: 'Keine Sicherheitsmaßnahme in dieser Analyse definiert.',
+  },
+  execSummary: {
+    banner: "Zusammenfassung für die Leitung", intro: "Diese einseitige Zusammenfassung richtet sich an nicht spezialisierte Leser (Leitung, Versicherer, Berufskammer, Partner). Sie fasst das Risikoniveau und die vorrangigen Maßnahmen zusammen.", globalLabel: "Gesamtrisikoniveau",
+    levels: { high: "Hoch", medium: "Mittel", low: "Unter Kontrolle", none: "Zu bewerten" },
+    levelTexts: { high: "Schwerwiegende Risiken erfordern rasches Handeln der Leitung.", medium: "Erhebliche Risiken sind gemäß Maßnahmenplan zu behandeln.", low: "Die identifizierten Risiken sind unter Kontrolle; Wachsamkeit bewahren.", none: "Analyse läuft: Risiken wurden noch nicht bewertet." },
+    topRisksTitle: "Wichtigste Risiken", topMeasuresTitle: "Erste zu ergreifende Maßnahmen",
+    noRisk: "Noch kein Risiko bewertet.", noMeasure: "Noch keine Maßnahme definiert.",
   },
   a1: {
     banner: 'WORKSHOP 1 — RAHMEN UND SICHERHEITSBASIS', perimetre: 'Untersuchungsbereich', objectifs: 'Ziele:',
@@ -354,6 +383,13 @@ const es: PdfStrings = {
     taux: (pct, done, total, enCours) => `Tasa de realización: ${pct}% (${done} de ${total} medidas realizadas).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'medida en despliegue' : 'medidas en despliegue'}.` : ''),
     noMesure: 'Ninguna medida de seguridad definida en este análisis.',
   },
+  execSummary: {
+    banner: "Resumen ejecutivo", intro: "Esta síntesis de una página está dirigida a un lector no especializado (dirección, asegurador, colegio profesional, socio). Resume el nivel de riesgo y las acciones prioritarias.", globalLabel: "Nivel de riesgo global",
+    levels: { high: "Alto", medium: "Moderado", low: "Bajo control", none: "Por evaluar" },
+    levelTexts: { high: "Riesgos importantes que requieren una acción rápida de la dirección.", medium: "Riesgos notables que deben tratarse según el plan de acción.", low: "Los riesgos identificados están bajo control; mantener la vigilancia.", none: "Análisis en curso: los riesgos aún no se han evaluado." },
+    topRisksTitle: "Principales riesgos", topMeasuresTitle: "Primeras acciones a emprender",
+    noRisk: "Ningún riesgo evaluado por el momento.", noMeasure: "Ninguna acción definida por el momento.",
+  },
   a1: {
     banner: 'TALLER 1 — ENCUADRE Y BASE DE SEGURIDAD', perimetre: 'Alcance del estudio', objectifs: 'Objetivos:',
     classifHeader: 'Clasificación', classifications: { NP: 'No protegido', DR: 'Difusión Restringida', S: 'Secreto', TS: 'Alto Secreto' },
@@ -436,6 +472,13 @@ const it: PdfStrings = {
     statutRealise: 'Realizzato', statutEnCours: 'In corso', statutAFaire: 'Da fare', statutReporte: 'Rinviato',
     taux: (pct, done, total, enCours) => `Tasso di realizzazione: ${pct}% (${done} su ${total} misure realizzate).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'misura in fase di implementazione' : 'misure in fase di implementazione'}.` : ''),
     noMesure: 'Nessuna misura di sicurezza definita in questa analisi.',
+  },
+  execSummary: {
+    banner: "Sintesi esecutiva", intro: "Questa sintesi di una pagina è destinata a un lettore non specialista (direzione, assicuratore, ordine professionale, partner). Riassume il livello di rischio e le azioni prioritarie.", globalLabel: "Livello di rischio complessivo",
+    levels: { high: "Elevato", medium: "Moderato", low: "Sotto controllo", none: "Da valutare" },
+    levelTexts: { high: "Rischi importanti che richiedono un'azione rapida della direzione.", medium: "Rischi rilevanti da trattare secondo il piano d'azione.", low: "I rischi identificati sono sotto controllo; mantenere la vigilanza.", none: "Analisi in corso: i rischi non sono ancora stati valutati." },
+    topRisksTitle: "Rischi principali", topMeasuresTitle: "Prime azioni da intraprendere",
+    noRisk: "Nessun rischio valutato al momento.", noMeasure: "Nessuna azione definita al momento.",
   },
   a1: {
     banner: 'WORKSHOP 1 — INQUADRAMENTO E BASE DI SICUREZZA', perimetre: "Ambito dello studio", objectifs: 'Obiettivi:',
