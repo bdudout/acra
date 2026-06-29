@@ -186,6 +186,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Secteur OT/ICS → glossaire contextuel (ICS, SCADA, PLC…) pour non-experts
   const isOtSector = /(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(analyse?.secteur || '')
   const [showOtGlossary, setShowOtGlossary] = useState(false)
+  const [showDictHelp, setShowDictHelp] = useState(false)
 
   // Profil de dimensionnement (taille/maturité) — facultatif, défaut « Analyse standard »
   const [tailleAnalyse, setTailleAnalyse] = useState<TailleAnalyse>(
@@ -475,6 +476,35 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
               <p className="text-sm text-amber-800 mt-1">{t.workshop.a1.rgpdArt9Text}</p>
             </div>
           )}
+
+          {/* Aide pédagogique : comprendre les critères DICT */}
+          <div className="border border-gray-200 rounded-xl bg-gray-50/60 p-3">
+            <button
+              type="button"
+              onClick={() => setShowDictHelp(v => !v)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <span className="text-sm font-semibold text-gray-700">📘 {t.workshop.a1.dictHelpTitle}</span>
+              <span className="text-xs text-blue-600 underline">
+                {showDictHelp ? t.workshop.hideExamples : t.workshop.showExamples}
+              </span>
+            </button>
+            {showDictHelp && (
+              <dl className="mt-2 space-y-1.5">
+                {[
+                  ['D', t.workshop.a1.dictHelpD],
+                  ['I', t.workshop.a1.dictHelpI],
+                  ['C', t.workshop.a1.dictHelpC],
+                  ['T', t.workshop.a1.dictHelpT],
+                ].map(([k, def]) => (
+                  <div key={k} className="text-xs">
+                    <dt className="inline font-semibold text-gray-800">{k} — </dt>
+                    <dd className="inline text-gray-600">{def}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
 
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3">
