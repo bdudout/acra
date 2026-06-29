@@ -126,10 +126,15 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
   // Échelles de cotation des 4 sous-critères (configurables) — défauts si non personnalisées.
   const [echelles, setEchelles] = useState<EchellesEcosysteme>(() => resolveEchelles(null))
+  // Noms de tiers déjà connus (autres analyses) → auto-complétion à la saisie (issue #46)
+  const [knownTierNames, setKnownTierNames] = useState<string[]>([])
   useEffect(() => {
     fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
       setEchelles(resolveEchelles(d?.echellesEcosysteme))
+    }).catch(() => {})
+    fetch('/api/tiers/names').then(r => r.ok ? r.json() : null).then(d => {
+      if (Array.isArray(d?.noms)) setKnownTierNames(d.noms)
     }).catch(() => {})
   }, [])
   const tEx = t as unknown as ExemplesTranslations
@@ -578,6 +583,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             {parties.length === 0 && (
               <p className="text-sm text-gray-500 italic text-center py-8">{t.workshop.a3.ppEmpty}</p>
             )}
+            {/* Auto-complétion des noms de tiers déjà saisis dans d'autres analyses */}
+            <datalist id="acra-tiers-known">
+              {knownTierNames.map(n => <option key={n} value={n} />)}
+            </datalist>
             <div className="space-y-2">
               {parties.map(p => {
                 const d = ppDerived(p)
@@ -593,6 +602,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                     <div className="flex-1 space-y-2">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input value={p.nom} onChange={e => updatePP(p.id, 'nom', e.target.value)}
+                          list="acra-tiers-known"
                           className="input text-sm" placeholder="Nom" />
                         <select value={p.type} onChange={e => updatePP(p.id, 'type', e.target.value)} className="input text-sm">
                           {TYPES_PP.map(tp => <option key={tp.value} value={tp.value}>{tp.label}</option>)}
