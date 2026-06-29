@@ -77,7 +77,10 @@ export async function GET(
       // Échelles configurées par l'organisation (annexe dynamique du PDF)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
-      const buffer = await renderAnalysePDF(pdfData, config)
+      // Locale du rapport (?lang=) — validée contre la liste connue, repli fr
+      const langParam = searchParams.get('lang')
+      const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
+      const buffer = await renderAnalysePDF(pdfData, config, locale)
       const safeName = analyse.nom.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 64)
       return new NextResponse(buffer as unknown as ArrayBuffer, {
         headers: {

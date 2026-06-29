@@ -36,6 +36,7 @@ import {
   Path,
 } from '@react-pdf/renderer'
 import { getRiskTier } from '@/lib/risk-scale'
+import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
   layoutStakeholders,
   stakeholderRef,
@@ -73,17 +74,12 @@ function riskColor(score: number): string {
   if (score >= 4)  return C.yellow
   return C.green
 }
-function riskLabel(score: number): string {
-  if (score >= 12) return 'Critique'
-  if (score >= 8)  return 'Élevé'
-  if (score >= 4)  return 'Modéré'
-  return 'Faible'
+function riskLabel(score: number, tp: PdfStrings): string {
+  if (score >= 12) return tp.risk.critique
+  if (score >= 8)  return tp.risk.eleve
+  if (score >= 4)  return tp.risk.modere
+  return tp.risk.faible
 }
-/** Pluralisation française : renvoie sg si n === 1, pl sinon. */
-function p(n: number, sg: string, pl: string): string {
-  return n === 1 ? sg : pl
-}
-
 // ─── Échelles : valeurs par défaut (repli si la config n'est pas fournie) ───────
 const DEFAULT_GRAVITE = [
   { niveau: 1, label: 'Négligeable', description: "Impact minimal, ne remet pas en cause les activités essentielles de l'organisation." },
@@ -177,12 +173,12 @@ function SectionBar({ title, color }: { title: string; color: string }) {
 }
 
 /** Footer rendered on every page */
-function Footer({ nom, date }: { nom: string; date: string }) {
+function Footer({ nom, date, tp }: { nom: string; date: string; tp: PdfStrings }) {
   return (
     <View style={s.footer} fixed>
       <Text style={s.footerTxt}>EBIOS RM — {nom}</Text>
-      <Text style={s.footerTxt}>Confidentiel — généré le {date}</Text>
-      <Text style={s.footerTxt} render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) => `Page ${pageNumber} / ${totalPages}`} />
+      <Text style={s.footerTxt}>{tp.footer.confidential} {date}</Text>
+      <Text style={s.footerTxt} render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) => tp.footer.page(pageNumber, totalPages)} />
     </View>
   )
 }
@@ -234,26 +230,26 @@ function DataTable({ headers, rows, color, colFlex }: TableProps) {
 
 // ─── Cover page ────────────────────────────────────────────────────────────────
 
-function CoverPage({ analyse, date }: { analyse: any; date: string }) {
-  const statut = analyse.statut === 'TERMINE' ? 'Terminée'
-               : analyse.statut === 'APPROUVE' ? 'Approuvée'
-               : 'En cours'
+function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
+  const statut = analyse.statut === 'TERMINE' ? tp.cover.statutTermine
+               : analyse.statut === 'APPROUVE' ? tp.cover.statutApprouve
+               : tp.cover.statutEnCours
 
   return (
     <Page size="A4" style={s.page}>
       {/* Top banner */}
       <View style={[s.banner, { backgroundColor: C.indigo, paddingVertical: 18 }]}>
         <Text style={{ color: C.white, fontSize: 20, fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>
-          ANALYSE DE RISQUES
+          {tp.cover.title}
         </Text>
         <Text style={{ color: '#C7D2FE', fontSize: 11 }}>
-          EBIOS Risk Manager — Méthode ANSSI
+          {tp.cover.method}
         </Text>
         <Text style={{ color: '#C7D2FE', fontSize: 9, marginTop: 2 }}>
-          Compatible ISO/IEC 27005
+          {tp.cover.iso}
         </Text>
         <Text style={{ color: '#A5B4FC', fontSize: 8, position: 'absolute', top: 10, right: 14 }}>
-          Généré le {date}
+          {tp.cover.generatedOn} {date}
         </Text>
       </View>
 
@@ -261,23 +257,23 @@ function CoverPage({ analyse, date }: { analyse: any; date: string }) {
       <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 8 }}>{analyse.nom}</Text>
 
       {analyse.organisation ? (
-        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>Organisation : {analyse.organisation}</Text>
+        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.organisation} : {analyse.organisation}</Text>
       ) : null}
       {analyse.secteur ? (
-        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>Secteur : {analyse.secteur}</Text>
+        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.secteur} : {analyse.secteur}</Text>
       ) : null}
-      <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>Statut : {statut}</Text>
+      <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statut} : {statut}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>
-        Créée le : {new Date(analyse.createdAt).toLocaleDateString('fr-FR')}
+        {tp.cover.createdOn} : {new Date(analyse.createdAt).toLocaleDateString(tp.dateLocale)}
       </Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>
-        Mise à jour : {new Date(analyse.updatedAt).toLocaleDateString('fr-FR')}
+        {tp.cover.updatedOn} : {new Date(analyse.updatedAt).toLocaleDateString(tp.dateLocale)}
       </Text>
 
       {/* Separator */}
       <View style={{ borderTopWidth: 0.5, borderTopColor: C.indigo, marginTop: 12 }} />
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
@@ -321,7 +317,7 @@ function RiskMatrixPdf({ points, config, title, color }: { points: { ref: string
   )
 }
 
-function SummaryPage({ analyse, date, config }: { analyse: any; date: string; config?: any }) {
+function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string; config?: any; tp: PdfStrings }) {
   const risques          = analyse.risques       || []
   const mesures          = analyse.mesures        || []
   const critiques        = risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique')
@@ -335,25 +331,22 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
 
   let conclusion = ''
   if (risques.length === 0) {
-    conclusion = "L'analyse n'a pas encore identifié de risques formalisés. Les ateliers de travail sont en cours."
+    conclusion = tp.summary.conclNone
   } else if (critiques.length > 0) {
-    conclusion = `L'analyse a identifié ${risques.length} ${p(risques.length, 'risque', 'risques')}, dont ${critiques.length} de niveau CRITIQUE nécessitant une action immédiate.` +
-      (mesuresP1.length > 0 ? ` ${mesuresP1.length} ${p(mesuresP1.length, 'mesure prioritaire (P1) a été définie', 'mesures prioritaires (P1) ont été définies')} pour y répondre.` : '')
+    conclusion = tp.summary.conclCritiques(risques.length, critiques.length, mesuresP1.length)
   } else if (elevees.length > 0) {
-    conclusion = `L'analyse a identifié ${risques.length} ${p(risques.length, 'risque', 'risques')}, dont ${elevees.length} de niveau ÉLEVÉ à traiter en priorité.` +
-      (mesures.length > 0 ? ` ${mesures.length} ${p(mesures.length, 'mesure de sécurité a été définie', 'mesures de sécurité ont été définies')}.` : '')
+    conclusion = tp.summary.conclEleves(risques.length, elevees.length, mesures.length)
   } else {
-    conclusion = `L'analyse a identifié ${risques.length} ${p(risques.length, 'risque', 'risques')} de niveaux modérés à faibles.` +
-      (mesures.length > 0 ? ` ${mesures.length} ${p(mesures.length, 'mesure de sécurité a été définie', 'mesures de sécurité ont été définies')}.` : '')
+    conclusion = tp.summary.conclModeres(risques.length, mesures.length)
   }
 
   const top5 = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque).slice(0, 5)
 
   const statutsMesures = [
-    { label: 'Réalisé',  count: mesuresRealisees.length, color: C.green },
-    { label: 'En cours', count: mesuresEnCours.length,   color: C.indigo },
-    { label: 'À faire',  count: mesures.filter((m: any) => m.statut === 'A_FAIRE').length,  color: C.orange },
-    { label: 'Reporté',  count: mesures.filter((m: any) => m.statut === 'REPORTE').length, color: C.gray500 },
+    { label: tp.summary.statutRealise, count: mesuresRealisees.length, color: C.green },
+    { label: tp.summary.statutEnCours, count: mesuresEnCours.length,   color: C.indigo },
+    { label: tp.summary.statutAFaire,  count: mesures.filter((m: any) => m.statut === 'A_FAIRE').length,  color: C.orange },
+    { label: tp.summary.statutReporte, count: mesures.filter((m: any) => m.statut === 'REPORTE').length, color: C.gray500 },
   ].filter(s => s.count > 0)
 
   // Risques numérotés R1, R2… (par score brut décroissant) — refs communes aux 2 matrices
@@ -365,14 +358,10 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="SYNTHÈSE EXÉCUTIVE" color={C.indigo} />
+      <Banner title={tp.summary.banner} color={C.indigo} />
 
       {/* Intro text */}
-      <Text style={s.body}>
-        Cette synthèse présente les résultats de l'analyse de risques réalisée selon la méthode EBIOS Risk Manager
-        (ANSSI), compatible ISO/IEC 27005. L'objectif est d'identifier les menaces pesant sur l'organisation,
-        d'évaluer leur impact potentiel et de définir un plan d'action pour les traiter.
-      </Text>
+      <Text style={s.body}>{tp.summary.intro}</Text>
 
       {/* Conclusion highlight */}
       <View style={s.hintBox}>
@@ -383,19 +372,19 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
       <View style={s.kpiRow}>
         <View style={[s.kpiCard, { backgroundColor: C.indigo }]}>
           <Text style={s.kpiVal}>{risques.length}</Text>
-          <Text style={s.kpiLbl}>{p(risques.length, 'Risque identifié', 'Risques identifiés')}</Text>
+          <Text style={s.kpiLbl}>{tp.summary.kpiRisques(risques.length)}</Text>
         </View>
         <View style={[s.kpiCard, { backgroundColor: C.red }]}>
           <Text style={s.kpiVal}>{critiques.length}</Text>
-          <Text style={s.kpiLbl}>{p(critiques.length, 'Risque critique', 'Risques critiques')}</Text>
+          <Text style={s.kpiLbl}>{tp.summary.kpiCritiques(critiques.length)}</Text>
         </View>
         <View style={[s.kpiCard, { backgroundColor: C.green }]}>
           <Text style={s.kpiVal}>{residuelsReduits.length}</Text>
-          <Text style={s.kpiLbl}>{p(residuelsReduits.length, 'Risque réduit', 'Risques réduits')}</Text>
+          <Text style={s.kpiLbl}>{tp.summary.kpiReduits(residuelsReduits.length)}</Text>
         </View>
         <View style={[s.kpiCard, { backgroundColor: C.teal }]}>
           <Text style={s.kpiVal}>{mesuresRealisees.length}</Text>
-          <Text style={s.kpiLbl}>{p(mesuresRealisees.length, 'Mesure réalisée', 'Mesures réalisées')}</Text>
+          <Text style={s.kpiLbl}>{tp.summary.kpiRealisees(mesuresRealisees.length)}</Text>
         </View>
       </View>
 
@@ -404,30 +393,30 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
         <View wrap={false} style={{ marginBottom: 6 }}>
           <View style={{ flexDirection: 'row', gap: 14 }}>
             <View style={{ flex: 1 }}>
-              <RiskMatrixPdf points={grossPts} config={config} title="Matrice des risques bruts" color={C.indigo} />
+              <RiskMatrixPdf points={grossPts} config={config} title={tp.summary.matrixBrute} color={C.indigo} />
             </View>
             <View style={{ flex: 1 }}>
-              <RiskMatrixPdf points={residualPts} config={config} title="Matrice des risques résiduels" color={C.green} />
+              <RiskMatrixPdf points={residualPts} config={config} title={tp.summary.matrixResiduelle} color={C.green} />
             </View>
           </View>
         </View>
       )}
       {(analyse.partiesPrenantes || []).length > 0 && (
         <View wrap={false} style={{ marginBottom: 6 }}>
-          <SectionBar title="Écosystème — cartographie de menace" color={C.teal} />
-          <EcosystemRadarPdf parties={analyse.partiesPrenantes} withList />
+          <SectionBar title={tp.summary.ecoMapTitle} color={C.teal} />
+          <EcosystemRadarPdf parties={analyse.partiesPrenantes} withList tp={tp} />
         </View>
       )}
 
       {/* Risk distribution */}
       {risques.length > 0 && (
         <View>
-          <Text style={s.h2}>Répartition des risques initiaux</Text>
+          <Text style={s.h2}>{tp.summary.distribTitle}</Text>
           {[
-            { label: 'Critique (>=12)', count: critiques.length },
-            { label: 'Élevé (8-11)',    count: elevees.length },
-            { label: 'Modéré (4-7)',    count: risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'modere').length },
-            { label: 'Faible (1-3)',    count: risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'faible').length },
+            { label: tp.summary.distribCritique, count: critiques.length },
+            { label: tp.summary.distribEleve,    count: elevees.length },
+            { label: tp.summary.distribModere,   count: risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'modere').length },
+            { label: tp.summary.distribFaible,   count: risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'faible').length },
           ].map((n, i) => {
             const colors_ = [C.red, C.orange, C.yellow, C.green]
             const pct = risques.length > 0 ? n.count / risques.length : 0
@@ -449,17 +438,17 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
       {/* Top 5 risks */}
       {top5.length > 0 && (
         <View>
-          <Text style={[s.h2, { marginTop: 6 }]}>Top 5 des risques les plus élevés</Text>
+          <Text style={[s.h2, { marginTop: 6 }]}>{tp.summary.top5Title}</Text>
           <DataTable
             color={C.gray800}
-            headers={['Risque', 'Score initial', 'Niveau', 'Stratégie', 'Score résiduel']}
+            headers={tp.summary.top5Headers}
             colFlex={[3, 1.2, 1.2, 1.5, 1.5]}
             rows={top5.map((r: any) => [
               r.nom,
               `${r.niveauRisque}/16`,
-              { text: riskLabel(r.niveauRisque), color: riskColor(r.niveauRisque), bold: true },
+              { text: riskLabel(r.niveauRisque, tp), color: riskColor(r.niveauRisque), bold: true },
               r.strategie.replace(/_/g, ' '),
-              r.niveauResiduel != null ? `${r.niveauResiduel}/16 (${riskLabel(r.niveauResiduel)})` : '—',
+              r.niveauResiduel != null ? `${r.niveauResiduel}/16 (${riskLabel(r.niveauResiduel, tp)})` : '—',
             ])}
           />
         </View>
@@ -468,7 +457,7 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
       {/* Action plan summary */}
       {mesures.length > 0 ? (
         <View>
-          <Text style={[s.h2, { marginTop: 6 }]}>Avancement du plan d'action</Text>
+          <Text style={[s.h2, { marginTop: 6 }]}>{tp.summary.actionTitle}</Text>
           <View style={{ flexDirection: 'row', gap: 4, marginBottom: 6 }}>
             {statutsMesures.map((sm, i) => (
               <View key={i} style={[s.kpiCard, { backgroundColor: sm.color }]}>
@@ -479,24 +468,22 @@ function SummaryPage({ analyse, date, config }: { analyse: any; date: string; co
           </View>
           {mesuresRealisees.length > 0 && (
             <Text style={s.small}>
-              Taux de réalisation : {Math.round((mesuresRealisees.length / mesures.length) * 100)}%
-              ({mesuresRealisees.length} sur {mesures.length} mesures réalisées).
-              {mesuresEnCours.length > 0 ? ` ${mesuresEnCours.length} ${p(mesuresEnCours.length, 'mesure en cours de déploiement', 'mesures en cours de déploiement')}.` : ''}
+              {tp.summary.taux(Math.round((mesuresRealisees.length / mesures.length) * 100), mesuresRealisees.length, mesures.length, mesuresEnCours.length)}
             </Text>
           )}
         </View>
       ) : (
-        <Text style={s.italic}>Aucune mesure de sécurité définie dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.summary.noMesure}</Text>
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Atelier 1 — Cadrage ───────────────────────────────────────────────────────
 
-function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
+function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const cadrage = analyse.cadrage
   if (!cadrage) return null
 
@@ -507,15 +494,15 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ATELIER 1 — CADRAGE ET SOCLE DE SÉCURITÉ" color={C.teal} />
+      <Banner title={tp.a1.banner} color={C.teal} />
 
       {(cadrage.perimetre || cadrage.objectifsEtude) && (
         <View>
-          <Text style={[s.label, { color: C.teal, marginBottom: 3 }]}>Périmètre de l'étude</Text>
+          <Text style={[s.label, { color: C.teal, marginBottom: 3 }]}>{tp.a1.perimetre}</Text>
           {cadrage.perimetre && <Text style={s.body}>{cadrage.perimetre}</Text>}
           {cadrage.objectifsEtude && (
             <View>
-              <Text style={s.label}>Objectifs :</Text>
+              <Text style={s.label}>{tp.a1.objectifs}</Text>
               <Text style={s.body}>{cadrage.objectifsEtude}</Text>
             </View>
           )}
@@ -524,10 +511,10 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
 
       {valeursMetier.length > 0 && (
         <View>
-          <SectionBar title={`Valeurs métier FM1 (${valeursMetier.length})`} color={C.teal} />
+          <SectionBar title={`${tp.a1.vm} (${valeursMetier.length})`} color={C.teal} />
           <DataTable
             color={C.teal}
-            headers={['Nom', 'Type', 'Description', 'Responsable']}
+            headers={tp.a1.vmHeaders}
             colFlex={[1.5, 1, 2.5, 1.5]}
             rows={valeursMetier.map((v: any) => [v.nom || '—', v.type || '—', v.description || '—', v.responsable || '—'])}
           />
@@ -547,10 +534,10 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
         }
         return (
           <View>
-            <SectionBar title={`Biens supports (${biensSupports.length})`} color={C.teal} />
+            <SectionBar title={`${tp.a1.bs} (${biensSupports.length})`} color={C.teal} />
             <DataTable
               color={C.teal}
-              headers={['Nom', 'Type', 'Description', 'Valeurs métier liées']}
+              headers={tp.a1.bsHeaders}
               colFlex={[1.5, 1, 2.2, 1.8]}
               rows={biensSupports.map((b: any) => [b.nom || '—', b.type || '—', b.description || '—', vmLinks(b)])}
             />
@@ -560,10 +547,10 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
 
       {evenementsRedoutes.length > 0 && (
         <View>
-          <SectionBar title={`Événements redoutés (${evenementsRedoutes.length})`} color={C.teal} />
+          <SectionBar title={`${tp.a1.er} (${evenementsRedoutes.length})`} color={C.teal} />
           <DataTable
             color={C.teal}
-            headers={['Description', 'Impacts', 'Gravité']}
+            headers={tp.a1.erHeaders}
             colFlex={[3, 3, 1]}
             rows={evenementsRedoutes.map((e: any) => [
               e.description || '—',
@@ -580,10 +567,10 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
 
       {socleSecurite.length > 0 && (
         <View>
-          <SectionBar title={`Socle de sécurité (${socleSecurite.length})`} color={C.teal} />
+          <SectionBar title={`${tp.a1.socle} (${socleSecurite.length})`} color={C.teal} />
           <DataTable
             color={C.teal}
-            headers={['Mesure', 'Source / Référentiel', 'Statut']}
+            headers={tp.a1.socleHeaders}
             colFlex={[3.5, 1.5, 1]}
             rows={socleSecurite.map((m: any) => [
               m.mesure || m.nom || '—',
@@ -595,35 +582,35 @@ function Atelier1Page({ analyse, date }: { analyse: any; date: string }) {
       )}
 
       {!cadrage.perimetre && !cadrage.objectifsEtude && valeursMetier.length === 0 && biensSupports.length === 0 && evenementsRedoutes.length === 0 && socleSecurite.length === 0 && (
-        <Text style={s.italic}>Le cadrage n'a pas encore été complété.</Text>
+        <Text style={s.italic}>{tp.a1.empty}</Text>
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Atelier 2 — Sources de risque ────────────────────────────────────────────
 
-function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
+function Atelier2Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const sources  = analyse.sourcesRisque || []
   const retained = sources.filter((s: any) => s.retenu)
   const excluded = sources.filter((s: any) => !s.retenu)
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ATELIER 2 — SOURCES DE RISQUE" color={C.orange} />
+      <Banner title={tp.a2.banner} color={C.orange} />
 
       {sources.length === 0 ? (
-        <Text style={s.italic}>Aucune source de risque définie dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.a2.empty}</Text>
       ) : (
         <View>
           {retained.length > 0 && (
             <View>
-              <SectionBar title={`Sources retenues (${retained.length})`} color={C.orange} />
+              <SectionBar title={`${tp.a2.retenues} (${retained.length})`} color={C.orange} />
               <DataTable
                 color={C.orange}
-                headers={['Source de risque', 'Catégorie', 'Pertinence', 'Motivation', 'Ressources', 'Activité']}
+                headers={tp.a2.headers}
                 colFlex={[3, 2, 1, 1, 1, 1]}
                 rows={retained.map((sr: any) => [
                   sr.nom,
@@ -639,10 +626,10 @@ function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
 
           {excluded.length > 0 && (
             <View>
-              <SectionBar title={`Sources écartées (${excluded.length})`} color={C.gray500} />
+              <SectionBar title={`${tp.a2.ecartees} (${excluded.length})`} color={C.gray500} />
               <DataTable
                 color={C.gray500}
-                headers={['Source de risque', 'Catégorie', 'Pertinence']}
+                headers={tp.a2.headersShort}
                 colFlex={[3, 2, 1]}
                 rows={excluded.map((sr: any) => [
                   sr.nom,
@@ -655,18 +642,20 @@ function Atelier2Page({ analyse, date }: { analyse: any; date: string }) {
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Écosystème (Atelier 3) — radar de menace + tableau parties prenantes ──────
 
-const ZONE_PDF: Record<EcosystemZone, { fill: string; label: string }> = {
-  danger:   { fill: C.orange, label: 'Danger' },
-  controle: { fill: C.yellow, label: 'Contrôle' },
-  veille:   { fill: C.green,  label: 'Veille' },
+const ZONE_PDF: Record<EcosystemZone, { fill: string }> = {
+  danger:   { fill: C.orange },
+  controle: { fill: C.yellow },
+  veille:   { fill: C.green },
 }
+const zoneLabel = (z: EcosystemZone, tp: PdfStrings): string =>
+  z === 'danger' ? tp.eco.danger : z === 'controle' ? tp.eco.controle : tp.eco.veille
 // Point : couleur = fiabilité (0..3 rouge→vert) · rayon = exposition (0..3 croissant).
 const FIAB_PDF = [C.red, C.orange, C.yellow, C.green]
 const EXPO_PDF = [3.5, 4.5, 5.5, 7]
@@ -683,15 +672,9 @@ function starPath(cx: number, cy: number, R: number): string {
   return `M${pts.join(' L')} Z`
 }
 
-const TYPE_LABELS_FR: Record<string, string> = {
-  FOURNISSEUR: 'Fournisseur', CLIENT: 'Client', PARTENAIRE: 'Partenaire',
-  PRESTATAIRE: 'Prestataire',
-  ORGANISME_REGULATION: 'Régulateur', AUTRE: 'Autre',
-}
-
 // Radar SVG (primitives @react-pdf) — réutilise la MÊME géométrie que la vue web
 // (src/lib/ecosystem-radar.ts) : rayon = menace (centre = max), zones danger/contrôle/veille.
-function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; withList?: boolean }) {
+function EcosystemRadarPdf({ parties, withList = false, tp }: { parties: any[]; withList?: boolean; tp: PdfStrings }) {
   const CXr = 138, CYr = 132, R = 116   // radar agrandi
   const geom = { cx: CXr, cy: CYr, rMax: R }
   // PDF = vue de synthèse : on n'affiche que les PP de rang 1 (recommandation du guide).
@@ -710,7 +693,7 @@ function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; with
     controle: pts.filter(p => p.zone === 'controle').length,
     veille:   pts.filter(p => p.zone === 'veille').length,
   }
-  const sectorLabel = (ty: string) => (TYPE_LABELS_FR[ty] || ty)
+  const sectorLabel = (ty: string) => (tp.partyTypes[ty] || ty)
   const short = (s: string) => (s.length > 16 ? s.slice(0, 15) + '…' : s)
   // Libellé de secteur sur 2 lignes (mots équilibrés) si trop long.
   const wrapLbl = (s: string): string[] => {
@@ -780,22 +763,22 @@ function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; with
         {(['danger', 'controle', 'veille'] as EcosystemZone[]).map(z => (
           <View key={z} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, marginVertical: 1 }}>
             <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: ZONE_PDF[z].fill, marginRight: 4 }} />
-            <Text style={{ fontSize: 7.5, color: C.gray800 }}>{ZONE_PDF[z].label} ({counts[z]})</Text>
+            <Text style={{ fontSize: 7.5, color: C.gray800 }}>{zoneLabel(z, tp)} ({counts[z]})</Text>
           </View>
         ))}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
           {FIAB_PDF.map((c, i) => <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c, marginRight: 1.5 }} />)}
-          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>Couleur = fiabilité (rouge→vert)</Text>
+          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>{tp.eco.legendFiab}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
           {EXPO_PDF.map((rr, i) => <View key={i} style={{ width: rr * 1.3, height: rr * 1.3, borderRadius: rr, backgroundColor: C.gray500, marginRight: 1.5 }} />)}
-          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>Taille = exposition</Text>
+          <Text style={{ fontSize: 7, color: C.gray500, marginLeft: 2 }}>{tp.eco.legendExpo}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6 }}>
           <Text style={{ fontSize: 8, color: STAR_PDF, marginRight: 2 }}>★</Text>
-          <Text style={{ fontSize: 7, color: C.gray500 }}>Tiers critique</Text>
+          <Text style={{ fontSize: 7, color: C.gray500 }}>{tp.eco.legendCritique}</Text>
         </View>
       </View>
 
@@ -816,25 +799,25 @@ function EcosystemRadarPdf({ parties, withList = false }: { parties: any[]; with
 
 // ─── Atelier 3 — Scénarios stratégiques ───────────────────────────────────────
 
-function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
+function Atelier3Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const scenarios = analyse.scenariosStrategiques || []
   const retained  = scenarios.filter((s: any) => s.retenu)
   const excluded  = scenarios.filter((s: any) => !s.retenu)
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ATELIER 3 — SCÉNARIOS STRATÉGIQUES" color={C.purple} />
+      <Banner title={tp.a3.banner} color={C.purple} />
 
       {scenarios.length === 0 ? (
-        <Text style={s.italic}>Aucun scénario stratégique défini dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.a3.empty}</Text>
       ) : (
         <View>
           {retained.length > 0 && (
             <View>
-              <SectionBar title={`Scénarios retenus (${retained.length})`} color={C.purple} />
+              <SectionBar title={`${tp.a3.retenus} (${retained.length})`} color={C.purple} />
               <DataTable
                 color={C.purple}
-                headers={['Scénario', 'Source de risque', 'Vraisemblance', 'Gravité', 'Score', 'Niveau']}
+                headers={tp.a3.headers}
                 colFlex={[3, 2, 1.2, 1, 1, 1.2]}
                 rows={retained.map((ss: any) => {
                   const sr = (analyse.sourcesRisque || []).find((x: any) => x.id === ss.sourceRisqueId)
@@ -844,7 +827,7 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
                     `${ss.vraisemblance}/4`,
                     `${ss.gravite}/4`,
                     `${ss.niveauRisque}/16`,
-                    { text: riskLabel(ss.niveauRisque), color: riskColor(ss.niveauRisque), bold: true },
+                    { text: riskLabel(ss.niveauRisque, tp), color: riskColor(ss.niveauRisque), bold: true },
                   ]
                 })}
               />
@@ -853,10 +836,10 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
 
           {excluded.length > 0 && (
             <View>
-              <SectionBar title={`Scénarios écartés (${excluded.length})`} color={C.gray500} />
+              <SectionBar title={`${tp.a3.ecartes} (${excluded.length})`} color={C.gray500} />
               <DataTable
                 color={C.gray500}
-                headers={['Scénario', 'Vraisemblance', 'Gravité', 'Score']}
+                headers={tp.a3.headersShort}
                 colFlex={[4, 1.2, 1, 1]}
                 rows={excluded.map((ss: any) => [
                   ss.nom,
@@ -872,11 +855,11 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
 
       {(analyse.partiesPrenantes || []).length > 0 && (
         <View>
-          <SectionBar title={`Écosystème — parties prenantes (${analyse.partiesPrenantes.length})`} color={C.teal} />
-          <EcosystemRadarPdf parties={analyse.partiesPrenantes} />
+          <SectionBar title={`${tp.a3.ppTitle} (${analyse.partiesPrenantes.length})`} color={C.teal} />
+          <EcosystemRadarPdf parties={analyse.partiesPrenantes} tp={tp} />
           <DataTable
             color={C.teal}
-            headers={['Réf', 'Partie prenante', 'Type', 'Dép.', 'Pén.', 'Mat.', 'Conf.', 'Expo.', 'Fiab.', 'Menace', 'Zone', 'Crit.']}
+            headers={tp.a3.ppHeaders}
             colFlex={[0.55, 2.4, 1.5, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.85, 1.2, 0.6]}
             rows={analyse.partiesPrenantes.map((pp: any, i: number) => {
               const dep = Number(pp.dependance ?? 2), pen = Number(pp.penetration ?? 2)
@@ -889,7 +872,7 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
               return [
                 { text: stakeholderRef(i), bold: true },
                 pp.nom,
-                TYPE_LABELS_FR[pp.type] || pp.type,
+                tp.partyTypes[pp.type] || pp.type,
                 fmt(dep),
                 fmt(pen),
                 fmt(mat),
@@ -897,7 +880,7 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
                 fmt(exposition),
                 fmt(fiabilite),
                 m.toFixed(2),
-                { text: ZONE_PDF[z].label, color: ZONE_PDF[z].fill, bold: true },
+                { text: zoneLabel(z, tp), color: ZONE_PDF[z].fill, bold: true },
                 pp.critique ? { text: '★', color: STAR_PDF, bold: true } : '—',
               ]
             })}
@@ -905,28 +888,28 @@ function Atelier3Page({ analyse, date }: { analyse: any; date: string }) {
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Atelier 4 — Scénarios opérationnels ──────────────────────────────────────
 
-function Atelier4Page({ analyse, date }: { analyse: any; date: string }) {
+function Atelier4Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const scenarios = analyse.scenariosOperationnels || []
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ATELIER 4 — SCÉNARIOS OPÉRATIONNELS" color={C.sky} />
+      <Banner title={tp.a4.banner} color={C.sky} />
 
       {scenarios.length === 0 ? (
-        <Text style={s.italic}>Aucun scénario opérationnel défini dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.a4.empty}</Text>
       ) : (
         <View>
-          <SectionBar title={`${p(scenarios.length, 'Scénario opérationnel', 'Scénarios opérationnels')} (${scenarios.length})`} color={C.sky} />
+          <SectionBar title={`${scenarios.length === 1 ? tp.a4.titleSing : tp.a4.titlePlur} (${scenarios.length})`} color={C.sky} />
           <DataTable
             color={C.sky}
-            headers={['Scénario opérationnel', 'Scénario stratégique', 'Vraisemblance', 'Gravité', 'Score']}
+            headers={tp.a4.headers}
             colFlex={[3, 2.5, 1.2, 1, 1]}
             rows={scenarios.map((so: any) => {
               const ss    = (analyse.scenariosStrategiques || []).find((x: any) => x.id === so.scenarioStrategiqueId)
@@ -944,7 +927,7 @@ function Atelier4Page({ analyse, date }: { analyse: any; date: string }) {
           {/* Sequences of elementary actions if present */}
           {scenarios.some((so: any) => so.actionsElementaires?.length > 0) && (
             <View>
-              <SectionBar title="Détail des actions élémentaires" color={C.sky} />
+              <SectionBar title={tp.a4.aeDetail} color={C.sky} />
               {scenarios
                 .filter((so: any) => so.actionsElementaires?.length > 0)
                 .map((so: any) => (
@@ -952,7 +935,7 @@ function Atelier4Page({ analyse, date }: { analyse: any; date: string }) {
                     <Text style={[s.label, { color: C.sky, marginBottom: 2 }]}>▸ {so.nom}</Text>
                     <DataTable
                       color={C.sky}
-                      headers={['Action élémentaire', 'Type', 'Bien support', 'Vulnérabilité']}
+                      headers={tp.a4.aeHeaders}
                       rows={so.actionsElementaires.map((a: any) => [
                         a.nom || '—', a.type || '—', a.bienSupport || '—', a.vulnerabilite || '—',
                       ])}
@@ -964,14 +947,14 @@ function Atelier4Page({ analyse, date }: { analyse: any; date: string }) {
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Atelier 5 — Traitement du risque ─────────────────────────────────────────
 
-function Atelier5Page({ analyse, date }: { analyse: any; date: string }) {
+function Atelier5Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const risques  = analyse.risques  || []
   const mesures  = analyse.mesures  || []
   const sorted   = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque)
@@ -979,39 +962,39 @@ function Atelier5Page({ analyse, date }: { analyse: any; date: string }) {
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ATELIER 5 — TRAITEMENT DU RISQUE" color={C.red} />
+      <Banner title={tp.a5.banner} color={C.red} />
 
       {risques.length === 0 ? (
-        <Text style={s.italic}>Aucun risque identifié dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.a5.risquesEmpty}</Text>
       ) : (
         <View>
-          <SectionBar title={`${p(risques.length, 'Risque identifié', 'Risques identifiés')} (${risques.length})`} color={C.red} />
+          <SectionBar title={`${risques.length === 1 ? tp.a5.risquesTitleSing : tp.a5.risquesTitlePlur} (${risques.length})`} color={C.red} />
           <DataTable
             color={C.red}
-            headers={['Risque', 'G', 'V', 'Score initial', 'Niveau', 'Stratégie', 'Score résiduel']}
+            headers={tp.a5.risquesHeaders}
             colFlex={[3, 0.7, 0.7, 1.2, 1.2, 1.5, 1.5]}
             rows={sorted.map((r: any) => [
               r.nom,
               String(r.gravite),
               String(r.vraisemblance),
               { text: `${r.niveauRisque}/16`, bold: true },
-              { text: riskLabel(r.niveauRisque), color: riskColor(r.niveauRisque), bold: true },
+              { text: riskLabel(r.niveauRisque, tp), color: riskColor(r.niveauRisque), bold: true },
               r.strategie.replace(/_/g, ' '),
               r.niveauResiduel != null
-                ? `${r.niveauResiduel}/16 (${riskLabel(r.niveauResiduel)})`
+                ? `${r.niveauResiduel}/16 (${riskLabel(r.niveauResiduel, tp)})`
                 : '—',
             ])}
           />
         </View>
       )}
 
-      <SectionBar title="Plan d'action — Mesures de sécurité" color={C.green} />
+      <SectionBar title={tp.a5.planTitle} color={C.green} />
       {mesures.length === 0 ? (
-        <Text style={s.italic}>Aucune mesure de sécurité définie dans cette analyse.</Text>
+        <Text style={s.italic}>{tp.a5.mesuresEmpty}</Text>
       ) : (
         <DataTable
           color={C.green}
-          headers={['Mesure', 'Type', 'Priorité', 'Statut', 'Responsable', 'Entité', 'Échéance']}
+          headers={tp.a5.mesuresHeaders}
           colFlex={[3, 1.5, 0.8, 1.2, 1.5, 1.2, 1.2]}
           rows={sortedM.map((m: any) => [
             m.nom,
@@ -1027,23 +1010,30 @@ function Atelier5Page({ analyse, date }: { analyse: any; date: string }) {
             },
             m.responsable || '—',
             m.entite || '—',
-            m.echeance ? new Date(m.echeance).toLocaleDateString('fr-FR') : '—',
+            m.echeance ? new Date(m.echeance).toLocaleDateString(tp.dateLocale) : '—',
           ])}
         />
       )}
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
 
 // ─── Appendix page ─────────────────────────────────────────────────────────────
 
-function AnnexePage({ analyse, date, config }: { analyse: any; date: string; config?: any }) {
-  // Échelles : config de l'organisation si présente, sinon valeurs par défaut
-  const gravite: any[] = config?.echelleGravite?.length ? config.echelleGravite : DEFAULT_GRAVITE
-  const vrais: any[]   = config?.echelleVraisemblance?.length ? config.echelleVraisemblance : DEFAULT_VRAIS
-  const seuils: any[]  = config?.seuilsMatrice?.length ? config.seuilsMatrice : DEFAULT_SEUILS
+function AnnexePage({ analyse, date, config, tp }: { analyse: any; date: string; config?: any; tp: PdfStrings }) {
+  // Échelles : config de l'organisation si présente, sinon valeurs par défaut localisées
+  const gravite: any[] = config?.echelleGravite?.length ? config.echelleGravite
+    : tp.annexe.defaultGravite.map((g, i) => ({ niveau: i + 1, label: g.label, description: g.description }))
+  const vrais: any[]   = config?.echelleVraisemblance?.length ? config.echelleVraisemblance
+    : tp.annexe.defaultVrais.map((v, i) => ({ niveau: i + 1, label: v.label, description: v.description }))
+  const seuils: any[]  = config?.seuilsMatrice?.length ? config.seuilsMatrice : [
+    { scoreMin: 1, scoreMax: 3, label: tp.risk.faible, couleur: C.green },
+    { scoreMin: 4, scoreMax: 7, label: tp.risk.modere, couleur: C.yellow },
+    { scoreMin: 8, scoreMax: 11, label: tp.risk.eleve, couleur: C.orange },
+    { scoreMin: 12, scoreMax: 25, label: tp.risk.critique, couleur: C.red },
+  ]
   // Matrice : lignes = gravité décroissante, colonnes = vraisemblance croissante
   const gravValues  = [...gravite].map(g => g.niveau).sort((a, b) => b - a)
   const vraisValues = [...vrais].map(v => v.niveau).sort((a, b) => a - b)
@@ -1052,47 +1042,34 @@ function AnnexePage({ analyse, date, config }: { analyse: any; date: string; con
 
   return (
     <Page size="A4" style={s.page} wrap>
-      <Banner title="ANNEXE — MÉTHODOLOGIE ET RÉFÉRENTIEL DE COTATION" color={C.darkGray} />
+      <Banner title={tp.annexe.banner} color={C.darkGray} />
 
       {/* 1. Méthode */}
-      <SectionBar title="1. Méthode EBIOS Risk Manager (EBIOS RM)" color={C.darkGray} />
-      <Text style={s.body}>
-        EBIOS Risk Manager est la méthode officielle de l'ANSSI (Agence Nationale de la Sécurité des
-        Systèmes d'Information) pour apprécier et traiter les risques numériques. Elle est compatible
-        avec la norme ISO/IEC 27005.
-      </Text>
-      <Text style={[s.body, { marginTop: 2 }]}>
-        L'analyse se déroule en 5 ateliers : {'\n'}
-        • Atelier 1 — Cadrage et socle de sécurité : périmètre, valeurs métier, biens supports, événements redoutés.{'\n'}
-        • Atelier 2 — Sources de risque : identification et évaluation des acteurs malveillants.{'\n'}
-        • Atelier 3 — Scénarios stratégiques : chemins d'attaque ciblant les valeurs métier via l'écosystème.{'\n'}
-        • Atelier 4 — Scénarios opérationnels : déclinaison technique des chemins d'attaque retenus.{'\n'}
-        • Atelier 5 — Traitement du risque : cotation finale, stratégies de traitement, plan d'action.
-      </Text>
-      <Text style={[s.body, { marginTop: 2 }]}>
-        Le niveau de risque est calculé par la formule : Niveau = Gravité × Vraisemblance (max {nb}×{nb} = {maxScore}).
-      </Text>
+      <SectionBar title={tp.annexe.methodeTitle} color={C.darkGray} />
+      <Text style={s.body}>{tp.annexe.methodeIntro}</Text>
+      <Text style={[s.body, { marginTop: 2 }]}>{tp.annexe.ateliers}</Text>
+      <Text style={[s.body, { marginTop: 2 }]}>{tp.annexe.formule(nb, maxScore)}</Text>
 
       {/* 2. Échelle gravité */}
-      <SectionBar title="2. Échelle de gravité (impact)" color={C.teal} />
+      <SectionBar title={tp.annexe.graviteTitle} color={C.teal} />
       <DataTable
         color={C.teal}
-        headers={['Valeur', 'Niveau', 'Signification']}
+        headers={tp.annexe.scaleHeaders}
         colFlex={[0.8, 1.5, 5]}
         rows={gravite.map((g: any) => [String(g.niveau), g.label || '—', g.description || '—'])}
       />
 
       {/* 3. Échelle vraisemblance */}
-      <SectionBar title="3. Échelle de vraisemblance (probabilité)" color={C.orange} />
+      <SectionBar title={tp.annexe.vraisTitle} color={C.orange} />
       <DataTable
         color={C.orange}
-        headers={['Valeur', 'Niveau', 'Signification']}
+        headers={tp.annexe.scaleHeaders}
         colFlex={[0.8, 1.5, 5]}
         rows={vrais.map((v: any) => [String(v.niveau), v.label || '—', v.description || '—'])}
       />
 
       {/* 4. Risk matrix */}
-      <SectionBar title="4. Matrice de cotation (Gravité × Vraisemblance)" color={C.indigo} />
+      <SectionBar title={tp.annexe.matriceTitle} color={C.indigo} />
       <View style={{ marginBottom: 8 }}>
         {/* Column headers */}
         <View style={{ flexDirection: 'row', marginLeft: 60, marginBottom: 2 }}>
@@ -1130,21 +1107,15 @@ function AnnexePage({ analyse, date, config }: { analyse: any; date: string; con
       </View>
 
       {/* 5. Stratégies */}
-      <SectionBar title="5. Stratégies de traitement des risques" color={C.purple} />
+      <SectionBar title={tp.annexe.strategiesTitle} color={C.purple} />
       <DataTable
         color={C.purple}
-        headers={['Stratégie', 'Description']}
+        headers={tp.annexe.strategiesHeaders}
         colFlex={[1.5, 6]}
-        rows={[
-          ['Réduire',    'Mettre en place des mesures de sécurité pour abaisser le niveau du risque à un niveau acceptable.'],
-          ['Accepter',   "Le risque est jugé acceptable en l'état (niveau faible ou coût de traitement supérieur au bénéfice)."],
-          ['Transférer', 'Reporter le risque sur un tiers (assurance cyber, sous-traitant, clause contractuelle).'],
-          ['Refuser',    "L'activité ou le système portant le risque est abandonné ou modifié en profondeur."],
-          ['Surveiller', 'Le risque est suivi sans traitement immédiat : réévaluation périodique prévue.'],
-        ]}
+        rows={tp.annexe.strategies.map(([name, desc]) => [name, desc])}
       />
 
-      <Footer nom={analyse.nom} date={date} />
+      <Footer nom={analyse.nom} date={date} tp={tp} />
     </Page>
   )
 }
@@ -1155,27 +1126,30 @@ export interface AnalysePDFProps {
   analyse: any
   /** Configuration des échelles (gravité/vraisemblance/matrice). Repli sur les défauts. */
   config?: any
+  /** Locale du rapport (fr par défaut). */
+  locale?: string
 }
 
-export function AnalysePDF({ analyse, config }: AnalysePDFProps) {
-  const date = new Date().toLocaleDateString('fr-FR')
+export function AnalysePDF({ analyse, config, locale }: AnalysePDFProps) {
+  const tp = getPdfStrings(locale)
+  const date = new Date().toLocaleDateString(tp.dateLocale)
 
   return (
     <Document
       title={`EBIOS RM — ${analyse.nom}`}
       author="ACRA — Augmented Cyber Risk Analysis"
-      subject="Rapport d'analyse de risques EBIOS RM"
+      subject={tp.docSubject}
       creator="ACRA"
       producer="@react-pdf/renderer"
     >
-      <CoverPage   analyse={analyse} date={date} />
-      <SummaryPage analyse={analyse} date={date} config={config} />
-      {analyse.cadrage && <Atelier1Page analyse={analyse} date={date} />}
-      <Atelier2Page analyse={analyse} date={date} />
-      <Atelier3Page analyse={analyse} date={date} />
-      <Atelier4Page analyse={analyse} date={date} />
-      <Atelier5Page analyse={analyse} date={date} />
-      <AnnexePage   analyse={analyse} date={date} config={config} />
+      <CoverPage   analyse={analyse} date={date} tp={tp} />
+      <SummaryPage analyse={analyse} date={date} config={config} tp={tp} />
+      {analyse.cadrage && <Atelier1Page analyse={analyse} date={date} tp={tp} />}
+      <Atelier2Page analyse={analyse} date={date} tp={tp} />
+      <Atelier3Page analyse={analyse} date={date} tp={tp} />
+      <Atelier4Page analyse={analyse} date={date} tp={tp} />
+      <Atelier5Page analyse={analyse} date={date} tp={tp} />
+      <AnnexePage   analyse={analyse} date={date} config={config} tp={tp} />
     </Document>
   )
 }
@@ -1186,6 +1160,6 @@ export function AnalysePDF({ analyse, config }: AnalysePDFProps) {
  * que les primitives <Document>/<Text> — sinon « React error #31 » au runtime
  * (élément non reconnu) sous le bundle serveur de Next.
  */
-export function renderAnalysePDF(analyse: any, config?: any): Promise<Buffer> {
-  return renderToBuffer(<AnalysePDF analyse={analyse} config={config} />)
+export function renderAnalysePDF(analyse: any, config?: any, locale?: string): Promise<Buffer> {
+  return renderToBuffer(<AnalysePDF analyse={analyse} config={config} locale={locale} />)
 }
