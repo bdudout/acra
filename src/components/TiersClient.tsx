@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
+import type { ConsolidatedTier } from '@/lib/tiers'
 
 export interface TiersRow {
   id:          string
@@ -33,7 +34,7 @@ const ZONE_STYLE: Record<EcosystemZone, { badge: string; dot: string }> = {
   veille:   { badge: 'bg-green-100 text-green-700 border-green-200',     dot: 'bg-green-500' },
 }
 
-export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
+export default function TiersClient({ tiers }: { tiers: ConsolidatedTier[] }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [zone, setZone] = useState<EcosystemZone | 'all'>('all')
@@ -60,8 +61,7 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
       if (zone !== 'all' && x.zone !== zone) return false
       if (!q) return true
       return x.nom.toLowerCase().includes(q)
-        || (x.description ?? '').toLowerCase().includes(q)
-        || x.analyseNom.toLowerCase().includes(q)
+        || x.analyses.some(a => a.analyseNom.toLowerCase().includes(q))
         || (ppTypes[x.type] ?? x.type).toLowerCase().includes(q)
     })
   }, [tiers, search, zone, onlyCritique, ppTypes])
@@ -124,30 +124,37 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
                   <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.tiers.colAnalyse}</th>
                   <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">{radar.menaceLabel}</th>
                   <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.tiers.colZone}</th>
-                  <th scope="col" className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {[...filtered].sort((a, b) => b.menace - a.menace).map(x => (
-                  <tr key={x.id} className="hover:bg-gray-50 transition-colors">
+                {filtered.map(x => (
+                  <tr key={x.key} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 max-w-xs">
                       <div className="font-medium text-gray-800">
                         {x.critique && <span className="text-amber-500 mr-1" title={t.workshop.a3.ppCritiqueLabel}>★</span>}
                         {x.nom}
                       </div>
-                      {x.description && <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{x.description}</div>}
+                      {x.occurrences > 1 && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">{x.occurrences} {t.tiers.occurrences}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span className="text-xs text-gray-600">{ppTypes[x.type] ?? x.type}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-800 text-xs">{x.analyseNom}</div>
-                      {x.entite && (
-                        <div className="mt-0.5 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
-                          <Building2 size={10} aria-hidden="true" /> {x.entite}
-                        </div>
-                      )}
-                      {x.analyseOrg && <div className="text-gray-500 text-xs">{x.analyseOrg}</div>}
+                      <div className="flex flex-col gap-0.5">
+                        {x.analyses.map(a => (
+                          <Link key={a.analyseId} href={`/analyses/${a.analyseId}/atelier/3`}
+                            className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline">
+                            {a.analyseNom}
+                            {a.entite && (
+                              <span className="ml-1 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
+                                <Building2 size={10} aria-hidden="true" /> {a.entite}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center hidden md:table-cell">
                       <span className="text-sm font-bold text-gray-800">{x.menace.toFixed(2)}</span>
@@ -158,11 +165,6 @@ export default function TiersClient({ tiers }: { tiers: TiersRow[] }) {
                         <span className={`h-1.5 w-1.5 rounded-full ${ZONE_STYLE[x.zone].dot}`} />
                         {zoneLabel[x.zone]}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/analyses/${x.analyseId}/atelier/3`} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline whitespace-nowrap">
-                        {t.tiers.goToAtelier}
-                      </Link>
                     </td>
                   </tr>
                 ))}

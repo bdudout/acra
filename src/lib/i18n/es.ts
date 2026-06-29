@@ -86,6 +86,7 @@ export const es: Translations = {
     noTiers:      'Ningún tercero identificado por ahora. Añada partes interesadas en el taller 3.',
     noMatch:      'Ningún tercero coincidente.',
     countLabel:   'terceros',
+    occurrences:  'análisis',
   },
 
   profile: {

@@ -87,6 +87,7 @@ export const fr = {
     noTiers:      "Aucun tiers identifié pour l'instant. Ajoutez des parties prenantes en atelier 3.",
     noMatch:      'Aucun tiers correspondant.',
     countLabel:   'tiers',
+    occurrences:  'analyse(s)',
   },
 
   // ─── Profil utilisateur ───────────────────────────────────────────────────

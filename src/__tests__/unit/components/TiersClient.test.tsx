@@ -7,11 +7,12 @@
  */
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
-import TiersClient, { type TiersRow } from '@/components/TiersClient'
+import TiersClient from '@/components/TiersClient'
+import type { ConsolidatedTier } from '@/lib/tiers'
 
-const rows: TiersRow[] = [
-  { id: '1', analyseId: 'a1', analyseNom: 'Analyse Alpha', analyseOrg: 'OrgA', nom: 'Infogéreur', type: 'PRESTATAIRE', description: null, exposition: 4, fiabilite: 1, menace: 16, zone: 'danger' },
-  { id: '2', analyseId: 'a2', analyseNom: 'Analyse Beta', analyseOrg: null, nom: 'Client Final', type: 'CLIENT', description: null, exposition: 2, fiabilite: 3, menace: 4, zone: 'veille' },
+const rows: ConsolidatedTier[] = [
+  { key: 'infogereur', nom: 'Infogéreur', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'Analyse Alpha' }], exposition: 4, fiabilite: 1, menace: 16, zone: 'danger', critique: false },
+  { key: 'client final', nom: 'Client Final', type: 'CLIENT', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'Analyse Beta' }], exposition: 2, fiabilite: 3, menace: 4, zone: 'veille', critique: false },
 ]
 
 describe('TiersClient', () => {

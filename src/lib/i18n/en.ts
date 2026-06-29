@@ -86,6 +86,7 @@ export const en: Translations = {
     noTiers:      'No third party identified yet. Add stakeholders in workshop 3.',
     noMatch:      'No matching third party.',
     countLabel:   'third parties',
+    occurrences:  'analysis(es)',
   },
 
   profile: {

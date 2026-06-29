@@ -86,6 +86,7 @@ export const it: Translations = {
     noTiers:      'Nessuna terza parte identificata per ora. Aggiungi parti interessate nel workshop 3.',
     noMatch:      'Nessuna terza parte corrispondente.',
     countLabel:   'terze parti',
+    occurrences:  'analisi',
   },
 
   profile: {

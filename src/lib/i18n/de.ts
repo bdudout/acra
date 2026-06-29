@@ -86,6 +86,7 @@ export const de: Translations = {
     noTiers:      'Noch kein Dritter identifiziert. Fügen Sie Stakeholder in Workshop 3 hinzu.',
     noMatch:      'Kein passender Dritter.',
     countLabel:   'Dritte',
+    occurrences:  'Analyse(n)',
   },
 
   profile: {

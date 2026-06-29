@@ -7,6 +7,7 @@ import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT } from '@/lib/i18n'
 import { menace, zoneOf } from '@/lib/ecosystem-radar'
+import { consolidateTiers } from '@/lib/tiers'
 import TiersClient, { type TiersRow } from '@/components/TiersClient'
 
 // Toujours afficher des données fraîches
@@ -81,7 +82,7 @@ export default async function TiersPage() {
           </div>
         </div>
 
-        <TiersClient tiers={tiers} />
+        <TiersClient tiers={consolidateTiers(tiers)} />
       </main>
     </div>
   )
