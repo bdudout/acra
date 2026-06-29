@@ -230,6 +230,10 @@ model Cadrage {
   objectifsEtude String? @db.Text
   missions       String? @db.Text // Missions de l'organisation (FM1)
 
+  // Profil de dimensionnement (taille/maturité) : STANDARD | TPE | PME | ETI_GE
+  // Facultatif côté UX ; oriente les référentiels recommandés. Défaut STANDARD.
+  tailleAnalyse  String @default("STANDARD")
+
   // Valeurs métier (FM1) — [{id, nom, type, description, responsable, missionRef}]
   valeursMetier Json?
 

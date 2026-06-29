@@ -103,6 +103,25 @@ describe('recommendedFrameworksForSector', () => {
     for (const kw of ['sast', 'dast', 'sbom', 'sca', 'secret']) expect(txt).toContain(kw)
   })
 
+  // ── Adaptation à la taille de l'organisation (issue #37) ────────────────────
+  it('STANDARD (défaut) ne modifie pas la recommandation sectorielle', () => {
+    expect(recommendedFrameworksForSector('Banque / Finance', 'STANDARD'))
+      .toEqual(recommendedFrameworksForSector('Banque / Finance'))
+  })
+  it('TPE place ANSSI Hygiène + CIS v8 en tête (socle atteignable)', () => {
+    const r = recommendedFrameworksForSector('Banque / Finance', 'TPE')
+    expect(r.slice(0, 2)).toEqual(['ANSSI_HYG', 'CIS_V8'])
+    expect(r).toContain('DORA') // la reco sectorielle reste présente
+    expect(new Set(r).size).toBe(r.length) // pas de doublon
+  })
+  it('PME place ANSSI Hygiène en tête', () => {
+    expect(recommendedFrameworksForSector('Industrie / Manufacturing', 'PME')[0]).toBe('ANSSI_HYG')
+  })
+  it('ETI_GE conserve la recommandation sectorielle complète', () => {
+    expect(recommendedFrameworksForSector('Santé / Médico-social', 'ETI_GE'))
+      .toEqual(recommendedFrameworksForSector('Santé / Médico-social'))
+  })
+
   // Garde-fou : chaque secteur du référentiel reçoit une recommandation valide,
   // et seul « Autre » tombe sur le repli générique ISO 27001 seul.
   it('chaque secteur de SECTEURS_ACTIVITE renvoie des frameworks valides', () => {

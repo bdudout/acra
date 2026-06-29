@@ -754,11 +754,23 @@ export function getFrameworkCategories(frameworkId: string): Record<string, Fram
 }
 
 /**
- * Référentiels recommandés selon le secteur d'activité (le 1er = prioritaire).
- * Heuristique par mots-clés, robuste aux variantes et traductions. CUSTOM exclu.
- * Sert à guider le choix du référentiel (badge « recommandé ») sans l'imposer.
+ * Profil de dimensionnement de l'analyse (taille / maturité de l'organisation).
+ * Oriente les référentiels recommandés vers un socle atteignable. `STANDARD` =
+ * comportement neutre (par défaut). Stocké en JSON dans Cadrage (pas de migration).
  */
-export function recommendedFrameworksForSector(secteur?: string | null): FrameworkId[] {
+export const TAILLES_ANALYSE = ['STANDARD', 'TPE', 'PME', 'ETI_GE'] as const
+export type TailleAnalyse = typeof TAILLES_ANALYSE[number]
+
+/** Réordonne les référentiels selon la taille (socle léger en tête pour TPE/PME). */
+export function adaptFrameworksForSize(base: FrameworkId[], taille?: TailleAnalyse | null): FrameworkId[] {
+  const dedup = (a: FrameworkId[]) => a.filter((x, i) => a.indexOf(x) === i)
+  if (taille === 'TPE') return dedup(['ANSSI_HYG', 'CIS_V8', ...base])
+  if (taille === 'PME') return dedup(['ANSSI_HYG', ...base])
+  return base // STANDARD (défaut) et ETI_GE : recommandations sectorielles inchangées
+}
+
+/** Logique sectorielle de base (sans adaptation de taille). */
+function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
   const s = (secteur ?? '').toLowerCase()
   const has = (...kw: string[]) => kw.some(k => s.includes(k))
   if (has('banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ')) return ['DORA', 'PCI_DSS', 'ISO27001']
@@ -780,4 +792,12 @@ export function recommendedFrameworksForSector(secteur?: string | null): Framewo
   if (has('tourisme', 'hôtel', 'hotel', 'hôtellerie', 'hotellerie', 'restauration', 'tourism', 'hospitality')) return ['PCI_DSS', 'ISO27001']
   if (has('association', 'économie sociale', 'economie sociale', 'non-profit', 'nonprofit')) return ['ANSSI_HYG', 'ISO27001']
   return ['ISO27001']
+}
+
+/**
+ * Référentiels recommandés selon le secteur ET la taille de l'organisation
+ * (le 1er = prioritaire). CUSTOM exclu. Guide le choix sans l'imposer.
+ */
+export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null): FrameworkId[] {
+  return adaptFrameworksForSize(baseFrameworksForSector(secteur), taille)
 }

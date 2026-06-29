@@ -15,6 +15,7 @@ function cleanCadrage(obj: any): any {
   if (!obj) return obj
   return {
     perimetre:    obj.perimetre    != null ? String(obj.perimetre).slice(0, 5000)  : undefined,
+    tailleAnalyse: ['STANDARD', 'TPE', 'PME', 'ETI_GE'].includes(obj.tailleAnalyse) ? obj.tailleAnalyse : undefined,
     contexte:     obj.contexte     != null ? String(obj.contexte).slice(0, 5000)   : undefined,
     objectifs:    obj.objectifs    != null ? String(obj.objectifs).slice(0, 5000)  : undefined,
     evenementsRedoutes: Array.isArray(obj.evenementsRedoutes) ? obj.evenementsRedoutes : undefined,

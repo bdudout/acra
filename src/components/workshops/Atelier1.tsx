@@ -35,7 +35,7 @@ import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
-import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
+import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, TAILLES_ANALYSE, type TailleAnalyse, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
 
@@ -187,10 +187,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const isOtSector = /(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(analyse?.secteur || '')
   const [showOtGlossary, setShowOtGlossary] = useState(false)
 
+  // Profil de dimensionnement (taille/maturité) — facultatif, défaut « Analyse standard »
+  const [tailleAnalyse, setTailleAnalyse] = useState<TailleAnalyse>(
+    (initialData?.tailleAnalyse as TailleAnalyse) || 'STANDARD'
+  )
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
-  // Référentiels recommandés selon le secteur (suggestion non bloquante)
-  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur)
+  // Référentiels recommandés selon le secteur + la taille (suggestion non bloquante)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse)
   // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
   // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la
   // sélection courante ; « Afficher tous » dévoile le catalogue complet.
@@ -209,8 +213,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   const autoSaveData = useMemo(
-    () => ({ perimetre, objectifsEtude: objectifs, missions, valeursMetier: vms, biensSupports: biens, evenementsRedoutes: ers, referentiels, referentielMesures, customControles, socleSecurite }),
-    [perimetre, objectifs, missions, vms, biens, ers, referentiels, referentielMesures, customControles, socleSecurite]
+    () => ({ perimetre, objectifsEtude: objectifs, missions, valeursMetier: vms, biensSupports: biens, evenementsRedoutes: ers, referentiels, referentielMesures, customControles, socleSecurite, tailleAnalyse }),
+    [perimetre, objectifs, missions, vms, biens, ers, referentiels, referentielMesures, customControles, socleSecurite, tailleAnalyse]
   )
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
@@ -390,6 +394,35 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
       {/* ── PÉRIMÈTRE ────────────────────────────────────────────────────── */}
       {activeTab === 'perimetre' && (
         <div className="card p-6 space-y-5">
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-1">{t.workshop.a1.tailleTitle}</h3>
+            <p className="text-sm text-gray-500 mb-3">{t.workshop.a1.tailleDesc}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {([
+                { value: 'STANDARD', label: t.workshop.a1.tailleStandardLabel, impact: t.workshop.a1.tailleStandardImpact },
+                { value: 'TPE', label: t.workshop.a1.tailleTpeLabel, impact: t.workshop.a1.tailleTpeImpact },
+                { value: 'PME', label: t.workshop.a1.taillePmeLabel, impact: t.workshop.a1.taillePmeImpact },
+                { value: 'ETI_GE', label: t.workshop.a1.tailleEtiLabel, impact: t.workshop.a1.tailleEtiImpact },
+              ] as { value: TailleAnalyse; label: string; impact: string }[]).map(opt => {
+                const on = tailleAnalyse === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTailleAnalyse(opt.value)}
+                    className={`text-left p-3 rounded-lg border-2 transition-all ${
+                      on ? 'border-ebios-500 bg-ebios-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className={`text-sm font-semibold ${on ? 'text-ebios-800' : 'text-gray-800'}`}>
+                      {on ? '✓ ' : ''}{opt.label}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5 leading-tight">{opt.impact}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div>
             <h3 className="font-semibold text-gray-800 mb-1">{t.workshop.a1.missionsTitle}</h3>
             <p className="text-sm text-gray-500 mb-3">{t.workshop.a1.missionsDesc}</p>
