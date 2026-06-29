@@ -679,11 +679,33 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   return [...new Set([...priority, ...base])]
 }
 
+/** Statut réglementaire de l'entité (cf. lib/qualification.ts). */
+export type StatutReglementaire = 'aucun' | 'OSE' | 'EEI' | 'OIV'
+
 /**
- * Référentiels recommandés selon le secteur, la taille de l'organisation ET le
- * sous-secteur (le 1er = prioritaire). CUSTOM exclu. Guide le choix sans l'imposer.
+ * Conditionne DORA au profil réglementaire (issue #67). DORA ne s'applique qu'aux
+ * entités financières réglementées : pour une TPE/PME finance SANS statut EEI/OIV
+ * (ex. fintech pré-agrément), DORA est prématuré → on le retire au profit d'un
+ * socle atteignable (CIS_V8 + ISO27001 + PCI-DSS conservés). Les analyses
+ * STANDARD/ETI-GE ou les entités EEI/OIV conservent DORA.
  */
-export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null): FrameworkId[] {
-  const base = refineFrameworksBySousSecteur(baseFrameworksForSector(secteur), sousSecteur)
-  return adaptFrameworksForSize(base, taille)
+export function refineFrameworksByRegulatory(fw: FrameworkId[], taille?: TailleAnalyse | null, statut?: StatutReglementaire | null): FrameworkId[] {
+  if (!fw.includes('DORA')) return fw
+  const petite = taille === 'TPE' || taille === 'PME'
+  const reglementee = statut === 'EEI' || statut === 'OIV'
+  if (!petite || reglementee) return fw
+  const out = fw.filter(f => f !== 'DORA')
+  if (!out.includes('CIS_V8')) out.unshift('CIS_V8')
+  return out
+}
+
+/**
+ * Référentiels recommandés selon le secteur, la taille de l'organisation, le
+ * sous-secteur ET le statut réglementaire (le 1er = prioritaire). CUSTOM exclu.
+ * Guide le choix sans l'imposer.
+ */
+export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null, statut?: StatutReglementaire | null): FrameworkId[] {
+  let fw = refineFrameworksBySousSecteur(baseFrameworksForSector(secteur), sousSecteur)
+  fw = refineFrameworksByRegulatory(fw, taille, statut)
+  return adaptFrameworksForSize(fw, taille)
 }

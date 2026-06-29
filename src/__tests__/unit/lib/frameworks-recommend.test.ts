@@ -102,6 +102,29 @@ describe('recommendedFrameworksForSector', () => {
     expect(r.length).toBe(new Set(r).size)
   })
 
+  // ── Conditionnement DORA selon taille / statut réglementaire (issue #67) ────
+  it('TPE finance sans statut → pas de DORA, socle atteignable (CIS/ISO/PCI)', () => {
+    const r = recommendedFrameworksForSector('Banque / Finance', 'TPE', null, 'aucun')
+    expect(r).not.toContain('DORA')
+    expect(r).toEqual(expect.arrayContaining(['CIS_V8', 'ISO27001', 'PCI_DSS']))
+  })
+  it('PME fintech sans statut → pas de DORA', () => {
+    const r = recommendedFrameworksForSector('Banque / Finance', 'PME', 'banque-fintech', 'aucun')
+    expect(r).not.toContain('DORA')
+    expect(r).toContain('CIS_V8')
+  })
+  it('ETI/GE finance → DORA conservé', () => {
+    expect(recommendedFrameworksForSector('Banque / Finance', 'ETI_GE')).toContain('DORA')
+  })
+  it('TPE finance MAIS statut EEI/OIV → DORA conservé (entité réglementée)', () => {
+    expect(recommendedFrameworksForSector('Banque / Finance', 'TPE', null, 'EEI')).toContain('DORA')
+    expect(recommendedFrameworksForSector('Banque / Finance', 'TPE', null, 'OIV')).toContain('DORA')
+  })
+  it('STANDARD / taille non précisée finance → DORA conservé (pas de régression)', () => {
+    expect(recommendedFrameworksForSector('Banque / Finance')).toContain('DORA')
+    expect(recommendedFrameworksForSector('Banque / Finance', 'STANDARD')).toContain('DORA')
+  })
+
   // ── i18n des contrôles DORA/IEC/SOC2/SSDF (issue #66) ───────────────────────
   it('getFrameworkControles localise les contrôles selon la locale', () => {
     const fr = getFrameworkControles('DORA')
@@ -157,9 +180,10 @@ describe('recommendedFrameworksForSector', () => {
       .toEqual(recommendedFrameworksForSector('Banque / Finance'))
   })
   it('TPE place ANSSI Hygiène + CIS v8 en tête (socle atteignable)', () => {
-    const r = recommendedFrameworksForSector('Banque / Finance', 'TPE')
+    // Industrie : reco sectorielle conservée (pas de DORA en jeu)
+    const r = recommendedFrameworksForSector('Industrie / Manufacturing', 'TPE')
     expect(r.slice(0, 2)).toEqual(['ANSSI_HYG', 'CIS_V8'])
-    expect(r).toContain('DORA') // la reco sectorielle reste présente
+    expect(r).toContain('IEC_62443') // la reco sectorielle reste présente
     expect(new Set(r).size).toBe(r.length) // pas de doublon
   })
   it('PME place ANSSI Hygiène en tête', () => {

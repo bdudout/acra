@@ -45,6 +45,7 @@ import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { regulatoryObligations } from '@/lib/regulatory-guidance'
 
 interface Props {
   analyseId: string
@@ -126,7 +127,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     () => (analyse?.referentielMesures as FrameworkId) ?? null
   )
   // Référentiels recommandés selon le secteur (suggestion non bloquante, cf. Atelier 1)
-  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, analyse?.cadrage?.tailleAnalyse)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, analyse?.cadrage?.tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire)
   // Couverture NIS2 Art. 21 du référentiel actif (différenciateur EEI/OSE)
   const nis2Coverage = useMemo(
     () => (activeFramework ? nis2CoverageForFramework(activeFramework) : []),
@@ -184,6 +185,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const evenementsRedoutes: any[] = analyse?.cadrage?.evenementsRedoutes || []
   // EBIOS RM peut valoir AIPD (RGPD art. 35) si données particulières (art. 9) en jeu
   const aipdPertinente = detectRgpdArt9(analyse?.cadrage?.valeursMetier || []).length > 0
+  // Obligations réglementaires différenciées selon le statut (issue #68).
+  const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire)
 
   function addRisque(fromScenario?: any) {
     const id = uid()
@@ -600,6 +603,16 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
             <div className="bg-violet-50 border border-violet-300 rounded-xl p-4">
               <p className="text-sm font-semibold text-violet-900">📄 {t.workshop.a5.aipdTitle}</p>
               <p className="text-sm text-violet-800 mt-1">{t.workshop.a5.aipdText}</p>
+            </div>
+          )}
+          {regObligations.length > 0 && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-amber-900">⚖️ {t.workshop.a5.reg.title}</p>
+              <ul className="mt-1.5 space-y-1 list-disc list-inside">
+                {regObligations.map(id => (
+                  <li key={id} className="text-sm text-amber-800">{(t.workshop.a5.reg as Record<string, string>)[id]}</li>
+                ))}
+              </ul>
             </div>
           )}
           <div className="card p-5">
