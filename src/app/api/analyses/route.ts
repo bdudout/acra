@@ -6,12 +6,14 @@ import { z } from 'zod'
 import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 
 const createSchema = z.object({
   nom:          z.string().min(1).max(200),
   description:  z.string().max(1000).optional(),
   organisation: z.string().max(200).optional(),
   secteur:      z.string().max(100).optional(),
+  sousSecteur:  z.string().max(60).optional(), // id stable de sous-secteur (issue #25)
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
@@ -99,6 +101,8 @@ export async function POST(req: NextRequest) {
         description: data.description,
         organisation: data.organisation,
         secteur: data.secteur,
+        // Sous-secteur conservé seulement s'il est cohérent avec le secteur.
+        sousSecteur: isSousSecteurOfSecteur(data.secteur, data.sousSecteur) ? data.sousSecteur : null,
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,

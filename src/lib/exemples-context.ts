@@ -23,9 +23,14 @@ export interface RankableExemple {
 
 export interface RankContext {
   secteur?: string | null
+  /** Sous-secteur (libellé LOCALISÉ) — affine le scoring (issue #25). */
+  sousSecteur?: string | null
   /** Mots-clés issus des réponses précédentes (noms de biens/valeurs métier déjà saisis). */
   extraKeywords?: string[]
 }
+
+// Mots vides ignorés lors de la tokenisation d'un libellé de sous-secteur (multi-langue).
+const SOUS_SECTEUR_STOPWORDS = new Set(['avec', 'sans', 'pour', 'dans', 'and', 'the', 'für', 'mit', 'con', 'per', 'del', 'della'])
 
 // Vocabulaire indicatif par famille de secteur (mots-clés en minuscules, sous-chaînes).
 // Étendu volontairement « large » : sert au scoring par recouvrement, pas à une taxonomie.
@@ -105,6 +110,21 @@ export function vocabForSecteur(secteur?: string | null): string[] {
   return fam ? fam.vocab : []
 }
 
+/**
+ * Vocabulaire issu d'un libellé de sous-secteur LOCALISÉ : tokenise le libellé en
+ * mots significatifs (≥ 4 lettres, hors mots vides). Comme le libellé est dans la
+ * langue de l'utilisateur, ces mots-clés matchent les exemples localisés.
+ */
+export function vocabForSousSecteur(sousSecteurLabel?: string | null): string[] {
+  const s = (sousSecteurLabel ?? '').toLowerCase()
+  if (!s) return []
+  return [...new Set(
+    s.split(/[^a-zà-ÿ]+/i)
+      .map(w => w.trim())
+      .filter(w => w.length >= 4 && !SOUS_SECTEUR_STOPWORDS.has(w))
+  )]
+}
+
 /** Score d'un exemple = nombre de mots-clés présents dans son texte (nom + description + impacts). */
 export function scoreExemple(ex: RankableExemple, keywords: string[]): number {
   if (!keywords.length) return 0
@@ -126,7 +146,7 @@ export function rankExemples<T extends RankableExemple>(
   exemples: T[],
   ctx: RankContext,
 ): (T & { pertinent: boolean })[] {
-  const keywords = [...vocabForSecteur(ctx.secteur), ...(ctx.extraKeywords ?? [])]
+  const keywords = [...vocabForSecteur(ctx.secteur), ...vocabForSousSecteur(ctx.sousSecteur), ...(ctx.extraKeywords ?? [])]
     .map(k => k.toLowerCase().trim())
     .filter(Boolean)
 

@@ -105,7 +105,8 @@ function getNiveauRisqueColor(score: number) {
 export default function Atelier3({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
-  const { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
+  const { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE, SOUS_SECTEURS } = useEbiosData()
+  const sousSecteurLabel = SOUS_SECTEURS.find((s: { id: string }) => s.id === analyse?.sousSecteur)?.label ?? null
 
   // Translated arrays (re-derived on locale change)
   const TYPES_PP = [
@@ -142,8 +143,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : scénarios stratégiques sectoriels remontés en tête
   const scExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale), { secteur: analyse?.secteur }),
-    [scExamples, analyse?.secteur, locale]
+    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    [scExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
   const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -140,6 +140,7 @@ model Analyse {
   description String?
   organisation String?
   secteur     String?
+  sousSecteur String?  // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
   dateDebut   DateTime @default(now())
   dateEcheance DateTime?
   statut      StatutAnalyse @default(EN_COURS)

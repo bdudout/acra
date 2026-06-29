@@ -79,6 +79,29 @@ describe('recommendedFrameworksForSector', () => {
     }
   })
 
+  // ── Affinage par sous-secteur (issue #25) ──────────────────────────────────
+  it('sous-secteur « éditeur de logiciel santé » → fait remonter le dév. sécurisé', () => {
+    const r = recommendedFrameworksForSector('Santé / Médico-social', null, 'sante-editeur')
+    expect(r).toContain('NIST_SSDF')
+    expect(r).toContain('SOC2')
+    expect(r).toContain('HDS') // le socle santé reste présent
+  })
+  it('sous-secteur « fintech / paiement » → PCI-DSS en priorité', () => {
+    expect(recommendedFrameworksForSector('Banque / Finance', null, 'banque-fintech')[0]).toBe('PCI_DSS')
+  })
+  it('sous-secteur « industrie de process / nucléaire » → IEC 62443 en priorité', () => {
+    expect(recommendedFrameworksForSector('Industrie / Manufacturing', null, 'industrie-process')[0]).toBe('IEC_62443')
+    expect(recommendedFrameworksForSector('Énergie / Utilities', null, 'energie-nucleaire')[0]).toBe('IEC_62443')
+  })
+  it('sous-secteur absent ou neutre → recommandation inchangée', () => {
+    expect(recommendedFrameworksForSector('Santé / Médico-social', null, undefined)[0]).toBe('HDS')
+    expect(recommendedFrameworksForSector('Santé / Médico-social', null, 'sante-hopital')[0]).toBe('HDS')
+  })
+  it('aucun doublon de framework après affinage', () => {
+    const r = recommendedFrameworksForSector('Santé / Médico-social', null, 'sante-editeur')
+    expect(r.length).toBe(new Set(r).size)
+  })
+
   // ── SOC 2 : contenu du référentiel ──────────────────────────────────────────
   it('SOC 2 : méta + contrôles + catégories cohérents', () => {
     expect(FRAMEWORK_META.SOC2.nom).toMatch(/SOC 2/)

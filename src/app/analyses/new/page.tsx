@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
+import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
 
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { SECTEURS_ACTIVITE } = useEbiosData()
-  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '' })
+  const { SECTEURS_ACTIVITE, SOUS_SECTEURS } = useEbiosData()
+  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '' })
+  // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
+  const sousSecteurOptions = SOUS_SECTEURS.filter(s => sousSecteurIdsFor(form.secteur).includes(s.id))
   const [socleId, setSocleId] = useState('')
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')
@@ -80,12 +83,25 @@ export default function NewAnalysePage() {
           <div>
             <label className="label">{t.newAnalysis.sector}</label>
             <select value={form.secteur}
-              onChange={e => setForm({ ...form, secteur: e.target.value })}
+              onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteur: '' })}
               className="input">
               <option value="">{t.newAnalysis.sectorPh}</option>
               {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.sectorHint}</p>
+            {/* Sous-secteur (optionnel) — affiché seulement si le secteur en propose */}
+            {sousSecteurOptions.length > 0 && (
+              <div className="mt-3">
+                <label className="label">{t.newAnalysis.subSector} <span className="text-gray-400 font-normal">({t.optional})</span></label>
+                <select value={form.sousSecteur}
+                  onChange={e => setForm({ ...form, sousSecteur: e.target.value })}
+                  className="input">
+                  <option value="">{t.newAnalysis.subSectorPh}</option>
+                  {sousSecteurOptions.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.subSectorHint}</p>
+              </div>
+            )}
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(form.secteur) && (
               <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">

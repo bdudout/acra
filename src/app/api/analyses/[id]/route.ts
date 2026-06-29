@@ -6,6 +6,7 @@ import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, type U
 import { analyseAccessWhere } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
+import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -72,10 +73,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json()
-  const allowed = ['nom', 'description', 'organisation', 'secteur', 'atelierCourant', 'dateEcheance', 'referentielMesures', 'isSocle']
+  const allowed = ['nom', 'description', 'organisation', 'secteur', 'sousSecteur', 'atelierCourant', 'dateEcheance', 'referentielMesures', 'isSocle']
   const data: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) data[key] = body[key]
+  }
+  // Cohérence secteur ↔ sous-secteur (issue #25) : on retient le sous-secteur
+  // seulement s'il appartient bien au secteur effectif (nouveau ou existant).
+  if ('sousSecteur' in data || 'secteur' in data) {
+    const secteurEff = ('secteur' in data ? data.secteur : existing.secteur) as string | null
+    const ssEff = ('sousSecteur' in data ? data.sousSecteur : existing.sousSecteur) as string | null
+    data.sousSecteur = isSousSecteurOfSecteur(secteurEff, ssEff) ? ssEff : null
   }
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {

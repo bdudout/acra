@@ -795,9 +795,28 @@ function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
 }
 
 /**
- * Référentiels recommandés selon le secteur ET la taille de l'organisation
- * (le 1er = prioritaire). CUSTOM exclu. Guide le choix sans l'imposer.
+ * Affine la liste de référentiels selon le sous-secteur (issue #25) : fait
+ * remonter en priorité les référentiels les plus pertinents pour le sous-type
+ * (dév. sécurisé pour un éditeur, PCI-DSS pour le paiement, IEC 62443 pour l'OT).
+ * Matching par mots-clés sur l'id stable du sous-secteur. Sans effet si aucun
+ * sous-secteur ou s'il est neutre. Dédoublonne en conservant l'ordre.
  */
-export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null): FrameworkId[] {
-  return adaptFrameworksForSize(baseFrameworksForSector(secteur), taille)
+export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?: string | null): FrameworkId[] {
+  const s = (sousSecteur ?? '').toLowerCase()
+  if (!s) return base
+  let priority: FrameworkId[] = []
+  if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
+  else if (/(fintech|paiement|payment|monetique)/.test(s)) priority = ['PCI_DSS']
+  else if (/(process|scada|nucleaire|nuclear|\bot\b)/.test(s)) priority = ['IEC_62443']
+  if (priority.length === 0) return base
+  return [...new Set([...priority, ...base])]
+}
+
+/**
+ * Référentiels recommandés selon le secteur, la taille de l'organisation ET le
+ * sous-secteur (le 1er = prioritaire). CUSTOM exclu. Guide le choix sans l'imposer.
+ */
+export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null): FrameworkId[] {
+  const base = refineFrameworksBySousSecteur(baseFrameworksForSector(secteur), sousSecteur)
+  return adaptFrameworksForSize(base, taille)
 }

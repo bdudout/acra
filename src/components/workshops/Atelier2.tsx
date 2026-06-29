@@ -33,6 +33,7 @@ import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 
 interface Props {
@@ -60,6 +61,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function Atelier2({ analyseId, initialData, analyse, flashMode }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
+  const { SOUS_SECTEURS } = useEbiosData()
+  const sousSecteurLabel = SOUS_SECTEURS.find((s: { id: string }) => s.id === analyse?.sousSecteur)?.label ?? null
 
   // Translated arrays (re-derived on locale change)
   const CATEGORIES = [
@@ -96,8 +99,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
   const srExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale), { secteur: analyse?.secteur }),
-    [srExamples, analyse?.secteur, locale]
+    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    [srExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
 
   // ── Auto-save ─────────────────────────────────────────────────────────────

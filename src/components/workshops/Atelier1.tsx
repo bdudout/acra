@@ -63,8 +63,10 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const { t, locale } = useTranslation()
   const {
     CATEGORIES_BIENS_SUPPORTS, NIVEAUX_GRAVITE, REFERENTIELS_SECURITE,
-    TYPES_BIEN_SUPPORT, NIVEAUX_DICT,
+    TYPES_BIEN_SUPPORT, NIVEAUX_DICT, SOUS_SECTEURS,
   } = useEbiosData()
+  // Libellé localisé du sous-secteur (issue #25) — alimente la guidance contextuelle.
+  const sousSecteurLabel = SOUS_SECTEURS.find((s: { id: string }) => s.id === analyse?.sousSecteur)?.label ?? null
 
   // Translated arrays (derived from t so they re-render on locale change)
   // Config organisation (#8) — types d'impacts + référentiels actifs ; null tant que non chargé
@@ -114,8 +116,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   )
   // Exemples contextuels : remonter les valeurs métier pertinentes pour le secteur
   const vmExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier', locale), { secteur: analyse?.secteur }),
-    [vmExamples, analyse?.secteur, locale]
+    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier', locale), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    [vmExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
   const erExamples = useMemo(
     () => resolveExemples(exOverride.evenementsRedoutes, defaultExemplesFor('evenementsRedoutes', tEx, locale)) as any[],
@@ -154,9 +156,10 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const bsExamplesRanked = useMemo(
     () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports', locale), {
       secteur: analyse?.secteur,
+      sousSecteur: sousSecteurLabel,
       extraKeywords: keywordsFromAnswers(vms),
     }),
-    [bsExamples, analyse?.secteur, vms, locale]
+    [bsExamples, analyse?.secteur, sousSecteurLabel, vms, locale]
   )
 
   // Exemples contextuels : événements redoutés pertinents selon le secteur et
@@ -167,9 +170,10 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const erExamplesRanked = useMemo(
     () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes', locale), {
       secteur: analyse?.secteur,
+      sousSecteur: sousSecteurLabel,
       extraKeywords: keywordsFromAnswers(vms),
     }),
-    [erExamples, analyse?.secteur, vms, locale]
+    [erExamples, analyse?.secteur, sousSecteurLabel, vms, locale]
   )
 
   // Événements redoutés
@@ -196,7 +200,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur + la taille (suggestion non bloquante)
-  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse, analyse?.sousSecteur)
   // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
   // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la
   // sélection courante ; « Afficher tous » dévoile le catalogue complet.

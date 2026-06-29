@@ -38,6 +38,46 @@ export const SECTEURS_ACTIVITE = [
   'Autre',
 ]
 
+// Sous-secteurs (taxonomie sectorielle, issue #25) — uniquement pour les secteurs
+// réglementés/hétérogènes où le sous-type change la posture de risque. `id` stable
+// (stocké en base, indépendant de la langue) ; `famille` = clé de rattachement au
+// secteur (cf. secteurFamily dans lib/sous-secteurs.ts) ; `label` localisé (i18n).
+export const SOUS_SECTEURS = [
+  // Santé / Médico-social
+  { id: 'sante-hopital', famille: 'sante', label: 'Établissement hospitalier (CHU / CH)' },
+  { id: 'sante-clinique', famille: 'sante', label: 'Clinique privée' },
+  { id: 'sante-ehpad', famille: 'sante', label: 'EHPAD / médico-social' },
+  { id: 'sante-labo', famille: 'sante', label: 'Laboratoire de biologie médicale' },
+  { id: 'sante-editeur', famille: 'sante', label: 'Éditeur de logiciel de santé (SIH)' },
+  { id: 'sante-pharma', famille: 'sante', label: 'Pharmacie / officine' },
+  // Banque / Finance
+  { id: 'banque-detail', famille: 'banque', label: 'Banque de détail' },
+  { id: 'banque-assurance', famille: 'banque', label: 'Assurance / mutuelle' },
+  { id: 'banque-gestion', famille: 'banque', label: 'Gestion d\'actifs' },
+  { id: 'banque-fintech', famille: 'banque', label: 'Fintech / établissement de paiement' },
+  { id: 'banque-marche', famille: 'banque', label: 'Infrastructure de marché financier' },
+  // Défense / Sécurité nationale
+  { id: 'defense-bitd', famille: 'defense', label: 'Industrie de défense (BITD)' },
+  { id: 'defense-forces', famille: 'defense', label: 'Forces armées / ministère' },
+  { id: 'defense-oiv', famille: 'defense', label: 'Opérateur d\'importance vitale (OIV)' },
+  // Énergie / Utilities
+  { id: 'energie-production', famille: 'energie', label: 'Production d\'électricité' },
+  { id: 'energie-reseau', famille: 'energie', label: 'Réseau / distribution' },
+  { id: 'energie-nucleaire', famille: 'energie', label: 'Nucléaire' },
+  { id: 'energie-fossile', famille: 'energie', label: 'Pétrole / gaz' },
+  { id: 'energie-renouvelable', famille: 'energie', label: 'Énergies renouvelables' },
+  // Administration publique
+  { id: 'admin-collectivite', famille: 'administration', label: 'Collectivité territoriale' },
+  { id: 'admin-centrale', famille: 'administration', label: 'Administration centrale / État' },
+  { id: 'admin-etab-public', famille: 'administration', label: 'Établissement public' },
+  // Industrie / Manufacturing
+  { id: 'industrie-manufacturiere', famille: 'industrie', label: 'Industrie manufacturière' },
+  { id: 'industrie-process', famille: 'industrie', label: 'Industrie de process (SCADA / OT)' },
+  { id: 'industrie-agro', famille: 'industrie', label: 'Agroalimentaire' },
+  { id: 'industrie-pharma-chimie', famille: 'industrie', label: 'Pharmaceutique / chimie' },
+  { id: 'industrie-auto-aero', famille: 'industrie', label: 'Automobile / aéronautique' },
+]
+
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────
 
 export const TYPES_BIEN_SUPPORT = [

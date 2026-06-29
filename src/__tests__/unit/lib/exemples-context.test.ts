@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { vocabForSecteur, scoreExemple, rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
+import { vocabForSecteur, vocabForSousSecteur, scoreExemple, rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exemples contextuels : réordonner les exemples proposés dans les ateliers selon
@@ -24,6 +24,32 @@ describe('vocabForSecteur', () => {
     expect(vocabForSecteur('')).toEqual([])
     expect(vocabForSecteur(null)).toEqual([])
     expect(vocabForSecteur('Secteur exotique')).toEqual([])
+  })
+})
+
+describe('vocabForSousSecteur — tokenise le libellé localisé (issue #25)', () => {
+  it('extrait les mots significatifs (≥ 4 lettres), ignore les mots vides', () => {
+    const v = vocabForSousSecteur('Éditeur de logiciel de santé (SIH)')
+    expect(v).toContain('éditeur')
+    expect(v).toContain('logiciel')
+    expect(v).toContain('santé')
+    expect(v).not.toContain('de')
+  })
+  it('renvoie [] pour vide/null', () => {
+    expect(vocabForSousSecteur('')).toEqual([])
+    expect(vocabForSousSecteur(null)).toEqual([])
+  })
+})
+
+describe('rankExemples — boost par sous-secteur (label localisé)', () => {
+  it('le vocabulaire du sous-secteur fait remonter les exemples correspondants', () => {
+    const exemples = [
+      { nom: 'Annuaire interne' },
+      { nom: 'Logiciel de prescription', description: 'circuit du médicament' },
+    ]
+    const r = rankExemples(exemples, { secteur: 'Santé / Médico-social', sousSecteur: 'Logiciel de prescription' })
+    expect(r[0].nom).toBe('Logiciel de prescription')
+    expect(r[0].pertinent).toBe(true)
   })
 })
 
