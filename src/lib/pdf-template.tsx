@@ -596,6 +596,8 @@ function Atelier2Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
   const sources  = analyse.sourcesRisque || []
   const retained = sources.filter((s: any) => s.retenu)
   const excluded = sources.filter((s: any) => !s.retenu)
+  // Ne pas produire une page quasi-vide si l'atelier n'a pas de données (issue #63)
+  if (sources.length === 0) return null
 
   return (
     <Page size="A4" style={s.page} wrap>
@@ -803,6 +805,8 @@ function Atelier3Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
   const scenarios = analyse.scenariosStrategiques || []
   const retained  = scenarios.filter((s: any) => s.retenu)
   const excluded  = scenarios.filter((s: any) => !s.retenu)
+  // Page omise si ni scénario ni partie prenante (issue #63)
+  if (scenarios.length === 0 && (analyse.partiesPrenantes || []).length === 0) return null
 
   return (
     <Page size="A4" style={s.page} wrap>
@@ -897,6 +901,8 @@ function Atelier3Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
 
 function Atelier4Page({ analyse, date, tp }: { analyse: any; date: string; tp: PdfStrings }) {
   const scenarios = analyse.scenariosOperationnels || []
+  // Page omise si aucun scénario opérationnel (issue #63)
+  if (scenarios.length === 0) return null
 
   return (
     <Page size="A4" style={s.page} wrap>
@@ -959,6 +965,8 @@ function Atelier5Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
   const mesures  = analyse.mesures  || []
   const sorted   = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque)
   const sortedM  = [...mesures].sort((a: any, b: any) => a.priorite - b.priorite)
+  // Page omise si ni risque ni mesure (issue #63)
+  if (risques.length === 0 && mesures.length === 0) return null
 
   return (
     <Page size="A4" style={s.page} wrap>
