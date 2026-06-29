@@ -18,6 +18,8 @@ export interface PdfStrings {
     title: string; method: string; iso: string; generatedOn: string
     organisation: string; secteur: string; statut: string; createdOn: string; updatedOn: string
     statutTermine: string; statutApprouve: string; statutEnCours: string
+    profilLabel: string; profils: Record<string, string>
+    statutRegLabel: string; statutsReg: Record<string, string>
   }
   footer: { confidential: string; page: (n: number, total: number) => string }
   risk: { critique: string; eleve: string; modere: string; faible: string }
@@ -79,6 +81,8 @@ const fr: PdfStrings = {
     title: 'ANALYSE DE RISQUES', method: 'EBIOS Risk Manager — Méthode ANSSI', iso: 'Compatible ISO/IEC 27005',
     generatedOn: 'Généré le', organisation: 'Organisation', secteur: 'Secteur', statut: 'Statut', createdOn: 'Créée le', updatedOn: 'Mise à jour',
     statutTermine: 'Terminée', statutApprouve: 'Approuvée', statutEnCours: 'En cours',
+    profilLabel: 'Profil', profils: { TPE: 'TPE / très petite structure', PME: 'PME', ETI_GE: 'ETI / grande organisation' },
+    statutRegLabel: 'Statut réglementaire', statutsReg: { OSE: 'OSE (services essentiels)', EEI: 'Entité essentielle/importante (NIS2)', OIV: "OIV (importance vitale)" },
   },
   footer: { confidential: 'Confidentiel — généré le', page: (n, t) => `Page ${n} / ${t}` },
   risk: { critique: 'Critique', eleve: 'Élevé', modere: 'Modéré', faible: 'Faible' },
@@ -160,6 +164,8 @@ const en: PdfStrings = {
     title: 'RISK ANALYSIS', method: 'EBIOS Risk Manager — ANSSI method', iso: 'Compatible with ISO/IEC 27005',
     generatedOn: 'Generated on', organisation: 'Organisation', secteur: 'Sector', statut: 'Status', createdOn: 'Created on', updatedOn: 'Updated',
     statutTermine: 'Completed', statutApprouve: 'Approved', statutEnCours: 'In progress',
+    profilLabel: 'Profile', profils: { TPE: 'Micro / very small org', PME: 'SME', ETI_GE: 'Large organisation' },
+    statutRegLabel: 'Regulatory status', statutsReg: { OSE: 'OES (essential services)', EEI: 'Essential/important entity (NIS2)', OIV: 'Vital-importance operator' },
   },
   footer: { confidential: 'Confidential — generated on', page: (n, t) => `Page ${n} / ${t}` },
   risk: { critique: 'Critical', eleve: 'High', modere: 'Moderate', faible: 'Low' },
@@ -241,6 +247,8 @@ const de: PdfStrings = {
     title: 'RISIKOANALYSE', method: 'EBIOS Risk Manager — ANSSI-Methode', iso: 'Kompatibel mit ISO/IEC 27005',
     generatedOn: 'Erstellt am', organisation: 'Organisation', secteur: 'Branche', statut: 'Status', createdOn: 'Erstellt am', updatedOn: 'Aktualisiert',
     statutTermine: 'Abgeschlossen', statutApprouve: 'Genehmigt', statutEnCours: 'In Bearbeitung',
+    profilLabel: 'Profil', profils: { TPE: 'Kleinst-/sehr kleine Organisation', PME: 'KMU', ETI_GE: 'Großorganisation' },
+    statutRegLabel: 'Regulatorischer Status', statutsReg: { OSE: 'OES (wesentliche Dienste)', EEI: 'Wesentliche/wichtige Einrichtung (NIS2)', OIV: 'Betreiber von vitaler Bedeutung' },
   },
   footer: { confidential: 'Vertraulich — erstellt am', page: (n, t) => `Seite ${n} / ${t}` },
   risk: { critique: 'Kritisch', eleve: 'Hoch', modere: 'Mittel', faible: 'Niedrig' },
@@ -322,6 +330,8 @@ const es: PdfStrings = {
     title: 'ANÁLISIS DE RIESGOS', method: 'EBIOS Risk Manager — Método ANSSI', iso: 'Compatible con ISO/IEC 27005',
     generatedOn: 'Generado el', organisation: 'Organización', secteur: 'Sector', statut: 'Estado', createdOn: 'Creado el', updatedOn: 'Actualizado',
     statutTermine: 'Terminado', statutApprouve: 'Aprobado', statutEnCours: 'En curso',
+    profilLabel: 'Perfil', profils: { TPE: 'Microempresa / muy pequeña', PME: 'PYME', ETI_GE: 'Gran organización' },
+    statutRegLabel: 'Estatus regulatorio', statutsReg: { OSE: 'OSE (servicios esenciales)', EEI: 'Entidad esencial/importante (NIS2)', OIV: 'Operador de importancia vital' },
   },
   footer: { confidential: 'Confidencial — generado el', page: (n, t) => `Página ${n} / ${t}` },
   risk: { critique: 'Crítico', eleve: 'Alto', modere: 'Moderado', faible: 'Bajo' },
@@ -403,6 +413,8 @@ const it: PdfStrings = {
     title: 'ANALISI DEI RISCHI', method: 'EBIOS Risk Manager — Metodo ANSSI', iso: 'Compatibile con ISO/IEC 27005',
     generatedOn: 'Generato il', organisation: 'Organizzazione', secteur: 'Settore', statut: 'Stato', createdOn: 'Creato il', updatedOn: 'Aggiornato',
     statutTermine: 'Completato', statutApprouve: 'Approvato', statutEnCours: 'In corso',
+    profilLabel: 'Profilo', profils: { TPE: 'Micro / struttura molto piccola', PME: 'PMI', ETI_GE: 'Grande organizzazione' },
+    statutRegLabel: 'Stato normativo', statutsReg: { OSE: 'OSE (servizi essenziali)', EEI: 'Soggetto essenziale/importante (NIS2)', OIV: 'Operatore di importanza vitale' },
   },
   footer: { confidential: 'Riservato — generato il', page: (n, t) => `Pagina ${n} / ${t}` },
   risk: { critique: 'Critico', eleve: 'Elevato', modere: 'Moderato', faible: 'Basso' },

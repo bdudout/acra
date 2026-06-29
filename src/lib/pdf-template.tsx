@@ -262,6 +262,12 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
       {analyse.secteur ? (
         <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.secteur} : {analyse.secteur}</Text>
       ) : null}
+      {analyse.cadrage?.tailleAnalyse && analyse.cadrage.tailleAnalyse !== 'STANDARD' && tp.cover.profils[analyse.cadrage.tailleAnalyse] ? (
+        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.profilLabel} : {tp.cover.profils[analyse.cadrage.tailleAnalyse]}</Text>
+      ) : null}
+      {analyse.qualification?.statutReglementaire && tp.cover.statutsReg[analyse.qualification.statutReglementaire] ? (
+        <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statutRegLabel} : {tp.cover.statutsReg[analyse.qualification.statutReglementaire]}</Text>
+      ) : null}
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statut} : {statut}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>
         {tp.cover.createdOn} : {new Date(analyse.createdAt).toLocaleDateString(tp.dateLocale)}
