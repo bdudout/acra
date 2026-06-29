@@ -87,6 +87,8 @@ export const de: Translations = {
     noMatch:      'Kein passender Dritter.',
     countLabel:   'Dritte',
     occurrences:  'Analyse(n)',
+    dupHintTitle: 'Mögliche Dubletten',
+    dupHintText: 'Einige Dritte haben ähnliche Namen. Harmonisieren Sie sie über die Autovervollständigung in Workshop 3, um die Konsolidierung zu verbessern.',
   },
 
   profile: {

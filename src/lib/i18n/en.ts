@@ -87,6 +87,8 @@ export const en: Translations = {
     noMatch:      'No matching third party.',
     countLabel:   'third parties',
     occurrences:  'analysis(es)',
+    dupHintTitle: 'Potential duplicates',
+    dupHintText: 'Some third parties have similar names. Harmonise them via autocomplete in Workshop 3 to improve consolidation.',
   },
 
   profile: {

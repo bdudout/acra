@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
-import type { ConsolidatedTier } from '@/lib/tiers'
+import { suggestTierDuplicates, type ConsolidatedTier } from '@/lib/tiers'
 
 export interface TiersRow {
   id:          string
@@ -40,6 +40,8 @@ export default function TiersClient({ tiers }: { tiers: ConsolidatedTier[] }) {
   const [zone, setZone] = useState<EcosystemZone | 'all'>('all')
   const [onlyCritique, setOnlyCritique] = useState(false)
   const critiqueCount = useMemo(() => tiers.filter(x => x.critique).length, [tiers])
+  // Doublons potentiels (lecture seule) : tiers au nom proche à harmoniser.
+  const dupGroups = useMemo(() => suggestTierDuplicates(tiers), [tiers])
 
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const radar = t.workshop.a3.radar
@@ -105,6 +107,19 @@ export default function TiersClient({ tiers }: { tiers: ConsolidatedTier[] }) {
         placeholder={t.tiers.searchPh}
         className="input w-full mb-4 text-sm"
       />
+
+      {/* Doublons potentiels (suggestion en lecture seule) */}
+      {dupGroups.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm font-semibold text-amber-900">⚠️ {t.tiers.dupHintTitle} ({dupGroups.length})</p>
+          <p className="text-xs text-amber-800 mt-0.5">{t.tiers.dupHintText}</p>
+          <ul className="mt-1.5 space-y-0.5">
+            {dupGroups.map((g, i) => (
+              <li key={i} className="text-xs text-amber-900">• {g.map(x => x.nom).join('  ·  ')}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="card p-10 text-center">

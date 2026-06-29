@@ -55,6 +55,34 @@ export function normalizeTierName(nom: string): string {
     .toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
+// Mots vides ignorés pour le rapprochement de doublons (suffixes corporate fréquents).
+const TIER_STOPWORDS = new Set(['sa', 'sas', 'sarl', 'inc', 'ltd', 'llc', 'gmbh', 'group', 'groupe', 'france', 'cloud', 'services', 'service', 'solutions', 'technologies', 'corp'])
+
+/** Premier token significatif (≥ 3 lettres, hors mots vides) d'un nom normalisé. */
+function leadToken(key: string): string {
+  for (const tok of key.split(' ')) {
+    if (tok.length >= 3 && !TIER_STOPWORDS.has(tok)) return tok
+  }
+  return key.split(' ')[0] ?? key
+}
+
+/**
+ * Détecte des groupes de tiers probablement identiques (doublons à harmoniser),
+ * p. ex. « Microsoft » / « Microsoft Azure » / « Microsoft 365 ». Heuristique en
+ * LECTURE SEULE (aucune écriture) : regroupe par premier token significatif partagé.
+ * Renvoie uniquement les groupes d'au moins 2 tiers distincts. Pur, testé.
+ */
+export function suggestTierDuplicates(tiers: ConsolidatedTier[]): ConsolidatedTier[][] {
+  const byLead = new Map<string, ConsolidatedTier[]>()
+  for (const t of tiers) {
+    const lead = leadToken(t.key)
+    if (!lead) continue
+    const g = byLead.get(lead)
+    if (g) g.push(t); else byLead.set(lead, [t])
+  }
+  return [...byLead.values()].filter(g => g.length >= 2)
+}
+
 /** Renvoie l'élément le plus fréquent d'une liste (1er en cas d'égalité). */
 function mostFrequent<T>(items: T[]): T {
   const counts = new Map<T, number>()

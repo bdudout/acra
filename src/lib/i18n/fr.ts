@@ -88,6 +88,8 @@ export const fr = {
     noMatch:      'Aucun tiers correspondant.',
     countLabel:   'tiers',
     occurrences:  'analyse(s)',
+    dupHintTitle: 'Doublons potentiels',
+    dupHintText: "Des tiers portent des noms proches. Harmonisez-les via l'auto-complétion en Atelier 3 pour fiabiliser la consolidation.",
   },
 
   // ─── Profil utilisateur ───────────────────────────────────────────────────

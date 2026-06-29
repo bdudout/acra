@@ -87,6 +87,8 @@ export const es: Translations = {
     noMatch:      'Ningún tercero coincidente.',
     countLabel:   'terceros',
     occurrences:  'análisis',
+    dupHintTitle: 'Duplicados potenciales',
+    dupHintText: 'Algunos terceros tienen nombres parecidos. Armonízalos mediante el autocompletado en el Taller 3 para mejorar la consolidación.',
   },
 
   profile: {
