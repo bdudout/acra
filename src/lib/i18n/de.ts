@@ -1021,6 +1021,8 @@ export const de: Translations = {
       vmExamplesTitle:'Häufige Geschäftswert-Beispiele',
       vmNamePh:       'Name des Geschäftswerts',
       vmOwnerPh:      'Verantwortlicher (intern/extern)',
+      classificationLabel: 'Einstufung',
+      classifications: { NP: 'Nicht eingestuft', DR: 'Verschlusssache (DR)', S: 'Geheim', TS: 'Streng geheim' },
       vmListTitle:    'Geschäftswerte',
       vmAddBtn:       '+ Hinzufügen',
       vmEmpty:        'Keine Geschäftswerte. Wählen Sie aus Beispielen oder fügen Sie manuell hinzu.',

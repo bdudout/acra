@@ -1021,6 +1021,8 @@ export const es: Translations = {
       vmExamplesTitle:'Ejemplos de valores de negocio comunes',
       vmNamePh:       'Nombre del valor de negocio',
       vmOwnerPh:      'Responsable (interno/externo)',
+      classificationLabel: 'Clasificación',
+      classifications: { NP: 'No protegido', DR: 'Difusión Restringida', S: 'Secreto', TS: 'Alto Secreto' },
       vmListTitle:    'Valores de negocio',
       vmAddBtn:       '+ Añadir',
       vmEmpty:        'Sin valores de negocio. Selecciona de los ejemplos o añade manualmente.',

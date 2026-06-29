@@ -1043,6 +1043,8 @@ export const fr = {
       vmExamplesTitle:'Exemples de valeurs métier courantes',
       vmNamePh:       'Nom de la valeur métier',
       vmOwnerPh:      'Responsable (interne/externe)',
+      classificationLabel: 'Classification',
+      classifications: { NP: 'Non protégé', DR: 'Diffusion Restreinte', S: 'Secret', TS: 'Très Secret' },
       vmListTitle:    'Valeurs métier',
       vmAddBtn:       '+ Ajouter',
       vmEmpty:        'Aucune valeur métier. Sélectionnez depuis les exemples ou ajoutez manuellement.',

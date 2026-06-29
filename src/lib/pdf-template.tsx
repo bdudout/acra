@@ -509,17 +509,28 @@ function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         </View>
       )}
 
-      {valeursMetier.length > 0 && (
+      {valeursMetier.length > 0 && (() => {
+        // Colonne « Classification » (IGI-1300) ajoutée seulement si au moins une
+        // valeur métier est classifiée (≠ NP) — rapport propre sinon (backlog #28).
+        const classif = (v: any): string => (v?.classification && v.classification !== 'NP') ? v.classification : ''
+        const hasClassif = valeursMetier.some((v: any) => classif(v))
+        const headers = hasClassif ? [...tp.a1.vmHeaders, tp.a1.classifHeader] : tp.a1.vmHeaders
+        const colFlex = hasClassif ? [1.4, 0.9, 2.3, 1.4, 1.1] : [1.5, 1, 2.5, 1.5]
+        return (
         <View>
           <SectionBar title={`${tp.a1.vm} (${valeursMetier.length})`} color={C.teal} />
           <DataTable
             color={C.teal}
-            headers={tp.a1.vmHeaders}
-            colFlex={[1.5, 1, 2.5, 1.5]}
-            rows={valeursMetier.map((v: any) => [v.nom || '—', v.type || '—', v.description || '—', v.responsable || '—'])}
+            headers={headers}
+            colFlex={colFlex}
+            rows={valeursMetier.map((v: any) => {
+              const base = [v.nom || '—', v.type || '—', v.description || '—', v.responsable || '—']
+              return hasClassif ? [...base, classif(v) ? (tp.a1.classifications[classif(v)] ?? classif(v)) : '—'] : base
+            })}
           />
         </View>
-      )}
+        )
+      })()}
 
       {biensSupports.length > 0 && (() => {
         // Lien N‑N bien support ↔ valeurs métier (issue #1) : affiche les VM liées

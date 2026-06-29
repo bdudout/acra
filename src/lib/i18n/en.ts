@@ -1021,6 +1021,8 @@ export const en: Translations = {
       vmExamplesTitle:'Common business value examples',
       vmNamePh:       'Business value name',
       vmOwnerPh:      'Owner (internal/external)',
+      classificationLabel: 'Classification',
+      classifications: { NP: 'Unclassified', DR: 'Restricted', S: 'Secret', TS: 'Top Secret' },
       vmListTitle:    'Business values',
       vmAddBtn:       '+ Add',
       vmEmpty:        'No business values yet. Select from examples or add manually.',

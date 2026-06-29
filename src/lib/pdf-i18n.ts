@@ -41,6 +41,7 @@ export interface PdfStrings {
   }
   a1: {
     banner: string; perimetre: string; objectifs: string
+    classifHeader: string; classifications: Record<string, string>
     vm: string; vmHeaders: string[]
     bs: string; bsHeaders: string[]
     er: string; erHeaders: string[]
@@ -102,6 +103,7 @@ const fr: PdfStrings = {
   },
   a1: {
     banner: 'ATELIER 1 — CADRAGE ET SOCLE DE SÉCURITÉ', perimetre: "Périmètre de l'étude", objectifs: 'Objectifs :',
+    classifHeader: 'Classification', classifications: { NP: 'Non protégé', DR: 'Diffusion Restreinte', S: 'Secret', TS: 'Très Secret' },
     vm: 'Valeurs métier FM1', vmHeaders: ['Nom', 'Type', 'Description', 'Responsable'],
     bs: 'Biens supports', bsHeaders: ['Nom', 'Type', 'Description', 'Valeurs métier liées'],
     er: 'Événements redoutés', erHeaders: ['Description', 'Impacts', 'Gravité'],
@@ -182,6 +184,7 @@ const en: PdfStrings = {
   },
   a1: {
     banner: 'WORKSHOP 1 — SCOPE AND SECURITY BASELINE', perimetre: 'Scope of the study', objectifs: 'Objectives:',
+    classifHeader: 'Classification', classifications: { NP: 'Unclassified', DR: 'Restricted', S: 'Secret', TS: 'Top Secret' },
     vm: 'Business values FM1', vmHeaders: ['Name', 'Type', 'Description', 'Owner'],
     bs: 'Supporting assets', bsHeaders: ['Name', 'Type', 'Description', 'Linked business values'],
     er: 'Feared events', erHeaders: ['Description', 'Impacts', 'Severity'],
@@ -262,6 +265,7 @@ const de: PdfStrings = {
   },
   a1: {
     banner: 'WORKSHOP 1 — RAHMEN UND SICHERHEITSBASIS', perimetre: 'Untersuchungsbereich', objectifs: 'Ziele:',
+    classifHeader: 'Einstufung', classifications: { NP: 'Nicht eingestuft', DR: 'Verschlusssache (DR)', S: 'Geheim', TS: 'Streng geheim' },
     vm: 'Geschäftswerte FM1', vmHeaders: ['Name', 'Typ', 'Beschreibung', 'Verantwortlich'],
     bs: 'Unterstützende Assets', bsHeaders: ['Name', 'Typ', 'Beschreibung', 'Verknüpfte Geschäftswerte'],
     er: 'Befürchtete Ereignisse', erHeaders: ['Beschreibung', 'Auswirkungen', 'Schweregrad'],
@@ -342,6 +346,7 @@ const es: PdfStrings = {
   },
   a1: {
     banner: 'TALLER 1 — ENCUADRE Y BASE DE SEGURIDAD', perimetre: 'Alcance del estudio', objectifs: 'Objetivos:',
+    classifHeader: 'Clasificación', classifications: { NP: 'No protegido', DR: 'Difusión Restringida', S: 'Secreto', TS: 'Alto Secreto' },
     vm: 'Valores de negocio FM1', vmHeaders: ['Nombre', 'Tipo', 'Descripción', 'Responsable'],
     bs: 'Activos de soporte', bsHeaders: ['Nombre', 'Tipo', 'Descripción', 'Valores de negocio vinculados'],
     er: 'Eventos temidos', erHeaders: ['Descripción', 'Impactos', 'Gravedad'],
@@ -422,6 +427,7 @@ const it: PdfStrings = {
   },
   a1: {
     banner: 'WORKSHOP 1 — INQUADRAMENTO E BASE DI SICUREZZA', perimetre: "Ambito dello studio", objectifs: 'Obiettivi:',
+    classifHeader: 'Classificazione', classifications: { NP: 'Non protetto', DR: 'Diffusione Riservata', S: 'Segreto', TS: 'Top Secret' },
     vm: 'Valori aziendali FM1', vmHeaders: ['Nome', 'Tipo', 'Descrizione', 'Responsabile'],
     bs: 'Asset di supporto', bsHeaders: ['Nome', 'Tipo', 'Descrizione', 'Valori aziendali collegati'],
     er: 'Eventi temuti', erHeaders: ['Descrizione', 'Impatti', 'Gravità'],

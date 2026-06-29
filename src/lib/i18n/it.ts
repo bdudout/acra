@@ -1021,6 +1021,8 @@ export const it: Translations = {
       vmExamplesTitle:'Esempi di valori aziendali comuni',
       vmNamePh:       'Nome del valore aziendale',
       vmOwnerPh:      'Responsabile (interno/esterno)',
+      classificationLabel: 'Classificazione',
+      classifications: { NP: 'Non protetto', DR: 'Diffusione Riservata', S: 'Segreto', TS: 'Top Secret' },
       vmListTitle:    'Valori aziendali',
       vmAddBtn:       '+ Aggiungi',
       vmEmpty:        'Nessun valore aziendale. Seleziona dagli esempi o aggiungi manualmente.',

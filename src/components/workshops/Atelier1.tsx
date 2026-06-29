@@ -34,6 +34,7 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { CLASSIFICATIONS, isClassified } from '@/lib/classification'
 import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, TAILLES_ANALYSE, type TailleAnalyse, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
@@ -238,6 +239,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
       type: exemple?.type || 'PROCESSUS',
       description: exemple?.description || '',
       responsable: exemple?.responsable || '',
+      classification: exemple?.classification || 'NP',
       disponibilite:   exemple?.disponibilite   ?? 2,
       integrite:       exemple?.integrite       ?? 2,
       confidentialite: exemple?.confidentialite ?? 2,
@@ -632,6 +634,19 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                         className="input text-sm"
                         placeholder={t.workshop.a1.vmOwnerExPh}
                       />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`vm-classif-${vm.id}`}>{t.workshop.a1.classificationLabel}</label>
+                      <select
+                        id={`vm-classif-${vm.id}`}
+                        value={vm.classification || 'NP'}
+                        onChange={e => updateVm(vm.id, 'classification', e.target.value)}
+                        className="input text-sm"
+                      >
+                        {CLASSIFICATIONS.map(c => (
+                          <option key={c} value={c}>{(t.workshop.a1.classifications as Record<string, string>)[c]}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="flex items-end">
                       <button onClick={() => setPendingDelete({ msg: t.deleteDialog.vm, action: () => removeVm(vm.id) })} className="btn-danger text-sm py-2 w-full">
