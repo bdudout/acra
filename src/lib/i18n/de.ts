@@ -89,6 +89,12 @@ export const de: Translations = {
     occurrences:  'Analyse(n)',
     dupHintTitle: 'Mögliche Dubletten',
     dupHintText: 'Einige Dritte haben ähnliche Namen. Harmonisieren Sie sie über die Autovervollständigung in Workshop 3, um die Konsolidierung zu verbessern.',
+    mergeTo: 'Zielname',
+    mergeBtn: 'Zusammenführen',
+    mergeConfirmTitle: 'Diese Dritten zusammenführen?',
+    mergeConfirmMsg: 'Alle Vorkommen werden in den von Ihnen bearbeitbaren Analysen in „{cible}“ umbenannt (eingereichte oder genehmigte Analysen bleiben unberührt). Dies kann nicht rückgängig gemacht werden.',
+    mergeDone: '{n} Vorkommen umbenannt, {b} übersprungen (außerhalb Ihres Bearbeitungsbereichs).',
+    mergeError: 'Zusammenführung fehlgeschlagen. Bitte erneut versuchen.',
   },
 
   profile: {

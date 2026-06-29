@@ -83,6 +83,48 @@ export function suggestTierDuplicates(tiers: ConsolidatedTier[]): ConsolidatedTi
   return [...byLead.values()].filter(g => g.length >= 2)
 }
 
+// ─── Fusion de doublons (étape 2b, écriture) ─────────────────────────────────
+
+/** Longueur maximale d'un nom de tiers cible. */
+const MERGE_NAME_MAX = 200
+
+/**
+ * Valide une demande de fusion AVANT toute écriture. Renvoie un code d'erreur
+ * (clé i18n) ou `null` si la requête est valide. Pur, testé.
+ */
+export function validateMergeRequest(noms: string[], cible: string): 'cible_vide' | 'cible_trop_longue' | 'pas_assez_de_noms' | null {
+  const target = String(cible ?? '').trim()
+  if (!target) return 'cible_vide'
+  if (target.length > MERGE_NAME_MAX) return 'cible_trop_longue'
+  // Au moins deux noms NORMALISÉS distincts : fusionner « Microsoft »/« microsoft »
+  // n'a aucun sens (la consolidation les regroupe déjà).
+  const uniq = new Set((noms ?? []).map(normalizeTierName).filter(Boolean))
+  if (uniq.size < 2) return 'pas_assez_de_noms'
+  return null
+}
+
+/**
+ * Détermine les parties prenantes à renommer vers `cible` parmi `rows`, en ne
+ * retenant que celles que l'utilisateur peut éditer (prédicat `canEdit` injecté
+ * → testable sans DB). Les PP déjà nommées `cible` sont ignorées (no-op). Les PP
+ * non éditables sont comptées dans `blocked`. Pur, testé.
+ */
+export function planTierRename<C extends { id: string; nom: string }>(
+  rows: C[],
+  cible: string,
+  canEdit: (row: C) => boolean
+): { renameIds: string[]; blocked: number } {
+  const target = String(cible ?? '').trim()
+  const renameIds: string[] = []
+  let blocked = 0
+  for (const r of rows ?? []) {
+    if (r.nom === target) continue // déjà au bon nom
+    if (canEdit(r)) renameIds.push(r.id)
+    else blocked++
+  }
+  return { renameIds, blocked }
+}
+
 /** Renvoie l'élément le plus fréquent d'une liste (1er en cas d'égalité). */
 function mostFrequent<T>(items: T[]): T {
   const counts = new Map<T, number>()

@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 import { suggestTierDuplicates, type ConsolidatedTier } from '@/lib/tiers'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export interface TiersRow {
   id:          string
@@ -34,14 +36,49 @@ const ZONE_STYLE: Record<EcosystemZone, { badge: string; dot: string }> = {
   veille:   { badge: 'bg-green-100 text-green-700 border-green-200',     dot: 'bg-green-500' },
 }
 
-export default function TiersClient({ tiers }: { tiers: ConsolidatedTier[] }) {
+export default function TiersClient({ tiers, canMerge = false }: { tiers: ConsolidatedTier[]; canMerge?: boolean }) {
   const { t } = useTranslation()
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [zone, setZone] = useState<EcosystemZone | 'all'>('all')
   const [onlyCritique, setOnlyCritique] = useState(false)
   const critiqueCount = useMemo(() => tiers.filter(x => x.critique).length, [tiers])
   // Doublons potentiels (lecture seule) : tiers au nom proche à harmoniser.
   const dupGroups = useMemo(() => suggestTierDuplicates(tiers), [tiers])
+
+  // Fusion (étape 2b) : nom cible choisi par groupe + confirmation + résultat.
+  const defaultTarget = (g: ConsolidatedTier[]) => g.map(x => x.nom).reduce((a, b) => (b.length < a.length ? b : a))
+  const [mergeTarget, setMergeTarget] = useState<Record<number, string>>({})
+  const [confirmGroup, setConfirmGroup] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [mergeMsg, setMergeMsg] = useState<string | null>(null)
+
+  async function runMerge(i: number) {
+    const g = dupGroups[i]
+    if (!g) return
+    const cible = mergeTarget[i] ?? defaultTarget(g)
+    setBusy(true)
+    setMergeMsg(null)
+    try {
+      const res = await fetch('/api/tiers/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noms: g.map(x => x.nom), cible }),
+      })
+      if (res.ok) {
+        const d = await res.json() as { renamed: number; blocked: number }
+        setMergeMsg(t.tiers.mergeDone.replace('{n}', String(d.renamed)).replace('{b}', String(d.blocked)))
+        router.refresh()
+      } else {
+        setMergeMsg(t.tiers.mergeError)
+      }
+    } catch {
+      setMergeMsg(t.tiers.mergeError)
+    } finally {
+      setBusy(false)
+      setConfirmGroup(null)
+    }
+  }
 
   const ppTypes = t.workshop.a3.ppTypes as Record<string, string>
   const radar = t.workshop.a3.radar
@@ -108,17 +145,54 @@ export default function TiersClient({ tiers }: { tiers: ConsolidatedTier[] }) {
         className="input w-full mb-4 text-sm"
       />
 
-      {/* Doublons potentiels (suggestion en lecture seule) */}
+      {/* Doublons potentiels : suggestion + fusion optionnelle (étape 2b) */}
       {dupGroups.length > 0 && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-sm font-semibold text-amber-900">⚠️ {t.tiers.dupHintTitle} ({dupGroups.length})</p>
           <p className="text-xs text-amber-800 mt-0.5">{t.tiers.dupHintText}</p>
-          <ul className="mt-1.5 space-y-0.5">
+          {mergeMsg && <p className="text-xs font-medium text-amber-900 mt-2" role="status">{mergeMsg}</p>}
+          <ul className="mt-2 space-y-2">
             {dupGroups.map((g, i) => (
-              <li key={i} className="text-xs text-amber-900">• {g.map(x => x.nom).join('  ·  ')}</li>
+              <li key={i} className="text-xs text-amber-900">
+                <span>• {g.map(x => x.nom).join('  ·  ')}</span>
+                {canMerge && (
+                  <span className="inline-flex items-center gap-1.5 ml-2 align-middle">
+                    <label className="sr-only" htmlFor={`merge-target-${i}`}>{t.tiers.mergeTo}</label>
+                    <select
+                      id={`merge-target-${i}`}
+                      value={mergeTarget[i] ?? defaultTarget(g)}
+                      onChange={e => setMergeTarget(m => ({ ...m, [i]: e.target.value }))}
+                      disabled={busy}
+                      className="rounded border border-amber-300 bg-white px-1.5 py-0.5 text-[11px] text-amber-900"
+                    >
+                      {g.map(x => <option key={x.key} value={x.nom}>{x.nom}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmGroup(i)}
+                      disabled={busy}
+                      className="rounded bg-amber-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                    >
+                      {t.tiers.mergeBtn}
+                    </button>
+                  </span>
+                )}
+              </li>
             ))}
           </ul>
         </div>
+      )}
+
+      {confirmGroup !== null && dupGroups[confirmGroup] && (
+        <ConfirmDialog
+          variant="warning"
+          icon="🔀"
+          title={t.tiers.mergeConfirmTitle}
+          message={t.tiers.mergeConfirmMsg.replace('{cible}', mergeTarget[confirmGroup] ?? defaultTarget(dupGroups[confirmGroup]))}
+          confirmLabel={t.tiers.mergeBtn}
+          onConfirm={() => runMerge(confirmGroup)}
+          onCancel={() => setConfirmGroup(null)}
+        />
       )}
 
       {filtered.length === 0 ? (

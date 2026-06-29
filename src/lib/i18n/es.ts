@@ -89,6 +89,12 @@ export const es: Translations = {
     occurrences:  'análisis',
     dupHintTitle: 'Duplicados potenciales',
     dupHintText: 'Algunos terceros tienen nombres parecidos. Armonízalos mediante el autocompletado en el Taller 3 para mejorar la consolidación.',
+    mergeTo: 'Nombre destino',
+    mergeBtn: 'Fusionar',
+    mergeConfirmTitle: '¿Fusionar estos terceros?',
+    mergeConfirmMsg: 'Todas las apariciones se renombrarán «{cible}» en los análisis que puedes editar (los análisis enviados o aprobados no se modifican). Acción irreversible.',
+    mergeDone: '{n} aparición(es) renombrada(s), {b} omitida(s) (fuera de tu ámbito de edición).',
+    mergeError: 'La fusión falló. Inténtalo de nuevo.',
   },
 
   profile: {

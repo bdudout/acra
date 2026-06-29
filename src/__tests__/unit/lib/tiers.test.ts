@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeTierName, consolidateTiers, suggestTierDuplicates, type TierInput } from '@/lib/tiers'
+import { normalizeTierName, consolidateTiers, suggestTierDuplicates, validateMergeRequest, planTierRename, type TierInput } from '@/lib/tiers'
 
 // Consolidation des tiers à travers les analyses (GitHub backlog #46, étape 1).
 
@@ -87,5 +87,42 @@ describe('suggestTierDuplicates — détection de doublons potentiels (lecture s
       row({ nom: 'Beta', analyseId: 'a2', menace: 1 }),
     ])
     expect(suggestTierDuplicates(tiers)).toEqual([])
+  })
+})
+
+describe('validateMergeRequest — garde-fous de la fusion (étape 2b)', () => {
+  it('rejette une cible vide', () => {
+    expect(validateMergeRequest(['Microsoft', 'Microsoft Azure'], '   ')).toBe('cible_vide')
+  })
+  it('rejette une cible trop longue', () => {
+    expect(validateMergeRequest(['A', 'B'], 'x'.repeat(201))).toBe('cible_trop_longue')
+  })
+  it('exige au moins deux noms distincts', () => {
+    expect(validateMergeRequest(['Microsoft', 'microsoft', '  Microsoft  '], 'Microsoft')).toBe('pas_assez_de_noms')
+    expect(validateMergeRequest(['Microsoft'], 'Microsoft')).toBe('pas_assez_de_noms')
+  })
+  it('accepte une requête valide → null', () => {
+    expect(validateMergeRequest(['Microsoft', 'Microsoft Azure'], 'Microsoft')).toBeNull()
+  })
+})
+
+describe('planTierRename — sélection des PP à renommer (étape 2b)', () => {
+  const c = (id: string, nom: string, editable: boolean) => ({ id, nom, editable })
+  it('ne renomme que les PP éditables ; compte les bloquées', () => {
+    const rows = [c('p1', 'Microsoft Azure', true), c('p2', 'Microsoft 365', false), c('p3', 'Microsoft Azure', true)]
+    const r = planTierRename(rows, 'Microsoft', x => x.editable)
+    expect(r.renameIds.sort()).toEqual(['p1', 'p3'])
+    expect(r.blocked).toBe(1)
+  })
+  it('ignore les PP déjà au nom cible (no-op, ni renommées ni bloquées)', () => {
+    const rows = [c('p1', 'Microsoft', true), c('p2', 'Microsoft Azure', true)]
+    const r = planTierRename(rows, 'Microsoft', x => x.editable)
+    expect(r.renameIds).toEqual(['p2'])
+    expect(r.blocked).toBe(0)
+  })
+  it('compare la cible après trim', () => {
+    const rows = [c('p1', 'Microsoft', true)]
+    const r = planTierRename(rows, '  Microsoft  ', x => x.editable)
+    expect(r.renameIds).toEqual([])
   })
 })

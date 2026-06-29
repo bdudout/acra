@@ -90,6 +90,12 @@ export const fr = {
     occurrences:  'analyse(s)',
     dupHintTitle: 'Doublons potentiels',
     dupHintText: "Des tiers portent des noms proches. Harmonisez-les via l'auto-complétion en Atelier 3 pour fiabiliser la consolidation.",
+    mergeTo: 'Nom cible',
+    mergeBtn: 'Fusionner',
+    mergeConfirmTitle: 'Fusionner ces tiers ?',
+    mergeConfirmMsg: 'Toutes les occurrences seront renommées « {cible} » dans les analyses que vous pouvez modifier (les analyses soumises ou approuvées ne sont pas touchées). Action irréversible.',
+    mergeDone: "{n} occurrence(s) renommée(s), {b} ignorée(s) (hors de votre périmètre d'édition).",
+    mergeError: 'La fusion a échoué. Réessayez.',
   },
 
   // ─── Profil utilisateur ───────────────────────────────────────────────────

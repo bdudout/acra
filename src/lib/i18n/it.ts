@@ -89,6 +89,12 @@ export const it: Translations = {
     occurrences:  'analisi',
     dupHintTitle: 'Potenziali duplicati',
     dupHintText: 'Alcune terze parti hanno nomi simili. Armonizzali tramite il completamento automatico nel Workshop 3 per migliorare il consolidamento.',
+    mergeTo: 'Nome destinazione',
+    mergeBtn: 'Unisci',
+    mergeConfirmTitle: 'Unire queste terze parti?',
+    mergeConfirmMsg: 'Tutte le occorrenze saranno rinominate «{cible}» nelle analisi che puoi modificare (le analisi inviate o approvate non vengono toccate). Azione irreversibile.',
+    mergeDone: '{n} occorrenza/e rinominata/e, {b} ignorata/e (fuori dal tuo ambito di modifica).',
+    mergeError: 'Unione non riuscita. Riprova.',
   },
 
   profile: {

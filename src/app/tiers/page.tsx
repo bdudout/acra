@@ -82,7 +82,7 @@ export default async function TiersPage() {
           </div>
         </div>
 
-        <TiersClient tiers={consolidateTiers(tiers)} />
+        <TiersClient tiers={consolidateTiers(tiers)} canMerge={userRole !== 'LECTEUR'} />
       </main>
     </div>
   )

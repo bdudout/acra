@@ -89,6 +89,12 @@ export const en: Translations = {
     occurrences:  'analysis(es)',
     dupHintTitle: 'Potential duplicates',
     dupHintText: 'Some third parties have similar names. Harmonise them via autocomplete in Workshop 3 to improve consolidation.',
+    mergeTo: 'Target name',
+    mergeBtn: 'Merge',
+    mergeConfirmTitle: 'Merge these third parties?',
+    mergeConfirmMsg: 'All occurrences will be renamed “{cible}” in the analyses you can edit (submitted or approved analyses are left untouched). This cannot be undone.',
+    mergeDone: '{n} occurrence(s) renamed, {b} skipped (outside your edit scope).',
+    mergeError: 'Merge failed. Please try again.',
   },
 
   profile: {

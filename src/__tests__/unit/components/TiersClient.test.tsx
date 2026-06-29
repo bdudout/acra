@@ -5,10 +5,14 @@
  *  - Filtre par zone
  *  - État vide
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import TiersClient from '@/components/TiersClient'
 import type { ConsolidatedTier } from '@/lib/tiers'
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 
 const rows: ConsolidatedTier[] = [
   { key: 'infogereur', nom: 'Infogéreur', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'Analyse Alpha' }], exposition: 4, fiabilite: 1, menace: 16, zone: 'danger', critique: false },
@@ -48,5 +52,27 @@ describe('TiersClient', () => {
     render(<TiersClient tiers={rows} />)
     const link = within(screen.getByText('Infogéreur').closest('tr')!).getByRole('link')
     expect(link).toHaveAttribute('href', '/analyses/a1/atelier/3')
+  })
+
+  // Fusion de doublons (étape 2b) : groupe « Microsoft » / « Microsoft Azure ».
+  const dupRows: ConsolidatedTier[] = [
+    { key: 'microsoft', nom: 'Microsoft', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'A' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
+    { key: 'microsoft azure', nom: 'Microsoft Azure', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'B' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
+  ]
+
+  it('affiche le bouton Fusionner pour un groupe de doublons quand canMerge', () => {
+    render(<TiersClient tiers={dupRows} canMerge />)
+    expect(screen.getByRole('button', { name: 'Fusionner' })).toBeInTheDocument()
+  })
+
+  it('masque la fusion en lecture seule (canMerge=false)', () => {
+    render(<TiersClient tiers={dupRows} canMerge={false} />)
+    expect(screen.queryByRole('button', { name: 'Fusionner' })).not.toBeInTheDocument()
+  })
+
+  it('ouvre la confirmation avant de fusionner', () => {
+    render(<TiersClient tiers={dupRows} canMerge />)
+    fireEvent.click(screen.getByRole('button', { name: 'Fusionner' }))
+    expect(screen.getByText('Fusionner ces tiers ?')).toBeInTheDocument()
   })
 })
