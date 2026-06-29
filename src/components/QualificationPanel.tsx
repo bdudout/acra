@@ -33,6 +33,10 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
   const complete = useMemo(() => isQualificationComplete(answers), [answers])
   const qLabels = t.qualification.questions as Record<string, string>
   const critLabels = t.qualification.criticiteOptions as Record<string, string>
+  const statutLabels = t.qualification.statutOptions as Record<string, string>
+  // Libellés d'options selon la question (criticité vs statut réglementaire…)
+  const optionLabels = (qid: string): Record<string, string> =>
+    qid === 'statutReglementaire' ? statutLabels : critLabels
   const oLabels = t.qualification.orientations as Record<string, string>
   const shortLabels = t.qualification.short as Record<string, string>
 
@@ -44,7 +48,9 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
       if (q.type === 'bool') {
         if (v === true) chips.push({ key: q.id, label: shortLabels[q.id] ?? q.id, tone: 'pos' })
       } else if (q.type === 'choice' && typeof v === 'string') {
-        chips.push({ key: q.id, label: `${shortLabels[q.id] ?? q.id} : ${critLabels[v] ?? v}`, tone: v === 'eleve' ? 'warn' : 'neutral' })
+        // 'aucun' (statut réglementaire neutre) n'est pas un point saillant
+        if (q.id === 'statutReglementaire' && v === 'aucun') continue
+        chips.push({ key: q.id, label: `${shortLabels[q.id] ?? q.id} : ${optionLabels(q.id)[v] ?? v}`, tone: v === 'eleve' ? 'warn' : 'neutral' })
       }
     }
     return chips
@@ -143,7 +149,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
                       answers[q.id] === opt.value ? 'bg-ebios-600 text-white border-ebios-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
                     }`}
                   >
-                    {critLabels[opt.value] ?? opt.value}
+                    {optionLabels(q.id)[opt.value] ?? opt.value}
                   </button>
                 ))}
               </div>

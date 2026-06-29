@@ -66,8 +66,14 @@ describe('deriveOrientations', () => {
     expect(o).toContain('CONFORMITE')
   })
 
+  it('statut réglementaire (OSE/EEI/OIV) ⇒ CONFORMITE ; aucun ⇒ rien', () => {
+    expect(deriveOrientations({ statutReglementaire: 'EEI' })).toContain('CONFORMITE')
+    expect(deriveOrientations({ statutReglementaire: 'OIV' })).toContain('CONFORMITE')
+    expect(deriveOrientations({ statutReglementaire: 'aucun' })).toEqual([])
+  })
+
   it('aucune orientation pour des réponses neutres', () => {
-    expect(deriveOrientations({ externalisation: false, criticite: 'modere' })).toEqual([])
+    expect(deriveOrientations({ externalisation: false, criticite: 'modere', statutReglementaire: 'aucun' })).toEqual([])
   })
 
   it('ne duplique pas les orientations', () => {

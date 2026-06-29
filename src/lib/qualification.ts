@@ -46,6 +46,15 @@ const CRITICITE_OPTIONS: QualificationOption[] = [
   { value: 'eleve' },
 ]
 
+// Statut réglementaire de l'entité (NIS2 / LPM). Marqueur dédié au-delà de la
+// simple question « réglementation » : oriente l'emphase conformité (NIS2 Art.21).
+const STATUT_REGLEMENTAIRE_OPTIONS: QualificationOption[] = [
+  { value: 'aucun' },
+  { value: 'OSE' },   // Opérateur de services essentiels (NIS1, hérité)
+  { value: 'EEI' },   // Entité essentielle ou importante (NIS2)
+  { value: 'OIV' },   // Opérateur d'importance vitale (LPM)
+]
+
 /** Questionnaire de qualification standard (libellés via i18n). */
 export const QUALIFICATION_QUESTIONS: QualificationQuestion[] = [
   { id: 'externalisation', type: 'bool' },
@@ -53,6 +62,7 @@ export const QUALIFICATION_QUESTIONS: QualificationQuestion[] = [
   { id: 'donneesPersonnelles', type: 'bool' },
   { id: 'expositionInternet', type: 'bool' },
   { id: 'reglementation', type: 'bool' },
+  { id: 'statutReglementaire', type: 'choice', options: STATUT_REGLEMENTAIRE_OPTIONS },
   { id: 'systemeIndustriel', type: 'bool' },
 ]
 
@@ -95,6 +105,7 @@ export function deriveOrientations(answers: QualificationAnswers | null | undefi
   if (answers.donneesPersonnelles === true) add('CONFIDENTIALITE')
   if (answers.expositionInternet === true) add('EXPOSITION')
   if (answers.reglementation === true) add('CONFORMITE')
+  if (typeof answers.statutReglementaire === 'string' && answers.statutReglementaire !== 'aucun') add('CONFORMITE')
   if (answers.systemeIndustriel === true) add('DISPONIBILITE_OT')
   if (answers.criticite === 'faible') add('ANALYSE_ALLEGEE')
   if (answers.criticite === 'eleve') add('ANALYSE_APPROFONDIE')
