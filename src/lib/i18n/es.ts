@@ -1001,6 +1001,8 @@ export const es: Translations = {
       objectivesTitle:'Objetivos del estudio',
       objectivesPh:   '¿Cuáles son los objetivos de este análisis de riesgos?',
       objectivesDesc: '¿Por qué realizas este análisis? (cumplimiento, certificación, incidente reciente, enfoque proactivo...)',
+      flashSuggestText: 'Para una estructura pequeña, el enfoque Flash (recorrido rápido y guiado) suele ser más adecuado y rápido de completar.',
+      flashSuggestBtn:  'Cambiar al enfoque Flash ⚡',
       tailleTitle:    'Perfil del análisis (opcional)',
       tailleDesc:     'Adapta los referenciales recomendados al tamaño / madurez de la organización. Sin impacto en el método; modificable en cualquier momento.',
       tailleStandardLabel: 'Análisis estándar',

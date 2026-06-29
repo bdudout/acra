@@ -424,6 +424,21 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
               })}
             </div>
           </div>
+          {(tailleAnalyse === 'TPE' || tailleAnalyse === 'PME') && !flashMode && (
+            <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-lg p-3">
+              <span aria-hidden className="text-lg">⚡</span>
+              <div className="flex-1">
+                <p className="text-sm text-sky-900">{t.workshop.a1.flashSuggestText}</p>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/analyses/${analyseId}/atelier/1?mode=flash`)}
+                  className="text-xs font-semibold text-sky-700 hover:text-sky-900 underline mt-1"
+                >
+                  {t.workshop.a1.flashSuggestBtn}
+                </button>
+              </div>
+            </div>
+          )}
           <div>
             <h3 className="font-semibold text-gray-800 mb-1">{t.workshop.a1.missionsTitle}</h3>
             <p className="text-sm text-gray-500 mb-3">{t.workshop.a1.missionsDesc}</p>

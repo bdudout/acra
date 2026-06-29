@@ -1001,6 +1001,8 @@ export const en: Translations = {
       objectivesTitle:'Study objectives',
       objectivesPh:   'What are the objectives of this risk analysis?',
       objectivesDesc: 'Why are you running this analysis? (compliance, certification, recent incident, proactive approach...)',
+      flashSuggestText: 'For a small organisation, the Flash approach (quick guided path) is often more suitable and faster to complete.',
+      flashSuggestBtn:  'Switch to the Flash approach ⚡',
       tailleTitle:    'Analysis profile (optional)',
       tailleDesc:     'Adapts the recommended frameworks to the size / maturity of the organisation. No impact on the method; can be changed at any time.',
       tailleStandardLabel: 'Standard analysis',

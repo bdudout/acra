@@ -1001,6 +1001,8 @@ export const it: Translations = {
       objectivesTitle:'Obiettivi dello studio',
       objectivesPh:   'Quali sono gli obiettivi di questa analisi dei rischi?',
       objectivesDesc: "Perché stai conducendo questa analisi? (conformità, certificazione, incidente recente, approccio proattivo...)",
+      flashSuggestText: 'Per una piccola struttura, l\'approccio Flash (percorso rapido e guidato) è spesso più adatto e veloce da completare.',
+      flashSuggestBtn:  'Passa all\'approccio Flash ⚡',
       tailleTitle:    'Profilo dell\'analisi (facoltativo)',
       tailleDesc:     'Adatta i riferimenti consigliati alla dimensione / maturità dell\'organizzazione. Nessun impatto sul metodo; modificabile in qualsiasi momento.',
       tailleStandardLabel: 'Analisi standard',

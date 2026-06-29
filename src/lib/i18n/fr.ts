@@ -1023,6 +1023,8 @@ export const fr = {
       objectivesTitle:'Objectifs de l\'étude',
       objectivesPh:   "Quels sont les objectifs de cette analyse de risques ?",
       objectivesDesc: "Pourquoi réalisez-vous cette analyse ? (conformité, certification, incident récent, démarche proactive...)",
+      flashSuggestText: 'Pour une petite structure, la Démarche Flash (parcours rapide et guidé) est souvent plus adaptée et plus rapide à compléter.',
+      flashSuggestBtn:  'Passer en Démarche Flash ⚡',
       tailleTitle:    'Profil de l\'analyse (facultatif)',
       tailleDesc:     'Adapte les référentiels recommandés à la taille / maturité de l\'organisation. Sans incidence sur la méthode ; modifiable à tout moment.',
       tailleStandardLabel: 'Analyse standard',

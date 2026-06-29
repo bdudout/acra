@@ -1001,6 +1001,8 @@ export const de: Translations = {
       objectivesTitle:'Studienziele',
       objectivesPh:   'Was sind die Ziele dieser Risikoanalyse?',
       objectivesDesc: 'Warum führen Sie diese Analyse durch? (Compliance, Zertifizierung, aktueller Vorfall, proaktiver Ansatz...)',
+      flashSuggestText: 'Für eine kleine Organisation ist der Flash-Ansatz (schneller geführter Pfad) oft besser geeignet und schneller auszufüllen.',
+      flashSuggestBtn:  'Zum Flash-Ansatz wechseln ⚡',
       tailleTitle:    'Analyseprofil (optional)',
       tailleDesc:     'Passt die empfohlenen Rahmenwerke an Größe / Reife der Organisation an. Ohne Einfluss auf die Methode; jederzeit änderbar.',
       tailleStandardLabel: 'Standardanalyse',
