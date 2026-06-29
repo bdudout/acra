@@ -44,6 +44,7 @@ import ExportButtons from '@/components/ExportButtons'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
+import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 
 interface Props {
   analyseId: string
@@ -181,6 +182,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const scenariosOp: any[] = analyse?.scenariosOperationnels || []
   // Événements redoutés de l'atelier 1
   const evenementsRedoutes: any[] = analyse?.cadrage?.evenementsRedoutes || []
+  // EBIOS RM peut valoir AIPD (RGPD art. 35) si données particulières (art. 9) en jeu
+  const aipdPertinente = detectRgpdArt9(analyse?.cadrage?.valeursMetier || []).length > 0
 
   function addRisque(fromScenario?: any) {
     const id = uid()
@@ -593,6 +596,12 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       {/* ── MESURES ─────────────────────────────────────────────────────── */}
       {tab === 'mesures' && (
         <div className="space-y-4">
+          {aipdPertinente && (
+            <div className="bg-violet-50 border border-violet-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-violet-900">📄 {t.workshop.a5.aipdTitle}</p>
+              <p className="text-sm text-violet-800 mt-1">{t.workshop.a5.aipdText}</p>
+            </div>
+          )}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="font-semibold text-gray-800">{t.workshop.a5.measRecoTitle}</h3>

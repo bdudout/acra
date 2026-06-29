@@ -931,6 +931,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                 ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
               </p>
             )}
+            {recommendedFw.includes('HDS') && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3">
+                ℹ️ {t.workshop.a1.hdsNote}
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
               {visibleFw.map(fid => {
                 const m = FRAMEWORK_META[fid]
