@@ -8,6 +8,31 @@
  * de crise…). Cette fonction renvoie la liste des identifiants d'obligations à
  * afficher (libellés via i18n `workshop.a5.reg.<id>`). Module pur → testé.
  */
+// Secteurs régulés (NIS2 haute criticité + régulations sectorielles FR) pour
+// lesquels les modules Conformité/Qualification sont quasi-obligatoires.
+const REGULATED_SECTOR_KEYWORDS = [
+  'banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ',
+  'santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health',
+  'défense', 'defense', 'militaire', 'defence',
+  'énergie', 'energie', 'utilities', 'energy', 'nucléaire', 'nucleaire',
+  'eau', 'assainissement', 'water',
+  'administration', 'public', 'collectivit', 'état', 'etat', 'government',
+  'télécom', 'telecom', 'communication',
+  'transport', 'logistique', 'logistics', 'aérien', 'aerien', 'ferroviaire',
+]
+
+/**
+ * Faut-il suggérer d'activer les modules Conformité/Qualification (issue #73) ?
+ * Vrai si un statut réglementaire est renseigné, ou si le secteur est régulé
+ * (NIS2 haute criticité / régulations sectorielles). Pur, testé.
+ */
+export function suggestsComplianceModule(secteur?: string | null, statut?: string | null): boolean {
+  if (statut && statut !== 'aucun') return true
+  const s = (secteur ?? '').toLowerCase()
+  if (!s) return false
+  return REGULATED_SECTOR_KEYWORDS.some(k => s.includes(k))
+}
+
 export function regulatoryObligations(statut?: string | null): string[] {
   switch (statut) {
     case 'OIV':

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { regulatoryObligations } from '@/lib/regulatory-guidance'
+import { regulatoryObligations, suggestsComplianceModule } from '@/lib/regulatory-guidance'
 
 // Obligations réglementaires différenciées selon le statut (issue #68).
 
@@ -24,5 +24,24 @@ describe('regulatoryObligations', () => {
     expect(regulatoryObligations(null)).toEqual([])
     expect(regulatoryObligations(undefined)).toEqual([])
     expect(regulatoryObligations('xxx')).toEqual([])
+  })
+})
+
+describe('suggestsComplianceModule (issue #73)', () => {
+  it('vrai pour les secteurs réglementés (NIS2 / régulés)', () => {
+    for (const s of ['Banque / Finance', 'Santé / Médico-social', 'Énergie / Utilities',
+      'Administration publique', 'Eau / Assainissement', 'Télécommunications', 'Défense / Sécurité nationale']) {
+      expect(suggestsComplianceModule(s)).toBe(true)
+    }
+  })
+  it('vrai dès qu\'un statut réglementaire est renseigné (même secteur neutre)', () => {
+    expect(suggestsComplianceModule('Médias / Culture', 'EEI')).toBe(true)
+    expect(suggestsComplianceModule(null, 'OIV')).toBe(true)
+  })
+  it('faux pour un secteur non réglementé sans statut', () => {
+    expect(suggestsComplianceModule('Médias / Culture')).toBe(false)
+    expect(suggestsComplianceModule('Tourisme / Hôtellerie-restauration', 'aucun')).toBe(false)
+    expect(suggestsComplianceModule('')).toBe(false)
+    expect(suggestsComplianceModule(null)).toBe(false)
   })
 })

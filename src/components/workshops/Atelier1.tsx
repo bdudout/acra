@@ -39,6 +39,7 @@ import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, TAILLES_ANALYSE, type TailleAnalyse, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
+import { suggestsComplianceModule } from '@/lib/regulatory-guidance'
 
 interface Props {
   analyseId: string
@@ -87,6 +88,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           setExOverride(d.exemplesAteliers)
         }
         setConformiteActive(Boolean(d.conformiteActive))
+        setQualificationActive(Boolean(d.qualificationActive))
       })
       .catch(() => {})
   }, [])
@@ -184,6 +186,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
 
   // Conformité au socle (fonctionnalité optionnelle) — stockée dans Cadrage.socleSecurite
   const [conformiteActive, setConformiteActive] = useState(false)
+  const [qualificationActive, setQualificationActive] = useState(false)
   const [socleSecurite, setSocleSecurite] = useState<ConformiteEntry[]>(
     Array.isArray(initialData?.socleSecurite) ? initialData.socleSecurite : []
   )
@@ -201,6 +204,9 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur + la taille (suggestion non bloquante)
   const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire)
+  // Suggestion d'activer les modules Conformité/Qualification pour les secteurs
+  // régulés où ils sont quasi-obligatoires (issue #73).
+  const suggestCompliance = suggestsComplianceModule(analyse?.secteur, analyse?.qualification?.statutReglementaire) && (!conformiteActive || !qualificationActive)
   // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
   // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la
   // sélection courante ; « Afficher tous » dévoile le catalogue complet.
@@ -1018,6 +1024,17 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <p className="text-sm text-yellow-800">{t.workshop.a1.socleInfoText}</p>
           </div>
+
+          {/* Suggestion d'activation des modules de conformité (secteur régulé) */}
+          {suggestCompliance && (
+            <div className="bg-sky-50 border border-sky-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-sky-900">🛡️ {t.workshop.a1.complianceSuggestTitle}</p>
+              <p className="text-sm text-sky-800 mt-1">{t.workshop.a1.complianceSuggestText}</p>
+              <a href="/configuration" className="text-sm text-sky-700 underline font-medium mt-1 inline-block">
+                {t.workshop.a1.complianceSuggestLink} →
+              </a>
+            </div>
+          )}
 
           {/* ── Référentiel de mesures ──────────────────────────────────── */}
           <div className="card p-5">
