@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
 import AtelierGuidancePanel from '@/components/AtelierGuidancePanel'
 import { ATELIERS_META } from '@/lib/ebios-data'
-import { getServerT } from '@/lib/i18n'
+import { getServerT, getServerLocale } from '@/lib/i18n'
 import Atelier1 from '@/components/workshops/Atelier1'
 import Atelier2 from '@/components/workshops/Atelier2'
 import Atelier3 from '@/components/workshops/Atelier3'
@@ -30,6 +30,7 @@ export default async function AtelierPage({
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const t = await getServerT()
+  const locale = await getServerLocale()
 
   const { id, num } = await params
   const resolvedSearchParams = await searchParams
@@ -113,7 +114,7 @@ export default async function AtelierPage({
   const conseilsActive = orgConfig.conseilsAteliersActive
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
   if (conformiteActive && analyse.cadrage) {
-    const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[])
+    const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[], locale)
     const ctlByRef = new Map(controles.map(c => [c.ref, c]))
     const entries = sanitizeConformite((analyse.cadrage as any).socleSecurite)
     nonConfItems = deriveNonConformites(entries).map(nc => ({

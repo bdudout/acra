@@ -102,6 +102,31 @@ describe('recommendedFrameworksForSector', () => {
     expect(r.length).toBe(new Set(r).size)
   })
 
+  // ── i18n des contrôles DORA/IEC/SOC2/SSDF (issue #66) ───────────────────────
+  it('getFrameworkControles localise les contrôles selon la locale', () => {
+    const fr = getFrameworkControles('DORA')
+    const en = getFrameworkControles('DORA', undefined, 'en')
+    const de = getFrameworkControles('DORA', undefined, 'de')
+    // même nombre de contrôles, même refs (clés stables), libellés traduits
+    expect(en.length).toBe(fr.length)
+    expect(en.map(c => c.ref)).toEqual(fr.map(c => c.ref))
+    const ictFr = fr.find(c => c.ref === 'DORA-ICT-1')!
+    const ictEn = en.find(c => c.ref === 'DORA-ICT-1')!
+    const ictDe = de.find(c => c.ref === 'DORA-ICT-1')!
+    expect(ictEn.nom).not.toBe(ictFr.nom)
+    expect(ictEn.nom.toLowerCase()).toContain('risk')
+    expect(ictDe.nom).not.toBe(ictFr.nom)
+  })
+  it('getFrameworkControles sans locale reste en français (back-compat)', () => {
+    expect(getFrameworkControles('SOC2')[0].nom).toBe(getFrameworkControles('SOC2', undefined, 'fr')[0].nom)
+  })
+  it('getFrameworkCategories localise les libellés de catégorie', () => {
+    const en = getFrameworkCategories('SOC2', 'en')
+    expect(en.A.label).toBe('Availability')
+    const it = getFrameworkCategories('IEC_62443', 'it')
+    expect(it.GOV.label).toBe('Governance OT')
+  })
+
   // ── SOC 2 : contenu du référentiel ──────────────────────────────────────────
   it('SOC 2 : méta + contrôles + catégories cohérents', () => {
     expect(FRAMEWORK_META.SOC2.nom).toMatch(/SOC 2/)

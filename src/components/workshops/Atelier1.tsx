@@ -1166,7 +1166,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           {conformiteActive && (
             <div className="card p-5">
               <ConformiteGrid
-                controles={getFrameworkControles(referentielMesures, customControles)}
+                controles={getFrameworkControles(referentielMesures, customControles, locale)}
                 entries={socleSecurite}
                 onChange={setSocleSecurite}
               />

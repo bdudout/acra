@@ -20,17 +20,17 @@ export default function FrameworkControlsPanel({
   onSelect,
   actionLabel,
 }: Props) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({})
   // Track which control refs have already been clicked (added) in this session
   const [addedRefs, setAddedRefs] = useState<Set<string>>(new Set())
 
   const controls = useMemo(
-    () => getFrameworkControles(frameworkId, customControles),
-    [frameworkId, customControles]
+    () => getFrameworkControles(frameworkId, customControles, locale),
+    [frameworkId, customControles, locale]
   )
-  const categories = useMemo(() => getFrameworkCategories(frameworkId), [frameworkId])
+  const categories = useMemo(() => getFrameworkCategories(frameworkId, locale), [frameworkId, locale])
   const meta = FRAMEWORK_META[frameworkId as FrameworkId]
 
   const filtered = useMemo(() => {

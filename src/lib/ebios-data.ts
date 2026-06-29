@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
+import type { FrameworkControl, FrameworkCategory } from '@/lib/frameworks-data'
 
 // ─── Critères DICT ────────────────────────────────────────────────────────────
 // Échelles 0–4 (Nul / Faible / Modéré / Important / Critique)
@@ -828,4 +829,174 @@ export const ATELIERS_META = [
     description: `L'atelier 5 conclut l'analyse. Pour chaque risque identifié, vous choisissez une stratégie de traitement (réduire, accepter, transférer, refuser), définissez les mesures de sécurité à mettre en place et évaluez le niveau de risque résiduel.`,
     etapes: ['Synthèse des risques', 'Stratégie de traitement', 'Mesures de sécurité', 'Risques résiduels', 'Plan d\'action'],
   },
+]
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contrôles des référentiels DORA / IEC 62443 / SOC 2 / NIST SSDF (issue #66)
+// Déplacés ici depuis frameworks-data.ts pour bénéficier de la machinerie i18n
+// (clés générées par extract-ebios-data-i18n.mjs ; localisés via getEbiosData).
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// DORA — Digital Operational Resilience Act
+// Source : Règlement (UE) 2022/2554 (applicable depuis le 17 janvier 2025).
+// 5 piliers : gestion du risque ICT, gestion/notification des incidents, tests de
+// résilience, gestion du risque lié aux prestataires ICT (registre d'information),
+// partage d'informations sur les cybermenaces.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const DORA_CATEGORIES: Record<string, FrameworkCategory> = {
+  ICT:  { label: 'Gestion du risque ICT',        icon: '🏛️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  INC:  { label: 'Incidents & notification',     icon: '🚨', color: 'text-orange-700', bg: 'bg-orange-50' },
+  TEST: { label: 'Tests de résilience',          icon: '🔬', color: 'text-red-700',    bg: 'bg-red-50'    },
+  TPP:  { label: 'Risque prestataires ICT',      icon: '🤝', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  INFO: { label: 'Partage d\'informations',      icon: '📡', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+}
+
+export const DORA_CONTROLES: FrameworkControl[] = [
+  // Pilier 1 — Gestion du risque ICT (art. 5-16)
+  { ref:'DORA-ICT-1', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Cadre de gestion du risque ICT approuvé par l\'organe de direction', description:'Un cadre de gestion du risque ICT documenté est défini, approuvé et revu au moins annuellement par l\'organe de direction, qui en porte la responsabilité finale (art. 5).' },
+  { ref:'DORA-ICT-2', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Cartographie des fonctions critiques ou importantes', description:'Les fonctions opérationnelles critiques ou importantes, les actifs ICT qui les supportent et leurs interdépendances sont identifiés et tenus à jour (art. 8).' },
+  { ref:'DORA-ICT-3', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Protection et prévention (sécurité ICT)', description:'Des politiques, procédures et outils assurent la sécurité des moyens ICT : gestion des accès, chiffrement, durcissement, segmentation réseau (art. 9).' },
+  { ref:'DORA-ICT-4', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Détection des activités anormales', description:'Des mécanismes de détection rapide des anomalies et incidents ICT sont en place, avec alertes et seuils définis (art. 10).' },
+  { ref:'DORA-ICT-5', type:'ORGANISATIONNELLE', categorie:'ICT', nom:'Politique de continuité d\'activité ICT', description:'Une politique de continuité des activités ICT et des plans de réponse et de rétablissement sont établis, incluant des objectifs RTO/RPO (art. 11).' },
+  { ref:'DORA-ICT-6', type:'TECHNOLOGIQUE',    categorie:'ICT', nom:'Sauvegardes et restauration éprouvées', description:'Des politiques de sauvegarde et des procédures de restauration sont définies et testées périodiquement, sur des environnements isolés (art. 12).' },
+  { ref:'DORA-ICT-7', type:'HUMAINE',          categorie:'ICT', nom:'Sensibilisation et formation à la résilience numérique', description:'Des programmes de sensibilisation à la sécurité et de formation à la résilience opérationnelle numérique sont déployés, y compris pour l\'organe de direction (art. 13).' },
+
+  // Pilier 2 — Gestion, classification et notification des incidents (art. 17-23)
+  { ref:'DORA-INC-1', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Processus de gestion des incidents liés aux ICT', description:'Un processus de détection, gestion et notification des incidents liés aux ICT est défini, avec rôles, procédures d\'escalade et journalisation (art. 17).' },
+  { ref:'DORA-INC-2', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Classification des incidents et cybermenaces', description:'Les incidents et cybermenaces sont classés selon les critères DORA (clients affectés, durée, perte de données, criticité des services, impact économique) (art. 18).' },
+  { ref:'DORA-INC-3', type:'ORGANISATIONNELLE', categorie:'INC', nom:'Notification des incidents majeurs à l\'autorité compétente', description:'Les incidents majeurs liés aux ICT sont notifiés à l\'autorité compétente selon les délais réglementaires (notification initiale, intermédiaire, finale) (art. 19).' },
+
+  // Pilier 3 — Tests de résilience opérationnelle numérique (art. 24-27)
+  { ref:'DORA-TEST-1', type:'TECHNOLOGIQUE',   categorie:'TEST', nom:'Programme de tests de résilience opérationnelle numérique', description:'Un programme de tests proportionné est établi : analyses de vulnérabilités, tests d\'intrusion, tests de continuité, au moins annuels sur les systèmes critiques (art. 24-25).' },
+  { ref:'DORA-TEST-2', type:'TECHNOLOGIQUE',   categorie:'TEST', nom:'Tests de pénétration fondés sur la menace (TLPT)', description:'Les entités significatives réalisent des tests de pénétration fondés sur la menace (TLPT, type TIBER-EU) au moins tous les 3 ans, couvrant les fonctions critiques (art. 26-27).' },
+
+  // Pilier 4 — Gestion du risque lié aux prestataires tiers ICT (art. 28-44)
+  { ref:'DORA-TPP-1', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Registre d\'information des prestataires ICT', description:'Un registre d\'information recensant tous les accords contractuels avec les prestataires de services ICT est tenu à jour et transmis aux autorités sur demande (art. 28).' },
+  { ref:'DORA-TPP-2', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Évaluation du risque avant contractualisation ICT', description:'Le risque lié à un prestataire ICT (notamment pour les fonctions critiques) est évalué avant la conclusion du contrat, y compris le risque de concentration (art. 28-29).' },
+  { ref:'DORA-TPP-3', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Clauses contractuelles obligatoires ICT', description:'Les contrats ICT incluent les clauses obligatoires DORA : niveaux de service, accès/audit, localisation des données, coopération, stratégie de sortie et réversibilité (art. 30).' },
+  { ref:'DORA-TPP-4', type:'ORGANISATIONNELLE', categorie:'TPP', nom:'Stratégie de sortie des prestataires critiques', description:'Une stratégie de sortie et des plans de transition sont définis pour les prestataires ICT supportant des fonctions critiques ou importantes (art. 28).' },
+
+  // Pilier 5 — Partage d'informations (art. 45)
+  { ref:'DORA-INFO-1', type:'ORGANISATIONNELLE', categorie:'INFO', nom:'Accords de partage d\'informations sur les cybermenaces', description:'L\'entité peut adhérer à des dispositifs de partage d\'informations et de renseignements sur les cybermenaces (IoC, TTP) au sein de communautés de confiance (art. 45).' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IEC 62443 — Sécurité des systèmes d'automatisation et de contrôle industriels (IACS/OT)
+// Source : série IEC 62443 (zones & conduits, niveaux de sécurité SL) + guide ANSSI-PA-107
+// (mars 2025) qui articule IEC 62443 avec EBIOS RM. Structuré par les 7 exigences
+// fondamentales (FR1-FR7) + zones/conduits + gouvernance OT.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const IEC_62443_CATEGORIES: Record<string, FrameworkCategory> = {
+  GOV: { label: 'Gouvernance OT', icon: '🏛️', color: 'text-gray-700',   bg: 'bg-gray-50'   },
+  ZC:  { label: 'Zones & conduits (SL)', icon: '🧩', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  FR1: { label: 'FR1 — Identification & authentification', icon: '🪪', color: 'text-blue-700', bg: 'bg-blue-50' },
+  FR2: { label: 'FR2 — Contrôle d\'usage', icon: '🔑', color: 'text-purple-700', bg: 'bg-purple-50' },
+  FR3: { label: 'FR3 — Intégrité du système', icon: '🛡️', color: 'text-green-700', bg: 'bg-green-50' },
+  FR4: { label: 'FR4 — Confidentialité des données', icon: '🔒', color: 'text-teal-700', bg: 'bg-teal-50' },
+  FR5: { label: 'FR5 — Restriction des flux', icon: '🚧', color: 'text-amber-700', bg: 'bg-amber-50' },
+  FR6: { label: 'FR6 — Réponse aux événements', icon: '🚨', color: 'text-orange-700', bg: 'bg-orange-50' },
+  FR7: { label: 'FR7 — Disponibilité des ressources', icon: '♻️', color: 'text-cyan-700', bg: 'bg-cyan-50' },
+}
+
+export const IEC_62443_CONTROLES: FrameworkControl[] = [
+  // Gouvernance OT (articulation EBIOS RM / ANSSI-PA-107)
+  { ref:'IEC-GOV-1', type:'ORGANISATIONNELLE', categorie:'GOV', nom:'Inventaire des actifs OT/ICS', description:'Inventaire exhaustif et tenu à jour des composants industriels (automates, IHM, capteurs, réseaux OT, postes d\'ingénierie), base de l\'analyse de risque.' },
+  { ref:'IEC-GOV-2', type:'ORGANISATIONNELLE', categorie:'GOV', nom:'Politique de sécurité OT distincte de l\'IT', description:'Une politique de cybersécurité spécifique aux systèmes industriels est définie, distincte de l\'IT (contraintes de sûreté, disponibilité, cycles longs) — cf. ANSSI-PA-107.' },
+  { ref:'IEC-GOV-3', type:'HUMAINE',           categorie:'GOV', nom:'Sensibilisation des équipes OT (automaticiens, exploitation)', description:'Les personnels d\'exploitation et de maintenance industrielle sont sensibilisés aux risques cyber et aux procédures sécurisées.' },
+
+  // Zones & conduits / niveaux de sécurité
+  { ref:'IEC-ZC-1', type:'TECHNOLOGIQUE',     categorie:'ZC', nom:'Découpage en zones et conduits', description:'Le SI industriel est découpé en zones de sécurité homogènes reliées par des conduits maîtrisés, selon la criticité et les besoins de sûreté.' },
+  { ref:'IEC-ZC-2', type:'ORGANISATIONNELLE', categorie:'ZC', nom:'Niveau de sécurité cible (SL-T) par zone', description:'Un niveau de sécurité cible (SL-T 1 à 4) est défini pour chaque zone en fonction du risque, et les écarts avec le SL atteint sont traités.' },
+  { ref:'IEC-ZC-3', type:'TECHNOLOGIQUE',     categorie:'ZC', nom:'Cloisonnement IT/OT (DMZ industrielle)', description:'Les réseaux IT et OT sont segmentés via une DMZ industrielle ; aucun flux direct entre bureautique et automates.' },
+
+  // FR1 — Identification & authentification (IAC)
+  { ref:'IEC-FR1-1', type:'TECHNOLOGIQUE', categorie:'FR1', nom:'Identification & authentification sur l\'OT', description:'Tous les utilisateurs, processus et dispositifs sont identifiés et authentifiés avant d\'accéder aux composants de contrôle.' },
+  { ref:'IEC-FR1-2', type:'TECHNOLOGIQUE', categorie:'FR1', nom:'Authentification renforcée des accès distants OT', description:'Les accès distants (télémaintenance fournisseur) sont soumis à authentification forte, traçabilité et validation par l\'exploitant.' },
+
+  // FR2 — Contrôle d'usage (UC)
+  { ref:'IEC-FR2-1', type:'TECHNOLOGIQUE', categorie:'FR2', nom:'Moindre privilège sur les composants de commande', description:'Les droits d\'usage sont restreints au strict nécessaire (rôles d\'exploitation, d\'ingénierie, de maintenance) sur les automates et IHM.' },
+  { ref:'IEC-FR2-2', type:'TECHNOLOGIQUE', categorie:'FR2', nom:'Journalisation des actions sur les systèmes de commande', description:'Les actions sur les systèmes de commande (modifications de programme, consignes) sont journalisées et horodatées.' },
+
+  // FR3 — Intégrité du système (SI)
+  { ref:'IEC-FR3-1', type:'TECHNOLOGIQUE', categorie:'FR3', nom:'Intégrité des firmwares et programmes automates', description:'L\'intégrité et l\'authenticité des firmwares et programmes des automates sont vérifiées (signatures, contrôles avant chargement).' },
+  { ref:'IEC-FR3-2', type:'TECHNOLOGIQUE', categorie:'FR3', nom:'Protection contre les codes malveillants adaptée à l\'OT', description:'Des mesures anti-malware compatibles avec les contraintes industrielles (liste blanche applicative, postes d\'ingénierie durcis) sont déployées.' },
+
+  // FR4 — Confidentialité des données (DC)
+  { ref:'IEC-FR4-1', type:'TECHNOLOGIQUE', categorie:'FR4', nom:'Confidentialité des données de procédé sensibles', description:'Les données de procédé sensibles (recettes, paramètres de production, savoir-faire) sont protégées en confidentialité.' },
+
+  // FR5 — Restriction des flux (RDF)
+  { ref:'IEC-FR5-1', type:'TECHNOLOGIQUE', categorie:'FR5', nom:'Filtrage des flux inter-zones via les conduits', description:'Les flux entre zones transitent uniquement par des conduits filtrés (pare-feux industriels, diodes de données si requis).' },
+  { ref:'IEC-FR5-2', type:'TECHNOLOGIQUE', categorie:'FR5', nom:'Détection d\'intrusion réseau industrielle (IDS OT)', description:'Les flux OT sont surveillés par une sonde de détection adaptée aux protocoles industriels (Modbus, OPC-UA, S7…).' },
+
+  // FR6 — Réponse aux événements (TRE)
+  { ref:'IEC-FR6-1', type:'ORGANISATIONNELLE', categorie:'FR6', nom:'Détection et réponse aux incidents OT', description:'Un processus de détection, qualification et réponse aux incidents de sécurité industriels est en place, articulé avec la sûreté de fonctionnement.' },
+  { ref:'IEC-FR6-2', type:'TECHNOLOGIQUE', categorie:'FR6', nom:'Capacité d\'investigation sur les systèmes industriels', description:'Les journaux et capacités d\'analyse permettent d\'investiguer un incident sur l\'OT sans perturber la production.' },
+
+  // FR7 — Disponibilité des ressources (RA)
+  { ref:'IEC-FR7-1', type:'TECHNOLOGIQUE', categorie:'FR7', nom:'Redondance des systèmes de production critiques', description:'Les composants critiques (automates, réseaux, alimentation) sont redondés pour garantir la continuité de la production.' },
+  { ref:'IEC-FR7-2', type:'TECHNOLOGIQUE', categorie:'FR7', nom:'Sauvegarde et restauration des configurations automates', description:'Les programmes et configurations des automates sont sauvegardés et leur restauration est testée régulièrement.' },
+  { ref:'IEC-FR7-3', type:'ORGANISATIONNELLE', categorie:'FR7', nom:'Gestion des obsolescences OT (cycles de vie longs)', description:'Les composants industriels en fin de support sont identifiés et un plan de gestion des obsolescences / mesures compensatoires est défini.' },
+]
+
+// ─── SOC 2 Type II — Trust Services Criteria (AICPA) ─────────────────────────
+export const SOC2_CATEGORIES: Record<string, FrameworkCategory> = {
+  CC: { label: 'Sécurité (critères communs)',  icon: '🔒', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  A:  { label: 'Disponibilité',                 icon: '⏱️', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  PI: { label: 'Intégrité du traitement',       icon: '✅', color: 'text-green-700',  bg: 'bg-green-50'  },
+  C:  { label: 'Confidentialité',               icon: '🔐', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  P:  { label: 'Vie privée',                    icon: '👤', color: 'text-rose-700',   bg: 'bg-rose-50'   },
+}
+
+export const SOC2_CONTROLES: FrameworkControl[] = [
+  // Critères communs (Sécurité) — CC1 à CC9, socle obligatoire de tout rapport SOC 2
+  { ref:'SOC2-CC-1', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Environnement de contrôle et gouvernance', description:'Politiques de sécurité approuvées par la direction, intégrité et valeurs éthiques, rôles et responsabilités définis (CC1).' },
+  { ref:'SOC2-CC-2', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Communication et information', description:'Les objectifs et obligations de sécurité sont communiqués en interne et aux parties prenantes externes (CC2).' },
+  { ref:'SOC2-CC-3', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Évaluation des risques', description:'Identification, analyse et traitement des risques pesant sur l’atteinte des objectifs, y compris le risque de fraude (CC3).' },
+  { ref:'SOC2-CC-4', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Activités de supervision', description:'Surveillance continue et évaluations indépendantes permettant de détecter et corriger les déficiences de contrôle (CC4).' },
+  { ref:'SOC2-CC-5', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Gestion des accès logiques', description:'Authentification, autorisations au moindre privilège, provisioning/déprovisioning et revue périodique des accès (CC6).' },
+  { ref:'SOC2-CC-6', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Opérations de sécurité et détection', description:'Journalisation, surveillance, détection des anomalies et réponse aux incidents de sécurité (CC7).' },
+  { ref:'SOC2-CC-7', type:'TECHNOLOGIQUE',    categorie:'CC', nom:'Gestion des changements', description:'Processus maîtrisé de gestion des changements applicatifs et d’infrastructure (revue, test, approbation) (CC8).' },
+  { ref:'SOC2-CC-8', type:'ORGANISATIONNELLE', categorie:'CC', nom:'Gestion des risques fournisseurs', description:'Évaluation et suivi des prestataires et sous-traitants susceptibles d’affecter les engagements de service (CC9).' },
+  // Disponibilité (A)
+  { ref:'SOC2-A-1', type:'TECHNOLOGIQUE',    categorie:'A',  nom:'Supervision de la capacité et de la disponibilité', description:'Surveillance des capacités, performances et disponibilité au regard des engagements (SLA) (A1.1).' },
+  { ref:'SOC2-A-2', type:'TECHNOLOGIQUE',    categorie:'A',  nom:'Sauvegarde et reprise après sinistre', description:'Sauvegardes, redondance et plan de reprise (DRP) testés périodiquement (A1.2/A1.3).' },
+  // Intégrité du traitement (PI)
+  { ref:'SOC2-PI-1', type:'TECHNOLOGIQUE',   categorie:'PI', nom:'Intégrité des traitements', description:'Contrôles d’entrée, de traitement et de sortie garantissant des traitements complets, exacts et autorisés (PI1).' },
+  // Confidentialité (C)
+  { ref:'SOC2-C-1', type:'TECHNOLOGIQUE',    categorie:'C',  nom:'Protection des informations confidentielles', description:'Chiffrement au repos et en transit, contrôle d’accès des informations désignées confidentielles (C1.1).' },
+  { ref:'SOC2-C-2', type:'ORGANISATIONNELLE', categorie:'C',  nom:'Conservation et destruction sécurisées', description:'Politiques de conservation et de destruction sécurisée des informations confidentielles en fin de cycle de vie (C1.2).' },
+  // Vie privée (P)
+  { ref:'SOC2-P-1', type:'ORGANISATIONNELLE', categorie:'P',  nom:'Gestion de la vie privée (cycle de vie des données personnelles)', description:'Notice, consentement, collecte, utilisation, conservation, divulgation et destruction des données personnelles conformes aux engagements (P1-P8).' },
+]
+
+// ─── NIST SSDF (SP 800-218) — développement logiciel sécurisé / DevSecOps ────
+export const NIST_SSDF_CATEGORIES: Record<string, FrameworkCategory> = {
+  PO: { label: 'Préparer l’organisation (PO)',     icon: '🏗️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  PS: { label: 'Protéger le logiciel (PS)',         icon: '🛡️', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  PW: { label: 'Produire un logiciel sûr (PW)',     icon: '⚙️', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  RV: { label: 'Répondre aux vulnérabilités (RV)',  icon: '🚨', color: 'text-red-700',    bg: 'bg-red-50'    },
+}
+
+export const NIST_SSDF_CONTROLES: FrameworkControl[] = [
+  // PO — Prepare the Organization
+  { ref:'SSDF-PO-1', type:'ORGANISATIONNELLE', categorie:'PO', nom:'Exigences de sécurité du développement', description:'Définir et tenir à jour les exigences de sécurité pour le développement logiciel et son infrastructure (PO.1).' },
+  { ref:'SSDF-PO-2', type:'HUMAINE',           categorie:'PO', nom:'Rôles, responsabilités et formation', description:'Attribuer les rôles de sécurité et former les équipes de développement aux pratiques de code sécurisé (PO.2).' },
+  { ref:'SSDF-PO-3', type:'TECHNOLOGIQUE',     categorie:'PO', nom:'Chaîne d’outils sécurisée (CI/CD)', description:'Mettre en place et sécuriser la chaîne d’outils (CI/CD) ; intégrer SAST/DAST et l’automatisation de sécurité dans le pipeline (PO.3).' },
+  // PS — Protect the Software
+  { ref:'SSDF-PS-1', type:'TECHNOLOGIQUE',     categorie:'PS', nom:'Protection du code et gestion des secrets', description:'Protéger le code contre les accès et modifications non autorisés ; gérer les secrets hors du code (coffre / secrets manager) (PS.1).' },
+  { ref:'SSDF-PS-2', type:'TECHNOLOGIQUE',     categorie:'PS', nom:'Intégrité et signature des artefacts', description:'Fournir un mécanisme de vérification d’intégrité des releases (signature des artefacts, provenance) (PS.2).' },
+  { ref:'SSDF-PS-3', type:'ORGANISATIONNELLE', categorie:'PS', nom:'Archivage et SBOM des versions publiées', description:'Archiver et protéger chaque version publiée ; produire et tenir à jour une nomenclature logicielle (SBOM) (PS.3).' },
+  // PW — Produce Well-Secured Software
+  { ref:'SSDF-PW-1', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Conception sécurisée et analyse des risques', description:'Concevoir le logiciel pour respecter les exigences de sécurité et atténuer les risques (threat modeling) (PW.1).' },
+  { ref:'SSDF-PW-2', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Revue de sécurité du code (SAST, revue par les pairs)', description:'Vérifier la conformité aux pratiques de code sécurisé par revue par les pairs et analyse statique (SAST) (PW.7).' },
+  { ref:'SSDF-PW-3', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Tests de sécurité (DAST, fuzzing, tests d’intrusion)', description:'Tester le code exécutable pour identifier les vulnérabilités (DAST, fuzzing, pentest) (PW.8).' },
+  { ref:'SSDF-PW-4', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Sécurité des composants tiers (SCA / dépendances)', description:'Acquérir et maintenir des composants tiers sûrs ; analyser les dépendances (SCA) et appliquer une politique de mise à jour (PW.4).' },
+  { ref:'SSDF-PW-5', type:'TECHNOLOGIQUE',     categorie:'PW', nom:'Configuration sécurisée par défaut', description:'Configurer le logiciel avec des paramètres de sécurité par défaut et durcir les environnements (dev/staging/prod séparés) (PW.9).' },
+  // RV — Respond to Vulnerabilities
+  { ref:'SSDF-RV-1', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Détection et politique de divulgation des vulnérabilités', description:'Identifier en continu les vulnérabilités (veille, scanning) et disposer d’une politique de divulgation responsable (RV.1).' },
+  { ref:'SSDF-RV-2', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Remédiation et correctifs', description:'Évaluer, prioriser et corriger les vulnérabilités, puis diffuser les correctifs aux clients (RV.2).' },
+  { ref:'SSDF-RV-3', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Analyse des causes racines', description:'Analyser les vulnérabilités pour en identifier les causes racines et améliorer le processus de développement (RV.3).' },
 ]
