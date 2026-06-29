@@ -798,5 +798,8 @@ const dict: Record<string, string> = {
   "SOC2_CONTROLES.SOC2-P-1.nom": "Gestione della privacy (ciclo di vita dei dati personali)",
   "SOC2_CONTROLES.SOC2-PI-1.description": "Controlli di input, elaborazione e output che garantiscono un’elaborazione completa, accurata e autorizzata (PI1).",
   "SOC2_CONTROLES.SOC2-PI-1.nom": "Integrità dell’elaborazione",
+  "SOUS_SECTEURS.juridique-avocat.label": "Studio legale",
+  "SOUS_SECTEURS.juridique-notaire.label": "Studio notarile",
+  "SOUS_SECTEURS.juridique-huissier.label": "Ufficiale giudiziario",
 }
 export default dict

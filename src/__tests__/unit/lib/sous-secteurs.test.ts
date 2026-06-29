@@ -15,6 +15,10 @@ describe('secteurFamily', () => {
     expect(secteurFamily('Administration publique')).toBe('administration')
     expect(secteurFamily('Industrie / Manufacturing')).toBe('industrie')
   })
+  it('reconnaît la famille juridique (avocat / notaire)', () => {
+    expect(secteurFamily("Professions juridiques / Cabinet d'avocats")).toBe('juridique')
+    expect(secteurFamily('Notaire')).toBe('juridique')
+  })
   it('renvoie null pour un secteur sans sous-secteurs ou vide', () => {
     expect(secteurFamily('Tourisme / Hôtellerie-restauration')).toBeNull()
     expect(secteurFamily('Autre')).toBeNull()

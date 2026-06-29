@@ -77,6 +77,10 @@ export const SOUS_SECTEURS = [
   { id: 'industrie-agro', famille: 'industrie', label: 'Agroalimentaire' },
   { id: 'industrie-pharma-chimie', famille: 'industrie', label: 'Pharmaceutique / chimie' },
   { id: 'industrie-auto-aero', famille: 'industrie', label: 'Automobile / aéronautique' },
+  // Professions juridiques (avocat ≠ notaire : exemples sectoriels distincts)
+  { id: 'juridique-avocat', famille: 'juridique', label: 'Cabinet d\'avocats' },
+  { id: 'juridique-notaire', famille: 'juridique', label: 'Étude notariale' },
+  { id: 'juridique-huissier', famille: 'juridique', label: 'Commissaire de justice (huissier)' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

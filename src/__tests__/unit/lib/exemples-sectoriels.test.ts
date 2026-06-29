@@ -172,6 +172,46 @@ describe('i18n des packs sectoriels', () => {
   })
 })
 
+describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
+  const SEC = "Professions juridiques / Cabinet d'avocats"
+  it('notaire : pas de contenu spécifique avocat (CARPA / RPVA)', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'juridique-notaire')
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'juridique-notaire')
+    const txt = [...vm, ...bs].map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(txt).not.toContain('carpa')
+    expect(txt).not.toContain('rpva')
+  })
+  it('notaire : propose un contenu notarial (acte authentique / RÉAL)', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'juridique-notaire')
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'juridique-notaire')
+    const txt = [...vm, ...bs].map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(/authentique|notar|réal|real|télé@ctes|telactes/i.test(txt)).toBe(true)
+  })
+  it('notaire : scénario BEC fraude au virement immobilier (#72)', () => {
+    const sc = sectorExemplesFor(SEC, 'scenariosStrategiques', 'fr', 'juridique-notaire')
+    const sr = sectorExemplesFor(SEC, 'sourcesRisque', 'fr', 'juridique-notaire')
+    const txt = [...sc, ...sr].map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(/virement|bec|faux ordre/i.test(txt)).toBe(true)
+  })
+  it('avocat : conserve CARPA / RPVA, pas le contenu notarial', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'juridique-avocat')
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'juridique-avocat')
+    const txt = [...vm, ...bs].map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(txt).toContain('carpa')
+    expect(/acte authentique|réalnot|realnot/i.test(txt)).toBe(false)
+  })
+  it('sans sous-secteur : tout est proposé (avocat + notaire)', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr')
+    const txt = vm.map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(txt).toContain('carpa')
+    expect(/authentique|notar/i.test(txt)).toBe(true)
+  })
+  it('le champ technique sousProfession n\'est pas exposé', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'juridique-notaire')
+    expect(vm.every(e => !('sousProfession' in e))).toBe(true)
+  })
+})
+
 describe('intégration : les exemples sectoriels remontent en tête via rankExemples', () => {
   it('santé : les valeurs métier sectorielles sont marquées pertinentes et en tête', () => {
     const generic = [

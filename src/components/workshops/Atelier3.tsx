@@ -143,7 +143,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : scénarios stratégiques sectoriels remontés en tête
   const scExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale, analyse?.sousSecteur), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [scExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
   const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps

@@ -327,28 +327,43 @@ const JURIDIQUE: SectorFamily = {
   match: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal'],
   exemples: {
     valeursMetier: [
-      { nom: 'Gestion des dossiers clients', type: 'PROCESSUS', description: 'Suivi des affaires, pièces et échéances des dossiers clients', responsable: 'Associé / avocat responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Correspondances et secret professionnel', type: 'INFORMATION', description: 'Échanges confidentiels avocat-client couverts par le secret professionnel', responsable: 'Associé / avocat responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Maniement de fonds clients (CARPA)', type: 'PROCESSUS', description: 'Gestion des fonds des clients via la CARPA', responsable: 'Direction financière du cabinet', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Dossiers sensibles (M&A, contentieux)', type: 'INFORMATION', description: 'Données confidentielles d’opérations M&A, due diligence et contentieux', responsable: 'Associé en charge du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Gestion des dossiers clients', type: 'PROCESSUS', description: 'Suivi des affaires, pièces et échéances des dossiers clients', responsable: 'Associé / responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Correspondances et secret professionnel', type: 'INFORMATION', description: 'Échanges confidentiels avec les clients couverts par le secret professionnel', responsable: 'Associé / responsable du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Maniement de fonds clients (CARPA)', type: 'PROCESSUS', description: 'Gestion des fonds des clients via la CARPA', responsable: 'Direction financière du cabinet', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'avocat' },
+      { nom: 'Dossiers sensibles (M&A, contentieux)', type: 'INFORMATION', description: 'Données confidentielles d’opérations M&A, due diligence et contentieux', responsable: 'Associé en charge du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'avocat' },
+      // ── Notaires (indices 4+ : ne pas réinsérer avant, i18n indexée) ──
+      { nom: 'Rédaction et conservation des actes authentiques', type: 'PROCESSUS', description: 'Établissement, signature électronique et conservation des actes authentiques (ventes, successions, donations)', responsable: 'Notaire / clerc rédacteur', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'notaire' },
+      { nom: 'Maniement des fonds de l’étude (compte CDC)', type: 'PROCESSUS', description: 'Réception et reversement des fonds des clients (prix de vente, droits) via le compte unique à la Caisse des Dépôts', responsable: 'Comptabilité de l’étude', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'notaire' },
+      { nom: 'Données patrimoniales des clients', type: 'INFORMATION', description: 'Successions, donations, régimes matrimoniaux et état civil des parties', responsable: 'Notaire en charge du dossier', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'notaire' },
     ],
     biensSupports: [
       { nom: 'Logiciel de gestion de cabinet', type: 'LOGICIEL', description: 'Application métier de gestion des dossiers, du temps et de la facturation' },
       { nom: 'Coffre-fort électronique / GED', type: 'LOGICIEL', description: 'Stockage sécurisé et archivage des actes et pièces' },
-      { nom: 'Plateformes e-procédure (RPVA, Télérecours)', type: 'RESEAU', description: 'Accès aux juridictions et dépôt dématérialisé des actes' },
+      { nom: 'Plateformes e-procédure (RPVA, Télérecours)', type: 'RESEAU', description: 'Accès aux juridictions et dépôt dématérialisé des actes', sousProfession: 'avocat' },
       { nom: 'Data room sécurisée', type: 'SOUS_TRAITANCE', description: 'Espace cloud de partage de pièces pour les opérations sensibles' },
+      // ── Notaires ──
+      { nom: 'Plateforme notariale (RÉAL / Télé@ctes)', type: 'RESEAU', description: 'Réseau et téléservices du notariat (publicité foncière, échanges interprofessionnels)', sousProfession: 'notaire' },
+      { nom: 'Logiciel de rédaction d’actes (Genapi, iNot, Fiducial Comnot)', type: 'LOGICIEL', description: 'Application notariale de rédaction et de gestion des actes', sousProfession: 'notaire' },
+      { nom: 'Coffre-fort des actes authentiques électroniques (MICEN)', type: 'SOUS_TRAITANCE', description: 'Minutier central électronique des notaires hébergeant les actes authentiques', sousProfession: 'notaire' },
     ],
     evenementsRedoutes: [
       { description: 'Divulgation de pièces couvertes par le secret professionnel', impacts: ['Violation du secret professionnel', 'Sanction déontologique', 'Préjudice grave au client'], graviteDefaut: 4 },
       { description: 'Indisponibilité des dossiers et de l’e-procédure', impacts: ['Forclusion / délais procéduraux manqués', 'Interruption de l’activité du cabinet'], graviteDefaut: 4 },
-      { description: 'Détournement de fonds clients (CARPA)', impacts: ['Perte financière pour les clients', 'Sanction de l’Ordre', 'Atteinte à la réputation'], graviteDefaut: 4 },
+      { description: 'Détournement de fonds clients (CARPA)', impacts: ['Perte financière pour les clients', 'Sanction de l’Ordre', 'Atteinte à la réputation'], graviteDefaut: 4, sousProfession: 'avocat' },
+      // ── Notaires ──
+      { description: 'Détournement d’un virement de prix de vente immobilière', impacts: ['Perte du prix de vente (100 000–500 000 €)', 'Mise en cause de la responsabilité civile du notaire', 'Atteinte à la confiance'], graviteDefaut: 4, sousProfession: 'notaire' },
     ],
     sourcesRisque: [
-      { nom: 'Cybercriminel ciblant les cabinets d’avocats', categorie: 'CYBERCRIMINEL', description: 'Attaquants visant les données confidentielles et les fonds des cabinets (rançongiciel, fraude au virement)', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+      { nom: 'Cybercriminel ciblant les professions du droit', categorie: 'CYBERCRIMINEL', description: 'Attaquants visant les données confidentielles et les fonds des cabinets et études (rançongiciel, fraude au virement)', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+      // ── Notaires ──
+      { nom: 'Escroc au faux ordre de virement (BEC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur usurpant l’identité d’une partie ou de l’étude pour détourner un virement lors d’une vente immobilière', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 4, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4, sousProfession: 'notaire' },
     ],
     scenariosStrategiques: [
       { critere: 'C', nom: 'Fuite de dossiers confidentiels clients (C)', description: 'Exfiltration de pièces couvertes par le secret professionnel par un cybercriminel', vraisemblanceDefaut: 3, graviteDefaut: 4 },
-      { critere: 'D', nom: 'Blocage du cabinet par rançongiciel (D)', description: 'Un rançongiciel chiffre les dossiers et bloque l’accès à l’e-procédure', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Blocage du cabinet par rançongiciel (D)', description: 'Un rançongiciel chiffre les dossiers et bloque l’accès aux téléservices', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      // ── Notaires ──
+      { critere: 'I', nom: 'Fraude au virement immobilier (BEC) (I)', description: 'Un escroc s’interpose dans les échanges et substitue un faux RIB pour détourner le virement du prix de vente', vraisemblanceDefaut: 4, graviteDefaut: 4, sousProfession: 'notaire' },
+      { critere: 'C', nom: 'Usurpation de l’identité de l’étude (C)', description: 'Compromission d’une messagerie de l’étude pour adresser de fausses instructions de virement aux clients', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'notaire' },
     ],
   },
 }
@@ -395,10 +410,20 @@ export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLI
  * [] si le secteur n'appartient à aucune famille connue ou si la catégorie
  * n'est pas couverte par cette famille.
  */
+/** Sous-profession ciblée à partir d'un id de sous-secteur (juridique). */
+function professionFromSousSecteur(sousSecteur?: string | null): string | undefined {
+  const v = (sousSecteur ?? '').toLowerCase()
+  if (v.includes('notaire')) return 'notaire'
+  if (v.includes('avocat')) return 'avocat'
+  if (v.includes('huissier')) return 'huissier'
+  return undefined
+}
+
 export function sectorExemplesFor(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
   locale: Locale = 'fr',
+  sousSecteur?: string | null,
 ): Record<string, unknown>[] {
   const s = (secteur ?? '').toLowerCase()
   if (!s) return []
@@ -406,8 +431,13 @@ export function sectorExemplesFor(
   if (!fam) return []
   const items = fam.exemples[category] ?? []
   const dict = DICTS[locale]
-  if (!dict) return items // FR (source) ou locale sans dictionnaire
-  return items.map((item, idx) => localizeItem(item, `${fam.key}.${category}.${idx}`, dict))
+  const prof = professionFromSousSecteur(sousSecteur)
+  // Localisation par INDICE D'ORIGINE (clés i18n indexées), puis filtrage par
+  // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
+  return items
+    .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
+    .filter(it => !prof || !it.sousProfession || it.sousProfession === prof)
+    .map(({ sousProfession, ...rest }) => rest)
 }
 
 /** Applique les traductions à un exemple (repli sur le texte FR source si clé absente). */
@@ -438,8 +468,9 @@ export function withSectorExemples<T extends Record<string, unknown>>(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
   locale: Locale = 'fr',
+  sousSecteur?: string | null,
 ): T[] {
-  const sector = sectorExemplesFor(secteur, category, locale) as T[]
+  const sector = sectorExemplesFor(secteur, category, locale, sousSecteur) as T[]
   if (!sector.length) return generic
   const keyOf = (e: T) =>
     String((e as { nom?: unknown }).nom ?? (e as { description?: unknown }).description ?? '')

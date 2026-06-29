@@ -798,5 +798,8 @@ const dict: Record<string, string> = {
   "SOC2_CONTROLES.SOC2-P-1.nom": "Privacy management (personal data lifecycle)",
   "SOC2_CONTROLES.SOC2-PI-1.description": "Input, processing and output controls ensuring complete, accurate and authorised processing (PI1).",
   "SOC2_CONTROLES.SOC2-PI-1.nom": "Processing integrity",
+  "SOUS_SECTEURS.juridique-avocat.label": "Law firm",
+  "SOUS_SECTEURS.juridique-notaire.label": "Notary's office",
+  "SOUS_SECTEURS.juridique-huissier.label": "Judicial officer (bailiff)",
 }
 export default dict
