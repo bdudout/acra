@@ -162,6 +162,20 @@ describe('recommendedFrameworksForSector', () => {
     expect(it.GOV.label).toBe('Governance OT')
   })
 
+  // ── Migration i18n des 5 référentiels (issue #87) ───────────────────────────
+  it('PCI/CIS/NIST CSF/NIST 800-53/HDS : contrôles + catégories intègres (sans + avec locale)', () => {
+    for (const id of ['PCI_DSS', 'CIS_V8', 'NIST_CSF', 'NIST_800_53', 'HDS']) {
+      const fr = getFrameworkControles(id)
+      expect(fr.length).toBeGreaterThan(0)
+      const cats = getFrameworkCategories(id)
+      for (const c of fr) expect(cats[c.categorie]).toBeTruthy()
+      // locale-aware : même nombre, mêmes refs, pas de crash (repli FR tant que non traduit)
+      const en = getFrameworkControles(id, undefined, 'en')
+      expect(en.map(c => c.ref)).toEqual(fr.map(c => c.ref))
+      expect(Object.keys(getFrameworkCategories(id, 'en'))).toEqual(Object.keys(cats))
+    }
+  })
+
   // ── RGS (issue #75) ─────────────────────────────────────────────────────────
   it('Administration publique → RGS recommandé', () => {
     const r = recommendedFrameworksForSector('Administration publique')
