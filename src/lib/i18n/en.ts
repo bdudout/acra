@@ -1590,6 +1590,11 @@ export const en: Translations = {
         oseSecurity: 'OSE (NIS1): apply the security rules set by the authority and stay ready for audits.',
         oseIncident: 'OSE (NIS1): report incidents with a significant impact on the continuity of essential services.',
       },
+      usage: {
+        title: 'Making the most of this report',
+        doraArt8: 'This report constitutes the ICT risk assessment documentation required by Article 8 of the DORA Regulation (EU 2022/2554), to be updated annually.',
+        homologationSSI: 'This report can serve as the risk-analysis report of your security accreditation file (PSSIE / RGS, and IGI 1300 for sensitive systems).',
+      },
       nis2Title:       'NIS2 Art. 21 coverage',
       nis2Intro:       'Indicative mapping: minimum NIS2 measures (Art. 21(2)) covered by this framework. Useful for essential/important entities.',
       frameworkAddDesc: 'Click a control to add it to the treatment plan. The reference is included in the name.',

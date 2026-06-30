@@ -33,6 +33,19 @@ export function suggestsComplianceModule(secteur?: string | null, statut?: strin
   return REGULATED_SECTOR_KEYWORDS.some(k => s.includes(k))
 }
 
+/**
+ * Notes d'usage du rapport (issues #70/#74) : opportunités réglementaires que le
+ * rapport EBIOS RM peut couvrir. `doraArt8` si DORA est retenu (documentation du
+ * risque ICT, art. 8 DORA) ; `homologationSSI` pour le secteur public (rapport
+ * d'analyse de risques du dossier d'homologation SSI). Pur, testé.
+ */
+export function reportUsageNotes(frameworks?: string[] | null, secteur?: string | null): string[] {
+  const notes: string[] = []
+  if ((frameworks ?? []).includes('DORA')) notes.push('doraArt8')
+  if (/administration|public|collectivit|état|etat|government|établissement public/i.test(secteur ?? '')) notes.push('homologationSSI')
+  return notes
+}
+
 export function regulatoryObligations(statut?: string | null, secteur?: string | null): string[] {
   // Secteur santé : depuis NIS2 (oct. 2024) l'autorité sectorielle est l'ANS
   // (enregistrement via MonEspaceNIS2, notification au CERT Santé), pas l'ANSSI.

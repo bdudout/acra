@@ -37,6 +37,8 @@ import {
 } from '@react-pdf/renderer'
 import { getRiskTier } from '@/lib/risk-scale'
 import { execGlobalLevel, execTopRisks, execMeasuresToEngage } from '@/lib/pdf-exec-summary'
+import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
+import { reportUsageNotes } from '@/lib/regulatory-guidance'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
   layoutStakeholders,
@@ -396,6 +398,12 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
 
   const top5 = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque).slice(0, 5)
 
+  // Notes de valorisation (DORA art. 8 / homologation SSI) — issues #70/#74
+  const usageNotes = reportUsageNotes(
+    recommendedFrameworksForSector(analyse.secteur, analyse.cadrage?.tailleAnalyse, analyse.sousSecteur, analyse.qualification?.statutReglementaire),
+    analyse.secteur,
+  )
+
   const statutsMesures = [
     { label: tp.summary.statutRealise, count: mesuresRealisees.length, color: C.green },
     { label: tp.summary.statutEnCours, count: mesuresEnCours.length,   color: C.indigo },
@@ -528,6 +536,15 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
         </View>
       ) : (
         <Text style={s.italic}>{tp.summary.noMesure}</Text>
+      )}
+
+      {/* Notes de valorisation du rapport (DORA art. 8 / homologation SSI) */}
+      {usageNotes.length > 0 && (
+        <View style={s.hintBox}>
+          <Text style={[s.hintText, { fontFamily: 'Helvetica-Bold', marginBottom: 2 }]}>{tp.summary.usageTitle}</Text>
+          {usageNotes.includes('doraArt8') && <Text style={s.hintText}>• {tp.summary.usageDoraArt8}</Text>}
+          {usageNotes.includes('homologationSSI') && <Text style={s.hintText}>• {tp.summary.usageHomologSSI}</Text>}
+        </View>
       )}
 
       <Footer nom={analyse.nom} date={date} tp={tp} />

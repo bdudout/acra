@@ -45,7 +45,7 @@ import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
-import { regulatoryObligations } from '@/lib/regulatory-guidance'
+import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
 
 interface Props {
   analyseId: string
@@ -187,6 +187,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const aipdPertinente = detectRgpdArt9(analyse?.cadrage?.valeursMetier || []).length > 0
   // Obligations réglementaires différenciées selon le statut (issue #68).
   const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire, analyse?.secteur)
+  // Opportunités d'usage du rapport (DORA art. 8 / homologation SSI) — issues #70/#74
+  const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur)
 
   function addRisque(fromScenario?: any) {
     const id = uid()
@@ -611,6 +613,16 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               <ul className="mt-1.5 space-y-1 list-disc list-inside">
                 {regObligations.map(id => (
                   <li key={id} className="text-sm text-amber-800">{(t.workshop.a5.reg as Record<string, string>)[id]}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {usageNotes.length > 0 && (
+            <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-emerald-900">📑 {t.workshop.a5.usage.title}</p>
+              <ul className="mt-1.5 space-y-1 list-disc list-inside">
+                {usageNotes.map(id => (
+                  <li key={id} className="text-sm text-emerald-800">{(t.workshop.a5.usage as Record<string, string>)[id]}</li>
                 ))}
               </ul>
             </div>

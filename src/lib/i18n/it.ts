@@ -1590,6 +1590,11 @@ export const it: Translations = {
         oseSecurity: 'OSE (NIS1): applica le regole di sicurezza stabilite dall’autorità e tieniti pronto ai controlli.',
         oseIncident: 'OSE (NIS1): notifica gli incidenti con impatto significativo sulla continuità dei servizi essenziali.',
       },
+      usage: {
+        title: 'Valorizzazione di questo rapporto',
+        doraArt8: 'Questo rapporto costituisce la documentazione della valutazione dei rischi ICT richiesta dall’articolo 8 del Regolamento DORA (UE 2022/2554), da aggiornare annualmente.',
+        homologationSSI: 'Questo rapporto può costituire il rapporto di analisi dei rischi del tuo fascicolo di omologazione di sicurezza (PSSIE / RGS, e IGI 1300 per i sistemi sensibili).',
+      },
       nis2Title:       'Copertura NIS2 Art. 21',
       nis2Intro:       'Mapping indicativo: misure minime NIS2 (Art. 21 §2) coperte da questo referenziale. Utile per i soggetti essenziali/importanti.',
       frameworkAddDesc: 'Clicca su un controllo per aggiungerlo al piano di trattamento. Il riferimento è incluso nel nome.',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { regulatoryObligations, suggestsComplianceModule } from '@/lib/regulatory-guidance'
+import { regulatoryObligations, suggestsComplianceModule, reportUsageNotes } from '@/lib/regulatory-guidance'
 
 // Obligations réglementaires différenciées selon le statut (issue #68).
 
@@ -53,5 +53,19 @@ describe('suggestsComplianceModule (issue #73)', () => {
     expect(suggestsComplianceModule('Tourisme / Hôtellerie-restauration', 'aucun')).toBe(false)
     expect(suggestsComplianceModule('')).toBe(false)
     expect(suggestsComplianceModule(null)).toBe(false)
+  })
+})
+
+describe('reportUsageNotes (issues #70/#74)', () => {
+  it('DORA sélectionné → note documentation risque ICT (art. 8)', () => {
+    expect(reportUsageNotes(['DORA', 'ISO27001'], 'Banque / Finance')).toContain('doraArt8')
+  })
+  it('secteur public → note dossier d\'homologation SSI', () => {
+    expect(reportUsageNotes(['ANSSI_HYG'], 'Administration publique')).toContain('homologationSSI')
+    expect(reportUsageNotes([], 'Collectivité territoriale')).toContain('homologationSSI')
+  })
+  it('ni DORA ni public → aucune note', () => {
+    expect(reportUsageNotes(['ISO27001'], 'Tourisme / Hôtellerie-restauration')).toEqual([])
+    expect(reportUsageNotes(undefined, null)).toEqual([])
   })
 })

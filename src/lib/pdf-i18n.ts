@@ -40,6 +40,8 @@ export interface PdfStrings {
     statutRealise: string; statutEnCours: string; statutAFaire: string; statutReporte: string
     taux: (pct: number, done: number, total: number, enCours: number) => string
     noMesure: string
+    /** Notes de valorisation du rapport (issues #70/#74). */
+    usageTitle: string; usageDoraArt8: string; usageHomologSSI: string
   }
   /** Résumé exécutif non technique en tête de rapport (issue #76). */
   execSummary: {
@@ -112,6 +114,7 @@ const fr: PdfStrings = {
     statutRealise: 'Réalisé', statutEnCours: 'En cours', statutAFaire: 'À faire', statutReporte: 'Reporté',
     taux: (pct, done, total, enCours) => `Taux de réalisation : ${pct}% (${done} sur ${total} mesures réalisées).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'mesure en cours de déploiement' : 'mesures en cours de déploiement'}.` : ''),
     noMesure: 'Aucune mesure de sécurité définie dans cette analyse.',
+    usageTitle: "Valorisation du rapport", usageDoraArt8: "Documentation de l'évaluation des risques ICT requise par l'article 8 du règlement DORA (UE 2022/2554).", usageHomologSSI: "Utilisable comme rapport d'analyse de risques d'un dossier d'homologation SSI (PSSIE/RGS, IGI 1300).",
   },
   execSummary: {
     banner: "Résumé exécutif", intro: "Cette synthèse en une page s'adresse à un lecteur non spécialiste (direction, assureur, ordre professionnel, partenaire). Elle résume le niveau de risque et les actions prioritaires.", globalLabel: "Niveau de risque global",
@@ -202,6 +205,7 @@ const en: PdfStrings = {
     statutRealise: 'Completed', statutEnCours: 'In progress', statutAFaire: 'To do', statutReporte: 'Postponed',
     taux: (pct, done, total, enCours) => `Completion rate: ${pct}% (${done} of ${total} measures completed).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'measure being deployed' : 'measures being deployed'}.` : ''),
     noMesure: 'No security measure defined in this analysis.',
+    usageTitle: "Making the most of this report", usageDoraArt8: "ICT risk assessment documentation required by Article 8 of the DORA Regulation (EU 2022/2554).", usageHomologSSI: "Usable as the risk-analysis report of a security accreditation file (PSSIE/RGS, IGI 1300).",
   },
   execSummary: {
     banner: "Executive summary", intro: "This one-page summary is intended for a non-specialist reader (management, insurer, professional body, partner). It outlines the risk level and the priority actions.", globalLabel: "Overall risk level",
@@ -292,6 +296,7 @@ const de: PdfStrings = {
     statutRealise: 'Umgesetzt', statutEnCours: 'In Bearbeitung', statutAFaire: 'Zu erledigen', statutReporte: 'Verschoben',
     taux: (pct, done, total, enCours) => `Umsetzungsgrad: ${pct}% (${done} von ${total} Maßnahmen umgesetzt).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'Maßnahme in Umsetzung' : 'Maßnahmen in Umsetzung'}.` : ''),
     noMesure: 'Keine Sicherheitsmaßnahme in dieser Analyse definiert.',
+    usageTitle: "Nutzen des Berichts", usageDoraArt8: "Dokumentation der IKT-Risikobewertung gemäß Artikel 8 der DORA-Verordnung (EU 2022/2554).", usageHomologSSI: "Verwendbar als Risikoanalysebericht einer Sicherheitsakkreditierung (PSSIE/RGS, IGI 1300).",
   },
   execSummary: {
     banner: "Zusammenfassung für die Leitung", intro: "Diese einseitige Zusammenfassung richtet sich an nicht spezialisierte Leser (Leitung, Versicherer, Berufskammer, Partner). Sie fasst das Risikoniveau und die vorrangigen Maßnahmen zusammen.", globalLabel: "Gesamtrisikoniveau",
@@ -382,6 +387,7 @@ const es: PdfStrings = {
     statutRealise: 'Realizado', statutEnCours: 'En curso', statutAFaire: 'Por hacer', statutReporte: 'Aplazado',
     taux: (pct, done, total, enCours) => `Tasa de realización: ${pct}% (${done} de ${total} medidas realizadas).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'medida en despliegue' : 'medidas en despliegue'}.` : ''),
     noMesure: 'Ninguna medida de seguridad definida en este análisis.',
+    usageTitle: "Aprovechamiento del informe", usageDoraArt8: "Documentación de la evaluación de riesgos TIC exigida por el artículo 8 del Reglamento DORA (UE 2022/2554).", usageHomologSSI: "Utilizable como informe de análisis de riesgos de un expediente de homologación de seguridad (PSSIE/RGS, IGI 1300).",
   },
   execSummary: {
     banner: "Resumen ejecutivo", intro: "Esta síntesis de una página está dirigida a un lector no especializado (dirección, asegurador, colegio profesional, socio). Resume el nivel de riesgo y las acciones prioritarias.", globalLabel: "Nivel de riesgo global",
@@ -472,6 +478,7 @@ const it: PdfStrings = {
     statutRealise: 'Realizzato', statutEnCours: 'In corso', statutAFaire: 'Da fare', statutReporte: 'Rinviato',
     taux: (pct, done, total, enCours) => `Tasso di realizzazione: ${pct}% (${done} su ${total} misure realizzate).` + (enCours > 0 ? ` ${enCours} ${enCours === 1 ? 'misura in fase di implementazione' : 'misure in fase di implementazione'}.` : ''),
     noMesure: 'Nessuna misura di sicurezza definita in questa analisi.',
+    usageTitle: "Valorizzazione del rapporto", usageDoraArt8: "Documentazione della valutazione dei rischi ICT richiesta dall'articolo 8 del Regolamento DORA (UE 2022/2554).", usageHomologSSI: "Utilizzabile come rapporto di analisi dei rischi di un fascicolo di omologazione di sicurezza (PSSIE/RGS, IGI 1300).",
   },
   execSummary: {
     banner: "Sintesi esecutiva", intro: "Questa sintesi di una pagina è destinata a un lettore non specialista (direzione, assicuratore, ordine professionale, partner). Riassume il livello di rischio e le azioni prioritarie.", globalLabel: "Livello di rischio complessivo",
