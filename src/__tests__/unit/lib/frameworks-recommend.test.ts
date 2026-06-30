@@ -162,6 +162,25 @@ describe('recommendedFrameworksForSector', () => {
     expect(it.GOV.label).toBe('Governance OT')
   })
 
+  // ── RGS (issue #75) ─────────────────────────────────────────────────────────
+  it('Administration publique → RGS recommandé', () => {
+    const r = recommendedFrameworksForSector('Administration publique')
+    expect(r).toContain('RGS')
+    expect(r).toContain('ANSSI_HYG')
+  })
+  it('RGS : méta + contrôles + catégories cohérents + localisable', () => {
+    expect(FRAMEWORK_META.RGS.nom).toBe('RGS')
+    const ctrls = getFrameworkControles('RGS')
+    expect(ctrls.length).toBeGreaterThanOrEqual(10)
+    const cats = getFrameworkCategories('RGS')
+    for (const c of ctrls) expect(cats[c.categorie]).toBeTruthy()
+    // homologation = pierre angulaire du RGS
+    expect(ctrls.map(c => `${c.nom} ${c.description}`).join(' ').toLowerCase()).toContain('homologation')
+    // i18n : libellés traduits en EN
+    const en = getFrameworkControles('RGS', undefined, 'en')
+    expect(en.find(c => c.ref === 'RGS-GOUV-1')!.nom).not.toBe(ctrls.find(c => c.ref === 'RGS-GOUV-1')!.nom)
+  })
+
   // ── SOC 2 : contenu du référentiel ──────────────────────────────────────────
   it('SOC 2 : méta + contrôles + catégories cohérents', () => {
     expect(FRAMEWORK_META.SOC2.nom).toMatch(/SOC 2/)

@@ -22,6 +22,7 @@ import {
   IEC_62443_CONTROLES, IEC_62443_CATEGORIES,
   SOC2_CONTROLES, SOC2_CATEGORIES,
   NIST_SSDF_CONTROLES, NIST_SSDF_CATEGORIES,
+  RGS_CONTROLES, RGS_CATEGORIES,
 } from '@/lib/ebios-data'
 
 // ─── Types partagés ───────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -70,6 +71,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   IEC_62443:  { nom: 'IEC 62443',            version: '+ ANSSI-PA-107', icon: '🏭', cible: 'Systèmes industriels OT/ICS (usine, énergie, transport, eau)' },
   SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },
   NIST_SSDF:  { nom: 'NIST SSDF',             version: 'SP 800-218', icon: '🧬', cible: 'Développement logiciel sécurisé / DevSecOps (CI/CD)' },
+  RGS:        { nom: 'RGS',                  version: 'v2.0',     icon: '🏛️', cible: 'Téléservices publics / homologation SSI (France)' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -566,6 +568,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
       case 'IEC_62443': return d.IEC_62443_CONTROLES
       case 'SOC2':      return d.SOC2_CONTROLES
       case 'NIST_SSDF': return d.NIST_SSDF_CONTROLES
+      case 'RGS':       return d.RGS_CONTROLES
     }
   }
   switch (frameworkId) {
@@ -584,6 +587,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'IEC_62443':   return IEC_62443_CONTROLES
     case 'SOC2':        return SOC2_CONTROLES
     case 'NIST_SSDF':   return NIST_SSDF_CONTROLES
+    case 'RGS':         return RGS_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -598,6 +602,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
       case 'IEC_62443': return d.IEC_62443_CATEGORIES
       case 'SOC2':      return d.SOC2_CATEGORIES
       case 'NIST_SSDF': return d.NIST_SSDF_CATEGORIES
+      case 'RGS':       return d.RGS_CATEGORIES
     }
   }
   switch (frameworkId) {
@@ -615,6 +620,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
     case 'IEC_62443':   return IEC_62443_CATEGORIES
     case 'SOC2':        return SOC2_CATEGORIES
     case 'NIST_SSDF':   return NIST_SSDF_CATEGORIES
+    case 'RGS':         return RGS_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -643,7 +649,7 @@ function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
   if (has('banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ')) return ['DORA', 'PCI_DSS', 'ISO27001']
   if (has('santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health')) return ['HDS', 'ISO27001']
   if (has('défense', 'defense', 'national', 'militaire', 'defence')) return ['NIST_800_53', 'ANSSI_HYG']
-  if (has('administration', 'public', 'collectivit', 'état', 'etat', 'government')) return ['ANSSI_HYG', 'ISO27001']
+  if (has('administration', 'public', 'collectivit', 'état', 'etat', 'government')) return ['ANSSI_HYG', 'RGS', 'ISO27001']
   if (has('énergie', 'energie', 'utilities', 'eau', 'nucléaire', 'nucleaire', 'energy')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('télécom', 'telecom', 'communication')) return ['ANSSI_HYG', 'NIST_CSF', 'ISO27001']
   if (has('transport', 'logistique', 'aérien', 'aerien', 'ferroviaire', 'logistics')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']

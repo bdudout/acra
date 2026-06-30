@@ -1004,3 +1004,38 @@ export const NIST_SSDF_CONTROLES: FrameworkControl[] = [
   { ref:'SSDF-RV-2', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Remédiation et correctifs', description:'Évaluer, prioriser et corriger les vulnérabilités, puis diffuser les correctifs aux clients (RV.2).' },
   { ref:'SSDF-RV-3', type:'ORGANISATIONNELLE', categorie:'RV', nom:'Analyse des causes racines', description:'Analyser les vulnérabilités pour en identifier les causes racines et améliorer le processus de développement (RV.3).' },
 ]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RGS — Référentiel Général de Sécurité (issue #75)
+// Source : arrêté du 6 mai 2010 modifié (RGS v2.0), ordonnance n°2005-1516, eIDAS.
+// Obligation pour les téléservices publics ; pièce d'un dossier d'homologation SSI.
+// ─────────────────────────────────────────────────────────────────────────────
+export const RGS_CATEGORIES: Record<string, FrameworkCategory> = {
+  GOUV:  { label: 'Gouvernance & homologation', icon: '🏛️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  AUTH:  { label: 'Authentification',           icon: '🪪', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  SIGN:  { label: 'Signature & cachet',         icon: '✍️', color: 'text-purple-700', bg: 'bg-purple-50' },
+  CONF:  { label: 'Confidentialité',            icon: '🔒', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  HORO:  { label: 'Horodatage',                 icon: '⏱️', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  TRACE: { label: 'Journalisation & preuve',    icon: '📜', color: 'text-gray-700',   bg: 'bg-gray-50'   },
+}
+
+export const RGS_CONTROLES: FrameworkControl[] = [
+  // Gouvernance & homologation
+  { ref:'RGS-GOUV-1', type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'Homologation de sécurité du téléservice', description:'Prononcer une décision d\'homologation de sécurité par l\'autorité administrative avant mise en service, et la réviser périodiquement (RGS, art. 5 ; arrêté du 6 mai 2010).' },
+  { ref:'RGS-GOUV-2', type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'Analyse de risques préalable à l\'homologation', description:'Conduire une analyse de risques (EBIOS RM) constituant le rapport d\'analyse de risques du dossier d\'homologation.' },
+  { ref:'RGS-GOUV-3', type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'PSSI et désignation d\'un RSSI', description:'Disposer d\'une politique de sécurité des systèmes d\'information (PSSIE) et désigner un responsable de la sécurité (RSSI).' },
+  // Authentification
+  { ref:'RGS-AUTH-1', type:'TECHNOLOGIQUE', categorie:'AUTH', nom:'Niveau d\'authentification adapté au risque', description:'Choisir un niveau de sécurité de la fonction d\'authentification (RGS une, deux ou trois étoiles) proportionné au risque du téléservice.' },
+  { ref:'RGS-AUTH-2', type:'TECHNOLOGIQUE', categorie:'AUTH', nom:'Certificats électroniques qualifiés (eIDAS)', description:'Recourir à des certificats et dispositifs qualifiés (référencés PRIS / conformes eIDAS) pour les fonctions sensibles.' },
+  { ref:'RGS-AUTH-3', type:'TECHNOLOGIQUE', categorie:'AUTH', nom:'Identification des usagers via FranceConnect', description:'Privilégier FranceConnect pour l\'identification et l\'authentification des usagers, lorsque c\'est pertinent.' },
+  // Signature & cachet
+  { ref:'RGS-SIGN-1', type:'TECHNOLOGIQUE', categorie:'SIGN', nom:'Signature électronique conforme', description:'Mettre en œuvre une signature électronique d\'un niveau adapté (avancée ou qualifiée, eIDAS) pour les actes nécessitant un engagement.' },
+  { ref:'RGS-SIGN-2', type:'TECHNOLOGIQUE', categorie:'SIGN', nom:'Cachet électronique de l\'administration', description:'Apposer un cachet électronique pour garantir l\'origine et l\'intégrité des documents émis par l\'administration.' },
+  // Confidentialité
+  { ref:'RGS-CONF-1', type:'TECHNOLOGIQUE', categorie:'CONF', nom:'Chiffrement des données sensibles', description:'Protéger en confidentialité les données sensibles avec des mécanismes cryptographiques conformes (annexe B1/B2 du RGS).' },
+  // Horodatage
+  { ref:'RGS-HORO-1', type:'TECHNOLOGIQUE', categorie:'HORO', nom:'Horodatage qualifié des preuves', description:'Horodater de manière fiable (contremarque de temps qualifiée) les actes et événements à valeur probante.' },
+  // Journalisation & preuve
+  { ref:'RGS-TRACE-1', type:'TECHNOLOGIQUE', categorie:'TRACE', nom:'Journalisation à valeur probante', description:'Journaliser les événements de sécurité et garantir l\'intégrité des journaux pour leur conférer une valeur de preuve.' },
+  { ref:'RGS-TRACE-2', type:'ORGANISATIONNELLE', categorie:'TRACE', nom:'Archivage électronique à valeur probante', description:'Archiver les documents et preuves dans un système d\'archivage électronique (SAE) conforme (NF Z42-013 / ISO 14641).' },
+]
