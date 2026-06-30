@@ -40,6 +40,7 @@ import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFramew
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
 import { suggestsComplianceModule } from '@/lib/regulatory-guidance'
+import { showsHdsCaveat } from '@/lib/sous-secteurs'
 
 interface Props {
   analyseId: string
@@ -1045,7 +1046,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                 ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
               </p>
             )}
-            {recommendedFw.includes('HDS') && (
+            {recommendedFw.includes('HDS') && showsHdsCaveat(analyse?.sousSecteur) && (
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3">
                 ℹ️ {t.workshop.a1.hdsNote}
               </p>

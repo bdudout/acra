@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { secteurFamily, sousSecteurIdsFor, isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { secteurFamily, sousSecteurIdsFor, isSousSecteurOfSecteur, showsHdsCaveat } from '@/lib/sous-secteurs'
 
 // Taxonomie des sous-secteurs (issue #25). Matching par mots-clés multilingue
 // car le secteur est stocké sous son libellé localisé.
@@ -36,6 +36,23 @@ describe('sousSecteurIdsFor', () => {
   })
   it('renvoie [] pour un secteur sans taxonomie', () => {
     expect(sousSecteurIdsFor('Médias / Culture')).toEqual([])
+  })
+})
+
+describe('showsHdsCaveat (issue #78) — pas de faux positif pour les hébergeurs', () => {
+  it('masque la note pour un CHU et un EHPAD (hébergeurs HDS réels)', () => {
+    expect(showsHdsCaveat('sante-hopital')).toBe(false)
+    expect(showsHdsCaveat('sante-ehpad')).toBe(false)
+  })
+  it('affiche la note pour les profils non-hébergeurs', () => {
+    expect(showsHdsCaveat('sante-clinique')).toBe(true)
+    expect(showsHdsCaveat('sante-labo')).toBe(true)
+    expect(showsHdsCaveat('sante-editeur')).toBe(true)
+  })
+  it('affiche la note quand le sous-secteur n\'est pas précisé (mise en garde générale)', () => {
+    expect(showsHdsCaveat(undefined)).toBe(true)
+    expect(showsHdsCaveat(null)).toBe(true)
+    expect(showsHdsCaveat('')).toBe(true)
   })
 })
 

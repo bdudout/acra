@@ -45,3 +45,13 @@ export function isSousSecteurOfSecteur(secteur?: string | null, sousSecteur?: st
   if (!sousSecteur) return false
   return sousSecteurIdsFor(secteur).includes(sousSecteur)
 }
+
+// Sous-secteurs santé qui hébergent réellement les données (cibles directes HDS) :
+// la mise en garde « HDS = auto-hébergement, préférez ISO 27001 » ne doit PAS leur
+// être affichée (issue #78).
+const HDS_SELF_HOSTING = new Set(['sante-hopital', 'sante-ehpad'])
+
+/** Faut-il afficher la mise en garde HDS ? Non pour les hébergeurs (CHU/EHPAD). */
+export function showsHdsCaveat(sousSecteur?: string | null): boolean {
+  return !HDS_SELF_HOSTING.has(sousSecteur ?? '')
+}

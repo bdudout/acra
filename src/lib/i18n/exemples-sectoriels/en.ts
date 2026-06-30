@@ -417,6 +417,10 @@ const en: Record<string, string> = {
   "juridique.scenariosStrategiques.2.description": "A fraudster interposes in the exchanges and substitutes a fake bank account to divert the sale-price transfer",
   "juridique.scenariosStrategiques.3.nom": "Impersonation of the firm (C)",
   "juridique.scenariosStrategiques.3.description": "Compromise of a firm mailbox to send fake transfer instructions to clients",
+  "sante.partiesPrenantes.0.nom": "French Digital Health Agency (ANS)",
+  "sante.partiesPrenantes.1.nom": "Health CERT (CERT Santé, ANS)",
+  "sante.partiesPrenantes.2.nom": "Regional Health Agency (ARS)",
+  "sante.partiesPrenantes.3.nom": "Health data hosting provider (HDS)",
 }
 
 export default en

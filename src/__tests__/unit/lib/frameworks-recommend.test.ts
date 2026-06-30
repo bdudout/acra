@@ -125,6 +125,18 @@ describe('recommendedFrameworksForSector', () => {
     expect(recommendedFrameworksForSector('Banque / Finance', 'STANDARD')).toContain('DORA')
   })
 
+  // ── Affinage défense BITD vs forces armées (issue #79) ──────────────────────
+  it('sous-secteur BITD → ISO 27001 + IEC 62443 remontés, NIST 800-53 conservé', () => {
+    const r = recommendedFrameworksForSector('Défense / Sécurité nationale', null, 'defense-bitd')
+    expect(r.slice(0, 2)).toEqual(['ISO27001', 'IEC_62443'])
+    expect(r).toContain('NIST_800_53')
+  })
+  it('sous-secteur forces armées → NIST 800-53 prioritaire + ANSSI', () => {
+    const r = recommendedFrameworksForSector('Défense / Sécurité nationale', null, 'defense-forces')
+    expect(r[0]).toBe('NIST_800_53')
+    expect(r).toContain('ANSSI_HYG')
+  })
+
   // ── i18n des contrôles DORA/IEC/SOC2/SSDF (issue #66) ───────────────────────
   it('getFrameworkControles localise les contrôles selon la locale', () => {
     const fr = getFrameworkControles('DORA')

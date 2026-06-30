@@ -140,6 +140,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   }, [])
   const tEx = t as unknown as ExemplesTranslations
   const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Parties prenantes sectorielles (ex. autorités santé ANS/CERT Santé/ARS) en tête (issue #81)
+  const ppExamplesSector = useMemo(
+    () => withSectorExemples(ppExamples, analyse?.secteur, 'partiesPrenantes', locale, analyse?.sousSecteur) as any[],
+    [ppExamples, analyse?.secteur, sousSecteurLabel, locale] // eslint-disable-line react-hooks/exhaustive-deps
+  )
   const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : scénarios stratégiques sectoriels remontés en tête
   const scExamplesRanked = useMemo(
@@ -522,7 +527,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             </div>
             {showPpExamples && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                {ppExamples.map((p: any, i) => {
+                {ppExamplesSector.map((p: any, i) => {
                   const d = ppDerived(p)
                   const { label, color } = getZoneLabel(d.zone)
                   const added = parties.some((x: any) => x.nom === p.nom)

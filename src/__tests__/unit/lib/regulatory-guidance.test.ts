@@ -16,6 +16,16 @@ describe('regulatoryObligations', () => {
     expect(o.length).toBeGreaterThan(0)
     expect(o).toContain('eeiIncident')
   })
+  it('EEI + secteur santé → autorité sectorielle ANS, pas ANSSI (issue #81)', () => {
+    const o = regulatoryObligations('EEI', 'Santé / Médico-social')
+    expect(o).toContain('eeiIncidentSante')
+    expect(o).not.toContain('eeiIncident')
+  })
+  it('EEI hors santé → texte générique (ANSSI)', () => {
+    const o = regulatoryObligations('EEI', 'Banque / Finance')
+    expect(o).toContain('eeiIncident')
+    expect(o).not.toContain('eeiIncidentSante')
+  })
   it('OSE (NIS1) → au moins une obligation', () => {
     expect(regulatoryObligations('OSE').length).toBeGreaterThan(0)
   })

@@ -33,7 +33,10 @@ export function suggestsComplianceModule(secteur?: string | null, statut?: strin
   return REGULATED_SECTOR_KEYWORDS.some(k => s.includes(k))
 }
 
-export function regulatoryObligations(statut?: string | null): string[] {
+export function regulatoryObligations(statut?: string | null, secteur?: string | null): string[] {
+  // Secteur santé : depuis NIS2 (oct. 2024) l'autorité sectorielle est l'ANS
+  // (enregistrement via MonEspaceNIS2, notification au CERT Santé), pas l'ANSSI.
+  const sante = /sant|médico|medico|hospital|health/i.test(secteur ?? '')
   switch (statut) {
     case 'OIV':
       // LPM / arrêtés SIIV : homologation soumise à l'ANSSI, guide PA sectoriel,
@@ -41,7 +44,8 @@ export function regulatoryObligations(statut?: string | null): string[] {
       return ['oivAnssiSubmit', 'oivSectorGuide', 'oivCrisisExercise']
     case 'EEI':
       // NIS2 : enregistrement auprès de l'autorité + notification d'incident.
-      return ['eeiRegister', 'eeiIncident']
+      // Santé → autorité sectorielle ANS / CERT Santé (issue #81).
+      return sante ? ['eeiRegisterSante', 'eeiIncidentSante'] : ['eeiRegister', 'eeiIncident']
     case 'OSE':
       // NIS1 (hérité) : mesures de sécurité + notification d'incident significatif.
       return ['oseSecurity', 'oseIncident']

@@ -1585,6 +1585,8 @@ export const de: Translations = {
         oivCrisisExercise: 'OIV: Planen Sie die Cyber-Krisenübung und die regelmäßige Prüfung gemäß SIIV-Vorschriften.',
         eeiRegister: 'NIS2: Registrieren Sie die Einrichtung bei der zuständigen nationalen Behörde (ANSSI) und halten Sie Ihre Angaben aktuell.',
         eeiIncident: 'NIS2: Melden Sie jeden erheblichen Vorfall innerhalb der gesetzlichen Fristen an das CSIRT/ANSSI (Frühwarnung binnen 24 h, Meldung binnen 72 h).',
+        eeiRegisterSante: 'NIS2 (Gesundheit): Registrieren Sie die Einrichtung bei der ANS über das Portal MonEspaceNIS2 und halten Sie Ihre Angaben aktuell.',
+        eeiIncidentSante: 'NIS2 (Gesundheit): Melden Sie erhebliche Vorfälle an das CERT Santé (ANS) innerhalb der gesetzlichen Fristen (Frühwarnung 24 h, Meldung 72 h).',
         oseSecurity: 'OSE (NIS1): Wenden Sie die von der Behörde festgelegten Sicherheitsregeln an und halten Sie sich für Prüfungen bereit.',
         oseIncident: 'OSE (NIS1): Melden Sie Vorfälle mit erheblichen Auswirkungen auf die Kontinuität wesentlicher Dienste.',
       },

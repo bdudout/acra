@@ -675,6 +675,10 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
   else if (/(fintech|paiement|payment|monetique)/.test(s)) priority = ['PCI_DSS']
   else if (/(process|scada|nucleaire|nuclear|\bot\b)/.test(s)) priority = ['IEC_62443']
+  // Défense (issue #79) : BITD (industrie d'armement) → certification DGA (ISO 27001)
+  // + SI embarqués / systèmes d'armes (IEC 62443). Les forces armées conservent le
+  // socle sectoriel (NIST 800-53 prioritaire + ANSSI Hygiène), donc pas de priorité ici.
+  else if (/bitd/.test(s)) priority = ['ISO27001', 'IEC_62443']
   if (priority.length === 0) return base
   return [...new Set([...priority, ...base])]
 }

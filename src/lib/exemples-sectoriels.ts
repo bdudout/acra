@@ -24,6 +24,7 @@ export type SectorExempleCategory =
   | 'evenementsRedoutes'
   | 'sourcesRisque'
   | 'scenariosStrategiques'
+  | 'partiesPrenantes'
 
 // Dictionnaires de traduction (FR = source dans les données ci-dessous, donc absent).
 // Clé : `${famille}.${categorie}.${index}.${champ}` (+ `.impacts.${j}` pour les tableaux).
@@ -68,6 +69,13 @@ const SANTE: SectorFamily = {
     scenariosStrategiques: [
       { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4 },
       { critere: 'C', nom: 'Exfiltration de données de santé (C)', description: 'Vol puis publication de dossiers patients par un cybercriminel', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+    ],
+    // Autorités sectorielles santé (NIS2 : ANS autorité compétente) — issue #81
+    partiesPrenantes: [
+      { nom: 'Agence du Numérique en Santé (ANS)', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 4, confiance: 4 },
+      { nom: 'CERT Santé (ANS)', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 4, confiance: 4 },
+      { nom: 'Agence Régionale de Santé (ARS)', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 3, confiance: 4 },
+      { nom: 'Hébergeur de données de santé (HDS)', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 4, confiance: 3 },
     ],
   },
 }

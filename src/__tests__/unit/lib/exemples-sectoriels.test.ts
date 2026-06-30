@@ -112,7 +112,7 @@ describe('withSectorExemples — fusion + déduplication', () => {
 })
 
 describe('i18n des packs sectoriels', () => {
-  const CATEGORIES: SectorExempleCategory[] = ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques']
+  const CATEGORIES: SectorExempleCategory[] = ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques', 'partiesPrenantes']
 
   it('locale=fr renvoie la donnée source (FR)', () => {
     expect(sectorExemplesFor('Santé', 'valeursMetier', 'fr')[0].nom).toBe('Prise en charge des patients aux urgences')

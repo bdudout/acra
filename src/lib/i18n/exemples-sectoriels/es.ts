@@ -416,6 +416,10 @@ const es: Record<string, string> = {
   "juridique.scenariosStrategiques.2.description": "Un estafador se interpone en los intercambios y sustituye un RIB falso para desviar la transferencia del precio de venta",
   "juridique.scenariosStrategiques.3.nom": "Usurpación de la identidad del despacho (C)",
   "juridique.scenariosStrategiques.3.description": "Compromiso de un buzón del despacho para enviar instrucciones de transferencia falsas a los clientes",
+  "sante.partiesPrenantes.0.nom": "Agencia Francesa de Salud Digital (ANS)",
+  "sante.partiesPrenantes.1.nom": "CERT de Salud (CERT Santé, ANS)",
+  "sante.partiesPrenantes.2.nom": "Agencia Regional de Salud (ARS)",
+  "sante.partiesPrenantes.3.nom": "Proveedor de alojamiento de datos de salud (HDS)",
 }
 
 export default es

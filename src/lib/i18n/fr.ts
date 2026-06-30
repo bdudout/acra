@@ -1590,6 +1590,8 @@ export const fr = {
         oivCrisisExercise: 'OIV : prévoyez l’exercice de gestion de crise cyber et le contrôle périodique exigés par la réglementation SIIV.',
         eeiRegister: 'NIS2 : enregistrez l’entité auprès de l’autorité nationale compétente (ANSSI) et tenez vos informations à jour.',
         eeiIncident: 'NIS2 : notifiez tout incident significatif au CSIRT/ANSSI dans les délais réglementaires (alerte précoce sous 24 h, notification sous 72 h).',
+        eeiRegisterSante: 'NIS2 (santé) : enregistrez l’entité auprès de l’ANS via le portail MonEspaceNIS2 et tenez vos informations à jour.',
+        eeiIncidentSante: 'NIS2 (santé) : notifiez les incidents significatifs au CERT Santé (ANS) dans les délais réglementaires (alerte précoce 24 h, notification 72 h).',
         oseSecurity: 'OSE (NIS1) : appliquez les règles de sécurité fixées par l’autorité et tenez-vous prêt aux contrôles.',
         oseIncident: 'OSE (NIS1) : notifiez les incidents ayant un impact significatif sur la continuité des services essentiels.',
       },

@@ -416,6 +416,10 @@ const de: Record<string, string> = {
   "juridique.scenariosStrategiques.2.description": "Ein Betrüger schaltet sich in den Austausch ein und ersetzt die Bankverbindung, um die Kaufpreisüberweisung umzuleiten",
   "juridique.scenariosStrategiques.3.nom": "Identitätsdiebstahl der Kanzlei (C)",
   "juridique.scenariosStrategiques.3.description": "Kompromittierung eines Kanzlei-Postfachs, um Mandanten gefälschte Überweisungsanweisungen zu senden",
+  "sante.partiesPrenantes.0.nom": "Französische Agentur für digitale Gesundheit (ANS)",
+  "sante.partiesPrenantes.1.nom": "Gesundheits-CERT (CERT Santé, ANS)",
+  "sante.partiesPrenantes.2.nom": "Regionale Gesundheitsbehörde (ARS)",
+  "sante.partiesPrenantes.3.nom": "Anbieter für das Hosting von Gesundheitsdaten (HDS)",
 }
 
 export default de

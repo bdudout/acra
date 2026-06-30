@@ -416,6 +416,10 @@ const it: Record<string, string> = {
   "juridique.scenariosStrategiques.2.description": "Un truffatore si inserisce negli scambi e sostituisce un IBAN falso per deviare il bonifico del prezzo di vendita",
   "juridique.scenariosStrategiques.3.nom": "Usurpazione dell'identità dello studio (C)",
   "juridique.scenariosStrategiques.3.description": "Compromissione di una casella dello studio per inviare ai clienti false istruzioni di bonifico",
+  "sante.partiesPrenantes.0.nom": "Agenzia francese per la sanità digitale (ANS)",
+  "sante.partiesPrenantes.1.nom": "CERT Sanità (CERT Santé, ANS)",
+  "sante.partiesPrenantes.2.nom": "Agenzia Regionale di Sanità (ARS)",
+  "sante.partiesPrenantes.3.nom": "Hosting di dati sanitari (HDS)",
 }
 
 export default it

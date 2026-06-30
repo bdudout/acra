@@ -186,7 +186,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   // EBIOS RM peut valoir AIPD (RGPD art. 35) si données particulières (art. 9) en jeu
   const aipdPertinente = detectRgpdArt9(analyse?.cadrage?.valeursMetier || []).length > 0
   // Obligations réglementaires différenciées selon le statut (issue #68).
-  const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire)
+  const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire, analyse?.secteur)
 
   function addRisque(fromScenario?: any) {
     const id = uid()

@@ -1585,6 +1585,8 @@ export const es: Translations = {
         oivCrisisExercise: 'OIV: prevé el ejercicio de gestión de crisis cibernética y el control periódico exigidos por la normativa SIIV.',
         eeiRegister: 'NIS2: registra la entidad ante la autoridad nacional competente (ANSSI) y mantén tu información actualizada.',
         eeiIncident: 'NIS2: notifica todo incidente significativo al CSIRT/ANSSI en los plazos reglamentarios (alerta temprana en 24 h, notificación en 72 h).',
+        eeiRegisterSante: 'NIS2 (salud): registra la entidad ante la ANS a través del portal MonEspaceNIS2 y mantén tu información actualizada.',
+        eeiIncidentSante: 'NIS2 (salud): notifica los incidentes significativos al CERT Santé (ANS) en los plazos reglamentarios (alerta temprana 24 h, notificación 72 h).',
         oseSecurity: 'OSE (NIS1): aplica las reglas de seguridad fijadas por la autoridad y mantente preparado para las auditorías.',
         oseIncident: 'OSE (NIS1): notifica los incidentes con impacto significativo en la continuidad de los servicios esenciales.',
       },
