@@ -1742,6 +1742,7 @@ export const de: Translations = {
       reglementation:      'Regulierung',
       statutReglementaire: 'Regulatorischer Status',
       systemeIndustriel:   'OT-Systeme',
+      rssiInterne:         'Dedizierter CISO',
     },
     yes:           'Ja',
     no:            'Nein',
@@ -1760,6 +1761,7 @@ export const de: Translations = {
       reglementation:      'Unterliegt das System einer spezifischen Regulierung (NIS2, DORA, HDS, PCI-DSS…)?',
       statutReglementaire: 'Welchen regulatorischen Status hat die Einrichtung (NIS2 / Gesetz für kritische Betreiber)?',
       systemeIndustriel:   'Umfasst der Geltungsbereich industrielle / OT-Systeme?',
+      rssiInterne:        'Verfügen Sie über einen dedizierten internen CISO/Sicherheitsverantwortlichen?',
     },
     criticiteOptions: { faible: 'Gering', modere: 'Mäßig', eleve: 'Hoch' },
     statutOptions: { aucun: 'Keiner / nicht betroffen', OSE: 'Betreiber wesentlicher Dienste (OES)', EEI: 'Wesentliche oder wichtige Einrichtung (NIS2)', OIV: 'Betreiber von vitaler Bedeutung (OIV)' },
@@ -1773,6 +1775,7 @@ export const de: Translations = {
       DISPONIBILITE_OT:    'Die Verfügbarkeit industrieller / OT-Systeme — kritische geschäftliche Auswirkungen.',
       ANALYSE_ALLEGEE:     'Eine schlanke, auf das Grundniveau fokussierte Analyse kann für diesen Geltungsbereich ausreichen.',
       ANALYSE_APPROFONDIE: 'Angesichts der Kritikalität wird eine umfassende Analyse (alle Workshops) empfohlen.',
+      GUIDANCE_RENFORCEE:  'Ohne dedizierten CISO wird eine verstärkte Anleitung empfohlen (Definitionen, konkrete Beispiele, Flash-Ansatz).',
     },
   },
   // ─── Konformitätsanalyse gegenüber dem Grundniveau (Workshop 1) ───────────

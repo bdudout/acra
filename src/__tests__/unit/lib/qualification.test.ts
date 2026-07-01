@@ -72,8 +72,13 @@ describe('deriveOrientations', () => {
     expect(deriveOrientations({ statutReglementaire: 'aucun' })).toEqual([])
   })
 
+  it('rssiInterne=false ⇒ GUIDANCE_RENFORCEE ; true ⇒ rien (issue #59)', () => {
+    expect(deriveOrientations({ rssiInterne: false })).toContain('GUIDANCE_RENFORCEE')
+    expect(deriveOrientations({ rssiInterne: true })).not.toContain('GUIDANCE_RENFORCEE')
+  })
+
   it('aucune orientation pour des réponses neutres', () => {
-    expect(deriveOrientations({ externalisation: false, criticite: 'modere', statutReglementaire: 'aucun' })).toEqual([])
+    expect(deriveOrientations({ externalisation: false, criticite: 'modere', statutReglementaire: 'aucun', rssiInterne: true })).toEqual([])
   })
 
   it('ne duplique pas les orientations', () => {
@@ -105,7 +110,9 @@ describe('sanitizeQualification', () => {
     expect(sanitizeQualification({ filiereOiv: 'xxx' } as any)).not.toHaveProperty('filiereOiv')
   })
   it('la filière OIV n’entre pas dans la complétude du questionnaire', () => {
-    const full: any = { externalisation: true, criticite: 'modere', donneesPersonnelles: false, expositionInternet: true, reglementation: false, statutReglementaire: 'OIV', systemeIndustriel: false }
+    const full: any = {}
+    for (const q of QUALIFICATION_QUESTIONS) full[q.id] = q.type === 'bool' ? false : q.options![0].value
+    full.statutReglementaire = 'OIV'
     expect(isQualificationComplete(full)).toBe(true) // sans filiereOiv
   })
 

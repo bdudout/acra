@@ -1742,6 +1742,7 @@ export const it: Translations = {
       reglementation:      'Normativa',
       statutReglementaire: 'Stato normativo',
       systemeIndustriel:   'Sistemi OT',
+      rssiInterne:         'RSSI dedicato',
     },
     yes:           'Sì',
     no:            'No',
@@ -1760,6 +1761,7 @@ export const it: Translations = {
       reglementation:      'Il sistema è soggetto a una normativa specifica (NIS2, DORA, HDS, PCI-DSS…)?',
       statutReglementaire: "Qual è lo stato normativo dell'entità (NIS2 / legge sugli operatori vitali)?",
       systemeIndustriel:   'Il perimetro comprende sistemi industriali / OT?',
+      rssiInterne:        'Disponete di un RSSI/responsabile della sicurezza dedicato interno?',
     },
     criticiteOptions: { faible: 'Bassa', modere: 'Moderata', eleve: 'Alta' },
     statutOptions: { aucun: 'Nessuno / non interessato', OSE: 'OSE — operatore di servizi essenziali', EEI: 'Soggetto essenziale o importante (NIS2)', OIV: 'Operatore di importanza vitale (OIV)' },
@@ -1773,6 +1775,7 @@ export const it: Translations = {
       DISPONIBILITE_OT:    'La disponibilità dei sistemi industriali / OT — impatti di business critici.',
       ANALYSE_ALLEGEE:     'Un\'analisi alleggerita incentrata sul livello base può bastare per questo perimetro.',
       ANALYSE_APPROFONDIE: "Vista la criticità, si raccomanda un'analisi approfondita (tutti i workshop).",
+      GUIDANCE_RENFORCEE:  'In assenza di un RSSI dedicato, è consigliata una guida rafforzata (definizioni, esempi concreti, approccio Flash).',
     },
   },
   // ─── Analisi di conformità al livello base (workshop 1) ───────────────────

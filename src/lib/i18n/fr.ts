@@ -1770,6 +1770,7 @@ export const fr = {
       reglementation:      'Réglementation',
       statutReglementaire: 'Statut réglementaire',
       systemeIndustriel:   'Systèmes OT',
+      rssiInterne:         'RSSI dédié',
     },
     yes:           'Oui',
     no:            'Non',
@@ -1788,6 +1789,7 @@ export const fr = {
       reglementation:      'Le système est-il soumis à une réglementation spécifique (NIS2, DORA, HDS, PCI-DSS…) ?',
       statutReglementaire: "Quel est le statut réglementaire de l'entité (NIS2 / LPM) ?",
       systemeIndustriel:   'Le périmètre comporte-t-il des systèmes industriels / OT ?',
+      rssiInterne:        "Disposez-vous d'un RSSI ou responsable sécurité dédié en interne ?",
     },
     criticiteOptions: { faible: 'Faible', modere: 'Modéré', eleve: 'Élevé' },
     statutOptions: { aucun: 'Aucun / non concerné', OSE: 'OSE — opérateur de services essentiels', EEI: 'Entité essentielle ou importante (NIS2)', OIV: "OIV — opérateur d'importance vitale" },
@@ -1801,6 +1803,7 @@ export const fr = {
       DISPONIBILITE_OT:    'La disponibilité des systèmes industriels / OT — impacts métier critiques.',
       ANALYSE_ALLEGEE:     'Une analyse allégée centrée sur le socle peut suffire pour ce périmètre.',
       ANALYSE_APPROFONDIE: 'Une analyse approfondie (tous les ateliers) est recommandée vu la criticité.',
+      GUIDANCE_RENFORCEE:  "En l'absence de RSSI dédié, une guidance renforcée est recommandée (définitions, exemples concrets, Démarche Flash).",
     },
   },
   // ─── Analyse de conformité au socle (atelier 1) ──────────────────────────

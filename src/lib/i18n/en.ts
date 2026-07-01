@@ -1742,6 +1742,7 @@ export const en: Translations = {
       reglementation:      'Regulation',
       statutReglementaire: 'Regulatory status',
       systemeIndustriel:   'OT systems',
+      rssiInterne:         'Dedicated CISO',
     },
     yes:           'Yes',
     no:            'No',
@@ -1760,6 +1761,7 @@ export const en: Translations = {
       reglementation:      'Is the system subject to a specific regulation (NIS2, DORA, HDS, PCI-DSS…)?',
       statutReglementaire: 'What is the regulatory status of the entity (NIS2 / vital-operator law)?',
       systemeIndustriel:   'Does the scope include industrial / OT systems?',
+      rssiInterne:        'Do you have a dedicated in-house CISO or security officer?',
     },
     criticiteOptions: { faible: 'Low', modere: 'Moderate', eleve: 'High' },
     statutOptions: { aucun: 'None / not concerned', OSE: 'OES — operator of essential services', EEI: 'Essential or important entity (NIS2)', OIV: 'Vital-importance operator (OIV)' },
@@ -1773,6 +1775,7 @@ export const en: Translations = {
       DISPONIBILITE_OT:    'Availability of industrial / OT systems — critical business impacts.',
       ANALYSE_ALLEGEE:     'A lightweight analysis focused on the baseline may be enough for this scope.',
       ANALYSE_APPROFONDIE: 'A thorough analysis (all workshops) is recommended given the criticality.',
+      GUIDANCE_RENFORCEE:  'Without a dedicated CISO, reinforced guidance is recommended (definitions, concrete examples, Flash approach).',
     },
   },
   // ─── Compliance analysis against the baseline (workshop 1) ────────────────

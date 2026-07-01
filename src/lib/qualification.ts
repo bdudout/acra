@@ -39,6 +39,7 @@ export type Orientation =
   | 'DISPONIBILITE_OT'
   | 'ANALYSE_ALLEGEE'
   | 'ANALYSE_APPROFONDIE'
+  | 'GUIDANCE_RENFORCEE'
 
 const CRITICITE_OPTIONS: QualificationOption[] = [
   { value: 'faible' },
@@ -82,6 +83,7 @@ export const QUALIFICATION_QUESTIONS: QualificationQuestion[] = [
   { id: 'reglementation', type: 'bool' },
   { id: 'statutReglementaire', type: 'choice', options: STATUT_REGLEMENTAIRE_OPTIONS },
   { id: 'systemeIndustriel', type: 'bool' },
+  { id: 'rssiInterne', type: 'bool' }, // RSSI/responsable sécu dédié en interne ? (issue #59)
 ]
 
 /**
@@ -130,6 +132,8 @@ export function deriveOrientations(answers: QualificationAnswers | null | undefi
   if (answers.systemeIndustriel === true) add('DISPONIBILITE_OT')
   if (answers.criticite === 'faible') add('ANALYSE_ALLEGEE')
   if (answers.criticite === 'eleve') add('ANALYSE_APPROFONDIE')
+  // Absence de RSSI dédié → guidance renforcée (définitions, exemples, mode Flash) (#59)
+  if (answers.rssiInterne === false) add('GUIDANCE_RENFORCEE')
 
   return out
 }
