@@ -193,7 +193,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   )
 
   // Secteur OT/ICS → glossaire contextuel (ICS, SCADA, PLC…) pour non-experts
-  const isOtSector = /(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(analyse?.secteur || '')
+  const isOtSector = /(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(analyse?.secteur || '')
   const [showOtGlossary, setShowOtGlossary] = useState(false)
   const [showDictHelp, setShowDictHelp] = useState(false)
 

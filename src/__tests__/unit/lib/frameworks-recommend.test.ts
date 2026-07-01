@@ -78,6 +78,9 @@ describe('recommendedFrameworksForSector', () => {
       expect(recommendedFrameworksForSector(s)).toContain('ANSSI_HYG')
     }
   })
+  it('Agroalimentaire reconnu comme OT → IEC 62443 en tête (issue #88)', () => {
+    expect(recommendedFrameworksForSector('Agriculture / Agroalimentaire')[0]).toBe('IEC_62443')
+  })
 
   // ── Affinage par sous-secteur (issue #25) ──────────────────────────────────
   it('sous-secteur « éditeur de logiciel santé » → fait remonter le dév. sécurisé', () => {

@@ -35,7 +35,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -411,7 +411,41 @@ const NUMERIQUE: SectorFamily = {
   },
 }
 
-export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE]
+// ─────────────────────────────────────────────────────────────────────────────
+// AGROALIMENTAIRE / AGRICULTURE (IAA) — production, chaîne du froid, traçabilité (issue #89)
+// ─────────────────────────────────────────────────────────────────────────────
+const AGRI: SectorFamily = {
+  key: 'agri',
+  match: ['agricol', 'agro', 'agriculture', 'agroaliment', 'élevage', 'elevage', 'ferme', 'alimentaire', 'food', 'farming'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Production et transformation alimentaire', type: 'PROCESSUS', description: 'Lignes de fabrication, cuisson, conditionnement des produits alimentaires', responsable: 'Direction de production', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Maîtrise de la chaîne du froid', type: 'PROCESSUS', description: 'Contrôle des températures de conservation, condition de la sécurité sanitaire des denrées', responsable: 'Responsable qualité / logistique', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Recettes et formulations', type: 'INFORMATION', description: 'Formules, procédés et savoir-faire de production (propriété industrielle)', responsable: 'R&D / direction industrielle', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Traçabilité sanitaire des lots', type: 'INFORMATION', description: 'Traçabilité amont/aval des lots, obligations HACCP et gestion des rappels produits', responsable: 'Direction qualité', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
+    ],
+    biensSupports: [
+      { nom: 'Automates et supervision de production (SCADA)', type: 'MATERIEL', description: 'Automates (PLC), supervision et capteurs des lignes de production' },
+      { nom: 'Supervision de la chaîne du froid', type: 'LOGICIEL', description: 'Pilotage des températures des chambres froides et de la logistique frigorifique' },
+      { nom: 'ERP / MES agroalimentaire', type: 'LOGICIEL', description: 'Gestion de production, des lots et de la traçabilité' },
+      { nom: 'Prestataire de transport frigorifique', type: 'SOUS_TRAITANCE', description: 'Transport et entreposage sous température dirigée' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Arrêt des lignes de production par cyberattaque', impacts: ['Perte de production et de denrées périssables', 'Rupture d’approvisionnement', 'Pertes financières'], graviteDefaut: 4 },
+      { description: 'Rupture de la chaîne du froid', impacts: ['Risque sanitaire pour le consommateur', 'Rappel de produits', 'Perte de lots'], graviteDefaut: 4 },
+      { description: 'Altération des recettes ou des dosages', impacts: ['Contamination / non-conformité', 'Risque sanitaire', 'Rappel de produits'], graviteDefaut: 4 },
+    ],
+    sourcesRisque: [
+      { nom: 'Rançongiciel ciblant l’agroalimentaire', categorie: 'CYBERCRIMINEL', description: 'Attaquants exploitant la criticité de la production et le caractère périssable des denrées pour maximiser la pression', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'D', nom: 'Arrêt de production par rançongiciel (D)', description: 'Un rançongiciel chiffre le MES/SCADA et bloque les lignes de production', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'I', nom: 'Sabotage des paramètres de production (I)', description: 'Un attaquant modifie les paramètres (température, dosage) compromettant la sécurité sanitaire', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+    ],
+  },
+}
+
+export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.

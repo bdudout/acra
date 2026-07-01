@@ -297,7 +297,7 @@ function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
   if (has('informatique', 'numérique', 'numerique', 'logiciel', 'saas', 'cloud', 'tech', 'digital')) return ['ISO27001', 'SOC2', 'NIST_SSDF', 'NIST_CSF', 'CIS_V8']
   if (has('éducation', 'education', 'recherche', 'université', 'universite', 'research')) return ['ISO27001', 'ANSSI_HYG']
   if (has('juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal', 'law firm')) return ['ANSSI_HYG', 'ISO27001']
-  if (has('agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'farming', 'agri-food')) return ['ANSSI_HYG', 'ISO27001']
+  if (has('agricol', 'agro', 'agriculture', 'élevage', 'elevage', 'farming', 'agri-food')) return ['IEC_62443', 'ANSSI_HYG', 'ISO27001']
   if (has('immobilier', 'construction', 'bâtiment', 'batiment', 'btp', 'real estate')) return ['ANSSI_HYG', 'ISO27001']
   if (has('média', 'media', 'presse', 'culture', 'audiovisuel', 'édition', 'edition')) return ['ANSSI_HYG', 'ISO27001']
   if (has('tourisme', 'hôtel', 'hotel', 'hôtellerie', 'hotellerie', 'restauration', 'tourism', 'hospitality')) return ['PCI_DSS', 'ISO27001']

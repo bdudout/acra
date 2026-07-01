@@ -103,7 +103,7 @@ export default function NewAnalysePage() {
               </div>
             )}
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
-            {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur)/i.test(form.secteur) && (
+            {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (
               <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
                 🏭 {t.newAnalysis.otNote}
               </div>

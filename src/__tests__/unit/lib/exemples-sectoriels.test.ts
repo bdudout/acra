@@ -212,6 +212,22 @@ describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
   })
 })
 
+describe('pack agroalimentaire (issue #89)', () => {
+  const SEC = 'Agriculture / Agroalimentaire'
+  it('propose des valeurs métier IAA (production / chaîne du froid)', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier')
+    expect(vm.length).toBeGreaterThan(0)
+    expect(vm.some(v => /froid|production|recette|traçabilité|tracabilite/i.test(`${v.nom} ${v.description}`))).toBe(true)
+  })
+  it('propose un bien support OT (SCADA/automates)', () => {
+    const bs = sectorExemplesFor(SEC, 'biensSupports')
+    expect(bs.some(b => /scada|automate|froid|mes/i.test(`${b.nom} ${b.description}`))).toBe(true)
+  })
+  it('traduit le pack en EN', () => {
+    expect(sectorExemplesFor(SEC, 'valeursMetier', 'en')[0].nom).toBe('Food production and processing')
+  })
+})
+
 describe('intégration : les exemples sectoriels remontent en tête via rankExemples', () => {
   it('santé : les valeurs métier sectorielles sont marquées pertinentes et en tête', () => {
     const generic = [
