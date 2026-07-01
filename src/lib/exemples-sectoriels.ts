@@ -98,18 +98,24 @@ const FINANCE: SectorFamily = {
       { nom: 'Passerelle SWIFT', type: 'RESEAU', description: 'Connexion au réseau interbancaire international de paiement' },
       { nom: 'Application de banque en ligne / mobile', type: 'LOGICIEL', description: 'Canaux digitaux d’accès des clients à leurs comptes' },
       { nom: 'Distributeurs automatiques (DAB / GAB)', type: 'MATERIEL', description: 'Terminaux de retrait et de dépôt en agence et hors site' },
+      // KYC/KYB — socle LCB-FT (issue #69)
+      { nom: 'Solution de vérification d’identité (KYC / KYB)', type: 'SOUS_TRAITANCE', description: 'Contrôle d’identité et de connaissance client/entreprise (Onfido, Jumio, Sumsub) — socle LCB-FT' },
     ],
     evenementsRedoutes: [
       { description: 'Détournement de virements ou fraude sur les paiements', impacts: ['Perte financière directe', 'Sanction réglementaire (DORA / ACPR)', 'Atteinte à la réputation'], graviteDefaut: 4 },
       { description: 'Indisponibilité de la banque en ligne et des paiements', impacts: ['Clients privés d’accès à leurs fonds', 'Sanction du régulateur', 'Perte de confiance'], graviteDefaut: 4 },
       { description: 'Fuite des données bancaires et personnelles des clients', impacts: ['Usurpation d’identité', 'Sanction RGPD', 'Préjudice client'], graviteDefaut: 4 },
+      // Fraude à l'identité / prêt frauduleux (issue #69)
+      { description: 'Usurpation d’identité pour un prêt frauduleux', impacts: ['Octroi de crédit à un fraudeur', 'Perte financière', 'Manquement LCB-FT / signalement TRACFIN'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
       { nom: 'Groupe spécialisé en fraude bancaire (type Carbanak)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels organisés ciblant les systèmes de paiement et SWIFT', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+      { nom: 'Fraudeur à l’identité (contournement KYC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur usurpant une identité (deepfake, faux documents) pour contourner le KYC et souscrire des produits', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
     ],
     scenariosStrategiques: [
       { critere: 'I', nom: 'Manipulation frauduleuse des virements (I)', description: 'Un attaquant détourne des ordres de paiement via la passerelle SWIFT', vraisemblanceDefaut: 2, graviteDefaut: 4 },
       { critere: 'D', nom: 'Indisponibilité des services de paiement (D)', description: 'Attaque rendant indisponibles la banque en ligne et les paiements', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'I', nom: 'Contournement du KYC pour un prêt frauduleux (I)', description: 'Un fraudeur déjoue la vérification d’identité (deepfake) pour souscrire un crédit', vraisemblanceDefaut: 3, graviteDefaut: 4 },
     ],
   },
 }

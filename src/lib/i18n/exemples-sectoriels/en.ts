@@ -597,6 +597,18 @@ const en: Record<string, string> = {
   "association.scenariosStrategiques.0.description": "An attacker exfiltrates the personal, sometimes sensitive, data of beneficiaries",
   "association.scenariosStrategiques.1.nom": "Diversion of the donation collection (I)",
   "association.scenariosStrategiques.1.description": "Compromise of the donation platform to divert payments",
+  "finance.biensSupports.4.nom": "Identity verification solution (KYC / KYB)",
+  "finance.biensSupports.4.description": "Customer/business identity and due-diligence checks (Onfido, Jumio, Sumsub) — AML foundation",
+  "finance.evenementsRedoutes.3.description": "Identity theft for a fraudulent loan",
+  "finance.evenementsRedoutes.3.impacts.0": "Credit granted to a fraudster",
+  "finance.evenementsRedoutes.3.impacts.1": "Financial loss",
+  "finance.evenementsRedoutes.3.impacts.2": "AML breach / suspicious activity report (FIU)",
+  "finance.sourcesRisque.1.nom": "Identity fraudster (KYC bypass)",
+  "finance.sourcesRisque.1.description": "Fraudster impersonating an identity (deepfake, forged documents) to bypass KYC and subscribe to products",
+  "finance.sourcesRisque.1.motivation": "Financial gain",
+  "finance.sourcesRisque.1.ressources": "Medium",
+  "finance.scenariosStrategiques.2.nom": "KYC bypass for a fraudulent loan (I)",
+  "finance.scenariosStrategiques.2.description": "A fraudster defeats identity verification (deepfake) to take out a loan",
 }
 
 export default en

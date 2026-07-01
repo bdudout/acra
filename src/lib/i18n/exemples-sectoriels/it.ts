@@ -596,6 +596,18 @@ const it: Record<string, string> = {
   "association.scenariosStrategiques.0.description": "Un attaccante esfiltra i dati personali, talvolta sensibili, dei beneficiari",
   "association.scenariosStrategiques.1.nom": "Deviazione della raccolta di donazioni (I)",
   "association.scenariosStrategiques.1.description": "Compromissione della piattaforma di donazioni per deviare i pagamenti",
+  "finance.biensSupports.4.nom": "Soluzione di verifica dell’identità (KYC / KYB)",
+  "finance.biensSupports.4.description": "Controllo di identità e adeguata verifica del cliente/impresa (Onfido, Jumio, Sumsub) — base dell’antiriciclaggio",
+  "finance.evenementsRedoutes.3.description": "Furto d’identità per un prestito fraudolento",
+  "finance.evenementsRedoutes.3.impacts.0": "Concessione di credito a un truffatore",
+  "finance.evenementsRedoutes.3.impacts.1": "Perdita finanziaria",
+  "finance.evenementsRedoutes.3.impacts.2": "Violazione antiriciclaggio / segnalazione di operazione sospetta (UIF)",
+  "finance.sourcesRisque.1.nom": "Truffatore d’identità (elusione del KYC)",
+  "finance.sourcesRisque.1.description": "Truffatore che usurpa un’identità (deepfake, documenti falsi) per eludere il KYC e sottoscrivere prodotti",
+  "finance.sourcesRisque.1.motivation": "Lucro",
+  "finance.sourcesRisque.1.ressources": "Medie",
+  "finance.scenariosStrategiques.2.nom": "Elusione del KYC per un prestito fraudolento (I)",
+  "finance.scenariosStrategiques.2.description": "Un truffatore aggira la verifica dell’identità (deepfake) per sottoscrivere un credito",
 }
 
 export default it

@@ -212,6 +212,15 @@ describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
   })
 })
 
+describe('pack finance — LCB-FT / KYC (issue #69)', () => {
+  it('propose le KYC/KYB et un scénario de fraude à l’identité', () => {
+    const bs = sectorExemplesFor('Banque / Finance', 'biensSupports')
+    const sc = sectorExemplesFor('Banque / Finance', 'scenariosStrategiques')
+    expect(bs.some(b => /kyc|kyb/i.test(`${b.nom} ${b.description}`))).toBe(true)
+    expect(sc.some(s => /kyc|prêt|pret|identité|identite/i.test(`${s.nom} ${s.description}`))).toBe(true)
+  })
+})
+
 describe('pack agroalimentaire (issue #89)', () => {
   const SEC = 'Agriculture / Agroalimentaire'
   it('propose des valeurs métier IAA (production / chaîne du froid)', () => {

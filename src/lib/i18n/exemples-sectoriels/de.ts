@@ -596,6 +596,18 @@ const de: Record<string, string> = {
   "association.scenariosStrategiques.0.description": "Ein Angreifer exfiltriert die personenbezogenen, teils sensiblen Daten der Begünstigten",
   "association.scenariosStrategiques.1.nom": "Umleitung der Spendensammlung (I)",
   "association.scenariosStrategiques.1.description": "Kompromittierung der Spendenplattform, um Zahlungen umzuleiten",
+  "finance.biensSupports.4.nom": "Lösung zur Identitätsprüfung (KYC / KYB)",
+  "finance.biensSupports.4.description": "Identitäts- und Sorgfaltsprüfung von Kunden/Unternehmen (Onfido, Jumio, Sumsub) — Grundlage der Geldwäschebekämpfung",
+  "finance.evenementsRedoutes.3.description": "Identitätsdiebstahl für einen betrügerischen Kredit",
+  "finance.evenementsRedoutes.3.impacts.0": "Kreditvergabe an einen Betrüger",
+  "finance.evenementsRedoutes.3.impacts.1": "Finanzieller Verlust",
+  "finance.evenementsRedoutes.3.impacts.2": "Verstoß gegen die Geldwäschebekämpfung / Verdachtsmeldung (FIU)",
+  "finance.sourcesRisque.1.nom": "Identitätsbetrüger (KYC-Umgehung)",
+  "finance.sourcesRisque.1.description": "Betrüger, der eine Identität vortäuscht (Deepfake, gefälschte Dokumente), um KYC zu umgehen und Produkte abzuschließen",
+  "finance.sourcesRisque.1.motivation": "Finanzieller Gewinn",
+  "finance.sourcesRisque.1.ressources": "Mittel",
+  "finance.scenariosStrategiques.2.nom": "KYC-Umgehung für einen betrügerischen Kredit (I)",
+  "finance.scenariosStrategiques.2.description": "Ein Betrüger überwindet die Identitätsprüfung (Deepfake), um einen Kredit aufzunehmen",
 }
 
 export default de
