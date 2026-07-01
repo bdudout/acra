@@ -35,7 +35,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -445,7 +445,153 @@ const AGRI: SectorFamily = {
   },
 }
 
-export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI]
+// ─── DÉFENSE / SÉCURITÉ NATIONALE (issue #83) ────────────────────────────────
+const DEFENSE: SectorFamily = {
+  key: 'defense',
+  match: ['défense', 'defense', 'militaire', 'armement', 'bitd', 'sécurité nationale', 'securite nationale', 'defence', 'army'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Informations classifiées de défense', type: 'INFORMATION', description: 'Données classifiées (Diffusion Restreinte, Secret) relatives aux programmes et opérations', responsable: 'Officier de sécurité', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Programmes et systèmes d’armes', type: 'PROCESSUS', description: 'Conception, développement et maintien en condition opérationnelle des systèmes de défense', responsable: 'Direction des programmes', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Chaîne d’approvisionnement de défense', type: 'PROCESSUS', description: 'Approvisionnement en composants et équipements critiques auprès de la BITD', responsable: 'Direction des achats', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+    ],
+    biensSupports: [
+      { nom: 'Réseau homologué / SI de souveraineté', type: 'RESEAU', description: 'Réseau homologué au traitement d’informations classifiées de défense' },
+      { nom: 'Systèmes embarqués et systèmes d’armes', type: 'MATERIEL', description: 'Calculateurs et logiciels embarqués des équipements militaires' },
+      { nom: 'Prestataire de la BITD', type: 'SOUS_TRAITANCE', description: 'Sous-traitant de la base industrielle et technologique de défense' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Exfiltration d’informations classifiées de défense', impacts: ['Atteinte à la souveraineté nationale', 'Avantage à un État adverse', 'Sanctions pénales'], graviteDefaut: 4 },
+      { description: 'Compromission d’un système d’armes', impacts: ['Perte de capacité opérationnelle', 'Risque pour la sécurité des forces'], graviteDefaut: 4 },
+    ],
+    sourcesRisque: [
+      { nom: 'Acteur étatique de cyberespionnage (APT)', categorie: 'ETAT_NATION', description: 'Acteur étatique ciblant les secrets de défense et la BITD', motivation: 'Espionnage / souveraineté', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'C', nom: 'Exfiltration de secrets de défense par un APT (C)', description: 'Un acteur étatique s’implante durablement pour exfiltrer des informations classifiées', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'I', nom: 'Sabotage d’un système d’armes via la supply chain (I)', description: 'Compromission d’un composant de la chaîne d’approvisionnement d’un système d’armes', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+    ],
+  },
+}
+
+// ─── IMMOBILIER / CONSTRUCTION (issue #83) ───────────────────────────────────
+const IMMOBILIER: SectorFamily = {
+  key: 'immobilier',
+  match: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp', 'promoteur', 'real estate', 'foncier', 'syndic'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Gestion locative et transactions', type: 'PROCESSUS', description: 'Baux, mandats, transactions et états des lieux', responsable: 'Direction de l’agence', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Données personnelles des clients', type: 'INFORMATION', description: 'Pièces d’identité, données bancaires et dossiers des locataires et acquéreurs', responsable: 'DPO / direction', disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Maquette numérique du bâtiment (BIM)', type: 'INFORMATION', description: 'Plans, maquettes BIM et données techniques des ouvrages', responsable: 'Direction technique', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+    ],
+    biensSupports: [
+      { nom: 'Logiciel de gestion immobilière / transaction', type: 'LOGICIEL', description: 'Application métier de gestion locative, syndic ou transaction' },
+      { nom: 'Plateforme de signature électronique', type: 'LOGICIEL', description: 'Signature des baux et compromis de vente à distance' },
+      { nom: 'Prestataire de gestion des paiements', type: 'SOUS_TRAITANCE', description: 'Encaissement des loyers et gestion des séquestres' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Fraude au virement lors d’une transaction immobilière', impacts: ['Perte des fonds (prix de vente)', 'Mise en cause de responsabilité', 'Atteinte à la réputation'], graviteDefaut: 4 },
+      { description: 'Fuite de données personnelles des clients', impacts: ['Sanction CNIL (RGPD)', 'Usurpation d’identité des clients', 'Perte de confiance'], graviteDefaut: 3 },
+    ],
+    sourcesRisque: [
+      { nom: 'Escroc au faux ordre de virement (BEC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur interceptant les échanges pour détourner les fonds d’une transaction', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 4, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'I', nom: 'Fraude au virement (BEC) sur une vente (I)', description: 'Un escroc substitue un faux RIB dans les échanges pour détourner le versement', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Rançongiciel bloquant la gestion locative (D)', description: 'Un rançongiciel chiffre le SI de gestion et interrompt l’activité', vraisemblanceDefaut: 3, graviteDefaut: 3 },
+    ],
+  },
+}
+
+// ─── MÉDIAS / CULTURE (issue #83) ────────────────────────────────────────────
+const MEDIA: SectorFamily = {
+  key: 'media',
+  match: ['média', 'media', 'presse', 'audiovisuel', 'édition', 'edition', 'journal', 'culture', 'diffusion', 'streaming', 'radio', 'télévision', 'television'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Production et diffusion de contenus', type: 'PROCESSUS', description: 'Chaîne de production, montage et diffusion des contenus éditoriaux', responsable: 'Direction de la rédaction', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 3 },
+      { nom: 'Protection des sources journalistiques', type: 'INFORMATION', description: 'Identité et échanges des sources, protégés par le secret des sources', responsable: 'Rédaction', disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Catalogue de contenus et droits', type: 'INFORMATION', description: 'Œuvres, droits de diffusion et données d’abonnés', responsable: 'Direction des contenus', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+    ],
+    biensSupports: [
+      { nom: 'Système de gestion de contenu (CMS / MAM)', type: 'LOGICIEL', description: 'Gestion des contenus éditoriaux et des médias (Media Asset Management)' },
+      { nom: 'Chaîne de diffusion / streaming', type: 'RESEAU', description: 'Infrastructure de diffusion en direct et à la demande' },
+      { nom: 'Plateforme d’abonnés', type: 'LOGICIEL', description: 'Gestion des abonnements et des données d’audience' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Défiguration du site ou détournement de l’antenne', impacts: ['Atteinte à la crédibilité', 'Diffusion de fausses informations', 'Atteinte à la réputation'], graviteDefaut: 4 },
+      { description: 'Compromission des sources journalistiques', impacts: ['Violation du secret des sources', 'Mise en danger des sources', 'Sanction déontologique'], graviteDefaut: 4 },
+      { description: 'Interruption de la diffusion', impacts: ['Perte d’audience', 'Perte de revenus publicitaires'], graviteDefaut: 3 },
+    ],
+    sourcesRisque: [
+      { nom: 'Groupe hacktiviste / de désinformation', categorie: 'ACTIVISTE', description: 'Acteur cherchant à défigurer, censurer ou diffuser de la désinformation', motivation: 'Idéologique', ressources: 'Moyennes', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'I', nom: 'Défiguration ou détournement de l’antenne (I)', description: 'Un hacktiviste compromet le CMS ou la chaîne de diffusion pour diffuser un message', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'C', nom: 'Exfiltration visant les sources journalistiques (C)', description: 'Un attaquant cible les échanges de la rédaction pour identifier des sources', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+    ],
+  },
+}
+
+// ─── TOURISME / HÔTELLERIE-RESTAURATION (issue #83) ──────────────────────────
+const TOURISME: SectorFamily = {
+  key: 'tourisme',
+  match: ['tourisme', 'hôtel', 'hotel', 'hôtellerie', 'hotellerie', 'restauration', 'restaurant', 'voyage', 'hospitality', 'camping'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Réservations et séjours clients', type: 'PROCESSUS', description: 'Gestion des réservations, check-in/out et facturation des séjours', responsable: 'Direction de l’établissement', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Données personnelles et de paiement des clients', type: 'INFORMATION', description: 'Coordonnées, préférences et données de carte des clients', responsable: 'Direction / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Programme de fidélité', type: 'INFORMATION', description: 'Comptes fidélité et historique des clients', responsable: 'Direction marketing', disponibilite: 2, integrite: 3, confidentialite: 3, tracabilite: 3 },
+    ],
+    biensSupports: [
+      { nom: 'Système de gestion hôtelière (PMS)', type: 'LOGICIEL', description: 'Property Management System : réservations, chambres, facturation' },
+      { nom: 'Terminaux et système de paiement', type: 'MATERIEL', description: 'TPE et système d’encaissement traitant les données de carte' },
+      { nom: 'Plateforme de réservation en ligne (OTA)', type: 'SOUS_TRAITANCE', description: 'Canaux de distribution et agrégateurs de réservation' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Vol des données de carte des clients', impacts: ['Fraude à la carte bancaire', 'Sanction PCI-DSS / CNIL', 'Atteinte à la réputation'], graviteDefaut: 4 },
+      { description: 'Indisponibilité du système de réservation', impacts: ['Perte de chiffre d’affaires', 'Impossibilité d’accueillir les clients'], graviteDefaut: 3 },
+    ],
+    sourcesRisque: [
+      { nom: 'Cybercriminel ciblant les données de paiement', categorie: 'CYBERCRIMINEL', description: 'Attaquant visant les données de carte via le PMS ou les terminaux de paiement', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'C', nom: 'Vol de données de carte via le PMS (C)', description: 'Un attaquant exfiltre les données de carte stockées ou en transit', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Rançongiciel bloquant l’établissement (D)', description: 'Un rançongiciel chiffre le PMS et bloque l’accueil et la facturation', vraisemblanceDefaut: 3, graviteDefaut: 3 },
+    ],
+  },
+}
+
+// ─── ASSOCIATIONS / ESS (issue #83) ──────────────────────────────────────────
+const ASSOCIATION: SectorFamily = {
+  key: 'association',
+  match: ['association', 'économie sociale', 'economie sociale', 'ess', 'ong', 'fondation', 'non-profit', 'nonprofit', 'caritati', 'bénévol', 'benevol', 'mutuelle solidaire'],
+  exemples: {
+    valeursMetier: [
+      { nom: 'Gestion des adhérents et donateurs', type: 'PROCESSUS', description: 'Adhésions, dons et relation avec les membres', responsable: 'Bureau / trésorier', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Données personnelles des bénéficiaires', type: 'INFORMATION', description: 'Données parfois sensibles des personnes accompagnées', responsable: 'Direction / DPO', disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Collecte de dons en ligne', type: 'PROCESSUS', description: 'Campagnes de collecte et paiements des donateurs', responsable: 'Direction / trésorier', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4 },
+    ],
+    biensSupports: [
+      { nom: 'Logiciel de gestion associative / CRM', type: 'LOGICIEL', description: 'Gestion des adhérents, dons et campagnes' },
+      { nom: 'Plateforme de collecte de dons en ligne', type: 'SOUS_TRAITANCE', description: 'Prestataire de paiement et de collecte (HelloAsso, etc.)' },
+      { nom: 'Site web et réseaux sociaux', type: 'RESEAU', description: 'Présence en ligne et communication de l’association' },
+    ],
+    evenementsRedoutes: [
+      { description: 'Fuite de données des bénéficiaires', impacts: ['Atteinte à la vie privée de personnes vulnérables', 'Sanction CNIL (RGPD)', 'Perte de confiance des donateurs'], graviteDefaut: 4 },
+      { description: 'Détournement des dons / fraude', impacts: ['Perte financière', 'Atteinte à la réputation et à la confiance'], graviteDefaut: 3 },
+    ],
+    sourcesRisque: [
+      { nom: 'Cybercriminel opportuniste', categorie: 'CYBERCRIMINEL', description: 'Attaquant exploitant les faibles moyens de sécurité des associations', motivation: 'Lucratif', ressources: 'Faibles', pertinenceDefaut: 3, motivationScoreDefaut: 3, ressourcesScoreDefaut: 1, activiteScoreDefaut: 3 },
+    ],
+    scenariosStrategiques: [
+      { critere: 'C', nom: 'Fuite de données des bénéficiaires (C)', description: 'Un attaquant exfiltre les données personnelles, parfois sensibles, des bénéficiaires', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'I', nom: 'Détournement de la collecte de dons (I)', description: 'Compromission de la plateforme de dons pour détourner les paiements', vraisemblanceDefaut: 2, graviteDefaut: 3 },
+    ],
+  },
+}
+
+export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.

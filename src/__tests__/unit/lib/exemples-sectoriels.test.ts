@@ -228,6 +228,30 @@ describe('pack agroalimentaire (issue #89)', () => {
   })
 })
 
+describe('packs des secteurs précédemment non couverts (issue #83)', () => {
+  const cas: [string, RegExp][] = [
+    ['Défense / Sécurité nationale', /classifié|classifie|armes|BITD|souveraineté|souverainete/i],
+    ['Immobilier / Construction', /locati|bail|BIM|virement|immobili/i],
+    ['Médias / Culture', /contenu|source|diffusion|antenne|CMS/i],
+    ['Tourisme / Hôtellerie-restauration', /réservation|reservation|PMS|carte|séjour|sejour/i],
+    ['Associations / ESS', /adhérent|adherent|don|bénéficiaire|beneficiaire/i],
+  ]
+  it('chaque secteur ajouté renvoie des exemples pertinents', () => {
+    for (const [sec, re] of cas) {
+      const vm = sectorExemplesFor(sec, 'valeursMetier')
+      expect(vm.length).toBeGreaterThan(0)
+      const txt = vm.map(v => `${v.nom} ${v.description}`).join(' ')
+      expect(re.test(txt)).toBe(true)
+    }
+  })
+  it('sont traduits (EN ≠ FR)', () => {
+    for (const [sec] of cas) {
+      expect(sectorExemplesFor(sec, 'valeursMetier', 'en')[0].nom)
+        .not.toBe(sectorExemplesFor(sec, 'valeursMetier', 'fr')[0].nom)
+    }
+  })
+})
+
 describe('intégration : les exemples sectoriels remontent en tête via rankExemples', () => {
   it('santé : les valeurs métier sectorielles sont marquées pertinentes et en tête', () => {
     const generic = [
