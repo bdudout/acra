@@ -55,6 +55,24 @@ const STATUT_REGLEMENTAIRE_OPTIONS: QualificationOption[] = [
   { value: 'OIV' },   // Opérateur d'importance vitale (LPM)
 ]
 
+// Filières OIV (secteurs d'activité d'importance vitale, SGDSN) — champ OPTIONNEL
+// affiché uniquement si statutReglementaire = OIV, pour pointer vers l'arrêté SIIV
+// et le HFDS compétents (issue #80). Hors questionnaire de complétude.
+export const FILIERE_OIV_OPTIONS: QualificationOption[] = [
+  { value: 'civil' },        // Activités civiles de l'État
+  { value: 'judiciaire' },   // Activités judiciaires
+  { value: 'militaire' },    // Activités militaires de l'État
+  { value: 'alimentation' }, // Alimentation
+  { value: 'communication' },// Communications électroniques, audiovisuel et information
+  { value: 'energie' },      // Énergie
+  { value: 'espace' },       // Espace et recherche
+  { value: 'finances' },     // Finances
+  { value: 'eau' },          // Gestion de l'eau
+  { value: 'industrie' },    // Industrie
+  { value: 'sante' },        // Santé
+  { value: 'transports' },   // Transports
+]
+
 /** Questionnaire de qualification standard (libellés via i18n). */
 export const QUALIFICATION_QUESTIONS: QualificationQuestion[] = [
   { id: 'externalisation', type: 'bool' },
@@ -83,6 +101,9 @@ export function sanitizeQualification(answers: unknown): QualificationAnswers {
       if (typeof v === 'string' && (q.options ?? []).some(o => o.value === v)) out[q.id] = v
     }
   }
+  // Champ optionnel hors questionnaire : filière OIV (issue #80)
+  const fil = src.filiereOiv
+  if (typeof fil === 'string' && FILIERE_OIV_OPTIONS.some(o => o.value === fil)) out.filiereOiv = fil
   return out
 }
 

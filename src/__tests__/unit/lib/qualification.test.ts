@@ -100,6 +100,15 @@ describe('sanitizeQualification', () => {
     expect(clean).toHaveProperty('criticite', 'eleve')
   })
 
+  it('conserve une filière OIV valide, rejette une invalide (issue #80)', () => {
+    expect(sanitizeQualification({ filiereOiv: 'energie' })).toHaveProperty('filiereOiv', 'energie')
+    expect(sanitizeQualification({ filiereOiv: 'xxx' } as any)).not.toHaveProperty('filiereOiv')
+  })
+  it('la filière OIV n’entre pas dans la complétude du questionnaire', () => {
+    const full: any = { externalisation: true, criticite: 'modere', donneesPersonnelles: false, expositionInternet: true, reglementation: false, statutReglementaire: 'OIV', systemeIndustriel: false }
+    expect(isQualificationComplete(full)).toBe(true) // sans filiereOiv
+  })
+
   it('renvoie un objet vide pour une entrée non-objet', () => {
     expect(sanitizeQualification(null)).toEqual({})
     expect(sanitizeQualification('x' as any)).toEqual({})

@@ -1763,6 +1763,8 @@ export const it: Translations = {
     },
     criticiteOptions: { faible: 'Bassa', modere: 'Moderata', eleve: 'Alta' },
     statutOptions: { aucun: 'Nessuno / non interessato', OSE: 'OSE — operatore di servizi essenziali', EEI: 'Soggetto essenziale o importante (NIS2)', OIV: 'Operatore di importanza vitale (OIV)' },
+    filiereOivLabel: 'Settore OIV (settore di importanza vitale)',
+    filieresOiv: { civil: 'Attività civili dello Stato', judiciaire: 'Attività giudiziarie', militaire: 'Attività militari dello Stato', alimentation: 'Alimentazione', communication: 'Comunicazioni elettroniche, audiovisivo, informazione', energie: 'Energia', espace: 'Spazio e ricerca', finances: 'Finanze', eau: "Gestione dell'acqua", industrie: 'Industria', sante: 'Salute', transports: 'Trasporti' },
     orientations: {
       ECOSYSTEME:          "L'ecosistema e le parti interessate (workshop 3) — rischi legati all'esternalizzazione.",
       CONFIDENTIALITE:     'La riservatezza dei dati — eventi temuti e impatti (workshop 1).',

@@ -1763,6 +1763,8 @@ export const de: Translations = {
     },
     criticiteOptions: { faible: 'Gering', modere: 'Mäßig', eleve: 'Hoch' },
     statutOptions: { aucun: 'Keiner / nicht betroffen', OSE: 'Betreiber wesentlicher Dienste (OES)', EEI: 'Wesentliche oder wichtige Einrichtung (NIS2)', OIV: 'Betreiber von vitaler Bedeutung (OIV)' },
+    filiereOivLabel: 'OIV-Sektor (Sektor von vitaler Bedeutung)',
+    filieresOiv: { civil: 'Zivile Tätigkeiten des Staates', judiciaire: 'Justizielle Tätigkeiten', militaire: 'Militärische Tätigkeiten des Staates', alimentation: 'Ernährung', communication: 'Elektronische Kommunikation, Audiovisuelles, Information', energie: 'Energie', espace: 'Raumfahrt und Forschung', finances: 'Finanzen', eau: 'Wasserwirtschaft', industrie: 'Industrie', sante: 'Gesundheit', transports: 'Verkehr' },
     orientations: {
       ECOSYSTEME:          'Das Ökosystem und die Stakeholder (Workshop 3) — Risiken im Zusammenhang mit der Auslagerung.',
       CONFIDENTIALITE:     'Die Vertraulichkeit der Daten — befürchtete Ereignisse und Auswirkungen (Workshop 1).',

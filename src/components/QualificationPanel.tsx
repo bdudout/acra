@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import {
   QUALIFICATION_QUESTIONS,
+  FILIERE_OIV_OPTIONS,
   deriveOrientations,
   isQualificationComplete,
   type QualificationAnswers,
@@ -156,6 +157,28 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true 
             )}
           </div>
         ))}
+
+        {/* Filière OIV (optionnelle) — affichée seulement si statut = OIV (issue #80) */}
+        {answers.statutReglementaire === 'OIV' && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-gray-100">
+            <label className="text-sm text-gray-700 sm:max-w-[60%]">{t.qualification.filiereOivLabel}</label>
+            <div className="flex gap-2 flex-wrap">
+              {FILIERE_OIV_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => setAnswer('filiereOiv', opt.value)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                    answers.filiereOiv === opt.value ? 'bg-ebios-600 text-white border-ebios-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {(t.qualification.filieresOiv as Record<string, string>)[opt.value] ?? opt.value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Orientations dérivées */}
