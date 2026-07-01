@@ -1347,5 +1347,14 @@ const dict: Record<string, string> = {
   "NIST_800_53_CONTROLES.SR-3.description": "Stabilire un piano e controlli per gestire i rischi della catena di fornitura.",
   "NIST_800_53_CONTROLES.SR-6.nom": "Valutazione dei fornitori e revisione delle prestazioni",
   "NIST_800_53_CONTROLES.SR-6.description": "Valutare le pratiche dei fornitori secondo la politica di gestione dei rischi della catena di fornitura.",
+  "SOURCES_RISQUE_EXEMPLES.8.nom": "Uso improprio dell’IA generativa (IA malevola)",
+  "SOURCES_RISQUE_EXEMPLES.8.description": "Attore che sfrutta l’IA generativa: phishing e deepfake molto convincenti, malware assistito da IA, prompt injection contro le IA dell’organizzazione",
+  "SOURCES_RISQUE_EXEMPLES.8.motivation": "Lucro, manipolazione, disinformazione",
+  "SOURCES_RISQUE_EXEMPLES.8.ressources": "Strumenti di IA ampiamente accessibili, costo d’attacco ridotto",
+  "EVENEMENTS_REDOUTES_EXEMPLES.10.description": "Fuga di dati tramite IA generativa (Shadow AI)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.nom": "Fuga di dati tramite IA generativa (Shadow AI) (C)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.description": "I collaboratori inseriscono dati riservati in un’IA generativa pubblica, causandone la divulgazione al di fuori del perimetro controllato.",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "Spear phishing assistito da IA / deepfake (I)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "Un attaccante genera e-mail molto convincenti e un deepfake vocale o video per ingannare un collaboratore e ottenere un bonifico o accessi.",
 }
 export default dict

@@ -226,6 +226,11 @@ export const EVENEMENTS_REDOUTES_EXEMPLES = [
     impacts: ['Violation secret médical', 'Sanctions CNIL', 'Perte de confiance des patients'],
     graviteDefaut: 4,
   },
+  {
+    description: 'Fuite de données via une IA générative (Shadow AI)',
+    impacts: ['Divulgation de données confidentielles saisies dans un LLM public', 'Perte de propriété intellectuelle', 'Non-conformité RGPD'],
+    graviteDefaut: 3,
+  },
 ]
 
 export const NIVEAUX_GRAVITE = [
@@ -391,6 +396,20 @@ export const SCENARIOS_STRATEGIQUES_EXEMPLES = [
     vraisemblanceDefaut: 2,
     graviteDefaut: 3,
   },
+  {
+    critere: 'C',
+    nom: 'Fuite de données via une IA générative (Shadow AI) (C)',
+    description: 'Des collaborateurs saisissent des données confidentielles dans une IA générative publique, entraînant leur divulgation hors du périmètre maîtrisé.',
+    vraisemblanceDefaut: 3,
+    graviteDefaut: 3,
+  },
+  {
+    critere: 'I',
+    nom: 'Hameçonnage ciblé assisté par IA / deepfake (I)',
+    description: 'Un attaquant génère des courriels et un deepfake vocal ou vidéo très crédibles pour tromper un collaborateur et obtenir un virement ou des accès.',
+    vraisemblanceDefaut: 3,
+    graviteDefaut: 4,
+  },
 ]
 
 // ─── Atelier 1 : Socle de sécurité (référentiels) ────────────────────────────
@@ -484,6 +503,15 @@ export const SOURCES_RISQUE_EXEMPLES = [
     ressources: 'Variables, généralement limités techniquement',
     pertinenceDefaut: 1,
     motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 1,
+  },
+  {
+    nom: 'Détournement de l\'IA générative (IA malveillante)',
+    categorie: 'CYBERCRIMINEL',
+    description: 'Acteur exploitant l\'IA générative : hameçonnage et deepfakes très crédibles, code malveillant assisté, injection de requêtes (prompt injection) contre les IA de l\'organisation',
+    motivation: 'Gain financier, manipulation, désinformation',
+    ressources: 'Outils d\'IA largement accessibles, coût d\'attaque abaissé',
+    pertinenceDefaut: 3,
+    motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 4,
   },
 ]
 

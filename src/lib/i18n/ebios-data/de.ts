@@ -1347,5 +1347,14 @@ const dict: Record<string, string> = {
   "NIST_800_53_CONTROLES.SR-3.description": "Einen Plan und Kontrollen zur Steuerung von Lieferkettenrisiken einrichten.",
   "NIST_800_53_CONTROLES.SR-6.nom": "Bewertung der Lieferanten und Leistungsüberprüfung",
   "NIST_800_53_CONTROLES.SR-6.description": "Die Praktiken der Lieferanten gemäß der Richtlinie für das Lieferkettenrisikomanagement bewerten.",
+  "SOURCES_RISQUE_EXEMPLES.8.nom": "Missbrauch generativer KI (bösartige KI)",
+  "SOURCES_RISQUE_EXEMPLES.8.description": "Akteur, der generative KI ausnutzt: sehr überzeugendes Phishing und Deepfakes, KI-gestützte Malware, Prompt Injection gegen die KIs der Organisation",
+  "SOURCES_RISQUE_EXEMPLES.8.motivation": "Finanzieller Gewinn, Manipulation, Desinformation",
+  "SOURCES_RISQUE_EXEMPLES.8.ressources": "Weit verfügbare KI-Werkzeuge, gesenkte Angriffskosten",
+  "EVENEMENTS_REDOUTES_EXEMPLES.10.description": "Datenabfluss über generative KI (Shadow AI)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.nom": "Datenabfluss über generative KI (Shadow AI) (C)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.description": "Mitarbeiter geben vertrauliche Daten in eine öffentliche generative KI ein, was zu deren Offenlegung außerhalb des kontrollierten Perimeters führt.",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "KI-gestütztes Spear-Phishing / Deepfake (I)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "Ein Angreifer erzeugt sehr überzeugende E-Mails und einen Stimm- oder Video-Deepfake, um einen Mitarbeiter zu einer Überweisung oder Zugriffsgewährung zu verleiten.",
 }
 export default dict
