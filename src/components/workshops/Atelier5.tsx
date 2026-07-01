@@ -189,6 +189,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire, analyse?.secteur)
   // Opportunités d'usage du rapport (DORA art. 8 / homologation SSI) — issues #70/#74
   const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur)
+  // Ressource sectorielle : rapport ANSSI « cabinets d'avocats » (issue #57)
+  const isJuridique = /juridique|avocat|barreau|legal/i.test(analyse?.secteur || '')
 
   function addRisque(fromScenario?: any) {
     const id = uid()
@@ -625,6 +627,15 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                   <li key={id} className="text-sm text-emerald-800">{(t.workshop.a5.usage as Record<string, string>)[id]}</li>
                 ))}
               </ul>
+            </div>
+          )}
+          {isJuridique && (
+            <div className="bg-sky-50 border border-sky-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-sky-900">📚 {t.workshop.a5.resJuridiqueTitle}</p>
+              <p className="text-sm text-sky-800 mt-1">{t.workshop.a5.resJuridiqueText}</p>
+              <a href="https://cyber.gouv.fr/publications" target="_blank" rel="noopener noreferrer" className="text-sm text-sky-700 underline font-medium mt-1 inline-block">
+                cyber.gouv.fr/publications ↗
+              </a>
             </div>
           )}
           <div className="card p-5">

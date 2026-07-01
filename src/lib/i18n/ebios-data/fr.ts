@@ -1375,6 +1375,7 @@ const dict: Record<string, string> = {
   "SOUS_SECTEURS.sante-hopital.label": "Établissement hospitalier (CHU / CH)",
   "SOUS_SECTEURS.sante-labo.label": "Laboratoire de biologie médicale",
   "SOUS_SECTEURS.sante-pharma.label": "Pharmacie / officine",
+  "SOUS_SECTEURS.sante-veterinaire.label": "Clinique vétérinaire / santé animale",
   "STRATEGIES_TRAITEMENT.ACCEPTER.conseil": "À réserver aux risques résiduels faibles ou négligeables après traitement",
   "STRATEGIES_TRAITEMENT.ACCEPTER.description": "Accepter le risque tel quel, en connaissance de cause",
   "STRATEGIES_TRAITEMENT.ACCEPTER.label": "Accepter",

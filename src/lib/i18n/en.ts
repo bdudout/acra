@@ -1600,6 +1600,8 @@ export const en: Translations = {
         doraArt8: 'This report constitutes the ICT risk assessment documentation required by Article 8 of the DORA Regulation (EU 2022/2554), to be updated annually.',
         homologationSSI: 'This report can serve as the risk-analysis report of your security accreditation file (PSSIE / RGS, and IGI 1300 for sensitive systems).',
       },
+      resJuridiqueTitle: 'Sector resource — legal professions',
+      resJuridiqueText: "See ANSSI's report on the cybersecurity of law firms (threats and concrete recommendations) to enrich your action plan.",
       nis2Title:       'NIS2 Art. 21 coverage',
       nis2Intro:       'Indicative mapping: minimum NIS2 measures (Art. 21(2)) covered by this framework. Useful for essential/important entities.',
       frameworkAddDesc: 'Click a control to add it to the treatment plan. The reference is included in the name.',

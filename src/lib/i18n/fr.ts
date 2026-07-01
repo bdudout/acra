@@ -1605,6 +1605,8 @@ export const fr = {
         doraArt8: 'Ce rapport constitue la documentation de l’évaluation des risques liés aux TIC requise par l’article 8 du règlement DORA (UE 2022/2554), à mettre à jour annuellement.',
         homologationSSI: 'Ce rapport peut constituer le rapport d’analyse de risques de votre dossier d’homologation de sécurité (PSSIE / RGS, et IGI 1300 pour les SI sensibles).',
       },
+      resJuridiqueTitle: 'Ressource sectorielle — professions du droit',
+      resJuridiqueText: "Consultez le rapport de l'ANSSI sur la cybersécurité des cabinets d'avocats (menaces et recommandations concrètes) pour enrichir votre plan de mesures.",
       nis2Title:       'Couverture NIS2 Art. 21',
       nis2Intro:       'Mapping indicatif : mesures minimales NIS2 (Art. 21 §2) couvertes par ce référentiel. Utile pour les entités essentielles/importantes (EEI/OSE).',
       frameworkAddDesc:"Cliquez sur un contrôle pour l'ajouter au plan de traitement. La référence est incluse dans le nom.",

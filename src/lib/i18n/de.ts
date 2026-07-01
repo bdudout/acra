@@ -1600,6 +1600,8 @@ export const de: Translations = {
         doraArt8: 'Dieser Bericht stellt die nach Artikel 8 der DORA-Verordnung (EU 2022/2554) geforderte Dokumentation der IKT-Risikobewertung dar und ist jährlich zu aktualisieren.',
         homologationSSI: 'Dieser Bericht kann als Risikoanalysebericht Ihrer Sicherheitsakkreditierung dienen (PSSIE / RGS, und IGI 1300 für sensible Systeme).',
       },
+      resJuridiqueTitle: 'Sektorressource — Rechtsberufe',
+      resJuridiqueText: 'Konsultieren Sie den ANSSI-Bericht zur Cybersicherheit von Anwaltskanzleien (Bedrohungen und konkrete Empfehlungen), um Ihren Maßnahmenplan zu ergänzen.',
       nis2Title:       'NIS2-Abdeckung (Art. 21)',
       nis2Intro:       'Indikatives Mapping: durch dieses Rahmenwerk abgedeckte NIS2-Mindestmaßnahmen (Art. 21 Abs. 2). Nützlich für wesentliche/wichtige Einrichtungen.',
       frameworkAddDesc: 'Klicken Sie auf ein Steuerelement, um es dem Behandlungsplan hinzuzufügen. Die Referenz ist im Namen enthalten.',

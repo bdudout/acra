@@ -1356,5 +1356,6 @@ const dict: Record<string, string> = {
   "SCENARIOS_STRATEGIQUES_EXEMPLES.11.description": "Employees enter confidential data into a public generative AI, leading to its disclosure outside the controlled perimeter.",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "AI-assisted spear phishing / deepfake (I)",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "An attacker generates highly convincing emails and a voice or video deepfake to trick an employee into a transfer or into granting access.",
+  "SOUS_SECTEURS.sante-veterinaire.label": "Veterinary clinic / animal health",
 }
 export default dict

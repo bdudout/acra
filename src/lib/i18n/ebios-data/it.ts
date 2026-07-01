@@ -1356,5 +1356,6 @@ const dict: Record<string, string> = {
   "SCENARIOS_STRATEGIQUES_EXEMPLES.11.description": "I collaboratori inseriscono dati riservati in un’IA generativa pubblica, causandone la divulgazione al di fuori del perimetro controllato.",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "Spear phishing assistito da IA / deepfake (I)",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "Un attaccante genera e-mail molto convincenti e un deepfake vocale o video per ingannare un collaboratore e ottenere un bonifico o accessi.",
+  "SOUS_SECTEURS.sante-veterinaire.label": "Clinica veterinaria / salute animale",
 }
 export default dict
