@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { regulatoryObligations, suggestsComplianceModule, reportUsageNotes } from '@/lib/regulatory-guidance'
+import { regulatoryObligations, suggestsComplianceModule, reportUsageNotes, nis2Classification, doraPrevailsOverNis2 } from '@/lib/regulatory-guidance'
 
 // Obligations réglementaires différenciées selon le statut (issue #68).
 
@@ -67,5 +67,39 @@ describe('reportUsageNotes (issues #70/#74)', () => {
   it('ni DORA ni public → aucune note', () => {
     expect(reportUsageNotes(['ISO27001'], 'Tourisme / Hôtellerie-restauration')).toEqual([])
     expect(reportUsageNotes(undefined, null)).toEqual([])
+  })
+})
+
+describe('nis2Classification (issues #85/#92)', () => {
+  it('secteurs Annexe I → entité essentielle', () => {
+    for (const s of ['Administration publique', 'Banque / Finance', 'Énergie / Utilities',
+      'Santé / Médico-social', 'Télécommunications', 'Transports / Logistique', 'Eau / Assainissement',
+      'Informatique / Numérique']) {
+      expect(nis2Classification(s)).toBe('essentielle')
+    }
+  })
+  it('secteurs Annexe II → entité importante', () => {
+    for (const s of ['Industrie / Manufacturing', 'Agriculture / Agroalimentaire',
+      'E-commerce / Marketplace', 'Éducation / Recherche']) {
+      expect(nis2Classification(s)).toBe('importante')
+    }
+  })
+  it('hors périmètre NIS2 → null (défense exclue, commerce, juridique, immobilier…)', () => {
+    for (const s of ['Défense / Sécurité nationale', 'Commerce / Distribution',
+      "Professions juridiques / Cabinet d'avocats", 'Immobilier / Construction',
+      'Médias / Culture', 'Tourisme / Hôtellerie-restauration', 'Associations / ESS', 'Autre', '']) {
+      expect(nis2Classification(s)).toBeNull()
+    }
+  })
+})
+
+describe('doraPrevailsOverNis2 (issue #84)', () => {
+  it('vrai pour le secteur financier', () => {
+    expect(doraPrevailsOverNis2('Banque / Finance')).toBe(true)
+    expect(doraPrevailsOverNis2('Assurance')).toBe(true)
+  })
+  it('faux hors finance', () => {
+    expect(doraPrevailsOverNis2('Santé / Médico-social')).toBe(false)
+    expect(doraPrevailsOverNis2(null)).toBe(false)
   })
 })

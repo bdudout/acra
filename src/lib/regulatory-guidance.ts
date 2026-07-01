@@ -46,6 +46,48 @@ export function reportUsageNotes(frameworks?: string[] | null, secteur?: string 
   return notes
 }
 
+// NIS2 — Annexe I (haute criticité → entité essentielle) et Annexe II (autres
+// secteurs critiques → entité importante). La défense/sécurité nationale est
+// EXCLUE du champ NIS2. Matching par mots-clés (secteur stocké localisé).
+const NIS2_ESSENTIELLE_KW = [
+  'administration', 'public', 'collectivit', 'état', 'etat', 'government',
+  'banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech',
+  'énergie', 'energie', 'utilities', 'energy', 'eau', 'assainissement', 'water',
+  'santé', 'sante', 'médico', 'medico', 'hospital', 'health',
+  'télécom', 'telecom', 'communication',
+  'transport', 'logistique', 'logistics',
+  'informatique', 'numérique', 'numerique', 'digital', 'cloud', 'saas',
+]
+const NIS2_IMPORTANTE_KW = [
+  'industrie', 'manufactur', 'usine', 'industry',
+  'agro', 'agricol', 'aliment', 'food',
+  'e-commerce', 'ecommerce', 'marketplace',
+  'recherche', 'research',
+  'poste', 'postal', 'déchet', 'dechet', 'waste', 'chimie', 'chemical',
+]
+// Secteurs explicitement HORS NIS2 (priment sur le matching par mots-clés).
+const NIS2_EXCLUS_KW = ['défense', 'defense', 'militaire', 'defence', 'sécurité nationale', 'securite nationale']
+
+/**
+ * Statut NIS2 probable de l'entité selon son secteur (issues #85/#92) :
+ * 'essentielle' (Annexe I), 'importante' (Annexe II) ou null (hors NIS2).
+ * Pur, testé. Ne présume pas de la taille (à confirmer par l'utilisateur).
+ */
+export function nis2Classification(secteur?: string | null): 'essentielle' | 'importante' | null {
+  const s = (secteur ?? '').toLowerCase()
+  if (!s) return null
+  if (NIS2_EXCLUS_KW.some(k => s.includes(k))) return null
+  if (NIS2_ESSENTIELLE_KW.some(k => s.includes(k))) return 'essentielle'
+  if (NIS2_IMPORTANTE_KW.some(k => s.includes(k))) return 'importante'
+  return null
+}
+
+/** DORA prime sur NIS2 (lex specialis) pour les entités financières (issue #84). */
+export function doraPrevailsOverNis2(secteur?: string | null): boolean {
+  const s = (secteur ?? '').toLowerCase()
+  return ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech'].some(k => s.includes(k))
+}
+
 export function regulatoryObligations(statut?: string | null, secteur?: string | null): string[] {
   // Secteur santé : depuis NIS2 (oct. 2024) l'autorité sectorielle est l'ANS
   // (enregistrement via MonEspaceNIS2, notification au CERT Santé), pas l'ANSSI.

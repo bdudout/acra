@@ -39,7 +39,7 @@ import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, TAILLES_ANALYSE, type TailleAnalyse, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
-import { suggestsComplianceModule } from '@/lib/regulatory-guidance'
+import { suggestsComplianceModule, nis2Classification, doraPrevailsOverNis2 } from '@/lib/regulatory-guidance'
 import { showsHdsCaveat } from '@/lib/sous-secteurs'
 
 interface Props {
@@ -208,6 +208,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
   // Suggestion d'activer les modules Conformité/Qualification pour les secteurs
   // régulés où ils sont quasi-obligatoires (issue #73).
   const suggestCompliance = suggestsComplianceModule(analyse?.secteur, analyse?.qualification?.statutReglementaire) && (!conformiteActive || !qualificationActive)
+  // Détection NIS2 proactive (issues #85/#92) : si le statut n'est pas déclaré et
+  // que le secteur relève de NIS2, signaler le statut probable (essentielle/importante).
+  const statutDeclare = analyse?.qualification?.statutReglementaire && analyse.qualification.statutReglementaire !== 'aucun'
+  const nis2Probable = statutDeclare ? null : nis2Classification(analyse?.secteur)
+  const nis2DoraNote = !!nis2Probable && doraPrevailsOverNis2(analyse?.secteur)
   // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
   // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la
   // sélection courante ; « Afficher tous » dévoile le catalogue complet.
@@ -1034,6 +1039,17 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
               <a href="/configuration" className="text-sm text-sky-700 underline font-medium mt-1 inline-block">
                 {t.workshop.a1.complianceSuggestLink} →
               </a>
+            </div>
+          )}
+
+          {/* Détection NIS2 proactive (statut non déclaré + secteur NIS2) */}
+          {nis2Probable && (
+            <div className="bg-indigo-50 border border-indigo-300 rounded-xl p-4">
+              <p className="text-sm font-semibold text-indigo-900">🇪🇺 {t.workshop.a1.nis2SuggestTitle}</p>
+              <p className="text-sm text-indigo-800 mt-1">
+                {t.workshop.a1.nis2SuggestText.replace('{statut}', nis2Probable === 'essentielle' ? t.workshop.a1.nis2Essentielle : t.workshop.a1.nis2Importante)}
+              </p>
+              {nis2DoraNote && <p className="text-sm text-indigo-800 mt-1">⚖️ {t.workshop.a1.nis2DoraNote}</p>}
             </div>
           )}
 
