@@ -1594,6 +1594,7 @@ export const de: Translations = {
         eeiIncidentSante: 'NIS2 (Gesundheit): Melden Sie erhebliche Vorfälle an das CERT Santé (ANS) innerhalb der gesetzlichen Fristen (Frühwarnung 24 h, Meldung 72 h).',
         oseSecurity: 'OSE (NIS1): Wenden Sie die von der Behörde festgelegten Sicherheitsregeln an und halten Sie sich für Prüfungen bereit.',
         oseIncident: 'OSE (NIS1): Melden Sie Vorfälle mit erheblichen Auswirkungen auf die Kontinuität wesentlicher Dienste.',
+        oivNis2Cumul: 'Doppelregime: Ein OIV ist in der Regel auch eine wesentliche Einrichtung im Sinne von NIS2. Die Pflichten aus LPM/SIIV und NIS2 kumulieren (die ANSSI stimmt beide ab).',
       },
       usage: {
         title: 'Nutzen dieses Berichts',

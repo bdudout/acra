@@ -621,6 +621,12 @@ const en: Record<string, string> = {
   "industrie.evenementsRedoutes.3.impacts.2": "Financial losses",
   "industrie.scenariosStrategiques.2.nom": "Takeover of a renewable farm via distributed SCADA (D)",
   "industrie.scenariosStrategiques.2.description": "An attacker compromises the remote supervision to disconnect or dysregulate the wind turbines / PV inverters",
+  "transport.biensSupports.7.nom": "Railway signalling (ERTMS / ETCS)",
+  "transport.biensSupports.7.description": "Signalling and command-control systems for railway traffic",
+  "transport.biensSupports.8.nom": "Airport systems and air traffic management",
+  "transport.biensSupports.8.description": "Airport operations systems and air traffic management support",
+  "transport.biensSupports.9.nom": "Ship and port systems (ECDIS / AIS)",
+  "transport.biensSupports.9.description": "Navigation, identification (AIS) and port management systems",
 }
 
 export default en

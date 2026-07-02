@@ -620,6 +620,12 @@ const es: Record<string, string> = {
   "industrie.evenementsRedoutes.3.impacts.2": "Pérdidas financieras",
   "industrie.scenariosStrategiques.2.nom": "Toma de control de un parque ENR mediante SCADA distribuido (D)",
   "industrie.scenariosStrategiques.2.description": "Un atacante compromete la telesupervisión para desconectar o desregular los aerogeneradores / inversores PV",
+  "transport.biensSupports.7.nom": "Señalización ferroviaria (ERTMS / ETCS)",
+  "transport.biensSupports.7.description": "Sistemas de señalización y control-mando de la circulación ferroviaria",
+  "transport.biensSupports.8.nom": "Sistemas aeroportuarios y gestión del tráfico aéreo",
+  "transport.biensSupports.8.description": "Sistemas de explotación aeroportuaria y apoyo a la gestión del tráfico aéreo",
+  "transport.biensSupports.9.nom": "Sistemas de buque y portuarios (ECDIS / AIS)",
+  "transport.biensSupports.9.description": "Sistemas de navegación, identificación (AIS) y gestión portuaria",
 }
 
 export default es

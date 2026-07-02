@@ -4,12 +4,12 @@ import { regulatoryObligations, suggestsComplianceModule, reportUsageNotes, nis2
 // Obligations réglementaires différenciées selon le statut (issue #68).
 
 describe('regulatoryObligations', () => {
-  it('OIV → 3 obligations dont la soumission à l\'ANSSI et l\'exercice de crise', () => {
+  it('OIV → obligations SIIV + double régime NIS2 (issue #98)', () => {
     const o = regulatoryObligations('OIV')
     expect(o).toContain('oivAnssiSubmit')
     expect(o).toContain('oivSectorGuide')
     expect(o).toContain('oivCrisisExercise')
-    expect(o.length).toBe(3)
+    expect(o).toContain('oivNis2Cumul') // double obligation OIV (LPM) + EEI (NIS2)
   })
   it('EEI (NIS2) → obligations NIS2 (notification d\'incident)', () => {
     const o = regulatoryObligations('EEI')

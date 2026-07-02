@@ -217,9 +217,13 @@ const TRANSPORT: SectorFamily = {
       { nom: 'Télématique embarquée / géolocalisation', type: 'MATERIEL', description: 'Boîtiers GPS et capteurs embarqués sur les véhicules' },
       { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport' },
       { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel' },
-      { nom: 'Système de gestion du transport (TMS)', type: 'LOGICIEL', description: 'Planification, optimisation et suivi des transports et tournées' },
-      { nom: 'Chronotachygraphe numérique', type: 'MATERIEL', description: 'Enregistrement réglementaire des temps de conduite et de repos' },
+      { nom: 'Système de gestion du transport (TMS)', type: 'LOGICIEL', description: 'Planification, optimisation et suivi des transports et tournées', sousProfession: 'logistique' },
+      { nom: 'Chronotachygraphe numérique', type: 'MATERIEL', description: 'Enregistrement réglementaire des temps de conduite et de repos', sousProfession: 'logistique' },
       { nom: 'Échanges de données informatisées (EDI)', type: 'RESEAU', description: 'Interfaces d’échange avec clients, transporteurs et douanes' },
+      // Modes spécifiques (issue #97)
+      { nom: 'Signalisation ferroviaire (ERTMS / ETCS)', type: 'MATERIEL', description: 'Systèmes de signalisation et de contrôle-commande des circulations ferroviaires', sousProfession: 'ferroviaire' },
+      { nom: 'Systèmes aéroportuaires et gestion du trafic aérien', type: 'LOGICIEL', description: 'Systèmes d’exploitation aéroportuaire et d’aide à la gestion du trafic aérien', sousProfession: 'aerien' },
+      { nom: 'Systèmes de navire et portuaires (ECDIS / AIS)', type: 'MATERIEL', description: 'Systèmes de navigation, d’identification (AIS) et de gestion portuaire', sousProfession: 'maritime' },
     ],
     evenementsRedoutes: [
       { description: 'Interruption de l’exploitation et des livraisons', impacts: ['Retards et ruptures d’approvisionnement', 'Perte de chiffre d’affaires', 'Atteinte aux engagements clients'], graviteDefaut: 4 },
@@ -613,12 +617,17 @@ export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLI
  * [] si le secteur n'appartient à aucune famille connue ou si la catégorie
  * n'est pas couverte par cette famille.
  */
-/** Sous-profession ciblée à partir d'un id de sous-secteur (juridique). */
+/** Sous-profession / sous-mode ciblé à partir d'un id de sous-secteur (juridique, transport…). */
 function professionFromSousSecteur(sousSecteur?: string | null): string | undefined {
   const v = (sousSecteur ?? '').toLowerCase()
   if (v.includes('notaire')) return 'notaire'
   if (v.includes('avocat')) return 'avocat'
   if (v.includes('huissier')) return 'huissier'
+  // Modes transport (issue #97)
+  if (v.includes('ferroviaire')) return 'ferroviaire'
+  if (v.includes('aerien') || v.includes('aérien')) return 'aerien'
+  if (v.includes('maritime')) return 'maritime'
+  if (v.includes('logistique')) return 'logistique'
   return undefined
 }
 

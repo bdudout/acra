@@ -1594,6 +1594,7 @@ export const es: Translations = {
         eeiIncidentSante: 'NIS2 (salud): notifica los incidentes significativos al CERT Santé (ANS) en los plazos reglamentarios (alerta temprana 24 h, notificación 72 h).',
         oseSecurity: 'OSE (NIS1): aplica las reglas de seguridad fijadas por la autoridad y mantente preparado para las auditorías.',
         oseIncident: 'OSE (NIS1): notifica los incidentes con impacto significativo en la continuidad de los servicios esenciales.',
+        oivNis2Cumul: 'Doble régimen: un OIV suele ser también una entidad esencial según NIS2. Las obligaciones LPM/SIIV y NIS2 se acumulan (la ANSSI articula ambas).',
       },
       usage: {
         title: 'Aprovechamiento de este informe',

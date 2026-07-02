@@ -620,6 +620,12 @@ const de: Record<string, string> = {
   "industrie.evenementsRedoutes.3.impacts.2": "Finanzielle Verluste",
   "industrie.scenariosStrategiques.2.nom": "Übernahme eines EE-Parks über verteiltes SCADA (D)",
   "industrie.scenariosStrategiques.2.description": "Ein Angreifer kompromittiert die Fernüberwachung, um die Windturbinen / PV-Wechselrichter zu trennen oder zu verstellen",
+  "transport.biensSupports.7.nom": "Eisenbahnsignalisierung (ERTMS / ETCS)",
+  "transport.biensSupports.7.description": "Signal- und Zugsteuerungssysteme für den Bahnverkehr",
+  "transport.biensSupports.8.nom": "Flughafensysteme und Flugverkehrsmanagement",
+  "transport.biensSupports.8.description": "Flughafenbetriebssysteme und Unterstützung des Flugverkehrsmanagements",
+  "transport.biensSupports.9.nom": "Schiffs- und Hafensysteme (ECDIS / AIS)",
+  "transport.biensSupports.9.description": "Navigations-, Identifikations- (AIS) und Hafenmanagementsysteme",
 }
 
 export default de

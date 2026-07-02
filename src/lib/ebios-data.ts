@@ -82,6 +82,11 @@ export const SOUS_SECTEURS = [
   { id: 'juridique-avocat', famille: 'juridique', label: 'Cabinet d\'avocats' },
   { id: 'juridique-notaire', famille: 'juridique', label: 'Étude notariale' },
   { id: 'juridique-huissier', famille: 'juridique', label: 'Commissaire de justice (huissier)' },
+  // Transport (issue #97) — modes distincts
+  { id: 'transport-logistique', famille: 'transport', label: 'Logistique / fret routier' },
+  { id: 'transport-ferroviaire', famille: 'transport', label: 'Ferroviaire' },
+  { id: 'transport-aerien', famille: 'transport', label: 'Aérien / aéroportuaire' },
+  { id: 'transport-maritime', famille: 'transport', label: 'Maritime / portuaire' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

@@ -212,6 +212,28 @@ describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
   })
 })
 
+describe('transport — distinction par mode (issue #97)', () => {
+  const SEC = 'Transports / Logistique'
+  it('ferroviaire : signalisation ERTMS, pas le chronotachygraphe routier', () => {
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'transport-ferroviaire')
+    const txt = bs.map(b => `${b.nom} ${b.description}`).join(' ').toLowerCase()
+    expect(/ertms|ferroviaire|signalisation/i.test(txt)).toBe(true)
+    expect(txt).not.toContain('chronotachygraphe')
+  })
+  it('aérien : systèmes aéroportuaires ; maritime : ECDIS/AIS', () => {
+    const air = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'transport-aerien').map(b => `${b.nom}`).join(' ')
+    const sea = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'transport-maritime').map(b => `${b.nom}`).join(' ')
+    expect(/aéroportuaire|trafic aérien/i.test(air)).toBe(true)
+    expect(/ecdis|ais|portuaire/i.test(sea)).toBe(true)
+  })
+  it('logistique : conserve TMS/chronotachygraphe, pas le ferroviaire', () => {
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'transport-logistique')
+    const txt = bs.map(b => `${b.nom}`).join(' ').toLowerCase()
+    expect(txt).toContain('chronotachygraphe')
+    expect(txt).not.toContain('ertms')
+  })
+})
+
 describe('pack industrie — énergies renouvelables (issue #95)', () => {
   it('propose des exemples ENR (éolien/PV/BESS)', () => {
     const bs = sectorExemplesFor('Énergie / Utilities', 'biensSupports')

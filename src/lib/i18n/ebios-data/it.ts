@@ -1357,5 +1357,9 @@ const dict: Record<string, string> = {
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "Spear phishing assistito da IA / deepfake (I)",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "Un attaccante genera e-mail molto convincenti e un deepfake vocale o video per ingannare un collaboratore e ottenere un bonifico o accessi.",
   "SOUS_SECTEURS.sante-veterinaire.label": "Clinica veterinaria / salute animale",
+  "SOUS_SECTEURS.transport-logistique.label": "Logistica / trasporto merci su strada",
+  "SOUS_SECTEURS.transport-ferroviaire.label": "Ferroviario",
+  "SOUS_SECTEURS.transport-aerien.label": "Aereo / aeroportuale",
+  "SOUS_SECTEURS.transport-maritime.label": "Marittimo / portuale",
 }
 export default dict

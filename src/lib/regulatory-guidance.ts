@@ -95,8 +95,9 @@ export function regulatoryObligations(statut?: string | null, secteur?: string |
   switch (statut) {
     case 'OIV':
       // LPM / arrêtés SIIV : homologation soumise à l'ANSSI, guide PA sectoriel,
-      // exercice de crise annuel.
-      return ['oivAnssiSubmit', 'oivSectorGuide', 'oivCrisisExercise']
+      // exercice de crise annuel. Double régime : un OIV est généralement AUSSI
+      // entité essentielle au sens de NIS2 (issue #98).
+      return ['oivAnssiSubmit', 'oivSectorGuide', 'oivCrisisExercise', 'oivNis2Cumul']
     case 'EEI':
       // NIS2 : enregistrement auprès de l'autorité + notification d'incident.
       // Santé → autorité sectorielle ANS / CERT Santé (issue #81).
