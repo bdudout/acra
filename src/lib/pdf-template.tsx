@@ -39,6 +39,7 @@ import { getRiskTier } from '@/lib/risk-scale'
 import { execGlobalLevel, execTopRisks, execMeasuresToEngage } from '@/lib/pdf-exec-summary'
 import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
 import { reportUsageNotes } from '@/lib/regulatory-guidance'
+import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
   layoutStakeholders,
@@ -568,18 +569,18 @@ function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
     <Page size="A4" style={s.page} wrap>
       <Banner title={tp.a1.banner} color={C.teal} />
 
-      {(cadrage.perimetre || cadrage.objectifsEtude) && (
+      {hasCadrageContexte(cadrage) ? (
         <View>
           <Text style={[s.label, { color: C.teal, marginBottom: 3 }]}>{tp.a1.perimetre}</Text>
-          {cadrage.perimetre && <Text style={s.body}>{cadrage.perimetre}</Text>}
-          {cadrage.objectifsEtude && (
+          {isNonEmptyText(cadrage.perimetre) ? <Text style={s.body}>{cadrage.perimetre}</Text> : null}
+          {isNonEmptyText(cadrage.objectifsEtude) ? (
             <View>
               <Text style={s.label}>{tp.a1.objectifs}</Text>
               <Text style={s.body}>{cadrage.objectifsEtude}</Text>
             </View>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
 
       {valeursMetier.length > 0 && (() => {
         // Colonne « Classification » (IGI-1300) ajoutée seulement si au moins une
