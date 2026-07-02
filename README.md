@@ -44,7 +44,8 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 - **Guidage méthodologique intégré** : chaque champ dispose d'un tooltip, d'un lien vers le guide ANSSI, et d'exemples contextuels
 - **Cohérence automatique** : les éléments d'un atelier alimentent automatiquement les ateliers suivants
-- **7 référentiels de mesures** : ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS — depuis une seule interface
+- **12 référentiels de mesures** : ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS — depuis une seule interface
+- **Guidage sectoriel & conformité** : exemples métier adaptés au secteur et au sous-secteur, recommandation de référentiels, détection du statut réglementaire (NIS2, OIV…) — [voir le détail](#-guidage-sectoriel--conformité)
 - **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
 - **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
 - **Multi-organisation hiérarchique** : cabinets de conseil (clients isolés), grands groupes (vision entité + consolidée), multi-sites, filiales — dans une seule instance — [voir le détail](#-multi-organisation-hiérarchique)
@@ -67,7 +68,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ### 🔐 Sécurité & référentiels
 
-- Mesures de sécurité issues de **7 référentiels** : ISO 27001:2022 · NIST CSF · NIST 800-53 · CIS Controls v8 · ANSSI Hygiène · HDS · PCI-DSS + contrôles personnalisés
+- Mesures de sécurité issues de **12 référentiels** : ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiène · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS + contrôles personnalisés — contrôles **localisés dans les 5 langues**
 - Politique de mot de passe configurable (longueur, complexité, expiration, historique, verrouillage)
 - **MFA** configurable (OTP à usage unique par **e-mail** ou **SMS**) avec fenêtre de confirmation de 60 min pour éviter tout verrouillage accidentel
 - **SSO** configurable (SAML 2.0 ou OIDC) — provisioning automatique des comptes
@@ -617,6 +618,30 @@ Les tiers sont positionnés sur un **radar polaire** : plus un point est proche 
 ![Vue transverse des tiers](docs/screenshots/tiers-light.png)
 
 Le radar, les étoiles de criticité et le tableau des parties prenantes (4 sous-critères + colonne *Critique*) sont également présents dans l'**export PDF**.
+
+---
+
+## 🧭 Guidage sectoriel & conformité
+
+ACRA adapte la démarche au **contexte réglementaire et sectoriel** de l'organisation, sans jamais l'imposer.
+
+**Exemples adaptés au secteur** — le secteur choisi au cadrage (et, pour les secteurs réglementés, un **sous-secteur**) alimente des bibliothèques d'exemples métier ciblés dans les ateliers 1 à 3 (valeurs métier, biens supports, événements redoutés, sources de risque, scénarios, parties prenantes). **16 familles** couvrent les 20 secteurs : santé, banque/finance, industrie & énergie (dont **ENR** : éolien/PV/BESS), transport, télécom, administration, agroalimentaire, immobilier/BTP, médias, tourisme, associations/ESS, juridique, numérique, éducation/recherche, commerce, défense. Les **sous-secteurs** affinent encore le contenu : un notaire ne voit pas les exemples propres aux avocats, le ferroviaire diffère de l'aérien, la construction/BTP de l'agence immobilière.
+
+**Recommandation de référentiels** — le secteur, la **taille de l'organisation** (TPE/PME/ETI-GE) et le sous-secteur orientent les référentiels recommandés (ex. Banque → DORA, Santé → HDS, Industrie/Énergie → IEC 62443, Administration → RGS, éditeur logiciel → NIST SSDF/SOC 2). DORA n'est proposé qu'aux entités financières réglementées (pas à une TPE fintech pré-agrément).
+
+**Module Conformité (optionnel, activable par organisation)**
+
+- **Qualification** de l'analyse (criticité, données personnelles, exposition, RSSI interne…) produisant des orientations ;
+- **Statut réglementaire** : détection proactive du régime **NIS2** (entité *essentielle* / *importante* selon le secteur), marqueurs **OSE / EEI / OIV** avec sélection de la **filière OIV** (12 filières SAIV), signalement du **cumul OIV (LPM) + EEI (NIS2)** et du fait que **DORA prime sur NIS2** pour la finance ;
+- **obligations contextualisées** (enregistrement, notification d'incident au CSIRT/ANSSI — ou au **CERT Santé/ANS** pour la santé, exercice de crise SIIV…) ;
+- **classification de l'information** (marqueur **IGI-1300** : NP / DR / Secret / Très Secret) ;
+- **alerte RGPD art. 9** en présence de données sensibles ;
+- **notes de valorisation** du rapport : documentation du risque ICT (**DORA art. 8**), pièce d'un dossier d'**homologation SSI** (PSSIE / RGS / IGI 1300), évaluation **ORSA** (Solvabilité II) pour l'assurance ;
+- couverture **NIS2 Art. 21** du référentiel de mesures choisi.
+
+**IA générative** — les risques émergents liés à l'IA générative (deepfakes, hameçonnage assisté, fuite de données via « Shadow AI », *prompt injection*) figurent dans les exemples par défaut, tous secteurs.
+
+> Ces éléments sont **documentaires et non bloquants** : ils guident et alertent, mais l'analyste reste libre de ses choix.
 
 ---
 

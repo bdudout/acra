@@ -44,7 +44,8 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 
 - **Integrierte methodische Anleitung**: Jedes Feld hat einen Tooltip, einen Link zum ANSSI-Leitfaden und kontextbezogene Beispiele
 - **Automatische Konsistenz**: Elemente eines Workshops fließen automatisch in die folgenden ein
-- **7 Maßnahmen-Frameworks**: ISO 27001:2022, NIST CSF, NIST 800-53, CIS Controls v8, ANSSI-Hygiene, HDS, PCI-DSS — aus einer einzigen Oberfläche
+- **12 Maßnahmen-Frameworks**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI-Hygiene, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS — aus einer einzigen Oberfläche
+- **Branchenspezifische Anleitung & Konformität**: an Branche und Teilbranche angepasste Fachbeispiele, Framework-Empfehlungen, Erkennung des regulatorischen Status (NIS2, OIV…) — [Details](#-branchenspezifische-anleitung--konformität)
 - **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
 - **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
 - **100 % selbst gehostet**: Ihre Daten verlassen niemals Ihre Infrastruktur
@@ -66,7 +67,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 
 ### 🔐 Sicherheit & Frameworks
 
-- Sicherheitsmaßnahmen aus **7 Frameworks**: ISO 27001:2022 · NIST CSF · NIST 800-53 · CIS Controls v8 · ANSSI-Hygiene · HDS · PCI-DSS + benutzerdefinierte Kontrollen
+- Sicherheitsmaßnahmen aus **12 Frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI-Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS + benutzerdefinierte Kontrollen — Kontrollen **in 5 Sprachen lokalisiert**
 - Konfigurierbare Passwortrichtlinie (Länge, Komplexität, Ablauf, Verlauf, Sperrung)
 - Konfigurierbare **MFA** (Einmalcode per **E-Mail** oder **SMS**) mit 60-Minuten-Bestätigungsfenster zur Vermeidung versehentlicher Sperrung
 - Konfigurierbares **SSO** (SAML 2.0 oder OIDC) — automatische Kontobereitstellung
@@ -581,6 +582,30 @@ flowchart LR
 | Geheimnisschutz | Verschlüsselte Secrets (`SECRETS_ENCRYPTION_KEY`), bcrypt (Kosten 12) |
 | Reversibilität / Fehlertoleranz | **30-Tage-Papierkorb** (Soft Delete + Admin-Wiederherstellung) |
 | Eingaberobustheit | Zod + **Allowlist-Sanitizer** (Anti-Mass-Assignment) |
+
+---
+
+## 🧭 Branchenspezifische Anleitung & Konformität
+
+ACRA passt das Vorgehen an den **regulatorischen und branchenspezifischen Kontext** der Organisation an, ohne ihn je aufzuzwingen.
+
+**Branchenspezifische Beispiele** — die bei der Rahmensetzung gewählte Branche (und für regulierte Branchen eine **Teilbranche**) speist gezielte Fachbeispiel-Bibliotheken in den Workshops 1 bis 3 (Geschäftswerte, unterstützende Assets, befürchtete Ereignisse, Risikoquellen, Szenarien, Interessengruppen). **16 Familien** decken die 20 Branchen ab: Gesundheit, Bank/Finanzen, Industrie & Energie (inkl. **erneuerbare Energien**: Wind/PV/BESS), Verkehr, Telekom, öffentliche Verwaltung, Lebensmittelindustrie, Immobilien/Bau, Medien, Tourismus, Vereine, Recht, Digital, Bildung/Forschung, Handel, Verteidigung. **Teilbranchen** verfeinern den Inhalt weiter: ein Notar sieht keine anwaltsspezifischen Beispiele, Schiene unterscheidet sich von Luftfahrt, Bau von der Immobilienagentur.
+
+**Framework-Empfehlung** — Branche, **Organisationsgröße** (Kleinstunternehmen / KMU / Großunternehmen) und Teilbranche steuern die empfohlenen Frameworks (z. B. Bank → DORA, Gesundheit → HDS, Industrie/Energie → IEC 62443, Verwaltung → RGS, Softwarehersteller → NIST SSDF/SOC 2). DORA wird nur regulierten Finanzunternehmen vorgeschlagen (nicht einem Fintech-Start-up vor der Zulassung).
+
+**Konformitätsmodul (optional, pro Organisation aktivierbar)**
+
+- **Qualifizierung** der Analyse (Kritikalität, personenbezogene Daten, Exposition, interner CISO…), die Orientierungen erzeugt;
+- **Regulatorischer Status**: proaktive Erkennung des **NIS2**-Regimes (*wesentliche* / *wichtige* Einrichtung je Branche), Marker **OSE / EEI / OIV** mit Auswahl der **OIV-Branche** (12 SAIV-Branchen), Hinweis auf das **Doppelregime OIV (LPM) + EEI (NIS2)** und darauf, dass **DORA vor NIS2 Vorrang hat** für die Finanzbranche;
+- **kontextbezogene Pflichten** (Registrierung, Vorfallmeldung an das CSIRT/ANSSI — oder an **CERT Santé/ANS** im Gesundheitswesen, SIIV-Krisenübung…);
+- **Informationsklassifizierung** (**IGI-1300**-Marker: NP / DR / Geheim / Streng geheim);
+- **DSGVO-Art.-9-Warnung** bei sensiblen Daten;
+- **Verwertungshinweise** zum Bericht: IKT-Risikodokumentation (**DORA Art. 8**), Bestandteil einer **Sicherheitsakkreditierung** (PSSIE / RGS / IGI 1300), **ORSA**-Bewertung (Solvency II) für Versicherungen;
+- **NIS2-Art.-21**-Abdeckung des gewählten Maßnahmen-Frameworks.
+
+**Generative KI** — neue Risiken durch generative KI (Deepfakes, KI-gestütztes Phishing, Datenabfluss über „Shadow AI“, Prompt Injection) sind in den Standardbeispielen enthalten, branchenübergreifend.
+
+> Diese Elemente sind **dokumentarisch und nicht blockierend**: Sie leiten und warnen, aber der Analyst bleibt frei in seiner Wahl.
 
 ---
 
