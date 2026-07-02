@@ -1600,6 +1600,7 @@ export const de: Translations = {
         title: 'Nutzen dieses Berichts',
         doraArt8: 'Dieser Bericht stellt die nach Artikel 8 der DORA-Verordnung (EU 2022/2554) geforderte Dokumentation der IKT-Risikobewertung dar und ist jährlich zu aktualisieren.',
         homologationSSI: 'Dieser Bericht kann als Risikoanalysebericht Ihrer Sicherheitsakkreditierung dienen (PSSIE / RGS, und IGI 1300 für sensible Systeme).',
+        orsaSolva2: 'Versicherung: Dieser Bericht fließt in die unternehmenseigene Risiko- und Solvabilitätsbeurteilung (ORSA, Art. 45 Solvency II) für das operationelle / Cyberrisiko ein.',
       },
       resJuridiqueTitle: 'Sektorressource — Rechtsberufe',
       resJuridiqueText: 'Konsultieren Sie den ANSSI-Bericht zur Cybersicherheit von Anwaltskanzleien (Bedrohungen und konkrete Empfehlungen), um Ihren Maßnahmenplan zu ergänzen.',

@@ -64,6 +64,10 @@ describe('reportUsageNotes (issues #70/#74)', () => {
     expect(reportUsageNotes(['ANSSI_HYG'], 'Administration publique')).toContain('homologationSSI')
     expect(reportUsageNotes([], 'Collectivité territoriale')).toContain('homologationSSI')
   })
+  it('assurance → note d’articulation ORSA (Solvabilité II) (issue #96)', () => {
+    expect(reportUsageNotes([], 'Assurance / mutuelle')).toContain('orsaSolva2')
+    expect(reportUsageNotes(['DORA'], 'Banque / Finance')).not.toContain('orsaSolva2')
+  })
   it('ni DORA ni public → aucune note', () => {
     expect(reportUsageNotes(['ISO27001'], 'Tourisme / Hôtellerie-restauration')).toEqual([])
     expect(reportUsageNotes(undefined, null)).toEqual([])

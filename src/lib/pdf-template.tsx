@@ -544,6 +544,7 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
           <Text style={[s.hintText, { fontFamily: 'Helvetica-Bold', marginBottom: 2 }]}>{tp.summary.usageTitle}</Text>
           {usageNotes.includes('doraArt8') && <Text style={s.hintText}>• {tp.summary.usageDoraArt8}</Text>}
           {usageNotes.includes('homologationSSI') && <Text style={s.hintText}>• {tp.summary.usageHomologSSI}</Text>}
+          {usageNotes.includes('orsaSolva2') && <Text style={s.hintText}>• {tp.summary.usageOrsaSolva2}</Text>}
         </View>
       )}
 

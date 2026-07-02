@@ -43,6 +43,8 @@ export function reportUsageNotes(frameworks?: string[] | null, secteur?: string 
   const notes: string[] = []
   if ((frameworks ?? []).includes('DORA')) notes.push('doraArt8')
   if (/administration|public|collectivit|état|etat|government|établissement public/i.test(secteur ?? '')) notes.push('homologationSSI')
+  // Assurance : le rapport alimente l'évaluation ORSA (Solvabilité II art. 45) (issue #96)
+  if (/assur|mutuelle|insurance|réassur|reassur/i.test(secteur ?? '')) notes.push('orsaSolva2')
   return notes
 }
 

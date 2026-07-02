@@ -1600,6 +1600,7 @@ export const en: Translations = {
         title: 'Making the most of this report',
         doraArt8: 'This report constitutes the ICT risk assessment documentation required by Article 8 of the DORA Regulation (EU 2022/2554), to be updated annually.',
         homologationSSI: 'This report can serve as the risk-analysis report of your security accreditation file (PSSIE / RGS, and IGI 1300 for sensitive systems).',
+        orsaSolva2: 'Insurance: this report feeds the Own Risk and Solvency Assessment (ORSA, art. 45 of Solvency II) for operational / cyber risk.',
       },
       resJuridiqueTitle: 'Sector resource — legal professions',
       resJuridiqueText: "See ANSSI's report on the cybersecurity of law firms (threats and concrete recommendations) to enrich your action plan.",

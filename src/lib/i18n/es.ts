@@ -1600,6 +1600,7 @@ export const es: Translations = {
         title: 'Aprovechamiento de este informe',
         doraArt8: 'Este informe constituye la documentación de la evaluación de riesgos de las TIC exigida por el artículo 8 del Reglamento DORA (UE 2022/2554), a actualizar anualmente.',
         homologationSSI: 'Este informe puede constituir el informe de análisis de riesgos de su expediente de homologación de seguridad (PSSIE / RGS, e IGI 1300 para los sistemas sensibles).',
+        orsaSolva2: 'Seguros: este informe alimenta la evaluación interna de riesgos y solvencia (ORSA, art. 45 de Solvencia II) por el riesgo operacional / cibernético.',
       },
       resJuridiqueTitle: 'Recurso sectorial — profesiones jurídicas',
       resJuridiqueText: 'Consulta el informe de la ANSSI sobre la ciberseguridad de los despachos de abogados (amenazas y recomendaciones concretas) para enriquecer tu plan de medidas.',
