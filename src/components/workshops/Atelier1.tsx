@@ -819,23 +819,29 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
             <div className="space-y-3">
               {biens.map(b => (
                 <div key={b.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2">
-                    <input
-                      value={b.nom} onChange={e => updateBien(b.id, 'nom', e.target.value)}
-                      className="input text-sm" placeholder={t.workshop.a1.bsNamePh}
-                    />
-                    <select
-                      value={b.type} onChange={e => updateBien(b.id, 'type', e.target.value)}
-                      className="input text-sm"
-                    >
-                      {TYPES_BIEN_SUPPORT.map(tbs => (
-                        <option key={tbs.value} value={tbs.value}>{tbs.emoji} {tbs.label}</option>
-                      ))}
-                    </select>
+                  <div className="flex-1 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        value={b.nom} onChange={e => updateBien(b.id, 'nom', e.target.value)}
+                        className="input text-sm" placeholder={t.workshop.a1.bsNamePh}
+                      />
+                      <select
+                        value={b.type} onChange={e => updateBien(b.id, 'type', e.target.value)}
+                        className="input text-sm"
+                      >
+                        {TYPES_BIEN_SUPPORT.map(tbs => (
+                          <option key={tbs.value} value={tbs.value}>{tbs.emoji} {tbs.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={b.description} onChange={e => updateBien(b.id, 'description', e.target.value)}
+                        className="input text-sm" placeholder={t.workshop.a1.bsDescPh}
+                      />
+                    </div>
                     {vms.length > 0 && (() => {
                       const linked = bienValeurMetierIds(b)
                       return (
-                        <div className="sm:col-span-1">
+                        <div>
                           <div className="text-[11px] text-gray-400 mb-0.5">{t.workshop.a1.bsVmSelect}</div>
                           <div className="flex flex-wrap gap-1">
                             {vms.map(vm => {
@@ -846,7 +852,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                                   type="button"
                                   onClick={() => toggleBienVm(b.id, vm.id)}
                                   title={vm.nom}
-                                  className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors max-w-[140px] truncate ${
+                                  className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors max-w-[220px] truncate ${
                                     on
                                       ? 'bg-ebios-100 border-ebios-300 text-ebios-800 font-medium'
                                       : 'bg-white border-gray-200 text-gray-500 hover:border-ebios-300'
@@ -860,10 +866,6 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
                         </div>
                       )
                     })()}
-                    <input
-                      value={b.description} onChange={e => updateBien(b.id, 'description', e.target.value)}
-                      className="input text-sm" placeholder={t.workshop.a1.bsDescPh}
-                    />
                   </div>
                   <button aria-label={t.workshop.deleteBtn} onClick={() => setPendingDelete({ msg: t.deleteDialog.bien, action: () => removeBien(b.id) })} className="text-gray-500 hover:text-red-500 mt-2"><span aria-hidden="true">✕</span></button>
                 </div>

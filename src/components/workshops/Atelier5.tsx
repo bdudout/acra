@@ -57,6 +57,8 @@ interface Props {
   flashMode?: boolean
   /** Échelle/seuils configurés (admin) pour la matrice des risques */
   scaleConfig?: ScaleConfig | null
+  /** Écarts du socle (non-conformités) à traiter, importables comme mesures (issue #3). */
+  nonConformites?: { ref: string; nom: string; statut: string; commentaire?: string }[]
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -76,7 +78,7 @@ const stratColors: Record<string, string> = {
   SURVEILLER: 'bg-purple-100 text-purple-700',
 }
 
-export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig }: Props) {
+export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig, nonConformites = [] }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
@@ -275,6 +277,24 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       cout: '',
       efficacite: 3,
       risqueId: exemple?.risqueId || risques[0]?.id || '',
+    }])
+  }
+
+  // Import d'un écart du socle (non-conformité) comme mesure de mise en conformité (issue #3).
+  function addMesureFromEcart(nc: { ref: string; nom: string; statut: string }) {
+    setMesures(prev => [...prev, {
+      id: uid(),
+      nom: `[${nc.ref}] ${nc.nom}`,
+      description: t.workshop.a5.ecartMesureDesc,
+      type: 'ORGANISATIONNELLE',
+      priorite: nc.statut === 'non_conforme' ? 1 : 2,
+      statut: 'A_FAIRE',
+      responsable: '',
+      entite: '',
+      echeance: defaultEcheance(),
+      cout: '',
+      efficacite: 3,
+      risqueId: risques[0]?.id || '',
     }])
   }
 
@@ -477,6 +497,11 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                             <p className="text-xs text-gray-500 mt-1">
                               {t.workshop.a5.stratConseil[r.strategie as keyof typeof t.workshop.a5.stratConseil]}
                             </p>
+                            {(r.strategie === 'ACCEPTER' || r.strategie === 'TRANSFERER' || r.strategie === 'REFUSER') && (
+                              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-1.5">
+                                📋 {(t.workshop.a5.stratPlanAction as Record<string, string>)[r.strategie]}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -638,6 +663,41 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               </a>
             </div>
           )}
+
+          {/* Écarts du socle (non-conformités A1) à traiter — importables comme mesures (issue #3) */}
+          {nonConformites.length > 0 && (() => {
+            const importedRefs = new Set(mesures.map((m: any) => (String(m.nom).match(/^\[([^\]]+)\]/) || [])[1]).filter(Boolean))
+            return (
+              <div className="card p-5 border-l-4 border-l-amber-400">
+                <h3 className="font-semibold text-gray-800 mb-1">🛡️ {t.workshop.a5.ecartsTitle}</h3>
+                <p className="text-xs text-gray-500 mb-3">{t.workshop.a5.ecartsIntro}</p>
+                <ul className="space-y-1.5">
+                  {nonConformites.map(nc => {
+                    const done = importedRefs.has(nc.ref)
+                    return (
+                      <li key={nc.ref} className="flex items-start justify-between gap-2">
+                        <span className="text-sm text-gray-700 flex gap-2">
+                          <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${nc.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                          <span>
+                            <span className="text-gray-400 mr-1">{nc.ref}</span>{nc.nom}
+                            <span className="ml-1 text-xs text-gray-400">({(t.conformite.statuts as Record<string, string>)[nc.statut] ?? nc.statut})</span>
+                          </span>
+                        </span>
+                        {done ? (
+                          <span className="text-xs text-green-600 font-medium flex-shrink-0 mt-0.5">✓ {t.workshop.a5.ecartImported}</span>
+                        ) : (
+                          <button type="button" onClick={() => addMesureFromEcart(nc)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium flex-shrink-0 mt-0.5 whitespace-nowrap">
+                            + {t.workshop.a5.ecartAddBtn}
+                          </button>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })()}
+
           <div className="card p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="font-semibold text-gray-800">{t.workshop.a5.measRecoTitle}</h3>

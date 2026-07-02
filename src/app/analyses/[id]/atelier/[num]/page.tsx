@@ -125,7 +125,6 @@ export default async function AtelierPage({
     }))
   }
   const showCatalogue = conformiteActive && (atelierNum === 3 || atelierNum === 4)
-  const showTunnelWarning = conformiteActive && atelierNum === 5
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -216,13 +215,6 @@ export default async function AtelierPage({
           </div>
         )}
 
-        {/* Garde-fou « tunnel de conformité » (atelier 5) */}
-        {showTunnelWarning && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-6">
-            <p className="text-sm font-semibold text-amber-800 mb-1">{t.conformite.tunnelWarningTitle}</p>
-            <p className="text-sm text-amber-800">{t.conformite.tunnelWarning}</p>
-          </div>
-        )}
 
         {/* Composant atelier (+ panneau conseils latéral optionnel) */}
         <div className="flex items-start gap-6">
@@ -262,6 +254,7 @@ export default async function AtelierPage({
                 initialTab={resolvedSearchParams.tab}
                 flashMode={flashMode}
                 scaleConfig={await getEffectiveScaleConfig((analyse as any).organizationId)}
+                nonConformites={nonConfItems}
               />
             )}
           </div>
