@@ -318,7 +318,9 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   let priority: FrameworkId[] = []
   if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
   else if (/(fintech|paiement|payment|monetique)/.test(s)) priority = ['PCI_DSS']
-  else if (/(process|scada|nucleaire|nuclear|\bot\b)/.test(s)) priority = ['IEC_62443']
+  // OT / industriel, y compris toute la filière énergie (production, réseau,
+  // nucléaire, fossile, renouvelable : éolien/PV/BESS pilotés par SCADA) — issue #94
+  else if (/(process|scada|nucleaire|nuclear|\bot\b|energie-|renouvelable|eolien|photovolt|solaire)/.test(s)) priority = ['IEC_62443']
   // Défense (issue #79) : BITD (industrie d'armement) → certification DGA (ISO 27001)
   // + SI embarqués / systèmes d'armes (IEC 62443). Les forces armées conservent le
   // socle sectoriel (NIST 800-53 prioritaire + ANSSI Hygiène), donc pas de priorité ici.

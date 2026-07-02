@@ -608,6 +608,18 @@ const es: Record<string, string> = {
   "finance.sourcesRisque.1.ressources": "Medios",
   "finance.scenariosStrategiques.2.nom": "Elusión del KYC para un préstamo fraudulento (I)",
   "finance.scenariosStrategiques.2.description": "Un estafador burla la verificación de identidad (deepfake) para contratar un crédito",
+  "industrie.valeursMetier.4.nom": "Producción de energía renovable (eólica / solar)",
+  "industrie.valeursMetier.4.description": "Explotación de parques eólicos y fotovoltaicos e inyección en la red eléctrica",
+  "industrie.biensSupports.5.nom": "Telesupervisión de parques ENR (SCADA distribuido)",
+  "industrie.biensSupports.5.description": "Supervisión a distancia de aerogeneradores e inversores fotovoltaicos repartidos por el territorio",
+  "industrie.biensSupports.6.nom": "Sistema de almacenamiento por baterías (BESS)",
+  "industrie.biensSupports.6.description": "Baterías de almacenamiento y su sistema de gestión (BMS / EMS)",
+  "industrie.evenementsRedoutes.3.description": "Desconexión o control malicioso de un parque ENR",
+  "industrie.evenementsRedoutes.3.impacts.0": "Pérdida de la producción inyectada",
+  "industrie.evenementsRedoutes.3.impacts.1": "Desestabilización de la red eléctrica",
+  "industrie.evenementsRedoutes.3.impacts.2": "Pérdidas financieras",
+  "industrie.scenariosStrategiques.2.nom": "Toma de control de un parque ENR mediante SCADA distribuido (D)",
+  "industrie.scenariosStrategiques.2.description": "Un atacante compromete la telesupervisión para desconectar o desregular los aerogeneradores / inversores PV",
 }
 
 export default es

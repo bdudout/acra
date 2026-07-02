@@ -132,6 +132,8 @@ const INDUSTRIE: SectorFamily = {
       { nom: 'Supervision et conduite du procédé (SCADA)', type: 'INFORMATION', description: 'Données temps réel de supervision et de commande des installations', responsable: 'Responsable OT / automatismes', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
       { nom: 'Sûreté de fonctionnement des installations', type: 'PROCESSUS', description: 'Systèmes instrumentés de sécurité protégeant personnes et environnement', responsable: 'Direction HSE / sûreté de fonctionnement', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
       { nom: 'Maintenance et télégestion', type: 'PROCESSUS', description: 'Télémaintenance et exploitation à distance des équipements industriels', responsable: 'Direction de la maintenance', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      // Énergies renouvelables (issue #95)
+      { nom: 'Production d’énergie renouvelable (éolien / solaire)', type: 'PROCESSUS', description: 'Pilotage des parcs éoliens et photovoltaïques et injection sur le réseau électrique', responsable: 'Direction de l’exploitation ENR', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
     ],
     biensSupports: [
       { nom: 'Automates programmables (PLC)', type: 'MATERIEL', description: 'Contrôleurs pilotant les équipements de production' },
@@ -139,11 +141,16 @@ const INDUSTRIE: SectorFamily = {
       { nom: 'Réseau OT / bus de terrain', type: 'RESEAU', description: 'Réseau industriel reliant capteurs, automates et supervision' },
       { nom: 'Accès de télémaintenance fournisseur', type: 'SOUS_TRAITANCE', description: 'Connexion distante d’un fournisseur pour la maintenance des équipements' },
       { nom: 'Logiciel d’ingénierie automate (Siemens STEP 7, Schneider Unity Pro)', type: 'LOGICIEL', description: 'Poste d’ingénierie de programmation et de configuration des automates' },
+      // Énergies renouvelables (issue #95)
+      { nom: 'Télésupervision des parcs ENR (SCADA distribué)', type: 'LOGICIEL', description: 'Supervision à distance des éoliennes et onduleurs photovoltaïques répartis sur le territoire' },
+      { nom: 'Système de stockage par batteries (BESS)', type: 'MATERIEL', description: 'Batteries de stockage et leur système de gestion (BMS / EMS)' },
     ],
     evenementsRedoutes: [
       { description: 'Arrêt ou sabotage de la production industrielle', impacts: ['Perte de production', 'Atteinte à la sécurité des personnes', 'Dommages matériels'], graviteDefaut: 4 },
       { description: 'Altération des consignes de procédé (SCADA / automates)', impacts: ['Accident industriel', 'Atteinte à l’environnement', 'Risque pour les opérateurs'], graviteDefaut: 4 },
       { description: 'Compromission via un accès de télémaintenance', impacts: ['Prise de contrôle des installations', 'Propagation IT → OT'], graviteDefaut: 3 },
+      // Énergies renouvelables (issue #95)
+      { description: 'Déconnexion ou pilotage malveillant d’un parc ENR', impacts: ['Perte de production injectée', 'Déstabilisation du réseau électrique', 'Pertes financières'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
       { nom: 'Acteur étatique ciblant les infrastructures (type Sandworm)', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à perturber ou saboter des systèmes industriels critiques', motivation: 'Déstabilisation / sabotage', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
@@ -151,6 +158,8 @@ const INDUSTRIE: SectorFamily = {
     scenariosStrategiques: [
       { critere: 'D', nom: 'Sabotage de la production via le réseau OT (D)', description: 'Un attaquant atteint les automates et arrête les installations', vraisemblanceDefaut: 2, graviteDefaut: 4 },
       { critere: 'I', nom: 'Altération des consignes de procédé (I)', description: 'Modification malveillante des paramètres SCADA provoquant un incident', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+      // Énergies renouvelables (issue #95)
+      { critere: 'D', nom: 'Prise de contrôle d’un parc ENR via le SCADA distribué (D)', description: 'Un attaquant compromet la télésupervision pour déconnecter ou dérégler les éoliennes / onduleurs PV', vraisemblanceDefaut: 2, graviteDefaut: 4 },
     ],
   },
 }

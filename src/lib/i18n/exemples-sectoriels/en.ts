@@ -609,6 +609,18 @@ const en: Record<string, string> = {
   "finance.sourcesRisque.1.ressources": "Medium",
   "finance.scenariosStrategiques.2.nom": "KYC bypass for a fraudulent loan (I)",
   "finance.scenariosStrategiques.2.description": "A fraudster defeats identity verification (deepfake) to take out a loan",
+  "industrie.valeursMetier.4.nom": "Renewable energy production (wind / solar)",
+  "industrie.valeursMetier.4.description": "Operation of wind and photovoltaic farms and injection into the power grid",
+  "industrie.biensSupports.5.nom": "Remote supervision of renewable farms (distributed SCADA)",
+  "industrie.biensSupports.5.description": "Remote supervision of wind turbines and photovoltaic inverters spread across the territory",
+  "industrie.biensSupports.6.nom": "Battery energy storage system (BESS)",
+  "industrie.biensSupports.6.description": "Storage batteries and their management system (BMS / EMS)",
+  "industrie.evenementsRedoutes.3.description": "Disconnection or malicious control of a renewable farm",
+  "industrie.evenementsRedoutes.3.impacts.0": "Loss of injected production",
+  "industrie.evenementsRedoutes.3.impacts.1": "Destabilization of the power grid",
+  "industrie.evenementsRedoutes.3.impacts.2": "Financial losses",
+  "industrie.scenariosStrategiques.2.nom": "Takeover of a renewable farm via distributed SCADA (D)",
+  "industrie.scenariosStrategiques.2.description": "An attacker compromises the remote supervision to disconnect or dysregulate the wind turbines / PV inverters",
 }
 
 export default en

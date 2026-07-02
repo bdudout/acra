@@ -608,6 +608,18 @@ const it: Record<string, string> = {
   "finance.sourcesRisque.1.ressources": "Medie",
   "finance.scenariosStrategiques.2.nom": "Elusione del KYC per un prestito fraudolento (I)",
   "finance.scenariosStrategiques.2.description": "Un truffatore aggira la verifica dell’identità (deepfake) per sottoscrivere un credito",
+  "industrie.valeursMetier.4.nom": "Produzione di energia rinnovabile (eolico / solare)",
+  "industrie.valeursMetier.4.description": "Gestione di parchi eolici e fotovoltaici e immissione nella rete elettrica",
+  "industrie.biensSupports.5.nom": "Telesupervisione dei parchi rinnovabili (SCADA distribuito)",
+  "industrie.biensSupports.5.description": "Supervisione a distanza di turbine eoliche e inverter fotovoltaici distribuiti sul territorio",
+  "industrie.biensSupports.6.nom": "Sistema di accumulo a batterie (BESS)",
+  "industrie.biensSupports.6.description": "Batterie di accumulo e il loro sistema di gestione (BMS / EMS)",
+  "industrie.evenementsRedoutes.3.description": "Disconnessione o controllo malevolo di un parco rinnovabile",
+  "industrie.evenementsRedoutes.3.impacts.0": "Perdita della produzione immessa",
+  "industrie.evenementsRedoutes.3.impacts.1": "Destabilizzazione della rete elettrica",
+  "industrie.evenementsRedoutes.3.impacts.2": "Perdite finanziarie",
+  "industrie.scenariosStrategiques.2.nom": "Presa di controllo di un parco rinnovabile tramite SCADA distribuito (D)",
+  "industrie.scenariosStrategiques.2.description": "Un attaccante compromette la telesupervisione per disconnettere o alterare le turbine eoliche / inverter PV",
 }
 
 export default it

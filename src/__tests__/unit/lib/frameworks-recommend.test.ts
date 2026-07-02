@@ -96,6 +96,11 @@ describe('recommendedFrameworksForSector', () => {
     expect(recommendedFrameworksForSector('Industrie / Manufacturing', null, 'industrie-process')[0]).toBe('IEC_62443')
     expect(recommendedFrameworksForSector('Énergie / Utilities', null, 'energie-nucleaire')[0]).toBe('IEC_62443')
   })
+  it('tous les sous-secteurs énergie (dont renouvelable) → IEC 62443 (issue #94)', () => {
+    for (const ss of ['energie-renouvelable', 'energie-production', 'energie-reseau', 'energie-fossile']) {
+      expect(recommendedFrameworksForSector('Énergie / Utilities', null, ss)).toContain('IEC_62443')
+    }
+  })
   it('sous-secteur absent ou neutre → recommandation inchangée', () => {
     expect(recommendedFrameworksForSector('Santé / Médico-social', null, undefined)[0]).toBe('HDS')
     expect(recommendedFrameworksForSector('Santé / Médico-social', null, 'sante-hopital')[0]).toBe('HDS')

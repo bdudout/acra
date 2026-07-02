@@ -608,6 +608,18 @@ const de: Record<string, string> = {
   "finance.sourcesRisque.1.ressources": "Mittel",
   "finance.scenariosStrategiques.2.nom": "KYC-Umgehung für einen betrügerischen Kredit (I)",
   "finance.scenariosStrategiques.2.description": "Ein Betrüger überwindet die Identitätsprüfung (Deepfake), um einen Kredit aufzunehmen",
+  "industrie.valeursMetier.4.nom": "Produktion erneuerbarer Energie (Wind / Solar)",
+  "industrie.valeursMetier.4.description": "Betrieb von Wind- und Photovoltaikparks und Einspeisung ins Stromnetz",
+  "industrie.biensSupports.5.nom": "Fernüberwachung von EE-Parks (verteiltes SCADA)",
+  "industrie.biensSupports.5.description": "Fernüberwachung von im Gebiet verteilten Windturbinen und PV-Wechselrichtern",
+  "industrie.biensSupports.6.nom": "Batteriespeichersystem (BESS)",
+  "industrie.biensSupports.6.description": "Speicherbatterien und ihr Managementsystem (BMS / EMS)",
+  "industrie.evenementsRedoutes.3.description": "Trennung oder böswillige Steuerung eines EE-Parks",
+  "industrie.evenementsRedoutes.3.impacts.0": "Verlust der eingespeisten Produktion",
+  "industrie.evenementsRedoutes.3.impacts.1": "Destabilisierung des Stromnetzes",
+  "industrie.evenementsRedoutes.3.impacts.2": "Finanzielle Verluste",
+  "industrie.scenariosStrategiques.2.nom": "Übernahme eines EE-Parks über verteiltes SCADA (D)",
+  "industrie.scenariosStrategiques.2.description": "Ein Angreifer kompromittiert die Fernüberwachung, um die Windturbinen / PV-Wechselrichter zu trennen oder zu verstellen",
 }
 
 export default de

@@ -212,6 +212,15 @@ describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
   })
 })
 
+describe('pack industrie — énergies renouvelables (issue #95)', () => {
+  it('propose des exemples ENR (éolien/PV/BESS)', () => {
+    const bs = sectorExemplesFor('Énergie / Utilities', 'biensSupports')
+    const vm = sectorExemplesFor('Énergie / Utilities', 'valeursMetier')
+    const txt = [...bs, ...vm].map(e => `${e.nom} ${e.description}`).join(' ')
+    expect(/renouvelable|éolien|eolien|photovolt|bess|solaire/i.test(txt)).toBe(true)
+  })
+})
+
 describe('pack finance — LCB-FT / KYC (issue #69)', () => {
   it('propose le KYC/KYB et un scénario de fraude à l’identité', () => {
     const bs = sectorExemplesFor('Banque / Finance', 'biensSupports')
