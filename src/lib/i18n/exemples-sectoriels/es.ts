@@ -626,6 +626,18 @@ const es: Record<string, string> = {
   "transport.biensSupports.8.description": "Sistemas de explotación aeroportuaria y apoyo a la gestión del tráfico aéreo",
   "transport.biensSupports.9.nom": "Sistemas de buque y portuarios (ECDIS / AIS)",
   "transport.biensSupports.9.description": "Sistemas de navegación, identificación (AIS) y gestión portuaria",
+  "immobilier.valeursMetier.3.nom": "Conducción de obra y planificación de los trabajos",
+  "immobilier.valeursMetier.3.description": "Pilotaje de las obras, coordinación de los oficios y seguimiento del calendario",
+  "immobilier.biensSupports.3.nom": "ERP / software de gestión de obra",
+  "immobilier.biensSupports.3.description": "Gestión de presupuestos, compras, planificación y seguimiento financiero de las obras",
+  "immobilier.biensSupports.4.nom": "Plataforma BIM colaborativa (CDE)",
+  "immobilier.biensSupports.4.description": "Entorno común de datos compartido entre la dirección de obra y los subcontratistas",
+  "immobilier.evenementsRedoutes.2.description": "Interrupción de una obra por ciberataque",
+  "immobilier.evenementsRedoutes.2.impacts.0": "Retraso en la entrega y penalizaciones",
+  "immobilier.evenementsRedoutes.2.impacts.1": "Sobrecostes e inmovilización",
+  "immobilier.evenementsRedoutes.2.impacts.2": "Litigios con el promotor",
+  "immobilier.scenariosStrategiques.2.nom": "Ransomware que bloquea la conducción de obra (D)",
+  "immobilier.scenariosStrategiques.2.description": "El ransomware cifra el ERP de obra y detiene los trabajos y la facturación",
 }
 
 export default es

@@ -1361,6 +1361,8 @@ const dict: Record<string, string> = {
   "SOUS_SECTEURS.energie-production.label": "Production d'électricité",
   "SOUS_SECTEURS.energie-renouvelable.label": "Énergies renouvelables",
   "SOUS_SECTEURS.energie-reseau.label": "Réseau / distribution",
+  "SOUS_SECTEURS.immobilier-agence.label": "Agence / gestion immobilière",
+  "SOUS_SECTEURS.immobilier-btp.label": "Construction / BTP",
   "SOUS_SECTEURS.industrie-agro.label": "Agroalimentaire",
   "SOUS_SECTEURS.industrie-auto-aero.label": "Automobile / aéronautique",
   "SOUS_SECTEURS.industrie-manufacturiere.label": "Industrie manufacturière",

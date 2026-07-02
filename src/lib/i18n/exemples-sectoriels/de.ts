@@ -626,6 +626,18 @@ const de: Record<string, string> = {
   "transport.biensSupports.8.description": "Flughafenbetriebssysteme und Unterstützung des Flugverkehrsmanagements",
   "transport.biensSupports.9.nom": "Schiffs- und Hafensysteme (ECDIS / AIS)",
   "transport.biensSupports.9.description": "Navigations-, Identifikations- (AIS) und Hafenmanagementsysteme",
+  "immobilier.valeursMetier.3.nom": "Baustellenleitung und Bauzeitenplanung",
+  "immobilier.valeursMetier.3.description": "Leitung der Baustellen, Koordination der Gewerke und Terminverfolgung",
+  "immobilier.biensSupports.3.nom": "Bau-ERP / Baustellensoftware",
+  "immobilier.biensSupports.3.description": "Verwaltung von Angeboten, Einkauf, Terminplanung und Finanzverfolgung der Baustellen",
+  "immobilier.biensSupports.4.nom": "Kollaborative BIM-Plattform (CDE)",
+  "immobilier.biensSupports.4.description": "Gemeinsame Datenumgebung zwischen Planung und Nachunternehmern",
+  "immobilier.evenementsRedoutes.2.description": "Unterbrechung einer Baustelle durch Cyberangriff",
+  "immobilier.evenementsRedoutes.2.impacts.0": "Lieferverzug und Vertragsstrafen",
+  "immobilier.evenementsRedoutes.2.impacts.1": "Mehrkosten und Stillstand",
+  "immobilier.evenementsRedoutes.2.impacts.2": "Streitigkeiten mit dem Bauherrn",
+  "immobilier.scenariosStrategiques.2.nom": "Ransomware, das die Baustellenleitung blockiert (D)",
+  "immobilier.scenariosStrategiques.2.description": "Ransomware verschlüsselt das Bau-ERP und stoppt Arbeiten und Rechnungsstellung",
 }
 
 export default de

@@ -499,25 +499,34 @@ const IMMOBILIER: SectorFamily = {
   match: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp', 'promoteur', 'real estate', 'foncier', 'syndic'],
   exemples: {
     valeursMetier: [
-      { nom: 'Gestion locative et transactions', type: 'PROCESSUS', description: 'Baux, mandats, transactions et états des lieux', responsable: 'Direction de l’agence', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Gestion locative et transactions', type: 'PROCESSUS', description: 'Baux, mandats, transactions et états des lieux', responsable: 'Direction de l’agence', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'agence' },
       { nom: 'Données personnelles des clients', type: 'INFORMATION', description: 'Pièces d’identité, données bancaires et dossiers des locataires et acquéreurs', responsable: 'DPO / direction', disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3 },
-      { nom: 'Maquette numérique du bâtiment (BIM)', type: 'INFORMATION', description: 'Plans, maquettes BIM et données techniques des ouvrages', responsable: 'Direction technique', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3 },
+      { nom: 'Maquette numérique du bâtiment (BIM)', type: 'INFORMATION', description: 'Plans, maquettes BIM et données techniques des ouvrages', responsable: 'Direction technique', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'btp' },
+      // Construction / BTP (issue #100)
+      { nom: 'Conduite de chantier et planning des travaux', type: 'PROCESSUS', description: 'Pilotage des chantiers, coordination des corps de métier et suivi du planning', responsable: 'Conducteur de travaux', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 3, sousProfession: 'btp' },
     ],
     biensSupports: [
-      { nom: 'Logiciel de gestion immobilière / transaction', type: 'LOGICIEL', description: 'Application métier de gestion locative, syndic ou transaction' },
+      { nom: 'Logiciel de gestion immobilière / transaction', type: 'LOGICIEL', description: 'Application métier de gestion locative, syndic ou transaction', sousProfession: 'agence' },
       { nom: 'Plateforme de signature électronique', type: 'LOGICIEL', description: 'Signature des baux et compromis de vente à distance' },
-      { nom: 'Prestataire de gestion des paiements', type: 'SOUS_TRAITANCE', description: 'Encaissement des loyers et gestion des séquestres' },
+      { nom: 'Prestataire de gestion des paiements', type: 'SOUS_TRAITANCE', description: 'Encaissement des loyers et gestion des séquestres', sousProfession: 'agence' },
+      // Construction / BTP (issue #100)
+      { nom: 'ERP / logiciel de gestion de chantier', type: 'LOGICIEL', description: 'Gestion des devis, achats, planning et suivi financier des chantiers', sousProfession: 'btp' },
+      { nom: 'Plateforme BIM collaborative (CDE)', type: 'SOUS_TRAITANCE', description: 'Environnement commun de données partagé entre maîtrise d’œuvre et sous-traitants', sousProfession: 'btp' },
     ],
     evenementsRedoutes: [
-      { description: 'Fraude au virement lors d’une transaction immobilière', impacts: ['Perte des fonds (prix de vente)', 'Mise en cause de responsabilité', 'Atteinte à la réputation'], graviteDefaut: 4 },
+      { description: 'Fraude au virement lors d’une transaction immobilière', impacts: ['Perte des fonds (prix de vente)', 'Mise en cause de responsabilité', 'Atteinte à la réputation'], graviteDefaut: 4, sousProfession: 'agence' },
       { description: 'Fuite de données personnelles des clients', impacts: ['Sanction CNIL (RGPD)', 'Usurpation d’identité des clients', 'Perte de confiance'], graviteDefaut: 3 },
+      // Construction / BTP (issue #100)
+      { description: 'Interruption d’un chantier par cyberattaque', impacts: ['Retard de livraison et pénalités', 'Surcoûts et immobilisation', 'Litiges avec le maître d’ouvrage'], graviteDefaut: 3, sousProfession: 'btp' },
     ],
     sourcesRisque: [
-      { nom: 'Escroc au faux ordre de virement (BEC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur interceptant les échanges pour détourner les fonds d’une transaction', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 4, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
+      { nom: 'Escroc au faux ordre de virement (BEC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur interceptant les échanges pour détourner les fonds d’une transaction ou d’un marché', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 4, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
     ],
     scenariosStrategiques: [
-      { critere: 'I', nom: 'Fraude au virement (BEC) sur une vente (I)', description: 'Un escroc substitue un faux RIB dans les échanges pour détourner le versement', vraisemblanceDefaut: 3, graviteDefaut: 4 },
-      { critere: 'D', nom: 'Rançongiciel bloquant la gestion locative (D)', description: 'Un rançongiciel chiffre le SI de gestion et interrompt l’activité', vraisemblanceDefaut: 3, graviteDefaut: 3 },
+      { critere: 'I', nom: 'Fraude au virement (BEC) sur une vente (I)', description: 'Un escroc substitue un faux RIB dans les échanges pour détourner le versement', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'agence' },
+      { critere: 'D', nom: 'Rançongiciel bloquant la gestion locative (D)', description: 'Un rançongiciel chiffre le SI de gestion et interrompt l’activité', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'agence' },
+      // Construction / BTP (issue #100)
+      { critere: 'D', nom: 'Rançongiciel bloquant la conduite de chantier (D)', description: 'Un rançongiciel chiffre l’ERP de chantier et interrompt les travaux et la facturation', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'btp' },
     ],
   },
 }
@@ -628,6 +637,9 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   if (v.includes('aerien') || v.includes('aérien')) return 'aerien'
   if (v.includes('maritime')) return 'maritime'
   if (v.includes('logistique')) return 'logistique'
+  // Immobilier ≠ construction/BTP (issue #100)
+  if (v.includes('btp') || v.includes('construction')) return 'btp'
+  if (v.includes('agence') || v.includes('immobilier-agence')) return 'agence'
   return undefined
 }
 

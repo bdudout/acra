@@ -48,6 +48,10 @@ describe('suggestsComplianceModule (issue #73)', () => {
     expect(suggestsComplianceModule('Médias / Culture', 'EEI')).toBe(true)
     expect(suggestsComplianceModule(null, 'OIV')).toBe(true)
   })
+  it('couvre l’enseignement supérieur et la recherche (ESR) (issue #101)', () => {
+    expect(suggestsComplianceModule('Éducation / Recherche')).toBe(true)
+    expect(suggestsComplianceModule('Université / enseignement supérieur')).toBe(true)
+  })
   it('faux pour un secteur non réglementé sans statut', () => {
     expect(suggestsComplianceModule('Médias / Culture')).toBe(false)
     expect(suggestsComplianceModule('Tourisme / Hôtellerie-restauration', 'aucun')).toBe(false)
@@ -82,9 +86,9 @@ describe('nis2Classification (issues #85/#92)', () => {
       expect(nis2Classification(s)).toBe('essentielle')
     }
   })
-  it('secteurs Annexe II → entité importante', () => {
+  it('secteurs Annexe II → entité importante (dont ESR — recherche)', () => {
     for (const s of ['Industrie / Manufacturing', 'Agriculture / Agroalimentaire',
-      'E-commerce / Marketplace', 'Éducation / Recherche']) {
+      'E-commerce / Marketplace', 'Éducation / Recherche', 'Université / enseignement supérieur']) {
       expect(nis2Classification(s)).toBe('importante')
     }
   })

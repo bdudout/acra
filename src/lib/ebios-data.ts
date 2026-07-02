@@ -87,6 +87,9 @@ export const SOUS_SECTEURS = [
   { id: 'transport-ferroviaire', famille: 'transport', label: 'Ferroviaire' },
   { id: 'transport-aerien', famille: 'transport', label: 'Aérien / aéroportuaire' },
   { id: 'transport-maritime', famille: 'transport', label: 'Maritime / portuaire' },
+  // Immobilier (issue #100) — agence vs construction/BTP
+  { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
+  { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

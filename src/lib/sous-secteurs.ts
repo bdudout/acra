@@ -10,7 +10,7 @@
  */
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
@@ -22,6 +22,7 @@ const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
   { famille: 'industrie', kw: ['industrie', 'manufactur', 'usine', 'scada', 'industry', 'industria', 'industrie '] },
   { famille: 'juridique', kw: ['juridique', 'avocat', 'notaire', 'juriste', 'barreau', 'legal', 'law', 'notar', 'abogado', 'anwalt'] },
   { famille: 'transport', kw: ['transport', 'logistique', 'logistics', 'fret', 'ferroviaire', 'aérien', 'aerien', 'maritime', 'livraison', 'transporte', 'trasporto', 'verkehr'] },
+  { famille: 'immobilier', kw: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp', 'promoteur', 'real estate', 'foncier', 'inmobili', 'immobili', 'bau'] },
 ]
 
 /** Famille d'un secteur (par mots-clés multilingues), ou null si aucune taxonomie. */

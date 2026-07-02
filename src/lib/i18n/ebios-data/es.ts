@@ -1361,5 +1361,7 @@ const dict: Record<string, string> = {
   "SOUS_SECTEURS.transport-ferroviaire.label": "Ferroviario",
   "SOUS_SECTEURS.transport-aerien.label": "Aéreo / aeroportuario",
   "SOUS_SECTEURS.transport-maritime.label": "Marítimo / portuario",
+  "SOUS_SECTEURS.immobilier-agence.label": "Agencia / gestión inmobiliaria",
+  "SOUS_SECTEURS.immobilier-btp.label": "Construcción / obras",
 }
 export default dict

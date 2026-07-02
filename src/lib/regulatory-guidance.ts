@@ -19,6 +19,8 @@ const REGULATED_SECTOR_KEYWORDS = [
   'administration', 'public', 'collectivit', 'état', 'etat', 'government',
   'télécom', 'telecom', 'communication',
   'transport', 'logistique', 'logistics', 'aérien', 'aerien', 'ferroviaire',
+  // Enseignement supérieur et recherche (ESR) — NIS2 Annexe II (recherche) — issue #101
+  'recherche', 'research', 'université', 'universite', 'enseignement', 'esr',
 ]
 
 /**
@@ -64,7 +66,7 @@ const NIS2_IMPORTANTE_KW = [
   'industrie', 'manufactur', 'usine', 'industry',
   'agro', 'agricol', 'aliment', 'food',
   'e-commerce', 'ecommerce', 'marketplace',
-  'recherche', 'research',
+  'recherche', 'research', 'université', 'universite', 'enseignement', 'esr',
   'poste', 'postal', 'déchet', 'dechet', 'waste', 'chimie', 'chemical',
 ]
 // Secteurs explicitement HORS NIS2 (priment sur le matching par mots-clés).

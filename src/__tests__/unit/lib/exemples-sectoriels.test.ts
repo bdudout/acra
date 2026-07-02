@@ -212,6 +212,23 @@ describe('juridique : avocat ≠ notaire (issues #71/#72)', () => {
   })
 })
 
+describe('immobilier — agence ≠ construction/BTP (issue #100)', () => {
+  const SEC = 'Immobilier / Construction'
+  it('BTP : chantier/ERP de chantier, pas la gestion locative', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'immobilier-btp')
+    const bs = sectorExemplesFor(SEC, 'biensSupports', 'fr', 'immobilier-btp')
+    const txt = [...vm, ...bs].map(e => `${e.nom} ${e.description}`).join(' ').toLowerCase()
+    expect(/chantier|btp|bim/i.test(txt)).toBe(true)
+    expect(txt).not.toContain('gestion locative')
+  })
+  it('agence : gestion locative / transaction, pas le chantier', () => {
+    const vm = sectorExemplesFor(SEC, 'valeursMetier', 'fr', 'immobilier-agence')
+    const txt = vm.map(e => `${e.nom}`).join(' ').toLowerCase()
+    expect(txt).toContain('gestion locative')
+    expect(txt).not.toContain('chantier')
+  })
+})
+
 describe('transport — distinction par mode (issue #97)', () => {
   const SEC = 'Transports / Logistique'
   it('ferroviaire : signalisation ERTMS, pas le chronotachygraphe routier', () => {

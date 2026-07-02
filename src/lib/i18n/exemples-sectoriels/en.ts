@@ -627,6 +627,18 @@ const en: Record<string, string> = {
   "transport.biensSupports.8.description": "Airport operations systems and air traffic management support",
   "transport.biensSupports.9.nom": "Ship and port systems (ECDIS / AIS)",
   "transport.biensSupports.9.description": "Navigation, identification (AIS) and port management systems",
+  "immobilier.valeursMetier.3.nom": "Site management and works scheduling",
+  "immobilier.valeursMetier.3.description": "Management of construction sites, coordination of trades and schedule tracking",
+  "immobilier.biensSupports.3.nom": "Construction ERP / site management software",
+  "immobilier.biensSupports.3.description": "Management of quotes, purchasing, scheduling and financial tracking of sites",
+  "immobilier.biensSupports.4.nom": "Collaborative BIM platform (CDE)",
+  "immobilier.biensSupports.4.description": "Common data environment shared between project management and subcontractors",
+  "immobilier.evenementsRedoutes.2.description": "Interruption of a construction site by cyberattack",
+  "immobilier.evenementsRedoutes.2.impacts.0": "Delivery delay and penalties",
+  "immobilier.evenementsRedoutes.2.impacts.1": "Overruns and immobilization",
+  "immobilier.evenementsRedoutes.2.impacts.2": "Disputes with the project owner",
+  "immobilier.scenariosStrategiques.2.nom": "Ransomware blocking site management (D)",
+  "immobilier.scenariosStrategiques.2.description": "Ransomware encrypts the construction ERP and halts works and invoicing",
 }
 
 export default en

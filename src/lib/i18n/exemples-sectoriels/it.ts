@@ -626,6 +626,18 @@ const it: Record<string, string> = {
   "transport.biensSupports.8.description": "Sistemi di gestione aeroportuale e supporto alla gestione del traffico aereo",
   "transport.biensSupports.9.nom": "Sistemi di nave e portuali (ECDIS / AIS)",
   "transport.biensSupports.9.description": "Sistemi di navigazione, identificazione (AIS) e gestione portuale",
+  "immobilier.valeursMetier.3.nom": "Conduzione del cantiere e pianificazione dei lavori",
+  "immobilier.valeursMetier.3.description": "Gestione dei cantieri, coordinamento delle imprese e monitoraggio del cronoprogramma",
+  "immobilier.biensSupports.3.nom": "ERP / software di gestione cantiere",
+  "immobilier.biensSupports.3.description": "Gestione di preventivi, acquisti, pianificazione e monitoraggio finanziario dei cantieri",
+  "immobilier.biensSupports.4.nom": "Piattaforma BIM collaborativa (CDE)",
+  "immobilier.biensSupports.4.description": "Ambiente comune di dati condiviso tra la direzione lavori e i subappaltatori",
+  "immobilier.evenementsRedoutes.2.description": "Interruzione di un cantiere per cyberattacco",
+  "immobilier.evenementsRedoutes.2.impacts.0": "Ritardo di consegna e penali",
+  "immobilier.evenementsRedoutes.2.impacts.1": "Extra-costi e immobilizzo",
+  "immobilier.evenementsRedoutes.2.impacts.2": "Contenziosi con il committente",
+  "immobilier.scenariosStrategiques.2.nom": "Ransomware che blocca la conduzione del cantiere (D)",
+  "immobilier.scenariosStrategiques.2.description": "Il ransomware cifra l’ERP di cantiere e blocca i lavori e la fatturazione",
 }
 
 export default it
