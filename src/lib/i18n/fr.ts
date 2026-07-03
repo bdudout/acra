@@ -383,6 +383,7 @@ export const fr = {
     conformiteSubtitle: 'Suivi de la conformité au référentiel, par analyse (socle en priorité).',
     conformiteModify: 'Modifier',
     conformiteRate: 'conforme',
+    conformiteNonConfLabel: 'non-conformité(s) à traiter',
     noAnalyses:     'Aucune analyse pour l\'instant',
     noAnalysesDesc: 'Créez votre première analyse de risques cyber guidée avec ACRA.',
     createFirst:    'Créer ma première analyse',

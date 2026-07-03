@@ -73,6 +73,29 @@ export interface ConformiteStats {
   tauxConformite: number
 }
 
+/**
+ * Applique un nouveau statut à un contrôle (par `ref`) dans une liste d'évaluations :
+ * met à jour l'entrée existante (en préservant le commentaire) ou l'ajoute si absente.
+ * Retourne une nouvelle liste (immutable). Utilisé par l'édition inline du socle
+ * depuis le dashboard. Pur, testé.
+ */
+export function applyConformiteStatut(
+  entries: ConformiteEntry[],
+  ref: string,
+  statut: ConformiteStatut,
+): ConformiteEntry[] {
+  const r = String(ref ?? '').trim()
+  if (!r || !isStatut(statut)) return entries
+  let found = false
+  const out = entries.map(e => {
+    if (e.ref !== r) return e
+    found = true
+    return { ...e, statut }
+  })
+  if (!found) out.push({ ref: r, statut })
+  return out
+}
+
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0
   for (const e of entries) {

@@ -373,6 +373,7 @@ export const es: Translations = {
     conformiteSubtitle: 'Seguimiento de la conformidad con el marco, por análisis (base primero).',
     conformiteModify: 'Modificar',
     conformiteRate: 'conforme',
+    conformiteNonConfLabel: 'no conformidad(es) a tratar',
     noAnalyses:     'Aún no hay análisis',
     noAnalysesDesc: 'Crea tu primer análisis de riesgos cibernéticos guiado con ACRA.',
     createFirst:    'Crear mi primer análisis',

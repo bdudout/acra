@@ -373,6 +373,7 @@ export const de: Translations = {
     conformiteSubtitle: 'Nachverfolgung der Rahmenwerk-Konformität, je Analyse (Sockel zuerst).',
     conformiteModify: 'Bearbeiten',
     conformiteRate: 'konform',
+    conformiteNonConfLabel: 'zu behandelnde Nichtkonformität(en)',
     noAnalyses:     'Noch keine Analysen',
     noAnalysesDesc: 'Erstellen Sie Ihre erste geführte Cyber-Risikoanalyse mit ACRA.',
     createFirst:    'Meine erste Analyse erstellen',

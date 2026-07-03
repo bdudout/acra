@@ -4,6 +4,7 @@ import {
   sanitizeConformite,
   deriveNonConformites,
   conformiteStats,
+  applyConformiteStatut,
   type ConformiteEntry,
 } from '@/lib/conformite'
 
@@ -76,5 +77,27 @@ describe('conformiteStats', () => {
   it('taux = 0 si aucun contrôle pertinent évalué', () => {
     const s = conformiteStats([{ ref: '5.4', statut: 'na' }], 5)
     expect(s.tauxConformite).toBe(0)
+  })
+})
+
+describe('applyConformiteStatut — édition inline du socle', () => {
+  const base: ConformiteEntry[] = [
+    { ref: '5.1', statut: 'non_conforme', commentaire: 'à traiter' },
+    { ref: '5.2', statut: 'partiel' },
+  ]
+  it('met à jour le statut d\'un contrôle existant en préservant le commentaire', () => {
+    const out = applyConformiteStatut(base, '5.1', 'conforme')
+    expect(out.find(e => e.ref === '5.1')).toEqual({ ref: '5.1', statut: 'conforme', commentaire: 'à traiter' })
+    expect(out).not.toBe(base) // immutable
+    expect(base[0].statut).toBe('non_conforme') // source inchangée
+  })
+  it('ajoute une entrée si le contrôle n\'est pas encore évalué', () => {
+    const out = applyConformiteStatut(base, '9.9', 'na')
+    expect(out).toHaveLength(3)
+    expect(out[2]).toEqual({ ref: '9.9', statut: 'na' })
+  })
+  it('ignore une ref vide ou un statut invalide', () => {
+    expect(applyConformiteStatut(base, '   ', 'conforme')).toBe(base)
+    expect(applyConformiteStatut(base, '5.1', 'bidon' as any)).toBe(base)
   })
 })

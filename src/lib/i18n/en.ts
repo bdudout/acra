@@ -373,6 +373,7 @@ export const en: Translations = {
     conformiteSubtitle: 'Framework compliance tracking, per analysis (baseline first).',
     conformiteModify: 'Edit',
     conformiteRate: 'compliant',
+    conformiteNonConfLabel: 'non-compliance(s) to address',
     noAnalyses:     'No analyses yet',
     noAnalysesDesc: 'Create your first guided cyber risk analysis with ACRA.',
     createFirst:    'Create my first analysis',
