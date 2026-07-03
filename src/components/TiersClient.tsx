@@ -1,12 +1,15 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
-import { suggestTierDuplicates, type ConsolidatedTier } from '@/lib/tiers'
+import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from '@/lib/tiers'
+
+// Clé de persistance (par navigateur) des groupes de doublons « ignorés ».
+const IGNORED_DUPS_LS_KEY = 'acra:tiers:ignoredDups'
 import ConfirmDialog from '@/components/ConfirmDialog'
 
 export interface TiersRow {
@@ -46,17 +49,35 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
   // Doublons potentiels (lecture seule) : tiers au nom proche à harmoniser.
   const dupGroups = useMemo(() => suggestTierDuplicates(tiers), [tiers])
 
-  // Fusion (étape 2b) : nom cible choisi par groupe + confirmation + résultat.
+  // Groupes « ignorés » par l'utilisateur (persistés en localStorage, par signature
+  // stable). Un groupe ignoré ne réapparaît que si sa composition change.
+  const [ignoredSigs, setIgnoredSigs] = useState<string[]>([])
+  const [showIgnored, setShowIgnored] = useState(false)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(IGNORED_DUPS_LS_KEY)
+      if (raw) setIgnoredSigs(JSON.parse(raw))
+    } catch { /* localStorage indisponible → pas de persistance */ }
+  }, [])
+  function persistIgnored(next: string[]) {
+    setIgnoredSigs(next)
+    try { localStorage.setItem(IGNORED_DUPS_LS_KEY, JSON.stringify(next)) } catch { /* noop */ }
+  }
+  const ignoredSet = useMemo(() => new Set(ignoredSigs), [ignoredSigs])
+  const visibleDups = useMemo(() => dupGroups.filter(g => !ignoredSet.has(tierGroupSignature(g))), [dupGroups, ignoredSet])
+  const ignoredDups = useMemo(() => dupGroups.filter(g => ignoredSet.has(tierGroupSignature(g))), [dupGroups, ignoredSet])
+
+  // Fusion (étape 2b) : nom cible choisi par groupe (clé = signature) + confirmation.
   const defaultTarget = (g: ConsolidatedTier[]) => g.map(x => x.nom).reduce((a, b) => (b.length < a.length ? b : a))
-  const [mergeTarget, setMergeTarget] = useState<Record<number, string>>({})
-  const [confirmGroup, setConfirmGroup] = useState<number | null>(null)
+  const [mergeTarget, setMergeTarget] = useState<Record<string, string>>({})
+  const [confirmSig, setConfirmSig] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [mergeMsg, setMergeMsg] = useState<string | null>(null)
 
-  async function runMerge(i: number) {
-    const g = dupGroups[i]
+  async function runMerge(sig: string) {
+    const g = dupGroups.find(x => tierGroupSignature(x) === sig)
     if (!g) return
-    const cible = mergeTarget[i] ?? defaultTarget(g)
+    const cible = mergeTarget[sig] ?? defaultTarget(g)
     setBusy(true)
     setMergeMsg(null)
     try {
@@ -76,7 +97,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
       setMergeMsg(t.tiers.mergeError)
     } finally {
       setBusy(false)
-      setConfirmGroup(null)
+      setConfirmSig(null)
     }
   }
 
@@ -145,53 +166,119 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
         className="input w-full mb-4 text-sm"
       />
 
-      {/* Doublons potentiels : suggestion + fusion optionnelle (étape 2b) */}
-      {dupGroups.length > 0 && (
+      {/* Doublons potentiels : suggestion + fusion optionnelle (étape 2b) + ignorer */}
+      {visibleDups.length > 0 && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="text-sm font-semibold text-amber-900">⚠️ {t.tiers.dupHintTitle} ({dupGroups.length})</p>
+          <p className="text-sm font-semibold text-amber-900">⚠️ {t.tiers.dupHintTitle} ({visibleDups.length})</p>
           <p className="text-xs text-amber-800 mt-0.5">{t.tiers.dupHintText}</p>
           {mergeMsg && <p className="text-xs font-medium text-amber-900 mt-2" role="status">{mergeMsg}</p>}
           <ul className="mt-2 space-y-2">
-            {dupGroups.map((g, i) => (
-              <li key={i} className="text-xs text-amber-900">
+            {visibleDups.map(g => {
+              const sig = tierGroupSignature(g)
+              return (
+              <li key={sig} className="text-xs text-amber-900">
                 <span>• {g.map(x => x.nom).join('  ·  ')}</span>
-                {canMerge && (
-                  <span className="inline-flex items-center gap-1.5 ml-2 align-middle">
-                    <label className="sr-only" htmlFor={`merge-target-${i}`}>{t.tiers.mergeTo}</label>
-                    <select
-                      id={`merge-target-${i}`}
-                      value={mergeTarget[i] ?? defaultTarget(g)}
-                      onChange={e => setMergeTarget(m => ({ ...m, [i]: e.target.value }))}
-                      disabled={busy}
-                      className="rounded border border-amber-300 bg-white px-1.5 py-0.5 text-[11px] text-amber-900"
-                    >
-                      {g.map(x => <option key={x.key} value={x.nom}>{x.nom}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmGroup(i)}
-                      disabled={busy}
-                      className="rounded bg-amber-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-amber-600 disabled:opacity-50"
-                    >
-                      {t.tiers.mergeBtn}
-                    </button>
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 ml-2 align-middle">
+                  {canMerge && (
+                    <>
+                      <label className="sr-only" htmlFor={`merge-target-${sig}`}>{t.tiers.mergeTo}</label>
+                      <select
+                        id={`merge-target-${sig}`}
+                        value={mergeTarget[sig] ?? defaultTarget(g)}
+                        onChange={e => setMergeTarget(m => ({ ...m, [sig]: e.target.value }))}
+                        disabled={busy}
+                        className="rounded border border-amber-300 bg-white px-1.5 py-0.5 text-[11px] text-amber-900"
+                      >
+                        {g.map(x => <option key={x.key} value={x.nom}>{x.nom}</option>)}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmSig(sig)}
+                        disabled={busy}
+                        className="rounded bg-amber-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        {t.tiers.mergeBtn}
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => persistIgnored([...ignoredSigs, sig])}
+                    className="rounded border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+                  >
+                    {t.tiers.dupIgnore}
+                  </button>
+                </span>
               </li>
-            ))}
+              )
+            })}
           </ul>
+          {ignoredDups.length > 0 && (
+            <div className="mt-2 border-t border-amber-200 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowIgnored(v => !v)}
+                className="text-[11px] text-amber-700 underline hover:text-amber-900"
+              >
+                {ignoredDups.length} {t.tiers.dupIgnoredCount} — {showIgnored ? t.tiers.dupHideIgnored : t.tiers.dupShowIgnored}
+              </button>
+              {showIgnored && (
+                <ul className="mt-1.5 space-y-1">
+                  {ignoredDups.map(g => {
+                    const sig = tierGroupSignature(g)
+                    return (
+                      <li key={sig} className="text-[11px] text-amber-700 flex items-center gap-2">
+                        <span className="line-through opacity-70">{g.map(x => x.nom).join('  ·  ')}</span>
+                        <button
+                          type="button"
+                          onClick={() => persistIgnored(ignoredSigs.filter(s => s !== sig))}
+                          className="underline hover:text-amber-900"
+                        >
+                          {t.tiers.dupRestore}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {confirmGroup !== null && dupGroups[confirmGroup] && (
+      {/* Aucun doublon visible mais des groupes ignorés : accès à la restauration */}
+      {visibleDups.length === 0 && ignoredDups.length > 0 && (
+        <div className="mb-4 text-xs text-gray-400">
+          <button type="button" onClick={() => setShowIgnored(v => !v)} className="underline hover:text-gray-600">
+            {ignoredDups.length} {t.tiers.dupIgnoredCount} — {showIgnored ? t.tiers.dupHideIgnored : t.tiers.dupShowIgnored}
+          </button>
+          {showIgnored && (
+            <ul className="mt-1.5 space-y-1">
+              {ignoredDups.map(g => {
+                const sig = tierGroupSignature(g)
+                return (
+                  <li key={sig} className="flex items-center gap-2">
+                    <span className="line-through">{g.map(x => x.nom).join('  ·  ')}</span>
+                    <button type="button" onClick={() => persistIgnored(ignoredSigs.filter(s => s !== sig))} className="underline hover:text-gray-600">
+                      {t.tiers.dupRestore}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {confirmSig !== null && dupGroups.find(x => tierGroupSignature(x) === confirmSig) && (
         <ConfirmDialog
           variant="warning"
           icon="🔀"
           title={t.tiers.mergeConfirmTitle}
-          message={t.tiers.mergeConfirmMsg.replace('{cible}', mergeTarget[confirmGroup] ?? defaultTarget(dupGroups[confirmGroup]))}
+          message={t.tiers.mergeConfirmMsg.replace('{cible}', mergeTarget[confirmSig] ?? defaultTarget(dupGroups.find(x => tierGroupSignature(x) === confirmSig)!))}
           confirmLabel={t.tiers.mergeBtn}
-          onConfirm={() => runMerge(confirmGroup)}
-          onCancel={() => setConfirmGroup(null)}
+          onConfirm={() => runMerge(confirmSig)}
+          onCancel={() => setConfirmSig(null)}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeTierName, consolidateTiers, suggestTierDuplicates, validateMergeRequest, planTierRename, type TierInput } from '@/lib/tiers'
+import { normalizeTierName, consolidateTiers, suggestTierDuplicates, validateMergeRequest, planTierRename, tierGroupSignature, type TierInput } from '@/lib/tiers'
 
 // Consolidation des tiers à travers les analyses (GitHub backlog #46, étape 1).
 
@@ -124,5 +124,23 @@ describe('planTierRename — sélection des PP à renommer (étape 2b)', () => {
     const rows = [c('p1', 'Microsoft', true)]
     const r = planTierRename(rows, '  Microsoft  ', x => x.editable)
     expect(r.renameIds).toEqual([])
+  })
+})
+
+describe('tierGroupSignature — clé stable pour « ignorer » un groupe de doublons', () => {
+  it('indépendante de l\'ordre des membres', () => {
+    const a = tierGroupSignature([{ key: 'microsoft' }, { key: 'microsoft azure' }])
+    const b = tierGroupSignature([{ key: 'microsoft azure' }, { key: 'microsoft' }])
+    expect(a).toBe(b)
+    expect(a).toBe('microsoft azure|microsoft')
+  })
+  it('change si la composition du groupe change (réapparition)', () => {
+    const before = tierGroupSignature([{ key: 'ovh' }, { key: 'ovh cloud' }])
+    const after  = tierGroupSignature([{ key: 'ovh' }, { key: 'ovh cloud' }, { key: 'ovh telecom' }])
+    expect(before).not.toBe(after)
+  })
+  it('ignore les clés vides ; groupe vide → chaîne vide', () => {
+    expect(tierGroupSignature([{ key: '' }, { key: 'aws' }])).toBe('aws')
+    expect(tierGroupSignature([])).toBe('')
   })
 })

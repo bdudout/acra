@@ -83,6 +83,20 @@ export function suggestTierDuplicates(tiers: ConsolidatedTier[]): ConsolidatedTi
   return [...byLead.values()].filter(g => g.length >= 2)
 }
 
+/**
+ * Signature stable d'un groupe de doublons : clés normalisées triées puis jointes.
+ * Sert de clé de persistance pour « ignorer » un groupe — indépendante de l'ordre.
+ * Si la composition du groupe change (nouveau tiers rapproché), la signature change
+ * → le groupe réapparaît (situation nouvelle à réexaminer). Pur, testé.
+ */
+export function tierGroupSignature(group: { key: string }[]): string {
+  return (group ?? [])
+    .map(g => String(g?.key ?? ''))
+    .filter(Boolean)
+    .sort()
+    .join('|')
+}
+
 // ─── Fusion de doublons (étape 2b, écriture) ─────────────────────────────────
 
 /** Longueur maximale d'un nom de tiers cible. */
