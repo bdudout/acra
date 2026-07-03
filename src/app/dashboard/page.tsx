@@ -14,6 +14,8 @@ import { analyseWhereClause, canCreateAnalyse, isAdminRole, type UserRole } from
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
+import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
+import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { ClipboardList, Send, Settings, CheckCircle2, AlertCircle, AlertTriangle, KeyRound, Building2 } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
@@ -38,6 +40,7 @@ export default async function DashboardPage() {
       risques: { select: { niveauRisque: true, niveauResiduel: true, strategie: true } },
       mesures: { select: { statut: true, priorite: true } },
       organization: { select: { nom: true } },
+      cadrage: { select: { socleSecurite: true, customControles: true } },
       partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true, rang: true, cle: true, parentCle: true } },
     },
   })
@@ -84,6 +87,27 @@ export default async function DashboardPage() {
   const analysesAvecCritiques = analyses
     .filter(a => a.risques.some(r => getRiskTier(r.niveauRisque) === 'critique'))
     .slice(0, 3)
+
+  // Suivi de conformité du socle de sécurité (fiche Club EBIOS) : analyses ayant un
+  // socle renseigné — priorité aux analyses SOCLE, puis au nombre de non-conformités.
+  const conformiteRows = analyses
+    .map(a => {
+      const entries = sanitizeConformite((a as any).cadrage?.socleSecurite)
+      if (entries.length === 0) return null
+      const ref = ((a as any).referentielMesures ?? 'ISO27001') as FrameworkId
+      const total = getFrameworkControles(ref, (a as any).cadrage?.customControles as any[], locale).length
+      return {
+        analyseId: a.id,
+        nom: a.nom,
+        isSocle: !!(a as any).isSocle,
+        frameworkNom: FRAMEWORK_META[ref]?.nom ?? String(ref),
+        stats: conformiteStats(entries, total),
+      }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => Number(b.isSocle) - Number(a.isSocle) || b.stats.nonConforme - a.stats.nonConforme)
+    .slice(0, 4)
+  const conformiteStatutLabels = t.conformite.statuts as Record<string, string>
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -284,6 +308,50 @@ export default async function DashboardPage() {
                       </Link>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Suivi de conformité du socle de sécurité (fiche Club EBIOS) */}
+            {conformiteRows.length > 0 && (
+              <div className="card p-5">
+                <h2 className="font-semibold text-gray-800 mb-1">🛡️ {t.dashboard.conformiteTitle}</h2>
+                <p className="text-xs text-gray-500 mb-4">{t.dashboard.conformiteSubtitle}</p>
+                <div className="space-y-4">
+                  {conformiteRows.map(c => (
+                    <div key={c.analyseId} className="border border-gray-100 rounded-lg p-3">
+                      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {c.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>}
+                          <span className="text-sm font-medium text-gray-800 truncate">{c.nom}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">· {c.frameworkNom}</span>
+                        </div>
+                        <Link href={`/analyses/${c.analyseId}/atelier/1`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
+                          {t.dashboard.conformiteModify} →
+                        </Link>
+                      </div>
+                      {/* Barre de répartition conforme / partiel / non-conforme / na */}
+                      <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-gray-100 mb-1.5">
+                        {[
+                          { n: c.stats.conforme,    cls: 'bg-green-500' },
+                          { n: c.stats.partiel,     cls: 'bg-amber-400' },
+                          { n: c.stats.nonConforme, cls: 'bg-red-500' },
+                          { n: c.stats.na,          cls: 'bg-gray-300' },
+                        ].map((seg, i) => seg.n > 0 ? (
+                          <div key={i} className={seg.cls} style={{ width: `${(seg.n / Math.max(c.stats.evalues, 1)) * 100}%` }} />
+                        ) : null)}
+                      </div>
+                      <div className="flex items-center justify-between text-xs flex-wrap gap-x-3 gap-y-1">
+                        <span className="font-semibold text-gray-700">{c.stats.tauxConformite}% {t.dashboard.conformiteRate}</span>
+                        <span className="text-gray-500">
+                          <span className="text-green-600">{c.stats.conforme} {conformiteStatutLabels.conforme}</span>
+                          {' · '}<span className="text-amber-600">{c.stats.partiel} {conformiteStatutLabels.partiel}</span>
+                          {' · '}<span className="text-red-600 font-medium">{c.stats.nonConforme} {conformiteStatutLabels.non_conforme}</span>
+                          {' · '}<span className="text-gray-400">{c.stats.evalues}/{c.stats.total}</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
