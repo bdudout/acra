@@ -132,7 +132,8 @@ describe('tierGroupSignature — clé stable pour « ignorer » un groupe de dou
     const a = tierGroupSignature([{ key: 'microsoft' }, { key: 'microsoft azure' }])
     const b = tierGroupSignature([{ key: 'microsoft azure' }, { key: 'microsoft' }])
     expect(a).toBe(b)
-    expect(a).toBe('microsoft azure|microsoft')
+    // Tri lexicographique croissant : le préfixe court ('microsoft') vient en premier.
+    expect(a).toBe('microsoft|microsoft azure')
   })
   it('change si la composition du groupe change (réapparition)', () => {
     const before = tierGroupSignature([{ key: 'ovh' }, { key: 'ovh cloud' }])
