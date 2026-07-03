@@ -615,6 +615,8 @@ export const de: Translations = {
       residualHint: 'Zielposition, sobald alle Aktionspläne umgesetzt sind.',
     },
     topRisks:         'Top identifizierte Risiken',
+    conformiteTitle:  'Konformität des Sicherheitssockels',
+    conformiteInheritedNote: 'geerbt vom Sockel „{socle}“',
     editRiskTreatment: 'Klicken, um die Risikobehandlung zu bearbeiten (Workshop 5)',
     editMeasure:      'Klicken, um die Maßnahme zu bearbeiten (Workshop 5)',
     actionPlanTitle:  'Aktionsplan',

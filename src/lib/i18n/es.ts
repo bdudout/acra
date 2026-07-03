@@ -615,6 +615,8 @@ export const es: Translations = {
       residualHint: 'Posición objetivo una vez implementados todos los planes de acción.',
     },
     topRisks:         'Principales riesgos identificados',
+    conformiteTitle:  'Conformidad de la base de seguridad',
+    conformiteInheritedNote: 'heredada de la base «{socle}»',
     editRiskTreatment: 'Haz clic para editar el tratamiento del riesgo (Taller 5)',
     editMeasure:      'Haz clic para editar la medida (Taller 5)',
     actionPlanTitle:  'Plan de acción',

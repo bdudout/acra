@@ -92,7 +92,7 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
                   <span className="text-sm font-medium text-gray-800 truncate">{r.nom}</span>
                   <span className="text-xs text-gray-400 flex-shrink-0">· {r.frameworkNom}</span>
                 </div>
-                <Link href={`/analyses/${r.analyseId}/atelier/1`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
+                <Link href={`/analyses/${r.analyseId}/atelier/1#socle-conformite`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
                   {t.dashboard.conformiteModify} →
                 </Link>
               </div>

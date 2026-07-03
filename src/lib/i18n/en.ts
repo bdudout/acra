@@ -615,6 +615,8 @@ export const en: Translations = {
       residualHint: 'Target position once all action plans are implemented.',
     },
     topRisks:         'Top identified risks',
+    conformiteTitle:  'Security baseline compliance',
+    conformiteInheritedNote: 'inherited from baseline “{socle}”',
     editRiskTreatment: 'Click to edit the risk treatment (Workshop 5)',
     editMeasure:      'Click to edit the measure (Workshop 5)',
     actionPlanTitle:  'Action plan',

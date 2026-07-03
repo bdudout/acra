@@ -630,6 +630,8 @@ export const fr = {
       residualHint: 'Position cible une fois tous les plans d\'action mis en œuvre.',
     },
     topRisks:         'Top risques identifiés',
+    conformiteTitle:  'Conformité au socle de sécurité',
+    conformiteInheritedNote: 'héritée du socle « {socle} »',
     editRiskTreatment: 'Cliquer pour modifier le traitement du risque (Atelier 5)',
     editMeasure:      'Cliquer pour modifier la mesure (Atelier 5)',
     actionPlanTitle:  "Plan d'action",

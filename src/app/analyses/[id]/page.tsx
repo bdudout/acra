@@ -18,7 +18,10 @@ import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
+import ConformitePie from '@/components/ConformitePie'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
+import { resolveEffectiveConformite, sanitizeConformite, conformiteStats } from '@/lib/conformite'
+import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
 import {
@@ -50,7 +53,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
       mesures: true,
       accesUtilisateurs: true,
       user: { select: { id: true, name: true, email: true } },
-      socle: { select: { id: true, nom: true } },
+      socle: { select: { id: true, nom: true, referentielMesures: true, cadrage: { select: { socleSecurite: true, customControles: true } } } },
       _count: { select: { heritiers: true } },
     },
   })
@@ -75,6 +78,27 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   // Config résolue par l'organisation de l'analyse (héritage des ancêtres).
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
   const qualificationActive = orgConfig.qualificationActive
+
+  // Camembert de conformité au référentiel du socle (propre ou héritée).
+  const socleForConf = (analyse as any).socle as { id: string; nom: string; referentielMesures?: string; cadrage?: { socleSecurite?: unknown; customControles?: unknown } } | null
+  const effConf = resolveEffectiveConformite({
+    ownEntries: analyse.cadrage ? sanitizeConformite((analyse.cadrage as any).socleSecurite) : [],
+    socle: socleForConf?.cadrage
+      ? { id: socleForConf.id, nom: socleForConf.nom, entries: sanitizeConformite(socleForConf.cadrage.socleSecurite) }
+      : null,
+  })
+  let conformitePie: { stats: ReturnType<typeof conformiteStats>; frameworkNom: string; inherited: boolean; sourceNom: string | null } | null = null
+  if (orgConfig.conformiteActive && effConf.entries.length > 0) {
+    const refId = (effConf.inherited ? socleForConf?.referentielMesures : (analyse as any).referentielMesures) ?? 'ISO27001'
+    const custom = (effConf.inherited ? socleForConf?.cadrage?.customControles : (analyse.cadrage as any)?.customControles) as any[]
+    const controles = getFrameworkControles(refId as FrameworkId, custom, locale)
+    conformitePie = {
+      stats: conformiteStats(effConf.entries, controles.length),
+      frameworkNom: FRAMEWORK_META[refId as FrameworkId]?.nom ?? String(refId),
+      inherited: effConf.inherited,
+      sourceNom: effConf.sourceAnalyseNom,
+    }
+  }
   const qualificationObligatoire = orgConfig.qualificationObligatoire
   const qualificationComplete = isQualificationComplete(sanitizeQualification((analyse as any).qualification))
 
@@ -292,6 +316,19 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 }))}
                 manageTiersHref={`/analyses/${analyse.id}/atelier/3`}
                 manageTiersPerPoint
+              />
+            )}
+
+            {/* Camembert de conformité au référentiel du socle (propre ou héritée) —
+                après les matrices de risques, avant le top des risques. */}
+            {conformitePie && (
+              <ConformitePie
+                stats={conformitePie.stats}
+                frameworkNom={conformitePie.frameworkNom}
+                title={t.analysis.conformiteTitle}
+                rateLabel={t.dashboard.conformiteRate}
+                labels={t.conformite.statuts as { conforme: string; partiel: string; non_conforme: string; na: string }}
+                note={conformitePie.inherited ? t.analysis.conformiteInheritedNote.replace('{socle}', conformitePie.sourceNom ?? '—') : null}
               />
             )}
 
