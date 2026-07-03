@@ -19,6 +19,7 @@ import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
+import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 
 export default async function AtelierPage({
   params,
@@ -112,6 +113,19 @@ export default async function AtelierPage({
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
   const conformiteActive = orgConfig.conformiteActive
   const conseilsActive = orgConfig.conseilsAteliersActive
+
+  // Qualification obligatoire (config org) : bloque l'ENTRÉE en atelier 1 tant que
+  // le questionnaire n'est pas complet — l'utilisateur est renvoyé vers la page de
+  // l'analyse où le panneau de qualification est mis en avant.
+  if (
+    atelierNum === 1 &&
+    orgConfig.qualificationActive &&
+    orgConfig.qualificationObligatoire &&
+    editable &&
+    !isQualificationComplete(sanitizeQualification((analyse as any).qualification))
+  ) {
+    redirect(`/analyses/${id}?qualif=required`)
+  }
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
   if (conformiteActive && analyse.cadrage) {
     const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[], locale)

@@ -1772,6 +1772,9 @@ export const es: Translations = {
     sectionDesc:   'Active pasos adicionales inspirados en las fichas de método del Club EBIOS. Desactivados, no aparecen en los análisis.',
     qualificationTitle: 'Cuestionario de cualificación al inicio de un análisis',
     qualificationDesc:  'Ofrece un breve cuestionario (externalización, criticidad, datos personales…) para enmarcar cada nuevo análisis y sugerir orientaciones.',
+    qualificationObligTitle: 'Hacer obligatoria la cualificación antes del Taller 1',
+    qualificationObligDesc:  'Bloquea la entrada al Taller 1 hasta que se complete el cuestionario de cualificación.',
+    qualificationObligRequires: 'Requiere activar la cualificación más arriba.',
     conformiteTitle:    'Análisis de conformidad con un marco de referencia (taller 1)',
     conformiteDesc:     'Permite evaluar la conformidad con la base de seguridad desde la fase de encuadre y explotar las brechas (no conformidades) en los talleres siguientes.',
     conseilsTitle:      'Panel de consejos y participantes por taller',
@@ -1782,6 +1785,10 @@ export const es: Translations = {
   },
   // ─── Cuestionario de cualificación ────────────────────────────────────────
   qualification: {
+    promptOptionalTitle: 'Cualifique su análisis antes de empezar',
+    promptOptionalText: 'Unas preguntas rápidas para enmarcar el análisis y sugerir orientaciones. Recomendado antes del Taller 1 — podrá volver más tarde.',
+    promptRequiredTitle: 'Cualificación requerida antes del Taller 1',
+    promptRequiredText: 'Complete este cuestionario para desbloquear el Taller 1 (obligatorio en la configuración de su organización).',
     navTitle:      'Cualificación',
     title:         'Cualificación del análisis',
     intro:         'Algunas preguntas opcionales para enmarcar su análisis y sugerir orientaciones. Puede modificarlas en cualquier momento.',

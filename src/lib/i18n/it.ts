@@ -1772,6 +1772,9 @@ export const it: Translations = {
     sectionDesc:   'Attiva passaggi aggiuntivi ispirati alle schede metodologiche del Club EBIOS. Disattivati, non compaiono nelle analisi.',
     qualificationTitle: "Questionario di qualificazione all'inizio di un'analisi",
     qualificationDesc:  "Propone un breve questionario (esternalizzazione, criticità, dati personali…) per inquadrare ogni nuova analisi e suggerire orientamenti.",
+    qualificationObligTitle: 'Rendere obbligatoria la qualificazione prima del Workshop 1',
+    qualificationObligDesc:  'Blocca l\'accesso al Workshop 1 finché il questionario di qualificazione non è completato.',
+    qualificationObligRequires: 'Richiede l\'attivazione della qualificazione qui sopra.',
     conformiteTitle:    'Analisi di conformità a un riferimento (workshop 1)',
     conformiteDesc:     'Permette di valutare la conformità al livello base di sicurezza già nella fase di inquadramento e di sfruttare gli scostamenti (non conformità) nei workshop successivi.',
     conseilsTitle:      'Pannello consigli e partecipanti per workshop',
@@ -1782,6 +1785,10 @@ export const it: Translations = {
   },
   // ─── Questionario di qualificazione ───────────────────────────────────────
   qualification: {
+    promptOptionalTitle: 'Qualifica la tua analisi prima di iniziare',
+    promptOptionalText: 'Alcune domande rapide per inquadrare l\'analisi e suggerire orientamenti. Consigliato prima del Workshop 1 — potrai tornarci più tardi.',
+    promptRequiredTitle: 'Qualificazione richiesta prima del Workshop 1',
+    promptRequiredText: 'Completa questo questionario per sbloccare il Workshop 1 (obbligatorio nella configurazione della tua organizzazione).',
     navTitle:      'Qualificazione',
     title:         "Qualificazione dell'analisi",
     intro:         'Alcune domande opzionali per inquadrare la tua analisi e suggerire orientamenti. Puoi modificarle in qualsiasi momento.',

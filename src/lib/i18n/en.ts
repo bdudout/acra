@@ -1772,6 +1772,9 @@ export const en: Translations = {
     sectionDesc:   "Enable additional steps inspired by the Club EBIOS method sheets. When disabled, they do not appear in analyses.",
     qualificationTitle: 'Qualification questionnaire at the start of an analysis',
     qualificationDesc:  'Offers a short questionnaire (outsourcing, criticality, personal data…) to frame each new analysis and suggest orientations.',
+    qualificationObligTitle: 'Make qualification mandatory before Workshop 1',
+    qualificationObligDesc:  'Blocks entry to Workshop 1 until the qualification questionnaire is completed.',
+    qualificationObligRequires: 'Requires enabling qualification above.',
     conformiteTitle:    'Compliance analysis against a framework (workshop 1)',
     conformiteDesc:     "Lets you assess compliance with the security baseline from the scoping stage and exploit the gaps (non-conformities) in the following workshops.",
     conseilsTitle:      'Tips & participants panel per workshop',
@@ -1782,6 +1785,10 @@ export const en: Translations = {
   },
   // ─── Qualification questionnaire ──────────────────────────────────────────
   qualification: {
+    promptOptionalTitle: 'Qualify your analysis before you start',
+    promptOptionalText: 'A few quick questions to frame the analysis and suggest orientations. Recommended before Workshop 1 — you can come back to it later.',
+    promptRequiredTitle: 'Qualification required before Workshop 1',
+    promptRequiredText: 'Complete this questionnaire to unlock Workshop 1 (mandatory in your organisation\'s configuration).',
     navTitle:      'Qualification',
     title:         'Analysis qualification',
     intro:         'A few optional questions to frame your analysis and suggest orientations. You can change them at any time.',

@@ -14,6 +14,8 @@ interface Props {
   analyseId: string
   initial?: QualificationAnswers | null
   canEdit?: boolean
+  /** Ouvrir le panneau déplié (ex. mise en avant tant que la qualification est incomplète). */
+  defaultOpen?: boolean
 }
 
 /**
@@ -21,14 +23,14 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false }: Props) {
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  // Toujours afficher la vue synthétique repliée par défaut, que la qualification
-  // soit réalisée ou non (si non réalisée, la synthèse l'indique + bouton « Modifier »).
-  const [collapsed, setCollapsed] = useState<boolean>(true)
+  // Replié par défaut (vue synthétique) ; déplié si `defaultOpen` (mise en avant
+  // tant que la qualification est incomplète).
+  const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
 
   const orientations = useMemo(() => deriveOrientations(answers), [answers])
   const complete = useMemo(() => isQualificationComplete(answers), [answers])

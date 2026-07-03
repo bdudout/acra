@@ -32,6 +32,7 @@ export interface RawOrgConfig {
   exemplesAteliers: unknown
   echellesEcosysteme: unknown
   qualificationActive: boolean
+  qualificationObligatoire: boolean
   conformiteActive: boolean
   conseilsAteliersActive: boolean
 }
@@ -45,6 +46,7 @@ export interface OrgConfigResolved {
   exemplesAteliers: Record<string, unknown[]>
   echellesEcosysteme: Record<string, unknown>
   qualificationActive: boolean
+  qualificationObligatoire: boolean
   conformiteActive: boolean
   conseilsAteliersActive: boolean
 }
@@ -57,6 +59,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   exemplesAteliers: {},
   echellesEcosysteme: {},
   qualificationActive: false,
+  qualificationObligatoire: false,
   conformiteActive: false,
   conseilsAteliersActive: true,
 }
@@ -70,7 +73,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
-type BoolKey = 'qualificationActive' | 'conformiteActive' | 'conseilsAteliersActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -97,6 +100,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     exemplesAteliers: pickJson('exemplesAteliers', defaults.exemplesAteliers),
     echellesEcosysteme: pickJson('echellesEcosysteme', defaults.echellesEcosysteme),
     qualificationActive: pickBool('qualificationActive', defaults.qualificationActive),
+    qualificationObligatoire: pickBool('qualificationObligatoire', defaults.qualificationObligatoire),
     conformiteActive: pickBool('conformiteActive', defaults.conformiteActive),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
   }

@@ -15,6 +15,7 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     exemplesAteliers: {},
     echellesEcosysteme: {},
     qualificationActive: false,
+    qualificationObligatoire: false,
     conformiteActive: false,
     conseilsAteliersActive: true,
     ...partial,
@@ -48,6 +49,13 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     const enfant = row({ conseilsAteliersActive: false })
     const racine = row({ conseilsAteliersActive: true })
     expect(resolveOrgConfig([enfant, racine]).conseilsAteliersActive).toBe(false)
+  })
+
+  it('qualificationObligatoire : défaut false, hérité comme un booléen', () => {
+    expect(resolveOrgConfig([]).qualificationObligatoire).toBe(false)
+    const enfant = row({ qualificationObligatoire: true })
+    const racine = row({ qualificationObligatoire: false })
+    expect(resolveOrgConfig([enfant, racine]).qualificationObligatoire).toBe(true)
   })
 
   it('un nœud sans row (null) est ignoré et hérite de l\'ancêtre', () => {

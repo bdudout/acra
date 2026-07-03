@@ -536,6 +536,8 @@ model OrganizationConfig {
   exemplesAteliers Json @default("{}")
   // Fonctionnalité optionnelle : questionnaire de qualification au début d'une analyse (cf. lib/qualification.ts)
   qualificationActive Boolean @default(false)
+  // Si la qualification est active, la rendre OBLIGATOIRE avant l'atelier 1 (bloque l'entrée tant qu'incomplete)
+  qualificationObligatoire Boolean @default(false)
   // Fonctionnalité optionnelle : grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle)
   conformiteActive    Boolean @default(false)
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier

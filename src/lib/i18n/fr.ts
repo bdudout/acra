@@ -1800,6 +1800,9 @@ export const fr = {
     sectionDesc:   "Activez des étapes complémentaires inspirées des fiches méthode du Club EBIOS. Désactivées, elles n'apparaissent pas dans les analyses.",
     qualificationTitle: "Questionnaire de qualification en début d'analyse",
     qualificationDesc:  'Propose un court questionnaire (externalisation, criticité, données personnelles…) pour cadrer chaque nouvelle analyse et suggérer des orientations.',
+    qualificationObligTitle: 'Rendre la qualification obligatoire avant l\'atelier 1',
+    qualificationObligDesc:  'Bloque l\'entrée dans l\'atelier 1 tant que le questionnaire de qualification n\'est pas complété.',
+    qualificationObligRequires: 'Nécessite l\'activation de la qualification ci-dessus.',
     conformiteTitle:    'Analyse de conformité à un référentiel (atelier 1)',
     conformiteDesc:     "Permet d'évaluer la conformité au socle de sécurité dès le cadrage et d'exploiter les écarts (non-conformités) dans les ateliers suivants.",
     conseilsTitle:      'Panneau de conseils & participants par atelier',
@@ -1810,6 +1813,10 @@ export const fr = {
   },
   // ─── Questionnaire de qualification ───────────────────────────────────────
   qualification: {
+    promptOptionalTitle: 'Qualifiez votre analyse avant de commencer',
+    promptOptionalText: 'Quelques questions rapides pour cadrer l\'analyse et suggérer des orientations. Recommandé avant l\'atelier 1 — vous pourrez y revenir plus tard.',
+    promptRequiredTitle: 'Qualification requise avant l\'atelier 1',
+    promptRequiredText: 'Complétez ce questionnaire pour débloquer l\'atelier 1 (obligatoire dans la configuration de votre organisation).',
     navTitle:      'Qualification',
     title:         "Qualification de l'analyse",
     intro:         "Quelques questions optionnelles pour cadrer votre analyse et suggérer des orientations. Vous pouvez les modifier à tout moment.",

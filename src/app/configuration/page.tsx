@@ -135,6 +135,7 @@ export default function ConfigurationPage() {
 
   // Fonctionnalités optionnelles (toggles)
   const [qualificationActive, setQualificationActive] = useState(false)
+  const [qualificationObligatoire, setQualificationObligatoire] = useState(false)
   const [conformiteActive, setConformiteActive] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
@@ -170,6 +171,7 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
+        setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
@@ -202,10 +204,11 @@ export default function ConfigurationPage() {
   // ── Fonctionnalités optionnelles (toggles) ───────────────────────────────
   const FEATURE_SETTERS: Record<string, (v: boolean) => void> = {
     qualificationActive: setQualificationActive,
+    qualificationObligatoire: setQualificationObligatoire,
     conformiteActive: setConformiteActive,
     conseilsAteliersActive: setConseilsAteliersActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'conformiteActive' | 'conseilsAteliersActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1040,14 +1043,19 @@ export default function ConfigurationPage() {
             <p className="text-sm text-gray-500 mb-4">{t.features.sectionDesc}</p>
             <div className="space-y-3">
               {([
-                { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/' },
-                { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/' },
-                { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/' },
-              ]).map(f => (
-                <div key={f.field} className="flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'qualificationObligatoire' as const, value: qualificationObligatoire, title: t.features.qualificationObligTitle, desc: t.features.qualificationObligDesc, href: 'https://club-ebios.org/site/', disabled: !qualificationActive, indent: true },
+                { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+              ]).map(f => {
+                const off = f.disabled // toggle inopérant (dépendance non satisfaite)
+                const effValue = f.value && !off
+                return (
+                <div key={f.field} className={`flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50 ${f.indent ? 'ml-6' : ''} ${off ? 'opacity-60' : ''}`}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800">{f.title}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
+                    {off && <p className="text-xs text-amber-700 mt-0.5">{t.features.qualificationObligRequires}</p>}
                     <a href={f.href} target="_blank" rel="noopener noreferrer" className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline mt-1 inline-block">
                       {t.features.learnMore}
                     </a>
@@ -1055,16 +1063,17 @@ export default function ConfigurationPage() {
                   <button
                     type="button"
                     role="switch"
-                    aria-checked={f.value}
+                    aria-checked={effValue}
                     aria-label={f.title}
-                    disabled={savingFeatures}
+                    disabled={savingFeatures || off}
                     onClick={() => saveFeature(f.field, !f.value)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${f.value ? 'bg-ebios-600' : 'bg-gray-300'} ${savingFeatures ? 'opacity-60' : ''}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-300'} ${(savingFeatures || off) ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${f.value ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${effValue ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}

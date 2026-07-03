@@ -18,6 +18,7 @@ const CONFIG_SELECT = {
   exemplesAteliers: true,
   echellesEcosysteme: true,
   qualificationActive: true,
+  qualificationObligatoire: true,
   conformiteActive: true,
   conseilsAteliersActive: true,
 } as const

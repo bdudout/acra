@@ -18,6 +18,7 @@ import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
+import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
 import {
@@ -74,10 +75,15 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   // Config résolue par l'organisation de l'analyse (héritage des ancêtres).
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
   const qualificationActive = orgConfig.qualificationActive
+  const qualificationObligatoire = orgConfig.qualificationObligatoire
+  const qualificationComplete = isQualificationComplete(sanitizeQualification((analyse as any).qualification))
 
   // Verrouillage si analyse approuvée (sauf ADMIN)
   const locked = analyse.statut === 'APPROUVE' && userRole !== 'ADMIN'
   const isOwner = analyse.userId === userId
+
+  // Mettre la qualification en avant (avant les ateliers) tant qu'elle est incomplète.
+  const qualificationPrompt = qualificationActive && editable && !locked && !qualificationComplete
 
   const pct = analyse.statut === 'TERMINE' ? 100 : Math.round(((analyse.atelierCourant - 1) / 5) * 100)
   // Ateliers localisés : structure (num, icône, couleur) de ATELIERS_META + texte traduit (t.ateliersMeta)
@@ -163,6 +169,30 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
+        {/* Qualification mise en avant AVANT les ateliers tant qu'incomplète
+            (facultative ou — si configuré — obligatoire avant l'atelier 1). */}
+        {qualificationPrompt && (
+          <div className={`mb-6 rounded-xl border p-4 ${qualificationObligatoire ? 'border-amber-300 bg-amber-50' : 'border-ebios-200 bg-ebios-50'}`}>
+            <div className="flex items-start gap-3 mb-3">
+              <span className="text-xl" aria-hidden="true">{qualificationObligatoire ? '⚠️' : '🧭'}</span>
+              <div>
+                <p className={`text-sm font-semibold ${qualificationObligatoire ? 'text-amber-900' : 'text-ebios-800'}`}>
+                  {qualificationObligatoire ? t.qualification.promptRequiredTitle : t.qualification.promptOptionalTitle}
+                </p>
+                <p className={`text-xs mt-0.5 ${qualificationObligatoire ? 'text-amber-800' : 'text-ebios-700'}`}>
+                  {qualificationObligatoire ? t.qualification.promptRequiredText : t.qualification.promptOptionalText}
+                </p>
+              </div>
+            </div>
+            <QualificationPanel
+              analyseId={analyse.id}
+              initial={(analyse as any).qualification ?? null}
+              canEdit={editable && !locked}
+              defaultOpen
+            />
+          </div>
+        )}
+
         {/* Progress */}
         <div className="card p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -196,8 +226,10 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* Questionnaire de qualification optionnel (cf. fiche Club EBIOS — cadrage) */}
-        {qualificationActive && (
+        {/* Questionnaire de qualification (cf. fiche Club EBIOS — cadrage).
+            Mis en avant plus haut tant qu'incomplet ; ici en consultation/édition
+            une fois renseigné (ou en lecture seule). */}
+        {qualificationActive && !qualificationPrompt && (
           <div className="mb-6">
             <QualificationPanel
               analyseId={analyse.id}

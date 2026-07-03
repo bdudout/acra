@@ -53,6 +53,7 @@ export async function GET(_req: NextRequest) {
     strategiesTraitement: cfg.strategiesTraitement,
     exemplesAteliers: cfg.exemplesAteliers,
     qualificationActive: cfg.qualificationActive,
+    qualificationObligatoire: cfg.qualificationObligatoire,
     conformiteActive: cfg.conformiteActive,
     conseilsAteliersActive: cfg.conseilsAteliersActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
@@ -146,6 +147,7 @@ export async function PUT(req: NextRequest) {
   }
 
   if (typeof body.qualificationActive === 'boolean') data.qualificationActive = body.qualificationActive
+  if (typeof body.qualificationObligatoire === 'boolean') data.qualificationObligatoire = body.qualificationObligatoire
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
 
@@ -176,6 +178,7 @@ export async function PUT(req: NextRequest) {
     strategiesTraitement: ((config as any).strategiesTraitement as unknown as StrategieTraitement[]) ?? DEFAULT_STRATEGIES,
     exemplesAteliers: (config as any).exemplesAteliers ?? {},
     qualificationActive: Boolean((config as any).qualificationActive),
+    qualificationObligatoire: Boolean((config as any).qualificationObligatoire),
     conformiteActive: Boolean((config as any).conformiteActive),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
     echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),

@@ -1772,6 +1772,9 @@ export const de: Translations = {
     sectionDesc:   'Aktivieren Sie zusätzliche Schritte, inspiriert von den Methodenblättern des Club EBIOS. Deaktiviert erscheinen sie nicht in den Analysen.',
     qualificationTitle: 'Qualifizierungsfragebogen zu Beginn einer Analyse',
     qualificationDesc:  'Bietet einen kurzen Fragebogen (Auslagerung, Kritikalität, personenbezogene Daten…), um jede neue Analyse einzugrenzen und Orientierungen vorzuschlagen.',
+    qualificationObligTitle: 'Qualifizierung vor Workshop 1 verpflichtend machen',
+    qualificationObligDesc:  'Sperrt den Zugang zu Workshop 1, bis der Qualifizierungsfragebogen ausgefüllt ist.',
+    qualificationObligRequires: 'Erfordert die Aktivierung der Qualifizierung oben.',
     conformiteTitle:    'Konformitätsanalyse gegenüber einem Rahmenwerk (Workshop 1)',
     conformiteDesc:     'Ermöglicht die Bewertung der Konformität mit dem Sicherheits-Grundniveau bereits in der Abgrenzungsphase und die Nutzung der Abweichungen (Nichtkonformitäten) in den folgenden Workshops.',
     conseilsTitle:      'Tipps- & Teilnehmer-Panel je Workshop',
@@ -1782,6 +1785,10 @@ export const de: Translations = {
   },
   // ─── Qualifizierungsfragebogen ────────────────────────────────────────────
   qualification: {
+    promptOptionalTitle: 'Qualifizieren Sie Ihre Analyse vor dem Start',
+    promptOptionalText: 'Ein paar kurze Fragen, um die Analyse einzugrenzen und Orientierungen vorzuschlagen. Empfohlen vor Workshop 1 — Sie können später darauf zurückkommen.',
+    promptRequiredTitle: 'Qualifizierung vor Workshop 1 erforderlich',
+    promptRequiredText: 'Füllen Sie diesen Fragebogen aus, um Workshop 1 freizuschalten (in der Konfiguration Ihrer Organisation verpflichtend).',
     navTitle:      'Qualifizierung',
     title:         'Qualifizierung der Analyse',
     intro:         'Einige optionale Fragen, um Ihre Analyse einzugrenzen und Orientierungen vorzuschlagen. Sie können sie jederzeit ändern.',
