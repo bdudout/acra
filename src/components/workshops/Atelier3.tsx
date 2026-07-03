@@ -32,6 +32,7 @@ import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { PRIORITES_MESURE, comparePriorite, measuresApplyingTo } from '@/lib/ecosystem-measures'
+import { CONTRACTUAL_CLAUSE_KEYS, contractualClauseMeasure, isContractualMeasure, groupMeasuresByPartiePrenante } from '@/lib/ecosystem-contractual-clauses'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
@@ -190,6 +191,12 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   // Exemples ISO27005 masqués par défaut : le référentiel A1 est présenté en priorité
   const [showMesEcoEx, setShowMesEcoEx] = useState(false)
   const [showISO27001Eco, setShowISO27001Eco] = useState<string | null>(null) // stores scenario id
+  // Composer de l'onglet « Mesures » (référentiel + manuel + clauses contractuelles)
+  const [composerScenarioId, setComposerScenarioId] = useState('')
+  const [composerPP, setComposerPP] = useState('')
+  const [composerManual, setComposerManual] = useState('')
+  const [showComposerFw, setShowComposerFw] = useState(false)
+  const [groupByPP, setGroupByPP] = useState(false)
 
   // Chaque PP reçoit une clé stable (cle) — générée si absente (legacy) — pour relier
   // les PP connexes (rangs 2/3) indépendamment de l'id DB régénéré à chaque sauvegarde.
@@ -390,7 +397,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     }))
   }
 
-  function addMesureEcosystemeISO27001(scenarioId: string, controle: FrameworkControl) {
+  function addMesureEcosystemeISO27001(scenarioId: string, controle: FrameworkControl, ppNom?: string) {
     setScenarios(prev => prev.map(s => {
       if (s.id !== scenarioId) return s
       return {
@@ -399,7 +406,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           ...(s.mesuresEcosysteme || []),
           {
             id: uid(),
-            partiePrenante: '',
+            partiePrenante: ppNom || '',
             mesure: `[${controle.ref}] ${controle.nom}`,
             description: controle.description || '',
             priorite: 'P2',
@@ -414,6 +421,17 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     }))
     // Ne pas fermer le panel : l'utilisateur peut ajouter plusieurs mesures d'affilée
     // setShowISO27001Eco(null)  ← commenté intentionnellement
+  }
+
+  /** Ajoute une clause contractuelle (RGPD, PAS, SLA…) taguée au prestataire. */
+  function addMesureContractuelle(scenarioId: string, ppNom: string, clauseKey: string) {
+    const label = (t.workshop.a3.measClauses as Record<string, string>)[clauseKey]
+    const desc  = (t.workshop.a3.measClauseDescs as Record<string, string>)[clauseKey]
+    const skeleton = contractualClauseMeasure(t.workshop.a3.measClauseTag, label, ppNom, desc)
+    setScenarios(prev => prev.map(s => {
+      if (s.id !== scenarioId) return s
+      return { ...s, mesuresEcosysteme: [...(s.mesuresEcosysteme || []), { id: uid(), ...skeleton }] }
+    }))
   }
 
   function updateMesure(scenarioId: string, mesureId: string, field: string, value: string) {
@@ -1059,19 +1077,183 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
       )}
 
       {/* ── MESURES ÉCOSYSTÈME (vue consolidée) ─────────────────────────── */}
-      {tab === 'mesures' && (
+      {tab === 'mesures' && (() => {
+        const composerTarget = composerScenarioId || retained[0]?.id || ''
+        // Toutes les mesures d'écosystème (dédupliquées par id), avec provenance scénario.
+        const allEco: any[] = []
+        const seenEco = new Set<string>()
+        for (const s of scenarios) {
+          for (const m of (s.mesuresEcosysteme || [])) {
+            if (m.id && seenEco.has(m.id)) continue
+            if (m.id) seenEco.add(m.id)
+            allEco.push({ ...m, _ownerNom: s.nom || t.workshop.a3.scenNoTitle })
+          }
+        }
+        const existingTitles = new Set(allEco.map(m => m.mesure))
+        const ppGroups = groupMeasuresByPartiePrenante(allEco)
+        return (
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
             <p className="text-sm text-green-800">{t.workshop.a3.measEcoDesc}</p>
           </div>
 
-          {scenarios.filter(s => (s.mesuresEcosysteme || []).length > 0).length === 0 && (
+          {/* ── Composer : référentiel + manuel + clauses contractuelles ── */}
+          <div className="card p-5 border-l-4 border-l-ebios-400">
+            <h3 className="font-semibold text-gray-800 mb-1">🧩 {t.workshop.a3.measComposerTitle}</h3>
+            <p className="text-xs text-gray-500 mb-3">{t.workshop.a3.measComposerIntro}</p>
+
+            {retained.length === 0 ? (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {t.workshop.a3.measComposerNoScenario}
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="label">{t.workshop.a3.measComposerScenario}</label>
+                    <select className="input" value={composerTarget} onChange={e => setComposerScenarioId(e.target.value)}>
+                      {retained.map(s => (
+                        <option key={s.id} value={s.id}>{s.nom || t.workshop.a3.scenNoTitle}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">{t.workshop.a3.measComposerPP}</label>
+                    <select className="input" value={composerPP} onChange={e => setComposerPP(e.target.value)}>
+                      <option value="">{t.workshop.a3.measComposerPPNone}</option>
+                      {parties.map((p: any) => (
+                        <option key={p.cle} value={p.nom}>{p.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Ajout manuel */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    className="input flex-1"
+                    placeholder={t.workshop.a3.measComposerManualPh}
+                    value={composerManual}
+                    onChange={e => setComposerManual(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && composerManual.trim()) {
+                        addMesureEcosysteme(composerTarget, composerPP, composerManual.trim())
+                        setComposerManual('')
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => { if (composerManual.trim()) { addMesureEcosysteme(composerTarget, composerPP, composerManual.trim()); setComposerManual('') } }}
+                    disabled={!composerManual.trim()}
+                    className="btn-secondary whitespace-nowrap disabled:opacity-50"
+                  >
+                    {t.workshop.a3.measComposerManualAdd}
+                  </button>
+                </div>
+
+                {/* Depuis un référentiel (même sélecteur que l'A5) */}
+                <div className="mb-3 border border-dashed border-indigo-200 rounded-lg">
+                  <button
+                    onClick={() => setShowComposerFw(v => !v)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-indigo-50 rounded-t-lg text-xs font-semibold text-indigo-800"
+                  >
+                    <span>📚 {t.workshop.a3.measComposerFrameworkToggle} — {FRAMEWORK_META[analyse?.referentielMesures as FrameworkId]?.nom ?? t.workshop.a5.chooseRef}</span>
+                    <span>{showComposerFw ? '▲' : '▼'}</span>
+                  </button>
+                  {showComposerFw && (
+                    <div className="p-2">
+                      <FrameworkControlsPanel
+                        frameworkId={analyse?.referentielMesures || 'ISO27001'}
+                        customControles={analyse?.cadrage?.customControles}
+                        onSelect={controle => addMesureEcosystemeISO27001(composerTarget, controle, composerPP)}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Clauses contractuelles par prestataire */}
+                <div className="border border-dashed border-purple-200 rounded-lg">
+                  <div className="px-3 py-2 bg-purple-50 rounded-t-lg">
+                    <span className="text-xs font-semibold text-purple-800">📄 {t.workshop.a3.measClausesTitle}</span>
+                    <p className="text-xs text-purple-700 mt-0.5">{t.workshop.a3.measClausesIntro}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-2">
+                    {CONTRACTUAL_CLAUSE_KEYS.map(key => {
+                      const label = (t.workshop.a3.measClauses as Record<string, string>)[key]
+                      const title = `[${t.workshop.a3.measClauseTag}] ${label}${composerPP ? ` — ${composerPP}` : ''}`
+                      const added = existingTitles.has(title)
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => { if (!added) addMesureContractuelle(composerTarget, composerPP, key) }}
+                          className={`text-left p-2 border rounded transition-all ${
+                            added
+                              ? 'bg-green-50 border-green-400 opacity-70 cursor-default'
+                              : 'bg-white border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                          }`}
+                        >
+                          {added && <div className="text-xs text-green-600 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
+                          <div className="text-xs font-medium text-gray-700">{label}</div>
+                          <div className="text-xs text-gray-400">{(t.workshop.a3.measClauseDescs as Record<string, string>)[key]}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Bascule d'affichage */}
+          {allEco.length > 0 && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+              {[
+                { id: false, label: t.workshop.a3.measGroupByScenario },
+                { id: true,  label: t.workshop.a3.measGroupByPP },
+              ].map(opt => (
+                <button
+                  key={String(opt.id)}
+                  onClick={() => setGroupByPP(opt.id)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${groupByPP === opt.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {allEco.length === 0 && (
             <div className="card p-8 text-center text-gray-500 italic">
               {t.workshop.a3.measEcoEmpty}
             </div>
           )}
 
-          {scenarios.filter(s => measuresApplyingTo(scenarios, s.id).length > 0).map(s => (
+          {/* ── Vue par prestataire ── */}
+          {groupByPP && ppGroups.map(g => (
+            <div key={g.partiePrenante || '__none__'} className="card p-5">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                🤝 {g.partiePrenante || <span className="italic text-gray-400">{t.workshop.a3.measGroupPPUnassigned}</span>}
+                <span className="ml-2 text-xs font-normal text-gray-400">({g.measures.length})</span>
+              </h3>
+              <ul className="space-y-1.5">
+                {g.measures.sort((a, b) => comparePriorite(a, b)).map((m: any) => (
+                  <li key={m.id} className="flex items-start gap-2 text-sm">
+                    <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${isContractualMeasure(m) ? 'bg-purple-500' : 'bg-ebios-400'}`} />
+                    <span className="flex-1">
+                      <span className="text-gray-800">{m.mesure}</span>
+                      {isContractualMeasure(m) && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-purple-100 text-purple-700 align-middle">{t.workshop.a3.measTypeContractuelle}</span>}
+                      <span className="ml-1 text-xs text-gray-400">· {m._ownerNom}</span>
+                      {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
+                    </span>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">{m.priorite ? t.workshop.a3.measPriorites[m.priorite as 'P1'] : '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {/* ── Vue par scénario (existant) ── */}
+          {!groupByPP && scenarios.filter(s => measuresApplyingTo(scenarios, s.id).length > 0).map(s => (
             <div key={s.id} className="card p-5">
               <h3 className="font-semibold text-gray-800 mb-1">{s.nom || t.workshop.a3.scenNoTitle}</h3>
               {s.coupleLabel && <p className="text-xs text-gray-500 mb-3">{t.workshop.a3.coupleLabel} {s.coupleLabel}</p>}
@@ -1114,7 +1296,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             {saving ? t.workshop.saving : t.workshop.saveNext}
           </button>
         </div>
-      )}
+        )
+      })()}
 
       {pendingDelete && (
         <ConfirmDialog
