@@ -13,6 +13,8 @@ import {
 } from '@/lib/conformite'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { getServerLocale } from '@/lib/i18n'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 /**
  * PATCH /api/analyses/[id]/conformite
@@ -21,8 +23,9 @@ import { getServerLocale } from '@/lib/i18n'
  * sans passer par l'atelier 1 — pour l'édition inline depuis le dashboard (suivi de
  * conformité). Body : { ref: string, statut: 'conforme'|'partiel'|'non_conforme'|'na' }.
  *
- * Requiert : session valide (401), droit d'ÉDITION sur l'analyse (403), analyse non
- * approuvée sauf ADMIN (403), et un cadrage existant (400). Ne touche que le champ
+ * Requiert : session valide (401), sous rate-limit écriture (429), droit d'ÉDITION
+ * sur l'analyse (403), conformité activée pour l'org (403), analyse non approuvée
+ * sauf ADMIN (403), et un cadrage existant (400). Ne touche que le champ
  * socleSecurite (fusion par ref). Renvoie les statistiques de conformité à jour.
  */
 export async function PATCH(
@@ -36,11 +39,26 @@ export async function PATCH(
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
+  // Rate-limiting écriture (defense-in-depth), aligné sur les autres endpoints d'écriture.
+  const rl = rateLimit(`conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de requêtes. Réessayez dans un instant.' },
+      { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) },
+    )
+  }
+
   const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(userId, userRole, analyseId),
     include: { accesUtilisateurs: true, cadrage: { select: { socleSecurite: true, customControles: true } } },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+
+  // Cohérence : refuser l'édition si la fonctionnalité conformité est désactivée pour l'org.
+  const orgConfig = await getOrgConfig((analyse as any).organizationId)
+  if (!orgConfig.conformiteActive) {
+    return NextResponse.json({ error: 'Fonctionnalité de conformité désactivée' }, { status: 403 })
+  }
 
   if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })

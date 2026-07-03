@@ -145,6 +145,11 @@ export default async function ActionsPage({ searchParams }: PageProps) {
     new Set(allMesures.map(m => m.entite).filter((e): e is string => !!e))
   ).sort()
 
+  // Tous les prestataires uniques (mesures d'écosystème) pour le filtre client
+  const allPrestataires = Array.from(
+    new Set(allMesures.map(m => m.partiePrenante).filter((p): p is string => !!p))
+  ).sort()
+
   const FILTERS_PRIORITE = [
     { key: 'all',    href: '/actions',                    label: t.actions.filterAll,    count: counts.all,    active: 'bg-gray-100 text-gray-800' },
     { key: 'p1',     href: '/actions?priorite=1',          label: t.actions.filterP1,     count: counts.p1,     active: 'bg-red-100 text-red-800' },
@@ -222,6 +227,12 @@ export default async function ActionsPage({ searchParams }: PageProps) {
           clearLabel={t.actions.clearFilters}
           clearSearchLabel={t.actions.clearSearch}
           sourceEcoLabel={t.actions.sourceEco}
+          allPrestataires={allPrestataires}
+          filterSourceLabel={t.actions.filterSourceLabel}
+          filterAllSources={t.actions.filterAllSources}
+          sourceA5Label={t.actions.sourceA5}
+          filterPrestataireLabel={t.actions.filterPrestataireLabel}
+          filterAllPrestataires={t.actions.filterAllPrestataires}
         />
       </main>
     </div>

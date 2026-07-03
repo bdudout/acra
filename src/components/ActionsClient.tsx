@@ -90,6 +90,12 @@ interface Props {
   clearLabel:          string
   clearSearchLabel:    string
   sourceEcoLabel:      string
+  allPrestataires:     string[]
+  filterSourceLabel:   string
+  filterAllSources:    string
+  sourceA5Label:       string
+  filterPrestataireLabel: string
+  filterAllPrestataires:  string
 }
 
 export default function ActionsClient({
@@ -102,11 +108,15 @@ export default function ActionsClient({
   echeanceRetard, echeanceSemaine, echeanceMois, echeanceSans,
   searchPh, resultCount,
   locale, clearLabel, clearSearchLabel, sourceEcoLabel,
+  allPrestataires, filterSourceLabel, filterAllSources, sourceA5Label,
+  filterPrestataireLabel, filterAllPrestataires,
 }: Props) {
   const [search,          setSearch]          = useState('')
   const [filterStatut,    setFilterStatut]    = useState('')
   const [filterEntite,    setFilterEntite]    = useState('')
   const [filterEcheance,  setFilterEcheance]  = useState('')
+  const [filterSource,    setFilterSource]    = useState('')
+  const [filterPrestataire, setFilterPrestataire] = useState('')
 
   const now = useMemo(() => new Date(), [])
 
@@ -135,6 +145,16 @@ export default function ActionsClient({
       list = list.filter(m => (m.entite ?? '') === filterEntite)
     }
 
+    // Filtre origine (plan d'action A5 vs mesure d'écosystème)
+    if (filterSource) {
+      list = list.filter(m => m.source === filterSource)
+    }
+
+    // Filtre prestataire (mesures d'écosystème taguées)
+    if (filterPrestataire) {
+      list = list.filter(m => (m.partiePrenante ?? '') === filterPrestataire)
+    }
+
     // Filtre échéance
     if (filterEcheance === 'retard') {
       list = list.filter(m => m.enRetard)
@@ -151,15 +171,17 @@ export default function ActionsClient({
     }
 
     return list
-  }, [mesures, search, filterStatut, filterEntite, filterEcheance, now])
+  }, [mesures, search, filterStatut, filterEntite, filterEcheance, filterSource, filterPrestataire, now])
 
-  const hasFilters = search.trim() || filterStatut || filterEntite || filterEcheance
+  const hasFilters = search.trim() || filterStatut || filterEntite || filterEcheance || filterSource || filterPrestataire
 
   function clearFilters() {
     setSearch('')
     setFilterStatut('')
     setFilterEntite('')
     setFilterEcheance('')
+    setFilterSource('')
+    setFilterPrestataire('')
   }
 
   const selectCls = 'text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-ebios-300 focus:border-ebios-400'
@@ -237,6 +259,37 @@ export default function ActionsClient({
             <option value="sans">{echeanceSans}</option>
           </select>
         </div>
+
+        {/* Filtre origine (A5 / écosystème) */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{filterSourceLabel}</span>
+          <select
+            value={filterSource}
+            onChange={e => setFilterSource(e.target.value)}
+            className={selectCls}
+          >
+            <option value="">{filterAllSources}</option>
+            <option value="a5">{sourceA5Label}</option>
+            <option value="ecosysteme">{sourceEcoLabel}</option>
+          </select>
+        </div>
+
+        {/* Filtre prestataire (mesures d'écosystème) */}
+        {allPrestataires.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{filterPrestataireLabel}</span>
+            <select
+              value={filterPrestataire}
+              onChange={e => setFilterPrestataire(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">{filterAllPrestataires}</option>
+              {allPrestataires.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Effacer filtres */}
         {hasFilters && (
