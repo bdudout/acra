@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { formatDate } from '@/lib/format'
 
 // Badge couleur selon statut
 function statutColor(statut: string) {
@@ -31,6 +32,8 @@ function typeColor(type: string) {
     case 'DISSUASIVE':        return 'bg-pink-50 text-pink-600'
     case 'ORGANISATIONNELLE': return 'bg-teal-50 text-teal-600'
     case 'TECHNIQUE':         return 'bg-indigo-50 text-indigo-600'
+    case 'PHYSIQUE':          return 'bg-amber-50 text-amber-600'
+    case 'CONTRACTUELLE':     return 'bg-purple-50 text-purple-700'
     default:                  return 'bg-gray-50 text-gray-600'
   }
 }
@@ -49,6 +52,10 @@ export interface MesureRow {
   entite:      string | null
   echeance:    string | null   // ISO string (sérialisé depuis Date)
   enRetard:    boolean
+  /** Origine : plan d'action A5 ou mesure d'écosystème (A3). */
+  source:      'a5' | 'ecosysteme'
+  /** Prestataire concerné (mesures d'écosystème uniquement). */
+  partiePrenante: string | null
 }
 
 interface Props {
@@ -79,6 +86,10 @@ interface Props {
   echeanceSans:        string
   searchPh:            string
   resultCount:         string   // template : '{n} ... {total} ...'
+  locale:              string
+  clearLabel:          string
+  clearSearchLabel:    string
+  sourceEcoLabel:      string
 }
 
 export default function ActionsClient({
@@ -90,6 +101,7 @@ export default function ActionsClient({
   filterAllStatuts, filterAllEntites,
   echeanceRetard, echeanceSemaine, echeanceMois, echeanceSans,
   searchPh, resultCount,
+  locale, clearLabel, clearSearchLabel, sourceEcoLabel,
 }: Props) {
   const [search,          setSearch]          = useState('')
   const [filterStatut,    setFilterStatut]    = useState('')
@@ -108,7 +120,8 @@ export default function ActionsClient({
         m.nom.toLowerCase().includes(q) ||
         m.analyseNom.toLowerCase().includes(q) ||
         (m.responsable ?? '').toLowerCase().includes(q) ||
-        (m.entite ?? '').toLowerCase().includes(q)
+        (m.entite ?? '').toLowerCase().includes(q) ||
+        (m.partiePrenante ?? '').toLowerCase().includes(q)
       )
     }
 
@@ -170,7 +183,7 @@ export default function ActionsClient({
             <button
               onClick={() => setSearch('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
-              aria-label="Effacer la recherche"
+              aria-label={clearSearchLabel}
             >
               ✕
             </button>
@@ -231,7 +244,7 @@ export default function ActionsClient({
             onClick={clearFilters}
             className="text-xs text-ebios-600 hover:text-ebios-800 font-medium underline whitespace-nowrap"
           >
-            ✕ Effacer
+            ✕ {clearLabel}
           </button>
         )}
       </div>
@@ -267,6 +280,11 @@ export default function ActionsClient({
                   </td>
                   <td className="px-4 py-3 max-w-xs">
                     <div className="font-medium text-gray-800">{m.nom}</div>
+                    {m.source === 'ecosysteme' && (
+                      <div className="text-[10px] text-teal-700 mt-0.5">
+                        🤝 {sourceEcoLabel}{m.partiePrenante ? ` · ${m.partiePrenante}` : ''}
+                      </div>
+                    )}
                     {m.description && (
                       <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{m.description}</div>
                     )}
@@ -304,7 +322,7 @@ export default function ActionsClient({
                   <td className="px-4 py-3 text-center hidden lg:table-cell">
                     {m.echeance ? (
                       <span className={`text-xs ${m.enRetard ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                        {new Date(m.echeance).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        {formatDate(m.echeance, locale)}
                       </span>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
@@ -312,7 +330,9 @@ export default function ActionsClient({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
-                      href={`/analyses/${m.analyseId}/atelier/5?tab=mesures#mesure-${m.mesureId}`}
+                      href={m.source === 'ecosysteme'
+                        ? `/analyses/${m.analyseId}/atelier/3?tab=mesures`
+                        : `/analyses/${m.analyseId}/atelier/5?tab=mesures#mesure-${m.mesureId}`}
                       className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline whitespace-nowrap"
                     >
                       {goToAtelier}

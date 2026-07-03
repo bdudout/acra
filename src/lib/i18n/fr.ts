@@ -465,6 +465,9 @@ export const fr = {
   actions: {
     title:           'Plans d\'action',
     subtitle:        'Toutes les mesures de sécurité, filtrées par priorité et statut',
+    clearFilters:    'Effacer',
+    clearSearch:     'Effacer la recherche',
+    sourceEco:       'Écosystème',
     filterAll:       'Toutes',
     filterP1:        '🔴 Priorité 1',
     filterP2:        '🟠 Priorité 2',
@@ -507,6 +510,8 @@ export const fr = {
       DISSUASIVE:       'Dissuasive',
       ORGANISATIONNELLE:'Organisationnelle',
       TECHNIQUE:        'Technique',
+      PHYSIQUE:         'Physique',
+      CONTRACTUELLE:    'Contractuelle',
     },
   },
 

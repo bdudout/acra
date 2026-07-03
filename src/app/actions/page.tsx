@@ -6,8 +6,9 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getServerT } from '@/lib/i18n'
+import { getServerT, getServerLocale } from '@/lib/i18n'
 import ActionsClient, { type MesureRow } from '@/components/ActionsClient'
+import { prioriteRank } from '@/lib/ecosystem-measures'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
   if (!session?.user) redirect('/auth/signin')
 
   const t = await getServerT()
+  const locale = await getServerLocale()
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
   const __org = await getAnalyseScope(userId, userRole)
@@ -52,6 +54,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
         },
         orderBy: [{ priorite: 'asc' }, { statut: 'asc' }],
       },
+      scenariosStrategiques: { select: { mesuresEcosysteme: true } },
     },
     orderBy: { updatedAt: 'desc' },
   }) as Array<{
@@ -61,10 +64,11 @@ export default async function ActionsPage({ searchParams }: PageProps) {
       priorite: number; statut: string; responsable: string | null;
       entite: string | null; echeance: Date | null; risqueId: string | null;
     }>
+    scenariosStrategiques: Array<{ mesuresEcosysteme: unknown }>
   }>
 
-  // Aplatir toutes les mesures
-  const allMesures: MesureRow[] = analyses.flatMap(a =>
+  // Aplatir les mesures A5 (plan d'action)
+  const mesuresA5: MesureRow[] = analyses.flatMap(a =>
     a.mesures.map(m => ({
       mesureId:    m.id,
       analyseId:   a.id,
@@ -79,8 +83,37 @@ export default async function ActionsPage({ searchParams }: PageProps) {
       entite:      m.entite ?? null,
       echeance:    m.echeance ? m.echeance.toISOString() : null,
       enRetard:    m.statut !== 'REALISE' && m.echeance !== null && m.echeance < now,
+      source:      'a5' as const,
+      partiePrenante: null,
     }))
   )
+
+  // Mesures d'écosystème (Atelier 3), stockées en JSON sur les scénarios stratégiques.
+  // Priorité 'P1'…'P4' (string) → nombre ; pas d'échéance/responsable ; taguées au tiers.
+  const mesuresEco: MesureRow[] = analyses.flatMap(a =>
+    (a.scenariosStrategiques ?? []).flatMap(sc => {
+      const list = Array.isArray(sc.mesuresEcosysteme) ? (sc.mesuresEcosysteme as any[]) : []
+      return list.map(m => ({
+        mesureId:    `eco-${String(m?.id ?? Math.random().toString(36).slice(2))}`,
+        analyseId:   a.id,
+        analyseNom:  a.nom,
+        analyseOrg:  a.organisation,
+        nom:         String(m?.mesure ?? ''),
+        description: m?.description ? String(m.description) : null,
+        type:        String(m?.type ?? 'ORGANISATIONNELLE'),
+        priorite:    prioriteRank(m?.priorite) < 4 ? prioriteRank(m?.priorite) + 1 : 3,
+        statut:      String(m?.statut ?? 'A_FAIRE'),
+        responsable: null,
+        entite:      null,
+        echeance:    null,
+        enRetard:    false,
+        source:      'ecosysteme' as const,
+        partiePrenante: m?.partiePrenante ? String(m.partiePrenante) : null,
+      }))
+    })
+  ).filter(m => m.nom.trim().length > 0)
+
+  const allMesures: MesureRow[] = [...mesuresA5, ...mesuresEco]
 
   // Trier : priorité croissante, puis en retard en premier, puis statut
   allMesures.sort((a, b) => {
@@ -185,6 +218,10 @@ export default async function ActionsPage({ searchParams }: PageProps) {
           echeanceSans={t.actions.echeanceSans}
           searchPh={t.actions.searchPh}
           resultCount={t.actions.resultCount}
+          locale={locale}
+          clearLabel={t.actions.clearFilters}
+          clearSearchLabel={t.actions.clearSearch}
+          sourceEcoLabel={t.actions.sourceEco}
         />
       </main>
     </div>

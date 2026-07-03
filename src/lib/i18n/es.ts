@@ -453,6 +453,9 @@ export const es: Translations = {
   actions: {
     title:           'Planes de acción',
     subtitle:        'Todas las medidas de seguridad, filtradas por prioridad y estado',
+    clearFilters:    'Borrar',
+    clearSearch:     'Borrar la búsqueda',
+    sourceEco:       'Ecosistema',
     filterAll:       'Todas',
     filterP1:        '🔴 Prioridad 1',
     filterP2:        '🟠 Prioridad 2',
@@ -495,6 +498,8 @@ export const es: Translations = {
       DISSUASIVE:       'Disuasiva',
       ORGANISATIONNELLE:'Organizacional',
       TECHNIQUE:        'Técnica',
+      PHYSIQUE:         'Física',
+      CONTRACTUELLE:    'Contractual',
     },
   },
 

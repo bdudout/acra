@@ -453,6 +453,9 @@ export const en: Translations = {
   actions: {
     title:           'Action plans',
     subtitle:        'All security measures, filtered by priority and status',
+    clearFilters:    'Clear',
+    clearSearch:     'Clear search',
+    sourceEco:       'Ecosystem',
     filterAll:       'All',
     filterP1:        '🔴 Priority 1',
     filterP2:        '🟠 Priority 2',
@@ -495,6 +498,8 @@ export const en: Translations = {
       DISSUASIVE:       'Dissuasive',
       ORGANISATIONNELLE:'Organisational',
       TECHNIQUE:        'Technical',
+      PHYSIQUE:         'Physical',
+      CONTRACTUELLE:    'Contractual',
     },
   },
 
