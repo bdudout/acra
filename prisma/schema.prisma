@@ -110,9 +110,42 @@ model Organization {
   membres   OrgMembership[]
   analyses  Analyse[]
   config    OrganizationConfig?
+  conformites Conformite[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──
+// Une conformité de référence par (organisation × référentiel). Découplée des
+// analyses : les analyses la lisent quand OrganizationConfig.conformiteNiveau =
+// "ORGANISATION". `entries` = ConformiteEntry[] (mêmes {ref,statut,commentaire}
+// que Cadrage.socleSecurite). L'historique est capturé dans ConformiteSnapshot.
+model Conformite {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  referentiel    String   // FrameworkId (ISO27001, NIST_CSF, …)
+  entries        Json     @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  snapshots      ConformiteSnapshot[]
+
+  @@unique([organizationId, referentiel])
+  @@index([organizationId])
+}
+
+// Instantané daté de l'état de conformité (tendance dans le temps).
+model ConformiteSnapshot {
+  id           String   @id @default(cuid())
+  conformiteId String
+  conformite   Conformite @relation(fields: [conformiteId], references: [id], onDelete: Cascade)
+  entries      Json
+  label        String?  // libellé optionnel (ex. "Avant audit 2026")
+  createdById  String?  // utilisateur ayant figé la version (null = automatique)
+  createdAt    DateTime @default(now())
+
+  @@index([conformiteId])
 }
 
 model OrgMembership {
@@ -540,6 +573,11 @@ model OrganizationConfig {
   qualificationObligatoire Boolean @default(false)
   // Fonctionnalité optionnelle : grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle)
   conformiteActive    Boolean @default(false)
+  // Palier 2 — niveau de portage de la conformité : "ANALYSE" (par analyse/socle, défaut, rétrocompatible)
+  // ou "ORGANISATION" (une conformité de référence par organisation × référentiel, entité Conformite).
+  conformiteNiveau       String @default("ANALYSE")
+  // Palier 2 — mode de création des versions/snapshots : "MANUEL" (défaut) | "AUTO" | "CHANGEMENT".
+  conformiteSnapshotMode String @default("MANUEL")
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
   conseilsAteliersActive Boolean @default(true)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)

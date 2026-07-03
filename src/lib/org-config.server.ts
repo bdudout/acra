@@ -20,6 +20,8 @@ const CONFIG_SELECT = {
   qualificationActive: true,
   qualificationObligatoire: true,
   conformiteActive: true,
+  conformiteNiveau: true,
+  conformiteSnapshotMode: true,
   conseilsAteliersActive: true,
 } as const
 

@@ -1803,6 +1803,19 @@ export const it: Translations = {
     disabled:      'Disattivata',
   },
   // ─── Questionario di qualificazione ───────────────────────────────────────
+  confOptions: {
+    sectionTitle: 'Opzioni di conformità',
+    sectionDesc: 'Dove è mantenuta la conformità di riferimento e come vengono registrate le sue versioni.',
+    niveauLabel: 'Livello di conformità',
+    niveauDesc: 'Per analisi (ogni analisi/base mantiene la propria) o per organizzazione (una conformità di riferimento per organizzazione × framework, ereditata dalle analisi).',
+    niveauAnalyse: 'Per analisi (predefinito)',
+    niveauOrganisation: 'Per organizzazione',
+    snapshotLabel: 'Creazione delle versioni (snapshot)',
+    snapshotDesc: 'Come vengono creati gli snapshot datati per seguire l\'andamento della conformità.',
+    snapshotManuel: 'Manuale — congela una versione su richiesta',
+    snapshotAuto: 'Automatica — periodica',
+    snapshotChangement: 'A ogni modifica',
+  },
   qualification: {
     promptOptionalTitle: 'Qualifica la tua analisi prima di iniziare',
     promptOptionalText: 'Alcune domande rapide per inquadrare l\'analisi e suggerire orientamenti. Consigliato prima del Workshop 1 — potrai tornarci più tardi.',

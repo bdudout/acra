@@ -17,6 +17,8 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     qualificationActive: false,
     qualificationObligatoire: false,
     conformiteActive: false,
+    conformiteNiveau: 'ANALYSE',
+    conformiteSnapshotMode: 'MANUEL',
     conseilsAteliersActive: true,
     ...partial,
   }
@@ -56,6 +58,15 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     const enfant = row({ qualificationObligatoire: true })
     const racine = row({ qualificationObligatoire: false })
     expect(resolveOrgConfig([enfant, racine]).qualificationObligatoire).toBe(true)
+  })
+
+  it('conformiteNiveau / conformiteSnapshotMode : défaut, puis 1re valeur non vide de la chaîne', () => {
+    expect(resolveOrgConfig([]).conformiteNiveau).toBe('ANALYSE')
+    expect(resolveOrgConfig([]).conformiteSnapshotMode).toBe('MANUEL')
+    const enfant = row({ conformiteNiveau: 'ORGANISATION', conformiteSnapshotMode: 'AUTO' })
+    const racine = row({ conformiteNiveau: 'ANALYSE', conformiteSnapshotMode: 'MANUEL' })
+    expect(resolveOrgConfig([enfant, racine]).conformiteNiveau).toBe('ORGANISATION')
+    expect(resolveOrgConfig([enfant, racine]).conformiteSnapshotMode).toBe('AUTO')
   })
 
   it('un nœud sans row (null) est ignoré et hérite de l\'ancêtre', () => {

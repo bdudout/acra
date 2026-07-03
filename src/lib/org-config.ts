@@ -34,6 +34,8 @@ export interface RawOrgConfig {
   qualificationActive: boolean
   qualificationObligatoire: boolean
   conformiteActive: boolean
+  conformiteNiveau: string
+  conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
 }
 
@@ -48,6 +50,8 @@ export interface OrgConfigResolved {
   qualificationActive: boolean
   qualificationObligatoire: boolean
   conformiteActive: boolean
+  conformiteNiveau: string
+  conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
 }
 
@@ -61,6 +65,8 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   qualificationActive: false,
   qualificationObligatoire: false,
   conformiteActive: false,
+  conformiteNiveau: 'ANALYSE',
+  conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,
 }
 
@@ -74,6 +80,7 @@ function isEmptyJson(v: unknown): boolean {
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive'
+type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -92,6 +99,13 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     }
     return def
   }
+  const pickStr = (key: StrKey, def: string): string => {
+    for (const row of chainSelfFirst) {
+      const v = row?.[key]
+      if (typeof v === 'string' && v) return v
+    }
+    return def
+  }
   return {
     entitesMesures: pickJson('entitesMesures', defaults.entitesMesures),
     typesImpacts: pickJson('typesImpacts', defaults.typesImpacts),
@@ -102,6 +116,8 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     qualificationActive: pickBool('qualificationActive', defaults.qualificationActive),
     qualificationObligatoire: pickBool('qualificationObligatoire', defaults.qualificationObligatoire),
     conformiteActive: pickBool('conformiteActive', defaults.conformiteActive),
+    conformiteNiveau: pickStr('conformiteNiveau', defaults.conformiteNiveau),
+    conformiteSnapshotMode: pickStr('conformiteSnapshotMode', defaults.conformiteSnapshotMode),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
   }
 }

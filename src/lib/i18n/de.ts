@@ -1803,6 +1803,19 @@ export const de: Translations = {
     disabled:      'Deaktiviert',
   },
   // ─── Qualifizierungsfragebogen ────────────────────────────────────────────
+  confOptions: {
+    sectionTitle: 'Konformitätsoptionen',
+    sectionDesc: 'Wo die Referenzkonformität liegt und wie ihre Versionen erfasst werden.',
+    niveauLabel: 'Konformitätsebene',
+    niveauDesc: 'Pro Analyse (jede Analyse/Sockel führt eigene) oder pro Organisation (eine Referenzkonformität je Organisation × Rahmenwerk, von Analysen geerbt).',
+    niveauAnalyse: 'Pro Analyse (Standard)',
+    niveauOrganisation: 'Pro Organisation',
+    snapshotLabel: 'Versionserstellung (Snapshots)',
+    snapshotDesc: 'Wie die datierten Snapshots zur Verfolgung des Konformitätstrends erstellt werden.',
+    snapshotManuel: 'Manuell — Version bei Bedarf einfrieren',
+    snapshotAuto: 'Automatisch — periodisch',
+    snapshotChangement: 'Bei jeder Änderung',
+  },
   qualification: {
     promptOptionalTitle: 'Qualifizieren Sie Ihre Analyse vor dem Start',
     promptOptionalText: 'Ein paar kurze Fragen, um die Analyse einzugrenzen und Orientierungen vorzuschlagen. Empfohlen vor Workshop 1 — Sie können später darauf zurückkommen.',

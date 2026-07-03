@@ -137,6 +137,9 @@ export default function ConfigurationPage() {
   const [qualificationActive, setQualificationActive] = useState(false)
   const [qualificationObligatoire, setQualificationObligatoire] = useState(false)
   const [conformiteActive, setConformiteActive] = useState(false)
+  const [conformiteNiveau, setConformiteNiveau] = useState('ANALYSE')
+  const [conformiteSnapshotMode, setConformiteSnapshotMode] = useState('MANUEL')
+  const [savingConfOpt, setSavingConfOpt] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
@@ -173,6 +176,8 @@ export default function ConfigurationPage() {
         setQualificationActive(Boolean(data.qualificationActive))
         setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
+        setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
+        setConformiteSnapshotMode(['MANUEL', 'AUTO', 'CHANGEMENT'].includes(data.conformiteSnapshotMode) ? data.conformiteSnapshotMode : 'MANUEL')
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
@@ -217,6 +222,20 @@ export default function ConfigurationPage() {
     })
     setSavingFeatures(false)
     if (!res.ok) FEATURE_SETTERS[field]?.(!value) // rollback
+  }
+
+  // Options conformité (Palier 2) — champs chaîne (niveau / mode de snapshot).
+  async function saveConformiteOption(field: 'conformiteNiveau' | 'conformiteSnapshotMode', value: string) {
+    const prev = field === 'conformiteNiveau' ? conformiteNiveau : conformiteSnapshotMode
+    const setter = field === 'conformiteNiveau' ? setConformiteNiveau : setConformiteSnapshotMode
+    setter(value) // optimiste
+    setSavingConfOpt(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    setSavingConfOpt(false)
+    if (!res.ok) setter(prev) // rollback
   }
 
   // ── Helpers exemples des ateliers ────────────────────────────────────────
@@ -1074,6 +1093,45 @@ export default function ConfigurationPage() {
                 </div>
                 )
               })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Options de conformité (Palier 2 — ADMIN, si conformité active) ── */}
+        {isAdmin && conformiteActive && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.confOptions.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.confOptions.sectionDesc}</p>
+            <div className="space-y-4">
+              {/* Niveau de portage */}
+              <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-800 mb-1">{t.confOptions.niveauLabel}</label>
+                <p className="text-xs text-gray-500 mb-2">{t.confOptions.niveauDesc}</p>
+                <select
+                  value={conformiteNiveau}
+                  disabled={savingConfOpt}
+                  onChange={e => saveConformiteOption('conformiteNiveau', e.target.value)}
+                  className="input max-w-md"
+                >
+                  <option value="ANALYSE">{t.confOptions.niveauAnalyse}</option>
+                  <option value="ORGANISATION">{t.confOptions.niveauOrganisation}</option>
+                </select>
+              </div>
+              {/* Mode de snapshot */}
+              <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-800 mb-1">{t.confOptions.snapshotLabel}</label>
+                <p className="text-xs text-gray-500 mb-2">{t.confOptions.snapshotDesc}</p>
+                <select
+                  value={conformiteSnapshotMode}
+                  disabled={savingConfOpt}
+                  onChange={e => saveConformiteOption('conformiteSnapshotMode', e.target.value)}
+                  className="input max-w-md"
+                >
+                  <option value="MANUEL">{t.confOptions.snapshotManuel}</option>
+                  <option value="AUTO">{t.confOptions.snapshotAuto}</option>
+                  <option value="CHANGEMENT">{t.confOptions.snapshotChangement}</option>
+                </select>
+              </div>
             </div>
           </section>
         )}

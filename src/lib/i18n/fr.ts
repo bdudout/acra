@@ -1831,6 +1831,19 @@ export const fr = {
     disabled:      'Désactivée',
   },
   // ─── Questionnaire de qualification ───────────────────────────────────────
+  confOptions: {
+    sectionTitle: 'Options de conformité',
+    sectionDesc: 'Où porter la conformité de référence et comment en historiser les versions.',
+    niveauLabel: 'Niveau de la conformité',
+    niveauDesc: 'Par analyse (chaque analyse/socle porte la sienne) ou par organisation (une conformité de référence par organisation × référentiel, héritée par les analyses).',
+    niveauAnalyse: 'Par analyse (défaut)',
+    niveauOrganisation: 'Par organisation',
+    snapshotLabel: 'Création des versions (snapshots)',
+    snapshotDesc: 'Comment sont créés les instantanés datés servant à suivre la tendance de conformité.',
+    snapshotManuel: 'Manuel — figer une version à la demande',
+    snapshotAuto: 'Automatique — périodique',
+    snapshotChangement: 'À chaque modification',
+  },
   qualification: {
     promptOptionalTitle: 'Qualifiez votre analyse avant de commencer',
     promptOptionalText: 'Quelques questions rapides pour cadrer l\'analyse et suggérer des orientations. Recommandé avant l\'atelier 1 — vous pourrez y revenir plus tard.',

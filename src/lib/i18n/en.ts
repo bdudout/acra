@@ -1803,6 +1803,19 @@ export const en: Translations = {
     disabled:      'Disabled',
   },
   // ─── Qualification questionnaire ──────────────────────────────────────────
+  confOptions: {
+    sectionTitle: 'Compliance options',
+    sectionDesc: 'Where the reference compliance is held and how its versions are recorded.',
+    niveauLabel: 'Compliance level',
+    niveauDesc: 'Per analysis (each analysis/baseline holds its own) or per organisation (one reference compliance per organisation × framework, inherited by analyses).',
+    niveauAnalyse: 'Per analysis (default)',
+    niveauOrganisation: 'Per organisation',
+    snapshotLabel: 'Version creation (snapshots)',
+    snapshotDesc: 'How dated snapshots used to track the compliance trend are created.',
+    snapshotManuel: 'Manual — freeze a version on demand',
+    snapshotAuto: 'Automatic — periodic',
+    snapshotChangement: 'On every change',
+  },
   qualification: {
     promptOptionalTitle: 'Qualify your analysis before you start',
     promptOptionalText: 'A few quick questions to frame the analysis and suggest orientations. Recommended before Workshop 1 — you can come back to it later.',

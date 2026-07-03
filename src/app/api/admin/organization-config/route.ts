@@ -9,6 +9,7 @@ import {
   type TypeImpact, type ReferentielActif, type StrategieTraitement,
 } from '@/lib/org-config-defaults'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
+import { sanitizeConformiteNiveau, sanitizeSnapshotMode } from '@/lib/conformite-config'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
@@ -55,6 +56,8 @@ export async function GET(_req: NextRequest) {
     qualificationActive: cfg.qualificationActive,
     qualificationObligatoire: cfg.qualificationObligatoire,
     conformiteActive: cfg.conformiteActive,
+    conformiteNiveau: cfg.conformiteNiveau,
+    conformiteSnapshotMode: cfg.conformiteSnapshotMode,
     conseilsAteliersActive: cfg.conseilsAteliersActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
@@ -149,6 +152,8 @@ export async function PUT(req: NextRequest) {
   if (typeof body.qualificationActive === 'boolean') data.qualificationActive = body.qualificationActive
   if (typeof body.qualificationObligatoire === 'boolean') data.qualificationObligatoire = body.qualificationObligatoire
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
+  if (typeof body.conformiteNiveau === 'string') data.conformiteNiveau = sanitizeConformiteNiveau(body.conformiteNiveau)
+  if (typeof body.conformiteSnapshotMode === 'string') data.conformiteSnapshotMode = sanitizeSnapshotMode(body.conformiteSnapshotMode)
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
 
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
@@ -180,6 +185,8 @@ export async function PUT(req: NextRequest) {
     qualificationActive: Boolean((config as any).qualificationActive),
     qualificationObligatoire: Boolean((config as any).qualificationObligatoire),
     conformiteActive: Boolean((config as any).conformiteActive),
+    conformiteNiveau: sanitizeConformiteNiveau((config as any).conformiteNiveau),
+    conformiteSnapshotMode: sanitizeSnapshotMode((config as any).conformiteSnapshotMode),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
     echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
   })

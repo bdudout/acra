@@ -1803,6 +1803,19 @@ export const es: Translations = {
     disabled:      'Desactivada',
   },
   // ─── Cuestionario de cualificación ────────────────────────────────────────
+  confOptions: {
+    sectionTitle: 'Opciones de conformidad',
+    sectionDesc: 'Dónde se mantiene la conformidad de referencia y cómo se registran sus versiones.',
+    niveauLabel: 'Nivel de conformidad',
+    niveauDesc: 'Por análisis (cada análisis/base mantiene la suya) o por organización (una conformidad de referencia por organización × marco, heredada por los análisis).',
+    niveauAnalyse: 'Por análisis (predeterminado)',
+    niveauOrganisation: 'Por organización',
+    snapshotLabel: 'Creación de versiones (snapshots)',
+    snapshotDesc: 'Cómo se crean las instantáneas fechadas para seguir la tendencia de conformidad.',
+    snapshotManuel: 'Manual — congelar una versión bajo demanda',
+    snapshotAuto: 'Automática — periódica',
+    snapshotChangement: 'En cada modificación',
+  },
   qualification: {
     promptOptionalTitle: 'Cualifique su análisis antes de empezar',
     promptOptionalText: 'Unas preguntas rápidas para enmarcar el análisis y sugerir orientaciones. Recomendado antes del Taller 1 — podrá volver más tarde.',
