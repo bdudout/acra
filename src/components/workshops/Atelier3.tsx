@@ -1091,6 +1091,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
         }
         const existingTitles = new Set(allEco.map(m => m.mesure))
         const ppGroups = groupMeasuresByPartiePrenante(allEco)
+        // Les clauses contractuelles ne concernent qu'un tiers avec qui on contractualise
+        // (fournisseur/prestataire/partenaire). Sans PP sélectionnée → autorisé (générique).
+        const PROVIDER_TYPES = ['FOURNISSEUR', 'PRESTATAIRE', 'PARTENAIRE']
+        const selectedPPType = parties.find((p: any) => p.nom === composerPP)?.type
+        const clausesAllowed = !composerPP || PROVIDER_TYPES.includes(selectedPPType)
         return (
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 rounded-xl p-4">
@@ -1177,19 +1182,28 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                     <span className="text-xs font-semibold text-purple-800">📄 {t.workshop.a3.measClausesTitle}</span>
                     <p className="text-xs text-purple-700 mt-0.5">{t.workshop.a3.measClausesIntro}</p>
                   </div>
+                  {!clausesAllowed && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border-t border-amber-200 px-3 py-2">
+                      ⚠️ {t.workshop.a3.measClausesProviderHint}
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-2">
                     {CONTRACTUAL_CLAUSE_KEYS.map(key => {
                       const label = (t.workshop.a3.measClauses as Record<string, string>)[key]
                       const title = `[${t.workshop.a3.measClauseTag}] ${label}${composerPP ? ` — ${composerPP}` : ''}`
                       const added = existingTitles.has(title)
+                      const disabled = added || !clausesAllowed
                       return (
                         <button
                           key={key}
-                          onClick={() => { if (!added) addMesureContractuelle(composerTarget, composerPP, key) }}
+                          disabled={disabled}
+                          onClick={() => { if (!disabled) addMesureContractuelle(composerTarget, composerPP, key) }}
                           className={`text-left p-2 border rounded transition-all ${
                             added
                               ? 'bg-green-50 border-green-400 opacity-70 cursor-default'
-                              : 'bg-white border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                              : !clausesAllowed
+                                ? 'bg-gray-50 border-gray-200 opacity-50 cursor-not-allowed'
+                                : 'bg-white border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                           }`}
                         >
                           {added && <div className="text-xs text-green-600 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
