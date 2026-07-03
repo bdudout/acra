@@ -37,3 +37,11 @@ export function sanitizeSnapshotMode(v: unknown): ConformiteSnapshotMode {
 export function isOrgLevelConformite(niveau: unknown): boolean {
   return sanitizeConformiteNiveau(niveau) === 'ORGANISATION'
 }
+
+/**
+ * Faut-il créer un snapshot À CHAQUE modification ? Vrai seulement en mode
+ * CHANGEMENT. (MANUEL = à la demande ; AUTO = périodique, hors édition inline.)
+ */
+export function shouldSnapshotOnChange(mode: unknown): boolean {
+  return sanitizeSnapshotMode(mode) === 'CHANGEMENT'
+}

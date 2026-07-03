@@ -20,7 +20,8 @@ import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
 import ConformitePie from '@/components/ConformitePie'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
-import { resolveEffectiveConformite, sanitizeConformite, conformiteStats } from '@/lib/conformite'
+import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
+import { getConformiteContext } from '@/lib/conformite.server'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { formatDate } from '@/lib/format'
@@ -79,24 +80,33 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
   const qualificationActive = orgConfig.qualificationActive
 
-  // Camembert de conformité au référentiel du socle (propre ou héritée).
+  // Camembert de conformité au référentiel : niveau ORGANISATION (entité), sinon
+  // conformité propre de l'analyse ou héritée du socle. Résolution org-aware.
   const socleForConf = (analyse as any).socle as { id: string; nom: string; referentielMesures?: string; cadrage?: { socleSecurite?: unknown; customControles?: unknown } } | null
-  const effConf = resolveEffectiveConformite({
+  const confCtxDetail = await getConformiteContext({
+    organizationId: (analyse as any).organizationId,
+    referentielMesures: (analyse as any).referentielMesures,
     ownEntries: analyse.cadrage ? sanitizeConformite((analyse.cadrage as any).socleSecurite) : [],
     socle: socleForConf?.cadrage
-      ? { id: socleForConf.id, nom: socleForConf.nom, entries: sanitizeConformite(socleForConf.cadrage.socleSecurite) }
+      ? { id: socleForConf.id, nom: socleForConf.nom, referentielMesures: socleForConf.referentielMesures, entries: sanitizeConformite(socleForConf.cadrage.socleSecurite) }
       : null,
+    conformiteNiveau: orgConfig.conformiteNiveau,
   })
-  let conformitePie: { stats: ReturnType<typeof conformiteStats>; frameworkNom: string; inherited: boolean; sourceNom: string | null } | null = null
-  if (orgConfig.conformiteActive && effConf.entries.length > 0) {
-    const refId = (effConf.inherited ? socleForConf?.referentielMesures : (analyse as any).referentielMesures) ?? 'ISO27001'
-    const custom = (effConf.inherited ? socleForConf?.cadrage?.customControles : (analyse.cadrage as any)?.customControles) as any[]
-    const controles = getFrameworkControles(refId as FrameworkId, custom, locale)
+  let conformitePie: { stats: ReturnType<typeof conformiteStats>; frameworkNom: string; note: string | null } | null = null
+  if (orgConfig.conformiteActive && confCtxDetail.entries.length > 0) {
+    const custom = (confCtxDetail.level === 'ANALYSE'
+      ? (analyse.cadrage as any)?.customControles
+      : confCtxDetail.level === 'SOCLE' ? socleForConf?.cadrage?.customControles : undefined) as any[]
+    const controles = getFrameworkControles(confCtxDetail.referentiel as FrameworkId, custom, locale)
+    const note = confCtxDetail.level === 'ORGANISATION'
+      ? t.analysis.conformiteOrgNote.replace('{org}', confCtxDetail.sourceNom ?? '—')
+      : confCtxDetail.level === 'SOCLE'
+        ? t.analysis.conformiteInheritedNote.replace('{socle}', confCtxDetail.sourceNom ?? '—')
+        : null
     conformitePie = {
-      stats: conformiteStats(effConf.entries, controles.length),
-      frameworkNom: FRAMEWORK_META[refId as FrameworkId]?.nom ?? String(refId),
-      inherited: effConf.inherited,
-      sourceNom: effConf.sourceAnalyseNom,
+      stats: conformiteStats(confCtxDetail.entries, controles.length),
+      frameworkNom: FRAMEWORK_META[confCtxDetail.referentiel as FrameworkId]?.nom ?? String(confCtxDetail.referentiel),
+      note,
     }
   }
   const qualificationObligatoire = orgConfig.qualificationObligatoire
@@ -328,7 +338,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 title={t.analysis.conformiteTitle}
                 rateLabel={t.dashboard.conformiteRate}
                 labels={t.conformite.statuts as { conforme: string; partiel: string; non_conforme: string; na: string }}
-                note={conformitePie.inherited ? t.analysis.conformiteInheritedNote.replace('{socle}', conformitePie.sourceNom ?? '—') : null}
+                note={conformitePie.note}
               />
             )}
 

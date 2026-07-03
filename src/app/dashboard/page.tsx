@@ -94,7 +94,7 @@ export default async function DashboardPage() {
   // socle renseigné — priorité aux analyses SOCLE, puis au nombre de non-conformités.
   // Les non-conformités sont éditables inline (cf. ConformiteTrackingCard + API).
   const conformiteRows: ConformiteCardRow[] = analyses
-    .map(a => {
+    .map((a): ConformiteCardRow | null => {
       const entries = sanitizeConformite((a as any).cadrage?.socleSecurite)
       if (entries.length === 0) return null
       const ref = ((a as any).referentielMesures ?? 'ISO27001') as FrameworkId
@@ -105,6 +105,8 @@ export default async function DashboardPage() {
         { userId: (a as any).userId, accesUtilisateurs: (a as any).accesUtilisateurs },
       )
       return {
+        key: a.id,
+        source: 'analyse' as const,
         analyseId: a.id,
         nom: a.nom,
         isSocle: !!(a as any).isSocle,
@@ -120,8 +122,40 @@ export default async function DashboardPage() {
       }
     })
     .filter((x): x is ConformiteCardRow => x !== null)
-    .sort((a, b) => Number(b.isSocle) - Number(a.isSocle) || b.stats.nonConforme - a.stats.nonConforme)
-    .slice(0, 4)
+
+  // Palier 2 — conformité au niveau ORGANISATION : entités Conformite des organisations
+  // visibles, éditables inline par les rôles de gouvernance (via l'API org).
+  const canGovern = isAdminRole(userRole) || userRole === 'RSSI' || userRole === 'RISK_MANAGER'
+  const visibleOrgIds = __org.scope.visibleOrgIds ?? []
+  const orgConformites = visibleOrgIds.length > 0
+    ? await prisma.conformite.findMany({
+        where: { organizationId: { in: visibleOrgIds } },
+        select: { id: true, organizationId: true, referentiel: true, entries: true, organization: { select: { nom: true } } },
+      })
+    : []
+  const orgRows: ConformiteCardRow[] = orgConformites.map(oc => {
+    const entries = sanitizeConformite(oc.entries)
+    const ref = (oc.referentiel ?? 'ISO27001') as FrameworkId
+    const controles = getFrameworkControles(ref, undefined, locale)
+    const nomByRef = new Map(controles.map(c => [c.ref, c.nom]))
+    return {
+      key: `org:${oc.organizationId}:${oc.referentiel}`,
+      source: 'org' as const,
+      orgId: oc.organizationId,
+      referentiel: oc.referentiel,
+      nom: oc.organization?.nom ?? oc.organizationId,
+      isSocle: false,
+      frameworkNom: FRAMEWORK_META[ref]?.nom ?? String(ref),
+      canEdit: canGovern,
+      total: controles.length,
+      stats: conformiteStats(entries, controles.length),
+      nonConformites: deriveNonConformites(entries).map(e => ({ ref: e.ref, nom: nomByRef.get(e.ref) ?? e.ref, statut: e.statut })),
+    }
+  })
+
+  const conformiteRowsAll: ConformiteCardRow[] = [...orgRows, ...conformiteRows]
+    .sort((a, b) => Number(b.source === 'org') - Number(a.source === 'org') || Number(b.isSocle) - Number(a.isSocle) || b.stats.nonConforme - a.stats.nonConforme)
+    .slice(0, 6)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -327,7 +361,7 @@ export default async function DashboardPage() {
             )}
 
             {/* Suivi + édition inline de la conformité du socle (fiche Club EBIOS) */}
-            {conformiteRows.length > 0 && <ConformiteTrackingCard rows={conformiteRows} />}
+            {conformiteRowsAll.length > 0 && <ConformiteTrackingCard rows={conformiteRowsAll} />}
           </div>
 
           {/* Colonne latérale */}

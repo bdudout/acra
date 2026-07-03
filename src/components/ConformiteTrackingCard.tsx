@@ -13,7 +13,13 @@ export interface ConformiteControl {
 }
 
 export interface ConformiteCardRow {
-  analyseId: string
+  /** Clé d'affichage unique (analyseId, ou org:<orgId>:<ref>). */
+  key: string
+  /** Origine : conformité par analyse (édition via /api/analyses) ou par organisation. */
+  source: 'analyse' | 'org'
+  analyseId?: string          // source === 'analyse'
+  orgId?: string              // source === 'org'
+  referentiel?: string        // source === 'org'
   nom: string
   isSocle: boolean
   frameworkNom: string
@@ -40,34 +46,33 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
   const { t } = useTranslation()
   const router = useRouter()
   const statutLabels = t.conformite.statuts as Record<string, string>
-  // État local par analyse : stats affichées + statuts des non-conformités + expansion.
+  // État local par ligne : stats affichées + statuts des non-conformités + expansion.
   const [state, setState] = useState<Record<string, { stats: ConformiteStats; ctrls: ConformiteControl[] }>>(
-    () => Object.fromEntries(rows.map(r => [r.analyseId, { stats: r.stats, ctrls: r.nonConformites }])),
+    () => Object.fromEntries(rows.map(r => [r.key, { stats: r.stats, ctrls: r.nonConformites }])),
   )
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState<string | null>(null)
 
-  async function changeStatut(analyseId: string, ref: string, statut: ConformiteStatut) {
-    const key = `${analyseId}:${ref}`
-    setBusy(key)
+  async function changeStatut(row: ConformiteCardRow, ref: string, statut: ConformiteStatut) {
+    const busyKey = `${row.key}:${ref}`
+    setBusy(busyKey)
     // Optimiste : refléter le nouveau statut localement.
     setState(prev => ({
       ...prev,
-      [analyseId]: { ...prev[analyseId], ctrls: prev[analyseId].ctrls.map(c => c.ref === ref ? { ...c, statut } : c) },
+      [row.key]: { ...prev[row.key], ctrls: prev[row.key].ctrls.map(c => c.ref === ref ? { ...c, statut } : c) },
     }))
+    // Édition selon l'origine : conformité par analyse ou par organisation.
+    const url = row.source === 'org'
+      ? `/api/organizations/${row.orgId}/conformite`
+      : `/api/analyses/${row.analyseId}/conformite`
+    const body = row.source === 'org' ? { referentiel: row.referentiel, ref, statut } : { ref, statut }
     try {
-      const res = await fetch(`/api/analyses/${analyseId}/conformite`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref, statut }),
-      })
+      const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) {
         const d = await res.json() as { stats: ConformiteStats }
-        setState(prev => ({ ...prev, [analyseId]: { ...prev[analyseId], stats: d.stats } }))
-        router.refresh() // réconcilier les autres vues (barre agrégée, catalogues)
-      } else {
-        router.refresh() // annule l'optimisme en rechargeant les données serveur
+        setState(prev => ({ ...prev, [row.key]: { ...prev[row.key], stats: d.stats } }))
       }
+      router.refresh() // réconcilier les autres vues (barre agrégée, catalogues)
     } catch {
       router.refresh()
     } finally {
@@ -81,20 +86,24 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
       <p className="text-xs text-gray-500 mb-4">{t.dashboard.conformiteSubtitle}</p>
       <div className="space-y-4">
         {rows.map(r => {
-          const st = state[r.analyseId]?.stats ?? r.stats
-          const ctrls = state[r.analyseId]?.ctrls ?? r.nonConformites
-          const isOpen = !!open[r.analyseId]
+          const st = state[r.key]?.stats ?? r.stats
+          const ctrls = state[r.key]?.ctrls ?? r.nonConformites
+          const isOpen = !!open[r.key]
           return (
-            <div key={r.analyseId} className="border border-gray-100 rounded-lg p-3">
+            <div key={r.key} className="border border-gray-100 rounded-lg p-3">
               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
-                  {r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>}
+                  {r.source === 'org'
+                    ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium flex-shrink-0" title={t.dashboard.conformiteOrgBadge}>🏢</span>
+                    : r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>}
                   <span className="text-sm font-medium text-gray-800 truncate">{r.nom}</span>
                   <span className="text-xs text-gray-400 flex-shrink-0">· {r.frameworkNom}</span>
                 </div>
-                <Link href={`/analyses/${r.analyseId}/atelier/1#socle-conformite`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
-                  {t.dashboard.conformiteModify} →
-                </Link>
+                {r.source === 'analyse' && (
+                  <Link href={`/analyses/${r.analyseId}/atelier/1#socle-conformite`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
+                    {t.dashboard.conformiteModify} →
+                  </Link>
+                )}
               </div>
 
               {/* Barre de répartition */}
@@ -119,7 +128,7 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
                 <div className="mt-2 border-t border-gray-100 pt-2">
                   <button
                     type="button"
-                    onClick={() => setOpen(o => ({ ...o, [r.analyseId]: !isOpen }))}
+                    onClick={() => setOpen(o => ({ ...o, [r.key]: !isOpen }))}
                     className="text-xs text-gray-600 hover:text-gray-900 font-medium"
                   >
                     {isOpen ? '▾' : '▸'} {ctrls.length} {t.dashboard.conformiteNonConfLabel}
@@ -136,8 +145,8 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
                           {r.canEdit ? (
                             <select
                               value={c.statut}
-                              disabled={busy === `${r.analyseId}:${c.ref}`}
-                              onChange={e => changeStatut(r.analyseId, c.ref, e.target.value as ConformiteStatut)}
+                              disabled={busy === `${r.key}:${c.ref}`}
+                              onChange={e => changeStatut(r, c.ref, e.target.value as ConformiteStatut)}
                               className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] text-gray-700 flex-shrink-0 disabled:opacity-50"
                               aria-label={`${c.ref} — ${t.dashboard.conformiteModify}`}
                             >

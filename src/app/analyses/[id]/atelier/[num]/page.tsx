@@ -18,7 +18,8 @@ import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
-import { sanitizeConformite, deriveNonConformites, resolveEffectiveConformite, type ConformiteStatut } from '@/lib/conformite'
+import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
+import { getConformiteContext } from '@/lib/conformite.server'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 
 export default async function AtelierPage({
@@ -129,23 +130,26 @@ export default async function AtelierPage({
     redirect(`/analyses/${id}?qualif=required`)
   }
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
-  // Conformité EFFECTIVE (Palier 1) : propre à l'analyse, ou héritée du socle en lecture.
+  // Conformité EFFECTIVE : niveau ORGANISATION (entité), sinon propre à l'analyse
+  // ou héritée du socle (Palier 1). Résolution centralisée (org-aware).
   const socleAnalyse = (analyse as any).socle as { id: string; nom: string; referentielMesures?: string; cadrage?: { socleSecurite?: unknown; customControles?: unknown } } | null
-  const effConformite = resolveEffectiveConformite({
+  const confCtx = await getConformiteContext({
+    organizationId: (analyse as any).organizationId,
+    referentielMesures: (analyse as any).referentielMesures,
     ownEntries: analyse.cadrage ? sanitizeConformite((analyse.cadrage as any).socleSecurite) : [],
     socle: socleAnalyse?.cadrage
-      ? { id: socleAnalyse.id, nom: socleAnalyse.nom, entries: sanitizeConformite(socleAnalyse.cadrage.socleSecurite) }
+      ? { id: socleAnalyse.id, nom: socleAnalyse.nom, referentielMesures: socleAnalyse.referentielMesures, entries: sanitizeConformite(socleAnalyse.cadrage.socleSecurite) }
       : null,
+    conformiteNiveau: orgConfig.conformiteNiveau,
   })
-  if (conformiteActive && effConformite.entries.length > 0) {
-    // Les refs appartiennent au référentiel de l'analyse PROPRIÉTAIRE de la conformité
-    // (le socle si héritée, sinon l'analyse courante).
-    const refSource = effConformite.inherited
-      ? { ref: socleAnalyse?.referentielMesures ?? 'ISO27001', custom: socleAnalyse?.cadrage?.customControles }
-      : { ref: (analyse as any).referentielMesures ?? 'ISO27001', custom: (analyse.cadrage as any)?.customControles }
-    const controles = getFrameworkControles(refSource.ref, refSource.custom as any[], locale)
+  if (conformiteActive && confCtx.entries.length > 0) {
+    // Contrôles personnalisés seulement en niveau ANALYSE (l'org utilise le référentiel standard).
+    const custom = confCtx.level === 'ANALYSE'
+      ? (analyse.cadrage as any)?.customControles
+      : confCtx.level === 'SOCLE' ? socleAnalyse?.cadrage?.customControles : undefined
+    const controles = getFrameworkControles(confCtx.referentiel as any, custom as any[], locale)
     const ctlByRef = new Map(controles.map(c => [c.ref, c]))
-    nonConfItems = deriveNonConformites(effConformite.entries).map(nc => ({
+    nonConfItems = deriveNonConformites(confCtx.entries).map(nc => ({
       ref: nc.ref,
       nom: ctlByRef.get(nc.ref)?.nom ?? nc.ref,
       statut: nc.statut,
@@ -253,9 +257,10 @@ export default async function AtelierPage({
                 initialData={initialData}
                 analyse={analyse}
                 flashMode={flashMode}
-                conformiteInherited={conformiteActive && effConformite.inherited}
-                conformiteSourceId={effConformite.sourceAnalyseId}
-                conformiteSourceNom={effConformite.sourceAnalyseNom}
+                conformiteInherited={conformiteActive && confCtx.level !== 'ANALYSE'}
+                conformiteLevel={confCtx.level}
+                conformiteSourceId={confCtx.sourceId}
+                conformiteSourceNom={confCtx.sourceNom}
               />
             )}
             {atelierNum === 2 && (

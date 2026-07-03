@@ -5,6 +5,7 @@ import {
   sanitizeConformiteNiveau,
   sanitizeSnapshotMode,
   isOrgLevelConformite,
+  shouldSnapshotOnChange,
 } from '../../../lib/conformite-config'
 
 describe('conformite-config — options Palier 2', () => {
@@ -33,5 +34,12 @@ describe('conformite-config — options Palier 2', () => {
     expect(isOrgLevelConformite('ORGANISATION')).toBe(true)
     expect(isOrgLevelConformite('ANALYSE')).toBe(false)
     expect(isOrgLevelConformite('bidon')).toBe(false)
+  })
+
+  it('shouldSnapshotOnChange : vrai seulement en mode CHANGEMENT', () => {
+    expect(shouldSnapshotOnChange('CHANGEMENT')).toBe(true)
+    expect(shouldSnapshotOnChange('MANUEL')).toBe(false)
+    expect(shouldSnapshotOnChange('AUTO')).toBe(false)
+    expect(shouldSnapshotOnChange('x')).toBe(false)
   })
 })
