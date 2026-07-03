@@ -5,6 +5,7 @@ import {
   deriveNonConformites,
   conformiteStats,
   applyConformiteStatut,
+  resolveEffectiveConformite,
   type ConformiteEntry,
 } from '@/lib/conformite'
 
@@ -99,5 +100,31 @@ describe('applyConformiteStatut — édition inline du socle', () => {
   it('ignore une ref vide ou un statut invalide', () => {
     expect(applyConformiteStatut(base, '   ', 'conforme')).toBe(base)
     expect(applyConformiteStatut(base, '5.1', 'bidon' as any)).toBe(base)
+  })
+})
+
+describe('resolveEffectiveConformite — héritage du socle (Palier 1)', () => {
+  const own: ConformiteEntry[] = [{ ref: 'A.5.1', statut: 'conforme' }]
+  const socleEntries: ConformiteEntry[] = [{ ref: 'A.8.1', statut: 'non_conforme' }]
+  const socle = { id: 'soc1', nom: 'Socle groupe', entries: socleEntries }
+
+  it('conformité propre non vide → gardée, non héritée', () => {
+    const r = resolveEffectiveConformite({ ownEntries: own, socle })
+    expect(r.entries).toBe(own)
+    expect(r.inherited).toBe(false)
+    expect(r.sourceAnalyseId).toBeNull()
+  })
+  it('pas de conformité propre + socle renseigné → héritée du socle', () => {
+    const r = resolveEffectiveConformite({ ownEntries: [], socle })
+    expect(r.entries).toBe(socleEntries)
+    expect(r.inherited).toBe(true)
+    expect(r.sourceAnalyseId).toBe('soc1')
+    expect(r.sourceAnalyseNom).toBe('Socle groupe')
+  })
+  it('ni propre ni socle → vide, non héritée', () => {
+    expect(resolveEffectiveConformite({ ownEntries: [], socle: null })).toEqual({
+      entries: [], inherited: false, sourceAnalyseId: null, sourceAnalyseNom: null,
+    })
+    expect(resolveEffectiveConformite({ ownEntries: [], socle: { id: 's', nom: 'x', entries: [] } }).inherited).toBe(false)
   })
 })

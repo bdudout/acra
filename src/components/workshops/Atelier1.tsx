@@ -39,6 +39,7 @@ import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, recommendedFrameworksForSector, TAILLES_ANALYSE, type TailleAnalyse, type FrameworkId, type FrameworkControl } from '@/lib/frameworks-data'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { ConformiteEntry } from '@/lib/conformite'
+import Link from 'next/link'
 import { suggestsComplianceModule, nis2Classification, doraPrevailsOverNis2 } from '@/lib/regulatory-guidance'
 import { showsHdsCaveat } from '@/lib/sous-secteurs'
 
@@ -47,6 +48,10 @@ interface Props {
   initialData?: any
   analyse: any
   flashMode?: boolean
+  /** Palier 1 : la conformité est héritée du socle → affichée en lecture seule ici. */
+  conformiteInherited?: boolean
+  conformiteSourceId?: string | null
+  conformiteSourceNom?: string | null
 }
 
 function uid() { return Math.random().toString(36).slice(2, 9) }
@@ -60,7 +65,7 @@ function getDictColor(v: number) {
   return 'bg-red-100 text-red-700'
 }
 
-export default function Atelier1({ analyseId, initialData, analyse, flashMode }: Props) {
+export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteSourceId = null, conformiteSourceNom = null }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const {
@@ -1199,7 +1204,20 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode }:
           </div>
 
           {/* ── Grille de conformité au référentiel (fonctionnalité optionnelle) ── */}
-          {conformiteActive && (
+          {conformiteActive && conformiteInherited && (
+            <div className="card p-5 border-l-4 border-l-indigo-400 bg-indigo-50/40">
+              <h3 className="font-semibold text-gray-800 mb-1">🔗 {t.workshop.a1.conformiteInheritedTitle}</h3>
+              <p className="text-sm text-gray-600">
+                {t.workshop.a1.conformiteInheritedText.replace('{socle}', conformiteSourceNom ?? '—')}
+              </p>
+              {conformiteSourceId && (
+                <Link href={`/analyses/${conformiteSourceId}/atelier/1`} className="text-sm text-ebios-600 hover:text-ebios-800 hover:underline mt-2 inline-block">
+                  {t.workshop.a1.conformiteInheritedLink} →
+                </Link>
+              )}
+            </div>
+          )}
+          {conformiteActive && !conformiteInherited && (
             <div className="card p-5">
               <ConformiteGrid
                 controles={getFrameworkControles(referentielMesures, customControles, locale)}

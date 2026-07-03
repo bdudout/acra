@@ -96,6 +96,38 @@ export function applyConformiteStatut(
   return out
 }
 
+/** Conformité effective d'une analyse (propre, ou héritée du socle) — Palier 1. */
+export interface EffectiveConformite {
+  entries: ConformiteEntry[]
+  /** Vrai si les entrées proviennent du socle (analyse fille sans conformité propre). */
+  inherited: boolean
+  sourceAnalyseId: string | null
+  sourceAnalyseNom: string | null
+}
+
+/**
+ * Résout la conformité effective d'une analyse (Palier 1) :
+ *  - si l'analyse a sa PROPRE conformité (entries non vides) → on la garde ;
+ *  - sinon, si elle hérite d'un socle qui en a une → on affiche celle du socle
+ *    (héritée, en LECTURE) ;
+ *  - sinon → vide.
+ * Résolution à la lecture (aucune copie/migration). Pur, testé.
+ */
+export function resolveEffectiveConformite(params: {
+  ownEntries: ConformiteEntry[]
+  socle?: { id: string; nom: string; entries: ConformiteEntry[] } | null
+}): EffectiveConformite {
+  const own = params.ownEntries ?? []
+  if (own.length > 0) {
+    return { entries: own, inherited: false, sourceAnalyseId: null, sourceAnalyseNom: null }
+  }
+  const socle = params.socle
+  if (socle && (socle.entries?.length ?? 0) > 0) {
+    return { entries: socle.entries, inherited: true, sourceAnalyseId: socle.id, sourceAnalyseNom: socle.nom }
+  }
+  return { entries: [], inherited: false, sourceAnalyseId: null, sourceAnalyseNom: null }
+}
+
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0
   for (const e of entries) {

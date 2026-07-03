@@ -18,7 +18,7 @@ import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
-import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
+import { sanitizeConformite, deriveNonConformites, resolveEffectiveConformite, type ConformiteStatut } from '@/lib/conformite'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 
 export default async function AtelierPage({
@@ -53,6 +53,8 @@ export default async function AtelierPage({
       risques: true,
       mesures: true,
       accesUtilisateurs: true,
+      // Socle dont l'analyse hérite (Palier 1) : conformité héritée en lecture.
+      socle: { select: { id: true, nom: true, referentielMesures: true, cadrage: { select: { socleSecurite: true, customControles: true } } } },
     },
   })
 
@@ -127,11 +129,23 @@ export default async function AtelierPage({
     redirect(`/analyses/${id}?qualif=required`)
   }
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
-  if (conformiteActive && analyse.cadrage) {
-    const controles = getFrameworkControles((analyse as any).referentielMesures ?? 'ISO27001', (analyse.cadrage as any).customControles as any[], locale)
+  // Conformité EFFECTIVE (Palier 1) : propre à l'analyse, ou héritée du socle en lecture.
+  const socleAnalyse = (analyse as any).socle as { id: string; nom: string; referentielMesures?: string; cadrage?: { socleSecurite?: unknown; customControles?: unknown } } | null
+  const effConformite = resolveEffectiveConformite({
+    ownEntries: analyse.cadrage ? sanitizeConformite((analyse.cadrage as any).socleSecurite) : [],
+    socle: socleAnalyse?.cadrage
+      ? { id: socleAnalyse.id, nom: socleAnalyse.nom, entries: sanitizeConformite(socleAnalyse.cadrage.socleSecurite) }
+      : null,
+  })
+  if (conformiteActive && effConformite.entries.length > 0) {
+    // Les refs appartiennent au référentiel de l'analyse PROPRIÉTAIRE de la conformité
+    // (le socle si héritée, sinon l'analyse courante).
+    const refSource = effConformite.inherited
+      ? { ref: socleAnalyse?.referentielMesures ?? 'ISO27001', custom: socleAnalyse?.cadrage?.customControles }
+      : { ref: (analyse as any).referentielMesures ?? 'ISO27001', custom: (analyse.cadrage as any)?.customControles }
+    const controles = getFrameworkControles(refSource.ref, refSource.custom as any[], locale)
     const ctlByRef = new Map(controles.map(c => [c.ref, c]))
-    const entries = sanitizeConformite((analyse.cadrage as any).socleSecurite)
-    nonConfItems = deriveNonConformites(entries).map(nc => ({
+    nonConfItems = deriveNonConformites(effConformite.entries).map(nc => ({
       ref: nc.ref,
       nom: ctlByRef.get(nc.ref)?.nom ?? nc.ref,
       statut: nc.statut,
@@ -234,7 +248,15 @@ export default async function AtelierPage({
         <div className="flex items-start gap-6">
           <div className="min-w-0 flex-1">
             {atelierNum === 1 && (
-              <Atelier1 analyseId={analyse.id} initialData={initialData} analyse={analyse} flashMode={flashMode} />
+              <Atelier1
+                analyseId={analyse.id}
+                initialData={initialData}
+                analyse={analyse}
+                flashMode={flashMode}
+                conformiteInherited={conformiteActive && effConformite.inherited}
+                conformiteSourceId={effConformite.sourceAnalyseId}
+                conformiteSourceNom={effConformite.sourceAnalyseNom}
+              />
             )}
             {atelierNum === 2 && (
               <Atelier2
