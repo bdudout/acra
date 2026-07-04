@@ -64,6 +64,7 @@ export const it: Translations = {
     risks:          'Rischi',
     tiers:          'Terze parti',
     actions:        'Azioni',
+    conformite:     'Conformità',
     configuration:  'Configurazione',
     admin:          'Admin',
     logout:         'Disconnetti',
@@ -1826,6 +1827,13 @@ export const it: Translations = {
     snapshotManuel: 'Manuale — congela una versione su richiesta',
     snapshotAuto: 'Automatica — periodica',
     snapshotChangement: 'A ogni modifica',
+  },
+  conformiteGlobal: {
+    title: 'Conformità — vista globale',
+    subtitle: 'Tasso di conformità per organizzazione e framework, aggregato sull\'albero (organizzazione → direzione → gruppo).',
+    orgCol: 'Organizzazione',
+    empty: 'Nessuna conformità a livello di organizzazione al momento. Attiva «Per organizzazione» in configurazione e compila la base.',
+    legend: 'Ogni cella aggrega la conformità del sotto-albero dell\'organizzazione (n. org · controlli valutati/totale). Clicca per vedere le analisi.',
   },
   qualification: {
     promptOptionalTitle: 'Qualifica la tua analisi prima di iniziare',

@@ -64,6 +64,7 @@ export const es: Translations = {
     risks:          'Riesgos',
     tiers:          'Terceros',
     actions:        'Acciones',
+    conformite:     'Conformidad',
     configuration:  'Configuración',
     admin:          'Admin',
     logout:         'Cerrar sesión',
@@ -1826,6 +1827,13 @@ export const es: Translations = {
     snapshotManuel: 'Manual — congelar una versión bajo demanda',
     snapshotAuto: 'Automática — periódica',
     snapshotChangement: 'En cada modificación',
+  },
+  conformiteGlobal: {
+    title: 'Conformidad — vista global',
+    subtitle: 'Tasa de conformidad por organización y marco, agregada sobre el árbol (organización → dirección → grupo).',
+    orgCol: 'Organización',
+    empty: 'Aún no hay conformidad a nivel de organización. Active «Por organización» en configuración y complete la base.',
+    legend: 'Cada celda agrega la conformidad del subárbol de la organización (nº de org · controles evaluados/total). Haga clic para ver los análisis.',
   },
   qualification: {
     promptOptionalTitle: 'Cualifique su análisis antes de empezar',

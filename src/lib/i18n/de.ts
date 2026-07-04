@@ -64,6 +64,7 @@ export const de: Translations = {
     risks:          'Risiken',
     tiers:          'Dritte',
     actions:        'Maßnahmen',
+    conformite:     'Konformität',
     configuration:  'Konfiguration',
     admin:          'Admin',
     logout:         'Abmelden',
@@ -1826,6 +1827,13 @@ export const de: Translations = {
     snapshotManuel: 'Manuell — Version bei Bedarf einfrieren',
     snapshotAuto: 'Automatisch — periodisch',
     snapshotChangement: 'Bei jeder Änderung',
+  },
+  conformiteGlobal: {
+    title: 'Konformität — Gesamtübersicht',
+    subtitle: 'Konformitätsgrad je Organisation und Rahmenwerk, über den Baum aggregiert (Organisation → Bereich → Gruppe).',
+    orgCol: 'Organisation',
+    empty: 'Noch keine Konformität auf Organisationsebene. Aktivieren Sie „Pro Organisation“ in der Konfiguration und füllen Sie den Sockel aus.',
+    legend: 'Jede Zelle aggregiert die Konformität des Organisations-Teilbaums (Org-Anzahl · bewertete/gesamte Kontrollen). Klicken für Analysen.',
   },
   qualification: {
     promptOptionalTitle: 'Qualifizieren Sie Ihre Analyse vor dem Start',

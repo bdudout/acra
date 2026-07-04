@@ -64,6 +64,7 @@ export const en: Translations = {
     risks:          'Risks',
     tiers:          'Third parties',
     actions:        'Actions',
+    conformite:     'Compliance',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Sign out',
@@ -1826,6 +1827,13 @@ export const en: Translations = {
     snapshotManuel: 'Manual — freeze a version on demand',
     snapshotAuto: 'Automatic — periodic',
     snapshotChangement: 'On every change',
+  },
+  conformiteGlobal: {
+    title: 'Compliance — global view',
+    subtitle: 'Compliance rate by organisation and framework, aggregated over the tree (organisation → division → group).',
+    orgCol: 'Organisation',
+    empty: 'No organisation-level compliance yet. Enable “Per organisation” in configuration and fill in the baseline.',
+    legend: 'Each cell aggregates the compliance of the organisation subtree (org count · evaluated/total controls). Click to view analyses.',
   },
   qualification: {
     promptOptionalTitle: 'Qualify your analysis before you start',

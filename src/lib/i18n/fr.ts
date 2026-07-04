@@ -65,6 +65,7 @@ export const fr = {
     risks:          'Risques',
     tiers:          'Tiers',
     actions:        'Actions',
+    conformite:     'Conformité',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Déconnexion',
@@ -1854,6 +1855,13 @@ export const fr = {
     snapshotManuel: 'Manuel — figer une version à la demande',
     snapshotAuto: 'Automatique — périodique',
     snapshotChangement: 'À chaque modification',
+  },
+  conformiteGlobal: {
+    title: 'Conformité — vue globale',
+    subtitle: 'Taux de conformité par organisation et référentiel, agrégé sur l\'arbre (organisation → direction → groupe).',
+    orgCol: 'Organisation',
+    empty: 'Aucune conformité au niveau organisation pour l\'instant. Activez « Par organisation » dans la configuration et renseignez le socle.',
+    legend: 'Chaque cellule agrège la conformité du sous-arbre de l\'organisation (nombre d\'org · contrôles évalués/total). Cliquez pour voir les analyses.',
   },
   qualification: {
     promptOptionalTitle: 'Qualifiez votre analyse avant de commencer',

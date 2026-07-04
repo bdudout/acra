@@ -10,7 +10,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
-  LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network,
+  LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut,
 } from 'lucide-react'
 
@@ -25,6 +25,7 @@ export default function Navbar() {
   const userRole: UserRole = (session?.user as any)?.role ?? 'ANALYSTE'
   const isAdmin      = isAdminRole(userRole)
   const isLecteur    = userRole === 'LECTEUR'
+  const canGovern    = isAdmin || userRole === 'RSSI' || userRole === 'RISK_MANAGER'
 
   // Fermer le menu sur clic extérieur
   useEffect(() => {
@@ -229,6 +230,17 @@ export default function Navbar() {
             <Shield size={16} aria-hidden="true" />
             <span>{t.nav.actions}</span>
           </Link>
+
+          {canGovern && (
+            <Link
+              href="/conformite"
+              className={`${navClass(pathname === '/conformite')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/conformite' ? 'page' : undefined}
+            >
+              <ShieldCheck size={16} aria-hidden="true" />
+              <span>{t.nav.conformite}</span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
