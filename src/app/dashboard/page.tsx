@@ -361,7 +361,7 @@ export default async function DashboardPage() {
             )}
 
             {/* Suivi + édition inline de la conformité du socle (fiche Club EBIOS) */}
-            {conformiteRowsAll.length > 0 && <ConformiteTrackingCard rows={conformiteRowsAll} />}
+            {conformiteRowsAll.length > 0 && <ConformiteTrackingCard rows={conformiteRowsAll} locale={locale} />}
           </div>
 
           {/* Colonne latérale */}

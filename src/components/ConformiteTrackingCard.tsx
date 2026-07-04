@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { CONFORMITE_STATUTS, type ConformiteStatut, type ConformiteStats } from '@/lib/conformite'
+import ConformiteHistory from '@/components/ConformiteHistory'
 
 export interface ConformiteControl {
   ref: string
@@ -42,7 +43,7 @@ const DOT: Record<ConformiteStatut, string> = {
 }
 
 /** Carte de suivi + édition inline de la conformité du socle (dashboard). */
-export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardRow[] }) {
+export default function ConformiteTrackingCard({ rows, locale }: { rows: ConformiteCardRow[]; locale: string }) {
   const { t } = useTranslation()
   const router = useRouter()
   const statutLabels = t.conformite.statuts as Record<string, string>
@@ -162,6 +163,11 @@ export default function ConformiteTrackingCard({ rows }: { rows: ConformiteCardR
                     </ul>
                   )}
                 </div>
+              )}
+
+              {/* Historique & tendance (conformité org) */}
+              {r.source === 'org' && r.orgId && r.referentiel && (
+                <ConformiteHistory orgId={r.orgId} referentiel={r.referentiel} locale={locale} canEdit={r.canEdit} />
               )}
             </div>
           )

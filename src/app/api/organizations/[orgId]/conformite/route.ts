@@ -108,3 +108,47 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ org
   })
   return NextResponse.json({ ok: true, snapshot: snap })
 }
+
+/**
+ * GET /api/organizations/[orgId]/conformite?referentiel=ISO27001 — état courant +
+ * historique des snapshots (avec taux calculé). Lecture : utilisateur authentifié
+ * dont le périmètre couvre l'organisation.
+ */
+export async function GET(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const userId = (session.user as any).id
+  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+
+  const scope = await getAnalyseScope(userId, userRole)
+  const visibles = scope.scope.visibleOrgIds ?? []
+  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+    return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
+  }
+
+  const referentiel = new URL(req.url).searchParams.get('referentiel') ?? ''
+  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
+    return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
+  }
+  const locale = await getServerLocale()
+  const total = getFrameworkControles(referentiel as FrameworkId, undefined, locale).length
+
+  const conf = await prisma.conformite.findUnique({
+    where: { organizationId_referentiel: { organizationId: orgId, referentiel } },
+    select: {
+      id: true, entries: true, updatedAt: true,
+      snapshots: { orderBy: { createdAt: 'asc' }, select: { id: true, label: true, createdAt: true, entries: true } },
+    },
+  })
+  if (!conf) return NextResponse.json({ current: null, snapshots: [] })
+
+  const pointOf = (entries: unknown, at: Date, id: string, label: string | null) => {
+    const s = conformiteStats(sanitizeConformite(entries), total)
+    return { id, label, createdAt: at, taux: s.tauxConformite, evalues: s.evalues, total: s.total }
+  }
+  return NextResponse.json({
+    current: pointOf(conf.entries, conf.updatedAt, conf.id, null),
+    snapshots: conf.snapshots.map(s => pointOf(s.entries, s.createdAt, s.id, s.label)),
+  })
+}
