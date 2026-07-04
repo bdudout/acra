@@ -18,11 +18,13 @@ function cellStyle(taux: number): string {
  * colonnes = référentiels, cellules = taux agrégé (roll-up sous-arbre).
  * Présentational — libellés fournis par l'appelant.
  */
-export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel }: {
+export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, hrefFor }: {
   rows: HeatmapRow[]
   refs: HeatmapRef[]
   orgCol: string
   emptyLabel: string
+  /** Lien d'une cellule (ex. export SoA). Défaut : liste des analyses. */
+  hrefFor?: (orgId: string, refId: string) => string
 }) {
   if (rows.length === 0 || refs.length === 0) {
     return <p className="text-sm text-gray-500 italic">{emptyLabel}</p>
@@ -51,7 +53,7 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel }: {
                   <td key={r.id} className="text-center">
                     {c ? (
                       <Link
-                        href={`/analyses`}
+                        href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'}
                         className={`inline-flex flex-col items-center rounded px-2 py-1 leading-tight ${cellStyle(c.taux)} hover:ring-1 hover:ring-gray-300`}
                         title={`${c.orgCount} org · ${c.evalues}/${c.total}`}
                       >

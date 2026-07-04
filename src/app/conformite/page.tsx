@@ -85,7 +85,13 @@ export default async function ConformiteGlobalPage() {
         </div>
 
         <div className="card p-5">
-          <ConformiteHeatmap rows={rows} refs={refs} orgCol={t.conformiteGlobal.orgCol} emptyLabel={t.conformiteGlobal.empty} />
+          <ConformiteHeatmap
+            rows={rows}
+            refs={refs}
+            orgCol={t.conformiteGlobal.orgCol}
+            emptyLabel={t.conformiteGlobal.empty}
+            hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
+          />
           {rows.length > 0 && (
             <p className="text-xs text-gray-400 mt-3">{t.conformiteGlobal.legend}</p>
           )}
