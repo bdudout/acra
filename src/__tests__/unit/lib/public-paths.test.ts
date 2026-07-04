@@ -32,4 +32,10 @@ describe('isPublicPath — accès sans authentification', () => {
     // ne doit pas confondre /api/healthcheck-something avec /api/health exact
     expect(isPublicPath('/api/health-internal')).toBe(false)
   })
+
+  it('autorise les endpoints cron (auth propre par CRON_SECRET), sans confusion de préfixe', () => {
+    expect(isPublicPath('/api/cron/conformite-snapshots')).toBe(true)
+    // pas de faux positif sur un préfixe voisin
+    expect(isPublicPath('/api/cronjobs-secret')).toBe(false)
+  })
 })

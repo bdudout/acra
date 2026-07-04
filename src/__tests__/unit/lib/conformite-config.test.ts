@@ -6,6 +6,7 @@ import {
   sanitizeSnapshotMode,
   isOrgLevelConformite,
   shouldSnapshotOnChange,
+  dueForAutoSnapshot,
 } from '../../../lib/conformite-config'
 
 describe('conformite-config — options Palier 2', () => {
@@ -41,5 +42,16 @@ describe('conformite-config — options Palier 2', () => {
     expect(shouldSnapshotOnChange('MANUEL')).toBe(false)
     expect(shouldSnapshotOnChange('AUTO')).toBe(false)
     expect(shouldSnapshotOnChange('x')).toBe(false)
+  })
+
+  it('dueForAutoSnapshot : jamais de snapshot → dû ; sinon selon la période', () => {
+    const now = new Date('2026-07-04T00:00:00Z')
+    expect(dueForAutoSnapshot(null, now, 30)).toBe(true)
+    // il y a 40 jours → dû
+    expect(dueForAutoSnapshot(new Date('2026-05-25T00:00:00Z'), now, 30)).toBe(true)
+    // il y a 10 jours → pas dû
+    expect(dueForAutoSnapshot(new Date('2026-06-24T00:00:00Z'), now, 30)).toBe(false)
+    // exactement la période → dû
+    expect(dueForAutoSnapshot(new Date('2026-06-04T00:00:00Z'), now, 30)).toBe(true)
   })
 })

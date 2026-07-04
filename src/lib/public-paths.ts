@@ -15,6 +15,9 @@ export function isPublicPath(pathname: string): boolean {
     // par erreur une route du type /api/health-internal.
     pathname === '/api/health' ||
     pathname === '/api/health/' ||
+    // Endpoints cron (planificateur externe) : auth propre par CRON_SECRET dans le
+    // handler, donc exemptés de l'auth par session du middleware.
+    pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/legal')
   )
 }

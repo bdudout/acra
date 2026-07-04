@@ -45,3 +45,16 @@ export function isOrgLevelConformite(niveau: unknown): boolean {
 export function shouldSnapshotOnChange(mode: unknown): boolean {
   return sanitizeSnapshotMode(mode) === 'CHANGEMENT'
 }
+
+/** Période (jours) entre deux snapshots automatiques (mode AUTO). */
+export const AUTO_SNAPSHOT_PERIOD_DAYS = 30
+
+/**
+ * En mode AUTO, un nouveau snapshot est-il dû ? Vrai s'il n'y en a jamais eu, ou
+ * si le dernier date de plus de `periodDays`. Pur (temps injecté) → testé.
+ */
+export function dueForAutoSnapshot(lastAt: Date | null | undefined, now: Date, periodDays: number = AUTO_SNAPSHOT_PERIOD_DAYS): boolean {
+  if (!lastAt) return true
+  const elapsedMs = now.getTime() - new Date(lastAt).getTime()
+  return elapsedMs >= periodDays * 24 * 60 * 60 * 1000
+}
