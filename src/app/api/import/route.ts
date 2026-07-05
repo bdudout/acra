@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { randomUUID } from 'crypto'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Identifiant d'enregistrement importé — générateur cryptographique (hygiène #109)
+// pour éviter toute collision / prédictibilité (vs Math.random()).
 function uid() {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
+  return randomUUID()
 }
 
 // Allowlists par modèle — évite le mass assignment si le schéma évolue
