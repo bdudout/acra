@@ -1890,6 +1890,7 @@ export const en: Translations = {
     criticiteOptions: { faible: 'Low', modere: 'Moderate', eleve: 'High' },
     statutOptions: { aucun: 'None / not concerned', OSE: 'OES — operator of essential services', EEI: 'Essential or important entity (NIS2)', OIV: 'Vital-importance operator (OIV)' },
     filiereOivLabel: 'OIV sector (vital-importance sector)',
+    entiteFinanciereAgreeeLabel: 'Licensed financial entity (ACPR/AMF)? (bank, insurer, investment firm…)',
     filieresOiv: { civil: 'State civil activities', judiciaire: 'Judicial activities', militaire: 'State military activities', alimentation: 'Food', communication: 'Electronic communications, audiovisual, information', energie: 'Energy', espace: 'Space and research', finances: 'Finance', eau: 'Water management', industrie: 'Industry', sante: 'Health', transports: 'Transport' },
     orientations: {
       ECOSYSTEME:          'The ecosystem and stakeholders (workshop 3) — risks related to outsourcing.',

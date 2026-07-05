@@ -129,7 +129,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     () => (analyse?.referentielMesures as FrameworkId) ?? null
   )
   // Référentiels recommandés selon le secteur (suggestion non bloquante, cf. Atelier 1)
-  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, analyse?.cadrage?.tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, analyse?.cadrage?.tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire, analyse?.qualification?.entiteFinanciereAgreee)
   // Couverture NIS2 Art. 21 du référentiel actif (différenciateur EEI/OSE)
   const nis2Coverage = useMemo(
     () => (activeFramework ? nis2CoverageForFramework(activeFramework) : []),

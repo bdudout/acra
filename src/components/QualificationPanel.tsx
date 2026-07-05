@@ -16,6 +16,8 @@ interface Props {
   canEdit?: boolean
   /** Ouvrir le panneau déplié (ex. mise en avant tant que la qualification est incomplète). */
   defaultOpen?: boolean
+  /** Secteur de l'analyse — conditionne l'affichage de champs sectoriels (ex. finance/DORA). */
+  secteur?: string | null
 }
 
 /**
@@ -23,7 +25,8 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null }: Props) {
+  const isFinance = /banqu|financ|bancaire|assur|fintech/i.test(secteur ?? '')
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
@@ -176,6 +179,28 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
                   }`}
                 >
                   {(t.qualification.filieresOiv as Record<string, string>)[opt.value] ?? opt.value}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Entité financière agréée (optionnel) — secteur finance seulement (issue #106) */}
+        {isFinance && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 border-t border-gray-100">
+            <label className="text-sm text-gray-700 sm:max-w-[60%]">{t.qualification.entiteFinanciereAgreeeLabel}</label>
+            <div className="flex gap-2">
+              {[{ v: true, l: t.qualification.yes }, { v: false, l: t.qualification.no }].map(opt => (
+                <button
+                  key={String(opt.v)}
+                  type="button"
+                  disabled={!canEdit}
+                  onClick={() => setAnswer('entiteFinanciereAgreee', opt.v)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                    answers.entiteFinanciereAgreee === opt.v ? 'bg-ebios-600 text-white border-ebios-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {opt.l}
                 </button>
               ))}
             </div>

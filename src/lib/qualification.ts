@@ -106,6 +106,9 @@ export function sanitizeQualification(answers: unknown): QualificationAnswers {
   // Champ optionnel hors questionnaire : filière OIV (issue #80)
   const fil = src.filiereOiv
   if (typeof fil === 'string' && FILIERE_OIV_OPTIONS.some(o => o.value === fil)) out.filiereOiv = fil
+  // Champ optionnel hors questionnaire : entité financière agréée ACPR/AMF (issue #106)
+  // — conditionne le maintien de DORA pour une petite entité finance réglementée.
+  if (typeof src.entiteFinanciereAgreee === 'boolean') out.entiteFinanciereAgreee = src.entiteFinanciereAgreee
   return out
 }
 

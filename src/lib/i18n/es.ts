@@ -1890,6 +1890,7 @@ export const es: Translations = {
     criticiteOptions: { faible: 'Baja', modere: 'Moderada', eleve: 'Alta' },
     statutOptions: { aucun: 'Ninguno / no afectado', OSE: 'OSE — operador de servicios esenciales', EEI: 'Entidad esencial o importante (NIS2)', OIV: 'Operador de importancia vital (OIV)' },
     filiereOivLabel: 'Sector OIV (sector de importancia vital)',
+    entiteFinanciereAgreeeLabel: '¿Entidad financiera autorizada (ACPR/AMF)? (banco, aseguradora, empresa de inversión…)',
     filieresOiv: { civil: 'Actividades civiles del Estado', judiciaire: 'Actividades judiciales', militaire: 'Actividades militares del Estado', alimentation: 'Alimentación', communication: 'Comunicaciones electrónicas, audiovisual, información', energie: 'Energía', espace: 'Espacio e investigación', finances: 'Finanzas', eau: 'Gestión del agua', industrie: 'Industria', sante: 'Salud', transports: 'Transportes' },
     orientations: {
       ECOSYSTEME:          'El ecosistema y las partes interesadas (taller 3) — riesgos relacionados con la externalización.',

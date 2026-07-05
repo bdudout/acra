@@ -1918,6 +1918,7 @@ export const fr = {
     criticiteOptions: { faible: 'Faible', modere: 'Modéré', eleve: 'Élevé' },
     statutOptions: { aucun: 'Aucun / non concerné', OSE: 'OSE — opérateur de services essentiels', EEI: 'Entité essentielle ou importante (NIS2)', OIV: "OIV — opérateur d'importance vitale" },
     filiereOivLabel: "Filière OIV (secteur d'activité d'importance vitale)",
+    entiteFinanciereAgreeeLabel: 'Entité financière agréée (ACPR/AMF) ? (banque, assurance, PSI…)',
     filieresOiv: { civil: "Activités civiles de l'État", judiciaire: 'Activités judiciaires', militaire: "Activités militaires de l'État", alimentation: 'Alimentation', communication: 'Communications électroniques, audiovisuel, information', energie: 'Énergie', espace: 'Espace et recherche', finances: 'Finances', eau: "Gestion de l'eau", industrie: 'Industrie', sante: 'Santé', transports: 'Transports' },
     orientations: {
       ECOSYSTEME:          "L'écosystème et les parties prenantes (atelier 3) — risques liés à l'externalisation.",

@@ -210,7 +210,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   // Référentiel de mesures (Ateliers 3 & 5) — stocké sur Analyse, envoyé via workshop/1
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur + la taille (suggestion non bloquante)
-  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire)
+  const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire, analyse?.qualification?.entiteFinanciereAgreee)
   // Suggestion d'activer les modules Conformité/Qualification pour les secteurs
   // régulés où ils sont quasi-obligatoires (issue #73).
   const suggestCompliance = suggestsComplianceModule(analyse?.secteur, analyse?.qualification?.statutReglementaire) && (!conformiteActive || !qualificationActive)

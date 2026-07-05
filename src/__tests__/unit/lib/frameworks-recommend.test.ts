@@ -132,6 +132,13 @@ describe('recommendedFrameworksForSector', () => {
     expect(recommendedFrameworksForSector('Banque / Finance')).toContain('DORA')
     expect(recommendedFrameworksForSector('Banque / Finance', 'STANDARD')).toContain('DORA')
   })
+  it('petite banque AGRÉÉE (ACPR/AMF) → DORA conservé malgré la taille (issue #106)', () => {
+    // Sans statut EEI/OIV mais agréée → DORA maintenu (proportionnalité art. 16, pas exclusion)
+    expect(recommendedFrameworksForSector('Banque / Finance', 'TPE', null, 'aucun', true)).toContain('DORA')
+    expect(recommendedFrameworksForSector('Banque / Finance', 'PME', 'banque-fintech', 'aucun', true)).toContain('DORA')
+    // Non agréée (fintech pré-agrément) → toujours retiré
+    expect(recommendedFrameworksForSector('Banque / Finance', 'TPE', null, 'aucun', false)).not.toContain('DORA')
+  })
 
   // ── Affinage défense BITD vs forces armées (issue #79) ──────────────────────
   it('sous-secteur BITD → ISO 27001 + IEC 62443 remontés, NIST 800-53 conservé', () => {

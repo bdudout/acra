@@ -333,16 +333,17 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
 export type StatutReglementaire = 'aucun' | 'OSE' | 'EEI' | 'OIV'
 
 /**
- * Conditionne DORA au profil réglementaire (issue #67). DORA ne s'applique qu'aux
- * entités financières réglementées : pour une TPE/PME finance SANS statut EEI/OIV
- * (ex. fintech pré-agrément), DORA est prématuré → on le retire au profit d'un
- * socle atteignable (CIS_V8 + ISO27001 + PCI-DSS conservés). Les analyses
- * STANDARD/ETI-GE ou les entités EEI/OIV conservent DORA.
+ * Conditionne DORA au profil réglementaire (issues #67, #106). DORA s'applique aux
+ * entités financières RÉGLEMENTÉES quelle que soit leur taille (proportionnalité
+ * art. 16 = régime allégé, PAS exclusion). On ne retire DORA que pour une TPE/PME
+ * finance NON agréée et SANS statut EEI/OIV (ex. fintech pré-agrément) au profit
+ * d'un socle atteignable (CIS_V8 + ISO27001 + PCI-DSS). Une entité financière
+ * agréée (ACPR/AMF) conserve DORA même petite.
  */
-export function refineFrameworksByRegulatory(fw: FrameworkId[], taille?: TailleAnalyse | null, statut?: StatutReglementaire | null): FrameworkId[] {
+export function refineFrameworksByRegulatory(fw: FrameworkId[], taille?: TailleAnalyse | null, statut?: StatutReglementaire | null, agreeeFinance?: boolean | null): FrameworkId[] {
   if (!fw.includes('DORA')) return fw
   const petite = taille === 'TPE' || taille === 'PME'
-  const reglementee = statut === 'EEI' || statut === 'OIV'
+  const reglementee = statut === 'EEI' || statut === 'OIV' || agreeeFinance === true
   if (!petite || reglementee) return fw
   const out = fw.filter(f => f !== 'DORA')
   if (!out.includes('CIS_V8')) out.unshift('CIS_V8')
@@ -354,8 +355,8 @@ export function refineFrameworksByRegulatory(fw: FrameworkId[], taille?: TailleA
  * sous-secteur ET le statut réglementaire (le 1er = prioritaire). CUSTOM exclu.
  * Guide le choix sans l'imposer.
  */
-export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null, statut?: StatutReglementaire | null): FrameworkId[] {
+export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null, statut?: StatutReglementaire | null, agreeeFinance?: boolean | null): FrameworkId[] {
   let fw = refineFrameworksBySousSecteur(baseFrameworksForSector(secteur), sousSecteur)
-  fw = refineFrameworksByRegulatory(fw, taille, statut)
+  fw = refineFrameworksByRegulatory(fw, taille, statut, agreeeFinance)
   return adaptFrameworksForSize(fw, taille)
 }

@@ -401,7 +401,7 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
 
   // Notes de valorisation (DORA art. 8 / homologation SSI) — issues #70/#74
   const usageNotes = reportUsageNotes(
-    recommendedFrameworksForSector(analyse.secteur, analyse.cadrage?.tailleAnalyse, analyse.sousSecteur, analyse.qualification?.statutReglementaire),
+    recommendedFrameworksForSector(analyse.secteur, analyse.cadrage?.tailleAnalyse, analyse.sousSecteur, analyse.qualification?.statutReglementaire, analyse.qualification?.entiteFinanciereAgreee),
     analyse.secteur,
   )
 
