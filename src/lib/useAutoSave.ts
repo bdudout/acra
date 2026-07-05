@@ -44,12 +44,15 @@ export function useAutoSave<T>(
   const saveFnRef = useRef(saveFn)
   const dataRef = useRef(data)
   const isFirstRender = useRef(true)
+  // Vrai tant qu'une modification est en attente de sauvegarde (debounce en cours).
+  const pendingRef = useRef(false)
 
   // Toujours garder la référence à jour pour éviter les stale closures
   saveFnRef.current = saveFn
   dataRef.current = data
 
   const save = useCallback(async (valueToSave: T) => {
+    pendingRef.current = false
     setStatus('saving')
     setError(null)
     try {
@@ -75,6 +78,7 @@ export function useAutoSave<T>(
 
     if (timerRef.current) clearTimeout(timerRef.current)
     setStatus('pending')
+    pendingRef.current = true
 
     timerRef.current = setTimeout(() => {
       save(dataRef.current)
@@ -86,6 +90,27 @@ export function useAutoSave<T>(
     // On veut se re-déclencher à chaque changement de `data`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, delay, disabled, save])
+
+  // Flush du dernier edit si une sauvegarde est en attente au moment où l'on quitte :
+  // démontage (navigation SPA, clic Navbar) ou fermeture d'onglet (beforeunload/pagehide).
+  // Évite la perte silencieuse de la dernière saisie pendant la fenêtre de debounce.
+  useEffect(() => {
+    const flush = () => {
+      if (!pendingRef.current) return
+      pendingRef.current = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+      // Fire-and-forget : le composant peut être démonté → pas de setState ici,
+      // on appelle directement la fonction de sauvegarde avec la dernière valeur.
+      void saveFnRef.current(dataRef.current)
+    }
+    window.addEventListener('beforeunload', flush)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
+  }, [])
 
   // saveNow : annule le debounce en cours et sauvegarde immédiatement
   const saveNow = useCallback(async () => {
