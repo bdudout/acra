@@ -49,25 +49,10 @@ const nextConfig = {
         }] : []),
 
         // ── Content Security Policy ────────────────────────────────────────
-        // 'unsafe-inline' nécessaire pour Next.js (CSS-in-JS + THEME_SCRIPT inline).
-        // 'unsafe-eval' est intentionnellement absent.
-        // Pour durcir davantage : passer aux nonces (nécessite middleware dynamique).
-        {
-          key: 'Content-Security-Policy',
-          value: [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob:",
-            "font-src 'self'",
-            "connect-src 'self'",
-            "object-src 'none'",         // interdit Flash/PDF plugins
-            "base-uri 'self'",           // interdit injection de <base href>
-            "form-action 'self'",        // les formulaires ne peuvent soumettre qu'à self
-            "frame-ancestors 'none'",    // redondant avec X-Frame-Options mais requis par CSP3
-            "upgrade-insecure-requests", // force HTTPS en production
-          ].join('; '),
-        },
+        // La CSP est désormais posée par le MIDDLEWARE (src/middleware.ts) pour
+        // permettre un `script-src` à nonce + strict-dynamic en production (issue
+        // #108). Ne pas la redéfinir ici : deux en-têtes CSP ⇒ intersection stricte
+        // qui casserait le rendu.
       ],
     },
 

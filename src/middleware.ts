@@ -1,12 +1,19 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 import { isPublicPath } from '@/lib/public-paths'
+import { buildCsp } from '@/lib/csp'
 
 export default withAuth(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function middleware(req: NextRequest & { nextauth?: { token?: any } }) {
     const { pathname } = req.nextUrl
     const token = req.nextauth?.token
+
+    // CSP par requête (issue #108) : en prod, script-src à nonce + strict-dynamic
+    // (plus d'`unsafe-inline` sur les scripts) ; en dev, CSP inchangée.
+    const isProd = process.env.NODE_ENV === 'production'
+    const nonce = isProd ? btoa(crypto.randomUUID()) : undefined
+    const csp = buildCsp(nonce, isProd)
 
     // #10/#11 — changement de mot de passe obligatoire : rediriger tant que ce
     // n'est pas fait. On laisse passer la page de changement, l'API de changement,
@@ -21,10 +28,20 @@ export default withAuth(
         const url = req.nextUrl.clone()
         url.pathname = '/auth/change-password'
         url.search = ''
-        return NextResponse.redirect(url)
+        const redirect = NextResponse.redirect(url)
+        redirect.headers.set('Content-Security-Policy', csp)
+        return redirect
       }
     }
-    return NextResponse.next()
+
+    // Nonce transmis à Next via l'en-tête de requête (Next l'applique à ses scripts)
+    // + en-tête `x-nonce` lisible par le layout pour le script de thème inline.
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('Content-Security-Policy', csp)
+    if (nonce) requestHeaders.set('x-nonce', nonce)
+    const res = NextResponse.next({ request: { headers: requestHeaders } })
+    res.headers.set('Content-Security-Policy', csp)
+    return res
   },
   {
     callbacks: {

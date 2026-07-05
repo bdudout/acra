@@ -5,6 +5,7 @@ import { Providers } from './providers'
 import Footer from '@/components/Footer'
 import CookieBanner from '@/components/CookieBanner'
 import { THEME_SCRIPT } from '@/lib/theme-script'
+import { headers } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -69,14 +70,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Nonce CSP (issue #108) posé par le middleware en production — appliqué au
+  // script de thème inline pour qu'il soit autorisé sans `'unsafe-inline'`.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
     // lang="fr" par défaut — mis à jour dynamiquement côté client via LanguageSwitcher
     <html lang="fr">
       <head>
         {/* Script anti-FOUC : applique le thème AVANT que React n'hydrate */}
         {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`}>
         {/* Lien d'évitement — RGAA 12.6 : permet aux utilisateurs clavier de
