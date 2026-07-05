@@ -1122,6 +1122,63 @@ export const RECYF_CONTROLES: FrameworkControl[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TISAX / VDA-ISA v6 — référentiel de la filière automobile
+// Source : VDA Information Security Assessment (VDA-ISA) v6, label TISAX (ENX).
+// Structure alignée sur les chapitres du catalogue VDA-ISA + les modules
+// « Protection des prototypes » et « Protection des données » (RGPD art. 28).
+// Exigé contractuellement par les constructeurs (OEM) à leurs fournisseurs.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const TISAX_CATEGORIES: Record<string, FrameworkCategory> = {
+  ORG:   { label: 'Politiques & organisation SI',    icon: '📋', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  RH:    { label: 'Ressources humaines',             icon: '👥', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  PHYS:  { label: 'Sécurité physique & continuité',  icon: '🏭', color: 'text-slate-700',  bg: 'bg-slate-50'  },
+  IAM:   { label: 'Identités & accès',               icon: '🔑', color: 'text-green-700',  bg: 'bg-green-50'  },
+  IT:    { label: 'Sécurité IT / cyber',             icon: '🛡️', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  FOURN: { label: 'Relations fournisseurs',          icon: '🔗', color: 'text-purple-700', bg: 'bg-purple-50' },
+  CONF:  { label: 'Conformité',                      icon: '⚖️', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  PROTO: { label: 'Protection des prototypes',       icon: '🚗', color: 'text-red-700',    bg: 'bg-red-50'    },
+  RGPD:  { label: 'Protection des données',          icon: '🔐', color: 'text-pink-700',   bg: 'bg-pink-50'   },
+}
+
+export const TISAX_CONTROLES: FrameworkControl[] = [
+  // 1 — Politiques & organisation SI
+  { ref:'TISAX-1.1', type:'ORGANISATIONNELLE', categorie:'ORG', nom:'Politiques de sécurité de l\'information', description:'Définir, approuver par la direction et diffuser des politiques de sécurité de l\'information, revues à intervalles planifiés.' },
+  { ref:'TISAX-1.2', type:'ORGANISATIONNELLE', categorie:'ORG', nom:'Organisation de la sécurité de l\'information', description:'Attribuer les rôles et responsabilités SSI, y compris pour les projets et la gestion des dérogations.' },
+  { ref:'TISAX-1.3', type:'ORGANISATIONNELLE', categorie:'ORG', nom:'Gestion des actifs et classification', description:'Inventorier les actifs et classifier l\'information selon sa criticité, avec des règles de manipulation associées.' },
+  { ref:'TISAX-1.4', type:'ORGANISATIONNELLE', categorie:'ORG', nom:'Gestion des risques SI', description:'Identifier, évaluer et traiter les risques de sécurité de l\'information de manière documentée et récurrente.' },
+  // 2 — Ressources humaines
+  { ref:'TISAX-2.1', type:'HUMAINE', categorie:'RH', nom:'Sécurité liée aux ressources humaines', description:'Encadrer la sécurité avant (vérifications), pendant (engagements de confidentialité) et à la fin du contrat de travail.' },
+  { ref:'TISAX-2.2', type:'HUMAINE', categorie:'RH', nom:'Sensibilisation et formation', description:'Assurer la sensibilisation et la formation régulières du personnel à la sécurité de l\'information.' },
+  // 3 — Sécurité physique & continuité
+  { ref:'TISAX-3.1', type:'PHYSIQUE', categorie:'PHYS', nom:'Sécurité physique et des zones', description:'Définir des périmètres et zones de sécurité, contrôler les accès physiques aux sites et locaux sensibles.' },
+  { ref:'TISAX-3.2', type:'ORGANISATIONNELLE', categorie:'PHYS', nom:'Continuité d\'activité', description:'Prévoir la continuité et la reprise des activités et des moyens IT supportant la production (plans, tests).' },
+  // 4 — Identités & accès
+  { ref:'TISAX-4.1', type:'TECHNOLOGIQUE', categorie:'IAM', nom:'Gestion des identités et des accès', description:'Gérer le cycle de vie des comptes et les droits selon le moindre privilège ; revoir périodiquement les accès.' },
+  { ref:'TISAX-4.2', type:'TECHNOLOGIQUE', categorie:'IAM', nom:'Moyens d\'authentification', description:'Encadrer les moyens d\'authentification (politique de mots de passe, authentification renforcée pour les accès sensibles/distants).' },
+  // 5 — Sécurité IT / cyber
+  { ref:'TISAX-5.1', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Gestion des changements et des capacités', description:'Encadrer les changements des systèmes et la séparation des environnements (dev/test/prod).' },
+  { ref:'TISAX-5.2', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Protection contre les codes malveillants', description:'Déployer des protections contre les logiciels malveillants sur les systèmes exposés et les postes.' },
+  { ref:'TISAX-5.3', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Journalisation et supervision', description:'Journaliser les événements de sécurité, superviser et détecter les activités anormales.' },
+  { ref:'TISAX-5.4', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Gestion des vulnérabilités et correctifs', description:'Identifier les vulnérabilités techniques et appliquer les correctifs selon un processus priorisé.' },
+  { ref:'TISAX-5.5', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Sécurité des réseaux et segmentation', description:'Segmenter les réseaux (bureautique / production OT / test) et filtrer les flux entre zones.' },
+  { ref:'TISAX-5.6', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Chiffrement et gestion des clés', description:'Protéger la confidentialité et l\'intégrité des données sensibles par le chiffrement et une gestion des clés maîtrisée.' },
+  { ref:'TISAX-5.7', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Sauvegardes', description:'Réaliser et tester des sauvegardes régulières des systèmes et données essentiels.' },
+  { ref:'TISAX-5.8', type:'TECHNOLOGIQUE', categorie:'IT', nom:'Développement et acquisition sécurisés', description:'Intégrer la sécurité dans le développement, l\'acquisition et la maintenance des systèmes et applications.' },
+  // 6 — Relations fournisseurs
+  { ref:'TISAX-6.1', type:'ORGANISATIONNELLE', categorie:'FOURN', nom:'Sécurité dans les relations fournisseurs', description:'Fixer des exigences de sécurité contractuelles aux fournisseurs et prestataires et en suivre le respect.' },
+  { ref:'TISAX-6.2', type:'ORGANISATIONNELLE', categorie:'FOURN', nom:'Gestion des incidents', description:'Détecter, traiter et remonter les incidents de sécurité, y compris ceux impliquant des tiers de la chaîne.' },
+  // 7 — Conformité
+  { ref:'TISAX-7.1', type:'ORGANISATIONNELLE', categorie:'CONF', nom:'Conformité et revue de sécurité', description:'Assurer la conformité aux exigences légales, réglementaires et contractuelles ; réaliser des audits et revues.' },
+  // Module Protection des prototypes
+  { ref:'TISAX-PP.1', type:'PHYSIQUE', categorie:'PROTO', nom:'Protection physique des prototypes', description:'Protéger les pièces, véhicules et composants prototypes (zones dédiées, contrôle d\'accès, occultation, gestion des supports).' },
+  { ref:'TISAX-PP.2', type:'ORGANISATIONNELLE', categorie:'PROTO', nom:'Essais, événements et médias', description:'Encadrer la sécurité lors des essais, présentations et prises de vues (films/photos) impliquant des prototypes.' },
+  // Module Protection des données (RGPD)
+  { ref:'TISAX-DP.1', type:'ORGANISATIONNELLE', categorie:'RGPD', nom:'Traitement pour le compte d\'un tiers (RGPD art. 28)', description:'Encadrer le traitement de données personnelles pour le compte du donneur d\'ordre (contrat de sous-traitance, instructions documentées).' },
+  { ref:'TISAX-DP.2', type:'TECHNOLOGIQUE', categorie:'RGPD', nom:'Mesures techniques et organisationnelles (RGPD)', description:'Mettre en œuvre les mesures techniques et organisationnelles protégeant les données personnelles confiées.' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Contrôles NIST CSF / NIST 800-53 / CIS v8 / HDS / PCI-DSS (issue #87)
 // Déplacés depuis frameworks-data.ts pour bénéficier de la machinerie i18n.
 // ─────────────────────────────────────────────────────────────────────────────
