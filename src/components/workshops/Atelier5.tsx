@@ -46,6 +46,7 @@ import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, 
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
+import { isClassified } from '@/lib/classification'
 
 interface Props {
   analyseId: string
@@ -190,7 +191,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   // Obligations réglementaires différenciées selon le statut (issue #68).
   const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire, analyse?.secteur)
   // Opportunités d'usage du rapport (DORA art. 8 / homologation SSI) — issues #70/#74
-  const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur)
+  const hasClassifiedVm = (analyse?.cadrage?.valeursMetier || []).some((vm: any) => isClassified(vm?.classification))
+  const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur, hasClassifiedVm)
   // Ressource sectorielle : rapport ANSSI « cabinets d'avocats » (issue #57)
   const isJuridique = /juridique|avocat|barreau|legal/i.test(analyse?.secteur || '')
 

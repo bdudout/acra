@@ -1675,6 +1675,7 @@ export const es: Translations = {
         title: 'Aprovechamiento de este informe',
         doraArt8: 'Este informe constituye la documentación de la evaluación de riesgos de las TIC exigida por el artículo 8 del Reglamento DORA (UE 2022/2554), a actualizar anualmente.',
         homologationSSI: 'Este informe puede constituir el informe de análisis de riesgos de su expediente de homologación de seguridad (PSSIE / RGS, e IGI 1300 para los sistemas sensibles).',
+        homologationII901: 'Para un operador de la industria de defensa (BITD) que opera un SI de nivel Difusión Restringida, este informe puede constituir la parte de análisis de riesgos del expediente de homologación II 901 (SGDSN/ANSSI).',
         orsaSolva2: 'Seguros: este informe alimenta la evaluación interna de riesgos y solvencia (ORSA, art. 45 de Solvencia II) por el riesgo operacional / cibernético.',
       },
       resJuridiqueTitle: 'Recurso sectorial — profesiones jurídicas',

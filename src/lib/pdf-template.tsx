@@ -39,6 +39,7 @@ import { getRiskTier } from '@/lib/risk-scale'
 import { execGlobalLevel, execTopRisks, execMeasuresToEngage } from '@/lib/pdf-exec-summary'
 import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
 import { reportUsageNotes } from '@/lib/regulatory-guidance'
+import { isClassified } from '@/lib/classification'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -399,10 +400,12 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
 
   const top5 = [...risques].sort((a: any, b: any) => b.niveauRisque - a.niveauRisque).slice(0, 5)
 
-  // Notes de valorisation (DORA art. 8 / homologation SSI) — issues #70/#74
+  // Notes de valorisation (DORA art. 8 / homologation SSI / II 901) — issues #70/#74/#103
+  const hasClassifiedVm = ((analyse.cadrage?.valeursMetier as any[]) ?? []).some(vm => isClassified(vm?.classification))
   const usageNotes = reportUsageNotes(
     recommendedFrameworksForSector(analyse.secteur, analyse.cadrage?.tailleAnalyse, analyse.sousSecteur, analyse.qualification?.statutReglementaire, analyse.qualification?.entiteFinanciereAgreee),
     analyse.secteur,
+    hasClassifiedVm,
   )
 
   const statutsMesures = [
@@ -545,6 +548,7 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
           <Text style={[s.hintText, { fontFamily: 'Helvetica-Bold', marginBottom: 2 }]}>{tp.summary.usageTitle}</Text>
           {usageNotes.includes('doraArt8') && <Text style={s.hintText}>• {tp.summary.usageDoraArt8}</Text>}
           {usageNotes.includes('homologationSSI') && <Text style={s.hintText}>• {tp.summary.usageHomologSSI}</Text>}
+          {usageNotes.includes('homologationII901') && <Text style={s.hintText}>• {tp.summary.usageHomologII901}</Text>}
           {usageNotes.includes('orsaSolva2') && <Text style={s.hintText}>• {tp.summary.usageOrsaSolva2}</Text>}
         </View>
       )}

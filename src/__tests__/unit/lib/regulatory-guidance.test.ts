@@ -72,6 +72,14 @@ describe('reportUsageNotes (issues #70/#74)', () => {
     expect(reportUsageNotes([], 'Assurance / mutuelle')).toContain('orsaSolva2')
     expect(reportUsageNotes(['DORA'], 'Banque / Finance')).not.toContain('orsaSolva2')
   })
+  it('défense privée (BITD) avec VM classifiée → note homologation II 901 (issue #103)', () => {
+    // Seulement si une valeur métier est classifiée (DR/SD)
+    expect(reportUsageNotes(['ISO27001'], 'Défense / BITD', true)).toContain('homologationII901')
+    // Défense sans VM classifiée → pas de note II 901
+    expect(reportUsageNotes(['ISO27001'], 'Défense / BITD', false)).not.toContain('homologationII901')
+    // Hors défense, même avec VM classifiée → pas de note II 901
+    expect(reportUsageNotes([], 'Administration publique', true)).not.toContain('homologationII901')
+  })
   it('ni DORA ni public → aucune note', () => {
     expect(reportUsageNotes(['ISO27001'], 'Tourisme / Hôtellerie-restauration')).toEqual([])
     expect(reportUsageNotes(undefined, null)).toEqual([])

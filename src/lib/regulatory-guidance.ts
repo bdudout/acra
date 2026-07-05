@@ -39,12 +39,17 @@ export function suggestsComplianceModule(secteur?: string | null, statut?: strin
  * Notes d'usage du rapport (issues #70/#74) : opportunités réglementaires que le
  * rapport EBIOS RM peut couvrir. `doraArt8` si DORA est retenu (documentation du
  * risque ICT, art. 8 DORA) ; `homologationSSI` pour le secteur public (rapport
- * d'analyse de risques du dossier d'homologation SSI). Pur, testé.
+ * d'analyse de risques du dossier d'homologation SSI) ; `homologationII901` pour la
+ * défense privée (BITD) opérant un SI Diffusion Restreinte — le rapport peut
+ * constituer la pièce d'analyse de risques du dossier d'homologation II 901
+ * (déclenché seulement si une valeur métier est classifiée IGI-1300 ≠ NP). Pur, testé.
  */
-export function reportUsageNotes(frameworks?: string[] | null, secteur?: string | null): string[] {
+export function reportUsageNotes(frameworks?: string[] | null, secteur?: string | null, hasClassifiedVm?: boolean): string[] {
   const notes: string[] = []
   if ((frameworks ?? []).includes('DORA')) notes.push('doraArt8')
   if (/administration|public|collectivit|état|etat|government|établissement public/i.test(secteur ?? '')) notes.push('homologationSSI')
+  // Défense privée (BITD) opérant un SI DR → homologation II 901 (issue #103)
+  if (hasClassifiedVm && /défense|defense|militaire|defence|armement|bitd|dga/i.test(secteur ?? '')) notes.push('homologationII901')
   // Assurance : le rapport alimente l'évaluation ORSA (Solvabilité II art. 45) (issue #96)
   if (/assur|mutuelle|insurance|réassur|reassur/i.test(secteur ?? '')) notes.push('orsaSolva2')
   return notes

@@ -1675,6 +1675,7 @@ export const it: Translations = {
         title: 'Valorizzazione di questo rapporto',
         doraArt8: 'Questo rapporto costituisce la documentazione della valutazione dei rischi ICT richiesta dall’articolo 8 del Regolamento DORA (UE 2022/2554), da aggiornare annualmente.',
         homologationSSI: 'Questo rapporto può costituire il rapporto di analisi dei rischi del tuo fascicolo di omologazione di sicurezza (PSSIE / RGS, e IGI 1300 per i sistemi sensibili).',
+        homologationII901: 'Per un operatore dell’industria della difesa (BITD) che gestisce un SI di livello Diffusione Ristretta, questo rapporto può costituire la parte di analisi dei rischi del fascicolo di omologazione II 901 (SGDSN/ANSSI).',
         orsaSolva2: 'Assicurazione: questo rapporto alimenta la valutazione interna del rischio e della solvibilità (ORSA, art. 45 di Solvency II) per il rischio operativo / cyber.',
       },
       resJuridiqueTitle: 'Risorsa settoriale — professioni legali',

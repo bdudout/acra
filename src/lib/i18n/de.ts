@@ -1675,6 +1675,7 @@ export const de: Translations = {
         title: 'Nutzen dieses Berichts',
         doraArt8: 'Dieser Bericht stellt die nach Artikel 8 der DORA-Verordnung (EU 2022/2554) geforderte Dokumentation der IKT-Risikobewertung dar und ist jährlich zu aktualisieren.',
         homologationSSI: 'Dieser Bericht kann als Risikoanalysebericht Ihrer Sicherheitsakkreditierung dienen (PSSIE / RGS, und IGI 1300 für sensible Systeme).',
+        homologationII901: 'Für einen Rüstungsindustrie-Betreiber (BITD) mit einem System der Stufe „Diffusion Restreinte“ kann dieser Bericht als Risikoanalyseteil der II-901-Akkreditierungsakte dienen (SGDSN/ANSSI).',
         orsaSolva2: 'Versicherung: Dieser Bericht fließt in die unternehmenseigene Risiko- und Solvabilitätsbeurteilung (ORSA, Art. 45 Solvency II) für das operationelle / Cyberrisiko ein.',
       },
       resJuridiqueTitle: 'Sektorressource — Rechtsberufe',
