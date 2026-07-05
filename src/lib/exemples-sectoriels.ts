@@ -88,34 +88,50 @@ const FINANCE: SectorFamily = {
   match: ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech'],
   exemples: {
     valeursMetier: [
-      { nom: 'Exécution des paiements et virements', type: 'PROCESSUS', description: 'Traitement des ordres de paiement, virements SEPA et SWIFT', responsable: 'Direction des opérations / back-office', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Core banking (tenue des comptes)', type: 'INFORMATION', description: 'Soldes, opérations et référentiel clients du système central', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Octroi de crédit et scoring', type: 'PROCESSUS', description: 'Évaluation du risque et décision d’octroi de crédit', responsable: 'Direction des risques crédit', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      { nom: 'Exécution des paiements et virements', type: 'PROCESSUS', description: 'Traitement des ordres de paiement, virements SEPA et SWIFT', responsable: 'Direction des opérations / back-office', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'banque' },
+      { nom: 'Core banking (tenue des comptes)', type: 'INFORMATION', description: 'Soldes, opérations et référentiel clients du système central', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'banque' },
+      { nom: 'Octroi de crédit et scoring', type: 'PROCESSUS', description: 'Évaluation du risque et décision d’octroi de crédit', responsable: 'Direction des risques crédit', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'banque' },
       { nom: 'Lutte anti-fraude et conformité (LCB-FT)', type: 'PROCESSUS', description: 'Détection de fraude, blanchiment et financement du terrorisme', responsable: 'Direction de la conformité (LCB-FT)', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
+      // Assurance (issue #111) — sousProfession 'assurance'
+      { nom: 'Gestion des sinistres', type: 'PROCESSUS', description: 'Déclaration, expertise, provisionnement et indemnisation des sinistres', responsable: 'Direction indemnisation / gestion des sinistres', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'assurance' },
+      { nom: 'Données des assurés (dont données de santé)', type: 'INFORMATION', description: 'Données personnelles et de santé des assurés (complémentaire santé, prévoyance) — RGPD art. 9', responsable: 'DPO / Direction technique', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'assurance' },
+      { nom: 'Tarification et modèles actuariels', type: 'PROCESSUS', description: 'Tarification, provisionnement et modèles actuariels (qualité des données soulignée par l’ACPR)', responsable: 'Direction actuariat', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'assurance' },
+      { nom: 'Souscription et gestion des contrats', type: 'PROCESSUS', description: 'Souscription, émission et gestion des polices et avenants', responsable: 'Direction souscription', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'assurance' },
     ],
     biensSupports: [
-      { nom: 'Plateforme core banking', type: 'LOGICIEL', description: 'Progiciel central de tenue des comptes et des opérations' },
-      { nom: 'Passerelle SWIFT', type: 'RESEAU', description: 'Connexion au réseau interbancaire international de paiement' },
-      { nom: 'Application de banque en ligne / mobile', type: 'LOGICIEL', description: 'Canaux digitaux d’accès des clients à leurs comptes' },
-      { nom: 'Distributeurs automatiques (DAB / GAB)', type: 'MATERIEL', description: 'Terminaux de retrait et de dépôt en agence et hors site' },
-      // KYC/KYB — socle LCB-FT (issue #69)
+      { nom: 'Plateforme core banking', type: 'LOGICIEL', description: 'Progiciel central de tenue des comptes et des opérations', sousProfession: 'banque' },
+      { nom: 'Passerelle SWIFT', type: 'RESEAU', description: 'Connexion au réseau interbancaire international de paiement', sousProfession: 'banque' },
+      { nom: 'Application de banque en ligne / mobile', type: 'LOGICIEL', description: 'Canaux digitaux d’accès des clients à leurs comptes', sousProfession: 'banque' },
+      { nom: 'Distributeurs automatiques (DAB / GAB)', type: 'MATERIEL', description: 'Terminaux de retrait et de dépôt en agence et hors site', sousProfession: 'banque' },
+      // KYC/KYB — socle LCB-FT (issue #69) — commun banque/assurance
       { nom: 'Solution de vérification d’identité (KYC / KYB)', type: 'SOUS_TRAITANCE', description: 'Contrôle d’identité et de connaissance client/entreprise (Onfido, Jumio, Sumsub) — socle LCB-FT' },
+      // Assurance (issue #111)
+      { nom: 'Plateforme de gestion des contrats et sinistres', type: 'LOGICIEL', description: 'Progiciel métier d’émission des polices et de gestion des sinistres', sousProfession: 'assurance' },
+      { nom: 'Outil actuariel et de tarification', type: 'LOGICIEL', description: 'Moteur de tarification, provisionnement et modèles actuariels', sousProfession: 'assurance' },
     ],
     evenementsRedoutes: [
-      { description: 'Détournement de virements ou fraude sur les paiements', impacts: ['Perte financière directe', 'Sanction réglementaire (DORA / ACPR)', 'Atteinte à la réputation'], graviteDefaut: 4 },
-      { description: 'Indisponibilité de la banque en ligne et des paiements', impacts: ['Clients privés d’accès à leurs fonds', 'Sanction du régulateur', 'Perte de confiance'], graviteDefaut: 4 },
+      { description: 'Détournement de virements ou fraude sur les paiements', impacts: ['Perte financière directe', 'Sanction réglementaire (DORA / ACPR)', 'Atteinte à la réputation'], graviteDefaut: 4, sousProfession: 'banque' },
+      { description: 'Indisponibilité de la banque en ligne et des paiements', impacts: ['Clients privés d’accès à leurs fonds', 'Sanction du régulateur', 'Perte de confiance'], graviteDefaut: 4, sousProfession: 'banque' },
       { description: 'Fuite des données bancaires et personnelles des clients', impacts: ['Usurpation d’identité', 'Sanction RGPD', 'Préjudice client'], graviteDefaut: 4 },
       // Fraude à l'identité / prêt frauduleux (issue #69)
-      { description: 'Usurpation d’identité pour un prêt frauduleux', impacts: ['Octroi de crédit à un fraudeur', 'Perte financière', 'Manquement LCB-FT / signalement TRACFIN'], graviteDefaut: 4 },
+      { description: 'Usurpation d’identité pour un prêt frauduleux', impacts: ['Octroi de crédit à un fraudeur', 'Perte financière', 'Manquement LCB-FT / signalement TRACFIN'], graviteDefaut: 4, sousProfession: 'banque' },
+      // Assurance (issue #111)
+      { description: 'Fuite des données de santé des assurés', impacts: ['Violation de données sensibles (RGPD art. 9)', 'Sanction CNIL', 'Préjudice grave pour les assurés'], graviteDefaut: 4, sousProfession: 'assurance' },
+      { description: 'Fraude à l’assurance (faux sinistres)', impacts: ['Indemnisations indues', 'Perte financière', 'Dégradation du ratio sinistres/primes'], graviteDefaut: 3, sousProfession: 'assurance' },
     ],
     sourcesRisque: [
-      { nom: 'Groupe spécialisé en fraude bancaire (type Carbanak)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels organisés ciblant les systèmes de paiement et SWIFT', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+      { nom: 'Groupe spécialisé en fraude bancaire (type Carbanak)', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels organisés ciblant les systèmes de paiement et SWIFT', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3, sousProfession: 'banque' },
       { nom: 'Fraudeur à l’identité (contournement KYC)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur usurpant une identité (deepfake, faux documents) pour contourner le KYC et souscrire des produits', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
+      // Assurance (issue #111)
+      { nom: 'Réseau de fraude à l’assurance', categorie: 'CYBERCRIMINEL', description: 'Fraudeurs organisés déclarant de faux sinistres ou manipulant les dossiers d’indemnisation', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 3, sousProfession: 'assurance' },
     ],
     scenariosStrategiques: [
-      { critere: 'I', nom: 'Manipulation frauduleuse des virements (I)', description: 'Un attaquant détourne des ordres de paiement via la passerelle SWIFT', vraisemblanceDefaut: 2, graviteDefaut: 4 },
-      { critere: 'D', nom: 'Indisponibilité des services de paiement (D)', description: 'Attaque rendant indisponibles la banque en ligne et les paiements', vraisemblanceDefaut: 3, graviteDefaut: 4 },
-      { critere: 'I', nom: 'Contournement du KYC pour un prêt frauduleux (I)', description: 'Un fraudeur déjoue la vérification d’identité (deepfake) pour souscrire un crédit', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'I', nom: 'Manipulation frauduleuse des virements (I)', description: 'Un attaquant détourne des ordres de paiement via la passerelle SWIFT', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: 'banque' },
+      { critere: 'D', nom: 'Indisponibilité des services de paiement (D)', description: 'Attaque rendant indisponibles la banque en ligne et les paiements', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'banque' },
+      { critere: 'I', nom: 'Contournement du KYC pour un prêt frauduleux (I)', description: 'Un fraudeur déjoue la vérification d’identité (deepfake) pour souscrire un crédit', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'banque' },
+      // Assurance (issue #111)
+      { critere: 'C', nom: 'Exfiltration des données de santé des assurés (C)', description: 'Un attaquant exfiltre la base des données de santé des assurés (complémentaire santé)', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'assurance' },
+      { critere: 'I', nom: 'Fraude aux sinistres par manipulation du SI (I)', description: 'Manipulation des dossiers de sinistres pour déclencher des indemnisations indues', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'assurance' },
     ],
   },
 }
@@ -643,6 +659,17 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   return undefined
 }
 
+/**
+ * Sous-profession dérivée du SECTEUR (à défaut de sous-secteur) — issue #111 :
+ * la famille FINANCE couvre banque ET assurance ; on distingue « assurance » vs
+ * « banque » pour ne pas servir des exemples bancaires trompeurs à un assureur.
+ */
+function professionFromSecteur(famKey: string, secteur: string): string | undefined {
+  if (famKey !== 'finance') return undefined
+  if (/assur|mutuelle|prévoyance|prevoyance|réassur|reassur/.test(secteur)) return 'assurance'
+  return 'banque'
+}
+
 export function sectorExemplesFor(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
@@ -655,7 +682,7 @@ export function sectorExemplesFor(
   if (!fam) return []
   const items = fam.exemples[category] ?? []
   const dict = DICTS[locale]
-  const prof = professionFromSousSecteur(sousSecteur)
+  const prof = professionFromSousSecteur(sousSecteur) ?? professionFromSecteur(fam.key, s)
   // Localisation par INDICE D'ORIGINE (clés i18n indexées), puis filtrage par
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
   return items

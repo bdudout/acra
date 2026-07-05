@@ -321,3 +321,24 @@ describe('intégration : les exemples sectoriels remontent en tête via rankExem
     expect(/patient|dpi|soin|médicament|medicament|imagerie|urgence/i.test(String(ranked[0].nom))).toBe(true)
   })
 })
+
+describe('FINANCE — séparation assurance vs banque (issue #111)', () => {
+  const noms = (sec: string, cat: SectorExempleCategory) => sectorExemplesFor(sec, cat, 'fr').map(x => String(x.nom ?? x.description))
+  it('un secteur assurance ne reçoit pas d\'exemples bancaires (SWIFT/core banking) mais des exemples assurance', () => {
+    const vm = noms('Assurance', 'valeursMetier')
+    expect(vm.some(x => /sinistres/i.test(x))).toBe(true)
+    expect(vm.some(x => /core banking/i.test(x))).toBe(false)
+    const bs = sectorExemplesFor('Assurance', 'biensSupports', 'fr').map(x => String(x.nom))
+    expect(bs.some(x => /SWIFT/i.test(x))).toBe(false)
+    expect(bs.some(x => /contrats et sinistres/i.test(x))).toBe(true)
+  })
+  it('un secteur banque conserve les exemples bancaires et pas les exemples assurance', () => {
+    const vm = noms('Banque / Finance', 'valeursMetier')
+    expect(vm.some(x => /core banking/i.test(x))).toBe(true)
+    expect(vm.some(x => /sinistres/i.test(x))).toBe(false)
+  })
+  it('les exemples communs (LCB-FT) restent visibles pour les deux', () => {
+    expect(noms('Assurance', 'valeursMetier').some(x => /LCB-FT/i.test(x))).toBe(true)
+    expect(noms('Banque / Finance', 'valeursMetier').some(x => /LCB-FT/i.test(x))).toBe(true)
+  })
+})
