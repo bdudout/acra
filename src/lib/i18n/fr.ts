@@ -574,6 +574,8 @@ export const fr = {
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
   newAnalysis: {
+    socleDiscoverTitle: 'Groupe multi-établissements ?',
+    socleDiscoverText: 'Vous pouvez créer une analyse « socle » partagée (valeurs métier, biens supports et sources communs), puis la marquer comme socle depuis sa page, et y rattacher les analyses des entités. Idéal pour un GHT, un groupe industriel ou multi-sites.',
     title:       'Nouvelle analyse ACRA',
     subtitle:    'Commençons par quelques informations générales sur votre analyse.',
     howTitle:    'Comment ça marche ?',

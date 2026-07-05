@@ -118,6 +118,15 @@ export default function NewAnalysePage() {
               placeholder={t.newAnalysis.descPh} />
           </div>
 
+          {/* Découvrabilité du socle (issue #107) — quand aucun socle n'existe encore,
+              expliquer qu'on peut en créer un pour un groupe multi-établissements. */}
+          {socles.length === 0 && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+              <p className="text-sm font-medium text-indigo-900">🏛️ {t.newAnalysis.socleDiscoverTitle}</p>
+              <p className="text-xs text-indigo-800 mt-0.5">{t.newAnalysis.socleDiscoverText}</p>
+            </div>
+          )}
+
           {/* Héritage depuis un socle */}
           {socles.length > 0 && (
             <div>

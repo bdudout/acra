@@ -560,6 +560,8 @@ export const en: Translations = {
   },
 
   newAnalysis: {
+    socleDiscoverTitle: 'Multi-entity group?',
+    socleDiscoverText: 'You can create a shared “baseline” analysis (common business values, supporting assets and risk sources), mark it as a baseline from its page, and attach the entities’ analyses to it. Ideal for a hospital group, an industrial group or multi-site organisation.',
     title:       'New ACRA analysis',
     subtitle:    'Let\'s start with some general information about your analysis.',
     howTitle:    'How does it work?',

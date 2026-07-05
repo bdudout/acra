@@ -560,6 +560,8 @@ export const es: Translations = {
   },
 
   newAnalysis: {
+    socleDiscoverTitle: '¿Grupo con varias entidades?',
+    socleDiscoverText: 'Puede crear un análisis «base» compartido (valores de negocio, activos de soporte y fuentes de riesgo comunes), marcarlo como base desde su página y vincular a él los análisis de las entidades. Ideal para un grupo hospitalario, un grupo industrial o multi-sitio.',
     title:       'Nuevo análisis ACRA',
     subtitle:    'Comencemos con información general sobre tu análisis.',
     howTitle:    '¿Cómo funciona?',

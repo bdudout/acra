@@ -560,6 +560,8 @@ export const de: Translations = {
   },
 
   newAnalysis: {
+    socleDiscoverTitle: 'Gruppe mit mehreren Einheiten?',
+    socleDiscoverText: 'Sie können eine gemeinsame „Sockel“-Analyse erstellen (gemeinsame Geschäftswerte, unterstützende Werte und Risikoquellen), sie auf ihrer Seite als Sockel markieren und die Analysen der Einheiten daran anhängen. Ideal für eine Krankenhausgruppe, eine Industriegruppe oder Multi-Standort-Organisation.',
     title:       'Neue ACRA-Analyse',
     subtitle:    'Beginnen wir mit allgemeinen Informationen zu Ihrer Analyse.',
     howTitle:    'Wie funktioniert es?',

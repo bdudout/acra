@@ -560,6 +560,8 @@ export const it: Translations = {
   },
 
   newAnalysis: {
+    socleDiscoverTitle: 'Gruppo multi-entità?',
+    socleDiscoverText: 'Puoi creare un’analisi «base» condivisa (valori aziendali, beni di supporto e fonti di rischio comuni), contrassegnarla come base dalla sua pagina e collegarvi le analisi delle entità. Ideale per un gruppo ospedaliero, un gruppo industriale o multi-sito.',
     title:       'Nuova analisi ACRA',
     subtitle:    'Iniziamo con alcune informazioni generali sulla tua analisi.',
     howTitle:    'Come funziona?',
