@@ -23,6 +23,7 @@ import {
   SOC2_CONTROLES, SOC2_CATEGORIES,
   NIST_SSDF_CONTROLES, NIST_SSDF_CATEGORIES,
   RGS_CONTROLES, RGS_CATEGORIES,
+  RECYF_CONTROLES, RECYF_CATEGORIES,
   NIST_CSF_CONTROLES, NIST_CSF_CATEGORIES,
   CIS_V8_CONTROLES, CIS_V8_CATEGORIES,
   HDS_CONTROLES, HDS_CATEGORIES,
@@ -61,7 +62,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
@@ -77,6 +78,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },
   NIST_SSDF:  { nom: 'NIST SSDF',             version: 'SP 800-218', icon: '🧬', cible: 'Développement logiciel sécurisé / DevSecOps (CI/CD)' },
   RGS:        { nom: 'RGS',                  version: 'v2.0',     icon: '🏛️', cible: 'Téléservices publics / homologation SSI (France)' },
+  RECYF:      { nom: 'ReCyF',                version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -197,6 +199,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
       case 'SOC2':      return d.SOC2_CONTROLES
       case 'NIST_SSDF': return d.NIST_SSDF_CONTROLES
       case 'RGS':       return d.RGS_CONTROLES
+      case 'RECYF':     return d.RECYF_CONTROLES
       case 'NIST_CSF':    return d.NIST_CSF_CONTROLES
       case 'NIST_800_53': return d.NIST_800_53_CONTROLES
       case 'CIS_V8':      return d.CIS_V8_CONTROLES
@@ -221,6 +224,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'SOC2':        return SOC2_CONTROLES
     case 'NIST_SSDF':   return NIST_SSDF_CONTROLES
     case 'RGS':         return RGS_CONTROLES
+    case 'RECYF':       return RECYF_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -236,6 +240,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
       case 'SOC2':      return d.SOC2_CATEGORIES
       case 'NIST_SSDF': return d.NIST_SSDF_CATEGORIES
       case 'RGS':       return d.RGS_CATEGORIES
+      case 'RECYF':     return d.RECYF_CATEGORIES
       case 'NIST_CSF':    return d.NIST_CSF_CATEGORIES
       case 'NIST_800_53': return d.NIST_800_53_CATEGORIES
       case 'CIS_V8':      return d.CIS_V8_CATEGORIES
@@ -259,6 +264,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
     case 'SOC2':        return SOC2_CATEGORIES
     case 'NIST_SSDF':   return NIST_SSDF_CATEGORIES
     case 'RGS':         return RGS_CATEGORIES
+    case 'RECYF':       return RECYF_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -358,5 +364,19 @@ export function refineFrameworksByRegulatory(fw: FrameworkId[], taille?: TailleA
 export function recommendedFrameworksForSector(secteur?: string | null, taille?: TailleAnalyse | null, sousSecteur?: string | null, statut?: StatutReglementaire | null, agreeeFinance?: boolean | null): FrameworkId[] {
   let fw = refineFrameworksBySousSecteur(baseFrameworksForSector(secteur), sousSecteur)
   fw = refineFrameworksByRegulatory(fw, taille, statut, agreeeFinance)
+  fw = refineFrameworksForNis2(fw, statut)
   return adaptFrameworksForSize(fw, taille)
+}
+
+/**
+ * Entités NIS2 (essentielles importantes EEI ou opérateurs de services essentiels
+ * OSE) — France : promeut ReCyF en tête (issue #90). ReCyF est la transposition
+ * opérationnelle française des exigences de l'art. 21 NIS2, elle guide donc en
+ * priorité les entités sous statut réglementaire NIS2, sans exclure les autres.
+ */
+export function refineFrameworksForNis2(fw: FrameworkId[], statut?: StatutReglementaire | null): FrameworkId[] {
+  if (statut !== 'EEI' && statut !== 'OSE') return fw
+  const out: FrameworkId[] = fw.filter(f => f !== 'RECYF')
+  out.unshift('RECYF')
+  return out
 }

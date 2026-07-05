@@ -1077,6 +1077,50 @@ export const RGS_CONTROLES: FrameworkControl[] = [
   { ref:'RGS-TRACE-2', type:'ORGANISATIONNELLE', categorie:'TRACE', nom:'Archivage électronique à valeur probante', description:'Archiver les documents et preuves dans un système d\'archivage électronique (SAE) conforme (NF Z42-013 / ISO 14641).' },
 ]
 
+// ─── ReCyF — Référentiel Cyber France (ANSSI, transposition opérationnelle NIS2) ──
+// Cadre opérationnel français adossé aux 10 mesures de l'art. 21 §2 de NIS2 et à
+// l'hygiène ANSSI. Objectifs 1–16 pour les entités essentielles/importantes (EEI),
+// + objectifs renforcés (17–20) pour les entités essentielles (EE). Référentiel
+// français (FR-natif, comme ANSSI Hygiène / HDS).
+export const RECYF_CATEGORIES: Record<string, FrameworkCategory> = {
+  GOUV:   { label: 'Gouvernance & pilotage',       icon: '🏛️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  RISQ:   { label: 'Maîtrise des risques',         icon: '🎯', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  PROT:   { label: 'Protection',                   icon: '🛡️', color: 'text-teal-700',   bg: 'bg-teal-50'   },
+  DETECT: { label: 'Détection',                    icon: '🔎', color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  REAC:   { label: 'Réaction & continuité',        icon: '🚨', color: 'text-red-700',    bg: 'bg-red-50'    },
+  TIERS:  { label: 'Chaîne d\'approvisionnement',  icon: '🔗', color: 'text-purple-700', bg: 'bg-purple-50' },
+}
+
+export const RECYF_CONTROLES: FrameworkControl[] = [
+  // Gouvernance & pilotage
+  { ref:'RECYF-1',  type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'Gouvernance de la cybersécurité', description:'Définir une gouvernance cyber : responsabilités de la direction, désignation d\'un responsable sécurité (RSSI) et pilotage documenté (NIS2 art. 20-21).' },
+  { ref:'RECYF-2',  type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'Enregistrement et obligations NIS2', description:'S\'enregistrer auprès de l\'ANSSI/l\'autorité sectorielle et tenir à jour les informations de l\'entité (MonEspaceNIS2).' },
+  { ref:'RECYF-3',  type:'ORGANISATIONNELLE', categorie:'GOUV', nom:'Politique de sécurité des systèmes d\'information', description:'Formaliser, approuver et diffuser une politique de sécurité des SI couvrant le périmètre régulé (art. 21 §2-a).' },
+  // Maîtrise des risques
+  { ref:'RECYF-4',  type:'ORGANISATIONNELLE', categorie:'RISQ', nom:'Analyse de risques', description:'Conduire et maintenir à jour une analyse de risques (EBIOS RM) sur les systèmes essentiels (art. 21 §2-a).' },
+  { ref:'RECYF-5',  type:'ORGANISATIONNELLE', categorie:'RISQ', nom:'Cartographie des actifs et des systèmes', description:'Établir et maintenir la cartographie des actifs, systèmes et dépendances essentielles au service.' },
+  { ref:'RECYF-6',  type:'ORGANISATIONNELLE', categorie:'RISQ', nom:'Évaluation de l\'efficacité des mesures', description:'Définir des politiques et procédures pour évaluer l\'efficacité des mesures de gestion des risques (art. 21 §2-f).' },
+  // Protection
+  { ref:'RECYF-7',  type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Gestion des identités et des accès', description:'Mettre en œuvre le moindre privilège, la gestion du cycle de vie des comptes et le contrôle des accès (art. 21 §2-i).' },
+  { ref:'RECYF-8',  type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Authentification multifacteur (MFA)', description:'Imposer l\'authentification multifacteur pour les accès distants, à privilèges et aux ressources sensibles (art. 21 §2-j).' },
+  { ref:'RECYF-9',  type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Sécurisation de l\'administration', description:'Cloisonner et durcir les moyens d\'administration (postes dédiés, réseau d\'administration, bastion).' },
+  { ref:'RECYF-10', type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Chiffrement des données et des flux', description:'Définir et appliquer une politique de chiffrement des données sensibles et des communications (art. 21 §2-h/j).' },
+  { ref:'RECYF-11', type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Sécurité du développement et gestion des vulnérabilités', description:'Sécuriser l\'acquisition, le développement et la maintenance ; identifier, corriger et divulguer les vulnérabilités (art. 21 §2-e).' },
+  { ref:'RECYF-12', type:'TECHNOLOGIQUE', categorie:'PROT', nom:'Sauvegardes protégées et testées', description:'Réaliser des sauvegardes régulières, isolées (hors-ligne/immuables) et en tester la restauration (art. 21 §2-c).' },
+  { ref:'RECYF-13', type:'HUMAINE', categorie:'PROT', nom:'Hygiène cyber et sensibilisation', description:'Assurer la sensibilisation et la formation à la cybersécurité de l\'ensemble du personnel (art. 21 §2-g).' },
+  // Détection
+  { ref:'RECYF-14', type:'TECHNOLOGIQUE', categorie:'DETECT', nom:'Journalisation et détection des incidents', description:'Journaliser les événements de sécurité et détecter les incidents (supervision, corrélation, alertes).' },
+  // Réaction & continuité
+  { ref:'RECYF-15', type:'ORGANISATIONNELLE', categorie:'REAC', nom:'Traitement et notification des incidents', description:'Gérer les incidents et notifier l\'autorité compétente dans les délais NIS2 (alerte précoce 24h, notification 72h) (art. 21 §2-b, art. 23).' },
+  { ref:'RECYF-16', type:'ORGANISATIONNELLE', categorie:'REAC', nom:'Continuité d\'activité et gestion de crise', description:'Disposer d\'un plan de continuité/reprise et d\'un dispositif de gestion de crise cyber (art. 21 §2-c).' },
+  // Chaîne d'approvisionnement
+  { ref:'RECYF-17', type:'ORGANISATIONNELLE', categorie:'TIERS', nom:'Sécurité de la chaîne d\'approvisionnement', description:'Prendre en compte la sécurité des fournisseurs et prestataires (exigences contractuelles, évaluation) (art. 21 §2-d).' },
+  // Objectifs renforcés — entités essentielles (EE)
+  { ref:'RECYF-18', type:'PHYSIQUE', categorie:'PROT', nom:'Sécurité physique et environnementale', description:'Protéger physiquement les installations et les composants supportant les services essentiels (EE).' },
+  { ref:'RECYF-19', type:'TECHNOLOGIQUE', categorie:'REAC', nom:'Communications d\'urgence sécurisées', description:'Disposer de moyens de communication d\'urgence sécurisés au sein de l\'entité en cas de crise (EE ; art. 21 §2-j).' },
+  { ref:'RECYF-20', type:'ORGANISATIONNELLE', categorie:'REAC', nom:'Exercices de crise cyber', description:'Réaliser périodiquement des exercices de gestion de crise cyber pour éprouver les dispositifs (EE).' },
+]
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Contrôles NIST CSF / NIST 800-53 / CIS v8 / HDS / PCI-DSS (issue #87)
 // Déplacés depuis frameworks-data.ts pour bénéficier de la machinerie i18n.
