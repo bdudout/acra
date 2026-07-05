@@ -1363,5 +1363,9 @@ const dict: Record<string, string> = {
   "SOUS_SECTEURS.transport-maritime.label": "Maritime / port",
   "SOUS_SECTEURS.immobilier-agence.label": "Real-estate agency / management",
   "SOUS_SECTEURS.immobilier-btp.label": "Construction / building",
+  "PCI_DSS_CONTROLES.PCI-6.4.3.nom": "Payment-page script inventory and integrity",
+  "PCI_DSS_CONTROLES.PCI-6.4.3.description": "All payment-page scripts are inventoried, authorised and their integrity is monitored (mandatory since March 2025).",
+  "PCI_DSS_CONTROLES.PCI-11.6.1.nom": "Payment-page tamper detection (anti-skimming)",
+  "PCI_DSS_CONTROLES.PCI-11.6.1.description": "A mechanism detects unauthorised changes to HTTP headers and payment-page content (anti e-skimming/Magecart).",
 }
 export default dict

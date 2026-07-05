@@ -71,7 +71,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   CIS_V8:     { nom: 'CIS Controls',         version: 'v8',       icon: '🛡️', cible: 'PME et ETI — priorisation pratique' },
   ANSSI_HYG:  { nom: 'ANSSI Guide d\'hygiène', version: 'v2',     icon: '🇫🇷', cible: 'Organisations françaises — ANSSI' },
   HDS:        { nom: 'HDS',                  version: '2024',     icon: '🏥', cible: 'Hébergeurs de données de santé (France)' },
-  PCI_DSS:    { nom: 'PCI-DSS',              version: 'v4.0',     icon: '💳', cible: 'Organisations traitant des paiements' },
+  PCI_DSS:    { nom: 'PCI-DSS',              version: 'v4.0.1',   icon: '💳', cible: 'Organisations traitant des paiements' },
   DORA:       { nom: 'DORA',                 version: 'UE 2022/2554', icon: '🏦', cible: 'Banque, assurance, fintech, marchés financiers (UE)' },
   IEC_62443:  { nom: 'IEC 62443',            version: '+ ANSSI-PA-107', icon: '🏭', cible: 'Systèmes industriels OT/ICS (usine, énergie, transport, eau)' },
   SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },

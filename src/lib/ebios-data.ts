@@ -1360,6 +1360,9 @@ export const PCI_DSS_CONTROLES: FrameworkControl[] = [
   { ref:'PCI-12.1', type:'ORGANISATIONNELLE', categorie:'R12', nom:'Politique de sécurité des informations PCI',           description:'Une politique de sécurité des informations couvrant tous les composants PCI-DSS est établie et maintenue.' },
   { ref:'PCI-12.3', type:'ORGANISATIONNELLE', categorie:'R12', nom:'Évaluation des risques de sécurité formelle',          description:'Une évaluation des risques de sécurité est réalisée au moins une fois par an et après chaque changement majeur.' },
   { ref:'PCI-12.10', type:'ORGANISATIONNELLE', categorie:'R12', nom:'Plan de réponse aux incidents PCI',                   description:'Un plan de réponse aux incidents couvrant les violations de données de carte est défini et testé annuellement.' },
+  // v4.0.1 — exigences obligatoires depuis le 31 mars 2025 (anti e-skimming pages de paiement)
+  { ref:'PCI-6.4.3', type:'TECHNOLOGIQUE',  categorie:'R6',  nom:'Inventaire et intégrité des scripts des pages de paiement', description:'Tous les scripts des pages de paiement sont inventoriés, autorisés et leur intégrité est contrôlée (obligatoire depuis mars 2025).' },
+  { ref:'PCI-11.6.1', type:'TECHNOLOGIQUE', categorie:'R11', nom:'Détection d\'altération des pages de paiement (anti-skimming)', description:'Un mécanisme détecte les modifications non autorisées des en-têtes HTTP et du contenu des pages de paiement (anti e-skimming/Magecart).' },
 ]
 
 export const NIST_800_53_CATEGORIES: Record<string, FrameworkCategory> = {
