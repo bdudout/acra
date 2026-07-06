@@ -23,9 +23,9 @@ ACRA instancie **les 5 ateliers de la méthode EBIOS RM de bout en bout**, avec 
 |---|---|---|---|
 | §3 Spécifications générales | 4 thèmes | Partielle (mention + versions faits) | 🟡 |
 | Atelier 1 — Cadrage & socle | EXI_M1_01→23 | Élevée | 🟢 |
-| Atelier 2 — Sources de risque | EXI_M2_01→10 | Élevée (hors radar) | 🟡 |
+| Atelier 2 — Sources de risque | EXI_M2_01→10 | Élevée (radar SR/OV livré) | 🟢 |
 | Atelier 3 — Scénarios stratégiques | EXI_M3_01→28 | Très élevée | 🟢 |
-| Atelier 4 — Scénarios opérationnels | EXI_M4_01→18 | Partielle | 🟡 |
+| Atelier 4 — Scénarios opérationnels | EXI_M4_01→18 | Élevée (ET/OU + 3 méthodes livrés) | 🟢 |
 | Atelier 5 — Traitement du risque | EXI_M5_01→12 | Élevée | 🟢 |
 | §5 Exigences de sécurité | EXI_S1→S6 | Élevée (mode client-serveur) | 🟢 |
 | §6 Exigences SaaS | EXI_SNC1→4 | Non applicable (auto-hébergé) | ➖ |
@@ -103,7 +103,7 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | EXI_M2_06 | 🟡 | Traçabilité des justifications de pertinence partielle |
 | EXI_M2_07 | 🟡 | Export des couples via PDF global |
 | EXI_M2_08 | 🟢 | Sélection des couples prioritaires (P1 / P2) |
-| EXI_M2_09 | 🔴 | **Cartographie visuelle de type radar des couples SR/OV** absente |
+| EXI_M2_09 | 🟢 | **Corrigé (G-03)** : cartographie radar des couples SR/OV dans l'onglet synthèse (points colorés par catégorie, P1 accentués) |
 | EXI_M2_10 | 🟡 | Rapprochement ER ↔ couples SR/OV partiel (synthèse de liaison) |
 
 ### 3.4 Atelier 3 — Scénarios stratégiques (EXI_M3_01→28) — point fort
@@ -129,9 +129,9 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | EXI_M4_01 | 🟢 | Scénarios opérationnels liés aux scénarios stratégiques |
 | EXI_M4_03 | 🟢 | Liste d'actions élémentaires par défaut, organisées en phases (`TYPES_ACTION_ELEMENTAIRE`) |
 | EXI_M4_05 | 🟢 | Chaque action élémentaire associée à un **bien support** |
-| EXI_M4_06 | 🔴 | **Opérateurs ET / OU** dans les modes opératoires absents |
-| EXI_M4_07 | 🔴 | **Trois méthodes de vraisemblance (expresse / standard / avancée)** non offertes explicitement |
-| EXI_M4_09→14 | 🟡 | Vraisemblance globale + cotation par action ; **algorithme d'agrégation** des actions élémentaires vers la vraisemblance globale non implémenté (saisie manuelle) |
+| EXI_M4_06 | 🟢 | **Corrigé (G-04)** : opérateur ET/OU par action élémentaire (sélecteur + colonne « Op. » dans l'export) |
+| EXI_M4_07 | 🟢 | **Corrigé (G-05)** : sélecteur de méthode (expresse / standard / avancée) appliqué à tous les scénarios |
+| EXI_M4_09→14 | 🟢 | **Corrigé (G-05)** : cotation par action (probabilité + difficulté) et **algorithme d'agrégation** vers la vraisemblance globale (forçable) |
 | EXI_M4_16 | 🟢 | Vraisemblance globale « forçable » |
 | EXI_M4_17 | 🟡 | Identification des actions élémentaires les plus critiques partielle |
 | EXI_M4_18 | 🟡 | Export des scénarios via PDF global |
@@ -174,9 +174,9 @@ Applicables uniquement pour une distribution SaaS labellisée (hébergement SecN
 |---|---|---|---|---|
 | ~~G-01~~ | ~~Mention de protection de l'analyse~~ — **✅ FAIT (commit df0de37)** | §3.2 | Faible | ✅ |
 | ~~G-02~~ | ~~Gestion des versions x.y des analyses~~ — **✅ FAIT (commit 5fe916a)** | §3.4 | Moyen | ✅ |
-| G-03 | **Cartographie radar des couples SR/OV** (Atelier 2) | EXI_M2_09 | Moyen | 🟡 Moyenne |
-| G-04 | **Opérateurs ET/OU** dans les modes opératoires (Atelier 4) | EXI_M4_06 | Moyen | 🟡 Moyenne |
-| G-05 | **Trois méthodes de vraisemblance** + agrégation des actions élémentaires | EXI_M4_07/09-14 | Élevé | 🟡 Moyenne |
+| ~~G-03~~ | ~~Cartographie radar des couples SR/OV~~ — **✅ FAIT (commit 816acfb)** | EXI_M2_09 | Moyen | ✅ |
+| ~~G-04~~ | ~~Opérateurs ET/OU dans les modes opératoires~~ — **✅ FAIT (commit a4c75a4)** | EXI_M4_06 | Moyen | ✅ |
+| ~~G-05~~ | ~~Trois méthodes de vraisemblance + agrégation~~ — **✅ FAIT (commit 6a72323)** | EXI_M4_07/09-14 | Élevé | ✅ |
 | ~~G-06~~ | ~~Catégorisation EBIOS des mesures + uniformiser « plan de traitement du risque »~~ — **✅ FAIT (commit 312abb9)** | EXI_M5_06 / v1.5 | Faible | ✅ |
 | ~~G-07~~ | ~~Indicateur d'état du socle vert/orange/rouge~~ — **✅ FAIT (commit cb8fdee)** | EXI_M1_20 | Faible | ✅ |
 | G-08 | **Export de livrables par atelier** (au-delà du PDF global) | §3.1 | Moyen | 🟢 Basse |
