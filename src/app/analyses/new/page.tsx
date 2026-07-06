@@ -6,12 +6,13 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
+import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
   const { SECTEURS_ACTIVITE, SOUS_SECTEURS } = useEbiosData()
-  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '' })
+  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '', mentionProtection: 'NON_PROTEGEE' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const sousSecteurOptions = SOUS_SECTEURS.filter(s => sousSecteurIdsFor(form.secteur).includes(s.id))
   const [socleId, setSocleId] = useState('')
@@ -108,6 +109,18 @@ export default function NewAnalysePage() {
                 🏭 {t.newAnalysis.otNote}
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="label">{t.mentionProtection.label}</label>
+            <select value={form.mentionProtection}
+              onChange={e => setForm({ ...form, mentionProtection: e.target.value })}
+              className="input">
+              {MENTIONS_PROTECTION.map(m => (
+                <option key={m} value={m}>{t.mentionProtection.levels[m]}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">{t.mentionProtection.help}</p>
           </div>
 
           <div>

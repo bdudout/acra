@@ -559,6 +559,16 @@ export const en: Translations = {
     expressStarting: '⏳ Creating…',
   },
 
+  mentionProtection: {
+    label: 'Protection marking',
+    help: 'Protection level of the risk-analysis document. Shown on the cover page and exports (EBIOS RM label requirement §3.2).',
+    levels: {
+      NON_PROTEGEE: 'Unprotected',
+      SENSIBLE: 'Sensitive',
+      RESTREINTE: 'Restricted',
+      CONFIDENTIELLE: 'Confidential',
+    },
+  },
   newAnalysis: {
     socleDiscoverTitle: 'Multi-entity group?',
     socleDiscoverText: 'You can create a shared “baseline” analysis (common business values, supporting assets and risk sources), mark it as a baseline from its page, and attach the entities’ analyses to it. Ideal for a hospital group, an industrial group or multi-site organisation.',

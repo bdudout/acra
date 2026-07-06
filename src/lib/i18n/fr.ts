@@ -573,6 +573,16 @@ export const fr = {
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
+  mentionProtection: {
+    label: 'Mention de protection',
+    help: "Niveau de protection du document d'analyse. Apparaît sur la page de garde et les exports (exigence label EBIOS RM §3.2).",
+    levels: {
+      NON_PROTEGEE: 'Non protégée',
+      SENSIBLE: 'Sensible',
+      RESTREINTE: 'Restreinte',
+      CONFIDENTIELLE: 'Confidentielle',
+    },
+  },
   newAnalysis: {
     socleDiscoverTitle: 'Groupe multi-établissements ?',
     socleDiscoverText: 'Vous pouvez créer une analyse « socle » partagée (valeurs métier, biens supports et sources communs), puis la marquer comme socle depuis sa page, et y rattacher les analyses des entités. Idéal pour un GHT, un groupe industriel ou multi-sites.',

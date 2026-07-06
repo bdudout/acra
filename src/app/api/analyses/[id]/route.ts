@@ -7,6 +7,7 @@ import { analyseAccessWhere } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { normalizeMentionProtection } from '@/lib/mention-protection'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -77,6 +78,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const data: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) data[key] = body[key]
+  }
+  // Mention de protection (label EBIOS RM §3.2) — normalisée vers un niveau connu.
+  if ('mentionProtection' in body) {
+    data.mentionProtection = normalizeMentionProtection(body.mentionProtection)
   }
   // Cohérence secteur ↔ sous-secteur (issue #25) : on retient le sous-secteur
   // seulement s'il appartient bien au secteur effectif (nouveau ou existant).

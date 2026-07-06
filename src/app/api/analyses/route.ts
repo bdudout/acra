@@ -7,6 +7,7 @@ import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
 
 const createSchema = z.object({
   nom:          z.string().min(1).max(200),
@@ -17,6 +18,7 @@ const createSchema = z.object({
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
+  mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
@@ -106,6 +108,7 @@ export async function POST(req: NextRequest) {
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,
+        mentionProtection: normalizeMentionProtection(data.mentionProtection),
         // Cadrage : copier du socle ou créer vide
         cadrage: {
           create: socleData.cadrage

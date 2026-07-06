@@ -559,6 +559,16 @@ export const de: Translations = {
     expressStarting: '⏳ Erstellen…',
   },
 
+  mentionProtection: {
+    label: 'Schutzkennzeichnung',
+    help: 'Schutzstufe des Analysedokuments. Erscheint auf dem Deckblatt und in Exporten (Anforderung EBIOS-RM-Label §3.2).',
+    levels: {
+      NON_PROTEGEE: 'Nicht geschützt',
+      SENSIBLE: 'Sensibel',
+      RESTREINTE: 'Eingeschränkt',
+      CONFIDENTIELLE: 'Vertraulich',
+    },
+  },
   newAnalysis: {
     socleDiscoverTitle: 'Gruppe mit mehreren Einheiten?',
     socleDiscoverText: 'Sie können eine gemeinsame „Sockel“-Analyse erstellen (gemeinsame Geschäftswerte, unterstützende Werte und Risikoquellen), sie auf ihrer Seite als Sockel markieren und die Analysen der Einheiten daran anhängen. Ideal für eine Krankenhausgruppe, eine Industriegruppe oder Multi-Standort-Organisation.',

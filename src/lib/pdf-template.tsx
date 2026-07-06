@@ -40,6 +40,7 @@ import { execGlobalLevel, execTopRisks, execMeasuresToEngage } from '@/lib/pdf-e
 import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
 import { reportUsageNotes } from '@/lib/regulatory-guidance'
 import { isClassified } from '@/lib/classification'
+import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -177,12 +178,18 @@ function SectionBar({ title, color }: { title: string; color: string }) {
   )
 }
 
+/** Mention de protection à afficher (label §3.2) ; '' si l'analyse est non protégée. */
+function mentionMarking(analyse: any, tp: PdfStrings): string { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const m = normalizeMentionProtection(analyse?.mentionProtection)
+  return isProtectedMention(m) ? (tp.cover.mentions[m] ?? '') : ''
+}
+
 /** Footer rendered on every page */
-function Footer({ nom, date, tp }: { nom: string; date: string; tp: PdfStrings }) {
+function Footer({ nom, date, tp, mention }: { nom: string; date: string; tp: PdfStrings; mention?: string }) {
   return (
     <View style={s.footer} fixed>
       <Text style={s.footerTxt}>EBIOS RM — {nom}</Text>
-      <Text style={s.footerTxt}>{tp.footer.confidential} {date}</Text>
+      <Text style={s.footerTxt}>{mention ? mention.toUpperCase() : `${tp.footer.confidential} ${date}`}</Text>
       <Text style={s.footerTxt} render={({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) => tp.footer.page(pageNumber, totalPages)} />
     </View>
   )
@@ -239,9 +246,22 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
   const statut = analyse.statut === 'TERMINE' ? tp.cover.statutTermine
                : analyse.statut === 'APPROUVE' ? tp.cover.statutApprouve
                : tp.cover.statutEnCours
+  const mention = normalizeMentionProtection(analyse.mentionProtection)
+  const mentionProtected = isProtectedMention(mention)
 
   return (
     <Page size="A4" style={s.page}>
+      {/* Marquage de protection du document (label EBIOS RM §3.2), bandeau pleine largeur
+          en tête (bleed). paddingTop généreux pour ne pas rogner le texte au bord de page ;
+          marginBottom:14 compense le marginTop:-14 du bandeau indigo qui suit. */}
+      {mentionProtected ? (
+        <View style={{ backgroundColor: C.red, marginTop: -14, marginHorizontal: -14, marginBottom: 14, paddingTop: 8, paddingBottom: 5, paddingHorizontal: 14, alignItems: 'center' }}>
+          <Text style={{ color: C.white, fontSize: 8.5, fontFamily: 'Helvetica-Bold', letterSpacing: 1 }}>
+            {(tp.cover.mentions[mention] ?? '').toUpperCase()}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Top banner */}
       <View style={[s.banner, { backgroundColor: C.indigo, paddingVertical: 18 }]}>
         <Text style={{ color: C.white, fontSize: 20, fontFamily: 'Helvetica-Bold', marginBottom: 4 }}>
@@ -273,6 +293,7 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
       {analyse.qualification?.statutReglementaire && tp.cover.statutsReg[analyse.qualification.statutReglementaire] ? (
         <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statutRegLabel} : {tp.cover.statutsReg[analyse.qualification.statutReglementaire]}</Text>
       ) : null}
+      <Text style={{ fontSize: 9, color: mentionProtected ? C.red : C.gray500, marginBottom: 3 }}>{tp.cover.mentionLabel} : {tp.cover.mentions[mention] ?? ''}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statut} : {statut}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>
         {tp.cover.createdOn} : {new Date(analyse.createdAt).toLocaleDateString(tp.dateLocale)}
@@ -284,7 +305,7 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
       {/* Separator */}
       <View style={{ borderTopWidth: 0.5, borderTopColor: C.indigo, marginTop: 12 }} />
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -370,7 +391,7 @@ function ExecutiveSummaryPage({ analyse, date, tp }: { analyse: any; date: strin
         </View>
       )) : <Text style={s.italic}>{tp.execSummary.noMeasure}</Text>}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -553,7 +574,7 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -673,7 +694,7 @@ function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         <Text style={s.italic}>{tp.a1.empty}</Text>
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -732,7 +753,7 @@ function Atelier2Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -980,7 +1001,7 @@ function Atelier3Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -1041,7 +1062,7 @@ function Atelier4Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         </View>
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -1111,7 +1132,7 @@ function Atelier5Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         />
       )}
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }
@@ -1211,7 +1232,7 @@ function AnnexePage({ analyse, date, config, tp }: { analyse: any; date: string;
         rows={tp.annexe.strategies.map(([name, desc]) => [name, desc])}
       />
 
-      <Footer nom={analyse.nom} date={date} tp={tp} />
+      <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>
   )
 }

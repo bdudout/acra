@@ -24,6 +24,7 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
+import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
 import { formatDate } from '@/lib/format'
 import {
   canViewAnalyse, canEditAnalyse, canSubmitAnalyse,
@@ -144,6 +145,11 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statutInfo.color}`}>
                 {statutInfo.icon} {(t.statusLabels as Record<string, string>)[analyse.statut] ?? statutInfo.label}
               </span>
+              {isProtectedMention((analyse as any).mentionProtection) && (
+                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700">
+                  🛡️ {t.mentionProtection.levels[normalizeMentionProtection((analyse as any).mentionProtection)]}
+                </span>
+              )}
               {!isOwner && (
                 <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
                   👤 {t.analysis.sharedBy} {analyse.user?.name ?? analyse.user?.email}

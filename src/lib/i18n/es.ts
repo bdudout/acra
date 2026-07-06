@@ -559,6 +559,16 @@ export const es: Translations = {
     expressStarting: '⏳ Creando…',
   },
 
+  mentionProtection: {
+    label: 'Mención de protección',
+    help: 'Nivel de protección del documento de análisis. Aparece en la portada y en las exportaciones (requisito del sello EBIOS RM §3.2).',
+    levels: {
+      NON_PROTEGEE: 'No protegida',
+      SENSIBLE: 'Sensible',
+      RESTREINTE: 'Restringida',
+      CONFIDENTIELLE: 'Confidencial',
+    },
+  },
   newAnalysis: {
     socleDiscoverTitle: '¿Grupo con varias entidades?',
     socleDiscoverText: 'Puede crear un análisis «base» compartido (valores de negocio, activos de soporte y fuentes de riesgo comunes), marcarlo como base desde su página y vincular a él los análisis de las entidades. Ideal para un grupo hospitalario, un grupo industrial o multi-sitio.',

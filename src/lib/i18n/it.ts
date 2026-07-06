@@ -559,6 +559,16 @@ export const it: Translations = {
     expressStarting: '⏳ Creazione…',
   },
 
+  mentionProtection: {
+    label: 'Menzione di protezione',
+    help: "Livello di protezione del documento di analisi. Compare in copertina e nelle esportazioni (requisito del marchio EBIOS RM §3.2).",
+    levels: {
+      NON_PROTEGEE: 'Non protetta',
+      SENSIBLE: 'Sensibile',
+      RESTREINTE: 'Ristretta',
+      CONFIDENTIELLE: 'Riservata',
+    },
+  },
   newAnalysis: {
     socleDiscoverTitle: 'Gruppo multi-entità?',
     socleDiscoverText: 'Puoi creare un’analisi «base» condivisa (valori aziendali, beni di supporto e fonti di rischio comuni), contrassegnarla come base dalla sua pagina e collegarvi le analisi delle entità. Ideale per un gruppo ospedaliero, un gruppo industriale o multi-sito.',

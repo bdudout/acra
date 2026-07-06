@@ -179,6 +179,8 @@ model Analyse {
   statut      StatutAnalyse @default(EN_COURS)
   atelierCourant Int @default(1)
   referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
+  // Mention de protection du document d'analyse (label EBIOS RM §3.2) — cf. lib/mention-protection.ts
+  mentionProtection String @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?
