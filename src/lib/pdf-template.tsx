@@ -41,6 +41,7 @@ import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
 import { reportUsageNotes } from '@/lib/regulatory-guidance'
 import { isClassified } from '@/lib/classification'
 import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
+import { etatSocleFromEntry } from '@/lib/socle-etat'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -589,6 +590,8 @@ function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
   const biensSupports: any[]      = cadrage.biensSupports      || []
   const evenementsRedoutes: any[] = cadrage.evenementsRedoutes || []
   const socleSecurite: any[]      = cadrage.socleSecurite      || []
+  const referentiels: any[]       = cadrage.referentiels       || []
+  const etatSocleColor: Record<string, string> = { APPLIQUE: C.green, PARTIEL: C.orange, NON_APPLIQUE: C.red }
 
   return (
     <Page size="A4" style={s.page} wrap>
@@ -670,6 +673,25 @@ function Atelier1Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
                 bold: !!e.gravite,
               },
             ])}
+          />
+        </View>
+      )}
+
+      {referentiels.length > 0 && (
+        <View>
+          <SectionBar title={`${tp.a1.referentielsSocle} (${referentiels.length})`} color={C.teal} />
+          <DataTable
+            color={C.teal}
+            headers={tp.a1.referentielsHeaders}
+            colFlex={[2, 1.4, 2.6]}
+            rows={referentiels.map((r: any) => {
+              const etat = etatSocleFromEntry(r)
+              return [
+                r.nom || '—',
+                { text: tp.a1.socleEtats[etat] ?? etat, color: etatSocleColor[etat], bold: true },
+                r.ecarts || '—',
+              ]
+            })}
           />
         </View>
       )}

@@ -59,6 +59,7 @@ export interface PdfStrings {
     bs: string; bsHeaders: string[]
     er: string; erHeaders: string[]
     socle: string; socleHeaders: string[]
+    referentielsSocle: string; referentielsHeaders: string[]; socleEtats: Record<string, string>
     empty: string
   }
   a2: { banner: string; empty: string; retenues: string; ecartees: string; headers: string[]; headersShort: string[] }
@@ -132,6 +133,7 @@ const fr: PdfStrings = {
     bs: 'Biens supports', bsHeaders: ['Nom', 'Type', 'Description', 'Valeurs métier liées'],
     er: 'Événements redoutés', erHeaders: ['Description', 'Impacts', 'Gravité'],
     socle: 'Socle de sécurité', socleHeaders: ['Mesure', 'Source / Référentiel', 'Statut'],
+    referentielsSocle: 'Référentiels du socle', referentielsHeaders: ['Référentiel', 'État d\'application', 'Écarts'], socleEtats: { APPLIQUE: 'Appliqué', PARTIEL: 'Avec restrictions', NON_APPLIQUE: 'Non appliqué' },
     empty: "Le cadrage n'a pas encore été complété.",
   },
   a2: { banner: 'ATELIER 2 — SOURCES DE RISQUE', empty: 'Aucune source de risque définie dans cette analyse.', retenues: 'Sources retenues', ecartees: 'Sources écartées', headers: ['Source de risque', 'Catégorie', 'Pertinence', 'Motivation', 'Ressources', 'Activité'], headersShort: ['Source de risque', 'Catégorie', 'Pertinence'] },
@@ -224,6 +226,7 @@ const en: PdfStrings = {
     bs: 'Supporting assets', bsHeaders: ['Name', 'Type', 'Description', 'Linked business values'],
     er: 'Feared events', erHeaders: ['Description', 'Impacts', 'Severity'],
     socle: 'Security baseline', socleHeaders: ['Measure', 'Source / Framework', 'Status'],
+    referentielsSocle: 'Baseline frameworks', referentielsHeaders: ['Framework', 'Application status', 'Gaps'], socleEtats: { APPLIQUE: 'Applied', PARTIEL: 'With restrictions', NON_APPLIQUE: 'Not applied' },
     empty: 'The scoping has not been completed yet.',
   },
   a2: { banner: 'WORKSHOP 2 — RISK ORIGINS', empty: 'No risk origin defined in this analysis.', retenues: 'Selected origins', ecartees: 'Discarded origins', headers: ['Risk origin', 'Category', 'Relevance', 'Motivation', 'Resources', 'Activity'], headersShort: ['Risk origin', 'Category', 'Relevance'] },
@@ -316,6 +319,7 @@ const de: PdfStrings = {
     bs: 'Unterstützende Assets', bsHeaders: ['Name', 'Typ', 'Beschreibung', 'Verknüpfte Geschäftswerte'],
     er: 'Befürchtete Ereignisse', erHeaders: ['Beschreibung', 'Auswirkungen', 'Schweregrad'],
     socle: 'Sicherheitsbasis', socleHeaders: ['Maßnahme', 'Quelle / Rahmenwerk', 'Status'],
+    referentielsSocle: 'Referenzrahmen der Basis', referentielsHeaders: ['Rahmenwerk', 'Anwendungsstatus', 'Lücken'], socleEtats: { APPLIQUE: 'Angewendet', PARTIEL: 'Mit Einschränkungen', NON_APPLIQUE: 'Nicht angewendet' },
     empty: 'Die Rahmensetzung wurde noch nicht abgeschlossen.',
   },
   a2: { banner: 'WORKSHOP 2 — RISIKOQUELLEN', empty: 'Keine Risikoquelle in dieser Analyse definiert.', retenues: 'Ausgewählte Quellen', ecartees: 'Verworfene Quellen', headers: ['Risikoquelle', 'Kategorie', 'Relevanz', 'Motivation', 'Ressourcen', 'Aktivität'], headersShort: ['Risikoquelle', 'Kategorie', 'Relevanz'] },
@@ -408,6 +412,7 @@ const es: PdfStrings = {
     bs: 'Activos de soporte', bsHeaders: ['Nombre', 'Tipo', 'Descripción', 'Valores de negocio vinculados'],
     er: 'Eventos temidos', erHeaders: ['Descripción', 'Impactos', 'Gravedad'],
     socle: 'Base de seguridad', socleHeaders: ['Medida', 'Fuente / Referencial', 'Estado'],
+    referentielsSocle: 'Marcos de la base', referentielsHeaders: ['Marco', 'Estado de aplicación', 'Brechas'], socleEtats: { APPLIQUE: 'Aplicado', PARTIEL: 'Con restricciones', NON_APPLIQUE: 'No aplicado' },
     empty: 'El encuadre aún no se ha completado.',
   },
   a2: { banner: 'TALLER 2 — FUENTES DE RIESGO', empty: 'Ninguna fuente de riesgo definida en este análisis.', retenues: 'Fuentes seleccionadas', ecartees: 'Fuentes descartadas', headers: ['Fuente de riesgo', 'Categoría', 'Pertinencia', 'Motivación', 'Recursos', 'Actividad'], headersShort: ['Fuente de riesgo', 'Categoría', 'Pertinencia'] },
@@ -500,6 +505,7 @@ const it: PdfStrings = {
     bs: 'Asset di supporto', bsHeaders: ['Nome', 'Tipo', 'Descrizione', 'Valori aziendali collegati'],
     er: 'Eventi temuti', erHeaders: ['Descrizione', 'Impatti', 'Gravità'],
     socle: 'Base di sicurezza', socleHeaders: ['Misura', 'Fonte / Riferimento', 'Stato'],
+    referentielsSocle: 'Framework della base', referentielsHeaders: ['Framework', 'Stato di applicazione', 'Lacune'], socleEtats: { APPLIQUE: 'Applicato', PARTIEL: 'Con restrizioni', NON_APPLIQUE: 'Non applicato' },
     empty: "L'inquadramento non è stato ancora completato.",
   },
   a2: { banner: 'WORKSHOP 2 — FONTI DI RISCHIO', empty: 'Nessuna fonte di rischio definita in questa analisi.', retenues: 'Fonti selezionate', ecartees: 'Fonti scartate', headers: ['Fonte di rischio', 'Categoria', 'Pertinenza', 'Motivazione', 'Risorse', 'Attività'], headersShort: ['Fonte di rischio', 'Categoria', 'Pertinenza'] },

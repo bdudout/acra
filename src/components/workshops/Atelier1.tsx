@@ -42,6 +42,14 @@ import type { ConformiteEntry } from '@/lib/conformite'
 import Link from 'next/link'
 import { suggestsComplianceModule, nis2Classification, doraPrevailsOverNis2 } from '@/lib/regulatory-guidance'
 import { showsHdsCaveat } from '@/lib/sous-secteurs'
+import { ETATS_SOCLE, etatSocleFromEntry, type EtatSocle } from '@/lib/socle-etat'
+
+// Styles statiques de l'indicateur d'état d'application du socle (EXI_M1_20).
+const ETAT_SOCLE_STYLE: Record<EtatSocle, { dot: string; active: string; idle: string }> = {
+  APPLIQUE:     { dot: 'bg-green-500',  active: 'bg-green-100 text-green-800 border-green-300',   idle: 'text-gray-500 border-gray-200 hover:bg-green-50' },
+  PARTIEL:      { dot: 'bg-amber-500',  active: 'bg-amber-100 text-amber-800 border-amber-300',   idle: 'text-gray-500 border-gray-200 hover:bg-amber-50' },
+  NON_APPLIQUE: { dot: 'bg-red-500',    active: 'bg-red-100 text-red-800 border-red-300',         idle: 'text-gray-500 border-gray-200 hover:bg-red-50' },
+}
 
 interface Props {
   analyseId: string
@@ -341,8 +349,15 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
     setReferentiels(prev => {
       const exists = prev.find(r => r.nom === nom)
       if (exists) return prev.filter(r => r.nom !== nom)
-      return [...prev, { nom, applicable: true, ecarts: '' }]
+      return [...prev, { nom, applicable: true, ecarts: '', etatApplication: 'APPLIQUE' }]
     })
+  }
+
+  // État d'application d'un référentiel (indicateur vert/orange/rouge, EXI_M1_20).
+  function setEtatReferentiel(nom: string, etat: EtatSocle) {
+    setReferentiels(prev => prev.map(r => r.nom === nom
+      ? { ...r, etatApplication: etat, applicable: etat !== 'NON_APPLIQUE' }
+      : r))
   }
 
   async function doSave() {
@@ -1267,17 +1282,41 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
             {referentiels.length > 0 && (
               <div className="space-y-2 mt-4">
                 <h4 className="text-sm font-medium text-gray-700">{t.workshop.a1.socleSelectedTitle}</h4>
-                {referentiels.map(r => (
-                  <div key={r.nom} className="flex gap-3 items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700 w-40 flex-shrink-0">{r.nom}</span>
-                    <input
-                      value={r.ecarts || ''}
-                      onChange={e => setReferentiels(prev => prev.map(x => x.nom === r.nom ? { ...x, ecarts: e.target.value } : x))}
-                      className="input text-sm flex-1"
-                      placeholder={t.workshop.a1.socleGapPh}
-                    />
-                  </div>
-                ))}
+                <p className="text-xs text-gray-500 -mt-1">{t.workshop.a1.socleEtatHint}</p>
+                {referentiels.map(r => {
+                  const etat = etatSocleFromEntry(r)
+                  return (
+                    <div key={r.nom} className="flex gap-3 items-center p-3 bg-gray-50 rounded-lg flex-wrap">
+                      <span className="flex items-center gap-2 text-sm font-medium text-gray-700 w-40 flex-shrink-0">
+                        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ETAT_SOCLE_STYLE[etat].dot}`} aria-hidden />
+                        {r.nom}
+                      </span>
+                      {/* Indicateur d'état d'application (vert / orange / rouge) — EXI_M1_20 */}
+                      <div className="flex gap-1 flex-shrink-0" role="group" aria-label={t.workshop.a1.socleEtatLabel}>
+                        {ETATS_SOCLE.map(e => {
+                          const on = etat === e
+                          return (
+                            <button
+                              key={e}
+                              type="button"
+                              onClick={() => setEtatReferentiel(r.nom, e)}
+                              aria-pressed={on}
+                              className={`text-xs px-2 py-1 rounded-full border transition-colors ${on ? ETAT_SOCLE_STYLE[e].active : ETAT_SOCLE_STYLE[e].idle}`}
+                            >
+                              {t.workshop.a1.socleEtat[e]}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <input
+                        value={r.ecarts || ''}
+                        onChange={e => setReferentiels(prev => prev.map(x => x.nom === r.nom ? { ...x, ecarts: e.target.value } : x))}
+                        className="input text-sm flex-1 min-w-[8rem]"
+                        placeholder={t.workshop.a1.socleGapPh}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
