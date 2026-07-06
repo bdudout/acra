@@ -68,7 +68,7 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | Réf. | Exigence (résumé) | Statut | Constat |
 |---|---|---|---|
 | §3.1 | Dérouler les 5 ateliers de bout en bout, mode agile, export par étape | 🟡 | Ateliers complets et navigation libre ; export de livrables **par atelier/étape** non individualisé (export PDF global) |
-| §3.2 | **Mention de protection obligatoire** (non protégée / sensible / restreinte / confidentielle) | 🔴 | Aucun champ de classification sur l'analyse (`model Analyse`) |
+| §3.2 | **Mention de protection obligatoire** (non protégée / sensible / restreinte / confidentielle) | 🟢 | **Corrigé (G-01)** : champ `Analyse.mentionProtection` + `lib/mention-protection.ts` ; sélecteur à la création, badge en application, marquage sur la page de garde et le pied de page des exports |
 | §3.3 | Guide d'utilisation (installation, fonctions de base, recommandations) | 🟡 | README + panneaux de guidage in-app ; pas de guide utilisateur dédié complet |
 | §3.4 | **Gestion des versions x.y** des analyses (cycle op./strat., incrément, synthèse des MàJ) | 🔴 | Pas de versionnage x.y par analyse ni synthèse des révisions |
 
@@ -172,7 +172,7 @@ Applicables uniquement pour une distribution SaaS labellisée (hébergement SecN
 
 | # | Écart | Exigence | Effort | Priorité |
 |---|---|---|---|---|
-| G-01 | **Mention de protection** de l'analyse (échelle non protégée → confidentielle) | §3.2 | Faible | 🟠 Haute |
+| ~~G-01~~ | ~~Mention de protection de l'analyse~~ — **✅ FAIT (commit df0de37)** | §3.2 | Faible | ✅ |
 | G-02 | **Gestion des versions x.y** des analyses (cycle op./strat., incrément, synthèse des révisions) | §3.4 | Moyen | 🟠 Haute |
 | G-03 | **Cartographie radar des couples SR/OV** (Atelier 2) | EXI_M2_09 | Moyen | 🟡 Moyenne |
 | G-04 | **Opérateurs ET/OU** dans les modes opératoires (Atelier 4) | EXI_M4_06 | Moyen | 🟡 Moyenne |
