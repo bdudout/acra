@@ -97,10 +97,24 @@ export function doraPrevailsOverNis2(secteur?: string | null): boolean {
   return ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech'].some(k => s.includes(k))
 }
 
+/**
+ * Autorité sectorielle NIS2 (registre + notification) selon le secteur (issue #93).
+ * La transposition française rattache chaque secteur régulé à une autorité de
+ * référence (ANS santé, ACPR/AMF finance-DORA, ARCEP télécoms, CRE énergie,
+ * ministère de l'Environnement pour l'eau) ; à défaut, texte générique ANSSI.
+ * Renvoie le couple de clés [enregistrement, notification d'incident].
+ */
+export function eeiAuthorityKeys(secteur?: string | null): [string, string] {
+  const s = secteur ?? ''
+  if (/sant|médico|medico|hospital|health/i.test(s)) return ['eeiRegisterSante', 'eeiIncidentSante']
+  if (/banqu|financ|bancaire|assur|fintech|mutuelle|bourse|marché|marche/i.test(s)) return ['eeiRegisterFinance', 'eeiIncidentFinance']
+  if (/télécom|telecom|télécommunication|telecommunication|opérateur|operateur|\bfai\b|telco/i.test(s)) return ['eeiRegisterTelecom', 'eeiIncidentTelecom']
+  if (/énergie|energie|energy|électric|electric|gaz|nucléaire|nucleaire|pétrol|petrol/i.test(s)) return ['eeiRegisterEnergie', 'eeiIncidentEnergie']
+  if (/\beau\b|assainissement|water|environnement/i.test(s)) return ['eeiRegisterEau', 'eeiIncidentEau']
+  return ['eeiRegister', 'eeiIncident']
+}
+
 export function regulatoryObligations(statut?: string | null, secteur?: string | null): string[] {
-  // Secteur santé : depuis NIS2 (oct. 2024) l'autorité sectorielle est l'ANS
-  // (enregistrement via MonEspaceNIS2, notification au CERT Santé), pas l'ANSSI.
-  const sante = /sant|médico|medico|hospital|health/i.test(secteur ?? '')
   switch (statut) {
     case 'OIV':
       // LPM / arrêtés SIIV : homologation soumise à l'ANSSI, guide PA sectoriel,
@@ -108,9 +122,9 @@ export function regulatoryObligations(statut?: string | null, secteur?: string |
       // entité essentielle au sens de NIS2 (issue #98).
       return ['oivAnssiSubmit', 'oivSectorGuide', 'oivCrisisExercise', 'oivNis2Cumul']
     case 'EEI':
-      // NIS2 : enregistrement auprès de l'autorité + notification d'incident.
-      // Santé → autorité sectorielle ANS / CERT Santé (issue #81).
-      return sante ? ['eeiRegisterSante', 'eeiIncidentSante'] : ['eeiRegister', 'eeiIncident']
+      // NIS2 : enregistrement + notification d'incident, routés vers l'autorité
+      // sectorielle réelle selon le secteur (issue #93 ; santé = #81).
+      return eeiAuthorityKeys(secteur)
     case 'OSE':
       // NIS1 (hérité) : mesures de sécurité + notification d'incident significatif.
       return ['oseSecurity', 'oseIncident']

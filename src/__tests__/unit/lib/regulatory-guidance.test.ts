@@ -21,8 +21,19 @@ describe('regulatoryObligations', () => {
     expect(o).toContain('eeiIncidentSante')
     expect(o).not.toContain('eeiIncident')
   })
-  it('EEI hors santé → texte générique (ANSSI)', () => {
+  it('EEI + finance → autorité ACPR/AMF (issue #93)', () => {
     const o = regulatoryObligations('EEI', 'Banque / Finance')
+    expect(o).toContain('eeiRegisterFinance')
+    expect(o).toContain('eeiIncidentFinance')
+    expect(o).not.toContain('eeiIncidentSante')
+  })
+  it('EEI + télécoms → ARCEP, énergie → CRE, eau → environnement (issue #93)', () => {
+    expect(regulatoryObligations('EEI', 'Télécommunications')).toContain('eeiIncidentTelecom')
+    expect(regulatoryObligations('EEI', 'Énergie')).toContain('eeiIncidentEnergie')
+    expect(regulatoryObligations('EEI', 'Eau / Assainissement')).toContain('eeiIncidentEau')
+  })
+  it('EEI secteur non régulé spécifiquement → texte générique (ANSSI)', () => {
+    const o = regulatoryObligations('EEI', 'Industrie / Manufacturing')
     expect(o).toContain('eeiIncident')
     expect(o).not.toContain('eeiIncidentSante')
   })
