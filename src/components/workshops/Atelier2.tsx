@@ -35,6 +35,7 @@ import { rankExemples } from '@/lib/exemples-context'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
+import SrOvRadar from '@/components/SrOvRadar'
 
 interface Props {
   analyseId: string
@@ -517,6 +518,24 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm text-blue-800">{t.workshop.a2.synthDesc}</p>
           </div>
+
+          {/* Cartographie de type radar des couples SR/OV (EXI_M2_09) */}
+          {totalCouples > 0 && (
+            <div className="card p-5">
+              <h3 className="font-semibold text-gray-800 mb-3">{t.workshop.a2.radarTitle}</h3>
+              <SrOvRadar
+                sources={sources}
+                pertinenceLabel={t.workshop.a2.thPert}
+                categoryLabels={Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]))}
+                labels={{
+                  empty: t.workshop.a2.radarEmpty,
+                  p1: t.workshop.a2.radarP1,
+                  pertinence1: t.workshop.a2.radarPert1,
+                  pertinence4: t.workshop.a2.radarPert4,
+                }}
+              />
+            </div>
+          )}
 
           {retained.length === 0 && (
             <div className="card p-8 text-center text-gray-500 italic">
