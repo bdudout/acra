@@ -44,7 +44,7 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 
 - **Built-in methodological guidance**: every field has a tooltip, a link to the ANSSI guide, and contextual examples
 - **Automatic consistency**: items from one workshop automatically feed the next
-- **12 control frameworks**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI Hygiene, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS — from a single interface
+- **14 control frameworks**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI Hygiene, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA — from a single interface
 - **Sector-specific guidance & compliance**: business examples tailored to the sector and sub-sector, framework recommendations, regulatory status detection (NIS2, OIV…) — [see details](#-sector-specific-guidance--compliance)
 - **Flash method (Club EBIOS)**: a guided single pass through the 5 workshops, leveraging capitalization (examples, security baseline) — ideal for a first analysis or a constrained context
 - **Club EBIOS guides integrated**: the Flash method and method sheet 5 (stakeholder threat level) are implemented directly in the workflow
@@ -62,12 +62,18 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - Visual **risk matrix** (severity × likelihood) with residual levels and before/after comparison
 - **DICT** criteria (Availability, Integrity, Confidentiality, Traceability) on business values and supporting assets
 - MITRE ATT&CK links on operational scenarios
+- **Radar map of risk-source / target-objective pairs** (Workshop 2)
+- **Logical AND/OR operators** in operating modes (Workshop 4)
+- **Three likelihood assessment methods**: express, standard, advanced (per-elementary-action rating and overall likelihood computation)
+- **EBIOS categorisation of measures**: governance, protection, defence, resilience
+- **Protection marking** of the analysis document (unprotected → confidential), shown on the cover page and exports
+- **x.y versioning** of analyses and **revision history** (operational/strategic cycle)
 - **Ecosystem threat cartography** (Workshop 3, ANSSI method sheet 5): stakeholder dangerousness computed on 4 sub-criteria, polar radar with 3 zones, configurable scales, critical-third-party flagging — [see details](#️-ecosystem-threat-cartography-workshop-3)
 - Cross-cutting **Third parties** view: organization-wide *third-party management*, aggregated across all analyses, filterable by zone and criticality
 
 ### 🔐 Security & frameworks
 
-- Security measures from **12 frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS + custom controls — controls **localized in 5 languages**
+- Security measures from **14 frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + custom controls — controls **localized in 5 languages**
 - Configurable password policy (length, complexity, expiry, history, lockout)
 - Configurable **MFA** (one-time passcode by **email** or **SMS**) with a 60-min confirmation window to avoid accidental lockout
 - Configurable **SSO** (SAML 2.0 or OIDC) — automatic account provisioning
@@ -75,7 +81,7 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 
 ### 👥 Collaboration & governance
 
-- **5-level RBAC**: ADMIN · CISO · RISK_MANAGER · ANALYST · READER
+- **6-level RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALYST · READER
 - Approval workflow: submission → review → approval (CISO or Risk Manager)
 - Per-analysis access sharing with individual permissions
 - Admin dashboard: user management, account creation, suspension, audit logs
@@ -212,10 +218,11 @@ The script fills in automatically:
 docker compose up -d
 ```
 
-Docker starts 3 services:
+Docker starts 4 services:
 - **`db`** — PostgreSQL 16 (port 5432)
 - **`migrator`** — runs `prisma migrate deploy` on startup (then exits)
 - **`app`** — Next.js application (port 3000)
+- **`backup`** — automatic PostgreSQL backups (7-day rotation)
 
 Check that everything is up:
 
@@ -456,7 +463,7 @@ curl https://your-domain.com/api/health
 # {"status":"ok","db":"connected",...}
 ```
 
-> The **first account** created at `/auth/register` becomes an **ADMINISTRATOR**.
+> The **first account** created at `/auth/register` becomes the instance **SUPER-ADMINISTRATOR**.
 > Create it immediately after deployment so a third party cannot claim that role
 > (registration is open by default).
 

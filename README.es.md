@@ -44,7 +44,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 
 - **Guía metodológica integrada**: cada campo dispone de un tooltip, un enlace a la guía ANSSI y ejemplos contextuales
 - **Coherencia automática**: los elementos de un taller alimentan automáticamente los siguientes
-- **12 marcos de medidas**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, Higiene ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS — desde una única interfaz
+- **14 marcos de medidas**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, Higiene ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA — desde una única interfaz
 - **Guía sectorial y conformidad**: ejemplos de negocio adaptados al sector y subsector, recomendación de marcos, detección del estatus regulatorio (NIS2, OIV…) — [ver detalles](#-guía-sectorial-y-conformidad)
 - **Método Flash (Club EBIOS)**: un recorrido guiado de los 5 talleres en una sola pasada, apoyándose en la capitalización (ejemplos, base de seguridad) — ideal para un primer análisis o un contexto restringido
 - **Guías del Club EBIOS integradas**: el método Flash y la ficha de método 5 (peligrosidad de las partes interesadas) están implementados directamente en el recorrido
@@ -62,12 +62,18 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 - **Matriz de riesgos** visual (gravedad × probabilidad) con niveles residuales y comparación antes/después de las medidas
 - Criterios **DICT** (Disponibilidad, Integridad, Confidencialidad, Trazabilidad) sobre valores de negocio y activos de soporte
 - Enlaces MITRE ATT&CK en los escenarios operativos
+- **Mapa radar de los pares fuente de riesgo / objetivo perseguido** (Taller 2)
+- **Operadores lógicos Y/O** en los modos operativos (Taller 4)
+- **Tres métodos de evaluación de la probabilidad**: exprés, estándar, avanzado (puntuación por acción elemental y cálculo de la probabilidad global)
+- **Categorización EBIOS de las medidas**: gobernanza, protección, defensa, resiliencia
+- **Mención de protección** del documento de análisis (no protegida → confidencial), en la portada y las exportaciones
+- **Versionado x.y** de los análisis e **historial de revisiones** (ciclo operativo/estratégico)
 - **Cartografía de amenaza del ecosistema** (Taller 3, ficha de método 5 de ANSSI): peligrosidad de las partes interesadas calculada con 4 subcriterios, radar polar de 3 zonas, escalas configurables, marcado de terceros críticos — [ver detalle](#️-cartografía-de-amenaza-del-ecosistema-taller-3)
 - Vista transversal de **Terceros**: gestión de terceros (*third-party management*) a escala de la organización, agregada sobre todos los análisis, filtrable por zona y criticidad
 
 ### 🔐 Seguridad y marcos
 
-- Medidas de seguridad de **12 marcos**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS + controles personalizados — controles **localizados en 5 idiomas**
+- Medidas de seguridad de **14 marcos**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + controles personalizados — controles **localizados en 5 idiomas**
 - Política de contraseñas configurable (longitud, complejidad, caducidad, historial, bloqueo)
 - **MFA** configurable (código de un solo uso por **correo electrónico** o **SMS**) con ventana de confirmación de 60 min para evitar bloqueos accidentales
 - **SSO** configurable (SAML 2.0 u OIDC) — aprovisionamiento automático de cuentas
@@ -75,7 +81,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 
 ### 👥 Colaboración y gobernanza
 
-- **RBAC de 5 niveles**: ADMIN · CISO · RISK_MANAGER · ANALISTA · LECTOR
+- **RBAC de 6 niveles**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALISTA · LECTOR
 - Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager)
 - Compartición de acceso por análisis con permisos individuales
 - Panel de administración: gestión de usuarios, creación de cuentas, suspensión, registros de auditoría
@@ -140,7 +146,7 @@ si se vuelve a ejecutar (detalles en la sección «Instalación detallada» más
 
 **La aplicación está disponible en http://localhost:3000.**
 Crea tu cuenta en `/auth/register` — **la primera cuenta creada se convierte
-automáticamente en ADMINISTRADOR**.
+automáticamente en SUPER-ADMINISTRADOR de instancia**.
 
 Para cargar los datos de demostración (opcional, nunca en producción):
 
@@ -212,10 +218,11 @@ El script rellena automáticamente:
 docker compose up -d
 ```
 
-Docker lanza 3 servicios:
+Docker lanza 4 servicios:
 - **`db`** — PostgreSQL 16 (puerto 5432)
 - **`migrator`** — ejecuta `prisma migrate deploy` al arrancar (luego se detiene)
 - **`app`** — Aplicación Next.js (puerto 3000)
+- **`backup`** — copias de seguridad automáticas de PostgreSQL (rotación de 7 días)
 
 Comprobar que todo funciona:
 

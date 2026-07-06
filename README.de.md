@@ -44,7 +44,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 
 - **Integrierte methodische Anleitung**: Jedes Feld hat einen Tooltip, einen Link zum ANSSI-Leitfaden und kontextbezogene Beispiele
 - **Automatische Konsistenz**: Elemente eines Workshops fließen automatisch in die folgenden ein
-- **12 Maßnahmen-Frameworks**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI-Hygiene, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS — aus einer einzigen Oberfläche
+- **14 Maßnahmen-Frameworks**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI-Hygiene, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA — aus einer einzigen Oberfläche
 - **Branchenspezifische Anleitung & Konformität**: an Branche und Teilbranche angepasste Fachbeispiele, Framework-Empfehlungen, Erkennung des regulatorischen Status (NIS2, OIV…) — [Details](#-branchenspezifische-anleitung--konformität)
 - **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
 - **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
@@ -62,12 +62,18 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - Visuelle **Risikomatrix** (Schweregrad × Wahrscheinlichkeit) mit Restrisikoniveaus und Vorher/Nachher-Vergleich
 - **DICT**-Kriterien (Verfügbarkeit, Integrität, Vertraulichkeit, Nachvollziehbarkeit) für Geschäftswerte und unterstützende Güter
 - MITRE-ATT&CK-Links bei operativen Szenarien
+- **Radar-Kartografie der Paare Risikoquelle / angestrebtes Ziel** (Workshop 2)
+- **Logische UND/ODER-Operatoren** in den Vorgehensweisen (Workshop 4)
+- **Drei Methoden zur Wahrscheinlichkeitsbewertung**: express, standard, erweitert (Bewertung je Elementaraktion und Berechnung der Gesamtwahrscheinlichkeit)
+- **EBIOS-Kategorisierung der Maßnahmen**: Governance, Schutz, Abwehr, Resilienz
+- **Schutzkennzeichnung** des Analysedokuments (nicht geschützt → vertraulich), auf dem Deckblatt und in Exporten
+- **x.y-Versionierung** der Analysen und **Revisionsverlauf** (operativer/strategischer Zyklus)
 - **Bedrohungskartierung des Ökosystems** (Workshop 3, ANSSI-Methodenblatt 5): Gefährdung der Beteiligten anhand von 4 Teilkriterien, polares Radar mit 3 Zonen, konfigurierbare Skalen, Markierung kritischer Dritter — [Details](#️-bedrohungskartierung-des-ökosystems-workshop-3)
 - Übergreifende **Dritte**-Ansicht: organisationsweites *Third-Party-Management*, über alle Analysen aggregiert, nach Zone und Kritikalität filterbar
 
 ### 🔐 Sicherheit & Frameworks
 
-- Sicherheitsmaßnahmen aus **12 Frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI-Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS + benutzerdefinierte Kontrollen — Kontrollen **in 5 Sprachen lokalisiert**
+- Sicherheitsmaßnahmen aus **14 Frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI-Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + benutzerdefinierte Kontrollen — Kontrollen **in 5 Sprachen lokalisiert**
 - Konfigurierbare Passwortrichtlinie (Länge, Komplexität, Ablauf, Verlauf, Sperrung)
 - Konfigurierbare **MFA** (Einmalcode per **E-Mail** oder **SMS**) mit 60-Minuten-Bestätigungsfenster zur Vermeidung versehentlicher Sperrung
 - Konfigurierbares **SSO** (SAML 2.0 oder OIDC) — automatische Kontobereitstellung
@@ -75,7 +81,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 
 ### 👥 Zusammenarbeit & Governance
 
-- **5-stufiges RBAC**: ADMIN · CISO · RISK_MANAGER · ANALYST · LESER
+- **6-stufiges RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALYST · LESER
 - Freigabe-Workflow: Einreichung → Prüfung → Freigabe (CISO oder Risk Manager)
 - Zugriffsfreigabe pro Analyse mit individuellen Berechtigungen
 - Admin-Dashboard: Benutzerverwaltung, Kontoerstellung, Sperrung, Audit-Logs
@@ -140,7 +146,7 @@ docker compose up -d
 
 **Die Anwendung ist unter http://localhost:3000 erreichbar.**
 Erstellen Sie Ihr Konto unter `/auth/register` — **das erste erstellte Konto wird
-automatisch ADMINISTRATOR**.
+automatisch INSTANZ-SUPER-ADMINISTRATOR**.
 
 Zum Laden der Demodaten (optional, niemals in Produktion):
 
@@ -212,10 +218,11 @@ Das Skript füllt automatisch aus:
 docker compose up -d
 ```
 
-Docker startet 3 Dienste:
+Docker startet 4 Dienste:
 - **`db`** — PostgreSQL 16 (Port 5432)
 - **`migrator`** — führt `prisma migrate deploy` beim Start aus (beendet sich danach)
 - **`app`** — Next.js-Anwendung (Port 3000)
+- **`backup`** — automatische PostgreSQL-Backups (7-Tage-Rotation)
 
 Prüfen, ob alles läuft:
 
