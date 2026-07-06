@@ -1575,6 +1575,7 @@ export const de: Translations = {
       aeTypesHint:  'Vorlagenaktionen (MITRE ATT&CK-inspiriert) — zum Hinzufügen klicken:',
       aeAddManual:  '+ Manuelle Aktion hinzufügen',
       aeNamePh:     'Aktionsname',
+      aeOperateurLabel: 'Logischer Operator (UND / ODER) mit dem vorherigen Schritt',
       aeVulnPh:     'Ausgenutzte Schwachstelle',
       aeBienSelectPh: '— Ziel-Asset —',
       aeOtherOption: 'Andere (manuell eingeben)',

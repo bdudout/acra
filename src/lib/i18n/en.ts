@@ -1575,6 +1575,7 @@ export const en: Translations = {
       aeTypesHint:  'Template actions (MITRE ATT&CK-inspired) — click to add:',
       aeAddManual:  '+ Add a manual action',
       aeNamePh:     'Action name',
+      aeOperateurLabel: 'Logical operator (AND / OR) with the previous step',
       aeVulnPh:     'Exploited vulnerability',
       aeBienSelectPh: '— Targeted supporting asset —',
       aeOtherOption: 'Other (type manually)',

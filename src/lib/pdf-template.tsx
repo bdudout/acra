@@ -44,6 +44,7 @@ import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-pr
 import { etatSocleFromEntry } from '@/lib/socle-etat'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { formatVersion } from '@/lib/version-analyse'
+import { normalizeOperateur } from '@/lib/operateur-ae'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -1095,7 +1096,9 @@ function Atelier4Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
                     <DataTable
                       color={C.sky}
                       headers={tp.a4.aeHeaders}
-                      rows={so.actionsElementaires.map((a: any) => [
+                      colFlex={[0.5, 2.2, 1.4, 1.6, 1.6]}
+                      rows={so.actionsElementaires.map((a: any, i: number) => [
+                        i === 0 ? '—' : (tp.a4.operateurs[normalizeOperateur(a.operateur)] ?? '—'),
                         a.nom || '—', a.type || '—', a.bienSupport || '—', a.vulnerabilite || '—',
                       ])}
                     />

@@ -1601,6 +1601,7 @@ export const fr = {
       aeTypesHint:  'Actions types (MITRE ATT&CK-inspirées) — cliquez pour ajouter :',
       aeAddManual:  '+ Ajouter une action manuelle',
       aeNamePh:     "Nom de l'action",
+      aeOperateurLabel: 'Opérateur logique (ET / OU) avec l\'étape précédente',
       aeVulnPh:     'Vulnérabilité exploitée',
       aeBienSelectPh: '— Bien support ciblé —',
       aeOtherOption: 'Autre (saisir manuellement)',

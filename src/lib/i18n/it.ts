@@ -1575,6 +1575,7 @@ export const it: Translations = {
       aeTypesHint:  'Azioni tipo (ispirate a MITRE ATT&CK) — fare clic per aggiungere:',
       aeAddManual:  '+ Aggiungere un\'azione manuale',
       aeNamePh:     'Nome dell\'azione',
+      aeOperateurLabel: 'Operatore logico (E / O) con il passaggio precedente',
       aeVulnPh:     'Vulnerabilità sfruttata',
       aeBienSelectPh: '— Asset di supporto target —',
       aeOtherOption: 'Altro (inserire manualmente)',

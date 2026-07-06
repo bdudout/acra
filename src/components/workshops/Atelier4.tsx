@@ -32,6 +32,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
+import { OPERATEURS_AE, normalizeOperateur } from '@/lib/operateur-ae'
 
 interface Props {
   analyseId: string
@@ -155,6 +156,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
             description: exemple?.description || '',
             bienSupport: '',
             vulnerabilite: exemple?.vulnerabiliteDefaut || '',
+            operateur: 'ET', // lien logique avec l'étape précédente (EXI_M4_06)
           },
         ],
       }
@@ -350,7 +352,11 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                             const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                             return (
                               <div key={a.id} className="flex items-center gap-1 flex-shrink-0">
-                                {idx > 0 && <span className="text-gray-500">→</span>}
+                                {idx > 0 && (
+                                  <span className="text-[10px] font-semibold text-indigo-600 px-1 rounded bg-indigo-50">
+                                    {normalizeOperateur(a.operateur)}
+                                  </span>
+                                )}
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color}`}>
                                   {idx + 1}. {a.nom || a.type}
                                 </span>
@@ -364,7 +370,18 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                             const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                             return (
                               <div key={a.id} className="flex gap-2 items-start p-3">
-                                <span className="text-gray-500 text-sm w-5 text-center mt-2.5 flex-shrink-0">{idx + 1}</span>
+                                <div className="flex flex-col items-center gap-1 flex-shrink-0 w-9">
+                                  {/* Opérateur logique ET/OU avec l'étape précédente (EXI_M4_06) */}
+                                  {idx > 0 && (
+                                    <select value={normalizeOperateur(a.operateur)}
+                                      aria-label={t.workshop.a4.aeOperateurLabel}
+                                      onChange={e => updateAction(s.id, a.id, 'operateur', e.target.value)}
+                                      className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-0.5 py-0.5">
+                                      {OPERATEURS_AE.map(op => <option key={op} value={op}>{op}</option>)}
+                                    </select>
+                                  )}
+                                  <span className="text-gray-500 text-sm text-center mt-1">{idx + 1}</span>
+                                </div>
                                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2">
                                   <select value={a.type}
                                     aria-label="Type d'action élémentaire"
