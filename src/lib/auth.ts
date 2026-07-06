@@ -86,25 +86,34 @@ export const authOptions: NextAuthOptions = {
         mfaCode:    { label: 'Code MFA',     type: 'text' },
         mfaChannel: { label: 'Canal MFA',    type: 'text' },
       },
-      async authorize(credentials: Record<string, string> | undefined) {
+      async authorize(credentials: Record<string, string> | undefined, req?: { headers?: Record<string, string> } | undefined) {
         if (!credentials?.email || !credentials.password) return null
 
-        // AUDIT [F003b] MEDIUM — CWE-307 / OWASP A07:2021 — Anti-brute-force partiel
-        // CVSS: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N)
-        // EVIDENCE: la limite est uniquement par EMAIL. Aucune limite par IP →
-        //   un attaquant peut faire du credential-stuffing / spraying sur des
-        //   milliers d'emails depuis une seule IP sans être freiné. Le store est
-        //   in-memory (non distribué) → limite réinitialisée à chaque redéploiement
-        //   et non partagée entre instances. Le lockout (login-lockout.ts) partage
-        //   ces deux limites (par email, in-memory).
-        // FIX: ajouter une 2e clé de rate-limit par IP (login:ip:<ip>) + store Redis
-        //   en production multi-instance ; envisager un CAPTCHA après N échecs.
-        // Rate limiting : 10 tentatives par email par 15 minutes (brute force)
+        // Anti-brute-force à DEUX clés (audit R01 / CWE-307 / A07:2021) :
+        //   (1) par EMAIL   : 10 tentatives / 15 min (bloque le ciblage d'un compte) ;
+        //   (2) par IP      : 50 tentatives / 15 min (bloque le credential-stuffing /
+        //       password-spraying sur de nombreux emails depuis une même IP).
+        // Le store est abstrait (rate-limit.ts, Redis-ready) : en multi-instance,
+        // brancher un RedisRateLimitStore. L'IP provient des en-têtes de proxy — à
+        // n'utiliser que derrière un reverse-proxy de confiance (voir README/ops).
         const emailKey = `login:email:${credentials.email.toLowerCase()}`
         const rl = rateLimit(emailKey, 10, 15 * 60 * 1000)
         if (!rl.allowed) {
           await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email })
           throw new Error('TOO_MANY_ATTEMPTS')
+        }
+
+        // Clé par IP (en-têtes de proxy ; objet plat côté next-auth, pas un Headers).
+        const xff = req?.headers?.['x-forwarded-for']
+        const ip = (typeof xff === 'string' ? xff.split(',')[0]?.trim() : undefined)
+          || req?.headers?.['x-real-ip']
+          || 'unknown'
+        if (ip !== 'unknown') {
+          const rlIp = rateLimit(`login:ip:${ip}`, 50, 15 * 60 * 1000)
+          if (!rlIp.allowed) {
+            await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email, ip })
+            throw new Error('TOO_MANY_ATTEMPTS')
+          }
         }
 
         // Politique configurable (verrouillage + expiration)

@@ -12,7 +12,7 @@
  *   if (!rl.allowed) return 429
  *
  * Limites configurées par contexte (voir bas de fichier) :
- *   - login        : 10/15min par email
+ *   - login        : 10/15min par email + 50/15min par IP (anti credential-stuffing, R01)
  *   - register     : 5/h par IP
  *   - password     : 5/h par userId
  *   - export       : 20/h par userId
