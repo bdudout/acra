@@ -21,7 +21,7 @@ ACRA instancie **les 5 ateliers de la méthode EBIOS RM de bout en bout**, avec 
 
 | Atelier / Chapitre | Exigences | Couverture | Verdict |
 |---|---|---|---|
-| §3 Spécifications générales | 4 thèmes | Partielle | 🟡 |
+| §3 Spécifications générales | 4 thèmes | Partielle (mention + versions faits) | 🟡 |
 | Atelier 1 — Cadrage & socle | EXI_M1_01→23 | Élevée | 🟢 |
 | Atelier 2 — Sources de risque | EXI_M2_01→10 | Élevée (hors radar) | 🟡 |
 | Atelier 3 — Scénarios stratégiques | EXI_M3_01→28 | Très élevée | 🟢 |
@@ -70,7 +70,7 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | §3.1 | Dérouler les 5 ateliers de bout en bout, mode agile, export par étape | 🟡 | Ateliers complets et navigation libre ; export de livrables **par atelier/étape** non individualisé (export PDF global) |
 | §3.2 | **Mention de protection obligatoire** (non protégée / sensible / restreinte / confidentielle) | 🟢 | **Corrigé (G-01)** : champ `Analyse.mentionProtection` + `lib/mention-protection.ts` ; sélecteur à la création, badge en application, marquage sur la page de garde et le pied de page des exports |
 | §3.3 | Guide d'utilisation (installation, fonctions de base, recommandations) | 🟡 | README + panneaux de guidage in-app ; pas de guide utilisateur dédié complet |
-| §3.4 | **Gestion des versions x.y** des analyses (cycle op./strat., incrément, synthèse des MàJ) | 🔴 | Pas de versionnage x.y par analyse ni synthèse des révisions |
+| §3.4 | **Gestion des versions x.y** des analyses (cycle op./strat., incrément, synthèse des MàJ) | 🟢 | **Corrigé (G-02)** : `Analyse.versionMajeure/Mineure` + `RevisionAnalyse` ; panneau de révisions (cycle op./strat., note, ateliers), incrément x.y, historique et synthèse dans l'export PDF |
 
 ### 3.2 Atelier 1 — Cadrage et socle de sécurité (EXI_M1_01→23)
 
@@ -145,8 +145,8 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | EXI_M5_03 | 🔴* | Matrice de traçabilité ER ↔ scénarios de risque absente (*exigence optionnelle*) |
 | EXI_M5_04 | 🟢 | Indicateur de stratégie de traitement (réduire/accepter/transférer/refuser) ; libellés « acceptable / tolérable / inacceptable » à aligner |
 | EXI_M5_05 | 🟢 | Mesures associées aux scénarios (objet de l'étude et écosystème) |
-| EXI_M5_06 | 🟡 | Responsable / coût / échéance / avancement ✅ ; **catégorie EBIOS (gouvernance / protection / défense / résilience)** non utilisée (ACRA catégorise par référentiel/type ISO) |
-| EXI_M5_07 | 🟢 | Plan de traitement du risque + export (« plan d'action ») |
+| EXI_M5_06 | 🟢 | Responsable / coût / échéance / avancement ✅ ; **catégorie EBIOS (gouvernance / protection / défense / résilience) livrée (G-06)** : `Mesure.categorieEbios`, sélecteur en atelier 5, colonne dédiée dans l'export PDF |
+| EXI_M5_07 | 🟢 | **Plan de traitement du risque** + export ; terminologie uniformisée (G-06) — titres « Plan de traitement du risque » en UI et PDF |
 | EXI_M5_08→12 | 🟢 | Gravité/vraisemblance résiduelles, cartographie résiduelle, documentation des risques résiduels |
 
 ### 3.7 Exigences de sécurité (§5 — mode client-serveur)
@@ -173,11 +173,11 @@ Applicables uniquement pour une distribution SaaS labellisée (hébergement SecN
 | # | Écart | Exigence | Effort | Priorité |
 |---|---|---|---|---|
 | ~~G-01~~ | ~~Mention de protection de l'analyse~~ — **✅ FAIT (commit df0de37)** | §3.2 | Faible | ✅ |
-| G-02 | **Gestion des versions x.y** des analyses (cycle op./strat., incrément, synthèse des révisions) | §3.4 | Moyen | 🟠 Haute |
+| ~~G-02~~ | ~~Gestion des versions x.y des analyses~~ — **✅ FAIT (commit 5fe916a)** | §3.4 | Moyen | ✅ |
 | G-03 | **Cartographie radar des couples SR/OV** (Atelier 2) | EXI_M2_09 | Moyen | 🟡 Moyenne |
 | G-04 | **Opérateurs ET/OU** dans les modes opératoires (Atelier 4) | EXI_M4_06 | Moyen | 🟡 Moyenne |
 | G-05 | **Trois méthodes de vraisemblance** + agrégation des actions élémentaires | EXI_M4_07/09-14 | Élevé | 🟡 Moyenne |
-| G-06 | **Catégorisation EBIOS des mesures** (gouvernance/protection/défense/résilience) + uniformiser « plan de traitement du risque » | EXI_M5_06 / v1.5 | Faible | 🟡 Moyenne |
+| ~~G-06~~ | ~~Catégorisation EBIOS des mesures + uniformiser « plan de traitement du risque »~~ — **✅ FAIT (commit 312abb9)** | EXI_M5_06 / v1.5 | Faible | ✅ |
 | ~~G-07~~ | ~~Indicateur d'état du socle vert/orange/rouge~~ — **✅ FAIT (commit cb8fdee)** | EXI_M1_20 | Faible | ✅ |
 | G-08 | **Export de livrables par atelier** (au-delà du PDF global) | §3.1 | Moyen | 🟢 Basse |
 | G-09 | **Cadre de l'étude** complet : participants (RACI), contraintes, hypothèses, planning | EXI_M1_01 | Faible | 🟢 Basse |
