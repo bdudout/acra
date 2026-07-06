@@ -25,6 +25,8 @@ import { getConformiteContext } from '@/lib/conformite.server'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
+import { formatVersion } from '@/lib/version-analyse'
+import RevisionPanel from '@/components/RevisionPanel'
 import { formatDate } from '@/lib/format'
 import {
   canViewAnalyse, canEditAnalyse, canSubmitAnalyse,
@@ -173,6 +175,9 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                   🔗 Hérite de : <Link href={`/analyses/${(analyse as any).socle.id}`} className="underline hover:text-indigo-900">{(analyse as any).socle.nom}</Link>
                 </span>
               )}
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-mono">
+                v{formatVersion((analyse as any).versionMajeure ?? 1, (analyse as any).versionMineure ?? 0)}
+              </span>
             </div>
           </div>
 
@@ -207,6 +212,15 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               </a>
             </>
           </div>
+        </div>
+
+        {/* Versions & révisions (label EBIOS RM §3.4) */}
+        <div className="mb-6">
+          <RevisionPanel
+            analyseId={analyse.id}
+            initialVersion={formatVersion((analyse as any).versionMajeure ?? 1, (analyse as any).versionMineure ?? 0)}
+            canRevise={editable && !locked}
+          />
         </div>
 
         {/* Qualification mise en avant AVANT les ateliers tant qu'incomplète

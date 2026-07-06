@@ -43,6 +43,7 @@ import { isClassified } from '@/lib/classification'
 import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
 import { etatSocleFromEntry } from '@/lib/socle-etat'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
+import { formatVersion } from '@/lib/version-analyse'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -296,6 +297,7 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
         <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statutRegLabel} : {tp.cover.statutsReg[analyse.qualification.statutReglementaire]}</Text>
       ) : null}
       <Text style={{ fontSize: 9, color: mentionProtected ? C.red : C.gray500, marginBottom: 3 }}>{tp.cover.mentionLabel} : {tp.cover.mentions[mention] ?? ''}</Text>
+      <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.versionLabel} : {formatVersion(analyse.versionMajeure ?? 1, analyse.versionMineure ?? 0)}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>{tp.cover.statut} : {statut}</Text>
       <Text style={{ fontSize: 9, color: C.gray500, marginBottom: 3 }}>
         {tp.cover.createdOn} : {new Date(analyse.createdAt).toLocaleDateString(tp.dateLocale)}
@@ -306,6 +308,25 @@ function CoverPage({ analyse, date, tp }: { analyse: any; date: string; tp: PdfS
 
       {/* Separator */}
       <View style={{ borderTopWidth: 0.5, borderTopColor: C.indigo, marginTop: 12 }} />
+
+      {/* Historique des versions (label EBIOS RM §3.4) */}
+      {Array.isArray(analyse.revisions) && analyse.revisions.length > 0 ? (
+        <View style={{ marginTop: 14 }}>
+          <SectionBar title={tp.cover.revisionsTitle} color={C.indigo} />
+          <DataTable
+            color={C.indigo}
+            headers={tp.cover.revisionsHeaders}
+            colFlex={[0.8, 1.2, 1.2, 1.2, 3]}
+            rows={analyse.revisions.map((r: any) => [
+              `v${r.version}`,
+              tp.cover.revisionCycles[r.cycle] ?? r.cycle,
+              new Date(r.createdAt).toLocaleDateString(tp.dateLocale),
+              Array.isArray(r.ateliers) && r.ateliers.length ? r.ateliers.join(', ') : '—',
+              r.note || '—',
+            ])}
+          />
+        </View>
+      ) : null}
 
       <Footer nom={analyse.nom} date={date} tp={tp} mention={mentionMarking(analyse, tp)} />
     </Page>

@@ -21,6 +21,7 @@ export interface PdfStrings {
     profilLabel: string; profils: Record<string, string>
     statutRegLabel: string; statutsReg: Record<string, string>
     mentionLabel: string; mentions: Record<string, string>
+    versionLabel: string; revisionsTitle: string; revisionsHeaders: string[]; revisionCycles: Record<string, string>
   }
   footer: { confidential: string; page: (n: number, total: number) => string }
   risk: { critique: string; eleve: string; modere: string; faible: string }
@@ -96,6 +97,7 @@ const fr: PdfStrings = {
     profilLabel: 'Profil', profils: { TPE: 'TPE / très petite structure', PME: 'PME', ETI_GE: 'ETI / grande organisation' },
     statutRegLabel: 'Statut réglementaire', statutsReg: { OSE: 'OSE (services essentiels)', EEI: 'Entité essentielle/importante (NIS2)', OIV: "OIV (importance vitale)" },
     mentionLabel: 'Mention de protection', mentions: { NON_PROTEGEE: 'Non protégée', SENSIBLE: 'Sensible', RESTREINTE: 'Restreinte', CONFIDENTIELLE: 'Confidentielle' },
+    versionLabel: 'Version', revisionsTitle: 'Historique des versions', revisionsHeaders: ['Version', 'Type', 'Date', 'Ateliers', 'Modifications'], revisionCycles: { OPERATIONNEL: 'Opérationnelle', STRATEGIQUE: 'Stratégique' },
   },
   footer: { confidential: 'Confidentiel — généré le', page: (n, t) => `Page ${n} / ${t}` },
   risk: { critique: 'Critique', eleve: 'Élevé', modere: 'Modéré', faible: 'Faible' },
@@ -189,6 +191,7 @@ const en: PdfStrings = {
     profilLabel: 'Profile', profils: { TPE: 'Micro / very small org', PME: 'SME', ETI_GE: 'Large organisation' },
     statutRegLabel: 'Regulatory status', statutsReg: { OSE: 'OES (essential services)', EEI: 'Essential/important entity (NIS2)', OIV: 'Vital-importance operator' },
     mentionLabel: 'Protection marking', mentions: { NON_PROTEGEE: 'Unprotected', SENSIBLE: 'Sensitive', RESTREINTE: 'Restricted', CONFIDENTIELLE: 'Confidential' },
+    versionLabel: 'Version', revisionsTitle: 'Version history', revisionsHeaders: ['Version', 'Type', 'Date', 'Workshops', 'Changes'], revisionCycles: { OPERATIONNEL: 'Operational', STRATEGIQUE: 'Strategic' },
   },
   footer: { confidential: 'Confidential — generated on', page: (n, t) => `Page ${n} / ${t}` },
   risk: { critique: 'Critical', eleve: 'High', modere: 'Moderate', faible: 'Low' },
@@ -282,6 +285,7 @@ const de: PdfStrings = {
     profilLabel: 'Profil', profils: { TPE: 'Kleinst-/sehr kleine Organisation', PME: 'KMU', ETI_GE: 'Großorganisation' },
     statutRegLabel: 'Regulatorischer Status', statutsReg: { OSE: 'OES (wesentliche Dienste)', EEI: 'Wesentliche/wichtige Einrichtung (NIS2)', OIV: 'Betreiber von vitaler Bedeutung' },
     mentionLabel: 'Schutzkennzeichnung', mentions: { NON_PROTEGEE: 'Nicht geschützt', SENSIBLE: 'Sensibel', RESTREINTE: 'Eingeschränkt', CONFIDENTIELLE: 'Vertraulich' },
+    versionLabel: 'Version', revisionsTitle: 'Versionsverlauf', revisionsHeaders: ['Version', 'Typ', 'Datum', 'Workshops', 'Änderungen'], revisionCycles: { OPERATIONNEL: 'Operativ', STRATEGIQUE: 'Strategisch' },
   },
   footer: { confidential: 'Vertraulich — erstellt am', page: (n, t) => `Seite ${n} / ${t}` },
   risk: { critique: 'Kritisch', eleve: 'Hoch', modere: 'Mittel', faible: 'Niedrig' },
@@ -375,6 +379,7 @@ const es: PdfStrings = {
     profilLabel: 'Perfil', profils: { TPE: 'Microempresa / muy pequeña', PME: 'PYME', ETI_GE: 'Gran organización' },
     statutRegLabel: 'Estatus regulatorio', statutsReg: { OSE: 'OSE (servicios esenciales)', EEI: 'Entidad esencial/importante (NIS2)', OIV: 'Operador de importancia vital' },
     mentionLabel: 'Mención de protección', mentions: { NON_PROTEGEE: 'No protegida', SENSIBLE: 'Sensible', RESTREINTE: 'Restringida', CONFIDENTIELLE: 'Confidencial' },
+    versionLabel: 'Versión', revisionsTitle: 'Historial de versiones', revisionsHeaders: ['Versión', 'Tipo', 'Fecha', 'Talleres', 'Cambios'], revisionCycles: { OPERATIONNEL: 'Operativa', STRATEGIQUE: 'Estratégica' },
   },
   footer: { confidential: 'Confidencial — generado el', page: (n, t) => `Página ${n} / ${t}` },
   risk: { critique: 'Crítico', eleve: 'Alto', modere: 'Moderado', faible: 'Bajo' },
@@ -468,6 +473,7 @@ const it: PdfStrings = {
     profilLabel: 'Profilo', profils: { TPE: 'Micro / struttura molto piccola', PME: 'PMI', ETI_GE: 'Grande organizzazione' },
     statutRegLabel: 'Stato normativo', statutsReg: { OSE: 'OSE (servizi essenziali)', EEI: 'Soggetto essenziale/importante (NIS2)', OIV: 'Operatore di importanza vitale' },
     mentionLabel: 'Menzione di protezione', mentions: { NON_PROTEGEE: 'Non protetta', SENSIBLE: 'Sensibile', RESTREINTE: 'Ristretta', CONFIDENTIELLE: 'Riservata' },
+    versionLabel: 'Versione', revisionsTitle: 'Cronologia delle versioni', revisionsHeaders: ['Versione', 'Tipo', 'Data', 'Workshop', 'Modifiche'], revisionCycles: { OPERATIONNEL: 'Operativa', STRATEGIQUE: 'Strategica' },
   },
   footer: { confidential: 'Riservato — generato il', page: (n, t) => `Pagina ${n} / ${t}` },
   risk: { critique: 'Critico', eleve: 'Elevato', modere: 'Moderato', faible: 'Basso' },

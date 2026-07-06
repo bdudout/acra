@@ -46,6 +46,7 @@ export async function GET(
       scenariosOperationnels: true,
       risques: true,
       mesures: true,
+      revisions: { orderBy: { createdAt: 'desc' } },
     },
   })
 

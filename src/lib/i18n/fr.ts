@@ -573,6 +573,23 @@ export const fr = {
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
+  revisions: {
+    title: 'Versions & révisions',
+    newRevision: 'Nouvelle révision',
+    cycle: 'Type de mise à jour',
+    cycleLabels: { OPERATIONNEL: 'Opérationnelle', STRATEGIQUE: 'Stratégique' },
+    cycleOperationnelHint: '(incrémente le mineur y)',
+    cycleStrategiqueHint: '(incrémente le majeur x)',
+    ateliers: 'Ateliers concernés',
+    atelier: 'Atelier',
+    note: 'Modifications majeures',
+    notePh: 'Décrivez les changements apportés…',
+    cancel: 'Annuler',
+    save: 'Enregistrer la révision',
+    saving: 'Enregistrement…',
+    empty: 'Aucune révision enregistrée.',
+    historyTitle: 'Historique des révisions',
+  },
   mentionProtection: {
     label: 'Mention de protection',
     help: "Niveau de protection du document d'analyse. Apparaît sur la page de garde et les exports (exigence label EBIOS RM §3.2).",

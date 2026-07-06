@@ -559,6 +559,23 @@ export const en: Translations = {
     expressStarting: '⏳ Creating…',
   },
 
+  revisions: {
+    title: 'Versions & revisions',
+    newRevision: 'New revision',
+    cycle: 'Update type',
+    cycleLabels: { OPERATIONNEL: 'Operational', STRATEGIQUE: 'Strategic' },
+    cycleOperationnelHint: '(increments minor y)',
+    cycleStrategiqueHint: '(increments major x)',
+    ateliers: 'Workshops concerned',
+    atelier: 'Workshop',
+    note: 'Major changes',
+    notePh: 'Describe the changes made…',
+    cancel: 'Cancel',
+    save: 'Save revision',
+    saving: 'Saving…',
+    empty: 'No revision recorded yet.',
+    historyTitle: 'Revision history',
+  },
   mentionProtection: {
     label: 'Protection marking',
     help: 'Protection level of the risk-analysis document. Shown on the cover page and exports (EBIOS RM label requirement §3.2).',

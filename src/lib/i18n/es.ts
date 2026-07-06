@@ -559,6 +559,23 @@ export const es: Translations = {
     expressStarting: '⏳ Creando…',
   },
 
+  revisions: {
+    title: 'Versiones y revisiones',
+    newRevision: 'Nueva revisión',
+    cycle: 'Tipo de actualización',
+    cycleLabels: { OPERATIONNEL: 'Operativa', STRATEGIQUE: 'Estratégica' },
+    cycleOperationnelHint: '(incrementa el menor y)',
+    cycleStrategiqueHint: '(incrementa el mayor x)',
+    ateliers: 'Talleres afectados',
+    atelier: 'Taller',
+    note: 'Cambios importantes',
+    notePh: 'Describa los cambios realizados…',
+    cancel: 'Cancelar',
+    save: 'Guardar revisión',
+    saving: 'Guardando…',
+    empty: 'Ninguna revisión registrada.',
+    historyTitle: 'Historial de revisiones',
+  },
   mentionProtection: {
     label: 'Mención de protección',
     help: 'Nivel de protección del documento de análisis. Aparece en la portada y en las exportaciones (requisito del sello EBIOS RM §3.2).',

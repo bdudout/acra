@@ -559,6 +559,23 @@ export const de: Translations = {
     expressStarting: '⏳ Erstellen…',
   },
 
+  revisions: {
+    title: 'Versionen & Revisionen',
+    newRevision: 'Neue Revision',
+    cycle: 'Art der Aktualisierung',
+    cycleLabels: { OPERATIONNEL: 'Operativ', STRATEGIQUE: 'Strategisch' },
+    cycleOperationnelHint: '(erhöht Minor y)',
+    cycleStrategiqueHint: '(erhöht Major x)',
+    ateliers: 'Betroffene Workshops',
+    atelier: 'Workshop',
+    note: 'Wesentliche Änderungen',
+    notePh: 'Beschreiben Sie die Änderungen…',
+    cancel: 'Abbrechen',
+    save: 'Revision speichern',
+    saving: 'Speichern…',
+    empty: 'Noch keine Revision erfasst.',
+    historyTitle: 'Revisionsverlauf',
+  },
   mentionProtection: {
     label: 'Schutzkennzeichnung',
     help: 'Schutzstufe des Analysedokuments. Erscheint auf dem Deckblatt und in Exporten (Anforderung EBIOS-RM-Label §3.2).',

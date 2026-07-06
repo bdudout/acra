@@ -181,6 +181,9 @@ model Analyse {
   referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
   // Mention de protection du document d'analyse (label EBIOS RM §3.2) — cf. lib/mention-protection.ts
   mentionProtection String @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
+  // Version x.y de l'analyse (label EBIOS RM §3.4) — cf. lib/version-analyse.ts
+  versionMajeure Int @default(1) // « x » — incrémenté lors d'une révision stratégique
+  versionMineure Int @default(0) // « y » — incrémenté lors d'une révision opérationnelle
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?
@@ -221,12 +224,33 @@ model Analyse {
 
   // Accès granulaires
   accesUtilisateurs AnalyseAcces[]
+  revisions   RevisionAnalyse[]
 
   @@index([userId])
   @@index([statut])
   @@index([socleId])
   @@index([deletedAt])
   @@index([organizationId])
+}
+
+// Révision d'une analyse (label EBIOS RM §3.4) — trace le suivi des versions x.y.
+model RevisionAnalyse {
+  id          String   @id @default(cuid())
+  analyseId   String
+  analyse     Analyse  @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  version     String   // « x.y » figée au moment de la révision
+  cycle       CycleRevision @default(OPERATIONNEL)
+  note        String?  @db.Text // modifications majeures apportées (saisie libre)
+  ateliers    Int[]    // ateliers concernés par la mise à jour (1..5)
+  createdById String?  // utilisateur ayant enregistré la révision
+  createdAt   DateTime @default(now())
+
+  @@index([analyseId])
+}
+
+enum CycleRevision {
+  OPERATIONNEL
+  STRATEGIQUE
 }
 
 enum StatutAnalyse {
