@@ -15,7 +15,8 @@
     "test:watch": "vitest --config vitest.config.mts",
     "test:coverage": "vitest run --config vitest.config.mts --coverage",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force && npm run db:seed"
+    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "postbuild": "node scripts/clean-standalone-env.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

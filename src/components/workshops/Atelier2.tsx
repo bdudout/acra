@@ -27,6 +27,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
@@ -44,7 +45,7 @@ interface Props {
   flashMode?: boolean
 }
 
-function uid() { return Math.random().toString(36).slice(2, 9) }
+// uid() centralisé dans @/lib/uid (audit R05)
 
 // Static color map for categories (keys don't change with locale)
 const CATEGORY_COLORS: Record<string, string> = {

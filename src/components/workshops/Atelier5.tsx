@@ -33,6 +33,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
@@ -63,7 +64,7 @@ interface Props {
   nonConformites?: { ref: string; nom: string; statut: string; commentaire?: string }[]
 }
 
-function uid() { return Math.random().toString(36).slice(2, 9) }
+// uid() centralisé dans @/lib/uid (audit R05)
 
 /** Date par défaut : aujourd'hui + 3 mois, format YYYY-MM-DD */
 function defaultEcheance(): string {

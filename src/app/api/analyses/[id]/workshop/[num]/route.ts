@@ -70,6 +70,14 @@ export async function PUT(
 
   const body = await req.json()
 
+  // Borne la cardinalité des tableaux persistés en masse (audit R03 / CWE-400) :
+  // un createMany sur un tableau non borné = DoS mémoire/CPU. 2000 items/atelier
+  // est très au-delà d'un usage réel (une analyse volumineuse ~ dizaines d'items).
+  const MAX_ENTITIES = 2000
+  for (const k of ['sourcesRisque', 'partiesPrenantes', 'scenariosStrategiques', 'scenariosOperationnels', 'risques', 'mesures'] as const) {
+    if (Array.isArray(body[k]) && body[k].length > MAX_ENTITIES) body[k] = body[k].slice(0, MAX_ENTITIES)
+  }
+
   // Normalise les types de mesures provenant des référentiels (ControlType → TypeMesure).
   // HUMAINE et PHYSIQUE → ORGANISATIONNELLE, TECHNOLOGIQUE → TECHNIQUE.
   // Defense-in-depth : le frontend fait déjà ce mapping, mais on l'assure côté serveur.

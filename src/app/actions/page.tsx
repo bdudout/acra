@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { uid } from '@/lib/uid'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
@@ -94,7 +95,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
     (a.scenariosStrategiques ?? []).flatMap(sc => {
       const list = Array.isArray(sc.mesuresEcosysteme) ? (sc.mesuresEcosysteme as any[]) : []
       return list.map(m => ({
-        mesureId:    `eco-${String(m?.id ?? Math.random().toString(36).slice(2))}`,
+        mesureId:    `eco-${String(m?.id ?? uid())}`,
         analyseId:   a.id,
         analyseNom:  a.nom,
         analyseOrg:  a.organisation,

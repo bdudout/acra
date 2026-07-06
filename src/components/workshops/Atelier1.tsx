@@ -25,6 +25,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
@@ -63,7 +64,7 @@ interface Props {
   conformiteSourceNom?: string | null
 }
 
-function uid() { return Math.random().toString(36).slice(2, 9) }
+// uid() centralisé dans @/lib/uid (audit R05)
 
 // Couleur selon niveau DICT (0–4)
 function getDictColor(v: number) {

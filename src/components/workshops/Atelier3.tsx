@@ -23,6 +23,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
@@ -50,7 +51,7 @@ interface Props {
   flashMode?: boolean
 }
 
-function uid() { return Math.random().toString(36).slice(2, 9) }
+// uid() centralisé dans @/lib/uid (audit R05)
 
 // Couleur par zone de dangerosité (statique, 3 zones : danger=orange, contrôle=jaune, veille=vert).
 const ZONE_COLOR: Record<EcosystemZone, { color: string; dot: string }> = {

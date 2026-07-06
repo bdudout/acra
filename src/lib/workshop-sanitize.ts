@@ -41,6 +41,30 @@ function json(v: unknown): unknown {
   return Array.isArray(v) || (v !== null && typeof v === 'object') ? v : undefined
 }
 
+/** Nombre max d'éléments par tableau JSON imbriqué (anti-DoS, audit R03/CWE-400). */
+const MAX_JSON_ITEMS = 500
+
+/** Tableau JSON borné en cardinalité ; conserve les éléments tels quels (ids, etc.). */
+function jsonCapped(v: unknown, max = MAX_JSON_ITEMS): unknown {
+  return Array.isArray(v) ? v.slice(0, max) : json(v)
+}
+
+/**
+ * Tableau d'objets borné en cardinalité ET réduit aux clés autorisées (audit
+ * R03/R04 / CWE-20,400) : élimine les clés arbitraires injectées côté client dans
+ * les blobs JSON (l'application ne persiste que le schéma métier attendu).
+ */
+function jsonObjArray(v: unknown, keys: string[], max = MAX_JSON_ITEMS): unknown {
+  if (!Array.isArray(v)) return undefined
+  return v.slice(0, max).map(item => {
+    if (item === null || typeof item !== 'object') return item
+    const src = item as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const k of keys) if (k in src) out[k] = src[k]
+    return out
+  })
+}
+
 // ── Atelier 2 : Sources de risque ─────────────────────────────────────────────
 export function cleanSourceRisque(s: Dict, analyseId: string) {
   return {
@@ -55,7 +79,7 @@ export function cleanSourceRisque(s: Dict, analyseId: string) {
     ressourcesScore: optNum(s.ressourcesScore),
     activiteScore:   optNum(s.activiteScore),
     pertinence:      num(s.pertinence, 1),
-    objectifsVises:  json(s.objectifsVises) as never,
+    objectifsVises:  jsonObjArray(s.objectifsVises, ['id', 'nom', 'description', 'priorite', 'pertinenceOV']) as never,
     retenu:          optBool(s.retenu),
     justification:   str(s.justification, 5000),
   }
@@ -101,9 +125,9 @@ export function cleanScenarioStrategique(s: Dict, analyseId: string) {
     objectifVise:        str(s.objectifVise, 500),
     description:         str(s.description, 5000),
     evenementRedouteRef: str(s.evenementRedouteRef, 255),
-    evenementsRedoutesIds: json(s.evenementsRedoutesIds) as never,
-    cheminAttaque:       json(s.cheminAttaque) as never,
-    mesuresEcosysteme:   json(s.mesuresEcosysteme) as never,
+    evenementsRedoutesIds: jsonCapped(s.evenementsRedoutesIds) as never,
+    cheminAttaque:       jsonCapped(s.cheminAttaque) as never,
+    mesuresEcosysteme:   jsonCapped(s.mesuresEcosysteme) as never,
     vraisemblance:       num(s.vraisemblance, 2),
     gravite:             num(s.gravite, 2),
     niveauRisque:        num(s.niveauRisque, 4),
@@ -118,7 +142,7 @@ export function cleanScenarioOperationnel(s: Dict, analyseId: string) {
     nom:                   String(s.nom ?? '').slice(0, 255),
     scenarioStrategiqueId: str(s.scenarioStrategiqueId, 255),
     description:           str(s.description, 5000),
-    actionsElementaires:   json(s.actionsElementaires) as never,
+    actionsElementaires:   jsonObjArray(s.actionsElementaires, ['id', 'type', 'nom', 'description', 'bienSupport', 'bienSupportCustom', 'vulnerabilite', 'operateur', 'probabiliteSucces', 'difficulteTechnique']) as never,
     vraisemblance:         num(s.vraisemblance, 2),
     gravite:               num(s.gravite, 2),
   }

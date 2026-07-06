@@ -5,7 +5,7 @@
 > Focus : posture globale + **ajouts récents** (mention de protection, versions/révisions, radar SR/OV, opérateurs ET/OU, méthodes de vraisemblance, packs sectoriels, autorités NIS2, CSP nonce).
 > Annotations `// AUDIT [Fxxx]` présentes en place dans les fichiers concernés (issues de l'audit précédent, toujours valides).
 
-## Score de risque global : ~2.8 / 10 — 🟢 FAIBLE
+## Score de risque global : ~1.5 / 10 — 🌟 BON (après remédiation R01/R03/R04/R05/R06)
 Posture **nettement améliorée** depuis l'audit du 2026-06-10 (4.6/10 MOYEN). Le finding ÉLEVÉ (injection CSV) et deux MOYENS (secrets en clair, mass-assignment) ont été corrigés ; la feature IA a été retirée (endpoint tombstone). Les items résiduels sont des **incohérences de durcissement** et **choix d'exploitation**, pas des failles béantes. **Aucune injection SQL/commande, aucun secret en dur, aucune IDOR.**
 
 ## Delta depuis l'audit 2026-06-10
@@ -26,10 +26,10 @@ Posture **nettement améliorée** depuis l'audit du 2026-06-10 (4.6/10 MOYEN). L
 |----|----------|------|-----------|---------------|
 | R01 | ✅ CORRIGÉ | 5.3→2.0 | A07 / CWE-307,290,770 | src/lib/auth.ts (clé par IP ajoutée) |
 | R02 | ⚠️ RISQUE ACCEPTÉ | 6.5 | A01 / CWE-269,862 | src/app/api/auth/register/route.ts:88-98 |
-| R03 | 🟢 FAIBLE | 4.3 | A04 / CWE-400 | src/app/api/analyses/[id]/workshop/[num]/route.ts · import/route.ts |
-| R04 | 🟢 FAIBLE | 3.1 | A04 / CWE-20 | src/lib/workshop-sanitize.ts (json) |
-| R05 | 🟢 FAIBLE | 2.0 | A02 / CWE-330 | src/components/workshops/Atelier{1..5}.tsx (uid) |
-| R06 | 🟠 OPS | 5.5 | A05 / CWE-200,538 | .next/standalone/**/.env (généré) |
+| R03 | ✅ CORRIGÉ | 4.3→0 | A04 / CWE-400 | cap cardinalité (2000/atelier, 500/blob) |
+| R04 | ✅ CORRIGÉ | 3.1→0 | A04 / CWE-20 | allowlist clés (jsonObjArray) |
+| R05 | ✅ CORRIGÉ | 2.0→0 | A02 / CWE-330 | src/lib/uid.ts (crypto préféré) |
+| R06 | ✅ CORRIGÉ | 5.5→0 | A05 / CWE-200,538 | scripts/clean-standalone-env.mjs (postbuild) |
 | R07 | ⚪ INFO | 0.0 | A03 / CWE-79 | src/app/layout.tsx:83 · src/app/page.tsx:59 |
 
 ---
