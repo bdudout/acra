@@ -42,6 +42,7 @@ import { reportUsageNotes } from '@/lib/regulatory-guidance'
 import { isClassified } from '@/lib/classification'
 import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
 import { etatSocleFromEntry } from '@/lib/socle-etat'
+import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -1134,9 +1135,10 @@ function Atelier5Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         <DataTable
           color={C.green}
           headers={tp.a5.mesuresHeaders}
-          colFlex={[3, 1.5, 0.8, 1.2, 1.5, 1.2, 1.2]}
+          colFlex={[2.6, 1.2, 1.2, 0.8, 1.1, 1.4, 1.1, 1.1]}
           rows={sortedM.map((m: any) => [
             m.nom,
+            tp.a5.mesureCategories[normalizeCategorieMesure(m.categorieEbios)] ?? '—',
             m.type || '—',
             {
               text: `P${m.priorite}`,

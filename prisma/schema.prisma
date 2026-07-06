@@ -505,6 +505,8 @@ model Mesure {
   echeance    DateTime?
   cout        String?
   efficacite  Int? // 1-4
+  // Catégorie EBIOS (label §EXI_M5_06) — cf. lib/mesure-categorie.ts
+  categorieEbios String @default("PROTECTION") // GOUVERNANCE | PROTECTION | DEFENSE | RESILIENCE
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

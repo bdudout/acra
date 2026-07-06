@@ -73,7 +73,7 @@ export interface PdfStrings {
   a4: { banner: string; empty: string; titleSing: string; titlePlur: string; headers: string[]; aeDetail: string; aeHeaders: string[] }
   a5: {
     banner: string; risquesEmpty: string; risquesTitleSing: string; risquesTitlePlur: string; risquesHeaders: string[]
-    planTitle: string; mesuresEmpty: string; mesuresHeaders: string[]
+    planTitle: string; mesuresEmpty: string; mesuresHeaders: string[]; mesureCategories: Record<string, string>
   }
   annexe: {
     banner: string; methodeTitle: string; methodeIntro: string; ateliers: string
@@ -147,7 +147,7 @@ const fr: PdfStrings = {
   a4: { banner: 'ATELIER 4 — SCÉNARIOS OPÉRATIONNELS', empty: 'Aucun scénario opérationnel défini dans cette analyse.', titleSing: 'Scénario opérationnel', titlePlur: 'Scénarios opérationnels', headers: ['Scénario opérationnel', 'Scénario stratégique', 'Vraisemblance', 'Gravité', 'Score'], aeDetail: 'Détail des actions élémentaires', aeHeaders: ['Action élémentaire', 'Type', 'Bien support', 'Vulnérabilité'] },
   a5: {
     banner: 'ATELIER 5 — TRAITEMENT DU RISQUE', risquesEmpty: 'Aucun risque identifié dans cette analyse.', risquesTitleSing: 'Risque identifié', risquesTitlePlur: 'Risques identifiés', risquesHeaders: ['Risque', 'G', 'V', 'Score initial', 'Niveau', 'Stratégie', 'Score résiduel'],
-    planTitle: "Plan d'action — Mesures de sécurité", mesuresEmpty: 'Aucune mesure de sécurité définie dans cette analyse.', mesuresHeaders: ['Mesure', 'Type', 'Priorité', 'Statut', 'Responsable', 'Entité', 'Échéance'],
+    planTitle: 'Plan de traitement du risque — Mesures de sécurité', mesuresEmpty: 'Aucune mesure de sécurité définie dans cette analyse.', mesuresHeaders: ['Mesure', 'Catégorie', 'Type', 'Priorité', 'Statut', 'Responsable', 'Entité', 'Échéance'], mesureCategories: { GOUVERNANCE: 'Gouvernance', PROTECTION: 'Protection', DEFENSE: 'Défense', RESILIENCE: 'Résilience' },
   },
   annexe: {
     banner: 'ANNEXE — MÉTHODOLOGIE ET RÉFÉRENTIEL DE COTATION', methodeTitle: '1. Méthode EBIOS Risk Manager (EBIOS RM)',
@@ -240,7 +240,7 @@ const en: PdfStrings = {
   a4: { banner: 'WORKSHOP 4 — OPERATIONAL SCENARIOS', empty: 'No operational scenario defined in this analysis.', titleSing: 'Operational scenario', titlePlur: 'Operational scenarios', headers: ['Operational scenario', 'Strategic scenario', 'Likelihood', 'Severity', 'Score'], aeDetail: 'Elementary actions detail', aeHeaders: ['Elementary action', 'Type', 'Supporting asset', 'Vulnerability'] },
   a5: {
     banner: 'WORKSHOP 5 — RISK TREATMENT', risquesEmpty: 'No risk identified in this analysis.', risquesTitleSing: 'Identified risk', risquesTitlePlur: 'Identified risks', risquesHeaders: ['Risk', 'S', 'L', 'Initial score', 'Level', 'Strategy', 'Residual score'],
-    planTitle: 'Action plan — Security measures', mesuresEmpty: 'No security measure defined in this analysis.', mesuresHeaders: ['Measure', 'Type', 'Priority', 'Status', 'Owner', 'Entity', 'Due date'],
+    planTitle: 'Risk treatment plan — Security measures', mesuresEmpty: 'No security measure defined in this analysis.', mesuresHeaders: ['Measure', 'Category', 'Type', 'Priority', 'Status', 'Owner', 'Entity', 'Due date'], mesureCategories: { GOUVERNANCE: 'Governance', PROTECTION: 'Protection', DEFENSE: 'Defence', RESILIENCE: 'Resilience' },
   },
   annexe: {
     banner: 'APPENDIX — METHODOLOGY AND RATING REFERENCE', methodeTitle: '1. EBIOS Risk Manager (EBIOS RM) method',
@@ -333,7 +333,7 @@ const de: PdfStrings = {
   a4: { banner: 'WORKSHOP 4 — OPERATIVE SZENARIEN', empty: 'Kein operatives Szenario in dieser Analyse definiert.', titleSing: 'Operatives Szenario', titlePlur: 'Operative Szenarien', headers: ['Operatives Szenario', 'Strategisches Szenario', 'Wahrscheinlichkeit', 'Schweregrad', 'Wert'], aeDetail: 'Detail der Elementaraktionen', aeHeaders: ['Elementaraktion', 'Typ', 'Unterstützendes Asset', 'Schwachstelle'] },
   a5: {
     banner: 'WORKSHOP 5 — RISIKOBEHANDLUNG', risquesEmpty: 'Kein Risiko in dieser Analyse identifiziert.', risquesTitleSing: 'Identifiziertes Risiko', risquesTitlePlur: 'Identifizierte Risiken', risquesHeaders: ['Risiko', 'S', 'W', 'Anfangswert', 'Stufe', 'Strategie', 'Restwert'],
-    planTitle: 'Maßnahmenplan — Sicherheitsmaßnahmen', mesuresEmpty: 'Keine Sicherheitsmaßnahme in dieser Analyse definiert.', mesuresHeaders: ['Maßnahme', 'Typ', 'Priorität', 'Status', 'Verantwortlich', 'Einheit', 'Fälligkeit'],
+    planTitle: 'Risikobehandlungsplan — Sicherheitsmaßnahmen', mesuresEmpty: 'Keine Sicherheitsmaßnahme in dieser Analyse definiert.', mesuresHeaders: ['Maßnahme', 'Kategorie', 'Typ', 'Priorität', 'Status', 'Verantwortlich', 'Einheit', 'Fälligkeit'], mesureCategories: { GOUVERNANCE: 'Governance', PROTECTION: 'Schutz', DEFENSE: 'Abwehr', RESILIENCE: 'Resilienz' },
   },
   annexe: {
     banner: 'ANHANG — METHODIK UND BEWERTUNGSREFERENZ', methodeTitle: '1. Methode EBIOS Risk Manager (EBIOS RM)',
@@ -426,7 +426,7 @@ const es: PdfStrings = {
   a4: { banner: 'TALLER 4 — ESCENARIOS OPERATIVOS', empty: 'Ningún escenario operativo definido en este análisis.', titleSing: 'Escenario operativo', titlePlur: 'Escenarios operativos', headers: ['Escenario operativo', 'Escenario estratégico', 'Verosimilitud', 'Gravedad', 'Puntuación'], aeDetail: 'Detalle de las acciones elementales', aeHeaders: ['Acción elemental', 'Tipo', 'Activo de soporte', 'Vulnerabilidad'] },
   a5: {
     banner: 'TALLER 5 — TRATAMIENTO DEL RIESGO', risquesEmpty: 'Ningún riesgo identificado en este análisis.', risquesTitleSing: 'Riesgo identificado', risquesTitlePlur: 'Riesgos identificados', risquesHeaders: ['Riesgo', 'G', 'V', 'Puntuación inicial', 'Nivel', 'Estrategia', 'Puntuación residual'],
-    planTitle: 'Plan de acción — Medidas de seguridad', mesuresEmpty: 'Ninguna medida de seguridad definida en este análisis.', mesuresHeaders: ['Medida', 'Tipo', 'Prioridad', 'Estado', 'Responsable', 'Entidad', 'Vencimiento'],
+    planTitle: 'Plan de tratamiento del riesgo — Medidas de seguridad', mesuresEmpty: 'Ninguna medida de seguridad definida en este análisis.', mesuresHeaders: ['Medida', 'Categoría', 'Tipo', 'Prioridad', 'Estado', 'Responsable', 'Entidad', 'Vencimiento'], mesureCategories: { GOUVERNANCE: 'Gobernanza', PROTECTION: 'Protección', DEFENSE: 'Defensa', RESILIENCE: 'Resiliencia' },
   },
   annexe: {
     banner: 'ANEXO — METODOLOGÍA Y REFERENCIAL DE VALORACIÓN', methodeTitle: '1. Método EBIOS Risk Manager (EBIOS RM)',
@@ -519,7 +519,7 @@ const it: PdfStrings = {
   a4: { banner: 'WORKSHOP 4 — SCENARI OPERATIVI', empty: 'Nessuno scenario operativo definito in questa analisi.', titleSing: 'Scenario operativo', titlePlur: 'Scenari operativi', headers: ['Scenario operativo', 'Scenario strategico', 'Verosimiglianza', 'Gravità', 'Punteggio'], aeDetail: 'Dettaglio delle azioni elementari', aeHeaders: ['Azione elementare', 'Tipo', 'Asset di supporto', 'Vulnerabilità'] },
   a5: {
     banner: 'WORKSHOP 5 — TRATTAMENTO DEL RISCHIO', risquesEmpty: 'Nessun rischio identificato in questa analisi.', risquesTitleSing: 'Rischio identificato', risquesTitlePlur: 'Rischi identificati', risquesHeaders: ['Rischio', 'G', 'V', 'Punteggio iniziale', 'Livello', 'Strategia', 'Punteggio residuo'],
-    planTitle: "Piano d'azione — Misure di sicurezza", mesuresEmpty: 'Nessuna misura di sicurezza definita in questa analisi.', mesuresHeaders: ['Misura', 'Tipo', 'Priorità', 'Stato', 'Responsabile', 'Entità', 'Scadenza'],
+    planTitle: 'Piano di trattamento del rischio — Misure di sicurezza', mesuresEmpty: 'Nessuna misura di sicurezza definita in questa analisi.', mesuresHeaders: ['Misura', 'Categoria', 'Tipo', 'Priorità', 'Stato', 'Responsabile', 'Entità', 'Scadenza'], mesureCategories: { GOUVERNANCE: 'Governance', PROTECTION: 'Protezione', DEFENSE: 'Difesa', RESILIENCE: 'Resilienza' },
   },
   annexe: {
     banner: 'APPENDICE — METODOLOGIA E RIFERIMENTO DI VALUTAZIONE', methodeTitle: '1. Metodo EBIOS Risk Manager (EBIOS RM)',

@@ -10,6 +10,7 @@ import {
   cleanScenarioStrategique,
   cleanScenarioOperationnel,
 } from '@/lib/workshop-sanitize'
+import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 
 /**
  * PUT /api/analyses/[id]/workshop/[num]
@@ -196,6 +197,7 @@ export async function PUT(
                     risqueId:    m.risqueId    != null ? String(m.risqueId) : undefined,
                     cout:        m.cout        != null ? String(m.cout).slice(0, 100) : undefined,
                     efficacite:  m.efficacite  != null ? Number(m.efficacite) : undefined,
+                    categorieEbios: normalizeCategorieMesure(m.categorieEbios),
                     referentiel: m.referentiel != null ? String(m.referentiel).slice(0, 100) : undefined,
                     codeRef:     m.codeRef     != null ? String(m.codeRef).slice(0, 50) : undefined,
                   }

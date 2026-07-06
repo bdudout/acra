@@ -43,6 +43,7 @@ import { getRiskTier, type ScaleConfig } from '@/lib/risk-scale'
 import ExportButtons from '@/components/ExportButtons'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
+import { CATEGORIES_MESURE_EBIOS, normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
@@ -92,6 +93,11 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     { value: 'ORGANISATIONNELLE', label: t.workshop.a5.measureTypes.ORGANISATIONNELLE },
     { value: 'TECHNIQUE',         label: t.workshop.a5.measureTypes.TECHNIQUE },
   ]
+
+  // Catégories EBIOS des mesures (fiche méthode n°9, EXI_M5_06).
+  const CATEGORIES_MESURE = CATEGORIES_MESURE_EBIOS.map(value => ({
+    value, label: t.workshop.a5.measureCategories[value],
+  }))
 
   const STATUTS_MESURE = [
     { value: 'A_FAIRE',  label: t.workshop.a5.measureStatuses.A_FAIRE.label,  color: t.workshop.a5.measureStatuses.A_FAIRE.color },
@@ -271,6 +277,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       nom: exemple?.nom || '',
       description: exemple?.description || '',
       type: exemple?.type || 'TECHNIQUE',
+      categorieEbios: normalizeCategorieMesure(exemple?.categorieEbios),
       priorite: exemple?.prioriteDefaut || 2,
       statut: 'A_FAIRE',
       responsable: '',
@@ -289,6 +296,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       nom: `[${nc.ref}] ${nc.nom}`,
       description: t.workshop.a5.ecartMesureDesc,
       type: 'ORGANISATIONNELLE',
+      categorieEbios: 'GOUVERNANCE',
       priorite: nc.statut === 'non_conforme' ? 1 : 2,
       statut: 'A_FAIRE',
       responsable: '',
@@ -835,6 +843,12 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                             aria-label="Type de mesure"
                             className="input text-xs w-36">
                             {TYPES_MESURE.map(tm => <option key={tm.value} value={tm.value}>{tm.label}</option>)}
+                          </select>
+                          {/* Catégorie EBIOS (gouvernance/protection/défense/résilience) — EXI_M5_06 */}
+                          <select value={normalizeCategorieMesure(m.categorieEbios)} onChange={e => updateMesure(m.id, 'categorieEbios', e.target.value)}
+                            aria-label={t.workshop.a5.measureCategoryLabel}
+                            className="input text-xs w-36">
+                            {CATEGORIES_MESURE.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                           </select>
                           <div className="flex gap-1" role="group" aria-label="Statut de la mesure">
                             {STATUTS_MESURE.map(s => (
