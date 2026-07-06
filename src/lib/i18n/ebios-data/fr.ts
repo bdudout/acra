@@ -1378,6 +1378,7 @@ const dict: Record<string, string> = {
   "SOUS_SECTEURS.sante-labo.label": "Laboratoire de biologie médicale",
   "SOUS_SECTEURS.sante-pharma.label": "Pharmacie / officine",
   "SOUS_SECTEURS.sante-veterinaire.label": "Clinique vétérinaire / santé animale",
+  "SOUS_SECTEURS.sante-saad.label": "Aide à domicile (SAAD / SAP)",
   "SOUS_SECTEURS.transport-aerien.label": "Aérien / aéroportuaire",
   "SOUS_SECTEURS.transport-ferroviaire.label": "Ferroviaire",
   "SOUS_SECTEURS.transport-logistique.label": "Logistique / fret routier",

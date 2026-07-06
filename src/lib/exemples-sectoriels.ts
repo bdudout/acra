@@ -47,28 +47,41 @@ const SANTE: SectorFamily = {
   match: ['santé', 'sante', 'hôpital', 'hopital', 'health', 'soin', 'clinique', 'médico', 'medico', 'ehpad', 'médical', 'medical'],
   exemples: {
     valeursMetier: [
-      { nom: 'Prise en charge des patients aux urgences', type: 'PROCESSUS', description: 'Accueil, tri, soins et orientation des patients en situation d’urgence', responsable: 'Direction des soins / service des urgences', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Dossier Patient Informatisé (DPI)', type: 'INFORMATION', description: 'Données de santé, antécédents, prescriptions et comptes rendus des patients', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Circuit du médicament', type: 'PROCESSUS', description: 'Prescription, dispensation et administration des traitements', responsable: 'Pharmacie à usage intérieur', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4 },
-      { nom: 'Imagerie médicale (PACS)', type: 'INFORMATION', description: 'Images radiologiques et comptes rendus d’examens des patients', responsable: 'Service d’imagerie médicale', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3 },
+      { nom: 'Prise en charge des patients aux urgences', type: 'PROCESSUS', description: 'Accueil, tri, soins et orientation des patients en situation d’urgence', responsable: 'Direction des soins / service des urgences', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'hopital' },
+      { nom: 'Dossier Patient Informatisé (DPI)', type: 'INFORMATION', description: 'Données de santé, antécédents, prescriptions et comptes rendus des patients', responsable: 'DSI / Direction des systèmes d’information', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'hopital' },
+      { nom: 'Circuit du médicament', type: 'PROCESSUS', description: 'Prescription, dispensation et administration des traitements', responsable: 'Pharmacie à usage intérieur', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'hopital' },
+      { nom: 'Imagerie médicale (PACS)', type: 'INFORMATION', description: 'Images radiologiques et comptes rendus d’examens des patients', responsable: 'Service d’imagerie médicale', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'hopital' },
+      // Aide à domicile / SAAD-SAP (issue #115) — sousProfession 'saad'
+      { nom: 'Coordination des interventions à domicile', type: 'PROCESSUS', description: 'Planification et suivi des interventions des aides à domicile chez les personnes accompagnées', responsable: 'Responsable de secteur', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'saad' },
+      { nom: 'Données des personnes aidées', type: 'INFORMATION', description: 'Coordonnées, situation de dépendance et parfois données de santé des bénéficiaires (RGPD art. 9)', responsable: 'Direction / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'saad' },
     ],
     biensSupports: [
-      { nom: 'Système d’information hospitalier (SIH / DPI)', type: 'LOGICIEL', description: 'Application centrale hébergeant les dossiers patients' },
-      { nom: 'Serveur d’imagerie (PACS)', type: 'LOGICIEL', description: 'Stockage et diffusion des images médicales' },
-      { nom: 'Dispositifs médicaux connectés', type: 'MATERIEL', description: 'Pompes, moniteurs, respirateurs et automates de biologie reliés au réseau' },
+      { nom: 'Système d’information hospitalier (SIH / DPI)', type: 'LOGICIEL', description: 'Application centrale hébergeant les dossiers patients', sousProfession: 'hopital' },
+      { nom: 'Serveur d’imagerie (PACS)', type: 'LOGICIEL', description: 'Stockage et diffusion des images médicales', sousProfession: 'hopital' },
+      { nom: 'Dispositifs médicaux connectés', type: 'MATERIEL', description: 'Pompes, moniteurs, respirateurs et automates de biologie reliés au réseau', sousProfession: 'hopital' },
       { nom: 'Hébergeur de données de santé (HDS)', type: 'SOUS_TRAITANCE', description: 'Prestataire certifié HDS hébergeant les données de santé' },
+      // Aide à domicile / SAAD-SAP (issue #115)
+      { nom: 'Logiciel de télégestion (Filien, Ximi, Apologic, Ogust)', type: 'LOGICIEL', description: 'Planification, pointage et facturation des interventions à domicile', sousProfession: 'saad' },
+      { nom: 'Tablettes / smartphones des intervenants', type: 'MATERIEL', description: 'Terminaux mobiles des intervenants terrain (pointage, données des aidés)', sousProfession: 'saad' },
+      { nom: 'CESU dématérialisé', type: 'SOUS_TRAITANCE', description: 'Titre de paiement dématérialisé des prestations à domicile', sousProfession: 'saad' },
     ],
     evenementsRedoutes: [
-      { description: 'Indisponibilité du SIH bloquant la prise en charge des patients', impacts: ['Report de soins et d’interventions', 'Risque vital pour les patients', 'Bascule en mode dégradé papier'], graviteDefaut: 4 },
+      { description: 'Indisponibilité du SIH bloquant la prise en charge des patients', impacts: ['Report de soins et d’interventions', 'Risque vital pour les patients', 'Bascule en mode dégradé papier'], graviteDefaut: 4, sousProfession: 'hopital' },
       { description: 'Fuite massive de dossiers patients (données de santé)', impacts: ['Atteinte à la vie privée des patients', 'Sanction CNIL (RGPD art. 9)', 'Perte de confiance'], graviteDefaut: 4 },
-      { description: 'Altération de prescriptions ou de paramètres de dispositifs médicaux', impacts: ['Erreur de traitement', 'Risque vital pour les patients'], graviteDefaut: 4 },
+      { description: 'Altération de prescriptions ou de paramètres de dispositifs médicaux', impacts: ['Erreur de traitement', 'Risque vital pour les patients'], graviteDefaut: 4, sousProfession: 'hopital' },
+      // Aide à domicile / SAAD-SAP (issue #115)
+      { description: 'Vol d’une tablette d’intervenant exposant les données des personnes vulnérables', impacts: ['Violation de données (RGPD art. 9)', 'Sanction CNIL', 'Préjudice pour des personnes vulnérables'], graviteDefaut: 4, sousProfession: 'saad' },
+      { description: 'Indisponibilité de la télégestion bloquant l’envoi des intervenants', impacts: ['Interruption des interventions à domicile', 'Risque pour des personnes dépendantes', 'Perte de facturation'], graviteDefaut: 4, sousProfession: 'saad' },
     ],
     sourcesRisque: [
       { nom: 'Groupe de rançongiciel ciblant les hôpitaux', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels exploitant la criticité vitale des soins pour maximiser la pression au paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
-      { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'hopital' },
       { critere: 'C', nom: 'Exfiltration de données de santé (C)', description: 'Vol puis publication de dossiers patients par un cybercriminel', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+      // Aide à domicile / SAAD-SAP (issue #115)
+      { critere: 'C', nom: 'Vol de tablette exposant les données des aidés (C)', description: 'La perte ou le vol d’une tablette d’intervenant expose les données des personnes accompagnées', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'saad' },
+      { critere: 'D', nom: 'Rançongiciel bloquant la télégestion (D)', description: 'Un rançongiciel chiffre le logiciel de télégestion et empêche d’organiser les interventions', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'saad' },
     ],
     // Autorités sectorielles santé (NIS2 : ANS autorité compétente) — issue #81
     partiesPrenantes: [
@@ -150,6 +163,10 @@ const INDUSTRIE: SectorFamily = {
       { nom: 'Maintenance et télégestion', type: 'PROCESSUS', description: 'Télémaintenance et exploitation à distance des équipements industriels', responsable: 'Direction de la maintenance', disponibilite: 3, integrite: 4, confidentialite: 2, tracabilite: 4 },
       // Énergies renouvelables (issue #95)
       { nom: 'Production d’énergie renouvelable (éolien / solaire)', type: 'PROCESSUS', description: 'Pilotage des parcs éoliens et photovoltaïques et injection sur le réseau électrique', responsable: 'Direction de l’exploitation ENR', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      // Pharma / chimie (issue #113) — sousProfession 'pharma'
+      { nom: 'Fabrication pharmaceutique (BPF / dossier de lot)', type: 'PROCESSUS', description: 'Production sous bonnes pratiques de fabrication ; enregistrement électronique des dossiers de lot (intégrité GxP / 21 CFR Part 11)', responsable: 'Direction industrielle / assurance qualité', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'pharma' },
+      { nom: 'Données d’essais cliniques', type: 'INFORMATION', description: 'Données des essais cliniques et des patients (confidentialité, exigences FDA / EMA)', responsable: 'Direction des affaires réglementaires / R&D', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'pharma' },
+      { nom: 'Formules, brevets et propriété intellectuelle', type: 'INFORMATION', description: 'Formulations, procédés de synthèse et brevets — cibles d’espionnage industriel', responsable: 'Direction R&D / propriété industrielle', disponibilite: 2, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'pharma' },
     ],
     biensSupports: [
       { nom: 'Automates programmables (PLC)', type: 'MATERIEL', description: 'Contrôleurs pilotant les équipements de production' },
@@ -160,6 +177,10 @@ const INDUSTRIE: SectorFamily = {
       // Énergies renouvelables (issue #95)
       { nom: 'Télésupervision des parcs ENR (SCADA distribué)', type: 'LOGICIEL', description: 'Supervision à distance des éoliennes et onduleurs photovoltaïques répartis sur le territoire' },
       { nom: 'Système de stockage par batteries (BESS)', type: 'MATERIEL', description: 'Batteries de stockage et leur système de gestion (BMS / EMS)' },
+      // Pharma / chimie (issue #113)
+      { nom: 'LIMS (système de gestion de laboratoire)', type: 'LOGICIEL', description: 'Gestion des analyses, échantillons et résultats de contrôle qualité', sousProfession: 'pharma' },
+      { nom: 'MES / SCADA de production GMP', type: 'LOGICIEL', description: 'Exécution et supervision de la production sous bonnes pratiques de fabrication', sousProfession: 'pharma' },
+      { nom: 'Supervision de la chaîne du froid (GTB / BMS)', type: 'MATERIEL', description: 'Surveillance des températures des entrepôts et unités réfrigérées', sousProfession: 'pharma' },
     ],
     evenementsRedoutes: [
       { description: 'Arrêt ou sabotage de la production industrielle', impacts: ['Perte de production', 'Atteinte à la sécurité des personnes', 'Dommages matériels'], graviteDefaut: 4 },
@@ -167,15 +188,23 @@ const INDUSTRIE: SectorFamily = {
       { description: 'Compromission via un accès de télémaintenance', impacts: ['Prise de contrôle des installations', 'Propagation IT → OT'], graviteDefaut: 3 },
       // Énergies renouvelables (issue #95)
       { description: 'Déconnexion ou pilotage malveillant d’un parc ENR', impacts: ['Perte de production injectée', 'Déstabilisation du réseau électrique', 'Pertes financières'], graviteDefaut: 4 },
+      // Pharma / chimie (issue #113)
+      { description: 'Falsification d’un dossier de lot (intégrité GxP)', impacts: ['Libération d’un lot non conforme', 'Rappel de produits / sanction FDA-EMA', 'Risque pour les patients'], graviteDefaut: 4, sousProfession: 'pharma' },
+      { description: 'Fuite de données d’essais cliniques ou de brevets', impacts: ['Perte d’avantage concurrentiel', 'Atteinte à la confidentialité des patients', 'Sanction RGPD'], graviteDefaut: 4, sousProfession: 'pharma' },
     ],
     sourcesRisque: [
       { nom: 'Acteur étatique ciblant les infrastructures (type Sandworm)', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à perturber ou saboter des systèmes industriels critiques', motivation: 'Déstabilisation / sabotage', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
+      // Pharma / chimie (issue #113)
+      { nom: 'Concurrent / espion industriel (contrefaçon, brevets)', categorie: 'CONCURRENT', description: 'Acteur cherchant à dérober formules, procédés et données cliniques', motivation: 'Espionnage industriel', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 3, ressourcesScoreDefaut: 3, activiteScoreDefaut: 2, sousProfession: 'pharma' },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Sabotage de la production via le réseau OT (D)', description: 'Un attaquant atteint les automates et arrête les installations', vraisemblanceDefaut: 2, graviteDefaut: 4 },
       { critere: 'I', nom: 'Altération des consignes de procédé (I)', description: 'Modification malveillante des paramètres SCADA provoquant un incident', vraisemblanceDefaut: 2, graviteDefaut: 4 },
       // Énergies renouvelables (issue #95)
       { critere: 'D', nom: 'Prise de contrôle d’un parc ENR via le SCADA distribué (D)', description: 'Un attaquant compromet la télésupervision pour déconnecter ou dérégler les éoliennes / onduleurs PV', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+      // Pharma / chimie (issue #113)
+      { critere: 'D', nom: 'Rançongiciel bloquant la libération des lots (D)', description: 'Un rançongiciel chiffre le MES / LIMS et interrompt le contrôle qualité et la libération des lots', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'pharma' },
+      { critere: 'C', nom: 'Exfiltration de données cliniques et de brevets (C)', description: 'Un attaquant exfiltre les données d’essais cliniques et la propriété intellectuelle', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'pharma' },
     ],
   },
 }
@@ -624,13 +653,25 @@ const ASSOCIATION: SectorFamily = {
     evenementsRedoutes: [
       { description: 'Fuite de données des bénéficiaires', impacts: ['Atteinte à la vie privée de personnes vulnérables', 'Sanction CNIL (RGPD)', 'Perte de confiance des donateurs'], graviteDefaut: 4 },
       { description: 'Détournement des dons / fraude', impacts: ['Perte financière', 'Atteinte à la réputation et à la confiance'], graviteDefaut: 3 },
+      // Fraude au virement (issue #114)
+      { description: 'Détournement d’une subvention ou d’un paiement fournisseur', impacts: ['Perte financière (fonds institutionnels)', 'Mise en cause des dirigeants', 'Rupture de financement du bailleur'], graviteDefaut: 4 },
     ],
     sourcesRisque: [
       { nom: 'Cybercriminel opportuniste', categorie: 'CYBERCRIMINEL', description: 'Attaquant exploitant les faibles moyens de sécurité des associations', motivation: 'Lucratif', ressources: 'Faibles', pertinenceDefaut: 3, motivationScoreDefaut: 3, ressourcesScoreDefaut: 1, activiteScoreDefaut: 3 },
+      // Fraude au virement (issue #114)
+      { nom: 'Escroc au faux ordre de virement (FOVI)', categorie: 'CYBERCRIMINEL', description: 'Fraudeur usurpant l’identité d’un dirigeant ou d’un fournisseur pour détourner un virement', motivation: 'Lucratif', ressources: 'Moyennes', pertinenceDefaut: 4, motivationScoreDefaut: 4, ressourcesScoreDefaut: 2, activiteScoreDefaut: 4 },
     ],
     scenariosStrategiques: [
       { critere: 'C', nom: 'Fuite de données des bénéficiaires (C)', description: 'Un attaquant exfiltre les données personnelles, parfois sensibles, des bénéficiaires', vraisemblanceDefaut: 3, graviteDefaut: 4 },
       { critere: 'I', nom: 'Détournement de la collecte de dons (I)', description: 'Compromission de la plateforme de dons pour détourner les paiements', vraisemblanceDefaut: 2, graviteDefaut: 3 },
+      // Fraude au virement institutionnel (issue #114)
+      { critere: 'I', nom: 'Fraude au virement institutionnel (FOVI/BEC) (I)', description: 'Un escroc usurpe l’identité d’un dirigeant ou d’un fournisseur pour détourner un virement de subvention ou un paiement', vraisemblanceDefaut: 3, graviteDefaut: 4 },
+    ],
+    // Parties prenantes des grandes ONG (issue #114)
+    partiesPrenantes: [
+      { nom: 'Bailleurs institutionnels (UE, AFD, agences ONU)', type: 'CLIENT', dependance: 4, penetration: 2, maturite: 3, confiance: 3 },
+      { nom: 'Commissaire aux comptes', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 3, confiance: 4 },
+      { nom: 'CNIL', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 4, confiance: 4 },
     ],
   },
 }
@@ -656,6 +697,14 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   // Immobilier ≠ construction/BTP (issue #100)
   if (v.includes('btp') || v.includes('construction')) return 'btp'
   if (v.includes('agence') || v.includes('immobilier-agence')) return 'agence'
+  // Pharma / chimie industriel (issue #113) — cible `industrie-pharma-chimie`,
+  // PAS `sante-pharma` (officine) qui n'a pas de pack dédié.
+  if (v.includes('pharma-chimie') || v.includes('industrie-pharma') || v.includes('industrie-chimie')) return 'pharma'
+  // Aide à domicile / SAAD-SAP (issue #115)
+  if (v.includes('saad') || v.includes('domicile')) return 'saad'
+  // Établissements hospitaliers (issue #115) — voient les actifs hospitaliers
+  // (DPI/SIH/PACS), pas les actifs d'aide à domicile.
+  if (v.includes('hopital') || v.includes('hôpital') || v.includes('clinique') || v.includes('ehpad')) return 'hopital'
   return undefined
 }
 

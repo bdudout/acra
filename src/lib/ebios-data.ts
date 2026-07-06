@@ -52,6 +52,7 @@ export const SOUS_SECTEURS = [
   { id: 'sante-editeur', famille: 'sante', label: 'Éditeur de logiciel de santé (SIH)' },
   { id: 'sante-pharma', famille: 'sante', label: 'Pharmacie / officine' },
   { id: 'sante-veterinaire', famille: 'sante', label: 'Clinique vétérinaire / santé animale' },
+  { id: 'sante-saad', famille: 'sante', label: 'Aide à domicile (SAAD / SAP)' },
   // Banque / Finance
   { id: 'banque-detail', famille: 'banque', label: 'Banque de détail' },
   { id: 'banque-assurance', famille: 'banque', label: 'Assurance / mutuelle' },

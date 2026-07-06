@@ -1357,6 +1357,7 @@ const dict: Record<string, string> = {
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.nom": "Phishing selectivo asistido por IA / deepfake (I)",
   "SCENARIOS_STRATEGIQUES_EXEMPLES.12.description": "Un atacante genera correos muy convincentes y un deepfake de voz o vídeo para engañar a un empleado y lograr una transferencia o accesos.",
   "SOUS_SECTEURS.sante-veterinaire.label": "Clínica veterinaria / salud animal",
+  "SOUS_SECTEURS.sante-saad.label": "Servicios de ayuda a domicilio (SAAD / SAP)",
   "SOUS_SECTEURS.transport-logistique.label": "Logística / transporte de mercancías por carretera",
   "SOUS_SECTEURS.transport-ferroviaire.label": "Ferroviario",
   "SOUS_SECTEURS.transport-aerien.label": "Aéreo / aeroportuario",
