@@ -89,7 +89,7 @@ Vérification de l'alignement des concepts et de la terminologie du guide v1.5.
 | EXI_M1_13 / 14 | 🟢 | Gravité par couple VM/ER + justifications (champ description) |
 | EXI_M1_15 | 🟡 | ER **non lié à une valeur métier** (risque non intentionnel) non explicitement supporté |
 | EXI_M1_16 | 🟡 | Export ER via PDF global |
-| EXI_M1_17→23 | 🟢 | Socle : référentiels + sélection d'exigences + écarts/dérogations + export. Réserve : **indicateur d'état vert/orange/rouge** à formaliser (EXI_M1_20) |
+| EXI_M1_17→23 | 🟢 | Socle : référentiels + sélection d'exigences + écarts/dérogations + export. **Indicateur d'état vert/orange/rouge livré (G-07, EXI_M1_20)** : pastille + sélecteur 3 états par référentiel, reflété dans l'export PDF |
 
 ### 3.3 Atelier 2 — Sources de risque (EXI_M2_01→10)
 
@@ -178,7 +178,7 @@ Applicables uniquement pour une distribution SaaS labellisée (hébergement SecN
 | G-04 | **Opérateurs ET/OU** dans les modes opératoires (Atelier 4) | EXI_M4_06 | Moyen | 🟡 Moyenne |
 | G-05 | **Trois méthodes de vraisemblance** + agrégation des actions élémentaires | EXI_M4_07/09-14 | Élevé | 🟡 Moyenne |
 | G-06 | **Catégorisation EBIOS des mesures** (gouvernance/protection/défense/résilience) + uniformiser « plan de traitement du risque » | EXI_M5_06 / v1.5 | Faible | 🟡 Moyenne |
-| G-07 | **Indicateur d'état du socle** vert/orange/rouge (appliqué / avec restrictions / non appliqué) | EXI_M1_20 | Faible | 🟢 Basse |
+| ~~G-07~~ | ~~Indicateur d'état du socle vert/orange/rouge~~ — **✅ FAIT (commit cb8fdee)** | EXI_M1_20 | Faible | ✅ |
 | G-08 | **Export de livrables par atelier** (au-delà du PDF global) | §3.1 | Moyen | 🟢 Basse |
 | G-09 | **Cadre de l'étude** complet : participants (RACI), contraintes, hypothèses, planning | EXI_M1_01 | Faible | 🟢 Basse |
 | G-10 | **Événement redouté non lié à une valeur métier** (risque non intentionnel) | EXI_M1_15 | Faible | 🟢 Basse |
