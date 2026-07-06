@@ -45,6 +45,7 @@ import { etatSocleFromEntry } from '@/lib/socle-etat'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { formatVersion } from '@/lib/version-analyse'
 import { normalizeOperateur } from '@/lib/operateur-ae'
+import { normalizeMethode } from '@/lib/vraisemblance-methode'
 import { hasCadrageContexte, isNonEmptyText } from '@/lib/pdf-guards'
 import { getPdfStrings, type PdfStrings } from '@/lib/pdf-i18n'
 import {
@@ -1066,6 +1067,9 @@ function Atelier4Page({ analyse, date, tp }: { analyse: any; date: string; tp: P
         <Text style={s.italic}>{tp.a4.empty}</Text>
       ) : (
         <View>
+          <Text style={{ fontSize: 8, color: C.gray500, marginBottom: 4 }}>
+            {tp.a4.methodeLabel} : {tp.a4.methodes[normalizeMethode(analyse.methodeVraisemblance)]}
+          </Text>
           <SectionBar title={`${scenarios.length === 1 ? tp.a4.titleSing : tp.a4.titlePlur} (${scenarios.length})`} color={C.sky} />
           <DataTable
             color={C.sky}

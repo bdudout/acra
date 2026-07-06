@@ -184,6 +184,8 @@ model Analyse {
   // Version x.y de l'analyse (label EBIOS RM §3.4) — cf. lib/version-analyse.ts
   versionMajeure Int @default(1) // « x » — incrémenté lors d'une révision stratégique
   versionMineure Int @default(0) // « y » — incrémenté lors d'une révision opérationnelle
+  // Méthode d'évaluation de la vraisemblance (label §EXI_M4_07) — cf. lib/vraisemblance-methode.ts
+  methodeVraisemblance String @default("EXPRESSE") // EXPRESSE | STANDARD | AVANCEE
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?

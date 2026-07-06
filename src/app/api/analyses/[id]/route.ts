@@ -8,6 +8,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
+import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -82,6 +83,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // Mention de protection (label EBIOS RM §3.2) — normalisée vers un niveau connu.
   if ('mentionProtection' in body) {
     data.mentionProtection = normalizeMentionProtection(body.mentionProtection)
+  }
+  // Méthode d'évaluation de la vraisemblance (label §EXI_M4_07).
+  if ('methodeVraisemblance' in body) {
+    data.methodeVraisemblance = normalizeMethode(body.methodeVraisemblance)
   }
   // Cohérence secteur ↔ sous-secteur (issue #25) : on retient le sous-secteur
   // seulement s'il appartient bien au secteur effectif (nouveau ou existant).

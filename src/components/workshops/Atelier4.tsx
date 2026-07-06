@@ -33,6 +33,7 @@ import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { OPERATEURS_AE, normalizeOperateur } from '@/lib/operateur-ae'
+import { METHODES_VRAISEMBLANCE, normalizeMethode, aggregateVraisemblance, type MethodeVraisemblance } from '@/lib/vraisemblance-methode'
 
 interface Props {
   analyseId: string
@@ -77,6 +78,25 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
     })
   })
   const [expanded, setExpanded] = useState<string | null>(null)
+  // Méthode d'évaluation de la vraisemblance (label EXI_M4_07) — s'applique à tous les scénarios.
+  const [methode, setMethode] = useState<MethodeVraisemblance>(() => normalizeMethode(analyse?.methodeVraisemblance))
+
+  // Recalcule la vraisemblance d'un scénario depuis la cotation des AE (standard/avancée).
+  function withComputedVrais(s: any, m: MethodeVraisemblance) {
+    const v = aggregateVraisemblance(s.actionsElementaires || [], m)
+    return v == null ? s : { ...s, vraisemblance: v }
+  }
+
+  // Change la méthode : persiste sur l'analyse et recote tous les scénarios.
+  function changeMethode(m: MethodeVraisemblance) {
+    setMethode(m)
+    setScenarios(prev => prev.map(s => withComputedVrais(s, m)))
+    fetch(`/api/analyses/${analyseId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ methodeVraisemblance: m }),
+    }).catch(() => {})
+  }
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,7 +165,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
   function addAction(scenarioId: string, exemple?: any) {
     setScenarios(prev => prev.map(s => {
       if (s.id !== scenarioId) return s
-      return {
+      const updated = {
         ...s,
         actionsElementaires: [
           ...(s.actionsElementaires || []),
@@ -157,28 +177,36 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
             bienSupport: '',
             vulnerabilite: exemple?.vulnerabiliteDefaut || '',
             operateur: 'ET', // lien logique avec l'étape précédente (EXI_M4_06)
+            probabiliteSucces: 2,   // cotation méthode standard/avancée (EXI_M4_10/11)
+            difficulteTechnique: 2, // cotation méthode avancée (EXI_M4_11)
           },
         ],
       }
+      return withComputedVrais(updated, methode)
     }))
   }
 
   function updateAction(scenarioId: string, actionId: string, field: string, value: any) {
     setScenarios(prev => prev.map(s => {
       if (s.id !== scenarioId) return s
-      return {
+      const updated = {
         ...s,
         actionsElementaires: s.actionsElementaires.map((a: any) =>
           a.id === actionId ? { ...a, [field]: value } : a
         ),
       }
+      // La cotation des AE recalcule la vraisemblance (méthodes standard/avancée).
+      return (field === 'probabiliteSucces' || field === 'difficulteTechnique')
+        ? withComputedVrais(updated, methode)
+        : updated
     }))
   }
 
   function removeAction(scenarioId: string, actionId: string) {
     setScenarios(prev => prev.map(s => {
       if (s.id !== scenarioId) return s
-      return { ...s, actionsElementaires: s.actionsElementaires.filter((a: any) => a.id !== actionId) }
+      const updated = { ...s, actionsElementaires: s.actionsElementaires.filter((a: any) => a.id !== actionId) }
+      return withComputedVrais(updated, methode)
     }))
   }
 
@@ -249,6 +277,18 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800">{t.workshop.a4.scenListTitle} ({scenarios.length})</h3>
           <button onClick={() => addScenario()} className="btn-primary text-sm py-1.5">{t.workshop.a4.scenAddBtn}</button>
+        </div>
+
+        {/* Méthode d'évaluation de la vraisemblance (EXI_M4_07) — s'applique à tous les scénarios */}
+        <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
+          <label className="label" htmlFor="methode-vrais">{t.workshop.a4.methodeLabel}</label>
+          <select id="methode-vrais" value={methode} onChange={e => changeMethode(normalizeMethode(e.target.value))}
+            className="input text-sm max-w-md">
+            {METHODES_VRAISEMBLANCE.map(m => (
+              <option key={m} value={m}>{t.workshop.a4.methodes[m]}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">{t.workshop.a4.methodeHints[methode]}</p>
         </div>
 
         {scenarios.length === 0 && (
@@ -414,6 +454,23 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                                       aria-label={t.workshop.a4.aeVulnPh}
                                       className="input text-sm" placeholder={t.workshop.a4.aeVulnPh} />
                                   )}
+                                  {/* Cotation par action (méthodes standard/avancée) — EXI_M4_10/11 */}
+                                  {methode !== 'EXPRESSE' && (
+                                    <select value={a.probabiliteSucces ?? 2}
+                                      aria-label={t.workshop.a4.probaLabel}
+                                      onChange={e => updateAction(s.id, a.id, 'probabiliteSucces', parseInt(e.target.value))}
+                                      className="input text-xs">
+                                      {[1, 2, 3, 4].map(n => <option key={n} value={n}>{t.workshop.a4.probaLabel} {n}/4</option>)}
+                                    </select>
+                                  )}
+                                  {methode === 'AVANCEE' && (
+                                    <select value={a.difficulteTechnique ?? 2}
+                                      aria-label={t.workshop.a4.difficulteLabel}
+                                      onChange={e => updateAction(s.id, a.id, 'difficulteTechnique', parseInt(e.target.value))}
+                                      className="input text-xs">
+                                      {[1, 2, 3, 4].map(n => <option key={n} value={n}>{t.workshop.a4.difficulteLabel} {n}/4</option>)}
+                                    </select>
+                                  )}
                                 </div>
                                 <button aria-label="Supprimer" onClick={() => removeAction(s.id, a.id)}
                                   className="text-gray-500 hover:text-red-500 mt-2"><span aria-hidden="true">✕</span></button>
@@ -431,7 +488,12 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                   {/* Évaluation vraisemblance + gravité */}
                   <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200">
                     <div>
-                      <label className="label">{t.workshop.a4.vraisLabel} V{s.vraisemblance} — {NIVEAUX_VRAISEMBLANCE[s.vraisemblance - 1]?.label}</label>
+                      <label className="label">
+                        {t.workshop.a4.vraisLabel} V{s.vraisemblance} — {NIVEAUX_VRAISEMBLANCE[s.vraisemblance - 1]?.label}
+                        {methode !== 'EXPRESSE' && (s.actionsElementaires?.length ?? 0) > 0 && (
+                          <span className="ml-2 text-xs font-normal text-indigo-600">{t.workshop.a4.vraisComputed}</span>
+                        )}
+                      </label>
                       <input type="range" min={1} max={4} value={s.vraisemblance}
                         onChange={e => updateScenario(s.id, 'vraisemblance', parseInt(e.target.value))}
                         className="w-full accent-ebios-600" />
