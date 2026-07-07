@@ -75,6 +75,9 @@ jobs:
       - name: TypeScript — vérification stricte
         run: npx tsc --noEmit
 
+      - name: i18n ebios-data — parité fr.ts / catalogue (issue #116)
+        run: npm run i18n:check
+
   # ── Tests unitaires ────────────────────────────────────────────────────────
   unit-tests:
     name: Tests unitaires (Vitest)

@@ -16,7 +16,8 @@
     "test:coverage": "vitest run --config vitest.config.mts --coverage",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
-    "postbuild": "node scripts/clean-standalone-env.mjs"
+    "postbuild": "node scripts/clean-standalone-env.mjs",
+    "i18n:check": "node scripts/extract-ebios-data-i18n.mjs --check"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

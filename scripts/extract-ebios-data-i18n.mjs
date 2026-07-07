@@ -73,10 +73,31 @@ const header = (lang) => `// ⚙️ AUTO-GÉNÉRÉ par scripts/extract-ebios-dat
     : `// Traduction ${lang.toUpperCase()} — remplacer chaque valeur FR par la traduction.\n` +
       `// Une clé absente retombe automatiquement sur le FR.\n`)
 
-function emit(lang, valueFor) {
+// Mode --check : ne rien écrire, échouer si fr.ts (source auto-générée) a dérivé
+// du catalogue (issue #116). À brancher en CI pour empêcher la dérive future.
+const CHECK = process.argv.includes('--check')
+
+function renderBody(lang, valueFor) {
   const lines = keys.map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(valueFor(k))},`)
-  const body = `${header(lang)}\nconst dict: Record<string, string> = {\n${lines.join('\n')}\n}\nexport default dict\n`
-  fs.writeFileSync(path.join(dir, `${lang}.ts`), body)
+  return `${header(lang)}\nconst dict: Record<string, string> = {\n${lines.join('\n')}\n}\nexport default dict\n`
+}
+
+function emit(lang, valueFor) {
+  fs.writeFileSync(path.join(dir, `${lang}.ts`), renderBody(lang, valueFor))
+}
+
+if (CHECK) {
+  const frPath = path.join(dir, 'fr.ts')
+  const expected = renderBody('fr', (k) => fr[k])
+  const actual = fs.existsSync(frPath) ? fs.readFileSync(frPath, 'utf-8') : ''
+  fs.rmSync(tmp, { force: true })
+  if (expected !== actual) {
+    console.error('❌ src/lib/i18n/ebios-data/fr.ts est désynchronisé du catalogue ebios-data.ts (issue #116).')
+    console.error('   Régénérez-le : node scripts/extract-ebios-data-i18n.mjs')
+    process.exit(1)
+  }
+  console.log(`✅ fr.ts synchronisé avec le catalogue (${keys.length} clés).`)
+  process.exit(0)
 }
 
 emit('fr', (k) => fr[k])

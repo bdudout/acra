@@ -1368,5 +1368,13 @@ const dict: Record<string, string> = {
   "PCI_DSS_CONTROLES.PCI-6.4.3.description": "All payment-page scripts are inventoried, authorised and their integrity is monitored (mandatory since March 2025).",
   "PCI_DSS_CONTROLES.PCI-11.6.1.nom": "Payment-page tamper detection (anti-skimming)",
   "PCI_DSS_CONTROLES.PCI-11.6.1.description": "A mechanism detects unauthorised changes to HTTP headers and payment-page content (anti e-skimming/Magecart).",
+  "PARTIES_PRENANTES_EXEMPLES.10.nom": "Wholesalers / Distributors",
+  "PARTIES_PRENANTES_EXEMPLES.11.nom": "Business partners",
+  "PARTIES_PRENANTES_EXEMPLES.12.nom": "Subsidiaries / Group",
+  "PARTIES_PRENANTES_EXEMPLES.13.nom": "Universities / Laboratories",
+  "PARTIES_PRENANTES_EXEMPLES.14.nom": "Sector regulator (ANSSI, etc.)",
+  "PARTIES_PRENANTES_EXEMPLES.15.nom": "Data protection authority (CNIL)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.critere": "C",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.critere": "I",
 }
 export default dict

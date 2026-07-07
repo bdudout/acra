@@ -1368,5 +1368,13 @@ const dict: Record<string, string> = {
   "PCI_DSS_CONTROLES.PCI-6.4.3.description": "Alle Skripte der Zahlungsseiten werden inventarisiert, autorisiert und ihre Integrität wird überwacht (seit März 2025 verpflichtend).",
   "PCI_DSS_CONTROLES.PCI-11.6.1.nom": "Manipulationserkennung auf Zahlungsseiten (Anti-Skimming)",
   "PCI_DSS_CONTROLES.PCI-11.6.1.description": "Ein Mechanismus erkennt unbefugte Änderungen an HTTP-Headern und Inhalten der Zahlungsseiten (Anti-E-Skimming/Magecart).",
+  "PARTIES_PRENANTES_EXEMPLES.10.nom": "Gro\u00dfh\u00e4ndler / Distributoren",
+  "PARTIES_PRENANTES_EXEMPLES.11.nom": "Gesch\u00e4ftspartner",
+  "PARTIES_PRENANTES_EXEMPLES.12.nom": "Tochtergesellschaften / Konzern",
+  "PARTIES_PRENANTES_EXEMPLES.13.nom": "Universit\u00e4ten / Labore",
+  "PARTIES_PRENANTES_EXEMPLES.14.nom": "Sektoraufsicht (ANSSI usw.)",
+  "PARTIES_PRENANTES_EXEMPLES.15.nom": "Datenschutzbeh\u00f6rde (CNIL)",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.11.critere": "C",
+  "SCENARIOS_STRATEGIQUES_EXEMPLES.12.critere": "I",
 }
 export default dict
