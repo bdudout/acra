@@ -7,6 +7,7 @@ import {
   daysUntilPurge,
   shouldWarn,
   decideInstanceMode,
+  analysisCapReached,
 } from '../../../lib/demo'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -114,5 +115,17 @@ describe('decideInstanceMode — garde-fou prod → démo', () => {
   it('aucun marqueur + env non-démo → stampe PROD', () => {
     expect(decideInstanceMode({ envDemo: false, marker: null, hasRealData: false }))
       .toEqual({ mode: 'PROD', persist: true, refusedDemo: false })
+  })
+})
+
+describe('analysisCapReached — plafond d\'analyses par org démo', () => {
+  it('faux sous le plafond', () => {
+    expect(analysisCapReached(DEMO_DEFAULTS.maxAnalysesPerOrg - 1, DEMO_DEFAULTS)).toBe(false)
+  })
+  it('vrai au plafond (le suivant est refusé)', () => {
+    expect(analysisCapReached(DEMO_DEFAULTS.maxAnalysesPerOrg, DEMO_DEFAULTS)).toBe(true)
+  })
+  it('vrai au-delà du plafond', () => {
+    expect(analysisCapReached(DEMO_DEFAULTS.maxAnalysesPerOrg + 5, DEMO_DEFAULTS)).toBe(true)
   })
 })

@@ -98,6 +98,14 @@ export function resolveDemoConfig(overrides?: Partial<Record<keyof DemoConfig, u
   }
 }
 
+/**
+ * Vrai si une organisation démo a atteint son plafond d'analyses (anti-abus sur le
+ * site public). Pur → testé unitairement. `count` = nombre d'analyses de l'org.
+ */
+export function analysisCapReached(count: number, cfg: DemoConfig = DEMO_DEFAULTS): boolean {
+  return count >= cfg.maxAnalysesPerOrg
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 interface OrgLifecycle {
