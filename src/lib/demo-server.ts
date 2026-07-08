@@ -7,7 +7,7 @@
  */
 import { prisma } from '@/lib/prisma'
 import { rootPath } from '@/lib/org-context'
-import { DEMO_DEFAULTS } from '@/lib/demo'
+import { DEMO_DEFAULTS, isDemoMode, isOrgExpired } from '@/lib/demo'
 
 function slugify(s: string): string {
   const base = s
@@ -55,4 +55,54 @@ export async function createDemoOrgForUser(userId: string, displayName: string):
     data: { userId, organizationId: created.id, role: 'ADMIN', scope: 'SUBTREE' },
   })
   return created
+}
+
+/**
+ * Met à jour `lastActivityAt` d'une organisation (mode démo uniquement) — no-op
+ * hors démo pour ne rien changer au comportement de prod. Ne lève jamais.
+ */
+export async function touchOrgActivity(orgId: string | null | undefined): Promise<void> {
+  if (!orgId || orgId === 'global' || !isDemoMode()) return
+  await prisma.organization.updateMany({ where: { id: orgId }, data: { lastActivityAt: new Date() } }).catch(() => {})
+}
+
+/** Rafraîchit l'activité des organisations d'un utilisateur (à la connexion). */
+export async function touchOrgActivityForUser(userId: string): Promise<void> {
+  if (!isDemoMode()) return
+  const memberships = await prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true } })
+  const ids = memberships.map(m => m.organizationId).filter(id => id !== 'global')
+  if (ids.length) {
+    await prisma.organization.updateMany({ where: { id: { in: ids } }, data: { lastActivityAt: new Date() } }).catch(() => {})
+  }
+}
+
+/**
+ * Purge les organisations démo expirées (inactivité ou cap dur — cf. isOrgExpired).
+ * Ordre : analyses (cascade leurs enfants) → organisation (cascade memberships/
+ * config/conformités) → comptes de démo devenus orphelins. Ne touche jamais `global`.
+ */
+export async function purgeExpiredDemoOrgs(now: Date = new Date()): Promise<{ purged: number; orgIds: string[] }> {
+  const orgs = await prisma.organization.findMany({
+    where: { actif: true, id: { not: 'global' } },
+    select: { id: true, createdAt: true, lastActivityAt: true },
+  })
+  const expired = orgs.filter(o => isOrgExpired(o, DEMO_DEFAULTS, now))
+  const orgIds: string[] = []
+  for (const org of expired) {
+    const members = await prisma.orgMembership.findMany({ where: { organizationId: org.id }, select: { userId: true } })
+    const memberIds = members.map(m => m.userId)
+    await prisma.$transaction([
+      // Analyse.organizationId est optionnel SANS cascade → suppression explicite
+      // (leurs enfants cadrage/sources/scénarios/risques/mesures/révisions cascadent).
+      prisma.analyse.deleteMany({ where: { organizationId: org.id } }),
+      prisma.organization.delete({ where: { id: org.id } }),
+    ])
+    // Comptes de démo jetables : supprimer ceux qui n'ont plus aucune organisation.
+    for (const uid of memberIds) {
+      const remaining = await prisma.orgMembership.count({ where: { userId: uid } })
+      if (remaining === 0) await prisma.user.delete({ where: { id: uid } }).catch(() => {})
+    }
+    orgIds.push(org.id)
+  }
+  return { purged: orgIds.length, orgIds }
 }

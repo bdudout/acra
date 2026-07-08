@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/logger'
 import { checkLockout, recordFailure, recordSuccess, type LockoutPolicy } from '@/lib/login-lockout'
+import { touchOrgActivityForUser } from '@/lib/demo-server'
 import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
@@ -208,6 +209,8 @@ export const authOptions: NextAuthOptions = {
         }).catch(() => { /* best-effort */ })
 
         await auditLog('LOGIN_SUCCESS', { userId: user.id, userEmail: user.email, userRole: user.role })
+        // Mode démo : la connexion compte comme activité (repousse la purge). No-op hors démo.
+        await touchOrgActivityForUser(user.id).catch(() => { /* best-effort */ })
         return { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: mustChange }
       },
     }),

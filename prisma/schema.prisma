@@ -106,6 +106,8 @@ model Organization {
   actif     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Dernière activité utilisateur (connexion / modif d'analyse) — mode démo, purge par inactivité (lib/demo.ts)
+  lastActivityAt DateTime @default(now())
 
   membres   OrgMembership[]
   analyses  Analyse[]

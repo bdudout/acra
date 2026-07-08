@@ -11,6 +11,7 @@ import {
   cleanScenarioOperationnel,
 } from '@/lib/workshop-sanitize'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
+import { touchOrgActivity } from '@/lib/demo-server'
 
 /**
  * PUT /api/analyses/[id]/workshop/[num]
@@ -223,6 +224,9 @@ export async function PUT(
       default:
         return NextResponse.json({ error: 'Atelier invalide' }, { status: 400 })
     }
+
+    // Mode démo : sauvegarder une analyse compte comme activité de l'org (repousse la purge). No-op hors démo.
+    await touchOrgActivity(analyse.organizationId).catch(() => { /* best-effort */ })
 
     return NextResponse.json({ ok: true })
   } catch (err) {
