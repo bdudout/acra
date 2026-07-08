@@ -577,6 +577,8 @@ export const en: Translations = {
     historyTitle: 'Revision history',
   },
   demo: {
+    expiresIn: 'Deleted in {n} d',
+    expiresInTitle: 'Your test data will be deleted after this period of inactivity.',
     badge: 'Demo environment',
     notice: 'Temporary test space — do not enter real confidential data. Your data will be deleted after a period of inactivity.',
     exportCta: 'Export my data',

@@ -591,6 +591,8 @@ export const fr = {
     historyTitle: 'Historique des révisions',
   },
   demo: {
+    expiresIn: 'Suppression dans {n} j',
+    expiresInTitle: 'Vos données de test seront supprimées après cette période d\'inactivité.',
     badge: 'Environnement de démonstration',
     notice: 'Espace de test temporaire — ne saisissez pas de données réelles confidentielles. Vos données seront supprimées après une période d\'inactivité.',
     exportCta: 'Exporter mes données',

@@ -577,6 +577,8 @@ export const it: Translations = {
     historyTitle: 'Cronologia delle revisioni',
   },
   demo: {
+    expiresIn: 'Eliminazione tra {n} g',
+    expiresInTitle: 'I tuoi dati di prova saranno eliminati dopo questo periodo di inattività.',
     badge: 'Ambiente dimostrativo',
     notice: 'Spazio di prova temporaneo — non inserire dati reali riservati. I tuoi dati saranno eliminati dopo un periodo di inattività.',
     exportCta: 'Esporta i miei dati',
