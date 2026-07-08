@@ -330,6 +330,18 @@ export const fr = {
       errorMismatch:'Les mots de passe ne correspondent pas.',
       errorGeneric: 'Erreur lors de la création du compte.',
     },
+    verifyEmail: {
+      title:       'Vérifiez votre adresse e-mail',
+      description: 'Saisissez le code que nous venons d\'envoyer à',
+      codeLabel:   'Code de vérification',
+      submit:      'Valider',
+      submitting:  'Vérification…',
+      resend:      'Renvoyer le code',
+      resent:      'Un nouveau code a été envoyé.',
+      invalid:     'Code invalide ou expiré.',
+      tooMany:     'Trop de demandes. Réessayez plus tard.',
+      backToSignin:'Retour à la connexion',
+    },
   },
 
   // ─── Landing ──────────────────────────────────────────────────────────────

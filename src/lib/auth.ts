@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/logger'
 import { checkLockout, recordFailure, recordSuccess, type LockoutPolicy } from '@/lib/login-lockout'
-import { touchOrgActivityForUser } from '@/lib/demo-server'
+import { touchOrgActivityForUser, isDemoInstance } from '@/lib/demo-server'
+import { requiresEmailVerification } from '@/lib/demo'
 import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
@@ -131,7 +132,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email.toLowerCase().trim() },
           select: {
             id: true, email: true, name: true, role: true, phone: true,
-            passwordHash: true, isActive: true,
+            passwordHash: true, isActive: true, emailVerified: true,
             passwordChangedAt: true, mustChangePassword: true,
           },
         })
@@ -163,6 +164,15 @@ export const authOptions: NextAuthOptions = {
 
         // Connexion réussie : on réinitialise le compteur d'échecs
         if (lockoutEnabled) recordSuccess(credentials.email)
+
+        // ── Vérification d'e-mail obligatoire en mode démo ────────────────────────
+        // Le mot de passe est correct, mais tant que l'adresse n'est pas validée
+        // (OTP reçu à l'inscription), la connexion est refusée. Gate isDemoInstance()
+        // → aucun impact en production. L'UI redirige vers la page de vérification.
+        if (requiresEmailVerification(await isDemoInstance(), user.emailVerified)) {
+          await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'email_not_verified' } })
+          throw new Error('EMAIL_NOT_VERIFIED')
+        }
 
         // ── Authentification multi-facteurs (si exigée par la politique) ──────────
         // Pattern next-auth « credentials 2 étapes » : 1re soumission (sans code) →

@@ -322,6 +322,18 @@ export const it: Translations = {
       errorMismatch:'Le password non corrispondono.',
       errorGeneric: 'Errore durante la creazione dell\'account.',
     },
+    verifyEmail: {
+      title:       'Verifica il tuo indirizzo e-mail',
+      description: 'Inserisci il codice che abbiamo appena inviato a',
+      codeLabel:   'Codice di verifica',
+      submit:      'Convalida',
+      submitting:  'Verifica…',
+      resend:      'Invia di nuovo il codice',
+      resent:      'È stato inviato un nuovo codice.',
+      invalid:     'Codice non valido o scaduto.',
+      tooMany:     'Troppe richieste. Riprova più tardi.',
+      backToSignin:'Torna all\'accesso',
+    },
   },
 
   landing: {

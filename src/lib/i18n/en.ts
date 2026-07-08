@@ -322,6 +322,18 @@ export const en: Translations = {
       errorMismatch:'Passwords do not match.',
       errorGeneric: 'Error creating account.',
     },
+    verifyEmail: {
+      title:       'Verify your email address',
+      description: 'Enter the code we just sent to',
+      codeLabel:   'Verification code',
+      submit:      'Verify',
+      submitting:  'Verifying…',
+      resend:      'Resend code',
+      resent:      'A new code has been sent.',
+      invalid:     'Invalid or expired code.',
+      tooMany:     'Too many requests. Please try again later.',
+      backToSignin:'Back to sign in',
+    },
   },
 
   landing: {

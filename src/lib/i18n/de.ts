@@ -322,6 +322,18 @@ export const de: Translations = {
       errorMismatch:'Die Passwörter stimmen nicht überein.',
       errorGeneric: 'Fehler beim Erstellen des Kontos.',
     },
+    verifyEmail: {
+      title:       'Bestätigen Sie Ihre E-Mail-Adresse',
+      description: 'Geben Sie den Code ein, den wir soeben gesendet haben an',
+      codeLabel:   'Bestätigungscode',
+      submit:      'Bestätigen',
+      submitting:  'Wird überprüft…',
+      resend:      'Code erneut senden',
+      resent:      'Ein neuer Code wurde gesendet.',
+      invalid:     'Ungültiger oder abgelaufener Code.',
+      tooMany:     'Zu viele Anfragen. Bitte später erneut versuchen.',
+      backToSignin:'Zurück zur Anmeldung',
+    },
   },
 
   landing: {

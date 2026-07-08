@@ -8,6 +8,7 @@ import {
   shouldWarn,
   decideInstanceMode,
   analysisCapReached,
+  requiresEmailVerification,
 } from '../../../lib/demo'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -127,5 +128,18 @@ describe('analysisCapReached — plafond d\'analyses par org démo', () => {
   })
   it('vrai au-delà du plafond', () => {
     expect(analysisCapReached(DEMO_DEFAULTS.maxAnalysesPerOrg + 5, DEMO_DEFAULTS)).toBe(true)
+  })
+})
+
+describe('requiresEmailVerification — blocage connexion démo tant que non vérifié', () => {
+  it('démo + e-mail non vérifié → bloque', () => {
+    expect(requiresEmailVerification(true, null)).toBe(true)
+    expect(requiresEmailVerification(true, undefined)).toBe(true)
+  })
+  it('démo + e-mail vérifié → autorise', () => {
+    expect(requiresEmailVerification(true, new Date())).toBe(false)
+  })
+  it('hors démo → jamais bloqué (même si non vérifié)', () => {
+    expect(requiresEmailVerification(false, null)).toBe(false)
   })
 })

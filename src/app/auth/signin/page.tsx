@@ -37,6 +37,11 @@ function SignInForm() {
       if (err.includes('MFA_INVALID'))     { setError(t.auth.signIn.mfaInvalid); return }
       if (err.includes('MFA_SEND_FAILED')) { setError(t.auth.signIn.mfaErrorSend); return }
       if (err.includes('MFA_NO_METHOD'))   { setError(t.auth.signIn.mfaNoMethod); return }
+      // Démo : adresse non vérifiée → rediriger vers la saisie du code de vérification.
+      if (err.includes('EMAIL_NOT_VERIFIED')) {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+        return
+      }
       const blocked = ['ACCOUNT_LOCKED', 'ACCOUNT_SUSPENDED', 'TOO_MANY_ATTEMPTS']
       setError(blocked.some(c => err.includes(c)) ? t.auth.signIn.errorBlocked : t.auth.signIn.error)
     } else {

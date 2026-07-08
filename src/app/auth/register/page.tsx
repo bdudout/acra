@@ -61,6 +61,12 @@ export default function RegisterPage() {
       return
     }
 
+    // Mode démo : l'adresse doit être vérifiée (OTP) avant toute connexion.
+    if (data.verificationRequired) {
+      router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`)
+      return
+    }
+
     await signIn('credentials', { email: form.email, password: form.password, redirect: false })
     router.push('/dashboard')
   }

@@ -106,6 +106,15 @@ export function analysisCapReached(count: number, cfg: DemoConfig = DEMO_DEFAULT
   return count >= cfg.maxAnalysesPerOrg
 }
 
+/**
+ * Vrai si la connexion doit être bloquée faute de vérification d'e-mail. En mode
+ * démo, chaque compte doit valider son adresse (OTP reçu à l'inscription) avant de
+ * pouvoir se connecter. Hors démo, aucune vérification n'est imposée ici. Pur.
+ */
+export function requiresEmailVerification(demo: boolean, emailVerified: Date | string | null | undefined): boolean {
+  return demo && !emailVerified
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 interface OrgLifecycle {

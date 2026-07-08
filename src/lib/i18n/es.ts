@@ -322,6 +322,18 @@ export const es: Translations = {
       errorMismatch:'Las contraseñas no coinciden.',
       errorGeneric: 'Error al crear la cuenta.',
     },
+    verifyEmail: {
+      title:       'Verifique su dirección de correo',
+      description: 'Introduzca el código que acabamos de enviar a',
+      codeLabel:   'Código de verificación',
+      submit:      'Validar',
+      submitting:  'Verificando…',
+      resend:      'Reenviar el código',
+      resent:      'Se ha enviado un nuevo código.',
+      invalid:     'Código no válido o caducado.',
+      tooMany:     'Demasiadas solicitudes. Inténtelo más tarde.',
+      backToSignin:'Volver al inicio de sesión',
+    },
   },
 
   landing: {

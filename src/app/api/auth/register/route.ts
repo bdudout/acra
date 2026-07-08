@@ -6,6 +6,7 @@ import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
 import { demoOrgCapReached, createDemoOrgForUser, isDemoInstance } from '@/lib/demo-server'
+import { createAndSendChallenge } from '@/lib/mfa-service'
 
 const schema = z.object({
   name:     z.string().min(2).max(100),
@@ -120,6 +121,17 @@ export async function POST(req: NextRequest) {
         userId: user.id, userEmail: user.email, ip: getClientIp(req),
         details: { demo: true, orgId: org.id, role: 'ADMIN' },
       })
+      // Vérification d'e-mail obligatoire (démo) : le compte reste emailVerified=null
+      // et la connexion est bloquée tant que l'OTP envoyé ici n'est pas validé.
+      // Anti mail-bombing : rate-limit supplémentaire par ADRESSE de destination.
+      const destRl = rateLimit(`emailverif:${user.email}`, 3, 15 * 60 * 1000)
+      if (destRl.allowed) {
+        const sent = await createAndSendChallenge({ userId: user.id, channel: 'EMAIL', destination: user.email })
+        if (sent.ok) {
+          await auditLog('EMAIL_VERIFICATION_SENT', { userId: user.id, userEmail: user.email, ip: getClientIp(req) })
+        }
+      }
+      return NextResponse.json({ user, verificationRequired: true }, { status: 201 })
     } else {
       // Multi-organisation : rattacher le nouvel utilisateur à l'organisation racine.
       // (upsert défensif de la racine — normalement créée par la migration.)
