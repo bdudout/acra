@@ -579,6 +579,8 @@ export const de: Translations = {
   demo: {
     expiresIn: 'Löschung in {n} T',
     expiresInTitle: 'Ihre Testdaten werden nach dieser Zeit der Inaktivität gelöscht.',
+    loadExample: 'Beispiel laden',
+    loadExampleHint: 'Eine vollständig ausgefüllte EBIOS-RM-Beispielanalyse in Ihrer Organisation erstellen.',
     badge: 'Demo-Umgebung',
     notice: 'Temporärer Testbereich — geben Sie keine echten vertraulichen Daten ein. Ihre Daten werden nach einer Zeit der Inaktivität gelöscht.',
     exportCta: 'Meine Daten exportieren',

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
+import { isDemoInstance } from '@/lib/demo-server'
 import AnalysesClient from '@/components/AnalysesClient'
 
 // Toujours des données fraîches (l'auth force déjà le rendu dynamique).
@@ -24,6 +25,7 @@ export default async function AnalysesPage() {
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
   const scope = await getAnalyseScope(userId, userRole)
+  const demo = await isDemoInstance()
 
   const analyses = await (prisma.analyse as any).findMany({
     where: analyseWhereClause(userId, scope.role, scope.scope),
@@ -44,7 +46,7 @@ export default async function AnalysesPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">…</div>}>
-        <AnalysesClient initialAnalyses={analyses} />
+        <AnalysesClient initialAnalyses={analyses} demo={demo} />
       </Suspense>
     </div>
   )

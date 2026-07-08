@@ -28,7 +28,7 @@ function urlParamToFilter(p: string | null): FilterValue {
  * Les données initiales sont chargées côté SERVEUR (issue #104) : premier rendu
  * instantané, sans FOUC réseau ; on rafraîchit ensuite localement après import/suppr.
  */
-export default function AnalysesClient({ initialAnalyses }: { initialAnalyses: any[] }) {
+export default function AnalysesClient({ initialAnalyses, demo = false }: { initialAnalyses: any[]; demo?: boolean }) {
   const { t, locale } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -40,6 +40,22 @@ export default function AnalysesClient({ initialAnalyses }: { initialAnalyses: a
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
+  const [loadingExample, setLoadingExample] = useState(false)
+
+  // Site de démo : charge un exemple complet dans l'organisation du testeur.
+  async function loadExample() {
+    setLoadingExample(true)
+    try {
+      const res = await fetch('/api/demo/load-example', { method: 'POST' })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Erreur')
+      if (result.analyseId) router.push(`/analyses/${result.analyseId}`)
+      else router.refresh()
+    } catch (err: any) {
+      alert(`Erreur : ${err.message}`)
+      setLoadingExample(false)
+    }
+  }
   // Sync filtre avec l'URL
   useEffect(() => {
     setFilter(urlParamToFilter(searchParams.get('filter')))
@@ -133,6 +149,16 @@ export default function AnalysesClient({ initialAnalyses }: { initialAnalyses: a
               {importing ? '⏳ Import…' : '📂 Importer'}
             </button>
             <ExpressAnalyseButton variant="button" />
+            {demo && (
+              <button
+                onClick={loadExample}
+                disabled={loadingExample}
+                className="btn-secondary flex items-center gap-2 text-sm"
+                title={t.demo.loadExampleHint}
+              >
+                {loadingExample ? '⏳ …' : `✨ ${t.demo.loadExample}`}
+              </button>
+            )}
             <Link href="/analyses/new" className="btn-primary flex items-center gap-2">
               {t.analyses.newBtn}
             </Link>
@@ -171,7 +197,14 @@ export default function AnalysesClient({ initialAnalyses }: { initialAnalyses: a
           <div className="card p-12 text-center">
             <div className="text-5xl mb-4">🔍</div>
             <p className="text-gray-500">{t.analyses.notFound}</p>
-            <Link href="/analyses/new" className="btn-primary inline-block mt-4">{t.analyses.createBtn}</Link>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Link href="/analyses/new" className="btn-primary inline-block">{t.analyses.createBtn}</Link>
+              {demo && (
+                <button onClick={loadExample} disabled={loadingExample} className="btn-secondary">
+                  {loadingExample ? '⏳ …' : `✨ ${t.demo.loadExample}`}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

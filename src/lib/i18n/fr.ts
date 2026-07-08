@@ -593,6 +593,8 @@ export const fr = {
   demo: {
     expiresIn: 'Suppression dans {n} j',
     expiresInTitle: 'Vos données de test seront supprimées après cette période d\'inactivité.',
+    loadExample: 'Charger un exemple',
+    loadExampleHint: 'Créer une analyse EBIOS RM de démonstration entièrement renseignée dans votre organisation.',
     badge: 'Environnement de démonstration',
     notice: 'Espace de test temporaire — ne saisissez pas de données réelles confidentielles. Vos données seront supprimées après une période d\'inactivité.',
     exportCta: 'Exporter mes données',
