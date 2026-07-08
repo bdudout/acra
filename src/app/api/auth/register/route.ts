@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
+import { isDemoMode } from '@/lib/demo'
+import { demoOrgCapReached, createDemoOrgForUser } from '@/lib/demo-server'
 
 const schema = z.object({
   name:     z.string().min(2).max(100),
@@ -85,42 +87,60 @@ export async function POST(req: NextRequest) {
     //   comptes, rôles, politiques). Combiné à F004 (inscription ouverte) → fort impact.
     // FIX: provisionner l'ADMIN initial hors-ligne (seed/CLI protégé, variable d'env),
     //   ne jamais attribuer ADMIN via un endpoint public.
-    // Le premier compte créé obtient automatiquement le rôle ADMIN
+    const demo = isDemoMode()
+
+    // Mode démo : plafond d'organisations actives (anti-abus, site public).
+    if (demo && await demoOrgCapReached()) {
+      return NextResponse.json({ error: 'DEMO_FULL' }, { status: 503 })
+    }
+
+    // Le premier compte créé obtient le rôle SUPER_ADMIN — SAUF en mode démo, où
+    // l'inscription publique n'accorde jamais de privilège d'instance (le
+    // super-admin de la démo est provisionné à part). Chaque inscrit démo est
+    // ADMIN de SA propre organisation (isolée).
     const userCount = await prisma.user.count()
     const isFirstUser = userCount === 0
+    const instanceRole = (!demo && isFirstUser) ? 'SUPER_ADMIN' : 'ANALYSTE'
 
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase().trim(),
-        // Le 1ᵉʳ compte est l'administrateur d'instance (gère les organisations).
         passwordHash,
-        role: isFirstUser ? 'SUPER_ADMIN' : 'ANALYSTE',
+        role: instanceRole,
       },
       select: { id: true, email: true, name: true, role: true },
     })
 
-    // Multi-organisation : rattacher le nouvel utilisateur à l'organisation racine.
-    // (upsert défensif de la racine — normalement créée par la migration.)
-    await prisma.organization.upsert({
-      where: { id: 'global' },
-      create: { id: 'global', nom: 'Organisation principale', slug: 'principale', path: '/global/' },
-      update: {},
-    })
-    await prisma.orgMembership.create({
-      data: {
-        userId: user.id,
-        organizationId: 'global',
-        role: isFirstUser ? 'ADMIN' : 'ANALYSTE',
-        scope: isFirstUser ? 'SUBTREE' : 'NODE',
-      },
-    })
+    if (demo) {
+      // Chaque testeur = sa propre organisation, dont il est ADMIN (SUBTREE).
+      const org = await createDemoOrgForUser(user.id, name)
+      await auditLog('REGISTER', {
+        userId: user.id, userEmail: user.email, ip: getClientIp(req),
+        details: { demo: true, orgId: org.id, role: 'ADMIN' },
+      })
+    } else {
+      // Multi-organisation : rattacher le nouvel utilisateur à l'organisation racine.
+      // (upsert défensif de la racine — normalement créée par la migration.)
+      await prisma.organization.upsert({
+        where: { id: 'global' },
+        create: { id: 'global', nom: 'Organisation principale', slug: 'principale', path: '/global/' },
+        update: {},
+      })
+      await prisma.orgMembership.create({
+        data: {
+          userId: user.id,
+          organizationId: 'global',
+          role: isFirstUser ? 'ADMIN' : 'ANALYSTE',
+          scope: isFirstUser ? 'SUBTREE' : 'NODE',
+        },
+      })
+      await auditLog('REGISTER', {
+        userId: user.id, userEmail: user.email, ip: getClientIp(req),
+        details: isFirstUser ? { role: 'ADMIN', reason: 'premier compte créé' } : undefined,
+      })
+    }
 
-    await auditLog('REGISTER', {
-      userId: user.id, userEmail: user.email,
-      ip: getClientIp(req),
-      details: isFirstUser ? { role: 'ADMIN', reason: 'premier compte créé' } : undefined,
-    })
     return NextResponse.json({ user }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {

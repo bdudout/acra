@@ -576,6 +576,12 @@ export const it: Translations = {
     empty: 'Nessuna revisione registrata.',
     historyTitle: 'Cronologia delle revisioni',
   },
+  demo: {
+    badge: 'Ambiente dimostrativo',
+    notice: 'Spazio di prova temporaneo — non inserire dati reali riservati. I tuoi dati saranno eliminati dopo un periodo di inattività.',
+    exportCta: 'Esporta i miei dati',
+    deployCta: 'Distribuire ACRA nel mio SI',
+  },
   mentionProtection: {
     label: 'Menzione di protezione',
     help: "Livello di protezione del documento di analisi. Compare in copertina e nelle esportazioni (requisito del marchio EBIOS RM §3.2).",

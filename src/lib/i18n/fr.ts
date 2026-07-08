@@ -590,6 +590,12 @@ export const fr = {
     empty: 'Aucune révision enregistrée.',
     historyTitle: 'Historique des révisions',
   },
+  demo: {
+    badge: 'Environnement de démonstration',
+    notice: 'Espace de test temporaire — ne saisissez pas de données réelles confidentielles. Vos données seront supprimées après une période d\'inactivité.',
+    exportCta: 'Exporter mes données',
+    deployCta: 'Déployer ACRA dans mon SI',
+  },
   mentionProtection: {
     label: 'Mention de protection',
     help: "Niveau de protection du document d'analyse. Apparaît sur la page de garde et les exports (exigence label EBIOS RM §3.2).",

@@ -4,6 +4,8 @@ import './globals.css'
 import { Providers } from './providers'
 import Footer from '@/components/Footer'
 import CookieBanner from '@/components/CookieBanner'
+import DemoBanner from '@/components/DemoBanner'
+import { isDemoMode } from '@/lib/demo'
 import { THEME_SCRIPT } from '@/lib/theme-script'
 import { headers } from 'next/headers'
 
@@ -90,6 +92,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <Providers>
           <div className="flex flex-col min-h-screen">
+            {isDemoMode() && (
+              <DemoBanner contactUrl={process.env.ACRA_DEMO_CONTACT_URL || 'mailto:contact@example.com'} />
+            )}
             {children}
             <Footer />
             <CookieBanner />

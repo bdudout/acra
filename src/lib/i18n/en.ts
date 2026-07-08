@@ -576,6 +576,12 @@ export const en: Translations = {
     empty: 'No revision recorded yet.',
     historyTitle: 'Revision history',
   },
+  demo: {
+    badge: 'Demo environment',
+    notice: 'Temporary test space — do not enter real confidential data. Your data will be deleted after a period of inactivity.',
+    exportCta: 'Export my data',
+    deployCta: 'Deploy ACRA in my IS',
+  },
   mentionProtection: {
     label: 'Protection marking',
     help: 'Protection level of the risk-analysis document. Shown on the cover page and exports (EBIOS RM label requirement §3.2).',

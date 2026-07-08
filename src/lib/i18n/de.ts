@@ -576,6 +576,12 @@ export const de: Translations = {
     empty: 'Noch keine Revision erfasst.',
     historyTitle: 'Revisionsverlauf',
   },
+  demo: {
+    badge: 'Demo-Umgebung',
+    notice: 'Temporärer Testbereich — geben Sie keine echten vertraulichen Daten ein. Ihre Daten werden nach einer Zeit der Inaktivität gelöscht.',
+    exportCta: 'Meine Daten exportieren',
+    deployCta: 'ACRA in meiner IT bereitstellen',
+  },
   mentionProtection: {
     label: 'Schutzkennzeichnung',
     help: 'Schutzstufe des Analysedokuments. Erscheint auf dem Deckblatt und in Exporten (Anforderung EBIOS-RM-Label §3.2).',
