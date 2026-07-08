@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isDemoMode } from '@/lib/demo'
-import { purgeExpiredDemoOrgs } from '@/lib/demo-server'
+import { purgeExpiredDemoOrgs, isDemoInstance } from '@/lib/demo-server'
 import { auditLog } from '@/lib/logger'
 
 /**
@@ -13,7 +12,9 @@ import { auditLog } from '@/lib/logger'
  * (cascade memberships/config/conformités) → comptes de démo orphelins.
  *
  * Sécurité : 503 si CRON_SECRET absent ; 401 si secret invalide ; 400 si l'instance
- * n'est PAS en mode démo (ACRA_DEMO_MODE≠true) — garde-fou anti-purge en production.
+ * n'est PAS une instance de démo prouvée — env `ACRA_DEMO_MODE=true` ET marqueur
+ * d'instance figé à DEMO (cf. resolveInstanceMode). Une instance de prod flippée par
+ * erreur en démo reste stampée PROD → purge refusée (garde-fou anti-destruction).
  */
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET
@@ -22,9 +23,9 @@ export async function POST(req: NextRequest) {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.nextUrl.searchParams.get('token') ?? ''
   if (token !== secret) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  // Garde-fou : ne JAMAIS purger sur une instance de production.
-  if (!isDemoMode()) {
-    return NextResponse.json({ error: 'Mode démo inactif (ACRA_DEMO_MODE≠true)' }, { status: 400 })
+  // Garde-fou : ne JAMAIS purger hors d'une instance de démo prouvée (env + marqueur figé).
+  if (!(await isDemoInstance())) {
+    return NextResponse.json({ error: 'Instance non démo — purge refusée' }, { status: 400 })
   }
 
   const { purged, orgIds } = await purgeExpiredDemoOrgs()

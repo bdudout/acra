@@ -7,7 +7,86 @@
  */
 import { prisma } from '@/lib/prisma'
 import { rootPath } from '@/lib/org-context'
-import { DEMO_DEFAULTS, isDemoMode, isOrgExpired } from '@/lib/demo'
+import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, type InstanceMode } from '@/lib/demo'
+import { auditLog } from '@/lib/logger'
+
+/**
+ * Marqueur d'instance mémoïsé pour le process : une fois résolu à une valeur
+ * concrète (PROD/DEMO), il est IMMUABLE en base, donc sûr à mettre en cache.
+ * `__resetInstanceModeCache` sert uniquement aux tests.
+ */
+let cachedInstanceMode: InstanceMode | null = null
+export function __resetInstanceModeCache(): void {
+  cachedInstanceMode = null
+}
+
+/**
+ * Vrai si l'instance contient déjà des données « réelles » (organisations autres
+ * que la racine « global », ou analyses). Utilisé pour refuser de convertir en démo
+ * une instance déjà peuplée.
+ */
+async function instanceHasRealData(): Promise<boolean> {
+  const [orgs, analyses] = await Promise.all([
+    prisma.organization.count({ where: { id: { not: 'global' } } }),
+    prisma.analyse.count(),
+  ])
+  return orgs > 0 || analyses > 0
+}
+
+/**
+ * Résout (et fige, à la première fois) l'identité de l'instance — PROD ou DEMO.
+ * Garde-fou anti-bascule : cf. `decideInstanceMode` (logique pure). Toute tentative
+ * refusée d'activer la démo (env démo sur une instance PROD ou déjà peuplée) est
+ * journalisée en audit `DEMO_MODE_REFUSED`. Ne lève jamais : en cas d'erreur DB,
+ * retombe sur PROD (le mode le plus sûr — jamais de purge).
+ */
+export async function resolveInstanceMode(): Promise<InstanceMode> {
+  if (cachedInstanceMode) return cachedInstanceMode
+  try {
+    const config = await prisma.configuration.findUnique({
+      where: { id: 'global' },
+      select: { instanceMode: true },
+    })
+    const marker = (config?.instanceMode === 'DEMO' || config?.instanceMode === 'PROD')
+      ? config.instanceMode
+      : null
+    const hasRealData = marker === null ? await instanceHasRealData() : false
+    const decision = decideInstanceMode({ envDemo: isDemoMode(), marker, hasRealData })
+
+    if (decision.persist) {
+      // Fige le marqueur (upsert : le singleton Configuration existe déjà en pratique).
+      await prisma.configuration.updateMany({
+        where: { id: 'global' },
+        data: { instanceMode: decision.mode },
+      }).catch(() => {})
+    }
+    if (decision.refusedDemo) {
+      await auditLog('DEMO_MODE_REFUSED', {
+        targetType: 'configuration',
+        details: {
+          reason: marker === 'PROD'
+            ? 'ACRA_DEMO_MODE activé sur une instance stampée PROD (immuable)'
+            : 'ACRA_DEMO_MODE activé sur une instance déjà peuplée de données réelles',
+        },
+      }).catch(() => {})
+    }
+    cachedInstanceMode = decision.mode
+    return decision.mode
+  } catch {
+    return 'PROD'
+  }
+}
+
+/**
+ * Vrai si l'instance est un déploiement de DÉMO effectif : env `ACRA_DEMO_MODE=true`
+ * ET marqueur d'instance figé à DEMO. C'est le SEUL prédicat qui doit garder les
+ * comportements sensibles (purge, inscription self-service, bandeau) — jamais
+ * `isDemoMode()` seul, qui ne lit que l'env et n'offre aucune protection anti-bascule.
+ */
+export async function isDemoInstance(): Promise<boolean> {
+  if (!isDemoMode()) return false
+  return (await resolveInstanceMode()) === 'DEMO'
+}
 
 function slugify(s: string): string {
   const base = s
@@ -82,6 +161,11 @@ export async function touchOrgActivityForUser(userId: string): Promise<void> {
  * config/conformités) → comptes de démo devenus orphelins. Ne touche jamais `global`.
  */
 export async function purgeExpiredDemoOrgs(now: Date = new Date()): Promise<{ purged: number; orgIds: string[] }> {
+  // Garde-fou DUR (défense en profondeur) : ne JAMAIS purger si l'instance n'est pas
+  // une démo prouvée (env + marqueur figé). Protège même un appelant qui oublierait
+  // de vérifier en amont — une instance de prod flippée en démo ne détruit rien.
+  if (!(await isDemoInstance())) return { purged: 0, orgIds: [] }
+
   const orgs = await prisma.organization.findMany({
     where: { actif: true, id: { not: 'global' } },
     select: { id: true, createdAt: true, lastActivityAt: true },

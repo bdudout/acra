@@ -774,6 +774,12 @@ model Configuration {
   // [{gravite, vraisemblance, seuilLabel}]
   matriceQualitative Json?
 
+  // Identité FIGÉE de l'instance : "PROD" ou "DEMO". Décidée une seule fois puis
+  // immuable (cf. lib/demo-server resolveInstanceMode). Garde-fou : une instance de
+  // prod ne peut jamais devenir une instance de démo (sinon la purge auto ACRA-Demo
+  // détruirait de vraies données), même si ACRA_DEMO_MODE est activé par erreur.
+  instanceMode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

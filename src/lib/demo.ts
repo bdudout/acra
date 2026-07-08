@@ -21,6 +21,43 @@ export function isDemoMode(): boolean {
   return process.env.ACRA_DEMO_MODE === 'true'
 }
 
+/**
+ * Identité figée d'une instance : décidée UNE fois puis persistée (cf. demo-server
+ * `resolveInstanceMode`). Sert de garde-fou : une instance de PROD ne peut jamais
+ * devenir une instance de DEMO, même si `ACRA_DEMO_MODE` est activé par erreur.
+ */
+export type InstanceMode = 'PROD' | 'DEMO'
+
+/**
+ * Décide (logique PURE) le mode d'instance à partir de l'état env + DB.
+ *  - marqueur déjà posé → IMMUABLE (on ne le réécrit pas) ; si l'env réclame le
+ *    mode démo alors que l'instance est stampée PROD → `refusedDemo` (à auditer) ;
+ *  - marqueur absent → on le pose : DEMO seulement si l'env démo est actif ET que
+ *    l'instance est vierge de données réelles ; sinon PROD (avec refus signalé si
+ *    l'env démo était demandé sur une instance déjà peuplée).
+ *
+ * @returns mode retenu, `persist` (faut-il écrire le marqueur), `refusedDemo`
+ *          (tentative d'activer la démo bloquée → alerte de sécurité).
+ */
+export function decideInstanceMode(input: {
+  envDemo: boolean
+  marker: InstanceMode | null
+  hasRealData: boolean
+}): { mode: InstanceMode; persist: boolean; refusedDemo: boolean } {
+  const { envDemo, marker, hasRealData } = input
+  if (marker !== null) {
+    return { mode: marker, persist: false, refusedDemo: envDemo && marker === 'PROD' }
+  }
+  if (envDemo && !hasRealData) {
+    return { mode: 'DEMO', persist: true, refusedDemo: false }
+  }
+  if (envDemo && hasRealData) {
+    // Instance déjà peuplée : refus de la conversion en démo (anti-destruction).
+    return { mode: 'PROD', persist: true, refusedDemo: true }
+  }
+  return { mode: 'PROD', persist: true, refusedDemo: false }
+}
+
 export interface DemoConfig {
   /** Jours sans activité avant purge d'une organisation démo. */
   inactivityDays: number

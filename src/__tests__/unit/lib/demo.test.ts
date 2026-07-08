@@ -6,6 +6,7 @@ import {
   isOrgExpired,
   daysUntilPurge,
   shouldWarn,
+  decideInstanceMode,
 } from '../../../lib/demo'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -74,5 +75,44 @@ describe('demo — logique d\'expiration', () => {
     it('n\'avertit pas une org déjà expirée (elle sera purgée)', () => {
       expect(shouldWarn(org, cfg, new Date('2026-03-01T00:00:00Z'))).toBe(false)
     })
+  })
+})
+
+// Sécurité anti-bascule : une instance de PROD ne doit JAMAIS devenir une instance
+// de démo (sinon la purge auto détruirait de vraies données). Le marqueur d'instance
+// est décidé une fois puis figé ; on ne peut passer en DEMO que sur une instance
+// vierge stampée démo dès l'origine.
+describe('decideInstanceMode — garde-fou prod → démo', () => {
+  it('marqueur DEMO existant → reste DEMO, sans réécriture, sans refus', () => {
+    expect(decideInstanceMode({ envDemo: true, marker: 'DEMO', hasRealData: true }))
+      .toEqual({ mode: 'DEMO', persist: false, refusedDemo: false })
+  })
+
+  it('marqueur PROD existant + env démo → RESTE PROD (immuable) et signale un refus', () => {
+    // Cas critique : quelqu\'un a posé ACRA_DEMO_MODE=true sur une instance de prod.
+    expect(decideInstanceMode({ envDemo: true, marker: 'PROD', hasRealData: true }))
+      .toEqual({ mode: 'PROD', persist: false, refusedDemo: true })
+  })
+
+  it('marqueur PROD existant + env non-démo → PROD, rien à signaler', () => {
+    expect(decideInstanceMode({ envDemo: false, marker: 'PROD', hasRealData: true }))
+      .toEqual({ mode: 'PROD', persist: false, refusedDemo: false })
+  })
+
+  it('aucun marqueur + env démo + instance vierge → stampe DEMO', () => {
+    expect(decideInstanceMode({ envDemo: true, marker: null, hasRealData: false }))
+      .toEqual({ mode: 'DEMO', persist: true, refusedDemo: false })
+  })
+
+  it('aucun marqueur + env démo MAIS données réelles déjà présentes → stampe PROD + refus', () => {
+    // Défense en profondeur : on n\'accepte pas de convertir en démo une instance
+    // qui contient déjà des organisations/analyses réelles.
+    expect(decideInstanceMode({ envDemo: true, marker: null, hasRealData: true }))
+      .toEqual({ mode: 'PROD', persist: true, refusedDemo: true })
+  })
+
+  it('aucun marqueur + env non-démo → stampe PROD', () => {
+    expect(decideInstanceMode({ envDemo: false, marker: null, hasRealData: false }))
+      .toEqual({ mode: 'PROD', persist: true, refusedDemo: false })
   })
 })

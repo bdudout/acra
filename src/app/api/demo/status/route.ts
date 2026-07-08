@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { isDemoMode, DEMO_DEFAULTS, daysUntilPurge } from '@/lib/demo'
+import { DEMO_DEFAULTS, daysUntilPurge } from '@/lib/demo'
+import { isDemoInstance } from '@/lib/demo-server'
 
 /**
  * GET /api/demo/status — état démo de l'utilisateur courant (bandeau ACRA-Demo).
@@ -10,7 +11,7 @@ import { isDemoMode, DEMO_DEFAULTS, daysUntilPurge } from '@/lib/demo'
  * `{ demo:false }` hors mode démo ou sans session. Aucune donnée sensible.
  */
 export async function GET() {
-  if (!isDemoMode()) return NextResponse.json({ demo: false })
+  if (!(await isDemoInstance())) return NextResponse.json({ demo: false })
   const session = await getServerSession(authOptions)
   const userId = (session?.user as { id?: string } | undefined)?.id
   if (!userId) return NextResponse.json({ demo: true, daysUntilPurge: null })

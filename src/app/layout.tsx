@@ -5,7 +5,7 @@ import { Providers } from './providers'
 import Footer from '@/components/Footer'
 import CookieBanner from '@/components/CookieBanner'
 import DemoBanner from '@/components/DemoBanner'
-import { isDemoMode } from '@/lib/demo'
+import { isDemoInstance } from '@/lib/demo-server'
 import { THEME_SCRIPT } from '@/lib/theme-script'
 import { headers } from 'next/headers'
 
@@ -76,6 +76,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Nonce CSP (issue #108) posé par le middleware en production — appliqué au
   // script de thème inline pour qu'il soit autorisé sans `'unsafe-inline'`.
   const nonce = (await headers()).get('x-nonce') ?? undefined
+  // Bandeau démo : uniquement sur une instance de démo PROUVÉE (env + marqueur figé).
+  const demo = await isDemoInstance()
   return (
     // lang="fr" par défaut — mis à jour dynamiquement côté client via LanguageSwitcher
     <html lang="fr">
@@ -92,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <Providers>
           <div className="flex flex-col min-h-screen">
-            {isDemoMode() && (
+            {demo && (
               <DemoBanner contactUrl={process.env.ACRA_DEMO_CONTACT_URL || 'mailto:contact@example.com'} />
             )}
             {children}

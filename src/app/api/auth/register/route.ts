@@ -5,8 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
-import { isDemoMode } from '@/lib/demo'
-import { demoOrgCapReached, createDemoOrgForUser } from '@/lib/demo-server'
+import { demoOrgCapReached, createDemoOrgForUser, isDemoInstance } from '@/lib/demo-server'
 
 const schema = z.object({
   name:     z.string().min(2).max(100),
@@ -87,7 +86,9 @@ export async function POST(req: NextRequest) {
     //   comptes, rôles, politiques). Combiné à F004 (inscription ouverte) → fort impact.
     // FIX: provisionner l'ADMIN initial hors-ligne (seed/CLI protégé, variable d'env),
     //   ne jamais attribuer ADMIN via un endpoint public.
-    const demo = isDemoMode()
+    // Instance de démo PROUVÉE (env + marqueur figé) — jamais isDemoMode() seul,
+    // pour qu'une instance de prod flippée par erreur ne bascule pas en self-service.
+    const demo = await isDemoInstance()
 
     // Mode démo : plafond d'organisations actives (anti-abus, site public).
     if (demo && await demoOrgCapReached()) {
