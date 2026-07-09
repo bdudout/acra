@@ -17,6 +17,10 @@
 # =============================================================================
 
 services:
+  # PostgreSQL n'est JAMAIS exposé sur Internet (accès interne via le réseau Docker).
+  db:
+    ports: !reset []
+
   app:
     environment:
       ACRA_DEMO_MODE: ${ACRA_DEMO_MODE:-true}
