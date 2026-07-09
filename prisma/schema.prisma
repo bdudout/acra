@@ -108,6 +108,8 @@ model Organization {
   updatedAt DateTime @updatedAt
   // Dernière activité utilisateur (connexion / modif d'analyse) — mode démo, purge par inactivité (lib/demo.ts)
   lastActivityAt DateTime @default(now())
+  // Date d'envoi du préavis de purge (mode démo) — anti-doublon ; réinitialisé quand l'org redevient active
+  warnedAt DateTime?
 
   membres   OrgMembership[]
   analyses  Analyse[]

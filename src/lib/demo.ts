@@ -150,3 +150,17 @@ export function shouldWarn(org: OrgLifecycle, cfg: DemoConfig = DEMO_DEFAULTS, n
   const d = daysUntilPurge(org, cfg, now)
   return d > 0 && d <= cfg.warningDays
 }
+
+/**
+ * Vrai s'il faut ENVOYER le préavis de purge à une organisation démo : elle est dans
+ * la fenêtre de préavis ET n'a pas encore été prévenue (`warnedAt`). Le flag est
+ * réinitialisé quand l'org redevient active (cf. touchOrgActivity) → re-préavis
+ * possible à la prochaine approche d'expiration. Pur → testé unitairement.
+ */
+export function needsPurgeWarning(
+  org: OrgLifecycle & { warnedAt?: Date | string | null },
+  cfg: DemoConfig = DEMO_DEFAULTS,
+  now: Date = new Date(),
+): boolean {
+  return !org.warnedAt && shouldWarn(org, cfg, now)
+}

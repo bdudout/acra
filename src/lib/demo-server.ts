@@ -7,8 +7,9 @@
  */
 import { prisma } from '@/lib/prisma'
 import { rootPath } from '@/lib/org-context'
-import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, resolveDemoConfig, type DemoConfig, type InstanceMode } from '@/lib/demo'
+import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, resolveDemoConfig, needsPurgeWarning, daysUntilPurge, type DemoConfig, type InstanceMode } from '@/lib/demo'
 import { auditLog } from '@/lib/logger'
+import { sendEmail } from '@/lib/email'
 
 /**
  * Réglages démo EFFECTIFS : surcharges persistées (Configuration.demoConfig, éditables
@@ -161,7 +162,9 @@ export async function createDemoOrgForUser(userId: string, displayName: string):
  */
 export async function touchOrgActivity(orgId: string | null | undefined): Promise<void> {
   if (!orgId || orgId === 'global' || !isDemoMode()) return
-  await prisma.organization.updateMany({ where: { id: orgId }, data: { lastActivityAt: new Date() } }).catch(() => {})
+  // Réinitialise aussi `warnedAt` : l'org repoussant son expiration pourra être
+  // prévenue à nouveau à la prochaine approche de purge.
+  await prisma.organization.updateMany({ where: { id: orgId }, data: { lastActivityAt: new Date(), warnedAt: null } }).catch(() => {})
 }
 
 /** Rafraîchit l'activité des organisations d'un utilisateur (à la connexion). */
@@ -170,8 +173,69 @@ export async function touchOrgActivityForUser(userId: string): Promise<void> {
   const memberships = await prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true } })
   const ids = memberships.map(m => m.organizationId).filter(id => id !== 'global')
   if (ids.length) {
-    await prisma.organization.updateMany({ where: { id: { in: ids } }, data: { lastActivityAt: new Date() } }).catch(() => {})
+    await prisma.organization.updateMany({ where: { id: { in: ids } }, data: { lastActivityAt: new Date(), warnedAt: null } }).catch(() => {})
   }
+}
+
+/** Contenu (FR) de l'e-mail de préavis de purge. */
+function buildWarningEmail(to: string, orgName: string, days: number): { to: string; subject: string; text: string; html: string } {
+  const j = days <= 1 ? '1 jour' : `${days} jours`
+  const subject = 'ACRA (démo) — vos données de test seront bientôt supprimées'
+  const text =
+    `Bonjour,\n\nVotre espace de démonstration « ${orgName} » sera automatiquement supprimé dans ${j} ` +
+    `faute d'activité récente.\n\nPour le conserver, il vous suffit de vous reconnecter (le compte à rebours ` +
+    `repart). Vous pouvez aussi exporter vos données de test depuis le bandeau de démonstration.\n\n` +
+    `— L'équipe ACRA`
+  const html =
+    `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
+      <h2 style="color:#4f46e5">Votre espace de démonstration expire bientôt</h2>
+      <p>Votre espace « <strong>${orgName}</strong> » sera automatiquement supprimé dans <strong>${j}</strong> faute d'activité récente.</p>
+      <p>Pour le conserver, <strong>reconnectez-vous</strong> (le compte à rebours repart). Vous pouvez aussi exporter vos données de test depuis le bandeau de démonstration.</p>
+      <p style="color:#6b7280;font-size:12px">— L'équipe ACRA</p>
+    </div>`
+  return { to, subject, text, html }
+}
+
+/**
+ * Envoie le préavis de purge aux organisations démo proches de l'expiration (fenêtre
+ * `warningDays`) qui n'ont pas encore été prévenues. Marque `warnedAt` pour ne prévenir
+ * qu'une fois (réinitialisé si l'org redevient active). Ne prévient jamais `global`.
+ * Marque `warnedAt` uniquement si au moins un e-mail est parti (ou s'il n'y a aucun
+ * destinataire) — un SMTP indisponible n'engloutit donc pas le préavis.
+ */
+export async function warnExpiringDemoOrgs(now: Date = new Date()): Promise<{ warned: number; orgIds: string[] }> {
+  if (!(await isDemoInstance())) return { warned: 0, orgIds: [] }
+
+  const cfg = await getDemoConfig()
+  const orgs = await prisma.organization.findMany({
+    where: { actif: true, id: { not: 'global' } },
+    select: { id: true, nom: true, createdAt: true, lastActivityAt: true, warnedAt: true },
+  })
+  const toWarn = orgs.filter(o => needsPurgeWarning(o, cfg, now))
+  const orgIds: string[] = []
+  for (const org of toWarn) {
+    const days = daysUntilPurge(org, cfg, now)
+    const members = await prisma.orgMembership.findMany({
+      where: { organizationId: org.id },
+      select: { user: { select: { email: true } } },
+    })
+    const emails = Array.from(new Set(members.map(m => m.user?.email).filter((e): e is string => !!e)))
+    let sent = false
+    for (const to of emails) {
+      const r = await sendEmail(buildWarningEmail(to, org.nom, days))
+      if (r.ok) sent = true
+    }
+    // Ne consomme le préavis que si l'envoi a abouti (ou s'il n'y a personne à prévenir).
+    if (sent || emails.length === 0) {
+      await prisma.organization.update({ where: { id: org.id }, data: { warnedAt: new Date() } }).catch(() => {})
+      await auditLog('DEMO_ORG_WARNED', {
+        targetType: 'organization', targetId: org.id,
+        details: { days, recipients: emails.length },
+      })
+      orgIds.push(org.id)
+    }
+  }
+  return { warned: orgIds.length, orgIds }
 }
 
 /**

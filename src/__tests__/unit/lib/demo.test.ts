@@ -9,6 +9,7 @@ import {
   decideInstanceMode,
   analysisCapReached,
   requiresEmailVerification,
+  needsPurgeWarning,
 } from '../../../lib/demo'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -141,5 +142,22 @@ describe('requiresEmailVerification — blocage connexion démo tant que non vé
   })
   it('hors démo → jamais bloqué (même si non vérifié)', () => {
     expect(requiresEmailVerification(false, null)).toBe(false)
+  })
+})
+
+describe('needsPurgeWarning — préavis de purge une seule fois', () => {
+  // Org qui expire 31-01 (créée 01-01, inactive) ; préavis 7 j → fenêtre 24-01→31-01.
+  const base = { createdAt: new Date('2026-01-01T00:00:00Z'), lastActivityAt: new Date('2026-01-01T00:00:00Z') }
+  it('dans la fenêtre + jamais prévenue → préavis à envoyer', () => {
+    expect(needsPurgeWarning({ ...base, warnedAt: null }, cfg, new Date('2026-01-28T00:00:00Z'))).toBe(true)
+  })
+  it('dans la fenêtre MAIS déjà prévenue → ne renvoie pas', () => {
+    expect(needsPurgeWarning({ ...base, warnedAt: new Date('2026-01-25T00:00:00Z') }, cfg, new Date('2026-01-28T00:00:00Z'))).toBe(false)
+  })
+  it('hors fenêtre (trop tôt) → pas de préavis', () => {
+    expect(needsPurgeWarning({ ...base, warnedAt: null }, cfg, new Date('2026-01-10T00:00:00Z'))).toBe(false)
+  })
+  it('déjà expirée → pas de préavis (sera purgée)', () => {
+    expect(needsPurgeWarning({ ...base, warnedAt: null }, cfg, new Date('2026-03-01T00:00:00Z'))).toBe(false)
   })
 })
