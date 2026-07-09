@@ -1,0 +1,19 @@
+# Caddy — reverse-proxy HTTPS automatique pour ACRA-Demo.
+# Le domaine et l'e-mail ACME sont injectés via l'environnement (docker-compose.demo.yml).
+# Caddy obtient et renouvelle seul les certificats Let's Encrypt.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip zstd
+	reverse_proxy app:3000
+
+	# En-têtes de sécurité (complètent ceux posés par l'application).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+}

@@ -1,0 +1,76 @@
+# =============================================================================
+# ACRA-Demo — surcouche Docker Compose pour le site de DÉMONSTRATION
+# =============================================================================
+#
+# À utiliser EN PLUS du docker-compose.yml de base :
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+#
+# Ce fichier :
+#   - active le mode démo sur l'app (ACRA_DEMO_MODE=true) + variables associées ;
+#   - retire l'exposition directe du port 3000 (l'app n'est atteignable que via Caddy) ;
+#   - ajoute Caddy en frontal (HTTPS automatique Let's Encrypt) ;
+#   - ajoute un service « cron » qui déclenche le préavis + la purge périodiquement.
+#
+# Pré-requis dans .env : ACRA_DEMO_MODE=true, CRON_SECRET, DEMO_DOMAIN, ACME_EMAIL,
+#   NEXTAUTH_URL=https://<DEMO_DOMAIN>, NEXT_PUBLIC_BASE_URL=https://<DEMO_DOMAIN>.
+# =============================================================================
+
+services:
+  app:
+    environment:
+      ACRA_DEMO_MODE: ${ACRA_DEMO_MODE:-true}
+      ACRA_DEMO_CONTACT_URL: ${ACRA_DEMO_CONTACT_URL:-mailto:contact@example.com}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
+      CRON_SECRET: ${CRON_SECRET}
+    # L'app n'est plus publiée directement : seul Caddy est exposé sur Internet.
+    ports: !reset []
+
+  # ── Reverse-proxy Caddy : HTTPS automatique (Let's Encrypt) ─────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: ebios_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DEMO_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # ── Planificateur : préavis + purge des organisations démo expirées ─────────
+  # Appelle POST /api/cron/demo-purge toutes les heures, en interne (http://app:3000),
+  # avec le CRON_SECRET. L'endpoint refuse toute purge hors instance de démo prouvée.
+  cron:
+    image: curlimages/curl:8.11.1
+    container_name: ebios_democron
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+      CRON_INTERVAL: ${CRON_INTERVAL:-3600}
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "démo-cron : purge toutes les $${CRON_INTERVAL}s";
+        while true; do
+          sleep "$${CRON_INTERVAL}";
+          curl -fsS -X POST -H "Authorization: Bearer $${CRON_SECRET}" \
+            http://app:3000/api/cron/demo-purge || echo "démo-cron : appel échoué";
+        done
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
