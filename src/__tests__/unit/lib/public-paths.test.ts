@@ -45,4 +45,9 @@ describe('isPublicPath — accès sans authentification', () => {
     expect(isPublicPath('/api/demo/load-example')).toBe(false)
     expect(isPublicPath('/api/demo/status-internal')).toBe(false)
   })
+
+  it('autorise la page publique « déployer » (cible du bandeau démo)', () => {
+    expect(isPublicPath('/deployer')).toBe(true)
+    expect(isPublicPath('/deployer-secret')).toBe(false)
+  })
 })

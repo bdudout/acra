@@ -21,6 +21,8 @@ export function isPublicPath(pathname: string): boolean {
     // Statut démo : lu par la page d'accueil (visiteur anonyme) pour afficher
     // l'encart « mode démonstration ». Ne renvoie aucune donnée sensible.
     pathname === '/api/demo/status' ||
+    // Page publique de documentation « déployer ACRA » (cible du bandeau démo).
+    pathname === '/deployer' ||
     pathname.startsWith('/legal')
   )
 }

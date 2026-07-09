@@ -58,7 +58,7 @@ export default function HomePage() {
   const ws = WS_TITLES[locale] ?? WS_TITLES.fr
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 via-ebios-900 to-indigo-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-ebios-950 text-white">
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
@@ -115,7 +115,7 @@ export default function HomePage() {
 
         <h1 className="text-5xl font-bold mb-6 leading-tight">
           {t.landing.heroLine1}<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-300">
             {t.landing.heroLine2}
           </span>
         </h1>

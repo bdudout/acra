@@ -7,14 +7,12 @@ import { useTranslation } from '@/lib/i18n/context'
 /**
  * Bandeau affiché sur le site de démonstration (ACRA-Demo, ACRA_DEMO_MODE=true).
  * Rappelle qu'il s'agit d'un environnement temporaire (RGPD) et propose deux
- * actions : exporter ses données de test et déployer / contacter pour un usage réel.
- * Le compte à rebours d'expiration et l'export « organisation entière » arrivent
- * en phase 2 (cycle de vie / purge).
+ * actions : exporter ses données de test et consulter la page de déploiement
+ * (architecture recommandée + lien GitHub) pour un usage réel dans son SI.
  */
-export default function DemoBanner({ contactUrl }: { contactUrl: string }) {
+export default function DemoBanner() {
   const { t } = useTranslation()
   const d = t.demo
-  const external = /^https?:|^mailto:/.test(contactUrl)
   // Compte à rebours d'expiration : jours restants avant purge de l'org du testeur.
   const [days, setDays] = useState<number | null>(null)
   useEffect(() => {
@@ -37,17 +35,10 @@ export default function DemoBanner({ contactUrl }: { contactUrl: string }) {
           <a href="/api/export/org" className="underline underline-offset-2 hover:text-white text-indigo-50">
             {d.exportCta}
           </a>
-          {external ? (
-            <a href={contactUrl} target="_blank" rel="noopener noreferrer"
-              className="rounded bg-white/15 hover:bg-white/25 px-2.5 py-1 font-medium">
-              {d.deployCta}
-            </a>
-          ) : (
-            <Link href={contactUrl}
-              className="rounded bg-white/15 hover:bg-white/25 px-2.5 py-1 font-medium">
-              {d.deployCta}
-            </Link>
-          )}
+          <Link href="/deployer"
+            className="rounded bg-white/15 hover:bg-white/25 px-2.5 py-1 font-medium">
+            {d.deployCta}
+          </Link>
         </span>
       </div>
     </div>

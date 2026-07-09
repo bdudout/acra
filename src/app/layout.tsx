@@ -94,9 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <Providers>
           <div className="flex flex-col min-h-screen">
-            {demo && (
-              <DemoBanner contactUrl={process.env.ACRA_DEMO_CONTACT_URL || 'mailto:contact@example.com'} />
-            )}
+            {demo && <DemoBanner />}
             {children}
             <Footer />
             <CookieBanner />
