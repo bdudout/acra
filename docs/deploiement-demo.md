@@ -95,25 +95,22 @@ Le fichier `docker-compose.demo.yml` retire la publication du port `3000` via
 
 ---
 
-## 6. Amorçage du premier SUPER_ADMIN (important)
+## 6. Premier compte : l'exploitant (aucune manipulation en base)
 
-En mode démo, l'inscription publique n'accorde **jamais** de rôle d'instance
-(chaque inscrit est ADMIN de sa seule organisation) et la connexion exige une
-**vérification d'e-mail** — qui exige un SMTP, lui-même configuré par un admin.
-Pour sortir de cet amorçage circulaire, provisionnez le premier super-admin **une
-fois** en base :
+Le **tout premier compte** inscrit sur l'instance devient automatiquement
+**SUPER_ADMIN** et son e-mail est **pré-vérifié** : il peut se connecter
+immédiatement, sans SMTP. Aucune commande SQL n'est nécessaire.
 
-```bash
-# 1) Inscrivez votre compte admin depuis l'interface (/auth/register).
-# 2) Promouvez-le et validez son e-mail manuellement :
-docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
-  "UPDATE \"User\" SET role='SUPER_ADMIN', \"emailVerified\"=now() WHERE email='vous@votredomaine.fr';"
-```
+1. Ouvrez `https://<DEMO_DOMAIN>/auth/register` et créez **votre** compte.
+2. Connectez-vous, allez dans **Admin → SMTP**, configurez et **testez** l'envoi.
+3. Réglez les fenêtres de purge et plafonds dans **Admin → Démo**.
 
-Connectez-vous, ouvrez **Admin → SMTP**, configurez et **testez** l'envoi. À partir
-de là, les testeurs reçoivent leurs e-mails de vérification normalement.
+À partir de là, les inscrits **suivants** sont des testeurs : organisation isolée +
+e-mail de vérification (d'où le SMTP configuré à l'étape 2).
 
-Réglez ensuite les fenêtres de purge et plafonds dans **Admin → Démo**.
+> ⚠️ **Sécurité** : comme le premier inscrit devient administrateur de l'instance,
+> inscrivez-vous **avant** de communiquer l'URL (même logique que l'amorçage de
+> production).
 
 ---
 

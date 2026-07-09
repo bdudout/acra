@@ -90,19 +90,22 @@ export async function POST(req: NextRequest) {
     // Instance de démo PROUVÉE (env + marqueur figé) — jamais isDemoMode() seul,
     // pour qu'une instance de prod flippée par erreur ne bascule pas en self-service.
     const demo = await isDemoInstance()
+    const userCount = await prisma.user.count()
+    const isFirstUser = userCount === 0
 
-    // Mode démo : plafond d'organisations actives (anti-abus, site public).
-    if (demo && await demoOrgCapReached()) {
+    // Amorçage : le PREMIER compte de l'instance est l'exploitant — SUPER_ADMIN,
+    // e-mail pré-vérifié (aucun SMTP au tout premier démarrage), rattaché à
+    // l'organisation racine. Cela vaut AUSSI en démo (l'exploitant s'inscrit avant
+    // d'ouvrir le site), ce qui évite tout amorçage manuel en base. Les inscrits
+    // démo SUIVANTS sont des testeurs : organisation isolée + vérification d'e-mail.
+    const demoTester = demo && !isFirstUser
+
+    // Mode démo : plafond d'organisations actives (anti-abus) — testeurs uniquement.
+    if (demoTester && await demoOrgCapReached()) {
       return NextResponse.json({ error: 'DEMO_FULL' }, { status: 503 })
     }
 
-    // Le premier compte créé obtient le rôle SUPER_ADMIN — SAUF en mode démo, où
-    // l'inscription publique n'accorde jamais de privilège d'instance (le
-    // super-admin de la démo est provisionné à part). Chaque inscrit démo est
-    // ADMIN de SA propre organisation (isolée).
-    const userCount = await prisma.user.count()
-    const isFirstUser = userCount === 0
-    const instanceRole = (!demo && isFirstUser) ? 'SUPER_ADMIN' : 'ANALYSTE'
+    const instanceRole = isFirstUser ? 'SUPER_ADMIN' : 'ANALYSTE'
 
     const user = await prisma.user.create({
       data: {
@@ -110,11 +113,13 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase().trim(),
         passwordHash,
         role: instanceRole,
+        // Le premier compte est pré-vérifié pour pouvoir se connecter immédiatement.
+        emailVerified: isFirstUser ? new Date() : undefined,
       },
       select: { id: true, email: true, name: true, role: true },
     })
 
-    if (demo) {
+    if (demoTester) {
       // Chaque testeur = sa propre organisation, dont il est ADMIN (SUBTREE).
       const org = await createDemoOrgForUser(user.id, name)
       await auditLog('REGISTER', {
