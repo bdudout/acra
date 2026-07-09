@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
@@ -42,6 +42,12 @@ export default function HomePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { t, locale } = useTranslation()
+
+  // Mode démo : affiche un encart expliquant les règles (données jetables, etc.).
+  const [isDemo, setIsDemo] = useState(false)
+  useEffect(() => {
+    fetch('/api/demo/status').then(r => r.ok ? r.json() : null).then(s => setIsDemo(!!s?.demo)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (status === 'authenticated') router.push('/dashboard')
@@ -91,6 +97,22 @@ export default function HomePage() {
           </svg>
           <span>{t.landing.badge}</span>
         </div>
+
+        {/* Encart mode démonstration — règles pour le visiteur (ACRA-Demo). */}
+        {isDemo && (
+          <div className="max-w-2xl mx-auto mb-8 text-left bg-indigo-500/15 border border-indigo-300/30 rounded-2xl px-6 py-5">
+            <div className="flex items-center gap-2 font-semibold mb-2">
+              <span aria-hidden="true">🧪</span> {t.demo.homeTitle}
+            </div>
+            <ul className="space-y-1.5 text-sm text-white/85">
+              <li>• {t.demo.homeRule1}</li>
+              <li>• {t.demo.homeRule2}</li>
+              <li>• {t.demo.homeRule3}</li>
+              <li>• {t.demo.homeRule4}</li>
+            </ul>
+          </div>
+        )}
+
         <h1 className="text-5xl font-bold mb-6 leading-tight">
           {t.landing.heroLine1}<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">

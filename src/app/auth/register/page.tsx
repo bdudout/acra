@@ -16,6 +16,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [policy, setPolicy] = useState<PasswordPolicyShape>(DEFAULT_POLICY)
+  const [isDemo, setIsDemo] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/demo/status').then(r => r.ok ? r.json() : null).then(s => setIsDemo(!!s?.demo)).catch(() => {})
+  }, [])
 
   // Libellé traduit d'une règle de mot de passe (code → texte i18n)
   const ruleLabel = (code: PasswordRuleCode): string => ({
@@ -82,6 +87,12 @@ export default function RegisterPage() {
 
         <h2 className="text-xl font-semibold text-gray-800 mb-2">{t.auth.register.title}</h2>
         <p className="text-sm text-gray-500 mb-6">{t.auth.register.description}</p>
+
+        {isDemo && (
+          <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg px-4 py-3 text-sm mb-4">
+            🧪 {t.demo.registerNote}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4">
