@@ -17,3 +17,9 @@
 		-Server
 	}
 }
+
+# Redirection www → apex (HTTPS, 301). Nécessite un enregistrement DNS pour
+# www.<DOMAIN> pointant vers le VPS (sinon Caddy ne peut pas obtenir le certificat).
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
