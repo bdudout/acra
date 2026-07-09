@@ -65,11 +65,7 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-snippet': -1 },
   },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-32x32.png',
-    apple: '/apple-touch-icon.png',
-  },
+  // Favicons servis par la convention App Router (src/app/icon.png + apple-icon.png).
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
