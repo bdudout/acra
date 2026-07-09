@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/context'
-import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2 } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2, FlaskConical } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery' | 'organizations'
+type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery' | 'organizations' | 'demo'
 
 /**
  * Navigation interne de l'espace d'administration (composant partagé).
@@ -15,6 +16,11 @@ export default function AdminNav({ active }: { active: AdminTab }) {
   const { t } = useTranslation()
   const { data: session } = useSession()
   const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN'
+  // Onglet « Démo » : uniquement sur une instance de démo (statut renvoyé par l'API).
+  const [isDemo, setIsDemo] = useState(false)
+  useEffect(() => {
+    fetch('/api/demo/status').then(r => r.ok ? r.json() : null).then(s => setIsDemo(!!s?.demo)).catch(() => {})
+  }, [])
 
   const items = [
     { key: 'dashboard', href: '/admin',          Icon: Home,          label: t.admin.navDashboard },
@@ -25,6 +31,8 @@ export default function AdminNav({ active }: { active: AdminTab }) {
     { key: 'smtp',      href: '/admin/smtp',     Icon: Mail,          label: t.admin.navSmtp },
     { key: 'audit',     href: '/admin/audit',    Icon: ClipboardList, label: t.admin.navAudit },
     { key: 'recovery',  href: '/admin/recovery', Icon: Trash2,        label: t.admin.navRecovery },
+    // Réglages du site de démonstration — super-administrateur + instance de démo.
+    ...(isSuperAdmin && isDemo ? [{ key: 'demo', href: '/admin/demo', Icon: FlaskConical, label: t.admin.navDemo }] : []),
   ] as const
 
   return (

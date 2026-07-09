@@ -780,6 +780,11 @@ model Configuration {
   // détruirait de vraies données), même si ACRA_DEMO_MODE est activé par erreur.
   instanceMode String?
 
+  // Réglages fins du mode démo (surchargent DEMO_DEFAULTS), éditables par le
+  // SUPER_ADMIN : { inactivityDays, hardCapDays, warningDays, maxAnalysesPerOrg,
+  // maxActiveOrgs }. Résolus via resolveDemoConfig (lib/demo.ts).
+  demoConfig Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -8,8 +8,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
-import { analysisCapReached, resolveDemoConfig } from '@/lib/demo'
-import { isDemoInstance } from '@/lib/demo-server'
+import { analysisCapReached } from '@/lib/demo'
+import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
 
 const createSchema = z.object({
   nom:          z.string().min(1).max(200),
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   // Site de démo : plafond d'analyses par organisation (anti-abus).
   if (await isDemoInstance()) {
     const count = await prisma.analyse.count({ where: { organizationId: __org.activeOrgId } })
-    if (analysisCapReached(count, resolveDemoConfig())) {
+    if (analysisCapReached(count, await getDemoConfig())) {
       return NextResponse.json({ error: 'DEMO_ANALYSIS_CAP' }, { status: 403 })
     }
   }

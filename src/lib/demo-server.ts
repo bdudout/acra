@@ -7,8 +7,26 @@
  */
 import { prisma } from '@/lib/prisma'
 import { rootPath } from '@/lib/org-context'
-import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, type InstanceMode } from '@/lib/demo'
+import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, resolveDemoConfig, type DemoConfig, type InstanceMode } from '@/lib/demo'
 import { auditLog } from '@/lib/logger'
+
+/**
+ * Réglages démo EFFECTIFS : surcharges persistées (Configuration.demoConfig, éditables
+ * par le SUPER_ADMIN) fusionnées avec les défauts. Lecture fraîche (pas de cache) pour
+ * que les changements d'UI prennent effet immédiatement. Retombe sur les défauts si
+ * la config est absente ou en cas d'erreur DB.
+ */
+export async function getDemoConfig(): Promise<DemoConfig> {
+  try {
+    const config = await prisma.configuration.findUnique({
+      where: { id: 'global' },
+      select: { demoConfig: true },
+    })
+    return resolveDemoConfig((config?.demoConfig ?? null) as Record<string, unknown> | null)
+  } catch {
+    return DEMO_DEFAULTS
+  }
+}
 
 /**
  * Marqueur d'instance mémoïsé pour le process : une fois résolu à une valeur
@@ -103,7 +121,8 @@ export function activeDemoOrgCount(): Promise<number> {
 
 /** Vrai si l'instance de démo a atteint son plafond d'organisations actives. */
 export async function demoOrgCapReached(): Promise<boolean> {
-  return (await activeDemoOrgCount()) >= DEMO_DEFAULTS.maxActiveOrgs
+  const cfg = await getDemoConfig()
+  return (await activeDemoOrgCount()) >= cfg.maxActiveOrgs
 }
 
 /**
@@ -166,11 +185,12 @@ export async function purgeExpiredDemoOrgs(now: Date = new Date()): Promise<{ pu
   // de vérifier en amont — une instance de prod flippée en démo ne détruit rien.
   if (!(await isDemoInstance())) return { purged: 0, orgIds: [] }
 
+  const cfg = await getDemoConfig()
   const orgs = await prisma.organization.findMany({
     where: { actif: true, id: { not: 'global' } },
     select: { id: true, createdAt: true, lastActivityAt: true },
   })
-  const expired = orgs.filter(o => isOrgExpired(o, DEMO_DEFAULTS, now))
+  const expired = orgs.filter(o => isOrgExpired(o, cfg, now))
   const orgIds: string[] = []
   for (const org of expired) {
     const members = await prisma.orgMembership.findMany({ where: { organizationId: org.id }, select: { userId: true } })

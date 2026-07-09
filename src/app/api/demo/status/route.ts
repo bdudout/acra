@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { DEMO_DEFAULTS, daysUntilPurge } from '@/lib/demo'
-import { isDemoInstance } from '@/lib/demo-server'
+import { daysUntilPurge } from '@/lib/demo'
+import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
 
 /**
  * GET /api/demo/status — état démo de l'utilisateur courant (bandeau ACRA-Demo).
@@ -22,6 +22,6 @@ export async function GET() {
     orderBy: { createdAt: 'asc' },
   })
   const org = membership?.organization
-  const days = org ? daysUntilPurge(org, DEMO_DEFAULTS) : null
+  const days = org ? daysUntilPurge(org, await getDemoConfig()) : null
   return NextResponse.json({ demo: true, daysUntilPurge: days })
 }
