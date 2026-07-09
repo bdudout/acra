@@ -38,4 +38,11 @@ describe('isPublicPath — accès sans authentification', () => {
     // pas de faux positif sur un préfixe voisin
     expect(isPublicPath('/api/cronjobs-secret')).toBe(false)
   })
+
+  it('autorise le statut démo (lu par l’accueil pour un visiteur anonyme), exact', () => {
+    expect(isPublicPath('/api/demo/status')).toBe(true)
+    // les autres routes démo restent protégées (création de données)
+    expect(isPublicPath('/api/demo/load-example')).toBe(false)
+    expect(isPublicPath('/api/demo/status-internal')).toBe(false)
+  })
 })

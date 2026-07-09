@@ -10,6 +10,7 @@ import { rootPath } from '@/lib/org-context'
 import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, resolveDemoConfig, needsPurgeWarning, daysUntilPurge, type DemoConfig, type InstanceMode } from '@/lib/demo'
 import { auditLog } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
+import { resolveScaleConfig } from '@/lib/risk-scale'
 
 /**
  * Réglages démo EFFECTIFS : surcharges persistées (Configuration.demoConfig, éditables
@@ -73,10 +74,24 @@ export async function resolveInstanceMode(): Promise<InstanceMode> {
     const decision = decideInstanceMode({ envDemo: isDemoMode(), marker, hasRealData })
 
     if (decision.persist) {
-      // Fige le marqueur (upsert : le singleton Configuration existe déjà en pratique).
-      await prisma.configuration.updateMany({
+      // Fige le marqueur. UPSERT (et non updateMany) : sur une instance de démo
+      // fraîchement déployée, la base est migrée mais PAS seedée → le singleton
+      // Configuration n'existe pas encore ; sans création, le marqueur ne persiste
+      // jamais et l'instance rebasculerait en PROD dès que des données existent.
+      // On crée alors la Configuration avec les échelles par défaut.
+      const scales = resolveScaleConfig(null)
+      await prisma.configuration.upsert({
         where: { id: 'global' },
-        data: { instanceMode: decision.mode },
+        update: { instanceMode: decision.mode },
+        create: {
+          id: 'global',
+          nbNiveaux: scales.nbNiveaux,
+          echelleGravite: scales.echelleGravite as unknown as object,
+          echelleVraisemblance: scales.echelleVraisemblance as unknown as object,
+          seuilsMatrice: scales.seuilsMatrice as unknown as object,
+          matriceMode: scales.matriceMode,
+          instanceMode: decision.mode,
+        },
       }).catch(() => {})
     }
     if (decision.refusedDemo) {
