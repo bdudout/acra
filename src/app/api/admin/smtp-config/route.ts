@@ -32,7 +32,8 @@ const SMTP_DEFAULTS = {
 async function requireAdmin() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  if ((session.user as any).role !== 'ADMIN') return { error: NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 }), session: null }
+  // Réglage d'INSTANCE (SMTP partagé) → SUPER_ADMIN uniquement (pas un ADMIN d'organisation).
+  if ((session.user as any).role !== 'SUPER_ADMIN') return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
   return { error: null, session }
 }
 

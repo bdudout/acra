@@ -12,7 +12,8 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  if ((session.user as any).role !== 'ADMIN') return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
+  // Réglage d'INSTANCE (SMTP partagé) → SUPER_ADMIN uniquement.
+  if ((session.user as any).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
 
   const to = (session.user as any).email as string
   if (!to) return NextResponse.json({ error: 'Aucune adresse e-mail sur le compte' }, { status: 400 })

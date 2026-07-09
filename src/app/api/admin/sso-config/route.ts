@@ -47,8 +47,9 @@ async function requireAdmin(req: NextRequest) {
   if (!session?.user) {
     return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
   }
-  if ((session.user as any).role !== 'ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 }), session: null }
+  // Configuration SSO/OIDC = réglage d'INSTANCE → SUPER_ADMIN uniquement.
+  if ((session.user as any).role !== 'SUPER_ADMIN') {
+    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
   }
   return { error: null, session }
 }

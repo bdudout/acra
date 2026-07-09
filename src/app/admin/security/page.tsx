@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
@@ -112,6 +114,14 @@ const SMS_MFA_AVAILABLE = false
 
 export default function AdminSecurityPage() {
   const { t } = useTranslation()
+  // Réglages d'INSTANCE (politique mdp, SMTP, SSO, MFA) → SUPER_ADMIN uniquement.
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN'
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/auth/signin')
+    if (status === 'authenticated' && !isSuperAdmin) router.push('/dashboard')
+  }, [status, isSuperAdmin, router])
   const [policy, setPolicy]           = useState<Policy>(DEFAULT)
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
@@ -241,6 +251,8 @@ export default function AdminSecurityPage() {
       setTimeout(() => setConfirmed(false), 4000)
     }
   }
+
+  if (status !== 'authenticated' || !isSuperAdmin) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

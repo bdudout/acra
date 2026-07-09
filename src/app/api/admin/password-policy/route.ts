@@ -47,8 +47,9 @@ const MFA_CONFIRMATION_WINDOW_MS = 60 * 60 * 1000
 async function requireAdmin(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  if ((session.user as any).role !== 'ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 }), session: null }
+  // Politique de mot de passe = réglage d'INSTANCE → SUPER_ADMIN uniquement.
+  if ((session.user as any).role !== 'SUPER_ADMIN') {
+    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
   }
   return { error: null, session }
 }

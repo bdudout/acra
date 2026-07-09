@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
-  if ((session.user as any).role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
+  // Politique de mot de passe = réglage d'INSTANCE → SUPER_ADMIN uniquement.
+  if ((session.user as any).role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
