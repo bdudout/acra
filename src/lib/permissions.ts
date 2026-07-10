@@ -49,9 +49,13 @@ export function canCreateAnalyse(user: SessionUser): boolean {
   return user.role === 'ANALYSTE' || isAdminRole(user.role)
 }
 
-/** L'utilisateur peut administrer les comptes (page /admin) */
+/**
+ * L'utilisateur peut administrer l'INSTANCE (espace /admin : comptes, sécurité,
+ * SMTP, SSO, audit, corbeille, organisations) — SUPER_ADMIN uniquement. Un ADMIN
+ * d'organisation ne gère que la méthodologie (échelles/matrice) via /configuration.
+ */
 export function canAdmin(user: SessionUser): boolean {
-  return isAdminRole(user.role)
+  return user.role === 'SUPER_ADMIN'
 }
 
 /** L'utilisateur peut gérer les organisations (niveau instance) — SUPER_ADMIN uniquement */

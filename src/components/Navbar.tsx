@@ -23,8 +23,9 @@ export default function Navbar() {
   const menuBtnRef = useRef<HTMLButtonElement>(null)
 
   const userRole: UserRole = (session?.user as any)?.role ?? 'ANALYSTE'
-  const isAdmin      = isAdminRole(userRole)
-  const isLecteur    = userRole === 'LECTEUR'
+  const isAdmin        = isAdminRole(userRole)
+  const isSuperAdmin   = userRole === 'SUPER_ADMIN'
+  const isLecteur      = userRole === 'LECTEUR'
   const canGovern    = isAdmin || userRole === 'RSSI' || userRole === 'RISK_MANAGER'
 
   // Fermer le menu sur clic extérieur
@@ -148,7 +149,9 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {isAdmin && (
+                {/* L'espace /admin (instance) est réservé au super-admin ; un ADMIN
+                    ne gère que /configuration (méthodologie). */}
+                {isSuperAdmin && (
                   <>
                     <Link
                       href="/admin"

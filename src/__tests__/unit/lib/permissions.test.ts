@@ -53,8 +53,10 @@ describe('canCreateAnalyse', () => {
 
 // ─── canAdmin ─────────────────────────────────────────────────────────────────
 describe('canAdmin', () => {
-  it('autorise uniquement ADMIN', () => {
-    expect(canAdmin(userWith('ADMIN'))).toBe(true)
+  it('autorise uniquement SUPER_ADMIN (espace /admin = instance)', () => {
+    expect(canAdmin(userWith('SUPER_ADMIN'))).toBe(true)
+    // Un ADMIN d'organisation ne gère que /configuration, pas /admin.
+    expect(canAdmin(userWith('ADMIN'))).toBe(false)
     expect(canAdmin(userWith('ANALYSTE'))).toBe(false)
     expect(canAdmin(userWith('RISK_MANAGER'))).toBe(false)
     expect(canAdmin(userWith('LECTEUR'))).toBe(false)
