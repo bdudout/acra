@@ -64,7 +64,8 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   echellesEcosysteme: {},
   qualificationActive: false,
   qualificationObligatoire: false,
-  conformiteActive: false,
+  // Module conformité activé par défaut (résolution des orgs sans valeur explicite).
+  conformiteActive: true,
   conformiteNiveau: 'ANALYSE',
   conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,

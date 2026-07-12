@@ -136,7 +136,7 @@ export default function ConfigurationPage() {
   // Fonctionnalités optionnelles (toggles)
   const [qualificationActive, setQualificationActive] = useState(false)
   const [qualificationObligatoire, setQualificationObligatoire] = useState(false)
-  const [conformiteActive, setConformiteActive] = useState(false)
+  const [conformiteActive, setConformiteActive] = useState(true)
   const [conformiteNiveau, setConformiteNiveau] = useState('ANALYSE')
   const [conformiteSnapshotMode, setConformiteSnapshotMode] = useState('MANUEL')
   const [savingConfOpt, setSavingConfOpt] = useState(false)
