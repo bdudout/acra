@@ -634,7 +634,7 @@ export default function AdminUsersPage() {
         <div className="mt-6 card p-5">
           <h2 className="font-semibold text-gray-800 mb-4">{t.admin.rolesGuideTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN'] as UserRole[]).map(role => (
+            {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN'] as UserRole[]).map(role => (
               <div key={role} className="p-3 rounded-lg border border-gray-100 bg-gray-50">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[role]}`}>
