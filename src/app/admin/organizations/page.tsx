@@ -153,11 +153,11 @@ export default function OrganizationsAdminPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <AdminNav active="organizations" />
         <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold text-gray-800">
           <Building2 size={22} className="text-ebios-600" /> {o.title}
         </h1>
         <p className="mb-6 text-sm text-gray-500">{o.subtitle}</p>
-        <AdminNav active="organizations" />
 
         {error && <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 

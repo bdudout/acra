@@ -9,13 +9,13 @@ ne peut jamais devenir une démo.
 
 ## 1. Serveur et DNS
 
-1. **VPS OVH** (Ubuntu 22.04/24.04, 2 vCPU / 4 Go RAM suffisent).
+1. **VPS OVH** (Debian 12/13 ou Ubuntu 22.04/24.04, 2 vCPU / 4 Go RAM suffisent).
 2. **DNS** : créez un enregistrement **A** `demo.votredomaine.fr` → IP du VPS.
 3. **Pare-feu** : ouvrez `80/tcp` et `443/tcp` (Caddy). Ne publiez PAS `3000`
    (l'app n'est atteignable que via Caddy — voir §5).
 
 ```bash
-# Sur le VPS (Ubuntu) — Docker + plugin compose
+# Sur le VPS (Debian ou Ubuntu) — Docker + plugin compose (le script get.docker.com gère les deux)
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker "$USER"   # puis reconnectez-vous
 docker compose version            # doit être >= 2.24 (pour `!reset`)

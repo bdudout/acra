@@ -91,7 +91,7 @@ export default function DeployerPage() {
                 </tr>
                 <tr>
                   <td className="px-4 py-3 font-medium text-slate-800 dark:text-gray-200">{p.os}</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-gray-400">Ubuntu 22.04 / 24.04 LTS · Docker + plugin Compose (≥ 2.24)</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-gray-400">Debian 12/13 ou Ubuntu 22.04/24.04 LTS · Docker + plugin Compose (≥ 2.24)</td>
                 </tr>
               </tbody>
             </table>
