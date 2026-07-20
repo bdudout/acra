@@ -299,12 +299,12 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                     <button key={i} onClick={() => { if (!added) addSource(s) }}
                       className={`text-left p-3 border rounded-lg transition-all ${
                         added
-                          ? 'border-green-400 bg-green-50 opacity-70 cursor-default'
-                          : 'border-dashed border-gray-300 hover:border-red-300 hover:bg-red-50'
+                          ? 'border-green-400 bg-green-50 opacity-70 cursor-default dark:border-green-600/60 dark:bg-green-500/10'
+                          : 'border-dashed border-gray-300 hover:border-red-300 hover:bg-red-50 dark:border-gray-600 dark:hover:border-red-500 dark:hover:bg-red-500/10'
                       }`}
                     >
-                      {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                      {!added && s.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                      {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                      {!added && s.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat?.color}`}>{cat?.label}</span>
                         <span className="text-xs font-medium text-gray-700">{s.nom}</span>

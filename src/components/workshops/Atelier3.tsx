@@ -733,10 +733,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                               className={`text-left p-2.5 rounded-lg border transition-colors text-xs ${
                                 alreadyAdded
                                   ? 'border-gray-200 bg-white opacity-50 cursor-not-allowed'
-                                  : 'border-dashed border-gray-300 bg-white hover:border-ebios-400 hover:bg-ebios-50 cursor-pointer'
+                                  : 'border-dashed border-gray-300 bg-white hover:border-ebios-400 hover:bg-ebios-50 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20 cursor-pointer'
                               }`}
                             >
-                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
+                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
                               <div className="font-medium text-gray-700 mb-1 leading-tight">{ex.nom}</div>
                               <div className="text-gray-500 leading-tight">{ex.description.slice(0, 80)}…</div>
                               <div className="flex gap-2 mt-1.5">

@@ -581,14 +581,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     onClick={() => { if (!added) addVm(vm) }}
                     className={`text-left p-3 border rounded-lg transition-all ${
                       added
-                        ? 'border-green-400 bg-green-50 opacity-70 cursor-default'
+                        ? 'border-green-400 bg-green-50 opacity-70 cursor-default dark:border-green-600/60 dark:bg-green-500/10'
                         : vm.pertinent
-                          ? 'border-ebios-300 bg-ebios-50/40 hover:border-ebios-400 hover:bg-ebios-50'
-                          : 'border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          ? 'border-ebios-300 bg-ebios-50/40 hover:border-ebios-400 hover:bg-ebios-50 dark:border-ebios-500/70 dark:bg-ebios-500/10 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20'
+                          : 'border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 dark:border-gray-600 dark:hover:border-blue-500 dark:hover:bg-blue-500/10'
                     }`}
                   >
-                    {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                    {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                         vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
@@ -811,12 +811,12 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                             onClick={() => { if (!added) addBien(b) }}
                             className={`text-left p-2.5 border rounded-lg transition-all ${
                               added
-                                ? 'border-green-400 bg-green-50 opacity-70 cursor-default shadow-none'
+                                ? 'border-green-400 bg-green-50 opacity-70 cursor-default shadow-none dark:border-green-600/60 dark:bg-green-500/10'
                                 : `hover:shadow-sm group ${cat.color} border-opacity-60 hover:border-opacity-100`
                             }`}
                           >
-                            {added && <div className="text-xs text-green-600 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
-                            {!added && b.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
+                            {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
+                            {!added && b.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
                             <div className="text-xs font-medium">{b.nom}</div>
                             <div className="text-xs opacity-60 mt-0.5 line-clamp-1">{b.description}</div>
                           </button>
@@ -925,12 +925,12 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     onClick={() => { if (!added) addEr(er) }}
                     className={`text-left p-3 border rounded-lg transition-all ${
                       added
-                        ? 'border-green-400 bg-green-50 opacity-70 cursor-default'
-                        : 'border-dashed border-gray-300 hover:border-red-300 hover:bg-red-50'
+                        ? 'border-green-400 bg-green-50 opacity-70 cursor-default dark:border-green-600/60 dark:bg-green-500/10'
+                        : 'border-dashed border-gray-300 hover:border-red-300 hover:bg-red-50 dark:border-gray-600 dark:hover:border-red-500 dark:hover:bg-red-500/10'
                     }`}
                   >
-                    {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && er.pertinent && <div className="text-xs text-ebios-700 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                    {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                    {!added && er.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
                     <div className="text-xs font-medium text-gray-700">{er.description}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
