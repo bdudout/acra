@@ -50,11 +50,18 @@ export function canCreateAnalyse(user: SessionUser): boolean {
 }
 
 /**
- * L'utilisateur peut administrer l'INSTANCE (espace /admin : comptes, sécurité,
- * SMTP, SSO, audit, corbeille, organisations) — SUPER_ADMIN uniquement. Un ADMIN
- * d'organisation ne gère que la méthodologie (échelles/matrice) via /configuration.
+ * L'utilisateur peut accéder à l'espace /admin scopé à SON organisation (gestion des
+ * comptes de son périmètre, corbeille) — ADMIN ou SUPER_ADMIN. Les réglages d'INSTANCE
+ * (SMTP, SSO, politique mdp, organisations, démo) et l'audit restent réservés au
+ * SUPER_ADMIN (contrôle propre dans chaque route/page). Un ADMIN ne voit jamais les
+ * autres organisations ni ne crée de SUPER_ADMIN.
  */
 export function canAdmin(user: SessionUser): boolean {
+  return isAdminRole(user.role)
+}
+
+/** Réglages/vues d'INSTANCE (SMTP, SSO, politique mdp, audit, organisations, démo) — SUPER_ADMIN. */
+export function canAdminInstance(user: SessionUser): boolean {
   return user.role === 'SUPER_ADMIN'
 }
 
@@ -206,8 +213,8 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   ANALYSTE:     'Création et édition de ses propres analyses de risques',
   RISK_MANAGER: 'Valide le périmètre métier et le niveau de risque — approuve les analyses (sans expertise technique SSI requise)',
   RSSI:         'Responsable SSI — apporte l\'expertise technique sécurité et approuve les analyses',
-  ADMIN:        'Administration complète d\'une organisation (comptes et analyses)',
-  SUPER_ADMIN:  'Niveau instance — gère les organisations et traverse tous les périmètres',
+  ADMIN:        'Administre SON organisation : gère les comptes de son périmètre et les analyses. Pas les réglages d\'instance (SMTP, SSO, politique mdp), ni les autres organisations, ni la création de super-administrateurs',
+  SUPER_ADMIN:  'Niveau instance : réglages globaux (SMTP, SSO, politique mdp), gestion des organisations et de tous les comptes, journal d\'audit, traverse tous les périmètres',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {

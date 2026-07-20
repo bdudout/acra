@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdmin } from '@/lib/permissions'
+import { canAdminInstance } from '@/lib/permissions'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 
 // GET /api/admin/audit-log/export — export CSV du journal d'audit (ADMIN seulement)
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const userId   = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  if (!canAdmin({ id: userId, role: userRole })) {
+  if (!canAdminInstance({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
   }
 

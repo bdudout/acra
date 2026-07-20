@@ -12,6 +12,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 import bcrypt from 'bcryptjs'
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest) {
   }
 
   const policy = await loadPasswordPolicy()
+  // Organisation active de l'admin : les comptes importés y sont rattachés (périmètre).
+  const activeOrgId = (await getAnalyseScope(currentUserId, userRole)).activeOrgId
   const results: RowResult[] = []
 
   for (const row of rows) {
@@ -90,6 +93,11 @@ export async function POST(req: NextRequest) {
       } as any,
       select: { id: true },
     })
+    if (activeOrgId) {
+      await prisma.orgMembership.create({
+        data: { userId: user.id, organizationId: activeOrgId, role: row.role as PrismaUserRole, scope: 'NODE' },
+      }).catch(() => {})
+    }
     results.push({ line: row.line, email: row.email, name: row.name, role: row.role, status: 'created', tempPassword })
     await auditLog('USER_CREATED', {
       userId: currentUserId, userRole, targetId: user.id, targetType: 'user',

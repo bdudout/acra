@@ -11,6 +11,35 @@ import { z } from 'zod'
 import { generateCompliantPassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
 import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
+import { getAnalyseScope } from '@/lib/org-context.server'
+
+/**
+ * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
+ * Sinon (ADMIN, ou super focalisé sur une org) → uniquement les comptes membres
+ * d'une des organisations visibles. `where` s'applique au findMany users.
+ */
+async function usersScope(userId: string, role: UserRole) {
+  const s = await getAnalyseScope(userId, role)
+  const isSuper = s.scope.isSuperAdmin === true
+  return {
+    all: isSuper,
+    visibleOrgIds: s.scope.visibleOrgIds,
+    activeOrgId: s.activeOrgId,
+    where: isSuper
+      ? {}
+      : { memberships: { some: { organizationId: { in: s.scope.visibleOrgIds } } } },
+  }
+}
+
+/** Vrai si l'admin (selon son périmètre) a le droit de gérer le compte cible. */
+async function canManageTarget(scope: { all: boolean; visibleOrgIds: string[] }, targetId: string): Promise<boolean> {
+  if (scope.all) return true
+  if (scope.visibleOrgIds.length === 0) return false
+  const n = await prisma.orgMembership.count({
+    where: { userId: targetId, organizationId: { in: scope.visibleOrgIds } },
+  })
+  return n > 0
+}
 
 const createSchema = z.object({
   name:  z.string().min(2).max(100),
@@ -75,11 +104,20 @@ export async function POST(req: NextRequest) {
     select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
   })
 
+  // Rattache le compte à l'organisation active de l'admin (pour qu'il apparaisse dans
+  // SON périmètre). Un ADMIN crée toujours des comptes DANS son organisation.
+  const scope = await usersScope(currentUserId, userRole)
+  if (scope.activeOrgId) {
+    await prisma.orgMembership.create({
+      data: { userId: user.id, organizationId: scope.activeOrgId, role: role as PrismaUserRole, scope: 'NODE' },
+    }).catch(() => {})
+  }
+
   await auditLog('USER_CREATED', {
     userId: currentUserId, userRole,
     targetId: user.id, targetType: 'user',
     ip: getClientIp(req),
-    details: { targetEmail: emailNorm, role },
+    details: { targetEmail: emailNorm, role, orgId: scope.activeOrgId },
   })
 
   // Le mot de passe temporaire n'est renvoyé qu'ici, une seule fois.
@@ -101,8 +139,12 @@ export async function GET(req: NextRequest) {
   // #12 — désactivation paresseuse des comptes inactifs (hors ADMIN) selon la politique
   await deactivateInactiveAccounts()
 
+  // Périmètre : un ADMIN ne voit que les comptes de SON organisation.
+  const scope = await usersScope(userId, userRole)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const users = await (prisma.user as any).findMany({
+    where: scope.where,
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
@@ -134,6 +176,12 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json() as { userId: string; role?: UserRole; action?: 'suspend' | 'activate' | 'reset-password' }
   const { userId: targetId, role, action } = body
+
+  // Périmètre : un ADMIN ne peut agir que sur les comptes de SON organisation.
+  const scope = await usersScope(currentUserId, userRole)
+  if (!(await canManageTarget(scope, targetId))) {
+    return NextResponse.json({ error: 'Compte hors de votre périmètre' }, { status: 403 })
+  }
 
   // ── Réinitialisation du mot de passe (#6) ──
   // Génère un MDP temporaire conforme, force le changement, et le renvoie 1× à l'admin.
@@ -273,6 +321,12 @@ export async function DELETE(req: NextRequest) {
 
   if (targetId === currentUserId) {
     return NextResponse.json({ error: 'Vous ne pouvez pas supprimer votre propre compte' }, { status: 400 })
+  }
+
+  // Périmètre : un ADMIN ne peut supprimer que les comptes de SON organisation.
+  const scope = await usersScope(currentUserId, userRole)
+  if (!(await canManageTarget(scope, targetId))) {
+    return NextResponse.json({ error: 'Compte hors de votre périmètre' }, { status: 403 })
   }
 
   const target = await prisma.user.findUnique({ where: { id: targetId }, select: { email: true, name: true } })
