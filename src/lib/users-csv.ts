@@ -20,7 +20,7 @@ export interface ParsedUserRow {
   error?: 'email_invalid' | 'duplicate'
 }
 
-const VALID_ROLES: readonly string[] = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
+const VALID_ROLES: readonly string[] = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']
 const ROLE_ALIASES: Record<string, UserRole> = {
   'lecteur': 'LECTEUR', 'reader': 'LECTEUR', 'viewer': 'LECTEUR', 'lecture seule': 'LECTEUR',
   'analyste': 'ANALYSTE', 'analyst': 'ANALYSTE',

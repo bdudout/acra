@@ -141,6 +141,7 @@ export default function ConfigurationPage() {
   const [conformiteSnapshotMode, setConformiteSnapshotMode] = useState('MANUEL')
   const [savingConfOpt, setSavingConfOpt] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
+  const [acceptationRisquesActive, setAcceptationRisquesActive] = useState(false)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
@@ -179,6 +180,7 @@ export default function ConfigurationPage() {
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
         setConformiteSnapshotMode(['MANUEL', 'AUTO', 'CHANGEMENT'].includes(data.conformiteSnapshotMode) ? data.conformiteSnapshotMode : 'MANUEL')
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
+        setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -212,8 +214,9 @@ export default function ConfigurationPage() {
     qualificationObligatoire: setQualificationObligatoire,
     conformiteActive: setConformiteActive,
     conseilsAteliersActive: setConseilsAteliersActive,
+    acceptationRisquesActive: setAcceptationRisquesActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1066,6 +1069,7 @@ export default function ConfigurationPage() {
                 { field: 'qualificationObligatoire' as const, value: qualificationObligatoire, title: t.features.qualificationObligTitle, desc: t.features.qualificationObligDesc, href: 'https://club-ebios.org/site/', disabled: !qualificationActive, indent: true },
                 { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
               ]).map(f => {
                 const off = f.disabled // toggle inopérant (dépendance non satisfaite)
                 const effValue = f.value && !off

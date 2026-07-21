@@ -37,6 +37,7 @@ export interface RawOrgConfig {
   conformiteNiveau: string
   conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
+  acceptationRisquesActive: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -53,6 +54,7 @@ export interface OrgConfigResolved {
   conformiteNiveau: string
   conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
+  acceptationRisquesActive: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -69,6 +71,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   conformiteNiveau: 'ANALYSE',
   conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,
+  acceptationRisquesActive: false,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -80,7 +83,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode'
 
 /**
@@ -120,5 +123,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     conformiteNiveau: pickStr('conformiteNiveau', defaults.conformiteNiveau),
     conformiteSnapshotMode: pickStr('conformiteSnapshotMode', defaults.conformiteSnapshotMode),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
+    acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
   }
 }

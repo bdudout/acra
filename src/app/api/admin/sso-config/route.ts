@@ -38,7 +38,7 @@ const SSOSchema = z.object({
 
   // Common
   autoProvision:  z.boolean().default(true),
-  defaultRole:    z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']).default('ANALYSTE'),
+  defaultRole:    z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']).default('ANALYSTE'),
   allowedDomains: z.string().max(4096).nullable().optional(),
 })
 

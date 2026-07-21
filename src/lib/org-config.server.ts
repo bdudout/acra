@@ -23,6 +23,7 @@ const CONFIG_SELECT = {
   conformiteNiveau: true,
   conformiteSnapshotMode: true,
   conseilsAteliersActive: true,
+  acceptationRisquesActive: true,
 } as const
 
 /**

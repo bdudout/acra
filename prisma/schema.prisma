@@ -14,8 +14,9 @@ enum UserRole {
   ANALYSTE      // Création et édition de ses analyses
   RISK_MANAGER  // Approbation des analyses soumises
   RSSI          // Responsable SSI — approbation et validation (comme RISK_MANAGER)
-  ADMIN         // Administration complète d'une organisation
+  ADMIN         // Administration de son organisation (comptes de son périmètre)
   SUPER_ADMIN   // Niveau instance : gère les organisations et traverse tous les périmètres
+  DIRECTION_METIER // Lecture seule + acceptation des risques résiduels (acceptation du risque)
 }
 
 // Portée d'une appartenance à une organisation (cf. multi-organisation hiérarchique).
@@ -203,10 +204,18 @@ model Analyse {
   socle     Analyse?  @relation("SocleHeritage", fields: [socleId], references: [id], onDelete: SetNull)
   heritiers Analyse[] @relation("SocleHeritage")
 
-  // Workflow d'approbation
+  // Workflow d'approbation (validation du LIVRABLE : l'analyse est-elle recevable ?)
   approbateurId          String?  // userId du Risk Manager qui a traité
   approuveLe             DateTime?
   commentaireApprobation String?  @db.Text
+
+  // Acceptation des RISQUES RÉSIDUELS (== acceptation du risque par la Direction métier),
+  // DISTINCTE de la validation de l'analyse. Portée GLOBALE : une décision pour l'ensemble
+  // des risques résiduels de l'analyse. Activable via OrganizationConfig.acceptationRisquesActive.
+  risquesResiduelsStatut      String    @default("EN_ATTENTE") // EN_ATTENTE | ACCEPTES | REFUSES
+  risquesResiduelsPar         String?   // userId de la Direction métier
+  risquesResiduelsLe          DateTime?
+  risquesResiduelsCommentaire String?   @db.Text
 
   // Suppression douce (corbeille) : récupérable par un ADMIN pendant 30 jours,
   // cf. lib/recovery.ts. deletedAt null = analyse active.
@@ -615,6 +624,9 @@ model OrganizationConfig {
   conformiteSnapshotMode String @default("MANUEL")
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
   conseilsAteliersActive Boolean @default(true)
+  // Fonctionnalité optionnelle : acceptation des risques résiduels par la Direction métier
+  // (rôle DIRECTION_METIER), distincte de la validation de l'analyse.
+  acceptationRisquesActive Boolean @default(false)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

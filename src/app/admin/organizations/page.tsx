@@ -20,7 +20,7 @@ interface Member {
   user: { id: string; name: string | null; email: string }
 }
 
-const ASSIGNABLE_ROLES = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN'] as const
+const ASSIGNABLE_ROLES = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as const
 
 export default function OrganizationsAdminPage() {
   const { t } = useTranslation()

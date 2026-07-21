@@ -30,9 +30,10 @@ import RevisionPanel from '@/components/RevisionPanel'
 import { formatDate } from '@/lib/format'
 import {
   canViewAnalyse, canEditAnalyse, canSubmitAnalyse,
-  canApproveAnalyse, canManageAccess, STATUT_APPROBATION_LABELS,
+  canApproveAnalyse, canManageAccess, canAcceptResidualRisks, STATUT_APPROBATION_LABELS,
   type UserRole,
 } from '@/lib/permissions'
+import ResidualRisksPanel from '@/components/ResidualRisksPanel'
 
 export default async function AnalyseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -461,6 +462,17 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               approuveLe={analyse.approuveLe ? analyse.approuveLe.toISOString() : null}
               approbateurId={analyse.approbateurId ?? null}
             />
+            {/* Acceptation des risques résiduels (Direction métier) — si activée pour l'org. */}
+            {orgConfig.acceptationRisquesActive && (
+              <ResidualRisksPanel
+                analyseId={analyse.id}
+                statut={(analyse as any).risquesResiduelsStatut ?? 'EN_ATTENTE'}
+                le={(analyse as any).risquesResiduelsLe ? (analyse as any).risquesResiduelsLe.toISOString() : null}
+                commentaire={(analyse as any).risquesResiduelsCommentaire ?? null}
+                canAct={canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive)}
+                locale={locale}
+              />
+            )}
           </div>
         </div>
       </main>

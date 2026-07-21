@@ -44,7 +44,7 @@ async function canManageTarget(scope: { all: boolean; visibleOrgIds: string[] },
 const createSchema = z.object({
   name:  z.string().min(2).max(100),
   email: z.string().email(),
-  role:  z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']),
+  role:  z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']),
 })
 
 async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {
@@ -259,8 +259,8 @@ export async function PATCH(req: NextRequest) {
   // Le rôle SUPER_ADMIN (niveau instance) n'est gérable que par un SUPER_ADMIN.
   const isSuper = userRole === 'SUPER_ADMIN'
   const validRoles: UserRole[] = isSuper
-    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN']
-    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
+    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER', 'SUPER_ADMIN']
+    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']
   if (!validRoles.includes(role)) {
     return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
   }

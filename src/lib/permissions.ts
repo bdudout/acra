@@ -21,7 +21,7 @@
  *  - APPROBATION → peut approuver (utilisé pour les Risk Managers sur une analyse spécifique)
  */
 
-export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN'
+export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER'
 export type AnalysePermission = 'LECTURE' | 'EDITION' | 'APPROBATION'
 
 export interface SessionUser {
@@ -105,8 +105,19 @@ function getEffectivePermission(
 
 /** L'utilisateur peut visualiser l'analyse */
 export function canViewAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI') return true
+  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || user.role === 'DIRECTION_METIER') return true
   return getEffectivePermission(user, analyse) !== null
+}
+
+/**
+ * L'utilisateur peut ACCEPTER (ou refuser) les risques résiduels d'une analyse
+ * (acceptation du risque, portée globale). Réservé à la DIRECTION_METIER (et aux
+ * administrateurs), et uniquement si la fonctionnalité est activée dans la config.
+ * Pur → testé unitairement.
+ */
+export function canAcceptResidualRisks(user: SessionUser, featureActive: boolean): boolean {
+  if (!featureActive) return false
+  return user.role === 'DIRECTION_METIER' || isAdminRole(user.role)
 }
 
 /** L'utilisateur peut modifier les ateliers de l'analyse */
@@ -172,14 +183,14 @@ export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgS
     // Admin d'organisation : tout son périmètre. SUPER_ADMIN : tout (orgFilter vide).
     return { ...notDeleted, ...orgFilter }
   }
-  if (role === 'RISK_MANAGER' || role === 'RSSI') {
+  if (role === 'RISK_MANAGER' || role === 'RSSI' || role === 'DIRECTION_METIER') {
     return {
       ...notDeleted,
       ...orgFilter,
       OR: [
         { userId },
         { accesUtilisateurs: { some: { userId } } },
-        // Les Risk Managers et RSSI voient aussi les analyses soumises/approuvées/rejetées
+        // Risk Managers, RSSI et Direction métier voient aussi les analyses soumises/approuvées/rejetées
         { statut: 'SOUMIS'   as const },
         { statut: 'APPROUVE' as const },
         { statut: 'REJETE'   as const },
@@ -206,6 +217,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   RSSI:         'RSSI',
   ADMIN:        'Administrateur',
   SUPER_ADMIN:  'Super-administrateur',
+  DIRECTION_METIER: 'Direction métier',
 }
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -215,6 +227,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   RSSI:         'Responsable SSI — apporte l\'expertise technique sécurité et approuve les analyses',
   ADMIN:        'Administre SON organisation : gère les comptes de son périmètre et les analyses. Pas les réglages d\'instance (SMTP, SSO, politique mdp), ni les autres organisations, ni la création de super-administrateurs',
   SUPER_ADMIN:  'Niveau instance : réglages globaux (SMTP, SSO, politique mdp), gestion des organisations et de tous les comptes, journal d\'audit, traverse tous les périmètres',
+  DIRECTION_METIER: 'Direction métier — consulte les analyses en lecture seule et accepte (ou refuse) les risques résiduels (acceptation du risque), distincte de la validation de l\'analyse',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -224,6 +237,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   RSSI:         'bg-purple-100 text-purple-800',
   ADMIN:        'bg-red-100 text-red-700',
   SUPER_ADMIN:  'bg-slate-800 text-white',
+  DIRECTION_METIER: 'bg-cyan-100 text-cyan-800',
 }
 
 export const PERMISSION_LABELS: Record<AnalysePermission, string> = {

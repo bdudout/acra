@@ -67,8 +67,8 @@ export default function AdminUsersPage() {
   // Rôles assignables : un SUPER_ADMIN peut aussi promouvoir/rétrograder un SUPER_ADMIN.
   const isSuperAdmin = currentRole === 'SUPER_ADMIN'
   const assignableRoles: UserRole[] = isSuperAdmin
-    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN']
-    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN']
+    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER', 'SUPER_ADMIN']
+    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']
 
   useEffect(() => {
     if (status === 'loading') return
@@ -266,7 +266,7 @@ export default function AdminUsersPage() {
 
   const inactiveCount = users.filter(u => !u.isActive).length
 
-  const roleStats = (['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN'] as UserRole[]).map(r => ({
+  const roleStats = (['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as UserRole[]).map(r => ({
     role: r,
     count: users.filter(u => u.role === r).length,
   }))
@@ -406,7 +406,7 @@ export default function AdminUsersPage() {
                     onChange={e => setNewUser(p => ({ ...p, role: e.target.value as UserRole }))}
                     className="input"
                   >
-                    {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN'] as UserRole[]).map(r => (
+                    {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as UserRole[]).map(r => (
                       <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                     ))}
                   </select>
@@ -634,7 +634,7 @@ export default function AdminUsersPage() {
         <div className="mt-6 card p-5">
           <h2 className="font-semibold text-gray-800 mb-4">{t.admin.rolesGuideTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN'] as UserRole[]).map(role => (
+            {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER', 'SUPER_ADMIN'] as UserRole[]).map(role => (
               <div key={role} className="p-3 rounded-lg border border-gray-100 bg-gray-50">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[role]}`}>

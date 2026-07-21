@@ -20,6 +20,7 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     conformiteNiveau: 'ANALYSE',
     conformiteSnapshotMode: 'MANUEL',
     conseilsAteliersActive: true,
+    acceptationRisquesActive: false,
     ...partial,
   }
 }

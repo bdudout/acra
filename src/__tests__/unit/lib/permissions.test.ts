@@ -9,6 +9,7 @@ import {
   canSubmitAnalyse,
   canApproveAnalyse,
   canManageAccess,
+  canAcceptResidualRisks,
   analyseWhereClause,
   type SessionUser,
   type AnalyseOwnership,
@@ -59,6 +60,44 @@ describe('canAdmin', () => {
     expect(canAdmin(userWith('ANALYSTE'))).toBe(false)
     expect(canAdmin(userWith('RISK_MANAGER'))).toBe(false)
     expect(canAdmin(userWith('LECTEUR'))).toBe(false)
+  })
+})
+
+// ─── Direction métier : lecture seule + acceptation des risques résiduels ─────
+describe('DIRECTION_METIER', () => {
+  const dm = userWith('DIRECTION_METIER')
+  const foreign = ownedBy('someone-else')
+
+  it('peut consulter n\'importe quelle analyse (lecture seule)', () => {
+    expect(canViewAnalyse(dm, foreign)).toBe(true)
+  })
+  it('ne peut ni éditer, ni soumettre, ni approuver l\'analyse', () => {
+    expect(canEditAnalyse(dm, foreign)).toBe(false)
+    expect(canSubmitAnalyse(dm, foreign)).toBe(false)
+    expect(canApproveAnalyse(dm, foreign)).toBe(false)
+  })
+  it('n\'est pas administrateur', () => {
+    expect(canAdmin(dm)).toBe(false)
+  })
+})
+
+describe('canAcceptResidualRisks', () => {
+  it('Direction métier peut accepter si la fonctionnalité est active', () => {
+    expect(canAcceptResidualRisks(userWith('DIRECTION_METIER'), true)).toBe(true)
+  })
+  it('les administrateurs le peuvent aussi', () => {
+    expect(canAcceptResidualRisks(userWith('ADMIN'), true)).toBe(true)
+    expect(canAcceptResidualRisks(userWith('SUPER_ADMIN'), true)).toBe(true)
+  })
+  it('personne ne le peut si la fonctionnalité est désactivée', () => {
+    expect(canAcceptResidualRisks(userWith('DIRECTION_METIER'), false)).toBe(false)
+    expect(canAcceptResidualRisks(userWith('ADMIN'), false)).toBe(false)
+  })
+  it('les autres rôles ne le peuvent pas (même si actif)', () => {
+    expect(canAcceptResidualRisks(userWith('ANALYSTE'), true)).toBe(false)
+    expect(canAcceptResidualRisks(userWith('RISK_MANAGER'), true)).toBe(false)
+    expect(canAcceptResidualRisks(userWith('RSSI'), true)).toBe(false)
+    expect(canAcceptResidualRisks(userWith('LECTEUR'), true)).toBe(false)
   })
 })
 
