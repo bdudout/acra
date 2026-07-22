@@ -11,7 +11,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -242,6 +242,17 @@ export default function Navbar() {
             >
               <ShieldCheck size={16} aria-hidden="true" />
               <span>{t.nav.conformite}</span>
+            </Link>
+          )}
+
+          {(canGovern || userRole === 'DIRECTION_METIER') && (
+            <Link
+              href="/derogations"
+              className={`${navClass(pathname === '/derogations')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/derogations' ? 'page' : undefined}
+            >
+              <FileWarning size={16} aria-hidden="true" />
+              <span>{t.nav.derogations}</span>
             </Link>
           )}
         </div>

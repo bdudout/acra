@@ -194,6 +194,7 @@ export default function DerogationsPanel({
                         onRejeter={c => transition(x.id, { action: 'REJETER', commentaire: c })}
                         onProlonger={(dt, c) => transition(x.id, { action: 'PROLONGER', nouvelleDateFin: dt || undefined, commentaire: c })}
                         onRevoquer={c => transition(x.id, { action: 'REVOQUER', commentaire: c })}
+                        onCloturer={(preuves, c) => transition(x.id, { action: 'CLOTURER', preuves, commentaire: c })}
                         show={{ canAvis, canDouble, canVal, canRev, canProlong, canClo }} />
                     )}
                   </div>
@@ -207,8 +208,19 @@ export default function DerogationsPanel({
   )
 }
 
+// Lit des fichiers en data URL (comme les logos d'organisation), cap 5 × ~1 Mo.
+function readPreuves(files: FileList | null): Promise<{ nom: string; mime: string; taille: number; dataUrl: string }[]> {
+  const list = Array.from(files ?? []).slice(0, 5).filter(f => f.size <= 1_000_000)
+  return Promise.all(list.map(f => new Promise<{ nom: string; mime: string; taille: number; dataUrl: string }>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve({ nom: f.name.slice(0, 200), mime: f.type, taille: f.size, dataUrl: String(r.result) })
+    r.onerror = reject
+    r.readAsDataURL(f)
+  })))
+}
+
 // Barre d'actions contextuelle (avec un champ commentaire commun).
-function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onProlonger, onRevoquer }: {
+function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onProlonger, onRevoquer, onCloturer }: {
   d: Record<string, unknown>
   busy: boolean
   show: { canAvis: boolean; canDouble: boolean; canVal: boolean; canRev: boolean; canProlong: boolean; canClo: boolean }
@@ -218,10 +230,12 @@ function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onPr
   onRejeter: (c: string) => void
   onProlonger: (dt: string, c: string) => void
   onRevoquer: (c: string) => void
+  onCloturer: (preuves: { nom: string; mime: string; taille: number; dataUrl: string }[], c: string) => void
 }) {
   const [c, setC] = useState('')
   const [dbl, setDbl] = useState(false)
   const [dt, setDt] = useState('')
+  const [preuves, setPreuves] = useState<{ nom: string; mime: string; taille: number; dataUrl: string }[]>([])
   const s = d as Record<string, string>
   const btn = 'text-xs px-2 py-1 rounded font-medium disabled:opacity-50'
   return (
@@ -247,6 +261,14 @@ function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onPr
         </>}
         {show.canRev && <button disabled={busy} onClick={() => onRevoquer(c)} className={`${btn} bg-gray-600 text-white`}>{s.revoquer}</button>}
       </div>
+      {show.canClo && (
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+          <input type="file" multiple onChange={async e => setPreuves(await readPreuves(e.target.files))}
+            className="text-xs text-gray-600 dark:text-gray-300 file:mr-2 file:text-xs file:rounded file:border-0 file:bg-gray-200 dark:file:bg-gray-700 file:px-2 file:py-1" />
+          <button disabled={busy || preuves.length === 0} onClick={() => onCloturer(preuves, c)} className={`${btn} bg-slate-700 text-white`}>{s.cloturer}</button>
+          {preuves.length > 0 && <span className="text-[11px] text-gray-500">{preuves.length} ✓</span>}
+        </div>
+      )}
     </div>
   )
 }

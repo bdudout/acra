@@ -66,6 +66,7 @@ export const fr = {
     tiers:          'Tiers',
     actions:        'Actions',
     conformite:     'Conformité',
+    derogations:    'Dérogations',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Déconnexion',
@@ -766,6 +767,15 @@ export const fr = {
     title: 'Dérogations',
     subtitle: 'Acceptation temporaire d\'une non-conformité, justifiée, compensée et suivie jusqu\'à son échéance.',
     newBtn: 'Demander une dérogation',
+    colAnalyse: 'Analyse',
+    colEtat: 'État',
+    colEcheance: 'Échéance',
+    filterAll: 'Toutes',
+    filterReview: 'En revue',
+    filterDue: 'À échéance',
+    filterDone: 'Terminées',
+    navLabel: 'Dérogations',
+
     empty: 'Aucune dérogation sur cette analyse.',
     // Formulaire
     intitule: 'Intitulé',
