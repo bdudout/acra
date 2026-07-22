@@ -37,6 +37,20 @@ describe('consolidateTiers', () => {
     expect(r[0].fiabilite).toBe(3)
   })
 
+  it('score contextuel par analyse : pire cas DANS chaque analyse (menace max) + zone', () => {
+    const r = consolidateTiers([
+      row({ nom: 'Cloud', analyseId: 'a1', menace: 0.5, zone: 'veille' }),
+      row({ nom: 'Cloud', analyseId: 'a1', menace: 2.0, zone: 'controle' }), // même analyse → pire cas local
+      row({ nom: 'Cloud', analyseId: 'a2', menace: 3.5, zone: 'danger' }),
+    ])
+    const byId = Object.fromEntries(r[0].analyses.map(a => [a.analyseId, a]))
+    expect(r[0].analyses).toHaveLength(2)
+    expect(byId['a1'].menace).toBe(2.0)
+    expect(byId['a1'].zone).toBe('controle')
+    expect(byId['a2'].menace).toBe(3.5)
+    expect(byId['a2'].zone).toBe('danger')
+  })
+
   it('critique = vrai si au moins une occurrence est critique', () => {
     const r = consolidateTiers([
       row({ nom: 'X', analyseId: 'a1', menace: 1, critique: false }),
@@ -100,6 +114,13 @@ describe('validateMergeRequest — garde-fous de la fusion (étape 2b)', () => {
   it('exige au moins deux noms distincts', () => {
     expect(validateMergeRequest(['Microsoft', 'microsoft', '  Microsoft  '], 'Microsoft')).toBe('pas_assez_de_noms')
     expect(validateMergeRequest(['Microsoft'], 'Microsoft')).toBe('pas_assez_de_noms')
+  })
+  it('rejette un tableau `noms` trop grand (anti-DoS #118)', () => {
+    const many = Array.from({ length: 101 }, (_, i) => `Tiers ${i}`)
+    expect(validateMergeRequest(many, 'Cible')).toBe('trop_de_noms')
+  })
+  it('rejette un nom trop long (anti-DoS #118)', () => {
+    expect(validateMergeRequest(['Microsoft', 'x'.repeat(201)], 'Microsoft')).toBe('nom_trop_long')
   })
   it('accepte une requête valide → null', () => {
     expect(validateMergeRequest(['Microsoft', 'Microsoft Azure'], 'Microsoft')).toBeNull()

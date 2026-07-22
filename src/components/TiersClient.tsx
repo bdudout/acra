@@ -321,7 +321,12 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
                       <div className="flex flex-col gap-0.5">
                         {x.analyses.map(a => (
                           <Link key={a.analyseId} href={`/analyses/${a.analyseId}/atelier/3`}
-                            className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline">
+                            className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline inline-flex items-center gap-1">
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${ZONE_STYLE[a.zone].dot}`}
+                              title={`${zoneLabel[a.zone]} · ${radar.menaceLabel} ${a.menace.toFixed(2)}`}
+                              aria-hidden="true"
+                            />
                             {a.analyseNom}
                             {a.entite && (
                               <span className="ml-1 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">

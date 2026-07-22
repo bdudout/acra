@@ -15,8 +15,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 const rows: ConsolidatedTier[] = [
-  { key: 'infogereur', nom: 'Infogéreur', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'Analyse Alpha' }], exposition: 4, fiabilite: 1, menace: 16, zone: 'danger', critique: false },
-  { key: 'client final', nom: 'Client Final', type: 'CLIENT', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'Analyse Beta' }], exposition: 2, fiabilite: 3, menace: 4, zone: 'veille', critique: false },
+  { key: 'infogereur', nom: 'Infogéreur', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'Analyse Alpha', menace: 16, zone: 'danger' }], exposition: 4, fiabilite: 1, menace: 16, zone: 'danger', critique: false },
+  { key: 'client final', nom: 'Client Final', type: 'CLIENT', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'Analyse Beta', menace: 4, zone: 'veille' }], exposition: 2, fiabilite: 3, menace: 4, zone: 'veille', critique: false },
 ]
 
 describe('TiersClient', () => {
@@ -56,8 +56,8 @@ describe('TiersClient', () => {
 
   // Fusion de doublons (étape 2b) : groupe « Microsoft » / « Microsoft Azure ».
   const dupRows: ConsolidatedTier[] = [
-    { key: 'microsoft', nom: 'Microsoft', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'A' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
-    { key: 'microsoft azure', nom: 'Microsoft Azure', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'B' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
+    { key: 'microsoft', nom: 'Microsoft', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a1', analyseNom: 'A', menace: 4, zone: 'veille' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
+    { key: 'microsoft azure', nom: 'Microsoft Azure', type: 'PRESTATAIRE', occurrences: 1, analyses: [{ analyseId: 'a2', analyseNom: 'B', menace: 4, zone: 'veille' }], exposition: 4, fiabilite: 9, menace: 4, zone: 'veille', critique: false },
   ]
 
   it('affiche le bouton Fusionner pour un groupe de doublons quand canMerge', () => {

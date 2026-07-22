@@ -38,8 +38,12 @@ export interface ConsolidatedTier {
   type: string
   /** Nombre d'occurrences (parties prenantes) regroupées. */
   occurrences: number
-  /** Analyses où le tiers apparaît (dédupliquées). */
-  analyses: { analyseId: string; analyseNom: string; entite?: string | null }[]
+  /**
+   * Analyses où le tiers apparaît (dédupliquées), avec le **score contextuel**
+   * de ce tiers DANS chaque analyse (menace/zone du pire cas local) : un même
+   * prestataire peut être « danger » dans une analyse et « veille » dans une autre.
+   */
+  analyses: { analyseId: string; analyseNom: string; entite?: string | null; menace: number; zone: EcosystemZone }[]
   // Pire cas (conservateur)
   menace: number
   zone: EcosystemZone
@@ -101,18 +105,29 @@ export function tierGroupSignature(group: { key: string }[]): string {
 
 /** Longueur maximale d'un nom de tiers cible. */
 const MERGE_NAME_MAX = 200
+/**
+ * Nombre maximal de noms acceptés dans une demande de fusion (anti-DoS, #118) :
+ * borne la clause SQL `IN` générée côté route. Une fusion légitime porte sur
+ * quelques variantes d'un même tiers, jamais des dizaines de milliers.
+ */
+const MERGE_MAX_NOMS = 100
 
 /**
  * Valide une demande de fusion AVANT toute écriture. Renvoie un code d'erreur
  * (clé i18n) ou `null` si la requête est valide. Pur, testé.
  */
-export function validateMergeRequest(noms: string[], cible: string): 'cible_vide' | 'cible_trop_longue' | 'pas_assez_de_noms' | null {
+export function validateMergeRequest(noms: string[], cible: string): 'cible_vide' | 'cible_trop_longue' | 'pas_assez_de_noms' | 'trop_de_noms' | 'nom_trop_long' | null {
   const target = String(cible ?? '').trim()
   if (!target) return 'cible_vide'
   if (target.length > MERGE_NAME_MAX) return 'cible_trop_longue'
+  const list = noms ?? []
+  // Anti-DoS (#118) : borne la taille du tableau et la longueur de chaque élément
+  // avant qu'ils n'alimentent une requête Prisma `nom: { in: noms }`.
+  if (list.length > MERGE_MAX_NOMS) return 'trop_de_noms'
+  if (list.some(n => typeof n === 'string' && n.length > MERGE_NAME_MAX)) return 'nom_trop_long'
   // Au moins deux noms NORMALISÉS distincts : fusionner « Microsoft »/« microsoft »
   // n'a aucun sens (la consolidation les regroupe déjà).
-  const uniq = new Set((noms ?? []).map(normalizeTierName).filter(Boolean))
+  const uniq = new Set(list.map(normalizeTierName).filter(Boolean))
   if (uniq.size < 2) return 'pas_assez_de_noms'
   return null
 }
@@ -169,13 +184,16 @@ export function consolidateTiers(rows: TierInput[]): ConsolidatedTier[] {
   for (const [key, g] of groups) {
     // Occurrence la plus menaçante → porte la menace + la zone (cohérence).
     const worst = g.reduce((a, b) => (b.menace > a.menace ? b : a))
-    const analyses: { analyseId: string; analyseNom: string; entite?: string | null }[] = []
-    const seen = new Set<string>()
+    // Score CONTEXTUEL par analyse : on conserve le pire cas (menace max) DANS
+    // chaque analyse, en préservant l'ordre de première apparition.
+    const perAnalyse = new Map<string, { analyseId: string; analyseNom: string; entite?: string | null; menace: number; zone: EcosystemZone }>()
     for (const r of g) {
-      if (seen.has(r.analyseId)) continue
-      seen.add(r.analyseId)
-      analyses.push({ analyseId: r.analyseId, analyseNom: r.analyseNom, entite: r.entite ?? null })
+      const cur = perAnalyse.get(r.analyseId)
+      if (!cur || r.menace > cur.menace) {
+        perAnalyse.set(r.analyseId, { analyseId: r.analyseId, analyseNom: r.analyseNom, entite: r.entite ?? null, menace: r.menace, zone: r.zone })
+      }
     }
+    const analyses = [...perAnalyse.values()]
     out.push({
       key,
       nom: mostFrequent(g.map(r => r.nom)),

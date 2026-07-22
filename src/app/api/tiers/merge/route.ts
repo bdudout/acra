@@ -11,6 +11,7 @@ import {
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { validateMergeRequest, planTierRename } from '@/lib/tiers'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,15 @@ export async function POST(request: Request) {
   const userId = (session.user as { id: string }).id
   const userRole: UserRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
   const user: SessionUser = { id: userId, role: userRole }
+
+  // Rate limiting (#118) : borne la fréquence des fusions comme les autres écritures.
+  const rl = rateLimit(`tiers-merge:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de requêtes. Réessayez dans un instant.' },
+      { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }
+    )
+  }
 
   let body: { noms?: unknown; cible?: unknown }
   try {
