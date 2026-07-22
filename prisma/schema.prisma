@@ -10,41 +10,41 @@ datasource db {
 // ─── Authentification ───────────────────────────────────────────────────────
 
 enum UserRole {
-  LECTEUR       // Lecture seule sur les analyses partagées
-  ANALYSTE      // Création et édition de ses analyses
-  RISK_MANAGER  // Approbation des analyses soumises
-  RSSI          // Responsable SSI — approbation et validation (comme RISK_MANAGER)
-  ADMIN         // Administration de son organisation (comptes de son périmètre)
-  SUPER_ADMIN   // Niveau instance : gère les organisations et traverse tous les périmètres
+  LECTEUR // Lecture seule sur les analyses partagées
+  ANALYSTE // Création et édition de ses analyses
+  RISK_MANAGER // Approbation des analyses soumises
+  RSSI // Responsable SSI — approbation et validation (comme RISK_MANAGER)
+  ADMIN // Administration de son organisation (comptes de son périmètre)
+  SUPER_ADMIN // Niveau instance : gère les organisations et traverse tous les périmètres
   DIRECTION_METIER // Lecture seule + acceptation des risques résiduels (acceptation du risque)
 }
 
 // Portée d'une appartenance à une organisation (cf. multi-organisation hiérarchique).
 enum OrgScope {
-  NODE     // ce nœud d'organisation uniquement
-  SUBTREE  // ce nœud ET tous ses descendants (vision consolidée, ex. RSSI groupe)
+  NODE // ce nœud d'organisation uniquement
+  SUBTREE // ce nœud ET tous ses descendants (vision consolidée, ex. RSSI groupe)
 }
 
 enum AnalysePermission {
-  LECTURE    // Consultation uniquement
-  EDITION    // Modification des ateliers
+  LECTURE // Consultation uniquement
+  EDITION // Modification des ateliers
   APPROBATION // Soumettre / approuver / rejeter
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  passwordHash  String?
-  image         String?
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  passwordHash       String?
+  image              String?
   // Numéro de téléphone (format E.164, ex. +33612345678) — utilisé pour le MFA par SMS
-  phone         String?
+  phone              String?
   role               UserRole  @default(ANALYSTE)
   isActive           Boolean   @default(true)
   passwordChangedAt  DateTime?
   mustChangePassword Boolean   @default(false) // changement de MDP forcé à la prochaine connexion
-  lastLoginAt        DateTime?                 // dernière connexion réussie (désactivation par inactivité)
+  lastLoginAt        DateTime? // dernière connexion réussie (désactivation par inactivité)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -94,28 +94,29 @@ model VerificationToken {
 // ─── Multi-organisation (arbre + appartenances) ──────────────────────────────
 
 model Organization {
-  id        String   @id @default(cuid())
-  nom       String
-  slug      String   @unique
-  parentId  String?
-  parent    Organization?  @relation("OrgArbre", fields: [parentId], references: [id])
-  enfants   Organization[] @relation("OrgArbre")
+  id             String         @id @default(cuid())
+  nom            String
+  slug           String         @unique
+  parentId       String?
+  parent         Organization?  @relation("OrgArbre", fields: [parentId], references: [id])
+  enfants        Organization[] @relation("OrgArbre")
   // Chemin matérialisé "/<racineId>/…/<id>/" : sous-arbre = orgs dont path startsWith O.path.
-  path      String   @default("/")
+  path           String         @default("/")
   // Logo personnalisé (data URL, optionnel). Absent ⇒ logo auto-généré (cf. lib/org-logo).
-  logo      String?  @db.Text
-  actif     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  logo           String?        @db.Text
+  actif          Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   // Dernière activité utilisateur (connexion / modif d'analyse) — mode démo, purge par inactivité (lib/demo.ts)
-  lastActivityAt DateTime @default(now())
+  lastActivityAt DateTime       @default(now())
   // Date d'envoi du préavis de purge (mode démo) — anti-doublon ; réinitialisé quand l'org redevient active
-  warnedAt DateTime?
+  warnedAt       DateTime?
 
-  membres   OrgMembership[]
-  analyses  Analyse[]
-  config    OrganizationConfig?
+  membres     OrgMembership[]
+  analyses    Analyse[]
+  config      OrganizationConfig?
   conformites Conformite[]
+  derogations Derogation[]
 
   @@index([parentId])
   @@index([path])
@@ -127,13 +128,13 @@ model Organization {
 // "ORGANISATION". `entries` = ConformiteEntry[] (mêmes {ref,statut,commentaire}
 // que Cadrage.socleSecurite). L'historique est capturé dans ConformiteSnapshot.
 model Conformite {
-  id             String   @id @default(cuid())
+  id             String               @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  referentiel    String   // FrameworkId (ISO27001, NIST_CSF, …)
-  entries        Json     @default("[]")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  referentiel    String // FrameworkId (ISO27001, NIST_CSF, …)
+  entries        Json                 @default("[]")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   snapshots      ConformiteSnapshot[]
 
   @@unique([organizationId, referentiel])
@@ -142,15 +143,93 @@ model Conformite {
 
 // Instantané daté de l'état de conformité (tendance dans le temps).
 model ConformiteSnapshot {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   conformiteId String
   conformite   Conformite @relation(fields: [conformiteId], references: [id], onDelete: Cascade)
   entries      Json
-  label        String?  // libellé optionnel (ex. "Avant audit 2026")
-  createdById  String?  // utilisateur ayant figé la version (null = automatique)
-  createdAt    DateTime @default(now())
+  label        String? // libellé optionnel (ex. "Avant audit 2026")
+  createdById  String? // utilisateur ayant figé la version (null = automatique)
+  createdAt    DateTime   @default(now())
 
   @@index([conformiteId])
+}
+
+// Dérogation : acceptation TEMPORAIRE d'une non-conformité au socle (voir
+// docs/derogations-spec.md). Rattachée à un contrôle d'un référentiel, à un
+// risque, ou (plus tard) au socle d'une organisation. Cycle de vie séparé du
+// plan d'action (mesures) : justifiée, compensée, bornée dans le temps, surveillée.
+model Derogation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  analyseId      String
+  analyse        Analyse      @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+
+  // Rattachement : 'CONTROLE' (referentiel+ref) | 'RISQUE' (risqueId) | 'SOCLE' (org, phase ultérieure)
+  portee      String
+  referentiel String? // FrameworkId si portée CONTROLE/SOCLE
+  ref         String? // contrôle du référentiel si portée CONTROLE
+  risqueId    String?
+  risque      Risque? @relation(fields: [risqueId], references: [id], onDelete: SetNull)
+
+  intitule              String
+  motif                 String @db.Text // justification de l'acceptation temporaire
+  mesuresCompensatoires String @db.Text
+
+  // Workflow : DEMANDEE | DOUBLE_REGARD | VALIDATION_METIER | ACTIVE | REJETEE | CLOTUREE | REVOQUEE
+  statut      String @default("DEMANDEE")
+  demandeurId String
+
+  // Avis RSSI (sur la dérogation ET les mesures compensatoires)
+  avisRssiPar         String?
+  avisRssiLe          DateTime?
+  avisRssiFavorable   Boolean?
+  avisRssiCommentaire String?   @db.Text
+
+  // Double regard (RSSI groupe) — quatre-yeux, un RSSI différent du premier
+  doubleRegardPar         String?
+  doubleRegardLe          DateTime?
+  doubleRegardFavorable   Boolean?
+  doubleRegardCommentaire String?   @db.Text
+
+  // Validation métier (rôle DIRECTION_METIER)
+  valideePar String?
+  valideeLe  DateTime?
+
+  // Période d'acceptation
+  dateDebut            DateTime?
+  dateFin              DateTime?
+  // Historique des prolongations : [{ancienneDateFin, nouvelleDateFin, motif, par, le}]
+  prolongations        Json      @default("[]")
+  // Nouvelle date de fin proposée pendant un cycle de prolongation en cours de revue
+  prolongationDemandee DateTime?
+
+  // Clôture avec preuves (data URL en base, comme les logos) : [{nom, mime, taille, dataUrl}]
+  preuves            Json      @default("[]")
+  clotureePar        String?
+  clotureeLe         DateTime?
+  clotureCommentaire String?   @db.Text
+
+  // Révocation d'une dérogation active
+  revoqueePar  String?
+  revoqueeLe   DateTime?
+  revoqueMotif String?   @db.Text
+
+  // Rejet pendant la revue
+  rejeteePar String?
+  rejeteeLe  DateTime?
+  rejetMotif String?   @db.Text
+
+  // Anti-doublon de l'alerte individuelle d'expiration (comme Organization.warnedAt)
+  alerteeLe DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([analyseId])
+  @@index([statut])
+  @@index([risqueId])
 }
 
 model OrgMembership {
@@ -158,7 +237,7 @@ model OrgMembership {
   userId         String
   organizationId String
   role           UserRole @default(ANALYSTE) // rôle DANS cette organisation
-  scope          OrgScope @default(NODE)     // NODE = ce nœud · SUBTREE = nœud + descendants
+  scope          OrgScope @default(NODE) // NODE = ce nœud · SUBTREE = nœud + descendants
   createdAt      DateTime @default(now())
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -172,25 +251,25 @@ model OrgMembership {
 // ─── EBIOS RM ────────────────────────────────────────────────────────────────
 
 model Analyse {
-  id          String   @id @default(cuid())
-  userId      String
-  nom         String
-  description String?
-  organisation String?
-  secteur     String?
-  sousSecteur String?  // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
-  dateDebut   DateTime @default(now())
-  dateEcheance DateTime?
-  statut      StatutAnalyse @default(EN_COURS)
-  atelierCourant Int @default(1)
-  referentielMesures String? @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
+  id                   String        @id @default(cuid())
+  userId               String
+  nom                  String
+  description          String?
+  organisation         String?
+  secteur              String?
+  sousSecteur          String? // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
+  dateDebut            DateTime      @default(now())
+  dateEcheance         DateTime?
+  statut               StatutAnalyse @default(EN_COURS)
+  atelierCourant       Int           @default(1)
+  referentielMesures   String?       @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
   // Mention de protection du document d'analyse (label EBIOS RM §3.2) — cf. lib/mention-protection.ts
-  mentionProtection String @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
+  mentionProtection    String        @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
   // Version x.y de l'analyse (label EBIOS RM §3.4) — cf. lib/version-analyse.ts
-  versionMajeure Int @default(1) // « x » — incrémenté lors d'une révision stratégique
-  versionMineure Int @default(0) // « y » — incrémenté lors d'une révision opérationnelle
+  versionMajeure       Int           @default(1) // « x » — incrémenté lors d'une révision stratégique
+  versionMineure       Int           @default(0) // « y » — incrémenté lors d'une révision opérationnelle
   // Méthode d'évaluation de la vraisemblance (label §EXI_M4_07) — cf. lib/vraisemblance-methode.ts
-  methodeVraisemblance String @default("EXPRESSE") // EXPRESSE | STANDARD | AVANCEE
+  methodeVraisemblance String        @default("EXPRESSE") // EXPRESSE | STANDARD | AVANCEE
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?
@@ -199,21 +278,21 @@ model Analyse {
   qualification Json?
 
   // Analyse socle — héritage de risques mutualisés
-  isSocle   Boolean @default(false) // Cette analyse sert de référence partagée
-  socleId   String?                 // Analyse socle dont celle-ci hérite (optionnel)
+  isSocle   Boolean   @default(false) // Cette analyse sert de référence partagée
+  socleId   String? // Analyse socle dont celle-ci hérite (optionnel)
   socle     Analyse?  @relation("SocleHeritage", fields: [socleId], references: [id], onDelete: SetNull)
   heritiers Analyse[] @relation("SocleHeritage")
 
   // Workflow d'approbation (validation du LIVRABLE : l'analyse est-elle recevable ?)
-  approbateurId          String?  // userId du Risk Manager qui a traité
+  approbateurId          String? // userId du Risk Manager qui a traité
   approuveLe             DateTime?
-  commentaireApprobation String?  @db.Text
+  commentaireApprobation String?   @db.Text
 
   // Acceptation des RISQUES RÉSIDUELS (== acceptation du risque par la Direction métier),
   // DISTINCTE de la validation de l'analyse. Portée GLOBALE : une décision pour l'ensemble
   // des risques résiduels de l'analyse. Activable via OrganizationConfig.acceptationRisquesActive.
   risquesResiduelsStatut      String    @default("EN_ATTENTE") // EN_ATTENTE | ACCEPTES | REFUSES
-  risquesResiduelsPar         String?   // userId de la Direction métier
+  risquesResiduelsPar         String? // userId de la Direction métier
   risquesResiduelsLe          DateTime?
   risquesResiduelsCommentaire String?   @db.Text
 
@@ -222,24 +301,25 @@ model Analyse {
   deletedAt   DateTime?
   deletedById String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id])
 
   // Ateliers
-  cadrage     Cadrage?
-  sourcesRisque SourceRisque[]
-  partiesPrenantes PartiePrenante[]
-  scenariosStrategiques ScenarioStrategique[]
+  cadrage                Cadrage?
+  sourcesRisque          SourceRisque[]
+  partiesPrenantes       PartiePrenante[]
+  scenariosStrategiques  ScenarioStrategique[]
   scenariosOperationnels ScenarioOperationnel[]
-  risques     Risque[]
-  mesures     Mesure[]
+  risques                Risque[]
+  mesures                Mesure[]
 
   // Accès granulaires
   accesUtilisateurs AnalyseAcces[]
-  revisions   RevisionAnalyse[]
+  revisions         RevisionAnalyse[]
+  derogations       Derogation[]
 
   @@index([userId])
   @@index([statut])
@@ -250,15 +330,15 @@ model Analyse {
 
 // Révision d'une analyse (label EBIOS RM §3.4) — trace le suivi des versions x.y.
 model RevisionAnalyse {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   analyseId   String
-  analyse     Analyse  @relation(fields: [analyseId], references: [id], onDelete: Cascade)
-  version     String   // « x.y » figée au moment de la révision
+  analyse     Analyse       @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  version     String // « x.y » figée au moment de la révision
   cycle       CycleRevision @default(OPERATIONNEL)
-  note        String?  @db.Text // modifications majeures apportées (saisie libre)
-  ateliers    Int[]    // ateliers concernés par la mise à jour (1..5)
-  createdById String?  // utilisateur ayant enregistré la révision
-  createdAt   DateTime @default(now())
+  note        String?       @db.Text // modifications majeures apportées (saisie libre)
+  ateliers    Int[] // ateliers concernés par la mise à jour (1..5)
+  createdById String? // utilisateur ayant enregistré la révision
+  createdAt   DateTime      @default(now())
 
   @@index([analyseId])
 }
@@ -270,9 +350,9 @@ enum CycleRevision {
 
 enum StatutAnalyse {
   EN_COURS
-  SOUMIS    // Soumis pour approbation
-  APPROUVE  // Approuvé par un Risk Manager
-  REJETE    // Rejeté avec commentaire
+  SOUMIS // Soumis pour approbation
+  APPROUVE // Approuvé par un Risk Manager
+  REJETE // Rejeté avec commentaire
   TERMINE
   ARCHIVE
 }
@@ -284,7 +364,7 @@ model AnalyseAcces {
   analyseId  String
   userId     String
   permission AnalysePermission @default(LECTURE)
-  invitePar  String?           // userId de celui qui a invité
+  invitePar  String? // userId de celui qui a invité
   createdAt  DateTime          @default(now())
 
   analyse Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
@@ -296,9 +376,9 @@ model AnalyseAcces {
 // ─── Atelier 1 : Cadrage et socle de sécurité ────────────────────────────────
 
 model Cadrage {
-  id          String @id @default(cuid())
-  analyseId   String @unique
-  analyse     Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String  @unique
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
   // Périmètre et missions
   perimetre      String? @db.Text
@@ -307,7 +387,7 @@ model Cadrage {
 
   // Profil de dimensionnement (taille/maturité) : STANDARD | TPE | PME | ETI_GE
   // Facultatif côté UX ; oriente les référentiels recommandés. Défaut STANDARD.
-  tailleAnalyse  String @default("STANDARD")
+  tailleAnalyse String @default("STANDARD")
 
   // Valeurs métier (FM1) — [{id, nom, type, description, responsable, missionRef}]
   valeursMetier Json?
@@ -319,35 +399,35 @@ model Cadrage {
   evenementsRedoutes Json? // [{id, valeurMetierId, description, impacts, gravite}]
 
   // Socle de sécurité
-  referentiels  Json? // [{nom, version, applicable, ecarts}]
-  socleSecurite Json? // [{id, mesure, source, statut}]
+  referentiels    Json? // [{nom, version, applicable, ecarts}]
+  socleSecurite   Json? // [{id, mesure, source, statut}]
   customControles Json? // [{ref, nom, description, type, categorie}] — contrôles custom du référentiel CUSTOM
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Atelier 2 : Sources de risque ───────────────────────────────────────────
 
 model SourceRisque {
-  id          String @id @default(cuid())
-  analyseId   String
-  analyse     Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
   nom         String
   categorie   CategorieSource
-  description String? @db.Text
+  description String?         @db.Text
 
   // Caractérisation FM4 (texte libre)
-  motivation  String?
-  ressources  String?
-  activite    String? // Niveau d'activité dans le secteur
+  motivation String?
+  ressources String?
+  activite   String? // Niveau d'activité dans le secteur
 
   // Scores FM4 (1-4 chacun) pour calcul de pertinence
-  motivationScore  Int? // 1-4
-  ressourcesScore  Int? // 1-4
-  activiteScore    Int? // 1-4
-  pertinence       Int  @default(1) // score global 1-4
+  motivationScore Int? // 1-4
+  ressourcesScore Int? // 1-4
+  activiteScore   Int? // 1-4
+  pertinence      Int  @default(1) // score global 1-4
 
   // Objectifs visés associés (couples SR/OV)
   // [{id, nom, description, priorite("P1"|"P2"), pertinenceOV}]
@@ -356,8 +436,8 @@ model SourceRisque {
   retenu        Boolean @default(true)
   justification String? @db.Text
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([analyseId])
 }
@@ -377,23 +457,23 @@ enum CategorieSource {
 // ─── Atelier 3 : Scénarios stratégiques ──────────────────────────────────────
 
 model PartiePrenante {
-  id          String @id @default(cuid())
-  analyseId   String
-  analyse     Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
   nom         String
   // Nom court affiché sur le radar (≤ 12 car.) ; si absent, on affiche la réf T1, T2…
   nomCourt    String?
   type        TypePartiePrenante
-  description String? @db.Text
+  description String?            @db.Text
 
   // Profondeur d'écosystème (fiche méthode 5 ANSSI) : rang 1 = lien direct avec l'objet
   // de l'étude ; rang 2/3 = parties prenantes connexes d'un tiers critique.
-  rang        Int     @default(1)
+  rang      Int     @default(1)
   // Clé STABLE côté client (survit au delete+recreate de la sauvegarde de l'atelier 3)
   // permettant de relier une PP connexe à sa PP parente. parentCle = cle de la parente.
-  cle         String?
-  parentCle   String?
+  cle       String?
+  parentCle String?
 
   // Méthode Club EBIOS « dangerosité des PP » — 4 sous-critères cotés 1..4 (Float
   // pour une cotation fine ; alimentera un futur module de third-party management).
@@ -406,15 +486,15 @@ model PartiePrenante {
   //   exposition = dependance × penetration  (1..16)
   //   fiabilite  = maturite × confiance        (1..16)
   //   menace     = exposition / fiabilite (calculée à la volée)
-  exposition  Float @default(4) // = dep × pen
-  fiabilite   Float @default(9) // = mat × conf
+  exposition Float @default(4) // = dep × pen
+  fiabilite  Float @default(9) // = mat × conf
 
   // Tiers qualifié de critique (marquage manuel par l'analyste) : étoile + nom
   // affichés sur le radar ; à inclure prioritairement dans les scénarios stratégiques.
-  critique    Boolean @default(false)
+  critique Boolean @default(false)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([analyseId])
 }
@@ -429,35 +509,35 @@ enum TypePartiePrenante {
 }
 
 model ScenarioStrategique {
-  id              String @id @default(cuid())
-  analyseId       String
-  analyse         Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
-  nom             String
-  sourceRisqueId  String?
-  objectifVise    String?
-  description     String? @db.Text
+  nom            String
+  sourceRisqueId String?
+  objectifVise   String?
+  description    String? @db.Text
 
   // Traçabilité vers Atelier 1
-  evenementRedouteRef String? // id ou libellé de l'ER associé (legacy, ER primaire)
+  evenementRedouteRef   String? // id ou libellé de l'ER associé (legacy, ER primaire)
   // Héritage de gravité (fiche Club EBIOS A3) : ids des ER liés à l'objectif visé.
   // La gravité du scénario = max des gravités de ces ER. null/[] = pas d'héritage.
   evenementsRedoutesIds Json? // string[] d'ids d'événements redoutés
 
   // Chemin d'attaque (parties prenantes impliquées)
-  cheminAttaque   Json? // [{etape, partiePrenante, action, evenementIntermediaire}]
+  cheminAttaque Json? // [{etape, partiePrenante, action, evenementIntermediaire}]
 
   // Mesures de sécurité sur l'écosystème (étape C Atelier 3)
   mesuresEcosysteme Json? // [{id, partiePrenante, mesure, type, statut}]
 
-  vraisemblance   Int @default(2) // 1-4
-  gravite         Int @default(2) // 1-4 (héritée des ER)
-  niveauRisque    Int @default(4) // vraisemblance * gravite
+  vraisemblance Int @default(2) // 1-4
+  gravite       Int @default(2) // 1-4 (héritée des ER)
+  niveauRisque  Int @default(4) // vraisemblance * gravite
 
-  retenu          Boolean @default(true)
+  retenu Boolean @default(true)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([analyseId])
   @@index([sourceRisqueId])
@@ -466,22 +546,22 @@ model ScenarioStrategique {
 // ─── Atelier 4 : Scénarios opérationnels ─────────────────────────────────────
 
 model ScenarioOperationnel {
-  id              String @id @default(cuid())
-  analyseId       String
-  analyse         Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
-  nom             String
+  nom                   String
   scenarioStrategiqueId String?
-  description     String? @db.Text
+  description           String? @db.Text
 
   // Séquence d'actions techniques
   actionsElementaires Json? // [{id, nom, type, bienSupport, vulnerabilite, description}]
 
-  vraisemblance   Int @default(2) // 1-4
-  gravite         Int @default(2) // héritée du scénario stratégique
+  vraisemblance Int @default(2) // 1-4
+  gravite       Int @default(2) // héritée du scénario stratégique
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([analyseId])
   @@index([scenarioStrategiqueId])
@@ -490,22 +570,22 @@ model ScenarioOperationnel {
 // ─── Atelier 5 : Traitement du risque ────────────────────────────────────────
 
 model Risque {
-  id              String @id @default(cuid())
-  analyseId       String
-  analyse         Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
-  nom             String
-  scenarioOpId    String?
-  description     String? @db.Text
-  gravite         Int     // 1-4
-  vraisemblance   Int     // 1-4
-  niveauRisque    Int     // gravite * vraisemblance
-  strategie       StrategieTraitement @default(REDUIRE)
+  nom           String
+  scenarioOpId  String?
+  description   String?             @db.Text
+  gravite       Int // 1-4
+  vraisemblance Int // 1-4
+  niveauRisque  Int // gravite * vraisemblance
+  strategie     StrategieTraitement @default(REDUIRE)
 
   // Traçabilité (FM) — référence à l'événement redouté et au scénario
-  evenementRedouteRef     String? // libellé ou id de l'ER associé
+  evenementRedouteRef       String? // libellé ou id de l'ER associé
   vulnerabilitesResiduelles Json? // [{description, niveau}]
-  facteursAggravants      Json?  // [{description}]
+  facteursAggravants        Json? // [{description}]
 
   // Risque résiduel après traitement
   graviteResiduelle       Int?
@@ -513,8 +593,10 @@ model Risque {
   niveauResiduel          Int?
   justificationResiduelle String? @db.Text
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  derogations Derogation[]
 
   @@index([analyseId])
   @@index([niveauRisque])
@@ -529,26 +611,26 @@ enum StrategieTraitement {
 }
 
 model Mesure {
-  id          String @id @default(cuid())
-  analyseId   String
-  analyse     Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  analyseId String
+  analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
-  risqueId    String?
-  nom         String
-  description String? @db.Text
-  type        TypeMesure @default(PREVENTIVE)
-  priorite    Int @default(2) // 1-4
-  statut      StatutMesure @default(A_FAIRE)
-  responsable String?
-  entite      String?  // Entité responsable (DSI, Métier, Risques…) — liste configurable
-  echeance    DateTime?
-  cout        String?
-  efficacite  Int? // 1-4
+  risqueId       String?
+  nom            String
+  description    String?      @db.Text
+  type           TypeMesure   @default(PREVENTIVE)
+  priorite       Int          @default(2) // 1-4
+  statut         StatutMesure @default(A_FAIRE)
+  responsable    String?
+  entite         String? // Entité responsable (DSI, Métier, Risques…) — liste configurable
+  echeance       DateTime?
+  cout           String?
+  efficacite     Int? // 1-4
   // Catégorie EBIOS (label §EXI_M5_06) — cf. lib/mesure-categorie.ts
-  categorieEbios String @default("PROTECTION") // GOUVERNANCE | PROTECTION | DEFENSE | RESILIENCE
+  categorieEbios String       @default("PROTECTION") // GOUVERNANCE | PROTECTION | DEFENSE | RESILIENCE
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([analyseId])
   @@index([statut])
@@ -575,14 +657,14 @@ enum StatutMesure {
 
 model AuditLog {
   id         String   @id @default(cuid())
-  action     String                       // ex: LOGIN_SUCCESS, ROLE_CHANGED…
-  userId     String?                      // auteur de l'action (null si non authentifié)
+  action     String // ex: LOGIN_SUCCESS, ROLE_CHANGED…
+  userId     String? // auteur de l'action (null si non authentifié)
   userEmail  String?
   userRole   String?
-  targetId   String?                      // ressource affectée (analyseId, userId…)
-  targetType String?                      // 'analyse' | 'user' | 'policy' | …
+  targetId   String? // ressource affectée (analyseId, userId…)
+  targetType String? // 'analyse' | 'user' | 'policy' | …
   ip         String?
-  details    String?  @db.Text            // JSON libre pour contexte additionnel
+  details    String?  @db.Text // JSON libre pour contexte additionnel
   createdAt  DateTime @default(now())
 
   @@index([action])
@@ -595,78 +677,85 @@ model AuditLog {
 model OrganizationConfig {
   // Multi-organisation : une ligne par organisation (id = organizationId). La ligne
   // historique "global" devient celle de l'organisation racine lors de la migration.
-  id             String   @id @default("global")
-  organization   Organization? @relation(fields: [id], references: [id], onDelete: Cascade)
+  id                         String        @id @default("global")
+  organization               Organization? @relation(fields: [id], references: [id], onDelete: Cascade)
   // Liste des entités responsables de mesures (ex: ["DSI", "Métier", "Risques"])
-  entitesMesures Json     @default("[]")
+  entitesMesures             Json          @default("[]")
   // Types d'impacts configurables (événements redoutés) — [{id, label, icon}]
-  typesImpacts   Json     @default("[]")
+  typesImpacts               Json          @default("[]")
   // Référentiels de sécurité configurables — [{nom, description, actif}]
-  referentielsActifs Json @default("[]")
+  referentielsActifs         Json          @default("[]")
   // Options de traitement du risque personnalisables — [{value, label, description, conseil}]
   // value reste l'identifiant interne (REDUIRE/ACCEPTER/...) ; label/description/conseil éditables.
-  strategiesTraitement Json @default("[]")
+  strategiesTraitement       Json          @default("[]")
   // Exemples par défaut des ateliers, personnalisables — { <categorie>: [ {...}, ... ] }
   // categorie = valeursMetier | biensSupports | evenementsRedoutes | ... (cf. exemples-ateliers.ts)
   // Une catégorie présente (tableau non vide) remplace les défauts ; sinon repli sur les défauts i18n.
-  exemplesAteliers Json @default("{}")
+  exemplesAteliers           Json          @default("{}")
   // Fonctionnalité optionnelle : questionnaire de qualification au début d'une analyse (cf. lib/qualification.ts)
-  qualificationActive Boolean @default(false)
+  qualificationActive        Boolean       @default(false)
   // Si la qualification est active, la rendre OBLIGATOIRE avant l'atelier 1 (bloque l'entrée tant qu'incomplete)
-  qualificationObligatoire Boolean @default(false)
+  qualificationObligatoire   Boolean       @default(false)
   // Grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle).
   // Activée par défaut.
-  conformiteActive    Boolean @default(true)
+  conformiteActive           Boolean       @default(true)
   // Palier 2 — niveau de portage de la conformité : "ANALYSE" (par analyse/socle, défaut, rétrocompatible)
   // ou "ORGANISATION" (une conformité de référence par organisation × référentiel, entité Conformite).
-  conformiteNiveau       String @default("ANALYSE")
+  conformiteNiveau           String        @default("ANALYSE")
   // Palier 2 — mode de création des versions/snapshots : "MANUEL" (défaut) | "AUTO" | "CHANGEMENT".
-  conformiteSnapshotMode String @default("MANUEL")
+  conformiteSnapshotMode     String        @default("MANUEL")
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
-  conseilsAteliersActive Boolean @default(true)
+  conseilsAteliersActive     Boolean       @default(true)
   // Fonctionnalité optionnelle : acceptation des risques résiduels par la Direction métier
   // (rôle DIRECTION_METIER), distincte de la validation de l'analyse.
-  acceptationRisquesActive Boolean @default(false)
+  acceptationRisquesActive   Boolean       @default(false)
+  // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
+  // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
+  derogationsActive          Boolean       @default(false)
+  // Durée par défaut d'une dérogation, en jours (défaut 180 = 6 mois).
+  derogationDureeDefautJours Int           @default(180)
+  // Fenêtre d'alerte avant expiration d'une dérogation, en jours (défaut 30).
+  derogationAlerteJours      Int           @default(30)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).
-  echellesEcosysteme Json @default("{}")
+  echellesEcosysteme         Json          @default("{}")
   // Portée des échelles gravité/vraisemblance/matrice (réglage INSTANCE, lu sur la racine) :
   //  - SHARED  : même échelle/matrice pour toutes les organisations (mode « groupe ») ;
   //  - PER_ORG : chaque organisation peut avoir ses propres échelles (mode « consultant »).
-  scalesScope    String   @default("SHARED")
-  updatedAt      DateTime @updatedAt
+  scalesScope                String        @default("SHARED")
+  updatedAt                  DateTime      @updatedAt
 }
 
 // ─── Politique de mots de passe (singleton global) ──────────────────────────
 
 model PasswordPolicy {
-  id               String  @id @default("global")
+  id                       String  @id @default("global")
   // Conformité ANSSI guide d'hygiène v2 : 12 car. min, complexité complète, 90j renouvellement
   minLength                Int     @default(12)
   requireUppercase         Boolean @default(true)
   requireLowercase         Boolean @default(true)
   requireNumbers           Boolean @default(true)
   requireSpecial           Boolean @default(true)
-  maxAgeDays               Int     @default(90)   // 0 = pas d'expiration
-  maxFailedAttempts        Int     @default(5)    // 0 = désactivé
-  lockoutDurationMinutes   Int     @default(15)   // durée de verrouillage en minutes
+  maxAgeDays               Int     @default(90) // 0 = pas d'expiration
+  maxFailedAttempts        Int     @default(5) // 0 = désactivé
+  lockoutDurationMinutes   Int     @default(15) // durée de verrouillage en minutes
   requireEmailVerification Boolean @default(false) // vérification email à l'inscription
-  inactivityDaysLimit      Int     @default(180)  // désactivation auto après N jours d'inactivité (0 = désactivé) — ne s'applique pas aux ADMIN
+  inactivityDaysLimit      Int     @default(180) // désactivation auto après N jours d'inactivité (0 = désactivé) — ne s'applique pas aux ADMIN
 
   // ── Authentification forte (MFA) ─────────────────────────────────────────
-  mfaEnabled       Boolean @default(false)  // MFA activé globalement
-  mfaMethodEmail   Boolean @default(true)   // OTP par e-mail
-  mfaMethodSms     Boolean @default(false)  // OTP par SMS
+  mfaEnabled     Boolean @default(false) // MFA activé globalement
+  mfaMethodEmail Boolean @default(true) // OTP par e-mail
+  mfaMethodSms   Boolean @default(false) // OTP par SMS
   // "ALL" = tous les utilisateurs | "ADMIN_ONLY" = ADMIN uniquement
-  mfaScope         String  @default("ALL")
+  mfaScope       String  @default("ALL")
 
   // ── Configuration SMS provider ────────────────────────────────────────────
   // ⚠️  Les clés API sont stockées en base ; pour la production, préférer des variables d'environnement.
-  smsProvider      String  @default("TWILIO") // "TWILIO" | "OVH" | "CUSTOM"
-  smsApiKey        String? // Twilio Account SID / OVH Application Key / custom
-  smsApiSecret     String? // Twilio Auth Token / OVH Application Secret / custom
-  smsSenderId      String? // Twilio From number / OVH sender / custom
+  smsProvider  String  @default("TWILIO") // "TWILIO" | "OVH" | "CUSTOM"
+  smsApiKey    String? // Twilio Account SID / OVH Application Key / custom
+  smsApiSecret String? // Twilio Auth Token / OVH Application Secret / custom
+  smsSenderId  String? // Twilio From number / OVH sender / custom
 
   // ── Confirmation d'activation MFA (safety window 60 min) ─────────────────
   // Quand le MFA est activé, un délai de 60 min s'ouvre pour que l'admin
@@ -675,7 +764,7 @@ model PasswordPolicy {
   mfaPendingConfirmation  Boolean   @default(false)
   mfaConfirmationDeadline DateTime?
 
-  updatedAt                DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Configuration SSO (singleton global) ────────────────────────────────────
@@ -694,9 +783,9 @@ model SSOConfig {
   // URL SSO de l'IdP (SAML 2.0 HTTP-POST Binding)
   samlSsoUrl        String?
   // Certificat X.509 de l'IdP (format PEM, commence par -----BEGIN CERTIFICATE-----)
-  samlCertificate   String?  @db.Text
+  samlCertificate   String? @db.Text
   // Algorithme de signature : RSA-SHA256 (recommandé) ou RSA-SHA1 (legacy)
-  samlSignAlgorithm String?  @default("RSA-SHA256")
+  samlSignAlgorithm String? @default("RSA-SHA256")
 
   // ── OIDC ──────────────────────────────────────────────────────────────────
   // Discovery URL de l'IdP (ex: https://accounts.google.com, https://login.microsoftonline.com/<tenant>/v2.0)
@@ -706,14 +795,14 @@ model SSOConfig {
   // Client Secret fourni par l'IdP (sensible — préférer les variables d'environnement en production)
   oidcClientSecret String?
   // Scopes demandés (espace séparé)
-  oidcScopes       String?  @default("openid email profile")
+  oidcScopes       String? @default("openid email profile")
   // La Redirect URI est calculée automatiquement : {origin}/api/auth/callback/sso
 
   // ── Commun (SAML + OIDC) ──────────────────────────────────────────────────
   // Crée automatiquement un compte à la première connexion SSO
-  autoProvision Boolean @default(true)
+  autoProvision  Boolean @default(true)
   // Rôle attribué aux comptes auto-provisionnés (voir UserRole)
-  defaultRole   String  @default("ANALYSTE")
+  defaultRole    String  @default("ANALYSTE")
   // Domaines e-mail autorisés — JSON array de strings, ex: ["corp.example.com","partner.org"]
   // Si vide ou null, tous les domaines sont acceptés
   allowedDomains String? @db.Text
@@ -725,22 +814,22 @@ model SSOConfig {
 // Serveur d'envoi d'e-mails, configurable par l'ADMIN. Le mot de passe est
 // chiffré au repos (AES-256-GCM, cf. secret-crypto.ts). Désactivé par défaut.
 model SMTPConfig {
-  id          String  @id @default("global")
-  enabled     Boolean @default(false)
+  id          String    @id @default("global")
+  enabled     Boolean   @default(false)
   host        String?
-  port        Int     @default(587)
+  port        Int       @default(587)
   // true = SSL/TLS implicite (port 465) ; false = STARTTLS (port 587/25)
-  secure      Boolean @default(false)
+  secure      Boolean   @default(false)
   username    String?
   // Chiffré au repos (jamais renvoyé en clair sauf à l'UI admin)
   password    String?
   fromAddress String?
-  fromName    String? @default("ACRA")
+  fromName    String?   @default("ACRA")
   // Dernier test d'envoi réussi — réinitialisé à false à chaque modification de config.
   // Sert de garde-fou : le MFA e-mail et la vérification d'e-mail exigent enabled && lastTestOk.
-  lastTestOk  Boolean @default(false)
+  lastTestOk  Boolean   @default(false)
   lastTestAt  DateTime?
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime  @updatedAt
 }
 
 // ─── Challenge MFA (OTP à usage unique, TTL court) ───────────────────────────
@@ -751,8 +840,8 @@ model MfaChallenge {
   id          String    @id @default(cuid())
   userId      String
   codeHash    String
-  channel     String    // "SMS" | "EMAIL"
-  destination String?   // destination masquée (pour affichage : ***@ex.com, +33•••89)
+  channel     String // "SMS" | "EMAIL"
+  destination String? // destination masquée (pour affichage : ***@ex.com, +33•••89)
   expiresAt   DateTime
   attempts    Int       @default(0)
   consumedAt  DateTime?
