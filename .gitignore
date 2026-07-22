@@ -47,3 +47,9 @@ Thumbs.db
 
 # ── ACRA test memory — NEVER COMMIT ───────────────────────────────────────────
 .acra-test-memory/
+
+# Playwright E2E
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
