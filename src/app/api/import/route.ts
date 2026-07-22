@@ -2,122 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { randomUUID } from 'crypto'
+import {
+  capArr,
+  cleanCadrage, cleanSourceRisque, cleanPartiePrenante, cleanScenarioStrat,
+  cleanScenarioOp, cleanRisque, cleanMesure,
+} from '@/lib/import-sanitize'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-// Identifiant d'enregistrement importé — générateur cryptographique (hygiène #109)
-// pour éviter toute collision / prédictibilité (vs Math.random()).
-function uid() {
-  return randomUUID()
-}
-
-// Allowlists par modèle — évite le mass assignment si le schéma évolue
-
-function cleanCadrage(obj: any): any {
-  if (!obj) return obj
-  return {
-    perimetre:    obj.perimetre    != null ? String(obj.perimetre).slice(0, 5000)  : undefined,
-    tailleAnalyse: ['STANDARD', 'TPE', 'PME', 'ETI_GE'].includes(obj.tailleAnalyse) ? obj.tailleAnalyse : undefined,
-    contexte:     obj.contexte     != null ? String(obj.contexte).slice(0, 5000)   : undefined,
-    objectifs:    obj.objectifs    != null ? String(obj.objectifs).slice(0, 5000)  : undefined,
-    evenementsRedoutes: Array.isArray(obj.evenementsRedoutes) ? obj.evenementsRedoutes : undefined,
-    valeursMetier:      Array.isArray(obj.valeursMetier)      ? obj.valeursMetier      : undefined,
-    biensSupports:      Array.isArray(obj.biensSupports)      ? obj.biensSupports      : undefined,
-    missions:           Array.isArray(obj.missions)           ? obj.missions           : undefined,
-    referentiel:  obj.referentiel != null ? String(obj.referentiel).slice(0, 100) : undefined,
-  }
-}
-
-function cleanSourceRisque(obj: any): any {
-  return {
-    nom:            String(obj.nom        ?? '').slice(0, 255),
-    categorie:      obj.categorie     != null ? String(obj.categorie).slice(0, 100) : undefined,
-    pertinence:     Number(obj.pertinence)  || 3,
-    retenu:         Boolean(obj.retenu),
-    motivation:     Number(obj.motivation)  || 3,
-    ressources:     Number(obj.ressources)  || 3,
-    activite:       Number(obj.activite)    || 3,
-    description:    obj.description   != null ? String(obj.description).slice(0, 2000) : undefined,
-    objectifsVises: Array.isArray(obj.objectifsVises) ? obj.objectifsVises : [],
-  }
-}
-
-function cleanPartiePrenante(obj: any): any {
-  // Méthode Club EBIOS : 4 sous-critères 1-4 → exposition = dép×pén · fiabilité = mat×conf.
-  const clamp14 = (v: any, def: number) => {
-    const n = Number(v)
-    return Number.isFinite(n) ? Math.max(1, Math.min(4, n)) : def
-  }
-  const dependance  = clamp14(obj.dependance, 2)
-  const penetration = clamp14(obj.penetration, 2)
-  const maturite    = clamp14(obj.maturite, 3)
-  const confiance   = clamp14(obj.confiance, 3)
-  return {
-    nom:             String(obj.nom         ?? '').slice(0, 255),
-    type:            String(obj.type        ?? 'FOURNISSEUR').slice(0, 50),
-    dependance, penetration, maturite, confiance,
-    exposition:      dependance * penetration,
-    fiabilite:       maturite * confiance,
-    description:     obj.description != null ? String(obj.description).slice(0, 2000) : undefined,
-  }
-}
-
-function cleanScenarioStrat(obj: any): any {
-  return {
-    nom:                  String(obj.nom             ?? '').slice(0, 255),
-    vraisemblance:        Number(obj.vraisemblance)   || 2,
-    gravite:              Number(obj.gravite)          || 2,
-    niveauRisque:         Number(obj.niveauRisque)     || 4,
-    retenu:               Boolean(obj.retenu),
-    description:          obj.description       != null ? String(obj.description).slice(0, 2000) : undefined,
-    objectifVise:         obj.objectifVise       != null ? String(obj.objectifVise).slice(0, 500) : undefined,
-    sourceRisqueRef:      obj.sourceRisqueRef    != null ? String(obj.sourceRisqueRef).slice(0, 255) : undefined,
-    evenementRedouteRef:  obj.evenementRedouteRef != null ? String(obj.evenementRedouteRef).slice(0, 255) : undefined,
-    mesuresEcosysteme:    Array.isArray(obj.mesuresEcosysteme) ? obj.mesuresEcosysteme : [],
-  }
-}
-
-function cleanScenarioOp(obj: any): any {
-  return {
-    nom:            String(obj.nom         ?? '').slice(0, 255),
-    vraisemblance:  Number(obj.vraisemblance) || 2,
-    gravite:        Number(obj.gravite)       || 2,
-    description:    obj.description != null ? String(obj.description).slice(0, 2000) : undefined,
-    cheminsAttaque: Array.isArray(obj.cheminsAttaque) ? obj.cheminsAttaque : [],
-    actionsMenace:  Array.isArray(obj.actionsMenace)  ? obj.actionsMenace  : [],
-  }
-}
-
-function cleanRisque(obj: any): any {
-  return {
-    nom:            String(obj.nom         ?? '').slice(0, 255),
-    gravite:        Number(obj.gravite)       || 2,
-    vraisemblance:  Number(obj.vraisemblance) || 2,
-    niveauRisque:   Number(obj.niveauRisque)  || 4,
-    strategie:      obj.strategie    != null ? String(obj.strategie).slice(0, 50)   : undefined,
-    niveauResiduel: obj.niveauResiduel != null ? Number(obj.niveauResiduel) : undefined,
-    description:    obj.description  != null ? String(obj.description).slice(0, 2000) : undefined,
-    scenarioRef:    obj.scenarioRef  != null ? String(obj.scenarioRef).slice(0, 255) : undefined,
-  }
-}
-
-function cleanMesure(obj: any): any {
-  return {
-    nom:         String(obj.nom       ?? '').slice(0, 255),
-    description: obj.description != null ? String(obj.description).slice(0, 2000) : undefined,
-    type:        obj.type        != null ? String(obj.type).slice(0, 50)          : undefined,
-    priorite:    Number(obj.priorite) || 2,
-    statut:      String(obj.statut ?? 'A_FAIRE').slice(0, 50),
-    responsable: obj.responsable != null ? String(obj.responsable).slice(0, 200)  : undefined,
-    entite:      obj.entite      != null ? String(obj.entite).trim().slice(0, 100): undefined,
-    echeance:    obj.echeance    != null ? new Date(obj.echeance) : undefined,
-    cout:        obj.cout        != null ? String(obj.cout).slice(0, 100)         : undefined,
-    efficacite:  obj.efficacite  != null ? Number(obj.efficacite) : undefined,
-    referentiel: obj.referentiel != null ? String(obj.referentiel).slice(0, 100)  : undefined,
-    codeRef:     obj.codeRef     != null ? String(obj.codeRef).slice(0, 50)       : undefined,
-  }
-}
+// Allowlists + clamps + caps par modèle : voir src/lib/import-sanitize.ts (#117).
 
 // ─── JSON import ──────────────────────────────────────────────────────────────
 
@@ -154,23 +45,24 @@ async function importJSON(raw: string, userId: string) {
       cadrage: src.cadrage ? {
         create: cleanCadrage(src.cadrage),
       } : undefined,
-      sourcesRisque: src.sourcesRisque?.length ? {
-        create: src.sourcesRisque.map((s: any) => cleanSourceRisque(s)),
+      // capArr borne chaque collection à IMPORT_MAX_ITEMS (anti-DoS #117) avant .map.
+      sourcesRisque: capArr(src.sourcesRisque).length ? {
+        create: capArr(src.sourcesRisque).map(cleanSourceRisque),
       } : undefined,
-      partiesPrenantes: src.partiesPrenantes?.length ? {
-        create: src.partiesPrenantes.map((p: any) => cleanPartiePrenante(p)),
+      partiesPrenantes: capArr(src.partiesPrenantes).length ? {
+        create: capArr(src.partiesPrenantes).map(cleanPartiePrenante),
       } : undefined,
-      scenariosStrategiques: src.scenariosStrategiques?.length ? {
-        create: src.scenariosStrategiques.map((s: any) => cleanScenarioStrat(s)),
+      scenariosStrategiques: capArr(src.scenariosStrategiques).length ? {
+        create: capArr(src.scenariosStrategiques).map(cleanScenarioStrat),
       } : undefined,
-      scenariosOperationnels: src.scenariosOperationnels?.length ? {
-        create: src.scenariosOperationnels.map((s: any) => cleanScenarioOp(s)),
+      scenariosOperationnels: capArr(src.scenariosOperationnels).length ? {
+        create: capArr(src.scenariosOperationnels).map(cleanScenarioOp),
       } : undefined,
-      risques: src.risques?.length ? {
-        create: src.risques.map((r: any) => cleanRisque(r)),
+      risques: capArr(src.risques).length ? {
+        create: capArr(src.risques).map(cleanRisque),
       } : undefined,
-      mesures: src.mesures?.length ? {
-        create: src.mesures.map((m: any) => cleanMesure(m)),
+      mesures: capArr(src.mesures).length ? {
+        create: capArr(src.mesures).map(cleanMesure),
       } : undefined,
     },
   })
@@ -293,11 +185,12 @@ async function importCSV(raw: string, userId: string) {
     data: {
       userId, nom: finalNom, organisation, secteur,
       statut: 'EN_COURS', atelierCourant: 1,
-      sourcesRisque:         sourcesRisque.length         ? { create: sourcesRisque }         : undefined,
-      scenariosStrategiques: scenariosStrategiques.length ? { create: scenariosStrategiques } : undefined,
-      scenariosOperationnels: scenariosOperationnels.length ? { create: scenariosOperationnels } : undefined,
-      risques:               risques.length               ? { create: risques }               : undefined,
-      mesures:               mesures.length               ? { create: mesures }               : undefined,
+      // capArr borne chaque collection à IMPORT_MAX_ITEMS (anti-DoS #117).
+      sourcesRisque:         capArr(sourcesRisque).length         ? { create: capArr(sourcesRisque) }         : undefined,
+      scenariosStrategiques: capArr(scenariosStrategiques).length ? { create: capArr(scenariosStrategiques) } : undefined,
+      scenariosOperationnels: capArr(scenariosOperationnels).length ? { create: capArr(scenariosOperationnels) } : undefined,
+      risques:               capArr(risques).length               ? { create: capArr(risques) }               : undefined,
+      mesures:               capArr(mesures).length               ? { create: capArr(mesures) }               : undefined,
     },
   })
 
