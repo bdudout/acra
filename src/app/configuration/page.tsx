@@ -142,6 +142,9 @@ export default function ConfigurationPage() {
   const [savingConfOpt, setSavingConfOpt] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [acceptationRisquesActive, setAcceptationRisquesActive] = useState(false)
+  const [derogationsActive, setDerogationsActive] = useState(false)
+  const [derogationDuree, setDerogationDuree] = useState(180)
+  const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
@@ -181,6 +184,9 @@ export default function ConfigurationPage() {
         setConformiteSnapshotMode(['MANUEL', 'AUTO', 'CHANGEMENT'].includes(data.conformiteSnapshotMode) ? data.conformiteSnapshotMode : 'MANUEL')
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
+        setDerogationsActive(Boolean(data.derogationsActive))
+        if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
+        if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -215,8 +221,9 @@ export default function ConfigurationPage() {
     conformiteActive: setConformiteActive,
     conseilsAteliersActive: setConseilsAteliersActive,
     acceptationRisquesActive: setAcceptationRisquesActive,
+    derogationsActive: setDerogationsActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -239,6 +246,19 @@ export default function ConfigurationPage() {
     })
     setSavingConfOpt(false)
     if (!res.ok) setter(prev) // rollback
+  }
+
+  // Paramètres numériques des dérogations (durée par défaut, fenêtre d'alerte).
+  async function saveDerogationInt(field: 'derogationDureeDefautJours' | 'derogationAlerteJours', value: number) {
+    const setter = field === 'derogationDureeDefautJours' ? setDerogationDuree : setDerogationAlerte
+    setter(value) // optimiste
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
   }
 
   // ── Helpers exemples des ateliers ────────────────────────────────────────
@@ -1070,6 +1090,7 @@ export default function ConfigurationPage() {
                 { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'derogationsActive' as const, value: derogationsActive, title: t.features.derogationsTitle, desc: t.features.derogationsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
               ]).map(f => {
                 const off = f.disabled // toggle inopérant (dépendance non satisfaite)
                 const effValue = f.value && !off
@@ -1098,6 +1119,27 @@ export default function ConfigurationPage() {
                 )
               })}
             </div>
+            {/* Paramètres des dérogations (durée par défaut, fenêtre d'alerte) — si activées */}
+            {derogationsActive && (
+              <div className="mt-3 ml-6 flex flex-wrap gap-6 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                <label className="text-sm text-gray-700">
+                  <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationDureeLabel}</span>
+                  <input type="number" min={1} max={3650} value={derogationDuree}
+                    onChange={e => setDerogationDuree(Number(e.target.value))}
+                    onBlur={e => saveDerogationInt('derogationDureeDefautJours', Math.max(1, Math.min(3650, Number(e.target.value) || 180)))}
+                    disabled={savingFeatures}
+                    className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                </label>
+                <label className="text-sm text-gray-700">
+                  <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationAlerteLabel}</span>
+                  <input type="number" min={1} max={365} value={derogationAlerte}
+                    onChange={e => setDerogationAlerte(Number(e.target.value))}
+                    onBlur={e => saveDerogationInt('derogationAlerteJours', Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
+                    disabled={savingFeatures}
+                    className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                </label>
+              </div>
+            )}
           </section>
         )}
 

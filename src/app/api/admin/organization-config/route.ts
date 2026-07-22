@@ -59,6 +59,10 @@ export async function GET(_req: NextRequest) {
     conformiteNiveau: cfg.conformiteNiveau,
     conformiteSnapshotMode: cfg.conformiteSnapshotMode,
     conseilsAteliersActive: cfg.conseilsAteliersActive,
+    acceptationRisquesActive: cfg.acceptationRisquesActive,
+    derogationsActive: cfg.derogationsActive,
+    derogationDureeDefautJours: cfg.derogationDureeDefautJours,
+    derogationAlerteJours: cfg.derogationAlerteJours,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -155,6 +159,15 @@ export async function PUT(req: NextRequest) {
   if (typeof body.conformiteNiveau === 'string') data.conformiteNiveau = sanitizeConformiteNiveau(body.conformiteNiveau)
   if (typeof body.conformiteSnapshotMode === 'string') data.conformiteSnapshotMode = sanitizeSnapshotMode(body.conformiteSnapshotMode)
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
+  if (typeof body.acceptationRisquesActive === 'boolean') data.acceptationRisquesActive = body.acceptationRisquesActive
+  if (typeof body.derogationsActive === 'boolean') data.derogationsActive = body.derogationsActive
+  // Durée par défaut (1 jour à 10 ans) et fenêtre d'alerte (1 à 365 jours), bornées.
+  if (typeof body.derogationDureeDefautJours === 'number' && Number.isFinite(body.derogationDureeDefautJours)) {
+    data.derogationDureeDefautJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeDefautJours)))
+  }
+  if (typeof body.derogationAlerteJours === 'number' && Number.isFinite(body.derogationAlerteJours)) {
+    data.derogationAlerteJours = Math.max(1, Math.min(365, Math.round(body.derogationAlerteJours)))
+  }
 
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
     // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.

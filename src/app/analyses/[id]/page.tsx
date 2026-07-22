@@ -34,6 +34,7 @@ import {
   type UserRole,
 } from '@/lib/permissions'
 import ResidualRisksPanel from '@/components/ResidualRisksPanel'
+import DerogationsPanel from '@/components/DerogationsPanel'
 
 export default async function AnalyseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
@@ -474,6 +475,18 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 le={(analyse as any).risquesResiduelsLe ? (analyse as any).risquesResiduelsLe.toISOString() : null}
                 commentaire={(analyse as any).risquesResiduelsCommentaire ?? null}
                 canAct={canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive)}
+                locale={locale}
+              />
+            )}
+            {/* Dérogations (acceptation temporaire de non-conformité) — si activées pour l'org. */}
+            {orgConfig.derogationsActive && (
+              <DerogationsPanel
+                analyseId={analyse.id}
+                currentUserId={userId}
+                currentUserRole={userRole}
+                canEdit={editable}
+                referentielCourant={(analyse as any).referentielMesures ?? null}
+                risques={analyse.risques.map((r: { id: string; nom: string }) => ({ id: r.id, nom: r.nom }))}
                 locale={locale}
               />
             )}
