@@ -85,7 +85,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationsActive: false,
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
-  derogationWorkflow: 'RSSI_METIER',
+  derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
 }
 

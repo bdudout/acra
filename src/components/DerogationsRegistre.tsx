@@ -35,13 +35,26 @@ const BADGE: Record<DerogationEtat, string> = {
 // organisation pilote les e-mails, pas cet aperçu).
 const ALERTE_DEFAUT = 30
 
-type Filtre = 'TOUS' | 'EN_REVUE' | 'ACTIVES' | 'A_ECHEANCE' | 'TERMINEES'
+type Filtre = 'EN_COURS_EXP' | 'EN_COURS' | 'EXPIREES' | 'EN_REVUE' | 'CLOTUREES'
+
+const REVIEW = ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER']
+const TERMINAL = ['CLOTUREE', 'REJETEE', 'REVOQUEE']
+// Prédicat d'appartenance d'une ligne (état effectif calculé) à un filtre.
+function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
+  switch (f) {
+    case 'EN_COURS_EXP': return etat === 'ACTIVE' || etat === 'EXPIRE_BIENTOT' || etat === 'EXPIREE'
+    case 'EN_COURS':     return etat === 'ACTIVE' || etat === 'EXPIRE_BIENTOT'
+    case 'EXPIREES':     return etat === 'EXPIREE'
+    case 'EN_REVUE':     return REVIEW.includes(statut)
+    case 'CLOTUREES':    return TERMINAL.includes(statut)
+  }
+}
 
 export default function DerogationsRegistre({ rows, locale, canCreate = false }: { rows: RegistreRow[]; locale: string; canCreate?: boolean }) {
   const { t } = useTranslation()
   const d = t.derogations
   const router = useRouter()
-  const [filtre, setFiltre] = useState<Filtre>('TOUS')
+  const [filtre, setFiltre] = useState<Filtre>('EN_COURS_EXP')
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,30 +79,15 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false }:
     jours: joursAvantExpiration(r.dateFin),
   })), [rows])
 
-  const filtered = useMemo(() => enriched.filter(r => {
-    switch (filtre) {
-      case 'EN_REVUE': return ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'].includes(r.statut)
-      case 'ACTIVES': return r.etat === 'ACTIVE'
-      case 'A_ECHEANCE': return r.etat === 'EXPIRE_BIENTOT' || r.etat === 'EXPIREE'
-      case 'TERMINEES': return ['REJETEE', 'CLOTUREE', 'REVOQUEE'].includes(r.statut)
-      default: return true
-    }
-  }), [enriched, filtre])
-
-  const count = (f: Filtre) => enriched.filter(r => {
-    if (f === 'ACTIVES') return r.etat === 'ACTIVE'
-    if (f === 'A_ECHEANCE') return r.etat === 'EXPIRE_BIENTOT' || r.etat === 'EXPIREE'
-    if (f === 'EN_REVUE') return ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'].includes(r.statut)
-    if (f === 'TERMINEES') return ['REJETEE', 'CLOTUREE', 'REVOQUEE'].includes(r.statut)
-    return true
-  }).length
+  const filtered = useMemo(() => enriched.filter(r => matchFiltre(filtre, r.statut, r.etat)), [enriched, filtre])
+  const count = (f: Filtre) => enriched.filter(r => matchFiltre(f, r.statut, r.etat)).length
 
   const filtres: { key: Filtre; label: string }[] = [
-    { key: 'TOUS', label: `${d.filterAll} (${count('TOUS')})` },
+    { key: 'EN_COURS_EXP', label: `${d.filterCurrentExpired} (${count('EN_COURS_EXP')})` },
+    { key: 'EN_COURS', label: `${d.filterCurrent} (${count('EN_COURS')})` },
+    { key: 'EXPIREES', label: `${d.filterExpired} (${count('EXPIREES')})` },
     { key: 'EN_REVUE', label: `${d.filterReview} (${count('EN_REVUE')})` },
-    { key: 'ACTIVES', label: `${d.statuts.ACTIVE} (${count('ACTIVES')})` },
-    { key: 'A_ECHEANCE', label: `${d.filterDue} (${count('A_ECHEANCE')})` },
-    { key: 'TERMINEES', label: `${d.filterDone} (${count('TERMINEES')})` },
+    { key: 'CLOTUREES', label: `${d.filterClosed} (${count('CLOTUREES')})` },
   ]
 
   return (

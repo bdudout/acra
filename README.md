@@ -82,10 +82,13 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ### 👥 Collaboration & gouvernance
 
-- **RBAC 6 niveaux** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · ANALYSTE · LECTEUR
-- Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager)
+- **RBAC 7 niveaux** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · DIRECTION_METIER · ANALYSTE · LECTEUR
+- **Multi-organisation** : arbre d'organisations avec périmètres hiérarchiques (nœud / sous-arbre) ; un ADMIN administre **uniquement les comptes de son organisation**, un SUPER_ADMIN gère l'instance
+- Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager), avec **séparation des tâches** — un approbateur ne peut pas approuver **sa propre** analyse (principe des quatre-yeux) — et **auto-validation** pour les organisations mono-utilisateur (cabinet libéral, où le quatre-yeux est impossible)
+- **Acceptation des risques résiduels** par la **Direction métier** (rôle dédié, lecture seule sur les analyses), distincte de la validation de l'analyse (acceptation du livrable)
+- **Dérogations** — acceptation *temporaire* d'une non-conformité au socle de sécurité : rattachée à un contrôle d'un référentiel ou à un risque, **justifiée, compensée, bornée dans le temps et surveillée**. Workflow configurable par organisation (**autonomie** / validation **RSSI** / RSSI + **Direction métier**, double regard « RSSI groupe » optionnel), **alertes avant expiration**, clôture avec **preuves**, et **registre des dérogations** transverse — un livrable de conformité (ISO 27001, registre d'exceptions DORA, dossier d'homologation ANSSI)
 - Partage d'accès par analyse avec permissions individuelles
-- Dashboard admin : gestion des utilisateurs, création de comptes, suspension, logs d'audit
+- Dashboard admin : gestion des utilisateurs (périmètre de l'organisation), création de comptes, suspension, logs d'audit
 - **Récupération (corbeille)** : une analyse supprimée par un utilisateur reste restaurable par un administrateur pendant **30 jours** avant purge définitive
 
 ### 📊 Export & reporting

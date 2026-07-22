@@ -145,7 +145,7 @@ export default function ConfigurationPage() {
   const [derogationsActive, setDerogationsActive] = useState(false)
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
-  const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI_METIER')
+  const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
