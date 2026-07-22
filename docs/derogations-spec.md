@@ -78,6 +78,34 @@ L'état **« dérogé » est dérivé à la lecture** : un contrôle est *dérog
 - il **y ré-entre** automatiquement à l'expiration ;
 - le score de conformité expose un bucket `dérogé` : « X% conforme · Y% dérogé (temporaire) · Z% non-conforme » *(Phase 3)*.
 
+## 7 bis. Intégration au score de conformité (Phase 3 — spec détaillée)
+
+### Principe
+Un contrôle **non-conforme** (`non_conforme` ou `partiel`) couvert par une **dérogation
+ACTIVE non expirée** est affiché comme **« dérogé »** — un état DÉRIVÉ à la lecture (jointure
+dérogations ↔ entrées de conformité par `referentiel` + `ref`), **sans** nouveau
+`ConformiteStatut` stocké (les 4 états bruts restent auditables). À l'expiration/clôture/révocation,
+le contrôle **redevient** `non_conforme` automatiquement.
+
+### Effets
+1. **Catalogue de vulnérabilités (A3/A4)** : un contrôle dérogé en **sort** tant que la
+   dérogation est active, y **ré-entre** à l'expiration. → l'expiration ré-ouvre le risque.
+2. **Score de conformité** : bucket dédié — « X % conforme · Y % dérogé (temporaire) · Z % non-conforme ».
+3. **Tunnel de conformité (A5)** : un écart dérogé n'est plus « bloquant » tant que la dérogation
+   court (il est traité par acceptation temporaire au lieu d'une mesure).
+4. **Dashboard / roll-up** : compteur de contrôles dérogés par organisation ; alerte quand
+   des dérogations couvrant le socle approchent de l'expiration.
+
+### Point d'ancrage technique
+- `conformite.ts` : une fonction pure `appliquerDerogations(entries, derogationsActives, now)`
+  renvoie les entrées enrichies d'un drapeau `derogee` (calcul pur, testable).
+- Portée : une dérogation **d'analyse** (`analyseId` défini) affecte le **socle de cette analyse**
+  (`Cadrage.socleSecurite`) ; une dérogation **d'organisation** (`analyseId` null) affecte la
+  **conformité de l'org** (entité `Conformite`, quand `conformiteNiveau = ORGANISATION`).
+- `conformiteStats` gagne un compteur `deroge` ; `deriveNonConformites` exclut les contrôles dérogés.
+
+### Questions ouvertes (à trancher) — voir la conversation.
+
 ## 8. Modèle de données
 
 `Derogation` (voir schema.prisma) — champs clés : `organizationId`, `analyseId`, `portee`
