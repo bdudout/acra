@@ -1248,6 +1248,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                 controles={getFrameworkControles(referentielMesures, customControles, locale)}
                 entries={socleSecurite}
                 onChange={setSocleSecurite}
+                derogationCtx={{ analyseId, referentiel: referentielMesures }}
               />
             </div>
           )}

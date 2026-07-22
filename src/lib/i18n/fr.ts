@@ -767,6 +767,8 @@ export const fr = {
     title: 'Dérogations',
     subtitle: 'Acceptation temporaire d\'une non-conformité, justifiée, compensée et suivie jusqu\'à son échéance.',
     newBtn: 'Demander une dérogation',
+    derogerBtn: 'Déroger',
+    autoTitle: 'Dérogation',
     colAnalyse: 'Analyse',
     colEtat: 'État',
     colEcheance: 'Échéance',

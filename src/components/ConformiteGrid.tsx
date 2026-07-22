@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
@@ -10,13 +10,21 @@ import {
   type ConformiteEntry,
   type ConformiteStatut,
 } from '@/lib/conformite'
+import { etatDerogation, type DerogationStatut } from '@/lib/derogation'
 
 interface Props {
   controles: FrameworkControl[]
   entries: ConformiteEntry[]
   onChange: (entries: ConformiteEntry[]) => void
   readOnly?: boolean
+  /** Contexte dérogations : permet de déroger un contrôle non-conforme depuis la
+   *  grille (bouton « Déroger » + badges). La grille vérifie elle-même que la
+   *  fonctionnalité est active pour l'organisation (via l'API). */
+  derogationCtx?: { analyseId: string; referentiel: string }
 }
+
+/** État dérogation d'un contrôle, dérivé de la liste des dérogations de l'analyse. */
+type DerogEtat = 'ACTIVE' | 'EN_REVUE' | null
 
 const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
   conforme:     { on: 'bg-green-600 text-white border-green-600',   dot: 'bg-green-500' },
@@ -30,10 +38,60 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * est activée (OrganizationConfig.conformiteActive). Les non-conformités dérivées
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
-export default function ConformiteGrid({ controles, entries, onChange, readOnly = false }: Props) {
+export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx }: Props) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const sLabels = t.conformite.statuts as Record<string, string>
+  const d = t.derogations
+
+  // ── Dérogations : état par contrôle + création rapide depuis la grille ──
+  const [derogActive, setDerogActive] = useState(false) // feature active pour l'org ?
+  const [derogByRef, setDerogByRef] = useState<Map<string, DerogEtat>>(new Map())
+  const [derogFormRef, setDerogFormRef] = useState<string | null>(null) // formulaire ouvert sur ce contrôle
+  const [derogMotif, setDerogMotif] = useState('')
+  const [derogMesures, setDerogMesures] = useState('')
+  const [derogBusy, setDerogBusy] = useState(false)
+  const [derogError, setDerogError] = useState<string | null>(null)
+
+  async function reloadDerogations() {
+    if (!derogationCtx) return
+    const res = await fetch(`/api/analyses/${derogationCtx.analyseId}/derogations`)
+    if (!res.ok) return
+    const data = await res.json()
+    setDerogActive(Boolean(data.config?.active))
+    const alerte = typeof data.config?.alerteJours === 'number' ? data.config.alerteJours : 30
+    const m = new Map<string, DerogEtat>()
+    for (const x of (data.derogations ?? []) as { portee: string; referentiel: string | null; ref: string | null; statut: DerogationStatut; dateFin: string | null }[]) {
+      if (x.portee !== 'CONTROLE' || x.referentiel !== derogationCtx.referentiel || !x.ref) continue
+      const etat = etatDerogation({ statut: x.statut, dateFin: x.dateFin }, alerte)
+      if (etat === 'ACTIVE' || etat === 'EXPIRE_BIENTOT') { m.set(x.ref, 'ACTIVE'); continue }
+      if ((x.statut === 'DEMANDEE' || x.statut === 'DOUBLE_REGARD' || x.statut === 'VALIDATION_METIER') && m.get(x.ref) !== 'ACTIVE') m.set(x.ref, 'EN_REVUE')
+    }
+    setDerogByRef(m)
+  }
+  useEffect(() => { reloadDerogations() }, [derogationCtx?.analyseId, derogationCtx?.referentiel]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Demande minimale : intitulé auto-généré, seuls motif + mesures compensatoires à saisir.
+  async function submitDerogation(c: FrameworkControl) {
+    if (!derogationCtx) return
+    setDerogBusy(true); setDerogError(null)
+    const res = await fetch(`/api/analyses/${derogationCtx.analyseId}/derogations`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        portee: 'CONTROLE',
+        referentiel: derogationCtx.referentiel,
+        ref: c.ref,
+        intitule: `${d.autoTitle} — ${c.ref} · ${c.nom}`.slice(0, 255),
+        motif: derogMotif,
+        mesuresCompensatoires: derogMesures,
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setDerogBusy(false)
+    if (!res.ok) { setDerogError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
+    setDerogFormRef(null); setDerogMotif(''); setDerogMesures('')
+    reloadDerogations()
+  }
 
   const byRef = useMemo(() => {
     const m = new Map<string, ConformiteEntry>()
@@ -141,6 +199,46 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                   className="input w-full mt-2 text-xs"
                 />
               )}
+              {/* Dérogation : badge d'état, ou demande rapide sur une non-conformité */}
+              {derogationCtx && derogActive && showComment && (() => {
+                const etat = derogByRef.get(c.ref) ?? null
+                if (etat === 'ACTIVE') return (
+                  <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300">
+                    🪪 {sLabels.deroge ?? 'Dérogé'}
+                  </span>
+                )
+                if (etat === 'EN_REVUE') return (
+                  <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                    🪪 {d.filterReview}
+                  </span>
+                )
+                if (readOnly) return null
+                if (derogFormRef !== c.ref) return (
+                  <button type="button" onClick={() => { setDerogFormRef(c.ref); setDerogError(null) }}
+                    className="mt-2 text-xs text-cyan-700 dark:text-cyan-300 hover:underline font-medium">
+                    🪪 {d.derogerBtn}
+                  </button>
+                )
+                return (
+                  <div className="mt-2 space-y-1.5 p-2.5 rounded-lg bg-cyan-50/60 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-500/40">
+                    {derogError && <p className="text-xs text-red-600">{derogError}</p>}
+                    <textarea value={derogMotif} onChange={e => setDerogMotif(e.target.value)}
+                      placeholder={d.motifPlaceholder} rows={2} className="input w-full text-xs" />
+                    <textarea value={derogMesures} onChange={e => setDerogMesures(e.target.value)}
+                      placeholder={d.mesuresPlaceholder} rows={2} className="input w-full text-xs" />
+                    <div className="flex gap-2">
+                      <button type="button" disabled={derogBusy} onClick={() => submitDerogation(c)}
+                        className="text-xs px-2.5 py-1 rounded bg-cyan-600 text-white font-medium disabled:opacity-50">
+                        {d.submit}
+                      </button>
+                      <button type="button" onClick={() => setDerogFormRef(null)}
+                        className="text-xs px-2.5 py-1 rounded text-gray-500 hover:text-gray-700">
+                        {d.cancel}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )
         })}

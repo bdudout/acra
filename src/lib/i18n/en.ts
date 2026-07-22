@@ -750,6 +750,8 @@ export const en: Translations = {
     title: 'Waivers',
     subtitle: 'Temporary acceptance of a non-conformity, justified, compensated and tracked until its expiry.',
     newBtn: 'Request a waiver',
+    derogerBtn: 'Request waiver',
+    autoTitle: 'Waiver',
     colAnalyse: 'Analysis',
     colEtat: 'Status',
     colEcheance: 'Due date',

@@ -750,6 +750,8 @@ export const es: Translations = {
     title: 'Exenciones',
     subtitle: 'Aceptación temporal de una no conformidad, justificada, compensada y supervisada hasta su vencimiento.',
     newBtn: 'Solicitar una exención',
+    derogerBtn: 'Solicitar exención',
+    autoTitle: 'Exención',
     colAnalyse: 'Análisis',
     colEtat: 'Estado',
     colEcheance: 'Vencimiento',

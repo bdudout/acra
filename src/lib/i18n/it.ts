@@ -750,6 +750,8 @@ export const it: Translations = {
     title: 'Deroghe',
     subtitle: 'Accettazione temporanea di una non conformità, motivata, compensata e monitorata fino alla scadenza.',
     newBtn: 'Richiedi una deroga',
+    derogerBtn: 'Richiedi deroga',
+    autoTitle: 'Deroga',
     colAnalyse: 'Analisi',
     colEtat: 'Stato',
     colEcheance: 'Scadenza',

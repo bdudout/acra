@@ -750,6 +750,8 @@ export const de: Translations = {
     title: 'Ausnahmegenehmigungen',
     subtitle: 'Vorübergehende Akzeptanz einer Nichtkonformität — begründet, kompensiert und bis zum Ablauf überwacht.',
     newBtn: 'Ausnahmegenehmigung beantragen',
+    derogerBtn: 'Ausnahme beantragen',
+    autoTitle: 'Ausnahmegenehmigung',
     colAnalyse: 'Analyse',
     colEtat: 'Status',
     colEcheance: 'Fällig am',
