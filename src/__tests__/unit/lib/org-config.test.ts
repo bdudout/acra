@@ -21,6 +21,9 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     conformiteSnapshotMode: 'MANUEL',
     conseilsAteliersActive: true,
     acceptationRisquesActive: false,
+    derogationsActive: false,
+    derogationDureeDefautJours: 180,
+    derogationAlerteJours: 30,
     ...partial,
   }
 }

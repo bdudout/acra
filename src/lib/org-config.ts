@@ -38,6 +38,9 @@ export interface RawOrgConfig {
   conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
+  derogationsActive: boolean
+  derogationDureeDefautJours: number
+  derogationAlerteJours: number
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -55,6 +58,9 @@ export interface OrgConfigResolved {
   conformiteSnapshotMode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
+  derogationsActive: boolean
+  derogationDureeDefautJours: number
+  derogationAlerteJours: number
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -72,6 +78,9 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,
   acceptationRisquesActive: false,
+  derogationsActive: false,
+  derogationDureeDefautJours: 180,
+  derogationAlerteJours: 30,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -83,8 +92,9 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode'
+type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -110,6 +120,13 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     }
     return def
   }
+  const pickInt = (key: IntKey, def: number): number => {
+    for (const row of chainSelfFirst) {
+      const v = (row as Record<string, unknown> | null)?.[key]
+      if (typeof v === 'number' && Number.isFinite(v)) return v
+    }
+    return def
+  }
   return {
     entitesMesures: pickJson('entitesMesures', defaults.entitesMesures),
     typesImpacts: pickJson('typesImpacts', defaults.typesImpacts),
@@ -124,5 +141,8 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     conformiteSnapshotMode: pickStr('conformiteSnapshotMode', defaults.conformiteSnapshotMode),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
     acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
+    derogationsActive: pickBool('derogationsActive', defaults.derogationsActive),
+    derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
+    derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
   }
 }

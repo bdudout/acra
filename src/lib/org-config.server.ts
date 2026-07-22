@@ -24,6 +24,9 @@ const CONFIG_SELECT = {
   conformiteSnapshotMode: true,
   conseilsAteliersActive: true,
   acceptationRisquesActive: true,
+  derogationsActive: true,
+  derogationDureeDefautJours: true,
+  derogationAlerteJours: true,
 } as const
 
 /**
