@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getAccessibleOrgIds } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { canEditAnalyse, type UserRole } from '@/lib/permissions'
 import {
@@ -44,15 +44,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const derog = await prisma.derogation.findUnique({ where: { id } })
   if (!derog) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
-  // L'analyse sous-jacente doit rester accessible à l'utilisateur.
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, derog.analyseId),
-    select: { id: true, userId: true, accesUtilisateurs: true, organizationId: true, deletedAt: true, nom: true },
-  })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Contrôle d'accès : dérogation portée par une analyse → l'analyse doit rester
+  // accessible ; dérogation autonome (org) → l'organisation doit être visible.
+  let peutEditer: boolean
+  if (derog.analyseId) {
+    const analyse = await prisma.analyse.findFirst({
+      where: await analyseAccessWhere(userId, userRole, derog.analyseId),
+      select: { id: true, userId: true, accesUtilisateurs: true, deletedAt: true },
+    })
+    if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+    peutEditer = canEditAnalyse(sessionUser, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
+  } else {
+    const { all, ids } = await getAccessibleOrgIds(userId, userRole)
+    if (!all && !ids.includes(derog.organizationId)) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+    // Pas de propriété d'analyse : le porteur (demandeur) ou un admin peut « éditer » (clôturer).
+    peutEditer = derog.demandeurId === userId
+  }
 
-  const orgConfig = await getOrgConfig(analyse.organizationId)
-  const peutEditer = canEditAnalyse(sessionUser, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
+  const orgConfig = await getOrgConfig(derog.organizationId)
   const rbac = { statut: derog.statut as DerogationStatut, demandeurId: derog.demandeurId, avisRssiPar: derog.avisRssiPar }
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>

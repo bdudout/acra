@@ -124,9 +124,9 @@ export default function DerogationsPanel({
       {creating && canEdit && (
         <div className="mb-4 space-y-2 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/40 dark:border-gray-700">
           <select value={form.portee} onChange={e => setForm(f => ({ ...f, portee: e.target.value }))} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
-            {(['CONTROLE', 'RISQUE', 'SOCLE'] as const).map(p => <option key={p} value={p}>{(d.portees as Record<string, string>)[p]}</option>)}
+            {(['CONTROLE', 'RISQUE'] as const).map(p => <option key={p} value={p}>{(d.portees as Record<string, string>)[p]}</option>)}
           </select>
-          {(form.portee === 'CONTROLE' || form.portee === 'SOCLE') && (
+          {form.portee === 'CONTROLE' && (
             <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           )}
           {form.portee === 'CONTROLE' && (

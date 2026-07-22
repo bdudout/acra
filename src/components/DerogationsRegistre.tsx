@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import { etatDerogation, joursAvantExpiration, type DerogationEtat, type DerogationStatut } from '@/lib/derogation'
 
 export interface RegistreRow {
   id: string
-  analyseId: string
-  analyseNom: string
+  analyseId: string | null
+  analyseNom: string | null
   portee: string
   referentiel: string | null
   ref: string | null
@@ -36,10 +37,28 @@ const ALERTE_DEFAUT = 30
 
 type Filtre = 'TOUS' | 'EN_REVUE' | 'ACTIVES' | 'A_ECHEANCE' | 'TERMINEES'
 
-export default function DerogationsRegistre({ rows, locale }: { rows: RegistreRow[]; locale: string }) {
+export default function DerogationsRegistre({ rows, locale, canCreate = false }: { rows: RegistreRow[]; locale: string; canCreate?: boolean }) {
   const { t } = useTranslation()
   const d = t.derogations
+  const router = useRouter()
   const [filtre, setFiltre] = useState<Filtre>('TOUS')
+  const [creating, setCreating] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '' })
+
+  async function submitCreate() {
+    setBusy(true); setError(null)
+    const res = await fetch('/api/derogations', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portee: 'CONTROLE', referentiel: form.referentiel, ref: form.ref, intitule: form.intitule, motif: form.motif, mesuresCompensatoires: form.mesures }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
+    setCreating(false); setForm({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '' })
+    router.refresh()
+  }
 
   const enriched = useMemo(() => rows.map(r => ({
     ...r,
@@ -75,8 +94,32 @@ export default function DerogationsRegistre({ rows, locale }: { rows: RegistreRo
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">🪪 {d.title}</h1>
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🪪 {d.title}</h1>
+        {canCreate && (
+          <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm whitespace-nowrap">
+            {creating ? d.cancel : `+ ${d.newBtn}`}
+          </button>
+        )}
+      </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{d.subtitle}</p>
+
+      {error && <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
+
+      {/* Création d'une dérogation autonome (niveau organisation) — portée contrôle. */}
+      {creating && canCreate && (
+        <div className="mb-5 card p-4 space-y-2 max-w-2xl">
+          <p className="text-xs text-gray-500 dark:text-gray-400">{d.orgLevelHint}</p>
+          <div className="flex gap-2">
+            <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          </div>
+          <input value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          <button onClick={submitCreate} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{d.submit}</button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 mb-4">
         {filtres.map(f => (
@@ -105,7 +148,9 @@ export default function DerogationsRegistre({ rows, locale }: { rows: RegistreRo
               <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{r.intitule}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/analyses/${r.analyseId}`} className="text-ebios-600 dark:text-ebios-300 hover:underline">{r.analyseNom}</Link>
+                  {r.analyseId
+                    ? <Link href={`/analyses/${r.analyseId}`} className="text-ebios-600 dark:text-ebios-300 hover:underline">{r.analyseNom}</Link>
+                    : <span className="text-gray-400 dark:text-gray-500 italic">{d.orgLevel}</span>}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {(d.portees as Record<string, string>)[r.portee] ?? r.portee}

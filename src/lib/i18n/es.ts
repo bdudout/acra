@@ -758,6 +758,8 @@ export const es: Translations = {
     filterDue: 'Por vencer',
     filterDone: 'Cerradas',
     navLabel: 'Exenciones',
+    orgLevel: 'Organización',
+    orgLevelHint: 'Exención a nivel de organización (fuera de un análisis) — siempre vinculada a un control de un marco.',
 
     empty: 'Ninguna exención en este análisis.',
     intitule: 'Título',
@@ -772,7 +774,7 @@ export const es: Translations = {
     mesuresPlaceholder: 'Medidas establecidas a la espera de la subsanación…',
     submit: 'Enviar solicitud',
     cancel: 'Cancelar',
-    portees: { CONTROLE: 'Control de un marco', RISQUE: 'Riesgo', SOCLE: 'Base de seguridad de la organización' },
+    portees: { CONTROLE: 'Control de un marco', RISQUE: 'Riesgo' },
     statuts: {
       DEMANDEE: 'A la espera del dictamen del CISO',
       DOUBLE_REGARD: 'Segunda revisión solicitada',
@@ -812,7 +814,6 @@ export const es: Translations = {
       portee_invalide: 'Alcance no válido.',
       controle_incomplet: 'Marco y control requeridos.',
       risque_manquant: 'Debe seleccionarse un riesgo.',
-      socle_incomplet: 'Se requiere un marco.',
     },
   },
 

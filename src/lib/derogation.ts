@@ -8,8 +8,11 @@
  */
 import { isAdminRole, type SessionUser } from '@/lib/permissions'
 
-export type DerogationPortee = 'CONTROLE' | 'RISQUE' | 'SOCLE'
-export const DEROGATION_PORTEES: DerogationPortee[] = ['CONTROLE', 'RISQUE', 'SOCLE']
+// Une dérogation cible TOUJOURS une mesure de référentiel (contrôle) OU un risque —
+// y compris au niveau organisation (« globale »). Le caractère global se traduit
+// par l'absence d'analyse (analyseId null), pas par une portée « socle » abstraite.
+export type DerogationPortee = 'CONTROLE' | 'RISQUE'
+export const DEROGATION_PORTEES: DerogationPortee[] = ['CONTROLE', 'RISQUE']
 
 /** Statuts persistés (colonne `statut`). Les états d'expiration sont CALCULÉS, pas stockés. */
 export type DerogationStatut =
@@ -87,7 +90,7 @@ export interface DerogationInput {
 
 export type DerogationInputError =
   | 'intitule_requis' | 'motif_requis' | 'mesures_requises'
-  | 'portee_invalide' | 'controle_incomplet' | 'risque_manquant' | 'socle_incomplet'
+  | 'portee_invalide' | 'controle_incomplet' | 'risque_manquant'
 
 /** Valide une demande de dérogation AVANT écriture. Renvoie une clé d'erreur ou null. */
 export function validateDerogationInput(input: DerogationInput): DerogationInputError | null {
@@ -95,9 +98,9 @@ export function validateDerogationInput(input: DerogationInput): DerogationInput
   if (!input.motif?.trim()) return 'motif_requis'
   if (!input.mesuresCompensatoires?.trim()) return 'mesures_requises'
   if (!DEROGATION_PORTEES.includes(input.portee as DerogationPortee)) return 'portee_invalide'
+  // Toujours une mesure de référentiel (contrôle) OU un risque.
   if (input.portee === 'CONTROLE' && !(input.referentiel?.trim() && input.ref?.trim())) return 'controle_incomplet'
   if (input.portee === 'RISQUE' && !input.risqueId?.trim()) return 'risque_manquant'
-  if (input.portee === 'SOCLE' && !input.referentiel?.trim()) return 'socle_incomplet'
   return null
 }
 

@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       organizationId: analyse.organizationId ?? 'global',
       analyseId: id,
       portee: input.portee,
-      referentiel: input.portee === 'RISQUE' ? null : input.referentiel,
+      referentiel: input.portee === 'CONTROLE' ? input.referentiel : null,
       ref: input.portee === 'CONTROLE' ? input.ref : null,
       risqueId: input.portee === 'RISQUE' ? input.risqueId : null,
       intitule: input.intitule!,

@@ -758,6 +758,8 @@ export const de: Translations = {
     filterDue: 'Fällig',
     filterDone: 'Abgeschlossen',
     navLabel: 'Ausnahmen',
+    orgLevel: 'Organisation',
+    orgLevelHint: 'Ausnahmegenehmigung auf Organisationsebene (außerhalb einer Analyse) — immer an eine Kontrolle eines Rahmenwerks gebunden.',
 
     empty: 'Keine Ausnahmegenehmigung für diese Analyse.',
     intitule: 'Titel',
@@ -772,7 +774,7 @@ export const de: Translations = {
     mesuresPlaceholder: 'Bis zur Behebung getroffene Maßnahmen…',
     submit: 'Antrag senden',
     cancel: 'Abbrechen',
-    portees: { CONTROLE: 'Kontrolle eines Rahmenwerks', RISQUE: 'Risiko', SOCLE: 'Sicherheitsbasis der Organisation' },
+    portees: { CONTROLE: 'Kontrolle eines Rahmenwerks', RISQUE: 'Risiko' },
     statuts: {
       DEMANDEE: 'Wartet auf CISO-Stellungnahme',
       DOUBLE_REGARD: 'Zweitprüfung angefordert',
@@ -812,7 +814,6 @@ export const de: Translations = {
       portee_invalide: 'Ungültiger Geltungsbereich.',
       controle_incomplet: 'Rahmenwerk und Kontrolle erforderlich.',
       risque_manquant: 'Es muss ein Risiko ausgewählt werden.',
-      socle_incomplet: 'Ein Rahmenwerk ist erforderlich.',
     },
   },
 

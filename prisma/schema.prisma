@@ -162,10 +162,12 @@ model Derogation {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  analyseId      String
-  analyse        Analyse      @relation(fields: [analyseId], references: [id], onDelete: Cascade)
+  // analyseId optionnel : une dérogation peut être portée par une analyse OU être
+  // autonome, au niveau de l'organisation (socle), saisie depuis /derogations.
+  analyseId      String?
+  analyse        Analyse?     @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
-  // Rattachement : 'CONTROLE' (referentiel+ref) | 'RISQUE' (risqueId) | 'SOCLE' (org, phase ultérieure)
+  // Rattachement : 'CONTROLE' (referentiel+ref) | 'RISQUE' (risqueId) | 'SOCLE' (org)
   portee      String
   referentiel String? // FrameworkId si portée CONTROLE/SOCLE
   ref         String? // contrôle du référentiel si portée CONTROLE

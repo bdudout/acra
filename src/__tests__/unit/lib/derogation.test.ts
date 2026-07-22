@@ -80,8 +80,8 @@ describe('validateDerogationInput', () => {
     expect(validateDerogationInput({ portee: 'RISQUE', intitule: 'X', motif: 'm', mesuresCompensatoires: 'c' })).toBe('risque_manquant')
     expect(validateDerogationInput({ portee: 'RISQUE', risqueId: 'r1', intitule: 'X', motif: 'm', mesuresCompensatoires: 'c' })).toBeNull()
   })
-  it('SOCLE sans référentiel', () => {
-    expect(validateDerogationInput({ portee: 'SOCLE', intitule: 'X', motif: 'm', mesuresCompensatoires: 'c' })).toBe('socle_incomplet')
+  it('SOCLE (portée abstraite) est désormais invalide — toujours un contrôle ou un risque', () => {
+    expect(validateDerogationInput({ portee: 'SOCLE', referentiel: 'ISO27001', intitule: 'X', motif: 'm', mesuresCompensatoires: 'c' })).toBe('portee_invalide')
   })
 })
 

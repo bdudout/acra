@@ -758,6 +758,8 @@ export const it: Translations = {
     filterDue: 'In scadenza',
     filterDone: 'Concluse',
     navLabel: 'Deroghe',
+    orgLevel: 'Organizzazione',
+    orgLevelHint: 'Deroga a livello di organizzazione (fuori da un\'analisi) — sempre collegata a un controllo di un framework.',
 
     empty: 'Nessuna deroga su questa analisi.',
     intitule: 'Titolo',
@@ -772,7 +774,7 @@ export const it: Translations = {
     mesuresPlaceholder: 'Misure adottate in attesa della messa in conformità…',
     submit: 'Invia richiesta',
     cancel: 'Annulla',
-    portees: { CONTROLE: 'Controllo di un framework', RISQUE: 'Rischio', SOCLE: 'Base di sicurezza dell\'organizzazione' },
+    portees: { CONTROLE: 'Controllo di un framework', RISQUE: 'Rischio' },
     statuts: {
       DEMANDEE: 'In attesa del parere del CISO',
       DOUBLE_REGARD: 'Seconda revisione richiesta',
@@ -812,7 +814,6 @@ export const it: Translations = {
       portee_invalide: 'Ambito non valido.',
       controle_incomplet: 'Framework e controllo richiesti.',
       risque_manquant: 'Deve essere selezionato un rischio.',
-      socle_incomplet: 'È richiesto un framework.',
     },
   },
 

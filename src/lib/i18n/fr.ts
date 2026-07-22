@@ -775,6 +775,8 @@ export const fr = {
     filterDue: 'À échéance',
     filterDone: 'Terminées',
     navLabel: 'Dérogations',
+    orgLevel: 'Organisation',
+    orgLevelHint: 'Dérogation au niveau de l\'organisation (hors analyse) — toujours rattachée à un contrôle d\'un référentiel.',
 
     empty: 'Aucune dérogation sur cette analyse.',
     // Formulaire
@@ -791,7 +793,7 @@ export const fr = {
     submit: 'Envoyer la demande',
     cancel: 'Annuler',
     // Portées
-    portees: { CONTROLE: 'Contrôle d\'un référentiel', RISQUE: 'Risque', SOCLE: 'Socle de l\'organisation' },
+    portees: { CONTROLE: 'Contrôle d\'un référentiel', RISQUE: 'Risque' },
     // Statuts / états
     statuts: {
       DEMANDEE: 'En attente d\'avis RSSI',
@@ -835,7 +837,6 @@ export const fr = {
       portee_invalide: 'Portée invalide.',
       controle_incomplet: 'Référentiel et contrôle requis.',
       risque_manquant: 'Un risque doit être sélectionné.',
-      socle_incomplet: 'Un référentiel est requis.',
     },
   },
 

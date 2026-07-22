@@ -758,6 +758,8 @@ export const en: Translations = {
     filterDue: 'Due',
     filterDone: 'Closed',
     navLabel: 'Waivers',
+    orgLevel: 'Organisation',
+    orgLevelHint: 'Organisation-level waiver (outside an analysis) — always attached to a framework control.',
 
     empty: 'No waiver on this analysis.',
     intitule: 'Title',
@@ -772,7 +774,7 @@ export const en: Translations = {
     mesuresPlaceholder: 'Measures in place pending remediation…',
     submit: 'Send request',
     cancel: 'Cancel',
-    portees: { CONTROLE: 'Framework control', RISQUE: 'Risk', SOCLE: 'Organisation baseline' },
+    portees: { CONTROLE: 'Framework control', RISQUE: 'Risk' },
     statuts: {
       DEMANDEE: 'Awaiting CISO opinion',
       DOUBLE_REGARD: 'Second review requested',
@@ -812,7 +814,6 @@ export const en: Translations = {
       portee_invalide: 'Invalid scope.',
       controle_incomplet: 'Framework and control required.',
       risque_manquant: 'A risk must be selected.',
-      socle_incomplet: 'A framework is required.',
     },
   },
 
