@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdminInstance } from '@/lib/permissions'
+import { canAdmin } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 
 // GET /api/admin/audit-log
 // Query params: page, limit, action, userId, from, to
+// Périmètre : un ADMIN voit les logs de SON organisation (rattachement
+// organizationId) ; le SUPER_ADMIN voit tout, y compris les événements
+// d'instance (organizationId null).
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -13,7 +17,7 @@ export async function GET(req: NextRequest) {
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  if (!canAdminInstance({ id: userId, role: userRole })) {
+  if (!canAdmin({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
   }
 
@@ -35,6 +39,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Scoping : ADMIN limité aux organisations visibles de son périmètre.
+  const scope = await getAnalyseScope(userId, userRole)
+  if (!scope.scope.isSuperAdmin) {
+    where.organizationId = { in: scope.scope.visibleOrgIds }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const auditLogModel = (prisma as any).auditLog
   const [logs, total] = await Promise.all([
@@ -47,8 +57,9 @@ export async function GET(req: NextRequest) {
     auditLogModel.count({ where }),
   ])
 
-  // Get distinct actions for filter dropdown
+  // Actions distinctes pour le filtre (dans le même périmètre).
   const actions = await auditLogModel.findMany({
+    where: scope.scope.isSuperAdmin ? undefined : { organizationId: { in: scope.scope.visibleOrgIds } },
     select: { action: true },
     distinct: ['action'],
     orderBy: { action: 'asc' },

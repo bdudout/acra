@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdminInstance } from '@/lib/permissions'
+import { canAdmin } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 
-// GET /api/admin/audit-log/export — export CSV du journal d'audit (ADMIN seulement)
+// GET /api/admin/audit-log/export — export CSV du journal d'audit.
+// Même périmètre que la consultation : ADMIN limité à son organisation,
+// SUPER_ADMIN sans restriction (événements d'instance inclus).
 // Query params: action, from, to (same as audit-log route)
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -14,7 +17,7 @@ export async function GET(req: NextRequest) {
   const userId   = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
-  if (!canAdminInstance({ id: userId, role: userRole })) {
+  if (!canAdmin({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
   }
 
@@ -30,6 +33,12 @@ export async function GET(req: NextRequest) {
       ...(from ? { gte: new Date(from) } : {}),
       ...(to   ? { lte: new Date(to)   } : {}),
     }
+  }
+
+  // Scoping : ADMIN limité aux organisations visibles de son périmètre.
+  const scope = await getAnalyseScope(userId, userRole)
+  if (!scope.scope.isSuperAdmin) {
+    where.organizationId = { in: scope.scope.visibleOrgIds }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

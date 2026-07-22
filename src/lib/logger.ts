@@ -129,6 +129,9 @@ export interface AuditContext {
   targetId?:    string   // ID de la ressource affectée
   targetType?:  string   // 'user' | 'analyse' | 'policy' | ...
   ip?:          string
+  // Organisation de rattachement (scoping des logs ADMIN). Si absente et que
+  // userId est fourni, elle est résolue depuis la 1ʳᵉ appartenance de l'auteur.
+  organizationId?: string | null
   details?:     Record<string, unknown>
 }
 
@@ -151,6 +154,17 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
   // Persistance en base de données (best-effort — ne bloque pas la requête)
   try {
     const { prisma } = await import('@/lib/prisma')
+    // Rattachement à une organisation : valeur explicite de l'appelant, sinon
+    // 1ʳᵉ appartenance de l'auteur (best-effort ; null = événement d'instance).
+    let organizationId = ctx.organizationId ?? null
+    if (!organizationId && ctx.userId) {
+      const m = await prisma.orgMembership.findFirst({
+        where: { userId: ctx.userId },
+        orderBy: { createdAt: 'asc' },
+        select: { organizationId: true },
+      })
+      organizationId = m?.organizationId ?? null
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (prisma as any).auditLog.create({
       data: {
@@ -161,6 +175,7 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
         targetId:   ctx.targetId,
         targetType: ctx.targetType,
         ip:         ctx.ip,
+        organizationId,
         details:    ctx.details ? JSON.stringify(ctx.details) : null,
       },
     })

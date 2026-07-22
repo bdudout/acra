@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
+import { isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 
 interface AuditLog {
@@ -83,7 +84,7 @@ export default function AuditLogPage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/auth/login')
-    if (status === 'authenticated' && !(userRole === 'SUPER_ADMIN')) router.push('/dashboard')
+    if (status === 'authenticated' && !isAdminRole(userRole)) router.push('/dashboard')
   }, [status, userRole, router])
 
   const fetchLogs = useCallback(async () => {
@@ -106,7 +107,7 @@ export default function AuditLogPage() {
   }, [page, filterAction, filterFrom, filterTo])
 
   useEffect(() => {
-    if (status === 'authenticated' && (userRole === 'SUPER_ADMIN')) {
+    if (status === 'authenticated' && isAdminRole(userRole)) {
       fetchLogs()
     }
   }, [fetchLogs, status, userRole])
@@ -118,7 +119,7 @@ export default function AuditLogPage() {
     setPage(1)
   }
 
-  if (status !== 'authenticated' || !(userRole === 'SUPER_ADMIN')) return null
+  if (status !== 'authenticated' || !isAdminRole(userRole)) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

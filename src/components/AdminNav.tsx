@@ -30,8 +30,9 @@ export default function AdminNav({ active }: { active: AdminTab }) {
     // Sécurité (politique mdp, SMTP, SSO) et SMTP = réglages d'INSTANCE → super-admin uniquement.
     ...(isSuperAdmin ? [{ key: 'security', href: '/admin/security', Icon: Shield, label: t.admin.navSecurity }] : []),
     ...(isSuperAdmin ? [{ key: 'smtp',     href: '/admin/smtp',     Icon: Mail,   label: t.admin.navSmtp }] : []),
-    // Journal d'audit = instance (pas encore scopé par org) → super-admin uniquement.
-    ...(isSuperAdmin ? [{ key: 'audit', href: '/admin/audit', Icon: ClipboardList, label: t.admin.navAudit }] : []),
+    // Journal d'audit : scopé par organisation → visible aussi par les ADMIN
+    // (leur périmètre) ; le SUPER_ADMIN voit tout, événements d'instance inclus.
+    { key: 'audit', href: '/admin/audit', Icon: ClipboardList, label: t.admin.navAudit },
     { key: 'recovery',  href: '/admin/recovery', Icon: Trash2,        label: t.admin.navRecovery },
     // Réglages du site de démonstration — super-administrateur + instance de démo.
     ...(isSuperAdmin && isDemo ? [{ key: 'demo', href: '/admin/demo', Icon: FlaskConical, label: t.admin.navDemo }] : []),

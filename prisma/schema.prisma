@@ -658,19 +658,24 @@ enum StatutMesure {
 // ─── Journal d'audit (audit trail) ──────────────────────────────────────────
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  action     String // ex: LOGIN_SUCCESS, ROLE_CHANGED…
-  userId     String? // auteur de l'action (null si non authentifié)
-  userEmail  String?
-  userRole   String?
-  targetId   String? // ressource affectée (analyseId, userId…)
-  targetType String? // 'analyse' | 'user' | 'policy' | …
-  ip         String?
-  details    String?  @db.Text // JSON libre pour contexte additionnel
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  action         String // ex: LOGIN_SUCCESS, ROLE_CHANGED…
+  userId         String? // auteur de l'action (null si non authentifié)
+  userEmail      String?
+  userRole       String?
+  targetId       String? // ressource affectée (analyseId, userId…)
+  targetType     String? // 'analyse' | 'user' | 'policy' | …
+  ip             String?
+  details        String?  @db.Text // JSON libre pour contexte additionnel
+  // Organisation de rattachement (scoping des logs pour les ADMIN) : fournie par
+  // l'appelant ou résolue depuis la 1ʳᵉ appartenance de l'auteur. Null = événement
+  // d'instance (visible uniquement du SUPER_ADMIN).
+  organizationId String?
+  createdAt      DateTime @default(now())
 
   @@index([action])
   @@index([userId])
+  @@index([organizationId])
   @@index([createdAt])
 }
 
