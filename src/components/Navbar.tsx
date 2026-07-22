@@ -28,6 +28,18 @@ export default function Navbar() {
   const isLecteur      = userRole === 'LECTEUR'
   const canGovern    = isAdmin || userRole === 'RSSI' || userRole === 'RISK_MANAGER'
 
+  // File d'attente du valideur : dérogations en attente de l'action de l'utilisateur
+  // (avis RSSI, double regard, validation métier) → badge sur le lien Dérogations.
+  const [derogPending, setDerogPending] = useState(0)
+  const isDerogActor = userRole === 'RSSI' || userRole === 'DIRECTION_METIER' || isAdmin
+  useEffect(() => {
+    if (!isDerogActor || !session?.user) return
+    fetch('/api/derogations')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && typeof d.pending === 'number') setDerogPending(d.pending) })
+      .catch(() => {})
+  }, [isDerogActor, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fermer le menu sur clic extérieur
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -253,6 +265,12 @@ export default function Navbar() {
             >
               <FileWarning size={16} aria-hidden="true" />
               <span>{t.nav.derogations}</span>
+              {derogPending > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold"
+                  aria-label={`${derogPending} en attente`}>
+                  {derogPending}
+                </span>
+              )}
             </Link>
           )}
         </div>

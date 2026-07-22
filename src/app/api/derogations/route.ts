@@ -4,9 +4,47 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { validateDerogationInput, statutInitial, calcDateFin, type DerogationWorkflow } from '@/lib/derogation'
+import {
+  validateDerogationInput, statutInitial, calcDateFin,
+  canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
+  type DerogationWorkflow, type DerogationStatut,
+} from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
+
+// GET /api/derogations — nombre de dérogations en attente de l'ACTION de
+// l'utilisateur courant (file d'attente du valideur) : avis RSSI, double regard,
+// validation métier — dans son périmètre d'organisations. Alimente le badge de
+// la navbar. Réutilise les gardes RBAC pures (mêmes règles que les transitions).
+export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const userId = (session.user as { id: string }).id
+  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const sessionUser = { id: userId, role: userRole }
+
+  // Seuls les rôles susceptibles d'agir font la requête complète.
+  if (userRole !== 'RSSI' && userRole !== 'DIRECTION_METIER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+    return NextResponse.json({ pending: 0 })
+  }
+
+  const scope = await getAnalyseScope(userId, userRole)
+  const rows = await prisma.derogation.findMany({
+    where: {
+      statut: { in: ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'] },
+      ...(scope.scope.isSuperAdmin ? {} : { organizationId: { in: scope.scope.visibleOrgIds } }),
+    },
+    select: { statut: true, demandeurId: true, avisRssiPar: true },
+  })
+  const pending = rows.filter(r => {
+    const rbac = { statut: r.statut as DerogationStatut, demandeurId: r.demandeurId, avisRssiPar: r.avisRssiPar }
+    return canAvisRssiDerogation(sessionUser, rbac)
+      || canDoubleRegardDerogation(sessionUser, rbac)
+      || canValiderDerogation(sessionUser, rbac)
+  }).length
+
+  return NextResponse.json({ pending })
+}
 
 // POST /api/derogations — créer une dérogation AUTONOME (niveau organisation, sans
 // analyse). Toujours rattachée à une mesure de référentiel (portée CONTROLE) : un
