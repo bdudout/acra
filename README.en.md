@@ -81,10 +81,13 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 
 ### 👥 Collaboration & governance
 
-- **6-level RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALYST · READER
-- Approval workflow: submission → review → approval (CISO or Risk Manager)
+- **7-level RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · BUSINESS_MANAGEMENT · ANALYST · READER
+- **Multi-organisation**: organisation tree with hierarchical scopes (node / subtree); an ADMIN manages **only the accounts of their organisation**, a SUPER_ADMIN manages the instance
+- Approval workflow: submission → review → approval (CISO or Risk Manager), with **separation of duties** — an approver cannot approve **their own** analysis (four-eyes principle) — and **self-validation** for single-user organisations (solo practices, where four-eyes is impossible)
+- **Residual risk acceptance** by **Business management** (dedicated read-only role), distinct from analysis validation (deliverable acceptance)
+- **Waivers** — *temporary* acceptance of a security-baseline non-conformity: attached to a framework control or a risk, **justified, compensated, time-boxed and monitored**. Per-organisation configurable workflow (**self-service** / **CISO** validation / CISO + **Business management**, optional group-CISO second review), **expiry alerts**, closure with **evidence**, and a cross-analysis **waiver register** — a compliance deliverable (ISO 27001, DORA exception register)
 - Per-analysis access sharing with individual permissions
-- Admin dashboard: user management, account creation, suspension, audit logs
+- Admin dashboard: user management (organisation scope), account creation, suspension, audit logs
 - **Recovery (trash)**: an analysis deleted by a user remains restorable by an administrator for **30 days** before permanent purge
 
 ### 📊 Export & reporting

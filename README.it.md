@@ -81,10 +81,13 @@ ACRA cambia tutto questo: è un **assistente metodologico interattivo** che guid
 
 ### 👥 Collaborazione e governance
 
-- **RBAC a 6 livelli**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALISTA · LETTORE
-- Flusso di approvazione: invio → revisione → approvazione (CISO o Risk Manager)
+- **RBAC a 7 livelli**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · DIREZIONE_AZIENDALE · ANALISTA · LETTORE
+- **Multi-organizzazione**: albero delle organizzazioni con perimetri gerarchici (nodo / sottoalbero); un ADMIN amministra **solo gli account della propria organizzazione**, un SUPER_ADMIN gestisce l'istanza
+- Flusso di approvazione: invio → revisione → approvazione (CISO o Risk Manager), con **separazione dei compiti** — un approvatore non può approvare la **propria** analisi (principio dei quattro occhi) — e **autovalidazione** per le organizzazioni mono-utente (studi individuali, dove i quattro occhi sono impossibili)
+- **Accettazione dei rischi residui** da parte della **Direzione aziendale** (ruolo dedicato in sola lettura), distinta dalla validazione dell'analisi
+- **Deroghe** — accettazione *temporanea* di una non conformità della base di sicurezza: collegata a un controllo di un framework o a un rischio, **motivata, compensata, limitata nel tempo e monitorata**. Flusso configurabile per organizzazione (**autonomia** / validazione **CISO** / CISO + **Direzione aziendale**, seconda revisione opzionale del CISO di gruppo), **avvisi di scadenza**, chiusura con **prove** e un **registro delle deroghe** trasversale — un deliverable di conformità (ISO 27001, registro delle eccezioni DORA)
 - Condivisione dell'accesso per analisi con permessi individuali
-- Dashboard di amministrazione: gestione utenti, creazione account, sospensione, log di audit
+- Dashboard di amministrazione: gestione utenti (perimetro dell'organizzazione), creazione account, sospensione, log di audit
 - **Recupero (cestino)**: un'analisi eliminata da un utente resta ripristinabile da un amministratore per **30 giorni** prima della cancellazione definitiva
 
 ### 📊 Esportazione e reporting

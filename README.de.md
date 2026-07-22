@@ -81,10 +81,13 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 
 ### 👥 Zusammenarbeit & Governance
 
-- **6-stufiges RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALYST · LESER
-- Freigabe-Workflow: Einreichung → Prüfung → Freigabe (CISO oder Risk Manager)
+- **7-stufiges RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · FACHBEREICHSLEITUNG · ANALYST · LESER
+- **Multi-Organisation**: Organisationsbaum mit hierarchischen Bereichen (Knoten / Teilbaum); ein ADMIN verwaltet **nur die Konten seiner Organisation**, ein SUPER_ADMIN die Instanz
+- Freigabe-Workflow: Einreichung → Prüfung → Freigabe (CISO oder Risk Manager), mit **Funktionstrennung** — ein Genehmiger kann **seine eigene** Analyse nicht freigeben (Vier-Augen-Prinzip) — und **Selbstfreigabe** für Ein-Personen-Organisationen (wo Vier-Augen unmöglich ist)
+- **Restrisiko-Akzeptanz** durch die **Fachbereichsleitung** (dedizierte Nur-Lese-Rolle), getrennt von der Validierung der Analyse
+- **Ausnahmegenehmigungen** — *vorübergehende* Akzeptanz einer Nichtkonformität der Sicherheitsbasis: an eine Kontrolle eines Rahmenwerks oder ein Risiko gebunden, **begründet, kompensiert, befristet und überwacht**. Pro Organisation konfigurierbarer Workflow (**eigenständig** / **CISO**-Freigabe / CISO + **Fachbereich**, optionale Zweitprüfung durch Gruppen-CISO), **Ablaufwarnungen**, Abschluss mit **Nachweisen** und ein analysenübergreifendes **Ausnahmenregister** — ein Compliance-Liefergegenstand (ISO 27001, DORA-Ausnahmenregister)
 - Zugriffsfreigabe pro Analyse mit individuellen Berechtigungen
-- Admin-Dashboard: Benutzerverwaltung, Kontoerstellung, Sperrung, Audit-Logs
+- Admin-Dashboard: Benutzerverwaltung (Organisationsbereich), Kontoerstellung, Sperrung, Audit-Logs
 - **Wiederherstellung (Papierkorb)**: eine vom Benutzer gelöschte Analyse bleibt **30 Tage** lang durch einen Administrator wiederherstellbar, bevor sie endgültig gelöscht wird
 
 ### 📊 Export & Reporting

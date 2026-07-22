@@ -81,10 +81,13 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 
 ### 👥 Colaboración y gobernanza
 
-- **RBAC de 6 niveles**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · ANALISTA · LECTOR
-- Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager)
+- **RBAC de 7 niveles**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · DIRECCIÓN_DE_NEGOCIO · ANALISTA · LECTOR
+- **Multiorganización**: árbol de organizaciones con perímetros jerárquicos (nodo / subárbol); un ADMIN administra **solo las cuentas de su organización**, un SUPER_ADMIN gestiona la instancia
+- Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager), con **separación de funciones** — un aprobador no puede aprobar **su propio** análisis (principio de cuatro ojos) — y **autovalidación** para organizaciones de un solo usuario (despachos individuales, donde los cuatro ojos son imposibles)
+- **Aceptación de riesgos residuales** por la **Dirección de negocio** (rol dedicado de solo lectura), distinta de la validación del análisis
+- **Exenciones** — aceptación *temporal* de una no conformidad de la base de seguridad: vinculada a un control de un marco o a un riesgo, **justificada, compensada, acotada en el tiempo y supervisada**. Flujo configurable por organización (**autoservicio** / validación **CISO** / CISO + **Dirección de negocio**, segunda revisión opcional por el CISO de grupo), **alertas de vencimiento**, cierre con **pruebas** y un **registro de exenciones** transversal — un entregable de cumplimiento (ISO 27001, registro de excepciones DORA)
 - Compartición de acceso por análisis con permisos individuales
-- Panel de administración: gestión de usuarios, creación de cuentas, suspensión, registros de auditoría
+- Panel de administración: gestión de usuarios (perímetro de la organización), creación de cuentas, suspensión, registros de auditoría
 - **Recuperación (papelera)**: un análisis eliminado por un usuario sigue siendo restaurable por un administrador durante **30 días** antes de su purga definitiva
 
 ### 📊 Exportación y reporting
