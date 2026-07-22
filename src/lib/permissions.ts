@@ -236,7 +236,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   RISK_MANAGER: 'bg-amber-100 text-amber-800',
   RSSI:         'bg-purple-100 text-purple-800',
   ADMIN:        'bg-red-100 text-red-700',
-  SUPER_ADMIN:  'bg-slate-800 text-white',
+  SUPER_ADMIN:  'bg-slate-200 text-slate-800',
   DIRECTION_METIER: 'bg-cyan-100 text-cyan-800',
 }
 

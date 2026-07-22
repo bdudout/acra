@@ -5,6 +5,11 @@ module.exports = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    // Les libs définissent des classes utilitaires (badges de rôle dans
+    // permissions.ts, couleurs de composants dans ebios-data.ts) construites
+    // par mapping dynamique : sans ce glob, Tailwind les purge (ex. bg-cyan-100,
+    // bg-slate-800) et les badges s'affichent sans fond.
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
