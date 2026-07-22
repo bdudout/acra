@@ -723,6 +723,9 @@ model OrganizationConfig {
   derogationWorkflow         String        @default("RSSI")
   // Double regard (2e RSSI / RSSI groupe) proposé à la demande du RSSI.
   derogationDoubleRegard     Boolean       @default(true)
+  // Un contrôle sous dérogation active sort-il du catalogue de vulnérabilités
+  // (ateliers 3/4) ? Défaut oui ; désactivable par organisation.
+  derogationSortCatalogue    Boolean       @default(true)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

@@ -65,6 +65,7 @@ export async function GET(_req: NextRequest) {
     derogationAlerteJours: cfg.derogationAlerteJours,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
+    derogationSortCatalogue: cfg.derogationSortCatalogue,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -174,6 +175,7 @@ export async function PUT(req: NextRequest) {
     data.derogationWorkflow = body.derogationWorkflow
   }
   if (typeof body.derogationDoubleRegard === 'boolean') data.derogationDoubleRegard = body.derogationDoubleRegard
+  if (typeof body.derogationSortCatalogue === 'boolean') data.derogationSortCatalogue = body.derogationSortCatalogue
 
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
     // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.

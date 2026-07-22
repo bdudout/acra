@@ -5,7 +5,7 @@ interface Props {
   frameworkNom: string
   title: string
   rateLabel: string            // ex. « conforme »
-  labels: { conforme: string; partiel: string; non_conforme: string; na: string }
+  labels: { conforme: string; partiel: string; non_conforme: string; na: string; deroge?: string }
   /** Note optionnelle (ex. « hérité du socle X »). */
   note?: string | null
 }
@@ -14,9 +14,10 @@ const R = 42
 const STROKE = 16
 const C = 2 * Math.PI * R
 
-const SEGS: { key: keyof Pick<ConformiteStats, 'conforme' | 'partiel' | 'nonConforme' | 'na'>; color: string; labelKey: keyof Props['labels'] }[] = [
+const SEGS: { key: keyof Pick<ConformiteStats, 'conforme' | 'partiel' | 'nonConforme' | 'deroge' | 'na'>; color: string; labelKey: keyof Props['labels'] }[] = [
   { key: 'conforme',    color: '#22c55e', labelKey: 'conforme' },
   { key: 'partiel',     color: '#fbbf24', labelKey: 'partiel' },
+  { key: 'deroge',      color: '#06b6d4', labelKey: 'deroge' },
   { key: 'nonConforme', color: '#ef4444', labelKey: 'non_conforme' },
   { key: 'na',          color: '#d1d5db', labelKey: 'na' },
 ]
@@ -62,13 +63,18 @@ export default function ConformitePie({ stats, frameworkNom, title, rateLabel, l
           </svg>
         </div>
         <ul className="text-xs space-y-1.5 min-w-[140px]">
-          {SEGS.map(seg => (
-            <li key={seg.key} className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: seg.color }} />
-              <span className="text-gray-600 flex-1">{labels[seg.labelKey]}</span>
-              <span className="font-semibold text-gray-800">{stats[seg.key] as number}</span>
-            </li>
-          ))}
+          {SEGS.map(seg => {
+            const label = labels[seg.labelKey]
+            // Masque « Dérogé » quand il n'y en a pas (bruit inutile) ou si non traduit.
+            if (!label || (seg.key === 'deroge' && (stats.deroge ?? 0) === 0)) return null
+            return (
+              <li key={seg.key} className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                <span className="text-gray-600 flex-1">{label}</span>
+                <span className="font-semibold text-gray-800">{stats[seg.key] as number}</span>
+              </li>
+            )
+          })}
           <li className="flex items-center gap-2 pt-1 border-t border-gray-100 text-gray-400">
             <span className="flex-1">{stats.evalues}/{stats.total}</span>
           </li>

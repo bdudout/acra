@@ -20,8 +20,9 @@ import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
 import ConformitePie from '@/components/ConformitePie'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
-import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
+import { sanitizeConformite, conformiteStats, marquerDerogations } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
+import { derogRefsActives } from '@/lib/derogation.server'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { normalizeMentionProtection, isProtectedMention } from '@/lib/mention-protection'
@@ -111,8 +112,18 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
       : confCtxDetail.level === 'SOCLE'
         ? t.analysis.conformiteInheritedNote.replace('{socle}', confCtxDetail.sourceNom ?? '—')
         : null
+    // Marque les contrôles dérogés (non-conformité couverte par une dérogation active).
+    let confEntries = confCtxDetail.entries
+    if (orgConfig.derogationsActive) {
+      const refs = await derogRefsActives({
+        referentiel: String(confCtxDetail.referentiel),
+        analyseId: confCtxDetail.level === 'ORGANISATION' ? null : analyse.id,
+        organizationId: confCtxDetail.level === 'ORGANISATION' ? (analyse as any).organizationId : null,
+      })
+      confEntries = marquerDerogations(confEntries, refs)
+    }
     conformitePie = {
-      stats: conformiteStats(confCtxDetail.entries, controles.length),
+      stats: conformiteStats(confEntries, controles.length),
       frameworkNom: FRAMEWORK_META[confCtxDetail.referentiel as FrameworkId]?.nom ?? String(confCtxDetail.referentiel),
       note,
     }
@@ -364,7 +375,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 frameworkNom={conformitePie.frameworkNom}
                 title={t.analysis.conformiteTitle}
                 rateLabel={t.dashboard.conformiteRate}
-                labels={t.conformite.statuts as { conforme: string; partiel: string; non_conforme: string; na: string }}
+                labels={t.conformite.statuts as { conforme: string; partiel: string; non_conforme: string; na: string; deroge: string }}
                 note={conformitePie.note}
               />
             )}

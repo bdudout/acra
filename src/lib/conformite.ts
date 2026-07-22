@@ -22,6 +22,8 @@ export interface ConformiteEntry {
   ref: string
   statut: ConformiteStatut
   commentaire?: string
+  /** DÉRIVÉ (jamais stocké) : contrôle non-conforme couvert par une dérogation active. */
+  derogee?: boolean
 }
 
 const isStatut = (s: unknown): s is ConformiteStatut =>
@@ -53,11 +55,28 @@ export function sanitizeConformite(entries: unknown, validRefs?: Set<string>): C
 }
 
 /**
- * Non-conformités exploitables : contrôles évalués non_conforme ou partiel.
- * Ce sont elles qui alimentent le catalogue de vulnérabilités (ateliers 3/4).
+ * Marque « dérogé » (dérivé, non stocké) les contrôles non-conforme/partiel dont
+ * la `ref` figure dans l'ensemble des contrôles couverts par une dérogation ACTIVE.
+ * Un contrôle conforme/NA n'est jamais dérogé (décision : non-conforme ET dérogé).
+ * Pur → testable.
+ */
+export function marquerDerogations(entries: ConformiteEntry[], derogRefs: Set<string>): ConformiteEntry[] {
+  if (!derogRefs || derogRefs.size === 0) return entries
+  return entries.map(e =>
+    (e.statut === 'non_conforme' || e.statut === 'partiel') && derogRefs.has(e.ref)
+      ? { ...e, derogee: true }
+      : e,
+  )
+}
+
+/**
+ * Non-conformités exploitables : contrôles non_conforme/partiel NON dérogés.
+ * Ce sont elles qui alimentent le catalogue de vulnérabilités (ateliers 3/4) ; un
+ * contrôle dérogé en sort (il y ré-entre automatiquement à l'expiration, car la
+ * marque `derogee` disparaît quand la dérogation n'est plus active).
  */
 export function deriveNonConformites(entries: ConformiteEntry[]): ConformiteEntry[] {
-  return entries.filter(e => e.statut === 'non_conforme' || e.statut === 'partiel')
+  return entries.filter(e => (e.statut === 'non_conforme' || e.statut === 'partiel') && !e.derogee)
 }
 
 export interface ConformiteStats {
@@ -65,6 +84,8 @@ export interface ConformiteStats {
   partiel: number
   nonConforme: number
   na: number
+  /** Contrôles non-conformes couverts par une dérogation active (bucket dédié). */
+  deroge: number
   /** Nombre de contrôles évalués (toutes valeurs confondues). */
   evalues: number
   /** Nombre total de contrôles du référentiel. */
@@ -129,14 +150,18 @@ export function resolveEffectiveConformite(params: {
 }
 
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
-  let conforme = 0, partiel = 0, nonConforme = 0, na = 0
+  let conforme = 0, partiel = 0, nonConforme = 0, na = 0, deroge = 0
   for (const e of entries) {
+    // Un contrôle dérogé bascule dans son propre bucket (retiré de conforme/partiel/non-conforme).
+    if (e.derogee) { deroge++; continue }
     if (e.statut === 'conforme') conforme++
     else if (e.statut === 'partiel') partiel++
     else if (e.statut === 'non_conforme') nonConforme++
     else if (e.statut === 'na') na++
   }
-  const pertinents = conforme + partiel + nonConforme
+  // Le dérogé reste au dénominateur (c'est une non-conformité assumée temporairement) : le
+  // taux de conformité ne « gonfle » pas artificiellement.
+  const pertinents = conforme + partiel + nonConforme + deroge
   const tauxConformite = pertinents > 0 ? Math.round((conforme / pertinents) * 100) : 0
-  return { conforme, partiel, nonConforme, na, evalues: entries.length, total, tauxConformite }
+  return { conforme, partiel, nonConforme, na, deroge, evalues: entries.length, total, tauxConformite }
 }

@@ -43,6 +43,7 @@ export interface RawOrgConfig {
   derogationAlerteJours: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
+  derogationSortCatalogue: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -65,6 +66,7 @@ export interface OrgConfigResolved {
   derogationAlerteJours: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
+  derogationSortCatalogue: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -87,6 +89,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationAlerteJours: 30,
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
+  derogationSortCatalogue: true,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -98,7 +101,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
@@ -152,5 +155,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
+    derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),
   }
 }

@@ -147,6 +147,7 @@ export default function ConfigurationPage() {
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
+  const [derogationSortCatalogue, setDerogationSortCatalogue] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
@@ -191,6 +192,7 @@ export default function ConfigurationPage() {
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
+        setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -227,8 +229,9 @@ export default function ConfigurationPage() {
     acceptationRisquesActive: setAcceptationRisquesActive,
     derogationsActive: setDerogationsActive,
     derogationDoubleRegard: setDerogationDoubleRegard,
+    derogationSortCatalogue: setDerogationSortCatalogue,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1165,6 +1168,12 @@ export default function ConfigurationPage() {
                     {t.features.derogationDoubleRegardLabel}
                   </label>
                 )}
+                {/* Un contrôle dérogé sort-il du catalogue de vulnérabilités ? */}
+                <label className="text-sm text-gray-700 flex items-center gap-2">
+                  <input type="checkbox" checked={derogationSortCatalogue} disabled={savingFeatures}
+                    onChange={e => saveFeature('derogationSortCatalogue', e.target.checked)} />
+                  {t.features.derogationSortCatalogueLabel}
+                </label>
                 {/* Durée / alerte */}
                 <div className="flex flex-wrap gap-6">
                   <label className="text-sm text-gray-700">

@@ -104,7 +104,12 @@ le contrôle **redevient** `non_conforme` automatiquement.
   **conformité de l'org** (entité `Conformite`, quand `conformiteNiveau = ORGANISATION`).
 - `conformiteStats` gagne un compteur `deroge` ; `deriveNonConformites` exclut les contrôles dérogés.
 
-### Questions ouvertes (à trancher) — voir la conversation.
+### Décisions (Brice, 2026-07-23)
+1. **Catalogue** : un contrôle dérogé **sort** du catalogue par défaut, mais c'est **configurable
+   à « non »** par organisation → `OrganizationConfig.derogationSortCatalogue` (défaut `true`).
+2. **Score** : **bucket dédié « Dérogé »** (« conforme / dérogé / non-conforme »).
+3. **Portée** : dérogation d'**analyse** → socle de l'analyse ; dérogation d'**organisation** → conformité de l'org.
+4. **Condition** : un contrôle est « dérogé » s'il est **`non_conforme`/`partiel` ET** couvert par une **dérogation active**.
 
 ## 8. Modèle de données
 

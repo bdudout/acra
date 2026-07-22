@@ -18,8 +18,9 @@ import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
-import { sanitizeConformite, deriveNonConformites, type ConformiteStatut } from '@/lib/conformite'
+import { sanitizeConformite, deriveNonConformites, marquerDerogations, type ConformiteStatut } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
+import { derogRefsActives } from '@/lib/derogation.server'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 
 export default async function AtelierPage({
@@ -149,7 +150,17 @@ export default async function AtelierPage({
       : confCtx.level === 'SOCLE' ? socleAnalyse?.cadrage?.customControles : undefined
     const controles = getFrameworkControles(confCtx.referentiel as any, custom as any[], locale)
     const ctlByRef = new Map(controles.map(c => [c.ref, c]))
-    nonConfItems = deriveNonConformites(confCtx.entries).map(nc => ({
+    // Si la config le demande, un contrôle dérogé sort du catalogue de vulnérabilités.
+    let confEntries = confCtx.entries
+    if (orgConfig.derogationsActive && orgConfig.derogationSortCatalogue) {
+      const refs = await derogRefsActives({
+        referentiel: String(confCtx.referentiel),
+        analyseId: confCtx.level === 'ORGANISATION' ? null : id,
+        organizationId: confCtx.level === 'ORGANISATION' ? (analyse as any).organizationId : null,
+      })
+      confEntries = marquerDerogations(confEntries, refs)
+    }
+    nonConfItems = deriveNonConformites(confEntries).map(nc => ({
       ref: nc.ref,
       nom: ctlByRef.get(nc.ref)?.nom ?? nc.ref,
       statut: nc.statut,

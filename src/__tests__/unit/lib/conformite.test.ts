@@ -6,6 +6,7 @@ import {
   conformiteStats,
   applyConformiteStatut,
   resolveEffectiveConformite,
+  marquerDerogations,
   type ConformiteEntry,
 } from '@/lib/conformite'
 
@@ -59,6 +60,48 @@ describe('deriveNonConformites', () => {
     const nc = deriveNonConformites(sample)
     expect(nc.find(c => c.ref === '5.1')).toBeUndefined()
     expect(nc.find(c => c.ref === '5.4')).toBeUndefined()
+  })
+})
+
+describe('marquerDerogations (#dérogations)', () => {
+  const entries: ConformiteEntry[] = [
+    { ref: 'A.1', statut: 'non_conforme' },
+    { ref: 'A.2', statut: 'partiel' },
+    { ref: 'A.3', statut: 'conforme' },
+    { ref: 'A.4', statut: 'non_conforme' },
+  ]
+  it('marque dérogé les non-conforme/partiel dont la ref est couverte', () => {
+    const r = marquerDerogations(entries, new Set(['A.1', 'A.2', 'A.3']))
+    expect(r.find(e => e.ref === 'A.1')?.derogee).toBe(true)
+    expect(r.find(e => e.ref === 'A.2')?.derogee).toBe(true)
+    expect(r.find(e => e.ref === 'A.3')?.derogee).toBeUndefined() // conforme → jamais dérogé
+    expect(r.find(e => e.ref === 'A.4')?.derogee).toBeUndefined() // non couvert
+  })
+  it('un contrôle dérogé sort du catalogue de vulnérabilités', () => {
+    const marque = marquerDerogations(entries, new Set(['A.1']))
+    const cat = deriveNonConformites(marque).map(e => e.ref)
+    expect(cat).toEqual(['A.2', 'A.4']) // A.1 dérogé exclu
+  })
+  it('sans dérogation, comportement inchangé', () => {
+    expect(marquerDerogations(entries, new Set())).toBe(entries)
+  })
+})
+
+describe('conformiteStats — bucket dérogé', () => {
+  it('les dérogés forment un bucket dédié, retirés de non-conforme, gardés au dénominateur', () => {
+    const entries: ConformiteEntry[] = marquerDerogations([
+      { ref: 'A.1', statut: 'conforme' },
+      { ref: 'A.2', statut: 'non_conforme' },
+      { ref: 'A.3', statut: 'non_conforme' },
+      { ref: 'A.4', statut: 'partiel' },
+    ], new Set(['A.3', 'A.4']))
+    const s = conformiteStats(entries, 4)
+    expect(s.conforme).toBe(1)
+    expect(s.nonConforme).toBe(1)   // A.2 seulement (A.3 dérogé)
+    expect(s.partiel).toBe(0)       // A.4 dérogé
+    expect(s.deroge).toBe(2)        // A.3 + A.4
+    // taux = conforme / (conforme+partiel+nonConforme+deroge) = 1/4 = 25%
+    expect(s.tauxConformite).toBe(25)
   })
 })
 
