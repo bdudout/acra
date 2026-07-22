@@ -138,8 +138,16 @@ export function canSubmitAnalyse(user: SessionUser, analyse: AnalyseOwnership): 
 
 /** L'utilisateur peut approuver ou rejeter l'analyse */
 export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
+  // ADMIN/SUPER_ADMIN : override conservé (flux mono-admin TPE — un cabinet d'une
+  // seule personne ne peut pas créer un « 2e compte » pour approuver). L'éventuelle
+  // auto-approbation ADMIN est journalisée (`selfApproval`) côté route d'approbation.
   if (isAdminRole(user.role)) return true
   if (user.role !== 'RISK_MANAGER' && user.role !== 'RSSI') return false
+  // Séparation des tâches / quatre-yeux (#120, A01 / CWE-863) : un RISK_MANAGER ou
+  // RSSI ne peut PAS approuver sa PROPRE analyse (maker ≠ checker), même s'il
+  // dispose d'un accès APPROBATION. C'est le différenciateur « approbation à deux
+  // niveaux » — il doit être appliqué au niveau du code, pas seulement documenté.
+  if (analyse.userId === user.id) return false
   // Risk Manager / RSSI : peut approuver s'il a un accès APPROBATION ou s'il a accès global
   const acces = analyse.accesUtilisateurs?.find(a => a.userId === user.id)
   // Sans accès granulaire restrictif, ils peuvent approuver toutes les analyses soumises

@@ -225,6 +225,24 @@ describe('canApproveAnalyse', () => {
     const analyse = ownedBy('u1', [{ userId: 'u2', permission: 'APPROBATION' }])
     expect(canApproveAnalyse(user, analyse)).toBe(true)
   })
+
+  // Séparation des tâches / quatre-yeux (#120, A01 / CWE-863) : un approbateur
+  // ne peut pas approuver SA PROPRE analyse (maker-checker).
+  it('RISK_MANAGER ne peut PAS approuver sa propre analyse (SoD)', () => {
+    expect(canApproveAnalyse(userWith('RISK_MANAGER', 'u1'), ownedBy('u1'))).toBe(false)
+  })
+  it('RSSI ne peut PAS approuver sa propre analyse (SoD)', () => {
+    expect(canApproveAnalyse(userWith('RSSI', 'u1'), ownedBy('u1'))).toBe(false)
+  })
+  it('RISK_MANAGER propriétaire même avec accès APPROBATION reste bloqué (SoD)', () => {
+    const user = userWith('RISK_MANAGER', 'u1')
+    const analyse = ownedBy('u1', [{ userId: 'u1', permission: 'APPROBATION' }])
+    expect(canApproveAnalyse(user, analyse)).toBe(false)
+  })
+  it('ADMIN propriétaire conserve son override (flux mono-admin TPE)', () => {
+    // L'auto-approbation ADMIN reste possible mais est journalisée (selfApproval) côté route.
+    expect(canApproveAnalyse(userWith('ADMIN', 'u1'), ownedBy('u1'))).toBe(true)
+  })
 })
 
 // ─── canManageAccess ──────────────────────────────────────────────────────────

@@ -65,7 +65,10 @@ export async function POST(req: NextRequest, { params }: Params) {
         commentaireApprobation: commentaire ?? null,
       },
     })
-    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire } })
+    // Séparation des tâches (#120) : les RISK_MANAGER/RSSI propriétaires sont bloqués
+    // par canApproveAnalyse ; seul un ADMIN-propriétaire peut atteindre ce point en
+    // auto-approuvant → on le rend visible en audit (`selfApproval`).
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, selfApproval: analyse.userId === userId } })
     return NextResponse.json(updated)
   }
 
