@@ -55,6 +55,7 @@ export default function DerogationsPanel({
   const d = t.derogations
   const [list, setList] = useState<Derog[]>([])
   const [alerteJours, setAlerteJours] = useState(30)
+  const [doubleRegardActif, setDoubleRegardActif] = useState(true)
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,6 +69,7 @@ export default function DerogationsPanel({
     const data = await res.json()
     setList(data.derogations ?? [])
     if (typeof data.config?.alerteJours === 'number') setAlerteJours(data.config.alerteJours)
+    if (typeof data.config?.doubleRegard === 'boolean') setDoubleRegardActif(data.config.doubleRegard)
   }
   useEffect(() => { reload() }, [analyseId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -195,6 +197,7 @@ export default function DerogationsPanel({
                         onProlonger={(dt, c) => transition(x.id, { action: 'PROLONGER', nouvelleDateFin: dt || undefined, commentaire: c })}
                         onRevoquer={c => transition(x.id, { action: 'REVOQUER', commentaire: c })}
                         onCloturer={(preuves, c) => transition(x.id, { action: 'CLOTURER', preuves, commentaire: c })}
+                        doubleRegardActif={doubleRegardActif}
                         show={{ canAvis, canDouble, canVal, canRev, canProlong, canClo }} />
                     )}
                   </div>
@@ -220,9 +223,10 @@ function readPreuves(files: FileList | null): Promise<{ nom: string; mime: strin
 }
 
 // Barre d'actions contextuelle (avec un champ commentaire commun).
-function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onProlonger, onRevoquer, onCloturer }: {
+function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onDouble, onValider, onRejeter, onProlonger, onRevoquer, onCloturer }: {
   d: Record<string, unknown>
   busy: boolean
+  doubleRegardActif: boolean
   show: { canAvis: boolean; canDouble: boolean; canVal: boolean; canRev: boolean; canProlong: boolean; canClo: boolean }
   onAvis: (fav: boolean, dbl: boolean, c: string) => void
   onDouble: (fav: boolean, c: string) => void
@@ -243,7 +247,7 @@ function ActionRow({ d, busy, show, onAvis, onDouble, onValider, onRejeter, onPr
       <textarea value={c} onChange={e => setC(e.target.value)} placeholder={s.commentairePlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
       <div className="flex flex-wrap gap-2">
         {show.canAvis && <>
-          <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={dbl} onChange={e => setDbl(e.target.checked)} />{s.demanderDoubleRegard}</label>
+          {doubleRegardActif && <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={dbl} onChange={e => setDbl(e.target.checked)} />{s.demanderDoubleRegard}</label>}
           <button disabled={busy} onClick={() => onAvis(true, dbl, c)} className={`${btn} bg-green-600 text-white`}>{s.avisFavorable}</button>
           <button disabled={busy} onClick={() => onAvis(false, false, c)} className={`${btn} bg-red-600 text-white`}>{s.avisDefavorable}</button>
         </>}

@@ -24,6 +24,8 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     derogationsActive: false,
     derogationDureeDefautJours: 180,
     derogationAlerteJours: 30,
+    derogationWorkflow: 'RSSI_METIER',
+    derogationDoubleRegard: true,
     ...partial,
   }
 }

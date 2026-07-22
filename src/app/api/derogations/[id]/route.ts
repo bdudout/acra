@@ -8,7 +8,7 @@ import {
   calcDateFin, statutApresAvisRssi, statutApresDoubleRegard, prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
   canRevoquerDerogation, canCloturerDerogation,
-  type DerogationStatut,
+  type DerogationStatut, type DerogationWorkflow,
 } from '@/lib/derogation'
 import { auditLog, getClientIp, type AuditAction } from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
@@ -73,6 +73,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     auditLog(a, { userId, userRole, targetId: id, targetType: 'derogation', ip: getClientIp(req), details: { nom: derog.intitule, ...details } })
 
   const save = (data: Record<string, unknown>) => prisma.derogation.update({ where: { id }, data })
+  // Niveau de workflow effectif + activation (fixe la période quand la dérogation devient active).
+  const workflow = orgConfig.derogationWorkflow as DerogationWorkflow
+  const activation = () => ({ dateDebut: derog.dateDebut ?? now, dateFin: calcDateFin(now, orgConfig.derogationDureeDefautJours), alerteeLe: null })
 
   switch (action) {
     // ── Avis RSSI (favorable/défavorable, + demande de double regard) ──
@@ -81,13 +84,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       const favorable = body.favorable === true
       const doubleRegard = body.demandeDoubleRegard === true
       if (!favorable && !commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour un avis défavorable' }, { status: 400 })
-      const statut = statutApresAvisRssi(favorable, doubleRegard)
+      const statut = statutApresAvisRssi(favorable, doubleRegard, workflow, orgConfig.derogationDoubleRegard)
       const updated = await save({
         statut,
         avisRssiPar: userId, avisRssiLe: now, avisRssiFavorable: favorable, avisRssiCommentaire: commentaire,
+        // Niveau RSSI : l'avis favorable active directement (le RSSI est le valideur).
+        ...(statut === 'ACTIVE' ? { valideePar: userId, valideeLe: now, ...activation() } : {}),
         ...(statut === 'REJETEE' ? { rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire } : {}),
       })
-      await audit('DEROGATION_RSSI_OPINION', { favorable, doubleRegard, statut })
+      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_RSSI_OPINION', { favorable, doubleRegard, statut })
       return NextResponse.json(updated)
     }
 
@@ -96,13 +101,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       if (!canDoubleRegardDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const favorable = body.favorable === true
       if (!favorable && !commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour un avis défavorable' }, { status: 400 })
-      const statut = statutApresDoubleRegard(favorable)
+      const statut = statutApresDoubleRegard(favorable, workflow)
       const updated = await save({
         statut,
         doubleRegardPar: userId, doubleRegardLe: now, doubleRegardFavorable: favorable, doubleRegardCommentaire: commentaire,
+        ...(statut === 'ACTIVE' ? { valideePar: userId, valideeLe: now, ...activation() } : {}),
         ...(statut === 'REJETEE' ? { rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire } : {}),
       })
-      await audit('DEROGATION_DOUBLE_REVIEW', { favorable, statut })
+      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_DOUBLE_REVIEW', { favorable, statut })
       return NextResponse.json(updated)
     }
 
@@ -143,14 +149,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       const nd = body.nouvelleDateFin ? new Date(String(body.nouvelleDateFin)) : calcDateFin(derog.dateFin ?? now, orgConfig.derogationDureeDefautJours)
       if (isNaN(nd.getTime())) return NextResponse.json({ error: 'Date de fin invalide' }, { status: 400 })
       const historique = [...(Array.isArray(derog.prolongations) ? derog.prolongations : []), prolongationEntry(derog.dateFin, nd, commentaire, userId, now)]
-      const updated = await save({
-        statut: 'DEMANDEE',
-        prolongationDemandee: nd,
-        prolongations: historique,
-        // nouveau cycle de revue : on réinitialise les avis
-        avisRssiPar: null, avisRssiLe: null, avisRssiFavorable: null, avisRssiCommentaire: null,
-        doubleRegardPar: null, doubleRegardLe: null, doubleRegardFavorable: null, doubleRegardCommentaire: null,
-      })
+      // En mode AUTONOME (aucun valideur), la prolongation s'applique directement ;
+      // sinon elle rouvre un cycle de revue (retour DEMANDEE).
+      const updated = workflow === 'AUTONOME'
+        ? await save({ statut: 'ACTIVE', dateFin: nd, prolongations: historique, alerteeLe: null })
+        : await save({
+            statut: 'DEMANDEE',
+            prolongationDemandee: nd,
+            prolongations: historique,
+            avisRssiPar: null, avisRssiLe: null, avisRssiFavorable: null, avisRssiCommentaire: null,
+            doubleRegardPar: null, doubleRegardLe: null, doubleRegardFavorable: null, doubleRegardCommentaire: null,
+          })
       await audit('DEROGATION_EXTENDED', { requested: nd.toISOString() })
       return NextResponse.json(updated)
     }

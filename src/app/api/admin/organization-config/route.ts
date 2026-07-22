@@ -63,6 +63,8 @@ export async function GET(_req: NextRequest) {
     derogationsActive: cfg.derogationsActive,
     derogationDureeDefautJours: cfg.derogationDureeDefautJours,
     derogationAlerteJours: cfg.derogationAlerteJours,
+    derogationWorkflow: cfg.derogationWorkflow,
+    derogationDoubleRegard: cfg.derogationDoubleRegard,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -168,6 +170,10 @@ export async function PUT(req: NextRequest) {
   if (typeof body.derogationAlerteJours === 'number' && Number.isFinite(body.derogationAlerteJours)) {
     data.derogationAlerteJours = Math.max(1, Math.min(365, Math.round(body.derogationAlerteJours)))
   }
+  if (typeof body.derogationWorkflow === 'string' && ['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(body.derogationWorkflow)) {
+    data.derogationWorkflow = body.derogationWorkflow
+  }
+  if (typeof body.derogationDoubleRegard === 'boolean') data.derogationDoubleRegard = body.derogationDoubleRegard
 
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
     // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.

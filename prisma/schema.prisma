@@ -718,6 +718,11 @@ model OrganizationConfig {
   derogationDureeDefautJours Int           @default(180)
   // Fenêtre d'alerte avant expiration d'une dérogation, en jours (défaut 30).
   derogationAlerteJours      Int           @default(30)
+  // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
+  // (validation RSSI), "RSSI_METIER" (RSSI puis Direction métier, défaut).
+  derogationWorkflow         String        @default("RSSI_METIER")
+  // Double regard (2e RSSI / RSSI groupe) proposé à la demande du RSSI.
+  derogationDoubleRegard     Boolean       @default(true)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

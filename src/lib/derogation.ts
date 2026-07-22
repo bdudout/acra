@@ -106,15 +106,38 @@ export function validateDerogationInput(input: DerogationInput): DerogationInput
 
 // ─── Machine à états (transitions PURES) ─────────────────────────────────────
 
-/** Statut résultant de l'avis RSSI (défavorable → rejet ; double regard → 2e RSSI ; sinon → métier). */
-export function statutApresAvisRssi(favorable: boolean, demandeDoubleRegard: boolean): DerogationStatut {
-  if (!favorable) return 'REJETEE'
-  return demandeDoubleRegard ? 'DOUBLE_REGARD' : 'VALIDATION_METIER'
+/**
+ * Niveau de workflow (réglage org) :
+ *  - AUTONOME    : la dérogation est active dès sa création (startup, self-service) ;
+ *  - RSSI        : validation par le RSSI, puis active ;
+ *  - RSSI_METIER : validation RSSI puis Direction métier (défaut).
+ */
+export type DerogationWorkflow = 'AUTONOME' | 'RSSI' | 'RSSI_METIER'
+export const DEROGATION_WORKFLOWS: DerogationWorkflow[] = ['AUTONOME', 'RSSI', 'RSSI_METIER']
+
+/** Statut à la création selon le niveau (AUTONOME → active d'emblée, sinon en revue). */
+export function statutInitial(workflow: DerogationWorkflow): DerogationStatut {
+  return workflow === 'AUTONOME' ? 'ACTIVE' : 'DEMANDEE'
 }
 
-/** Statut résultant du double regard (2e RSSI). */
-export function statutApresDoubleRegard(favorable: boolean): DerogationStatut {
-  return favorable ? 'VALIDATION_METIER' : 'REJETEE'
+/** Après un avis favorable : validation métier si le niveau l'exige, sinon active. */
+function statutSiFavorable(workflow: DerogationWorkflow): DerogationStatut {
+  return workflow === 'RSSI_METIER' ? 'VALIDATION_METIER' : 'ACTIVE'
+}
+
+/**
+ * Statut résultant de l'avis RSSI. Défavorable → rejet. Favorable : double regard
+ * si demandé ET autorisé par la config ; sinon on suit le niveau (métier ou actif).
+ */
+export function statutApresAvisRssi(favorable: boolean, demandeDoubleRegard: boolean, workflow: DerogationWorkflow, doubleRegardActif: boolean): DerogationStatut {
+  if (!favorable) return 'REJETEE'
+  if (demandeDoubleRegard && doubleRegardActif) return 'DOUBLE_REGARD'
+  return statutSiFavorable(workflow)
+}
+
+/** Statut résultant du double regard (2e RSSI) selon le niveau de workflow. */
+export function statutApresDoubleRegard(favorable: boolean, workflow: DerogationWorkflow): DerogationStatut {
+  return favorable ? statutSiFavorable(workflow) : 'REJETEE'
 }
 
 /** Statuts terminaux (plus aucune transition possible). */

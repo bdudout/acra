@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   calcDateFin, joursAvantExpiration, etatDerogation, needsExpiryAlert,
-  validateDerogationInput, statutApresAvisRssi, statutApresDoubleRegard, estTerminale,
+  validateDerogationInput, statutInitial, statutApresAvisRssi, statutApresDoubleRegard, estTerminale,
   prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
   canRevoquerDerogation, canCloturerDerogation,
@@ -87,18 +87,29 @@ describe('validateDerogationInput', () => {
 
 // ─── Machine à états ─────────────────────────────────────────────────────────
 describe('transitions', () => {
+  it('statut initial : AUTONOME → ACTIVE, sinon DEMANDEE', () => {
+    expect(statutInitial('AUTONOME')).toBe('ACTIVE')
+    expect(statutInitial('RSSI')).toBe('DEMANDEE')
+    expect(statutInitial('RSSI_METIER')).toBe('DEMANDEE')
+  })
   it('avis RSSI défavorable → REJETEE', () => {
-    expect(statutApresAvisRssi(false, false)).toBe('REJETEE')
+    expect(statutApresAvisRssi(false, false, 'RSSI_METIER', true)).toBe('REJETEE')
   })
-  it('avis RSSI favorable + double regard → DOUBLE_REGARD', () => {
-    expect(statutApresAvisRssi(true, true)).toBe('DOUBLE_REGARD')
+  it('avis RSSI favorable + double regard (autorisé) → DOUBLE_REGARD', () => {
+    expect(statutApresAvisRssi(true, true, 'RSSI_METIER', true)).toBe('DOUBLE_REGARD')
   })
-  it('avis RSSI favorable sans double regard → VALIDATION_METIER', () => {
-    expect(statutApresAvisRssi(true, false)).toBe('VALIDATION_METIER')
+  it('double regard demandé mais désactivé en config → suit le niveau', () => {
+    expect(statutApresAvisRssi(true, true, 'RSSI_METIER', false)).toBe('VALIDATION_METIER')
+    expect(statutApresAvisRssi(true, true, 'RSSI', false)).toBe('ACTIVE')
   })
-  it('double regard favorable → VALIDATION_METIER, défavorable → REJETEE', () => {
-    expect(statutApresDoubleRegard(true)).toBe('VALIDATION_METIER')
-    expect(statutApresDoubleRegard(false)).toBe('REJETEE')
+  it('avis RSSI favorable : niveau RSSI_METIER → VALIDATION_METIER, niveau RSSI → ACTIVE', () => {
+    expect(statutApresAvisRssi(true, false, 'RSSI_METIER', true)).toBe('VALIDATION_METIER')
+    expect(statutApresAvisRssi(true, false, 'RSSI', true)).toBe('ACTIVE')
+  })
+  it('double regard favorable suit le niveau ; défavorable → REJETEE', () => {
+    expect(statutApresDoubleRegard(true, 'RSSI_METIER')).toBe('VALIDATION_METIER')
+    expect(statutApresDoubleRegard(true, 'RSSI')).toBe('ACTIVE')
+    expect(statutApresDoubleRegard(false, 'RSSI_METIER')).toBe('REJETEE')
   })
   it('estTerminale', () => {
     for (const s of ['REJETEE', 'CLOTUREE', 'REVOQUEE'] as DerogationStatut[]) expect(estTerminale(s)).toBe(true)

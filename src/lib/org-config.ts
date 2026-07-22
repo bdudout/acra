@@ -41,6 +41,8 @@ export interface RawOrgConfig {
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
+  derogationWorkflow: string
+  derogationDoubleRegard: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -61,6 +63,8 @@ export interface OrgConfigResolved {
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
+  derogationWorkflow: string
+  derogationDoubleRegard: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -81,6 +85,8 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationsActive: false,
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
+  derogationWorkflow: 'RSSI_METIER',
+  derogationDoubleRegard: true,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -92,8 +98,8 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive'
-type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard'
+type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
 /**
@@ -144,5 +150,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationsActive: pickBool('derogationsActive', defaults.derogationsActive),
     derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
+    derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
+    derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
   }
 }

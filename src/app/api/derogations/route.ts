@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { validateDerogationInput } from '@/lib/derogation'
+import { validateDerogationInput, statutInitial, calcDateFin, type DerogationWorkflow } from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -47,6 +47,9 @@ export async function POST(req: NextRequest) {
   const erreur = validateDerogationInput(input)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
 
+  // Niveau de workflow : AUTONOME (startup) → active immédiatement.
+  const statut = statutInitial(orgConfig.derogationWorkflow as DerogationWorkflow)
+  const now = new Date()
   const derogation = await prisma.derogation.create({
     data: {
       organizationId: orgId,
@@ -58,12 +61,13 @@ export async function POST(req: NextRequest) {
       motif: input.motif!,
       mesuresCompensatoires: input.mesuresCompensatoires!,
       demandeurId: userId,
-      statut: 'DEMANDEE',
+      statut,
+      ...(statut === 'ACTIVE' ? { dateDebut: now, dateFin: calcDateFin(now, orgConfig.derogationDureeDefautJours) } : {}),
     },
   })
-  await auditLog('DEROGATION_REQUESTED', {
+  await auditLog(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_REQUESTED', {
     userId, userRole, targetId: derogation.id, targetType: 'derogation', ip: getClientIp(req),
-    details: { organizationId: orgId, portee: 'CONTROLE', intitule: input.intitule, standalone: true },
+    details: { organizationId: orgId, portee: 'CONTROLE', intitule: input.intitule, standalone: true, workflow: orgConfig.derogationWorkflow },
   })
   return NextResponse.json(derogation, { status: 201 })
 }

@@ -145,6 +145,8 @@ export default function ConfigurationPage() {
   const [derogationsActive, setDerogationsActive] = useState(false)
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
+  const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI_METIER')
+  const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
   const [exRows, setExRows] = useState<Record<string, Record<string, unknown>[]>>({})
@@ -187,6 +189,8 @@ export default function ConfigurationPage() {
         setDerogationsActive(Boolean(data.derogationsActive))
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
+        if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
+        setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
         const hasOv: Record<string, boolean> = {}
@@ -222,8 +226,9 @@ export default function ConfigurationPage() {
     conseilsAteliersActive: setConseilsAteliersActive,
     acceptationRisquesActive: setAcceptationRisquesActive,
     derogationsActive: setDerogationsActive,
+    derogationDoubleRegard: setDerogationDoubleRegard,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -246,6 +251,19 @@ export default function ConfigurationPage() {
     })
     setSavingConfOpt(false)
     if (!res.ok) setter(prev) // rollback
+  }
+
+  // Niveau de workflow de dérogation (chaîne).
+  async function saveDerogationWorkflow(value: string) {
+    const prev = derogationWorkflow
+    setDerogationWorkflow(value) // optimiste
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ derogationWorkflow: value }),
+    })
+    setSavingFeatures(false)
+    if (!res.ok) setDerogationWorkflow(prev)
   }
 
   // Paramètres numériques des dérogations (durée par défaut, fenêtre d'alerte).
@@ -1119,25 +1137,53 @@ export default function ConfigurationPage() {
                 )
               })}
             </div>
-            {/* Paramètres des dérogations (durée par défaut, fenêtre d'alerte) — si activées */}
+            {/* Paramètres des dérogations — si activées */}
             {derogationsActive && (
-              <div className="mt-3 ml-6 flex flex-wrap gap-6 p-4 rounded-lg border border-gray-200 bg-gray-50">
-                <label className="text-sm text-gray-700">
-                  <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationDureeLabel}</span>
-                  <input type="number" min={1} max={3650} value={derogationDuree}
-                    onChange={e => setDerogationDuree(Number(e.target.value))}
-                    onBlur={e => saveDerogationInt('derogationDureeDefautJours', Math.max(1, Math.min(3650, Number(e.target.value) || 180)))}
-                    disabled={savingFeatures}
-                    className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
-                </label>
-                <label className="text-sm text-gray-700">
-                  <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationAlerteLabel}</span>
-                  <input type="number" min={1} max={365} value={derogationAlerte}
-                    onChange={e => setDerogationAlerte(Number(e.target.value))}
-                    onBlur={e => saveDerogationInt('derogationAlerteJours', Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
-                    disabled={savingFeatures}
-                    className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
-                </label>
+              <div className="mt-3 ml-6 space-y-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                {/* Niveau de workflow */}
+                <div>
+                  <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationWorkflowLabel}</span>
+                  <div className="flex flex-col gap-1.5">
+                    {([
+                      { v: 'AUTONOME', label: t.features.derogationWfAutonome },
+                      { v: 'RSSI', label: t.features.derogationWfRssi },
+                      { v: 'RSSI_METIER', label: t.features.derogationWfRssiMetier },
+                    ]).map(o => (
+                      <label key={o.v} className="text-sm text-gray-700 flex items-center gap-2">
+                        <input type="radio" name="derogWf" checked={derogationWorkflow === o.v} disabled={savingFeatures}
+                          onChange={() => saveDerogationWorkflow(o.v)} />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                {/* Double regard (seulement si un RSSI intervient) */}
+                {derogationWorkflow !== 'AUTONOME' && (
+                  <label className="text-sm text-gray-700 flex items-center gap-2">
+                    <input type="checkbox" checked={derogationDoubleRegard} disabled={savingFeatures}
+                      onChange={e => saveFeature('derogationDoubleRegard', e.target.checked)} />
+                    {t.features.derogationDoubleRegardLabel}
+                  </label>
+                )}
+                {/* Durée / alerte */}
+                <div className="flex flex-wrap gap-6">
+                  <label className="text-sm text-gray-700">
+                    <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationDureeLabel}</span>
+                    <input type="number" min={1} max={3650} value={derogationDuree}
+                      onChange={e => setDerogationDuree(Number(e.target.value))}
+                      onBlur={e => saveDerogationInt('derogationDureeDefautJours', Math.max(1, Math.min(3650, Number(e.target.value) || 180)))}
+                      disabled={savingFeatures}
+                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                  </label>
+                  <label className="text-sm text-gray-700">
+                    <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationAlerteLabel}</span>
+                    <input type="number" min={1} max={365} value={derogationAlerte}
+                      onChange={e => setDerogationAlerte(Number(e.target.value))}
+                      onBlur={e => saveDerogationInt('derogationAlerteJours', Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
+                      disabled={savingFeatures}
+                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                  </label>
+                </div>
               </div>
             )}
           </section>
