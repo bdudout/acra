@@ -144,7 +144,12 @@ async function importJSON(raw: string, userId: string) {
       nom,
       organisation:   src.organisation  || '',
       secteur:        src.secteur        || '',
-      statut:         src.statut === 'APPROUVE' ? 'TERMINE' : (src.statut || 'EN_COURS'),
+      // Sécurité (#117) : ne JAMAIS faire confiance au `statut` du fichier importé.
+      // Une analyse importée repart toujours EN_COURS — sinon un importeur pourrait
+      // forger SOUMIS (injection dans la file d'approbation sans soumission auditée)
+      // ou TERMINE/ARCHIVE (analyse « validée » sans revue) → contournement du
+      // workflow RBAC (A01). Le chemin CSV force déjà EN_COURS (cohérence).
+      statut:         'EN_COURS',
       atelierCourant: src.atelierCourant || 1,
       cadrage: src.cadrage ? {
         create: cleanCadrage(src.cadrage),
