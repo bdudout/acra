@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
+import { useBranding } from '@/components/BrandingProvider'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
@@ -18,6 +19,7 @@ export default function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const { t } = useTranslation()
+  const branding = useBranding()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef    = useRef<HTMLDivElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
@@ -81,12 +83,12 @@ export default function Navbar() {
         <Link
           href="/dashboard"
           className="flex items-center gap-2 mr-4 flex-shrink-0"
-          aria-label="ACRA — Retour au tableau de bord"
+          aria-label={branding.nom}
         >
           <Image src="/logo-head.png" alt="" width={365} height={384} priority className="h-10 w-auto" />
           <span className="hidden sm:inline leading-none">
-            <span className="block font-bold text-ebios-700 dark:text-ebios-300">ACRA</span>
-            <span className="block text-[10px] font-normal text-gray-400 tracking-wide">augmented cyber risk analysis</span>
+            <span className="block font-bold text-ebios-700 dark:text-ebios-300">{branding.nom}</span>
+            <span className="block text-[10px] font-normal text-gray-400 tracking-wide lowercase">{branding.baseline}</span>
           </span>
         </Link>
 

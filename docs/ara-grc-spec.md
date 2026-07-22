@@ -85,18 +85,19 @@ rendent ce split possible plus tard sans réécriture.
 
 ---
 
-## 3. Renommage dynamique (ACRA → ARA)
+## 3. Nom de l'application — CONFIGURABLE (décision 2026-07-23)
 
-- **Instance/organisation 100 % cyber** → l'app s'appelle **ACRA — Augmented
-  Cyber Risk Analysis** (existant, rassurant pour le RSSI).
-- **Dès qu'un module non-cyber est activé** → l'app devient **ARA — Augmented
-  Risk Analysis** (logo perroquet 🦜, déclinaison de la charte actuelle).
-- Implémentation : `lib/branding.ts` → `getBranding(orgConfig)` renvoie
-  `{ nom, sigle, logo, baseline }` ; consommé par Navbar, login, PDF, e-mails,
-  `<title>`. Le nom n'est plus jamais codé en dur. Le module cyber garde le nom
-  « ACRA » comme **nom du module** dans ARA (« ARA · module ACRA »).
-- Les modules gardent leurs noms propres candidats (TATOU pour le risque
-  opérationnel…) comme noms *commerciaux* de modules — à confirmer (marques).
+- Le nom n'est **jamais codé en dur** : `lib/branding.ts` → `resolveBranding(cfg)`
+  renvoie `{ nom, baseline, logo }`, consommé par Navbar, login, `<title>`, PDF,
+  e-mails.
+- **Défaut** (aucune configuration, périmètre cyber) : **ACRA — Augmented Cyber
+  Risk Analysis** (existant, rassurant pour le RSSI).
+- **Réglé dans la configuration** (niveau instance, SUPER_ADMIN) : `appName` +
+  `appBaseline` optionnels. Renseignés → remplacent le défaut partout. C'est là
+  que le **nouveau nom de gamme sera choisi** (⚠️ la marque « ARA » n'est PAS
+  retenue — nom à décider plus tard ; le code ne présuppose aucun nom).
+- Le module cyber garde « ACRA » comme **nom de module**, quel que soit le nom
+  global. Les autres modules gardent des noms de module (à décider).
 
 ---
 

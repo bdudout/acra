@@ -847,6 +847,13 @@ export const fr = {
   },
 
   // ─── Configuration ────────────────────────────────────────────────────────
+  branding: {
+    sectionTitle: 'Identité de l\'application',
+    sectionDesc: 'Nom et sous-titre affichés dans l\'application (barre de navigation, page de connexion). Laissez vide pour conserver le nom par défaut.',
+    nameLabel: 'Nom de l\'application',
+    baselineLabel: 'Sous-titre',
+    hint: 'Réglage au niveau de l\'instance (super-administrateur). Servira au renommage lorsque des modules non-cyber seront activés.',
+  },
   config: {
     title:             'Configuration des échelles',
     subtitle:          'Personnalisez les niveaux de gravité, vraisemblance et les seuils de la matrice des risques.',

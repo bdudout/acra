@@ -871,6 +871,13 @@ model MfaChallenge {
 model Configuration {
   id String @id @default("global")
 
+  // Identité de l'application (niveau instance, réglée par un SUPER_ADMIN dans la
+  // configuration). Vides ⇒ défauts i18n (« ACRA » / « Augmented Cyber Risk
+  // Analysis »). Servent au renommage quand des modules non-cyber sont activés —
+  // le nom de gamme n'est PAS codé en dur (cf. docs/ara-grc-spec.md §3).
+  appName     String?
+  appBaseline String?
+
   // Nombre de niveaux dans les échelles (4 ou 5)
   nbNiveaux Int @default(4)
 

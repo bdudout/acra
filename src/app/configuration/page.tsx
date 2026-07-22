@@ -105,8 +105,13 @@ export default function ConfigurationPage() {
   const { CATEGORIES_BIENS_SUPPORTS } = useEbiosData()
   const { data: session } = useSession()
   const isAdmin = isAdminRole((session?.user as any)?.role)
+  const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN'
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Identité de l'application (instance, SUPER_ADMIN) — vide = défaut « ACRA ».
+  const [brandName, setBrandName] = useState('')
+  const [brandBaseline, setBrandBaseline] = useState('')
+  const [brandSaved, setBrandSaved] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'gravite' | 'vraisemblance' | 'matrice' | 'apercu'>('gravite')
   // Onglet principal de la configuration (4 sections)
@@ -576,6 +581,24 @@ export default function ConfigurationPage() {
     )
   }
 
+  // Charge l'identité configurée (SUPER_ADMIN uniquement).
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    fetch('/api/admin/branding')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setBrandName(d.appName ?? ''); setBrandBaseline(d.appBaseline ?? '') } })
+      .catch(() => {})
+  }, [isSuperAdmin])
+
+  async function saveBranding() {
+    setBrandSaved(false)
+    const res = await fetch('/api/admin/branding', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appName: brandName, appBaseline: brandBaseline }),
+    })
+    if (res.ok) { setBrandSaved(true); setTimeout(() => setBrandSaved(false), 2500) }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -597,6 +620,32 @@ export default function ConfigurationPage() {
             </div>
           )}
         </div>
+
+        {/* Identité de l'application (instance) — SUPER_ADMIN uniquement */}
+        {isSuperAdmin && (
+          <section className="mb-6 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.branding.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.branding.sectionDesc}</p>
+            <div className="flex flex-wrap gap-4 items-end">
+              <label className="text-sm text-gray-700 flex-1 min-w-[180px]">
+                <span className="block text-xs font-medium text-gray-600 mb-1">{t.branding.nameLabel}</span>
+                <input value={brandName} onChange={e => setBrandName(e.target.value)}
+                  placeholder={t.auth.appName} maxLength={120}
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 text-sm" />
+              </label>
+              <label className="text-sm text-gray-700 flex-1 min-w-[220px]">
+                <span className="block text-xs font-medium text-gray-600 mb-1">{t.branding.baselineLabel}</span>
+                <input value={brandBaseline} onChange={e => setBrandBaseline(e.target.value)}
+                  placeholder={t.auth.appSubtitle} maxLength={120}
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 text-sm" />
+              </label>
+              <button onClick={saveBranding} className="btn-primary text-sm">
+                {brandSaved ? t.config.savedLabel : t.config.saveShort}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{t.branding.hint}</p>
+          </section>
+        )}
 
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (

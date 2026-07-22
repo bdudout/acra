@@ -824,6 +824,13 @@ export const en: Translations = {
   },
 
 
+  branding: {
+    sectionTitle: 'Application identity',
+    sectionDesc: 'Name and subtitle shown across the app (navigation bar, sign-in page). Leave blank to keep the default name.',
+    nameLabel: 'Application name',
+    baselineLabel: 'Subtitle',
+    hint: 'Instance-level setting (super-administrator). Used for renaming when non-cyber modules are enabled.',
+  },
   config: {
     title:             'Scale configuration',
     subtitle:          'Customise severity, likelihood levels and risk matrix thresholds.',

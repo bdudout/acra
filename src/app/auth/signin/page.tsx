@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
+import { useBranding } from '@/components/BrandingProvider'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 function SignInForm() {
@@ -175,14 +176,15 @@ function SignInForm() {
 
 export default function SignInPage() {
   const { t } = useTranslation()
+  const branding = useBranding()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-16 w-auto mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-gray-900">{t.auth.appName}</h1>
-          <p className="text-gray-500 text-sm mt-1">{t.auth.appSubtitle}</p>
+          <h1 className="text-2xl font-bold text-gray-900">{branding.nom}</h1>
+          <p className="text-gray-500 text-sm mt-1">{branding.baseline}</p>
         </div>
 
         <Suspense fallback={

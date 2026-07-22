@@ -824,6 +824,13 @@ export const de: Translations = {
   },
 
 
+  branding: {
+    sectionTitle: 'Anwendungsidentität',
+    sectionDesc: 'Name und Untertitel, die in der App angezeigt werden (Navigationsleiste, Anmeldeseite). Leer lassen, um den Standardnamen beizubehalten.',
+    nameLabel: 'Anwendungsname',
+    baselineLabel: 'Untertitel',
+    hint: 'Einstellung auf Instanzebene (Super-Administrator). Dient der Umbenennung, wenn Nicht-Cyber-Module aktiviert werden.',
+  },
   config: {
     title:             'Skalenkonfiguration',
     subtitle:          'Passen Sie Schweregrad-, Wahrscheinlichkeitsstufen und Risikomatrix-Schwellenwerte an.',

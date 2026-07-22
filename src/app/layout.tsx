@@ -8,6 +8,9 @@ import DemoBanner from '@/components/DemoBanner'
 import { isDemoInstance } from '@/lib/demo-server'
 import { THEME_SCRIPT } from '@/lib/theme-script'
 import { headers } from 'next/headers'
+import { getServerT } from '@/lib/i18n'
+import { getBranding } from '@/lib/branding.server'
+import { BrandingProvider } from '@/components/BrandingProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -74,6 +77,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = (await headers()).get('x-nonce') ?? undefined
   // Bandeau démo : uniquement sur une instance de démo PROUVÉE (env + marqueur figé).
   const demo = await isDemoInstance()
+  // Identité de l'app (nom configurable, repli sur les libellés i18n).
+  const t = await getServerT()
+  const branding = await getBranding({ nom: t.auth.appName, baseline: t.auth.appSubtitle })
   return (
     // lang="fr" par défaut — mis à jour dynamiquement côté client via LanguageSwitcher
     <html lang="fr">
@@ -89,12 +95,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Aller au contenu principal
         </a>
         <Providers>
-          <div className="flex flex-col min-h-screen">
-            {demo && <DemoBanner />}
-            {children}
-            <Footer />
-            <CookieBanner />
-          </div>
+          <BrandingProvider value={branding}>
+            <div className="flex flex-col min-h-screen">
+              {demo && <DemoBanner />}
+              {children}
+              <Footer />
+              <CookieBanner />
+            </div>
+          </BrandingProvider>
         </Providers>
       </body>
     </html>

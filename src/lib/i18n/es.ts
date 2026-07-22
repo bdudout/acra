@@ -824,6 +824,13 @@ export const es: Translations = {
   },
 
 
+  branding: {
+    sectionTitle: 'Identidad de la aplicación',
+    sectionDesc: 'Nombre y subtítulo mostrados en la aplicación (barra de navegación, página de inicio de sesión). Deja en blanco para conservar el nombre predeterminado.',
+    nameLabel: 'Nombre de la aplicación',
+    baselineLabel: 'Subtítulo',
+    hint: 'Ajuste a nivel de instancia (superadministrador). Se usará para el renombrado cuando se activen módulos no cibernéticos.',
+  },
   config: {
     title:             'Configuración de escalas',
     subtitle:          'Personaliza los niveles de gravedad, probabilidad y los umbrales de la matriz de riesgos.',
