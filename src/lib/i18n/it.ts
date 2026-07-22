@@ -1089,6 +1089,8 @@ export const it: Translations = {
     submitRejected:      '⚠️ L\'analisi è stata rifiutata. Correggi i problemi segnalati e inviala di nuovo.',
     submitHint:          'Una volta completata l\'analisi, inviala per approvazione a un Risk Manager.',
     submitBtn:           '📤 Invia per approvazione',
+    autoValidateHint:    'La tua organizzazione ha un solo utente: puoi validare direttamente l\'analisi (l\'azione è registrata).',
+    autoValidateBtn:     '✅ Valida l\'analisi',
     submitting:          '⏳ Invio…',
     approveHint:         'Questa analisi è stata inviata per approvazione. Esaminarla e approvarla o rifiutarla.',
     commentLabel:        'Commento (obbligatorio per il rifiuto)',

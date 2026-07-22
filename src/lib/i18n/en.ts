@@ -1089,6 +1089,8 @@ export const en: Translations = {
     submitRejected:      '⚠️ The analysis was rejected. Fix the issues raised and resubmit.',
     submitHint:          'Once the analysis is complete, submit it for approval by a Risk Manager.',
     submitBtn:           '📤 Submit for approval',
+    autoValidateHint:    'Your organisation has a single user: you can validate the analysis directly (the action is logged).',
+    autoValidateBtn:     '✅ Validate the analysis',
     submitting:          '⏳ Sending…',
     approveHint:         'This analysis has been submitted for approval. Review it then approve or reject.',
     commentLabel:        'Comment (required for rejection)',

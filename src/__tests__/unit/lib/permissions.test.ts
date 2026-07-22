@@ -8,6 +8,7 @@ import {
   canEditAnalyse,
   canSubmitAnalyse,
   canApproveAnalyse,
+  canAutoValidateAnalyse,
   canManageAccess,
   canAcceptResidualRisks,
   analyseWhereClause,
@@ -242,6 +243,28 @@ describe('canApproveAnalyse', () => {
   it('ADMIN propriétaire conserve son override (flux mono-admin TPE)', () => {
     // L'auto-approbation ADMIN reste possible mais est journalisée (selfApproval) côté route.
     expect(canApproveAnalyse(userWith('ADMIN', 'u1'), ownedBy('u1'))).toBe(true)
+  })
+})
+
+// ─── canAutoValidateAnalyse — organisation mono-utilisateur (#121) ─────────────
+describe('canAutoValidateAnalyse', () => {
+  it('ADMIN propriétaire, org d\'1 personne → true (quatre-yeux impossible)', () => {
+    expect(canAutoValidateAnalyse(userWith('ADMIN', 'u1'), ownedBy('u1'), 1)).toBe(true)
+  })
+  it('ADMIN propriétaire mais org de 2+ personnes → false (SoD reprend)', () => {
+    expect(canAutoValidateAnalyse(userWith('ADMIN', 'u1'), ownedBy('u1'), 2)).toBe(false)
+  })
+  it('org inconnue / analyse héritée (0 membre) → false', () => {
+    expect(canAutoValidateAnalyse(userWith('ADMIN', 'u1'), ownedBy('u1'), 0)).toBe(false)
+  })
+  it('non-propriétaire → false même en org d\'1 personne', () => {
+    expect(canAutoValidateAnalyse(userWith('ADMIN', 'u2'), ownedBy('u1'), 1)).toBe(false)
+  })
+  it('ANALYSTE propriétaire seul → false (pas d\'autorité d\'approbation)', () => {
+    expect(canAutoValidateAnalyse(userWith('ANALYSTE', 'u1'), ownedBy('u1'), 1)).toBe(false)
+  })
+  it('RISK_MANAGER propriétaire seul → false (bloqué par la SoD #120)', () => {
+    expect(canAutoValidateAnalyse(userWith('RISK_MANAGER', 'u1'), ownedBy('u1'), 1)).toBe(false)
   })
 })
 

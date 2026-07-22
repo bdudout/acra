@@ -1089,6 +1089,8 @@ export const de: Translations = {
     submitRejected:      '⚠️ Die Analyse wurde abgelehnt. Beheben Sie die genannten Probleme und reichen Sie sie erneut ein.',
     submitHint:          'Sobald die Analyse abgeschlossen ist, reichen Sie sie zur Genehmigung bei einem Risk Manager ein.',
     submitBtn:           '📤 Zur Genehmigung einreichen',
+    autoValidateHint:    'Ihre Organisation hat nur einen Benutzer: Sie können die Analyse direkt freigeben (die Aktion wird protokolliert).',
+    autoValidateBtn:     '✅ Analyse freigeben',
     submitting:          '⏳ Senden…',
     approveHint:         'Diese Analyse wurde zur Genehmigung eingereicht. Überprüfen Sie sie und genehmigen oder ablehnen Sie sie.',
     commentLabel:        'Kommentar (bei Ablehnung erforderlich)',

@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, countOrgMembers } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { ATELIERS_META, getNiveauRisqueLabel } from '@/lib/ebios-data'
@@ -30,7 +30,7 @@ import RevisionPanel from '@/components/RevisionPanel'
 import { formatDate } from '@/lib/format'
 import {
   canViewAnalyse, canEditAnalyse, canSubmitAnalyse,
-  canApproveAnalyse, canManageAccess, canAcceptResidualRisks, STATUT_APPROBATION_LABELS,
+  canApproveAnalyse, canAutoValidateAnalyse, canManageAccess, canAcceptResidualRisks, STATUT_APPROBATION_LABELS,
   type UserRole,
 } from '@/lib/permissions'
 import ResidualRisksPanel from '@/components/ResidualRisksPanel'
@@ -75,6 +75,9 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const canSubmit = canSubmitAnalyse(sessionUser, ownership)
   const canApprove = canApproveAnalyse(sessionUser, ownership)
   const canManage = canManageAccess(sessionUser, ownership)
+  // Organisation mono-utilisateur (cabinet libéral) → auto-validation directe.
+  const orgMemberCount = await countOrgMembers((analyse as any).organizationId)
+  const canAutoValidate = canAutoValidateAnalyse(sessionUser, ownership, orgMemberCount)
 
   // Échelle/seuils configurés (admin) pour piloter la matrice des risques
   const scaleConfig = await getEffectiveScaleConfig((analyse as any).organizationId)
@@ -458,6 +461,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               canManage={canManage}
               canSubmit={canSubmit}
               canApprove={canApprove}
+              canAutoValidate={canAutoValidate}
               commentaireApprobation={analyse.commentaireApprobation ?? null}
               approuveLe={analyse.approuveLe ? analyse.approuveLe.toISOString() : null}
               approbateurId={analyse.approbateurId ?? null}

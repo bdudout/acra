@@ -154,6 +154,24 @@ export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership):
   return !acces || acces.permission === 'APPROBATION'
 }
 
+/**
+ * Auto-validation en organisation MONO-UTILISATEUR (cabinet libéral : notaire,
+ * médecin, expert-comptable…). Dans une organisation d'une seule personne, le
+ * principe des quatre-yeux est matériellement impossible (aucun second compte
+ * pour approuver) : on autorise alors le propriétaire, s'il a l'autorité
+ * d'approbation, à valider directement son analyse (EN_COURS → APPROUVE), l'action
+ * étant journalisée comme auto-validation. Dès qu'un 2e membre existe
+ * (`orgMemberCount > 1`), la séparation des tâches (#120) reprend et cette voie
+ * est fermée. Pur → testable sans DB (le comptage est fait côté serveur).
+ */
+export function canAutoValidateAnalyse(user: SessionUser, analyse: AnalyseOwnership, orgMemberCount: number): boolean {
+  // Exactement 1 membre : ni 0 (org inconnue / analyse héritée sans org → on
+  // n'offre pas l'auto-validation), ni ≥2 (quatre-yeux possible → SoD #120).
+  if (orgMemberCount !== 1) return false
+  if (analyse.userId !== user.id) return false
+  return canApproveAnalyse(user, analyse)
+}
+
 /** L'utilisateur peut gérer les accès (inviter des collaborateurs) */
 export function canManageAccess(user: SessionUser, analyse: AnalyseOwnership): boolean {
   if (isAdminRole(user.role)) return true

@@ -178,3 +178,14 @@ export async function getAnalyseScope(userId: string, instanceRole: UserRole): P
     memberships: ctx.memberships,
   }
 }
+
+/**
+ * Nombre de membres d'une organisation. Sert à détecter une organisation
+ * MONO-UTILISATEUR (cabinet libéral) pour laquelle le principe des quatre-yeux
+ * est impossible → auto-validation autorisée (voir `canAutoValidateAnalyse`).
+ * Une analyse sans organizationId (héritage) est traitée comme non mono-org (0).
+ */
+export async function countOrgMembers(organizationId: string | null | undefined): Promise<number> {
+  if (!organizationId) return 0
+  return prisma.orgMembership.count({ where: { organizationId } })
+}

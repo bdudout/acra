@@ -1109,6 +1109,8 @@ export const fr = {
     submitRejected:      "⚠️ L'analyse a été rejetée. Corrigez les points soulevés puis soumettez à nouveau.",
     submitHint:          "Une fois l'analyse complète, soumettez-la pour approbation par un Risk Manager.",
     submitBtn:           '📤 Soumettre pour approbation',
+    autoValidateHint:    "Votre organisation ne compte qu'un seul utilisateur : vous pouvez valider directement l'analyse (l'action est journalisée).",
+    autoValidateBtn:     "✅ Valider l'analyse",
     submitting:          '⏳ Envoi…',
     approveHint:         "Cette analyse a été soumise pour approbation. Examinez-la puis approuvez ou rejetez.",
     commentLabel:        'Commentaire (obligatoire en cas de rejet)',

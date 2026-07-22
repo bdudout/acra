@@ -25,9 +25,10 @@ interface Props {
   ownerEmail?: string
   currentUserId: string
   currentUserRole: UserRole
-  canManage: boolean   // peut inviter/retirer
-  canSubmit: boolean   // peut soumettre
-  canApprove: boolean  // peut approuver/rejeter
+  canManage: boolean       // peut inviter/retirer
+  canSubmit: boolean       // peut soumettre
+  canApprove: boolean      // peut approuver/rejeter
+  canAutoValidate?: boolean // org mono-utilisateur : valider directement (sans SOUMIS)
   commentaireApprobation?: string | null
   approuveLe?: string | null
   approbateurId?: string | null
@@ -37,7 +38,7 @@ interface Props {
 export default function AccessPanel({
   analyseId, statut: statutInit, ownerId, ownerName, ownerEmail,
   currentUserId, currentUserRole,
-  canManage, canSubmit, canApprove,
+  canManage, canSubmit, canApprove, canAutoValidate = false,
   commentaireApprobation: commentaireInit, approuveLe, approbateurId,
   onStatutChange,
 }: Props) {
@@ -120,7 +121,7 @@ export default function AccessPanel({
     } catch { /* silent */ }
   }
 
-  async function handleApprobation(action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER') {
+  async function handleApprobation(action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER' | 'VALIDER') {
     if (action === 'REJETER' && !commentaire.trim()) {
       setApprovalError(t.access.rejectRequired)
       return
@@ -175,8 +176,23 @@ export default function AccessPanel({
           </div>
         )}
 
-        {/* Actions analyste : soumettre */}
-        {canSubmit && (statut === 'EN_COURS' || statut === 'REJETE') && (
+        {/* Organisation mono-utilisateur : validation directe (sans passer par SOUMIS,
+            car aucun second compte ne peut approuver — quatre-yeux impossible). */}
+        {canAutoValidate && (statut === 'EN_COURS' || statut === 'REJETE') && (
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-sm text-gray-600 mb-3">{t.access.autoValidateHint}</p>
+            <button
+              onClick={() => handleApprobation('VALIDER')}
+              disabled={submitting}
+              className="btn-primary disabled:opacity-50"
+            >
+              {submitting ? t.access.submitting : t.access.autoValidateBtn}
+            </button>
+          </div>
+        )}
+
+        {/* Actions analyste : soumettre (workflow standard multi-utilisateur) */}
+        {canSubmit && !canAutoValidate && (statut === 'EN_COURS' || statut === 'REJETE') && (
           <div className="border-t border-gray-100 pt-4">
             <p className="text-sm text-gray-600 mb-3">
               {statut === 'REJETE' ? t.access.submitRejected : t.access.submitHint}

@@ -1,15 +1,15 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, countOrgMembers } from '@/lib/org-context.server'
 import { NextRequest, NextResponse } from 'next/server'
-import { canSubmitAnalyse, canApproveAnalyse } from '@/lib/permissions'
+import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 type Params = { params: Promise<{ id: string }> }
 
 // POST /api/analyses/[id]/approbation
-// body: { action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER', commentaire?: string }
+// body: { action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER' | 'VALIDER', commentaire?: string }
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -25,12 +25,32 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   const { action, commentaire } = await req.json() as {
-    action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER'
+    action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER' | 'VALIDER'
     commentaire?: string
   }
 
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
   const sessionUser = { id: userId, role: userRole }
+
+  // Auto-validation (organisation MONO-UTILISATEUR) : le propriétaire valide
+  // directement son analyse (EN_COURS/REJETE → APPROUVE) car il n'existe aucun
+  // second compte pour approuver. Journalisée `autoValidation`. La séparation des
+  // tâches (#120) reprend dès qu'un 2e membre existe.
+  if (action === 'VALIDER') {
+    const memberCount = await countOrgMembers(analyse.organizationId)
+    if (!canAutoValidateAnalyse(sessionUser, ownership, memberCount)) {
+      return NextResponse.json({ error: 'Auto-validation réservée aux organisations mono-utilisateur' }, { status: 403 })
+    }
+    if (analyse.statut !== 'EN_COURS' && analyse.statut !== 'REJETE') {
+      return NextResponse.json({ error: `Impossible de valider depuis le statut "${analyse.statut}"` }, { status: 400 })
+    }
+    const updated = await prisma.analyse.update({
+      where: { id },
+      data: { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null },
+    })
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, autoValidation: true } })
+    return NextResponse.json(updated)
+  }
 
   if (action === 'SOUMETTRE') {
     if (!canSubmitAnalyse(sessionUser, ownership)) {

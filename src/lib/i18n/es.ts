@@ -1089,6 +1089,8 @@ export const es: Translations = {
     submitRejected:      '⚠️ El análisis fue rechazado. Corrija los problemas señalados y vuelva a enviarlo.',
     submitHint:          'Una vez completado el análisis, envíalo para aprobación a un Risk Manager.',
     submitBtn:           '📤 Enviar para aprobación',
+    autoValidateHint:    'Tu organización tiene un solo usuario: puedes validar el análisis directamente (la acción queda registrada).',
+    autoValidateBtn:     '✅ Validar el análisis',
     submitting:          '⏳ Enviando…',
     approveHint:         'Este análisis ha sido enviado para aprobación. Revísalo y apruébalo o recházalo.',
     commentLabel:        'Comentario (obligatorio para el rechazo)',
