@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { isAdminRole } from '@/lib/permissions'
+import { sanitizeTaxonomie, type TaxonomieNode } from '@/lib/taxonomie'
+import TaxonomieEditor from '@/components/TaxonomieEditor'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Navbar from '@/components/Navbar'
@@ -152,6 +154,9 @@ export default function ConfigurationPage() {
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
+  // Socle GRC
+  const [registreRisquesActive, setRegistreRisquesActive] = useState(false)
+  const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
   const [derogationSortCatalogue, setDerogationSortCatalogue] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
   // ── Exemples des ateliers ────────────────────────────────────────────────
@@ -197,6 +202,8 @@ export default function ConfigurationPage() {
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
+        setRegistreRisquesActive(Boolean(data.registreRisquesActive))
+        setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
         const rows: Record<string, Record<string, unknown>[]> = {}
@@ -235,8 +242,9 @@ export default function ConfigurationPage() {
     derogationsActive: setDerogationsActive,
     derogationDoubleRegard: setDerogationDoubleRegard,
     derogationSortCatalogue: setDerogationSortCatalogue,
+    registreRisquesActive: setRegistreRisquesActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1161,6 +1169,7 @@ export default function ConfigurationPage() {
                 { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'derogationsActive' as const, value: derogationsActive, title: t.features.derogationsTitle, desc: t.features.derogationsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: false, indent: false },
               ]).map(f => {
                 const off = f.disabled // toggle inopérant (dépendance non satisfaite)
                 const effValue = f.value && !off
@@ -1244,6 +1253,15 @@ export default function ConfigurationPage() {
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ── Socle GRC : taxonomie de risques (si le registre est activé) ── */}
+        {isAdmin && registreRisquesActive && taxonomieRisques !== null && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.taxonomie.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.taxonomie.sectionDesc}</p>
+            <TaxonomieEditor initial={taxonomieRisques} />
           </section>
         )}
 

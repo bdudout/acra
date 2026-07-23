@@ -824,6 +824,22 @@ export const it: Translations = {
   },
 
 
+  taxonomie: {
+    sectionTitle: 'Tassonomia dei rischi',
+    sectionDesc: 'Categorie di rischio usate dal registro e dalla mappa di calore. Predefinito: le 7 categorie di Basilea (rischio operativo) — modifica, aggiungi o riordina liberamente.',
+    categoryPlaceholder: 'Nome della categoria',
+    addCategory: 'Aggiungi una categoria',
+    resetDefault: 'Ripristina (Basilea)',
+    bale: {
+      '1': 'Frode interna',
+      '2': 'Frode esterna',
+      '3': 'Pratiche occupazionali e sicurezza sul lavoro',
+      '4': 'Clienti, prodotti e pratiche commerciali',
+      '5': 'Danni ad attività materiali',
+      '6': 'Interruzione dell\'attività e guasti dei sistemi',
+      '7': 'Esecuzione, consegna e gestione dei processi',
+    },
+  },
   branding: {
     sectionTitle: 'Identità dell\'applicazione',
     sectionDesc: 'Nome e sottotitolo mostrati nell\'app (barra di navigazione, pagina di accesso). Lascia vuoto per mantenere il nome predefinito.',
@@ -2059,6 +2075,8 @@ export const it: Translations = {
     derogationWfRssiMetier: 'Validazione CISO poi Direzione aziendale',
     derogationDoubleRegardLabel: 'Consentire una seconda revisione (2° CISO / CISO di gruppo) su richiesta del CISO',
     derogationSortCatalogueLabel: 'Un controllo con deroga attiva viene rimosso dal catalogo delle vulnerabilità (workshop 3/4)',
+    registreRisquesTitle: 'Registro dei rischi e mappa di calore',
+    registreRisquesDesc: 'Attiva il registro dei rischi trasversale (tutti i rischi, non solo cyber) e la mappa di calore — base dei moduli GRC.',
     learnMore:          'Scopri di più ↗',
     enabled:       'Attivata',
     disabled:      'Disattivata',

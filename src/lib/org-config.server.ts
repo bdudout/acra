@@ -30,6 +30,8 @@ const CONFIG_SELECT = {
   derogationWorkflow: true,
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
+  taxonomieRisques: true,
+  registreRisquesActive: true,
 } as const
 
 /**

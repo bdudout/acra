@@ -824,6 +824,22 @@ export const en: Translations = {
   },
 
 
+  taxonomie: {
+    sectionTitle: 'Risk taxonomy',
+    sectionDesc: 'Risk categories used by the register and heat map. Default: the 7 Basel categories (operational risk) — edit, add or reorder freely.',
+    categoryPlaceholder: 'Category name',
+    addCategory: 'Add a category',
+    resetDefault: 'Reset (Basel)',
+    bale: {
+      '1': 'Internal fraud',
+      '2': 'External fraud',
+      '3': 'Employment practices & workplace safety',
+      '4': 'Clients, products & business practices',
+      '5': 'Damage to physical assets',
+      '6': 'Business disruption & system failures',
+      '7': 'Execution, delivery & process management',
+    },
+  },
   branding: {
     sectionTitle: 'Application identity',
     sectionDesc: 'Name and subtitle shown across the app (navigation bar, sign-in page). Leave blank to keep the default name.',
@@ -2059,6 +2075,8 @@ export const en: Translations = {
     derogationWfRssiMetier: 'CISO then Business management validation',
     derogationDoubleRegardLabel: 'Allow a second review (2nd CISO / group CISO) at the CISO\'s request',
     derogationSortCatalogueLabel: 'A control under active waiver is removed from the vulnerability catalogue (workshops 3/4)',
+    registreRisquesTitle: 'Risk register & heat map',
+    registreRisquesDesc: 'Enables the cross-cutting risk register (all risks, not only cyber) and the heat map — foundation of the GRC modules.',
     learnMore:          'Learn more ↗',
     enabled:       'Enabled',
     disabled:      'Disabled',

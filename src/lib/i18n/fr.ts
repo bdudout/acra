@@ -847,6 +847,22 @@ export const fr = {
   },
 
   // ─── Configuration ────────────────────────────────────────────────────────
+  taxonomie: {
+    sectionTitle: 'Taxonomie de risques',
+    sectionDesc: 'Catégories de risques utilisées par le registre et la cartographie. Défaut : les 7 catégories de Bâle (risque opérationnel) — modifiez, ajoutez ou réordonnez librement.',
+    categoryPlaceholder: 'Nom de la catégorie',
+    addCategory: 'Ajouter une catégorie',
+    resetDefault: 'Réinitialiser (Bâle)',
+    bale: {
+      '1': 'Fraude interne',
+      '2': 'Fraude externe',
+      '3': 'Pratiques en matière d\'emploi et sécurité du travail',
+      '4': 'Clients, produits et pratiques commerciales',
+      '5': 'Dommages aux actifs corporels',
+      '6': 'Interruption d\'activité et pannes de systèmes',
+      '7': 'Exécution, livraison et gestion des processus',
+    },
+  },
   branding: {
     sectionTitle: 'Identité de l\'application',
     sectionDesc: 'Nom et sous-titre affichés dans l\'application (barre de navigation, page de connexion). Laissez vide pour conserver le nom par défaut.',
@@ -2092,6 +2108,8 @@ export const fr = {
     derogationWfRssiMetier: 'Validation RSSI puis Direction métier',
     derogationDoubleRegardLabel: 'Autoriser le double regard (2ᵉ RSSI / RSSI groupe) à la demande du RSSI',
     derogationSortCatalogueLabel: 'Un contrôle sous dérogation active sort du catalogue de vulnérabilités (ateliers 3/4)',
+    registreRisquesTitle: 'Registre de risques & cartographie',
+    registreRisquesDesc: 'Active le registre de risques transverse (tous risques, pas seulement cyber) et la cartographie — socle des modules GRC.',
     learnMore:          'En savoir plus ↗',
     enabled:       'Activée',
     disabled:      'Désactivée',

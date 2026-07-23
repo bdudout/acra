@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sanitizeTaxonomie } from '@/lib/taxonomie'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -66,6 +67,8 @@ export async function GET(_req: NextRequest) {
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
+    taxonomieRisques: cfg.taxonomieRisques,
+    registreRisquesActive: cfg.registreRisquesActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -176,6 +179,9 @@ export async function PUT(req: NextRequest) {
   }
   if (typeof body.derogationDoubleRegard === 'boolean') data.derogationDoubleRegard = body.derogationDoubleRegard
   if (typeof body.derogationSortCatalogue === 'boolean') data.derogationSortCatalogue = body.derogationSortCatalogue
+  if (typeof body.registreRisquesActive === 'boolean') data.registreRisquesActive = body.registreRisquesActive
+  // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
+  if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
     // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.

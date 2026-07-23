@@ -824,6 +824,22 @@ export const de: Translations = {
   },
 
 
+  taxonomie: {
+    sectionTitle: 'Risikotaxonomie',
+    sectionDesc: 'Risikokategorien für Register und Heatmap. Standard: die 7 Basel-Kategorien (operationelles Risiko) — frei bearbeiten, hinzufügen oder umsortieren.',
+    categoryPlaceholder: 'Kategoriename',
+    addCategory: 'Kategorie hinzufügen',
+    resetDefault: 'Zurücksetzen (Basel)',
+    bale: {
+      '1': 'Interner Betrug',
+      '2': 'Externer Betrug',
+      '3': 'Beschäftigungspraxis & Arbeitssicherheit',
+      '4': 'Kunden, Produkte & Geschäftsgepflogenheiten',
+      '5': 'Sachschäden',
+      '6': 'Geschäftsunterbrechung & Systemausfälle',
+      '7': 'Ausführung, Lieferung & Prozessmanagement',
+    },
+  },
   branding: {
     sectionTitle: 'Anwendungsidentität',
     sectionDesc: 'Name und Untertitel, die in der App angezeigt werden (Navigationsleiste, Anmeldeseite). Leer lassen, um den Standardnamen beizubehalten.',
@@ -2059,6 +2075,8 @@ export const de: Translations = {
     derogationWfRssiMetier: 'CISO- dann Fachbereichsfreigabe',
     derogationDoubleRegardLabel: 'Zweitprüfung (2. CISO / Gruppen-CISO) auf Wunsch des CISO zulassen',
     derogationSortCatalogueLabel: 'Eine Kontrolle mit aktiver Ausnahmegenehmigung wird aus dem Schwachstellenkatalog entfernt (Workshops 3/4)',
+    registreRisquesTitle: 'Risikoregister & Heatmap',
+    registreRisquesDesc: 'Aktiviert das übergreifende Risikoregister (alle Risiken, nicht nur Cyber) und die Heatmap — Grundlage der GRC-Module.',
     learnMore:          'Mehr erfahren ↗',
     enabled:       'Aktiviert',
     disabled:      'Deaktiviert',

@@ -824,6 +824,22 @@ export const es: Translations = {
   },
 
 
+  taxonomie: {
+    sectionTitle: 'Taxonomía de riesgos',
+    sectionDesc: 'Categorías de riesgo usadas por el registro y el mapa de calor. Por defecto: las 7 categorías de Basilea (riesgo operacional) — edita, añade o reordena libremente.',
+    categoryPlaceholder: 'Nombre de la categoría',
+    addCategory: 'Añadir una categoría',
+    resetDefault: 'Restablecer (Basilea)',
+    bale: {
+      '1': 'Fraude interno',
+      '2': 'Fraude externo',
+      '3': 'Prácticas de empleo y seguridad laboral',
+      '4': 'Clientes, productos y prácticas comerciales',
+      '5': 'Daños a activos físicos',
+      '6': 'Interrupción de actividad y fallos de sistemas',
+      '7': 'Ejecución, entrega y gestión de procesos',
+    },
+  },
   branding: {
     sectionTitle: 'Identidad de la aplicación',
     sectionDesc: 'Nombre y subtítulo mostrados en la aplicación (barra de navegación, página de inicio de sesión). Deja en blanco para conservar el nombre predeterminado.',
@@ -2059,6 +2075,8 @@ export const es: Translations = {
     derogationWfRssiMetier: 'Validación del CISO y luego de la Dirección de negocio',
     derogationDoubleRegardLabel: 'Permitir una segunda revisión (2.º CISO / CISO de grupo) a petición del CISO',
     derogationSortCatalogueLabel: 'Un control con exención activa se retira del catálogo de vulnerabilidades (talleres 3/4)',
+    registreRisquesTitle: 'Registro de riesgos y mapa de calor',
+    registreRisquesDesc: 'Activa el registro de riesgos transversal (todos los riesgos, no solo ciber) y el mapa de calor — base de los módulos GRC.',
     learnMore:          'Más información ↗',
     enabled:       'Activada',
     disabled:      'Desactivada',

@@ -731,6 +731,11 @@ model OrganizationConfig {
   // Un contrôle sous dérogation active sort-il du catalogue de vulnérabilités
   // (ateliers 3/4) ? Défaut oui ; désactivable par organisation.
   derogationSortCatalogue    Boolean       @default(true)
+  // ── Socle GRC (modules non-cyber) ──
+  // Taxonomie de risques personnalisée ([] ⇒ défaut Bâle, cf. lib/taxonomie).
+  taxonomieRisques           Json          @default("[]")
+  // Toggle du module « Registre de risques / Cartographie » (M1).
+  registreRisquesActive      Boolean       @default(false)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

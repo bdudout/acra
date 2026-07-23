@@ -27,6 +27,8 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     derogationWorkflow: 'RSSI_METIER',
     derogationDoubleRegard: true,
     derogationSortCatalogue: true,
+    taxonomieRisques: [],
+    registreRisquesActive: false,
     ...partial,
   }
 }
