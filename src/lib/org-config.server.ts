@@ -9,6 +9,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { resolveOrgConfig, type RawOrgConfig, type OrgConfigResolved } from '@/lib/org-config'
+import { resolveModuleActivation, sanitizeModulesPolicy } from '@/lib/module-policy'
 
 const CONFIG_SELECT = {
   entitesMesures: true,
@@ -39,7 +40,7 @@ const CONFIG_SELECT = {
  * `orgId` absent/inconnu ⇒ valeurs par défaut.
  */
 export async function getOrgConfig(orgId: string | null | undefined): Promise<OrgConfigResolved> {
-  if (!orgId) return resolveOrgConfig([])
+  if (!orgId) return applyInstancePolicy(resolveOrgConfig([]))
 
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
   // Chaîne d'ids racine→nœud déduite du chemin "/racine/…/nœud/".
@@ -53,5 +54,23 @@ export async function getOrgConfig(orgId: string | null | undefined): Promise<Or
 
   // Chaîne SELF-first (nœud → racine) pour resolveOrgConfig.
   const chainSelfFirst = idsRootToSelf.slice().reverse().map(id => byId.get(id) ?? null)
-  return resolveOrgConfig(chainSelfFirst)
+  return applyInstancePolicy(resolveOrgConfig(chainSelfFirst))
+}
+
+/**
+ * Applique la POLITIQUE D'INSTANCE (Configuration.modulesPolicy) au-dessus de la
+ * config d'organisation : point UNIQUE où l'activation effective d'un module est
+ * résolue (FORCE_ON/FORCE_OFF surplombent le toggle de l'org). Best-effort.
+ */
+async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigResolved> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inst = await (prisma as any).configuration.findUnique({
+      where: { id: 'global' }, select: { modulesPolicy: true },
+    })
+    const policy = sanitizeModulesPolicy(inst?.modulesPolicy)
+    return { ...cfg, registreRisquesActive: resolveModuleActivation(policy.registreRisques, cfg.registreRisquesActive) }
+  } catch {
+    return cfg
+  }
 }

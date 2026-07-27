@@ -863,6 +863,14 @@ export const fr = {
       '7': 'Exécution, livraison et gestion des processus',
     },
   },
+  modulesPolicy: {
+    sectionTitle: 'Activation des modules (instance)',
+    sectionDesc: 'Politique appliquée à toutes les organisations. « Par organisation » laisse chaque admin décider ; « Imposé » l\'active partout ; « Interdit » le rend indisponible.',
+    perOrg: 'Par organisation',
+    forceOn: 'Imposé (actif partout)',
+    forceOff: 'Interdit (indisponible)',
+    hint: 'Réglage au niveau de l\'instance (super-administrateur).',
+  },
   branding: {
     sectionTitle: 'Identité de l\'application',
     sectionDesc: 'Nom et sous-titre affichés dans l\'application (barre de navigation, page de connexion). Laissez vide pour conserver le nom par défaut.',
@@ -2110,6 +2118,8 @@ export const fr = {
     derogationSortCatalogueLabel: 'Un contrôle sous dérogation active sort du catalogue de vulnérabilités (ateliers 3/4)',
     registreRisquesTitle: 'Registre de risques & cartographie',
     registreRisquesDesc: 'Active le registre de risques transverse (tous risques, pas seulement cyber) et la cartographie — socle des modules GRC.',
+    moduleForcedOn: 'Imposé au niveau de l\'instance',
+    moduleForcedOff: 'Désactivé au niveau de l\'instance',
     learnMore:          'En savoir plus ↗',
     enabled:       'Activée',
     disabled:      'Désactivée',

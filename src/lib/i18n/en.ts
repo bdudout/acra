@@ -840,6 +840,14 @@ export const en: Translations = {
       '7': 'Execution, delivery & process management',
     },
   },
+  modulesPolicy: {
+    sectionTitle: 'Module activation (instance)',
+    sectionDesc: 'Policy applied to all organisations. “Per organisation” lets each admin decide; “Forced” enables it everywhere; “Forbidden” makes it unavailable.',
+    perOrg: 'Per organisation',
+    forceOn: 'Forced (active everywhere)',
+    forceOff: 'Forbidden (unavailable)',
+    hint: 'Instance-level setting (super-administrator).',
+  },
   branding: {
     sectionTitle: 'Application identity',
     sectionDesc: 'Name and subtitle shown across the app (navigation bar, sign-in page). Leave blank to keep the default name.',
@@ -2077,6 +2085,8 @@ export const en: Translations = {
     derogationSortCatalogueLabel: 'A control under active waiver is removed from the vulnerability catalogue (workshops 3/4)',
     registreRisquesTitle: 'Risk register & heat map',
     registreRisquesDesc: 'Enables the cross-cutting risk register (all risks, not only cyber) and the heat map — foundation of the GRC modules.',
+    moduleForcedOn: 'Enforced at instance level',
+    moduleForcedOff: 'Disabled at instance level',
     learnMore:          'Learn more ↗',
     enabled:       'Enabled',
     disabled:      'Disabled',

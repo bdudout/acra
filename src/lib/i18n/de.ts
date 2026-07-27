@@ -840,6 +840,14 @@ export const de: Translations = {
       '7': 'Ausführung, Lieferung & Prozessmanagement',
     },
   },
+  modulesPolicy: {
+    sectionTitle: 'Modulaktivierung (Instanz)',
+    sectionDesc: 'Richtlinie für alle Organisationen. „Pro Organisation“ lässt jeden Admin entscheiden; „Erzwungen“ aktiviert es überall; „Verboten“ macht es nicht verfügbar.',
+    perOrg: 'Pro Organisation',
+    forceOn: 'Erzwungen (überall aktiv)',
+    forceOff: 'Verboten (nicht verfügbar)',
+    hint: 'Einstellung auf Instanzebene (Super-Administrator).',
+  },
   branding: {
     sectionTitle: 'Anwendungsidentität',
     sectionDesc: 'Name und Untertitel, die in der App angezeigt werden (Navigationsleiste, Anmeldeseite). Leer lassen, um den Standardnamen beizubehalten.',
@@ -2077,6 +2085,8 @@ export const de: Translations = {
     derogationSortCatalogueLabel: 'Eine Kontrolle mit aktiver Ausnahmegenehmigung wird aus dem Schwachstellenkatalog entfernt (Workshops 3/4)',
     registreRisquesTitle: 'Risikoregister & Heatmap',
     registreRisquesDesc: 'Aktiviert das übergreifende Risikoregister (alle Risiken, nicht nur Cyber) und die Heatmap — Grundlage der GRC-Module.',
+    moduleForcedOn: 'Auf Instanzebene erzwungen',
+    moduleForcedOff: 'Auf Instanzebene deaktiviert',
     learnMore:          'Mehr erfahren ↗',
     enabled:       'Aktiviert',
     disabled:      'Deaktiviert',

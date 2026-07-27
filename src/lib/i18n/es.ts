@@ -840,6 +840,14 @@ export const es: Translations = {
       '7': 'Ejecución, entrega y gestión de procesos',
     },
   },
+  modulesPolicy: {
+    sectionTitle: 'Activación de módulos (instancia)',
+    sectionDesc: 'Política aplicada a todas las organizaciones. «Por organización» deja decidir a cada admin; «Impuesto» lo activa en todas partes; «Prohibido» lo hace no disponible.',
+    perOrg: 'Por organización',
+    forceOn: 'Impuesto (activo en todas)',
+    forceOff: 'Prohibido (no disponible)',
+    hint: 'Ajuste a nivel de instancia (superadministrador).',
+  },
   branding: {
     sectionTitle: 'Identidad de la aplicación',
     sectionDesc: 'Nombre y subtítulo mostrados en la aplicación (barra de navegación, página de inicio de sesión). Deja en blanco para conservar el nombre predeterminado.',
@@ -2077,6 +2085,8 @@ export const es: Translations = {
     derogationSortCatalogueLabel: 'Un control con exención activa se retira del catálogo de vulnerabilidades (talleres 3/4)',
     registreRisquesTitle: 'Registro de riesgos y mapa de calor',
     registreRisquesDesc: 'Activa el registro de riesgos transversal (todos los riesgos, no solo ciber) y el mapa de calor — base de los módulos GRC.',
+    moduleForcedOn: 'Impuesto a nivel de instancia',
+    moduleForcedOff: 'Desactivado a nivel de instancia',
     learnMore:          'Más información ↗',
     enabled:       'Activada',
     disabled:      'Desactivada',

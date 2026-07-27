@@ -840,6 +840,14 @@ export const it: Translations = {
       '7': 'Esecuzione, consegna e gestione dei processi',
     },
   },
+  modulesPolicy: {
+    sectionTitle: 'Attivazione dei moduli (istanza)',
+    sectionDesc: 'Politica applicata a tutte le organizzazioni. «Per organizzazione» lascia decidere a ogni admin; «Imposto» lo attiva ovunque; «Vietato» lo rende non disponibile.',
+    perOrg: 'Per organizzazione',
+    forceOn: 'Imposto (attivo ovunque)',
+    forceOff: 'Vietato (non disponibile)',
+    hint: 'Impostazione a livello di istanza (super-amministratore).',
+  },
   branding: {
     sectionTitle: 'Identità dell\'applicazione',
     sectionDesc: 'Nome e sottotitolo mostrati nell\'app (barra di navigazione, pagina di accesso). Lascia vuoto per mantenere il nome predefinito.',
@@ -2077,6 +2085,8 @@ export const it: Translations = {
     derogationSortCatalogueLabel: 'Un controllo con deroga attiva viene rimosso dal catalogo delle vulnerabilità (workshop 3/4)',
     registreRisquesTitle: 'Registro dei rischi e mappa di calore',
     registreRisquesDesc: 'Attiva il registro dei rischi trasversale (tutti i rischi, non solo cyber) e la mappa di calore — base dei moduli GRC.',
+    moduleForcedOn: 'Imposto a livello di istanza',
+    moduleForcedOff: 'Disattivato a livello di istanza',
     learnMore:          'Scopri di più ↗',
     enabled:       'Attivata',
     disabled:      'Disattivata',

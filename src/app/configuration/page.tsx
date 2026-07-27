@@ -156,6 +156,8 @@ export default function ConfigurationPage() {
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
   // Socle GRC
   const [registreRisquesActive, setRegistreRisquesActive] = useState(false)
+  // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
+  const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
   const [derogationSortCatalogue, setDerogationSortCatalogue] = useState(true)
   const [savingFeatures, setSavingFeatures] = useState(false)
@@ -203,6 +205,7 @@ export default function ConfigurationPage() {
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
+        if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
         const ov = (data.exemplesAteliers && typeof data.exemplesAteliers === 'object' && !Array.isArray(data.exemplesAteliers)) ? data.exemplesAteliers : {}
@@ -607,6 +610,23 @@ export default function ConfigurationPage() {
     if (res.ok) { setBrandSaved(true); setTimeout(() => setBrandSaved(false), 2500) }
   }
 
+  // Politique d'instance d'un module (SUPER_ADMIN) — mise à jour optimiste.
+  async function saveModulesPolicy(moduleKey: string, etat: string) {
+    const prev = modulesPolicy
+    const next = { ...modulesPolicy, [moduleKey]: etat }
+    setModulesPolicy(next)
+    // Reflète immédiatement l'effet sur le toggle de l'org active.
+    if (moduleKey === 'registreRisques') {
+      if (etat === 'FORCE_ON') setRegistreRisquesActive(true)
+      else if (etat === 'FORCE_OFF') setRegistreRisquesActive(false)
+    }
+    const res = await fetch('/api/admin/modules-policy', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modulesPolicy: next }),
+    })
+    if (!res.ok) setModulesPolicy(prev)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -652,6 +672,31 @@ export default function ConfigurationPage() {
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-2">{t.branding.hint}</p>
+          </section>
+        )}
+
+        {/* Politique d'activation des modules (instance) — SUPER_ADMIN */}
+        {isSuperAdmin && (
+          <section className="mb-6 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.modulesPolicy.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.modulesPolicy.sectionDesc}</p>
+            <div className="space-y-3">
+              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }]).map(m => (
+                <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+                  <span className="text-sm font-medium text-gray-800">{m.label}</span>
+                  <select
+                    value={modulesPolicy[m.key] ?? 'PER_ORG'}
+                    onChange={e => saveModulesPolicy(m.key, e.target.value)}
+                    className="px-2 py-1.5 rounded border border-gray-300 text-sm"
+                  >
+                    <option value="PER_ORG">{t.modulesPolicy.perOrg}</option>
+                    <option value="FORCE_ON">{t.modulesPolicy.forceOn}</option>
+                    <option value="FORCE_OFF">{t.modulesPolicy.forceOff}</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{t.modulesPolicy.hint}</p>
           </section>
         )}
 
@@ -1169,16 +1214,20 @@ export default function ConfigurationPage() {
                 { field: 'conseilsAteliersActive' as const, value: conseilsAteliersActive, title: t.features.conseilsTitle, desc: t.features.conseilsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'derogationsActive' as const, value: derogationsActive, title: t.features.derogationsTitle, desc: t.features.derogationsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
-                { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: false, indent: false },
+                { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.registreRisques === 'FORCE_ON' || modulesPolicy.registreRisques === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreRisques },
               ]).map(f => {
-                const off = f.disabled // toggle inopérant (dépendance non satisfaite)
-                const effValue = f.value && !off
+                const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
+                const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
+                const off = f.disabled && !isForced // « off » = dépendance non satisfaite (hors forçage)
+                const locked = f.disabled           // toggle non actionnable (dépendance OU forçage instance)
+                const effValue = isForced ? f.value : (f.value && !off)
                 return (
                 <div key={f.field} className={`flex items-start justify-between gap-4 p-4 rounded-lg border border-gray-200 bg-gray-50 ${f.indent ? 'ml-6' : ''} ${off ? 'opacity-60' : ''}`}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-800">{f.title}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
                     {off && <p className="text-xs text-amber-700 mt-0.5">{t.features.qualificationObligRequires}</p>}
+                    {isForced && <p className="text-xs text-ebios-700 mt-0.5">🔒 {forced === 'FORCE_ON' ? t.features.moduleForcedOn : t.features.moduleForcedOff}</p>}
                     <a href={f.href} target="_blank" rel="noopener noreferrer" className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline mt-1 inline-block">
                       {t.features.learnMore}
                     </a>
@@ -1188,9 +1237,9 @@ export default function ConfigurationPage() {
                     role="switch"
                     aria-checked={effValue}
                     aria-label={f.title}
-                    disabled={savingFeatures || off}
+                    disabled={savingFeatures || locked}
                     onClick={() => saveFeature(f.field, !f.value)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-300'} ${(savingFeatures || off) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-300'} ${(savingFeatures || locked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${effValue ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeTaxonomie } from '@/lib/taxonomie'
+import { sanitizeModulesPolicy } from '@/lib/module-policy'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -48,7 +49,16 @@ export async function GET(_req: NextRequest) {
 
   // Config EFFECTIVE de l'organisation active (héritage des ancêtres + défauts).
   const cfg = await getOrgConfig(await activeOrgId(session))
+  // Politique d'instance (lecture seule ici) : permet à l'UI de verrouiller les
+  // toggles de module imposés/interdits au niveau instance. Best-effort.
+  let modulesPolicy: Record<string, string> = {}
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inst = await (prisma as any).configuration.findUnique({ where: { id: 'global' }, select: { modulesPolicy: true } })
+    modulesPolicy = sanitizeModulesPolicy(inst?.modulesPolicy) as Record<string, string>
+  } catch { /* défaut vide */ }
   return NextResponse.json({
+    modulesPolicy,
     entitesMesures: cfg.entitesMesures,
     typesImpacts: cfg.typesImpacts,
     referentielsActifs: cfg.referentielsActifs,

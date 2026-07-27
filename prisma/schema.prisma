@@ -883,6 +883,11 @@ model Configuration {
   appName     String?
   appBaseline String?
 
+  // Politique d'ACTIVATION des modules au niveau instance (SUPER_ADMIN). Map
+  // { <module>: 'PER_ORG' | 'FORCE_ON' | 'FORCE_OFF' } — surplombe le toggle par
+  // organisation (cf. lib/module-policy). {} ⇒ tout en PER_ORG (rétrocompatible).
+  modulesPolicy Json @default("{}")
+
   // Nombre de niveaux dans les échelles (4 ou 5)
   nbNiveaux Int @default(4)
 
