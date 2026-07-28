@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -286,6 +286,16 @@ export default function Navbar() {
           )}
 
           {/* Socle GRC (module Registre de risques) — visible si le module est actif. */}
+          {registreActif && !isLecteur && (
+            <Link
+              href="/registre"
+              className={`${navClass(pathname === '/registre')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/registre' ? 'page' : undefined}
+            >
+              <BookMarked size={16} aria-hidden="true" />
+              <span>{t.nav.registre}</span>
+            </Link>
+          )}
           {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
             <Link
               href="/processus"

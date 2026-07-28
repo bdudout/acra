@@ -118,6 +118,7 @@ model Organization {
   conformites Conformite[]
   derogations Derogation[]
   processus   Processus[]
+  riskItems   RiskItem[]
 
   @@index([parentId])
   @@index([path])
@@ -144,8 +145,49 @@ model Processus {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  riskItems RiskItem[]
+
   @@index([organizationId])
   @@index([parentId])
+}
+
+// ─── Socle GRC : registre de risques CANONIQUE (RiskItem) ────────────────────
+// Point de convergence de tous les modules : risque rattaché à la maille
+// taxonomie × processus × entité, coté inhérent/résiduel (échelles configurables),
+// avec une PROVENANCE traçable. ACRA y publiera ses risques approuvés.
+model RiskItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule      String
+  description   String?    @db.Text
+  // Maille : catégorie (code de la taxonomie résolue) × processus × entité.
+  taxonomieCode String?
+  processusId   String?
+  processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
+  entite        String? // entité concernée (texte libre pour l'instant)
+  proprietaire  String?
+
+  // Cotation (mêmes échelles gravité × vraisemblance que le cyber).
+  graviteInherente        Int?
+  vraisemblanceInherente  Int?
+  graviteResiduelle       Int?
+  vraisemblanceResiduelle Int?
+
+  // Cycle de vie : IDENTIFIE | EVALUE | TRAITE | ACCEPTE | CLOTURE.
+  statut     String  @default("IDENTIFIE")
+  // Provenance : MANUEL | ACRA | INCIDENT | CONTROLE | AUDIT (+ traçabilité).
+  provenance String  @default("MANUEL")
+  sourceType String? // ex. 'analyse'
+  sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([processusId])
+  @@index([taxonomieCode])
 }
 
 // ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──
