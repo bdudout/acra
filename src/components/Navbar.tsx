@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -41,6 +41,15 @@ export default function Navbar() {
       .then(d => { if (d && typeof d.pending === 'number') setDerogPending(d.pending) })
       .catch(() => {})
   }, [isDerogActor, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Modules GRC actifs (état effectif) → affiche le groupe de navigation dédié.
+  const [registreActif, setRegistreActif] = useState(false)
+  useEffect(() => {
+    if (!session?.user) return
+    fetch('/api/modules').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setRegistreActif(Boolean(d.registreRisquesActive)) })
+      .catch(() => {})
+  }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fermer le menu sur clic extérieur
   useEffect(() => {
@@ -273,6 +282,18 @@ export default function Navbar() {
                   {derogPending}
                 </span>
               )}
+            </Link>
+          )}
+
+          {/* Socle GRC (module Registre de risques) — visible si le module est actif. */}
+          {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
+            <Link
+              href="/processus"
+              className={`${navClass(pathname === '/processus')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/processus' ? 'page' : undefined}
+            >
+              <Workflow size={16} aria-hidden="true" />
+              <span>{t.nav.processus}</span>
             </Link>
           )}
         </div>
