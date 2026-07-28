@@ -117,9 +117,35 @@ model Organization {
   config      OrganizationConfig?
   conformites Conformite[]
   derogations Derogation[]
+  processus   Processus[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// ─── Socle GRC : référentiel de processus (macro-processus → processus) ──────
+// Ossature de la « maille » de risque (taxonomie × processus × entité). Propre à
+// chaque organisation, hiérarchique. Référencé par le registre de risques (RiskItem).
+model Processus {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Hiérarchie : parent = macro-processus (null = niveau racine).
+  parentId       String?
+  parent         Processus?   @relation("ProcessusArbre", fields: [parentId], references: [id], onDelete: SetNull)
+  enfants        Processus[]  @relation("ProcessusArbre")
+
+  nom          String
+  description  String?  @db.Text
+  proprietaire String? // responsable du processus (texte libre pour l'instant)
+  criticite    Int? // criticité optionnelle (1-4)
+  ordre        Int      @default(0)
+  actif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([parentId])
 }
 
 // ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──
