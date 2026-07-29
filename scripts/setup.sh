@@ -118,6 +118,13 @@ if is_unset "$SECRETS_ENCRYPTION_KEY"; then
   SECRETS_ENCRYPTION_KEY="$(gen_secret 48)"; success "SECRETS_ENCRYPTION_KEY généré (chiffrement des secrets au repos)"
 else success "SECRETS_ENCRYPTION_KEY conservé"; fi
 
+# CRON_SECRET : protège les endpoints /api/cron/* déclenchés par le service "scheduler".
+# Généré par défaut pour activer la planification (snapshots conformité, alertes dérogations).
+CRON_SECRET="$(read_env CRON_SECRET)"
+if is_unset "$CRON_SECRET"; then
+  CRON_SECRET="$(gen_secret 32)"; success "CRON_SECRET généré (planification des tâches périodiques)"
+else success "CRON_SECRET conservé"; fi
+
 # DATABASE_URL : conservée si déjà définie et valide (peut pointer une DB distante),
 # sinon dérivée des variables POSTGRES_* (host "db" du service Docker Compose).
 DATABASE_URL="$(read_env DATABASE_URL)"
@@ -171,6 +178,11 @@ NEXTAUTH_URL=${NEXTAUTH_URL}
 # Chiffre en base les secrets configurés via l'admin (OIDC client secret, SMS, SMTP).
 # ⚠️ Si cette clé change, les secrets déjà chiffrés deviennent indéchiffrables.
 SECRETS_ENCRYPTION_KEY=${SECRETS_ENCRYPTION_KEY}
+
+# ── Tâches planifiées (/api/cron/*) ───────────────────────────────────────────
+# Jeton du service "scheduler" (docker-compose) : snapshots de conformité et
+# alertes/synthèses de dérogations. Vide ⇒ planification désactivée (endpoints 503).
+CRON_SECRET=${CRON_SECRET}
 EOF
 
 chmod 600 "$ENV_FILE" 2>/dev/null || true

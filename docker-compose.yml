@@ -66,6 +66,9 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       # URL publique de l'application (ex: https://votre-domaine.com en prod)
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # Jeton protégeant les endpoints planifiés /api/cron/* (voir service "scheduler").
+      # Absent ⇒ ces endpoints répondent 503 (planification désactivée).
+      CRON_SECRET: ${CRON_SECRET:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -82,6 +85,28 @@ services:
       start_period: 30s
       retries: 3
     command: ["node", "server.js"]
+
+  # ---------------------------------------------------------------------------
+  # Planificateur des tâches périodiques (/api/cron/*) — snapshots de conformité
+  # et alertes/synthèses de dérogations. Appelle l'app EN INTERNE (http://app:3000)
+  # avec le CRON_SECRET ; aucune exposition réseau. Inactif si CRON_SECRET absent.
+  # Cadence (cf. scripts/scheduler.sh) : snapshots 02:00 · derogations-expiry
+  # 07:00 · derogations-digest le 1er à 08:00. Le fuseau suit TZ (défaut UTC).
+  # ---------------------------------------------------------------------------
+  scheduler:
+    image: curlimages/curl:8.11.1
+    container_name: ebios_scheduler
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+      SCHEDULER_TICK: ${SCHEDULER_TICK:-900}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./scripts/scheduler.sh:/scheduler.sh:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/scheduler.sh"]
 
   # ---------------------------------------------------------------------------
   # Service de backup — pg_dump quotidien avec rotation 7 jours

@@ -245,11 +245,31 @@ Le script renseigne automatiquement :
 docker compose up -d
 ```
 
-Docker lance 4 services :
+Docker lance 5 services :
 - **`db`** — PostgreSQL 16 (port 5432)
 - **`migrator`** — exécute `prisma migrate deploy` au démarrage (s'arrête ensuite)
 - **`app`** — Application Next.js (port 3000)
+- **`scheduler`** — planifie les tâches périodiques `/api/cron/*` (voir ci-dessous)
 - **`backup`** — sauvegardes PostgreSQL automatiques (rotation 7 jours)
+
+#### Tâches planifiées
+
+Le service **`scheduler`** appelle en interne (`http://app:3000`, sans exposition
+réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`**
+(généré automatiquement par `scripts/setup.sh`). Cadence par défaut
+(cf. [`scripts/scheduler.sh`](scripts/scheduler.sh), fuseau `TZ`, UTC par défaut) :
+
+| Tâche | Endpoint | Cadence |
+|-------|----------|---------|
+| Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
+| Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
+| Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
+
+> Sans `CRON_SECRET`, les endpoints répondent `503` et le `scheduler` reste inactif
+> (aucune boucle de redémarrage). Les traitements sont **idempotents** : un double
+> déclenchement éventuel est sans effet de bord. Pour un planificateur externe
+> (cron système, GitHub Actions…), appelez les mêmes URL avec l'en-tête
+> `Authorization: Bearer $CRON_SECRET`.
 
 Vérifier que tout est opérationnel :
 
