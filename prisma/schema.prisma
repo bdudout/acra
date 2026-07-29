@@ -119,6 +119,7 @@ model Organization {
   derogations Derogation[]
   processus   Processus[]
   riskItems   RiskItem[]
+  riskActions RiskAction[]
 
   @@index([parentId])
   @@index([path])
@@ -182,12 +183,41 @@ model RiskItem {
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
 
+  actions RiskAction[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@index([processusId])
   @@index([taxonomieCode])
+}
+
+// ─── Socle GRC — M2 : plan d'action / traitement d'un RiskItem ───────────────
+// Mesure de traitement portée par un risque du registre. Le retard n'est PAS
+// stocké : il se dérive de l'échéance (cf. lib/risk-action.ts). organizationId
+// dupliqué pour le scoping et la consolidation (roll-up) sans jointure.
+model RiskAction {
+  id             String       @id @default(cuid())
+  riskItemId     String
+  riskItem       RiskItem     @relation(fields: [riskItemId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  description String?   @db.Text
+  responsable String?
+  echeance    DateTime?
+  // Statut stocké : A_FAIRE | EN_COURS | FAIT (EN_RETARD est dérivé).
+  statut      String    @default("A_FAIRE")
+  ordre       Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([riskItemId])
+  @@index([organizationId])
+  @@index([statut])
 }
 
 // ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──

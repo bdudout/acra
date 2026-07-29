@@ -6,6 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
+import { summarizeActions } from '@/lib/risk-action'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -29,13 +30,15 @@ export async function GET() {
   const rows = await prisma.riskItem.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } } },
+    include: { processus: { select: { nom: true } }, actions: { select: { statut: true, echeance: true } } },
   })
-  const risks = rows.map(r => ({
+  const now = new Date()
+  const risks = rows.map(({ actions, processus, ...r }) => ({
     ...r,
-    processusNom: r.processus?.nom ?? null,
+    processusNom: processus?.nom ?? null,
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
+    actionsSummary: summarizeActions(actions, now),
   }))
   return NextResponse.json({ risks, active: true })
 }

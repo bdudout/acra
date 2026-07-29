@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
+import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 
 interface Risk {
   id: string; intitule: string; taxonomieCode: string | null; processusId: string | null
@@ -12,6 +13,7 @@ interface Risk {
   graviteInherente: number | null; vraisemblanceInherente: number | null
   graviteResiduelle: number | null; vraisemblanceResiduelle: number | null
   niveauInherent: number | null; niveauResiduel: number | null
+  actionsSummary: ActionsSummary
 }
 type Proc = { id: string; nom: string }
 type Form = {
@@ -40,6 +42,7 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
   const taxoLabel = (code: string | null) => {
@@ -147,14 +150,16 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
               <th className="px-4 py-3">{r.colInherent}</th>
               <th className="px-4 py-3">{r.colResidual}</th>
               <th className="px-4 py-3">{r.colStatut}</th>
+              <th className="px-4 py-3">{r.colActions}</th>
               {canEdit && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} className="px-4 py-6 text-gray-400">…</td></tr>
-              : risks.length === 0 ? <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
+            {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
+              : risks.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
               : risks.map(x => (
-                <tr key={x.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                <Fragment key={x.id}>
+                <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {x.intitule}
                     {x.provenance !== 'MANUEL' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-ebios-100 text-ebios-700">{x.provenance}</span>}
@@ -165,15 +170,43 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
                   <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauInherent)}`}>{x.niveauInherent ?? '—'}</span></td>
                   <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauResiduel)}`}>{x.niveauResiduel ?? '—'}</span></td>
                   <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{(r.statuts as Record<string, string>)[x.statut] ?? x.statut}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => setExpandedId(id => id === x.id ? null : x.id)} className="inline-flex items-center gap-1.5 text-xs">
+                      <ProgressBadge s={x.actionsSummary} labels={r.plan} />
+                      <span className="text-gray-400">{expandedId === x.id ? '▾' : '▸'}</span>
+                    </button>
+                  </td>
                   {canEdit && <td className="px-4 py-3 whitespace-nowrap text-right">
                     <button onClick={() => startEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{r.edit}</button>
                     <button onClick={() => remove(x.id)} className="text-xs text-red-500 hover:underline">{r.delete}</button>
                   </td>}
                 </tr>
+                {expandedId === x.id && (
+                  <tr className="bg-gray-50/60 dark:bg-gray-800/30">
+                    <td colSpan={canEdit ? 8 : 7} className="px-4 py-4">
+                      <RiskActionsPanel riskId={x.id} canEdit={canEdit} onChange={reload} />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
           </tbody>
         </table>
       </div>
     </div>
+  )
+}
+
+// Pastille de synthèse du plan d'action : taux d'avancement + alerte de retard.
+function ProgressBadge({ s, labels }: { s: ActionsSummary; labels: Record<string, string> }) {
+  if (s.total === 0) return <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400">{labels.none}</span>
+  const cls = s.enRetard > 0 ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300'
+    : s.tauxAvancement === 100 ? 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300'
+    : 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
+  return (
+    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${cls}`}>
+      {s.tauxAvancement}% · {s.faits}/{s.total}
+      {s.enRetard > 0 && <span className="ml-1">⚠ {s.enRetard}</span>}
+    </span>
   )
 }
