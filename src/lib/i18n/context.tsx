@@ -51,6 +51,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('acra-locale', l)
     // Cookie pour les server components
     document.cookie = `acra-locale=${l}; path=/; max-age=31536000; SameSite=Lax`
+    // Mémorise la préférence côté serveur (pour les e-mails hors session).
+    // Best-effort : silencieux si non authentifié (401) ou hors ligne.
+    fetch('/api/user/locale', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ locale: l }),
+    }).catch(() => {})
     setLocaleState(l)
     // Re-exécute les Server Components avec le nouveau cookie
     // (dashboard, analyses, et toutes les pages RSC relisent getServerT())

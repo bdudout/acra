@@ -41,6 +41,9 @@ model User {
   // Numéro de téléphone (format E.164, ex. +33612345678) — utilisé pour le MFA par SMS
   phone              String?
   role               UserRole  @default(ANALYSTE)
+  // Langue préférée (fr|en|de|es|it) — utilisée pour localiser les e-mails hors
+  // session (tâches planifiées). Null = repli français. Cf. lib/email-i18n.ts.
+  locale             String?
   isActive           Boolean   @default(true)
   passwordChangedAt  DateTime?
   mustChangePassword Boolean   @default(false) // changement de MDP forcé à la prochaine connexion

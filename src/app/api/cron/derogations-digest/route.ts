@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { buildDerogationDigest, type DigestSource } from '@/lib/derogation'
 import { sendEmail } from '@/lib/email'
+import { derogationDigestEmail } from '@/lib/email-i18n'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,22 +50,21 @@ export async function POST(req: NextRequest) {
 
     const rows = await prisma.orgMembership.findMany({
       where: { organizationId: orgId, role: { in: [...RECIPIENT_ROLES] } },
-      select: { user: { select: { email: true, isActive: true } } },
+      select: { user: { select: { email: true, isActive: true, locale: true } } },
     })
-    const emails = [...new Set(rows.filter(r => r.user.isActive && r.user.email).map(r => r.user.email))]
-    if (emails.length === 0) continue
+    // Déduplication par e-mail (langue du 1er trouvé).
+    const byEmail = new Map<string, string | null>()
+    for (const r of rows) if (r.user.isActive && r.user.email && !byEmail.has(r.user.email)) byEmail.set(r.user.email, r.user.locale)
+    if (byEmail.size === 0) continue
 
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
-    const lignes = digest.aRisque
-      .map(x => `• ${x.intitule} — ${x.joursRestants < 0 ? `expirée depuis ${-x.joursRestants} j` : `expire dans ${x.joursRestants} j`}`)
-      .join('\n')
-    const text = `Synthèse des dérogations — ${org?.nom ?? ''}\n\n`
-      + `Actives : ${digest.active}\nBientôt expirées : ${digest.expireBientot}\nExpirées : ${digest.expiree}\n\n`
-      + `À traiter :\n${lignes}\n`
+    const orgNom = org?.nom ?? ''
+    const items = digest.aRisque.map(x => ({ intitule: x.intitule, joursRestants: x.joursRestants }))
 
     orgsNotified++
-    for (const to of emails) {
-      const res = await sendEmail({ to, subject: `[ACRA] Synthèse des dérogations — ${org?.nom ?? ''}`, text })
+    for (const [to, locale] of byEmail) {
+      const { subject, text } = derogationDigestEmail(locale, { orgNom, active: digest.active, expireBientot: digest.expireBientot, expiree: digest.expiree, items })
+      const res = await sendEmail({ to, subject, text })
       if (res.ok) emailsSent++; else emailsSkipped++
     }
   }
