@@ -1,8 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
+import { type TaxonomieNode } from '@/lib/taxonomie'
+import { distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
@@ -37,10 +40,34 @@ export default function PilotageGrc() {
   const p = t.pilotage
   const [data, setData] = useState<Rollup | null>(null)
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<RiskFilters>({})
+  const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
+  const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
+  const [entites, setEntites] = useState<string[]>([])
 
+  const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
+
+  // Référentiels des sélecteurs (chargés une fois) : catégories, processus, entités.
   useEffect(() => {
-    fetch('/api/grc/rollup').then(x => x.ok ? x.json() : null).then(d => { setData(d); setLoading(false) })
+    Promise.all([
+      fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
+      fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
+      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
+    ]).then(([tt, pp, rr]) => {
+      setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? []); setEntites(distinctEntites(rr.risks ?? []))
+    })
   }, [])
+
+  // La consolidation est recalculée côté serveur à chaque changement de filtre.
+  useEffect(() => {
+    const q = filtersToQuery(filters)
+    fetch(`/api/grc/rollup${q ? `?${q}` : ''}`).then(x => x.ok ? x.json() : null).then(d => { setData(d); setLoading(false) })
+  }, [filters])
+
+  function exportCsv() {
+    const q = filtersToQuery(filters)
+    window.location.href = `/api/risk-items/export${q ? `?${q}` : ''}`
+  }
 
   if (loading) return <p className="text-gray-400">…</p>
   if (!data?.active) return <p className="text-gray-400">{p.inactive}</p>
@@ -55,6 +82,11 @@ export default function PilotageGrc() {
         <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
+
+      <RiskFiltersBar
+        filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
+        processus={procs} entites={entites} onExport={exportCsv}
+      />
 
       {/* Synthèse consolidée */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">

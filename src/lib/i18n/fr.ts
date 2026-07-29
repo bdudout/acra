@@ -1018,6 +1018,22 @@ export const fr = {
     empty: 'Aucun risque consolidé.',
     links: 'Aussi :',
   },
+  filtres: {
+    title: 'Filtres',
+    allCategories: 'Toutes catégories',
+    allProcesses: 'Tous processus',
+    allEntities: 'Toutes entités',
+    allStatuses: 'Tous statuts',
+    allLevels: 'Tous niveaux',
+    reset: 'Réinitialiser',
+    exportCsv: 'Exporter CSV',
+    levels: {
+      eleve: 'Élevé',
+      moyen: 'Moyen',
+      faible: 'Faible',
+      nonCote: 'Non coté',
+    },
+  },
   branding: {
     sectionTitle: 'Identité de l\'application',
     sectionDesc: 'Nom et sous-titre affichés dans l\'application (barre de navigation, page de connexion). Laissez vide pour conserver le nom par défaut.',

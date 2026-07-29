@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -8,12 +8,13 @@ import { type UserRole } from '@/lib/permissions'
 import { niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
 import { rollupRisks, rollupByOrg, type RiskLite, type ScopedAction } from '@/lib/grc-rollup'
+import { applyFilters, parseFilters } from '@/lib/risk-filters'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/grc/rollup — consolidation risque + plan d'action sur le SOUS-ARBRE
 // de l'organisation active (vue direction / groupe). Total + ventilation par entité.
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as { id: string }).id
@@ -35,20 +36,37 @@ export async function GET() {
     }),
     prisma.riskItem.findMany({
       where: orgFilter,
-      select: { organizationId: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true },
+      select: {
+        id: true, organizationId: true, taxonomieCode: true, processusId: true, entite: true, statut: true,
+        graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true,
+      },
     }),
     prisma.riskAction.findMany({
       where: orgFilter,
-      select: { organizationId: true, statut: true, echeance: true },
+      select: { organizationId: true, riskItemId: true, statut: true, echeance: true },
     }),
   ])
 
-  const risks: RiskLite[] = riskRows.map(r => ({
-    organizationId: r.organizationId,
+  // Filtres partagés avec la cartographie (même définition, cf. lib/risk-filters).
+  const { searchParams } = new URL(req.url)
+  const filters = parseFilters(searchParams)
+  const enriched = riskRows.map(r => ({
+    ...r,
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
   }))
-  const actions: ScopedAction[] = actionRows.map(a => ({ organizationId: a.organizationId, statut: a.statut, echeance: a.echeance }))
+  const kept = applyFilters(enriched, filters)
+  const keptIds = new Set(kept.map(r => r.id))
+
+  const risks: RiskLite[] = kept.map(r => ({
+    organizationId: r.organizationId,
+    niveauInherent: r.niveauInherent,
+    niveauResiduel: r.niveauResiduel,
+  }))
+  // Les actions suivent les risques retenus (cohérence filtre ↔ avancement affiché).
+  const actions: ScopedAction[] = actionRows
+    .filter(a => keptIds.has(a.riskItemId))
+    .map(a => ({ organizationId: a.organizationId, statut: a.statut, echeance: a.echeance }))
   const now = new Date()
 
   return NextResponse.json({

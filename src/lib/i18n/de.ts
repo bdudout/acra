@@ -995,6 +995,22 @@ export const de: Translations = {
     empty: 'Kein konsolidiertes Risiko.',
     links: 'Auch:',
   },
+  filtres: {
+    title: 'Filter',
+    allCategories: 'Alle Kategorien',
+    allProcesses: 'Alle Prozesse',
+    allEntities: 'Alle Einheiten',
+    allStatuses: 'Alle Status',
+    allLevels: 'Alle Stufen',
+    reset: 'Zurücksetzen',
+    exportCsv: 'CSV exportieren',
+    levels: {
+      eleve: 'Hoch',
+      moyen: 'Mittel',
+      faible: 'Niedrig',
+      nonCote: 'Unbewertet',
+    },
+  },
   branding: {
     sectionTitle: 'Anwendungsidentität',
     sectionDesc: 'Name und Untertitel, die in der App angezeigt werden (Navigationsleiste, Anmeldeseite). Leer lassen, um den Standardnamen beizubehalten.',

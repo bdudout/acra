@@ -7,8 +7,17 @@ import {
   buildHeatmap, aggregateByDimension, CARTO_MAX,
   type CartoRisk, type CartoMode, type CartoDimension, type NiveauBucket,
 } from '@/lib/cartographie'
+import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 type PublishAnalyse = { id: string; nom: string; organisation: string | null; risquesCount: number; dejaPublies: number }
+
+// Le registre renvoie aussi statut et niveaux calculés : nécessaires au filtrage.
+type FilterableCartoRisk = CartoRisk & {
+  statut: string
+  niveauInherent: number | null
+  niveauResiduel: number | null
+}
 
 const BUCKET_BG: Record<NiveauBucket, string> = {
   faible: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
@@ -24,35 +33,47 @@ function cellBg(bucket: NiveauBucket | null, empty: boolean): string {
 export default function Cartographie({ canPublish }: { canPublish: boolean }) {
   const { t } = useTranslation()
   const c = t.cartographie
-  const [risks, setRisks] = useState<CartoRisk[]>([])
+  const [risks, setRisks] = useState<FilterableCartoRisk[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
+  const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
   const [analyses, setAnalyses] = useState<PublishAnalyse[]>([])
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<CartoMode>('residual')
   const [dimension, setDimension] = useState<CartoDimension>('taxonomie')
+  const [filters, setFilters] = useState<RiskFilters>({ mode: 'residual' })
   const [publishing, setPublishing] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
 
   async function reload() {
-    const [rr, tt, aa] = await Promise.all([
+    const [rr, tt, pp, aa] = await Promise.all([
       fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
       fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
+      fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
       canPublish ? fetch('/api/risk-items/publish').then(x => x.ok ? x.json() : { analyses: [] }) : Promise.resolve({ analyses: [] }),
     ])
-    setRisks(rr.risks ?? []); setTaxo(tt.taxonomie ?? []); setAnalyses(aa.analyses ?? [])
+    setRisks(rr.risks ?? []); setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? []); setAnalyses(aa.analyses ?? [])
     setLoading(false)
   }
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const heat = useMemo(() => buildHeatmap(risks, mode), [risks, mode])
+  // Le mode (inhérent/résiduel) pilote aussi l'évaluation du filtre de niveau.
+  const shown = useMemo(() => applyFilters(risks, { ...filters, mode }), [risks, filters, mode])
+  const entites = useMemo(() => distinctEntites(risks), [risks])
+
+  const heat = useMemo(() => buildHeatmap(shown, mode), [shown, mode])
   const cellIndex = useMemo(() => {
     const m = new Map<string, typeof heat.cells[number]>()
     heat.cells.forEach(cell => m.set(`${cell.gravite}:${cell.vraisemblance}`, cell))
     return m
   }, [heat])
-  const buckets = useMemo(() => aggregateByDimension(risks, dimension, mode), [risks, dimension, mode])
+  const buckets = useMemo(() => aggregateByDimension(shown, dimension, mode), [shown, dimension, mode])
+
+  function exportCsv() {
+    const q = filtersToQuery({ ...filters, mode })
+    window.location.href = `/api/risk-items/export${q ? `?${q}` : ''}`
+  }
 
   function dimLabel(key: string, label: string | null): string {
     if (key === '') return c.nonRenseigne
@@ -91,9 +112,14 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
 
       {loading ? <p className="text-gray-400">…</p> : (
         <>
-          {/* Bandeau de synthèse */}
+          <RiskFiltersBar
+            filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
+            processus={procs} entites={entites} onExport={exportCsv}
+          />
+
+          {/* Bandeau de synthèse (sur le périmètre filtré) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <Stat label={c.total} value={risks.length} />
+            <Stat label={c.total} value={shown.length} />
             <Stat label={c.eleves} value={heat.parBucket.eleve} tone="eleve" />
             <Stat label={c.moyens} value={heat.parBucket.moyen} tone="moyen" />
             <Stat label={c.nonCotes} value={heat.totalNonCote} />

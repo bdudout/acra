@@ -995,6 +995,22 @@ export const es: Translations = {
     empty: 'Ningún riesgo consolidado.',
     links: 'También:',
   },
+  filtres: {
+    title: 'Filtros',
+    allCategories: 'Todas las categorías',
+    allProcesses: 'Todos los procesos',
+    allEntities: 'Todas las entidades',
+    allStatuses: 'Todos los estados',
+    allLevels: 'Todos los niveles',
+    reset: 'Restablecer',
+    exportCsv: 'Exportar CSV',
+    levels: {
+      eleve: 'Alto',
+      moyen: 'Medio',
+      faible: 'Bajo',
+      nonCote: 'Sin valorar',
+    },
+  },
   branding: {
     sectionTitle: 'Identidad de la aplicación',
     sectionDesc: 'Nombre y subtítulo mostrados en la aplicación (barra de navegación, página de inicio de sesión). Deja en blanco para conservar el nombre predeterminado.',
