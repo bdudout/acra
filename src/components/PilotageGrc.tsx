@@ -1,0 +1,118 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n/context'
+
+interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number }
+interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
+interface OrgPosture { orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary }
+interface Rollup { active: boolean; orgCount: number; consolide: { risques: RiskTotals; actions: ActionsSummary }; parOrg: OrgPosture[] }
+
+// Barre de répartition des paliers (élevé / moyen / faible / non coté).
+function PostureBar({ t: totals }: { t: RiskTotals }) {
+  const segs = [
+    { n: totals.eleve, c: 'bg-red-500' },
+    { n: totals.moyen, c: 'bg-amber-500' },
+    { n: totals.faible, c: 'bg-green-500' },
+    { n: totals.nonCote, c: 'bg-gray-300 dark:bg-gray-600' },
+  ]
+  const tot = totals.total || 1
+  return (
+    <div className="flex h-2 w-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+      {segs.map((s, i) => s.n > 0 && <div key={i} className={s.c} style={{ width: `${(s.n / tot) * 100}%` }} title={String(s.n)} />)}
+    </div>
+  )
+}
+
+function progressColor(s: ActionsSummary): string {
+  if (s.total === 0) return 'text-gray-400'
+  if (s.enRetard > 0) return 'text-red-600 dark:text-red-400'
+  if (s.tauxAvancement === 100) return 'text-green-600 dark:text-green-400'
+  return 'text-amber-600 dark:text-amber-400'
+}
+
+export default function PilotageGrc() {
+  const { t } = useTranslation()
+  const p = t.pilotage
+  const [data, setData] = useState<Rollup | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/grc/rollup').then(x => x.ok ? x.json() : null).then(d => { setData(d); setLoading(false) })
+  }, [])
+
+  if (loading) return <p className="text-gray-400">…</p>
+  if (!data?.active) return <p className="text-gray-400">{p.inactive}</p>
+
+  const cr = data.consolide.risques
+  const ca = data.consolide.actions
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">📊 {p.title}</h1>
+        <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
+      </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
+
+      {/* Synthèse consolidée */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <Tile label={p.total} value={cr.total} />
+        <Tile label={p.eleves} value={cr.eleve} tone="red" />
+        <Tile label={p.moyens} value={cr.moyen} tone="amber" />
+        <Tile label={p.faibles} value={cr.faible} tone="green" />
+        <Tile label={p.avancement} value={`${ca.tauxAvancement}%`} />
+        <Tile label={p.enRetard} value={ca.enRetard} tone={ca.enRetard > 0 ? 'red' : undefined} />
+      </div>
+
+      {/* Ventilation par entité */}
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+              <th className="px-4 py-3">{p.colOrg}</th>
+              <th className="px-4 py-3">{p.colPosture}</th>
+              <th className="px-4 py-3 text-right">{p.colTotal}</th>
+              <th className="px-4 py-3 text-right">{p.colEleves}</th>
+              <th className="px-4 py-3">{p.colPlan}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.parOrg.length === 0 ? <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">{p.empty}</td></tr>
+              : data.parOrg.map(o => (
+                <tr key={o.orgId} className="border-b border-gray-100 dark:border-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{o.orgNom}</td>
+                  <td className="px-4 py-3"><PostureBar t={o.risques} /></td>
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{o.risques.total}</td>
+                  <td className="px-4 py-3 text-right">{o.risques.eleve > 0 ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.risques.eleve}</span> : <span className="text-gray-400">0</span>}</td>
+                  <td className={`px-4 py-3 ${progressColor(o.actions)}`}>
+                    {o.actions.total === 0 ? <span className="text-gray-400">—</span> : (
+                      <span>{o.actions.tauxAvancement}% · {o.actions.faits}/{o.actions.total}{o.actions.enRetard > 0 && <span className="ml-1">⚠ {o.actions.enRetard}</span>}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-xs text-gray-400 mt-4">
+        {p.links}{' '}
+        <Link href="/cartographie" className="text-ebios-600 hover:underline">{t.nav.cartographie}</Link>
+        {' · '}
+        <Link href="/conformite" className="text-ebios-600 hover:underline">{t.nav.conformite}</Link>
+      </p>
+    </div>
+  )
+}
+
+function Tile({ label, value, tone }: { label: string; value: number | string; tone?: 'red' | 'amber' | 'green' }) {
+  const color = tone === 'red' ? 'text-red-600 dark:text-red-400' : tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : tone === 'green' ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-gray-100'
+  return (
+    <div className="card p-3">
+      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    </div>
+  )
+}

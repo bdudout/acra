@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -304,6 +304,16 @@ export default function Navbar() {
             >
               <Map size={16} aria-hidden="true" />
               <span>{t.nav.cartographie}</span>
+            </Link>
+          )}
+          {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
+            <Link
+              href="/pilotage"
+              className={`${navClass(pathname === '/pilotage')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/pilotage' ? 'page' : undefined}
+            >
+              <BarChart3 size={16} aria-hidden="true" />
+              <span>{t.nav.pilotage}</span>
             </Link>
           )}
           {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
