@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  calcDateFin, joursAvantExpiration, etatDerogation, needsExpiryAlert,
+  calcDateFin, joursAvantExpiration, etatDerogation, needsExpiryAlert, buildDerogationDigest,
   validateDerogationInput, statutInitial, statutApresAvisRssi, statutApresDoubleRegard, estTerminale,
   prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
@@ -60,6 +60,28 @@ describe('needsExpiryAlert', () => {
 })
 
 // ─── Validation d'entrée ─────────────────────────────────────────────────────
+describe('buildDerogationDigest', () => {
+  const derogs = [
+    { id: 'a', statut: 'ACTIVE' as const, intitule: 'Loin', dateFin: inDays(200) },      // active
+    { id: 'b', statut: 'ACTIVE' as const, intitule: 'Bientôt', dateFin: inDays(10) },     // expire bientôt (<=30)
+    { id: 'c', statut: 'ACTIVE' as const, intitule: 'Expirée', dateFin: inDays(-5) },     // expirée
+    { id: 'd', statut: 'CLOTUREE' as const, intitule: 'Clôturée', dateFin: inDays(-1) },  // ignorée (non ACTIVE)
+    { id: 'e', statut: 'ACTIVE' as const, intitule: 'Sans fin', dateFin: null },          // active (jamais)
+  ]
+  it('compte par état dérivé et liste les à-risque, plus urgent d\'abord', () => {
+    const d = buildDerogationDigest(derogs, 30, NOW)
+    expect(d.active).toBe(2)        // a + e
+    expect(d.expireBientot).toBe(1) // b
+    expect(d.expiree).toBe(1)       // c
+    expect(d.aRisque.map(x => x.id)).toEqual(['c', 'b']) // c (-5j) avant b (10j)
+    expect(d.aRisque[0].etat).toBe('EXPIREE')
+    expect(d.aRisque[1].etat).toBe('EXPIRE_BIENTOT')
+  })
+  it('périmètre vide → tout à zéro', () => {
+    expect(buildDerogationDigest([], 30, NOW)).toEqual({ active: 0, expireBientot: 0, expiree: 0, aRisque: [] })
+  })
+})
+
 describe('validateDerogationInput', () => {
   const base = { portee: 'CONTROLE', referentiel: 'ISO27001', ref: 'A.5.1', intitule: 'X', motif: 'm', mesuresCompensatoires: 'c' }
   it('valide une dérogation contrôle complète → null', () => {

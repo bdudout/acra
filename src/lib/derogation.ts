@@ -76,6 +76,45 @@ export function needsExpiryAlert(d: DerogationAlerteSource, alerteJours: number,
   return joursAvantExpiration(d.dateFin ?? null, now) <= alerteJours
 }
 
+// ─── Digest périodique (crons) ───────────────────────────────────────────────
+
+export interface DigestSource extends DerogationEtatSource {
+  id: string
+  intitule: string
+}
+export interface DigestItem {
+  id: string
+  intitule: string
+  joursRestants: number
+  etat: DerogationEtat
+}
+export interface DerogationDigest {
+  active: number // ACTIVE non menacée
+  expireBientot: number
+  expiree: number
+  aRisque: DigestItem[] // dérogations EXPIRE_BIENTOT ou EXPIREE, les plus urgentes d'abord
+}
+
+/**
+ * Synthèse (digest) de l'état des dérogations d'un périmètre, pour l'e-mail
+ * périodique. Ne compte que les dérogations ACTIVE (dérivées) ; la liste
+ * `aRisque` (bientôt expirées + expirées) est triée du plus urgent (le plus en
+ * retard) au moins urgent. Pur, testé.
+ */
+export function buildDerogationDigest(derogations: DigestSource[], alerteJours: number, now: Date = new Date()): DerogationDigest {
+  const digest: DerogationDigest = { active: 0, expireBientot: 0, expiree: 0, aRisque: [] }
+  for (const d of derogations) {
+    if (d.statut !== 'ACTIVE') continue
+    const etat = etatDerogation(d, alerteJours, now)
+    if (etat === 'EXPIREE') { digest.expiree++; }
+    else if (etat === 'EXPIRE_BIENTOT') { digest.expireBientot++; }
+    else { digest.active++; continue }
+    digest.aRisque.push({ id: d.id, intitule: d.intitule, joursRestants: joursAvantExpiration(d.dateFin ?? null, now), etat })
+  }
+  digest.aRisque.sort((a, b) => a.joursRestants - b.joursRestants)
+  return digest
+}
+
 // ─── Validation d'entrée ─────────────────────────────────────────────────────
 
 export interface DerogationInput {
