@@ -15,7 +15,8 @@ export default function RiskFiltersBar({
   tr: (key: string) => string
   processus: { id: string; nom: string }[]
   entites: string[]
-  onExport?: () => void
+  /** Déclenche le téléchargement dans le format demandé. */
+  onExport?: (format: 'csv' | 'xlsx' | 'pdf') => void
 }) {
   const { t } = useTranslation()
   const f = t.filtres
@@ -62,7 +63,14 @@ export default function RiskFiltersBar({
         {n > 0 && <button onClick={() => onChange({ mode: filters.mode })} className="text-xs text-gray-500 hover:text-gray-700 underline">{f.reset}</button>}
 
         <div className="flex-1" />
-        {onExport && <button onClick={onExport} className="btn-secondary text-xs">{f.exportCsv}</button>}
+        {onExport && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500 dark:text-gray-400">{f.exportLabel}</span>
+            <button onClick={() => onExport('csv')} className="btn-secondary text-xs">{f.csv}</button>
+            <button onClick={() => onExport('xlsx')} className="btn-secondary text-xs">{f.xlsx}</button>
+            <button onClick={() => onExport('pdf')} className="btn-secondary text-xs">{f.pdf}</button>
+          </div>
+        )}
       </div>
     </div>
   )

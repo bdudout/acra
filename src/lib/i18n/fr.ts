@@ -1026,7 +1026,10 @@ export const fr = {
     allStatuses: 'Tous statuts',
     allLevels: 'Tous niveaux',
     reset: 'Réinitialiser',
-    exportCsv: 'Exporter CSV',
+    exportLabel: 'Exporter :',
+    csv: 'CSV',
+    xlsx: 'Excel',
+    pdf: 'PDF',
     levels: {
       eleve: 'Élevé',
       moyen: 'Moyen',

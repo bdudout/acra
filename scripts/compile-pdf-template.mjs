@@ -9,19 +9,27 @@ import path from 'node:path'
 
 const root = path.dirname(fileURLToPath(import.meta.url)) + '/..'
 
-await build({
-  entryPoints: [path.join(root, 'src/lib/pdf-template.tsx')],
-  outfile: path.join(root, '.pdf-runtime/pdf-template.cjs'),
-  bundle: true,
-  platform: 'node',
-  format: 'cjs',
-  target: 'node20',
-  jsx: 'automatic',
-  // react-pdf et react restent externes → résolus depuis node_modules au runtime
-  // (instance unique), comme dans les tests.
-  external: ['@react-pdf/renderer', 'react', 'react-dom'],
-  // Résout l'alias @/ comme tsconfig
-  alias: { '@': path.join(root, 'src') },
-  logLevel: 'info',
-})
-console.log('[compile-pdf-template] .pdf-runtime/pdf-template.cjs généré')
+// Chaque template PDF est compilé en bundle CJS autonome (même transform).
+const TEMPLATES = [
+  { entry: 'src/lib/pdf-template.tsx', out: '.pdf-runtime/pdf-template.cjs' },
+  { entry: 'src/lib/carto-pdf-template.tsx', out: '.pdf-runtime/carto-pdf-template.cjs' },
+]
+
+for (const { entry, out } of TEMPLATES) {
+  await build({
+    entryPoints: [path.join(root, entry)],
+    outfile: path.join(root, out),
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    target: 'node20',
+    jsx: 'automatic',
+    // react-pdf et react restent externes → résolus depuis node_modules au runtime
+    // (instance unique), comme dans les tests.
+    external: ['@react-pdf/renderer', 'react', 'react-dom'],
+    // Résout l'alias @/ comme tsconfig
+    alias: { '@': path.join(root, 'src') },
+    logLevel: 'info',
+  })
+  console.log(`[compile-pdf-template] ${out} généré`)
+}

@@ -36,7 +36,7 @@ function progressColor(s: ActionsSummary): string {
 }
 
 export default function PilotageGrc() {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const p = t.pilotage
   const [data, setData] = useState<Rollup | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,9 +64,12 @@ export default function PilotageGrc() {
     fetch(`/api/grc/rollup${q ? `?${q}` : ''}`).then(x => x.ok ? x.json() : null).then(d => { setData(d); setLoading(false) })
   }, [filters])
 
-  function exportCsv() {
-    const q = filtersToQuery(filters)
-    window.location.href = `/api/risk-items/export${q ? `?${q}` : ''}`
+  // Export du périmètre filtré ; `lang` localise le rapport PDF.
+  function exportAs(format: 'csv' | 'xlsx' | 'pdf') {
+    const qs = new URLSearchParams(filtersToQuery(filters))
+    qs.set('format', format)
+    if (format === 'pdf') qs.set('lang', locale)
+    window.location.href = `/api/risk-items/export?${qs.toString()}`
   }
 
   if (loading) return <p className="text-gray-400">…</p>
@@ -85,7 +88,7 @@ export default function PilotageGrc() {
 
       <RiskFiltersBar
         filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
-        processus={procs} entites={entites} onExport={exportCsv}
+        processus={procs} entites={entites} onExport={exportAs}
       />
 
       {/* Synthèse consolidée */}

@@ -31,7 +31,7 @@ function cellBg(bucket: NiveauBucket | null, empty: boolean): string {
 }
 
 export default function Cartographie({ canPublish }: { canPublish: boolean }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const c = t.cartographie
   const [risks, setRisks] = useState<FilterableCartoRisk[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
@@ -70,9 +70,12 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
   }, [heat])
   const buckets = useMemo(() => aggregateByDimension(shown, dimension, mode), [shown, dimension, mode])
 
-  function exportCsv() {
-    const q = filtersToQuery({ ...filters, mode })
-    window.location.href = `/api/risk-items/export${q ? `?${q}` : ''}`
+  // Export du périmètre AFFICHÉ (filtres + mode) ; `lang` localise le rapport PDF.
+  function exportAs(format: 'csv' | 'xlsx' | 'pdf') {
+    const p = new URLSearchParams(filtersToQuery({ ...filters, mode }))
+    p.set('format', format)
+    if (format === 'pdf') p.set('lang', locale)
+    window.location.href = `/api/risk-items/export?${p.toString()}`
   }
 
   function dimLabel(key: string, label: string | null): string {
@@ -114,7 +117,7 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
         <>
           <RiskFiltersBar
             filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
-            processus={procs} entites={entites} onExport={exportCsv}
+            processus={procs} entites={entites} onExport={exportAs}
           />
 
           {/* Bandeau de synthèse (sur le périmètre filtré) */}

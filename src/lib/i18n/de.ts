@@ -1003,7 +1003,10 @@ export const de: Translations = {
     allStatuses: 'Alle Status',
     allLevels: 'Alle Stufen',
     reset: 'Zurücksetzen',
-    exportCsv: 'CSV exportieren',
+    exportLabel: 'Exportieren:',
+    csv: 'CSV',
+    xlsx: 'Excel',
+    pdf: 'PDF',
     levels: {
       eleve: 'Hoch',
       moyen: 'Mittel',
