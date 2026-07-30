@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -45,10 +45,11 @@ export default function Navbar() {
   // Modules GRC actifs (état effectif) → affiche le groupe de navigation dédié.
   const [registreActif, setRegistreActif] = useState(false)
   const [incidentsActif, setIncidentsActif] = useState(false)
+  const [controlesActif, setControlesActif] = useState(false)
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)) } })
+      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)) } })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -295,6 +296,18 @@ export default function Navbar() {
             >
               <Siren size={16} aria-hidden="true" />
               <span>{t.nav.incidents}</span>
+            </Link>
+          )}
+
+          {/* Module Contrôle permanent — l'EXÉCUTION est ouverte à la 1ʳᵉ ligne. */}
+          {controlesActif && !isLecteur && (
+            <Link
+              href="/controles"
+              className={`${navClass(pathname === '/controles')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/controles' ? 'page' : undefined}
+            >
+              <ClipboardCheck size={16} aria-hidden="true" />
+              <span>{t.nav.controles}</span>
             </Link>
           )}
 

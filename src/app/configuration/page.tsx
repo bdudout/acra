@@ -157,6 +157,7 @@ export default function ConfigurationPage() {
   // Socle GRC
   const [registreRisquesActive, setRegistreRisquesActive] = useState(false)
   const [incidentsActive, setIncidentsActive] = useState(false)
+  const [controlePermanentActive, setControlePermanentActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
@@ -207,6 +208,7 @@ export default function ConfigurationPage() {
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
         setIncidentsActive(Boolean(data.incidentsActive))
+        setControlePermanentActive(Boolean(data.controlePermanentActive))
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
@@ -249,8 +251,9 @@ export default function ConfigurationPage() {
     derogationSortCatalogue: setDerogationSortCatalogue,
     registreRisquesActive: setRegistreRisquesActive,
     incidentsActive: setIncidentsActive,
+    controlePermanentActive: setControlePermanentActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -627,6 +630,10 @@ export default function ConfigurationPage() {
       if (etat === 'FORCE_ON') setIncidentsActive(true)
       else if (etat === 'FORCE_OFF') setIncidentsActive(false)
     }
+    if (moduleKey === 'controlePermanent') {
+      if (etat === 'FORCE_ON') setControlePermanentActive(true)
+      else if (etat === 'FORCE_OFF') setControlePermanentActive(false)
+    }
     const res = await fetch('/api/admin/modules-policy', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ modulesPolicy: next }),
@@ -688,7 +695,7 @@ export default function ConfigurationPage() {
             <h2 className="text-base font-semibold text-gray-800 mb-1">{t.modulesPolicy.sectionTitle}</h2>
             <p className="text-sm text-gray-500 mb-4">{t.modulesPolicy.sectionDesc}</p>
             <div className="space-y-3">
-              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }, { key: 'incidents', label: t.features.incidentsTitle }]).map(m => (
+              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }, { key: 'incidents', label: t.features.incidentsTitle }, { key: 'controlePermanent', label: t.features.controlePermanentTitle }]).map(m => (
                 <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
                   <span className="text-sm font-medium text-gray-800">{m.label}</span>
                   <select
@@ -1223,6 +1230,7 @@ export default function ConfigurationPage() {
                 { field: 'derogationsActive' as const, value: derogationsActive, title: t.features.derogationsTitle, desc: t.features.derogationsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.registreRisques === 'FORCE_ON' || modulesPolicy.registreRisques === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreRisques },
                 { field: 'incidentsActive' as const, value: incidentsActive, title: t.features.incidentsTitle, desc: t.features.incidentsDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.incidents === 'FORCE_ON' || modulesPolicy.incidents === 'FORCE_OFF', indent: false, forced: modulesPolicy.incidents },
+                { field: 'controlePermanentActive' as const, value: controlePermanentActive, title: t.features.controlePermanentTitle, desc: t.features.controlePermanentDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.controlePermanent === 'FORCE_ON' || modulesPolicy.controlePermanent === 'FORCE_OFF', indent: false, forced: modulesPolicy.controlePermanent },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'

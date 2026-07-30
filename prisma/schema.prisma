@@ -124,6 +124,7 @@ model Organization {
   riskItems   RiskItem[]
   riskActions RiskAction[]
   incidents   Incident[]
+  controles   Controle[]
 
   @@index([parentId])
   @@index([path])
@@ -152,6 +153,7 @@ model Processus {
 
   riskItems RiskItem[]
   incidents Incident[]
+  controles Controle[]
 
   @@index([organizationId])
   @@index([parentId])
@@ -190,6 +192,7 @@ model RiskItem {
 
   actions   RiskAction[]
   incidents Incident[]
+  controles Controle[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,6 +200,66 @@ model RiskItem {
   @@index([organizationId])
   @@index([processusId])
   @@index([taxonomieCode])
+}
+
+// ─── Module M3 — Contrôle permanent ──────────────────────────────────────────
+// Bibliothèque de contrôles rattachés à la maille (risque / processus), exécutés
+// périodiquement. Niveau 1 = 1ʳᵉ ligne exécute ; niveau 2 = 2ᵉ ligne supervise.
+// Le taux de conformité observé alimente l'efficacité (cf. lib/controle.ts) qui
+// suggère une vraisemblance résiduelle — boucle RCSA, jamais automatique.
+model Controle {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule          String
+  description       String? @db.Text
+  // N1 | N2
+  niveau            String  @default("N1")
+  // MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL
+  periodicite       String  @default("TRIMESTRIEL")
+  responsable       String?
+  // Taille d'échantillon attendue (facultatif).
+  tailleEchantillon Int?
+  actif             Boolean @default(true)
+
+  // Rattachement à la maille : un risque du registre et/ou un processus.
+  riskItemId  String?
+  riskItem    RiskItem?  @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+  processusId String?
+  processus   Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
+
+  executions ControleExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([riskItemId])
+  @@index([processusId])
+  @@index([actif])
+}
+
+// Une exécution de contrôle : résultat, constat et échantillon réellement testé.
+model ControleExecution {
+  id             String   @id @default(cuid())
+  controleId     String
+  controle       Controle @relation(fields: [controleId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  // CONFORME | ANOMALIE | NON_APPLICABLE
+  resultat          String
+  dateRealisation   DateTime
+  constat           String?  @db.Text
+  tailleTestee      Int?
+  anomaliesTrouvees Int?
+  executantId       String
+
+  createdAt DateTime @default(now())
+
+  @@index([controleId])
+  @@index([organizationId])
+  @@index([dateRealisation])
 }
 
 // ─── Module M2 — Incidents & pertes (LDC) ────────────────────────────────────
@@ -893,6 +956,7 @@ model OrganizationConfig {
   // Toggle du module « Registre de risques / Cartographie » (M1).
   registreRisquesActive      Boolean       @default(false)
   incidentsActive            Boolean       @default(false)
+  controlePermanentActive    Boolean       @default(false)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

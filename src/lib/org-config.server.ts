@@ -34,6 +34,7 @@ const CONFIG_SELECT = {
   taxonomieRisques: true,
   registreRisquesActive: true,
   incidentsActive: true,
+  controlePermanentActive: true,
 } as const
 
 /**
@@ -74,6 +75,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       ...cfg,
       registreRisquesActive: resolveModuleActivation(policy.registreRisques, cfg.registreRisquesActive),
       incidentsActive: resolveModuleActivation(policy.incidents, cfg.incidentsActive),
+      controlePermanentActive: resolveModuleActivation(policy.controlePermanent, cfg.controlePermanentActive),
     }
   } catch {
     return cfg

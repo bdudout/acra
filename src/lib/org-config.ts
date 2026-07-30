@@ -47,6 +47,7 @@ export interface RawOrgConfig {
   taxonomieRisques: unknown
   registreRisquesActive: boolean
   incidentsActive?: boolean
+  controlePermanentActive?: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -73,6 +74,7 @@ export interface OrgConfigResolved {
   taxonomieRisques: unknown[]
   registreRisquesActive: boolean
   incidentsActive: boolean
+  controlePermanentActive: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -99,6 +101,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   taxonomieRisques: [],
   registreRisquesActive: false,
   incidentsActive: false,
+  controlePermanentActive: false,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -110,7 +113,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
@@ -168,5 +171,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     taxonomieRisques: pickJson('taxonomieRisques', defaults.taxonomieRisques),
     registreRisquesActive: pickBool('registreRisquesActive', defaults.registreRisquesActive),
     incidentsActive: pickBool('incidentsActive', defaults.incidentsActive),
+    controlePermanentActive: pickBool('controlePermanentActive', defaults.controlePermanentActive),
   }
 }
