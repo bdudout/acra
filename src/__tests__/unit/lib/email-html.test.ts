@@ -60,4 +60,20 @@ describe('emailLayout', () => {
     const html = emailLayout({ heading: 'H', itemsTitle: 'À traiter', items: [{ label: 'x' }] })
     expect(html).toContain('À traiter')
   })
+
+  it('bloc code : monospace, valeur et libellé présents', () => {
+    const html = emailLayout({ heading: 'H', code: { value: 'A1B2C3', label: 'Votre code' } })
+    expect(html).toContain('A1B2C3')
+    expect(html).toContain('Votre code')
+    expect(html).toContain('monospace')
+    expect(html).toContain('letter-spacing')
+  })
+  it('bloc code : valeur échappée (secret contenant du HTML)', () => {
+    const html = emailLayout({ heading: 'H', code: { value: '<b>pw&1</b>' } })
+    expect(html.includes('<b>pw')).toBe(false)
+    expect(html).toContain('&lt;b&gt;pw&amp;1&lt;/b&gt;')
+  })
+  it('bloc code absent si non fourni', () => {
+    expect(emailLayout({ heading: 'H' }).includes('letter-spacing')).toBe(false)
+  })
 })

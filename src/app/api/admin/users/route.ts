@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { generateCompliantPassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
 import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
+import { emailLayout } from '@/lib/email-html'
 import { getAnalyseScope } from '@/lib/org-context.server'
 
 /**
@@ -212,12 +213,12 @@ export async function PATCH(req: NextRequest) {
       to: target.email,
       subject: 'ACRA — Réinitialisation de votre mot de passe',
       text: `Votre mot de passe ACRA a été réinitialisé par un administrateur.\n\nMot de passe temporaire : ${tempPassword}\n\nVous devrez le changer à votre prochaine connexion.`,
-      html: `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
-        <h2 style="color:#4f46e5">Réinitialisation de votre mot de passe</h2>
-        <p>Votre mot de passe ACRA a été réinitialisé par un administrateur.</p>
-        <p>Mot de passe temporaire : <strong style="font-family:monospace;font-size:16px">${tempPassword}</strong></p>
-        <p style="color:#6b7280;font-size:12px">Vous devrez le changer à votre prochaine connexion.</p>
-      </div>`,
+      html: emailLayout({
+        heading: 'Réinitialisation de votre mot de passe',
+        paragraphs: ['Votre mot de passe ACRA a été réinitialisé par un administrateur.'],
+        code: { value: tempPassword, label: 'Mot de passe temporaire :' },
+        footer: 'Vous devrez le changer à votre prochaine connexion.',
+      }),
     })
 
     return NextResponse.json({ user: updated, tempPassword, emailed: mail.ok })

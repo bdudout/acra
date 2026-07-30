@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
+import { emailLayout } from '@/lib/email-html'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -22,11 +23,12 @@ export async function POST(req: NextRequest) {
     to,
     subject: 'ACRA — E-mail de test',
     text: 'Cet e-mail confirme que votre configuration SMTP ACRA fonctionne.',
-    html: `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
-      <h2 style="color:#4f46e5">ACRA — E-mail de test ✅</h2>
-      <p>Cet e-mail confirme que votre configuration SMTP fonctionne correctement.</p>
-      <p style="color:#6b7280;font-size:12px">Envoyé depuis le panneau d'administration ACRA.</p>
-    </div>`,
+    html: emailLayout({
+      heading: 'ACRA — E-mail de test',
+      tone: 'success',
+      paragraphs: ['Cet e-mail confirme que votre configuration SMTP fonctionne correctement.'],
+      footer: "Envoyé depuis le panneau d'administration ACRA.",
+    }),
   })
 
   // Enregistre le statut du test (garde-fou MFA e-mail + vérification d'e-mail)

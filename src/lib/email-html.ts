@@ -26,6 +26,9 @@ const TONE_COLOR: Record<Tone, string> = {
 export interface EmailStat { label: string; value: string | number; tone?: Tone }
 export interface EmailItem { label: string; detail?: string; tone?: Tone }
 
+/** Valeur à mettre en évidence en monospace (code MFA, mot de passe temporaire…). */
+export interface EmailCode { value: string; label?: string }
+
 export interface EmailLayoutInput {
   /** Titre affiché en tête (échappé automatiquement). */
   heading: string
@@ -33,6 +36,8 @@ export interface EmailLayoutInput {
   paragraphs?: string[]
   /** Compteurs présentés en ligne. */
   stats?: EmailStat[]
+  /** Bloc de code/secret mis en évidence. */
+  code?: EmailCode
   /** Liste à puces (éléments à traiter). */
   items?: EmailItem[]
   /** Libellé de la liste. */
@@ -75,6 +80,18 @@ export function emailLayout(input: EmailLayoutInput): string {
       )
     }
     parts.push(`</tr></table>`)
+  }
+
+  if (input.code) {
+    if (input.code.label) {
+      parts.push(`<p style="margin:0 0 6px;font-size:13px">${escapeHtml(input.code.label)}</p>`)
+    }
+    parts.push(
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px">`,
+      `<tr><td style="background-color:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:12px 18px;font-family:'Courier New',Courier,monospace;font-size:20px;font-weight:bold;letter-spacing:2px;color:#111827">`,
+      escapeHtml(input.code.value),
+      `</td></tr></table>`,
+    )
   }
 
   if (input.items?.length) {

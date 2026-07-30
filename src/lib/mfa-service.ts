@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { generateCode, hashCode, verifyCode, isExpired, MFA_TTL_MS, MFA_MAX_ATTEMPTS } from '@/lib/mfa'
 import { sendSms } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
+import { emailLayout } from '@/lib/email-html'
 
 export type MfaChannel = 'SMS' | 'EMAIL'
 
@@ -60,11 +61,11 @@ export async function createAndSendChallenge(opts: {
         to: destination,
         subject: `${appName} — Code de vérification`,
         text,
-        html: `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
-          <h2 style="color:#4f46e5">Code de vérification</h2>
-          <p>Votre code : <strong style="font-size:20px;font-family:monospace;letter-spacing:2px">${code}</strong></p>
-          <p style="color:#6b7280;font-size:12px">Valable 5 minutes. Ne le partagez avec personne.</p>
-        </div>`,
+        html: emailLayout({
+          heading: 'Code de vérification',
+          code: { value: code, label: 'Votre code :' },
+          footer: 'Valable 5 minutes. Ne le partagez avec personne.',
+        }),
       })
 
   if (!sent.ok) {
