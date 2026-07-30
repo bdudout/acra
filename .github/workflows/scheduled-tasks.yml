@@ -1,0 +1,127 @@
+name: Scheduled tasks
+
+# ─── Planificateur des tâches périodiques (/api/cron/*) — variante CLOUD ──────
+#
+# Alternative au service « scheduler » de docker-compose.yml, destinée aux
+# déploiements où l'on ne fait pas tourner de sidecar (PaaS, serverless…).
+# Ce workflow appelle les endpoints planifiés de l'instance DÉPLOYÉE.
+#
+# Pré-requis — deux secrets de dépôt (Settings → Secrets and variables → Actions) :
+#   • ACRA_BASE_URL : URL publique de l'instance, sans slash final
+#                     (ex. https://acra.mondomaine.fr)
+#   • CRON_SECRET   : le même jeton que celui configuré côté application
+# Tant que ces secrets sont absents, le workflow se termine en succès sans rien
+# appeler (les forks du dépôt ne subissent donc aucun échec).
+#
+# ⚠️ N'activer QU'UNE seule variante : soit ce workflow, soit le service
+# « scheduler » du compose. Les endpoints sont idempotents, mais un double
+# déclenchement enverrait le digest deux fois.
+#
+# Note : la cadence de GitHub Actions est « best effort » — un déclenchement peut
+# être décalé de plusieurs minutes (voire ignoré si le dépôt est inactif depuis
+# 60 jours). Pour une exigence de ponctualité stricte, préférer le sidecar.
+
+on:
+  schedule:
+    # Heures en UTC. Aligné sur scripts/scheduler.sh.
+    - cron: '0 2 * * *'   # quotidien 02:00 — snapshots de conformité (mode AUTO)
+    - cron: '0 7 * * *'   # quotidien 07:00 — alerte d'échéance des dérogations
+    - cron: '0 8 1 * *'   # le 1er du mois 08:00 — synthèse des dérogations
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Tâche à déclencher manuellement'
+        required: true
+        type: choice
+        options:
+          - conformite-snapshots
+          - derogations-expiry
+          - derogations-digest
+
+# Le workflow n'écrit rien dans le dépôt : aucun privilège nécessaire.
+permissions: {}
+
+concurrency:
+  group: scheduled-tasks-${{ github.event.schedule || inputs.task }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Déclencher la tâche planifiée
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Détermine la tâche : depuis l'expression cron déclenchée, ou l'entrée manuelle.
+      - name: Résoudre la tâche
+        id: task
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          MANUAL: ${{ inputs.task }}
+        run: |
+          case "${SCHEDULE:-}" in
+            '0 2 * * *')  TASK=conformite-snapshots ;;
+            '0 7 * * *')  TASK=derogations-expiry ;;
+            '0 8 1 * *')  TASK=derogations-digest ;;
+            *)            TASK="${MANUAL:-}" ;;
+          esac
+          if [ -z "$TASK" ]; then
+            echo "::error::Impossible de déterminer la tâche à exécuter."
+            exit 1
+          fi
+          echo "task=$TASK" >> "$GITHUB_OUTPUT"
+          echo "Tâche : $TASK"
+
+      # Les secrets ne sont pas accessibles dans un `if:` de job → on teste ici.
+      - name: Vérifier la configuration
+        id: cfg
+        env:
+          BASE_URL: ${{ secrets.ACRA_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::notice::ACRA_BASE_URL ou CRON_SECRET absent — planification désactivée, rien à faire."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Appeler l'endpoint planifié
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          BASE_URL: ${{ secrets.ACRA_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TASK: ${{ steps.task.outputs.task }}
+        run: |
+          set -u
+          url="${BASE_URL%/}/api/cron/${TASK}"
+          # Le corps de réponse ne contient aucune donnée métier (compteurs seuls).
+          # Le jeton passe par un en-tête, jamais par l'URL (pas de fuite en logs).
+          # 3 tentatives : absorbe un redémarrage applicatif ou un cold start.
+          for attempt in 1 2 3; do
+            body="$(mktemp)"
+            # En cas d'échec réseau, curl écrit déjà « 000 » via -w : ne pas le
+            # dupliquer avec un `|| echo 000` (donnait « HTTP 000000»).
+            code="$(curl -sS --max-time 120 -o "$body" -w '%{http_code}' \
+              -X POST -H "Authorization: Bearer ${CRON_SECRET}" "$url")" || true
+            [ -n "$code" ] || code=000
+            echo "Tentative ${attempt} — HTTP ${code}"
+            case "$code" in
+              2*)
+                echo "Réponse : $(cat "$body")"
+                echo "::notice::${TASK} exécutée (HTTP ${code})."
+                exit 0 ;;
+              401|403)
+                echo "::error::Authentification refusée (HTTP ${code}) — CRON_SECRET ne correspond pas à celui de l'instance."
+                exit 1 ;;
+              503)
+                echo "::error::Endpoints cron désactivés côté application (CRON_SECRET absent de son environnement)."
+                exit 1 ;;
+              404)
+                echo "::error::Endpoint introuvable (${url}) — vérifier ACRA_BASE_URL et la version déployée."
+                exit 1 ;;
+            esac
+            [ "$attempt" -lt 3 ] && sleep 20
+          done
+          echo "::error::${TASK} en échec après 3 tentatives (dernier code HTTP ${code})."
+          exit 1

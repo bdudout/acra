@@ -268,8 +268,29 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 > Sans `CRON_SECRET`, les endpoints répondent `503` et le `scheduler` reste inactif
 > (aucune boucle de redémarrage). Les traitements sont **idempotents** : un double
 > déclenchement éventuel est sans effet de bord. Pour un planificateur externe
-> (cron système, GitHub Actions…), appelez les mêmes URL avec l'en-tête
+> (cron système…), appelez les mêmes URL avec l'en-tête
 > `Authorization: Bearer $CRON_SECRET`.
+
+##### Variante cloud : GitHub Actions
+
+Pour un déploiement sans sidecar (PaaS, serverless…), le workflow
+[`.github/workflows/scheduled-tasks.yml`](.github/workflows/scheduled-tasks.yml)
+assure les mêmes cadences en appelant l'instance déployée. Deux secrets de dépôt
+suffisent (*Settings → Secrets and variables → Actions*) :
+
+| Secret | Valeur |
+|--------|--------|
+| `ACRA_BASE_URL` | URL publique de l'instance, sans slash final (ex. `https://acra.mondomaine.fr`) |
+| `CRON_SECRET` | le même jeton que celui configuré côté application |
+
+Tant que ces secrets sont absents, le workflow se termine en succès sans rien
+appeler. Chaque tâche est aussi déclenchable à la main (*Actions → Scheduled
+tasks → Run workflow*), ce qui permet de valider la configuration immédiatement.
+
+> **N'activez qu'une seule variante** — soit le service `scheduler`, soit ce
+> workflow : sinon le digest mensuel partirait deux fois. La cadence de GitHub
+> Actions est « best effort » (déclenchement parfois décalé, et suspendu après
+> 60 jours d'inactivité du dépôt) ; pour une ponctualité stricte, gardez le sidecar.
 
 Vérifier que tout est opérationnel :
 

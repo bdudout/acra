@@ -92,6 +92,10 @@ services:
   # avec le CRON_SECRET ; aucune exposition réseau. Inactif si CRON_SECRET absent.
   # Cadence (cf. scripts/scheduler.sh) : snapshots 02:00 · derogations-expiry
   # 07:00 · derogations-digest le 1er à 08:00. Le fuseau suit TZ (défaut UTC).
+  #
+  # ⚠️ Variante CLOUD alternative : .github/workflows/scheduled-tasks.yml (appelle
+  # l'instance déployée depuis GitHub Actions). N'activer QUE l'UNE des deux, sinon
+  # le digest mensuel partirait deux fois.
   # ---------------------------------------------------------------------------
   scheduler:
     image: curlimages/curl:8.11.1
