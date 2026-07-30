@@ -56,3 +56,36 @@ describe('derogationDigestEmail', () => {
     expect(e.text).toContain('Bientôt expirées : 2')
   })
 })
+
+describe('versions HTML (multipart)', () => {
+  it('expiry : html non vide, table inline, texte conservé en repli', () => {
+    const e = derogationExpiryEmail('fr', { intitule: 'Accès legacy', jours: 10 })
+    expect(e.html).toContain('<table')
+    expect(e.html).toContain('Accès legacy')
+    expect(e.html).toContain('expire dans 10 j')
+    expect(e.text).toContain('expire dans 10 j')   // repli texte intact
+    expect(e.html.includes('<style')).toBe(false)
+  })
+  it('expiry : ton rouge si déjà expirée, ambre sinon', () => {
+    expect(derogationExpiryEmail('fr', { intitule: 'X', jours: -2 }).html).toContain('#DC2626')
+    expect(derogationExpiryEmail('fr', { intitule: 'X', jours: 5 }).html).toContain('#D97706')
+  })
+  it('expiry : intitulé hostile échappé (pas d\'injection HTML)', () => {
+    const e = derogationExpiryEmail('fr', { intitule: '<img src=x onerror=alert(1)>', jours: 3 })
+    expect(e.html.includes('<img')).toBe(false)
+    expect(e.html).toContain('&lt;img')
+  })
+  it('digest : compteurs et lignes présents dans le html, localisés', () => {
+    const e = derogationDigestEmail('en', { orgNom: 'StarBank', active: 3, expireBientot: 2, expiree: 1, items: [{ intitule: 'Legacy access', joursRestants: -2 }] })
+    expect(e.html).toContain('Waivers summary')
+    expect(e.html).toContain('StarBank')
+    expect(e.html).toContain('Expiring soon')
+    expect(e.html).toContain('Legacy access')
+    expect(e.html).toContain('expired 2 day(s) ago')
+  })
+  it('digest : nom d\'organisation hostile échappé', () => {
+    const e = derogationDigestEmail('fr', { orgNom: '<script>x</script>', active: 0, expireBientot: 1, expiree: 0, items: [] })
+    expect(e.html.includes('<script>')).toBe(false)
+    expect(e.html).toContain('&lt;script&gt;')
+  })
+})

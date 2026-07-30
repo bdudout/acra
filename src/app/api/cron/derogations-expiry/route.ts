@@ -66,14 +66,12 @@ export async function POST(req: NextRequest) {
 
     const jours = joursAvantExpiration(d.dateFin ?? null, now)
     for (const r of byEmail.values()) {
-      const { subject, text } = derogationExpiryEmail(r.locale, { intitule: d.intitule, jours })
-      const res = await sendEmail({ to: r.email, subject, text })
+      const { subject, text, html } = derogationExpiryEmail(r.locale, { intitule: d.intitule, jours })
+      const res = await sendEmail({ to: r.email, subject, text, html })
       if (res.ok) emailsSent++; else emailsSkipped++
     }
-    const emails = byEmail
-
     await prisma.derogation.update({ where: { id: d.id }, data: { alerteeLe: now } })
-    await auditLog('DEROGATION_EXPIRING', { organizationId: d.organizationId, details: { derogationId: d.id, jours, recipients: emails.size } })
+    await auditLog('DEROGATION_EXPIRING', { organizationId: d.organizationId, details: { derogationId: d.id, jours, recipients: byEmail.size } })
     alerted++
   }
 

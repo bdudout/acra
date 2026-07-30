@@ -10,6 +10,7 @@ import { rootPath } from '@/lib/org-context'
 import { DEMO_DEFAULTS, isDemoMode, isOrgExpired, decideInstanceMode, resolveDemoConfig, needsPurgeWarning, daysUntilPurge, type DemoConfig, type InstanceMode } from '@/lib/demo'
 import { auditLog } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
+import { escapeHtml } from '@/lib/email-html'
 import { resolveScaleConfig } from '@/lib/risk-scale'
 
 /**
@@ -204,7 +205,7 @@ function buildWarningEmail(to: string, orgName: string, days: number): { to: str
   const html =
     `<div style="font-family:sans-serif;font-size:14px;color:#1f2937">
       <h2 style="color:#4f46e5">Votre espace de démonstration expire bientôt</h2>
-      <p>Votre espace « <strong>${orgName}</strong> » sera automatiquement supprimé dans <strong>${j}</strong> faute d'activité récente.</p>
+      <p>Votre espace « <strong>${escapeHtml(orgName)}</strong> » sera automatiquement supprimé dans <strong>${j}</strong> faute d'activité récente.</p>
       <p>Pour le conserver, <strong>reconnectez-vous</strong> (le compte à rebours repart). Vous pouvez aussi exporter vos données de test depuis le bandeau de démonstration.</p>
       <p style="color:#6b7280;font-size:12px">— L'équipe ACRA</p>
     </div>`

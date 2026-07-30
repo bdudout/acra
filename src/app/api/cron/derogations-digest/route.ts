@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
 
     orgsNotified++
     for (const [to, locale] of byEmail) {
-      const { subject, text } = derogationDigestEmail(locale, { orgNom, active: digest.active, expireBientot: digest.expireBientot, expiree: digest.expiree, items })
-      const res = await sendEmail({ to, subject, text })
+      const { subject, text, html } = derogationDigestEmail(locale, { orgNom, active: digest.active, expireBientot: digest.expireBientot, expiree: digest.expiree, items })
+      const res = await sendEmail({ to, subject, text, html })
       if (res.ok) emailsSent++; else emailsSkipped++
     }
   }
