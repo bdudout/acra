@@ -9,10 +9,13 @@ import { type UserRole } from '@/lib/permissions'
 // (politique d'instance déjà appliquée par getOrgConfig). Sert à la navigation.
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ registreRisquesActive: false })
+  if (!session?.user) return NextResponse.json({ registreRisquesActive: false, incidentsActive: false })
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
   const cfg = await getOrgConfig(scope.activeOrgId)
-  return NextResponse.json({ registreRisquesActive: cfg.registreRisquesActive })
+  return NextResponse.json({
+    registreRisquesActive: cfg.registreRisquesActive,
+    incidentsActive: cfg.incidentsActive,
+  })
 }

@@ -46,6 +46,7 @@ export interface RawOrgConfig {
   derogationSortCatalogue: boolean
   taxonomieRisques: unknown
   registreRisquesActive: boolean
+  incidentsActive?: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -71,6 +72,7 @@ export interface OrgConfigResolved {
   derogationSortCatalogue: boolean
   taxonomieRisques: unknown[]
   registreRisquesActive: boolean
+  incidentsActive: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -96,6 +98,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationSortCatalogue: true,
   taxonomieRisques: [],
   registreRisquesActive: false,
+  incidentsActive: false,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -107,7 +110,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
@@ -164,5 +167,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),
     taxonomieRisques: pickJson('taxonomieRisques', defaults.taxonomieRisques),
     registreRisquesActive: pickBool('registreRisquesActive', defaults.registreRisquesActive),
+    incidentsActive: pickBool('incidentsActive', defaults.incidentsActive),
   }
 }

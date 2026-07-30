@@ -123,6 +123,7 @@ model Organization {
   processus   Processus[]
   riskItems   RiskItem[]
   riskActions RiskAction[]
+  incidents   Incident[]
 
   @@index([parentId])
   @@index([path])
@@ -150,6 +151,7 @@ model Processus {
   updatedAt    DateTime @updatedAt
 
   riskItems RiskItem[]
+  incidents Incident[]
 
   @@index([organizationId])
   @@index([parentId])
@@ -186,12 +188,65 @@ model RiskItem {
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
 
-  actions RiskAction[]
+  actions   RiskAction[]
+  incidents Incident[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([processusId])
+  @@index([taxonomieCode])
+}
+
+// ─── Module M2 — Incidents & pertes (LDC) ────────────────────────────────────
+// Déclaré par la 1ʳᵉ ligne (formulaire court, LECTEUR inclus), qualifié par la
+// 2ᵉ ligne (taxonomie, coût réel, rattachement au registre) puis clôturé.
+// Pertes en logique LDC bancaire : brut, récupérations, net = brut − récup
+// (calculé à la lecture, cf. lib/incident.ts — jamais stocké dérivé).
+model Incident {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  description String? @db.Text
+
+  // Chronologie : survenance (fait), détection, puis déclaration (= createdAt).
+  dateSurvenance DateTime?
+  dateDetection  DateTime?
+
+  // Maille, identique au registre : catégorie × processus × entité.
+  taxonomieCode String?
+  processusId   String?
+  processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
+  entite        String?
+
+  // Impact ressenti à la déclaration (échelle courte 1-4 : on signale, on ne cote pas).
+  impactEstime Int?
+
+  // Pertes (LDC) — montants en euros.
+  montantBrut   Decimal? @db.Decimal(14, 2)
+  recuperations Decimal? @db.Decimal(14, 2)
+
+  // Rattachement au registre canonique (boucle incident → risque).
+  riskItemId String?
+  riskItem   RiskItem? @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+
+  // Cycle de vie : DECLARE → QUALIFIE → CLOTURE (ou REJETE).
+  statut             String    @default("DECLARE")
+  declarantId        String
+  qualifiePar        String?
+  qualifieLe         DateTime?
+  clotureLe          DateTime?
+  clotureCommentaire String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([statut])
+  @@index([riskItemId])
   @@index([processusId])
   @@index([taxonomieCode])
 }
@@ -837,6 +892,7 @@ model OrganizationConfig {
   taxonomieRisques           Json          @default("[]")
   // Toggle du module « Registre de risques / Cartographie » (M1).
   registreRisquesActive      Boolean       @default(false)
+  incidentsActive            Boolean       @default(false)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

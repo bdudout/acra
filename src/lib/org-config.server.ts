@@ -33,6 +33,7 @@ const CONFIG_SELECT = {
   derogationSortCatalogue: true,
   taxonomieRisques: true,
   registreRisquesActive: true,
+  incidentsActive: true,
 } as const
 
 /**
@@ -69,7 +70,11 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       where: { id: 'global' }, select: { modulesPolicy: true },
     })
     const policy = sanitizeModulesPolicy(inst?.modulesPolicy)
-    return { ...cfg, registreRisquesActive: resolveModuleActivation(policy.registreRisques, cfg.registreRisquesActive) }
+    return {
+      ...cfg,
+      registreRisquesActive: resolveModuleActivation(policy.registreRisques, cfg.registreRisquesActive),
+      incidentsActive: resolveModuleActivation(policy.incidents, cfg.incidentsActive),
+    }
   } catch {
     return cfg
   }

@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -44,10 +44,11 @@ export default function Navbar() {
 
   // Modules GRC actifs (état effectif) → affiche le groupe de navigation dédié.
   const [registreActif, setRegistreActif] = useState(false)
+  const [incidentsActif, setIncidentsActif] = useState(false)
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setRegistreActif(Boolean(d.registreRisquesActive)) })
+      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)) } })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -282,6 +283,18 @@ export default function Navbar() {
                   {derogPending}
                 </span>
               )}
+            </Link>
+          )}
+
+          {/* Module Incidents — la DÉCLARATION est ouverte à tous les rôles (1ʳᵉ ligne). */}
+          {incidentsActif && (
+            <Link
+              href="/incidents"
+              className={`${navClass(pathname === '/incidents')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/incidents' ? 'page' : undefined}
+            >
+              <Siren size={16} aria-hidden="true" />
+              <span>{t.nav.incidents}</span>
             </Link>
           )}
 
