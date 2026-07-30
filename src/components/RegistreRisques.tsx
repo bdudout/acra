@@ -14,6 +14,7 @@ interface Risk {
   graviteResiduelle: number | null; vraisemblanceResiduelle: number | null
   niveauInherent: number | null; niveauResiduel: number | null
   actionsSummary: ActionsSummary
+  calibration: { occurrences: number; perteNetteTotale: number; vraisemblanceSuggeree: number | null } | null
 }
 type Proc = { id: string; nom: string }
 type Form = {
@@ -92,6 +93,24 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
       gr: x.graviteResiduelle?.toString() ?? '', vr: x.vraisemblanceResiduelle?.toString() ?? '',
     })
   }
+  // Applique la vraisemblance suggérée par la fréquence d'incidents observée.
+  // Décision explicite du risk manager : rien n'est appliqué automatiquement.
+  async function appliquerSuggestion(x: Risk) {
+    const v = x.calibration?.vraisemblanceSuggeree
+    if (v == null) return
+    if (!confirm(r.calibration.confirm.replace('{v}', String(v)))) return
+    await fetch(`/api/risk-items/${x.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intitule: x.intitule, taxonomieCode: x.taxonomieCode, processusId: x.processusId,
+        entite: x.entite, proprietaire: x.proprietaire, statut: x.statut,
+        graviteInherente: x.graviteInherente, vraisemblanceInherente: x.vraisemblanceInherente,
+        graviteResiduelle: x.graviteResiduelle, vraisemblanceResiduelle: v,
+      }),
+    })
+    reload()
+  }
+
   async function remove(id: string) {
     if (!confirm(r.confirmDelete)) return
     await fetch(`/api/risk-items/${id}`, { method: 'DELETE' }); reload()
@@ -168,7 +187,22 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{taxoLabel(x.taxonomieCode)}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{x.processusNom ?? '—'}</td>
                   <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauInherent)}`}>{x.niveauInherent ?? '—'}</span></td>
-                  <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauResiduel)}`}>{x.niveauResiduel ?? '—'}</span></td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauResiduel)}`}>{x.niveauResiduel ?? '—'}</span>
+                    {x.calibration && x.calibration.vraisemblanceSuggeree != null && x.calibration.vraisemblanceSuggeree !== x.vraisemblanceResiduelle && (
+                      <button
+                        onClick={() => appliquerSuggestion(x)}
+                        title={r.calibration.hint
+                          .replace('{n}', String(x.calibration.occurrences))
+                          .replace('{v}', String(x.calibration.vraisemblanceSuggeree))}
+                        className="block mt-1 text-[10px] text-ebios-600 hover:underline whitespace-nowrap"
+                      >
+                        {r.calibration.badge
+                          .replace('{n}', String(x.calibration.occurrences))
+                          .replace('{v}', String(x.calibration.vraisemblanceSuggeree))}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{(r.statuts as Record<string, string>)[x.statut] ?? x.statut}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => setExpandedId(id => id === x.id ? null : x.id)} className="inline-flex items-center gap-1.5 text-xs">

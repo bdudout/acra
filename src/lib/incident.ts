@@ -171,6 +171,10 @@ export interface RiskCalibration {
  * `fenetreMois`. Barème (annualisé) : <1/an → 1 ; 1 → 2 ; 2-3 → 3 ; 4-11 → 4 ;
  * ≥12 → 5. C'est une SUGGESTION affichée au risk manager, jamais appliquée
  * d'office (décision produit : l'humain tranche).
+ *
+ * La suggestion cible la vraisemblance RÉSIDUELLE : un incident survenu l'a été
+ * MALGRÉ les contrôles en place, la fréquence observée décrit donc l'exposition
+ * actuelle, pas l'exposition brute.
  */
 export function suggestCalibration(incidents: IncidentLite[], riskItemId: string, fenetreMois = 12): RiskCalibration {
   const lies = incidents.filter(i => i.riskItemId === riskItemId)
@@ -182,4 +186,61 @@ export function suggestCalibration(incidents: IncidentLite[], riskItemId: string
   const parAn = occurrences * (12 / Math.max(1, fenetreMois))
   const vraisemblanceSuggeree = parAn >= 12 ? 5 : parAn >= 4 ? 4 : parAn >= 2 ? 3 : parAn >= 1 ? 2 : 1
   return { occurrences, perteNetteTotale: Math.round(perteNetteTotale * 100) / 100, vraisemblanceSuggeree }
+}
+
+// ─── Promotion d'un incident orphelin en risque du registre ──────────────────
+
+export interface PromotableIncident {
+  id: string
+  intitule: string
+  description: string | null
+  taxonomieCode: string | null
+  processusId: string | null
+  entite: string | null
+  impactEstime: number | null
+  montantBrut: number | null
+  recuperations: number | null
+  riskItemId: string | null
+}
+
+export interface PromotedRisk {
+  intitule: string
+  description: string | null
+  taxonomieCode: string | null
+  processusId: string | null
+  entite: string | null
+  graviteResiduelle: number | null
+  vraisemblanceResiduelle: number | null
+  statut: string
+  provenance: 'INCIDENT'
+  sourceType: 'incident'
+  sourceId: string
+}
+
+/** Vrai si l'incident peut être promu : pas déjà rattaché à un risque. */
+export function estPromouvable(i: { riskItemId: string | null }): boolean {
+  return !i.riskItemId
+}
+
+/**
+ * Convertit un incident orphelin en risque du registre. L'impact ressenti
+ * (échelle 1-4) sert de gravité résiduelle de départ, ramené sur l'échelle 1-5
+ * du registre ; la vraisemblance résiduelle démarre à 1 (une occurrence connue),
+ * à affiner ensuite par `suggestCalibration`. Le risque reste tracé vers son
+ * incident d'origine (provenance INCIDENT).
+ */
+export function promoteToRisk(i: PromotableIncident): PromotedRisk {
+  return {
+    intitule: i.intitule,
+    description: i.description,
+    taxonomieCode: i.taxonomieCode,
+    processusId: i.processusId,
+    entite: i.entite,
+    graviteResiduelle: i.impactEstime == null ? null : Math.min(5, Math.max(1, i.impactEstime)),
+    vraisemblanceResiduelle: 1,
+    statut: 'EVALUE',
+    provenance: 'INCIDENT',
+    sourceType: 'incident',
+    sourceId: i.id,
+  }
 }

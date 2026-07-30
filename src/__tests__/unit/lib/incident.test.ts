@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection,
   estTerminal, transitionAutorisee, qualificationComplete, suggestCalibration,
-  INCIDENT_STATUTS,
+  INCIDENT_STATUTS, estPromouvable, promoteToRisk,
 } from '@/lib/incident'
 
 describe('validateIncidentInput', () => {
@@ -142,5 +142,32 @@ describe('suggestCalibration', () => {
     const r = suggestCalibration([inc('r1', 1000, 200), inc('r1', 500, null), inc('autre', 9999)], 'r1')
     expect(r.occurrences).toBe(2)
     expect(r.perteNetteTotale).toBe(1300)
+  })
+})
+
+describe('promotion en risque du registre', () => {
+  const base = {
+    id: 'i1', intitule: 'Virement frauduleux', description: 'exfiltration RIB',
+    taxonomieCode: 'BALE_2', processusId: 'p1', entite: 'DAF',
+    impactEstime: 3, montantBrut: 25000, recuperations: 9000, riskItemId: null,
+  }
+  it('promouvable seulement si orphelin', () => {
+    expect(estPromouvable({ riskItemId: null })).toBe(true)
+    expect(estPromouvable({ riskItemId: 'r1' })).toBe(false)
+  })
+  it('recopie la maille et trace la provenance', () => {
+    const r = promoteToRisk(base)
+    expect(r).toMatchObject({
+      intitule: 'Virement frauduleux', description: 'exfiltration RIB',
+      taxonomieCode: 'BALE_2', processusId: 'p1', entite: 'DAF',
+      statut: 'EVALUE', provenance: 'INCIDENT', sourceType: 'incident', sourceId: 'i1',
+    })
+  })
+  it('impact ressenti → gravité résiduelle, vraisemblance à 1 (une occurrence connue)', () => {
+    expect(promoteToRisk(base).graviteResiduelle).toBe(3)
+    expect(promoteToRisk(base).vraisemblanceResiduelle).toBe(1)
+  })
+  it('sans impact renseigné, la gravité reste nulle', () => {
+    expect(promoteToRisk({ ...base, impactEstime: null }).graviteResiduelle).toBeNull()
   })
 })

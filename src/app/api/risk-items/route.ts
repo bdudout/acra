@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
+import { suggestCalibration, type IncidentLite } from '@/lib/incident'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -32,6 +33,23 @@ export async function GET() {
     orderBy: [{ createdAt: 'desc' }],
     include: { processus: { select: { nom: true } }, actions: { select: { statut: true, echeance: true } } },
   })
+
+  // Boucle M2 : si le module incidents est actif, on joint la fréquence observée
+  // pour proposer une vraisemblance résiduelle (SUGGESTION, jamais appliquée).
+  let incidentsLies: IncidentLite[] = []
+  if (orgConfig.incidentsActive) {
+    const inc = await prisma.incident.findMany({
+      where: { organizationId: orgId, riskItemId: { not: null }, statut: { in: ['QUALIFIE', 'CLOTURE'] } },
+      select: { riskItemId: true, dateSurvenance: true, montantBrut: true, recuperations: true },
+    })
+    incidentsLies = inc.map(i => ({
+      riskItemId: i.riskItemId,
+      dateSurvenance: i.dateSurvenance,
+      montantBrut: i.montantBrut == null ? null : Number(i.montantBrut as unknown as string),
+      recuperations: i.recuperations == null ? null : Number(i.recuperations as unknown as string),
+    }))
+  }
+
   const now = new Date()
   const risks = rows.map(({ actions, processus, ...r }) => ({
     ...r,
@@ -39,6 +57,7 @@ export async function GET() {
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
     actionsSummary: summarizeActions(actions, now),
+    calibration: orgConfig.incidentsActive ? suggestCalibration(incidentsLies, r.id) : null,
   }))
   return NextResponse.json({ risks, active: true })
 }

@@ -121,6 +121,21 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     setQualId(null); reload()
   }
 
+  // Export LDC (le périmètre = tous les incidents de l'organisation active).
+  function exportLdc(format: 'csv' | 'xlsx') {
+    window.location.href = `/api/incidents/export?format=${format}&lang=${locale}`
+  }
+
+  // Promotion d'un incident orphelin en risque du registre (2ᵉ ligne).
+  async function promouvoir(id: string) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/incidents/${id}/promote`, { method: 'POST' })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
+  }
+
   async function supprimer(id: string) {
     if (!confirm(n.confirmDelete)) return
     await fetch(`/api/incidents/${id}`, { method: 'DELETE' }); reload()
@@ -134,7 +149,12 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🚨 {n.title}</h1>
-        {!showDecl && <button onClick={() => { setDecl(EMPTY_DECL); setShowDecl(true) }} className="btn-primary text-sm">{n.declareBtn}</button>}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-gray-500 dark:text-gray-400">{n.exportLdc}</span>
+          <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>
+          <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
+          {!showDecl && <button onClick={() => { setDecl(EMPTY_DECL); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
+        </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{n.subtitle}</p>
 
@@ -224,6 +244,10 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                       ) : (
                         <>
                           <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline mr-2">{n.qualify}</button>
+                          {!i.riskItemId && (
+                            <button onClick={() => promouvoir(i.id)} disabled={busy} title={n.promoteHint}
+                              className="text-xs text-ebios-600 hover:underline mr-2 disabled:opacity-50">{n.promote}</button>
+                          )}
                           <button onClick={() => supprimer(i.id)} className="text-xs text-red-500 hover:underline">{n.delete}</button>
                         </>
                       )}
