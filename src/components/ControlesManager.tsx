@@ -10,7 +10,8 @@ interface Efficacite {
   efficacite: 'FORTE' | 'MOYENNE' | 'FAIBLE' | null
   vraisemblanceSuggeree: number | null
 }
-interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null }
+interface Preuve { nom: string; mime: string; taille: number; dataUrl: string }
+interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null; preuves: Preuve[] }
 interface Controle {
   id: string; intitule: string; description: string | null
   niveau: string; periodicite: string; responsable: string | null
@@ -65,6 +66,19 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
+  const [preuves, setPreuves] = useState<Preuve[]>([])
+
+  // Lit les fichiers choisis en data URL (même stockage que les dérogations).
+  async function chargerPreuves(files: FileList | null) {
+    if (!files) return
+    const lus = await Promise.all(Array.from(files).slice(0, 5).map(f => new Promise<Preuve>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve({ nom: f.name, mime: f.type, taille: f.size, dataUrl: String(reader.result) })
+      reader.onerror = reject
+      reader.readAsDataURL(f)
+    })))
+    setPreuves(p => [...p, ...lus].slice(0, 5))
+  }
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
@@ -119,13 +133,14 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
         resultat: exec.resultat, dateRealisation: exec.dateRealisation || null,
         constat: exec.constat || null, tailleTestee: exec.tailleTestee || null,
         anomaliesTrouvees: exec.anomaliesTrouvees || null,
+        preuves,
       }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     if (data.actionCreee) setFlash(c.actionGeneree)
-    setExec(EMPTY_EXEC); setExecId(null); reload()
+    setExec(EMPTY_EXEC); setPreuves([]); setExecId(null); reload()
   }
 
   async function basculerActif(x: Controle) {
@@ -258,7 +273,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {canExecute && x.actif && (
-                        <button onClick={() => { setExecId(x.id); setExec(EMPTY_EXEC); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
+                        <button onClick={() => { setExecId(x.id); setExec(EMPTY_EXEC); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
                       )}
                       {canDefine && <>
                         <button onClick={() => startEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{c.edit}</button>
@@ -289,6 +304,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${RESULTAT_BADGE[e.resultat]}`}>{lbl(c.resultats, e.resultat)}</span>
                               <span className="text-gray-400">{jour(e.dateRealisation)}</span>
                               {e.constat && <span className="text-gray-600 dark:text-gray-300 truncate">{e.constat}</span>}
+                              {e.preuves?.length > 0 && <span className="text-gray-400">📎 {e.preuves.length}</span>}
                             </li>
                           ))}
                         </ul>
@@ -319,6 +335,21 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
                           </label>
                         </div>
                         <textarea value={exec.constat} onChange={e => setExec(f => ({ ...f, constat: e.target.value }))} placeholder={c.constatPlaceholder} rows={2} className={`${inp} w-full`} />
+                        <div>
+                          <label className="text-xs text-gray-500 dark:text-gray-400">{c.preuves}
+                            <input type="file" multiple onChange={e => chargerPreuves(e.target.files)} className={`${inp} block mt-1 w-full`} />
+                          </label>
+                          {preuves.length > 0 && (
+                            <ul className="mt-1 space-y-0.5">
+                              {preuves.map((p, i) => (
+                                <li key={i} className="text-xs text-gray-500 flex items-center gap-2">
+                                  <span className="truncate">{p.nom}</span>
+                                  <button onClick={() => setPreuves(list => list.filter((_, j) => j !== i))} className="text-red-500 hover:underline">{c.retirer}</button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                         <div className="flex gap-2">
                           <button onClick={() => enregistrerExec(x)} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{c.save}</button>
                           <button onClick={() => { setExecId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{c.cancel}</button>

@@ -262,6 +262,7 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 | Tâche | Endpoint | Cadence |
 |-------|----------|---------|
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
+| Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
 | Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
 | Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
 

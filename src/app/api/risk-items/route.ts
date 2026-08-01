@@ -8,6 +8,7 @@ import { type UserRole } from '@/lib/permissions'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
 import { suggestCalibration, type IncidentLite } from '@/lib/incident'
+import { evaluerEfficacite } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -50,6 +51,22 @@ export async function GET() {
     }))
   }
 
+  // Boucle M3 : efficacité des contrôles rattachés au risque → suggestion de
+  // vraisemblance résiduelle (les contrôles inactifs ne comptent pas).
+  const execsParRisque = new Map<string, { resultat: string; dateRealisation: Date }[]>()
+  if (orgConfig.controlePermanentActive) {
+    const ctrls = await prisma.controle.findMany({
+      where: { organizationId: orgId, actif: true, riskItemId: { not: null } },
+      select: { riskItemId: true, executions: { select: { resultat: true, dateRealisation: true } } },
+    })
+    for (const c of ctrls) {
+      if (!c.riskItemId) continue
+      const arr = execsParRisque.get(c.riskItemId) ?? []
+      arr.push(...c.executions)
+      execsParRisque.set(c.riskItemId, arr)
+    }
+  }
+
   const now = new Date()
   const risks = rows.map(({ actions, processus, ...r }) => ({
     ...r,
@@ -58,6 +75,7 @@ export async function GET() {
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
     actionsSummary: summarizeActions(actions, now),
     calibration: orgConfig.incidentsActive ? suggestCalibration(incidentsLies, r.id) : null,
+    controleEfficacite: orgConfig.controlePermanentActive ? evaluerEfficacite(execsParRisque.get(r.id) ?? []) : null,
   }))
   return NextResponse.json({ risks, active: true })
 }

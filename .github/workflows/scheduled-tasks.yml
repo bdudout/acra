@@ -25,6 +25,7 @@ on:
   schedule:
     # Heures en UTC. Aligné sur scripts/scheduler.sh.
     - cron: '0 2 * * *'   # quotidien 02:00 — snapshots de conformité (mode AUTO)
+    - cron: '0 6 * * *'   # quotidien 06:00 — rappel des contrôles à exécuter
     - cron: '0 7 * * *'   # quotidien 07:00 — alerte d'échéance des dérogations
     - cron: '0 8 1 * *'   # le 1er du mois 08:00 — synthèse des dérogations
   workflow_dispatch:
@@ -35,6 +36,7 @@ on:
         type: choice
         options:
           - conformite-snapshots
+          - controles-echeances
           - derogations-expiry
           - derogations-digest
 
@@ -61,6 +63,7 @@ jobs:
         run: |
           case "${SCHEDULE:-}" in
             '0 2 * * *')  TASK=conformite-snapshots ;;
+            '0 6 * * *')  TASK=controles-echeances ;;
             '0 7 * * *')  TASK=derogations-expiry ;;
             '0 8 1 * *')  TASK=derogations-digest ;;
             *)            TASK="${MANUAL:-}" ;;

@@ -910,6 +910,8 @@ export const en: Translations = {
     calibration: {
       badge: '↑ L{v} suggested',
       hint: '{n} linked incident(s) → suggested residual likelihood: {v}',
+      badgeControles: '↑ L{v} (controls)',
+      hintControles: '{n} control execution(s) · {t}% compliant → suggested residual likelihood: {v}',
       confirm: 'Apply residual likelihood {v} based on observed incidents?',
     },
     plan: { none: 'None' },
@@ -1123,6 +1125,8 @@ export const en: Translations = {
     tailleTestee: 'Tested',
     anomaliesTrouvees: 'Anomalies',
     constatPlaceholder: 'Finding (required if anomaly)',
+    preuves: 'Evidence',
+    retirer: 'remove',
     jamaisExecute: 'never executed',
     historique: 'History',
     resume: '{e} assessed execution(s) · {c} compliant · {a} anomaly(ies)',

@@ -7,6 +7,7 @@
 #
 # Cadence :
 #   • conformite-snapshots : quotidien à 02:00 (snapshots auto de conformité)
+#   • controles-echeances   : quotidien à 06:00 (rappel des contrôles à exécuter)
 #   • derogations-expiry    : quotidien à 07:00 (alerte individuelle d'échéance)
 #   • derogations-digest    : mensuel, le 1er à 08:00 (synthèse par organisation)
 #
@@ -39,13 +40,14 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : snapshots 02:00 · derogations-expiry 07:00 · derogations-digest 1er 08:00"
+echo "[scheduler] planning : snapshots 02:00 · controles-echeances 06:00 · derogations-expiry 07:00 · derogations-digest 1er 08:00"
 
-last_snap=""; last_exp=""; last_dig=""
+last_snap=""; last_ctl=""; last_exp=""; last_dig=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
 
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
+  [ "$hour" = "06" ] && [ "$last_ctl"  != "$day" ]   && { hit controles-echeances;  last_ctl="$day"; }
   [ "$hour" = "07" ] && [ "$last_exp"  != "$day" ]   && { hit derogations-expiry;   last_exp="$day"; }
   [ "$hour" = "08" ] && [ "$dom" = "01" ] && [ "$last_dig" != "$month" ] && { hit derogations-digest; last_dig="$month"; }
 

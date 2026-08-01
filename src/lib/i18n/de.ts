@@ -910,6 +910,8 @@ export const de: Translations = {
     calibration: {
       badge: '↑ W{v} vorgeschlagen',
       hint: '{n} verknüpfte Vorfälle → vorgeschlagene Residual-Wahrscheinlichkeit: {v}',
+      badgeControles: '↑ W{v} (Kontrollen)',
+      hintControles: '{n} Kontrollausführung(en) · {t}% konform → vorgeschlagene Residual-Wahrscheinlichkeit: {v}',
       confirm: 'Residual-Wahrscheinlichkeit {v} anhand der Vorfälle übernehmen?',
     },
     plan: { none: 'Keine' },
@@ -1123,6 +1125,8 @@ export const de: Translations = {
     tailleTestee: 'Geprüft',
     anomaliesTrouvees: 'Abweichungen',
     constatPlaceholder: 'Feststellung (bei Abweichung erforderlich)',
+    preuves: 'Nachweise',
+    retirer: 'entfernen',
     jamaisExecute: 'nie ausgeführt',
     historique: 'Historie',
     resume: '{e} bewertete Ausführung(en) · {c} konform · {a} Abweichung(en)',

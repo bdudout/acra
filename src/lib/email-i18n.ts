@@ -113,3 +113,69 @@ export function derogationDigestEmail(locale: string | null | undefined, p: Dige
   })
   return { subject: L.subject(p.orgNom), text, html }
 }
+
+// ─── Rappel d'échéance de contrôle permanent (M3) ────────────────────────────
+
+export interface ControleEcheanceParams {
+  intitule: string
+  echeance: string
+  enRetard: boolean
+  responsable: string | null
+}
+
+const controleLabels: Record<EmailLocale, {
+  subjectDu: (i: string) => string; subjectRetard: (i: string) => string
+  headingDu: string; headingRetard: string
+  due: (d: string) => string; late: (d: string) => string
+  owner: string; cta: string
+}> = {
+  fr: {
+    subjectDu: i => `[ACRA] Contrôle à exécuter : ${i}`, subjectRetard: i => `[ACRA] Contrôle en retard : ${i}`,
+    headingDu: 'Contrôle à exécuter', headingRetard: 'Contrôle en retard',
+    due: d => `échéance au ${d}`, late: d => `échéance dépassée depuis le ${d}`,
+    owner: 'Responsable', cta: 'Enregistrez son exécution dans ACRA.',
+  },
+  en: {
+    subjectDu: i => `[ACRA] Control due: ${i}`, subjectRetard: i => `[ACRA] Control overdue: ${i}`,
+    headingDu: 'Control due', headingRetard: 'Control overdue',
+    due: d => `due on ${d}`, late: d => `overdue since ${d}`,
+    owner: 'Owner', cta: 'Record its execution in ACRA.',
+  },
+  de: {
+    subjectDu: i => `[ACRA] Kontrolle fällig: ${i}`, subjectRetard: i => `[ACRA] Kontrolle überfällig: ${i}`,
+    headingDu: 'Kontrolle fällig', headingRetard: 'Kontrolle überfällig',
+    due: d => `fällig am ${d}`, late: d => `überfällig seit ${d}`,
+    owner: 'Verantwortlich', cta: 'Erfassen Sie die Ausführung in ACRA.',
+  },
+  es: {
+    subjectDu: i => `[ACRA] Control por ejecutar: ${i}`, subjectRetard: i => `[ACRA] Control vencido: ${i}`,
+    headingDu: 'Control por ejecutar', headingRetard: 'Control vencido',
+    due: d => `vence el ${d}`, late: d => `vencido desde el ${d}`,
+    owner: 'Responsable', cta: 'Registre su ejecución en ACRA.',
+  },
+  it: {
+    subjectDu: i => `[ACRA] Controllo da eseguire: ${i}`, subjectRetard: i => `[ACRA] Controllo in ritardo: ${i}`,
+    headingDu: 'Controllo da eseguire', headingRetard: 'Controllo in ritardo',
+    due: d => `scadenza il ${d}`, late: d => `scaduto dal ${d}`,
+    owner: 'Responsabile', cta: "Registra la sua esecuzione in ACRA.",
+  },
+}
+
+/** E-mail de rappel d'échéance d'un contrôle permanent (texte + HTML). */
+export function controleEcheanceEmail(locale: string | null | undefined, p: ControleEcheanceParams): BuiltEmail {
+  const loc = emailLocale(locale)
+  const L = controleLabels[loc]
+  const quand = p.enRetard ? L.late(p.echeance) : L.due(p.echeance)
+  const subject = p.enRetard ? L.subjectRetard(p.intitule) : L.subjectDu(p.intitule)
+  const text = `${p.intitule} — ${quand}.\n`
+    + (p.responsable ? `${L.owner} : ${p.responsable}\n` : '')
+    + L.cta
+  const html = emailLayout({
+    heading: p.enRetard ? L.headingRetard : L.headingDu,
+    tone: p.enRetard ? 'danger' : 'warning',
+    items: [{ label: p.intitule, detail: quand, tone: p.enRetard ? 'danger' : 'warning' }],
+    paragraphs: [p.responsable ? `${L.owner} : ${p.responsable}` : L.cta, ...(p.responsable ? [L.cta] : [])],
+    footer: 'ACRA',
+  })
+  return { subject, text, html }
+}

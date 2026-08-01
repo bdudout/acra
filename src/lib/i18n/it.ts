@@ -910,6 +910,8 @@ export const it: Translations = {
     calibration: {
       badge: '↑ P{v} suggerita',
       hint: '{n} incidente(i) collegati → probabilità residua suggerita: {v}',
+      badgeControles: '↑ P{v} (controlli)',
+      hintControles: '{n} esecuzione(i) di controllo · {t}% conformi → probabilità residua suggerita: {v}',
       confirm: 'Applicare la probabilità residua {v} in base agli incidenti osservati?',
     },
     plan: { none: 'Nessuna' },
@@ -1123,6 +1125,8 @@ export const it: Translations = {
     tailleTestee: 'Testati',
     anomaliesTrouvees: 'Anomalie',
     constatPlaceholder: 'Rilievo (obbligatorio in caso di anomalia)',
+    preuves: 'Evidenze',
+    retirer: 'rimuovi',
     jamaisExecute: 'mai eseguito',
     historique: 'Storico',
     resume: '{e} esecuzione(i) valutate · {c} conformi · {a} anomalia(e)',

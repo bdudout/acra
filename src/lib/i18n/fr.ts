@@ -933,6 +933,8 @@ export const fr = {
     calibration: {
       badge: '↑ V{v} suggérée',
       hint: '{n} incident(s) rattaché(s) → vraisemblance résiduelle suggérée : {v}',
+      badgeControles: '↑ V{v} (contrôles)',
+      hintControles: '{n} exécution(s) de contrôle · {t}% conformes → vraisemblance résiduelle suggérée : {v}',
       confirm: 'Appliquer la vraisemblance résiduelle {v} d\'après les incidents observés ?',
     },
     plan: { none: 'Aucune' },
@@ -1146,6 +1148,8 @@ export const fr = {
     tailleTestee: 'Testés',
     anomaliesTrouvees: 'Anomalies',
     constatPlaceholder: 'Constat (obligatoire en cas d\'anomalie)',
+    preuves: 'Pièces justificatives',
+    retirer: 'retirer',
     jamaisExecute: 'jamais exécuté',
     historique: 'Historique',
     resume: '{e} exécution(s) évaluée(s) · {c} conforme(s) · {a} anomalie(s)',

@@ -231,6 +231,10 @@ model Controle {
 
   executions ControleExecution[]
 
+  // Anti-doublon de l'alerte d'échéance (comme Derogation.alerteeLe) : remis à
+  // null dès qu'une exécution est enregistrée → une alerte par période.
+  alerteeLe DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -253,6 +257,8 @@ model ControleExecution {
   constat           String?  @db.Text
   tailleTestee      Int?
   anomaliesTrouvees Int?
+  // Pièces justificatives en data URL (cf. lib/preuves.ts) : [{nom,mime,taille,dataUrl}]
+  preuves           Json     @default("[]")
   executantId       String
 
   createdAt DateTime @default(now())

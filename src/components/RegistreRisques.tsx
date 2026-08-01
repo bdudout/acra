@@ -15,6 +15,7 @@ interface Risk {
   niveauInherent: number | null; niveauResiduel: number | null
   actionsSummary: ActionsSummary
   calibration: { occurrences: number; perteNetteTotale: number; vraisemblanceSuggeree: number | null } | null
+  controleEfficacite: { evaluees: number; tauxConformite: number | null; efficacite: string | null; vraisemblanceSuggeree: number | null } | null
 }
 type Proc = { id: string; nom: string }
 type Form = {
@@ -95,8 +96,10 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   }
   // Applique la vraisemblance suggérée par la fréquence d'incidents observée.
   // Décision explicite du risk manager : rien n'est appliqué automatiquement.
-  async function appliquerSuggestion(x: Risk) {
-    const v = x.calibration?.vraisemblanceSuggeree
+  async function appliquerSuggestion(x: Risk, source: 'incidents' | 'controles' = 'incidents') {
+    const v = source === 'controles'
+      ? x.controleEfficacite?.vraisemblanceSuggeree
+      : x.calibration?.vraisemblanceSuggeree
     if (v == null) return
     if (!confirm(r.calibration.confirm.replace('{v}', String(v)))) return
     await fetch(`/api/risk-items/${x.id}`, {
@@ -189,6 +192,18 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
                   <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauInherent)}`}>{x.niveauInherent ?? '—'}</span></td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauResiduel)}`}>{x.niveauResiduel ?? '—'}</span>
+                    {x.controleEfficacite && x.controleEfficacite.vraisemblanceSuggeree != null && x.controleEfficacite.evaluees > 0 && x.controleEfficacite.vraisemblanceSuggeree !== x.vraisemblanceResiduelle && (
+                      <button
+                        onClick={() => appliquerSuggestion(x, 'controles')}
+                        title={r.calibration.hintControles
+                          .replace('{n}', String(x.controleEfficacite.evaluees))
+                          .replace('{t}', String(x.controleEfficacite.tauxConformite))
+                          .replace('{v}', String(x.controleEfficacite.vraisemblanceSuggeree))}
+                        className="block mt-1 text-[10px] text-ebios-600 hover:underline whitespace-nowrap"
+                      >
+                        {r.calibration.badgeControles.replace('{v}', String(x.controleEfficacite.vraisemblanceSuggeree))}
+                      </button>
+                    )}
                     {x.calibration && x.calibration.vraisemblanceSuggeree != null && x.calibration.vraisemblanceSuggeree !== x.vraisemblanceResiduelle && (
                       <button
                         onClick={() => appliquerSuggestion(x)}

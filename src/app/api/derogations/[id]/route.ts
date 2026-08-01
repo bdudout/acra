@@ -11,26 +11,10 @@ import {
   type DerogationStatut, type DerogationWorkflow,
 } from '@/lib/derogation'
 import { auditLog, getClientIp, type AuditAction } from '@/lib/logger'
+import { sanitizePreuves } from '@/lib/preuves'
 import { NextRequest, NextResponse } from 'next/server'
 
 type Params = { params: Promise<{ id: string }> }
-
-// Cap des preuves (data URL en base, comme les logos) : 5 max, ~1,4 Mo (≈ 1 Mo binaire) chacune.
-function sanitizePreuves(v: unknown): { nom: string; mime: string; taille: number; dataUrl: string }[] {
-  if (!Array.isArray(v)) return []
-  return v.slice(0, 5).flatMap(p => {
-    if (!p || typeof p !== 'object') return []
-    const o = p as Record<string, unknown>
-    const dataUrl = typeof o.dataUrl === 'string' ? o.dataUrl : ''
-    if (!/^data:/.test(dataUrl) || dataUrl.length > 1_400_000) return []
-    return [{
-      nom: String(o.nom ?? 'preuve').slice(0, 200),
-      mime: String(o.mime ?? '').slice(0, 100),
-      taille: typeof o.taille === 'number' ? o.taille : dataUrl.length,
-      dataUrl,
-    }]
-  })
-}
 
 // PATCH /api/derogations/[id] — transition du workflow (body: { action, ... }).
 export async function PATCH(req: NextRequest, { params }: Params) {

@@ -40,7 +40,7 @@ export async function GET() {
     include: {
       processus: { select: { nom: true } },
       riskItem: { select: { intitule: true } },
-      executions: { orderBy: { dateRealisation: 'desc' }, select: { id: true, resultat: true, dateRealisation: true, constat: true } },
+      executions: { orderBy: { dateRealisation: 'desc' }, select: { id: true, resultat: true, dateRealisation: true, constat: true, preuves: true } },
     },
   })
 

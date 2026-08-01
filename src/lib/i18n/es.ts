@@ -910,6 +910,8 @@ export const es: Translations = {
     calibration: {
       badge: '↑ P{v} sugerida',
       hint: '{n} incidente(s) vinculado(s) → probabilidad residual sugerida: {v}',
+      badgeControles: '↑ P{v} (controles)',
+      hintControles: '{n} ejecución(es) de control · {t}% conformes → probabilidad residual sugerida: {v}',
       confirm: '¿Aplicar la probabilidad residual {v} según los incidentes observados?',
     },
     plan: { none: 'Ninguna' },
@@ -1123,6 +1125,8 @@ export const es: Translations = {
     tailleTestee: 'Probados',
     anomaliesTrouvees: 'Anomalías',
     constatPlaceholder: 'Hallazgo (obligatorio si hay anomalía)',
+    preuves: 'Evidencias',
+    retirer: 'quitar',
     jamaisExecute: 'nunca ejecutado',
     historique: 'Historial',
     resume: '{e} ejecución(es) evaluada(s) · {c} conforme(s) · {a} anomalía(s)',

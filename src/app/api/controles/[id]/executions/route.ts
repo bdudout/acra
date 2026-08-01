@@ -6,6 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie } from '@/lib/controle'
+import { sanitizePreuves } from '@/lib/preuves'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -45,13 +46,19 @@ export async function POST(req: NextRequest, { params }: Params) {
   const erreur = validateExecutionInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanExecutionInput(body)
+  const preuves = sanitizePreuves(body.preuves)
 
   // L'exécution et l'action générée doivent apparaître ensemble : une anomalie
   // sans son action de traitement laisserait un trou dans la piste d'audit.
   const { execution, actionCreee } = await prisma.$transaction(async tx => {
     const execution = await tx.controleExecution.create({
-      data: { ...data, controleId: id, organizationId: controle.organizationId, executantId: userId },
+      data: {
+        ...data, controleId: id, organizationId: controle.organizationId,
+        executantId: userId, preuves: preuves as unknown as object,
+      },
     })
+    // Nouvelle exécution ⇒ nouvelle période : l'alerte d'échéance peut repartir.
+    await tx.controle.update({ where: { id }, data: { alerteeLe: null } })
     let actionCreee: string | null = null
     if (data.resultat === 'ANOMALIE' && controle.riskItemId && cfg.registreRisquesActive) {
       const action = await tx.riskAction.create({
@@ -71,7 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: controle.organizationId, ip: getClientIp(req),
-    details: { scope: 'controle', action: 'execute', controleId: id, resultat: data.resultat, actionCreee },
+    details: { scope: 'controle', action: 'execute', controleId: id, resultat: data.resultat, actionCreee, preuves: preuves.length },
   })
   return NextResponse.json({ execution, actionCreee }, { status: 201 })
 }
