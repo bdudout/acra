@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -320,6 +320,16 @@ export default function Navbar() {
             >
               <BookMarked size={16} aria-hidden="true" />
               <span>{t.nav.registre}</span>
+            </Link>
+          )}
+          {registreActif && !isLecteur && (
+            <Link
+              href="/campagnes"
+              className={`${navClass(pathname === '/campagnes')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/campagnes' ? 'page' : undefined}
+            >
+              <ClipboardList size={16} aria-hidden="true" />
+              <span>{t.nav.campagnes}</span>
             </Link>
           )}
           {registreActif && !isLecteur && (

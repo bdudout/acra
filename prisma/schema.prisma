@@ -125,6 +125,7 @@ model Organization {
   riskActions RiskAction[]
   incidents   Incident[]
   controles   Controle[]
+  campagnes   Campagne[]
 
   @@index([parentId])
   @@index([path])
@@ -190,9 +191,10 @@ model RiskItem {
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
 
-  actions   RiskAction[]
-  incidents Incident[]
-  controles Controle[]
+  actions     RiskAction[]
+  incidents   Incident[]
+  controles   Controle[]
+  evaluations CampagneEvaluation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -200,6 +202,81 @@ model RiskItem {
   @@index([organizationId])
   @@index([processusId])
   @@index([taxonomieCode])
+}
+
+// ─── M1 v2 — Campagnes d'évaluation RCSA ─────────────────────────────────────
+// La 2ᵉ ligne ouvre une campagne sur le registre : chaque risque donne lieu à
+// une évaluation confiée à son propriétaire (1ʳᵉ ligne), qui cote inhérent →
+// efficacité des contrôles → résiduel. La 2ᵉ ligne valide (quatre-yeux : le
+// valideur ne peut pas être l'évaluateur), la clôture applique les cotations
+// validées au registre. Cf. lib/campagne.ts.
+model Campagne {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  description String?   @db.Text
+  dateDebut   DateTime?
+  dateFin     DateTime?
+
+  // BROUILLON | OUVERTE | CLOTUREE
+  statut      String    @default("BROUILLON")
+  ouvertePar  String?
+  ouverteLe   DateTime?
+  clotureePar String?
+  clotureeLe  DateTime?
+
+  evaluations CampagneEvaluation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([statut])
+}
+
+// Une évaluation par (campagne × risque). Photographie la cotation d'origine
+// pour garder trace de ce qui a changé pendant la campagne.
+model CampagneEvaluation {
+  id             String   @id @default(cuid())
+  campagneId     String
+  campagne       Campagne @relation(fields: [campagneId], references: [id], onDelete: Cascade)
+  riskItemId     String
+  riskItem       RiskItem @relation(fields: [riskItemId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  // Cotation d'origine, figée à l'ouverture de la campagne (comparaison avant/après).
+  origineGraviteInherente        Int?
+  origineVraisemblanceInherente  Int?
+  origineGraviteResiduelle       Int?
+  origineVraisemblanceResiduelle Int?
+
+  // Cotation saisie pendant la campagne.
+  graviteInherente        Int?
+  vraisemblanceInherente  Int?
+  efficaciteControles     String? // FORTE | MOYENNE | FAIBLE | INEXISTANTE
+  graviteResiduelle       Int?
+  vraisemblanceResiduelle Int?
+  commentaire             String? @db.Text
+
+  // A_COTER | COTEE | VALIDEE | REJETEE
+  statut       String    @default("A_COTER")
+  evaluateurId String?
+  coteeLe      DateTime?
+  valideurId   String?
+  valideeLe    DateTime?
+  motifRejet   String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Un risque n'est évalué qu'une fois par campagne.
+  @@unique([campagneId, riskItemId])
+  @@index([campagneId])
+  @@index([riskItemId])
+  @@index([organizationId])
+  @@index([statut])
 }
 
 // ─── Module M3 — Contrôle permanent ──────────────────────────────────────────
