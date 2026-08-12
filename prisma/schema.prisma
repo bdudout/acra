@@ -1107,6 +1107,9 @@ model OrganizationConfig {
   incidentsActive            Boolean       @default(false)
   controlePermanentActive    Boolean       @default(false)
   auditInterneActive         Boolean       @default(false)
+  // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
+  // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
+  appetitRisque              Json          @default("{}")
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

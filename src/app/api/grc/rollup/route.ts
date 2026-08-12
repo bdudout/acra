@@ -15,6 +15,7 @@ import {
   type CockpitIncident, type CockpitExecution, type CockpitConstat,
 } from '@/lib/grc-cockpit'
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
+import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,22 @@ export async function GET(req: NextRequest) {
     organizationId: c.organizationId, criticite: c.criticite, statut: c.statut, echeance: c.echeance,
   }))
 
+  // Appétit au risque : dépassements calculés sur les risques retenus (post-filtre).
+  const appetit = cleanAppetitConfig(orgConfig.appetitRisque)
+  const appetitDefini = appetit.seuilGlobal != null || Object.keys(appetit.parCategorie).length > 0
+  const appetitRows: (RiskAppetitLite & { organizationId: string })[] = kept.map(r => ({
+    organizationId: r.organizationId, taxonomieCode: r.taxonomieCode, niveauResiduel: r.niveauResiduel,
+  }))
+  const appetitByOrg = new Map<string, number>() // org → nb risques hors appétit
+  if (appetitDefini) {
+    const grouped = new Map<string, RiskAppetitLite[]>()
+    for (const r of appetitRows) {
+      const a = grouped.get(r.organizationId) ?? []
+      a.push(r); grouped.set(r.organizationId, a)
+    }
+    for (const [org, rows] of grouped) appetitByOrg.set(org, synthetiserAppetit(rows, appetit).horsAppetit)
+  }
+
   // Cartes par organisation, fusionnées ensuite sur les lignes du registre.
   const incMap = withIncidents ? incidentsByOrg(incidents) : null
   const ctrlMap = withControles ? controlesByOrg(controleRows, executions) : null
@@ -123,18 +140,20 @@ export async function GET(req: NextRequest) {
     ...(incMap ? { incidents: incMap.get(o.orgId) ?? { total: 0, ouverts: 0, perteNette: 0 } } : {}),
     ...(ctrlMap ? { controles: ctrlMap.get(o.orgId) ?? { controles: 0, evaluees: 0, conformes: 0, anomalies: 0, tauxConformite: null } } : {}),
     ...(audMap ? { audit: audMap.get(o.orgId) ?? { missions: 0, constats: 0, critiques: 0, recosEnRetard: 0, tauxResolution: 0 } } : {}),
+    ...(appetitDefini ? { horsAppetit: appetitByOrg.get(o.orgId) ?? 0 } : {}),
   }))
 
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
-    modules: { incidents: withIncidents, controles: withControles, audit: withAudit },
+    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini },
     consolide: {
       risques: rollupRisks(risks),
       actions: summarizeActions(actions, now),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),
+      ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
     },
     parOrg,
   })

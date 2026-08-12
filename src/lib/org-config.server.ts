@@ -36,6 +36,7 @@ const CONFIG_SELECT = {
   incidentsActive: true,
   controlePermanentActive: true,
   auditInterneActive: true,
+  appetitRisque: true,
 } as const
 
 /**

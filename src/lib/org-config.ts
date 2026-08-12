@@ -19,6 +19,7 @@ import {
   type ReferentielActif,
   type StrategieTraitement,
 } from '@/lib/org-config-defaults'
+import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
 
 /** Entités responsables de mesures par défaut. */
 export const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
@@ -49,6 +50,7 @@ export interface RawOrgConfig {
   incidentsActive?: boolean
   controlePermanentActive?: boolean
   auditInterneActive?: boolean
+  appetitRisque?: unknown
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -77,6 +79,7 @@ export interface OrgConfigResolved {
   incidentsActive: boolean
   controlePermanentActive: boolean
   auditInterneActive: boolean
+  appetitRisque: AppetitConfig
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -105,6 +108,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   incidentsActive: false,
   controlePermanentActive: false,
   auditInterneActive: false,
+  appetitRisque: APPETIT_DEFAULT,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -115,7 +119,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
@@ -176,5 +180,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     incidentsActive: pickBool('incidentsActive', defaults.incidentsActive),
     controlePermanentActive: pickBool('controlePermanentActive', defaults.controlePermanentActive),
     auditInterneActive: pickBool('auditInterneActive', defaults.auditInterneActive),
+    appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
   }
 }

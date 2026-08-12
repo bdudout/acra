@@ -8,6 +8,7 @@ import {
   type CartoRisk, type CartoMode, type CartoDimension, type NiveauBucket,
 } from '@/lib/cartographie'
 import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import { synthetiserAppetit, type AppetitConfig } from '@/lib/appetit'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 type PublishAnalyse = { id: string; nom: string; organisation: string | null; risquesCount: number; dejaPublies: number }
@@ -43,18 +44,47 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
   const [filters, setFilters] = useState<RiskFilters>({ mode: 'residual' })
   const [publishing, setPublishing] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
+  // Appétit au risque (gouvernance) : seuil global + surcharges par catégorie.
+  const [appetit, setAppetit] = useState<AppetitConfig | null>(null)
+  const [appetitMeta, setAppetitMeta] = useState<{ canEdit: boolean; seuilMin: number; seuilMax: number }>({ canEdit: false, seuilMin: 1, seuilMax: 25 })
+  const [appetitOpen, setAppetitOpen] = useState(false)
+  const [savingAppetit, setSavingAppetit] = useState(false)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
 
   async function reload() {
-    const [rr, tt, pp, aa] = await Promise.all([
+    const [rr, tt, pp, aa, ap] = await Promise.all([
       fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
       fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
       canPublish ? fetch('/api/risk-items/publish').then(x => x.ok ? x.json() : { analyses: [] }) : Promise.resolve({ analyses: [] }),
+      fetch('/api/appetit').then(x => x.ok ? x.json() : null),
     ])
     setRisks(rr.risks ?? []); setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? []); setAnalyses(aa.analyses ?? [])
+    if (ap?.active) { setAppetit(ap.appetit as AppetitConfig); setAppetitMeta({ canEdit: !!ap.canEdit, seuilMin: ap.seuilMin, seuilMax: ap.seuilMax }) }
     setLoading(false)
+  }
+
+  // Position de l'appétit : seuil global (borne sur le niveau produit G×V).
+  const seuilGlobal = appetit?.seuilGlobal ?? null
+  const appetitDefini = !!appetit && (appetit.seuilGlobal != null || Object.keys(appetit.parCategorie ?? {}).length > 0)
+
+  function setSeuilGlobal(v: string) {
+    setAppetit(a => ({ seuilGlobal: v === '' ? null : Number(v), parCategorie: a?.parCategorie ?? {} }))
+  }
+  function setSeuilCategorie(code: string, v: string) {
+    setAppetit(a => {
+      const parCategorie = { ...(a?.parCategorie ?? {}) }
+      if (v === '') delete parCategorie[code]; else parCategorie[code] = Number(v)
+      return { seuilGlobal: a?.seuilGlobal ?? null, parCategorie }
+    })
+  }
+  async function saveAppetit() {
+    setSavingAppetit(true); setFlash(null)
+    const res = await fetch('/api/appetit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(appetit) })
+    setSavingAppetit(false)
+    if (res.ok) { const d = await res.json(); setAppetit(d.appetit as AppetitConfig); setFlash(c.appetitSaved) }
+    else setFlash(c.appetitErr)
   }
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -69,6 +99,11 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
     return m
   }, [heat])
   const buckets = useMemo(() => aggregateByDimension(shown, dimension, mode), [shown, dimension, mode])
+  // Dépassements d'appétit sur le périmètre affiché (l'appétit porte sur le RÉSIDUEL).
+  const appetitSynthese = useMemo(
+    () => (appetit ? synthetiserAppetit(shown.map(r => ({ taxonomieCode: r.taxonomieCode, niveauResiduel: r.niveauResiduel })), appetit) : null),
+    [shown, appetit],
+  )
 
   // Export du périmètre AFFICHÉ (filtres + mode) ; `lang` localise le rapport PDF.
   function exportAs(format: 'csv' | 'xlsx' | 'pdf') {
@@ -125,8 +160,52 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
             <Stat label={c.total} value={shown.length} />
             <Stat label={c.eleves} value={heat.parBucket.eleve} tone="eleve" />
             <Stat label={c.moyens} value={heat.parBucket.moyen} tone="moyen" />
-            <Stat label={c.nonCotes} value={heat.totalNonCote} />
+            {appetitDefini && appetitSynthese
+              ? <Stat label={c.appetitHorsTile} value={appetitSynthese.horsAppetit} tone={appetitSynthese.horsAppetit > 0 ? 'eleve' : undefined} />
+              : <Stat label={c.nonCotes} value={heat.totalNonCote} />}
           </div>
+
+          {/* Appétit au risque — panneau de gouvernance (repliable) */}
+          {appetit && (
+            <div className="card p-4 mb-6">
+              <button onClick={() => setAppetitOpen(o => !o)} className="w-full flex items-center justify-between text-left" aria-expanded={appetitOpen}>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">🎯 {c.appetitTitle}</span>
+                <span className="text-xs text-gray-400">
+                  {seuilGlobal != null ? c.appetitSeuilGlobal + ' ' + seuilGlobal : c.appetitAucun}
+                  {appetitSynthese && appetitSynthese.horsAppetit > 0 && <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">· {appetitSynthese.horsAppetit} {c.appetitHorsTile}</span>}
+                  <span className="ml-2">{appetitOpen ? '▾' : '▸'}</span>
+                </span>
+              </button>
+              {appetitOpen && (
+                <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{c.appetitSubtitle}</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <label className="text-sm text-gray-700 dark:text-gray-300 w-48">{c.appetitSeuilGlobal}</label>
+                    <input type="number" min={appetitMeta.seuilMin} max={appetitMeta.seuilMax} disabled={!appetitMeta.canEdit}
+                      value={seuilGlobal ?? ''} onChange={e => setSeuilGlobal(e.target.value)}
+                      placeholder={c.appetitAucun} className="input w-24 disabled:opacity-60" />
+                    <span className="text-xs text-gray-400">/ {appetitMeta.seuilMax}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">{c.appetitParCategorie}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                    {taxo.map(cat => (
+                      <div key={cat.code} className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600 dark:text-gray-300 flex-1 truncate" title={taxonomieLabel(cat, tr)}>{taxonomieLabel(cat, tr)}</label>
+                        <input type="number" min={appetitMeta.seuilMin} max={appetitMeta.seuilMax} disabled={!appetitMeta.canEdit}
+                          value={appetit.parCategorie?.[cat.code] ?? ''} onChange={e => setSeuilCategorie(cat.code, e.target.value)}
+                          placeholder="—" className="input w-20 disabled:opacity-60" />
+                      </div>
+                    ))}
+                  </div>
+                  {appetitMeta.canEdit && (
+                    <button onClick={saveAppetit} disabled={savingAppetit} className="btn-primary text-sm disabled:opacity-60">
+                      {savingAppetit ? '…' : c.appetitSave}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Heat map gravité × vraisemblance */}
@@ -142,8 +221,10 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
                         {vraisemblances.map(v => {
                           const cell = cellIndex.get(`${g}:${v}`)
                           const n = cell?.risqueIds.length ?? 0
+                          // Cellule au-delà de l'appétit global (niveau produit > seuil).
+                          const horsAppetit = seuilGlobal != null && g * v > seuilGlobal
                           return (
-                            <div key={v} title={`G${g} × V${v} — ${n}`} className={`aspect-square m-0.5 rounded flex items-center justify-center text-sm font-bold ${cellBg(cell?.bucket ?? null, n === 0)}`}>
+                            <div key={v} title={`G${g} × V${v} — ${n}${horsAppetit ? ` · ${c.appetitHorsTile}` : ''}`} className={`aspect-square m-0.5 rounded flex items-center justify-center text-sm font-bold ${cellBg(cell?.bucket ?? null, n === 0)} ${horsAppetit ? 'ring-2 ring-inset ring-red-600/70 dark:ring-red-400/70' : ''}`}>
                               {n > 0 ? n : ''}
                             </div>
                           )

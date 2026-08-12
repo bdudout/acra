@@ -12,14 +12,15 @@ interface ActionsSummary { total: number; faits: number; enCours: number; aFaire
 interface IncidentTotals { total: number; ouverts: number; perteNette: number }
 interface ControleTotals { controles: number; evaluees: number; conformes: number; anomalies: number; tauxConformite: number | null }
 interface AuditTotals { missions: number; constats: number; critiques: number; recosEnRetard: number; tauxResolution: number }
+interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
 interface OrgPosture {
   orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
-  incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals
+  incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; horsAppetit?: number
 }
 interface Rollup {
   active: boolean; orgCount: number
-  modules: { incidents: boolean; controles: boolean; audit: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals }
+  modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese }
   parOrg: OrgPosture[]
 }
 
@@ -91,9 +92,10 @@ export default function PilotageGrc() {
   const ci = data.consolide.incidents
   const cc = data.consolide.controles
   const cau = data.consolide.audit
+  const cap = data.consolide.appetit
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   const mod = data.modules
-  const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0)
+  const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0)
 
   return (
     <div>
@@ -133,6 +135,10 @@ export default function PilotageGrc() {
             <Tile label={p.constatsCritiques} value={cau.critiques} tone={cau.critiques > 0 ? 'red' : undefined} />
             <Tile label={p.recosEnRetard} value={cau.recosEnRetard} tone={cau.recosEnRetard > 0 ? 'red' : undefined} />
           </>}
+          {cap && <>
+            <Tile label={p.horsAppetit} value={cap.horsAppetit} tone={cap.horsAppetit > 0 ? 'red' : undefined} />
+            <Tile label={p.dansAppetit} value={`${cap.dansAppetit}/${cap.evalues}`} tone="green" />
+          </>}
         </div>
       )}
 
@@ -149,6 +155,7 @@ export default function PilotageGrc() {
               {mod.incidents && <th className="px-4 py-3 text-right">{p.colIncidents}</th>}
               {mod.controles && <th className="px-4 py-3 text-right">{p.colConformite}</th>}
               {mod.audit && <th className="px-4 py-3 text-right">{p.colConstats}</th>}
+              {mod.appetit && <th className="px-4 py-3 text-right">{p.colHorsAppetit}</th>}
             </tr>
           </thead>
           <tbody>
@@ -183,6 +190,13 @@ export default function PilotageGrc() {
                       {o.audit && o.audit.critiques > 0
                         ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.audit.critiques}</span>
                         : <span className="text-gray-400">{o.audit && o.audit.constats > 0 ? '0' : '—'}</span>}
+                    </td>
+                  )}
+                  {mod.appetit && (
+                    <td className="px-4 py-3 text-right">
+                      {o.horsAppetit && o.horsAppetit > 0
+                        ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.horsAppetit}</span>
+                        : <span className="text-gray-400">0</span>}
                     </td>
                   )}
                 </tr>
