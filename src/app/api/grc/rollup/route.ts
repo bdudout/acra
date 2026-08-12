@@ -17,6 +17,7 @@ import {
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
 import { evaluerKri, synthetiserKri, type KriSens, type KriStatut } from '@/lib/kri'
+import { classifierIncident, estEvalueDora, synthetiserDora, type DoraCriteres, type DoraClasse } from '@/lib/dora'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,13 +41,14 @@ export async function GET(req: NextRequest) {
   const withControles = orgConfig.controlePermanentActive
   const withAudit = orgConfig.auditInterneActive
   const withKri = orgConfig.kriActive
+  const withReglementaire = orgConfig.reglementaireActive
 
   // Périmètre : sous-arbre visible (SUPER_ADMIN non focalisé = toutes les orgs).
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const orgFilter = spansAll ? {} : { organizationId: { in: orgIds } }
 
-  const [orgs, riskRows, actionRows, incidentRows, controleRows, executionRows, missionRows, constatRows, kriRows] = await Promise.all([
+  const [orgs, riskRows, actionRows, incidentRows, controleRows, executionRows, missionRows, constatRows, kriRows, doraRows] = await Promise.all([
     prisma.organization.findMany({
       where: spansAll ? {} : { id: { in: orgIds } },
       select: { id: true, nom: true },
@@ -82,6 +84,9 @@ export async function GET(req: NextRequest) {
           where: { ...orgFilter, actif: true },
           select: { organizationId: true, sens: true, seuilAlerte: true, seuilCritique: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { valeur: true } } },
         })
+      : Promise.resolve([]),
+    withReglementaire
+      ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, doraCriteres: true } })
       : Promise.resolve([]),
   ])
 
@@ -153,6 +158,22 @@ export async function GET(req: NextRequest) {
     for (const [org, statuts] of grouped) kriByOrg.set(org, synthetiserKri(statuts.map(statut => ({ statut }))).enAlerte)
   }
 
+  // DORA : incidents TIC évalués majeurs (registre réglementaire).
+  const doraByOrg = new Map<string, number>() // org → nb incidents majeurs
+  const doraClasses: DoraClasse[] = []
+  if (withReglementaire) {
+    const grouped = new Map<string, DoraClasse[]>()
+    for (const r of doraRows) {
+      const criteres = (r.doraCriteres ?? {}) as DoraCriteres
+      if (!estEvalueDora(criteres)) continue
+      const classe = classifierIncident(criteres).classe
+      doraClasses.push(classe)
+      const a = grouped.get(r.organizationId) ?? []
+      a.push(classe); grouped.set(r.organizationId, a)
+    }
+    for (const [org, classes] of grouped) doraByOrg.set(org, synthetiserDora(classes).majeurs)
+  }
+
   // Cartes par organisation, fusionnées ensuite sur les lignes du registre.
   const incMap = withIncidents ? incidentsByOrg(incidents) : null
   const ctrlMap = withControles ? controlesByOrg(controleRows, executions) : null
@@ -165,12 +186,13 @@ export async function GET(req: NextRequest) {
     ...(audMap ? { audit: audMap.get(o.orgId) ?? { missions: 0, constats: 0, critiques: 0, recosEnRetard: 0, tauxResolution: 0 } } : {}),
     ...(appetitDefini ? { horsAppetit: appetitByOrg.get(o.orgId) ?? 0 } : {}),
     ...(withKri ? { kriEnAlerte: kriByOrg.get(o.orgId) ?? 0 } : {}),
+    ...(withReglementaire ? { doraMajeurs: doraByOrg.get(o.orgId) ?? 0 } : {}),
   }))
 
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
-    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri },
+    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri, reglementaire: withReglementaire },
     consolide: {
       risques: rollupRisks(risks),
       actions: summarizeActions(actions, now),
@@ -179,6 +201,7 @@ export async function GET(req: NextRequest) {
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),
       ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
       ...(withKri ? { kri: synthetiserKri(kriStatuts.map(k => ({ statut: k.statut }))) } : {}),
+      ...(withReglementaire ? { dora: synthetiserDora(doraClasses) } : {}),
     },
     parOrg,
   })

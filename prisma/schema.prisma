@@ -393,6 +393,11 @@ model Incident {
   clotureLe          DateTime?
   clotureCommentaire String?   @db.Text
 
+  // Critères de classification DORA (registre d'incidents TIC) — cf. lib/dora.ts.
+  // { clientsAffectes?, transactionsAffectees?, dureeIndispoMinutes?, impactEconomique?,
+  //   reputation?, etendueGeo?, pertesDonnees?, serviceCritique? }. Vide = non évalué.
+  doraCriteres Json @default("{}")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1169,6 +1174,7 @@ model OrganizationConfig {
   controlePermanentActive    Boolean       @default(false)
   auditInterneActive         Boolean       @default(false)
   kriActive                  Boolean       @default(false)
+  reglementaireActive        Boolean       @default(false)
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

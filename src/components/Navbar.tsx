@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -48,10 +48,11 @@ export default function Navbar() {
   const [controlesActif, setControlesActif] = useState(false)
   const [auditActif, setAuditActif] = useState(false)
   const [kriActif, setKriActif] = useState(false)
+  const [reglementaireActif, setReglementaireActif] = useState(false)
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)); setAuditActif(Boolean(d.auditInterneActive)); setKriActif(Boolean(d.kriActive)) } })
+      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)); setAuditActif(Boolean(d.auditInterneActive)); setKriActif(Boolean(d.kriActive)); setReglementaireActif(Boolean(d.reglementaireActive)) } })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -310,6 +311,18 @@ export default function Navbar() {
             >
               <Search size={16} aria-hidden="true" />
               <span>{t.nav.audit}</span>
+            </Link>
+          )}
+
+          {/* Module Reporting réglementaire — registre DORA / LDC ACPR. */}
+          {reglementaireActif && !isLecteur && (
+            <Link
+              href="/reglementaire"
+              className={`${navClass(pathname === '/reglementaire')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/reglementaire' ? 'page' : undefined}
+            >
+              <Landmark size={16} aria-hidden="true" />
+              <span>{t.nav.reglementaire}</span>
             </Link>
           )}
 
