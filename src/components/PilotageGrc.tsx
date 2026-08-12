@@ -9,8 +9,19 @@ import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
-interface OrgPosture { orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary }
-interface Rollup { active: boolean; orgCount: number; consolide: { risques: RiskTotals; actions: ActionsSummary }; parOrg: OrgPosture[] }
+interface IncidentTotals { total: number; ouverts: number; perteNette: number }
+interface ControleTotals { controles: number; evaluees: number; conformes: number; anomalies: number; tauxConformite: number | null }
+interface AuditTotals { missions: number; constats: number; critiques: number; recosEnRetard: number; tauxResolution: number }
+interface OrgPosture {
+  orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
+  incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals
+}
+interface Rollup {
+  active: boolean; orgCount: number
+  modules: { incidents: boolean; controles: boolean; audit: boolean }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals }
+  parOrg: OrgPosture[]
+}
 
 // Barre de répartition des paliers (élevé / moyen / faible / non coté).
 function PostureBar({ t: totals }: { t: RiskTotals }) {
@@ -77,6 +88,12 @@ export default function PilotageGrc() {
 
   const cr = data.consolide.risques
   const ca = data.consolide.actions
+  const ci = data.consolide.incidents
+  const cc = data.consolide.controles
+  const cau = data.consolide.audit
+  const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+  const mod = data.modules
+  const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0)
 
   return (
     <div>
@@ -101,6 +118,24 @@ export default function PilotageGrc() {
         <Tile label={p.enRetard} value={ca.enRetard} tone={ca.enRetard > 0 ? 'red' : undefined} />
       </div>
 
+      {/* Bandeau cross-module : un groupe par module actif (3 lignes de défense) */}
+      {(ci || cc || cau) && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          {ci && <>
+            <Tile label={p.perteNette} value={euros(ci.perteNette)} />
+            <Tile label={p.incidentsOuverts} value={ci.ouverts} tone={ci.ouverts > 0 ? 'amber' : undefined} />
+          </>}
+          {cc && <>
+            <Tile label={p.tauxConformite} value={cc.tauxConformite == null ? '—' : `${cc.tauxConformite}%`} tone={cc.tauxConformite != null && cc.tauxConformite < 80 ? 'red' : undefined} />
+            <Tile label={p.anomalies} value={cc.anomalies} tone={cc.anomalies > 0 ? 'amber' : undefined} />
+          </>}
+          {cau && <>
+            <Tile label={p.constatsCritiques} value={cau.critiques} tone={cau.critiques > 0 ? 'red' : undefined} />
+            <Tile label={p.recosEnRetard} value={cau.recosEnRetard} tone={cau.recosEnRetard > 0 ? 'red' : undefined} />
+          </>}
+        </div>
+      )}
+
       {/* Ventilation par entité */}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
@@ -111,10 +146,13 @@ export default function PilotageGrc() {
               <th className="px-4 py-3 text-right">{p.colTotal}</th>
               <th className="px-4 py-3 text-right">{p.colEleves}</th>
               <th className="px-4 py-3">{p.colPlan}</th>
+              {mod.incidents && <th className="px-4 py-3 text-right">{p.colIncidents}</th>}
+              {mod.controles && <th className="px-4 py-3 text-right">{p.colConformite}</th>}
+              {mod.audit && <th className="px-4 py-3 text-right">{p.colConstats}</th>}
             </tr>
           </thead>
           <tbody>
-            {data.parOrg.length === 0 ? <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">{p.empty}</td></tr>
+            {data.parOrg.length === 0 ? <tr><td colSpan={nbCols} className="px-4 py-6 text-center text-gray-400 italic">{p.empty}</td></tr>
               : data.parOrg.map(o => (
                 <tr key={o.orgId} className="border-b border-gray-100 dark:border-gray-800">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{o.orgNom}</td>
@@ -126,6 +164,27 @@ export default function PilotageGrc() {
                       <span>{o.actions.tauxAvancement}% · {o.actions.faits}/{o.actions.total}{o.actions.enRetard > 0 && <span className="ml-1">⚠ {o.actions.enRetard}</span>}</span>
                     )}
                   </td>
+                  {mod.incidents && (
+                    <td className="px-4 py-3 text-right">
+                      {o.incidents && o.incidents.total > 0
+                        ? <span className={o.incidents.ouverts > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}>{o.incidents.ouverts}/{o.incidents.total}</span>
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                  )}
+                  {mod.controles && (
+                    <td className="px-4 py-3 text-right">
+                      {o.controles && o.controles.tauxConformite != null
+                        ? <span className={o.controles.tauxConformite < 80 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-600 dark:text-gray-300'}>{o.controles.tauxConformite}%</span>
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                  )}
+                  {mod.audit && (
+                    <td className="px-4 py-3 text-right">
+                      {o.audit && o.audit.critiques > 0
+                        ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.audit.critiques}</span>
+                        : <span className="text-gray-400">{o.audit && o.audit.constats > 0 ? '0' : '—'}</span>}
+                    </td>
+                  )}
                 </tr>
               ))}
           </tbody>
