@@ -36,6 +36,7 @@ const CONFIG_SELECT = {
   incidentsActive: true,
   controlePermanentActive: true,
   auditInterneActive: true,
+  kriActive: true,
   appetitRisque: true,
 } as const
 
@@ -79,6 +80,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       incidentsActive: resolveModuleActivation(policy.incidents, cfg.incidentsActive),
       controlePermanentActive: resolveModuleActivation(policy.controlePermanent, cfg.controlePermanentActive),
       auditInterneActive: resolveModuleActivation(policy.auditInterne, cfg.auditInterneActive),
+      kriActive: resolveModuleActivation(policy.kri, cfg.kriActive),
     }
   } catch {
     return cfg

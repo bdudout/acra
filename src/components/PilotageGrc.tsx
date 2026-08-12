@@ -13,14 +13,15 @@ interface IncidentTotals { total: number; ouverts: number; perteNette: number }
 interface ControleTotals { controles: number; evaluees: number; conformes: number; anomalies: number; tauxConformite: number | null }
 interface AuditTotals { missions: number; constats: number; critiques: number; recosEnRetard: number; tauxResolution: number }
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
+interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface OrgPosture {
   orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
-  incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; horsAppetit?: number
+  incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; horsAppetit?: number; kriEnAlerte?: number
 }
 interface Rollup {
   active: boolean; orgCount: number
-  modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese }
+  modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese }
   parOrg: OrgPosture[]
 }
 
@@ -93,9 +94,10 @@ export default function PilotageGrc() {
   const cc = data.consolide.controles
   const cau = data.consolide.audit
   const cap = data.consolide.appetit
+  const ck = data.consolide.kri
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   const mod = data.modules
-  const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0)
+  const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0) + (mod.kri ? 1 : 0)
 
   return (
     <div>
@@ -121,7 +123,7 @@ export default function PilotageGrc() {
       </div>
 
       {/* Bandeau cross-module : un groupe par module actif (3 lignes de défense) */}
-      {(ci || cc || cau) && (
+      {(ci || cc || cau || cap || ck) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {ci && <>
             <Tile label={p.perteNette} value={euros(ci.perteNette)} />
@@ -138,6 +140,10 @@ export default function PilotageGrc() {
           {cap && <>
             <Tile label={p.horsAppetit} value={cap.horsAppetit} tone={cap.horsAppetit > 0 ? 'red' : undefined} />
             <Tile label={p.dansAppetit} value={`${cap.dansAppetit}/${cap.evalues}`} tone="green" />
+          </>}
+          {ck && <>
+            <Tile label={p.kriCritiques} value={ck.critique} tone={ck.critique > 0 ? 'red' : undefined} />
+            <Tile label={p.kriEnAlerte} value={ck.enAlerte} tone={ck.enAlerte > 0 ? 'amber' : undefined} />
           </>}
         </div>
       )}
@@ -156,6 +162,7 @@ export default function PilotageGrc() {
               {mod.controles && <th className="px-4 py-3 text-right">{p.colConformite}</th>}
               {mod.audit && <th className="px-4 py-3 text-right">{p.colConstats}</th>}
               {mod.appetit && <th className="px-4 py-3 text-right">{p.colHorsAppetit}</th>}
+              {mod.kri && <th className="px-4 py-3 text-right">{p.colKri}</th>}
             </tr>
           </thead>
           <tbody>
@@ -196,6 +203,13 @@ export default function PilotageGrc() {
                     <td className="px-4 py-3 text-right">
                       {o.horsAppetit && o.horsAppetit > 0
                         ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.horsAppetit}</span>
+                        : <span className="text-gray-400">0</span>}
+                    </td>
+                  )}
+                  {mod.kri && (
+                    <td className="px-4 py-3 text-right">
+                      {o.kriEnAlerte && o.kriEnAlerte > 0
+                        ? <span className="text-amber-600 dark:text-amber-400 font-semibold">{o.kriEnAlerte}</span>
                         : <span className="text-gray-400">0</span>}
                     </td>
                   )}

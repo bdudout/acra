@@ -128,6 +128,7 @@ model Organization {
   controles     Controle[]
   campagnes     Campagne[]
   auditMissions AuditMission[]
+  kris          Kri[]
 
   @@index([parentId])
   @@index([path])
@@ -157,6 +158,7 @@ model Processus {
   riskItems RiskItem[]
   incidents Incident[]
   controles Controle[]
+  kris      Kri[]
 
   @@index([organizationId])
   @@index([parentId])
@@ -198,6 +200,7 @@ model RiskItem {
   controles     Controle[]
   evaluations   CampagneEvaluation[]
   auditConstats AuditConstat[]
+  kris          Kri[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -488,6 +491,64 @@ model AuditConstat {
   @@index([organizationId])
   @@index([statut])
   @@index([riskItemId])
+}
+
+// ─── KRI — Indicateur clé de risque ──────────────────────────────────────────
+// Métrique à signal avancé, suivie périodiquement (KriMesure). Deux seuils
+// (alerte, critique) + un SENS de dégradation ; le statut courant se dérive de la
+// dernière mesure (cf. lib/kri.ts). Rattachable à une maille du registre.
+model Kri {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  description String? @db.Text
+  unite       String?
+  // HAUSSE (plus haut = pire) | BAISSE (plus bas = pire)
+  sens         String  @default("HAUSSE")
+  seuilAlerte  Float
+  seuilCritique Float
+  // MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL
+  frequence   String  @default("MENSUEL")
+  responsable String?
+  actif       Boolean @default(true)
+
+  // Rattachement optionnel à la maille : catégorie de taxonomie / risque / processus.
+  taxonomieCode String?
+  riskItemId    String?
+  riskItem      RiskItem?  @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+  processusId   String?
+  processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
+
+  mesures KriMesure[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([riskItemId])
+  @@index([processusId])
+  @@index([actif])
+}
+
+// Mesure périodique d'un KRI (valeur relevée à une date).
+model KriMesure {
+  id             String   @id @default(cuid())
+  kriId          String
+  kri            Kri      @relation(fields: [kriId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  valeur      Float
+  dateMesure  DateTime @default(now())
+  commentaire String?  @db.Text
+  saisiPar    String
+
+  createdAt DateTime @default(now())
+
+  @@index([kriId])
+  @@index([organizationId])
+  @@index([dateMesure])
 }
 
 // ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──
@@ -1107,6 +1168,7 @@ model OrganizationConfig {
   incidentsActive            Boolean       @default(false)
   controlePermanentActive    Boolean       @default(false)
   auditInterneActive         Boolean       @default(false)
+  kriActive                  Boolean       @default(false)
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

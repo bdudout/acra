@@ -9,7 +9,7 @@ import { type UserRole } from '@/lib/permissions'
 // (politique d'instance déjà appliquée par getOrgConfig). Sert à la navigation.
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ registreRisquesActive: false, incidentsActive: false, controlePermanentActive: false, auditInterneActive: false })
+  if (!session?.user) return NextResponse.json({ registreRisquesActive: false, incidentsActive: false, controlePermanentActive: false, auditInterneActive: false, kriActive: false })
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
@@ -19,5 +19,6 @@ export async function GET() {
     incidentsActive: cfg.incidentsActive,
     controlePermanentActive: cfg.controlePermanentActive,
     auditInterneActive: cfg.auditInterneActive,
+    kriActive: cfg.kriActive,
   })
 }

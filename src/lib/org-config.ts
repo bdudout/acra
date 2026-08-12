@@ -50,6 +50,7 @@ export interface RawOrgConfig {
   incidentsActive?: boolean
   controlePermanentActive?: boolean
   auditInterneActive?: boolean
+  kriActive?: boolean
   appetitRisque?: unknown
 }
 
@@ -79,6 +80,7 @@ export interface OrgConfigResolved {
   incidentsActive: boolean
   controlePermanentActive: boolean
   auditInterneActive: boolean
+  kriActive: boolean
   appetitRisque: AppetitConfig
 }
 
@@ -108,6 +110,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   incidentsActive: false,
   controlePermanentActive: false,
   auditInterneActive: false,
+  kriActive: false,
   appetitRisque: APPETIT_DEFAULT,
 }
 
@@ -120,7 +123,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
@@ -180,6 +183,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     incidentsActive: pickBool('incidentsActive', defaults.incidentsActive),
     controlePermanentActive: pickBool('controlePermanentActive', defaults.controlePermanentActive),
     auditInterneActive: pickBool('auditInterneActive', defaults.auditInterneActive),
+    kriActive: pickBool('kriActive', defaults.kriActive),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
   }
 }

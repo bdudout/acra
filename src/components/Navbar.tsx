@@ -12,7 +12,7 @@ import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -47,10 +47,11 @@ export default function Navbar() {
   const [incidentsActif, setIncidentsActif] = useState(false)
   const [controlesActif, setControlesActif] = useState(false)
   const [auditActif, setAuditActif] = useState(false)
+  const [kriActif, setKriActif] = useState(false)
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)); setAuditActif(Boolean(d.auditInterneActive)) } })
+      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)); setAuditActif(Boolean(d.auditInterneActive)); setKriActif(Boolean(d.kriActive)) } })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -309,6 +310,18 @@ export default function Navbar() {
             >
               <Search size={16} aria-hidden="true" />
               <span>{t.nav.audit}</span>
+            </Link>
+          )}
+
+          {/* Module KRI — indicateurs clés de risque (définition 2ᵉ ligne, saisie 1ʳᵉ). */}
+          {kriActif && !isLecteur && (
+            <Link
+              href="/kri"
+              className={`${navClass(pathname === '/kri')} inline-flex items-center gap-1.5 flex-shrink-0`}
+              aria-current={pathname === '/kri' ? 'page' : undefined}
+            >
+              <TrendingUp size={16} aria-hidden="true" />
+              <span>{t.nav.kri}</span>
             </Link>
           )}
 

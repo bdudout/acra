@@ -16,6 +16,7 @@ import {
 } from '@/lib/grc-cockpit'
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
+import { evaluerKri, synthetiserKri, type KriSens, type KriStatut } from '@/lib/kri'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,13 +39,14 @@ export async function GET(req: NextRequest) {
   const withIncidents = orgConfig.incidentsActive
   const withControles = orgConfig.controlePermanentActive
   const withAudit = orgConfig.auditInterneActive
+  const withKri = orgConfig.kriActive
 
   // Périmètre : sous-arbre visible (SUPER_ADMIN non focalisé = toutes les orgs).
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const orgFilter = spansAll ? {} : { organizationId: { in: orgIds } }
 
-  const [orgs, riskRows, actionRows, incidentRows, controleRows, executionRows, missionRows, constatRows] = await Promise.all([
+  const [orgs, riskRows, actionRows, incidentRows, controleRows, executionRows, missionRows, constatRows, kriRows] = await Promise.all([
     prisma.organization.findMany({
       where: spansAll ? {} : { id: { in: orgIds } },
       select: { id: true, nom: true },
@@ -74,6 +76,12 @@ export async function GET(req: NextRequest) {
       : Promise.resolve([]),
     withAudit
       ? prisma.auditConstat.findMany({ where: orgFilter, select: { organizationId: true, criticite: true, statut: true, echeance: true } })
+      : Promise.resolve([]),
+    withKri
+      ? prisma.kri.findMany({
+          where: { ...orgFilter, actif: true },
+          select: { organizationId: true, sens: true, seuilAlerte: true, seuilCritique: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { valeur: true } } },
+        })
       : Promise.resolve([]),
   ])
 
@@ -130,6 +138,21 @@ export async function GET(req: NextRequest) {
     for (const [org, rows] of grouped) appetitByOrg.set(org, synthetiserAppetit(rows, appetit).horsAppetit)
   }
 
+  // KRI : statut courant de chaque KRI actif (dernière mesure vs seuils).
+  const kriStatuts: { organizationId: string; statut: KriStatut }[] = kriRows.map(k => ({
+    organizationId: k.organizationId,
+    statut: evaluerKri(k.mesures[0]?.valeur ?? null, { sens: k.sens as KriSens, seuilAlerte: k.seuilAlerte, seuilCritique: k.seuilCritique }),
+  }))
+  const kriByOrg = new Map<string, number>() // org → nb KRI en alerte (alerte + critique)
+  if (withKri) {
+    const grouped = new Map<string, KriStatut[]>()
+    for (const k of kriStatuts) {
+      const a = grouped.get(k.organizationId) ?? []
+      a.push(k.statut); grouped.set(k.organizationId, a)
+    }
+    for (const [org, statuts] of grouped) kriByOrg.set(org, synthetiserKri(statuts.map(statut => ({ statut }))).enAlerte)
+  }
+
   // Cartes par organisation, fusionnées ensuite sur les lignes du registre.
   const incMap = withIncidents ? incidentsByOrg(incidents) : null
   const ctrlMap = withControles ? controlesByOrg(controleRows, executions) : null
@@ -141,12 +164,13 @@ export async function GET(req: NextRequest) {
     ...(ctrlMap ? { controles: ctrlMap.get(o.orgId) ?? { controles: 0, evaluees: 0, conformes: 0, anomalies: 0, tauxConformite: null } } : {}),
     ...(audMap ? { audit: audMap.get(o.orgId) ?? { missions: 0, constats: 0, critiques: 0, recosEnRetard: 0, tauxResolution: 0 } } : {}),
     ...(appetitDefini ? { horsAppetit: appetitByOrg.get(o.orgId) ?? 0 } : {}),
+    ...(withKri ? { kriEnAlerte: kriByOrg.get(o.orgId) ?? 0 } : {}),
   }))
 
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
-    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini },
+    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri },
     consolide: {
       risques: rollupRisks(risks),
       actions: summarizeActions(actions, now),
@@ -154,6 +178,7 @@ export async function GET(req: NextRequest) {
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),
       ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
+      ...(withKri ? { kri: synthetiserKri(kriStatuts.map(k => ({ statut: k.statut }))) } : {}),
     },
     parOrg,
   })
