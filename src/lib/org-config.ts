@@ -48,6 +48,7 @@ export interface RawOrgConfig {
   registreRisquesActive: boolean
   incidentsActive?: boolean
   controlePermanentActive?: boolean
+  auditInterneActive?: boolean
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -75,6 +76,7 @@ export interface OrgConfigResolved {
   registreRisquesActive: boolean
   incidentsActive: boolean
   controlePermanentActive: boolean
+  auditInterneActive: boolean
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -102,6 +104,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   registreRisquesActive: false,
   incidentsActive: false,
   controlePermanentActive: false,
+  auditInterneActive: false,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -113,7 +116,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
 
@@ -172,5 +175,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     registreRisquesActive: pickBool('registreRisquesActive', defaults.registreRisquesActive),
     incidentsActive: pickBool('incidentsActive', defaults.incidentsActive),
     controlePermanentActive: pickBool('controlePermanentActive', defaults.controlePermanentActive),
+    auditInterneActive: pickBool('auditInterneActive', defaults.auditInterneActive),
   }
 }

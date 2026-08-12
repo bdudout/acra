@@ -21,7 +21,7 @@
  *  - APPROBATION → peut approuver (utilisé pour les Risk Managers sur une analyse spécifique)
  */
 
-export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER'
+export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER' | 'AUDITEUR'
 export type AnalysePermission = 'LECTURE' | 'EDITION' | 'APPROBATION'
 
 export interface SessionUser {
@@ -244,6 +244,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN:        'Administrateur',
   SUPER_ADMIN:  'Super-administrateur',
   DIRECTION_METIER: 'Direction métier',
+  AUDITEUR:     'Auditeur',
 }
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -254,6 +255,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   ADMIN:        'Administre SON organisation : gère les comptes de son périmètre et les analyses. Pas les réglages d\'instance (SMTP, SSO, politique mdp), ni les autres organisations, ni la création de super-administrateurs',
   SUPER_ADMIN:  'Niveau instance : réglages globaux (SMTP, SSO, politique mdp), gestion des organisations et de tous les comptes, journal d\'audit, traverse tous les périmètres',
   DIRECTION_METIER: 'Direction métier — consulte les analyses en lecture seule et accepte (ou refuse) les risques résiduels (acceptation du risque), distincte de la validation de l\'analyse',
+  AUDITEUR: 'Auditeur (3ᵉ ligne de défense) — lecture globale sur l\'ensemble du dispositif, écriture réservée au module Audit interne (missions, constats, recommandations) ; personne d\'autre ne modifie ses constats',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -264,6 +266,7 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   ADMIN:        'bg-red-100 text-red-700',
   SUPER_ADMIN:  'bg-slate-200 text-slate-800',
   DIRECTION_METIER: 'bg-cyan-100 text-cyan-800',
+  AUDITEUR: 'bg-purple-100 text-purple-800',
 }
 
 export const PERMISSION_LABELS: Record<AnalysePermission, string> = {

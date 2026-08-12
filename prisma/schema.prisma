@@ -17,6 +17,7 @@ enum UserRole {
   ADMIN // Administration de son organisation (comptes de son périmètre)
   SUPER_ADMIN // Niveau instance : gère les organisations et traverse tous les périmètres
   DIRECTION_METIER // Lecture seule + acceptation des risques résiduels (acceptation du risque)
+  AUDITEUR // 3ᵉ ligne : lecture globale, écriture sur le seul module Audit interne
 }
 
 // Portée d'une appartenance à une organisation (cf. multi-organisation hiérarchique).
@@ -115,17 +116,18 @@ model Organization {
   // Date d'envoi du préavis de purge (mode démo) — anti-doublon ; réinitialisé quand l'org redevient active
   warnedAt       DateTime?
 
-  membres     OrgMembership[]
-  analyses    Analyse[]
-  config      OrganizationConfig?
-  conformites Conformite[]
-  derogations Derogation[]
-  processus   Processus[]
-  riskItems   RiskItem[]
-  riskActions RiskAction[]
-  incidents   Incident[]
-  controles   Controle[]
-  campagnes   Campagne[]
+  membres       OrgMembership[]
+  analyses      Analyse[]
+  config        OrganizationConfig?
+  conformites   Conformite[]
+  derogations   Derogation[]
+  processus     Processus[]
+  riskItems     RiskItem[]
+  riskActions   RiskAction[]
+  incidents     Incident[]
+  controles     Controle[]
+  campagnes     Campagne[]
+  auditMissions AuditMission[]
 
   @@index([parentId])
   @@index([path])
@@ -191,10 +193,11 @@ model RiskItem {
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
 
-  actions     RiskAction[]
-  incidents   Incident[]
-  controles   Controle[]
-  evaluations CampagneEvaluation[]
+  actions       RiskAction[]
+  incidents     Incident[]
+  controles     Controle[]
+  evaluations   CampagneEvaluation[]
+  auditConstats AuditConstat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -227,7 +230,7 @@ model Campagne {
   clotureePar String?
   clotureeLe  DateTime?
 
-  evaluations CampagneEvaluation[]
+  evaluations   CampagneEvaluation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,6 +425,69 @@ model RiskAction {
   @@index([riskItemId])
   @@index([organizationId])
   @@index([statut])
+}
+
+// ─── Module M4 — Audit interne (3ᵉ ligne de défense) ─────────────────────────
+// L'auditeur planifie des missions (périmètre = processus/entités) et formule
+// des constats (criticité + recommandation) dont il suit la résolution. Les
+// constats régulateur (ACPR/BCE) sont le même objet, source différente.
+// Cloisonnement : seul le rôle AUDITEUR (et l'admin) écrit ; les autres lisent.
+// Cf. lib/audit.ts.
+model AuditMission {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  objectif    String?   @db.Text
+  perimetre   String?   @db.Text
+  responsable String?
+  dateDebut   DateTime?
+  dateFin     DateTime?
+
+  // PLANIFIEE | EN_COURS | CLOTUREE
+  statut String @default("PLANIFIEE")
+
+  constats AuditConstat[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([statut])
+}
+
+// Constat d'audit (ou de régulateur) avec recommandation et suivi de résolution.
+model AuditConstat {
+  id             String       @id @default(cuid())
+  missionId      String
+  mission        AuditMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  intitule       String
+  description    String? @db.Text
+  recommandation String? @db.Text
+  criticite      Int? // 1-4
+  // AUDIT_INTERNE | REGULATEUR
+  source         String  @default("AUDIT_INTERNE")
+
+  // Suivi de la recommandation.
+  responsableAction String?
+  echeance          DateTime?
+  // OUVERT | EN_COURS | RESOLU | ACCEPTE
+  statut            String    @default("OUVERT")
+
+  // Rattachement optionnel au registre (traçabilité audit → risque).
+  riskItemId String?
+  riskItem   RiskItem? @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([missionId])
+  @@index([organizationId])
+  @@index([statut])
+  @@index([riskItemId])
 }
 
 // ─── Palier 2 : conformité au niveau ORGANISATION (par référentiel), versionnée ──
@@ -1040,6 +1106,7 @@ model OrganizationConfig {
   registreRisquesActive      Boolean       @default(false)
   incidentsActive            Boolean       @default(false)
   controlePermanentActive    Boolean       @default(false)
+  auditInterneActive         Boolean       @default(false)
   // Échelles de cotation des 4 sous-critères de dangerosité de l'écosystème (atelier 3)
   // — { dependance|penetration|maturite|confiance: { niveaux: [{valeur, nom, description}] } }.
   // Vide ⇒ repli sur les défauts (cf. lib/ecosystem-echelles.ts).

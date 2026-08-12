@@ -81,6 +81,7 @@ export async function GET(_req: NextRequest) {
     registreRisquesActive: cfg.registreRisquesActive,
     incidentsActive: cfg.incidentsActive,
     controlePermanentActive: cfg.controlePermanentActive,
+    auditInterneActive: cfg.auditInterneActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -194,6 +195,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.registreRisquesActive === 'boolean') data.registreRisquesActive = body.registreRisquesActive
   if (typeof body.incidentsActive === 'boolean') data.incidentsActive = body.incidentsActive
   if (typeof body.controlePermanentActive === 'boolean') data.controlePermanentActive = body.controlePermanentActive
+  if (typeof body.auditInterneActive === 'boolean') data.auditInterneActive = body.auditInterneActive
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 
