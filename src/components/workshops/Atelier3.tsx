@@ -20,7 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
-import { Map as MapIcon, Lightbulb, Puzzle, Handshake } from 'lucide-react'
+import { Map as MapIcon, Lightbulb, Puzzle, Handshake, ClipboardList, ShieldCheck } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -517,9 +517,9 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
       {/* Onglets */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
         {[
-          { id: 'pp',        label: `🤝 ${t.workshop.a3.tabEco} (${parties.length})` },
-          { id: 'scenarios', label: `📋 ${t.workshop.a3.tabScen} (${scenarios.length})` },
-          { id: 'mesures',   label: `🛡️ ${t.workshop.a3.ecoMeasLabel}` },
+          { id: 'pp',        label: <><Handshake size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{`${t.workshop.a3.tabEco} (${parties.length})`}</> },
+          { id: 'scenarios', label: <><ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{`${t.workshop.a3.tabScen} (${scenarios.length})`}</> },
+          { id: 'mesures',   label: <><ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a3.ecoMeasLabel}</> },
         ].map(tabItem => (
           <button key={tabItem.id} onClick={() => setTab(tabItem.id as any)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${tab === tabItem.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}>

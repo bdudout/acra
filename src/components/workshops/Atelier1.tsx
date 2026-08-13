@@ -22,7 +22,7 @@
  *  - flashMode   : mode « Flash » (Club EBIOS) — parcours rapide guidé, conserve le flag dans l'URL
  */
 
-import { Building2, Lightbulb, Link2, Star, Zap } from 'lucide-react'
+import { Building2, Lightbulb, Link2, Star, Zap, Target, Briefcase, Monitor, AlertTriangle, Lock, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -376,12 +376,12 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
     doSave()
   }
 
-  const tabs = [
-    { id: 'perimetre' as const, label: `1. ${t.workshop.a1.tabScope}`, icon: '🎯' },
-    { id: 'vm'        as const, label: `2. ${t.workshop.a1.tabVM}`,    icon: '💼' },
-    { id: 'biens'     as const, label: `3. ${t.workshop.a1.tabBS}`,    icon: '🖥️' },
-    { id: 'er'        as const, label: `4. ${t.workshop.a1.tabER}`,    icon: '⚠️' },
-    { id: 'socle'     as const, label: `5. ${t.workshop.a1.tabSocle}`, icon: '🔒' },
+  const tabs: { id: 'perimetre' | 'vm' | 'biens' | 'er' | 'socle'; label: string; Icon: LucideIcon }[] = [
+    { id: 'perimetre', label: `1. ${t.workshop.a1.tabScope}`, Icon: Target },
+    { id: 'vm',        label: `2. ${t.workshop.a1.tabVM}`,    Icon: Briefcase },
+    { id: 'biens',     label: `3. ${t.workshop.a1.tabBS}`,    Icon: Monitor },
+    { id: 'er',        label: `4. ${t.workshop.a1.tabER}`,    Icon: AlertTriangle },
+    { id: 'socle',     label: `5. ${t.workshop.a1.tabSocle}`, Icon: Lock },
   ]
 
   const completionSteps = [
@@ -428,7 +428,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
               activeTab === tab.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <span>{tab.icon}</span>{tab.label}
+            <tab.Icon size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{tab.label}
           </button>
         ))}
       </div>

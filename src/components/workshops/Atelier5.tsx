@@ -30,7 +30,7 @@
  *                  risk register dropdown)
  */
 
-import { ShieldCheck, Star } from 'lucide-react'
+import { ShieldCheck, Star, AlertTriangle, BarChart3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -365,9 +365,9 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
 
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
         {[
-          { id: 'risques',  label: `⚠️ ${t.workshop.a5.tabRisques} (${risques.length})` },
-          { id: 'mesures',  label: `🛡️ ${t.workshop.a5.tabMesures} (${mesures.length})` },
-          { id: 'synthese', label: `📊 ${t.workshop.a5.tabPlan}` },
+          { id: 'risques',  label: <><AlertTriangle size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{`${t.workshop.a5.tabRisques} (${risques.length})`}</> },
+          { id: 'mesures',  label: <><ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{`${t.workshop.a5.tabMesures} (${mesures.length})`}</> },
+          { id: 'synthese', label: <><BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a5.tabPlan}</> },
         ].map(tabItem => (
           <button key={tabItem.id} onClick={() => setTab(tabItem.id as any)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${tab === tabItem.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600'}`}>

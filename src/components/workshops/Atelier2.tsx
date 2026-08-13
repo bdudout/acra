@@ -24,7 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
-import { Bot, VenetianMask, Zap } from 'lucide-react'
+import { Bot, VenetianMask, Zap, BarChart3 } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -250,13 +250,13 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
           onClick={() => setActiveTab('saisie')}
           className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'saisie' ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
         >
-          🎭 {t.workshop.a2.tabSR}
+          <VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a2.tabSR}
         </button>
         <button
           onClick={() => setActiveTab('synthese')}
           className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'synthese' ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
         >
-          📊 {t.workshop.a2.tabCouples}
+          <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a2.tabCouples}
         </button>
       </div>
 
