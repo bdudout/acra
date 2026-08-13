@@ -1,5 +1,6 @@
 'use client'
 
+import { Siren } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -148,7 +149,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🚨 {n.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><Siren size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {n.title}</h1>
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-500 dark:text-gray-400">{n.exportLdc}</span>
           <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>

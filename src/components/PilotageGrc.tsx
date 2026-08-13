@@ -1,5 +1,6 @@
 'use client'
 
+import { BarChart3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
@@ -104,7 +105,7 @@ export default function PilotageGrc() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">📊 {p.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><BarChart3 size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
         <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>

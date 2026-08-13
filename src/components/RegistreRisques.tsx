@@ -1,5 +1,6 @@
 'use client'
 
+import { NotebookText } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -127,7 +128,7 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">📒 {r.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><NotebookText size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {r.title}</h1>
         {canEdit && !showForm && <button onClick={() => { setForm(EMPTY); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{r.newBtn}</button>}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>

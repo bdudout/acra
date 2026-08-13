@@ -30,6 +30,7 @@
  *                  risk register dropdown)
  */
 
+import { ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -680,7 +681,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
             const importedRefs = new Set(mesures.map((m: any) => (String(m.nom).match(/^\[([^\]]+)\]/) || [])[1]).filter(Boolean))
             return (
               <div className="card p-5 border-l-4 border-l-amber-400">
-                <h3 className="font-semibold text-gray-800 mb-1">🛡️ {t.workshop.a5.ecartsTitle}</h3>
+                <h3 className="font-semibold text-gray-800 mb-1"><ShieldCheck size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a5.ecartsTitle}</h3>
                 <p className="text-xs text-gray-500 mb-3">{t.workshop.a5.ecartsIntro}</p>
                 <ul className="space-y-1.5">
                   {nonConformites.map(nc => {

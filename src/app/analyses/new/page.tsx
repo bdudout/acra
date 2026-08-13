@@ -1,5 +1,6 @@
 'use client'
 
+import { Lightbulb } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -55,7 +56,7 @@ export default function NewAnalysePage() {
         </div>
 
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-8">
-          <h3 className="font-semibold text-indigo-900 mb-1">💡 {t.newAnalysis.howTitle}</h3>
+          <h3 className="font-semibold text-indigo-900 mb-1"><Lightbulb size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.newAnalysis.howTitle}</h3>
           <p className="text-sm text-indigo-800">{t.newAnalysis.howDesc}</p>
         </div>
 

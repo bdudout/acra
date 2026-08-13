@@ -1,5 +1,6 @@
 'use client'
 
+import { ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -83,7 +84,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-gray-800 mb-1">🛡️ {t.dashboard.conformiteTitle}</h2>
+      <h2 className="font-semibold text-gray-800 mb-1"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.conformiteTitle}</h2>
       <p className="text-xs text-gray-500 mb-4">{t.dashboard.conformiteSubtitle}</p>
       <div className="space-y-4">
         {rows.map(r => {

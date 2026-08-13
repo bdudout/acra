@@ -1,5 +1,6 @@
 'use client'
 
+import { Landmark } from 'lucide-react'
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -66,7 +67,7 @@ export default function ReglementaireManager({ canAssess }: { canAssess: boolean
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🏛️ {r.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><Landmark size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {r.title}</h1>
         <a href="/api/reglementaire/dora?format=csv" className="btn-secondary text-sm">{r.exportCsv}</a>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{r.subtitle}</p>

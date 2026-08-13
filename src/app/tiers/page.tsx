@@ -1,3 +1,4 @@
+import { Handshake } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -77,7 +78,7 @@ export default async function TiersPage() {
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6 flex-wrap">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">🤝 {t.tiers.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900"><Handshake size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.tiers.title}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{t.tiers.subtitle}</p>
           </div>
         </div>

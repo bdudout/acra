@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/format'
 import { sanitizeConformite, conformiteStats, deriveNonConformites } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
-import { ClipboardList, Send, Settings, CheckCircle2, AlertCircle, AlertTriangle, KeyRound, Building2 } from 'lucide-react'
+import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Send, Settings, TrendingUp, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -229,7 +229,7 @@ export default async function DashboardPage() {
             {analyses.length > 0 && (
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-800">📊 {t.dashboard.overview}</h2>
+                  <h2 className="font-semibold text-gray-800"><BarChart3 size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.overview}</h2>
                   {analyses.length > 6 && (
                     <Link href="/analyses" className="text-sm text-ebios-600 hover:underline">
                       {t.dashboard.viewAll} ({stats.total}) →
@@ -243,7 +243,7 @@ export default async function DashboardPage() {
             {/* Radar global de la menace de l'écosystème — tous les tiers de toutes les analyses */}
             {allTiers.length > 0 && (
               <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-1">🌐 {t.dashboard.ecosystemTitle}</h2>
+                <h2 className="font-semibold text-gray-800 mb-1"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.ecosystemTitle}</h2>
                 <p className="text-xs text-gray-500 mb-3">{t.dashboard.ecosystemSubtitle}</p>
                 <EcosystemRadar parties={allTiers} hideHeader aggregated manageTiersHref="/tiers" />
               </div>
@@ -339,7 +339,7 @@ export default async function DashboardPage() {
 
             {analysesAvecCritiques.length > 0 && (
               <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-3">🔴 {t.dashboard.criticalTitle}</h2>
+                <h2 className="font-semibold text-gray-800 mb-3"><AlertCircle size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.criticalTitle}</h2>
                 <div className="space-y-2">
                   {analysesAvecCritiques.map(a => {
                     const critiques = a.risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique')
@@ -368,7 +368,7 @@ export default async function DashboardPage() {
           <div className="space-y-6">
             {analyses.length > 0 && (
               <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-3">📈 {t.dashboard.progressTitle}</h2>
+                <h2 className="font-semibold text-gray-800 mb-3"><TrendingUp size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.progressTitle}</h2>
                 <div className="space-y-2">
                   {ATELIERS_META.map((a, i) => {
                     const done = analyses.filter((x: any) => x.atelierCourant > i + 1 || x.statut === 'TERMINE').length
@@ -390,7 +390,7 @@ export default async function DashboardPage() {
             )}
 
             <div className="card p-5 space-y-2">
-              <h2 className="font-semibold text-gray-800 mb-3">⚡ {t.dashboard.quickTitle}</h2>
+              <h2 className="font-semibold text-gray-800 mb-3"><Zap size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.quickTitle}</h2>
               <Link href="/analyses" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                 📋 {t.dashboard.quickAll}
               </Link>

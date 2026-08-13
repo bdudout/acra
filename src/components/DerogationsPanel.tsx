@@ -1,5 +1,6 @@
 'use client'
 
+import { IdCard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
@@ -111,7 +112,7 @@ export default function DerogationsPanel({
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-1">
-        <h3 className="font-semibold text-gray-800 dark:text-gray-100">🪪 {d.title}</h3>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100"><IdCard size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {d.title}</h3>
         {canEdit && (
           <button onClick={() => setCreating(v => !v)} className="text-sm text-ebios-600 hover:text-ebios-800 dark:text-ebios-300 font-medium">
             {creating ? d.cancel : `+ ${d.newBtn}`}

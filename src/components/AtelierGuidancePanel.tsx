@@ -1,5 +1,6 @@
 'use client'
 
+import { Users, Target, Link2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -83,8 +84,7 @@ export default function AtelierGuidancePanel({ num }: Props) {
 
         {/* Participants recommandés */}
         <section className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            👥 {g.participantsTitle}
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"><Users size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {g.participantsTitle}
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {data.participants.map(p => (
@@ -97,8 +97,7 @@ export default function AtelierGuidancePanel({ num }: Props) {
 
         {/* Conseils essentiels */}
         <section className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            🎯 {g.tipsTitle}
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"><Target size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {g.tipsTitle}
           </h3>
           <ul className="space-y-2">
             {data.tips.map((tip, i) => (
@@ -113,8 +112,7 @@ export default function AtelierGuidancePanel({ num }: Props) {
 
         {/* En savoir plus */}
         <section>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            🔗 {g.learnMore}
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"><Link2 size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {g.learnMore}
           </h3>
           <ul className="space-y-1">
             {GUIDANCE_LINKS.map(l => (

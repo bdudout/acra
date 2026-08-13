@@ -1,5 +1,6 @@
 'use client'
 
+import { Home } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -101,7 +102,7 @@ export default function AdminDashboardPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">🏠 Administration ACRA</h1>
+          <h1 className="text-2xl font-bold text-gray-900"><Home size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> Administration ACRA</h1>
           <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme</p>
         </div>
 

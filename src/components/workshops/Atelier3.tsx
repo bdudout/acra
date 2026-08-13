@@ -20,6 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
+import { Map as MapIcon, Lightbulb, Puzzle, Handshake } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -582,7 +583,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* Cartographie des zones de dangerosité FM5 */}
           {parties.length > 0 && (
             <div className="card p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">🗺️ {t.workshop.a3.ppMapTitle}</h3>
+              <h3 className="font-semibold text-gray-800 mb-3"><MapIcon size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a3.ppMapTitle}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {ZONE_ORDER.map(zone => {
                   const info = ZONE_INFO[zone]
@@ -690,7 +691,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* ── Propositions par critère DICT ─────────────────────────── */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-800">💡 {t.workshop.a3.scenExTitle}</h3>
+              <h3 className="font-semibold text-gray-800"><Lightbulb size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a3.scenExTitle}</h3>
               <button
                 onClick={() => setShowScenExamples(v => !v)}
                 className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -1105,7 +1106,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
 
           {/* ── Composer : référentiel + manuel + clauses contractuelles ── */}
           <div className="card p-5 border-l-4 border-l-ebios-400">
-            <h3 className="font-semibold text-gray-800 mb-1">🧩 {t.workshop.a3.measComposerTitle}</h3>
+            <h3 className="font-semibold text-gray-800 mb-1"><Puzzle size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a3.measComposerTitle}</h3>
             <p className="text-xs text-gray-500 mb-3">{t.workshop.a3.measComposerIntro}</p>
 
             {retained.length === 0 ? (
@@ -1246,8 +1247,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* ── Vue par prestataire ── */}
           {groupByPP && ppGroups.map(g => (
             <div key={g.partiePrenante || '__none__'} className="card p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">
-                🤝 {g.partiePrenante || <span className="italic text-gray-400">{t.workshop.a3.measGroupPPUnassigned}</span>}
+              <h3 className="font-semibold text-gray-800 mb-3"><Handshake size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {g.partiePrenante || <span className="italic text-gray-400">{t.workshop.a3.measGroupPPUnassigned}</span>}
                 <span className="ml-2 text-xs font-normal text-gray-400">({g.measures.length})</span>
               </h3>
               <ul className="space-y-1.5">

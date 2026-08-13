@@ -1,3 +1,4 @@
+import { ShieldCheck } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -80,7 +81,7 @@ export default async function ConformiteGlobalPage() {
       <Navbar />
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">🛡️ {t.conformiteGlobal.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.conformiteGlobal.title}</h1>
           <p className="text-gray-500 text-sm mt-0.5">{t.conformiteGlobal.subtitle}</p>
         </div>
 

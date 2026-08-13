@@ -1,3 +1,4 @@
+import { ShieldCheck } from 'lucide-react'
 import type { ConformiteStats } from '@/lib/conformite'
 
 interface Props {
@@ -33,7 +34,7 @@ export default function ConformitePie({ stats, frameworkNom, title, rateLabel, l
 
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-gray-800 mb-1">🛡️ {title}</h2>
+      <h2 className="font-semibold text-gray-800 mb-1"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {title}</h2>
       <p className="text-xs text-gray-500 mb-3">{frameworkNom}{note ? ` · ${note}` : ''}</p>
       <div className="flex items-center gap-5 flex-wrap">
         <div className="relative" style={{ width: 120, height: 120 }}>

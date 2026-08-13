@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, Check } from 'lucide-react'
+import { Check, Globe, Lock, Palette, User } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { LOCALES, LOCALE_LABELS } from '@/lib/i18n'
@@ -147,7 +147,7 @@ export default function ProfilePage() {
 
         {/* ── Section identité ──────────────────────────────────────── */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-5">👤 {t.profile.identityTitle}</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-5"><User size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.profile.identityTitle}</h2>
 
           {profileSuccess && (
             <div className="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
@@ -212,7 +212,7 @@ export default function ProfilePage() {
 
         {/* ── Section langue ────────────────────────────────────────── */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">🌐 Langue de l&apos;interface</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> Langue de l&apos;interface</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {LOCALES.map(l => (
               <button
@@ -234,7 +234,7 @@ export default function ProfilePage() {
 
         {/* ── Section thème ─────────────────────────────────────────── */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">🎨 {t.profile.themeTitle}</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4"><Palette size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.profile.themeTitle}</h2>
           <div className="grid grid-cols-3 gap-2">
             {THEME_OPTIONS.map(({ value, icon }) => {
               const label = value === 'light'
@@ -269,7 +269,7 @@ export default function ProfilePage() {
 
         {/* ── Section mot de passe ──────────────────────────────────── */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-5">🔒 {t.profile.changePassword}</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-5"><Lock size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.profile.changePassword}</h2>
 
           {pwdSuccess && (
             <div className="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">

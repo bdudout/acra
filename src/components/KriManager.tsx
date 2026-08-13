@@ -1,5 +1,6 @@
 'use client'
 
+import { TrendingUp } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -114,7 +115,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">📈 {k.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><TrendingUp size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {k.title}</h1>
         {canDefine && <button onClick={openCreate} className="btn-primary text-sm">{k.newBtn}</button>}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{k.subtitle}</p>

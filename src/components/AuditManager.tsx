@@ -1,5 +1,6 @@
 'use client'
 
+import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, transitionMissionAutorisee } from '@/lib/audit'
@@ -148,7 +149,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🔎 {a.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><Search size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {a.title}</h1>
         {canWrite && !showMForm && <button onClick={() => { setMForm(EMPTY_M); setShowMForm(true) }} className="btn-primary text-sm">{a.newMissionBtn}</button>}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{a.subtitle}</p>

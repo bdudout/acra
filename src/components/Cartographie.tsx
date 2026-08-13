@@ -1,5 +1,6 @@
 'use client'
 
+import { Map as MapIcon } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -140,7 +141,7 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🗺️ {c.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><MapIcon size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
           <button className={`${toggle} ${mode === 'inherent' ? on : off}`} onClick={() => setMode('inherent')}>{c.inherent}</button>
           <button className={`${toggle} ${mode === 'residual' ? on : off}`} onClick={() => setMode('residual')}>{c.residual}</button>

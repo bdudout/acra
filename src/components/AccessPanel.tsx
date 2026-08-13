@@ -1,5 +1,6 @@
 'use client'
 
+import { ClipboardList, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -157,7 +158,7 @@ export default function AccessPanel({
 
       {/* Statut d'approbation */}
       <div className="card p-5">
-        <h3 className="font-semibold text-gray-800 mb-3">📋 {t.access.statusTitle}</h3>
+        <h3 className="font-semibold text-gray-800 mb-3"><ClipboardList size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.access.statusTitle}</h3>
         <div className="flex items-center gap-3 mb-4">
           <span className={`text-sm px-3 py-1 rounded-full font-medium ${statutInfo.color}`}>
             {statutInfo.icon} {statusLabel(statut)}
@@ -265,7 +266,7 @@ export default function AccessPanel({
       {/* Gestion des accès */}
       {canManage && (
         <div className="card p-5">
-          <h3 className="font-semibold text-gray-800 mb-4">👥 {t.access.collaboTitle}</h3>
+          <h3 className="font-semibold text-gray-800 mb-4"><Users size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.access.collaboTitle}</h3>
 
           {/* Propriétaire */}
           <div className="flex items-center gap-3 p-3 bg-ebios-50 rounded-lg border border-ebios-100 mb-3">

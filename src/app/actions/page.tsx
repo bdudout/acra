@@ -1,3 +1,4 @@
+import { ShieldCheck } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { uid } from '@/lib/uid'
@@ -167,7 +168,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
         {/* En-tête */}
         <div className="flex items-center gap-4 mb-6 flex-wrap">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">🛡️ {t.actions.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.actions.title}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{t.actions.subtitle}</p>
           </div>
         </div>

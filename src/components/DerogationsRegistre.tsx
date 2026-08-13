@@ -1,5 +1,6 @@
 'use client'
 
+import { IdCard } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -93,7 +94,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false }:
   return (
     <div>
       <div className="flex items-start justify-between gap-4 mb-1">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🪪 {d.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><IdCard size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {d.title}</h1>
         {canCreate && (
           <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm whitespace-nowrap">
             {creating ? d.cancel : `+ ${d.newBtn}`}

@@ -1,5 +1,6 @@
 'use client'
 
+import { FolderTree } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { buildProcessusTree, type ProcessusTree } from '@/lib/processus'
@@ -85,7 +86,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">🗂️ {p.title}</h1>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1"><FolderTree size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
 
       {canEdit && (

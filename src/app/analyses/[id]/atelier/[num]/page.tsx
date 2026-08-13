@@ -1,3 +1,4 @@
+import { ShieldCheck } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -237,7 +238,7 @@ export default async function AtelierPage({
         {/* Catalogue de vulnérabilités issu du socle (ateliers 3 & 4) */}
         {showCatalogue && (
           <div className="card p-5 mb-6 border-l-4 border-l-red-400">
-            <h2 className="font-semibold text-gray-800 mb-1">🛡️ {t.conformite.vulnPanelTitle}</h2>
+            <h2 className="font-semibold text-gray-800 mb-1"><ShieldCheck size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.conformite.vulnPanelTitle}</h2>
             <p className="text-xs text-gray-500 mb-3">{t.conformite.vulnPanelIntro}</p>
             {nonConfItems.length === 0 ? (
               <p className="text-sm text-gray-500">{t.conformite.vulnPanelEmpty}</p>

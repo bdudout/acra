@@ -1,5 +1,6 @@
 'use client'
 
+import { FlaskConical } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS } from '@/lib/controle'
@@ -164,7 +165,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">🧪 {c.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><FlaskConical size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
         {canDefine && !showForm && (
           <button onClick={() => { setForm(EMPTY); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>
         )}

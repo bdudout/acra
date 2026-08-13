@@ -22,6 +22,7 @@
  * if `t.ateliersMeta` is not populated (e.g. during SSR hydration).
  */
 
+import { BookOpen } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ATELIERS_META } from '@/lib/ebios-data'
@@ -142,7 +143,7 @@ export default function EbiosGuide() {
 
       {/* Ressources ANSSI */}
       <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-        <h3 className="text-sm font-semibold text-indigo-900 mb-2">📚 {t.dashboard.anssiTitle}</h3>
+        <h3 className="text-sm font-semibold text-indigo-900 mb-2"><BookOpen size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.anssiTitle}</h3>
         <ul className="space-y-1 text-xs text-indigo-700">
           <li>
             <a
