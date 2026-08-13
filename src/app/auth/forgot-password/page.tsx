@@ -1,5 +1,6 @@
 'use client'
 
+import { KeyRound } from 'lucide-react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -10,7 +11,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-3" aria-hidden="true">🔑</div>
+          <div className="text-4xl mb-3" aria-hidden="true"><KeyRound size={32} aria-hidden="true" /></div>
           <h1 className="text-2xl font-bold text-gray-900">{t.auth.forgot.title}</h1>
           <p className="text-gray-500 text-sm mt-1">{t.auth.forgot.subtitle}</p>
         </div>

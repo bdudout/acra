@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, Target, Link2 } from 'lucide-react'
+import { Lightbulb, Link2, Target, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -57,7 +57,7 @@ export default function AtelierGuidancePanel({ num }: Props) {
           title={g.panelTitle}
           className="sticky top-24 flex h-32 w-10 flex-col items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-ebios-50 hover:text-ebios-700 transition-colors"
         >
-          <span className="text-lg">💡</span>
+          <span className="text-lg"><Lightbulb size={18} aria-hidden="true" /></span>
           <span className="[writing-mode:vertical-rl] rotate-180 text-xs font-medium">{g.panelTitle}</span>
         </button>
       </aside>
@@ -71,7 +71,7 @@ export default function AtelierGuidancePanel({ num }: Props) {
       <div className="sticky top-24 rounded-lg border border-gray-200 bg-white p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-            <span>💡</span>{g.panelTitle}
+            <span><Lightbulb size={18} aria-hidden="true" /></span>{g.panelTitle}
           </h2>
           <button
             type="button"

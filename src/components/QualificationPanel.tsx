@@ -1,5 +1,6 @@
 'use client'
 
+import { Compass } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import {
@@ -88,7 +89,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
       <div className="card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span>🧭</span>
+            <span><Compass size={18} aria-hidden="true" /></span>
             <span className="text-sm font-medium text-gray-800">{t.qualification.title}</span>
           </div>
           {canEdit && (
@@ -118,7 +119,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
   return (
     <div className="card p-6">
       <div className="flex items-start gap-2 mb-1">
-        <span className="text-lg">🧭</span>
+        <span className="text-lg"><Compass size={18} aria-hidden="true" /></span>
         <h2 className="text-base font-semibold text-gray-800">{t.qualification.title}</h2>
       </div>
       <p className="text-sm text-gray-500 mb-5">{t.qualification.intro}</p>

@@ -22,6 +22,7 @@
  *  - analyse     : parent Analyse (used for strategic scenario names in dropdowns)
  */
 
+import { Star, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -229,7 +230,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
     <div className="space-y-6">
       {flashMode && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-start gap-3">
-          <span className="text-xl flex-shrink-0" aria-hidden="true">⚡</span>
+          <span className="text-xl flex-shrink-0" aria-hidden="true"><Zap size={20} aria-hidden="true" /></span>
           <p className="text-sm text-amber-800">{t.workshop.a4.flashHint}</p>
         </div>
       )}
@@ -378,7 +379,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                             <button key={i} onClick={() => addAction(s.id, a)}
                               title={a.pertinent ? t.workshop.relevantLabel : undefined}
                               className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color} hover:opacity-80 transition-opacity ${a.pertinent ? 'ring-1 ring-ebios-400' : ''}`}>
-                              {a.pertinent && <span aria-hidden>⭐ </span>}+ {a.nom}
+                              {a.pertinent && <span aria-hidden><Star size={18} aria-hidden="true" /></span>}+ {a.nom}
                             </button>
                           )
                         })}

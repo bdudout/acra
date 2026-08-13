@@ -1,5 +1,6 @@
 'use client'
 
+import { Cookie } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
@@ -35,7 +36,7 @@ export default function CookieBanner() {
   return (
     <div ref={ref} className="fixed bottom-0 inset-x-0 z-50 bg-gray-900 text-white shadow-2xl" role="region" aria-label="Information sur les cookies">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <span className="text-lg flex-shrink-0" aria-hidden="true">🍪</span>
+        <span className="text-lg flex-shrink-0" aria-hidden="true"><Cookie size={18} aria-hidden="true" /></span>
         <p className="text-sm flex-1 text-gray-200">
           ACRA utilise uniquement des cookies <strong className="text-white">strictement nécessaires</strong> à son
           fonctionnement&nbsp;: authentification (session sécurisée) et préférence de langue.

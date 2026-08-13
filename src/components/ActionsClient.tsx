@@ -1,5 +1,6 @@
 'use client'
 
+import { Search } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/format'
@@ -193,7 +194,7 @@ export default function ActionsClient({
 
         {/* Recherche */}
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Search size={18} aria-hidden="true" /></span>
           <input
             type="search"
             value={search}

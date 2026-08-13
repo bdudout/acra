@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2 } from 'lucide-react'
+import { Building2, Search } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 // Couleur badge selon score de risque
@@ -71,7 +71,7 @@ export default function RisquesClient({
       {/* Barre de recherche */}
       <div className="mb-4">
         <div className="relative max-w-sm">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"><Search size={18} aria-hidden="true" /></span>
           <input
             type="search"
             value={search}

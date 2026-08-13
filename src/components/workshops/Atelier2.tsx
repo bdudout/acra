@@ -24,6 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
+import { Bot, VenetianMask, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -231,7 +232,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
     <div className="space-y-6">
       <div className="bg-red-50 border border-red-200 rounded-xl p-5">
         <div className="flex gap-3">
-          <span className="text-2xl">🎭</span>
+          <span className="text-2xl"><VenetianMask size={24} aria-hidden="true" /></span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
@@ -263,7 +264,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
         <>
           {/* [IA — désactivé] Bloc de suggestions IA à réactiver quand l'intégration sera prête.
           <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl">
-            <span className="text-2xl">🤖</span>
+            <span className="text-2xl"><Bot size={24} aria-hidden="true" /></span>
             <div className="flex-1">
               <p className="text-sm font-medium text-violet-900">{t.workshop.a2.aiTitle}</p>
               <p className="text-xs text-violet-700">
@@ -626,7 +627,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
 
       {flashMode && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-xl flex-shrink-0">⚡</span>
+          <span className="text-xl flex-shrink-0"><Zap size={20} aria-hidden="true" /></span>
           <div>
             <p className="text-sm font-semibold text-amber-900">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</p>
             <p className="text-xs text-amber-700 mt-0.5">{t.analyses.expressInfo}</p>

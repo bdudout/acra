@@ -7,7 +7,7 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
-import { Download, FileText, FileSpreadsheet, FileJson, Trash2 } from 'lucide-react'
+import { Calendar, Download, FileJson, FileSpreadsheet, FileText, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 
@@ -195,7 +195,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
 
         {filtered.length === 0 ? (
           <div className="card p-12 text-center">
-            <div className="text-5xl mb-4">🔍</div>
+            <div className="text-5xl mb-4"><Search size={40} aria-hidden="true" /></div>
             <p className="text-gray-500">{t.analyses.notFound}</p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <Link href="/analyses/new" className="btn-primary inline-block">{t.analyses.createBtn}</Link>
@@ -293,7 +293,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                         </div>
                       )}
                       <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 flex-wrap">
-                        <span><span aria-hidden="true">📅 </span>{t.analyses.created} {formatDate(a.createdAt, locale)}</span>
+                        <span><span aria-hidden="true"><Calendar size={18} aria-hidden="true" /></span>{t.analyses.created} {formatDate(a.createdAt, locale)}</span>
                         <span><span aria-hidden="true">✏️ </span>{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
                         <span>🎭 {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
                         <span>📋 {a._count.scenariosStrategiques} {a._count.scenariosStrategiques === 1 ? t.analyses.scenarioSg : t.analyses.scenarios}</span>

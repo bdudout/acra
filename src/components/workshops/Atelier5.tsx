@@ -30,7 +30,7 @@
  *                  risk register dropdown)
  */
 
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Star } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -750,7 +750,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                               : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-400 hover:text-indigo-600'
                         }`}
                       >
-                        {isReco && !isActive && <span title={t.workshop.a1.recommendedBadge}>⭐</span>}
+                        {isReco && !isActive && <span title={t.workshop.a1.recommendedBadge}><Star size={18} aria-hidden="true" /></span>}
                         <span>{meta.icon}</span>
                         <span>{meta.nom}</span>
                       </button>

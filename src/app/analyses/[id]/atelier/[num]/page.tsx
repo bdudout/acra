@@ -1,4 +1,4 @@
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck, Zap } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -220,7 +220,7 @@ export default async function AtelierPage({
         {/* Bandeau mode Flash */}
         {flashMode && (
           <div className="mb-6 bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-start gap-3">
-            <span className="text-xl">⚡</span>
+            <span className="text-xl"><Zap size={20} aria-hidden="true" /></span>
             <div className="flex-1">
               <span className="font-semibold text-amber-900 text-sm">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</span>
               <span className="text-amber-700 text-sm ml-2">{t.analyses.expressInfo}</span>

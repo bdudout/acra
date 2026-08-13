@@ -22,7 +22,7 @@
  *  - flashMode   : mode « Flash » (Club EBIOS) — parcours rapide guidé, conserve le flag dans l'URL
  */
 
-import { Building2, Link2 } from 'lucide-react'
+import { Building2, Lightbulb, Link2, Star, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -398,7 +398,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
       {/* Explication + progression */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
         <div className="flex gap-3">
-          <span className="text-2xl">💡</span>
+          <span className="text-2xl"><Lightbulb size={24} aria-hidden="true" /></span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
@@ -467,7 +467,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
           </div>
           {(tailleAnalyse === 'TPE' || tailleAnalyse === 'PME') && !flashMode && (
             <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-lg p-3">
-              <span aria-hidden className="text-lg">⚡</span>
+              <span aria-hidden className="text-lg"><Zap size={18} aria-hidden="true" /></span>
               <div className="flex-1">
                 <p className="text-sm text-sky-900">{t.workshop.a1.flashSuggestText}</p>
                 <button
@@ -1111,7 +1111,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     }`}
                   >
                     {isReco && !selected && (
-                      <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold text-indigo-700" title={t.workshop.a1.recommendedBadge}>⭐</span>
+                      <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold text-indigo-700" title={t.workshop.a1.recommendedBadge}><Star size={18} aria-hidden="true" /></span>
                     )}
                     <div className="text-lg mb-0.5">{m.icon}</div>
                     <div className={`text-xs font-semibold leading-tight ${selected ? 'text-indigo-800' : 'text-gray-800'}`}>

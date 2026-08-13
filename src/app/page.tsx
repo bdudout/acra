@@ -1,5 +1,6 @@
 'use client'
 
+import { FlaskConical } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -102,7 +103,7 @@ export default function HomePage() {
         {isDemo && (
           <div className="max-w-2xl mx-auto mb-8 text-left bg-indigo-500/15 border border-indigo-300/30 rounded-2xl px-6 py-5">
             <div className="flex items-center gap-2 font-semibold mb-2">
-              <span aria-hidden="true">🧪</span> {t.demo.homeTitle}
+              <span aria-hidden="true"><FlaskConical size={18} aria-hidden="true" /></span> {t.demo.homeTitle}
             </div>
             <ul className="space-y-1.5 text-sm text-white/85">
               <li>• {t.demo.homeRule1}</li>

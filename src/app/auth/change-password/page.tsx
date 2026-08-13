@@ -1,5 +1,6 @@
 'use client'
 
+import { Lock } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -69,7 +70,7 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-md">
         <div className="card p-8">
           <div className="mb-6">
-            <div className="text-3xl mb-2">🔐</div>
+            <div className="text-3xl mb-2"><Lock size={28} aria-hidden="true" /></div>
             <h1 className="text-xl font-bold text-gray-900">{t.changePassword.title}</h1>
             <p className="text-sm text-gray-500 mt-1">{t.changePassword.subtitle}</p>
             {session?.user?.email && (

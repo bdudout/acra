@@ -1,6 +1,6 @@
 'use client'
 
-import { Home } from 'lucide-react'
+import { ClipboardList, Home, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
             <div className="text-sm text-gray-500 mt-1">Comptes suspendus</div>
           </div>
           <Link href="/admin/audit" className="card p-5 text-center hover:shadow-md transition-shadow">
-            <div className="text-3xl font-bold text-indigo-600">📋</div>
+            <div className="text-3xl font-bold text-indigo-600"><ClipboardList size={28} aria-hidden="true" /></div>
             <div className="text-sm text-gray-500 mt-1">Journal d&apos;audit</div>
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
         {/* Raccourcis */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
           <Link href="/admin/users" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
-            <span className="text-2xl">👥</span>
+            <span className="text-2xl"><Users size={24} aria-hidden="true" /></span>
             <div>
               <div className="font-semibold text-gray-800 text-sm">Gestion des utilisateurs</div>
               <div className="text-xs text-gray-500">Rôles, suspension, suppression</div>
@@ -201,7 +201,7 @@ export default function AdminDashboardPage() {
             </div>
           </Link>
           <Link href="/admin/audit" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
-            <span className="text-2xl">📋</span>
+            <span className="text-2xl"><ClipboardList size={24} aria-hidden="true" /></span>
             <div>
               <div className="font-semibold text-gray-800 text-sm">Journal d&apos;audit</div>
               <div className="text-xs text-gray-500">Tous les événements + export CSV</div>

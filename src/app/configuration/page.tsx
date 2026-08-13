@@ -1,5 +1,6 @@
 'use client'
 
+import { Lock, Palette } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { isAdminRole } from '@/lib/permissions'
 import { sanitizeTaxonomie, type TaxonomieNode } from '@/lib/taxonomie'
@@ -738,7 +739,7 @@ export default function ConfigurationPage() {
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <span className="text-amber-500 text-xl flex-shrink-0">🔒</span>
+            <span className="text-amber-500 text-xl flex-shrink-0"><Lock size={20} aria-hidden="true" /></span>
             <div>
               <p className="text-sm font-medium text-amber-800">{t.config.readOnlyTitle}</p>
               <p className="text-xs text-amber-700 mt-0.5">{t.config.readOnlyDesc}</p>
@@ -983,7 +984,7 @@ export default function ConfigurationPage() {
                 } ${!isAdmin ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="font-semibold text-gray-800 flex items-center gap-2">
-                  <span>🎨</span> {t.config.modeQualitativeTitle}
+                  <span><Palette size={18} aria-hidden="true" /></span> {t.config.modeQualitativeTitle}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">{t.config.modeQualitativeDesc}</p>
               </button>

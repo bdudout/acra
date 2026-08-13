@@ -11,6 +11,7 @@
  * Utilisé sur : /dashboard, /analyses
  */
 
+import { Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -94,7 +95,7 @@ export default function ExpressAnalyseButton({ variant = 'button' }: Props) {
             onClick={ev => ev.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">⚡</span>
+              <span className="text-3xl"><Zap size={28} aria-hidden="true" /></span>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">{e.expressTitle}</h2>
                 <p className="text-sm text-gray-500">{e.expressSubtitle}</p>
