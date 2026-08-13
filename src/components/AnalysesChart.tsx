@@ -1,6 +1,6 @@
 'use client'
 
-import { Landmark } from 'lucide-react'
+import { CheckCircle2, Landmark, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
@@ -89,7 +89,7 @@ export default function AnalysesChart({ analyses }: Props) {
                       )}
                     </div>
                     <div className={`text-xs mt-0.5 ${a.statut === 'TERMINE' ? 'text-green-600' : 'text-orange-500'}`}>
-                      {a.statut === 'TERMINE' ? `✅ ${c.statusDone}` : `⚙️ ${c.statusAtelier} ${a.atelierCourant}/5`}
+                      {a.statut === 'TERMINE' ? <><CheckCircle2 size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{c.statusDone}</> : <><Settings size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{`${c.statusAtelier} ${a.atelierCourant}/5`}</>}
                     </div>
                   </td>
                   <td className="py-3 px-2">

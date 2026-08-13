@@ -7,7 +7,7 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
-import { AlertTriangle, Calendar, ClipboardList, Download, FileJson, FileSpreadsheet, FileText, Landmark, Link2, Search, ShieldCheck, Trash2, VenetianMask } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, ClipboardList, Clock, Download, FileJson, FileSpreadsheet, FileText, FolderOpen, Landmark, Link2, Pencil, Search, Settings, ShieldCheck, Sparkles, Trash2, Trophy, Upload, VenetianMask } from 'lucide-react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 
@@ -146,7 +146,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               className="btn-secondary flex items-center gap-2 text-sm"
               title="Importer une analyse depuis un fichier JSON ou CSV"
             >
-              {importing ? '⏳ Import…' : '📂 Importer'}
+              {importing ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Import…</> : <><FolderOpen size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Importer</>}
             </button>
             <ExpressAnalyseButton variant="button" />
             {demo && (
@@ -156,7 +156,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                 className="btn-secondary flex items-center gap-2 text-sm"
                 title={t.demo.loadExampleHint}
               >
-                {loadingExample ? '⏳ …' : `✨ ${t.demo.loadExample}`}
+                {loadingExample ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />…</> : <><Sparkles size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.demo.loadExample}</>}
               </button>
             )}
             <Link href="/analyses/new" className="btn-primary flex items-center gap-2">
@@ -201,7 +201,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               <Link href="/analyses/new" className="btn-primary inline-block">{t.analyses.createBtn}</Link>
               {demo && (
                 <button onClick={loadExample} disabled={loadingExample} className="btn-secondary">
-                  {loadingExample ? '⏳ …' : `✨ ${t.demo.loadExample}`}
+                  {loadingExample ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />…</> : <><Sparkles size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.demo.loadExample}</>}
                 </button>
               )}
             </div>
@@ -217,11 +217,11 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
 
               const maxTier = getRiskTier(maxRisk)
               const riskBadge = maxTier === 'critique'
-                ? { label: `🔴 ${critiques} ${critiques === 1 ? t.analyses.riskSg : t.analyses.risks}`, cls: 'bg-red-100 text-red-700',    href: '/risques?niveau=critique' }
+                ? { label: <><AlertCircle size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{`${critiques} ${critiques === 1 ? t.analyses.riskSg : t.analyses.risks}`}</>, cls: 'bg-red-100 text-red-700',    href: '/risques?niveau=critique' }
                 : maxTier === 'eleve'
-                  ? { label: `🟠 élevé (${maxRisk})`,    cls: 'bg-orange-100 text-orange-700', href: '/risques?niveau=eleve' }
+                  ? { label: <><Circle size={10} className="inline align-[-0.1em] mr-1 fill-current" aria-hidden="true" />{`élevé (${maxRisk})`}</>,    cls: 'bg-orange-100 text-orange-700', href: '/risques?niveau=eleve' }
                   : maxTier === 'modere'
-                    ? { label: `🟡 modéré (${maxRisk})`, cls: 'bg-yellow-100 text-yellow-700', href: '/risques?niveau=modere' }
+                    ? { label: <><Circle size={10} className="inline align-[-0.1em] mr-1 fill-current" aria-hidden="true" />{`modéré (${maxRisk})`}</>, cls: 'bg-yellow-100 text-yellow-700', href: '/risques?niveau=modere' }
                     : null
 
               // Mesures P1 à faire
@@ -230,10 +230,10 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               const risquesReduire = (a.risques ?? []).filter((r: any) => r.strategie === 'REDUIRE').length
 
               const statutBadge = {
-                TERMINE:  { label: `✅ ${t.analyses.doneStatus}`,           cls: 'bg-green-100 text-green-700'   },
-                APPROUVE: { label: `🏆 ${t.statut.APPROUVE}`,               cls: 'bg-teal-100 text-teal-700'    },
-                SOUMIS:   { label: `📤 ${t.statut.SOUMIS}`,                 cls: 'bg-blue-100 text-blue-700'    },
-                EN_COURS: { label: `⚙️ ${t.analyses.inProgStatus}`,         cls: 'bg-orange-100 text-orange-700' },
+                TERMINE:  { label: <><CheckCircle2 size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.analyses.doneStatus}</>,           cls: 'bg-green-100 text-green-700'   },
+                APPROUVE: { label: <><Trophy size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.statut.APPROUVE}</>,               cls: 'bg-teal-100 text-teal-700'    },
+                SOUMIS:   { label: <><Upload size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.statut.SOUMIS}</>,                 cls: 'bg-blue-100 text-blue-700'    },
+                EN_COURS: { label: <><Settings size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.analyses.inProgStatus}</>,         cls: 'bg-orange-100 text-orange-700' },
               }[a.statut as string] ?? { label: a.statut, cls: 'bg-gray-100 text-gray-700' }
 
               return (
@@ -264,7 +264,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                             className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 hover:opacity-80 transition-opacity"
                             onClick={e => e.stopPropagation()}
                           >
-                            🔽 {risquesReduire} {risquesReduire === 1 ? t.analyses.riskSg : t.analyses.risks} à réduire
+                            <ArrowDown size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{risquesReduire} {risquesReduire === 1 ? t.analyses.riskSg : t.analyses.risks} à réduire
                           </Link>
                         )}
                         {mesuresP1AFaire > 0 && (
@@ -294,7 +294,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                       )}
                       <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 flex-wrap">
                         <span><span aria-hidden="true"><Calendar size={18} aria-hidden="true" /></span>{t.analyses.created} {formatDate(a.createdAt, locale)}</span>
-                        <span><span aria-hidden="true">✏️ </span>{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
+                        <span><Pencil size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
                         <span><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
                         <span><ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.scenariosStrategiques} {a._count.scenariosStrategiques === 1 ? t.analyses.scenarioSg : t.analyses.scenarios}</span>
                         <span><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {a._count.risques} {a._count.risques === 1 ? t.analyses.riskSg : t.analyses.risks}</span>

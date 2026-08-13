@@ -1,6 +1,6 @@
 'use client'
 
-import { Pin } from 'lucide-react'
+import { Pin, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
@@ -55,7 +55,7 @@ export default function ConformiteHistory({ orgId, referentiel, locale, canEdit 
   return (
     <div className="mt-2 border-t border-gray-100 pt-2">
       <button type="button" onClick={toggle} className="text-xs text-gray-600 hover:text-gray-900 font-medium">
-        {open ? '▾' : '▸'} 📈 {d.conformiteHistoryToggle}
+        {open ? '▾' : '▸'} <TrendingUp size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{d.conformiteHistoryToggle}
       </button>
       {open && (
         <div className="mt-2">

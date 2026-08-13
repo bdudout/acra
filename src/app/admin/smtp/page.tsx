@@ -161,7 +161,7 @@ export default function SmtpConfigPage() {
 
             {testMsg && (
               <div className={`rounded-xl px-4 py-3 text-sm border ${testMsg.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                {testMsg.ok ? '✅ ' : '⚠️ '}{testMsg.text}
+                {testMsg.ok ? <CheckCircle2 size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : <AlertTriangle size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" />}{testMsg.text}
               </div>
             )}
 

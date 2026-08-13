@@ -1341,7 +1341,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
           title={t.workshop.a1.proceedWarnTitle}
           message={t.workshop.a1.proceedWarnMsg}
           confirmLabel={t.workshop.a1.proceedAnyway}
-          icon="⚠️"
+          icon={<AlertTriangle size={22} className="text-amber-500" aria-hidden="true" />}
           variant="warning"
           onConfirm={() => { setPendingProceed(false); doSave() }}
           onCancel={() => setPendingProceed(false)}

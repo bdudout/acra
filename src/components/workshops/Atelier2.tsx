@@ -24,7 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
-import { BarChart3, Bot, CheckCircle2, Star, Target, VenetianMask, Zap } from 'lucide-react'
+import { BarChart3, Bot, CheckCircle2, Clock, Sparkles, Star, Target, VenetianMask, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -275,7 +275,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
               onClick={aiSuggest} disabled={aiLoading}
               className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              {aiLoading ? `⏳ ${t.workshop.aiLoading}` : `✨ ${t.workshop.aiBtn}`}
+              {aiLoading ? <><Clock size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.workshop.aiLoading}</> : <><Sparkles size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.workshop.aiBtn}</>}
             </button>
           </div>
           */}
@@ -588,7 +588,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                                   ? 'bg-ebios-100 text-ebios-800 border border-ebios-300'
                                   : 'bg-gray-100 text-gray-600'
                               }`}>
-                                {ov.priorite === 'P1' ? '⭐ ' : ''}{ov.nom}
+                                {ov.priorite === 'P1' ? <Star size={12} className="inline align-[-0.1em] mr-1 text-amber-500" aria-hidden="true" /> : null}{ov.nom}
                               </span>
                             ))}
                             {!(s.objectifsVises?.length) && <span className="text-xs text-gray-500 italic">{t.workshop.a2.ovEmpty}</span>}

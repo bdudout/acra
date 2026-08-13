@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Building2, Handshake, Search } from 'lucide-react'
+import { AlertTriangle, Building2, Handshake, Search, Shuffle } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from '@/lib/tiers'
@@ -273,7 +273,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
       {confirmSig !== null && dupGroups.find(x => tierGroupSignature(x) === confirmSig) && (
         <ConfirmDialog
           variant="warning"
-          icon="🔀"
+          icon={<Shuffle size={22} aria-hidden="true" />}
           title={t.tiers.mergeConfirmTitle}
           message={t.tiers.mergeConfirmMsg.replace('{cible}', mergeTarget[confirmSig] ?? defaultTarget(dupGroups.find(x => tierGroupSignature(x) === confirmSig)!))}
           confirmLabel={t.tiers.mergeBtn}

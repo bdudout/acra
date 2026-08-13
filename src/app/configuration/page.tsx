@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, Palette } from 'lucide-react'
+import { Lock, Palette, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { isAdminRole } from '@/lib/permissions'
 import { sanitizeTaxonomie, type TaxonomieNode } from '@/lib/taxonomie'
@@ -969,7 +969,7 @@ export default function ConfigurationPage() {
                 } ${!isAdmin ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="font-semibold text-gray-800 flex items-center gap-2">
-                  <span>✖️</span> {t.config.modeQuantitativeTitle}
+                  <X size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.config.modeQuantitativeTitle}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">{t.config.modeQuantitativeDesc}</p>
               </button>

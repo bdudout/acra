@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 type ConfirmVariant = 'danger' | 'warning' | 'primary' | 'success'
@@ -14,7 +15,7 @@ interface Props {
   /** Libellé du bouton de confirmation. Défaut : « Supprimer ». */
   confirmLabel?: string
   /** Émoji affiché. Défaut : 🗑️. */
-  icon?: string
+  icon?: ReactNode
   /** Couleur du bouton de confirmation. Défaut : danger (rouge). */
   variant?: ConfirmVariant
 }
@@ -88,7 +89,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-start gap-3 mb-5">
-          <span className="text-2xl flex-shrink-0" aria-hidden="true">{icon ?? '🗑️'}</span>
+          <span className="flex-shrink-0 text-gray-500" aria-hidden="true">{icon ?? <Trash2 size={24} aria-hidden="true" />}</span>
           <div>
             <h3 id={titleId} className="font-semibold text-gray-900 mb-1">
               {title ?? t.deleteDialog.title}

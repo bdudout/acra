@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -225,7 +225,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> CSV
               </a>
               <a href={`/api/export/${analyse.id}?format=json`} className="btn-secondary">
-                🗂 JSON
+                <FileJson size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" />JSON
               </a>
             </>
           </div>

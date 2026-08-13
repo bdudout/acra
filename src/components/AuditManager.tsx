@@ -1,6 +1,6 @@
 'use client'
 
-import { Search } from 'lucide-react'
+import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, transitionMissionAutorisee } from '@/lib/audit'
@@ -196,7 +196,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                     <span className="block text-xs text-gray-400">
                       {jour(m.dateDebut)} → {jour(m.dateFin)}{m.responsable && ` · ${m.responsable}`}
                       {m.synthese.total > 0 && ` · ${a.constatsResume.replace('{r}', String(m.synthese.resolus)).replace('{t}', String(m.synthese.total))}`}
-                      {m.synthese.enRetard > 0 && ` · ⚠ ${m.synthese.enRetard}`}
+                      {m.synthese.enRetard > 0 && <> · <AlertTriangle size={13} className="inline align-[-0.15em] mr-0.5 text-amber-600" aria-hidden="true" />{m.synthese.enRetard}</>}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

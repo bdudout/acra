@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
     action: () => void
     title?: string
     confirmLabel?: string
-    icon?: string
+    icon?: ReactNode
     variant?: 'danger' | 'warning' | 'primary' | 'success'
   } | null>(null)
 
@@ -181,14 +181,14 @@ export default function AdminUsersPage() {
       ? { message: t.admin.suspendConfirm(user.email), action: () => toggleSuspend(user),
           title: t.admin.suspendTitle, confirmLabel: t.admin.suspendConfirmBtn, icon: '⏸️', variant: 'warning' }
       : { message: t.admin.activateConfirm(user.email), action: () => toggleSuspend(user),
-          title: t.admin.activateTitle, confirmLabel: t.admin.activateConfirmBtn, icon: '✅', variant: 'success' })
+          title: t.admin.activateTitle, confirmLabel: t.admin.activateConfirmBtn, icon: <CheckCircle2 size={22} className="text-green-500" aria-hidden="true" />, variant: 'success' })
   }
   function confirmDelete(user: UserItem) {
     setPendingConfirm({ message: t.admin.deleteConfirm(user.email), action: () => deleteUser(user) })
   }
   function confirmResetPassword(user: UserItem) {
     setPendingConfirm({ message: t.admin.resetPwdConfirm(user.email), action: () => resetPassword(user),
-      title: t.admin.resetPwdTitle, confirmLabel: t.admin.resetPwdConfirmBtn, icon: '🔑', variant: 'primary' })
+      title: t.admin.resetPwdTitle, confirmLabel: t.admin.resetPwdConfirmBtn, icon: <KeyRound size={22} aria-hidden="true" />, variant: 'primary' })
   }
 
   async function resetPassword(user: UserItem) {

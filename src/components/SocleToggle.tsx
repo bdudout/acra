@@ -16,6 +16,7 @@
  *  - heritiersCount : nombre d'analyses qui héritent de ce socle
  */
 
+import { Landmark } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -44,7 +45,7 @@ export default function SocleToggle({ analyseId, isSocle, heritiersCount = 0 }: 
     <div className="flex items-center gap-3 p-4 bg-purple-50 border border-purple-200 rounded-xl">
       <div className="flex-1">
         <p className="text-sm font-semibold text-purple-900">
-          {isSocle ? '🏛️ Analyse socle active' : '🏛️ Marquer comme analyse socle'}
+          <Landmark size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{isSocle ? 'Analyse socle active' : 'Marquer comme analyse socle'}
         </p>
         <p className="text-xs text-purple-700 mt-0.5">
           {isSocle

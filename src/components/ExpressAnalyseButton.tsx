@@ -81,7 +81,7 @@ export default function ExpressAnalyseButton({ variant = 'button' }: Props) {
           onClick={openModal}
           className="flex items-center gap-2 p-2 rounded-lg hover:bg-amber-50 text-sm text-amber-700 w-full text-left"
         >
-          ⚡ {quickLabel}
+          <Zap size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{quickLabel}
         </button>
       )}
 

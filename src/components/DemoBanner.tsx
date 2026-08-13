@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical } from 'lucide-react'
+import { Calendar, FlaskConical } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
@@ -33,7 +33,7 @@ export default function DemoBanner() {
           <span className="text-indigo-100">{d.notice}</span>
           {days !== null && (
             <span className="whitespace-nowrap text-indigo-50" title={d.expiresInTitle}>
-              · 🗓 {d.expiresIn.replace('{n}', String(days))}
+              · <Calendar size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{d.expiresIn.replace('{n}', String(days))}
             </span>
           )}
         </div>

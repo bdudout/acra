@@ -22,7 +22,7 @@
  *  - analyse     : parent Analyse (used for strategic scenario names in dropdowns)
  */
 
-import { ClipboardList, Settings, Star, Zap } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardList, Settings, Star, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -535,7 +535,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
             {byStrat.map(({ ss, ops }) => (
               <div key={ss.id} className={`flex items-center gap-3 p-3 rounded-lg border ${ops.length > 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
                 <span className={`text-sm ${ops.length > 0 ? 'text-green-700' : 'text-yellow-700'}`}>
-                  {ops.length > 0 ? '✅' : '⚠️'}
+                  {ops.length > 0 ? <CheckCircle2 size={16} className="inline text-green-600" aria-hidden="true" /> : <AlertTriangle size={16} className="inline text-amber-600" aria-hidden="true" />}
                 </span>
                 <span className="text-sm text-gray-700 flex-1">{ss.nom}</span>
                 <span className="text-xs text-gray-500">
