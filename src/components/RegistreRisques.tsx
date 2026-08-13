@@ -1,6 +1,6 @@
 'use client'
 
-import { NotebookText } from 'lucide-react'
+import { AlertTriangle, NotebookText } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -256,7 +256,7 @@ function ProgressBadge({ s, labels }: { s: ActionsSummary; labels: Record<string
   return (
     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${cls}`}>
       {s.tauxAvancement}% · {s.faits}/{s.total}
-      {s.enRetard > 0 && <span className="ml-1">⚠ {s.enRetard}</span>}
+      {s.enRetard > 0 && <span className="ml-1"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {s.enRetard}</span>}
     </span>
   )
 }

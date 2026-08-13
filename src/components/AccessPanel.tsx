@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, Users } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardList, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -223,7 +223,7 @@ export default function AccessPanel({
               />
             </div>
             {approvalError && (
-              <p className="text-sm text-red-600">⚠️ {approvalError}</p>
+              <p className="text-sm text-red-600"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {approvalError}</p>
             )}
             <div className="flex gap-2">
               <button
@@ -376,8 +376,8 @@ export default function AccessPanel({
                 </button>
               </div>
             </div>
-            {inviteError && <p className="text-sm text-red-600 mt-2">⚠️ {inviteError}</p>}
-            {inviteSuccess && <p className="text-sm text-green-600 mt-2">✅ {inviteSuccess}</p>}
+            {inviteError && <p className="text-sm text-red-600 mt-2"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {inviteError}</p>}
+            {inviteSuccess && <p className="text-sm text-green-600 mt-2"><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {inviteSuccess}</p>}
             <div className="mt-2 grid grid-cols-1 gap-1">
               {(['LECTURE', 'EDITION', 'APPROBATION'] as AnalysePermission[]).map(p => (
                 <div key={p} className="text-xs text-gray-500">

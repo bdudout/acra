@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2 } from 'lucide-react'
+import { AlertTriangle, Building2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from '@/lib/tiers'
@@ -169,7 +169,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
       {/* Doublons potentiels : suggestion + fusion optionnelle (étape 2b) + ignorer */}
       {visibleDups.length > 0 && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="text-sm font-semibold text-amber-900">⚠️ {t.tiers.dupHintTitle} ({visibleDups.length})</p>
+          <p className="text-sm font-semibold text-amber-900"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.tiers.dupHintTitle} ({visibleDups.length})</p>
           <p className="text-xs text-amber-800 mt-0.5">{t.tiers.dupHintText}</p>
           {mergeMsg && <p className="text-xs font-medium text-amber-900 mt-2" role="status">{mergeMsg}</p>}
           <ul className="mt-2 space-y-2">

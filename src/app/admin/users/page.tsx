@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { KeyRound, UserPlus, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, KeyRound, UserPlus, X, XCircle } from 'lucide-react'
 import AdminNav from '@/components/AdminNav'
 import {
   ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_COLORS,
@@ -435,7 +435,7 @@ export default function AdminUsersPage() {
               <h2 className="font-semibold text-gray-800 mb-1">{t.admin.bulkImport.title}</h2>
               <p className="text-xs text-gray-500 mb-3">{t.admin.bulkImport.desc}</p>
               {importError && (
-                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">⚠️ {importError}</div>
+                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {importError}</div>
               )}
               <textarea
                 value={csvText}
@@ -644,29 +644,29 @@ export default function AdminUsersPage() {
                 <p className="text-xs text-gray-600">{ROLE_DESCRIPTIONS[role]}</p>
                 <div className="mt-2 space-y-0.5 text-xs text-gray-500">
                   {role === 'LECTEUR' && <>
-                    <div>✅ {t.admin.lecteurCan}</div>
-                    <div>❌ {t.admin.lecteurCant}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.lecteurCan}</div>
+                    <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.lecteurCant}</div>
                   </>}
                   {role === 'ANALYSTE' && <>
-                    <div>✅ {t.admin.analysteCan1}</div>
-                    <div>✅ {t.admin.analysteCan2}</div>
-                    <div>✅ {t.admin.analysteCan3}</div>
-                    <div>❌ {t.admin.analysteCant}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.analysteCan1}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.analysteCan2}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.analysteCan3}</div>
+                    <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.analysteCant}</div>
                   </>}
                   {role === 'RISK_MANAGER' && <>
-                    <div>✅ {t.admin.rmCan1}</div>
-                    <div>✅ {t.admin.rmCan2}</div>
-                    <div>❌ {t.admin.rmCant}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rmCan1}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rmCan2}</div>
+                    <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.rmCant}</div>
                   </>}
                   {role === 'RSSI' && <>
-                    <div>✅ {t.admin.rssiCan1}</div>
-                    <div>✅ {t.admin.rssiCan2}</div>
-                    <div>❌ {t.admin.rssiCant}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rssiCan1}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rssiCan2}</div>
+                    <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.rssiCant}</div>
                   </>}
                   {role === 'ADMIN' && <>
-                    <div>✅ {t.admin.adminCan1}</div>
-                    <div>✅ {t.admin.adminCan2}</div>
-                    <div>✅ {t.admin.adminCan3}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan1}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan2}</div>
+                    <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan3}</div>
                   </>}
                 </div>
               </div>

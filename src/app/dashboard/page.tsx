@@ -319,7 +319,7 @@ export default async function DashboardPage() {
                             <div className="flex gap-2 text-xs text-gray-500 hidden sm:flex">
                               <span title="Sources">🎭 {a._count.sourcesRisque}</span>
                               <span title="Scénarios">📋 {a._count.scenariosStrategiques}</span>
-                              <span title="Risques">⚠️ {a._count.risques}</span>
+                              <span title="Risques"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {a._count.risques}</span>
                               <span title="Mesures">🛡️ {a._count.mesures}</span>
                             </div>
                           </div>

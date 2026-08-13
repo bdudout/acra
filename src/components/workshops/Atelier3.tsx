@@ -20,7 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
-import { Map as MapIcon, Lightbulb, Puzzle, Handshake, ClipboardList, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -1068,7 +1068,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-sm text-blue-800">
-              <strong>✅ {retained.length}</strong> {t.workshop.a3.scenSummaryRetenu} {scenarios.length} {t.workshop.a3.scenSummaryTotal}
+              <strong><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {retained.length}</strong> {t.workshop.a3.scenSummaryRetenu} {scenarios.length} {t.workshop.a3.scenSummaryTotal}
             </p>
           </div>
 

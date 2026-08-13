@@ -1,5 +1,6 @@
 'use client'
 
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -295,11 +296,11 @@ export default function AdminSecurityPage() {
             {/* Conséquences */}
             <div className="rounded-lg bg-amber-100 border border-amber-200 px-3 py-2 text-xs space-y-1">
               <p>
-                <span className="font-semibold text-green-700">✅ {t.mfa.pendingIfConfirm}</span>
+                <span className="font-semibold text-green-700"><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.mfa.pendingIfConfirm}</span>
                 {' '}<span className="text-amber-700">{t.mfa.pendingIfConfirmDesc}</span>
               </p>
               <p>
-                <span className="font-semibold text-red-600">🔴 {t.mfa.pendingIfExpire}</span>
+                <span className="font-semibold text-red-600"><AlertCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.mfa.pendingIfExpire}</span>
                 {' '}<span className="text-amber-700">{t.mfa.pendingIfExpireDesc}</span>
               </p>
             </div>

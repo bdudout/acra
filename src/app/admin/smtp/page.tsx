@@ -1,5 +1,6 @@
 'use client'
 
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -99,10 +100,10 @@ export default function SmtpConfigPage() {
           <div className="text-center py-12 text-gray-500">{t.loading}</div>
         ) : (
           <form onSubmit={handleSave} className="card p-6 space-y-5">
-            {saved && <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">✅ {t.smtp.savedMsg}</div>}
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">⚠️ {error}</div>}
+            {saved && <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm"><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.smtp.savedMsg}</div>}
+            {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {error}</div>}
 
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">⚠️ {t.smtp.secretsWarning}</p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.smtp.secretsWarning}</p>
 
             {/* Toggle activé */}
             <label className="flex items-center gap-3 cursor-pointer select-none group">

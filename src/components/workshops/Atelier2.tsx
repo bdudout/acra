@@ -24,7 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
-import { Bot, VenetianMask, Zap, BarChart3 } from 'lucide-react'
+import { BarChart3, Bot, CheckCircle2, VenetianMask, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -621,7 +621,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
         <p className="text-sm text-blue-800">
-          <strong>✅ {t.workshop.a2.summaryLabel} :</strong> {retained.length} {t.workshop.a2.summaryText} {totalCouples} {t.workshop.a2.summaryCouple} <strong>{couplesP1} P1</strong>. {t.workshop.a2.summaryFeed}
+          <strong><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.workshop.a2.summaryLabel} :</strong> {retained.length} {t.workshop.a2.summaryText} {totalCouples} {t.workshop.a2.summaryCouple} <strong>{couplesP1} P1</strong>. {t.workshop.a2.summaryFeed}
         </p>
       </div>
 

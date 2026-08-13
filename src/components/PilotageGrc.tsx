@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart3 } from 'lucide-react'
+import { AlertTriangle, BarChart3 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
@@ -183,7 +183,7 @@ export default function PilotageGrc() {
                   <td className="px-4 py-3 text-right">{o.risques.eleve > 0 ? <span className="text-red-600 dark:text-red-400 font-semibold">{o.risques.eleve}</span> : <span className="text-gray-400">0</span>}</td>
                   <td className={`px-4 py-3 ${progressColor(o.actions)}`}>
                     {o.actions.total === 0 ? <span className="text-gray-400">—</span> : (
-                      <span>{o.actions.tauxAvancement}% · {o.actions.faits}/{o.actions.total}{o.actions.enRetard > 0 && <span className="ml-1">⚠ {o.actions.enRetard}</span>}</span>
+                      <span>{o.actions.tauxAvancement}% · {o.actions.faits}/{o.actions.total}{o.actions.enRetard > 0 && <span className="ml-1"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {o.actions.enRetard}</span>}</span>
                     )}
                   </td>
                   {mod.incidents && (

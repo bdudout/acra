@@ -7,7 +7,7 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
-import { Calendar, Download, FileJson, FileSpreadsheet, FileText, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, Calendar, Download, FileJson, FileSpreadsheet, FileText, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 
@@ -297,7 +297,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                         <span><span aria-hidden="true">✏️ </span>{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
                         <span>🎭 {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
                         <span>📋 {a._count.scenariosStrategiques} {a._count.scenariosStrategiques === 1 ? t.analyses.scenarioSg : t.analyses.scenarios}</span>
-                        <span>⚠️ {a._count.risques} {a._count.risques === 1 ? t.analyses.riskSg : t.analyses.risks}</span>
+                        <span><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {a._count.risques} {a._count.risques === 1 ? t.analyses.riskSg : t.analyses.risks}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">

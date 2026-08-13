@@ -22,7 +22,7 @@
  *  - flashMode   : mode « Flash » (Club EBIOS) — parcours rapide guidé, conserve le flag dans l'URL
  */
 
-import { Building2, Lightbulb, Link2, Star, Zap, Target, Briefcase, Monitor, AlertTriangle, Lock, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Briefcase, Building2, Lightbulb, Link2, Lock, Monitor, Star, Target, Zap, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -528,7 +528,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
 
           {rgpdArt9.length > 0 && (
             <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-amber-900">⚠️ {t.workshop.a1.rgpdArt9Title}</p>
+              <p className="text-sm font-semibold text-amber-900"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.workshop.a1.rgpdArt9Title}</p>
               <p className="text-sm text-amber-800 mt-1">{t.workshop.a1.rgpdArt9Text}</p>
             </div>
           )}

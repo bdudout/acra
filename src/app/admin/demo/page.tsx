@@ -1,5 +1,6 @@
 'use client'
 
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -108,7 +109,7 @@ export default function DemoAdminPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-1">{d.title}</h1>
         <p className="text-gray-500 text-sm mb-6">{d.subtitle}</p>
 
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">⚠️ {error}</div>}
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {error}</div>}
 
         {loading || !cfg ? (
           <div className="text-center py-12 text-gray-500">{t.loading}</div>
@@ -117,7 +118,7 @@ export default function DemoAdminPage() {
             {/* Réglages */}
             <form onSubmit={handleSave} className="card p-6 space-y-4">
               <h2 className="font-semibold text-gray-900">{d.settingsTitle}</h2>
-              {saved && <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">✅ {d.saved}</div>}
+              {saved && <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm"><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {d.saved}</div>}
               {fields.map(f => (
                 <label key={f.key} className="flex items-center justify-between gap-4">
                   <span className="text-sm text-gray-700">{f.label}</span>
