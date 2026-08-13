@@ -1,6 +1,6 @@
 'use client'
 
-import { Handshake, Search } from 'lucide-react'
+import { CheckCircle2, Handshake, Search } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/format'
@@ -306,7 +306,7 @@ export default function ActionsClient({
       {/* Tableau */}
       {filtered.length === 0 ? (
         <div className="card p-12 text-center">
-          <div className="text-4xl mb-3">{hasFilters ? '🔍' : '✅'}</div>
+          <div className="mb-3 flex justify-center">{hasFilters ? <Search size={40} className="text-gray-300" aria-hidden="true" /> : <CheckCircle2 size={40} className="text-green-500" aria-hidden="true" />}</div>
           <p className="text-gray-500">{noActions}</p>
         </div>
       ) : (

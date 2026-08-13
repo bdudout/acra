@@ -710,10 +710,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                     T: 'border-yellow-200 bg-yellow-50',
                   }
                   const critLabels: Record<string, string> = {
-                    D: '🟢 D — Disponibilité',
-                    I: '🔵 I — Intégrité',
-                    C: '🔴 C — Confidentialité',
-                    T: '🟡 T — Traçabilité',
+                    D: 'D — Disponibilité',
+                    I: 'I — Intégrité',
+                    C: 'C — Confidentialité',
+                    T: 'T — Traçabilité',
                   }
                   const exemples = scExamplesRanked.filter(e => e.critere === critere)
                   const alreadyHas = scenarios.some(s => s.nom && exemples.some(e => e.nom === s.nom))
@@ -811,7 +811,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                             <option value="">{t.workshop.a3.selectCouplePh}</option>
                             {couplesDisponibles.map(c => (
                               <option key={c.id} value={c.label}>
-                                {c.priorite === 'P1' ? '⭐ P1 ' : 'P2 '}{c.label}
+                                {c.priorite === 'P1' ? <><Star size={12} className="inline align-[-0.1em] mr-1 text-amber-500" aria-hidden="true" />P1 </> : 'P2 '}{c.label}
                               </option>
                             ))}
                           </select>

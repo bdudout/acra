@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2, Search, ChevronDown, CheckCircle2, ArrowUpRight, Ban, Eye, type LucideIcon } from 'lucide-react'
+import { ArrowUpRight, Ban, Building2, CheckCircle2, ChevronDown, Eye, Search, type LucideIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 // Couleur badge selon score de risque
@@ -94,7 +94,7 @@ export default function RisquesClient({
       {/* Tableau */}
       {filtered.length === 0 ? (
         <div className="card p-12 text-center">
-          <div className="text-4xl mb-3">{search ? '🔍' : '✅'}</div>
+          <div className="mb-3 flex justify-center">{search ? <Search size={40} className="text-gray-300" aria-hidden="true" /> : <CheckCircle2 size={40} className="text-green-500" aria-hidden="true" />}</div>
           <p className="text-gray-500">
             {search ? `Aucun risque correspondant à « ${search} »` : noRisks}
           </p>

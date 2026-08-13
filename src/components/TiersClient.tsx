@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Building2 } from 'lucide-react'
+import { AlertTriangle, Building2, Handshake, Search } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from '@/lib/tiers'
@@ -284,7 +284,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
 
       {filtered.length === 0 ? (
         <div className="card p-10 text-center">
-          <div className="text-4xl mb-3">{search || zone !== 'all' || onlyCritique ? '🔍' : '🤝'}</div>
+          <div className="mb-3 flex justify-center">{search || zone !== 'all' || onlyCritique ? <Search size={40} className="text-gray-300" aria-hidden="true" /> : <Handshake size={40} className="text-gray-300" aria-hidden="true" />}</div>
           <p className="text-gray-500">{search || zone !== 'all' || onlyCritique ? t.tiers.noMatch : t.tiers.noTiers}</p>
         </div>
       ) : (

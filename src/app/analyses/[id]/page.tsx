@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Landmark, Link2, Lock, ShieldCheck, User } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -245,7 +245,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
         {qualificationPrompt && (
           <div className={`mb-6 rounded-xl border p-4 ${qualificationObligatoire ? 'border-amber-300 bg-amber-50' : 'border-ebios-200 bg-ebios-50'}`}>
             <div className="flex items-start gap-3 mb-3">
-              <span className="text-xl" aria-hidden="true">{qualificationObligatoire ? '⚠️' : '🧭'}</span>
+              <span aria-hidden="true">{qualificationObligatoire ? <AlertTriangle size={18} className="text-amber-600" /> : <Compass size={18} className="text-gray-500" />}</span>
               <div>
                 <p className={`text-sm font-semibold ${qualificationObligatoire ? 'text-amber-900' : 'text-ebios-800'}`}>
                   {qualificationObligatoire ? t.qualification.promptRequiredTitle : t.qualification.promptOptionalTitle}
@@ -289,7 +289,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                     'bg-gray-50 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  <div className="text-xl mb-1">{done ? '✅' : a.icon}</div>
+                  <div className="text-xl mb-1">{done ? <CheckCircle2 size={20} className="inline text-green-600" aria-hidden="true" /> : a.icon}</div>
                   <div className="text-xs font-medium hidden sm:block">{a.titre}</div>
                   <div className="text-xs sm:hidden">{a.num}</div>
                 </Link>
@@ -318,13 +318,13 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             {/* Résumé en chiffres */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: analyse.sourcesRisque.filter((s: { retenu: boolean }) => s.retenu).length === 1 ? t.analysis.statSourcesSg    : t.analysis.statSources,    value: analyse.sourcesRisque.filter((s: { retenu: boolean }) => s.retenu).length, total: analyse.sourcesRisque.length, icon: '🎭' },
-                { label: analyse.scenariosStrategiques.filter((s: { retenu: boolean }) => s.retenu).length === 1 ? t.analysis.statStrategicSg : t.analysis.statStrategic, value: analyse.scenariosStrategiques.filter((s: { retenu: boolean }) => s.retenu).length, total: analyse.scenariosStrategiques.length, icon: '🗺️' },
-                { label: analyse.scenariosOperationnels.length === 1 ? t.analysis.statOpSg         : t.analysis.statOp,         value: analyse.scenariosOperationnels.length, total: null, icon: '⚙️' },
-                { label: analyse.risques.length === 1                ? t.analysis.statRisksSg      : t.analysis.statRisks,      value: analyse.risques.length, total: null, icon: '⚠️' },
+                { label: analyse.sourcesRisque.filter((s: { retenu: boolean }) => s.retenu).length === 1 ? t.analysis.statSourcesSg    : t.analysis.statSources,    value: analyse.sourcesRisque.filter((s: { retenu: boolean }) => s.retenu).length, total: analyse.sourcesRisque.length, Icon: VenetianMask },
+                { label: analyse.scenariosStrategiques.filter((s: { retenu: boolean }) => s.retenu).length === 1 ? t.analysis.statStrategicSg : t.analysis.statStrategic, value: analyse.scenariosStrategiques.filter((s: { retenu: boolean }) => s.retenu).length, total: analyse.scenariosStrategiques.length, Icon: MapIcon },
+                { label: analyse.scenariosOperationnels.length === 1 ? t.analysis.statOpSg         : t.analysis.statOp,         value: analyse.scenariosOperationnels.length, total: null, Icon: Settings },
+                { label: analyse.risques.length === 1                ? t.analysis.statRisksSg      : t.analysis.statRisks,      value: analyse.risques.length, total: null, Icon: AlertTriangle },
               ].map((s, i) => (
                 <div key={i} className="card p-4 text-center">
-                  <div className="text-2xl mb-1">{s.icon}</div>
+                  <div className="mb-1 flex justify-center"><s.Icon size={22} className="text-gray-500" aria-hidden="true" /></div>
                   <div className="text-2xl font-bold text-gray-800">
                     {s.value}{s.total !== null && s.total > 0 ? <span className="text-sm text-gray-500">/{s.total}</span> : ''}
                   </div>

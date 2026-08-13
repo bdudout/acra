@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/format'
 import { sanitizeConformite, conformiteStats, deriveNonConformites } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
-import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
+import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, Hand, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {t.dashboard.greeting}, {session.user.name?.split(' ')[0] || 'Analyste'} 👋
+              {t.dashboard.greeting}, {session.user.name?.split(' ')[0] || 'Analyste'} <Hand size={20} className="inline align-[-0.2em] text-amber-500" aria-hidden="true" />
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <p className="text-gray-500">{t.dashboard.subtitle}</p>
@@ -290,7 +290,7 @@ export default async function DashboardPage() {
                             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
                               a.statut === 'TERMINE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                             }`}>
-                              {a.statut === 'TERMINE' ? `✅ ${t.dashboard.doneStatus}` : `⚙️ ${t.dashboard.inProgStatus}`}
+                              {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />{t.dashboard.doneStatus}</> : <><Settings size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.dashboard.inProgStatus}</>}
                             </span>
                             {critiques > 0 && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium flex-shrink-0">
