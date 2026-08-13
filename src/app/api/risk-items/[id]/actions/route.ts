@@ -15,9 +15,11 @@ type Params = { params: Promise<{ id: string }> }
 // Charge le risque parent dans le périmètre de l'utilisateur. `write` = exclut LECTEUR.
 async function loadRisk(session: { user: { id: string; role?: string } }, id: string, write: boolean) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (write && userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
-  const scope = await getAnalyseScope(userId, userRole)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const risk = await prisma.riskItem.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },

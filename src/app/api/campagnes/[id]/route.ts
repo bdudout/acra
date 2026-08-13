@@ -21,8 +21,10 @@ function peutPiloter(role: UserRole): boolean {
 
 async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const campagne = await prisma.campagne.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },

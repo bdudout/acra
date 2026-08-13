@@ -20,8 +20,10 @@ export function peutDefinir(role: UserRole): boolean {
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   return { userId, userRole, orgId: scope.activeOrgId }
 }
 

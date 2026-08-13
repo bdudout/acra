@@ -20,15 +20,16 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   const sessionUser = { id: userId, role: userRole }
 
   // Seuls les rôles susceptibles d'agir font la requête complète.
   if (userRole !== 'RSSI' && userRole !== 'DIRECTION_METIER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.json({ pending: 0 })
   }
-
-  const scope = await getAnalyseScope(userId, userRole)
   const rows = await prisma.derogation.findMany({
     where: {
       statut: { in: ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'] },
@@ -53,15 +54,16 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
 
   // Rôles pouvant porter une dérogation : pas les lecteurs, ni la Direction métier
   // (qui valide) — c'est un « porteur » qui la demande.
   if (userRole === 'LECTEUR' || userRole === 'DIRECTION_METIER') {
     return NextResponse.json({ error: 'Rôle non autorisé à demander une dérogation' }, { status: 403 })
   }
-
-  const scope = await getAnalyseScope(userId, userRole)
   const orgId = scope.activeOrgId
   if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
 

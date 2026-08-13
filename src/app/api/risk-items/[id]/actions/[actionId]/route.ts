@@ -14,9 +14,11 @@ type Params = { params: Promise<{ id: string; actionId: string }> }
 // Charge l'action dans le périmètre de l'utilisateur (non-LECTEUR), rattachée au bon risque.
 async function loadAction(session: { user: { id: string; role?: string } }, riskItemId: string, actionId: string) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
-  const scope = await getAnalyseScope(userId, userRole)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const action = await prisma.riskAction.findFirst({
     where: { id: actionId, riskItemId, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },

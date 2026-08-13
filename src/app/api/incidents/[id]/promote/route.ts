@@ -21,13 +21,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const { id } = await params
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (!(isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI')) {
     return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   }
-
-  const { id } = await params
-  const scope = await getAnalyseScope(userId, userRole)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const incident = await prisma.incident.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },

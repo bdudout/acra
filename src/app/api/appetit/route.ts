@@ -21,10 +21,11 @@ function peutGouvernerAppetit(role: UserRole): boolean {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const userId = (session.user as { id: string }).id
 
-  const scope = await getAnalyseScope(userId, userRole)
+  const scope = await getAnalyseScope(userId, instanceRole)
+  const userRole = scope.role
   if (!scope.activeOrgId) return NextResponse.json({ active: false })
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.registreRisquesActive) return NextResponse.json({ active: false })
@@ -42,10 +43,11 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const userId = (session.user as { id: string }).id
 
-  const scope = await getAnalyseScope(userId, userRole)
+  const scope = await getAnalyseScope(userId, instanceRole)
+  const userRole = scope.role
   if (!scope.activeOrgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })

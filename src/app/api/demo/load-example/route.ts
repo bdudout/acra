@@ -23,8 +23,10 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: UserRole }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const instanceRole = ((session.user as { role?: UserRole }).role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (!scope.activeOrgId) {
     return NextResponse.json({ error: 'Aucune organisation active' }, { status: 403 })
   }

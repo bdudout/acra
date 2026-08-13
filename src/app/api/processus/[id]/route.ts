@@ -12,9 +12,11 @@ type Params = { params: Promise<{ id: string }> }
 // Charge le processus en s'assurant qu'il appartient au périmètre de l'utilisateur (ADMIN).
 async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (!isAdminRole(userRole)) return { error: NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 }) }
-  const scope = await getAnalyseScope(userId, userRole)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const p = await prisma.processus.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },

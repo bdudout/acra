@@ -24,8 +24,10 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   if (!scope.activeOrgId) return NextResponse.json({ active: false, incidents: [] })
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.reglementaireActive) return NextResponse.json({ active: false, incidents: [] })

@@ -15,8 +15,10 @@ type Params = { params: Promise<{ id: string }> }
 
 async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
   const userId = session.user.id
-  const userRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
+  const scope = await getAnalyseScope(userId, instanceRole)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const userRole = scope.role
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const kri = await prisma.kri.findFirst({
