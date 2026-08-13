@@ -1,6 +1,6 @@
 'use client'
 
-import { Lightbulb } from 'lucide-react'
+import { Factory, Landmark, Lightbulb } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -107,7 +107,7 @@ export default function NewAnalysePage() {
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (
               <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
-                🏭 {t.newAnalysis.otNote}
+                <Factory size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.newAnalysis.otNote}
               </div>
             )}
           </div>
@@ -136,7 +136,7 @@ export default function NewAnalysePage() {
               expliquer qu'on peut en créer un pour un groupe multi-établissements. */}
           {socles.length === 0 && (
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-              <p className="text-sm font-medium text-indigo-900">🏛️ {t.newAnalysis.socleDiscoverTitle}</p>
+              <p className="text-sm font-medium text-indigo-900"><Landmark size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.newAnalysis.socleDiscoverTitle}</p>
               <p className="text-xs text-indigo-800 mt-0.5">{t.newAnalysis.socleDiscoverText}</p>
             </div>
           )}
@@ -144,7 +144,7 @@ export default function NewAnalysePage() {
           {/* Héritage depuis un socle */}
           {socles.length > 0 && (
             <div>
-              <label className="label">🏛️ Hériter d'une analyse socle <span className="text-gray-400 font-normal">(optionnel)</span></label>
+              <label className="label"><Landmark size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Hériter d'une analyse socle <span className="text-gray-400 font-normal">(optionnel)</span></label>
               <select
                 value={socleId}
                 onChange={e => setSocleId(e.target.value)}

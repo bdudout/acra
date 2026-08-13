@@ -24,7 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
-import { BarChart3, Bot, CheckCircle2, VenetianMask, Zap } from 'lucide-react'
+import { BarChart3, Bot, CheckCircle2, Star, Target, VenetianMask, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -305,7 +305,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                       }`}
                     >
                       {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                      {!added && s.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                      {!added && s.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat?.color}`}>{cat?.label}</span>
                         <span className="text-xs font-medium text-gray-700">{s.nom}</span>
@@ -400,7 +400,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                         {/* Caractérisation FM4 — Motivation / Ressources / Activité */}
                         <div className="border border-gray-200 rounded-lg p-4 bg-white">
                           <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            📊 {t.workshop.a2.fm4Title}
+                            <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a2.fm4Title}
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {/* Motivation */}
@@ -454,7 +454,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold text-gray-700">
-                              🎯 {t.workshop.a2.ovSectionTitle}
+                              <Target size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a2.ovSectionTitle}
                             </h4>
                             <button onClick={() => addOV(s.id)} className="text-xs text-ebios-600 hover:underline">{t.workshop.a2.ovAddBtn}</button>
                           </div>

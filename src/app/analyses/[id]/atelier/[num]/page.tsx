@@ -1,4 +1,4 @@
-import { ShieldCheck, Zap } from 'lucide-react'
+import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -227,7 +227,7 @@ export default async function AtelierPage({
               {/* Conseil de dimensionnement spécifique à l'atelier en mode Flash */}
               {(t.analyses.flashTips as Record<string, string>)[`a${atelierNum}`] && (
                 <p className="mt-2 text-sm text-amber-900">
-                  <span className="font-semibold">💡 {t.analyses.flashTipLabel} :</span>{' '}
+                  <span className="font-semibold"><Lightbulb size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.analyses.flashTipLabel} :</span>{' '}
                   {(t.analyses.flashTips as Record<string, string>)[`a${atelierNum}`]}
                 </p>
               )}

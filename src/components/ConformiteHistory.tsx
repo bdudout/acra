@@ -1,5 +1,6 @@
 'use client'
 
+import { Pin } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
@@ -80,7 +81,7 @@ export default function ConformiteHistory({ orgId, referentiel, locale, canEdit 
               disabled={busy}
               className="mt-2 text-[11px] rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             >
-              📌 {d.conformiteFreeze}
+              <Pin size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.conformiteFreeze}
             </button>
           )}
         </div>

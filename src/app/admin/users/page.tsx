@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { AlertTriangle, CheckCircle2, KeyRound, UserPlus, X, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, X, XCircle } from 'lucide-react'
 import AdminNav from '@/components/AdminNav'
 import {
   ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_COLORS,
@@ -324,7 +324,7 @@ export default function AdminUsersPage() {
           <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-semibold text-amber-800 text-sm mb-1">🔑 {t.admin.tempPwdTitle}</div>
+                <div className="font-semibold text-amber-800 text-sm mb-1"><KeyRound size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.admin.tempPwdTitle}</div>
                 <p className="text-xs text-amber-700 mb-2">{t.admin.tempPwdHint}</p>
                 <div className="text-sm text-gray-700">
                   <div><span className="text-gray-500">{t.admin.createEmail}:</span> <span className="font-medium">{createdCreds.email}</span></div>
@@ -362,7 +362,7 @@ export default function AdminUsersPage() {
             onClick={() => { setShowImport(v => !v); setImportError(null) }}
             className="btn-secondary flex items-center gap-2"
           >
-            📥 {t.admin.bulkImport.btn}
+            <Download size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.admin.bulkImport.btn}
           </button>
           </div>
 
@@ -447,7 +447,7 @@ export default function AdminUsersPage() {
               <div className="flex items-center gap-3 flex-wrap mt-3">
                 <label className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
                   <input type="file" accept=".csv,text/csv" onChange={onCsvFile} className="hidden" />
-                  📄 {t.admin.bulkImport.file}
+                  <FileText size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.admin.bulkImport.file}
                 </label>
                 <button type="button" onClick={importCsv} disabled={importing || !csvText.trim()} className="btn-primary ml-auto disabled:opacity-50">
                   {importing ? t.admin.bulkImport.running : t.admin.bulkImport.run}

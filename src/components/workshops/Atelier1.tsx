@@ -22,7 +22,7 @@
  *  - flashMode   : mode « Flash » (Club EBIOS) — parcours rapide guidé, conserve le flag dans l'URL
  */
 
-import { AlertTriangle, Briefcase, Building2, Lightbulb, Link2, Lock, Monitor, Star, Target, Zap, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, BookOpen, Briefcase, Building2, Factory, Lightbulb, Link2, Lock, Monitor, Scale, ShieldCheck, Star, Target, Zap, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -540,7 +540,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
               onClick={() => setShowDictHelp(v => !v)}
               className="flex items-center justify-between w-full text-left"
             >
-              <span className="text-sm font-semibold text-gray-700">📘 {t.workshop.a1.dictHelpTitle}</span>
+              <span className="text-sm font-semibold text-gray-700"><BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.dictHelpTitle}</span>
               <span className="text-xs text-blue-600 underline">
                 {showDictHelp ? t.workshop.hideExamples : t.workshop.showExamples}
               </span>
@@ -589,7 +589,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                         vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
@@ -754,7 +754,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                 onClick={() => setShowOtGlossary(v => !v)}
                 className="flex items-center justify-between w-full text-left"
               >
-                <span className="text-sm font-semibold text-amber-900">🏭 {t.workshop.a1.otGlossaryTitle}</span>
+                <span className="text-sm font-semibold text-amber-900"><Factory size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.otGlossaryTitle}</span>
                 <span className="text-xs text-amber-700 underline">
                   {showOtGlossary ? t.workshop.hideExamples : t.workshop.showExamples}
                 </span>
@@ -817,7 +817,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                             }`}
                           >
                             {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
-                            {!added && b.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
+                            {!added && b.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                             <div className="text-xs font-medium">{b.nom}</div>
                             <div className="text-xs opacity-60 mt-0.5 line-clamp-1">{b.description}</div>
                           </button>
@@ -931,7 +931,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && er.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1">⭐ {t.workshop.relevantLabel}</div>}
+                    {!added && er.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                     <div className="text-xs font-medium text-gray-700">{er.description}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
@@ -1059,7 +1059,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
           {/* Suggestion d'activation des modules de conformité (secteur régulé) */}
           {suggestCompliance && (
             <div className="bg-sky-50 border border-sky-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-sky-900">🛡️ {t.workshop.a1.complianceSuggestTitle}</p>
+              <p className="text-sm font-semibold text-sky-900"><ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.complianceSuggestTitle}</p>
               <p className="text-sm text-sky-800 mt-1">{t.workshop.a1.complianceSuggestText}</p>
               <a href="/configuration" className="text-sm text-sky-700 underline font-medium mt-1 inline-block">
                 {t.workshop.a1.complianceSuggestLink} →
@@ -1074,7 +1074,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
               <p className="text-sm text-indigo-800 mt-1">
                 {t.workshop.a1.nis2SuggestText.replace('{statut}', nis2Probable === 'essentielle' ? t.workshop.a1.nis2Essentielle : t.workshop.a1.nis2Importante)}
               </p>
-              {nis2DoraNote && <p className="text-sm text-indigo-800 mt-1">⚖️ {t.workshop.a1.nis2DoraNote}</p>}
+              {nis2DoraNote && <p className="text-sm text-indigo-800 mt-1"><Scale size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.nis2DoraNote}</p>}
             </div>
           )}
 
@@ -1084,7 +1084,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
             <p className="text-xs text-gray-500 mb-3">{t.workshop.a1.referentielMesDesc}</p>
             {analyse?.secteur && recommendedFw.length > 0 && (
               <p className="text-xs text-indigo-700 mb-3">
-                ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
+                <Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
               </p>
             )}
             {recommendedFw.includes('HDS') && showsHdsCaveat(analyse?.sousSecteur) && (

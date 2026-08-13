@@ -1,5 +1,6 @@
 'use client'
 
+import { FlaskConical } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -90,7 +91,7 @@ export default function RegisterPage() {
 
         {isDemo && (
           <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg px-4 py-3 text-sm mb-4">
-            🧪 {t.demo.registerNote}
+            <FlaskConical size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.demo.registerNote}
           </div>
         )}
 

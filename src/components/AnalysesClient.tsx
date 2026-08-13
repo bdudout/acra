@@ -7,7 +7,7 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
-import { AlertTriangle, Calendar, Download, FileJson, FileSpreadsheet, FileText, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, Calendar, ClipboardList, Download, FileJson, FileSpreadsheet, FileText, Landmark, Link2, Search, ShieldCheck, Trash2, VenetianMask } from 'lucide-react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 
@@ -273,17 +273,17 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                             className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 hover:opacity-80 transition-opacity"
                             onClick={e => e.stopPropagation()}
                           >
-                            🛡️ {mesuresP1AFaire} P1 à faire
+                            <ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {mesuresP1AFaire} P1 à faire
                           </Link>
                         )}
                         {(a as any).isSocle && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 text-purple-700">
-                            🏛️ Socle
+                            <Landmark size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Socle
                           </span>
                         )}
                         {(a as any).socle && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-600">
-                            🔗 {(a as any).socle.nom}
+                            <Link2 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {(a as any).socle.nom}
                           </span>
                         )}
                       </div>
@@ -295,8 +295,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                       <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 flex-wrap">
                         <span><span aria-hidden="true"><Calendar size={18} aria-hidden="true" /></span>{t.analyses.created} {formatDate(a.createdAt, locale)}</span>
                         <span><span aria-hidden="true">✏️ </span>{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
-                        <span>🎭 {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
-                        <span>📋 {a._count.scenariosStrategiques} {a._count.scenariosStrategiques === 1 ? t.analyses.scenarioSg : t.analyses.scenarios}</span>
+                        <span><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
+                        <span><ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.scenariosStrategiques} {a._count.scenariosStrategiques === 1 ? t.analyses.scenarioSg : t.analyses.scenarios}</span>
                         <span><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {a._count.risques} {a._count.risques === 1 ? t.analyses.riskSg : t.analyses.risks}</span>
                       </div>
                       <div className="flex items-center gap-2">

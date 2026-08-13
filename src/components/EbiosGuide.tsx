@@ -22,7 +22,7 @@
  * if `t.ateliersMeta` is not populated (e.g. during SSR hydration).
  */
 
-import { BookOpen } from 'lucide-react'
+import { BookOpen, FileText } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ATELIERS_META } from '@/lib/ebios-data'
@@ -132,7 +132,7 @@ export default function EbiosGuide() {
                     rel="noopener noreferrer"
                     className={`inline-flex items-center gap-1 text-xs font-medium ${colors.link}`}
                   >
-                    📄 Guide ANSSI — Atelier {a.num} →
+                    <FileText size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Guide ANSSI — Atelier {a.num} →
                   </a>
                 </div>
               )}

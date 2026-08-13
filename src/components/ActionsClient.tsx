@@ -1,6 +1,6 @@
 'use client'
 
-import { Search } from 'lucide-react'
+import { Handshake, Search } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatDate } from '@/lib/format'
@@ -336,7 +336,7 @@ export default function ActionsClient({
                     <div className="font-medium text-gray-800">{m.nom}</div>
                     {m.source === 'ecosysteme' && (
                       <div className="text-[10px] text-teal-700 mt-0.5">
-                        🤝 {sourceEcoLabel}{m.partiePrenante ? ` · ${m.partiePrenante}` : ''}
+                        <Handshake size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {sourceEcoLabel}{m.partiePrenante ? ` · ${m.partiePrenante}` : ''}
                       </div>
                     )}
                     {m.description && (

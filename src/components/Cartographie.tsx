@@ -1,6 +1,6 @@
 'use client'
 
-import { Map as MapIcon } from 'lucide-react'
+import { Map as MapIcon, Target } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -170,7 +170,7 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
           {appetit && (
             <div className="card p-4 mb-6">
               <button onClick={() => setAppetitOpen(o => !o)} className="w-full flex items-center justify-between text-left" aria-expanded={appetitOpen}>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">🎯 {c.appetitTitle}</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200"><Target size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {c.appetitTitle}</span>
                 <span className="text-xs text-gray-400">
                   {seuilGlobal != null ? c.appetitSeuilGlobal + ' ' + seuilGlobal : c.appetitAucun}
                   {appetitSynthese && appetitSynthese.horsAppetit > 0 && <span className="ml-2 text-red-600 dark:text-red-400 font-semibold">· {appetitSynthese.horsAppetit} {c.appetitHorsTile}</span>}

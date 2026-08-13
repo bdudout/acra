@@ -1,5 +1,6 @@
 'use client'
 
+import { IdCard } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { FrameworkControl } from '@/lib/frameworks-data'
@@ -204,19 +205,19 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                 const etat = derogByRef.get(c.ref) ?? null
                 if (etat === 'ACTIVE') return (
                   <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300">
-                    🪪 {sLabels.deroge ?? 'Dérogé'}
+                    <IdCard size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {sLabels.deroge ?? 'Dérogé'}
                   </span>
                 )
                 if (etat === 'EN_REVUE') return (
                   <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-                    🪪 {d.filterReview}
+                    <IdCard size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.filterReview}
                   </span>
                 )
                 if (readOnly) return null
                 if (derogFormRef !== c.ref) return (
                   <button type="button" onClick={() => { setDerogFormRef(c.ref); setDerogError(null) }}
                     className="mt-2 text-xs text-cyan-700 dark:text-cyan-300 hover:underline font-medium">
-                    🪪 {d.derogerBtn}
+                    <IdCard size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.derogerBtn}
                   </button>
                 )
                 return (

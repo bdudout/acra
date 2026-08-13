@@ -1268,7 +1268,7 @@ export default function ConfigurationPage() {
                     <p className="text-sm font-medium text-gray-800">{f.title}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{f.desc}</p>
                     {off && <p className="text-xs text-amber-700 mt-0.5">{t.features.qualificationObligRequires}</p>}
-                    {isForced && <p className="text-xs text-ebios-700 mt-0.5">🔒 {forced === 'FORCE_ON' ? t.features.moduleForcedOn : t.features.moduleForcedOff}</p>}
+                    {isForced && <p className="text-xs text-ebios-700 mt-0.5"><Lock size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {forced === 'FORCE_ON' ? t.features.moduleForcedOn : t.features.moduleForcedOff}</p>}
                     <a href={f.href} target="_blank" rel="noopener noreferrer" className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline mt-1 inline-block">
                       {t.features.learnMore}
                     </a>

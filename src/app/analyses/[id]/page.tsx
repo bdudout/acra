@@ -1,3 +1,4 @@
+import { BarChart3, BookOpen, Landmark, Link2, Lock, ShieldCheck, User } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -165,12 +166,12 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               </span>
               {isProtectedMention((analyse as any).mentionProtection) && (
                 <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700">
-                  🛡️ {t.mentionProtection.levels[normalizeMentionProtection((analyse as any).mentionProtection)]}
+                  <ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.mentionProtection.levels[normalizeMentionProtection((analyse as any).mentionProtection)]}
                 </span>
               )}
               {!isOwner && (
                 <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                  👤 {t.analysis.sharedBy} {analyse.user?.name ?? analyse.user?.email}
+                  <User size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.analysis.sharedBy} {analyse.user?.name ?? analyse.user?.email}
                 </span>
               )}
               <span className="text-sm text-gray-500">
@@ -178,17 +179,17 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               </span>
               {locked && (
                 <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
-                  🔒 {t.analysis.readOnly}
+                  <Lock size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.analysis.readOnly}
                 </span>
               )}
               {(analyse as any).isSocle && (
                 <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
-                  🏛️ Analyse socle
+                  <Landmark size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Analyse socle
                 </span>
               )}
               {(analyse as any).socle && (
                 <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                  🔗 Hérite de : <Link href={`/analyses/${(analyse as any).socle.id}`} className="underline hover:text-indigo-900">{(analyse as any).socle.nom}</Link>
+                  <Link2 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Hérite de : <Link href={`/analyses/${(analyse as any).socle.id}`} className="underline hover:text-indigo-900">{(analyse as any).socle.nom}</Link>
                 </span>
               )}
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-mono">
@@ -218,10 +219,10 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             <>
               <PDFExportButton analyseId={analyse.id} />
               <a href={`/api/export/${analyse.id}?format=xlsx`} className="btn-secondary">
-                📗 Excel
+                <BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Excel
               </a>
               <a href={`/api/export/${analyse.id}?format=csv`} className="btn-secondary">
-                📊 CSV
+                <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> CSV
               </a>
               <a href={`/api/export/${analyse.id}?format=json`} className="btn-secondary">
                 🗂 JSON

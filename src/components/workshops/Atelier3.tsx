@@ -20,7 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
-import { CheckCircle2, ClipboardList, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck } from 'lucide-react'
+import { BookOpen, CheckCircle2, ClipboardList, FileText, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck, Star } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -737,7 +737,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                                   : 'border-dashed border-gray-300 bg-white hover:border-ebios-400 hover:bg-ebios-50 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20 cursor-pointer'
                               }`}
                             >
-                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5">⭐ {t.workshop.relevantLabel}</div>}
+                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                               <div className="font-medium text-gray-700 mb-1 leading-tight">{ex.nom}</div>
                               <div className="text-gray-500 leading-tight">{ex.description.slice(0, 80)}…</div>
                               <div className="flex gap-2 mt-1.5">
@@ -1164,7 +1164,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                     onClick={() => setShowComposerFw(v => !v)}
                     className="w-full flex items-center justify-between px-3 py-2 bg-indigo-50 rounded-t-lg text-xs font-semibold text-indigo-800"
                   >
-                    <span>📚 {t.workshop.a3.measComposerFrameworkToggle} — {FRAMEWORK_META[analyse?.referentielMesures as FrameworkId]?.nom ?? t.workshop.a5.chooseRef}</span>
+                    <span><BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a3.measComposerFrameworkToggle} — {FRAMEWORK_META[analyse?.referentielMesures as FrameworkId]?.nom ?? t.workshop.a5.chooseRef}</span>
                     <span>{showComposerFw ? '▲' : '▼'}</span>
                   </button>
                   {showComposerFw && (
@@ -1181,7 +1181,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                 {/* Clauses contractuelles par prestataire */}
                 <div className="border border-dashed border-purple-200 rounded-lg">
                   <div className="px-3 py-2 bg-purple-50 rounded-t-lg">
-                    <span className="text-xs font-semibold text-purple-800">📄 {t.workshop.a3.measClausesTitle}</span>
+                    <span className="text-xs font-semibold text-purple-800"><FileText size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a3.measClausesTitle}</span>
                     <p className="text-xs text-purple-700 mt-0.5">{t.workshop.a3.measClausesIntro}</p>
                   </div>
                   {!clausesAllowed && (

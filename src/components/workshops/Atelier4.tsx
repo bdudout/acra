@@ -22,7 +22,7 @@
  *  - analyse     : parent Analyse (used for strategic scenario names in dropdowns)
  */
 
-import { Star, Zap } from 'lucide-react'
+import { ClipboardList, Star, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -316,7 +316,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
                   </span>
                   {s.scenarioStrategiqueNom && (
                     <div className="text-xs text-gray-500 mt-0.5 truncate">
-                      📋 {t.workshop.a4.scenSSPrefix} {s.scenarioStrategiqueNom}
+                      <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a4.scenSSPrefix} {s.scenarioStrategiqueNom}
                     </div>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Lock, Mail, Smartphone } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -544,7 +544,7 @@ export default function AdminSecurityPage() {
                           onChange={e => setPolicy(p => ({ ...p, mfaMethodEmail: e.target.checked }))}
                           className="w-4 h-4 accent-ebios-600"
                         />
-                        <span className="text-sm text-gray-700">📧 {t.mfa.methodEmail}</span>
+                        <span className="text-sm text-gray-700"><Mail size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.mfa.methodEmail}</span>
                       </label>
                       {SMS_MFA_AVAILABLE && (
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -554,7 +554,7 @@ export default function AdminSecurityPage() {
                           onChange={e => setPolicy(p => ({ ...p, mfaMethodSms: e.target.checked }))}
                           className="w-4 h-4 accent-ebios-600"
                         />
-                        <span className="text-sm text-gray-700">📱 {t.mfa.methodSms}</span>
+                        <span className="text-sm text-gray-700"><Smartphone size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.mfa.methodSms}</span>
                       </label>
                       )}
                     </div>
@@ -588,7 +588,7 @@ export default function AdminSecurityPage() {
                   {/* Config SMS — visible uniquement si SMS coché */}
                   {SMS_MFA_AVAILABLE && policy.mfaMethodSms && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-200">
-                      <p className="text-xs font-semibold text-gray-800">📱 {t.mfa.smsProviderTitle}</p>
+                      <p className="text-xs font-semibold text-gray-800"><Smartphone size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.mfa.smsProviderTitle}</p>
 
                       {/* Avertissement sécurité clés */}
                       <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -753,7 +753,7 @@ export default function AdminSecurityPage() {
                   {/* ── SAML ────────────────────────────────────────────── */}
                   {sso.protocol === 'SAML' && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-200">
-                      <p className="text-xs font-semibold text-gray-800">🔐 {t.sso.samlSection}</p>
+                      <p className="text-xs font-semibold text-gray-800"><Lock size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.sso.samlSection}</p>
 
                       {/* SP Entity ID */}
                       <div>
@@ -798,7 +798,7 @@ export default function AdminSecurityPage() {
                   {/* ── OIDC ────────────────────────────────────────────── */}
                   {sso.protocol === 'OIDC' && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-200">
-                      <p className="text-xs font-semibold text-gray-800">🔐 {t.sso.oidcSection}</p>
+                      <p className="text-xs font-semibold text-gray-800"><Lock size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.sso.oidcSection}</p>
 
                       {/* Issuer URL */}
                       <div>

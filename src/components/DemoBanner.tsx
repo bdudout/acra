@@ -1,5 +1,6 @@
 'use client'
 
+import { FlaskConical } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
@@ -27,7 +28,7 @@ export default function DemoBanner() {
         {/* Info : badge démo + rappel RGPD + compte à rebours */}
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap">
-            🧪 {d.badge}
+            <FlaskConical size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.badge}
           </span>
           <span className="text-indigo-100">{d.notice}</span>
           {days !== null && (

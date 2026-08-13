@@ -30,7 +30,7 @@
  *                  risk register dropdown)
  */
 
-import { ShieldCheck, Star, AlertTriangle, BarChart3 } from 'lucide-react'
+import { AlertTriangle, BarChart3, BookOpen, ClipboardList, FileText, Files, Scale, ShieldCheck, Star } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -511,7 +511,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                             </p>
                             {(r.strategie === 'ACCEPTER' || r.strategie === 'TRANSFERER' || r.strategie === 'REFUSER') && (
                               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-1.5">
-                                📋 {(t.workshop.a5.stratPlanAction as Record<string, string>)[r.strategie]}
+                                <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {(t.workshop.a5.stratPlanAction as Record<string, string>)[r.strategie]}
                               </p>
                             )}
                           </div>
@@ -642,13 +642,13 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
         <div className="space-y-4">
           {aipdPertinente && (
             <div className="bg-violet-50 border border-violet-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-violet-900">📄 {t.workshop.a5.aipdTitle}</p>
+              <p className="text-sm font-semibold text-violet-900"><FileText size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a5.aipdTitle}</p>
               <p className="text-sm text-violet-800 mt-1">{t.workshop.a5.aipdText}</p>
             </div>
           )}
           {regObligations.length > 0 && (
             <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-amber-900">⚖️ {t.workshop.a5.reg.title}</p>
+              <p className="text-sm font-semibold text-amber-900"><Scale size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a5.reg.title}</p>
               <ul className="mt-1.5 space-y-1 list-disc list-inside">
                 {regObligations.map(id => (
                   <li key={id} className="text-sm text-amber-800">{(t.workshop.a5.reg as Record<string, string>)[id]}</li>
@@ -658,7 +658,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
           )}
           {usageNotes.length > 0 && (
             <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-emerald-900">📑 {t.workshop.a5.usage.title}</p>
+              <p className="text-sm font-semibold text-emerald-900"><Files size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a5.usage.title}</p>
               <ul className="mt-1.5 space-y-1 list-disc list-inside">
                 {usageNotes.map(id => (
                   <li key={id} className="text-sm text-emerald-800">{(t.workshop.a5.usage as Record<string, string>)[id]}</li>
@@ -668,7 +668,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
           )}
           {isJuridique && (
             <div className="bg-sky-50 border border-sky-300 rounded-xl p-4">
-              <p className="text-sm font-semibold text-sky-900">📚 {t.workshop.a5.resJuridiqueTitle}</p>
+              <p className="text-sm font-semibold text-sky-900"><BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a5.resJuridiqueTitle}</p>
               <p className="text-sm text-sky-800 mt-1">{t.workshop.a5.resJuridiqueText}</p>
               <a href="https://cyber.gouv.fr/publications" target="_blank" rel="noopener noreferrer" className="text-sm text-sky-700 underline font-medium mt-1 inline-block">
                 cyber.gouv.fr/publications ↗
@@ -728,7 +728,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               <p className="text-xs text-gray-500 mb-2">{t.workshop.a5.chooseRef}</p>
               {analyse?.secteur && recommendedFw.length > 0 && (
                 <p className="text-xs text-indigo-700 mb-2">
-                  ⭐ {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
+                  <Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.recommendedBadge} ({analyse.secteur}) : {recommendedFw.map(fid => FRAMEWORK_META[fid].nom).join(', ')}
                 </p>
               )}
               <div className="flex flex-wrap gap-1.5">

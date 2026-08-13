@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/format'
 import { sanitizeConformite, conformiteStats, deriveNonConformites } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
-import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Send, Settings, TrendingUp, Zap } from 'lucide-react'
+import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -317,10 +317,10 @@ export default async function DashboardPage() {
                               {a.statut === 'TERMINE' ? '✅ 5/5' : `${atelier?.icon} A${a.atelierCourant}/5`}
                             </span>
                             <div className="flex gap-2 text-xs text-gray-500 hidden sm:flex">
-                              <span title="Sources">🎭 {a._count.sourcesRisque}</span>
-                              <span title="Scénarios">📋 {a._count.scenariosStrategiques}</span>
+                              <span title="Sources"><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque}</span>
+                              <span title="Scénarios"><ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.scenariosStrategiques}</span>
                               <span title="Risques"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {a._count.risques}</span>
-                              <span title="Mesures">🛡️ {a._count.mesures}</span>
+                              <span title="Mesures"><ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.mesures}</span>
                             </div>
                           </div>
                         </div>
@@ -392,29 +392,29 @@ export default async function DashboardPage() {
             <div className="card p-5 space-y-2">
               <h2 className="font-semibold text-gray-800 mb-3"><Zap size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.quickTitle}</h2>
               <Link href="/analyses" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
-                📋 {t.dashboard.quickAll}
+                <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickAll}
               </Link>
               {canCreateAnalyse({ id: userId, role: userRole }) && (
                 <>
                   <Link href="/analyses/new" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
-                    ➕ {t.dashboard.quickNew}
+                    <Plus size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickNew}
                   </Link>
                   <ExpressAnalyseButton variant="link" />
                 </>
               )}
               {stats.soumises > 0 && (userRole === 'RISK_MANAGER' || userRole === 'RSSI' || isAdminRole(userRole)) && (
                 <Link href="/analyses?filter=soumis" className="flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 text-sm text-blue-700 font-medium">
-                  📤 {stats.soumises} {t.dashboard.quickApprove}
+                  <Upload size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {stats.soumises} {t.dashboard.quickApprove}
                 </Link>
               )}
               {userRole !== 'LECTEUR' && (
                 <Link href="/configuration" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
-                  ⚙️ {t.dashboard.quickConfig}
+                  <Settings size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickConfig}
                 </Link>
               )}
               {isAdminRole(userRole) && (
                 <Link href="/admin/users" className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 text-sm text-red-700">
-                  🔑 {t.dashboard.quickAdmin}
+                  <KeyRound size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickAdmin}
                 </Link>
               )}
             </div>

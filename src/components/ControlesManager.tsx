@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, Paperclip } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS } from '@/lib/controle'
@@ -305,7 +305,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${RESULTAT_BADGE[e.resultat]}`}>{lbl(c.resultats, e.resultat)}</span>
                               <span className="text-gray-400">{jour(e.dateRealisation)}</span>
                               {e.constat && <span className="text-gray-600 dark:text-gray-300 truncate">{e.constat}</span>}
-                              {e.preuves?.length > 0 && <span className="text-gray-400">📎 {e.preuves.length}</span>}
+                              {e.preuves?.length > 0 && <span className="text-gray-400"><Paperclip size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {e.preuves.length}</span>}
                             </li>
                           ))}
                         </ul>
