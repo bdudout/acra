@@ -1,4 +1,5 @@
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -190,7 +191,7 @@ export default async function AtelierPage({
             <span aria-current="page">{t.workshop.breadcrumbAtelier} {atelierNum}</span>
           </nav>
           <div className="flex items-center gap-3">
-            <span className="text-4xl" aria-hidden="true">{meta.icon}</span>
+            <span aria-hidden="true">{(() => { const AtIcon = ATELIER_ICONS[atelierNum - 1]; return AtIcon ? <AtIcon size={36} aria-hidden="true" /> : null })()}</span>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {(t.workshop as any)[`a${atelierNum}`]?.title ?? `${t.workshop.breadcrumbAtelier} ${atelierNum} — ${meta.titre}`}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ATELIERS_META } from '@/lib/ebios-data'
@@ -304,7 +305,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                           <div className="bg-ebios-500 h-2 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
                         <span className="text-xs text-gray-500">
-                          {atelier.icon} {t.analyses.workshop} {a.atelierCourant}/5
+                          {(() => { const AtIcon = ATELIER_ICONS[_ai]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}{t.analyses.workshop} {a.atelierCourant}/5
                         </span>
                       </div>
                     </div>

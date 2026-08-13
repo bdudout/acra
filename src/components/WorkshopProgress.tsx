@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { ATELIERS_META } from '@/lib/ebios-data'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -62,7 +63,7 @@ export default function WorkshopProgress({ analyseId, current, completed }: Prop
                       : 'bg-gray-50 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  <span aria-hidden="true">{a.icon}</span>
+                  <span aria-hidden="true">{(() => { const AtIcon = ATELIER_ICONS[i]; return AtIcon ? <AtIcon size={16} aria-hidden="true" /> : null })()}</span>
                   <span className="hidden sm:inline">
                     {done && <span aria-hidden="true">✓ </span>}{a.num}. {titre}
                   </span>

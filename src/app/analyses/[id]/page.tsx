@@ -1,4 +1,5 @@
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -289,7 +290,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                     'bg-gray-50 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  <div className="text-xl mb-1">{done ? <CheckCircle2 size={20} className="inline text-green-600" aria-hidden="true" /> : a.icon}</div>
+                  <div className="text-xl mb-1">{done ? <CheckCircle2 size={20} className="inline text-green-600" aria-hidden="true" /> : (() => { const AtIcon = ATELIER_ICONS[a.num - 1]; return AtIcon ? <AtIcon size={20} className="text-gray-500" aria-hidden="true" /> : null })()}</div>
                   <div className="text-xs font-medium hidden sm:block">{a.titre}</div>
                   <div className="text-xs sm:hidden">{a.num}</div>
                 </Link>

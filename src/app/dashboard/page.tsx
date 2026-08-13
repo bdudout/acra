@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -314,7 +315,7 @@ export default async function DashboardPage() {
                                 style={{ width: a.statut === 'TERMINE' ? '100%' : `${Math.round(((a.atelierCourant - 1) / 5) * 100)}%` }} />
                             </div>
                             <span className="text-xs text-gray-500 flex-shrink-0">
-                              {a.statut === 'TERMINE' ? '✅ 5/5' : `${atelier?.icon} A${a.atelierCourant}/5`}
+                              {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />5/5</> : <>{(() => { const AtIcon = ATELIER_ICONS[_ai]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}A{a.atelierCourant}/5</>}
                             </span>
                             <div className="flex gap-2 text-xs text-gray-500 hidden sm:flex">
                               <span title="Sources"><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque}</span>
@@ -376,7 +377,7 @@ export default async function DashboardPage() {
                     return (
                       <div key={a.num}>
                         <div className="flex justify-between text-xs text-gray-600 mb-1">
-                          <span>{a.icon} A{a.num} — {(t.ateliersMeta as any)[i]?.titre ?? a.titre}</span>
+                          <span>{(() => { const AtIcon = ATELIER_ICONS[i]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}A{a.num} — {(t.ateliersMeta as any)[i]?.titre ?? a.titre}</span>
                           <span>{done}/{stats.total}</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

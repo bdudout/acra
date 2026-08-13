@@ -23,6 +23,7 @@
  */
 
 import { BookOpen, FileText } from 'lucide-react'
+import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ATELIERS_META } from '@/lib/ebios-data'
@@ -82,7 +83,7 @@ export default function EbiosGuide() {
                 onClick={() => setOpenIndex(isOpen ? null : i)}
                 aria-expanded={isOpen}
               >
-                <span className="text-xl flex-shrink-0 mt-0.5">{a.icon}</span>
+                <span className="flex-shrink-0 mt-0.5">{(() => { const AtIcon = ATELIER_ICONS[i]; return AtIcon ? <AtIcon size={20} aria-hidden="true" /> : null })()}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${colors.badge}`}>
