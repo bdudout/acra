@@ -1,5 +1,6 @@
 'use client'
 
+import { Landmark } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
@@ -84,7 +85,7 @@ export default function AnalysesChart({ analyses }: Props) {
                         {a.nom}
                       </div>
                       {a.isSocle && (
-                        <span className="text-xs flex-shrink-0" title="Analyse socle">🏛️</span>
+                        <span className="text-xs flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                       )}
                     </div>
                     <div className={`text-xs mt-0.5 ${a.statut === 'TERMINE' ? 'text-green-600' : 'text-orange-500'}`}>

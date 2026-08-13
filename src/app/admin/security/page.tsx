@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, CheckCircle2, Lock, Mail, Smartphone } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Lock, Mail, Smartphone } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -329,7 +329,7 @@ export default function AdminSecurityPage() {
         {/* Bandeau MFA auto-désactivé (fenêtre expirée) */}
         {MFA_UI_VISIBLE && policy.mfaPendingConfirmation && countdown === 0 && (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
-            🔴 {t.mfa.autoDisabledWarning}
+            <AlertCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.mfa.autoDisabledWarning}
           </div>
         )}
 
@@ -340,12 +340,12 @@ export default function AdminSecurityPage() {
 
             {saved && (
               <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-                ✅ {t.passwordPolicy.savedMsg}
+                <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.passwordPolicy.savedMsg}
               </div>
             )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-                ⚠️ {error}
+                <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {error}
               </div>
             )}
 
@@ -491,13 +491,13 @@ export default function AdminSecurityPage() {
               </label>
               {!smtpReady && (
                 <p className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  ⚠️ {t.mfa.smtpRequired}{' '}
+                  <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.mfa.smtpRequired}{' '}
                   <a href="/admin/smtp" className="underline font-medium">{t.mfa.smtpConfigLink}</a>
                 </p>
               )}
               {policy.requireEmailVerification && (
                 <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  ⚠️ {t.passwordPolicy.emailVerifWarning}
+                  <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.passwordPolicy.emailVerifWarning}
                 </p>
               )}
             </div>
@@ -525,7 +525,7 @@ export default function AdminSecurityPage() {
               </label>
               {!smtpReady && (
                 <p className="mb-4 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  ⚠️ {t.mfa.smtpRequired}{' '}
+                  <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.mfa.smtpRequired}{' '}
                   <a href="/admin/smtp" className="underline font-medium">{t.mfa.smtpConfigLink}</a>
                 </p>
               )}
@@ -592,7 +592,7 @@ export default function AdminSecurityPage() {
 
                       {/* Avertissement sécurité clés */}
                       <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        ⚠️ {t.mfa.smsKeysWarning}
+                        <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.mfa.smsKeysWarning}
                       </p>
 
                       {/* Provider */}
@@ -692,12 +692,12 @@ export default function AdminSecurityPage() {
 
               {ssoSaved && (
                 <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-                  ✅ {t.sso.savedMsg}
+                  <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.sso.savedMsg}
                 </div>
               )}
               {ssoError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-                  ⚠️ {ssoError}
+                  <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {ssoError}
                 </div>
               )}
 
@@ -709,7 +709,7 @@ export default function AdminSecurityPage() {
 
               {/* Avertissement secrets */}
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                ⚠️ {t.sso.keysWarning}
+                <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.sso.keysWarning}
               </p>
 
               {/* Toggle SSO activé */}

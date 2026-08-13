@@ -310,12 +310,12 @@ export default function AdminUsersPage() {
         {/* Messages */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-            ⚠️ {error}
+            <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {error}
           </div>
         )}
         {success && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-            ✅ {success}
+            <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {success}
           </div>
         )}
 
@@ -371,7 +371,7 @@ export default function AdminUsersPage() {
               <h2 className="font-semibold text-gray-800 mb-4">{t.admin.createTitle}</h2>
               {createError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                  ⚠️ {createError}
+                  <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {createError}
                 </div>
               )}
               <form onSubmit={createUser} className="grid grid-cols-1 sm:grid-cols-2 gap-4">

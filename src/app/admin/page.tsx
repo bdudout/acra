@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, Home, Users, CheckCircle2, AlertTriangle, UserPlus, KeyRound, Trash2, Lock, LockOpen, FileText, XCircle, Download, Pin, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardList, Download, FileText, Home, KeyRound, Lock, LockOpen, Pin, ShieldCheck, Trash2, UserPlus, Users, XCircle, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
             </div>
           </Link>
           <Link href="/admin/security" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
-            <span className="text-2xl">🛡️</span>
+            <span className="text-2xl"><ShieldCheck size={24} aria-hidden="true" /></span>
             <div>
               <div className="font-semibold text-gray-800 text-sm">Politique de sécurité</div>
               <div className="text-xs text-gray-500">Mots de passe, verrouillage</div>

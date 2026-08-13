@@ -351,7 +351,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     <div className="space-y-6">
       <div className="bg-green-50 border border-green-200 rounded-xl p-5">
         <div className="flex gap-3">
-          <span className="text-2xl">🛡️</span>
+          <span className="text-2xl"><ShieldCheck size={24} aria-hidden="true" /></span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}

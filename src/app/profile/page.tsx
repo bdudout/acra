@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, Globe, Lock, Palette, User, Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, Globe, Lock, Monitor, Moon, Palette, Sun, User, type LucideIcon } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { LOCALES, LOCALE_LABELS } from '@/lib/i18n'
@@ -151,12 +151,12 @@ export default function ProfilePage() {
 
           {profileSuccess && (
             <div className="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-              ✅ {t.profile.identitySuccess}
+              <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.profile.identitySuccess}
             </div>
           )}
           {profileError && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              ⚠️ {profileError}
+              <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {profileError}
             </div>
           )}
 
@@ -273,12 +273,12 @@ export default function ProfilePage() {
 
           {pwdSuccess && (
             <div className="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-              ✅ {t.profile.successMsg}
+              <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.profile.successMsg}
             </div>
           )}
           {pwdError && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              ⚠️ {pwdError}
+              <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {pwdError}
             </div>
           )}
 

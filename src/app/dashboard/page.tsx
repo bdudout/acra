@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/format'
 import { sanitizeConformite, conformiteStats, deriveNonConformites } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
-import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
+import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
 export const dynamic = 'force-dynamic'
@@ -259,7 +259,7 @@ export default async function DashboardPage() {
 
               {analyses.length === 0 ? (
                 <div className="card p-12 text-center">
-                  <div className="text-5xl mb-4">🛡️</div>
+                  <div className="text-5xl mb-4"><ShieldCheck size={40} aria-hidden="true" /></div>
                   <h3 className="font-semibold text-gray-800 mb-2">{t.dashboard.noAnalyses}</h3>
                   <p className="text-gray-500 text-sm mb-6">{t.dashboard.noAnalysesDesc}</p>
                   <Link href="/analyses/new" className="btn-primary inline-block">
@@ -285,7 +285,7 @@ export default async function DashboardPage() {
                               </span>
                             )}
                             {(a as any).isSocle && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                             )}
                             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
                               a.statut === 'TERMINE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
@@ -294,12 +294,12 @@ export default async function DashboardPage() {
                             </span>
                             {critiques > 0 && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium flex-shrink-0">
-                                🔴 {critiques} {critiques === 1 ? t.dashboard.critBadgeSg : t.dashboard.critBadge}
+                                <AlertCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {critiques} {critiques === 1 ? t.dashboard.critBadgeSg : t.dashboard.critBadge}
                               </span>
                             )}
                             {mesuresP1 > 0 && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex-shrink-0">
-                                ⚠️ {mesuresP1} {t.dashboard.p1Badge}
+                                <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {mesuresP1} {t.dashboard.p1Badge}
                               </span>
                             )}
                           </div>

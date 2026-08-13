@@ -1,6 +1,6 @@
 'use client'
 
-import { Factory, Landmark, Lightbulb } from 'lucide-react'
+import { CheckCircle2, Factory, Landmark, Lightbulb } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -162,7 +162,7 @@ export default function NewAnalysePage() {
               </p>
               {socleId && (
                 <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-xs text-indigo-800">
-                  ✅ Les éléments du socle sélectionné seront copiés dans cette analyse. Vous pourrez les modifier librement.
+                  <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> Les éléments du socle sélectionné seront copiés dans cette analyse. Vous pourrez les modifier librement.
                 </div>
               )}
             </div>

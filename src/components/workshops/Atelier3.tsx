@@ -20,7 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
-import { BookOpen, CheckCircle2, ClipboardList, FileText, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck, Star } from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileText, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck, Star } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -502,7 +502,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     <div className="space-y-6">
       <div className="bg-orange-50 border border-orange-200 rounded-xl p-5">
         <div className="flex gap-3">
-          <span className="text-2xl">🗺️</span>
+          <span className="text-2xl"><MapIcon size={24} aria-hidden="true" /></span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
@@ -1186,7 +1186,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                   </div>
                   {!clausesAllowed && (
                     <p className="text-xs text-amber-800 bg-amber-50 border-t border-amber-200 px-3 py-2">
-                      ⚠️ {t.workshop.a3.measClausesProviderHint}
+                      <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {t.workshop.a3.measClausesProviderHint}
                     </p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-2">

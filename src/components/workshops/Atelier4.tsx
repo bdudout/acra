@@ -22,7 +22,7 @@
  *  - analyse     : parent Analyse (used for strategic scenario names in dropdowns)
  */
 
-import { ClipboardList, Star, Zap } from 'lucide-react'
+import { ClipboardList, Settings, Star, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -236,7 +236,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
       )}
       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
         <div className="flex gap-3">
-          <span className="text-2xl">⚙️</span>
+          <span className="text-2xl"><Settings size={24} aria-hidden="true" /></span>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}

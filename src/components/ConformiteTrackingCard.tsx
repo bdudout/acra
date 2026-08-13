@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, ShieldCheck } from 'lucide-react'
+import { Building2, Landmark, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -97,7 +97,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
                 <div className="flex items-center gap-2 min-w-0">
                   {r.source === 'org'
                     ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium flex-shrink-0" title={t.dashboard.conformiteOrgBadge}><Building2 size={18} aria-hidden="true" /></span>
-                    : r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle">🏛️</span>}
+                    : r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>}
                   <span className="text-sm font-medium text-gray-800 truncate">{r.nom}</span>
                   <span className="text-xs text-gray-400 flex-shrink-0">· {r.frameworkNom}</span>
                 </div>

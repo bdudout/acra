@@ -85,7 +85,7 @@ export default function RecoveryPage() {
 
         {analyses.length === 0 ? (
           <div className="card p-10 text-center">
-            <div className="mb-3 text-4xl">🗑️</div>
+            <div className="mb-3 text-4xl"><Trash2 size={32} aria-hidden="true" /></div>
             <p className="text-gray-500">{r.empty}</p>
           </div>
         ) : (
