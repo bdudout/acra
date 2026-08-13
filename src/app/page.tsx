@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, type LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -9,12 +9,12 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 
-const WORKSHOPS = [
-  { num: 1, icon: '🎯', titleKey: 'w1', descKey: 'w1d' },
-  { num: 2, icon: '🎭', titleKey: 'w2', descKey: 'w2d' },
-  { num: 3, icon: '🗺️', titleKey: 'w3', descKey: 'w3d' },
-  { num: 4, icon: '⚙️', titleKey: 'w4', descKey: 'w4d' },
-  { num: 5, icon: '🛡️', titleKey: 'w5', descKey: 'w5d' },
+const WORKSHOPS: { num: number; Icon: LucideIcon; titleKey: string; descKey: string }[] = [
+  { num: 1, Icon: Target,        titleKey: 'w1', descKey: 'w1d' },
+  { num: 2, Icon: VenetianMask,  titleKey: 'w2', descKey: 'w2d' },
+  { num: 3, Icon: MapIcon,       titleKey: 'w3', descKey: 'w3d' },
+  { num: 4, Icon: Settings,      titleKey: 'w4', descKey: 'w4d' },
+  { num: 5, Icon: ShieldCheck,   titleKey: 'w5', descKey: 'w5d' },
 ]
 
 const WS_TITLES: Record<string, Record<string, string>> = {
@@ -137,15 +137,14 @@ export default function HomePage() {
         {/* Features */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-24 text-left">
           {([
-            { icon: '🎯', f: t.landing.features.ateliers   },
-            { icon: '💡', f: t.landing.features.guided     },
-            // [IA — désactivé] { icon: '🤖', f: t.landing.features.ai },
-            { icon: '📊', f: t.landing.features.matrix     },
-            { icon: '📥', f: t.landing.features.export     },
-            { icon: '🔒', f: t.landing.features.secure     },
-          ] as { icon: string; f: { title: string; desc: string } }[]).map(({ icon, f }, i) => (
+            { Icon: Target,      f: t.landing.features.ateliers   },
+            { Icon: Lightbulb,   f: t.landing.features.guided     },
+            { Icon: BarChart3,   f: t.landing.features.matrix     },
+            { Icon: Download,    f: t.landing.features.export     },
+            { Icon: Lock,        f: t.landing.features.secure     },
+          ] as { Icon: LucideIcon; f: { title: string; desc: string } }[]).map(({ Icon, f }, i) => (
             <div key={i} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-              <div className="text-3xl mb-3">{icon}</div>
+              <div className="mb-3"><Icon size={28} aria-hidden="true" /></div>
               <h3 className="font-bold text-lg mb-2">{f.title}</h3>
               <p className="text-white/60 text-sm leading-relaxed">{f.desc}</p>
             </div>
@@ -159,7 +158,7 @@ export default function HomePage() {
             {WORKSHOPS.map((w, i) => (
               <div key={i} className="flex-1 flex flex-col items-center">
                 <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl mb-3">
-                  {w.icon}
+                  <w.Icon size={24} aria-hidden="true" />
                 </div>
                 <div className="text-xs font-bold text-white/40 mb-1">ATELIER {w.num}</div>
                 <div className="font-semibold text-sm mb-1">{ws[w.titleKey]}</div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, Globe, Lock, Palette, User } from 'lucide-react'
+import { Check, Globe, Lock, Palette, User, Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { LOCALES, LOCALE_LABELS } from '@/lib/i18n'
@@ -34,10 +34,10 @@ function checkPassword(password: string, policy: PolicyShape) {
   ]
 }
 
-const THEME_OPTIONS: { value: ThemeMode; icon: string }[] = [
-  { value: 'light',  icon: '☀️' },
-  { value: 'dark',   icon: '🌙' },
-  { value: 'system', icon: '💻' },
+const THEME_OPTIONS: { value: ThemeMode; Icon: LucideIcon }[] = [
+  { value: 'light',  Icon: Sun },
+  { value: 'dark',   Icon: Moon },
+  { value: 'system', Icon: Monitor },
 ]
 
 export default function ProfilePage() {
@@ -236,7 +236,7 @@ export default function ProfilePage() {
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4"><Palette size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.profile.themeTitle}</h2>
           <div className="grid grid-cols-3 gap-2">
-            {THEME_OPTIONS.map(({ value, icon }) => {
+            {THEME_OPTIONS.map(({ value, Icon }) => {
               const label = value === 'light'
                 ? t.profile.themeLight
                 : value === 'dark'
@@ -257,7 +257,7 @@ export default function ProfilePage() {
                       : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="text-xl">{icon}</span>
+                  <Icon size={20} aria-hidden="true" />
                   <span>{label}</span>
                   <span className={`text-xs text-center leading-tight font-normal ${value === theme ? 'text-ebios-500' : 'text-gray-400'}`}>{desc}</span>
                   {value === theme && <span className="text-ebios-500 text-xs">✓</span>}

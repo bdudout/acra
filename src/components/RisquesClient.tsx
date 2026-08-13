@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Building2, Search } from 'lucide-react'
+import { Building2, Search, ChevronDown, CheckCircle2, ArrowUpRight, Ban, Eye, type LucideIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 // Couleur badge selon score de risque
@@ -14,8 +14,8 @@ function niveauColor(score: number) {
 }
 
 // Icônes des stratégies (le libellé texte vient de l'i18n t.strategyLabels)
-const STRATEGY_ICONS: Record<string, string> = {
-  REDUIRE: '🔽', ACCEPTER: '✅', TRANSFERER: '↗️', REFUSER: '🚫', SURVEILLER: '👁️',
+const STRATEGY_ICONS: Record<string, LucideIcon> = {
+  REDUIRE: ChevronDown, ACCEPTER: CheckCircle2, TRANSFERER: ArrowUpRight, REFUSER: Ban, SURVEILLER: Eye,
 }
 
 export interface RisqueRow {
@@ -141,7 +141,7 @@ export default function RisquesClient({
                       <div className="text-xs text-gray-500 mt-0.5">{trL(c.label)}</div>
                     </td>
                     <td className="px-4 py-3 text-center hidden sm:table-cell">
-                      <span className="text-xs text-gray-600">{`${STRATEGY_ICONS[r.strategie] ?? ''} ${(t.strategyLabels as Record<string, string>)[r.strategie] ?? r.strategie}`.trim()}</span>
+                      <span className="text-xs text-gray-600 inline-flex items-center gap-1">{(() => { const SI = STRATEGY_ICONS[r.strategie]; return SI ? <SI size={13} aria-hidden="true" /> : null })()}{(t.strategyLabels as Record<string, string>)[r.strategie] ?? r.strategie}</span>
                     </td>
                     <td className="px-4 py-3 text-center hidden md:table-cell">
                       {cRes ? (

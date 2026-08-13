@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, Home, Users } from 'lucide-react'
+import { ClipboardList, Home, Users, CheckCircle2, AlertTriangle, UserPlus, KeyRound, Trash2, Lock, LockOpen, FileText, XCircle, Download, Pin, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -27,18 +27,18 @@ interface RecentEvent {
   createdAt: string
 }
 
-const ACTION_ICONS: Record<string, string> = {
-  LOGIN_SUCCESS:    '✅',
-  LOGIN_FAILED:     '⚠️',
-  REGISTER:         '👤',
-  ROLE_CHANGED:     '🔑',
-  USER_DELETED:     '🗑️',
-  USER_SUSPENDED:   '🔒',
-  USER_ACTIVATED:   '🔓',
-  ANALYSE_CREATED:  '📄',
-  ANALYSE_APPROVED: '✅',
-  ANALYSE_REJECTED: '❌',
-  EXPORT:           '📥',
+const ACTION_ICONS: Record<string, LucideIcon> = {
+  LOGIN_SUCCESS:    CheckCircle2,
+  LOGIN_FAILED:     AlertTriangle,
+  REGISTER:         UserPlus,
+  ROLE_CHANGED:     KeyRound,
+  USER_DELETED:     Trash2,
+  USER_SUSPENDED:   Lock,
+  USER_ACTIVATED:   LockOpen,
+  ANALYSE_CREATED:  FileText,
+  ANALYSE_APPROVED: CheckCircle2,
+  ANALYSE_REJECTED: XCircle,
+  EXPORT:           Download,
 }
 
 export default function AdminDashboardPage() {
@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
                 <p className="text-sm text-gray-500 italic text-center py-4">Aucun événement</p>
               ) : stats?.recentEvents.map(ev => (
                 <div key={ev.id} className="flex items-start gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-base flex-shrink-0">{ACTION_ICONS[ev.action] ?? '📌'}</span>
+                  {(() => { const AI = ACTION_ICONS[ev.action] ?? Pin; return <span className="flex-shrink-0 text-gray-500"><AI size={16} aria-hidden="true" /></span> })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-semibold text-gray-700">{ev.action}</span>
