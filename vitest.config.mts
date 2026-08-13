@@ -16,8 +16,10 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+    // Forme tableau/regex : plus fiable que l'alias-chaîne sous vitest 4 / Node 26
+    // (l'alias-chaîne retombait sur le résolveur natif Node → « Cannot find package '@/…' »).
+    alias: [
+      { find: /^@\/(.*)$/, replacement: fileURLToPath(new URL('./src/$1', import.meta.url)) },
+    ],
   },
 })
