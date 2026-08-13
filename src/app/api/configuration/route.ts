@@ -35,7 +35,9 @@ export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as any).id
-  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  // Rôle EFFECTIF dans l'org active (pas le rôle d'instance) → A01/CWE-863.
+  const { role: userRole } = await getAnalyseScope(userId, instanceRole)
   if (!canEditConfig({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Seul un administrateur peut modifier les échelles' }, { status: 403 })
   }
@@ -72,7 +74,8 @@ export async function DELETE(_req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as any).id
-  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const { role: userRole } = await getAnalyseScope(userId, instanceRole)
   if (!canEditConfig({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Seul un administrateur peut réinitialiser les échelles' }, { status: 403 })
   }

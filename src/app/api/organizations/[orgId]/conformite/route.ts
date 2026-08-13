@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   sanitizeConformite, applyConformiteStatut, conformiteStats,
@@ -24,18 +24,16 @@ async function guard(req: NextRequest, orgId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
   const userId = (session.user as any).id
-  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
   const rl = rateLimit(`org-conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) return { error: NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }) }
 
+  // Rôle EFFECTIF dans l'org CIBLE (orgId param), pas le rôle d'instance → A01/CWE-863.
+  // null = aucune appartenance couvrant cet org → hors périmètre (subsume la visibilité).
+  const userRole = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
+  if (!userRole) return { error: NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 }) }
   if (!canManageOrgConformite(userRole)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
-
-  // Périmètre : l'organisation doit être visible par l'utilisateur.
-  const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  const allowed = orgId === 'global' || visibles.length === 0 || visibles.includes(orgId)
-  if (!allowed) return { error: NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 }) }
 
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.conformiteActive) return { error: NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 }) }

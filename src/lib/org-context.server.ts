@@ -118,6 +118,32 @@ export async function resolveOrgContext(
 }
 
 /**
+ * Rôle EFFECTIF d'un utilisateur dans une organisation DONNÉE (pas l'org active) :
+ * appartenance directe sur l'org, sinon appartenance SUBTREE ancêtre qui la couvre,
+ * sinon `null` (aucun accès). SUPER_ADMIN → 'SUPER_ADMIN'. Sert aux routes ciblant
+ * un orgId en PARAMÈTRE (A01/CWE-863) : le gate doit refléter le rôle DANS cet org,
+ * pas le rôle d'instance ni celui de l'organisation active.
+ */
+export async function getEffectiveRoleForOrg(userId: string, instanceRole: UserRole, orgId: string): Promise<UserRole | null> {
+  if (instanceRole === 'SUPER_ADMIN') return 'SUPER_ADMIN'
+  const [memberRows, allOrgs] = await Promise.all([
+    prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, role: true, scope: true } }),
+    prisma.organization.findMany({ select: { id: true, path: true, parentId: true } }),
+  ])
+  const orgs: OrgNode[] = allOrgs.map(o => ({ id: o.id, path: o.path, parentId: o.parentId }))
+  const target = orgs.find(o => o.id === orgId)
+  if (!target) return null
+  const direct = memberRows.find(m => m.organizationId === orgId)
+  if (direct) return direct.role as UserRole
+  const covering = memberRows.find(m => {
+    if (m.scope !== 'SUBTREE') return false
+    const n = orgs.find(o => o.id === m.organizationId)
+    return n ? isInSubtree(target.path, n.path) : false
+  })
+  return covering ? (covering.role as UserRole) : null
+}
+
+/**
  * Ensemble des organisations accessibles à un utilisateur, UNION de toutes ses
  * appartenances (NODE → l'org ; SUBTREE → l'org + descendants). Sert au contrôle
  * d'accès à une analyse par id (au-delà de la seule organisation active).
