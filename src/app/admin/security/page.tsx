@@ -381,7 +381,7 @@ export default function AdminSecurityPage() {
                   <div
                     onClick={() => toggle(field)}
                     className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
-                      policy[field] ? 'bg-ebios-500' : 'bg-gray-300 dark:bg-gray-600'
+                      policy[field] ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-600'
                     }`}
                   >
                     <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${
@@ -480,7 +480,7 @@ export default function AdminSecurityPage() {
                 <div
                   onClick={() => { if (!smtpReady && !policy.requireEmailVerification) return; toggle('requireEmailVerification') }}
                   className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
-                    policy.requireEmailVerification ? 'bg-ebios-500' : 'bg-gray-300'
+                    policy.requireEmailVerification ? 'bg-ebios-500' : 'bg-gray-500'
                   } ${!smtpReady && !policy.requireEmailVerification ? 'opacity-50' : ''}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -514,7 +514,7 @@ export default function AdminSecurityPage() {
                 <div
                   onClick={() => { if (!smtpReady && !policy.mfaEnabled) return; setPolicy(p => ({ ...p, mfaEnabled: !p.mfaEnabled })) }}
                   className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
-                    policy.mfaEnabled ? 'bg-ebios-500' : 'bg-gray-300'
+                    policy.mfaEnabled ? 'bg-ebios-500' : 'bg-gray-500'
                   } ${!smtpReady && !policy.mfaEnabled ? 'opacity-50' : ''}`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -717,7 +717,7 @@ export default function AdminSecurityPage() {
                 <div
                   onClick={() => setSso(s => ({ ...s, enabled: !s.enabled }))}
                   className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
-                    sso.enabled ? 'bg-ebios-500' : 'bg-gray-300'
+                    sso.enabled ? 'bg-ebios-500' : 'bg-gray-500'
                   }`}
                 >
                   <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -854,7 +854,7 @@ export default function AdminSecurityPage() {
                       <div
                         onClick={() => setSso(s => ({ ...s, autoProvision: !s.autoProvision }))}
                         className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 mt-0.5 ${
-                          sso.autoProvision ? 'bg-ebios-500' : 'bg-gray-300'
+                          sso.autoProvision ? 'bg-ebios-500' : 'bg-gray-500'
                         }`}
                       >
                         <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${

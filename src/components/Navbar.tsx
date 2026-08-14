@@ -6,13 +6,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
+import { buildNav, type NavKey, type NavModules } from '@/lib/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
-  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked, Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
+  User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
+  Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
+  LayoutGrid, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -21,17 +24,19 @@ export default function Navbar() {
   const { t } = useTranslation()
   const branding = useBranding()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [grcOpen, setGrcOpen]   = useState(false)
   const menuRef    = useRef<HTMLDivElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
+  const grcRef     = useRef<HTMLDivElement>(null)
+  const grcBtnRef  = useRef<HTMLButtonElement>(null)
 
   const userRole: UserRole = (session?.user as any)?.role ?? 'ANALYSTE'
   const isAdmin        = isAdminRole(userRole)
   const isSuperAdmin   = userRole === 'SUPER_ADMIN'
   const isLecteur      = userRole === 'LECTEUR'
-  const canGovern    = isAdmin || userRole === 'RSSI' || userRole === 'RISK_MANAGER'
 
   // File d'attente du valideur : dérogations en attente de l'action de l'utilisateur
-  // (avis RSSI, double regard, validation métier) → badge sur le lien Dérogations.
+  // (avis RSSI, double regard, validation métier) → badge sur le menu « GRC ».
   const [derogPending, setDerogPending] = useState(0)
   const isDerogActor = userRole === 'RSSI' || userRole === 'DIRECTION_METIER' || isAdmin
   useEffect(() => {
@@ -42,48 +47,88 @@ export default function Navbar() {
       .catch(() => {})
   }, [isDerogActor, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Modules GRC actifs (état effectif) → affiche le groupe de navigation dédié.
-  const [registreActif, setRegistreActif] = useState(false)
-  const [incidentsActif, setIncidentsActif] = useState(false)
-  const [controlesActif, setControlesActif] = useState(false)
-  const [auditActif, setAuditActif] = useState(false)
-  const [kriActif, setKriActif] = useState(false)
-  const [reglementaireActif, setReglementaireActif] = useState(false)
+  // Modules GRC actifs (état effectif) → alimentent le modèle de navigation.
+  const [modules, setModules] = useState<NavModules>({
+    registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false,
+  })
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setRegistreActif(Boolean(d.registreRisquesActive)); setIncidentsActif(Boolean(d.incidentsActive)); setControlesActif(Boolean(d.controlePermanentActive)); setAuditActif(Boolean(d.auditInterneActive)); setKriActif(Boolean(d.kriActive)); setReglementaireActif(Boolean(d.reglementaireActive)) } })
+      .then(d => { if (d) setModules({
+        registre:      Boolean(d.registreRisquesActive),
+        incidents:     Boolean(d.incidentsActive),
+        controles:     Boolean(d.controlePermanentActive),
+        audit:         Boolean(d.auditInterneActive),
+        kri:           Boolean(d.kriActive),
+        reglementaire: Boolean(d.reglementaireActive),
+      }) })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fermer le menu sur clic extérieur
+  // Modèle de navigation : parcours EBIOS inline + modules GRC repliés (logique pure).
+  const { primary, grc } = buildNav(userRole, modules)
+
+  // Fermer les menus sur clic extérieur
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
+      const target = e.target as Node
+      if (menuRef.current && !menuRef.current.contains(target)) setMenuOpen(false)
+      if (grcRef.current && !grcRef.current.contains(target)) setGrcOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fermer le menu sur Escape
+  // Fermer les menus sur Escape (et rendre le focus au déclencheur)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && menuOpen) {
-        setMenuOpen(false)
-        menuBtnRef.current?.focus()
-      }
+      if (e.key !== 'Escape') return
+      if (menuOpen) { setMenuOpen(false); menuBtnRef.current?.focus() }
+      if (grcOpen)  { setGrcOpen(false);  grcBtnRef.current?.focus() }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [menuOpen])
+  }, [menuOpen, grcOpen])
 
   function navClass(active: boolean) {
     return `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
       active ? 'bg-ebios-100 text-ebios-700' : 'text-gray-600 hover:bg-gray-100'
     }`
   }
+
+  // Une route est active si elle est exacte ou parente de la route courante.
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+
+  // Métadonnées d'affichage (icône + libellé i18n) de chaque lien. Défini DANS le
+  // composant car les libellés sont traduits (règle i18n du projet).
+  const NAV_META: Record<NavKey, { href: string; Icon: LucideIcon; label: string }> = {
+    dashboard:     { href: '/dashboard',     Icon: LayoutDashboard, label: t.nav.dashboard },
+    analyses:      { href: '/analyses',      Icon: FolderKanban,    label: isLecteur ? t.nav.analysesReader : t.nav.analyses },
+    risques:       { href: '/risques',       Icon: AlertTriangle,   label: t.nav.risks },
+    tiers:         { href: '/tiers',         Icon: Network,         label: t.nav.tiers },
+    actions:       { href: '/actions',       Icon: Shield,          label: t.nav.actions },
+    conformite:    { href: '/conformite',    Icon: ShieldCheck,     label: t.nav.conformite },
+    derogations:   { href: '/derogations',   Icon: FileWarning,     label: t.nav.derogations },
+    registre:      { href: '/registre',      Icon: BookMarked,      label: t.nav.registre },
+    campagnes:     { href: '/campagnes',     Icon: ClipboardList,   label: t.nav.campagnes },
+    cartographie:  { href: '/cartographie',  Icon: Map,             label: t.nav.cartographie },
+    pilotage:      { href: '/pilotage',      Icon: BarChart3,       label: t.nav.pilotage },
+    processus:     { href: '/processus',     Icon: Workflow,        label: t.nav.processus },
+    incidents:     { href: '/incidents',     Icon: Siren,           label: t.nav.incidents },
+    controles:     { href: '/controles',     Icon: ClipboardCheck,  label: t.nav.controles },
+    audit:         { href: '/audit',         Icon: Search,          label: t.nav.audit },
+    kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
+    reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
+  }
+
+  const grcActive = grc.some(key => isActive(NAV_META[key].href))
+
+  const badge = (n: number, label: string) => (
+    <span
+      className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold"
+      aria-label={label}
+    >{n}</span>
+  )
 
   return (
     <nav
@@ -180,21 +225,19 @@ export default function Navbar() {
                 {/* L'espace /admin (instance) est réservé au super-admin ; un ADMIN
                     ne gère que /configuration (méthodologie). */}
                 {isSuperAdmin && (
-                  <>
-                    <Link
-                      href="/admin"
-                      role="menuitem"
-                      className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                        pathname.startsWith('/admin')
-                          ? 'bg-ebios-50 text-ebios-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      <KeyRound size={16} aria-hidden="true" />
-                      {t.nav.admin}
-                    </Link>
-                  </>
+                  <Link
+                    href="/admin"
+                    role="menuitem"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname.startsWith('/admin')
+                        ? 'bg-ebios-50 text-ebios-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <KeyRound size={16} aria-hidden="true" />
+                    {t.nav.admin}
+                  </Link>
                 )}
 
                 <hr className="my-1 border-gray-100" aria-hidden="true" />
@@ -214,192 +257,73 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Rangée du bas : liens de navigation principaux (pleine largeur) */}
+      {/* Rangée du bas : parcours EBIOS inline + menu déroulant « GRC » pour le reste */}
       <div className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto" role="list">
-          <Link
-            href="/dashboard"
-            className={`${navClass(pathname === '/dashboard')} inline-flex items-center gap-1.5 flex-shrink-0`}
-            aria-current={pathname === '/dashboard' ? 'page' : undefined}
-          >
-            <LayoutDashboard size={16} aria-hidden="true" />
-            <span>{t.nav.dashboard}</span>
-          </Link>
+        <div className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto">
 
-          <Link
-            href="/analyses"
-            className={`${navClass(pathname.startsWith('/analyses'))} inline-flex items-center gap-1.5 flex-shrink-0`}
-            aria-current={pathname.startsWith('/analyses') ? 'page' : undefined}
-          >
-            <FolderKanban size={16} aria-hidden="true" />
-            <span>{isLecteur ? t.nav.analysesReader : t.nav.analyses}</span>
-          </Link>
+          {primary.map(key => {
+            const item = NAV_META[key]
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={key}
+                href={item.href}
+                className={`${navClass(active)} inline-flex items-center gap-1.5 flex-shrink-0`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <item.Icon size={16} aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
 
-          <Link
-            href="/risques"
-            className={`${navClass(pathname === '/risques')} inline-flex items-center gap-1.5 flex-shrink-0`}
-            aria-current={pathname === '/risques' ? 'page' : undefined}
-          >
-            <AlertTriangle size={16} aria-hidden="true" />
-            <span>{t.nav.risks}</span>
-          </Link>
+          {/* Menu déroulant « GRC » : gouvernance + modules, filtrés par droits.
+              Masqué si l'utilisateur n'a accès à aucun de ces liens. */}
+          {grc.length > 0 && (
+            <div className="relative flex-shrink-0" ref={grcRef}>
+              <button
+                ref={grcBtnRef}
+                onClick={() => setGrcOpen(v => !v)}
+                aria-expanded={grcOpen}
+                aria-haspopup="menu"
+                className={`${navClass(grcActive)} inline-flex items-center gap-1.5`}
+              >
+                <LayoutGrid size={16} aria-hidden="true" />
+                <span>{t.nav.grc}</span>
+                {derogPending > 0 && badge(derogPending, `${derogPending} en attente`)}
+                <ChevronDown size={14} className="text-gray-400" aria-hidden="true" />
+              </button>
 
-          <Link
-            href="/tiers"
-            className={`${navClass(pathname === '/tiers')} inline-flex items-center gap-1.5 flex-shrink-0`}
-            aria-current={pathname === '/tiers' ? 'page' : undefined}
-          >
-            <Network size={16} aria-hidden="true" />
-            <span>{t.nav.tiers}</span>
-          </Link>
-
-          <Link
-            href="/actions"
-            className={`${navClass(pathname === '/actions')} inline-flex items-center gap-1.5 flex-shrink-0`}
-            aria-current={pathname === '/actions' ? 'page' : undefined}
-          >
-            <Shield size={16} aria-hidden="true" />
-            <span>{t.nav.actions}</span>
-          </Link>
-
-          {canGovern && (
-            <Link
-              href="/conformite"
-              className={`${navClass(pathname === '/conformite')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/conformite' ? 'page' : undefined}
-            >
-              <ShieldCheck size={16} aria-hidden="true" />
-              <span>{t.nav.conformite}</span>
-            </Link>
-          )}
-
-          {(canGovern || userRole === 'DIRECTION_METIER') && (
-            <Link
-              href="/derogations"
-              className={`${navClass(pathname === '/derogations')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/derogations' ? 'page' : undefined}
-            >
-              <FileWarning size={16} aria-hidden="true" />
-              <span>{t.nav.derogations}</span>
-              {derogPending > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold"
-                  aria-label={`${derogPending} en attente`}>
-                  {derogPending}
-                </span>
+              {grcOpen && (
+                <div
+                  role="menu"
+                  aria-label={t.nav.grc}
+                  className="absolute left-0 top-full mt-1 bg-white border border-gray-200
+                             rounded-xl shadow-lg p-1 z-50 w-56 max-h-[70vh] overflow-y-auto"
+                >
+                  {grc.map(key => {
+                    const item = NAV_META[key]
+                    const active = isActive(item.href)
+                    return (
+                      <Link
+                        key={key}
+                        href={item.href}
+                        role="menuitem"
+                        onClick={() => setGrcOpen(false)}
+                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                          active ? 'bg-ebios-50 text-ebios-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        <item.Icon size={16} aria-hidden="true" />
+                        <span className="flex-1">{item.label}</span>
+                        {key === 'derogations' && derogPending > 0 && badge(derogPending, `${derogPending} en attente`)}
+                      </Link>
+                    )
+                  })}
+                </div>
               )}
-            </Link>
-          )}
-
-          {/* Module Incidents — la DÉCLARATION est ouverte à tous les rôles (1ʳᵉ ligne). */}
-          {incidentsActif && (
-            <Link
-              href="/incidents"
-              className={`${navClass(pathname === '/incidents')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/incidents' ? 'page' : undefined}
-            >
-              <Siren size={16} aria-hidden="true" />
-              <span>{t.nav.incidents}</span>
-            </Link>
-          )}
-
-          {/* Module Audit interne (3ᵉ ligne) — lecture globale, écriture AUDITEUR. */}
-          {auditActif && !isLecteur && (
-            <Link
-              href="/audit"
-              className={`${navClass(pathname === '/audit')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/audit' ? 'page' : undefined}
-            >
-              <Search size={16} aria-hidden="true" />
-              <span>{t.nav.audit}</span>
-            </Link>
-          )}
-
-          {/* Module Reporting réglementaire — registre DORA / LDC ACPR. */}
-          {reglementaireActif && !isLecteur && (
-            <Link
-              href="/reglementaire"
-              className={`${navClass(pathname === '/reglementaire')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/reglementaire' ? 'page' : undefined}
-            >
-              <Landmark size={16} aria-hidden="true" />
-              <span>{t.nav.reglementaire}</span>
-            </Link>
-          )}
-
-          {/* Module KRI — indicateurs clés de risque (définition 2ᵉ ligne, saisie 1ʳᵉ). */}
-          {kriActif && !isLecteur && (
-            <Link
-              href="/kri"
-              className={`${navClass(pathname === '/kri')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/kri' ? 'page' : undefined}
-            >
-              <TrendingUp size={16} aria-hidden="true" />
-              <span>{t.nav.kri}</span>
-            </Link>
-          )}
-
-          {/* Module Contrôle permanent — l'EXÉCUTION est ouverte à la 1ʳᵉ ligne. */}
-          {controlesActif && !isLecteur && (
-            <Link
-              href="/controles"
-              className={`${navClass(pathname === '/controles')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/controles' ? 'page' : undefined}
-            >
-              <ClipboardCheck size={16} aria-hidden="true" />
-              <span>{t.nav.controles}</span>
-            </Link>
-          )}
-
-          {/* Socle GRC (module Registre de risques) — visible si le module est actif. */}
-          {registreActif && !isLecteur && (
-            <Link
-              href="/registre"
-              className={`${navClass(pathname === '/registre')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/registre' ? 'page' : undefined}
-            >
-              <BookMarked size={16} aria-hidden="true" />
-              <span>{t.nav.registre}</span>
-            </Link>
-          )}
-          {registreActif && !isLecteur && (
-            <Link
-              href="/campagnes"
-              className={`${navClass(pathname === '/campagnes')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/campagnes' ? 'page' : undefined}
-            >
-              <ClipboardList size={16} aria-hidden="true" />
-              <span>{t.nav.campagnes}</span>
-            </Link>
-          )}
-          {registreActif && !isLecteur && (
-            <Link
-              href="/cartographie"
-              className={`${navClass(pathname === '/cartographie')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/cartographie' ? 'page' : undefined}
-            >
-              <Map size={16} aria-hidden="true" />
-              <span>{t.nav.cartographie}</span>
-            </Link>
-          )}
-          {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
-            <Link
-              href="/pilotage"
-              className={`${navClass(pathname === '/pilotage')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/pilotage' ? 'page' : undefined}
-            >
-              <BarChart3 size={16} aria-hidden="true" />
-              <span>{t.nav.pilotage}</span>
-            </Link>
-          )}
-          {registreActif && (canGovern || userRole === 'DIRECTION_METIER') && (
-            <Link
-              href="/processus"
-              className={`${navClass(pathname === '/processus')} inline-flex items-center gap-1.5 flex-shrink-0`}
-              aria-current={pathname === '/processus' ? 'page' : undefined}
-            >
-              <Workflow size={16} aria-hidden="true" />
-              <span>{t.nav.processus}</span>
-            </Link>
+            </div>
           )}
         </div>
       </div>
