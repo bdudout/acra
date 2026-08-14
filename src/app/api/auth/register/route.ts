@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape } from '@/lib/password-policy'
-import { demoOrgCapReached, createDemoOrgForUser, isDemoInstance } from '@/lib/demo-server'
+import { demoOrgCapReached, createDemoOrgForUser, isSignupOpen } from '@/lib/demo-server'
+import { resolveSignupDecision } from '@/lib/demo'
 import { createAndSendChallenge } from '@/lib/mfa-service'
 
 const schema = z.object({
@@ -87,44 +88,46 @@ export async function POST(req: NextRequest) {
     //   comptes, rôles, politiques). Combiné à F004 (inscription ouverte) → fort impact.
     // FIX: provisionner l'ADMIN initial hors-ligne (seed/CLI protégé, variable d'env),
     //   ne jamais attribuer ADMIN via un endpoint public.
-    // Instance de démo PROUVÉE (env + marqueur figé) — jamais isDemoMode() seul,
-    // pour qu'une instance de prod flippée par erreur ne bascule pas en self-service.
-    const demo = await isDemoInstance()
+    // Inscription publique ouverte : instance de démo PROUVÉE (env + marqueur figé)
+    // OU toggle runtime `publicSignupActive` (SUPER_ADMIN). Jamais isDemoMode() seul.
+    const signupOpen = await isSignupOpen()
     const userCount = await prisma.user.count()
     const isFirstUser = userCount === 0
 
-    // Amorçage : le PREMIER compte de l'instance est l'exploitant — SUPER_ADMIN,
-    // e-mail pré-vérifié (aucun SMTP au tout premier démarrage), rattaché à
-    // l'organisation racine. Cela vaut AUSSI en démo (l'exploitant s'inscrit avant
-    // d'ouvrir le site), ce qui évite tout amorçage manuel en base. Les inscrits
-    // démo SUIVANTS sont des testeurs : organisation isolée + vérification d'e-mail.
-    const demoTester = demo && !isFirstUser
-
-    // Mode démo : plafond d'organisations actives (anti-abus) — testeurs uniquement.
-    if (demoTester && await demoOrgCapReached()) {
-      return NextResponse.json({ error: 'DEMO_FULL' }, { status: 503 })
+    // Amorçage : le PREMIER compte = l'exploitant (SUPER_ADMIN, e-mail pré-vérifié,
+    // rattaché à la racine), toujours autorisé. Inscrits SUIVANTS uniquement si
+    // l'inscription est ouverte → chacun obtient son organisation isolée (ADMIN) avec
+    // vérification d'e-mail + plafond. Sinon inscription FERMÉE (anti F004 : pas de
+    // rattachement anonyme à l'organisation racine sur une instance de production).
+    const decision = resolveSignupDecision({ isFirstUser, signupOpen })
+    if (!decision.allowed) {
+      return NextResponse.json({ error: 'REGISTRATION_CLOSED' }, { status: 403 })
     }
 
-    const instanceRole = isFirstUser ? 'SUPER_ADMIN' : 'ANALYSTE'
+    // Plafond d'organisations actives (anti-abus) — inscrits self-service uniquement.
+    if (decision.enforceCap && await demoOrgCapReached()) {
+      return NextResponse.json({ error: 'DEMO_FULL' }, { status: 503 })
+    }
 
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase().trim(),
         passwordHash,
-        role: instanceRole,
-        // Le premier compte est pré-vérifié pour pouvoir se connecter immédiatement.
-        emailVerified: isFirstUser ? new Date() : undefined,
+        role: decision.instanceRole,
+        // Vérification d'e-mail requise pour les inscrits self-service ; le 1er compte
+        // (exploitant) est pré-vérifié pour se connecter immédiatement.
+        emailVerified: decision.requireEmailVerif ? undefined : new Date(),
       },
       select: { id: true, email: true, name: true, role: true },
     })
 
-    if (demoTester) {
-      // Chaque testeur = sa propre organisation, dont il est ADMIN (SUBTREE).
+    if (decision.provisionOrg) {
+      // Chaque inscrit self-service = sa propre organisation, dont il est ADMIN (SUBTREE).
       const org = await createDemoOrgForUser(user.id, name)
       await auditLog('REGISTER', {
         userId: user.id, userEmail: user.email, ip: getClientIp(req),
-        details: { demo: true, orgId: org.id, role: 'ADMIN' },
+        details: { selfService: true, orgId: org.id, role: 'ADMIN' },
       })
       // Vérification d'e-mail obligatoire (démo) : le compte reste emailVerified=null
       // et la connexion est bloquée tant que l'OTP envoyé ici n'est pas validé.

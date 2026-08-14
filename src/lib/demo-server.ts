@@ -123,6 +123,22 @@ export async function isDemoInstance(): Promise<boolean> {
   return (await resolveInstanceMode()) === 'DEMO'
 }
 
+/**
+ * Inscription publique en self-service OUVERTE : soit l'instance est une DÉMO
+ * (env ACRA_DEMO_MODE + marqueur figé), soit le SUPER_ADMIN a activé au runtime
+ * `Configuration.publicSignupActive`. C'est le prédicat consommé par la route
+ * d'inscription pour autoriser la création d'organisations isolées self-service.
+ */
+export async function isSignupOpen(): Promise<boolean> {
+  if (await isDemoInstance()) return true
+  try {
+    const config = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { publicSignupActive: true } })
+    return config?.publicSignupActive === true
+  } catch {
+    return false
+  }
+}
+
 function slugify(s: string): string {
   const base = s
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')

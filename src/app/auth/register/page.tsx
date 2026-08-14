@@ -18,9 +18,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [policy, setPolicy] = useState<PasswordPolicyShape>(DEFAULT_POLICY)
   const [isDemo, setIsDemo] = useState(false)
+  const [open, setOpen] = useState<boolean | null>(null)
 
   useEffect(() => {
     fetch('/api/demo/status').then(r => r.ok ? r.json() : null).then(s => setIsDemo(!!s?.demo)).catch(() => {})
+    fetch('/api/auth/registration-open').then(r => r.ok ? r.json() : null).then(s => setOpen(s ? !!s.open : true)).catch(() => setOpen(true))
   }, [])
 
   // Libellé traduit d'une règle de mot de passe (code → texte i18n)
@@ -62,7 +64,7 @@ export default function RegisterPage() {
 
     const data = await res.json()
     if (!res.ok) {
-      setError(data.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : (data.error || t.auth.register.errorGeneric))
+      setError(data.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : data.error === 'REGISTRATION_CLOSED' ? t.auth.register.closedMsg : (data.error || t.auth.register.errorGeneric))
       setLoading(false)
       return
     }
@@ -101,6 +103,11 @@ export default function RegisterPage() {
           </div>
         )}
 
+        {open === false ? (
+          <div className="bg-gray-50 border border-gray-200 text-gray-600 rounded-lg px-4 py-6 text-sm text-center">
+            {t.auth.register.closedMsg}
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.register.name}</label>
@@ -170,6 +177,7 @@ export default function RegisterPage() {
             {loading ? t.auth.register.submitting : t.auth.register.submit}
           </button>
         </form>
+        )}
 
         <p className="text-center text-sm text-gray-600 mt-6">
           {t.auth.register.hasAccount}{' '}

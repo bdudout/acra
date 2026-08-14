@@ -39,6 +39,8 @@ export default function DemoAdminPage() {
   const [saved, setSaved] = useState(false)
   const [purging, setPurging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [publicSignup, setPublicSignup] = useState<boolean | null>(null)
+  const [savingPS, setSavingPS] = useState(false)
 
   const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN'
 
@@ -57,7 +59,21 @@ export default function DemoAdminPage() {
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) applyData(data) })
       .finally(() => setLoading(false))
+    fetch('/api/admin/public-signup')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setPublicSignup(data ? !!data.publicSignupActive : false))
+      .catch(() => setPublicSignup(false))
   }, [status, isSuperAdmin])
+
+  async function savePublicSignup(next: boolean) {
+    setSavingPS(true); setError(null)
+    const res = await fetch('/api/admin/public-signup', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publicSignupActive: next }),
+    })
+    setSavingPS(false)
+    if (res.ok) { const data = await res.json(); setPublicSignup(!!data.publicSignupActive) }
+    else { const data = await res.json().catch(() => ({})); setError(data.error ?? 'Erreur') }
+  }
 
   function set<K extends keyof DemoCfg>(key: K, value: number) {
     setCfg(c => (c ? { ...c, [key]: value } : c)); setSaved(false)
@@ -111,9 +127,30 @@ export default function DemoAdminPage() {
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4"><AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {error}</div>}
 
-        {loading || !cfg ? (
+        {isSuperAdmin && (
+          <div className="card p-6 mb-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold text-gray-900">{t.demo.publicSignupTitle}</h2>
+                <p className="text-sm text-gray-500 mt-1">{t.demo.publicSignupDesc}</p>
+              </div>
+              <button
+                type="button"
+                disabled={publicSignup === null || savingPS}
+                onClick={() => savePublicSignup(!publicSignup)}
+                aria-pressed={!!publicSignup}
+                aria-label={t.demo.publicSignupTitle}
+                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${publicSignup ? 'bg-ebios-600' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${publicSignup ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
           <div className="text-center py-12 text-gray-500">{t.loading}</div>
-        ) : (
+        ) : cfg ? (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Réglages */}
             <form onSubmit={handleSave} className="card p-6 space-y-4">
@@ -176,7 +213,7 @@ export default function DemoAdminPage() {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
       </main>
     </div>
   )

@@ -332,6 +332,7 @@ export const it: Translations = {
       errorShort:   'La password deve contenere almeno 8 caratteri.',
       errorMismatch:'Le password non corrispondono.',
       errorGeneric: 'Errore durante la creazione dell\'account.',
+      closedMsg: 'La registrazione non è aperta su questa istanza. Contatta il tuo amministratore.',
     },
     verifyEmail: {
       title:       'Verifica il tuo indirizzo e-mail',
@@ -610,6 +611,8 @@ export const it: Translations = {
     homeRule3: 'Non inserire alcun dato reale riservato — utilizza dati fittizi.',
     homeRule4: 'I tuoi dati di prova vengono eliminati automaticamente dopo un periodo di inattività (con preavviso via e-mail).',
     registerNote: 'Registrazione alla demo: riceverai un\'e-mail di verifica. I tuoi dati sono temporanei e saranno eliminati dopo un periodo di inattività.',
+    publicSignupTitle: 'Registrazione pubblica',
+    publicSignupDesc: 'Consentire a qualsiasi visitatore di creare il proprio spazio (organizzazione isolata + ADMIN), con verifica e-mail e tetto anti-abuso. Indipendente dalla modalità demo.',
     badge: 'Ambiente dimostrativo',
     notice: 'Spazio di prova temporaneo — non inserire dati reali riservati. I tuoi dati saranno eliminati dopo un periodo di inattività.',
     exportCta: 'Esporta i miei dati',

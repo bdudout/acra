@@ -340,6 +340,7 @@ export const fr = {
       errorShort:   'Le mot de passe doit contenir au moins 8 caractères.',
       errorMismatch:'Les mots de passe ne correspondent pas.',
       errorGeneric: 'Erreur lors de la création du compte.',
+      closedMsg: 'L\'inscription n\'est pas ouverte sur cette instance. Contactez votre administrateur.',
     },
     verifyEmail: {
       title:       'Vérifiez votre adresse e-mail',
@@ -624,6 +625,8 @@ export const fr = {
     homeRule3: 'N\'y saisissez aucune donnée réelle confidentielle — utilisez des données fictives.',
     homeRule4: 'Vos données de test sont supprimées automatiquement après une période d\'inactivité (préavis par e-mail).',
     registerNote: 'Inscription à la démo : un e-mail de vérification vous sera envoyé. Vos données sont temporaires et seront supprimées après une période d\'inactivité.',
+    publicSignupTitle: 'Inscription publique',
+    publicSignupDesc: 'Autoriser tout visiteur à créer son propre espace (organisation isolée + ADMIN), avec vérification d\'e-mail et plafond anti-abus. Indépendant du mode démo.',
     badge: 'Environnement de démonstration',
     notice: 'Espace de test temporaire — ne saisissez pas de données réelles confidentielles. Vos données seront supprimées après une période d\'inactivité.',
     exportCta: 'Exporter mes données',

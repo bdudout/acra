@@ -332,6 +332,7 @@ export const de: Translations = {
       errorShort:   'Das Passwort muss mindestens 8 Zeichen lang sein.',
       errorMismatch:'Die Passwörter stimmen nicht überein.',
       errorGeneric: 'Fehler beim Erstellen des Kontos.',
+      closedMsg: 'Die Registrierung ist auf dieser Instanz nicht geöffnet. Wenden Sie sich an Ihren Administrator.',
     },
     verifyEmail: {
       title:       'Bestätigen Sie Ihre E-Mail-Adresse',
@@ -610,6 +611,8 @@ export const de: Translations = {
     homeRule3: 'Geben Sie keine echten vertraulichen Daten ein — verwenden Sie fiktive Daten.',
     homeRule4: 'Ihre Testdaten werden nach einer Zeit der Inaktivität automatisch gelöscht (mit vorheriger E-Mail-Warnung).',
     registerNote: 'Demo-Registrierung: Sie erhalten eine Bestätigungs-E-Mail. Ihre Daten sind temporär und werden nach einer Zeit der Inaktivität gelöscht.',
+    publicSignupTitle: 'Öffentliche Registrierung',
+    publicSignupDesc: 'Jedem Besucher erlauben, einen eigenen Arbeitsbereich zu erstellen (isolierte Organisation + ADMIN), mit E-Mail-Verifizierung und Missbrauchsobergrenze. Unabhängig vom Demo-Modus.',
     badge: 'Demo-Umgebung',
     notice: 'Temporärer Testbereich — geben Sie keine echten vertraulichen Daten ein. Ihre Daten werden nach einer Zeit der Inaktivität gelöscht.',
     exportCta: 'Meine Daten exportieren',

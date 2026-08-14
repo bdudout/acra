@@ -1363,6 +1363,12 @@ model Configuration {
   // maxActiveOrgs }. Résolus via resolveDemoConfig (lib/demo.ts).
   demoConfig Json?
 
+  // Inscription publique en self-service, réglée au RUNTIME par le SUPER_ADMIN
+  // (indépendante de l'env ACRA_DEMO_MODE). ON ⇒ tout visiteur peut créer son
+  // organisation isolée (ADMIN) avec vérification d'e-mail + plafond anti-abus.
+  // OFF (défaut) ⇒ inscription fermée hors amorçage du 1er compte (anti F004).
+  publicSignupActive Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

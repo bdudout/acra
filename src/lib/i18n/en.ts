@@ -332,6 +332,7 @@ export const en: Translations = {
       errorShort:   'Password must be at least 8 characters.',
       errorMismatch:'Passwords do not match.',
       errorGeneric: 'Error creating account.',
+      closedMsg: 'Registration is not open on this instance. Contact your administrator.',
     },
     verifyEmail: {
       title:       'Verify your email address',
@@ -610,6 +611,8 @@ export const en: Translations = {
     homeRule3: 'Do not enter any real confidential data — use fictitious data.',
     homeRule4: 'Your test data is deleted automatically after a period of inactivity (email warning beforehand).',
     registerNote: 'Demo sign-up: a verification email will be sent to you. Your data is temporary and will be deleted after a period of inactivity.',
+    publicSignupTitle: 'Public registration',
+    publicSignupDesc: 'Allow any visitor to create their own workspace (isolated organization + ADMIN), with email verification and an anti-abuse cap. Independent of demo mode.',
     badge: 'Demo environment',
     notice: 'Temporary test space — do not enter real confidential data. Your data will be deleted after a period of inactivity.',
     exportCta: 'Export my data',
