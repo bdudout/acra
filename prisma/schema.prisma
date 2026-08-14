@@ -1369,6 +1369,13 @@ model Configuration {
   // OFF (défaut) ⇒ inscription fermée hors amorçage du 1er compte (anti F004).
   publicSignupActive Boolean @default(false)
 
+  // Contenu public configurable (niveau instance, SUPER_ADMIN) : personnalise le
+  // bandeau public et l'appel à l'action de contact/déploiement SANS toucher aux
+  // fichiers i18n ni aux vars d'env. Vides ⇒ défauts i18n (cf. lib/public-content).
+  publicNotice       String?
+  publicContactUrl   String?
+  publicContactLabel String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

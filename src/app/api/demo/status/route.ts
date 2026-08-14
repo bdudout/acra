@@ -12,9 +12,23 @@ import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
  */
 export async function GET() {
   if (!(await isDemoInstance())) return NextResponse.json({ demo: false })
+
+  // Contenu public configurable (surcharges brutes ; le client applique le repli
+  // i18n via resolvePublicContent). Lisible même par un visiteur anonyme.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cfg = await (prisma as any).configuration.findUnique({
+    where: { id: 'global' },
+    select: { publicNotice: true, publicContactUrl: true, publicContactLabel: true },
+  }).catch(() => null)
+  const content = {
+    publicNotice: cfg?.publicNotice ?? null,
+    publicContactUrl: cfg?.publicContactUrl ?? null,
+    publicContactLabel: cfg?.publicContactLabel ?? null,
+  }
+
   const session = await getServerSession(authOptions)
   const userId = (session?.user as { id?: string } | undefined)?.id
-  if (!userId) return NextResponse.json({ demo: true, daysUntilPurge: null })
+  if (!userId) return NextResponse.json({ demo: true, daysUntilPurge: null, content })
 
   const membership = await prisma.orgMembership.findFirst({
     where: { userId, organizationId: { not: 'global' } },
@@ -23,5 +37,5 @@ export async function GET() {
   })
   const org = membership?.organization
   const days = org ? daysUntilPurge(org, await getDemoConfig()) : null
-  return NextResponse.json({ demo: true, daysUntilPurge: days })
+  return NextResponse.json({ demo: true, daysUntilPurge: days, content })
 }

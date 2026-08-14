@@ -41,6 +41,9 @@ export default function DemoAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [publicSignup, setPublicSignup] = useState<boolean | null>(null)
   const [savingPS, setSavingPS] = useState(false)
+  const [pc, setPc] = useState<{ publicNotice: string; publicContactUrl: string; publicContactLabel: string } | null>(null)
+  const [savingPC, setSavingPC] = useState(false)
+  const [savedPC, setSavedPC] = useState(false)
 
   const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN'
 
@@ -63,7 +66,25 @@ export default function DemoAdminPage() {
       .then(r => r.ok ? r.json() : null)
       .then(data => setPublicSignup(data ? !!data.publicSignupActive : false))
       .catch(() => setPublicSignup(false))
+    fetch('/api/admin/public-content')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setPc(data
+        ? { publicNotice: data.publicNotice ?? '', publicContactUrl: data.publicContactUrl ?? '', publicContactLabel: data.publicContactLabel ?? '' }
+        : { publicNotice: '', publicContactUrl: '', publicContactLabel: '' }))
+      .catch(() => setPc({ publicNotice: '', publicContactUrl: '', publicContactLabel: '' }))
   }, [status, isSuperAdmin])
+
+  async function savePublicContent(e: React.FormEvent) {
+    e.preventDefault()
+    if (!pc) return
+    setSavingPC(true); setSavedPC(false); setError(null)
+    const res = await fetch('/api/admin/public-content', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pc),
+    })
+    setSavingPC(false)
+    if (res.ok) { const data = await res.json(); setPc({ publicNotice: data.publicNotice ?? '', publicContactUrl: data.publicContactUrl ?? '', publicContactLabel: data.publicContactLabel ?? '' }); setSavedPC(true) }
+    else { const data = await res.json().catch(() => ({})); setError(data.error ?? 'Erreur') }
+  }
 
   async function savePublicSignup(next: boolean) {
     setSavingPS(true); setError(null)
@@ -146,6 +167,40 @@ export default function DemoAdminPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {isSuperAdmin && pc && (
+          <form onSubmit={savePublicContent} className="card p-6 mb-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-gray-900">{t.demo.publicContentTitle}</h2>
+              <p className="text-sm text-gray-500 mt-1">{t.demo.publicContentDesc}</p>
+            </div>
+            {savedPC && <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm"><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.demo.publicContentSaved}</div>}
+            <label className="block">
+              <span className="text-sm text-gray-700">{t.demo.publicContentNotice}</span>
+              <textarea value={pc.publicNotice} maxLength={300} rows={2}
+                onChange={e => { setPc(p => p && { ...p, publicNotice: e.target.value }); setSavedPC(false) }}
+                className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-ebios-500 focus:border-ebios-500" />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm text-gray-700">{t.demo.publicContentContactUrl}</span>
+                <input type="text" value={pc.publicContactUrl} maxLength={300} placeholder="/deployer"
+                  onChange={e => { setPc(p => p && { ...p, publicContactUrl: e.target.value }); setSavedPC(false) }}
+                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-ebios-500 focus:border-ebios-500" />
+              </label>
+              <label className="block">
+                <span className="text-sm text-gray-700">{t.demo.publicContentContactLabel}</span>
+                <input type="text" value={pc.publicContactLabel} maxLength={60}
+                  onChange={e => { setPc(p => p && { ...p, publicContactLabel: e.target.value }); setSavedPC(false) }}
+                  className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-ebios-500 focus:border-ebios-500" />
+              </label>
+            </div>
+            <button type="submit" disabled={savingPC}
+              className="bg-ebios-600 hover:bg-ebios-700 disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm">
+              {savingPC ? d.saving : d.save}
+            </button>
+          </form>
         )}
 
         {loading ? (

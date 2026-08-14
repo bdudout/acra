@@ -4,6 +4,7 @@ import { Calendar, FlaskConical } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
+import { resolvePublicContent, type PublicContentConfig } from '@/lib/public-content'
 
 /**
  * Bandeau affiché sur le site de démonstration (ACRA-Demo, ACRA_DEMO_MODE=true).
@@ -16,12 +17,23 @@ export default function DemoBanner() {
   const d = t.demo
   // Compte à rebours d'expiration : jours restants avant purge de l'org du testeur.
   const [days, setDays] = useState<number | null>(null)
+  // Surcharges de contenu public (bandeau/CTA) réglées par le SUPER_ADMIN.
+  const [content, setContent] = useState<PublicContentConfig | null>(null)
   useEffect(() => {
     fetch('/api/demo/status')
       .then(r => r.ok ? r.json() : null)
-      .then(s => { if (s?.demo && typeof s.daysUntilPurge === 'number') setDays(s.daysUntilPurge) })
+      .then(s => {
+        if (s?.demo && typeof s.daysUntilPurge === 'number') setDays(s.daysUntilPurge)
+        if (s?.content) setContent(s.content)
+      })
       .catch(() => {})
   }, [])
+
+  // Repli i18n : valeurs par défaut appliquées quand aucune surcharge n'est définie.
+  const pc = resolvePublicContent(content, {
+    notice: d.notice, contactUrl: '/deployer', contactLabel: d.deployCta,
+  })
+  const contactExternal = !pc.contactUrl.startsWith('/')
   return (
     <div className="w-full bg-indigo-600 text-white text-[13px] leading-tight">
       <div className="max-w-7xl mx-auto px-4 py-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:justify-between">
@@ -30,7 +42,7 @@ export default function DemoBanner() {
           <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap">
             <FlaskConical size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.badge}
           </span>
-          <span className="text-indigo-100">{d.notice}</span>
+          <span className="text-indigo-100">{pc.notice}</span>
           {days !== null && (
             <span className="whitespace-nowrap text-indigo-50" title={d.expiresInTitle}>
               · <Calendar size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{d.expiresIn.replace('{n}', String(days))}
@@ -43,10 +55,17 @@ export default function DemoBanner() {
             className="rounded-md border border-white/40 px-2.5 py-1 font-medium text-white hover:bg-white/10 transition-colors">
             {d.exportCta}
           </a>
-          <Link href="/deployer"
-            className="rounded-md bg-white px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-50 transition-colors">
-            {d.deployCta}
-          </Link>
+          {contactExternal ? (
+            <a href={pc.contactUrl} target="_blank" rel="noopener noreferrer"
+              className="rounded-md bg-white px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-50 transition-colors">
+              {pc.contactLabel}
+            </a>
+          ) : (
+            <Link href={pc.contactUrl}
+              className="rounded-md bg-white px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-50 transition-colors">
+              {pc.contactLabel}
+            </Link>
+          )}
         </div>
       </div>
     </div>
