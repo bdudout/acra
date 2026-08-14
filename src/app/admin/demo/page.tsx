@@ -163,7 +163,7 @@ export default function DemoAdminPage() {
                 onClick={() => savePublicSignup(!publicSignup)}
                 aria-pressed={!!publicSignup}
                 aria-label={t.demo.publicSignupTitle}
-                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${publicSignup ? 'bg-ebios-600' : 'bg-gray-500'}`}
+                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${publicSignup ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${publicSignup ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>

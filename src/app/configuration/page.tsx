@@ -1280,7 +1280,7 @@ export default function ConfigurationPage() {
                     aria-label={f.title}
                     disabled={savingFeatures || locked}
                     onClick={() => saveFeature(f.field, !f.value)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-500'} ${(savingFeatures || locked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${(savingFeatures || locked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${effValue ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
@@ -1510,7 +1510,7 @@ export default function ConfigurationPage() {
                   <button
                     type="button"
                     onClick={() => toggleRef(idx)}
-                    className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${r.actif ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-600'}`}
+                    className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${r.actif ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
                     aria-label={r.actif ? t.config.refsDisable : t.config.refsEnable}
                   >
                     <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${r.actif ? 'translate-x-4' : 'translate-x-0'}`} />
