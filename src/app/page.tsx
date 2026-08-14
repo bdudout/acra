@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, type LucideIcon } from 'lucide-react'
+import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, Check, type LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -189,7 +189,7 @@ export default function HomePage() {
 
                 {/* Résultat */}
                 <div className="mt-auto flex items-start gap-2 bg-white/10 rounded-xl p-3">
-                  <span className="text-green-300 text-base mt-0.5 flex-shrink-0">✓</span>
+                  <Check size={16} className="text-green-300 mt-0.5 flex-shrink-0" aria-hidden="true" />
                   <p className="text-xs text-white/85 leading-relaxed">{ex.result}</p>
                 </div>
               </div>
@@ -200,43 +200,22 @@ export default function HomePage() {
         {/* Stats / social proof */}
         <div className="mt-24 grid grid-cols-2 sm:grid-cols-4 gap-6">
           {[
-            { value: '5',   label: 'Ateliers EBIOS RM' },
-            { value: '5',   label: 'Langues supportées' },
-            { value: '100%', label: 'Open-source' },
-            { value: 'ISO', label: '27005 compatible' },
+            { value: '5' },
+            { value: '5' },
+            { value: '100%' },
+            { value: 'ISO' },
           ].map((s, i) => (
             <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
               <div className="text-3xl font-bold text-white mb-1">{s.value}</div>
-              <div className="text-xs text-white/50 leading-snug">{s.label}</div>
+              <div className="text-xs text-white/50 leading-snug">{t.landing.statLabels[i]}</div>
             </div>
           ))}
         </div>
 
         {/* FAQ */}
         <div className="mt-24 text-left max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold mb-10 text-center">Questions fréquentes</h2>
-          {[
-            {
-              q: "Qu'est-ce qu'EBIOS RM ?",
-              a: "EBIOS Risk Manager est la méthode officielle de l'ANSSI (Agence Nationale de la Sécurité des Systèmes d'Information) pour réaliser des analyses de risques cybersécurité. Elle est structurée en 5 ateliers progressifs et compatible avec la norme ISO 27005.",
-            },
-            {
-              q: "À qui s'adresse ACRA ?",
-              a: "ACRA s'adresse aux RSSI, Risk Managers, consultants et analystes qui souhaitent réaliser ou piloter des analyses EBIOS RM de façon structurée, collaborative et traçable — sans nécessairement être expert de la méthode.",
-            },
-            {
-              q: "ACRA est-il gratuit ?",
-              a: "Oui, ACRA est entièrement open-source sous licence MIT. Vous pouvez l'héberger vous-même avec Docker en quelques minutes.",
-            },
-            {
-              q: "Quels formats d'export sont disponibles ?",
-              a: "ACRA génère des rapports PDF complets (synthèse executive + détail des 5 ateliers), ainsi que des exports JSON et CSV pour l'intégration avec d'autres outils.",
-            },
-            {
-              q: "Puis-je collaborer à plusieurs sur une analyse ?",
-              a: "Oui. ACRA intègre un système RBAC complet : chaque analyse peut être partagée avec des utilisateurs en lecture, édition ou approbation. Les rôles RSSI, Risk Manager, Analyste et Lecteur sont supportés.",
-            },
-          ].map((item, i) => (
+          <h2 className="text-3xl font-bold mb-10 text-center">{t.landing.faq.title}</h2>
+          {t.landing.faq.items.map((item, i) => (
             <details key={i} className="group border-b border-white/10 py-5">
               <summary className="flex items-center justify-between cursor-pointer font-semibold text-white/90 hover:text-white list-none">
                 {item.q}

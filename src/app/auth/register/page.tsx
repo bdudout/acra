@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, Check, X, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -103,7 +103,14 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {open === false ? (
+        {open === null ? (
+          // État de chargement neutre : on ne connaît pas encore l'état d'inscription.
+          // Évite d'afficher (puis retirer) le formulaire si l'inscription est fermée.
+          <div role="status" className="flex items-center justify-center gap-2 text-gray-500 text-sm py-10">
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            <span>{t.loading}</span>
+          </div>
+        ) : open === false ? (
           <div className="bg-gray-50 border border-gray-200 text-gray-600 rounded-lg px-4 py-6 text-sm text-center">
             {t.auth.register.closedMsg}
           </div>
@@ -151,7 +158,9 @@ export default function RegisterPage() {
                   ...(policy.requireSpecial   ? [{ ok: /[^A-Za-z0-9]/.test(form.password), label: ruleLabel('special') }] : []),
                 ].map((rule, i) => (
                   <div key={i} className={`flex items-center gap-1.5 text-xs ${rule.ok ? 'text-green-600' : 'text-red-500'}`}>
-                    <span>{rule.ok ? '✓' : '✗'}</span>
+                    {rule.ok
+                      ? <Check size={13} aria-hidden="true" className="shrink-0" />
+                      : <X size={13} aria-hidden="true" className="shrink-0" />}
                     <span>{rule.label}</span>
                   </div>
                 ))}

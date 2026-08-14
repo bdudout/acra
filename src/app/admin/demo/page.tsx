@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { useTranslation } from '@/lib/i18n/context'
 
 interface DemoCfg {
@@ -38,6 +39,7 @@ export default function DemoAdminPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [purging, setPurging] = useState(false)
+  const [confirmingPurge, setConfirmingPurge] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [publicSignup, setPublicSignup] = useState<boolean | null>(null)
   const [savingPS, setSavingPS] = useState(false)
@@ -114,8 +116,8 @@ export default function DemoAdminPage() {
     } finally { setSaving(false) }
   }
 
-  async function handlePurge() {
-    if (!window.confirm(d.purgeConfirm)) return
+  // Purge réelle — déclenchée uniquement après confirmation PAR SAISIE (ConfirmDialog).
+  async function doPurge() {
     setPurging(true); setError(null)
     try {
       const res = await fetch('/api/admin/demo-config', {
@@ -161,7 +163,7 @@ export default function DemoAdminPage() {
                 onClick={() => savePublicSignup(!publicSignup)}
                 aria-pressed={!!publicSignup}
                 aria-label={t.demo.publicSignupTitle}
-                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${publicSignup ? 'bg-ebios-600' : 'bg-gray-300'}`}
+                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${publicSignup ? 'bg-ebios-600' : 'bg-gray-500'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${publicSignup ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
@@ -262,7 +264,7 @@ export default function DemoAdminPage() {
                 )}
               </div>
 
-              <button type="button" onClick={handlePurge} disabled={purging}
+              <button type="button" onClick={() => setConfirmingPurge(true)} disabled={purging}
                 className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2 px-4 rounded-lg text-sm">
                 {purging ? d.purging : d.purgeNow}
               </button>
@@ -270,6 +272,20 @@ export default function DemoAdminPage() {
           </div>
         ) : null}
       </main>
+
+      {confirmingPurge && (
+        <ConfirmDialog
+          title={d.purgeConfirmTitle}
+          message={d.purgeConfirm}
+          icon={<AlertTriangle size={24} aria-hidden="true" />}
+          variant="danger"
+          confirmLabel={d.purgeNow}
+          requireText={d.purgeConfirmWord}
+          requireTextLabel={d.purgeConfirmHint.replace('{word}', d.purgeConfirmWord)}
+          onConfirm={() => { setConfirmingPurge(false); doPurge() }}
+          onCancel={() => setConfirmingPurge(false)}
+        />
+      )}
     </div>
   )
 }

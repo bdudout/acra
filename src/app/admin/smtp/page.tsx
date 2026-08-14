@@ -109,7 +109,7 @@ export default function SmtpConfigPage() {
             <label className="flex items-center gap-3 cursor-pointer select-none group">
               <div
                 onClick={() => set('enabled', !cfg.enabled)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${cfg.enabled ? 'bg-ebios-500' : 'bg-gray-300'}`}
+                className={`relative w-11 h-6 rounded-full transition-colors ${cfg.enabled ? 'bg-ebios-500' : 'bg-gray-500'}`}
               >
                 <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${cfg.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
               </div>
@@ -130,7 +130,7 @@ export default function SmtpConfigPage() {
             <label className="flex items-start gap-3 cursor-pointer select-none group">
               <div
                 onClick={() => set('secure', !cfg.secure)}
-                className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${cfg.secure ? 'bg-ebios-500' : 'bg-gray-300'}`}
+                className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${cfg.secure ? 'bg-ebios-500' : 'bg-gray-500'}`}
               >
                 <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${cfg.secure ? 'translate-x-5' : 'translate-x-0'}`} />
               </div>

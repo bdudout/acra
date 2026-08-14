@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -14,10 +14,18 @@ interface Props {
   title?: string
   /** Libellé du bouton de confirmation. Défaut : « Supprimer ». */
   confirmLabel?: string
-  /** Émoji affiché. Défaut : 🗑️. */
+  /** Icône affichée. Défaut : corbeille. */
   icon?: ReactNode
   /** Couleur du bouton de confirmation. Défaut : danger (rouge). */
   variant?: ConfirmVariant
+  /**
+   * Confirmation PAR SAISIE : si fourni, l'opérateur doit taper EXACTEMENT ce texte
+   * pour activer le bouton de confirmation (garde-fou pour les actions très
+   * destructrices, ex. purge des organisations démo).
+   */
+  requireText?: string
+  /** Libellé/consigne du champ de saisie (obligatoire si `requireText` est fourni). */
+  requireTextLabel?: string
 }
 
 const VARIANT_BTN: Record<ConfirmVariant, string> = {
@@ -32,18 +40,24 @@ const VARIANT_BTN: Record<ConfirmVariant, string> = {
  * - role="dialog" + aria-modal="true" + aria-labelledby
  * - Focus trap : Tab/Shift+Tab circulent uniquement dans la dialog
  * - Fermeture par Escape
- * - Focus placé sur le bouton "Annuler" à l'ouverture (action sûre par défaut)
+ * - Focus initial sur l'action sûre (Annuler), ou sur le champ de saisie si
+ *   `requireText` est fourni.
  */
-export default function ConfirmDialog({ message, onConfirm, onCancel, title, confirmLabel, icon, variant = 'danger' }: Props) {
+export default function ConfirmDialog({ message, onConfirm, onCancel, title, confirmLabel, icon, variant = 'danger', requireText, requireTextLabel }: Props) {
   const { t } = useTranslation()
   const cancelRef  = useRef<HTMLButtonElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const inputRef   = useRef<HTMLInputElement>(null)
   const titleId    = 'confirm-dialog-title'
+  const inputId    = 'confirm-dialog-require-text'
 
-  // Focus sur le bouton annuler à l'ouverture
+  const [typed, setTyped] = useState('')
+  const confirmDisabled = requireText ? typed !== requireText : false
+
+  // Focus initial : le champ de saisie s'il existe, sinon le bouton « Annuler ».
   useEffect(() => {
-    cancelRef.current?.focus()
-  }, [])
+    (requireText ? inputRef.current : cancelRef.current)?.focus()
+  }, [requireText])
 
   // Fermeture par Escape
   useEffect(() => {
@@ -54,10 +68,12 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
     return () => document.removeEventListener('keydown', onKey)
   }, [onCancel])
 
-  // Focus trap — Tab / Shift+Tab reste dans la dialog
+  // Focus trap — Tab / Shift+Tab reste dans la dialog (ignore les éléments désactivés).
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key !== 'Tab') return
-    const focusable = [cancelRef.current, confirmRef.current].filter(Boolean) as HTMLElement[]
+    const focusable = [inputRef.current, cancelRef.current, confirmRef.current]
+      .filter((el): el is NonNullable<typeof el> => !!el && !el.disabled)
+    if (focusable.length === 0) return
     const first = focusable[0]
     const last  = focusable[focusable.length - 1]
 
@@ -77,7 +93,6 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      aria-hidden="true"
       onClick={onCancel}
     >
       <div
@@ -97,6 +112,23 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
             <p className="text-sm text-gray-600">{message}</p>
           </div>
         </div>
+
+        {requireText && (
+          <div className="mb-5">
+            <label htmlFor={inputId} className="block text-sm text-gray-600 mb-1">{requireTextLabel}</label>
+            <input
+              id={inputId}
+              ref={inputRef}
+              type="text"
+              value={typed}
+              onChange={e => setTyped(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            />
+          </div>
+        )}
+
         <div className="flex justify-end gap-3">
           <button
             ref={cancelRef}
@@ -108,7 +140,8 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className={`text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${VARIANT_BTN[variant]}`}
+            disabled={confirmDisabled}
+            className={`text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_BTN[variant]}`}
           >
             {confirmLabel ?? t.deleteDialog.confirmBtn}
           </button>
