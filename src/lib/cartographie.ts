@@ -26,11 +26,18 @@ export interface CartoRisk {
 }
 
 // Couple (gravité, vraisemblance) selon le mode ; null si la cotation est incomplète.
+// En mode RÉSIDUEL, si le couple résiduel est incomplet, on ancre le risque sur son
+// couple INHÉRENT complet (miroir du repli `niveauResiduel ?? niveauInherent` de
+// riskNiveauBucket/postureBucket) : un risque identifié mais non traité reste placé
+// sur la carte à son exposition inhérente au lieu d'être compté « non coté » — la
+// heat map, les filtres, le pilotage et l'export s'accordent alors (source unique, #123).
 export function coupleFor(r: CartoRisk, mode: CartoMode): { g: number; v: number } | null {
-  const g = mode === 'residual' ? r.graviteResiduelle : r.graviteInherente
-  const v = mode === 'residual' ? r.vraisemblanceResiduelle : r.vraisemblanceInherente
-  if (g == null || v == null) return null
-  return { g, v }
+  if (mode === 'residual' && r.graviteResiduelle != null && r.vraisemblanceResiduelle != null) {
+    return { g: r.graviteResiduelle, v: r.vraisemblanceResiduelle }
+  }
+  // Inhérent : mode inhérent, OU résiduel incomplet (repli d'ancrage).
+  if (r.graviteInherente == null || r.vraisemblanceInherente == null) return null
+  return { g: r.graviteInherente, v: r.vraisemblanceInherente }
 }
 
 // Palier de niveau (produit G×V) — aligné sur les pastilles du registre.

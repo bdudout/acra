@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   coupleFor, niveauBucket, buildHeatmap, aggregateByDimension, type CartoRisk,
 } from '@/lib/cartographie'
+import { riskNiveauBucket } from '@/lib/risk-filters'
 
 function mk(p: Partial<CartoRisk>): CartoRisk {
   return {
@@ -22,6 +23,36 @@ describe('coupleFor', () => {
   it('null si cotation incomplète', () => {
     expect(coupleFor(mk({ graviteInherente: 3 }), 'inherent')).toBeNull()
     expect(coupleFor(mk({ graviteResiduelle: 3, vraisemblanceResiduelle: 3 }), 'inherent')).toBeNull()
+  })
+  // #123 — mode résiduel : repli sur l'inhérent COMPLET quand le résiduel est incomplet.
+  it('mode résiduel : ancre sur l\'inhérent quand le résiduel manque ou est partiel', () => {
+    const nonTraite = mk({ graviteInherente: 4, vraisemblanceInherente: 4 }) // résiduel null
+    expect(coupleFor(nonTraite, 'residual')).toEqual({ g: 4, v: 4 })
+    const partiel = mk({ graviteInherente: 4, vraisemblanceInherente: 4, graviteResiduelle: 2 }) // vR manquant
+    expect(coupleFor(partiel, 'residual')).toEqual({ g: 4, v: 4 })
+    // résiduel complet → prime
+    const traite = mk({ graviteInherente: 4, vraisemblanceInherente: 4, graviteResiduelle: 1, vraisemblanceResiduelle: 1 })
+    expect(coupleFor(traite, 'residual')).toEqual({ g: 1, v: 1 })
+    // aucune cotation → null
+    expect(coupleFor(mk({}), 'residual')).toBeNull()
+  })
+})
+
+// #123 — la carte (buildHeatmap/coupleFor) et les filtres/pilotage (riskNiveauBucket)
+// doivent classer un même risque de façon IDENTIQUE en mode résiduel (source unique).
+describe('#123 cohérence carte ↔ filtres (mode résiduel)', () => {
+  it('un risque non traité est coté « élevé » des deux côtés, pas « non coté »', () => {
+    const nonTraite = mk({ id: 'nt', graviteInherente: 4, vraisemblanceInherente: 4 })
+    // carte
+    const heat = buildHeatmap([nonTraite], 'residual')
+    expect(heat.totalNonCote).toBe(0)
+    expect(heat.totalCote).toBe(1)
+    expect(heat.parBucket.eleve).toBe(1)
+    // filtres/pilotage : même verdict
+    expect(riskNiveauBucket(
+      { taxonomieCode: null, processusId: null, entite: null, statut: 'EN_COURS', niveauInherent: 16, niveauResiduel: null },
+      'residual',
+    )).toBe('eleve')
   })
 })
 
