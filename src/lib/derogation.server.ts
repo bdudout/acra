@@ -16,9 +16,12 @@ export async function derogRefsActives(
     statut: 'ACTIVE',
     referentiel: params.referentiel,
     ref: { not: null },
-    // Non expirée : une dérogation ACTIVE dont la dateFin est passée est EXPIRÉE
-    // (le contrôle redevient une non-conformité), donc exclue.
-    OR: [{ dateFin: null }, { dateFin: { gte: now } }],
+    // Non expirée : une dérogation ACTIVE doit avoir une dateFin PRÉSENTE ET FUTURE.
+    // Une dateFin dépassée = EXPIRÉE (le contrôle redevient non-conformité) ; une
+    // dateFin absente = anormale (toute activation passe par `activation()` qui pose
+    // une échéance) → exclue par défense en profondeur, pour garantir l'invariant
+    // « dérogation bornée dans le temps » (ISO 27005/27001) même sur données corrompues (#121).
+    dateFin: { gte: now },
   }
   if (params.analyseId) where.analyseId = params.analyseId
   else if (params.organizationId) { where.analyseId = null; where.organizationId = params.organizationId }
