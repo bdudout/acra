@@ -25,6 +25,10 @@ export default function Navbar() {
   const branding = useBranding()
   const [menuOpen, setMenuOpen] = useState(false)
   const [grcOpen, setGrcOpen]   = useState(false)
+  // Position du menu « GRC » en coordonnées viewport : il est rendu en `fixed`
+  // pour ÉCHAPPER au clipping de la barre (overflow-x-auto force overflow-y:auto,
+  // ce qui masquait le menu déroulé). Recalculée à chaque ouverture.
+  const [grcPos, setGrcPos]     = useState<{ top: number; left: number } | null>(null)
   const menuRef    = useRef<HTMLDivElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
   const grcRef     = useRef<HTMLDivElement>(null)
@@ -89,6 +93,25 @@ export default function Navbar() {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [menuOpen, grcOpen])
+
+  // Le menu « GRC » est positionné en `fixed` d'après le bouton : on le referme
+  // au scroll/resize pour éviter tout décalage (plutôt que de le suivre).
+  useEffect(() => {
+    if (!grcOpen) return
+    const close = () => setGrcOpen(false)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close) }
+  }, [grcOpen])
+
+  // Ouvre/ferme le menu « GRC » en recalculant sa position viewport à l'ouverture.
+  function toggleGrc() {
+    if (!grcOpen && grcBtnRef.current) {
+      const r = grcBtnRef.current.getBoundingClientRect()
+      setGrcPos({ top: Math.round(r.bottom + 4), left: Math.round(r.left) })
+    }
+    setGrcOpen(v => !v)
+  }
 
   function navClass(active: boolean) {
     return `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -283,7 +306,7 @@ export default function Navbar() {
             <div className="relative flex-shrink-0" ref={grcRef}>
               <button
                 ref={grcBtnRef}
-                onClick={() => setGrcOpen(v => !v)}
+                onClick={toggleGrc}
                 aria-expanded={grcOpen}
                 aria-haspopup="menu"
                 className={`${navClass(grcActive)} inline-flex items-center gap-1.5`}
@@ -298,8 +321,9 @@ export default function Navbar() {
                 <div
                   role="menu"
                   aria-label={t.nav.grc}
-                  className="absolute left-0 top-full mt-1 bg-white border border-gray-200
-                             rounded-xl shadow-lg p-1 z-50 w-56 max-h-[70vh] overflow-y-auto"
+                  style={{ top: grcPos?.top, left: grcPos?.left }}
+                  className="fixed bg-white border border-gray-200
+                             rounded-xl shadow-lg p-1 z-50 w-56 max-h-96 overflow-y-auto"
                 >
                   {grc.map(key => {
                     const item = NAV_META[key]

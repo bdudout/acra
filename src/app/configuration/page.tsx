@@ -599,6 +599,18 @@ export default function ConfigurationPage() {
     return getRiskLevel(g, v, config as any).label || '?'
   }
 
+  // Charge l'identité configurée (SUPER_ADMIN uniquement).
+  // ⚠️ Ce hook DOIT rester AVANT tout return conditionnel (Rules of Hooks) :
+  // placé après `if (loading) return`, il n'était appelé que sur certains rendus
+  // → « Rendered more hooks than during the previous render » (crash).
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    fetch('/api/admin/branding')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setBrandName(d.appName ?? ''); setBrandBaseline(d.appBaseline ?? '') } })
+      .catch(() => {})
+  }, [isSuperAdmin])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -607,15 +619,6 @@ export default function ConfigurationPage() {
       </div>
     )
   }
-
-  // Charge l'identité configurée (SUPER_ADMIN uniquement).
-  useEffect(() => {
-    if (!isSuperAdmin) return
-    fetch('/api/admin/branding')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setBrandName(d.appName ?? ''); setBrandBaseline(d.appBaseline ?? '') } })
-      .catch(() => {})
-  }, [isSuperAdmin])
 
   async function saveBranding() {
     setBrandSaved(false)
