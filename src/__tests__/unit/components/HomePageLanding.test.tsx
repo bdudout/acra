@@ -35,4 +35,26 @@ describe('Landing — FAQ et stats internationalisées', () => {
       expect(screen.getByText(label)).toBeInTheDocument()
     }
   })
+
+  it('rend la bande de chiffres réels avec leurs sources (pas de faux témoignages)', () => {
+    render(<HomePage />)
+    expect(screen.getByText(fr.landing.facts.title)).toBeInTheDocument()
+    for (const fact of fr.landing.facts.items) {
+      expect(screen.getByText(fact.value)).toBeInTheDocument()
+      expect(screen.getByText(fact.label)).toBeInTheDocument()
+    }
+    // La note de sources doit être visible.
+    expect(screen.getByText(fr.landing.facts.note)).toBeInTheDocument()
+  })
+
+  it('présente les exemples comme des scénarios illustratifs, pas des témoignages', () => {
+    render(<HomePage />)
+    // Le tag « Scénario illustratif » doit apparaître (une fois par exemple).
+    expect(screen.getAllByText(fr.landing.examplesScenarioTag).length).toBe(fr.landing.examples.length)
+  })
+
+  it('affiche la 6e carte « évolutif vers le GRC »', () => {
+    render(<HomePage />)
+    expect(screen.getByText(fr.landing.features.grc.title)).toBeInTheDocument()
+  })
 })

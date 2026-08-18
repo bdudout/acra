@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, Check, type LucideIcon } from 'lucide-react'
+import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, Check, Layers, type LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -142,6 +142,7 @@ export default function HomePage() {
             { Icon: BarChart3,   f: t.landing.features.matrix     },
             { Icon: Download,    f: t.landing.features.export     },
             { Icon: Lock,        f: t.landing.features.secure     },
+            { Icon: Layers,      f: t.landing.features.grc        },
           ] as { Icon: LucideIcon; f: { title: string; desc: string } }[]).map(({ Icon, f }, i) => (
             <div key={i} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
               <div className="mb-3"><Icon size={28} aria-hidden="true" /></div>
@@ -175,17 +176,18 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
             {t.landing.examples.map((ex, i) => (
               <div key={i} className="bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-6 flex flex-col gap-4">
-                {/* Header */}
-                <div className="flex items-center justify-between">
+                {/* En-tête : secteur + profil type (pas une personne réelle) */}
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-widest text-indigo-200">{ex.sector}</span>
-                  <span className="text-xs bg-white/15 text-white/90 rounded-full px-3 py-0.5">{ex.role}</span>
+                  <span className="text-xs bg-white/15 text-white/90 rounded-full px-3 py-0.5">{t.landing.examplesProfileLabel} : {ex.role}</span>
                 </div>
                 <div className="font-bold text-base">{ex.org}</div>
 
-                {/* Citation */}
-                <blockquote className="text-sm text-white/85 leading-relaxed italic border-l-2 border-indigo-300 pl-4">
-                  "{ex.quote}"
-                </blockquote>
+                {/* Scénario illustratif — description de situation, PAS un témoignage. */}
+                <div className="border-l-2 border-indigo-300 pl-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-200/80 mb-1">{t.landing.examplesScenarioTag}</div>
+                  <p className="text-sm text-white/85 leading-relaxed">{ex.quote}</p>
+                </div>
 
                 {/* Résultat */}
                 <div className="mt-auto flex items-start gap-2 bg-white/10 rounded-xl p-3">
@@ -195,6 +197,21 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Chiffres clés — sources publiques réelles (pas de faux témoignages) */}
+        <div className="mt-24">
+          <h2 className="text-3xl font-bold mb-3">{t.landing.facts.title}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
+            {t.landing.facts.items.map((fact, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+                <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-300 mb-2">{fact.value}</div>
+                <p className="text-sm text-white/75 leading-relaxed mb-2">{fact.label}</p>
+                <span className="text-[11px] uppercase tracking-wide text-white/40">{fact.source}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-white/40 mt-4 max-w-3xl">{t.landing.facts.note}</p>
         </div>
 
         {/* Stats / social proof */}
