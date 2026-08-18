@@ -282,3 +282,68 @@ describe('canManageAccess', () => {
     expect(canManageAccess(user, ownedBy('u1'))).toBe(false)
   })
 })
+
+// ─── Nouveaux rôles (3 lignes de défense) — logique métier RBAC ───────────────
+// Verrouille les droits des rôles ajoutés : CONTROLEUR, CONFORMITE, DPO (2ᵉ ligne,
+// supervision) et METIER (1ʳᵉ ligne, opérationnel). Aucun ne doit pouvoir
+// approuver une analyse ni accepter les risques résiduels.
+describe('Rôles ajoutés — droits métier', () => {
+  // Analyse d'autrui (owner 'other-user'), sans accès accordé au user testé (u1).
+  const foreign = ownedBy('other-user')
+
+  // Rôles de SUPERVISION 2ᵉ ligne : lecture GLOBALE, mais aucune écriture/décision.
+  describe.each(['CONTROLEUR', 'CONFORMITE', 'DPO'] as const)('%s (2ᵉ ligne, supervision)', (role) => {
+    const u = userWith(role)
+    it('a une lecture GLOBALE des analyses (supervision)', () => {
+      expect(canViewAnalyse(u, foreign)).toBe(true)
+    })
+    it('ne crée pas d’analyse', () => {
+      expect(canCreateAnalyse(u)).toBe(false)
+    })
+    it('n’édite, ne soumet ni n’approuve une analyse d’autrui', () => {
+      expect(canEditAnalyse(u, foreign)).toBe(false)
+      expect(canSubmitAnalyse(u, foreign)).toBe(false)
+      expect(canApproveAnalyse(u, foreign)).toBe(false)
+    })
+    it('n’accepte pas les risques résiduels (réservé à la direction métier)', () => {
+      expect(canAcceptResidualRisks(u, true)).toBe(false)
+    })
+    it('n’est ni administrateur, ni éditeur des échelles', () => {
+      expect(canAdmin(u)).toBe(false)
+      expect(canEditConfig(u)).toBe(false)
+    })
+  })
+
+  // METIER : 1ʳᵉ ligne opérationnelle — PAS de lecture globale, pas de décision.
+  describe('METIER (1ʳᵉ ligne, opérationnel)', () => {
+    const u = userWith('METIER', 'u1')
+    it('n’a PAS de lecture globale (uniquement via partage explicite)', () => {
+      expect(canViewAnalyse(u, foreign)).toBe(false)
+    })
+    it('peut consulter une analyse partagée en LECTURE', () => {
+      const shared = ownedBy('other-user', [{ userId: 'u1', permission: 'LECTURE' }])
+      expect(canViewAnalyse(u, shared)).toBe(true)
+    })
+    it('ne crée pas d’analyse et n’approuve pas', () => {
+      expect(canCreateAnalyse(u)).toBe(false)
+      expect(canApproveAnalyse(u, foreign)).toBe(false)
+    })
+    it('n’accepte pas les risques résiduels et n’est pas administrateur', () => {
+      expect(canAcceptResidualRisks(u, true)).toBe(false)
+      expect(canAdmin(u)).toBe(false)
+    })
+  })
+
+  // Non-régression transverse : l'approbation et l'acceptation des risques
+  // résiduels restent hors de portée de TOUS les nouveaux rôles.
+  it('aucun rôle ajouté ne peut approuver une analyse', () => {
+    for (const role of ['CONTROLEUR', 'METIER', 'CONFORMITE', 'DPO'] as const) {
+      expect(canApproveAnalyse(userWith(role), foreign)).toBe(false)
+    }
+  })
+  it('aucun rôle ajouté ne peut accepter les risques résiduels', () => {
+    for (const role of ['CONTROLEUR', 'METIER', 'CONFORMITE', 'DPO'] as const) {
+      expect(canAcceptResidualRisks(userWith(role), true)).toBe(false)
+    }
+  })
+})
