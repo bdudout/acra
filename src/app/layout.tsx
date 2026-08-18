@@ -82,7 +82,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const branding = await getBranding({ nom: t.auth.appName, baseline: t.auth.appSubtitle })
   return (
     // lang="fr" par défaut — mis à jour dynamiquement côté client via LanguageSwitcher
-    <html lang="fr">
+    // suppressHydrationWarning : le script anti-FOUC pose la classe `dark` sur
+    // <html> AVANT l'hydratation ; sans ça React signale un mismatch attendu
+    // (le serveur ne connaît pas le thème de l'utilisateur).
+    <html lang="fr" suppressHydrationWarning>
       <head>
         {/* Script anti-FOUC : applique le thème AVANT que React n'hydrate */}
         {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}

@@ -21,7 +21,7 @@
  *  - APPROBATION → peut approuver (utilisé pour les Risk Managers sur une analyse spécifique)
  */
 
-export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER' | 'AUDITEUR'
+export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER' | 'AUDITEUR' | 'CONTROLEUR' | 'METIER' | 'CONFORMITE' | 'DPO'
 export type AnalysePermission = 'LECTURE' | 'EDITION' | 'APPROBATION'
 
 export interface SessionUser {
@@ -105,7 +105,7 @@ function getEffectivePermission(
 
 /** L'utilisateur peut visualiser l'analyse */
 export function canViewAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || user.role === 'DIRECTION_METIER') return true
+  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || user.role === 'DIRECTION_METIER' || user.role === 'CONTROLEUR' || user.role === 'CONFORMITE' || user.role === 'DPO') return true
   return getEffectivePermission(user, analyse) !== null
 }
 
@@ -245,6 +245,10 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN:  'Super-administrateur',
   DIRECTION_METIER: 'Direction métier',
   AUDITEUR:     'Auditeur',
+  CONTROLEUR:   'Contrôleur',
+  METIER:       'Métier',
+  CONFORMITE:   'Conformité',
+  DPO:          'DPO',
 }
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -256,6 +260,10 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   SUPER_ADMIN:  'Niveau instance : réglages globaux (SMTP, SSO, politique mdp), gestion des organisations et de tous les comptes, journal d\'audit, traverse tous les périmètres',
   DIRECTION_METIER: 'Direction métier — consulte les analyses en lecture seule et accepte (ou refuse) les risques résiduels (acceptation du risque), distincte de la validation de l\'analyse',
   AUDITEUR: 'Auditeur (3ᵉ ligne de défense) — lecture globale sur l\'ensemble du dispositif, écriture réservée au module Audit interne (missions, constats, recommandations) ; personne d\'autre ne modifie ses constats',
+  CONTROLEUR: 'Contrôleur (2ᵉ ligne de défense) — définit et exécute les contrôles permanents, avec une lecture globale du dispositif de risque ; distinct de l\'auditeur (3ᵉ ligne)',
+  METIER: 'Métier (1ʳᵉ ligne de défense) — acteur opérationnel : déclare les incidents et contribue aux analyses de son périmètre ; distinct de la direction métier, qui accepte les risques résiduels',
+  CONFORMITE: 'Conformité (2ᵉ ligne de défense) — pilote les référentiels de conformité (ISO 27001, NIS2, DORA…), les dérogations et la gouvernance associée ; lecture globale du dispositif ; distinct du RSSI',
+  DPO: 'Délégué à la protection des données (DPO) — supervise la conformité RGPD et le traitement des données personnelles ; lecture globale du dispositif de risque',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -267,6 +275,10 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   SUPER_ADMIN:  'bg-slate-200 text-slate-800',
   DIRECTION_METIER: 'bg-cyan-100 text-cyan-800',
   AUDITEUR: 'bg-purple-100 text-purple-800',
+  CONTROLEUR: 'bg-emerald-100 text-emerald-800',
+  METIER: 'bg-teal-100 text-teal-800',
+  CONFORMITE: 'bg-lime-100 text-lime-800',
+  DPO: 'bg-violet-100 text-violet-800',
 }
 
 export const PERMISSION_LABELS: Record<AnalysePermission, string> = {

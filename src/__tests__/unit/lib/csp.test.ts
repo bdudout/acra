@@ -17,6 +17,13 @@ describe('buildCsp — durcissement CSP (issue #108)', () => {
     const csp = buildCsp(undefined, true)
     expect(csp).toContain("script-src 'self' 'unsafe-inline'")
   })
+  it('dev : script-src inclut unsafe-eval (React a besoin d\'eval en mode dev)', () => {
+    expect(buildCsp(undefined, false)).toContain("'unsafe-eval'")
+  })
+  it('production : script-src n\'inclut JAMAIS unsafe-eval', () => {
+    expect(buildCsp('abc123', true)).not.toContain('unsafe-eval')
+    expect(buildCsp(undefined, true)).not.toContain('unsafe-eval')
+  })
   it('conserve les directives de durcissement communes', () => {
     const csp = buildCsp('n', true)
     for (const d of ["default-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "style-src 'self' 'unsafe-inline'"]) {

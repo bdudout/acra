@@ -18,6 +18,10 @@ enum UserRole {
   SUPER_ADMIN // Niveau instance : gère les organisations et traverse tous les périmètres
   DIRECTION_METIER // Lecture seule + acceptation des risques résiduels (acceptation du risque)
   AUDITEUR // 3ᵉ ligne : lecture globale, écriture sur le seul module Audit interne
+  CONTROLEUR // 2ᵉ ligne : contrôle permanent (définit/exécute), lecture globale du dispositif
+  METIER // 1ʳᵉ ligne : opérationnel — déclare les incidents, contribue à son périmètre
+  CONFORMITE // 2ᵉ ligne : pilote la conformité (ISO 27001, NIS2, DORA…) et la gouvernance associée
+  DPO // Délégué à la protection des données — supervise la conformité RGPD
 }
 
 // Portée d'une appartenance à une organisation (cf. multi-organisation hiérarchique).
