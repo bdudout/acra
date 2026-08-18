@@ -402,6 +402,14 @@ model Incident {
   //   reputation?, etendueGeo?, pertesDonnees?, serviceCritique? }. Vide = non évalué.
   doraCriteres Json @default("{}")
 
+  // Workflow de déclaration DORA (art. 19) — cf. lib/dora-reporting.ts.
+  // Horodatage de classification « majeur » (démarre l'horloge des 4 h) et des
+  // soumissions de chaque phase à l'autorité compétente.
+  doraClasseMajeurLe          DateTime?
+  doraInitialeSoumiseLe       DateTime?
+  doraIntermediaireSoumiseLe  DateTime?
+  doraFinaleSoumiseLe         DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

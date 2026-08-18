@@ -12,7 +12,7 @@
 // Ne s'applique QU'AUX incidents MAJEURS. Outil d'aide à la décision — ne vaut pas
 // obligation réglementaire officielle. Logique PURE et testée.
 
-import type { DoraClasse } from './dora'
+import { classifierIncident, DORA_SEUILS_DEFAUT, type DoraClasse, type DoraCriteres, type DoraSeuils } from './dora'
 
 export const DORA_PHASES = ['INITIALE', 'INTERMEDIAIRE', 'FINALE'] as const
 export type DoraPhase = (typeof DORA_PHASES)[number]
@@ -131,4 +131,43 @@ export function synthetiserDeclarationDora(
     .sort((a, b) => a.getTime() - b.getTime())
 
   return { applicable, prochaineEcheance: aVenir[0] ?? null, enRetard, soumises }
+}
+
+// ─── Pont depuis un incident enregistré ──────────────────────────────────────
+// Relie la CLASSIFICATION (lib/dora.ts) au WORKFLOW : à partir des critères DORA
+// et des horodatages stockés sur l'incident, calcule la classe puis planifie les
+// phases. Point unique consommé par l'API/l'UI du module incidents.
+
+export interface IncidentReportingRecord {
+  doraCriteres?: DoraCriteres | null
+  dateDetection?: Date | string | null
+  /** Horodatage de classification « majeur » (démarre l'horloge des 4 h). */
+  doraClasseMajeurLe?: Date | string | null
+  doraInitialeSoumiseLe?: Date | string | null
+  doraIntermediaireSoumiseLe?: Date | string | null
+  doraFinaleSoumiseLe?: Date | string | null
+}
+
+export interface IncidentReporting {
+  classe: DoraClasse
+  echeances: DoraEcheance[]
+  synthese: DoraReportingSynthese
+}
+
+export function evaluerReportingIncident(
+  rec: IncidentReportingRecord,
+  maintenant: Date = new Date(),
+  seuils: DoraSeuils = DORA_SEUILS_DEFAUT,
+  cfg: DoraDelaisConfig = DORA_DELAIS_DEFAUT,
+): IncidentReporting {
+  const classe = classifierIncident(rec.doraCriteres ?? {}, seuils).classe
+  const echeances = planifierDeclarationDora({
+    classe,
+    dateDetection: rec.dateDetection,
+    dateClassification: rec.doraClasseMajeurLe,
+    initialeSoumiseLe: rec.doraInitialeSoumiseLe,
+    intermediaireSoumiseLe: rec.doraIntermediaireSoumiseLe,
+    finaleSoumiseLe: rec.doraFinaleSoumiseLe,
+  }, maintenant, cfg)
+  return { classe, echeances, synthese: synthetiserDeclarationDora(echeances, maintenant) }
 }

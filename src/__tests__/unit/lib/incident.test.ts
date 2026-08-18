@@ -171,3 +171,18 @@ describe('promotion en risque du registre', () => {
     expect(promoteToRisk({ ...base, impactEstime: null }).graviteResiduelle).toBeNull()
   })
 })
+
+// ─── Horodatages du workflow de déclaration DORA (art. 19) ────────────────────
+describe('incident — dates du workflow DORA', () => {
+  it('valide et parse les horodatages de phase', () => {
+    const body = { intitule: 'Incident', doraClasseMajeurLe: '2026-03-01T08:00:00Z', doraInitialeSoumiseLe: '2026-03-01T10:00:00Z' }
+    expect(validateIncidentInput(body)).toBe(null)
+    const c = cleanIncidentInput(body)
+    expect(c.doraClasseMajeurLe).toEqual(new Date('2026-03-01T08:00:00Z'))
+    expect(c.doraInitialeSoumiseLe).toEqual(new Date('2026-03-01T10:00:00Z'))
+    expect(c.doraFinaleSoumiseLe).toBe(null) // absent → null
+  })
+  it('rejette un horodatage de phase invalide', () => {
+    expect(validateIncidentInput({ intitule: 'X', doraFinaleSoumiseLe: 'pas-une-date' })).toBe('date_invalide')
+  })
+})

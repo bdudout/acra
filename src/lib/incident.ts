@@ -25,6 +25,11 @@ export interface IncidentInput {
   recuperations?: unknown
   riskItemId?: unknown
   statut?: unknown
+  // Workflow de déclaration DORA (art. 19) — horodatages de phase.
+  doraClasseMajeurLe?: unknown
+  doraInitialeSoumiseLe?: unknown
+  doraIntermediaireSoumiseLe?: unknown
+  doraFinaleSoumiseLe?: unknown
 }
 
 export interface CleanIncident {
@@ -40,7 +45,16 @@ export interface CleanIncident {
   recuperations: number | null
   riskItemId: string | null
   statut: IncidentStatut
+  doraClasseMajeurLe: Date | null
+  doraInitialeSoumiseLe: Date | null
+  doraIntermediaireSoumiseLe: Date | null
+  doraFinaleSoumiseLe: Date | null
 }
+
+/** Champs d'horodatage du workflow de déclaration DORA (art. 19). */
+export const DORA_DATE_CHAMPS = [
+  'doraClasseMajeurLe', 'doraInitialeSoumiseLe', 'doraIntermediaireSoumiseLe', 'doraFinaleSoumiseLe',
+] as const
 
 function parseDate(v: unknown): Date | null {
   if (v == null || v === '') return null
@@ -69,6 +83,12 @@ export function validateIncidentInput(body: IncidentInput): string | null {
   const surv = parseDate(body.dateSurvenance)
   const det = parseDate(body.dateDetection)
   if (surv && det && det.getTime() < surv.getTime()) return 'detection_avant_survenance'
+
+  // Horodatages du workflow DORA : dates valides si renseignées.
+  for (const champ of DORA_DATE_CHAMPS) {
+    const v = body[champ]
+    if (v != null && v !== '' && parseDate(v) == null) return 'date_invalide'
+  }
 
   if (body.impactEstime != null && body.impactEstime !== '') {
     const n = Number(body.impactEstime)
@@ -106,6 +126,10 @@ export function cleanIncidentInput(body: IncidentInput): CleanIncident {
     recuperations: parseMontant(body.recuperations),
     riskItemId: txt(body.riskItemId),
     statut: INCIDENT_STATUTS.includes(s) ? s : 'DECLARE',
+    doraClasseMajeurLe: parseDate(body.doraClasseMajeurLe),
+    doraInitialeSoumiseLe: parseDate(body.doraInitialeSoumiseLe),
+    doraIntermediaireSoumiseLe: parseDate(body.doraIntermediaireSoumiseLe),
+    doraFinaleSoumiseLe: parseDate(body.doraFinaleSoumiseLe),
   }
 }
 

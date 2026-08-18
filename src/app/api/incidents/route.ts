@@ -6,6 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection } from '@/lib/incident'
+import { evaluerReportingIncident } from '@/lib/dora-reporting'
+import { type DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -48,6 +50,15 @@ export async function GET() {
       riskItemIntitule: riskItem?.intitule ?? null,
       perteNette: perteNette(brut, recup),
       delaiDetection: delaiDetection(r.dateSurvenance, r.dateDetection),
+      // Échéancier de déclaration DORA (art. 19) : classe + phases + synthèse.
+      doraReporting: evaluerReportingIncident({
+        doraCriteres: r.doraCriteres as DoraCriteres,
+        dateDetection: r.dateDetection,
+        doraClasseMajeurLe: r.doraClasseMajeurLe,
+        doraInitialeSoumiseLe: r.doraInitialeSoumiseLe,
+        doraIntermediaireSoumiseLe: r.doraIntermediaireSoumiseLe,
+        doraFinaleSoumiseLe: r.doraFinaleSoumiseLe,
+      }),
     }
   })
   return NextResponse.json({ incidents, active: true })
