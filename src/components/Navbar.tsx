@@ -15,7 +15,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -145,6 +145,7 @@ export default function Navbar() {
     audit:         { href: '/audit',         Icon: Search,          label: t.nav.audit },
     kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
+    registreTic:   { href: '/registre-tic',  Icon: ScrollText,      label: t.nav.registreTic },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
