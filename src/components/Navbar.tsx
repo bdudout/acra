@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
-import { buildNav, type NavKey, type NavModules } from '@/lib/navigation'
+import { buildNav, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
 import GlobalSearch from './GlobalSearch'
@@ -15,7 +15,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, type LucideIcon,
+  LayoutGrid, Radar, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -24,15 +24,14 @@ export default function Navbar() {
   const { t } = useTranslation()
   const branding = useBranding()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [grcOpen, setGrcOpen]   = useState(false)
-  // Position du menu « GRC » en coordonnées viewport : il est rendu en `fixed`
-  // pour ÉCHAPPER au clipping de la barre (overflow-x-auto force overflow-y:auto,
-  // ce qui masquait le menu déroulé). Recalculée à chaque ouverture.
-  const [grcPos, setGrcPos]     = useState<{ top: number; left: number } | null>(null)
+  // Un seul groupe déroulant ouvert à la fois (identifiant), + sa position viewport.
+  // Les menus sont rendus en `fixed` pour ÉCHAPPER au clipping de la barre
+  // (overflow-x-auto force overflow-y:auto, ce qui masquerait le menu déroulé).
+  const [openGroup, setOpenGroup] = useState<NavGroupId | null>(null)
+  const [groupPos, setGroupPos]   = useState<{ top: number; left: number } | null>(null)
   const menuRef    = useRef<HTMLDivElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
-  const grcRef     = useRef<HTMLDivElement>(null)
-  const grcBtnRef  = useRef<HTMLButtonElement>(null)
+  const navRowRef  = useRef<HTMLDivElement>(null)
 
   const userRole: UserRole = (session?.user as any)?.role ?? 'ANALYSTE'
   const isAdmin        = isAdminRole(userRole)
@@ -40,7 +39,7 @@ export default function Navbar() {
   const isLecteur      = userRole === 'LECTEUR'
 
   // File d'attente du valideur : dérogations en attente de l'action de l'utilisateur
-  // (avis RSSI, double regard, validation métier) → badge sur le menu « GRC ».
+  // (avis RSSI, double regard, validation métier) → badge sur le groupe qui la contient.
   const [derogPending, setDerogPending] = useState(0)
   const isDerogActor = userRole === 'RSSI' || userRole === 'DIRECTION_METIER' || isAdmin
   useEffect(() => {
@@ -69,48 +68,52 @@ export default function Navbar() {
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Modèle de navigation : parcours EBIOS inline + modules GRC repliés (logique pure).
-  const { primary, grc } = buildNav(userRole, modules)
+  // Modèle de navigation (logique pure) : mode cyber (EBIOS inline + menu GRC) ou
+  // mode GRC (cyber replié en sous-menu, domaines GRC groupés en tête).
+  const { entries } = buildNav(userRole, modules)
 
   // Fermer les menus sur clic extérieur
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node
       if (menuRef.current && !menuRef.current.contains(target)) setMenuOpen(false)
-      if (grcRef.current && !grcRef.current.contains(target)) setGrcOpen(false)
+      // Les menus de groupe sont des enfants DOM de la rangée (même en `fixed`),
+      // donc un clic dedans reste « à l'intérieur » : on ne ferme que le vrai extérieur.
+      if (navRowRef.current && !navRowRef.current.contains(target)) setOpenGroup(null)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fermer les menus sur Escape (et rendre le focus au déclencheur)
+  // Fermer les menus sur Escape (et rendre le focus au déclencheur du menu utilisateur)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       if (menuOpen) { setMenuOpen(false); menuBtnRef.current?.focus() }
-      if (grcOpen)  { setGrcOpen(false);  grcBtnRef.current?.focus() }
+      if (openGroup) setOpenGroup(null)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [menuOpen, grcOpen])
+  }, [menuOpen, openGroup])
 
-  // Le menu « GRC » est positionné en `fixed` d'après le bouton : on le referme
-  // au scroll/resize pour éviter tout décalage (plutôt que de le suivre).
+  // Les menus de groupe sont positionnés en `fixed` d'après le bouton : on les referme
+  // au scroll/resize pour éviter tout décalage (plutôt que de les suivre).
   useEffect(() => {
-    if (!grcOpen) return
-    const close = () => setGrcOpen(false)
+    if (!openGroup) return
+    const close = () => setOpenGroup(null)
     window.addEventListener('scroll', close, true)
     window.addEventListener('resize', close)
     return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close) }
-  }, [grcOpen])
+  }, [openGroup])
 
-  // Ouvre/ferme le menu « GRC » en recalculant sa position viewport à l'ouverture.
-  function toggleGrc() {
-    if (!grcOpen && grcBtnRef.current) {
-      const r = grcBtnRef.current.getBoundingClientRect()
-      setGrcPos({ top: Math.round(r.bottom + 4), left: Math.round(r.left) })
+  // Ouvre/ferme un groupe en recalculant sa position viewport à l'ouverture.
+  function toggleGroup(id: NavGroupId, btn: HTMLElement) {
+    const willOpen = openGroup !== id
+    if (willOpen) {
+      const r = btn.getBoundingClientRect()
+      setGroupPos({ top: Math.round(r.bottom + 4), left: Math.round(r.left) })
     }
-    setGrcOpen(v => !v)
+    setOpenGroup(willOpen ? id : null)
   }
 
   function navClass(active: boolean) {
@@ -144,7 +147,14 @@ export default function Navbar() {
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
   }
 
-  const grcActive = grc.some(key => isActive(NAV_META[key].href))
+  // Métadonnées des groupes déroulants (icône + libellé de domaine).
+  const NAV_GROUP_META: Record<NavGroupId, { Icon: LucideIcon; label: string }> = {
+    grc:         { Icon: LayoutGrid,     label: t.nav.grc },
+    cyber:       { Icon: Radar,          label: t.nav.grpCyber },
+    controle:    { Icon: ClipboardCheck, label: t.nav.grpControle },
+    registre:    { Icon: BookMarked,     label: t.nav.grpRegistre },
+    gouvernance: { Icon: ShieldCheck,    label: t.nav.grpGouvernance },
+  }
 
   const badge = (n: number, label: string) => (
     <span
@@ -280,75 +290,80 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Rangée du bas : parcours EBIOS inline + menu déroulant « GRC » pour le reste */}
+      {/* Rangée du bas : entrées de navigation (liens directs + groupes déroulants).
+          La disposition (cyber inline vs domaines GRC groupés) vient de buildNav. */}
       <div className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto">
+        <div ref={navRowRef} className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto">
 
-          {primary.map(key => {
-            const item = NAV_META[key]
-            const active = isActive(item.href)
+          {entries.map(entry => {
+            if (entry.kind === 'link') {
+              const item = NAV_META[entry.key]
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={`link:${entry.key}`}
+                  href={item.href}
+                  className={`${navClass(active)} inline-flex items-center gap-1.5 flex-shrink-0`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <item.Icon size={16} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            }
+
+            // Groupe déroulant (domaine).
+            const meta = NAV_GROUP_META[entry.id]
+            const groupActive = entry.items.some(k => isActive(NAV_META[k].href))
+            const open = openGroup === entry.id
+            const pending = entry.items.includes('derogations') ? derogPending : 0
             return (
-              <Link
-                key={key}
-                href={item.href}
-                className={`${navClass(active)} inline-flex items-center gap-1.5 flex-shrink-0`}
-                aria-current={active ? 'page' : undefined}
-              >
-                <item.Icon size={16} aria-hidden="true" />
-                <span>{item.label}</span>
-              </Link>
+              <div key={`group:${entry.id}`} className="relative flex-shrink-0">
+                <button
+                  onClick={e => toggleGroup(entry.id, e.currentTarget)}
+                  aria-expanded={open}
+                  aria-haspopup="menu"
+                  className={`${navClass(groupActive)} inline-flex items-center gap-1.5`}
+                >
+                  <meta.Icon size={16} aria-hidden="true" />
+                  <span>{meta.label}</span>
+                  {pending > 0 && badge(pending, `${pending} en attente`)}
+                  <ChevronDown size={14} className="text-gray-400" aria-hidden="true" />
+                </button>
+
+                {open && (
+                  <div
+                    role="menu"
+                    aria-label={meta.label}
+                    style={{ top: groupPos?.top, left: groupPos?.left }}
+                    className="fixed bg-white border border-gray-200
+                               rounded-xl shadow-lg p-1 z-50 w-56 max-h-96 overflow-y-auto"
+                  >
+                    {entry.items.map(key => {
+                      const item = NAV_META[key]
+                      const active = isActive(item.href)
+                      return (
+                        <Link
+                          key={key}
+                          href={item.href}
+                          role="menuitem"
+                          onClick={() => setOpenGroup(null)}
+                          className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                            active ? 'bg-ebios-50 text-ebios-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          <item.Icon size={16} aria-hidden="true" />
+                          <span className="flex-1">{item.label}</span>
+                          {key === 'derogations' && derogPending > 0 && badge(derogPending, `${derogPending} en attente`)}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
           })}
-
-          {/* Menu déroulant « GRC » : gouvernance + modules, filtrés par droits.
-              Masqué si l'utilisateur n'a accès à aucun de ces liens. */}
-          {grc.length > 0 && (
-            <div className="relative flex-shrink-0" ref={grcRef}>
-              <button
-                ref={grcBtnRef}
-                onClick={toggleGrc}
-                aria-expanded={grcOpen}
-                aria-haspopup="menu"
-                className={`${navClass(grcActive)} inline-flex items-center gap-1.5`}
-              >
-                <LayoutGrid size={16} aria-hidden="true" />
-                <span>{t.nav.grc}</span>
-                {derogPending > 0 && badge(derogPending, `${derogPending} en attente`)}
-                <ChevronDown size={14} className="text-gray-400" aria-hidden="true" />
-              </button>
-
-              {grcOpen && (
-                <div
-                  role="menu"
-                  aria-label={t.nav.grc}
-                  style={{ top: grcPos?.top, left: grcPos?.left }}
-                  className="fixed bg-white border border-gray-200
-                             rounded-xl shadow-lg p-1 z-50 w-56 max-h-96 overflow-y-auto"
-                >
-                  {grc.map(key => {
-                    const item = NAV_META[key]
-                    const active = isActive(item.href)
-                    return (
-                      <Link
-                        key={key}
-                        href={item.href}
-                        role="menuitem"
-                        onClick={() => setGrcOpen(false)}
-                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                          active ? 'bg-ebios-50 text-ebios-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                        aria-current={active ? 'page' : undefined}
-                      >
-                        <item.Icon size={16} aria-hidden="true" />
-                        <span className="flex-1">{item.label}</span>
-                        {key === 'derogations' && derogPending > 0 && badge(derogPending, `${derogPending} en attente`)}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </nav>
