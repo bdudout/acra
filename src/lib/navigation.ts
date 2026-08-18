@@ -41,7 +41,9 @@ const PRIMARY: NavKey[] = ['dashboard', 'analyses', 'risques', 'tiers', 'actions
 
 export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const isAdmin = isAdminRole(role)
-  const isLecteur = role === 'LECTEUR'
+  // 1ʳᵉ ligne « pure » : LECTEUR (lecture seule) et METIER (opérationnel) ne gèrent
+  // pas les modules 2ᵉ/3ᵉ ligne — ils ne voient que la déclaration d'incident.
+  const firstLineOnly = role === 'LECTEUR' || role === 'METIER'
   const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER'
   const canDerog = canGovern || role === 'DIRECTION_METIER'
   const canPilotage = canGovern || role === 'DIRECTION_METIER'
@@ -53,15 +55,15 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canDerog) grc.push('derogations')
 
   // Socle GRC — module Registre de risques
-  if (modules.registre && !isLecteur) grc.push('registre', 'campagnes', 'cartographie')
+  if (modules.registre && !firstLineOnly) grc.push('registre', 'campagnes', 'cartographie')
   if (modules.registre && canPilotage) grc.push('pilotage', 'processus')
 
   // Modules — la DÉCLARATION d'incident reste ouverte à tous les rôles (1ʳᵉ ligne).
   if (modules.incidents) grc.push('incidents')
-  if (modules.controles && !isLecteur) grc.push('controles')
-  if (modules.audit && !isLecteur) grc.push('audit')
-  if (modules.kri && !isLecteur) grc.push('kri')
-  if (modules.reglementaire && !isLecteur) grc.push('reglementaire')
+  if (modules.controles && !firstLineOnly) grc.push('controles')
+  if (modules.audit && !firstLineOnly) grc.push('audit')
+  if (modules.kri && !firstLineOnly) grc.push('kri')
+  if (modules.reglementaire && !firstLineOnly) grc.push('reglementaire')
 
   return { primary: [...PRIMARY], grc }
 }

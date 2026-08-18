@@ -774,6 +774,8 @@ export const de: Translations = {
     SUPER_ADMIN:  'Super-Administrator',
     DIRECTION_METIER: 'Fachbereichsleitung',
     AUDITEUR:     'Prüfer',
+    CONTROLEUR:   'Kontrolleur',
+    METIER:       'Fachbereich',
   },
   residualRisks: {
     title: 'Akzeptanz von Restrisiken',

@@ -20,7 +20,7 @@ const ALL_OFF: NavModules = {
 
 describe('buildNav — groupe primaire', () => {
   it('expose toujours les 5 liens EBIOS de base, quel que soit le rôle', () => {
-    for (const role of ['SUPER_ADMIN', 'ADMIN', 'RISK_MANAGER', 'RSSI', 'DIRECTION_METIER', 'AUDITEUR', 'ANALYSTE', 'LECTEUR'] as const) {
+    for (const role of ['SUPER_ADMIN', 'ADMIN', 'RISK_MANAGER', 'RSSI', 'DIRECTION_METIER', 'AUDITEUR', 'ANALYSTE', 'LECTEUR', 'CONTROLEUR', 'METIER'] as const) {
       expect(buildNav(role, ALL_OFF).primary).toEqual(['dashboard', 'analyses', 'risques', 'tiers', 'actions'])
     }
   })
@@ -66,6 +66,21 @@ describe('buildNav — groupe GRC (gating préservé)', () => {
     expect(grc).toContain('pilotage')
     expect(grc).toContain('processus')
     expect(grc).not.toContain('conformite')
+  })
+
+  it('METIER (1ʳᵉ ligne) ne voit que les incidents, comme LECTEUR', () => {
+    expect(buildNav('METIER', ALL_ON).grc).toEqual(['incidents'])
+    expect(buildNav('METIER', ALL_OFF).grc).toEqual([])
+  })
+
+  it('CONTROLEUR (2ᵉ ligne) voit les modules mais pas la gouvernance', () => {
+    const { grc } = buildNav('CONTROLEUR', ALL_ON)
+    expect(grc).toContain('controles')
+    expect(grc).toContain('audit')
+    expect(grc).toContain('registre')
+    expect(grc).not.toContain('conformite')
+    expect(grc).not.toContain('derogations')
+    expect(grc).not.toContain('pilotage')
   })
 
   it('pilotage/processus exigent le module registre ET un rôle gouvernance/métier', () => {

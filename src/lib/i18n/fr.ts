@@ -791,6 +791,8 @@ export const fr = {
     SUPER_ADMIN:  'Super-administrateur',
     DIRECTION_METIER: 'Direction métier',
     AUDITEUR:     'Auditeur',
+    CONTROLEUR:   'Contrôleur',
+    METIER:       'Métier',
   },
   residualRisks: {
     title: 'Acceptation des risques résiduels',

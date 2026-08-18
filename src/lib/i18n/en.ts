@@ -774,6 +774,8 @@ export const en: Translations = {
     SUPER_ADMIN:  'Super administrator',
     DIRECTION_METIER: 'Business management',
     AUDITEUR:     'Auditor',
+    CONTROLEUR:   'Controller',
+    METIER:       'Business line',
   },
   residualRisks: {
     title: 'Residual risk acceptance',
