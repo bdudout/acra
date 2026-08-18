@@ -61,7 +61,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // 1ʳᵉ ligne « pure » : LECTEUR (lecture seule) et METIER (opérationnel) ne gèrent
   // pas les modules 2ᵉ/3ᵉ ligne — ils ne voient que la déclaration d'incident.
   const firstLineOnly = role === 'LECTEUR' || role === 'METIER'
-  const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER'
+  const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
   const canDerog = canGovern || role === 'DIRECTION_METIER'
   const canPilotage = canGovern || role === 'DIRECTION_METIER'
 

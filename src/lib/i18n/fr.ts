@@ -797,6 +797,8 @@ export const fr = {
     AUDITEUR:     'Auditeur',
     CONTROLEUR:   'Contrôleur',
     METIER:       'Métier',
+    CONFORMITE:   'Conformité',
+    DPO:          'DPO',
   },
   residualRisks: {
     title: 'Acceptation des risques résiduels',

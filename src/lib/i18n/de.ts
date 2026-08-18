@@ -780,6 +780,8 @@ export const de: Translations = {
     AUDITEUR:     'Prüfer',
     CONTROLEUR:   'Kontrolleur',
     METIER:       'Fachbereich',
+    CONFORMITE:   'Compliance',
+    DPO:          'DSB',
   },
   residualRisks: {
     title: 'Akzeptanz von Restrisiken',

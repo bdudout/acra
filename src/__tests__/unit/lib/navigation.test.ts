@@ -97,6 +97,14 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(keys).not.toContain('cartographie')
   })
 
+  it('CONFORMITE et DPO (2ᵉ ligne gouvernance) accèdent à conformité + dérogations', () => {
+    for (const role of ['CONFORMITE', 'DPO'] as const) {
+      const keys = allKeys(buildNav(role, ALL_ON))
+      expect(keys).toContain('conformite')
+      expect(keys).toContain('derogations')
+    }
+  })
+
   it('le parcours EBIOS reste TOUJOURS atteignable (dans le sous-menu cyber)', () => {
     const m = buildNav('ANALYSTE', ALL_ON)
     for (const k of ['dashboard', 'analyses', 'risques', 'tiers', 'actions']) {

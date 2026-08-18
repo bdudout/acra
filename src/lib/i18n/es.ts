@@ -780,6 +780,8 @@ export const es: Translations = {
     AUDITEUR:     'Auditor',
     CONTROLEUR:   'Controlador',
     METIER:       'Negocio',
+    CONFORMITE:   'Cumplimiento',
+    DPO:          'DPD',
   },
   residualRisks: {
     title: 'Aceptación de riesgos residuales',
