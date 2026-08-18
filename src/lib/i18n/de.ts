@@ -1136,6 +1136,10 @@ export const de: Translations = {
     colPerte: 'Nettoverlust',
     colRisque: 'Verknüpftes Risiko',
     colStatut: 'Status',
+    colDora: 'DORA-Meldung',
+    doraEnRetard: 'überfällig',
+    doraEcheance: 'Frist',
+    doraDeclare: 'übermittelt',
     statuts: {
       DECLARE: 'Gemeldet',
       QUALIFIE: 'Qualifiziert',

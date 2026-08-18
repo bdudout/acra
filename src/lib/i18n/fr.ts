@@ -1159,6 +1159,10 @@ export const fr = {
     colPerte: 'Perte nette',
     colRisque: 'Risque lié',
     colStatut: 'Statut',
+    colDora: 'Déclaration DORA',
+    doraEnRetard: 'en retard',
+    doraEcheance: 'échéance',
+    doraDeclare: 'déclaré',
     statuts: {
       DECLARE: 'Déclaré',
       QUALIFIE: 'Qualifié',

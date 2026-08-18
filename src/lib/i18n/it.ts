@@ -1136,6 +1136,10 @@ export const it: Translations = {
     colPerte: 'Perdita netta',
     colRisque: 'Rischio collegato',
     colStatut: 'Stato',
+    colDora: 'Notifica DORA',
+    doraEnRetard: 'in ritardo',
+    doraEcheance: 'scadenza',
+    doraDeclare: 'inviato',
     statuts: {
       DECLARE: 'Dichiarato',
       QUALIFIE: 'Qualificato',

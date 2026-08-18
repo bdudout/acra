@@ -1136,6 +1136,10 @@ export const en: Translations = {
     colPerte: 'Net loss',
     colRisque: 'Linked risk',
     colStatut: 'Status',
+    colDora: 'DORA notification',
+    doraEnRetard: 'overdue',
+    doraEcheance: 'deadline',
+    doraDeclare: 'submitted',
     statuts: {
       DECLARE: 'Reported',
       QUALIFIE: 'Qualified',
