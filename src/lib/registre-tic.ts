@@ -65,6 +65,51 @@ export function validerArrangement(a: ArrangementTic): string[] {
   return manquants
 }
 
+// ─── Entrée API : normalisation & validation ─────────────────────────────────
+
+const TYPES_SET = new Set<string>(TYPES_SERVICE_TIC)
+const NIVEAUX_SET = new Set<string>(NIVEAUX_CRITICITE)
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+function toDate(v: unknown): Date | null {
+  if (v == null || v === '') return null
+  const d = v instanceof Date ? v : new Date(v as string)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Normalise un corps de requête en ArrangementTic (types/enums sûrs). */
+export function cleanArrangementInput(body: unknown): ArrangementTic {
+  const b = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
+  return {
+    reference: str(b.reference) ?? '',
+    prestataireNom: str(b.prestataireNom) ?? '',
+    identifiant: str(b.identifiant),
+    pays: str(b.pays),
+    typeService: TYPES_SET.has(String(b.typeService)) ? (b.typeService as TypeServiceTic) : 'AUTRE',
+    fonctionSupportee: str(b.fonctionSupportee),
+    criticite: NIVEAUX_SET.has(String(b.criticite)) ? (b.criticite as NiveauCriticite) : 'NON_CRITIQUE',
+    dateDebut: toDate(b.dateDebut),
+    dateFin: toDate(b.dateFin),
+    paysDonnees: str(b.paysDonnees),
+    sousTraitance: b.sousTraitance === true || b.sousTraitance === 'true',
+  }
+}
+
+/**
+ * Validation minimale à l'ENREGISTREMENT (brouillon autorisé incomplet) :
+ * référence et prestataire requis, cohérence des dates. La complétude ITS
+ * (champs des fonctions critiques) est mesurée à part par `validerArrangement`.
+ * Renvoie un code d'erreur i18n ou null.
+ */
+export function validateArrangementInput(body: unknown): string | null {
+  const a = cleanArrangementInput(body)
+  if (!a.reference) return 'reference_requise'
+  if (!a.prestataireNom) return 'prestataire_requis'
+  const debut = toDate(a.dateDebut)
+  const fin = toDate(a.dateFin)
+  if (debut && fin && fin.getTime() < debut.getTime()) return 'dates_incoherentes'
+  return null
+}
+
 export interface RegistreCompletude {
   total: number
   complets: number
