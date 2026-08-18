@@ -110,6 +110,30 @@ export function validateArrangementInput(body: unknown): string | null {
   return null
 }
 
+// ─── Export (registre au format tabulaire) ───────────────────────────────────
+
+/** En-tête de l'export CSV du registre (ordre des colonnes). */
+export const REGISTRE_CSV_HEADER = [
+  'reference', 'prestataire', 'identifiant', 'pays', 'typeService',
+  'fonctionSupportee', 'criticite', 'dateDebut', 'dateFin', 'paysDonnees',
+  'sousTraitance', 'complet',
+] as const
+
+const jourIso = (v: Date | string | null | undefined): string => {
+  const d = toDate(v ?? null)
+  return d ? d.toISOString().slice(0, 10) : ''
+}
+
+/** Une ligne d'export pour un arrangement (valeurs brutes, à échapper par l'appelant). */
+export function arrangementToCsvRow(a: ArrangementTic): (string | number)[] {
+  return [
+    a.reference, a.prestataireNom, a.identifiant ?? '', a.pays ?? '', a.typeService,
+    a.fonctionSupportee ?? '', a.criticite, jourIso(a.dateDebut), jourIso(a.dateFin),
+    a.paysDonnees ?? '', a.sousTraitance ? 'oui' : 'non',
+    validerArrangement(a).length === 0 ? 'oui' : 'non',
+  ]
+}
+
 export interface RegistreCompletude {
   total: number
   complets: number

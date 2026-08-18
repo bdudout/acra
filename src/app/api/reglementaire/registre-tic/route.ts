@@ -7,8 +7,9 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   cleanArrangementInput, validateArrangementInput, validerArrangement,
-  evaluerCompletude, synthetiserRegistre, type ArrangementTic,
+  evaluerCompletude, synthetiserRegistre, arrangementToCsvRow, REGISTRE_CSV_HEADER, type ArrangementTic,
 } from '@/lib/registre-tic'
+import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +28,8 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 }
 
 // GET /api/reglementaire/registre-tic — registre + complétude + synthèse de pilotage.
-export async function GET() {
+// ?format=csv exporte le registre (durci CWE-1236 via toCsvCell).
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
@@ -38,6 +40,17 @@ export async function GET() {
   const rows = await prisma.arrangementTic.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] })
   const asLib = rows as unknown as ArrangementTic[]
   const arrangements = rows.map(r => ({ ...r, champsManquants: validerArrangement(r as unknown as ArrangementTic) }))
+
+  if (new URL(req.url).searchParams.get('format') === 'csv') {
+    const lignes = asLib.map(a => arrangementToCsvRow(a).map(toCsvCell).join(','))
+    const csv = '﻿' + [REGISTRE_CSV_HEADER.join(','), ...lignes].join('\r\n')
+    return new NextResponse(csv, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="registre-tic.csv"',
+      },
+    })
+  }
 
   return NextResponse.json({
     active: true,

@@ -12,6 +12,8 @@ import {
   synthetiserRegistre,
   cleanArrangementInput,
   validateArrangementInput,
+  arrangementToCsvRow,
+  REGISTRE_CSV_HEADER,
   type ArrangementTic,
 } from '@/lib/registre-tic'
 
@@ -121,5 +123,26 @@ describe('cleanArrangementInput / validateArrangementInput', () => {
 
   it('une entrée valide → null', () => {
     expect(validateArrangementInput({ reference: 'CT-1', prestataireNom: 'Acme', typeService: 'CLOUD', criticite: 'NON_CRITIQUE' })).toBe(null)
+  })
+})
+
+describe('arrangementToCsvRow — export registre', () => {
+  it('produit une ligne alignée sur l’en-tête, avec dates ISO et indicateur de complétude', () => {
+    const a: ArrangementTic = {
+      reference: 'CT-1', prestataireNom: 'Acme', identifiant: 'LEI123', pays: 'FR',
+      typeService: 'CLOUD', fonctionSupportee: 'Paiements', criticite: 'CRITIQUE',
+      dateDebut: '2025-01-01', dateFin: '2027-01-01', paysDonnees: 'FR', sousTraitance: true,
+    }
+    const row = arrangementToCsvRow(a)
+    expect(row.length).toBe(REGISTRE_CSV_HEADER.length)
+    expect(row[0]).toBe('CT-1')
+    expect(row).toContain('2025-01-01')     // date de début en ISO court
+    expect(row[REGISTRE_CSV_HEADER.length - 2]).toBe('oui') // sous-traitance
+    expect(row[REGISTRE_CSV_HEADER.length - 1]).toBe('oui') // complet (CRITIQUE renseignée)
+  })
+
+  it('marque « non » un arrangement incomplet', () => {
+    const a = cleanArrangementInput({ reference: 'CT-2', prestataireNom: 'X', criticite: 'CRITIQUE' })
+    expect(arrangementToCsvRow(a)[REGISTRE_CSV_HEADER.length - 1]).toBe('non')
   })
 })
