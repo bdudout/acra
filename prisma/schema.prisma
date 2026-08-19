@@ -134,6 +134,7 @@ model Organization {
   auditMissions AuditMission[]
   kris          Kri[]
   arrangementsTic ArrangementTic[]
+  campagnesControle CampagneControle[]
 
   @@index([parentId])
   @@index([path])
@@ -419,6 +420,30 @@ model Incident {
   @@index([riskItemId])
   @@index([processusId])
   @@index([taxonomieCode])
+}
+
+// ─── Campagne de contrôle de 1er niveau (N1) — orchestration M3 ──────────────
+// Une vague de contrôles à exécuter sur une période. Le périmètre référence des
+// contrôles existants (controleIds) ; l'avancement se calcule depuis leurs
+// exécutions dans la fenêtre (cf. lib/campagne-controle.ts).
+model CampagneControle {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  description String?  @db.Text
+  niveau      String   @default("N1") // N1 | N2
+  statut      String   @default("PLANIFIEE") // PLANIFIEE | EN_COURS | CLOTUREE
+  dateDebut   DateTime?
+  dateFin     DateTime?
+  controleIds Json     @default("[]") // périmètre : identifiants de contrôles
+  createdBy   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 // ─── Registre d'information des prestataires tiers TIC (DORA art. 28) ─────────

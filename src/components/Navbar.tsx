@@ -142,6 +142,7 @@ export default function Navbar() {
     processus:     { href: '/processus',     Icon: Workflow,        label: t.nav.processus },
     incidents:     { href: '/incidents',     Icon: Siren,           label: t.nav.incidents },
     controles:     { href: '/controles',     Icon: ClipboardCheck,  label: t.nav.controles },
+    campagnesControle: { href: '/controles/campagnes', Icon: ClipboardList, label: t.nav.campagnesControle },
     audit:         { href: '/audit',         Icon: Search,          label: t.nav.audit },
     kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
