@@ -31,7 +31,7 @@ export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions'
   | 'conformite' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
-  | 'incidents' | 'controles' | 'audit' | 'kri' | 'reglementaire' | 'registreTic'
+  | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri' | 'reglementaire' | 'registreTic'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'gouvernance'
@@ -102,7 +102,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
 
   // Contrôle permanent + KRI (2ᵉ ligne).
   const controle: NavKey[] = []
-  if (modules.controles && !firstLineOnly) controle.push('controles')
+  if (modules.controles && !firstLineOnly) controle.push('controles', 'campagnesControle')
   if (modules.kri && !firstLineOnly) controle.push('kri')
   if (controle.length) entries.push(groupOrLink('controle', controle))
 
