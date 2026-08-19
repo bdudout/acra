@@ -15,6 +15,12 @@ interface Incident {
   delaiDetection: number | null
   riskItemId: string | null; riskItemIntitule: string | null
   statut: string; createdAt: string
+  doraReporting?: DoraReporting
+}
+interface DoraReporting {
+  classe: 'MAJEUR' | 'SIGNIFICATIF' | 'MINEUR'
+  echeances: { phase: string; echeance: string | null; statut: string; soumiseLe: string | null }[]
+  synthese: { applicable: boolean; prochaineEcheance: string | null; enRetard: number; soumises: number }
 }
 type Proc = { id: string; nom: string }
 type Risk = { id: string; intitule: string }
@@ -59,6 +65,27 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   }
   const euros = (v: number | null) =>
     v == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v)
+
+  // Cellule « Déclaration DORA » (art. 19) : signal compact par incident majeur.
+  function doraCell(i: Incident) {
+    const d = i.doraReporting
+    if (!d || !d.synthese.applicable) return <span className="text-gray-300 dark:text-gray-600">—</span>
+    if (d.synthese.enRetard > 0) return (
+      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 whitespace-nowrap">
+        ⚠ {d.synthese.enRetard} {n.doraEnRetard}
+      </span>
+    )
+    if (d.synthese.prochaineEcheance) return (
+      <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+        {n.doraEcheance} : {new Date(d.synthese.prochaineEcheance).toLocaleDateString(locale)}
+      </span>
+    )
+    return (
+      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300 whitespace-nowrap">
+        {n.doraDeclare}
+      </span>
+    )
+  }
 
   async function reload() {
     const [ii, tt, pp, rr] = await Promise.all([
@@ -213,12 +240,13 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
               <th className="px-4 py-3 text-right">{n.colPerte}</th>
               <th className="px-4 py-3">{n.colRisque}</th>
               <th className="px-4 py-3">{n.colStatut}</th>
+              <th className="px-4 py-3">{n.colDora}</th>
               {canQualify && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} className="px-4 py-6 text-gray-400">…</td></tr>
-              : incidents.length === 0 ? <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
+            {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
+              : incidents.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
               : incidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
@@ -238,6 +266,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                       {(n.statuts as Record<string, string>)[i.statut] ?? i.statut}
                     </span>
                   </td>
+                  <td className="px-4 py-3">{doraCell(i)}</td>
                   {canQualify && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {qualId === i.id ? (

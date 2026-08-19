@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest'
 import {
   planifierDeclarationDora,
   synthetiserDeclarationDora,
+  evaluerReportingIncident,
   type DoraEcheance,
 } from '@/lib/dora-reporting'
 
@@ -96,5 +97,38 @@ describe('synthetiserDeclarationDora', () => {
   it('un incident non majeur n’est pas applicable', () => {
     const r = planifierDeclarationDora({ classe: 'MINEUR' })
     expect(synthetiserDeclarationDora(r).applicable).toBe(false)
+  })
+})
+
+describe('evaluerReportingIncident — pont classification → planification', () => {
+  it('un incident classé MAJEUR déclenche le workflow (échéance initiale calculée)', () => {
+    const rep = evaluerReportingIncident({
+      // serviceCritique + 1 critère secondaire (réputation) → MAJEUR
+      doraCriteres: { serviceCritique: true, reputation: true },
+      dateDetection: '2026-03-01T08:00:00Z',
+      doraClasseMajeurLe: '2026-03-01T08:00:00Z',
+    }, at('2026-03-01T09:00:00Z'))
+    expect(rep.classe).toBe('MAJEUR')
+    expect(phase(rep.echeances, 'INITIALE').echeance).toEqual(at('2026-03-01T12:00:00Z'))
+    expect(rep.synthese.applicable).toBe(true)
+  })
+
+  it('un incident non majeur → phases INAPPLICABLE, non applicable', () => {
+    const rep = evaluerReportingIncident({
+      doraCriteres: { reputation: true }, // 1 seul signal → SIGNIFICATIF
+      dateDetection: '2026-03-01T08:00:00Z',
+    })
+    expect(rep.classe).toBe('SIGNIFICATIF')
+    expect(rep.synthese.applicable).toBe(false)
+  })
+
+  it('reflète les soumissions de phase déjà enregistrées', () => {
+    const rep = evaluerReportingIncident({
+      doraCriteres: { serviceCritique: true, reputation: true },
+      dateDetection: '2026-03-01T08:00:00Z', doraClasseMajeurLe: '2026-03-01T08:00:00Z',
+      doraInitialeSoumiseLe: '2026-03-01T10:00:00Z',
+    }, at('2026-03-01T11:00:00Z'))
+    expect(rep.synthese.soumises).toBe(1)
+    expect(phase(rep.echeances, 'INITIALE').statut).toBe('SOUMIS')
   })
 })

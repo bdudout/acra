@@ -133,6 +133,7 @@ model Organization {
   campagnes     Campagne[]
   auditMissions AuditMission[]
   kris          Kri[]
+  arrangementsTic ArrangementTic[]
 
   @@index([parentId])
   @@index([path])
@@ -402,6 +403,14 @@ model Incident {
   //   reputation?, etendueGeo?, pertesDonnees?, serviceCritique? }. Vide = non évalué.
   doraCriteres Json @default("{}")
 
+  // Workflow de déclaration DORA (art. 19) — cf. lib/dora-reporting.ts.
+  // Horodatage de classification « majeur » (démarre l'horloge des 4 h) et des
+  // soumissions de chaque phase à l'autorité compétente.
+  doraClasseMajeurLe          DateTime?
+  doraInitialeSoumiseLe       DateTime?
+  doraIntermediaireSoumiseLe  DateTime?
+  doraFinaleSoumiseLe         DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -410,6 +419,32 @@ model Incident {
   @@index([riskItemId])
   @@index([processusId])
   @@index([taxonomieCode])
+}
+
+// ─── Registre d'information des prestataires tiers TIC (DORA art. 28) ─────────
+// Un accord contractuel avec un prestataire de services TIC. Champs alignés sur
+// les templates ITS ; validation/synthèse dans lib/registre-tic.ts.
+model ArrangementTic {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  reference         String
+  prestataireNom    String
+  identifiant       String?  // LEI de préférence
+  pays              String?  // pays du prestataire (ISO)
+  typeService       String   @default("AUTRE") // cf. TYPES_SERVICE_TIC
+  fonctionSupportee String?
+  criticite         String   @default("NON_CRITIQUE") // CRITIQUE | IMPORTANTE | NON_CRITIQUE
+  dateDebut         DateTime?
+  dateFin           DateTime?
+  paysDonnees       String?  // pays de stockage/traitement des données
+  sousTraitance     Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 // ─── Socle GRC — M2 : plan d'action / traitement d'un RiskItem ───────────────

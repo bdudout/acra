@@ -31,7 +31,7 @@ export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions'
   | 'conformite' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
-  | 'incidents' | 'controles' | 'audit' | 'kri' | 'reglementaire'
+  | 'incidents' | 'controles' | 'audit' | 'kri' | 'reglementaire' | 'registreTic'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'gouvernance'
@@ -109,8 +109,9 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Audit (3ᵉ ligne).
   if (modules.audit && !firstLineOnly) entries.push(link('audit'))
 
-  // Reporting réglementaire.
+  // Reporting réglementaire + registre d'information des tiers TIC (DORA art. 28).
   if (modules.reglementaire && !firstLineOnly) entries.push(link('reglementaire'))
+  if (modules.reglementaire && !firstLineOnly) entries.push(link('registreTic'))
 
   // Gouvernance.
   if (gouvernance.length) entries.push(groupOrLink('gouvernance', gouvernance))

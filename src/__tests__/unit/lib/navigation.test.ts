@@ -70,7 +70,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
   it('RISK_MANAGER (gouvernance) voit cartographie, registre, contrôle, audit, réglementaire, gouvernance', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     const keys = allKeys(m)
-    for (const k of ['cartographie', 'registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'conformite', 'derogations']) {
+    for (const k of ['cartographie', 'registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
       expect(keys).toContain(k)
     }
     expect(groupIds(m)).toEqual(expect.arrayContaining(['cyber', 'registre', 'controle', 'gouvernance']))

@@ -10,6 +10,10 @@ import {
   validerArrangement,
   evaluerCompletude,
   synthetiserRegistre,
+  cleanArrangementInput,
+  validateArrangementInput,
+  arrangementToCsvRow,
+  REGISTRE_CSV_HEADER,
   type ArrangementTic,
 } from '@/lib/registre-tic'
 
@@ -90,5 +94,55 @@ describe('synthetiserRegistre', () => {
     expect(s.arrangements).toBe(0)
     expect(s.prestataires).toBe(0)
     expect(s.concentrationTop).toBe(null)
+  })
+})
+
+describe('cleanArrangementInput / validateArrangementInput', () => {
+  it('normalise : type/criticité inconnus → défauts, trims, sous-traitance', () => {
+    const a = cleanArrangementInput({
+      reference: '  CT-9 ', prestataireNom: ' Acme ', typeService: 'BOGUS', criticite: 'BOGUS',
+      identifiant: '  ', sousTraitance: 'true', dateFin: '2027-01-01',
+    })
+    expect(a.reference).toBe('CT-9')
+    expect(a.prestataireNom).toBe('Acme')
+    expect(a.typeService).toBe('AUTRE')       // inconnu → défaut
+    expect(a.criticite).toBe('NON_CRITIQUE')  // inconnu → défaut
+    expect(a.identifiant).toBe(null)          // vide → null
+    expect(a.sousTraitance).toBe(true)
+    expect(a.dateFin).toEqual(new Date('2027-01-01'))
+  })
+
+  it('exige référence et prestataire', () => {
+    expect(validateArrangementInput({ prestataireNom: 'Acme' })).toBe('reference_requise')
+    expect(validateArrangementInput({ reference: 'CT-1' })).toBe('prestataire_requis')
+  })
+
+  it('rejette une date de fin antérieure au début', () => {
+    expect(validateArrangementInput({ reference: 'CT-1', prestataireNom: 'Acme', dateDebut: '2026-06-01', dateFin: '2026-01-01' })).toBe('dates_incoherentes')
+  })
+
+  it('une entrée valide → null', () => {
+    expect(validateArrangementInput({ reference: 'CT-1', prestataireNom: 'Acme', typeService: 'CLOUD', criticite: 'NON_CRITIQUE' })).toBe(null)
+  })
+})
+
+describe('arrangementToCsvRow — export registre', () => {
+  it('produit une ligne alignée sur l’en-tête, avec dates ISO et indicateur de complétude', () => {
+    const a: ArrangementTic = {
+      reference: 'CT-1', prestataireNom: 'Acme', identifiant: 'LEI123', pays: 'FR',
+      typeService: 'CLOUD', fonctionSupportee: 'Paiements', criticite: 'CRITIQUE',
+      dateDebut: '2025-01-01', dateFin: '2027-01-01', paysDonnees: 'FR', sousTraitance: true,
+    }
+    const row = arrangementToCsvRow(a)
+    expect(row.length).toBe(REGISTRE_CSV_HEADER.length)
+    expect(row[0]).toBe('CT-1')
+    expect(row).toContain('2025-01-01')     // date de début en ISO court
+    expect(row[REGISTRE_CSV_HEADER.length - 2]).toBe('oui') // sous-traitance
+    expect(row[REGISTRE_CSV_HEADER.length - 1]).toBe('oui') // complet (CRITIQUE renseignée)
+  })
+
+  it('marque « non » un arrangement incomplet', () => {
+    const a = cleanArrangementInput({ reference: 'CT-2', prestataireNom: 'X', criticite: 'CRITIQUE' })
+    expect(arrangementToCsvRow(a)[REGISTRE_CSV_HEADER.length - 1]).toBe('non')
   })
 })
