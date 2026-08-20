@@ -8,6 +8,8 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
+import { buildSoaExport, type SoaControleLite } from '@/lib/soa-export'
+import { createRequire } from 'node:module'
 
 /**
  * GET /api/organizations/[orgId]/conformite/soa?referentiel=ISO27001
@@ -49,6 +51,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
 
   const orgNom = conf?.organization?.nom ?? orgId
   const frameworkNom = FRAMEWORK_META[referentiel as FrameworkId]?.nom ?? referentiel
+
+  // ── PDF : déclaration d'applicabilité formelle ────────────────────────────
+  if (new URL(req.url).searchParams.get('format') === 'pdf') {
+    try {
+      const soaControles: SoaControleLite[] = controles.map(c => ({
+        ref: c.ref, nom: c.nom, categorie: (c as { categorie?: string | null }).categorie ?? null,
+      }))
+      const soaData = buildSoaExport(soaControles, entries)
+      const stamp = new Date().toISOString().slice(0, 10)
+      const nodeRequire = createRequire(process.cwd() + '/package.json')
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { renderSoaPDF } = nodeRequire(process.cwd() + '/.pdf-runtime/soa-pdf-template.cjs')
+      const buffer = await renderSoaPDF(
+        soaData,
+        { tauxConformite: stats.tauxConformite, evalues: stats.evalues, total: stats.total },
+        locale, orgNom, frameworkNom, stamp,
+      )
+      const safe = `soa-${orgNom}-${referentiel}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'soa'
+      return new NextResponse(buffer as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${safe}.pdf"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export soa pdf] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du PDF' }, { status: 500 })
+    }
+  }
 
   const lines: string[] = []
   // En-tête de contexte

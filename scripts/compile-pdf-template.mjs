@@ -14,6 +14,7 @@ const TEMPLATES = [
   { entry: 'src/lib/pdf-template.tsx', out: '.pdf-runtime/pdf-template.cjs' },
   { entry: 'src/lib/carto-pdf-template.tsx', out: '.pdf-runtime/carto-pdf-template.cjs' },
   { entry: 'src/lib/ras-pdf-template.tsx', out: '.pdf-runtime/ras-pdf-template.cjs' },
+  { entry: 'src/lib/soa-pdf-template.tsx', out: '.pdf-runtime/soa-pdf-template.cjs' },
 ]
 
 for (const { entry, out } of TEMPLATES) {
