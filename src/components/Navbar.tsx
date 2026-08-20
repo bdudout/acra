@@ -15,7 +15,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -135,6 +135,7 @@ export default function Navbar() {
     actions:       { href: '/actions',       Icon: Shield,          label: t.nav.actions },
     conformite:    { href: '/conformite',    Icon: ShieldCheck,     label: t.nav.conformite },
     referentiels:  { href: '/referentiels',  Icon: BookMarked,      label: t.nav.referentiels },
+    documents:     { href: '/documents',     Icon: FileText,        label: t.nav.documents },
     derogations:   { href: '/derogations',   Icon: FileWarning,     label: t.nav.derogations },
     registre:      { href: '/registre',      Icon: BookMarked,      label: t.nav.registre },
     campagnes:     { href: '/campagnes',     Icon: ClipboardList,   label: t.nav.campagnes },

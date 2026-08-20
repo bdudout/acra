@@ -136,6 +136,7 @@ model Organization {
   arrangementsTic ArrangementTic[]
   campagnesControle CampagneControle[]
   referentiels      Referentiel[]
+  documents         Document[]
 
   @@index([parentId])
   @@index([path])
@@ -475,6 +476,48 @@ model Referentiel {
 
   @@unique([organizationId, code])
   @@index([organizationId])
+}
+
+// ─── Bibliothèque documentaire GRC (PSSI, stratégies, politiques…) ───────────
+// Métadonnées d'un document. Les OCTETS sont hors base (stockage volume local ou
+// OVH Object Storage, cf. lib/document-storage.ts) ; `storageKey` pointe le blob.
+// Portée polymorphe : rattaché à un référentiel (par CODE — builtin ou custom),
+// à un risque, ou à l'organisation. Cf. lib/document.ts.
+model Document {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  titre       String
+  // PSSI | STRATEGIE | POLITIQUE | PROCEDURE | PREUVE | AUTRE
+  type        String  @default("AUTRE")
+  // REFERENTIEL | RISQUE | ORG
+  portee          String  @default("ORG")
+  referentielCode String? // code du référentiel (builtin ou custom) si portée REFERENTIEL
+  risqueId        String? // identifiant de risque si portée RISQUE
+
+  version     String?
+  description String? @db.Text
+  dateDocument DateTime?
+  dateRevue    DateTime?
+
+  // Fichier stocké hors base.
+  fichierNom String  // nom d'origine (affichage)
+  mime       String
+  taille     Int
+  checksum   String  // sha256 hex
+  storageKey String  // clé dans le backend de stockage
+
+  // Chaînage de versions (version précédente remplacée).
+  remplaceId String?
+
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, portee])
+  @@index([referentielCode])
 }
 
 // ─── Registre d'information des prestataires tiers TIC (DORA art. 28) ─────────
