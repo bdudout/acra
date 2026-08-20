@@ -34,20 +34,39 @@ export async function GET(req: NextRequest) {
   const now = new Date()
   const annee = (searchParams.get('annee') ?? '').match(/^\d{4}$/) ? (searchParams.get('annee') as string) : String(now.getFullYear())
 
+  const format = (searchParams.get('format') ?? 'pdf').toLowerCase() === 'pptx' ? 'pptx' : 'pdf'
   const { consolide, modules } = await gatherGrcConsolide(orgId, cfg, now)
   const rapport = buildRapportControleInterne(consolide, modules)
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: orgId, ip: getClientIp(req),
-    details: { scope: 'rapport-controle-interne', action: 'export', format: 'pdf', annee },
+    details: { scope: 'rapport-controle-interne', action: 'export', format, annee },
   })
 
   const stamp = now.toISOString().slice(0, 10)
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
+
+  // ── PPTX : format présentation pour les comités ────────────────────────────
+  if (format === 'pptx') {
+    try {
+      const { renderRapportControleInternePptx } = await import('@/lib/rapport-controle-interne-pptx')
+      const buffer = await renderRapportControleInternePptx(rapport, locale, org?.nom ?? '', annee, stamp)
+      return new NextResponse(buffer as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'Content-Disposition': `attachment; filename="acra-rapport-controle-interne-${annee}.pptx"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export rapport controle interne pptx] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du PPTX' }, { status: 500 })
+    }
+  }
   try {
     const nodeRequire = createRequire(process.cwd() + '/package.json')
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { renderRapportControleInternePDF } = nodeRequire(process.cwd() + '/.pdf-runtime/rapport-controle-interne-pdf-template.cjs')
-    const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
     const buffer = await renderRapportControleInternePDF(rapport, locale, org?.nom ?? '', annee, stamp)
     return new NextResponse(buffer as unknown as ArrayBuffer, {
       headers: {
