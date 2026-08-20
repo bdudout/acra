@@ -53,3 +53,6 @@ Thumbs.db
 /playwright-report/
 /blob-report/
 /.playwright/
+
+# Stockage local des documents (dev)
+.data/
