@@ -116,6 +116,14 @@ export default function PilotageGrc() {
           <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
         </div>
       </div>
+
+      {/* Dossiers de comité (PDF) — assemblage des indicateurs des modules actifs. */}
+      <div className="flex items-center flex-wrap gap-2 mb-4 text-sm">
+        <span className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><FileText size={15} aria-hidden="true" /> {p.comiteLabel} :</span>
+        <a href={`/api/comites/pack?type=RISQUES&lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.comiteRisques}</a>
+        <a href={`/api/comites/pack?type=CONFORMITE&lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.comiteConformite}</a>
+        <a href={`/api/comites/pack?type=INCIDENTS&lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.comiteIncidents}</a>
+      </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
 
       <RiskFiltersBar
