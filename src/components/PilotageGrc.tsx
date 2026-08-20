@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, BarChart3 } from 'lucide-react'
+import { AlertTriangle, BarChart3, FileText } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
@@ -106,7 +106,15 @@ export default function PilotageGrc() {
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><BarChart3 size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
-        <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
+        <div className="flex items-center gap-3">
+          {mod.appetit && (
+            <a href={`/api/appetit/ras?lang=${locale}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <FileText size={15} aria-hidden="true" /> {p.exportRas}
+            </a>
+          )}
+          <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
+        </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
 

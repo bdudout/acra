@@ -1048,6 +1048,7 @@ export const de: Translations = {
     title: 'GRC-Steuerung',
     subtitle: 'Konsolidierte Sicht des Organisationsteilbaums: Risikolage und Fortschritt der Maßnahmenpläne je Einheit.',
     scope: '{n} Organisation(en)',
+    exportRas: 'RAS (PDF)',
     inactive: 'Modul nicht aktiviert.',
     total: 'Risiken',
     eleves: 'Hoch',

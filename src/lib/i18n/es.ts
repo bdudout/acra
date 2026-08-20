@@ -1048,6 +1048,7 @@ export const es: Translations = {
     title: 'Pilotaje GRC',
     subtitle: 'Vista consolidada del subárbol de organizaciones: postura de riesgo y avance de los planes de acción por entidad.',
     scope: '{n} organización(es)',
+    exportRas: 'RAS (PDF)',
     inactive: 'Módulo no activado.',
     total: 'Riesgos',
     eleves: 'Altos',

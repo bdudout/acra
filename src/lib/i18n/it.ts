@@ -1048,6 +1048,7 @@ export const it: Translations = {
     title: 'Pilotaggio GRC',
     subtitle: 'Vista consolidata del sottoalbero di organizzazioni: postura di rischio e avanzamento dei piani d\'azione per entità.',
     scope: '{n} organizzazione/i',
+    exportRas: 'RAS (PDF)',
     inactive: 'Modulo non attivato.',
     total: 'Rischi',
     eleves: 'Alti',

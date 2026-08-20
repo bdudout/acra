@@ -1071,6 +1071,7 @@ export const fr = {
     title: 'Pilotage GRC',
     subtitle: 'Vue consolidée du sous-arbre d\'organisations : posture de risque et avancement des plans d\'action par entité.',
     scope: '{n} organisation(s)',
+    exportRas: 'RAS (PDF)',
     inactive: 'Module non activé.',
     total: 'Risques',
     eleves: 'Élevés',
