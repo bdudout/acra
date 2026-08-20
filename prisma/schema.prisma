@@ -135,6 +135,7 @@ model Organization {
   kris          Kri[]
   arrangementsTic ArrangementTic[]
   campagnesControle CampagneControle[]
+  referentiels      Referentiel[]
 
   @@index([parentId])
   @@index([path])
@@ -443,6 +444,36 @@ model CampagneControle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([organizationId])
+}
+
+// ─── Socle référentiels & exigences (custom / PSSI / politiques) ──────────────
+// Un référentiel CUSTOM propre à l'organisation : PSSI, politique interne, cadre
+// réglementaire maison. Ses exigences (points de contrôle) ont la MÊME forme que
+// les FrameworkControl livrés (ref, nom, description, type, categorie) — les
+// référentiels custom sont donc interchangeables avec les cadres BUILTIN pour la
+// conformité, les contrôles et l'audit. Les cadres livrés restent définis en code
+// (frameworks-data.ts) ; seuls les custom sont stockés ici. Cf. lib/referentiel.ts.
+model Referentiel {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  code        String  // slug MAJUSCULES, unique par organisation (ex. PSSI-2026)
+  nom         String
+  // PSSI | POLITIQUE | REGLEMENTAIRE | STANDARD | CUSTOM
+  type        String  @default("CUSTOM")
+  version     String?
+  description String? @db.Text
+  // Exigences : FrameworkControl[] { ref, nom, description, type, categorie }.
+  exigences   Json    @default("[]")
+  actif       Boolean @default(true)
+  createdBy   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, code])
   @@index([organizationId])
 }
 
