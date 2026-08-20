@@ -1,0 +1,17 @@
+{
+  "_comment": "Exceptions d'audit npm SCOPÉES et DOCUMENTÉES. Chaque entrée suspend UNE advisory précise (par GHSA) sur UN paquet précis, avec justification et date de revue. scripts/audit-check.mjs échoue sur toute advisory moderate+ NON listée ici. À vider dès qu'un correctif amont existe (préférer un override dans package.json).",
+  "allow": [
+    {
+      "ghsa": "GHSA-w3rx-r6r6-pgpr",
+      "package": "image-size",
+      "reason": "DoS (boucle infinie) dans le parseur ICNS d'image-size, tiré transitivement par pptxgenjs. NON ATTEIGNABLE : l'export PPTX (rapport de contrôle interne) n'embarque aucune image, le parseur n'est jamais invoqué. Aucune version corrigée d'image-size publiée à ce jour.",
+      "review": "2026-11-20"
+    },
+    {
+      "ghsa": "GHSA-5p2g-fcmc-qvqq",
+      "package": "image-size",
+      "reason": "DoS (boucle infinie) dans les parseurs JXL/HEIF d'image-size, tiré transitivement par pptxgenjs. NON ATTEIGNABLE : idem (aucune image embarquée dans le PPTX). Retirer et remplacer par un override dès qu'image-size publie un correctif.",
+      "review": "2026-11-20"
+    }
+  ]
+}
