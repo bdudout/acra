@@ -1048,6 +1048,7 @@ export const en: Translations = {
     title: 'GRC steering',
     subtitle: 'Consolidated view of the organization subtree: risk posture and action-plan progress per entity.',
     scope: '{n} organization(s)',
+    exportRas: 'RAS (PDF)',
     inactive: 'Module not enabled.',
     total: 'Risks',
     eleves: 'High',
