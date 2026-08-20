@@ -31,10 +31,11 @@ export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions'
   | 'conformite' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
-  | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri' | 'reglementaire' | 'registreTic'
+  | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
-export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'gouvernance'
+export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
 
 /** Une entrée de barre : soit un lien direct, soit un groupe déroulant. */
 export type NavEntry =
@@ -109,9 +110,12 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Audit (3ᵉ ligne).
   if (modules.audit && !firstLineOnly) entries.push(link('audit'))
 
-  // Reporting réglementaire + registre d'information des tiers TIC (DORA art. 28).
-  if (modules.reglementaire && !firstLineOnly) entries.push(link('reglementaire'))
-  if (modules.reglementaire && !firstLineOnly) entries.push(link('registreTic'))
+  // Domaine réglementaire : reporting incidents (DORA art. 19), registre
+  // d'information des tiers TIC (art. 28) et suivi consolidé des recommandations
+  // régulateur (ACPR/BCE) — regroupés en un menu « Réglementaire ».
+  if (modules.reglementaire && !firstLineOnly) {
+    entries.push(groupOrLink('reglementaire', ['reglementaire', 'registreTic', 'suiviRegulateur']))
+  }
 
   // Gouvernance.
   if (gouvernance.length) entries.push(groupOrLink('gouvernance', gouvernance))

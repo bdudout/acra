@@ -147,6 +147,7 @@ export default function Navbar() {
     kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
     registreTic:   { href: '/registre-tic',  Icon: ScrollText,      label: t.nav.registreTic },
+    suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
@@ -155,6 +156,7 @@ export default function Navbar() {
     cyber:       { Icon: Radar,          label: t.nav.grpCyber },
     controle:    { Icon: ClipboardCheck, label: t.nav.grpControle },
     registre:    { Icon: BookMarked,     label: t.nav.grpRegistre },
+    reglementaire: { Icon: Landmark,     label: t.nav.grpReglementaire },
     gouvernance: { Icon: ShieldCheck,    label: t.nav.grpGouvernance },
   }
 
