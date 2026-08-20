@@ -1076,6 +1076,7 @@ export const fr = {
     comiteRisques: 'Risques',
     comiteConformite: 'Conformité',
     comiteIncidents: 'Incidents',
+    rapportControleInterne: 'Rapport de contrôle interne',
     inactive: 'Module non activé.',
     total: 'Risques',
     eleves: 'Élevés',

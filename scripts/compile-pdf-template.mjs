@@ -16,6 +16,7 @@ const TEMPLATES = [
   { entry: 'src/lib/ras-pdf-template.tsx', out: '.pdf-runtime/ras-pdf-template.cjs' },
   { entry: 'src/lib/soa-pdf-template.tsx', out: '.pdf-runtime/soa-pdf-template.cjs' },
   { entry: 'src/lib/comite-pack-pdf-template.tsx', out: '.pdf-runtime/comite-pack-pdf-template.cjs' },
+  { entry: 'src/lib/rapport-controle-interne-pdf-template.tsx', out: '.pdf-runtime/rapport-controle-interne-pdf-template.cjs' },
 ]
 
 for (const { entry, out } of TEMPLATES) {
