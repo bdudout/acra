@@ -38,11 +38,11 @@ describe('buildNav — mode cyber (aucun module 2ᵉ/3ᵉ ligne)', () => {
     }
   })
 
-  it('RISK_MANAGER a un menu « GRC » avec conformité + dérogations', () => {
+  it('RISK_MANAGER a un menu « GRC » avec conformité + référentiels + dérogations', () => {
     const m = buildNav('RISK_MANAGER', ALL_OFF)
     expect(groupIds(m)).toEqual(['grc'])
     const grc = m.entries.find(e => e.kind === 'group')!
-    expect(grc.kind === 'group' && grc.items).toEqual(['conformite', 'derogations'])
+    expect(grc.kind === 'group' && grc.items).toEqual(['conformite', 'referentiels', 'derogations'])
   })
 
   it('ANALYSTE / LECTEUR sans module n’ont aucun menu GRC', () => {

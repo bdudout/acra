@@ -134,6 +134,7 @@ export default function Navbar() {
     tiers:         { href: '/tiers',         Icon: Network,         label: t.nav.tiers },
     actions:       { href: '/actions',       Icon: Shield,          label: t.nav.actions },
     conformite:    { href: '/conformite',    Icon: ShieldCheck,     label: t.nav.conformite },
+    referentiels:  { href: '/referentiels',  Icon: BookMarked,      label: t.nav.referentiels },
     derogations:   { href: '/derogations',   Icon: FileWarning,     label: t.nav.derogations },
     registre:      { href: '/registre',      Icon: BookMarked,      label: t.nav.registre },
     campagnes:     { href: '/campagnes',     Icon: ClipboardList,   label: t.nav.campagnes },

@@ -29,7 +29,7 @@ export interface NavModules {
 
 export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions'
-  | 'conformite' | 'derogations'
+  | 'conformite' | 'referentiels' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
   | 'reglementaire' | 'registreTic' | 'suiviRegulateur'
@@ -68,7 +68,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
 
   // Gouvernance (disponible dans les deux modes).
   const gouvernance: NavKey[] = []
-  if (canGovern) gouvernance.push('conformite')
+  if (canGovern) gouvernance.push('conformite', 'referentiels')
   if (canDerog) gouvernance.push('derogations')
 
   // Le mode GRC est déclenché par un module de 2ᵉ/3ᵉ ligne (le registre étant le
