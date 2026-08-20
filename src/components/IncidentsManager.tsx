@@ -56,6 +56,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const [qual, setQual] = useState<QualForm>({ taxonomieCode: '', montantBrut: '', recuperations: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [doraDetailId, setDoraDetailId] = useState<string | null>(null)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
   const taxoLabel = (code: string | null) => {
@@ -66,25 +67,45 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const euros = (v: number | null) =>
     v == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v)
 
-  // Cellule « Déclaration DORA » (art. 19) : signal compact par incident majeur.
+  // Cellule « Déclaration DORA » (art. 19) : signal compact + accès au détail des
+  // trois phases par incident majeur.
   function doraCell(i: Incident) {
     const d = i.doraReporting
     if (!d || !d.synthese.applicable) return <span className="text-gray-300 dark:text-gray-600">—</span>
-    if (d.synthese.enRetard > 0) return (
+    let chip
+    if (d.synthese.enRetard > 0) chip = (
       <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 whitespace-nowrap">
         ⚠ {d.synthese.enRetard} {n.doraEnRetard}
       </span>
     )
-    if (d.synthese.prochaineEcheance) return (
+    else if (d.synthese.prochaineEcheance) chip = (
       <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
         {n.doraEcheance} : {new Date(d.synthese.prochaineEcheance).toLocaleDateString(locale)}
       </span>
     )
-    return (
+    else chip = (
       <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300 whitespace-nowrap">
         {n.doraDeclare}
       </span>
     )
+    return (
+      <button onClick={() => setDoraDetailId(i.id)} className="hover:underline focus:underline" title={n.doraDetailTitle}>
+        {chip}
+      </button>
+    )
+  }
+
+  const DORA_PHASE_LABEL: Record<string, string> = {
+    INITIALE: n.doraPhaseInitiale, INTERMEDIAIRE: n.doraPhaseIntermediaire, FINALE: n.doraPhaseFinale,
+  }
+  const DORA_STATUT_BADGE: Record<string, string> = {
+    SOUMIS: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+    EN_RETARD: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
+    A_FAIRE: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+    INAPPLICABLE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
+  }
+  const DORA_PHASE_FIELD: Record<string, 'doraInitialeSoumiseLe' | 'doraIntermediaireSoumiseLe' | 'doraFinaleSoumiseLe'> = {
+    INITIALE: 'doraInitialeSoumiseLe', INTERMEDIAIRE: 'doraIntermediaireSoumiseLe', FINALE: 'doraFinaleSoumiseLe',
   }
 
   async function reload() {
@@ -154,6 +175,25 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     window.location.href = `/api/incidents/export?format=${format}&lang=${locale}`
   }
 
+  // Export ITS : registre de déclaration des incidents TIC majeurs (DORA art. 19).
+  function exportIts() {
+    window.location.href = `/api/reglementaire/dora-its`
+  }
+
+  // Enregistre un horodatage du workflow DORA (classification majeur ou soumission
+  // d'une phase) sur l'incident, puis rafraîchit le détail.
+  async function setDoraTimestamp(id: string, field: 'doraClasseMajeurLe' | 'doraInitialeSoumiseLe' | 'doraIntermediaireSoumiseLe' | 'doraFinaleSoumiseLe') {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/incidents/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: new Date().toISOString() }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
+  }
+
   // Promotion d'un incident orphelin en risque du registre (2ᵉ ligne).
   async function promouvoir(id: string) {
     setBusy(true); setError(null)
@@ -181,6 +221,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           <span className="text-xs text-gray-500 dark:text-gray-400">{n.exportLdc}</span>
           <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>
           <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
+          <button onClick={exportIts} className="btn-secondary text-xs" title={n.doraItsHint}>{n.doraExportIts}</button>
           {!showDecl && <button onClick={() => { setDecl(EMPTY_DECL); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>
       </div>
@@ -326,6 +367,63 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
               </select>
               <button onClick={() => enregistrerQual(i)} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.save}</button>
               <button onClick={() => { setQualId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{n.cancel}</button>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Détail de la déclaration DORA (3 phases) — art. 19 */}
+      {doraDetailId && (() => {
+        const i = incidents.find(x => x.id === doraDetailId)
+        const d = i?.doraReporting
+        if (!i || !d) return null
+        const classeMajeur = d.classe === 'MAJEUR'
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDoraDetailId(null)}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{n.doraDetailTitle}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{i.intitule} — {n.doraClasse} : {(n.doraClasses as Record<string, string>)[d.classe] ?? d.classe}</p>
+                </div>
+                <button onClick={() => setDoraDetailId(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none" aria-label={n.cancel}>×</button>
+              </div>
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              {!i.doraReporting?.echeances.some(e => e.phase === 'INITIALE' && e.statut !== 'INAPPLICABLE') && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">{n.doraNonApplicable}</p>
+              )}
+
+              <div className="space-y-2">
+                {d.echeances.map(e => (
+                  <div key={e.phase} className="flex items-center justify-between gap-2 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2">
+                    <div>
+                      <p className="text-sm text-gray-700 dark:text-gray-200">{DORA_PHASE_LABEL[e.phase] ?? e.phase}</p>
+                      <p className="text-[11px] text-gray-400">
+                        {e.echeance ? `${n.doraEcheance} : ${new Date(e.echeance).toLocaleString(locale)}` : '—'}
+                        {e.soumiseLe && ` · ${n.doraSoumisLe} ${new Date(e.soumiseLe).toLocaleDateString(locale)}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${DORA_STATUT_BADGE[e.statut] ?? DORA_STATUT_BADGE.INAPPLICABLE}`}>
+                        {(n.doraStatuts as Record<string, string>)[e.statut] ?? e.statut}
+                      </span>
+                      {canQualify && classeMajeur && !e.soumiseLe && (
+                        <button onClick={() => setDoraTimestamp(i.id, DORA_PHASE_FIELD[e.phase])} disabled={busy}
+                          className="btn-secondary text-[11px] disabled:opacity-50">{n.doraMarquerSoumis}</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {canQualify && classeMajeur && (
+                <div className="pt-1 border-t border-gray-100 dark:border-gray-700">
+                  <button onClick={() => setDoraTimestamp(i.id, 'doraClasseMajeurLe')} disabled={busy}
+                    className="btn-secondary text-xs disabled:opacity-50">{n.doraClasserMajeur}</button>
+                  <p className="text-[11px] text-gray-400 mt-1">{n.doraClasserMajeurHint}</p>
+                </div>
+              )}
             </div>
           </div>
         )
