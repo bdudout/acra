@@ -124,7 +124,8 @@ export default function PilotageGrc() {
         <a href={`/api/comites/pack?type=CONFORMITE&lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.comiteConformite}</a>
         <a href={`/api/comites/pack?type=INCIDENTS&lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.comiteIncidents}</a>
         <span className="mx-1 text-gray-300 dark:text-gray-600">|</span>
-        <a href={`/api/reglementaire/rapport-controle-interne?lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.rapportControleInterne}</a>
+        <a href={`/api/reglementaire/rapport-controle-interne?lang=${locale}`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">{p.rapportControleInterne} (PDF)</a>
+        <a href={`/api/reglementaire/rapport-controle-interne?lang=${locale}&format=pptx`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800" title={p.rapportControleInterne}>PPTX</a>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
 

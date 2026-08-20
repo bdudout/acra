@@ -35,9 +35,11 @@ jobs:
         # On audite uniquement les dépendances de production (ce qui est réellement
         # déployé). Les advisories de la chaîne de build (esbuild/vite/vitest,
         # devDependencies) ne sont pas expédiées et n'exposent pas l'app en production.
-        # Seuil « moderate » : l'arbre de prod est tenu à 0 advisory (cf. overrides
-        # uuid/postcss dans package.json) — toute régression moderate+ doit être traitée.
-        run: npm audit --omit=dev --audit-level=moderate
+        # Seuil « moderate » : l'arbre de prod est tenu à 0 advisory NON justifiée.
+        # Le script échoue sur toute advisory moderate+ absente de .audit-allowlist.json
+        # (exceptions ciblées + documentées, cf. ce fichier). Voir aussi les overrides
+        # de sécurité dans package.json (uuid/postcss/…).
+        run: node scripts/audit-check.mjs
         continue-on-error: false
 
       - name: npm audit report (JSON)
