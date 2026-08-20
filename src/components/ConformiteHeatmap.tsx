@@ -18,13 +18,15 @@ function cellStyle(taux: number): string {
  * colonnes = référentiels, cellules = taux agrégé (roll-up sous-arbre).
  * Présentational — libellés fournis par l'appelant.
  */
-export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, hrefFor }: {
+export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, hrefFor, pdfHrefFor }: {
   rows: HeatmapRow[]
   refs: HeatmapRef[]
   orgCol: string
   emptyLabel: string
-  /** Lien d'une cellule (ex. export SoA). Défaut : liste des analyses. */
+  /** Lien d'une cellule (ex. export SoA CSV). Défaut : liste des analyses. */
   hrefFor?: (orgId: string, refId: string) => string
+  /** Lien secondaire d'export PDF (SoA formelle). Optionnel. */
+  pdfHrefFor?: (orgId: string, refId: string) => string
 }) {
   if (rows.length === 0 || refs.length === 0) {
     return <p className="text-sm text-gray-500 italic">{emptyLabel}</p>
@@ -52,14 +54,21 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, href
                 return (
                   <td key={r.id} className="text-center">
                     {c ? (
-                      <Link
-                        href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'}
-                        className={`inline-flex flex-col items-center rounded px-2 py-1 leading-tight ${cellStyle(c.taux)} hover:ring-1 hover:ring-gray-300`}
+                      <div
+                        className={`inline-flex flex-col items-center rounded px-2 py-1 leading-tight ${cellStyle(c.taux)}`}
                         title={`${c.orgCount} org · ${c.evalues}/${c.total}`}
                       >
-                        <span className="font-bold">{c.taux}%</span>
+                        <Link href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'} className="hover:underline">
+                          <span className="font-bold">{c.taux}%</span>
+                        </Link>
                         <span className="text-[9px] opacity-70">{c.evalues}/{c.total}</span>
-                      </Link>
+                        {pdfHrefFor && (
+                          <span className="text-[9px] mt-0.5 flex gap-1.5">
+                            <Link href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'} className="underline opacity-80 hover:opacity-100">CSV</Link>
+                            <Link href={pdfHrefFor(row.orgId, r.id)} className="underline opacity-80 hover:opacity-100">PDF</Link>
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-gray-300">—</span>
                     )}
