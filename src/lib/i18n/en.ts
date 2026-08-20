@@ -1053,6 +1053,7 @@ export const en: Translations = {
     comiteRisques: 'Risk',
     comiteConformite: 'Compliance',
     comiteIncidents: 'Incidents',
+    rapportControleInterne: 'Internal control report',
     inactive: 'Module not enabled.',
     total: 'Risks',
     eleves: 'High',
