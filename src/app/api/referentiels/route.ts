@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
       organizationId: orgId, createdBy: userId,
       code: data.code, nom: data.nom, type: data.type, version: data.version, description: data.description,
       exigences: data.exigences as unknown as Prisma.InputJsonValue,
+      missions: data.missions as unknown as Prisma.InputJsonValue,
     },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

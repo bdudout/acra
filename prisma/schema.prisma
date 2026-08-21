@@ -473,6 +473,8 @@ model Referentiel {
   description String? @db.Text
   // Exigences : FrameworkControl[] { ref, nom, description, type, categorie }.
   exigences   Json    @default("[]")
+  // Missions : objectifs de sécurité { intitule, description } (politique/stratégie).
+  missions    Json    @default("[]")
   actif       Boolean @default(true)
   createdBy   String?
 

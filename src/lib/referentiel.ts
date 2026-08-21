@@ -19,6 +19,12 @@ const DEFAULT_TYPE: ControlType = 'ORGANISATIONNELLE'
 export const REFERENTIEL_TYPES = ['PSSI', 'POLITIQUE', 'REGLEMENTAIRE', 'STANDARD', 'CUSTOM'] as const
 export type ReferentielType = (typeof REFERENTIEL_TYPES)[number]
 
+/** Objectif de sécurité (« mission ») porté par une politique/stratégie. */
+export interface Mission {
+  intitule: string
+  description: string | null
+}
+
 export interface ReferentielInput {
   code?: unknown
   nom?: unknown
@@ -26,6 +32,7 @@ export interface ReferentielInput {
   version?: unknown
   description?: unknown
   exigences?: unknown
+  missions?: unknown
 }
 
 export interface CleanReferentiel {
@@ -35,6 +42,7 @@ export interface CleanReferentiel {
   version: string | null
   description: string | null
   exigences: Exigence[]
+  missions: Mission[]
 }
 
 const txt = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
@@ -130,5 +138,33 @@ export function cleanReferentielInput(body: ReferentielInput): CleanReferentiel 
     version: txtOrNull(body.version),
     description: txtOrNull(body.description),
     exigences,
+    missions: cleanMissions(body.missions),
   }
+}
+
+/** Normalise une liste de missions (objectifs) : intitulé requis, dédupliquées. */
+export function cleanMissions(v: unknown): Mission[] {
+  if (!Array.isArray(v)) return []
+  const out: Mission[] = []
+  const seen = new Set<string>()
+  for (const raw of v) {
+    if (raw == null || typeof raw !== 'object') continue
+    const o = raw as Record<string, unknown>
+    const intitule = txt(o.intitule)
+    if (!intitule || seen.has(intitule)) continue
+    seen.add(intitule)
+    out.push({ intitule, description: txtOrNull(o.description) })
+  }
+  return out
+}
+
+/** Parse une saisie texte en missions : une par ligne « intitulé | description ». */
+export function parseMissions(texte: unknown): Mission[] {
+  if (typeof texte !== 'string') return []
+  return cleanMissions(texte.split(/\r?\n/).map(line => {
+    const l = line.trim()
+    if (!l || l.startsWith('#')) return null
+    const [intitule, ...rest] = l.split(/\s*\|\s*/)
+    return { intitule, description: rest.join(' | ') }
+  }).filter(Boolean))
 }
