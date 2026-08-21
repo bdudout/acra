@@ -44,6 +44,19 @@ export function isAdminRole(role: UserRole): boolean {
   return role === 'ADMIN' || role === 'SUPER_ADMIN'
 }
 
+/**
+ * Peut DÉFINIR les dispositifs de 2ᵉ ligne de défense (plan de contrôle permanent,
+ * KRI, campagnes de contrôle). En plus de RISK_MANAGER / RSSI / admin, inclut les
+ * rôles DÉDIÉS à la 2ᵉ ligne : CONTROLEUR (« définit et exécute les contrôles
+ * permanents ») et CONFORMITE (pilote les référentiels et la gouvernance associée).
+ * Helper CENTRAL : les 3 modules (controles, kri, campagnes) délèguent ici pour
+ * rester cohérents (cf. correctif #125).
+ */
+export function peutDefinir2eLigne(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+    || role === 'CONTROLEUR' || role === 'CONFORMITE'
+}
+
 /** L'utilisateur peut créer de nouvelles analyses */
 export function canCreateAnalyse(user: SessionUser): boolean {
   return user.role === 'ANALYSTE' || isAdminRole(user.role)

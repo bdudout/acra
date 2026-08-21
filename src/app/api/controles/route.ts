@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
   validateControleInput, cleanControleInput, prochaineEcheance,
   etatEcheance, evaluerEfficacite, type Periodicite,
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 /** Définir le plan de contrôle relève de la 2ᵉ ligne. */
 export function peutDefinir(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+  return peutDefinir2eLigne(role)
 }
 
 async function ctx(session: { user: { id: string; role?: string } }) {
