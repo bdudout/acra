@@ -320,6 +320,11 @@ model Controle {
   processusId String?
   processus   Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
 
+  // Rattachement à un référentiel (code builtin ou custom) et aux exigences
+  // (points de contrôle) que ce contrôle atteste → conformité DÉRIVÉE.
+  referentielCode String?
+  exigenceRefs    Json    @default("[]") // string[] des refs d'exigences couvertes
+
   executions ControleExecution[]
 
   // Anti-doublon de l'alerte d'échéance (comme Derogation.alerteeLe) : remis à
@@ -626,6 +631,11 @@ model AuditConstat {
   // Rattachement optionnel au registre (traçabilité audit → risque).
   riskItemId String?
   riskItem   RiskItem? @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+
+  // Rattachement optionnel à une exigence d'un référentiel : un constat visant un
+  // point de contrôle précis dégrade sa conformité dérivée.
+  referentielCode String?
+  exigenceRef     String?
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

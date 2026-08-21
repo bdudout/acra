@@ -19,18 +19,22 @@ interface Controle {
   tailleEchantillon: number | null; actif: boolean
   riskItemId: string | null; riskItemIntitule: string | null
   processusId: string | null; processusNom: string | null
+  referentielCode: string | null; exigenceRefs: string[]
   derniereExecution: string | null; prochaineEcheance: string
   etatEcheance: 'A_VENIR' | 'DU' | 'EN_RETARD' | null
   efficacite: Efficacite; executions: Execution[]; nbExecutions: number
 }
 type Proc = { id: string; nom: string }
 type Risk = { id: string; intitule: string }
+type RefLite = { code: string; nom: string }
+type ExigenceLite = { ref: string; nom: string }
 
 type Form = {
   intitule: string; description: string; niveau: string; periodicite: string
   responsable: string; riskItemId: string; processusId: string; tailleEchantillon: string
+  referentielCode: string; exigenceRefs: string[]
 }
-const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '' }
+const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [] }
 
 type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string }
 const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '' }
@@ -57,6 +61,8 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
   const [controles, setControles] = useState<Controle[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
+  const [refs, setRefs] = useState<RefLite[]>([])
+  const [exigencesRef, setExigencesRef] = useState<ExigenceLite[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<Form>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
@@ -85,16 +91,29 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
 
   async function reload() {
-    const [cc, pp, rr] = await Promise.all([
+    const [cc, pp, rr, ff] = await Promise.all([
       fetch('/api/controles').then(x => x.ok ? x.json() : { controles: [] }),
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
       fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
+      fetch('/api/referentiels').then(x => x.ok ? x.json() : { referentiels: [] }),
     ])
     setControles(cc.controles ?? []); setProcs(pp.processus ?? [])
     setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
+    setRefs((ff.referentiels ?? []).map((r: RefLite) => ({ code: r.code, nom: r.nom })))
     setLoading(false)
   }
   useEffect(() => { reload() }, [])
+
+  // Charge les exigences du référentiel choisi (pour la sélection des points couverts).
+  useEffect(() => {
+    if (!form.referentielCode) { setExigencesRef([]); return }
+    let annule = false
+    fetch(`/api/referentiels/exigences?code=${encodeURIComponent(form.referentielCode)}`)
+      .then(x => x.ok ? x.json() : { exigences: [] })
+      .then(d => { if (!annule) setExigencesRef(d.exigences ?? []) })
+      .catch(() => { if (!annule) setExigencesRef([]) })
+    return () => { annule = true }
+  }, [form.referentielCode])
 
   function err(code: string) { return lbl(c.errors, code) }
 
@@ -107,6 +126,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
       responsable: form.responsable || null,
       riskItemId: form.riskItemId || null, processusId: form.processusId || null,
       tailleEchantillon: form.tailleEchantillon || null,
+      referentielCode: form.referentielCode || null, exigenceRefs: form.exigenceRefs,
     }
     const res = await fetch(editId ? `/api/controles/${editId}` : '/api/controles', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -123,6 +143,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
       intitule: x.intitule, description: x.description ?? '', niveau: x.niveau, periodicite: x.periodicite,
       responsable: x.responsable ?? '', riskItemId: x.riskItemId ?? '', processusId: x.processusId ?? '',
       tailleEchantillon: x.tailleEchantillon?.toString() ?? '',
+      referentielCode: x.referentielCode ?? '', exigenceRefs: x.exigenceRefs ?? [],
     })
   }
 
@@ -215,6 +236,30 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
               <option value="">{c.processNone}</option>
               {procs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
+          </div>
+          {/* Rattachement à un référentiel + exigences couvertes (conformité dérivée) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select value={form.referentielCode} onChange={e => setForm(f => ({ ...f, referentielCode: e.target.value, exigenceRefs: [] }))} className={inp}>
+              <option value="">{c.refNone}</option>
+              {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+            </select>
+            {form.referentielCode && (
+              <div className="sm:row-span-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{c.exigencesCouvertes} ({form.exigenceRefs.length})</div>
+                <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
+                  {exigencesRef.length === 0
+                    ? <div className="px-3 py-2 text-xs text-gray-400">{c.exigencesVides}</div>
+                    : exigencesRef.map(ex => (
+                      <label key={ex.ref} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <input type="checkbox" checked={form.exigenceRefs.includes(ex.ref)}
+                          onChange={() => setForm(f => ({ ...f, exigenceRefs: f.exigenceRefs.includes(ex.ref) ? f.exigenceRefs.filter(r => r !== ex.ref) : [...f.exigenceRefs, ex.ref] }))} />
+                        <span className="font-mono text-gray-400 w-14 shrink-0">{ex.ref}</span>
+                        <span className="text-gray-700 dark:text-gray-200 truncate" title={ex.nom}>{ex.nom}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{editId ? c.save : c.add}</button>

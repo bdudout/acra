@@ -35,6 +35,8 @@ export interface ControleInput {
   processusId?: unknown
   tailleEchantillon?: unknown
   actif?: unknown
+  referentielCode?: unknown
+  exigenceRefs?: unknown
 }
 
 export interface CleanControle {
@@ -47,6 +49,23 @@ export interface CleanControle {
   processusId: string | null
   tailleEchantillon: number | null
   actif: boolean
+  referentielCode: string | null
+  exigenceRefs: string[]
+}
+
+/** Normalise une liste de refs d'exigences : chaînes non vides, dédupliquées. */
+export function cleanExigenceRefs(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const x of v) {
+    if (typeof x !== 'string') continue
+    const s = x.trim()
+    if (!s || seen.has(s)) continue
+    seen.add(s)
+    out.push(s)
+  }
+  return out
 }
 
 const txt = (v: unknown): string | null =>
@@ -78,6 +97,8 @@ export function cleanControleInput(body: ControleInput): CleanControle {
     tailleEchantillon: body.tailleEchantillon == null || body.tailleEchantillon === ''
       ? null : Math.max(1, Math.round(Number(body.tailleEchantillon))),
     actif: body.actif === undefined ? true : body.actif !== false,
+    referentielCode: txt(body.referentielCode),
+    exigenceRefs: cleanExigenceRefs(body.exigenceRefs),
   }
 }
 

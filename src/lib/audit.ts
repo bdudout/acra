@@ -93,6 +93,8 @@ export interface ConstatInput {
   echeance?: unknown
   riskItemId?: unknown
   statut?: unknown
+  referentielCode?: unknown
+  exigenceRef?: unknown
 }
 
 export interface CleanConstat {
@@ -105,6 +107,8 @@ export interface CleanConstat {
   echeance: Date | null
   riskItemId: string | null
   statut: ConstatStatut
+  referentielCode: string | null
+  exigenceRef: string | null
 }
 
 export function validateConstatInput(body: ConstatInput, opts: { partial?: boolean } = {}): string | null {
@@ -136,6 +140,8 @@ export function cleanConstatInput(body: ConstatInput): CleanConstat {
     echeance: parseDate(body.echeance),
     riskItemId: txt(body.riskItemId),
     statut: CONSTAT_STATUTS.includes(st) ? st : 'OUVERT',
+    referentielCode: txt(body.referentielCode),
+    exigenceRef: txt(body.exigenceRef),
   }
 }
 
