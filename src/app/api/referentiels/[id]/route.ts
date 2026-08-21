@@ -64,6 +64,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data: {
       code: data.code, nom: data.nom, type: data.type, version: data.version, description: data.description,
       exigences: data.exigences as unknown as Prisma.InputJsonValue,
+      missions: data.missions as unknown as Prisma.InputJsonValue,
     },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

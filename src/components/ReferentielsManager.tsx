@@ -1,10 +1,10 @@
 'use client'
 
-import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge } from 'lucide-react'
+import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { parseExigences, REFERENTIEL_TYPES } from '@/lib/referentiel'
+import { parseExigences, parseMissions, REFERENTIEL_TYPES } from '@/lib/referentiel'
 
 interface CouvExigence { ref: string; nom: string; statut: string; nbControles: number; nbAnomaliesAudit: number }
 interface CouvSynthese { total: number; couverts: number; conformes: number; anomalies: number; nonCouverts: number; tauxCouverture: number; tauxConformite: number }
@@ -13,9 +13,9 @@ interface Ref {
   id?: string; code: string; nom: string; source: 'BUILTIN' | 'CUSTOM'
   type: string; version: string | null; nbExigences: number; actif: boolean
 }
-interface RefDetail { id: string; code: string; nom: string; type: string; version: string | null; description: string | null; exigences: { ref: string; nom: string; categorie?: string; type?: string }[] }
+interface RefDetail { id: string; code: string; nom: string; type: string; version: string | null; description: string | null; exigences: { ref: string; nom: string; categorie?: string; type?: string }[]; missions?: { intitule: string; description?: string }[] }
 
-const emptyForm = { code: '', nom: '', type: 'PSSI', version: '', description: '', exigencesText: '' }
+const emptyForm = { code: '', nom: '', type: 'PSSI', version: '', description: '', exigencesText: '', missionsText: '' }
 
 export default function ReferentielsManager({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation()
@@ -29,6 +29,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
   const [couv, setCouv] = useState<{ code: string; nom: string; parExigence: CouvExigence[]; synthese: CouvSynthese } | null>(null)
   const [couvLoading, setCouvLoading] = useState(false)
+  const [seeding, setSeeding] = useState(false)
 
   const exigencesParsed = useMemo(() => parseExigences(form.exigencesText), [form.exigencesText])
 
@@ -55,6 +56,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     setForm({
       code: ref.code, nom: ref.nom, type: ref.type, version: ref.version ?? '', description: ref.description ?? '',
       exigencesText: (ref.exigences ?? []).map(e => [e.ref, e.nom, e.categorie ?? '', e.type ?? ''].filter(Boolean).join(' | ')).join('\n'),
+      missionsText: (ref.missions ?? []).map(m => [m.intitule, m.description ?? ''].filter(Boolean).join(' | ')).join('\n'),
     })
     setErr(null); setShowForm(true)
   }
@@ -64,7 +66,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     const url = editing ? `/api/referentiels/${editing}` : '/api/referentiels'
     const res = await fetch(url, {
       method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: form.code, nom: form.nom, type: form.type, version: form.version, description: form.description, exigences: exigencesParsed }),
+      body: JSON.stringify({ code: form.code, nom: form.nom, type: form.type, version: form.version, description: form.description, exigences: exigencesParsed, missions: parseMissions(form.missionsText) }),
     })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
@@ -76,11 +78,20 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   }
   async function del(id: string) { await fetch(`/api/referentiels/${id}`, { method: 'DELETE' }); setConfirmDel(null); reload() }
 
+  async function seedPolitiqueDefaut() {
+    setSeeding(true); setErr(null)
+    const res = await fetch('/api/referentiels/politique-defaut', { method: 'POST' })
+    setSeeding(false)
+    if (!res.ok && res.status !== 409) { const d = await res.json().catch(() => ({})); setErr(d.error ?? 'Erreur') }
+    reload()
+  }
+
   const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ebios-500'
 
   if (loading) return <div className="text-center py-12 text-gray-500">{t.loading}</div>
   const customs = refs.filter(x => x.source === 'CUSTOM')
   const builtins = refs.filter(x => x.source === 'BUILTIN')
+  const hasPolitique = customs.some(x => x.type === 'PSSI' || x.type === 'POLITIQUE')
 
   const typeBadge = (type: string, source: string) => (
     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${source === 'BUILTIN' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-ebios-100 text-ebios-700 dark:bg-ebios-500/15 dark:text-ebios-300'}`}>
@@ -106,6 +117,23 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{r.readOnly}</div>
       )}
 
+      {/* Aucune politique/stratégie : proposer d'initialiser le socle par défaut */}
+      {canManage && !hasPolitique && !showForm && (
+        <div className="bg-ebios-50 dark:bg-ebios-500/10 border border-ebios-200 dark:border-ebios-500/30 rounded-xl px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <ShieldCheck size={18} className="text-ebios-600 dark:text-ebios-300 mt-0.5 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{r.aucunePolitique}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-xl">{r.aucunePolitiqueDetail}</p>
+            </div>
+          </div>
+          <button onClick={seedPolitiqueDefaut} disabled={seeding}
+            className="inline-flex items-center gap-1.5 bg-ebios-600 hover:bg-ebios-700 text-white text-sm font-medium py-2 px-3 rounded-lg disabled:opacity-50 shrink-0">
+            <ShieldCheck size={15} aria-hidden="true" /> {seeding ? r.initialisation : r.initialiserPolitique}
+          </button>
+        </div>
+      )}
+
       {showForm && canManage && (
         <form onSubmit={save} className="card p-5 space-y-4">
           {err && <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-lg px-3 py-2 text-sm"><AlertTriangle size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> {err}</div>}
@@ -122,6 +150,13 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               <input className={`mt-1 ${inputCls}`} value={form.version} onChange={e => setForm({ ...form, version: e.target.value })} placeholder="v1.0" /></label>
             <label className="block sm:col-span-2"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.description}</span>
               <input className={`mt-1 ${inputCls}`} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
+            <label className="block sm:col-span-2">
+              <span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.missions}</span>
+              <span className="block text-xs text-gray-400 mb-1">{r.missionsHint}</span>
+              <textarea className={`mt-1 ${inputCls} text-xs`} rows={4} value={form.missionsText}
+                onChange={e => setForm({ ...form, missionsText: e.target.value })}
+                placeholder={'Protéger le DIC des données et services clients | objectif premier\nAssurer la résilience opérationnelle (DORA)'} />
+            </label>
             <label className="block sm:col-span-2">
               <span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.exigences}</span>
               <span className="block text-xs text-gray-400 mb-1">{r.exigencesHint}</span>
