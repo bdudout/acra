@@ -19,7 +19,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "postbuild": "node scripts/clean-standalone-env.mjs",
-    "i18n:check": "node scripts/extract-ebios-data-i18n.mjs --check"
+    "i18n:check": "node scripts/extract-ebios-data-i18n.mjs --check",
+    "db:seed:demo": "tsx prisma/seed-demo-realistic.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
