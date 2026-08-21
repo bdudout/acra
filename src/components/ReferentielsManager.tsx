@@ -1,10 +1,13 @@
 'use client'
 
-import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock } from 'lucide-react'
+import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { parseExigences, REFERENTIEL_TYPES } from '@/lib/referentiel'
+
+interface CouvExigence { ref: string; nom: string; statut: string; nbControles: number; nbAnomaliesAudit: number }
+interface CouvSynthese { total: number; couverts: number; conformes: number; anomalies: number; nonCouverts: number; tauxCouverture: number; tauxConformite: number }
 
 interface Ref {
   id?: string; code: string; nom: string; source: 'BUILTIN' | 'CUSTOM'
@@ -24,8 +27,18 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const [form, setForm] = useState({ ...emptyForm })
   const [err, setErr] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
+  const [couv, setCouv] = useState<{ code: string; nom: string; parExigence: CouvExigence[]; synthese: CouvSynthese } | null>(null)
+  const [couvLoading, setCouvLoading] = useState(false)
 
   const exigencesParsed = useMemo(() => parseExigences(form.exigencesText), [form.exigencesText])
+
+  async function openCouverture(code: string, nom: string) {
+    setCouv({ code, nom, parExigence: [], synthese: { total: 0, couverts: 0, conformes: 0, anomalies: 0, nonCouverts: 0, tauxCouverture: 0, tauxConformite: 0 } })
+    setCouvLoading(true)
+    const d = await fetch(`/api/referentiels/couverture?code=${encodeURIComponent(code)}`).then(x => x.ok ? x.json() : null).catch(() => null)
+    setCouvLoading(false)
+    if (d?.active) setCouv({ code, nom, parExigence: d.parExigence ?? [], synthese: d.synthese })
+  }
 
   async function reload() {
     const d = await fetch('/api/referentiels').then(x => x.ok ? x.json() : null).catch(() => null)
@@ -139,7 +152,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                   <th className="text-left font-medium px-3 py-2">{r.col.type}</th>
                   <th className="text-left font-medium px-3 py-2">{r.col.version}</th>
                   <th className="text-right font-medium px-3 py-2">{r.col.exigences}</th>
-                  {canManage && <th className="px-3 py-2"></th>}
+                  <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -152,12 +165,13 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                     <td className="px-3 py-2">{typeBadge(x.type, x.source)}</td>
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                     <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
-                    {canManage && (
-                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
+                      {canManage && <>
                         <button onClick={() => x.id && openEdit(x.id)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={t.save}><Pencil size={15} aria-hidden="true" /></button>
                         <button onClick={() => x.id && setConfirmDel(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={t.delete}><Trash2 size={15} aria-hidden="true" /></button>
-                      </td>
-                    )}
+                      </>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -176,6 +190,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                 <th className="text-left font-medium px-3 py-2">{r.col.nom}</th>
                 <th className="text-left font-medium px-3 py-2">{r.col.version}</th>
                 <th className="text-right font-medium px-3 py-2">{r.col.exigences}</th>
+                <th className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -187,6 +202,9 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                   </td>
                   <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -194,9 +212,52 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
         </div>
       </div>
 
+      {couv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCouv(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-1.5"><Gauge size={16} aria-hidden="true" /> {r.couvertureTitle}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{couv.nom}</p>
+              </div>
+              <button onClick={() => setCouv(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none" aria-label={t.cancel}>×</button>
+            </div>
+            <div className="p-5 overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                <div className="card p-3"><div className="text-xl font-bold tabular-nums">{couv.synthese.couverts}/{couv.synthese.total}</div><div className="text-[11px] text-gray-500">{r.covKpi.couverts}</div></div>
+                <div className="card p-3"><div className="text-xl font-bold tabular-nums text-green-600 dark:text-green-400">{couv.synthese.conformes}</div><div className="text-[11px] text-gray-500">{r.covKpi.conformes}</div></div>
+                <div className="card p-3"><div className={`text-xl font-bold tabular-nums ${couv.synthese.anomalies > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{couv.synthese.anomalies}</div><div className="text-[11px] text-gray-500">{r.covKpi.anomalies}</div></div>
+                <div className="card p-3"><div className="text-xl font-bold tabular-nums">{couv.synthese.tauxCouverture}%</div><div className="text-[11px] text-gray-500">{r.covKpi.taux}</div></div>
+              </div>
+              {couvLoading ? <div className="text-center py-6 text-gray-400 text-sm">{t.loading}</div>
+                : couv.parExigence.length === 0 ? <div className="text-center py-6 text-gray-400 text-sm">{r.covEmpty}</div>
+                : (
+                  <div className="space-y-1">
+                    {couv.parExigence.map(e => (
+                      <div key={e.ref} className="flex items-center gap-2 text-sm border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-1.5">
+                        <span className="font-mono text-[11px] text-gray-400 w-16 shrink-0">{e.ref}</span>
+                        <span className="flex-1 text-gray-700 dark:text-gray-200 truncate" title={e.nom}>{e.nom}</span>
+                        {e.nbControles > 0 && <span className="text-[10px] text-gray-400 shrink-0">{r.covControles.replace('{n}', String(e.nbControles))}</span>}
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${COV_BADGE[e.statut] ?? COV_BADGE.NON_COUVERT}`}>{r.covStatut[e.statut as keyof typeof r.covStatut] ?? e.statut}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {confirmDel && (
         <ConfirmDialog message={r.deleteConfirm} confirmLabel={t.delete} onConfirm={() => del(confirmDel)} onCancel={() => setConfirmDel(null)} />
       )}
     </div>
   )
+}
+
+const COV_BADGE: Record<string, string> = {
+  NON_COUVERT: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
+  CONFORME: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  PARTIEL: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  ANOMALIE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
 }
