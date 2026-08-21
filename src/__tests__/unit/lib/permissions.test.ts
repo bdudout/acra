@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  peutDefinir2eLigne,
   canCreateAnalyse,
   canAdmin,
   canConfigurer,
@@ -344,6 +345,19 @@ describe('Rôles ajoutés — droits métier', () => {
   it('aucun rôle ajouté ne peut accepter les risques résiduels', () => {
     for (const role of ['CONTROLEUR', 'METIER', 'CONFORMITE', 'DPO'] as const) {
       expect(canAcceptResidualRisks(userWith(role), true)).toBe(false)
+    }
+  })
+})
+
+describe('peutDefinir2eLigne (définition contrôles / KRI / campagnes — #125)', () => {
+  it('autorise les rôles 2ᵉ ligne dédiés (CONTROLEUR, CONFORMITE) en plus de RM/RSSI/admin', () => {
+    for (const role of ['ADMIN', 'SUPER_ADMIN', 'RISK_MANAGER', 'RSSI', 'CONTROLEUR', 'CONFORMITE'] as const) {
+      expect(peutDefinir2eLigne(role)).toBe(true)
+    }
+  })
+  it('refuse les rôles non concernés (1ʳᵉ ligne pure, lecture, 3ᵉ ligne)', () => {
+    for (const role of ['LECTEUR', 'ANALYSTE', 'METIER', 'DPO', 'AUDITEUR', 'DIRECTION_METIER'] as const) {
+      expect(peutDefinir2eLigne(role)).toBe(false)
     }
   })
 })

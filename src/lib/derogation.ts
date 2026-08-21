@@ -214,9 +214,15 @@ export function canDoubleRegardDerogation(user: SessionUser, d: DerogationRbacSo
     && user.id !== d.avisRssiPar && user.id !== d.demandeurId
 }
 
-/** Validation métier : DIRECTION_METIER (ou admin en secours), depuis VALIDATION_METIER. */
+/**
+ * Validation métier : DIRECTION_METIER (ou admin en secours), depuis VALIDATION_METIER.
+ * Le DEMANDEUR ne peut jamais valider sa propre dérogation (séparation des tâches /
+ * quatre-yeux, cohérent avec les gardes avis RSSI et double regard — cf. #122).
+ */
 export function canValiderDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
-  return d.statut === 'VALIDATION_METIER' && (user.role === 'DIRECTION_METIER' || isAdminRole(user.role))
+  return d.statut === 'VALIDATION_METIER'
+    && (user.role === 'DIRECTION_METIER' || isAdminRole(user.role))
+    && user.id !== d.demandeurId
 }
 
 /** Révocation d'une dérogation ACTIVE : RSSI, métier ou admin. */

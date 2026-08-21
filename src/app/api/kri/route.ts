@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
   validateKriInput, cleanKriInput, evaluerKri, tendanceKri, synthetiserKri,
   type KriSens, type KriStatut,
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // La DÉFINITION d'un KRI relève de la 2ᵉ ligne (gouvernance) ; la SAISIE des
 // mesures est ouverte à la 1ʳᵉ ligne (cf. mesures/route.ts). L'admin gère aussi.
 export function peutDefinirKri(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+  return peutDefinir2eLigne(role)
 }
 
 async function ctx(session: { user: { id: string; role?: string } }) {

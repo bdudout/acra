@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { validateCampagneInput, cleanCampagneInput, avancementCampagne } from '@/lib/campagne'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 /** Piloter une campagne relève de la 2ᵉ ligne (risk manager / RSSI / admin). */
 export function peutPiloter(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+  return peutDefinir2eLigne(role)
 }
 
 async function ctx(session: { user: { id: string; role?: string } }) {

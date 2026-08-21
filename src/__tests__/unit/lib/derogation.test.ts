@@ -166,6 +166,13 @@ describe('RBAC dérogations', () => {
     expect(canValiderDerogation(u('RSSI'), d)).toBe(false)
     expect(canValiderDerogation(u('DIRECTION_METIER'), { statut: 'DEMANDEE', demandeurId: 'p' })).toBe(false)
   })
+  it('validation métier : le DEMANDEUR ne peut pas valider sa propre dérogation (quatre-yeux, #122)', () => {
+    // Même quand le demandeur est DIRECTION_METIER (ou admin), l'auto-validation est refusée.
+    expect(canValiderDerogation(u('DIRECTION_METIER', 'porteur'), { statut: 'VALIDATION_METIER', demandeurId: 'porteur' })).toBe(false)
+    expect(canValiderDerogation(u('ADMIN', 'porteur'), { statut: 'VALIDATION_METIER', demandeurId: 'porteur' })).toBe(false)
+    // Un AUTRE valideur métier reste autorisé.
+    expect(canValiderDerogation(u('DIRECTION_METIER', 'autre'), { statut: 'VALIDATION_METIER', demandeurId: 'porteur' })).toBe(true)
+  })
   it('révocation : RSSI/métier/admin, depuis ACTIVE', () => {
     const d = { statut: 'ACTIVE' as const, demandeurId: 'p' }
     expect(canRevoquerDerogation(u('RSSI'), d)).toBe(true)
