@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   peutDefinir2eLigne,
+  hasGlobalReadDispositif,
   canCreateAnalyse,
   canAdmin,
   canConfigurer,
@@ -359,5 +360,27 @@ describe('peutDefinir2eLigne (définition contrôles / KRI / campagnes — #125)
     for (const role of ['LECTEUR', 'ANALYSTE', 'METIER', 'DPO', 'AUDITEUR', 'DIRECTION_METIER'] as const) {
       expect(peutDefinir2eLigne(role)).toBe(false)
     }
+  })
+})
+
+describe('hasGlobalReadDispositif + analyseWhereClause (lecture globale — #126)', () => {
+  const GLOBAL = ['ADMIN', 'SUPER_ADMIN', 'RISK_MANAGER', 'RSSI', 'DIRECTION_METIER', 'CONTROLEUR', 'CONFORMITE', 'DPO', 'AUDITEUR'] as const
+  const NON_GLOBAL = ['LECTEUR', 'ANALYSTE', 'METIER'] as const
+
+  it('accorde la lecture globale aux gouvernants + 2ᵉ/3ᵉ ligne (dont AUDITEUR)', () => {
+    for (const role of GLOBAL) expect(hasGlobalReadDispositif(role)).toBe(true)
+    for (const role of NON_GLOBAL) expect(hasGlobalReadDispositif(role)).toBe(false)
+  })
+
+  it('analyseWhereClause : la LISTE est cohérente avec la vue unitaire pour AUDITEUR/CONTROLEUR/CONFORMITE/DPO', () => {
+    // Ces rôles voient désormais les analyses soumises/approuvées/rejetées (pas seulement les leurs).
+    for (const role of ['AUDITEUR', 'CONTROLEUR', 'CONFORMITE', 'DPO'] as const) {
+      const w = analyseWhereClause('u1', role) as { OR?: { statut?: string }[] }
+      const statuts = (w.OR ?? []).map(o => o.statut).filter(Boolean)
+      expect(statuts).toEqual(expect.arrayContaining(['SOUMIS', 'APPROUVE', 'REJETE']))
+    }
+    // ANALYSTE reste limité à ses propres analyses + partagées (pas de statuts globaux).
+    const a = analyseWhereClause('u1', 'ANALYSTE') as { OR?: { statut?: string }[] }
+    expect((a.OR ?? []).some(o => o.statut)).toBe(false)
   })
 })

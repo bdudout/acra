@@ -15,7 +15,7 @@
  * ⚠️ Règle d'or : le GATING (qui voit quoi) reste identique au comportement
  * historique — on ne change que la DISPOSITION selon le mode, jamais les droits.
  */
-import { isAdminRole, type UserRole } from './permissions'
+import { isAdminRole, hasGlobalReadDispositif, type UserRole } from './permissions'
 
 /** État effectif des modules GRC optionnels (renvoyé par /api/modules). */
 export interface NavModules {
@@ -64,7 +64,11 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const firstLineOnly = role === 'LECTEUR' || role === 'METIER'
   const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
   const canDerog = canGovern || role === 'DIRECTION_METIER'
-  const canPilotage = canGovern || role === 'DIRECTION_METIER'
+  // Processus (données de cartographie) = gouvernance.
+  const canGererProcessus = canGovern || role === 'DIRECTION_METIER'
+  // Pilotage (cockpit de lecture consolidée) : tous les rôles à lecture globale du
+  // dispositif — dont CONTROLEUR et AUDITEUR, que l'API /grc/rollup sert déjà (#126).
+  const canPilotage = hasGlobalReadDispositif(role)
 
   // Gouvernance (disponible dans les deux modes).
   const gouvernance: NavKey[] = []
@@ -94,7 +98,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.registre && !firstLineOnly) {
     entries.push(link('cartographie'))
     const registre: NavKey[] = ['registre', 'campagnes']
-    if (canPilotage) registre.push('processus', 'pilotage')
+    if (canGererProcessus) registre.push('processus')
+    if (canPilotage) registre.push('pilotage')
     entries.push(groupOrLink('registre', registre))
   }
 

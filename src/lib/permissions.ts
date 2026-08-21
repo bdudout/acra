@@ -57,6 +57,21 @@ export function peutDefinir2eLigne(role: UserRole): boolean {
     || role === 'CONTROLEUR' || role === 'CONFORMITE'
 }
 
+/**
+ * Lecture GLOBALE (transverse, en lecture seule) du dispositif de risque. Les rôles
+ * de 2ᵉ et 3ᵉ ligne de défense doivent pouvoir CONSULTER l'ensemble du dispositif
+ * (analyses soumises/approuvées, cockpit de pilotage) pour exercer leur mission —
+ * sans droit d'écriture. En plus des gouvernants (admin/RM/RSSI/DIRECTION_METIER) :
+ * CONTROLEUR, CONFORMITE, DPO (2ᵉ ligne) et AUDITEUR (3ᵉ ligne — « lecture globale
+ * sur l'ensemble du dispositif »). Helper CENTRAL : `canViewAnalyse` (vue unitaire),
+ * `analyseWhereClause` (liste) et `buildNav` (pilotage) délèguent ici pour rester
+ * cohérents — corrige l'asymétrie liste↔unitaire (#126). N'accorde AUCUNE écriture.
+ */
+export function hasGlobalReadDispositif(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI' || role === 'DIRECTION_METIER'
+    || role === 'CONTROLEUR' || role === 'CONFORMITE' || role === 'DPO' || role === 'AUDITEUR'
+}
+
 /** L'utilisateur peut créer de nouvelles analyses */
 export function canCreateAnalyse(user: SessionUser): boolean {
   return user.role === 'ANALYSTE' || isAdminRole(user.role)
@@ -118,7 +133,8 @@ function getEffectivePermission(
 
 /** L'utilisateur peut visualiser l'analyse */
 export function canViewAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  if (isAdminRole(user.role) || user.role === 'RISK_MANAGER' || user.role === 'RSSI' || user.role === 'DIRECTION_METIER' || user.role === 'CONTROLEUR' || user.role === 'CONFORMITE' || user.role === 'DPO') return true
+  // Lecture globale du dispositif (2ᵉ/3ᵉ ligne + gouvernance) — inclut AUDITEUR (#126).
+  if (hasGlobalReadDispositif(user.role)) return true
   return getEffectivePermission(user, analyse) !== null
 }
 
@@ -222,14 +238,16 @@ export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgS
     // Admin d'organisation : tout son périmètre. SUPER_ADMIN : tout (orgFilter vide).
     return { ...notDeleted, ...orgFilter }
   }
-  if (role === 'RISK_MANAGER' || role === 'RSSI' || role === 'DIRECTION_METIER') {
+  if (hasGlobalReadDispositif(role)) {
+    // Lecture globale du dispositif (gouvernance + 2ᵉ/3ᵉ ligne : CONTROLEUR,
+    // CONFORMITE, DPO, AUDITEUR) : propres + partagées + soumises/approuvées/
+    // rejetées → la LISTE est cohérente avec la vue unitaire (#126). Lecture seule.
     return {
       ...notDeleted,
       ...orgFilter,
       OR: [
         { userId },
         { accesUtilisateurs: { some: { userId } } },
-        // Risk Managers, RSSI et Direction métier voient aussi les analyses soumises/approuvées/rejetées
         { statut: 'SOUMIS'   as const },
         { statut: 'APPROUVE' as const },
         { statut: 'REJETE'   as const },
