@@ -1140,6 +1140,7 @@ export const fr = {
     promoteHint: 'Créer un risque au registre depuis cet incident',
     declareTitle: 'Déclarer un incident',
     declareHint: 'Formulaire court : signalez ce qui s\'est passé, la qualification viendra ensuite.',
+    declareRolesNote: 'La déclaration d\'incident est ouverte à tous les rôles pour ne pas freiner le signalement. Elle relève normalement des risk managers et des métiers en charge de la gestion d\'incident ou de crise ; la qualification, le traitement et le suivi restent du ressort de la 2ᵉ ligne.',
     intitulePlaceholder: 'Que s\'est-il passé ?',
     descriptionPlaceholder: 'Précisions (facultatif)',
     dateSurvenance: 'Survenance',

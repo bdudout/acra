@@ -1117,6 +1117,7 @@ export const en: Translations = {
     promoteHint: 'Create a register risk from this incident',
     declareTitle: 'Report an incident',
     declareHint: 'Short form: report what happened, qualification comes later.',
+    declareRolesNote: 'Incident reporting is open to all roles so as not to hinder reporting. It is normally handled by risk managers and the teams in charge of incident or crisis management; qualification, treatment and follow-up remain the responsibility of the 2nd line.',
     intitulePlaceholder: 'What happened?',
     descriptionPlaceholder: 'Details (optional)',
     dateSurvenance: 'Occurred',

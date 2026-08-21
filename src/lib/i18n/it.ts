@@ -1117,6 +1117,7 @@ export const it: Translations = {
     promoteHint: 'Crea un rischio del registro da questo incidente',
     declareTitle: 'Dichiara un incidente',
     declareHint: 'Modulo breve: segnala l\'accaduto, la qualificazione verrà dopo.',
+    declareRolesNote: 'La segnalazione di incidenti è aperta a tutti i ruoli per non ostacolare la segnalazione. Spetta normalmente ai risk manager e ai team responsabili della gestione degli incidenti o delle crisi; qualificazione, trattamento e monitoraggio restano di competenza della 2ª linea.',
     intitulePlaceholder: 'Cosa è accaduto?',
     descriptionPlaceholder: 'Dettagli (facoltativo)',
     dateSurvenance: 'Accadimento',

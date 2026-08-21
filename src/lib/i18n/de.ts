@@ -1117,6 +1117,7 @@ export const de: Translations = {
     promoteHint: 'Aus diesem Vorfall ein Register-Risiko anlegen',
     declareTitle: 'Vorfall melden',
     declareHint: 'Kurzformular: melden Sie, was passiert ist — die Qualifizierung folgt.',
+    declareRolesNote: 'Die Meldung von Vorfällen steht allen Rollen offen, um die Meldung nicht zu behindern. Sie erfolgt normalerweise durch Risikomanager und die für das Vorfall- oder Krisenmanagement zuständigen Teams; Qualifizierung, Behandlung und Nachverfolgung bleiben Aufgabe der 2. Verteidigungslinie.',
     intitulePlaceholder: 'Was ist passiert?',
     descriptionPlaceholder: 'Details (optional)',
     dateSurvenance: 'Eingetreten',

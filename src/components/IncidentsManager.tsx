@@ -1,6 +1,6 @@
 'use client'
 
-import { Siren } from 'lucide-react'
+import { Siren, Info } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -225,7 +225,13 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           {!showDecl && <button onClick={() => { setDecl(EMPTY_DECL); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{n.subtitle}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{n.subtitle}</p>
+
+      {/* Note : qui déclare — ouvert à tous, mais attendu des risk managers / métiers gestion d'incident */}
+      <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg px-3 py-2 mb-5 text-xs text-gray-600 dark:text-gray-300">
+        <Info size={14} className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-300" aria-hidden="true" />
+        <span>{n.declareRolesNote}</span>
+      </div>
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">

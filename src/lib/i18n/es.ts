@@ -1117,6 +1117,7 @@ export const es: Translations = {
     promoteHint: 'Crear un riesgo del registro desde este incidente',
     declareTitle: 'Declarar un incidente',
     declareHint: 'Formulario corto: informe qué ocurrió, la calificación vendrá después.',
+    declareRolesNote: 'La declaración de incidentes está abierta a todos los roles para no frenar la notificación. Normalmente corresponde a los risk managers y a los equipos a cargo de la gestión de incidentes o crisis; la calificación, el tratamiento y el seguimiento siguen siendo responsabilidad de la 2ª línea.',
     intitulePlaceholder: '¿Qué ha ocurrido?',
     descriptionPlaceholder: 'Detalles (opcional)',
     dateSurvenance: 'Ocurrencia',
