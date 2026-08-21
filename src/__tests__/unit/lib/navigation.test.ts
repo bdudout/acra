@@ -76,15 +76,19 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(groupIds(m)).toEqual(expect.arrayContaining(['cyber', 'registre', 'controle', 'gouvernance']))
   })
 
-  it('CONTROLEUR (2ᵉ ligne) voit les modules mais pas la gouvernance', () => {
+  it('CONTROLEUR (2ᵉ ligne) voit les modules + le pilotage (lecture globale, #126) mais pas la gouvernance-écriture', () => {
     const m = buildNav('CONTROLEUR', ALL_ON)
     const keys = allKeys(m)
     expect(keys).toContain('controles')
     expect(keys).toContain('audit')
     expect(keys).toContain('cartographie')
+    // Pilotage = cockpit de LECTURE consolidée : désormais exposé (l'API /grc/rollup
+    // le sert déjà) — cohérent avec la lecture globale du dispositif (#126).
+    expect(keys).toContain('pilotage')
+    // Mais pas la gouvernance-écriture ni les données de cartographie.
     expect(keys).not.toContain('conformite')
     expect(keys).not.toContain('derogations')
-    expect(keys).not.toContain('pilotage')
+    expect(keys).not.toContain('processus')
   })
 
   it('METIER (1ʳᵉ ligne) : cyber + incidents seulement, aucun module de gestion', () => {
