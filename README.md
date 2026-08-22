@@ -183,6 +183,12 @@ d'audit — la conformité est *prouvée*, pas seulement déclarée.
 
 <img src="docs/screenshots/grc-referentiels-light.png" width="49%"> <img src="docs/screenshots/grc-referentiels-dark.png" width="49%">
 
+La **couverture dérivée** d'un référentiel : le statut de chaque exigence (conforme /
+partiel / anomalie / non couvert) est calculé à partir des **contrôles réels** qui la
+couvrent et des constats d'audit — ici la PSSI StarBank couverte par les contrôles permanents.
+
+<img src="docs/screenshots/grc-couverture-light.png" width="49%"> <img src="docs/screenshots/grc-couverture-dark.png" width="49%">
+
 ### 🚨 Incidents & pertes — reporting DORA (art. 19)
 
 Déclaration en 1ʳᵉ ligne, qualification en 2ᵉ ligne, pertes en logique **LDC** (brut,
@@ -219,6 +225,12 @@ versionné, rattaché à un référentiel / risque / organisation, téléchargem
 - **Rapport annuel de contrôle interne** — 3 lignes de défense + volet résilience DORA (PDF **et PPTX**)
 - **Registre DORA ITS** des incidents majeurs (art. 19) et **registre d'information des tiers TIC** (art. 28) — CSV
 - **Cartographie des risques** (PDF)
+
+Exemple — **rapport annuel de contrôle interne** (généré depuis les données de démo StarBank) :
+appréciation d'ensemble, points d'attention, puis synthèse par ligne de défense (contrôle
+permanent, gestion des risques & conformité, audit) et volet résilience DORA.
+
+<img src="docs/screenshots/grc-rapport-controle-interne.png" width="60%">
 
 ---
 

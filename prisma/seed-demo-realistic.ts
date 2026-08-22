@@ -84,6 +84,26 @@ const RISQUES_REGISTRE: Record<string, RiskSeed[]> = {
   ],
 }
 
+// Contrôles permanents liés aux exigences de la politique socle → alimentent la
+// « conformité dérivée » (couverture) et le module Contrôle permanent.
+interface CtrlSeed { intitule: string; exigenceRefs: string[]; niveau: string; periodicite: string; resultat: string }
+const CONTROLES_DEMO: Record<string, CtrlSeed[]> = {
+  StarBank: [
+    { intitule: 'Revue trimestrielle des accès à privilèges', exigenceRefs: ['POL-05'], niveau: 'N1', periodicite: 'TRIMESTRIEL', resultat: 'CONFORME' },
+    { intitule: 'Test mensuel de restauration des sauvegardes', exigenceRefs: ['POL-10'], niveau: 'N1', periodicite: 'MENSUEL', resultat: 'CONFORME' },
+    { intitule: 'Revue du registre des tiers TIC (DORA)', exigenceRefs: ['POL-15', 'POL-16'], niveau: 'N2', periodicite: 'SEMESTRIEL', resultat: 'ANOMALIE' },
+    { intitule: 'Exercice annuel de gestion d\'incident', exigenceRefs: ['POL-12'], niveau: 'N1', periodicite: 'ANNUEL', resultat: 'CONFORME' },
+  ],
+  GalaxyInsurance: [
+    { intitule: 'Contrôle du chiffrement des données de santé', exigenceRefs: ['POL-06'], niveau: 'N1', periodicite: 'TRIMESTRIEL', resultat: 'CONFORME' },
+    { intitule: 'Revue des accès partenaires', exigenceRefs: ['POL-05'], niveau: 'N1', periodicite: 'TRIMESTRIEL', resultat: 'ANOMALIE' },
+  ],
+  Hydroclinical: [
+    { intitule: 'Test de bascule en mode dégradé (PRA)', exigenceRefs: ['POL-11'], niveau: 'N1', periodicite: 'SEMESTRIEL', resultat: 'CONFORME' },
+    { intitule: 'Contrôle des accès de télémaintenance éditeur', exigenceRefs: ['POL-05', 'POL-15'], niveau: 'N2', periodicite: 'TRIMESTRIEL', resultat: 'CONFORME' },
+  ],
+}
+
 /**
  * PURGE — retire EXACTEMENT ce que ce seed crée (jeu de démo réaliste), pour
  * repartir sur une instance vierge après l'installation. Sûr et idempotent :
@@ -104,6 +124,8 @@ async function purge() {
     await prisma.incident.deleteMany({ where: { organizationId: orgId, intitule: { in: sec.incidents.map(i => i.intitule) } } })
     // Registre des risques (par intitulé exact du seed)
     await prisma.riskItem.deleteMany({ where: { organizationId: orgId, intitule: { in: (RISQUES_REGISTRE[sec.nom] ?? []).map(r => r.intitule) } } })
+    // Contrôles permanents (cascade → exécutions)
+    await prisma.controle.deleteMany({ where: { organizationId: orgId, intitule: { in: (CONTROLES_DEMO[sec.nom] ?? []).map(c => c.intitule) } } })
     // Politique socle sectorielle
     await prisma.referentiel.deleteMany({ where: { organizationId: orgId, code: sec.codePol } })
     // Modules réactivables réinitialisés à OFF (données démo désactivées)
@@ -197,7 +219,24 @@ async function main() {
       } })
       rq++
     }
-    console.log(`✓ ${sec.nom} : modules ON · 3 comptes · politique ${pol.code} · ${created} incidents · ${rq} risques (registre)`)
+    // 6) Contrôles permanents liés aux exigences de la politique (conformité dérivée)
+    let ct = 0
+    for (const c of (CONTROLES_DEMO[sec.nom] ?? [])) {
+      const dup = await prisma.controle.findFirst({ where: { organizationId: orgId, intitule: c.intitule }, select: { id: true } })
+      if (dup) continue
+      const ctrl = await prisma.controle.create({ data: {
+        organizationId: orgId, intitule: c.intitule, niveau: c.niveau, periodicite: c.periodicite,
+        referentielCode: pol.code, exigenceRefs: c.exigenceRefs as unknown as object,
+        responsable: 'Contrôle permanent',
+      } })
+      await prisma.controleExecution.create({ data: {
+        controleId: ctrl.id, organizationId: orgId, resultat: c.resultat,
+        dateRealisation: new Date(now - 15 * 86_400_000), executantId: rssi!.id,
+        constat: c.resultat === 'ANOMALIE' ? 'Écart constaté — plan d\'action ouvert.' : null,
+      } })
+      ct++
+    }
+    console.log(`✓ ${sec.nom} : modules ON · 3 comptes · politique ${pol.code} · ${created} incidents · ${rq} risques · ${ct} contrôles`)
   }
   console.log('\nAnalyses EBIOS RM complètes (5 ateliers) :')
   for (const spec of ANALYSES_EBIOS) await creerAnalyseEbios(spec)
