@@ -150,6 +150,78 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ---
 
+## 🏛️ Module GRC — Gouvernance, Risques & Conformité
+
+Au-delà de l'analyse EBIOS RM, ACRA embarque un **socle GRC complet** structuré selon le
+modèle des **trois lignes de défense**, pensé pour les entités régulées (banque, assurance,
+santé) et aligné sur **DORA**, **NIS2** et **ISO/IEC 27001/27002**. Chaque module est
+activable par organisation ; la navigation bascule automatiquement en « mode GRC » dès
+qu'un module de 2ᵉ/3ᵉ ligne est actif.
+
+> Les captures ci-dessous sont issues du **jeu de démonstration réaliste** (secteur bancaire),
+> ancré sur des menaces publiques (ENISA Threat Landscape). Chargeable puis purgeable :
+> `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
+
+### 📊 Pilotage GRC — cockpit consolidé
+
+Vue de direction agrégeant, par sous-arbre d'organisations, la **posture de risque** et
+l'avancement des plans d'action : registre (élevés/moyens/faibles), pertes nettes (LDC),
+incidents ouverts, taux de conformité, anomalies de contrôle, constats critiques, appétit,
+KRI et incidents **TIC majeurs DORA**. Génération en un clic des **dossiers de comité** et
+du **rapport de contrôle interne** (PDF/PPTX).
+
+<img src="docs/screenshots/grc-pilotage-light.png" width="49%"> <img src="docs/screenshots/grc-pilotage-dark.png" width="49%">
+
+### 📚 Référentiels & exigences — conformité *prouvée*
+
+Les **cadres livrés** (ISO 27001, NIST CSF/800-53, CIS, ANSSI, HDS, PCI-DSS, DORA,
+IEC 62443, SOC 2, RGS, ReCyF…) et vos **référentiels propres** (PSSI, politiques internes)
+déclinés en **points de contrôle contrôlables et auditables**. Une **politique de sécurité
+par défaut** (socle DORA + ISO 27001/27002, avec ses missions) s'initialise en un clic.
+La **couverture** de chaque exigence est **dérivée des contrôles réels** et des constats
+d'audit — la conformité est *prouvée*, pas seulement déclarée.
+
+<img src="docs/screenshots/grc-referentiels-light.png" width="49%"> <img src="docs/screenshots/grc-referentiels-dark.png" width="49%">
+
+### 🚨 Incidents & pertes — reporting DORA (art. 19)
+
+Déclaration en 1ʳᵉ ligne, qualification en 2ᵉ ligne, pertes en logique **LDC** (brut,
+récupérations, net). Chaque incident est **classé automatiquement DORA** (mineur /
+significatif / majeur) ; pour les incidents majeurs, les **échéances de notification
+art. 19** (initiale / intermédiaire / finale) sont calculées et suivies, et le **registre
+ITS** est exportable.
+
+<img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
+
+### ✅ Contrôle permanent (N1/N2) & 🔎 Audit interne (3ᵉ ligne)
+
+Bibliothèque de **contrôles permanents** rattachés à la maille (risque / processus /
+exigence de référentiel), exécutés périodiquement, avec **efficacité observée** (boucle
+RCSA) et **campagnes de contrôle N1**. En 3ᵉ ligne, l'**audit interne** planifie des
+missions, formule des **constats** (criticité + recommandation) et suit leur résolution ;
+les recommandations du **régulateur** (ACPR/BCE) sont suivies dans le même flux.
+
+<img src="docs/screenshots/grc-controles-light.png" width="49%"> <img src="docs/screenshots/grc-audit-light.png" width="49%">
+
+### 🛡️ Conformité & 🗂️ Bibliothèque documentaire
+
+Suivi de la **conformité** par référentiel (heatmap multi-organisations, export **SoA**
+CSV/PDF) et **bibliothèque documentaire** GRC (PSSI, stratégies, politiques) : dépôt
+versionné, rattaché à un référentiel / risque / organisation, téléchargement authentifié.
+
+<img src="docs/screenshots/grc-conformite-light.png" width="49%"> <img src="docs/screenshots/grc-documents-light.png" width="49%">
+
+### 📄 Productions réglementaires prêtes à l'emploi
+
+- **RAS** — Risk Appetite Statement (PDF)
+- **SoA** — Statement of Applicability / déclaration d'applicabilité (PDF)
+- **Packs de comité** — Risques / Conformité / Incidents (PDF)
+- **Rapport annuel de contrôle interne** — 3 lignes de défense + volet résilience DORA (PDF **et PPTX**)
+- **Registre DORA ITS** des incidents majeurs (art. 19) et **registre d'information des tiers TIC** (art. 28) — CSV
+- **Cartographie des risques** (PDF)
+
+---
+
 ## 🚀 Quick Start (Docker)
 
 **Aucune installation locale de Node, npm ou Prisma n'est requise** : l'image Docker

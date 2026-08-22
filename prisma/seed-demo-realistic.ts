@@ -62,6 +62,28 @@ const SECTEURS: SectorSeed[] = [
   },
 ]
 
+// Registre des risques (cartographie / cockpit) — cotation inhérente et résiduelle.
+interface RiskSeed { intitule: string; description: string; entite: string; proprietaire: string; gi: number; vi: number; gr: number; vr: number; statut: string }
+const RISQUES_REGISTRE: Record<string, RiskSeed[]> = {
+  StarBank: [
+    { intitule: 'Rançongiciel sur le cœur bancaire', description: 'Chiffrement du SI via un tiers TIC → arrêt des services.', entite: 'DSI', proprietaire: 'RSSI', gi: 4, vi: 3, gr: 4, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Indisponibilité DDoS de la banque en ligne', description: 'Saturation des canaux digitaux.', entite: 'DSI Réseau', proprietaire: 'RSSI', gi: 3, vi: 3, gr: 3, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Fuite de données clients et KYC', description: 'Exfiltration de données personnelles et bancaires.', entite: 'Conformité', proprietaire: 'DPO', gi: 4, vi: 3, gr: 4, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Fraude au virement (BEC)', description: 'Virements frauduleux via compromission de messagerie.', entite: 'Paiements', proprietaire: 'Direction Paiements', gi: 3, vi: 3, gr: 3, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Défaillance d\'un prestataire cloud critique', description: 'Interruption d\'un tiers TIC critique (DORA).', entite: 'Risques', proprietaire: 'RSSI', gi: 4, vi: 2, gr: 3, vr: 2, statut: 'IDENTIFIE' },
+  ],
+  GalaxyInsurance: [
+    { intitule: 'Fuite de données de santé des assurés', description: 'Exfiltration de dossiers sinistres/santé (art. 9 RGPD).', entite: 'Conformité', proprietaire: 'DPO', gi: 4, vi: 3, gr: 4, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Rançongiciel sur la plateforme sinistres', description: 'Chiffrement de la plateforme métier.', entite: 'DSI', proprietaire: 'RSSI', gi: 3, vi: 2, gr: 3, vr: 1, statut: 'EVALUE' },
+    { intitule: 'Dépendance à un prestataire de tarification', description: 'Indisponibilité du scoring externe.', entite: 'Souscription', proprietaire: 'Direction Technique', gi: 3, vi: 2, gr: 3, vr: 2, statut: 'IDENTIFIE' },
+  ],
+  Hydroclinical: [
+    { intitule: 'Rançongiciel bloquant le SIH', description: 'Chiffrement du dossier patient informatisé, mode dégradé.', entite: 'DSI', proprietaire: 'RSSI', gi: 4, vi: 3, gr: 4, vr: 2, statut: 'EVALUE' },
+    { intitule: 'Vol de dossiers patients', description: 'Exfiltration de données de santé.', entite: 'DSI', proprietaire: 'DPO', gi: 4, vi: 2, gr: 4, vr: 1, statut: 'EVALUE' },
+    { intitule: 'Indisponibilité d\'un équipement biomédical', description: 'Vulnérabilité critique sur un dispositif connecté.', entite: 'Biomédical', proprietaire: 'Ingénieur biomédical', gi: 3, vi: 2, gr: 3, vr: 2, statut: 'IDENTIFIE' },
+  ],
+}
+
 /**
  * PURGE — retire EXACTEMENT ce que ce seed crée (jeu de démo réaliste), pour
  * repartir sur une instance vierge après l'installation. Sûr et idempotent :
@@ -80,6 +102,8 @@ async function purge() {
     if (noms.length) await prisma.analyse.deleteMany({ where: { organizationId: orgId, nom: { in: noms } } })
     // Incidents (par intitulé exact du seed)
     await prisma.incident.deleteMany({ where: { organizationId: orgId, intitule: { in: sec.incidents.map(i => i.intitule) } } })
+    // Registre des risques (par intitulé exact du seed)
+    await prisma.riskItem.deleteMany({ where: { organizationId: orgId, intitule: { in: (RISQUES_REGISTRE[sec.nom] ?? []).map(r => r.intitule) } } })
     // Politique socle sectorielle
     await prisma.referentiel.deleteMany({ where: { organizationId: orgId, code: sec.codePol } })
     // Modules réactivables réinitialisés à OFF (données démo désactivées)
@@ -160,7 +184,20 @@ async function main() {
       } })
       created++
     }
-    console.log(`✓ ${sec.nom} : modules ON · 3 comptes · politique ${pol.code} · ${created} incidents (dont majeurs DORA)`)
+
+    // 5) Registre des risques (cartographie / cockpit)
+    let rq = 0
+    for (const r of (RISQUES_REGISTRE[sec.nom] ?? [])) {
+      const dup = await prisma.riskItem.findFirst({ where: { organizationId: orgId, intitule: r.intitule }, select: { id: true } })
+      if (dup) continue
+      await prisma.riskItem.create({ data: {
+        organizationId: orgId, intitule: r.intitule, description: r.description, entite: r.entite, proprietaire: r.proprietaire,
+        graviteInherente: r.gi, vraisemblanceInherente: r.vi, graviteResiduelle: r.gr, vraisemblanceResiduelle: r.vr,
+        statut: r.statut, provenance: 'MANUEL',
+      } })
+      rq++
+    }
+    console.log(`✓ ${sec.nom} : modules ON · 3 comptes · politique ${pol.code} · ${created} incidents · ${rq} risques (registre)`)
   }
   console.log('\nAnalyses EBIOS RM complètes (5 ateliers) :')
   for (const spec of ANALYSES_EBIOS) await creerAnalyseEbios(spec)
