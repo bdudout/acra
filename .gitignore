@@ -56,3 +56,6 @@ Thumbs.db
 
 # Stockage local des documents (dev)
 .data/
+
+# Présentations locales (non versionnées)
+/presentations/
