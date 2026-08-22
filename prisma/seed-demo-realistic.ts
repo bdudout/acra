@@ -62,6 +62,42 @@ const SECTEURS: SectorSeed[] = [
   },
 ]
 
+/**
+ * PURGE — retire EXACTEMENT ce que ce seed crée (jeu de démo réaliste), pour
+ * repartir sur une instance vierge après l'installation. Sûr et idempotent :
+ * scopé aux 3 organisations sectorielles de démo, ne touche jamais d'autres orgs.
+ * `npm run db:seed:demo:purge`.
+ */
+async function purge() {
+  console.log('Purge du jeu de démonstration réaliste (ENISA)…')
+  const emails: string[] = []
+  for (const sec of SECTEURS) {
+    const org = await prisma.organization.findFirst({ where: { nom: sec.nom }, select: { id: true } })
+    if (!org) continue
+    const orgId = org.id
+    // Analyses EBIOS (cascade → cadrage/sources/PP/scénarios/risques/mesures)
+    const noms = ANALYSES_EBIOS.filter(a => a.orgNom === sec.nom).map(a => a.nom)
+    if (noms.length) await prisma.analyse.deleteMany({ where: { organizationId: orgId, nom: { in: noms } } })
+    // Incidents (par intitulé exact du seed)
+    await prisma.incident.deleteMany({ where: { organizationId: orgId, intitule: { in: sec.incidents.map(i => i.intitule) } } })
+    // Politique socle sectorielle
+    await prisma.referentiel.deleteMany({ where: { organizationId: orgId, code: sec.codePol } })
+    // Modules réactivables réinitialisés à OFF (données démo désactivées)
+    await prisma.organizationConfig.updateMany({ where: { id: orgId }, data: {
+      registreRisquesActive: false, incidentsActive: false, controlePermanentActive: false,
+      auditInterneActive: false, kriActive: false, reglementaireActive: false,
+    } }).catch(() => {})
+    for (const role of ['RSSI', 'CONTROLEUR', 'AUDITEUR']) emails.push(`${role.toLowerCase()}.${sec.nom.toLowerCase()}@demo.acra`)
+    console.log(`  ✓ ${sec.nom} purgé (analyse EBIOS, incidents, politique, modules réinitialisés)`)
+  }
+  // Comptes de démonstration + adhésions
+  const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { id: true } })
+  for (const u of users) await prisma.orgMembership.deleteMany({ where: { userId: u.id } })
+  await prisma.user.deleteMany({ where: { email: { in: emails } } })
+  console.log(`  ✓ ${users.length} comptes de démonstration supprimés`)
+  console.log('\nJeu de démonstration purgé — instance prête à démarrer avec des données vides.')
+}
+
 async function main() {
   const hash = await bcrypt.hash(PWD, 10)
   const now = Date.now()
@@ -130,9 +166,11 @@ async function main() {
   for (const spec of ANALYSES_EBIOS) await creerAnalyseEbios(spec)
 
   console.log(`\nComptes de démonstration : rssi.<org>@demo.acra / controleur.<org>@demo.acra / auditeur.<org>@demo.acra — mot de passe ${PWD}`)
+  console.log('Pour repartir vierge après l\'installation : npm run db:seed:demo:purge')
 }
 
-main().catch(e => { console.error(e); process.exit(1) }).finally(() => prisma.$disconnect())
+const action = process.argv.includes('--purge') ? purge : main
+action().catch(e => { console.error(e); process.exit(1) }).finally(() => prisma.$disconnect())
 
 // ─── Analyses EBIOS RM complètes par secteur (5 ateliers) ────────────────────
 // Contenu réaliste ancré sur les menaces sectorielles (ENISA / panoramas ANSSI).

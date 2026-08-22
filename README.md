@@ -182,6 +182,22 @@ docker compose exec app npx prisma db seed
 # ⚠️ Tests uniquement — changez/supprimez ce compte avant toute mise en production
 ```
 
+#### Jeu de démonstration réaliste (sectoriel) — chargeable puis **purgeable**
+
+Un jeu de données réaliste, ancré sur les menaces publiques (ENISA Threat Landscape),
+peut être chargé pour trois secteurs (banque, assurance, santé) : comptes par rôle,
+politique de sécurité socle (DORA + ISO 27001), incidents classés DORA et **une
+analyse EBIOS RM complète (5 ateliers) par secteur**.
+
+```bash
+docker compose exec app npm run db:seed:demo        # charger le jeu de démonstration
+docker compose exec app npm run db:seed:demo:purge  # le retirer → repartir avec des données vides
+```
+
+La purge est **sûre et idempotente** : elle ne retire QUE les données de démonstration
+(3 organisations sectorielles) et ne touche jamais vos données réelles. Exécutez-la
+avant la mise en production pour démarrer sur une instance vierge.
+
 ---
 
 ## 📦 Installation détaillée
