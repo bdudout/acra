@@ -28,7 +28,7 @@ export default async function ControlesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <ControlesManager canDefine={canDefine} canExecute={canExecute} />
+        <ControlesManager canDefine={canDefine} canExecute={canExecute} currentUserName={session.user.name ?? null} />
       </main>
     </div>
   )

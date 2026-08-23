@@ -279,7 +279,7 @@ export default async function DashboardPage() {
                         className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow block">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-medium text-gray-900 truncate">{a.nom}</span>
+                            <span className="font-medium text-gray-900 truncate" title={a.nom}>{a.nom}</span>
                             {consolidated && (a as any).organization?.nom && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium flex-shrink-0 inline-flex items-center gap-1" title={t.nav.organization}>
                                 <Building2 size={11} aria-hidden="true" /> {(a as any).organization.nom}

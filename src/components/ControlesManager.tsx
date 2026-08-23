@@ -4,6 +4,7 @@ import { FlaskConical, Paperclip } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS } from '@/lib/controle'
+import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 
 interface Efficacite {
   evaluees: number; conformes: number; anomalies: number
@@ -55,20 +56,24 @@ const RESULTAT_BADGE: Record<string, string> = {
   NON_APPLICABLE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
 }
 
-export default function ControlesManager({ canDefine, canExecute }: { canDefine: boolean; canExecute: boolean }) {
+export default function ControlesManager({ canDefine, canExecute, currentUserName }: { canDefine: boolean; canExecute: boolean; currentUserName?: string | null }) {
   const { t, locale } = useTranslation()
   const c = t.controles
+  // Formulaire vierge : responsable pré-rempli avec l'utilisateur courant (modifiable).
+  const emptyForm = (): Form => ({ ...EMPTY, responsable: defaultResponsable(currentUserName) })
+  // Saisie d'exécution vierge : date de réalisation = aujourd'hui par défaut.
+  const emptyExec = (): ExecForm => ({ ...EMPTY_EXEC, dateRealisation: todayInputDate() })
   const [controles, setControles] = useState<Controle[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
   const [refs, setRefs] = useState<RefLite[]>([])
   const [exigencesRef, setExigencesRef] = useState<ExigenceLite[]>([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState<Form>(EMPTY)
+  const [form, setForm] = useState<Form>(emptyForm)
   const [editId, setEditId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [execId, setExecId] = useState<string | null>(null)
-  const [exec, setExec] = useState<ExecForm>(EMPTY_EXEC)
+  const [exec, setExec] = useState<ExecForm>(emptyExec)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -134,7 +139,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
-    setForm(EMPTY); setEditId(null); setShowForm(false); reload()
+    setForm(emptyForm()); setEditId(null); setShowForm(false); reload()
   }
 
   function startEdit(x: Controle) {
@@ -162,7 +167,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     if (data.actionCreee) setFlash(c.actionGeneree)
-    setExec(EMPTY_EXEC); setPreuves([]); setExecId(null); reload()
+    setExec(emptyExec()); setPreuves([]); setExecId(null); reload()
   }
 
   async function basculerActif(x: Controle) {
@@ -179,6 +184,9 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
   }
 
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
+  const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
+  const responsableSug = suggestionsFromValues(controles.map(x => x.responsable))
   const enRetard = controles.filter(x => x.etatEcheance === 'EN_RETARD').length
   const dus = controles.filter(x => x.etatEcheance === 'DU').length
   const actifs = controles.filter(x => x.actif).length
@@ -188,7 +196,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><FlaskConical size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
         {canDefine && !showForm && (
-          <button onClick={() => { setForm(EMPTY); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>
+          <button onClick={() => { setForm(emptyForm()); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>
         )}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{c.subtitle}</p>
@@ -207,7 +215,8 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
         <div className="card p-4 mb-5 space-y-3">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{editId ? c.editTitle : c.addTitle}</p>
           {error && <p className="text-xs text-red-600">{error}</p>}
-          <input value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} placeholder={c.intitulePlaceholder} className={`${inp} w-full`} />
+          <input value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} placeholder={c.intitulePlaceholder} list="acra-controle-intitules" className={`${inp} w-full`} />
+          <datalist id="acra-controle-intitules">{intituleSug.map(s => <option key={s} value={s} />)}</datalist>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={c.descriptionPlaceholder} rows={2} className={`${inp} w-full`} />
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <label className="text-xs text-gray-500 dark:text-gray-400">{c.niveau}
@@ -221,7 +230,8 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
               </select>
             </label>
             <label className="text-xs text-gray-500 dark:text-gray-400">{c.responsable}
-              <input value={form.responsable} onChange={e => setForm(f => ({ ...f, responsable: e.target.value }))} className={`${inp} w-full mt-1`} />
+              <input value={form.responsable} onChange={e => setForm(f => ({ ...f, responsable: e.target.value }))} list="acra-controle-responsables" className={`${inp} w-full mt-1`} />
+              <datalist id="acra-controle-responsables">{responsableSug.map(s => <option key={s} value={s} />)}</datalist>
             </label>
             <label className="text-xs text-gray-500 dark:text-gray-400">{c.echantillon}
               <input type="number" min="1" value={form.tailleEchantillon} onChange={e => setForm(f => ({ ...f, tailleEchantillon: e.target.value }))} className={`${inp} w-full mt-1`} />
@@ -319,7 +329,7 @@ export default function ControlesManager({ canDefine, canExecute }: { canDefine:
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {canExecute && x.actif && (
-                        <button onClick={() => { setExecId(x.id); setExec(EMPTY_EXEC); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
+                        <button onClick={() => { setExecId(x.id); setExec(emptyExec()); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
                       )}
                       {canDefine && <>
                         <button onClick={() => startEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{c.edit}</button>
