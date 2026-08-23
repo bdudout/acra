@@ -11,6 +11,8 @@ import {
   cleanCampagneControleInput,
   avancementCampagne,
   campagneEnRetard,
+  prochaineFenetreCampagne,
+  CAMPAGNE_RECURRENCES,
 } from '@/lib/campagne-controle'
 
 describe('validate/clean campagne de contrôle', () => {
@@ -25,6 +27,37 @@ describe('validate/clean campagne de contrôle', () => {
     expect(c.intitule).toBe('Campagne T1')
     expect(c.controleIds).toEqual(['a', 'b']) // dédupliqué, vides retirés
     expect(c.niveau).toBe('N1')               // défaut
+  })
+  it('récurrence : valeur valide conservée, défaut/inconnue → NONE', () => {
+    expect(cleanCampagneControleInput({ intitule: 'X', recurrence: 'TRIMESTRIEL' }).recurrence).toBe('TRIMESTRIEL')
+    expect(cleanCampagneControleInput({ intitule: 'X' }).recurrence).toBe('NONE')
+    expect(cleanCampagneControleInput({ intitule: 'X', recurrence: 'BOGUS' }).recurrence).toBe('NONE')
+  })
+})
+
+describe('prochaineFenetreCampagne', () => {
+  it('NONE ou fenêtre incomplète → null', () => {
+    expect(prochaineFenetreCampagne('NONE', new Date('2026-01-01'), new Date('2026-01-07'))).toBeNull()
+    expect(prochaineFenetreCampagne('MENSUEL', null, new Date('2026-01-07'))).toBeNull()
+    expect(prochaineFenetreCampagne('MENSUEL', new Date('2026-01-01'), null)).toBeNull()
+  })
+  it('mensuel : décale début et fin d\'un mois (fenêtre préservée)', () => {
+    const r = prochaineFenetreCampagne('MENSUEL', new Date('2026-01-01'), new Date('2026-01-07'))
+    expect(r!.dateDebut.toISOString().slice(0, 10)).toBe('2026-02-01')
+    expect(r!.dateFin.toISOString().slice(0, 10)).toBe('2026-02-07')
+  })
+  it('hebdomadaire : décale de 7 jours', () => {
+    const r = prochaineFenetreCampagne('HEBDOMADAIRE', new Date('2026-01-01'), new Date('2026-01-03'))
+    expect(r!.dateDebut.toISOString().slice(0, 10)).toBe('2026-01-08')
+    expect(r!.dateFin.toISOString().slice(0, 10)).toBe('2026-01-10')
+  })
+  it('trimestriel : décale de 3 mois', () => {
+    const r = prochaineFenetreCampagne('TRIMESTRIEL', new Date('2026-01-15'), new Date('2026-01-31'))
+    expect(r!.dateDebut.toISOString().slice(0, 10)).toBe('2026-04-15')
+    expect(r!.dateFin.toISOString().slice(0, 10)).toBe('2026-04-30') // borne au dernier jour
+  })
+  it('CAMPAGNE_RECURRENCES expose NONE + les périodicités', () => {
+    expect([...CAMPAGNE_RECURRENCES]).toEqual(['NONE', 'HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
   })
 })
 

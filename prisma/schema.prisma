@@ -448,6 +448,9 @@ model CampagneControle {
   description String?  @db.Text
   niveau      String   @default("N1") // N1 | N2
   statut      String   @default("PLANIFIEE") // PLANIFIEE | EN_COURS | CLOTUREE
+  // NONE | HEBDOMADAIRE | MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL. À la clôture
+  // d'une campagne récurrente, la suivante est planifiée automatiquement.
+  recurrence  String   @default("NONE")
   dateDebut   DateTime?
   dateFin     DateTime?
   controleIds Json     @default("[]") // périmètre : identifiants de contrôles
