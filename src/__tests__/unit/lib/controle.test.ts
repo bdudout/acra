@@ -89,6 +89,11 @@ describe('prochaineEcheance', () => {
   it('borne le jour au dernier jour du mois cible (31 janvier + 1 mois)', () => {
     expect(prochaineEcheance('MENSUEL', '2026-01-31', '2025-01-01').toISOString().slice(0, 10)).toBe('2026-02-28')
   })
+  it('hebdomadaire : dernière exécution + 7 jours (calcul en jours)', () => {
+    expect(prochaineEcheance('HEBDOMADAIRE', '2026-01-15', '2025-01-01').toISOString().slice(0, 10)).toBe('2026-01-22')
+    // franchit la fin de mois sans borner au dernier jour du mois
+    expect(prochaineEcheance('HEBDOMADAIRE', '2026-01-28', '2025-01-01').toISOString().slice(0, 10)).toBe('2026-02-04')
+  })
 })
 
 describe('etatEcheance', () => {
@@ -134,11 +139,11 @@ describe('evaluerEfficacite', () => {
 
 describe('constantes et libellés', () => {
   it('occurrences par an', () => {
-    expect(OCCURRENCES_PAR_AN).toEqual({ MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1 })
+    expect(OCCURRENCES_PAR_AN).toEqual({ HEBDOMADAIRE: 52, MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1 })
   })
   it('énumérations', () => {
     expect([...CONTROLE_NIVEAUX]).toEqual(['N1', 'N2'])
-    expect([...PERIODICITES]).toEqual(['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
+    expect([...PERIODICITES]).toEqual(['HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
     expect([...RESULTATS]).toEqual(['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'])
   })
   it('libellé du plan d\'action généré sur anomalie', () => {

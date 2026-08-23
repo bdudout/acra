@@ -8,7 +8,7 @@
 export const CONTROLE_NIVEAUX = ['N1', 'N2'] as const
 export type ControleNiveau = (typeof CONTROLE_NIVEAUX)[number]
 
-export const PERIODICITES = ['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+export const PERIODICITES = ['HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
 export type Periodicite = (typeof PERIODICITES)[number]
 
 export const RESULTATS = ['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'] as const
@@ -16,10 +16,12 @@ export type Resultat = (typeof RESULTATS)[number]
 
 /** Nombre d'exécutions attendues par an, par périodicité. */
 export const OCCURRENCES_PAR_AN: Record<Periodicite, number> = {
-  MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1,
+  HEBDOMADAIRE: 52, MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1,
 }
 
-const MOIS_PAR_PERIODE: Record<Periodicite, number> = {
+// Périodicités calculées en mois (échéance bornée au dernier jour du mois cible).
+// L'hebdomadaire est traité à part, en jours (cf. prochaineEcheance).
+const MOIS_PAR_PERIODE: Record<Exclude<Periodicite, 'HEBDOMADAIRE'>, number> = {
   MENSUEL: 1, TRIMESTRIEL: 3, SEMESTRIEL: 6, ANNUEL: 12,
 }
 
@@ -163,13 +165,19 @@ function addMonths(d: Date, mois: number): Date {
   return cible
 }
 
+/** Ajoute `jours` jours à une date (UTC). */
+function addDays(d: Date, jours: number): Date {
+  return new Date(d.getTime() + jours * 86_400_000)
+}
+
 /**
  * Prochaine échéance d'un contrôle : dernière exécution + une période, ou la
  * date de création + une période si le contrôle n'a jamais été exécuté.
+ * L'hebdomadaire avance de 7 jours ; les autres périodicités avancent en mois.
  */
 export function prochaineEcheance(periodicite: Periodicite, derniereExecution: Date | string | null, creeLe: Date | string): Date {
   const base = derniereExecution ? new Date(derniereExecution) : new Date(creeLe)
-  return addMonths(base, MOIS_PAR_PERIODE[periodicite])
+  return periodicite === 'HEBDOMADAIRE' ? addDays(base, 7) : addMonths(base, MOIS_PAR_PERIODE[periodicite])
 }
 
 export type EtatEcheance = 'A_VENIR' | 'DU' | 'EN_RETARD'
