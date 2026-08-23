@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
+import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
 
 interface Incident {
   id: string; intitule: string; description: string | null
@@ -31,6 +32,11 @@ type DeclForm = {
   processusId: string; entite: string; impactEstime: string
 }
 const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '' }
+// Formulaire de déclaration vierge : dates de survenance et détection = aujourd'hui
+// par défaut (l'incident vient en général d'être constaté). Modifiables.
+function emptyDecl(): DeclForm {
+  return { ...EMPTY_DECL, dateSurvenance: todayInputDate(), dateDetection: todayInputDate() }
+}
 
 // Formulaire de QUALIFICATION (2ᵉ ligne) : taxonomie, pertes, rattachement.
 type QualForm = { taxonomieCode: string; montantBrut: string; recuperations: string; riskItemId: string; statut: string; clotureCommentaire: string }
@@ -50,7 +56,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const [procs, setProcs] = useState<Proc[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
   const [loading, setLoading] = useState(true)
-  const [decl, setDecl] = useState<DeclForm>(EMPTY_DECL)
+  const [decl, setDecl] = useState<DeclForm>(emptyDecl)
   const [showDecl, setShowDecl] = useState(false)
   const [qualId, setQualId] = useState<string | null>(null)
   const [qual, setQual] = useState<QualForm>({ taxonomieCode: '', montantBrut: '', recuperations: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '' })
@@ -138,7 +144,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
-    setDecl(EMPTY_DECL); setShowDecl(false); reload()
+    setDecl(emptyDecl()); setShowDecl(false); reload()
   }
 
   function startQual(i: Incident) {
@@ -210,6 +216,8 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   }
 
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  // Suggestions d'entités à partir des incidents déjà saisis (org courante).
+  const entiteSug = suggestionsFromValues(incidents.map(i => i.entite))
   const totalPertes = incidents.reduce((s, i) => s + (i.perteNette ?? 0), 0)
   const ouverts = incidents.filter(i => i.statut === 'DECLARE').length
 
@@ -222,7 +230,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>
           <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
           <button onClick={exportIts} className="btn-secondary text-xs" title={n.doraItsHint}>{n.doraExportIts}</button>
-          {!showDecl && <button onClick={() => { setDecl(EMPTY_DECL); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
+          {!showDecl && <button onClick={() => { setDecl(emptyDecl()); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{n.subtitle}</p>
@@ -268,7 +276,8 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
               <option value="">{n.processNone}</option>
               {procs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
-            <input value={decl.entite} onChange={e => setDecl(f => ({ ...f, entite: e.target.value }))} placeholder={n.entityPlaceholder} className={inp} />
+            <input value={decl.entite} onChange={e => setDecl(f => ({ ...f, entite: e.target.value }))} placeholder={n.entityPlaceholder} list="acra-incident-entites" className={inp} />
+            <datalist id="acra-incident-entites">{entiteSug.map(s => <option key={s} value={s} />)}</datalist>
           </div>
           <div className="flex gap-2">
             <button onClick={declarer} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.declare}</button>
