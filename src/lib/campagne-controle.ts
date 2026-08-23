@@ -11,6 +11,15 @@ export type CampagneControleStatut = (typeof CAMPAGNE_CONTROLE_STATUTS)[number]
 export const CAMPAGNE_NIVEAUX = ['N1', 'N2'] as const
 export type CampagneNiveau = (typeof CAMPAGNE_NIVEAUX)[number]
 
+// Récurrence d'une campagne : à sa clôture, la suivante est planifiée automatiquement
+// (même périmètre, fenêtre décalée d'une période). NONE = campagne ponctuelle.
+export const CAMPAGNE_RECURRENCES = ['NONE', 'HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+export type CampagneRecurrence = (typeof CAMPAGNE_RECURRENCES)[number]
+
+const MOIS_PAR_RECURRENCE: Record<Exclude<CampagneRecurrence, 'NONE' | 'HEBDOMADAIRE'>, number> = {
+  MENSUEL: 1, TRIMESTRIEL: 3, SEMESTRIEL: 6, ANNUEL: 12,
+}
+
 export interface CampagneControleInput {
   intitule?: unknown
   description?: unknown
@@ -19,6 +28,7 @@ export interface CampagneControleInput {
   controleIds?: unknown
   niveau?: unknown
   statut?: unknown
+  recurrence?: unknown
 }
 
 export interface CleanCampagneControle {
@@ -29,6 +39,7 @@ export interface CleanCampagneControle {
   controleIds: string[]
   niveau: CampagneNiveau
   statut: CampagneControleStatut
+  recurrence: CampagneRecurrence
 }
 
 const DAY = 86_400_000
@@ -58,6 +69,7 @@ export function cleanCampagneControleInput(body: CampagneControleInput): CleanCa
     : []
   const niveau = body.niveau === 'N2' ? 'N2' : 'N1'
   const statut = (CAMPAGNE_CONTROLE_STATUTS as readonly string[]).includes(body.statut as string) ? (body.statut as CampagneControleStatut) : 'PLANIFIEE'
+  const recurrence = (CAMPAGNE_RECURRENCES as readonly string[]).includes(body.recurrence as string) ? (body.recurrence as CampagneRecurrence) : 'NONE'
   return {
     intitule: txt(body.intitule) ?? '',
     description: txt(body.description),
@@ -66,7 +78,40 @@ export function cleanCampagneControleInput(body: CampagneControleInput): CleanCa
     controleIds: ids,
     niveau,
     statut,
+    recurrence,
   }
+}
+
+/** Ajoute `mois` mois à une date (UTC), borné au dernier jour du mois cible. */
+function addMonths(d: Date, mois: number): Date {
+  const jour = d.getUTCDate()
+  const cible = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + mois, 1))
+  const dernierJour = new Date(Date.UTC(cible.getUTCFullYear(), cible.getUTCMonth() + 1, 0)).getUTCDate()
+  cible.setUTCDate(Math.min(jour, dernierJour))
+  // Conserve l'heure d'origine (fenêtres jour entier → sans effet notable).
+  cible.setUTCHours(d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds())
+  return cible
+}
+
+/**
+ * Fenêtre de la campagne suivante pour une récurrence donnée : début et fin
+ * décalés d'une période (7 jours pour l'hebdomadaire, N mois sinon). La durée de
+ * la fenêtre est préservée. Retourne null si NONE ou si la fenêtre est incomplète.
+ */
+export function prochaineFenetreCampagne(
+  recurrence: CampagneRecurrence,
+  dateDebut: Date | string | null,
+  dateFin: Date | string | null,
+): { dateDebut: Date; dateFin: Date } | null {
+  if (recurrence === 'NONE') return null
+  const d = parseDate(dateDebut)
+  const f = parseDate(dateFin)
+  if (!d || !f) return null
+  if (recurrence === 'HEBDOMADAIRE') {
+    return { dateDebut: new Date(d.getTime() + 7 * DAY), dateFin: new Date(f.getTime() + 7 * DAY) }
+  }
+  const mois = MOIS_PAR_RECURRENCE[recurrence]
+  return { dateDebut: addMonths(d, mois), dateFin: addMonths(f, mois) }
 }
 
 export interface ExecutionControleLite {

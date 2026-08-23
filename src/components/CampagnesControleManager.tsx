@@ -7,10 +7,12 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 
 const STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
 const NIVEAUX = ['N1', 'N2'] as const
+const RECURRENCES = ['NONE', 'HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
 
 interface Avancement { total: number; faits: number; aFaire: number; anomalies: number; tauxAvancement: number }
 interface Campagne {
   id: string; intitule: string; description: string | null; niveau: string; statut: string
+  recurrence: string
   dateDebut: string | null; dateFin: string | null; controleIds: string[]
   avancement: Avancement; enRetard: boolean
 }
@@ -22,7 +24,7 @@ const STATUT_BADGE: Record<string, string> = {
   CLOTUREE: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
 }
 
-const emptyForm = { intitule: '', description: '', niveau: 'N1', statut: 'PLANIFIEE', dateDebut: '', dateFin: '', controleIds: [] as string[] }
+const emptyForm = { intitule: '', description: '', niveau: 'N1', statut: 'PLANIFIEE', recurrence: 'NONE', dateDebut: '', dateFin: '', controleIds: [] as string[] }
 
 export default function CampagnesControleManager({ canDefine }: { canDefine: boolean }) {
   const { t } = useTranslation()
@@ -62,6 +64,20 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
     setShowForm(false); reload()
   }
   async function del(id: string) { await fetch(`/api/controles/campagnes/${id}`, { method: 'DELETE' }); setConfirmDel(null); reload() }
+
+  // Change le statut d'une campagne (PATCH = remplacement → on renvoie tous les champs).
+  // À la clôture d'une campagne récurrente, l'API planifie automatiquement la suivante.
+  async function changeStatut(a: Campagne, statut: string) {
+    await fetch(`/api/controles/campagnes/${a.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intitule: a.intitule, description: a.description, niveau: a.niveau,
+        statut, recurrence: a.recurrence,
+        dateDebut: a.dateDebut, dateFin: a.dateFin, controleIds: a.controleIds,
+      }),
+    })
+    reload()
+  }
 
   const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ebios-500'
 
@@ -132,6 +148,11 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
               <select className={`mt-1 ${inputCls}`} value={form.statut} onChange={e => setForm({ ...form, statut: e.target.value })}>
                 {STATUTS.map(s => <option key={s} value={s}>{c.statutOpt[s]}</option>)}
               </select></label>
+            <label className="block sm:col-span-2"><span className="text-sm text-gray-700 dark:text-gray-300">{c.champ.recurrence}</span>
+              <select className={`mt-1 ${inputCls}`} value={form.recurrence} onChange={e => setForm({ ...form, recurrence: e.target.value })}>
+                {RECURRENCES.map(r => <option key={r} value={r}>{c.recurrenceOpt[r]}</option>)}
+              </select>
+              <span className="block mt-1 text-xs text-gray-400">{c.recurrenceHint}</span></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{c.champ.dateDebut}</span>
               <input type="date" className={`mt-1 ${inputCls}`} value={form.dateDebut} onChange={e => setForm({ ...form, dateDebut: e.target.value })} /></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{c.champ.dateFin}</span>
@@ -186,13 +207,27 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
                   <tr key={a.id} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
                       <div className="font-medium text-gray-800 dark:text-gray-100">{a.intitule}</div>
-                      <div className="text-[11px] text-gray-400">{a.niveau} · {a.controleIds.length} {c.champ.controles.toLowerCase()}</div>
+                      <div className="text-[11px] text-gray-400">
+                        {a.niveau} · {a.controleIds.length} {c.champ.controles.toLowerCase()}
+                        {a.recurrence && a.recurrence !== 'NONE' && (
+                          <span className="ml-1.5 text-ebios-600 dark:text-ebios-300" title={c.recurrenceHint}>↻ {c.recurrenceOpt[a.recurrence as keyof typeof c.recurrenceOpt] ?? a.recurrence}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
                       {fmtPeriode(a)}
                       {a.enRetard && <span className="ml-1.5 text-[10px] text-red-600 dark:text-red-400 font-semibold">⚠ {c.enRetard}</span>}
                     </td>
-                    <td className="px-3 py-2"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUT_BADGE[a.statut] ?? STATUT_BADGE.PLANIFIEE}`}>{c.statutOpt[a.statut as keyof typeof c.statutOpt] ?? a.statut}</span></td>
+                    <td className="px-3 py-2">
+                      {canDefine ? (
+                        <select value={a.statut} onChange={e => changeStatut(a, e.target.value)} aria-label={c.col.statut}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium border-0 cursor-pointer ${STATUT_BADGE[a.statut] ?? STATUT_BADGE.PLANIFIEE}`}>
+                          {STATUTS.map(s => <option key={s} value={s}>{c.statutOpt[s]}</option>)}
+                        </select>
+                      ) : (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUT_BADGE[a.statut] ?? STATUT_BADGE.PLANIFIEE}`}>{c.statutOpt[a.statut as keyof typeof c.statutOpt] ?? a.statut}</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden min-w-[3rem]">

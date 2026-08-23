@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     data: {
       organizationId: orgId, createdBy: userId,
       intitule: data.intitule, description: data.description,
-      niveau: data.niveau, statut: data.statut,
+      niveau: data.niveau, statut: data.statut, recurrence: data.recurrence,
       dateDebut: data.dateDebut, dateFin: data.dateFin, controleIds: data.controleIds,
     },
   })

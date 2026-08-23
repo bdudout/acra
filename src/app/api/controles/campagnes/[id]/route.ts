@@ -6,7 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { peutDefinir } from '../../route'
-import { validateCampagneControleInput, cleanCampagneControleInput } from '@/lib/campagne-controle'
+import { validateCampagneControleInput, cleanCampagneControleInput, prochaineFenetreCampagne, type CampagneRecurrence } from '@/lib/campagne-controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -39,18 +39,41 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanCampagneControleInput(body)
 
+  // Statut avant mise à jour : on ne planifie la campagne suivante qu'au PASSAGE en clôture.
+  const avant = await prisma.campagneControle.findUnique({ where: { id }, select: { statut: true } })
+
   const updated = await prisma.campagneControle.update({
     where: { id },
     data: {
       intitule: data.intitule, description: data.description, niveau: data.niveau,
-      statut: data.statut, dateDebut: data.dateDebut, dateFin: data.dateFin, controleIds: data.controleIds,
+      statut: data.statut, recurrence: data.recurrence,
+      dateDebut: data.dateDebut, dateFin: data.dateFin, controleIds: data.controleIds,
     },
   })
+
+  // Récurrence : à la clôture d'une campagne récurrente, planifier automatiquement
+  // la suivante (même périmètre, fenêtre décalée d'une période) — statut PLANIFIEE.
+  let suivanteId: string | null = null
+  if (data.statut === 'CLOTUREE' && avant?.statut !== 'CLOTUREE' && data.recurrence !== 'NONE') {
+    const fenetre = prochaineFenetreCampagne(data.recurrence as CampagneRecurrence, data.dateDebut, data.dateFin)
+    if (fenetre) {
+      const suivante = await prisma.campagneControle.create({
+        data: {
+          organizationId: g.orgId, createdBy: g.userId,
+          intitule: data.intitule, description: data.description,
+          niveau: data.niveau, statut: 'PLANIFIEE', recurrence: data.recurrence,
+          dateDebut: fenetre.dateDebut, dateFin: fenetre.dateFin, controleIds: data.controleIds,
+        },
+      })
+      suivanteId = suivante.id
+    }
+  }
+
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),
-    details: { scope: 'campagne-controle', action: 'update', id },
+    details: { scope: 'campagne-controle', action: 'update', id, ...(suivanteId ? { suivanteId } : {}) },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json({ ...updated, suivanteId })
 }
 
 // DELETE /api/controles/campagnes/[id]
