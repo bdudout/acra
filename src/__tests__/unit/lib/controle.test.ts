@@ -3,6 +3,7 @@ import {
   validateControleInput, cleanControleInput, validateExecutionInput, cleanExecutionInput,
   prochaineEcheance, etatEcheance, evaluerEfficacite, libelleActionAnomalie,
   OCCURRENCES_PAR_AN, CONTROLE_NIVEAUX, PERIODICITES, RESULTATS,
+  cleanChecklist, cleanChecklistResultats, deduireResultatChecklist, CHECKLIST_STATUTS,
 } from '@/lib/controle'
 
 describe('validateControleInput', () => {
@@ -137,6 +138,57 @@ describe('evaluerEfficacite', () => {
   })
 })
 
+describe('cleanChecklist (points à vérifier d\'un contrôle)', () => {
+  it('trim, non vides, dédupliqués (insensible espaces), plafonné à 50', () => {
+    expect(cleanChecklist(['  A ', 'B', 'A', ''])).toEqual(['A', 'B'])
+    expect(cleanChecklist('pas un tableau')).toEqual([])
+    expect(cleanChecklist(null)).toEqual([])
+    expect(cleanChecklist(Array.from({ length: 60 }, (_, i) => `p${i}`)).length).toBe(50)
+  })
+  it('accepte des objets {label} comme des chaînes', () => {
+    expect(cleanChecklist([{ label: ' X ' }, 'Y'])).toEqual(['X', 'Y'])
+  })
+})
+
+describe('cleanChecklistResultats', () => {
+  it('garde label + statut valides, commentaire trimé ou null', () => {
+    const r = cleanChecklistResultats([
+      { label: ' Point 1 ', statut: 'OK' },
+      { label: 'P2', statut: 'KO', commentaire: '  souci ' },
+      { label: '', statut: 'OK' },          // label vide → ignoré
+      { label: 'P3', statut: 'BOGUS' },     // statut invalide → ignoré
+    ])
+    expect(r).toEqual([
+      { label: 'Point 1', statut: 'OK', commentaire: null },
+      { label: 'P2', statut: 'KO', commentaire: 'souci' },
+    ])
+  })
+  it('entrée non tableau → []', () => {
+    expect(cleanChecklistResultats(null)).toEqual([])
+  })
+})
+
+describe('deduireResultatChecklist', () => {
+  it('checklist vide → null (résultat saisi manuellement)', () => {
+    expect(deduireResultatChecklist([])).toBeNull()
+  })
+  it('au moins un KO → ANOMALIE, compte les KO, taille = OK+KO', () => {
+    expect(deduireResultatChecklist([
+      { label: 'a', statut: 'OK' }, { label: 'b', statut: 'KO' }, { label: 'c', statut: 'KO' },
+    ])).toEqual({ resultat: 'ANOMALIE', anomaliesTrouvees: 2, tailleTestee: 3 })
+  })
+  it('tous NA → NON_APPLICABLE', () => {
+    expect(deduireResultatChecklist([
+      { label: 'a', statut: 'NA' }, { label: 'b', statut: 'NA' },
+    ])).toEqual({ resultat: 'NON_APPLICABLE', anomaliesTrouvees: 0, tailleTestee: 0 })
+  })
+  it('OK (avec NA) sans KO → CONFORME, taille = OK+KO', () => {
+    expect(deduireResultatChecklist([
+      { label: 'a', statut: 'OK' }, { label: 'b', statut: 'NA' },
+    ])).toEqual({ resultat: 'CONFORME', anomaliesTrouvees: 0, tailleTestee: 1 })
+  })
+})
+
 describe('constantes et libellés', () => {
   it('occurrences par an', () => {
     expect(OCCURRENCES_PAR_AN).toEqual({ HEBDOMADAIRE: 52, MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1 })
@@ -145,6 +197,7 @@ describe('constantes et libellés', () => {
     expect([...CONTROLE_NIVEAUX]).toEqual(['N1', 'N2'])
     expect([...PERIODICITES]).toEqual(['HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
     expect([...RESULTATS]).toEqual(['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'])
+    expect([...CHECKLIST_STATUTS]).toEqual(['OK', 'KO', 'NA'])
   })
   it('libellé du plan d\'action généré sur anomalie', () => {
     expect(libelleActionAnomalie('Rapprochement bancaire')).toBe("Traiter l'anomalie : Rapprochement bancaire")

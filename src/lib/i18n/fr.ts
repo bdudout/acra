@@ -1283,6 +1283,13 @@ export const fr = {
       ANOMALIE: 'Anomalie',
       NON_APPLICABLE: 'Non applicable',
     },
+    checklist: 'Points à vérifier',
+    checklistHint: 'facultatif ; cotés OK/KO/N/A à l’exécution, le résultat se déduit',
+    checklistAdd: 'Ajouter un point',
+    checklistPlaceholder: 'Point à vérifier…',
+    checklistComment: 'Commentaire (facultatif)',
+    resultatDeduit: 'Résultat déduit',
+    checklistStatuts: { OK: 'OK', KO: 'KO', NA: 'N/A' },
     etats: {
       A_VENIR: 'À venir',
       DU: 'Dû',

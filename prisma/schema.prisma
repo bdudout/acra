@@ -325,6 +325,10 @@ model Controle {
   referentielCode String?
   exigenceRefs    Json    @default("[]") // string[] des refs d'exigences couvertes
 
+  // Points à vérifier (checklist) : string[] de libellés. Vide = pas de checklist
+  // → l'exécution saisit un résultat unique (rétrocompatible).
+  checklist Json @default("[]")
+
   executions ControleExecution[]
 
   // Anti-doublon de l'alerte d'échéance (comme Derogation.alerteeLe) : remis à
@@ -355,6 +359,8 @@ model ControleExecution {
   anomaliesTrouvees Int?
   // Pièces justificatives en data URL (cf. lib/preuves.ts) : [{nom,mime,taille,dataUrl}]
   preuves           Json     @default("[]")
+  // Cotation des points de la checklist : [{label,statut:OK|KO|NA,commentaire?}]
+  checklistResultats Json    @default("[]")
   executantId       String
 
   createdAt DateTime @default(now())
