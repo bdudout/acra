@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import CampagnesManager from '@/components/CampagnesManager'
@@ -22,7 +22,8 @@ export default async function CampagnesPage() {
   if (!orgConfig.registreRisquesActive) redirect('/dashboard')
 
   // Piloter (ouvrir/valider/clôturer) = 2ᵉ ligne ; coter = 1ʳᵉ ligne.
-  const canPilot = isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI'
+  // Aligné sur le garde de l'API /api/campagnes (peutDefinir2eLigne).
+  const canPilot = peutDefinir2eLigne(userRole)
   const canCote = userRole !== 'LECTEUR'
 
   return (
