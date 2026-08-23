@@ -1272,6 +1272,7 @@ export const fr = {
       N2: 'Niveau 2',
     },
     periodicites: {
+      HEBDOMADAIRE: 'Hebdomadaire',
       MENSUEL: 'Mensuel',
       TRIMESTRIEL: 'Trimestriel',
       SEMESTRIEL: 'Semestriel',

@@ -1249,6 +1249,7 @@ export const es: Translations = {
       N2: 'Nivel 2',
     },
     periodicites: {
+      HEBDOMADAIRE: 'Semanal',
       MENSUEL: 'Mensual',
       TRIMESTRIEL: 'Trimestral',
       SEMESTRIEL: 'Semestral',

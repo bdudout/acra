@@ -1249,6 +1249,7 @@ export const de: Translations = {
       N2: 'Stufe 2',
     },
     periodicites: {
+      HEBDOMADAIRE: 'Wöchentlich',
       MENSUEL: 'Monatlich',
       TRIMESTRIEL: 'Quartalsweise',
       SEMESTRIEL: 'Halbjährlich',
