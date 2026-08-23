@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { RISK_ACTION_STATUTS } from '@/lib/risk-action'
+import { suggestionsFromValues } from '@/lib/form-defaults'
 
 export interface ActionsSummary {
   total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number
@@ -64,6 +65,10 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
   }
 
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  // Autocomplétion du responsable à partir des actions déjà saisies sur ce risque.
+  // id scopé par riskId (plusieurs panneaux peuvent coexister sur une même page).
+  const respListId = `acra-riskaction-resp-${riskId}`
+  const responsableSug = suggestionsFromValues(actions.map(x => x.responsable))
 
   return (
     <div>
@@ -77,7 +82,8 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
           {error && <p className="text-xs text-red-600">{error}</p>}
           <input value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} placeholder={a.intitulePlaceholder} className={`${inp} w-full`} />
           <div className="flex flex-wrap gap-2 items-center">
-            <input value={form.responsable} onChange={e => setForm(f => ({ ...f, responsable: e.target.value }))} placeholder={a.responsablePlaceholder} className={inp} />
+            <input value={form.responsable} onChange={e => setForm(f => ({ ...f, responsable: e.target.value }))} placeholder={a.responsablePlaceholder} list={respListId} className={inp} />
+            <datalist id={respListId}>{responsableSug.map(s => <option key={s} value={s} />)}</datalist>
             <input type="date" value={form.echeance} onChange={e => setForm(f => ({ ...f, echeance: e.target.value }))} className={inp} aria-label={a.echeance} />
             <select value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))} className={inp}>
               {RISK_ACTION_STATUTS.map(s => <option key={s} value={s}>{(a.statuts as Record<string, string>)[s] ?? s}</option>)}
@@ -95,7 +101,7 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
             {actions.map(x => (
               <li key={x.id} className="flex items-center gap-3 text-sm">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUT_BADGE[x.statutEffectif] ?? STATUT_BADGE.A_FAIRE}`}>{(a.statuts as Record<string, string>)[x.statutEffectif] ?? x.statutEffectif}</span>
-                <span className="flex-1 text-gray-700 dark:text-gray-200 truncate">{x.intitule}</span>
+                <span className="flex-1 text-gray-700 dark:text-gray-200 truncate" title={x.intitule}>{x.intitule}</span>
                 {x.responsable && <span className="text-xs text-gray-400">{x.responsable}</span>}
                 {x.echeance && <span className="text-xs text-gray-400">{x.echeance.slice(0, 10)}</span>}
                 {canEdit && <>

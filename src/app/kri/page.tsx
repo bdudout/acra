@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import KriManager from '@/components/KriManager'
@@ -21,7 +21,8 @@ export default async function KriPage() {
   if (!orgConfig.kriActive) redirect('/dashboard')
 
   // Définition = 2ᵉ ligne (gouvernance) ; saisie de mesure = 1ʳᵉ ligne (tout sauf lecteur).
-  const canDefine = isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI'
+  // Aligné sur le garde de l'API POST /api/kri (peutDefinir2eLigne).
+  const canDefine = peutDefinir2eLigne(userRole)
   const canMeasure = userRole !== 'LECTEUR'
 
   return (
