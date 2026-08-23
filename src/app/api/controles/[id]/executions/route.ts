@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie } from '@/lib/controle'
+import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie, cleanChecklistResultats, deduireResultatChecklist } from '@/lib/controle'
 import { sanitizePreuves } from '@/lib/preuves'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -45,6 +45,23 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!controle.actif) return NextResponse.json({ error: 'controle_inactif' }, { status: 400 })
 
   const body = await req.json().catch(() => ({}))
+  // Si le contrôle est coté via une checklist, le résultat global est DÉDUIT des
+  // points (anomalie si un KO) et prime sur toute valeur envoyée par le client.
+  const checklistResultats = cleanChecklistResultats(body.checklistResultats)
+  const deduction = deduireResultatChecklist(checklistResultats)
+  if (deduction) {
+    body.resultat = deduction.resultat
+    body.tailleTestee = deduction.tailleTestee
+    body.anomaliesTrouvees = deduction.anomaliesTrouvees
+    // Constat auto à partir des points KO si aucun constat global n'est fourni
+    // (préserve la piste d'audit exigée pour une anomalie).
+    if (deduction.resultat === 'ANOMALIE' && !(typeof body.constat === 'string' && body.constat.trim())) {
+      body.constat = checklistResultats
+        .filter(r => r.statut === 'KO')
+        .map(r => (r.commentaire ? `${r.label} : ${r.commentaire}` : r.label))
+        .join(' ; ')
+    }
+  }
   const erreur = validateExecutionInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanExecutionInput(body)
@@ -57,6 +74,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: {
         ...data, controleId: id, organizationId: controle.organizationId,
         executantId: userId, preuves: preuves as unknown as object,
+        checklistResultats: checklistResultats as unknown as object,
       },
     })
     // Nouvelle exécution ⇒ nouvelle période : l'alerte d'échéance peut repartir.

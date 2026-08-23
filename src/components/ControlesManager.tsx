@@ -3,7 +3,7 @@
 import { FlaskConical, Paperclip } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS } from '@/lib/controle'
+import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist } from '@/lib/controle'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 
 interface Efficacite {
@@ -13,7 +13,9 @@ interface Efficacite {
   vraisemblanceSuggeree: number | null
 }
 interface Preuve { nom: string; mime: string; taille: number; dataUrl: string }
-interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null; preuves: Preuve[] }
+type ChecklistStatut = 'OK' | 'KO' | 'NA'
+interface ChecklistResultat { label: string; statut: ChecklistStatut; commentaire?: string | null }
+interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null; preuves: Preuve[]; checklistResultats?: ChecklistResultat[] }
 interface Controle {
   id: string; intitule: string; description: string | null
   niveau: string; periodicite: string; responsable: string | null
@@ -21,6 +23,7 @@ interface Controle {
   riskItemId: string | null; riskItemIntitule: string | null
   processusId: string | null; processusNom: string | null
   referentielCode: string | null; exigenceRefs: string[]
+  checklist: string[]
   derniereExecution: string | null; prochaineEcheance: string
   etatEcheance: 'A_VENIR' | 'DU' | 'EN_RETARD' | null
   efficacite: Efficacite; executions: Execution[]; nbExecutions: number
@@ -33,12 +36,12 @@ type ExigenceLite = { ref: string; nom: string }
 type Form = {
   intitule: string; description: string; niveau: string; periodicite: string
   responsable: string; riskItemId: string; processusId: string; tailleEchantillon: string
-  referentielCode: string; exigenceRefs: string[]
+  referentielCode: string; exigenceRefs: string[]; checklist: string[]
 }
-const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [] }
+const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [] }
 
-type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string }
-const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '' }
+type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string; checklist: ChecklistResultat[] }
+const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '', checklist: [] }
 
 const ECHEANCE_BADGE: Record<string, string> = {
   A_VENIR: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -54,6 +57,11 @@ const RESULTAT_BADGE: Record<string, string> = {
   CONFORME: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
   ANOMALIE: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
   NON_APPLICABLE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
+}
+const CHECK_BADGE: Record<string, string> = {
+  OK: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  KO: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
+  NA: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200',
 }
 
 export default function ControlesManager({ canDefine, canExecute, currentUserName }: { canDefine: boolean; canExecute: boolean; currentUserName?: string | null }) {
@@ -132,6 +140,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       riskItemId: form.riskItemId || null, processusId: form.processusId || null,
       tailleEchantillon: form.tailleEchantillon || null,
       referentielCode: form.referentielCode || null, exigenceRefs: form.exigenceRefs,
+      checklist: form.checklist,
     }
     const res = await fetch(editId ? `/api/controles/${editId}` : '/api/controles', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -149,6 +158,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       responsable: x.responsable ?? '', riskItemId: x.riskItemId ?? '', processusId: x.processusId ?? '',
       tailleEchantillon: x.tailleEchantillon?.toString() ?? '',
       referentielCode: x.referentielCode ?? '', exigenceRefs: x.exigenceRefs ?? [],
+      checklist: x.checklist ?? [],
     })
   }
 
@@ -157,9 +167,11 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     const res = await fetch(`/api/controles/${x.id}/executions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        // Si le contrôle a une checklist, le serveur DÉDUIT le résultat des points.
         resultat: exec.resultat, dateRealisation: exec.dateRealisation || null,
         constat: exec.constat || null, tailleTestee: exec.tailleTestee || null,
         anomaliesTrouvees: exec.anomaliesTrouvees || null,
+        checklistResultats: exec.checklist.length ? exec.checklist : undefined,
         preuves,
       }),
     })
@@ -271,6 +283,21 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               </div>
             )}
           </div>
+          {/* Checklist : points à vérifier (facultatif). À l'exécution, chacun est coté
+              OK/KO/NA et le résultat global se déduit. */}
+          <div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{c.checklist} <span className="text-gray-400">— {c.checklistHint}</span></div>
+            <div className="space-y-1.5">
+              {form.checklist.map((point, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-5 text-right">{i + 1}.</span>
+                  <input value={point} onChange={e => setForm(f => ({ ...f, checklist: f.checklist.map((p, j) => j === i ? e.target.value : p) }))} placeholder={c.checklistPlaceholder} className={`${inp} flex-1`} />
+                  <button type="button" onClick={() => setForm(f => ({ ...f, checklist: f.checklist.filter((_, j) => j !== i) }))} className="text-xs text-red-500 hover:underline">{c.retirer}</button>
+                </div>
+              ))}
+              <button type="button" onClick={() => setForm(f => ({ ...f, checklist: [...f.checklist, ''] }))} className="text-xs text-ebios-600 hover:underline">+ {c.checklistAdd}</button>
+            </div>
+          </div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{editId ? c.save : c.add}</button>
             <button onClick={() => { setShowForm(false); setEditId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{c.cancel}</button>
@@ -329,7 +356,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {canExecute && x.actif && (
-                        <button onClick={() => { setExecId(x.id); setExec(emptyExec()); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
+                        <button onClick={() => { setExecId(x.id); setExec({ ...emptyExec(), checklist: (x.checklist ?? []).map(label => ({ label, statut: 'OK' as ChecklistStatut, commentaire: '' })) }); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
                       )}
                       {canDefine && <>
                         <button onClick={() => startEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{c.edit}</button>
@@ -374,22 +401,55 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                       <td colSpan={6} className="px-4 py-4 space-y-2">
                         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{c.executeTitle} — {x.intitule}</p>
                         {error && <p className="text-xs text-red-600">{error}</p>}
-                        <div className="flex flex-wrap gap-2 items-end">
-                          <label className="text-xs text-gray-500 dark:text-gray-400">{c.resultat}
-                            <select value={exec.resultat} onChange={e => setExec(f => ({ ...f, resultat: e.target.value }))} className={`${inp} block mt-1`}>
-                              {RESULTATS.map(rr => <option key={rr} value={rr}>{lbl(c.resultats, rr)}</option>)}
-                            </select>
-                          </label>
-                          <label className="text-xs text-gray-500 dark:text-gray-400">{c.dateRealisation}
-                            <input type="date" value={exec.dateRealisation} onChange={e => setExec(f => ({ ...f, dateRealisation: e.target.value }))} className={`${inp} block mt-1`} />
-                          </label>
-                          <label className="text-xs text-gray-500 dark:text-gray-400">{c.tailleTestee}
-                            <input type="number" min="0" value={exec.tailleTestee} onChange={e => setExec(f => ({ ...f, tailleTestee: e.target.value }))} className={`${inp} block mt-1 w-24`} />
-                          </label>
-                          <label className="text-xs text-gray-500 dark:text-gray-400">{c.anomaliesTrouvees}
-                            <input type="number" min="0" value={exec.anomaliesTrouvees} onChange={e => setExec(f => ({ ...f, anomaliesTrouvees: e.target.value }))} className={`${inp} block mt-1 w-24`} />
-                          </label>
-                        </div>
+                        {exec.checklist.length > 0 ? (
+                          // Cotation par point : le résultat global est déduit (aperçu affiché).
+                          <div className="space-y-1.5">
+                            <div className="flex flex-wrap items-end gap-3">
+                              <label className="text-xs text-gray-500 dark:text-gray-400">{c.dateRealisation}
+                                <input type="date" value={exec.dateRealisation} onChange={e => setExec(f => ({ ...f, dateRealisation: e.target.value }))} className={`${inp} block mt-1`} />
+                              </label>
+                              {(() => { const d = deduireResultatChecklist(exec.checklist); return d && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400 pb-1.5">{c.resultatDeduit} :{' '}
+                                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${RESULTAT_BADGE[d.resultat]}`}>{lbl(c.resultats, d.resultat)}</span>
+                                </span>
+                              )})()}
+                            </div>
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
+                              {exec.checklist.map((pt, i) => (
+                                <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+                                  <span className="text-xs text-gray-700 dark:text-gray-200 flex-1 min-w-[160px]" title={pt.label}>{pt.label}</span>
+                                  <div className="flex gap-1">
+                                    {(['OK', 'KO', 'NA'] as ChecklistStatut[]).map(st => (
+                                      <button key={st} type="button"
+                                        onClick={() => setExec(f => ({ ...f, checklist: f.checklist.map((p, j) => j === i ? { ...p, statut: st } : p) }))}
+                                        className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${pt.statut === st ? CHECK_BADGE[st] : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'}`}>
+                                        {lbl(c.checklistStatuts, st)}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <input value={pt.commentaire ?? ''} onChange={e => setExec(f => ({ ...f, checklist: f.checklist.map((p, j) => j === i ? { ...p, commentaire: e.target.value } : p) }))} placeholder={c.checklistComment} className={`${inp} text-xs flex-1 min-w-[140px]`} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 items-end">
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{c.resultat}
+                              <select value={exec.resultat} onChange={e => setExec(f => ({ ...f, resultat: e.target.value }))} className={`${inp} block mt-1`}>
+                                {RESULTATS.map(rr => <option key={rr} value={rr}>{lbl(c.resultats, rr)}</option>)}
+                              </select>
+                            </label>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{c.dateRealisation}
+                              <input type="date" value={exec.dateRealisation} onChange={e => setExec(f => ({ ...f, dateRealisation: e.target.value }))} className={`${inp} block mt-1`} />
+                            </label>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{c.tailleTestee}
+                              <input type="number" min="0" value={exec.tailleTestee} onChange={e => setExec(f => ({ ...f, tailleTestee: e.target.value }))} className={`${inp} block mt-1 w-24`} />
+                            </label>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{c.anomaliesTrouvees}
+                              <input type="number" min="0" value={exec.anomaliesTrouvees} onChange={e => setExec(f => ({ ...f, anomaliesTrouvees: e.target.value }))} className={`${inp} block mt-1 w-24`} />
+                            </label>
+                          </div>
+                        )}
                         <textarea value={exec.constat} onChange={e => setExec(f => ({ ...f, constat: e.target.value }))} placeholder={c.constatPlaceholder} rows={2} className={`${inp} w-full`} />
                         <div>
                           <label className="text-xs text-gray-500 dark:text-gray-400">{c.preuves}

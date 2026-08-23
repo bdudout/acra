@@ -1260,6 +1260,13 @@ export const en: Translations = {
       ANOMALIE: 'Anomaly',
       NON_APPLICABLE: 'Not applicable',
     },
+    checklist: 'Checklist items',
+    checklistHint: 'optional; rated OK/KO/N/A at execution, the result is derived',
+    checklistAdd: 'Add an item',
+    checklistPlaceholder: 'Checklist item…',
+    checklistComment: 'Comment (optional)',
+    resultatDeduit: 'Derived result',
+    checklistStatuts: { OK: 'OK', KO: 'KO', NA: 'N/A' },
     etats: {
       A_VENIR: 'Upcoming',
       DU: 'Due',

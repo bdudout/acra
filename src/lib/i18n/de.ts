@@ -1260,6 +1260,13 @@ export const de: Translations = {
       ANOMALIE: 'Abweichung',
       NON_APPLICABLE: 'Nicht anwendbar',
     },
+    checklist: 'Prüfpunkte',
+    checklistHint: 'optional; bei der Durchführung mit OK/KO/N/A bewertet, Ergebnis wird abgeleitet',
+    checklistAdd: 'Punkt hinzufügen',
+    checklistPlaceholder: 'Prüfpunkt…',
+    checklistComment: 'Kommentar (optional)',
+    resultatDeduit: 'Abgeleitetes Ergebnis',
+    checklistStatuts: { OK: 'OK', KO: 'KO', NA: 'N/A' },
     etats: {
       A_VENIR: 'Bevorstehend',
       DU: 'Fällig',

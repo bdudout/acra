@@ -14,6 +14,76 @@ export type Periodicite = (typeof PERIODICITES)[number]
 export const RESULTATS = ['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'] as const
 export type Resultat = (typeof RESULTATS)[number]
 
+// ─── Checklist (points à vérifier) ───────────────────────────────────────────
+// Un contrôle peut porter une liste de points à vérifier. À l'exécution, chaque
+// point est coté OK / KO / NA, et le résultat global se DÉDUIT (anomalie si un KO).
+export const CHECKLIST_STATUTS = ['OK', 'KO', 'NA'] as const
+export type ChecklistStatut = (typeof CHECKLIST_STATUTS)[number]
+
+/** Résultat d'un point à l'exécution (label dénormalisé → l'historique reste lisible). */
+export interface ChecklistResultat {
+  label: string
+  statut: ChecklistStatut
+  commentaire?: string | null
+}
+
+const CHECKLIST_MAX = 50
+
+/** Normalise la checklist d'un contrôle : libellés trim, non vides, dédupliqués, plafonnés. */
+export function cleanChecklist(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const x of v) {
+    const label = typeof x === 'string'
+      ? x.trim()
+      : (x && typeof x === 'object' && typeof (x as { label?: unknown }).label === 'string'
+        ? String((x as { label: string }).label).trim() : '')
+    if (!label || seen.has(label)) continue
+    seen.add(label)
+    out.push(label)
+    if (out.length >= CHECKLIST_MAX) break
+  }
+  return out
+}
+
+/** Normalise les résultats de checklist d'une exécution (label + statut valides). */
+export function cleanChecklistResultats(v: unknown): ChecklistResultat[] {
+  if (!Array.isArray(v)) return []
+  const out: ChecklistResultat[] = []
+  for (const x of v) {
+    if (!x || typeof x !== 'object') continue
+    const o = x as { label?: unknown; statut?: unknown; commentaire?: unknown }
+    const label = typeof o.label === 'string' ? o.label.trim() : ''
+    if (!label) continue
+    if (!CHECKLIST_STATUTS.includes(o.statut as ChecklistStatut)) continue
+    const commentaire = typeof o.commentaire === 'string' && o.commentaire.trim() ? o.commentaire.trim() : null
+    out.push({ label, statut: o.statut as ChecklistStatut, commentaire })
+    if (out.length >= CHECKLIST_MAX) break
+  }
+  return out
+}
+
+export interface DeductionChecklist {
+  resultat: Resultat
+  anomaliesTrouvees: number
+  tailleTestee: number
+}
+
+/**
+ * Déduit le résultat global d'une exécution à partir des cotations de checklist :
+ * ANOMALIE si au moins un KO ; NON_APPLICABLE si aucun point évalué (que des NA) ;
+ * sinon CONFORME. `tailleTestee` = points effectivement évalués (OK + KO).
+ * Retourne null si la checklist est vide (le résultat est alors saisi manuellement).
+ */
+export function deduireResultatChecklist(resultats: ChecklistResultat[]): DeductionChecklist | null {
+  if (!resultats || resultats.length === 0) return null
+  const ko = resultats.filter(r => r.statut === 'KO').length
+  const ok = resultats.filter(r => r.statut === 'OK').length
+  const resultat: Resultat = ko > 0 ? 'ANOMALIE' : (ok === 0 ? 'NON_APPLICABLE' : 'CONFORME')
+  return { resultat, anomaliesTrouvees: ko, tailleTestee: ok + ko }
+}
+
 /** Nombre d'exécutions attendues par an, par périodicité. */
 export const OCCURRENCES_PAR_AN: Record<Periodicite, number> = {
   HEBDOMADAIRE: 52, MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1,
@@ -39,6 +109,7 @@ export interface ControleInput {
   actif?: unknown
   referentielCode?: unknown
   exigenceRefs?: unknown
+  checklist?: unknown
 }
 
 export interface CleanControle {
@@ -53,6 +124,7 @@ export interface CleanControle {
   actif: boolean
   referentielCode: string | null
   exigenceRefs: string[]
+  checklist: string[]
 }
 
 /** Normalise une liste de refs d'exigences : chaînes non vides, dédupliquées. */
@@ -101,6 +173,7 @@ export function cleanControleInput(body: ControleInput): CleanControle {
     actif: body.actif === undefined ? true : body.actif !== false,
     referentielCode: txt(body.referentielCode),
     exigenceRefs: cleanExigenceRefs(body.exigenceRefs),
+    checklist: cleanChecklist(body.checklist),
   }
 }
 

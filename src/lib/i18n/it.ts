@@ -1260,6 +1260,13 @@ export const it: Translations = {
       ANOMALIE: 'Anomalia',
       NON_APPLICABLE: 'Non applicabile',
     },
+    checklist: 'Punti da verificare',
+    checklistHint: 'facoltativo; valutati OK/KO/N/A all’esecuzione, il risultato si deduce',
+    checklistAdd: 'Aggiungi un punto',
+    checklistPlaceholder: 'Punto da verificare…',
+    checklistComment: 'Commento (facoltativo)',
+    resultatDeduit: 'Risultato dedotto',
+    checklistStatuts: { OK: 'OK', KO: 'KO', NA: 'N/A' },
     etats: {
       A_VENIR: 'In arrivo',
       DU: 'Dovuto',
