@@ -84,6 +84,34 @@ export function deduireResultatChecklist(resultats: ChecklistResultat[]): Deduct
   return { resultat, anomaliesTrouvees: ko, tailleTestee: ok + ko }
 }
 
+// ─── Filtrage de la bibliothèque (recherche + facettes) ──────────────────────
+export interface ControleFiltre {
+  q?: string                // texte : intitulé ou responsable
+  niveau?: string           // N1 | N2 | '' (tous)
+  etat?: string             // A_VENIR | DU | EN_RETARD | '' (tous)
+  referentielCode?: string  // code de référentiel | '' (tous)
+  actif?: string            // 'true' | 'false' | '' (tous)
+}
+
+const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase()
+
+/** Filtre (ET logique) une liste de contrôles selon recherche + facettes. Pur, testé. */
+export function filtrerControles<T extends {
+  intitule: string; responsable: string | null; niveau: string
+  etatEcheance: string | null; referentielCode: string | null; actif: boolean
+}>(list: T[], f: ControleFiltre): T[] {
+  const q = f.q ? sansAccents(f.q.trim()) : ''
+  return list.filter(c => {
+    if (q && !sansAccents(`${c.intitule} ${c.responsable ?? ''}`).includes(q)) return false
+    if (f.niveau && c.niveau !== f.niveau) return false
+    if (f.etat && c.etatEcheance !== f.etat) return false
+    if (f.referentielCode && c.referentielCode !== f.referentielCode) return false
+    if (f.actif === 'true' && !c.actif) return false
+    if (f.actif === 'false' && c.actif) return false
+    return true
+  })
+}
+
 /** Nombre d'exécutions attendues par an, par périodicité. */
 export const OCCURRENCES_PAR_AN: Record<Periodicite, number> = {
   HEBDOMADAIRE: 52, MENSUEL: 12, TRIMESTRIEL: 4, SEMESTRIEL: 2, ANNUEL: 1,

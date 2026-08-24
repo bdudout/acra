@@ -3,7 +3,7 @@
 import { FlaskConical, Paperclip } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist } from '@/lib/controle'
+import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 
 interface Efficacite {
@@ -87,6 +87,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [preuves, setPreuves] = useState<Preuve[]>([])
+  const [filtre, setFiltre] = useState<ControleFiltre>({ q: '', niveau: '', etat: '', referentielCode: '', actif: '' })
 
   // Lit les fichiers choisis en data URL (même stockage que les dérogations).
   async function chargerPreuves(files: FileList | null) {
@@ -199,6 +200,8 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
   const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
   const responsableSug = suggestionsFromValues(controles.map(x => x.responsable))
+  const controlesFiltres = filtrerControles(controles, filtre)
+  const filtreActif = Boolean(filtre.q || filtre.niveau || filtre.etat || filtre.referentielCode || filtre.actif)
   const enRetard = controles.filter(x => x.etatEcheance === 'EN_RETARD').length
   const dus = controles.filter(x => x.etatEcheance === 'DU').length
   const actifs = controles.filter(x => x.actif).length
@@ -305,6 +308,38 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
         </div>
       )}
 
+      {/* Barre de filtres : recherche + facettes (niveau, échéance, référentiel, actif) */}
+      {!loading && controles.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2 items-center">
+          <input value={filtre.q ?? ''} onChange={e => setFiltre(f => ({ ...f, q: e.target.value }))} placeholder={c.filtreRecherche} className={`${inp} min-w-[200px]`} />
+          <select value={filtre.niveau ?? ''} onChange={e => setFiltre(f => ({ ...f, niveau: e.target.value }))} className={inp} aria-label={c.niveau}>
+            <option value="">{c.filtreNiveauTous}</option>
+            {CONTROLE_NIVEAUX.map(n => <option key={n} value={n}>{lbl(c.niveaux, n)}</option>)}
+          </select>
+          <select value={filtre.etat ?? ''} onChange={e => setFiltre(f => ({ ...f, etat: e.target.value }))} className={inp} aria-label={c.colEcheance}>
+            <option value="">{c.filtreEtatTous}</option>
+            {['A_VENIR', 'DU', 'EN_RETARD'].map(s => <option key={s} value={s}>{lbl(c.etats, s)}</option>)}
+          </select>
+          {refs.length > 0 && (
+            <select value={filtre.referentielCode ?? ''} onChange={e => setFiltre(f => ({ ...f, referentielCode: e.target.value }))} className={inp} aria-label={c.refNone}>
+              <option value="">{c.filtreRefTous}</option>
+              {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+            </select>
+          )}
+          <select value={filtre.actif ?? ''} onChange={e => setFiltre(f => ({ ...f, actif: e.target.value }))} className={inp} aria-label={c.filtreActifTous}>
+            <option value="">{c.filtreActifTous}</option>
+            <option value="true">{c.filtreActifsSeuls}</option>
+            <option value="false">{c.filtreInactifsSeuls}</option>
+          </select>
+          {filtreActif && (
+            <>
+              <span className="text-xs text-gray-400">{c.filtreResultat.replace('{n}', String(controlesFiltres.length)).replace('{total}', String(controles.length))}</span>
+              <button onClick={() => setFiltre({ q: '', niveau: '', etat: '', referentielCode: '', actif: '' })} className="text-xs text-ebios-600 hover:underline">✕ {c.filtreEffacer}</button>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -320,7 +355,8 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
           <tbody>
             {loading ? <tr><td colSpan={6} className="px-4 py-6 text-gray-400">…</td></tr>
               : controles.length === 0 ? <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400 italic">{c.empty}</td></tr>
-              : controles.map(x => (
+              : controlesFiltres.length === 0 ? <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400 italic">{c.filtreAucun}</td></tr>
+              : controlesFiltres.map(x => (
                 <Fragment key={x.id}>
                   <tr className={`border-b border-gray-100 dark:border-gray-800 align-top ${x.actif ? '' : 'opacity-50'}`}>
                     <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
