@@ -4,6 +4,7 @@ import {
   prochaineEcheance, etatEcheance, evaluerEfficacite, libelleActionAnomalie,
   OCCURRENCES_PAR_AN, CONTROLE_NIVEAUX, PERIODICITES, RESULTATS,
   cleanChecklist, cleanChecklistResultats, deduireResultatChecklist, CHECKLIST_STATUTS,
+  filtrerControles,
 } from '@/lib/controle'
 
 describe('validateControleInput', () => {
@@ -186,6 +187,37 @@ describe('deduireResultatChecklist', () => {
     expect(deduireResultatChecklist([
       { label: 'a', statut: 'OK' }, { label: 'b', statut: 'NA' },
     ])).toEqual({ resultat: 'CONFORME', anomaliesTrouvees: 0, tailleTestee: 1 })
+  })
+})
+
+describe('filtrerControles', () => {
+  const base = (o: Partial<Parameters<typeof filtrerControles>[0][number]>) => ({
+    intitule: 'Contrôle', responsable: null, niveau: 'N1', etatEcheance: 'A_VENIR' as const,
+    referentielCode: null, actif: true, ...o,
+  })
+  const list = [
+    base({ intitule: 'Revue des accès à privilèges', responsable: 'Alice', niveau: 'N2', etatEcheance: 'EN_RETARD', referentielCode: 'ISO27001', actif: true }),
+    base({ intitule: 'Test de restauration', responsable: 'Bob', niveau: 'N1', etatEcheance: 'DU', referentielCode: 'DORA', actif: true }),
+    base({ intitule: 'Ancien contrôle', responsable: null, niveau: 'N1', etatEcheance: null, referentielCode: null, actif: false }),
+  ]
+  it('sans filtre → liste inchangée', () => {
+    expect(filtrerControles(list, {})).toHaveLength(3)
+  })
+  it('recherche insensible casse/accents sur intitulé et responsable', () => {
+    expect(filtrerControles(list, { q: 'acces' }).map(c => c.responsable)).toEqual(['Alice'])
+    expect(filtrerControles(list, { q: 'BOB' }).map(c => c.intitule)).toEqual(['Test de restauration'])
+  })
+  it('filtre par niveau, état, référentiel', () => {
+    expect(filtrerControles(list, { niveau: 'N2' })).toHaveLength(1)
+    expect(filtrerControles(list, { etat: 'DU' }).map(c => c.responsable)).toEqual(['Bob'])
+    expect(filtrerControles(list, { referentielCode: 'DORA' })).toHaveLength(1)
+  })
+  it('filtre par actif (true/false)', () => {
+    expect(filtrerControles(list, { actif: 'false' })).toHaveLength(1)
+    expect(filtrerControles(list, { actif: 'true' })).toHaveLength(2)
+  })
+  it('combine les filtres (ET logique)', () => {
+    expect(filtrerControles(list, { niveau: 'N1', actif: 'true' })).toHaveLength(1)
   })
 })
 
