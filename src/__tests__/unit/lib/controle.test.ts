@@ -41,6 +41,10 @@ describe('cleanControleInput', () => {
   it('actif explicitement désactivable', () => {
     expect(cleanControleInput({ intitule: 'X', actif: false }).actif).toBe(false)
   })
+  it('superviseIds (contrôle du contrôle N2→N1) : nettoyés et dédupliqués', () => {
+    expect(cleanControleInput({ intitule: 'X', superviseIds: ['a', 'a', ' b ', 3, ''] }).superviseIds).toEqual(['a', 'b'])
+    expect(cleanControleInput({ intitule: 'X' }).superviseIds).toEqual([])
+  })
 })
 
 describe('validateExecutionInput', () => {
@@ -75,6 +79,11 @@ describe('cleanExecutionInput', () => {
     expect(c.constat).toBe('écart')
     expect(c.tailleTestee).toBe(30)
     expect(c.anomaliesTrouvees).toBe(2)
+  })
+  it('indépendance de l\'exécutant : booléen ou null', () => {
+    expect(cleanExecutionInput({ resultat: 'CONFORME', independant: true }).independant).toBe(true)
+    expect(cleanExecutionInput({ resultat: 'CONFORME', independant: false }).independant).toBe(false)
+    expect(cleanExecutionInput({ resultat: 'CONFORME' }).independant).toBeNull()
   })
 })
 

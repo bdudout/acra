@@ -138,6 +138,7 @@ export interface ControleInput {
   referentielCode?: unknown
   exigenceRefs?: unknown
   checklist?: unknown
+  superviseIds?: unknown
 }
 
 export interface CleanControle {
@@ -153,6 +154,8 @@ export interface CleanControle {
   referentielCode: string | null
   exigenceRefs: string[]
   checklist: string[]
+  /** Contrôle du contrôle : identifiants des contrôles (N1) supervisés par ce contrôle (N2). */
+  superviseIds: string[]
 }
 
 /** Normalise une liste de refs d'exigences : chaînes non vides, dédupliquées. */
@@ -202,6 +205,7 @@ export function cleanControleInput(body: ControleInput): CleanControle {
     referentielCode: txt(body.referentielCode),
     exigenceRefs: cleanExigenceRefs(body.exigenceRefs),
     checklist: cleanChecklist(body.checklist),
+    superviseIds: cleanExigenceRefs(body.superviseIds),
   }
 }
 
@@ -211,6 +215,7 @@ export interface ExecutionInput {
   constat?: unknown
   tailleTestee?: unknown
   anomaliesTrouvees?: unknown
+  independant?: unknown
 }
 
 export interface CleanExecution {
@@ -219,6 +224,8 @@ export interface CleanExecution {
   constat: string | null
   tailleTestee: number | null
   anomaliesTrouvees: number | null
+  /** Exécutant indépendant de la 1ʳᵉ ligne (séparation des fonctions, contrôle N2). null = non renseigné. */
+  independant: boolean | null
 }
 
 function parseDate(v: unknown): Date | null {
@@ -252,6 +259,7 @@ export function cleanExecutionInput(body: ExecutionInput, now: Date = new Date()
     constat: txt(body.constat),
     tailleTestee: body.tailleTestee == null || body.tailleTestee === '' ? null : Math.max(0, Math.round(Number(body.tailleTestee))),
     anomaliesTrouvees: body.anomaliesTrouvees == null || body.anomaliesTrouvees === '' ? null : Math.max(0, Math.round(Number(body.anomaliesTrouvees))),
+    independant: typeof body.independant === 'boolean' ? body.independant : null,
   }
 }
 

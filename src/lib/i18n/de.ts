@@ -1277,6 +1277,13 @@ export const de: Translations = {
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Löschen',
     filtreAucun: 'Keine Kontrolle entspricht den Filtern.',
+    supervise: 'Überwachte Kontrollen (N1)',
+    superviseHint: 'eine N2-Kontrolle prüft diese First-Line-Kontrollen',
+    superviseVide: 'Keine N1-Kontrolle zu überwachen.',
+    superviseListe: 'Überwacht',
+    independantLabel: 'Ausführender unabhängig von der ersten Linie (Funktionstrennung)',
+    independantBadge: 'Unabhängig',
+    independantHint: 'Von einer von der ersten Linie unabhängigen Person durchgeführt',
     etats: {
       A_VENIR: 'Bevorstehend',
       DU: 'Fällig',

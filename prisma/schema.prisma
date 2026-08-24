@@ -329,6 +329,11 @@ model Controle {
   // → l'exécution saisit un résultat unique (rétrocompatible).
   checklist Json @default("[]")
 
+  // Contrôle du contrôle : identifiants des contrôles (N1) supervisés par ce
+  // contrôle (typiquement N2). string[] — vide = contrôle direct. Lien logique
+  // (pas de FK, pour rester simple et tolérant aux suppressions).
+  superviseIds Json @default("[]")
+
   executions ControleExecution[]
 
   // Anti-doublon de l'alerte d'échéance (comme Derogation.alerteeLe) : remis à
@@ -361,6 +366,9 @@ model ControleExecution {
   preuves           Json     @default("[]")
   // Cotation des points de la checklist : [{label,statut:OK|KO|NA,commentaire?}]
   checklistResultats Json    @default("[]")
+  // Indépendance de l'exécutant vis-à-vis de la 1ʳᵉ ligne (séparation des
+  // fonctions, contrôle N2). null = non renseigné.
+  independant       Boolean?
   executantId       String
 
   createdAt DateTime @default(now())
