@@ -1277,6 +1277,13 @@ export const es: Translations = {
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Borrar',
     filtreAucun: 'Ningún control coincide con los filtros.',
+    supervise: 'Controles supervisados (N1)',
+    superviseHint: 'un control N2 verifica estos controles de primera línea',
+    superviseVide: 'Ningún control N1 que supervisar.',
+    superviseListe: 'Supervisa',
+    independantLabel: 'Ejecutante independiente de la primera línea (segregación de funciones)',
+    independantBadge: 'Independiente',
+    independantHint: 'Ejecutado por una persona independiente de la primera línea',
     etats: {
       A_VENIR: 'Próximo',
       DU: 'Vencido',

@@ -1300,6 +1300,13 @@ export const fr = {
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Effacer',
     filtreAucun: 'Aucun contrôle ne correspond aux filtres.',
+    supervise: 'Contrôles supervisés (N1)',
+    superviseHint: 'un contrôle N2 vérifie ces contrôles de 1ʳᵉ ligne',
+    superviseVide: 'Aucun contrôle N1 à superviser.',
+    superviseListe: 'Supervise',
+    independantLabel: 'Exécutant indépendant de la 1ʳᵉ ligne (séparation des fonctions)',
+    independantBadge: 'Indépendant',
+    independantHint: 'Exécuté par une personne indépendante de la 1ʳᵉ ligne',
     etats: {
       A_VENIR: 'À venir',
       DU: 'Dû',

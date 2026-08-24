@@ -1277,6 +1277,13 @@ export const en: Translations = {
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Clear',
     filtreAucun: 'No control matches the filters.',
+    supervise: 'Supervised controls (N1)',
+    superviseHint: 'an N2 control verifies these first-line controls',
+    superviseVide: 'No N1 control to supervise.',
+    superviseListe: 'Supervises',
+    independantLabel: 'Performer independent from the first line (segregation of duties)',
+    independantBadge: 'Independent',
+    independantHint: 'Performed by someone independent from the first line',
     etats: {
       A_VENIR: 'Upcoming',
       DU: 'Due',

@@ -15,7 +15,7 @@ interface Efficacite {
 interface Preuve { nom: string; mime: string; taille: number; dataUrl: string }
 type ChecklistStatut = 'OK' | 'KO' | 'NA'
 interface ChecklistResultat { label: string; statut: ChecklistStatut; commentaire?: string | null }
-interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null; preuves: Preuve[]; checklistResultats?: ChecklistResultat[] }
+interface Execution { id: string; resultat: string; dateRealisation: string; constat: string | null; preuves: Preuve[]; checklistResultats?: ChecklistResultat[]; independant?: boolean | null }
 interface Controle {
   id: string; intitule: string; description: string | null
   niveau: string; periodicite: string; responsable: string | null
@@ -23,7 +23,7 @@ interface Controle {
   riskItemId: string | null; riskItemIntitule: string | null
   processusId: string | null; processusNom: string | null
   referentielCode: string | null; exigenceRefs: string[]
-  checklist: string[]
+  checklist: string[]; superviseIds: string[]
   derniereExecution: string | null; prochaineEcheance: string
   etatEcheance: 'A_VENIR' | 'DU' | 'EN_RETARD' | null
   efficacite: Efficacite; executions: Execution[]; nbExecutions: number
@@ -36,12 +36,12 @@ type ExigenceLite = { ref: string; nom: string }
 type Form = {
   intitule: string; description: string; niveau: string; periodicite: string
   responsable: string; riskItemId: string; processusId: string; tailleEchantillon: string
-  referentielCode: string; exigenceRefs: string[]; checklist: string[]
+  referentielCode: string; exigenceRefs: string[]; checklist: string[]; superviseIds: string[]
 }
-const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [] }
+const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [], superviseIds: [] }
 
-type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string; checklist: ChecklistResultat[] }
-const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '', checklist: [] }
+type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string; checklist: ChecklistResultat[]; independant: boolean }
+const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '', checklist: [], independant: false }
 
 const ECHEANCE_BADGE: Record<string, string> = {
   A_VENIR: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -142,6 +142,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       tailleEchantillon: form.tailleEchantillon || null,
       referentielCode: form.referentielCode || null, exigenceRefs: form.exigenceRefs,
       checklist: form.checklist,
+      superviseIds: form.niveau === 'N2' ? form.superviseIds : [],
     }
     const res = await fetch(editId ? `/api/controles/${editId}` : '/api/controles', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -159,7 +160,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       responsable: x.responsable ?? '', riskItemId: x.riskItemId ?? '', processusId: x.processusId ?? '',
       tailleEchantillon: x.tailleEchantillon?.toString() ?? '',
       referentielCode: x.referentielCode ?? '', exigenceRefs: x.exigenceRefs ?? [],
-      checklist: x.checklist ?? [],
+      checklist: x.checklist ?? [], superviseIds: x.superviseIds ?? [],
     })
   }
 
@@ -173,6 +174,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
         constat: exec.constat || null, tailleTestee: exec.tailleTestee || null,
         anomaliesTrouvees: exec.anomaliesTrouvees || null,
         checklistResultats: exec.checklist.length ? exec.checklist : undefined,
+        independant: x.niveau === 'N2' ? exec.independant : undefined,
         preuves,
       }),
     })
@@ -286,6 +288,27 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               </div>
             )}
           </div>
+          {/* Contrôle du contrôle : un contrôle N2 supervise des contrôles N1 (2ᵉ ligne
+              qui vérifie la bonne exécution et l'efficacité de la 1ʳᵉ ligne). */}
+          {form.niveau === 'N2' && (
+            <div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{c.supervise} <span className="text-gray-400">— {c.superviseHint}</span> ({form.superviseIds.length})</div>
+              {controles.filter(x => x.niveau === 'N1' && x.id !== editId).length === 0
+                ? <div className="text-xs text-gray-400">{c.superviseVide}</div>
+                : (
+                  <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
+                    {controles.filter(x => x.niveau === 'N1' && x.id !== editId).map(n1 => (
+                      <label key={n1.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <input type="checkbox" checked={form.superviseIds.includes(n1.id)}
+                          onChange={() => setForm(f => ({ ...f, superviseIds: f.superviseIds.includes(n1.id) ? f.superviseIds.filter(i => i !== n1.id) : [...f.superviseIds, n1.id] }))} />
+                        <span className="text-gray-700 dark:text-gray-200 truncate" title={n1.intitule}>{n1.intitule}</span>
+                        {n1.efficacite.efficacite && <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${EFF_BADGE[n1.efficacite.efficacite]}`}>{n1.efficacite.tauxConformite}%</span>}
+                      </label>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
           {/* Checklist : points à vérifier (facultatif). À l'exécution, chacun est coté
               OK/KO/NA et le résultat global se déduit. */}
           <div>
@@ -417,11 +440,28 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                             </span>
                           )}
                         </p>
+                        {/* Contrôle du contrôle : contrôles N1 supervisés + leur efficacité */}
+                        {x.superviseIds?.length > 0 && (
+                          <div className="mb-2 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">{c.superviseListe} : </span>
+                            {x.superviseIds.map(id => {
+                              const n1 = controles.find(ct => ct.id === id)
+                              if (!n1) return null
+                              return (
+                                <span key={id} className="inline-flex items-center gap-1 mr-2">
+                                  <span className="text-gray-700 dark:text-gray-200">{n1.intitule}</span>
+                                  {n1.efficacite.efficacite && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${EFF_BADGE[n1.efficacite.efficacite]}`}>{n1.efficacite.tauxConformite}%</span>}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                         <ul className="space-y-1">
                           {x.executions.map(e => (
                             <li key={e.id} className="flex items-center gap-2 text-xs">
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${RESULTAT_BADGE[e.resultat]}`}>{lbl(c.resultats, e.resultat)}</span>
                               <span className="text-gray-400">{jour(e.dateRealisation)}</span>
+                              {e.independant === true && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-ebios-100 text-ebios-700 dark:bg-ebios-500/15 dark:text-ebios-300" title={c.independantHint}>{c.independantBadge}</span>}
                               {e.constat && <span className="text-gray-600 dark:text-gray-300 truncate">{e.constat}</span>}
                               {e.preuves?.length > 0 && <span className="text-gray-400"><Paperclip size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {e.preuves.length}</span>}
                             </li>
@@ -502,6 +542,13 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                             </ul>
                           )}
                         </div>
+                        {/* Indépendance de l'exécutant (séparation des fonctions) — contrôle N2 */}
+                        {x.niveau === 'N2' && (
+                          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                            <input type="checkbox" checked={exec.independant} onChange={e => setExec(f => ({ ...f, independant: e.target.checked }))} />
+                            {c.independantLabel}
+                          </label>
+                        )}
                         <div className="flex gap-2">
                           <button onClick={() => enregistrerExec(x)} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{c.save}</button>
                           <button onClick={() => { setExecId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{c.cancel}</button>
