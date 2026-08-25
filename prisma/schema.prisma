@@ -1358,6 +1358,9 @@ model OrganizationConfig {
   auditInterneActive         Boolean       @default(false)
   kriActive                  Boolean       @default(false)
   reglementaireActive        Boolean       @default(false)
+  // 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut) ;
+  // false = mode « ligne unique » (org non régulée) : quatre-yeux et rôles 2ᵉ ligne relâchés.
+  secondeLigneActive         Boolean       @default(true)
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
