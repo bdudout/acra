@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   validateMissionInput, cleanMissionInput, transitionMissionAutorisee, prochaineFenetreMission,
+  filtrerMissions, filtrerConstats,
   validateConstatInput, cleanConstatInput, constatTermine, constatEnRetard, synthetiserConstats,
   MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES,
 } from '@/lib/audit'
@@ -61,6 +62,37 @@ describe('mission — type & récurrence (plan pluriannuel)', () => {
     expect(a.dateFin.toISOString().slice(0, 10)).toBe('2027-02-01')
     const t = prochaineFenetreMission('TRIENNAL', '2026-01-15', '2026-03-15')!
     expect(t.dateDebut.toISOString().slice(0, 10)).toBe('2029-01-15')
+  })
+})
+
+describe('filtrerMissions', () => {
+  const list = [
+    { intitule: 'Audit des accès', responsable: 'Alice', statut: 'EN_COURS', type: 'THEMATIQUE' },
+    { intitule: 'Revue périodique SI', responsable: 'Bob', statut: 'PLANIFIEE', type: 'PERIODIQUE' },
+    { intitule: 'Audit clôturé', responsable: null, statut: 'CLOTUREE', type: 'THEMATIQUE' },
+  ]
+  it('recherche insensible casse/accents (intitulé + responsable)', () => {
+    expect(filtrerMissions(list, { q: 'acces' }).map(m => m.responsable)).toEqual(['Alice'])
+    expect(filtrerMissions(list, { q: 'BOB' }).length).toBe(1)
+  })
+  it('facettes statut et type', () => {
+    expect(filtrerMissions(list, { statut: 'CLOTUREE' }).length).toBe(1)
+    expect(filtrerMissions(list, { type: 'PERIODIQUE' }).length).toBe(1)
+  })
+  it('sans filtre → inchangé', () => { expect(filtrerMissions(list, {}).length).toBe(3) })
+})
+
+describe('filtrerConstats', () => {
+  const list = [
+    { intitule: 'Écart habilitations', description: 'comptes dormants', statut: 'OUVERT', criticite: 4, source: 'AUDIT_INTERNE' },
+    { intitule: 'Retard patch', description: null, statut: 'RESOLU', criticite: 2, source: 'AUDIT_INTERNE' },
+    { intitule: 'Demande ACPR', description: 'lettre de suite', statut: 'EN_COURS', criticite: 3, source: 'REGULATEUR' },
+  ]
+  it('recherche, statut, criticité, source', () => {
+    expect(filtrerConstats(list, { q: 'dormants' }).length).toBe(1)
+    expect(filtrerConstats(list, { statut: 'RESOLU' }).length).toBe(1)
+    expect(filtrerConstats(list, { criticite: '4' }).length).toBe(1)
+    expect(filtrerConstats(list, { source: 'REGULATEUR' }).map(c => c.intitule)).toEqual(['Demande ACPR'])
   })
 })
 
