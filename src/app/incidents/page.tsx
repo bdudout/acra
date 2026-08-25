@@ -21,7 +21,10 @@ export default async function IncidentsPage() {
   if (!orgConfig.incidentsActive) redirect('/dashboard')
 
   // La déclaration est ouverte à tous (1ʳᵉ ligne) ; la qualification à la 2ᵉ ligne.
-  const canQualify = isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI'
+  // Qualification = 2ᵉ ligne ; en mode ligne unique, ouverte à la 1ʳᵉ ligne (sauf lecteur).
+  const canQualify = orgConfig.secondeLigneActive === false
+    ? userRole !== 'LECTEUR'
+    : (isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI')
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

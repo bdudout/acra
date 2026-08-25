@@ -361,6 +361,14 @@ describe('peutDefinir2eLigne (définition contrôles / KRI / campagnes — #125)
       expect(peutDefinir2eLigne(role)).toBe(false)
     }
   })
+  it('mode ligne unique (2ᵉ ligne off) : ouvert à tout rôle sauf LECTEUR', () => {
+    for (const role of ['ANALYSTE', 'METIER', 'DIRECTION_METIER', 'RISK_MANAGER', 'ADMIN'] as const) {
+      expect(peutDefinir2eLigne(role, { secondeLigneActive: false })).toBe(true)
+    }
+    expect(peutDefinir2eLigne('LECTEUR', { secondeLigneActive: false })).toBe(false)
+    // 2ᵉ ligne active (explicite) : comportement inchangé.
+    expect(peutDefinir2eLigne('ANALYSTE', { secondeLigneActive: true })).toBe(false)
+  })
 })
 
 describe('hasGlobalReadDispositif + analyseWhereClause (lecture globale — #126)', () => {

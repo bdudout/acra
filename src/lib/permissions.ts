@@ -52,7 +52,10 @@ export function isAdminRole(role: UserRole): boolean {
  * Helper CENTRAL : les 3 modules (controles, kri, campagnes) délèguent ici pour
  * rester cohérents (cf. correctif #125).
  */
-export function peutDefinir2eLigne(role: UserRole): boolean {
+export function peutDefinir2eLigne(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+  // Mode « ligne unique » (org non régulée, 2ᵉ ligne désactivée) : la 1ʳᵉ ligne
+  // réalise elle-même la définition ; ouvert à tout rôle sauf le lecteur.
+  if (opts?.secondeLigneActive === false) return role !== 'LECTEUR'
   return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
     || role === 'CONTROLEUR' || role === 'CONFORMITE'
 }

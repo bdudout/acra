@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
   validateCampagneInput, cleanCampagneInput, transitionCampagneAutorisee,
   avancementCampagne, type CampagneStatut,
@@ -15,8 +15,8 @@ export const dynamic = 'force-dynamic'
 
 type Params = { params: Promise<{ id: string }> }
 
-function peutPiloter(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+function peutPiloter(role: UserRole, secondeLigneActive: boolean): boolean {
+  return peutDefinir2eLigne(role, { secondeLigneActive })
 }
 
 async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
@@ -33,7 +33,7 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(campagne.organizationId)
   if (!cfg.registreRisquesActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, campagne }
+  return { userId, userRole, campagne, secondeLigneActive: cfg.secondeLigneActive }
 }
 
 // GET /api/campagnes/[id] — détail + évaluations (avec le risque rattaché).
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params
   const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
-  if (!peutPiloter(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutPiloter(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const depuis = c.campagne.statut as CampagneStatut
@@ -182,7 +182,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { id } = await params
   const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
-  if (!peutPiloter(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutPiloter(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   // Une campagne clôturée est une pièce d'archive : elle ne se supprime pas.
   if (c.campagne.statut === 'CLOTUREE') return NextResponse.json({ error: 'campagne_cloturee' }, { status: 400 })
 

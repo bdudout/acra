@@ -173,6 +173,14 @@ describe('RBAC dérogations', () => {
     // Un AUTRE valideur métier reste autorisé.
     expect(canValiderDerogation(u('DIRECTION_METIER', 'autre'), { statut: 'VALIDATION_METIER', demandeurId: 'porteur' })).toBe(true)
   })
+  it('mode ligne unique (2ᵉ ligne off) : le demandeur peut valider (quatre-yeux relâché)', () => {
+    const self = { statut: 'VALIDATION_METIER' as const, demandeurId: 'porteur' }
+    // 2ᵉ ligne active (défaut) : refus ; off : autorisé pour le même acteur (DIRECTION_METIER/admin).
+    expect(canValiderDerogation(u('ADMIN', 'porteur'), self, { secondeLigneActive: false })).toBe(true)
+    expect(canValiderDerogation(u('ADMIN', 'porteur'), self, { secondeLigneActive: true })).toBe(false)
+    // Le rôle requis reste exigé même en mode ligne unique (LECTEUR ne valide pas).
+    expect(canValiderDerogation(u('LECTEUR', 'porteur'), self, { secondeLigneActive: false })).toBe(false)
+  })
   it('révocation : RSSI/métier/admin, depuis ACTIVE', () => {
     const d = { statut: 'ACTIVE' as const, demandeurId: 'p' }
     expect(canRevoquerDerogation(u('RSSI'), d)).toBe(true)
