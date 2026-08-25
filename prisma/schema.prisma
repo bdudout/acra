@@ -618,6 +618,12 @@ model AuditMission {
   // PLANIFIEE | EN_COURS | CLOTUREE
   statut String @default("PLANIFIEE")
 
+  // Plan d'audit pluriannuel : type de mission et récurrence. À la clôture d'une
+  // mission périodique récurrente, la suivante est planifiée automatiquement.
+  // type : THEMATIQUE | PERIODIQUE ; recurrence : NONE | ANNUEL | BIENNAL | TRIENNAL
+  type       String @default("THEMATIQUE")
+  recurrence String @default("NONE")
+
   // Programme d'audit (points de revue) : string[] de libellés. Vide = pas de
   // programme structuré. Coté à la clôture (programmeResultats).
   programme          Json @default("[]")
