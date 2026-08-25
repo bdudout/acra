@@ -58,12 +58,14 @@ export function incidentsByOrg(rows: CockpitIncident[]): Map<string, IncidentTot
 
 export interface CockpitControle {
   organizationId: string
+  niveau?: string // N1 | N2 (facultatif : segmentation du reporting)
 }
 
 export interface CockpitExecution {
   organizationId: string
   resultat: string
   dateRealisation: Date | string
+  niveau?: string // niveau du contrôle parent (facultatif)
 }
 
 export interface ControleTotals {
@@ -83,6 +85,16 @@ export function rollupControles(controles: CockpitControle[], execs: CockpitExec
     anomalies: eff.anomalies,
     tauxConformite: eff.tauxConformite,
   }
+}
+
+/** Rollup du contrôle permanent segmenté par niveau (N1 = 1ʳᵉ ligne, N2 = 2ᵉ ligne). */
+export function rollupControlesParNiveau(controles: CockpitControle[], execs: CockpitExecution[]): Record<'N1' | 'N2', ControleTotals> {
+  const filtre = (n: 'N1' | 'N2') => ({
+    c: controles.filter(x => (x.niveau ?? 'N1') === n),
+    e: execs.filter(x => (x.niveau ?? 'N1') === n),
+  })
+  const n1 = filtre('N1'), n2 = filtre('N2')
+  return { N1: rollupControles(n1.c, n1.e), N2: rollupControles(n2.c, n2.e) }
 }
 
 export function controlesByOrg(controles: CockpitControle[], execs: CockpitExecution[]): Map<string, ControleTotals> {

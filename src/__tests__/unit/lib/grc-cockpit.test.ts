@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   rollupIncidents, incidentsByOrg,
-  rollupControles, controlesByOrg,
+  rollupControles, controlesByOrg, rollupControlesParNiveau,
   rollupAudit, auditByOrg,
   type CockpitIncident, type CockpitExecution, type CockpitConstat,
 } from '@/lib/grc-cockpit'
@@ -60,6 +60,22 @@ describe('grc-cockpit — contrôles', () => {
 
   it('aucune exécution évaluable → taux null', () => {
     expect(rollupControles(controles, []).tauxConformite).toBeNull()
+  })
+
+  it('segmente N1 / N2 (niveau absent = N1 par défaut)', () => {
+    const ctrls = [
+      { organizationId: 'a', niveau: 'N1' }, { organizationId: 'a', niveau: 'N2' }, { organizationId: 'a' },
+    ]
+    const exs = [
+      { organizationId: 'a', resultat: 'CONFORME', dateRealisation: '2026-01-01', niveau: 'N1' },
+      { organizationId: 'a', resultat: 'ANOMALIE', dateRealisation: '2026-01-02', niveau: 'N1' },
+      { organizationId: 'a', resultat: 'CONFORME', dateRealisation: '2026-01-03', niveau: 'N2' },
+    ]
+    const r = rollupControlesParNiveau(ctrls, exs)
+    expect(r.N1.controles).toBe(2) // N1 explicite + niveau absent
+    expect(r.N1.tauxConformite).toBe(50) // 1/2
+    expect(r.N2.controles).toBe(1)
+    expect(r.N2.tauxConformite).toBe(100)
   })
 })
 

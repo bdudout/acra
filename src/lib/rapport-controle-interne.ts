@@ -36,8 +36,28 @@ export function buildRapportControleInterne(consolide: ComiteConsolide, modules:
   // Vue « tous domaines » : le rapport annuel couvre l'ensemble du dispositif.
   const pack = buildComitePack('RISQUES', consolide, modules)
 
+  // Segmentation du contrôle permanent N1 / N2 : si le consolidé fournit le détail
+  // par niveau, on enrichit la section « controles » de métriques dédiées
+  // (contrôle permanent 1ʳᵉ ligne N1 vs 2ᵉ ligne N2) — attendu du rapport annuel.
+  const parN = consolide.controles?.parNiveau
+  const sections = parN
+    ? pack.sections.map(sec => {
+        if (sec.id !== 'controles') return sec
+        const extra: ComiteSection['metrics'] = []
+        if (parN.N1) {
+          if (parN.N1.tauxConformite != null) extra.push({ key: 'tauxConformiteN1', value: parN.N1.tauxConformite })
+          extra.push({ key: 'anomaliesN1', value: parN.N1.anomalies, alerte: parN.N1.anomalies > 0 })
+        }
+        if (parN.N2) {
+          if (parN.N2.tauxConformite != null) extra.push({ key: 'tauxConformiteN2', value: parN.N2.tauxConformite })
+          extra.push({ key: 'anomaliesN2', value: parN.N2.anomalies, alerte: parN.N2.anomalies > 0 })
+        }
+        return { ...sec, metrics: [...sec.metrics, ...extra] }
+      })
+    : pack.sections
+
   const parLigne = new Map<LigneDefense, ComiteSection[]>()
-  for (const sec of pack.sections) {
+  for (const sec of sections) {
     const ligne = LIGNE_DE[sec.id] ?? '1'
     const arr = parLigne.get(ligne) ?? []
     arr.push(sec)
