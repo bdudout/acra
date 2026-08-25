@@ -7,7 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   validateEvaluationInput, cleanEvaluationInput, evaluationComplete,
-  transitionEvaluationAutorisee, peutValider, type EvaluationStatut,
+  transitionEvaluationAutorisee, peutValider, statutApresCotation, type EvaluationStatut,
 } from '@/lib/campagne'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -62,11 +62,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const now = new Date()
+  // Mode « ligne unique » (org non régulée, 2ᵉ ligne désactivée) : la cotation vaut
+  // clôture — pas d'étape de validation distincte ni de quatre-yeux.
+  const mono = cfg.secondeLigneActive === false
 
   // ── Validation / rejet (2ᵉ ligne, quatre-yeux) ─────────────────────────────
   if (vers === 'VALIDEE' || vers === 'REJETEE') {
-    if (!peutPiloter(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-    if (!peutValider(evaluation.evaluateurId, userId)) {
+    // En mode ligne unique, la 1ʳᵉ ligne peut valider elle-même (hors quatre-yeux).
+    if (!mono && !peutPiloter(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+    if (!mono && !peutValider(evaluation.evaluateurId, userId)) {
       return NextResponse.json({ error: 'quatre_yeux' }, { status: 403 })
     }
     const motif = typeof body.motifRejet === 'string' ? body.motifRejet.trim() : ''
@@ -96,17 +100,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'cotation_incomplete' }, { status: 400 })
   }
 
+  // En mode ligne unique, la cotation atteint directement VALIDEE (validation implicite).
+  const statutFinal = vers === 'COTEE' ? statutApresCotation(cfg.secondeLigneActive) : vers
   const updated = await prisma.campagneEvaluation.update({
     where: { id: evalId },
     data: {
       ...data,
-      statut: vers,
+      statut: statutFinal,
       ...(vers === 'COTEE' ? { evaluateurId: userId, coteeLe: now, motifRejet: null } : {}),
+      ...(statutFinal === 'VALIDEE' ? { valideurId: userId, valideeLe: now } : {}),
     },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: evaluation.organizationId, ip: getClientIp(req),
-    details: { scope: 'campagne-evaluation', action: 'coter', campagneId: id, id: evalId },
+    details: { scope: 'campagne-evaluation', action: mono ? 'coter+valider' : 'coter', campagneId: id, id: evalId },
   })
   return NextResponse.json(updated)
 }

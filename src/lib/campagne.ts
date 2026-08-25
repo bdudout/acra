@@ -155,6 +155,16 @@ export function peutValider(evaluateurId: string | null, valideurId: string): bo
   return evaluateurId !== valideurId
 }
 
+/**
+ * Statut atteint par une évaluation dès la cotation, selon la présence d'une 2ᵉ ligne.
+ * 2ᵉ ligne active (défaut) : COTEE (une validation distincte, en quatre-yeux, suit).
+ * 2ᵉ ligne désactivée (mode ligne unique, org non régulée) : VALIDEE — la cotation
+ * de la 1ʳᵉ ligne vaut clôture, sans étape de validation séparée.
+ */
+export function statutApresCotation(secondeLigneActive?: boolean): EvaluationStatut {
+  return secondeLigneActive === false ? 'VALIDEE' : 'COTEE'
+}
+
 // ─── Avancement ──────────────────────────────────────────────────────────────
 
 export interface EvaluationLite { statut: string }
