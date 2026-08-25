@@ -59,4 +59,30 @@ describe('buildRapportControleInterne', () => {
   it('expose la liste des appréciations', () => {
     expect(APPRECIATIONS).toEqual(['SATISFAISANT', 'A_RENFORCER', 'INSUFFISANT'])
   })
+
+  it('segmente le contrôle permanent N1 / N2 quand parNiveau est fourni', () => {
+    const c: ComiteConsolide = {
+      ...sain,
+      controles: {
+        tauxConformite: 90, anomalies: 2,
+        parNiveau: {
+          N1: { tauxConformite: 88, anomalies: 2, controles: 4 },
+          N2: { tauxConformite: 100, anomalies: 0, controles: 2 },
+        },
+      },
+    }
+    const r = buildRapportControleInterne(c, ALL)
+    const sec = r.groupes.find(g => g.ligne === '1')!.sections.find(s => s.id === 'controles')!
+    const keys = sec.metrics.map(m => m.key)
+    expect(keys).toContain('tauxConformiteN1')
+    expect(keys).toContain('tauxConformiteN2')
+    expect(sec.metrics.find(m => m.key === 'tauxConformiteN2')!.value).toBe(100)
+    expect(sec.metrics.find(m => m.key === 'anomaliesN1')!.value).toBe(2)
+  })
+
+  it('sans parNiveau : pas de métriques par niveau (rétrocompatible)', () => {
+    const r = buildRapportControleInterne(sain, ALL)
+    const sec = r.groupes.find(g => g.ligne === '1')!.sections.find(s => s.id === 'controles')!
+    expect(sec.metrics.some(m => m.key.endsWith('N1') || m.key.endsWith('N2'))).toBe(false)
+  })
 })

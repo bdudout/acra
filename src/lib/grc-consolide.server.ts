@@ -9,7 +9,7 @@ import { prisma } from './prisma'
 import { niveauRisque } from './risk-item'
 import { summarizeActions } from './risk-action'
 import { rollupRisks, type RiskLite } from './grc-rollup'
-import { rollupIncidents, rollupControles, rollupAudit, type CockpitIncident, type CockpitExecution, type CockpitConstat } from './grc-cockpit'
+import { rollupIncidents, rollupControles, rollupControlesParNiveau, rollupAudit, type CockpitIncident, type CockpitExecution, type CockpitConstat } from './grc-cockpit'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from './appetit'
 import { evaluerKri, synthetiserKri, type KriSens } from './kri'
 import { classifierIncident, estEvalueDora, synthetiserDora, type DoraCriteres, type DoraClasse } from './dora'
@@ -41,8 +41,8 @@ export async function gatherGrcConsolide(
     prisma.riskItem.findMany({ where: orgFilter, select: { organizationId: true, taxonomieCode: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true } }),
     prisma.riskAction.findMany({ where: orgFilter, select: { organizationId: true, statut: true, echeance: true } }),
     withIncidents ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true, doraCriteres: true } }) : Promise.resolve([]),
-    withControles ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true } }) : Promise.resolve([]),
-    withControles ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true } }) : Promise.resolve([]),
+    withControles ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true, niveau: true } }) : Promise.resolve([]),
+    withControles ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true, controle: { select: { niveau: true } } } }) : Promise.resolve([]),
     withAudit ? prisma.auditMission.findMany({ where: orgFilter, select: { organizationId: true } }) : Promise.resolve([]),
     (withAudit || withReglementaire) ? prisma.auditConstat.findMany({ where: orgFilter, select: { organizationId: true, criticite: true, statut: true, echeance: true, source: true, intitule: true, recommandation: true, responsableAction: true } }) : Promise.resolve([]),
     withKri ? prisma.kri.findMany({ where: { ...orgFilter, actif: true }, select: { sens: true, seuilAlerte: true, seuilCritique: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { valeur: true } } } }) : Promise.resolve([]),
@@ -71,9 +71,15 @@ export async function gatherGrcConsolide(
     consolide.incidents = rollupIncidents(incidents)
   }
   if (withControles) {
-    const execs: CockpitExecution[] = executionRows.map(e => ({ organizationId: e.organizationId, resultat: e.resultat, dateRealisation: e.dateRealisation }))
-    const cr = rollupControles(controleRows, execs)
-    consolide.controles = { tauxConformite: cr.tauxConformite, anomalies: cr.anomalies }
+    const execs: CockpitExecution[] = executionRows.map(e => ({ organizationId: e.organizationId, resultat: e.resultat, dateRealisation: e.dateRealisation, niveau: e.controle?.niveau }))
+    const ctrls = controleRows.map(c => ({ organizationId: c.organizationId, niveau: c.niveau }))
+    const cr = rollupControles(ctrls, execs)
+    const pn = rollupControlesParNiveau(ctrls, execs)
+    const niv = (t: typeof pn.N1) => ({ tauxConformite: t.tauxConformite, anomalies: t.anomalies, controles: t.controles })
+    consolide.controles = {
+      tauxConformite: cr.tauxConformite, anomalies: cr.anomalies,
+      parNiveau: { N1: niv(pn.N1), N2: niv(pn.N2) },
+    }
   }
   if (withAudit) {
     const constats: CockpitConstat[] = constatRows.map(c => ({ organizationId: c.organizationId, criticite: c.criticite, statut: c.statut, echeance: c.echeance }))

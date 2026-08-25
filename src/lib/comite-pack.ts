@@ -12,7 +12,12 @@ export interface ComiteConsolide {
   actions?: { total: number; faits: number; enRetard: number; tauxAvancement: number }
   appetit?: { horsAppetit: number; dansAppetit: number; evalues: number }
   incidents?: { total: number; ouverts: number; perteNette: number }
-  controles?: { tauxConformite: number | null; anomalies: number }
+  controles?: {
+    tauxConformite: number | null; anomalies: number
+    // Segmentation optionnelle par niveau (N1 = 1ʳᵉ ligne, N2 = 2ᵉ ligne) pour le
+    // rapport de contrôle interne.
+    parNiveau?: { N1?: { tauxConformite: number | null; anomalies: number; controles: number }; N2?: { tauxConformite: number | null; anomalies: number; controles: number } }
+  }
   audit?: { critiques: number; recosEnRetard: number }
   regulateur?: { echues: number; sous30j: number }
   kri?: { enAlerte: number; critique: number }
