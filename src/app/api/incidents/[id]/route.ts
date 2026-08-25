@@ -15,9 +15,11 @@ export const dynamic = 'force-dynamic'
 
 type Params = { params: Promise<{ id: string }> }
 
-// La QUALIFICATION relève de la 2ᵉ ligne (risk manager / RSSI / admin) :
-// taxonomie, coût réel, rattachement au registre.
-function peutQualifier(role: UserRole): boolean {
+// La QUALIFICATION relève de la 2ᵉ ligne (risk manager / RSSI / admin). En mode
+// « ligne unique » (2ᵉ ligne désactivée), elle est ouverte à la 1ʳᵉ ligne (tout
+// rôle sauf lecteur) : taxonomie, coût réel, rattachement au registre.
+function peutQualifier(role: UserRole, secondeLigneActive: boolean): boolean {
+  if (!secondeLigneActive) return role !== 'LECTEUR'
   return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
 }
 
@@ -35,7 +37,7 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   if (!incident) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const orgConfig = await getOrgConfig(incident.organizationId)
   if (!orgConfig.incidentsActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, incident }
+  return { userId, userRole, incident, secondeLigneActive: orgConfig.secondeLigneActive }
 }
 
 // PATCH /api/incidents/[id] — qualifier, clôturer, rejeter ou corriger.
@@ -63,7 +65,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const changeEtat = vers !== depuis
   const estDeclarant = incident.declarantId === userId
   if (changeEtat || !(estDeclarant && depuis === 'DECLARE')) {
-    if (!peutQualifier(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+    if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   }
 
   // Passer en QUALIFIE suppose la taxonomie renseignée (objet de la qualification).
@@ -117,7 +119,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
   const { userId, userRole, incident } = c
-  if (!peutQualifier(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.incident.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

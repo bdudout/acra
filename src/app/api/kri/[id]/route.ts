@@ -28,7 +28,7 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   if (!kri) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(kri.organizationId)
   if (!cfg.kriActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, kri }
+  return { userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive }
 }
 
 // GET /api/kri/[id] — détail + historique des mesures + statut/tendance.
@@ -65,7 +65,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params
   const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
-  if (!peutDefinirKri(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateKriInput(body, { partial: true })
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { id } = await params
   const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
-  if (!peutDefinirKri(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.kri.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

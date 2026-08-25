@@ -23,7 +23,7 @@ export default async function CampagnesPage() {
 
   // Piloter (ouvrir/valider/clôturer) = 2ᵉ ligne ; coter = 1ʳᵉ ligne.
   // Aligné sur le garde de l'API /api/campagnes (peutDefinir2eLigne).
-  const canPilot = peutDefinir2eLigne(userRole)
+  const canPilot = peutDefinir2eLigne(userRole, { secondeLigneActive: orgConfig.secondeLigneActive })
   const canCote = userRole !== 'LECTEUR'
 
   return (

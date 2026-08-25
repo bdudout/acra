@@ -42,7 +42,7 @@ export async function GET() {
     return { ...c, controleIds, avancement: av, enRetard: campagneEnRetard({ dateFin: c.dateFin }, av, now) }
   })
 
-  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole) })
+  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive }) })
 }
 
 // POST /api/controles/campagnes — crée une campagne (2ᵉ ligne).
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutDefinir(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateCampagneControleInput(body)

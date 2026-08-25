@@ -98,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // ── Validation métier → ACTIVE (ou application d'une prolongation) ──
     case 'VALIDER': {
-      if (!canValiderDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canValiderDerogation(sessionUser, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const prolongation = derog.prolongationDemandee != null
       const dateFin = prolongation ? derog.prolongationDemandee! : calcDateFin(now, orgConfig.derogationDureeDefautJours)
       const historique = prolongation
@@ -119,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // ── Refus métier (au stade VALIDATION_METIER) ──
     case 'REJETER': {
-      if (!canValiderDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canValiderDerogation(sessionUser, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour le refus' }, { status: 400 })
       const updated = await save({ statut: 'REJETEE', rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire })
       await audit('DEROGATION_REJECTED', {})

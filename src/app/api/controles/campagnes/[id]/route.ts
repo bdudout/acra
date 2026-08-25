@@ -20,7 +20,7 @@ async function guard(session: { user: { id: string; role?: string } }, id: strin
   if (!orgId) return { error: NextResponse.json({ error: 'org_absente' }, { status: 400 }) }
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutDefinir(scope.role)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir(scope.role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const row = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
   if (!row) return { error: NextResponse.json({ error: 'introuvable' }, { status: 404 }) }
   return { userId, userRole: scope.role, orgId }

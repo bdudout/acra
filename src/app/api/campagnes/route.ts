@@ -11,8 +11,8 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 /** Piloter une campagne relève de la 2ᵉ ligne (risk manager / RSSI / admin). */
-export function peutPiloter(role: UserRole): boolean {
-  return peutDefinir2eLigne(role)
+export function peutPiloter(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+  return peutDefinir2eLigne(role, opts)
 }
 
 async function ctx(session: { user: { id: string; role?: string } }) {
@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!peutPiloter(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   const cfg = await getOrgConfig(orgId)
+  if (!peutPiloter(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))

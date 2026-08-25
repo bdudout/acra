@@ -219,10 +219,14 @@ export function canDoubleRegardDerogation(user: SessionUser, d: DerogationRbacSo
  * Le DEMANDEUR ne peut jamais valider sa propre dérogation (séparation des tâches /
  * quatre-yeux, cohérent avec les gardes avis RSSI et double regard — cf. #122).
  */
-export function canValiderDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
-  return d.statut === 'VALIDATION_METIER'
+export function canValiderDerogation(user: SessionUser, d: DerogationRbacSource, opts?: { secondeLigneActive?: boolean }): boolean {
+  const base = d.statut === 'VALIDATION_METIER'
     && (user.role === 'DIRECTION_METIER' || isAdminRole(user.role))
-    && user.id !== d.demandeurId
+  if (!base) return false
+  // Mode « ligne unique » (2ᵉ ligne off) : le quatre-yeux (demandeur ≠ valideur)
+  // est relâché ; sinon il reste imposé (CWE-863, #122).
+  if (opts?.secondeLigneActive === false) return true
+  return user.id !== d.demandeurId
 }
 
 /** Révocation d'une dérogation ACTIVE : RSSI, métier ou admin. */

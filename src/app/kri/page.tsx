@@ -22,7 +22,7 @@ export default async function KriPage() {
 
   // Définition = 2ᵉ ligne (gouvernance) ; saisie de mesure = 1ʳᵉ ligne (tout sauf lecteur).
   // Aligné sur le garde de l'API POST /api/kri (peutDefinir2eLigne).
-  const canDefine = peutDefinir2eLigne(userRole)
+  const canDefine = peutDefinir2eLigne(userRole, { secondeLigneActive: orgConfig.secondeLigneActive })
   const canMeasure = userRole !== 'LECTEUR'
 
   return (

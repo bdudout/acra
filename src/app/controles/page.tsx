@@ -22,7 +22,7 @@ export default async function ControlesPage() {
 
   // Définir le plan de contrôle = 2ᵉ ligne ; l'exécuter = 1ʳᵉ ligne (tous sauf LECTEUR).
   // Aligné sur le garde de l'API POST /api/controles (peutDefinir2eLigne).
-  const canDefine = peutDefinir2eLigne(userRole)
+  const canDefine = peutDefinir2eLigne(userRole, { secondeLigneActive: orgConfig.secondeLigneActive })
   const canExecute = userRole !== 'LECTEUR'
 
   return (
