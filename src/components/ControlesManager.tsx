@@ -64,7 +64,7 @@ const CHECK_BADGE: Record<string, string> = {
   NA: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200',
 }
 
-export default function ControlesManager({ canDefine, canExecute, currentUserName }: { canDefine: boolean; canExecute: boolean; currentUserName?: string | null }) {
+export default function ControlesManager({ canDefine, canExecute, currentUserName, secondeLigneActive = true }: { canDefine: boolean; canExecute: boolean; currentUserName?: string | null; secondeLigneActive?: boolean }) {
   const { t, locale } = useTranslation()
   const c = t.controles
   // Formulaire vierge : responsable pré-rempli avec l'utilisateur courant (modifiable).
@@ -310,8 +310,9 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
             )}
           </div>
           {/* Contrôle du contrôle : un contrôle N2 supervise des contrôles N1 (2ᵉ ligne
-              qui vérifie la bonne exécution et l'efficacité de la 1ʳᵉ ligne). */}
-          {form.niveau === 'N2' && (
+              qui vérifie la bonne exécution et l'efficacité de la 1ʳᵉ ligne).
+              Masqué en mode « ligne unique » (2ᵉ ligne désactivée). */}
+          {secondeLigneActive && form.niveau === 'N2' && (
             <div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{c.supervise} <span className="text-gray-400">— {c.superviseHint}</span> ({form.superviseIds.length})</div>
               {controles.filter(x => x.niveau === 'N1' && x.id !== editId).length === 0
@@ -563,8 +564,9 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                             </ul>
                           )}
                         </div>
-                        {/* Indépendance de l'exécutant (séparation des fonctions) — contrôle N2 */}
-                        {x.niveau === 'N2' && (
+                        {/* Indépendance de l'exécutant (séparation des fonctions) — contrôle N2.
+                            Masqué en mode « ligne unique » (2ᵉ ligne désactivée). */}
+                        {secondeLigneActive && x.niveau === 'N2' && (
                           <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                             <input type="checkbox" checked={exec.independant} onChange={e => setExec(f => ({ ...f, independant: e.target.checked }))} />
                             {c.independantLabel}

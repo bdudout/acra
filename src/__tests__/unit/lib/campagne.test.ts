@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   validateCampagneInput, cleanCampagneInput, transitionCampagneAutorisee,
   validateEvaluationInput, cleanEvaluationInput, evaluationComplete, suggestResiduel,
-  transitionEvaluationAutorisee, peutValider, avancementCampagne,
+  transitionEvaluationAutorisee, peutValider, avancementCampagne, statutApresCotation,
   CAMPAGNE_STATUTS, EVALUATION_STATUTS, EFFICACITES,
 } from '@/lib/campagne'
 
@@ -87,6 +87,16 @@ describe('suggestResiduel', () => {
   it('null si une donnée manque', () => {
     expect(suggestResiduel(null, 'FORTE')).toBeNull()
     expect(suggestResiduel(4, null)).toBeNull()
+  })
+})
+
+describe('statutApresCotation (mode 2ᵉ ligne optionnelle)', () => {
+  it('2ᵉ ligne active (défaut) → COTEE (validation distincte requise)', () => {
+    expect(statutApresCotation(true)).toBe('COTEE')
+    expect(statutApresCotation(undefined)).toBe('COTEE')
+  })
+  it('2ᵉ ligne désactivée (mode ligne unique) → VALIDEE (cotation vaut clôture)', () => {
+    expect(statutApresCotation(false)).toBe('VALIDEE')
   })
 })
 
