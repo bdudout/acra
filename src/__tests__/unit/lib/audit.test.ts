@@ -25,6 +25,26 @@ describe('cleanMissionInput', () => {
     expect(m.perimetre).toBe('Paie, RH')
     expect(m.responsable).toBe('Cabinet X')
   })
+  it('programme (checklist), cotation et périmètre audité (N3→N1/N2)', () => {
+    const m = cleanMissionInput({
+      intitule: 'Audit accès',
+      programme: ['Revue des habilitations', '  Revue des habilitations  ', '', 'Test MFA'],
+      programmeResultats: [{ label: 'Revue des habilitations', statut: 'KO', commentaire: '  2 écarts  ' }, { label: 'x', statut: 'BOGUS' }],
+      processusIds: ['p1', 'p1', ' p2 '],
+      controleIds: ['c1', 3, 'c2'],
+    })
+    expect(m.programme).toEqual(['Revue des habilitations', 'Test MFA'])
+    expect(m.programmeResultats).toEqual([{ label: 'Revue des habilitations', statut: 'KO', commentaire: '2 écarts' }])
+    expect(m.processusIds).toEqual(['p1', 'p2'])
+    expect(m.controleIds).toEqual(['c1', 'c2'])
+  })
+  it('défauts : programme et périmètre vides', () => {
+    const m = cleanMissionInput({ intitule: 'X' })
+    expect(m.programme).toEqual([])
+    expect(m.programmeResultats).toEqual([])
+    expect(m.processusIds).toEqual([])
+    expect(m.controleIds).toEqual([])
+  })
 })
 
 describe('transitionMissionAutorisee', () => {

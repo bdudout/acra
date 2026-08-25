@@ -92,7 +92,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const updated = await prisma.auditMission.update({
     where: { id },
-    data: { ...partiel, ...(vers !== depuis ? { statut: vers } : {}) },
+    data: {
+      ...partiel,
+      ...('programmeResultats' in partiel ? { programmeResultats: partiel.programmeResultats as unknown as object } : {}),
+      ...(vers !== depuis ? { statut: vers } : {}),
+    },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.mission.organizationId, ip: getClientIp(req),
