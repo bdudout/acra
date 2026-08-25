@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  validateMissionInput, cleanMissionInput, transitionMissionAutorisee,
+  validateMissionInput, cleanMissionInput, transitionMissionAutorisee, prochaineFenetreMission,
   validateConstatInput, cleanConstatInput, constatTermine, constatEnRetard, synthetiserConstats,
   MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES,
 } from '@/lib/audit'
@@ -44,6 +44,23 @@ describe('cleanMissionInput', () => {
     expect(m.programmeResultats).toEqual([])
     expect(m.processusIds).toEqual([])
     expect(m.controleIds).toEqual([])
+  })
+})
+
+describe('mission — type & récurrence (plan pluriannuel)', () => {
+  it('type et recurrence : valeurs connues, défauts sinon', () => {
+    expect(cleanMissionInput({ intitule: 'X', type: 'PERIODIQUE', recurrence: 'ANNUEL' })).toMatchObject({ type: 'PERIODIQUE', recurrence: 'ANNUEL' })
+    expect(cleanMissionInput({ intitule: 'X', type: 'BOGUS', recurrence: 'BOGUS' })).toMatchObject({ type: 'THEMATIQUE', recurrence: 'NONE' })
+    expect(cleanMissionInput({ intitule: 'X' })).toMatchObject({ type: 'THEMATIQUE', recurrence: 'NONE' })
+  })
+  it('prochaineFenetreMission décale la fenêtre selon la récurrence (en années)', () => {
+    expect(prochaineFenetreMission('NONE', '2026-01-01', '2026-02-01')).toBeNull()
+    expect(prochaineFenetreMission('ANNUEL', null, '2026-02-01')).toBeNull() // fenêtre incomplète
+    const a = prochaineFenetreMission('ANNUEL', '2026-01-01', '2026-02-01')!
+    expect(a.dateDebut.toISOString().slice(0, 10)).toBe('2027-01-01')
+    expect(a.dateFin.toISOString().slice(0, 10)).toBe('2027-02-01')
+    const t = prochaineFenetreMission('TRIENNAL', '2026-01-15', '2026-03-15')!
+    expect(t.dateDebut.toISOString().slice(0, 10)).toBe('2029-01-15')
   })
 })
 

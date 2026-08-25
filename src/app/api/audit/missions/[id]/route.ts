@@ -7,7 +7,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   validateMissionInput, cleanMissionInput, transitionMissionAutorisee,
-  synthetiserConstats, constatEnRetard, type MissionStatut,
+  synthetiserConstats, constatEnRetard, prochaineFenetreMission,
+  type MissionStatut, type MissionRecurrence,
 } from '@/lib/audit'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -98,11 +99,32 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(vers !== depuis ? { statut: vers } : {}),
     },
   })
+
+  // Plan pluriannuel : à la clôture d'une mission périodique récurrente, planifier
+  // automatiquement la suivante (même périmètre/programme, fenêtre décalée).
+  let suivanteId: string | null = null
+  if (vers === 'CLOTUREE' && depuis !== 'CLOTUREE' && updated.recurrence !== 'NONE') {
+    const fenetre = prochaineFenetreMission(updated.recurrence as MissionRecurrence, updated.dateDebut, updated.dateFin)
+    if (fenetre) {
+      const suivante = await prisma.auditMission.create({
+        data: {
+          organizationId: c.mission.organizationId, statut: 'PLANIFIEE',
+          intitule: updated.intitule, objectif: updated.objectif, perimetre: updated.perimetre,
+          responsable: updated.responsable, type: updated.type, recurrence: updated.recurrence,
+          dateDebut: fenetre.dateDebut, dateFin: fenetre.dateFin,
+          programme: updated.programme as object, processusIds: updated.processusIds as object,
+          controleIds: updated.controleIds as object,
+        },
+      })
+      suivanteId = suivante.id
+    }
+  }
+
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.mission.organizationId, ip: getClientIp(req),
-    details: { scope: 'audit-mission', action: vers !== depuis ? `transition:${depuis}->${vers}` : 'update', id },
+    details: { scope: 'audit-mission', action: vers !== depuis ? `transition:${depuis}->${vers}` : 'update', id, ...(suivanteId ? { suivanteId } : {}) },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json({ ...updated, suivanteId })
 }
 
 // DELETE /api/audit/missions/[id] — supprimer une mission et ses constats.

@@ -3,7 +3,7 @@
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, transitionMissionAutorisee } from '@/lib/audit'
+import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
 
 interface Synthese { total: number; ouverts: number; resolus: number; enRetard: number; critiques: number; tauxResolution: number }
@@ -15,6 +15,7 @@ interface Mission {
   statut: string; synthese: Synthese
   programme: string[]; programmeResultats: ProgrammeResultat[]
   processusIds: string[]; controleIds: string[]
+  type: string; recurrence: string
 }
 type ProcLite = { id: string; nom: string }
 type CtrlLite = { id: string; intitule: string; niveau: string }
@@ -26,8 +27,8 @@ interface Constat {
 }
 type Risk = { id: string; intitule: string }
 
-type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[] }
-const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [] }
+type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[]; type: string; recurrence: string }
+const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [], type: 'THEMATIQUE', recurrence: 'NONE' }
 type CForm = { intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string }
 const EMPTY_C: CForm = { intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '' }
 
@@ -69,6 +70,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   const [showCForm, setShowCForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [flash, setFlash] = useState<string | null>(null)
   const [procs, setProcs] = useState<ProcLite[]>([])
   const [ctrls, setCtrls] = useState<CtrlLite[]>([])
   // Cotation du programme en cours d'édition (mission dépliée) : missionId → résultats
@@ -104,7 +106,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
     setBusy(true); setError(null)
     const res = await fetch('/api/audit/missions', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...mForm, objectif: mForm.objectif || null, perimetre: mForm.perimetre || null, responsable: mForm.responsable || null, dateDebut: mForm.dateDebut || null, dateFin: mForm.dateFin || null, programme: mForm.programme, processusIds: mForm.processusIds, controleIds: mForm.controleIds }),
+      body: JSON.stringify({ ...mForm, objectif: mForm.objectif || null, perimetre: mForm.perimetre || null, responsable: mForm.responsable || null, dateDebut: mForm.dateDebut || null, dateFin: mForm.dateFin || null, programme: mForm.programme, processusIds: mForm.processusIds, controleIds: mForm.controleIds, type: mForm.type, recurrence: mForm.recurrence }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
@@ -126,13 +128,14 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   }
 
   async function transitionnerMission(m: Mission, statut: string) {
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setFlash(null)
     const res = await fetch(`/api/audit/missions/${m.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intitule: m.intitule, statut }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    if (data.suivanteId) setFlash(a.missionSuivantePlanifiee)
     reload()
   }
 
@@ -188,6 +191,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{a.subtitle}</p>
       {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+      {flash && <p className="text-xs text-ebios-600 mb-3">{flash}</p>}
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
@@ -247,6 +251,16 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
           </div>
           <div className="flex flex-wrap gap-3 items-end">
             <input value={mForm.responsable} onChange={e => setMForm(f => ({ ...f, responsable: e.target.value }))} placeholder={a.responsablePlaceholder} className={inp} />
+            <label className="text-xs text-gray-500 dark:text-gray-400">{a.typeMission}
+              <select value={mForm.type} onChange={e => setMForm(f => ({ ...f, type: e.target.value }))} className={`${inp} block mt-1`}>
+                {MISSION_TYPES.map(tt => <option key={tt} value={tt}>{lbl(a.typeOpt, tt)}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-gray-500 dark:text-gray-400">{a.recurrence}
+              <select value={mForm.recurrence} onChange={e => setMForm(f => ({ ...f, recurrence: e.target.value }))} className={`${inp} block mt-1`} title={a.recurrenceHint}>
+                {MISSION_RECURRENCES.map(rr => <option key={rr} value={rr}>{lbl(a.recurrenceOpt, rr)}</option>)}
+              </select>
+            </label>
             <label className="text-xs text-gray-500 dark:text-gray-400">{a.dateDebut}<input type="date" value={mForm.dateDebut} onChange={e => setMForm(f => ({ ...f, dateDebut: e.target.value }))} className={`${inp} block mt-1`} /></label>
             <label className="text-xs text-gray-500 dark:text-gray-400">{a.dateFin}<input type="date" value={mForm.dateFin} onChange={e => setMForm(f => ({ ...f, dateFin: e.target.value }))} className={`${inp} block mt-1`} /></label>
             <button onClick={creerMission} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{a.add}</button>
@@ -269,6 +283,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                     </button>
                     <span className="block text-xs text-gray-400">
                       {jour(m.dateDebut)} → {jour(m.dateFin)}{m.responsable && ` · ${m.responsable}`}
+                      {m.type === 'PERIODIQUE' && <span className="ml-1.5 text-ebios-600 dark:text-ebios-300">· {lbl(a.typeOpt, 'PERIODIQUE')}{m.recurrence !== 'NONE' && ` ↻ ${lbl(a.recurrenceOpt, m.recurrence)}`}</span>}
                       {m.synthese.total > 0 && ` · ${a.constatsResume.replace('{r}', String(m.synthese.resolus)).replace('{t}', String(m.synthese.total))}`}
                       {m.synthese.enRetard > 0 && <> · <AlertTriangle size={13} className="inline align-[-0.15em] mr-0.5 text-amber-600" aria-hidden="true" />{m.synthese.enRetard}</>}
                     </span>

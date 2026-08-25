@@ -20,6 +20,13 @@ export type ConstatStatut = (typeof CONSTAT_STATUTS)[number]
 export const CRITICITE_MIN = 1
 export const CRITICITE_MAX = 4
 
+// Plan d'audit pluriannuel : nature de la mission + récurrence (en années).
+export const MISSION_TYPES = ['THEMATIQUE', 'PERIODIQUE'] as const
+export type MissionType = (typeof MISSION_TYPES)[number]
+export const MISSION_RECURRENCES = ['NONE', 'ANNUEL', 'BIENNAL', 'TRIENNAL'] as const
+export type MissionRecurrence = (typeof MISSION_RECURRENCES)[number]
+const ANNEES_PAR_RECURRENCE: Record<Exclude<MissionRecurrence, 'NONE'>, number> = { ANNUEL: 1, BIENNAL: 2, TRIENNAL: 3 }
+
 // ─── Mission ─────────────────────────────────────────────────────────────────
 
 export interface MissionInput {
@@ -33,6 +40,8 @@ export interface MissionInput {
   programmeResultats?: unknown
   processusIds?: unknown
   controleIds?: unknown
+  type?: unknown
+  recurrence?: unknown
 }
 
 export interface CleanMission {
@@ -49,6 +58,9 @@ export interface CleanMission {
   /** Périmètre audité (N3→N1/N2) : processus et contrôles couverts. */
   processusIds: string[]
   controleIds: string[]
+  /** Plan pluriannuel : nature et récurrence de la mission. */
+  type: MissionType
+  recurrence: MissionRecurrence
 }
 
 function parseDate(v: unknown): Date | null {
@@ -87,7 +99,36 @@ export function cleanMissionInput(body: MissionInput): CleanMission {
     programmeResultats: cleanChecklistResultats(body.programmeResultats),
     processusIds: cleanExigenceRefs(body.processusIds),
     controleIds: cleanExigenceRefs(body.controleIds),
+    type: MISSION_TYPES.includes(body.type as MissionType) ? (body.type as MissionType) : 'THEMATIQUE',
+    recurrence: MISSION_RECURRENCES.includes(body.recurrence as MissionRecurrence) ? (body.recurrence as MissionRecurrence) : 'NONE',
   }
+}
+
+/** Ajoute `mois` mois à une date (UTC), borné au dernier jour du mois cible. */
+function addMonths(d: Date, mois: number): Date {
+  const jour = d.getUTCDate()
+  const cible = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + mois, 1))
+  const dernierJour = new Date(Date.UTC(cible.getUTCFullYear(), cible.getUTCMonth() + 1, 0)).getUTCDate()
+  cible.setUTCDate(Math.min(jour, dernierJour))
+  cible.setUTCHours(d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds())
+  return cible
+}
+
+/**
+ * Fenêtre de la mission périodique suivante selon la récurrence (décalage en
+ * années). Retourne null si NONE ou si la fenêtre (début/fin) est incomplète.
+ */
+export function prochaineFenetreMission(
+  recurrence: MissionRecurrence,
+  dateDebut: Date | string | null,
+  dateFin: Date | string | null,
+): { dateDebut: Date; dateFin: Date } | null {
+  if (recurrence === 'NONE') return null
+  const d = parseDate(dateDebut)
+  const f = parseDate(dateFin)
+  if (!d || !f) return null
+  const mois = ANNEES_PAR_RECURRENCE[recurrence] * 12
+  return { dateDebut: addMonths(d, mois), dateFin: addMonths(f, mois) }
 }
 
 /** Transitions : PLANIFIEE → EN_COURS → CLOTUREE. Aucun retour en arrière. */
