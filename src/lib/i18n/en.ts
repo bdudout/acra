@@ -1284,6 +1284,9 @@ export const en: Translations = {
     independantLabel: 'Performer independent from the first line (segregation of duties)',
     independantBadge: 'Independent',
     independantHint: 'Performed by someone independent from the first line',
+    importLabel: 'Import a baseline…',
+    importHint: 'Create ready-to-use control templates (duplicates skipped)',
+    importResultat: '{n} control(s) imported, {s} already present.',
     etats: {
       A_VENIR: 'Upcoming',
       DU: 'Due',

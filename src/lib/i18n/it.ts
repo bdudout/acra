@@ -1284,6 +1284,9 @@ export const it: Translations = {
     independantLabel: 'Esecutore indipendente dalla prima linea (separazione delle funzioni)',
     independantBadge: 'Indipendente',
     independantHint: 'Eseguito da una persona indipendente dalla prima linea',
+    importLabel: 'Importa un set…',
+    importHint: 'Crea controlli tipo pronti all\'uso (duplicati ignorati)',
+    importResultat: '{n} controllo/i importato/i, {s} già presente/i.',
     etats: {
       A_VENIR: 'In arrivo',
       DU: 'Dovuto',
