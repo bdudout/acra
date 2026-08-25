@@ -3,8 +3,9 @@
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee } from '@/lib/audit'
+import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
+import { PROGRAMMES_AUDIT, getProgrammeAudit } from '@/lib/audit-programmes-catalogue'
 
 interface Synthese { total: number; ouverts: number; resolus: number; enRetard: number; critiques: number; tauxResolution: number }
 type ChecklistStatut = 'OK' | 'KO' | 'NA'
@@ -76,6 +77,8 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   // Cotation du programme en cours d'édition (mission dépliée) : missionId → résultats
   const [coteId, setCoteId] = useState<string | null>(null)
   const [cote, setCote] = useState<ProgrammeResultat[]>([])
+  const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
+  const [cFiltre, setCFiltre] = useState<ConstatFiltre>({ q: '', statut: '', criticite: '', source: '' })
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
@@ -179,6 +182,8 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   }
 
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const missionsAff = filtrerMissions(missions, mFiltre)
+  const mFiltreActif = Boolean(mFiltre.q || mFiltre.statut || mFiltre.type)
   const totalRetard = missions.reduce((s, m) => s + m.synthese.enRetard, 0)
   const totalCritiques = missions.reduce((s, m) => s + m.synthese.critiques, 0)
   const enCours = missions.filter(m => m.statut === 'EN_COURS').length
@@ -211,7 +216,14 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
           </div>
           {/* Programme d'audit : points de revue (coté à la clôture) */}
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{a.programme} <span className="text-gray-400">— {a.programmeHint}</span></div>
+            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
+              <div className="text-xs text-gray-500 dark:text-gray-400">{a.programme} <span className="text-gray-400">— {a.programmeHint}</span></div>
+              <select value="" onChange={e => { const p = getProgrammeAudit(e.target.value); if (p) setMForm(f => ({ ...f, programme: [...f.programme, ...p.points.filter(pt => !f.programme.includes(pt))] })); e.target.value = '' }}
+                className={inp} aria-label={a.programmeCharger} title={a.programmeChargerHint}>
+                <option value="">{a.programmeCharger}</option>
+                {PROGRAMMES_AUDIT.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
+              </select>
+            </div>
             <div className="space-y-1.5">
               {mForm.programme.map((pt, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -269,11 +281,33 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
         </div>
       )}
 
+      {/* Barre de filtres des missions */}
+      {!loading && missions.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2 items-center">
+          <input value={mFiltre.q ?? ''} onChange={e => setMFiltre(f => ({ ...f, q: e.target.value }))} placeholder={a.filtreRecherche} className={`${inp} min-w-[200px]`} />
+          <select value={mFiltre.statut ?? ''} onChange={e => setMFiltre(f => ({ ...f, statut: e.target.value }))} className={inp} aria-label={a.filtreStatut}>
+            <option value="">{a.filtreStatutTous}</option>
+            {MISSION_STATUTS.map(s => <option key={s} value={s}>{lbl(a.missionStatuts, s)}</option>)}
+          </select>
+          <select value={mFiltre.type ?? ''} onChange={e => setMFiltre(f => ({ ...f, type: e.target.value }))} className={inp} aria-label={a.typeMission}>
+            <option value="">{a.filtreTypeTous}</option>
+            {MISSION_TYPES.map(tt => <option key={tt} value={tt}>{lbl(a.typeOpt, tt)}</option>)}
+          </select>
+          {mFiltreActif && (
+            <>
+              <span className="text-xs text-gray-400">{a.filtreResultat.replace('{n}', String(missionsAff.length)).replace('{total}', String(missions.length))}</span>
+              <button onClick={() => setMFiltre({ q: '', statut: '', type: '' })} className="text-xs text-ebios-600 hover:underline">✕ {a.filtreEffacer}</button>
+            </>
+          )}
+        </div>
+      )}
+
       {loading ? <p className="text-gray-400">…</p>
         : missions.length === 0 ? <p className="text-gray-400 italic">{a.empty}</p>
+        : missionsAff.length === 0 ? <p className="text-gray-400 italic">{a.filtreAucun}</p>
         : (
           <div className="space-y-3">
-            {missions.map(m => (
+            {missionsAff.map(m => (
               <div key={m.id} className="card p-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
@@ -400,9 +434,22 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                       </div>
                     )}
 
-                    {constats.length === 0 ? <p className="text-xs text-gray-400 italic">{a.aucunConstat}</p> : (
+                    {constats.length > 3 && (
+                      <div className="mb-2 flex flex-wrap gap-2 items-center">
+                        <input value={cFiltre.q ?? ''} onChange={e => setCFiltre(f => ({ ...f, q: e.target.value }))} placeholder={a.filtreRecherche} className={`${inp} text-xs min-w-[160px]`} />
+                        <select value={cFiltre.statut ?? ''} onChange={e => setCFiltre(f => ({ ...f, statut: e.target.value }))} className={`${inp} text-xs`} aria-label={a.suivi}>
+                          <option value="">{a.filtreStatutTous}</option>
+                          {CONSTAT_STATUTS.map(s => <option key={s} value={s}>{lbl(a.constatStatuts, s)}</option>)}
+                        </select>
+                        <select value={cFiltre.source ?? ''} onChange={e => setCFiltre(f => ({ ...f, source: e.target.value }))} className={`${inp} text-xs`} aria-label={a.source}>
+                          <option value="">{a.filtreSourceToutes}</option>
+                          {CONSTAT_SOURCES.map(s => <option key={s} value={s}>{lbl(a.sources, s)}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    {(() => { const cf = filtrerConstats(constats, cFiltre); return constats.length === 0 ? <p className="text-xs text-gray-400 italic">{a.aucunConstat}</p> : cf.length === 0 ? <p className="text-xs text-gray-400 italic">{a.filtreAucun}</p> : (
                       <ul className="space-y-2">
-                        {constats.map(cc => (
+                        {cf.map(cc => (
                           <li key={cc.id} className="text-sm border-b border-gray-100 dark:border-gray-800 pb-2">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
@@ -427,7 +474,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                           </li>
                         ))}
                       </ul>
-                    )}
+                    ) })()}
                   </div>
                 )}
               </div>

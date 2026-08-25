@@ -203,6 +203,34 @@ export function cleanConstatInput(body: ConstatInput): CleanConstat {
   }
 }
 
+// ─── Filtrage (recherche + facettes) ─────────────────────────────────────────
+const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase()
+
+export interface MissionFiltre { q?: string; statut?: string; type?: string }
+/** Filtre (ET logique) une liste de missions : recherche intitulé/responsable + statut + type. */
+export function filtrerMissions<T extends { intitule: string; responsable: string | null; statut: string; type: string }>(list: T[], f: MissionFiltre): T[] {
+  const q = f.q ? sansAccents(f.q.trim()) : ''
+  return list.filter(m => {
+    if (q && !sansAccents(`${m.intitule} ${m.responsable ?? ''}`).includes(q)) return false
+    if (f.statut && m.statut !== f.statut) return false
+    if (f.type && m.type !== f.type) return false
+    return true
+  })
+}
+
+export interface ConstatFiltre { q?: string; statut?: string; criticite?: string; source?: string }
+/** Filtre (ET logique) une liste de constats : recherche + statut + criticité + source. */
+export function filtrerConstats<T extends { intitule: string; description: string | null; statut: string; criticite: number | null; source: string }>(list: T[], f: ConstatFiltre): T[] {
+  const q = f.q ? sansAccents(f.q.trim()) : ''
+  return list.filter(c => {
+    if (q && !sansAccents(`${c.intitule} ${c.description ?? ''}`).includes(q)) return false
+    if (f.statut && c.statut !== f.statut) return false
+    if (f.criticite && String(c.criticite ?? '') !== f.criticite) return false
+    if (f.source && c.source !== f.source) return false
+    return true
+  })
+}
+
 /** Un constat est terminal quand il est RÉSOLU ou ACCEPTÉ (plus de suivi actif). */
 export function constatTermine(statut: ConstatStatut): boolean {
   return statut === 'RESOLU' || statut === 'ACCEPTE'
