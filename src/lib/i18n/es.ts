@@ -2943,6 +2943,8 @@ export const es: Translations = {
     kriDesc: 'Indicadores clave de riesgo con seguimiento periódico, umbrales de alerta/crítico y señal temprana. Definidos por la 2ª línea, medidos por la 1ª.',
     reglementaireTitle: 'Reporte regulatorio',
     reglementaireDesc: 'Registro de incidentes TIC (clasificación DORA mayor/significativo/menor) y resumen de pérdidas (LDC ACPR). Apoyo a la decisión, exportación CSV.',
+    secondeLigneTitle: '2ª línea de defensa (segregación de funciones)',
+    secondeLigneDesc: 'Activada (predeterminado): dispositivo regulado — definición/validación por la 2ª línea, cuatro ojos, control del control N2. Desactivada: modo «línea única» para organizaciones no reguladas (la 1ª línea realiza las tareas, sin doble validación).',
     moduleForcedOn: 'Impuesto a nivel de instancia',
     moduleForcedOff: 'Desactivado a nivel de instancia',
     learnMore:          'Más información ↗',

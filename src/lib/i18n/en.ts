@@ -2943,6 +2943,8 @@ export const en: Translations = {
     kriDesc: 'Key risk indicators tracked periodically, with alert/critical thresholds and early warning. Defined by the 2nd line, measured by the 1st.',
     reglementaireTitle: 'Regulatory reporting',
     reglementaireDesc: 'ICT incident register (DORA major/significant/minor classification) and loss summary (ACPR LDC). Decision support, CSV export.',
+    secondeLigneTitle: '2nd line of defence (segregation of duties)',
+    secondeLigneDesc: 'Enabled (default): regulated setup — definition/validation by the 2nd line, four-eyes, N2 control-of-control. Disabled: "single-line" mode for non-regulated organisations (the 1st line performs the tasks, without dual validation).',
     moduleForcedOn: 'Enforced at instance level',
     moduleForcedOff: 'Disabled at instance level',
     learnMore:          'Learn more ↗',

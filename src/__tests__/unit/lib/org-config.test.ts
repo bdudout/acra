@@ -42,6 +42,12 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(c.echellesEcosysteme).toEqual({})
   })
 
+  it('2ᵉ ligne de défense : active par défaut (rétrocompatible), désactivable par row', () => {
+    expect(resolveOrgConfig([]).secondeLigneActive).toBe(true)
+    expect(DEFAULT_ORG_CONFIG.secondeLigneActive).toBe(true)
+    expect(resolveOrgConfig([row({ secondeLigneActive: false })]).secondeLigneActive).toBe(false)
+  })
+
   it('un champ JSON vide hérite de l\'ancêtre (le plus proche non vide gagne)', () => {
     // chaîne SELF-first : [enfant, racine]
     const enfant = row({ entitesMesures: [] })                       // vide → hérite

@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import {
-  resolveModuleActivation, isModuleForced, sanitizeModulesPolicy,
+  resolveModuleActivation, isModuleForced, sanitizeModulesPolicy, GOVERNABLE_MODULES,
 } from '@/lib/module-policy'
+
+describe('GOVERNABLE_MODULES', () => {
+  it('inclut la 2ᵉ ligne de défense (gouvernable au niveau instance)', () => {
+    expect(GOVERNABLE_MODULES).toContain('secondeLigne')
+  })
+  it('sanitize accepte une politique sur secondeLigne', () => {
+    expect(sanitizeModulesPolicy({ secondeLigne: 'FORCE_ON' })).toEqual({ secondeLigne: 'FORCE_ON' })
+  })
+})
 
 describe('resolveModuleActivation', () => {
   it('PER_ORG / absent → la valeur de l\'organisation décide', () => {

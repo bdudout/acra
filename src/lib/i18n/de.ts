@@ -2943,6 +2943,8 @@ export const de: Translations = {
     kriDesc: 'Periodisch verfolgte Schlüsselrisikoindikatoren mit Warn-/Kritisch-Schwellen und Frühwarnung. Definition durch die 2., Messung durch die 1. Linie.',
     reglementaireTitle: 'Regulatorisches Reporting',
     reglementaireDesc: 'IKT-Vorfallregister (DORA-Klassifizierung schwer/erheblich/gering) und Verlustübersicht (ACPR LDC). Entscheidungshilfe, CSV-Export.',
+    secondeLigneTitle: '2. Verteidigungslinie (Funktionstrennung)',
+    secondeLigneDesc: 'Aktiviert (Standard): reguliertes Modell — Definition/Validierung durch die 2. Linie, Vier-Augen-Prinzip, Kontrolle der Kontrolle N2. Deaktiviert: „Einlinien"-Modus für nicht regulierte Organisationen (die 1. Linie führt die Aufgaben ohne Doppelvalidierung aus).',
     moduleForcedOn: 'Auf Instanzebene erzwungen',
     moduleForcedOff: 'Auf Instanzebene deaktiviert',
     learnMore:          'Mehr erfahren ↗',

@@ -162,6 +162,7 @@ export default function ConfigurationPage() {
   const [auditInterneActive, setAuditInterneActive] = useState(false)
   const [kriActive, setKriActive] = useState(false)
   const [reglementaireActive, setReglementaireActive] = useState(false)
+  const [secondeLigneActive, setSecondeLigneActive] = useState(true) // défaut true = mode réglementé
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
@@ -216,6 +217,7 @@ export default function ConfigurationPage() {
         setAuditInterneActive(Boolean(data.auditInterneActive))
         setKriActive(Boolean(data.kriActive))
         setReglementaireActive(Boolean(data.reglementaireActive))
+        setSecondeLigneActive(data.secondeLigneActive !== false) // défaut true
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
@@ -262,8 +264,9 @@ export default function ConfigurationPage() {
     auditInterneActive: setAuditInterneActive,
     kriActive: setKriActive,
     reglementaireActive: setReglementaireActive,
+    secondeLigneActive: setSecondeLigneActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -720,7 +723,7 @@ export default function ConfigurationPage() {
             <h2 className="text-base font-semibold text-gray-800 mb-1">{t.modulesPolicy.sectionTitle}</h2>
             <p className="text-sm text-gray-500 mb-4">{t.modulesPolicy.sectionDesc}</p>
             <div className="space-y-3">
-              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }, { key: 'incidents', label: t.features.incidentsTitle }, { key: 'controlePermanent', label: t.features.controlePermanentTitle }, { key: 'auditInterne', label: t.features.auditInterneTitle }, { key: 'kri', label: t.features.kriTitle }, { key: 'reglementaire', label: t.features.reglementaireTitle }]).map(m => (
+              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }, { key: 'incidents', label: t.features.incidentsTitle }, { key: 'controlePermanent', label: t.features.controlePermanentTitle }, { key: 'auditInterne', label: t.features.auditInterneTitle }, { key: 'kri', label: t.features.kriTitle }, { key: 'reglementaire', label: t.features.reglementaireTitle }, { key: 'secondeLigne', label: t.features.secondeLigneTitle }]).map(m => (
                 <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
                   <span className="text-sm font-medium text-gray-800">{m.label}</span>
                   <select
@@ -1259,6 +1262,7 @@ export default function ConfigurationPage() {
                 { field: 'auditInterneActive' as const, value: auditInterneActive, title: t.features.auditInterneTitle, desc: t.features.auditInterneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.auditInterne === 'FORCE_ON' || modulesPolicy.auditInterne === 'FORCE_OFF', indent: false, forced: modulesPolicy.auditInterne },
                 { field: 'kriActive' as const, value: kriActive, title: t.features.kriTitle, desc: t.features.kriDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.kri === 'FORCE_ON' || modulesPolicy.kri === 'FORCE_OFF', indent: false, forced: modulesPolicy.kri },
                 { field: 'reglementaireActive' as const, value: reglementaireActive, title: t.features.reglementaireTitle, desc: t.features.reglementaireDesc, href: 'https://www.eiopa.europa.eu/digital-operational-resilience-act-dora_en', disabled: modulesPolicy.reglementaire === 'FORCE_ON' || modulesPolicy.reglementaire === 'FORCE_OFF', indent: false, forced: modulesPolicy.reglementaire },
+                { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
