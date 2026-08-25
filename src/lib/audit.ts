@@ -4,6 +4,8 @@
 // régulateur (ACPR/BCE) sont le même objet, source différente. Cloisonnement :
 // seul l'auditeur écrit ; les autres consultent. Logique PURE et testée.
 
+import { cleanChecklist, cleanChecklistResultats, cleanExigenceRefs, type ChecklistResultat } from './controle'
+
 export const MISSION_STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
 export type MissionStatut = (typeof MISSION_STATUTS)[number]
 
@@ -27,6 +29,10 @@ export interface MissionInput {
   responsable?: unknown
   dateDebut?: unknown
   dateFin?: unknown
+  programme?: unknown
+  programmeResultats?: unknown
+  processusIds?: unknown
+  controleIds?: unknown
 }
 
 export interface CleanMission {
@@ -36,6 +42,13 @@ export interface CleanMission {
   responsable: string | null
   dateDebut: Date | null
   dateFin: Date | null
+  /** Programme d'audit : points de revue (checklist). */
+  programme: string[]
+  /** Cotation du programme (à la clôture) : [{label, statut, commentaire?}]. */
+  programmeResultats: ChecklistResultat[]
+  /** Périmètre audité (N3→N1/N2) : processus et contrôles couverts. */
+  processusIds: string[]
+  controleIds: string[]
 }
 
 function parseDate(v: unknown): Date | null {
@@ -70,6 +83,10 @@ export function cleanMissionInput(body: MissionInput): CleanMission {
     responsable: txt(body.responsable),
     dateDebut: parseDate(body.dateDebut),
     dateFin: parseDate(body.dateFin),
+    programme: cleanChecklist(body.programme),
+    programmeResultats: cleanChecklistResultats(body.programmeResultats),
+    processusIds: cleanExigenceRefs(body.processusIds),
+    controleIds: cleanExigenceRefs(body.controleIds),
   }
 }
 

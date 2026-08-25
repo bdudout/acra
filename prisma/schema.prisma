@@ -618,6 +618,16 @@ model AuditMission {
   // PLANIFIEE | EN_COURS | CLOTUREE
   statut String @default("PLANIFIEE")
 
+  // Programme d'audit (points de revue) : string[] de libellés. Vide = pas de
+  // programme structuré. Coté à la clôture (programmeResultats).
+  programme          Json @default("[]")
+  // Cotation du programme : [{label, statut: OK|KO|NA, commentaire?}]
+  programmeResultats Json @default("[]")
+  // Périmètre audité (contrôle périodique N3 sur les 1ʳᵉ/2ᵉ lignes) : identifiants
+  // des processus et des contrôles (N1/N2) couverts par la mission. Liens logiques.
+  processusIds Json @default("[]")
+  controleIds  Json @default("[]")
+
   constats AuditConstat[]
 
   createdAt DateTime @default(now())

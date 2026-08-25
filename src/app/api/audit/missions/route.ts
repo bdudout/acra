@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanMissionInput(body)
 
-  const mission = await prisma.auditMission.create({ data: { ...data, organizationId: orgId, statut: 'PLANIFIEE' } })
+  const mission = await prisma.auditMission.create({ data: { ...data, programmeResultats: data.programmeResultats as unknown as object, organizationId: orgId, statut: 'PLANIFIEE' } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'audit-mission', action: 'create', id: mission.id },
