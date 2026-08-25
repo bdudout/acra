@@ -1307,6 +1307,9 @@ export const fr = {
     independantLabel: 'Exécutant indépendant de la 1ʳᵉ ligne (séparation des fonctions)',
     independantBadge: 'Indépendant',
     independantHint: 'Exécuté par une personne indépendante de la 1ʳᵉ ligne',
+    importLabel: 'Importer un socle…',
+    importHint: 'Créer des contrôles-types prêts à l\'emploi (doublons ignorés)',
+    importResultat: '{n} contrôle(s) importé(s), {s} déjà présent(s).',
     etats: {
       A_VENIR: 'À venir',
       DU: 'Dû',

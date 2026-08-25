@@ -1284,6 +1284,9 @@ export const de: Translations = {
     independantLabel: 'Ausführender unabhängig von der ersten Linie (Funktionstrennung)',
     independantBadge: 'Unabhängig',
     independantHint: 'Von einer von der ersten Linie unabhängigen Person durchgeführt',
+    importLabel: 'Vorlage importieren…',
+    importHint: 'Sofort einsatzbereite Kontroll-Vorlagen erstellen (Duplikate übersprungen)',
+    importResultat: '{n} Kontrolle(n) importiert, {s} bereits vorhanden.',
     etats: {
       A_VENIR: 'Bevorstehend',
       DU: 'Fällig',
