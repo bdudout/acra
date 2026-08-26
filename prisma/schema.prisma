@@ -898,6 +898,8 @@ model Analyse {
   organisation         String?
   secteur              String?
   sousSecteur          String? // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
+  // Tags / programme (regroupement libre pour les grandes organisations) : string[]
+  tags                 Json          @default("[]")
   dateDebut            DateTime      @default(now())
   dateEcheance         DateTime?
   statut               StatutAnalyse @default(EN_COURS)
