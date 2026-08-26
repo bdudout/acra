@@ -9,6 +9,7 @@ import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, ClipboardList, Clock, Download, FileJson, FileSpreadsheet, FileText, FolderOpen, Landmark, Link2, Pencil, Search, Settings, ShieldCheck, Sparkles, Trash2, Trophy, Upload, VenetianMask } from 'lucide-react'
+import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 
@@ -37,6 +38,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
   const [analyses, setAnalyses] = useState<any[]>(initialAnalyses)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterValue>(() => urlParamToFilter(searchParams.get('filter')))
+  const [tagFilter, setTagFilter] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -115,7 +117,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   })
 
-  const filtered = sorted
+  const allTags = tagsUniques(analyses)
+  const filtered = filtrerParTag(sorted, tagFilter)
     .filter(a => filter === 'ALL' || a.statut === filter)
     .filter(a =>
       !search ||
@@ -192,6 +195,13 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               </button>
             ))}
           </div>
+          {allTags.length > 0 && (
+            <select value={tagFilter} onChange={e => setTagFilter(e.target.value)}
+              className="input max-w-[12rem] text-sm" aria-label={t.analyses.tagFilterLabel}>
+              <option value="">{t.analyses.tagFilterAll}</option>
+              {allTags.map(tg => <option key={tg} value={tg}>{tg}</option>)}
+            </select>
+          )}
         </div>
 
         {filtered.length === 0 ? (
@@ -291,6 +301,14 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                       {(a.organisation || a.secteur) && (
                         <div className="text-sm text-gray-500 mb-2">
                           {[a.organisation, a.secteur].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
+                      {Array.isArray(a.tags) && a.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {a.tags.map((tg: string) => (
+                            <button key={tg} type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); setTagFilter(tg) }}
+                              className="text-[11px] px-2 py-0.5 rounded-full bg-ebios-50 text-ebios-700 hover:bg-ebios-100 font-medium">{tg}</button>
+                          ))}
                         </div>
                       )}
                       <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 flex-wrap">

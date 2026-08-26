@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { cleanTags } from '@/lib/analyse-tags'
 import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -17,6 +18,7 @@ const createSchema = z.object({
   organisation: z.string().max(200).optional(),
   secteur:      z.string().max(100).optional(),
   sousSecteur:  z.string().max(60).optional(), // id stable de sous-secteur (issue #25)
+  tags:         z.array(z.string()).optional(), // tags / programme (regroupement)
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
     orderBy: { updatedAt: 'desc' },
     select: {
       id: true, nom: true, description: true, organisation: true,
-      secteur: true, statut: true, atelierCourant: true,
+      secteur: true, statut: true, atelierCourant: true, tags: true,
       isSocle: true, socleId: true,
       socle: { select: { id: true, nom: true } },
       createdAt: true, updatedAt: true,
@@ -115,6 +117,7 @@ export async function POST(req: NextRequest) {
         secteur: data.secteur,
         // Sous-secteur conservé seulement s'il est cohérent avec le secteur.
         sousSecteur: isSousSecteurOfSecteur(data.secteur, data.sousSecteur) ? data.sousSecteur : null,
+        tags: cleanTags(data.tags),
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,

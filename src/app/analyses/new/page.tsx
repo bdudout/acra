@@ -7,13 +7,14 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
+import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
   const { SECTEURS_ACTIVITE, SOUS_SECTEURS } = useEbiosData()
-  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '', mentionProtection: 'NON_PROTEGEE' })
+  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '', mentionProtection: 'NON_PROTEGEE', tags: '' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const sousSecteurOptions = SOUS_SECTEURS.filter(s => sousSecteurIdsFor(form.secteur).includes(s.id))
   const [socleId, setSocleId] = useState('')
@@ -37,7 +38,7 @@ export default function NewAnalysePage() {
     const res = await fetch('/api/analyses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, ...(socleId ? { socleId } : {}) }),
+      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), ...(socleId ? { socleId } : {}) }),
     })
 
     const data = await res.json()
@@ -110,6 +111,13 @@ export default function NewAnalysePage() {
                 <Factory size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.newAnalysis.otNote}
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="label">{t.newAnalysis.tagsLabel}</label>
+            <input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })}
+              placeholder={t.newAnalysis.tagsPlaceholder} className="input" />
+            <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.tagsHint}</p>
           </div>
 
           <div>
