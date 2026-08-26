@@ -1463,7 +1463,8 @@ export const de: Translations = {
     },
     sources: {
       AUDIT_INTERNE: 'Interne Revision',
-      REGULATEUR: 'Aufsicht',
+      REGULATEUR: 'Aufsicht / Aufsichtsbehörde',
+      AUDITEUR_EXTERNE: 'Externer Prüfer (Abschlussprüfer / Dritter)',
     },
     errors: {
       intitule_requis: 'Titel ist erforderlich.',

@@ -1486,7 +1486,8 @@ export const fr = {
     },
     sources: {
       AUDIT_INTERNE: 'Audit interne',
-      REGULATEUR: 'Régulateur',
+      REGULATEUR: 'Régulateur / autorité de contrôle',
+      AUDITEUR_EXTERNE: 'Auditeur externe (CAC / tiers)',
     },
     errors: {
       intitule_requis: 'L\'intitulé est requis.',

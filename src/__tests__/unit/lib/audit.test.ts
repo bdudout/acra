@@ -3,8 +3,25 @@ import {
   validateMissionInput, cleanMissionInput, transitionMissionAutorisee, prochaineFenetreMission,
   filtrerMissions, filtrerConstats,
   validateConstatInput, cleanConstatInput, constatTermine, constatEnRetard, synthetiserConstats,
-  MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES,
+  MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, niveauControle, SOURCE_NIVEAU,
 } from '@/lib/audit'
+
+describe('4ᵉ niveau — source de constat & niveau de contrôle', () => {
+  it('CONSTAT_SOURCES inclut l\'auditeur externe (4ᵉ niveau)', () => {
+    expect([...CONSTAT_SOURCES]).toEqual(['AUDIT_INTERNE', 'REGULATEUR', 'AUDITEUR_EXTERNE'])
+  })
+  it('niveauControle : audit interne = N3 ; régulateur & auditeur externe = N4', () => {
+    expect(niveauControle('AUDIT_INTERNE')).toBe('N3')
+    expect(niveauControle('REGULATEUR')).toBe('N4')
+    expect(niveauControle('AUDITEUR_EXTERNE')).toBe('N4')
+    expect(SOURCE_NIVEAU.AUDITEUR_EXTERNE).toBe('N4')
+  })
+  it('cleanConstatInput accepte la nouvelle source', () => {
+    expect(cleanConstatInput({ intitule: 'X', source: 'AUDITEUR_EXTERNE' }).source).toBe('AUDITEUR_EXTERNE')
+    expect(validateConstatInput({ intitule: 'X', source: 'AUDITEUR_EXTERNE' })).toBeNull()
+    expect(validateConstatInput({ intitule: 'X', source: 'BOGUS' })).toBe('source_invalide')
+  })
+})
 
 describe('validateMissionInput', () => {
   it('intitulé requis', () => {
@@ -165,7 +182,7 @@ describe('énumérations', () => {
   it('statuts et sources', () => {
     expect([...MISSION_STATUTS]).toEqual(['PLANIFIEE', 'EN_COURS', 'CLOTUREE'])
     expect([...CONSTAT_STATUTS]).toEqual(['OUVERT', 'EN_COURS', 'RESOLU', 'ACCEPTE'])
-    expect([...CONSTAT_SOURCES]).toEqual(['AUDIT_INTERNE', 'REGULATEUR'])
+    expect([...CONSTAT_SOURCES]).toEqual(['AUDIT_INTERNE', 'REGULATEUR', 'AUDITEUR_EXTERNE'])
   })
 
   it('validateMissionInput partial: intitulé non requis si absent', () => {

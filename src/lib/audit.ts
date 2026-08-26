@@ -9,8 +9,24 @@ import { cleanChecklist, cleanChecklistResultats, cleanExigenceRefs, type Checkl
 export const MISSION_STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
 export type MissionStatut = (typeof MISSION_STATUTS)[number]
 
-export const CONSTAT_SOURCES = ['AUDIT_INTERNE', 'REGULATEUR'] as const
+// Source d'un constat : audit interne (3ᵉ ligne / N3), ou contrôle EXTERNE (4ᵉ
+// niveau) qui peut être une autorité de contrôle (REGULATEUR) ou un auditeur
+// externe / commissaire aux comptes (AUDITEUR_EXTERNE).
+export const CONSTAT_SOURCES = ['AUDIT_INTERNE', 'REGULATEUR', 'AUDITEUR_EXTERNE'] as const
 export type ConstatSource = (typeof CONSTAT_SOURCES)[number]
+
+/** Niveau du dispositif de contrôle porté par la source du constat. */
+export type NiveauControle = 'N3' | 'N4'
+export const SOURCE_NIVEAU: Record<ConstatSource, NiveauControle> = {
+  AUDIT_INTERNE: 'N3',       // contrôle périodique / audit interne (3ᵉ ligne)
+  REGULATEUR: 'N4',          // contrôle externe — autorité de contrôle
+  AUDITEUR_EXTERNE: 'N4',    // contrôle externe — audit tiers / commissaire aux comptes
+}
+export function niveauControle(source: string): NiveauControle {
+  return SOURCE_NIVEAU[source as ConstatSource] ?? 'N3'
+}
+/** Sources de contrôle EXTERNE (4ᵉ niveau) : régulateur + auditeur externe. */
+export const SOURCES_EXTERNES: ConstatSource[] = ['REGULATEUR', 'AUDITEUR_EXTERNE']
 
 // Suivi d'un constat/recommandation : ouvert → en cours → résolu (ou accepté
 // par la direction si le risque est assumé sans remédiation).
