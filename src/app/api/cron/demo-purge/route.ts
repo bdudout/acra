@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { assertCronAuth } from '@/lib/cron-auth'
 import { purgeExpiredDemoOrgs, warnExpiringDemoOrgs, isDemoInstance } from '@/lib/demo-server'
 import { auditLog } from '@/lib/logger'
 
@@ -18,11 +19,8 @@ import { auditLog } from '@/lib/logger'
  * erreur en démo reste stampée PROD → purge refusée (garde-fou anti-destruction).
  */
 export async function POST(req: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return NextResponse.json({ error: 'Cron désactivé (CRON_SECRET absent)' }, { status: 503 })
-  const auth = req.headers.get('authorization') ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.nextUrl.searchParams.get('token') ?? ''
-  if (token !== secret) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const denied = assertCronAuth(req)
+  if (denied) return denied
 
   // Garde-fou : ne JAMAIS purger hors d'une instance de démo prouvée (env + marqueur figé).
   if (!(await isDemoInstance())) {

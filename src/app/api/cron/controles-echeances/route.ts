@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { assertCronAuth } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { prochaineEcheance, etatEcheance, type Periodicite } from '@/lib/controle'
@@ -21,11 +22,8 @@ const RECIPIENT_ROLES = ['RSSI', 'ADMIN', 'RISK_MANAGER'] as const
  * 503 si CRON_SECRET absent ; 401 si le secret ne correspond pas.
  */
 export async function POST(req: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return NextResponse.json({ error: 'Cron désactivé (CRON_SECRET absent)' }, { status: 503 })
-  const auth = req.headers.get('authorization') ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.nextUrl.searchParams.get('token') ?? ''
-  if (token !== secret) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const denied = assertCronAuth(req)
+  if (denied) return denied
 
   const now = new Date()
   const candidats = await prisma.controle.findMany({
