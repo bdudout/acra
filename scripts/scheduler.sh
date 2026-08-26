@@ -40,11 +40,14 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : snapshots 02:00 · controles-echeances 06:00 · derogations-expiry 07:00 · derogations-digest 1er 08:00"
+echo "[scheduler] planning : webhooks-dispatch chaque tick · snapshots 02:00 · controles-echeances 06:00 · derogations-expiry 07:00 · derogations-digest 1er 08:00"
 
 last_snap=""; last_ctl=""; last_exp=""; last_dig=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
+
+  # Livraison des webhooks sortants : à chaque tick (file idempotente, backoff interne).
+  hit webhooks-dispatch
 
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
   [ "$hour" = "06" ] && [ "$last_ctl"  != "$day" ]   && { hit controles-echeances;  last_ctl="$day"; }

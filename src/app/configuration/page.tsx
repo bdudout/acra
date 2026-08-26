@@ -23,6 +23,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
 import ApiKeysManager from '@/components/ApiKeysManager'
+import WebhooksManager from '@/components/WebhooksManager'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -745,6 +746,7 @@ export default function ConfigurationPage() {
 
         {/* Clés d'API (accès machine à l'API publique v1) — ADMIN */}
         {isAdmin && <ApiKeysManager />}
+        {isAdmin && <WebhooksManager />}
 
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (
