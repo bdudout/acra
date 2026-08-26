@@ -18,6 +18,9 @@ export function isPublicPath(pathname: string): boolean {
     // Endpoints cron (planificateur externe) : auth propre par CRON_SECRET dans le
     // handler, donc exemptés de l'auth par session du middleware.
     pathname.startsWith('/api/cron/') ||
+    // API publique v1 : authentification propre par clé d'API (Bearer) dans le
+    // handler, donc exemptée de l'auth par session du middleware.
+    pathname.startsWith('/api/v1/') ||
     // Statut démo : lu par la page d'accueil (visiteur anonyme) pour afficher
     // l'encart « mode démonstration ». Ne renvoie aucune donnée sensible.
     pathname === '/api/demo/status' ||

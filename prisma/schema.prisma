@@ -137,9 +137,30 @@ model Organization {
   campagnesControle CampagneControle[]
   referentiels      Referentiel[]
   documents         Document[]
+  apiKeys           ApiKey[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// Clé d'API : accès machine (Bearer) à l'API publique v1, portée à une organisation.
+// Seul le HASH SHA-256 du jeton est stocké ; le préfixe (public) sert au lookup.
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  prefix         String       @unique   // segment public « acra_<prefix>_… »
+  hashedKey      String                  // sha256 hex du jeton complet
+  scopes         Json         @default("[\"read\"]") // ['read'] | ['read','write']
+  createdBy      String?
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([prefix])
 }
 
 // ─── Socle GRC : référentiel de processus (macro-processus → processus) ──────

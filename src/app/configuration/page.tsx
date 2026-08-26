@@ -22,6 +22,7 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
+import ApiKeysManager from '@/components/ApiKeysManager'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -741,6 +742,9 @@ export default function ConfigurationPage() {
             <p className="text-xs text-gray-400 mt-2">{t.modulesPolicy.hint}</p>
           </section>
         )}
+
+        {/* Clés d'API (accès machine à l'API publique v1) — ADMIN */}
+        {isAdmin && <ApiKeysManager />}
 
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (

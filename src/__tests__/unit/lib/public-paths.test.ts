@@ -39,6 +39,12 @@ describe('isPublicPath — accès sans authentification', () => {
     expect(isPublicPath('/api/cronjobs-secret')).toBe(false)
   })
 
+  it('autorise l’API publique v1 (auth propre par clé Bearer), sans confusion de préfixe', () => {
+    expect(isPublicPath('/api/v1/risks')).toBe(true)
+    expect(isPublicPath('/api/v1/openapi.json')).toBe(true)
+    expect(isPublicPath('/api/v1x/secret')).toBe(false)
+  })
+
   it('autorise le statut démo (lu par l’accueil pour un visiteur anonyme), exact', () => {
     expect(isPublicPath('/api/demo/status')).toBe(true)
     // les autres routes démo restent protégées (création de données)
