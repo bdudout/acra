@@ -10,6 +10,7 @@ import { summarizeActions } from '@/lib/risk-action'
 import { suggestCalibration, type IncidentLite } from '@/lib/incident'
 import { evaluerEfficacite } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { emitWebhookEvent } from '@/lib/webhook.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -103,5 +104,6 @@ export async function POST(req: NextRequest) {
   }
   const risk = await prisma.riskItem.create({ data: { ...data, organizationId: orgId, provenance: 'MANUEL' } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'create', id: risk.id, intitule: data.intitule } })
+  await emitWebhookEvent(orgId, 'risk.created', { id: risk.id, intitule: risk.intitule })
   return NextResponse.json(risk, { status: 201 })
 }

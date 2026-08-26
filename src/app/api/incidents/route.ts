@@ -9,6 +9,7 @@ import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection }
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
 import { type DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { emitWebhookEvent } from '@/lib/webhook.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,5 +101,6 @@ export async function POST(req: NextRequest) {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: 'declare', id: incident.id },
   })
+  await emitWebhookEvent(orgId, 'incident.declared', { id: incident.id, intitule: incident.intitule, statut: incident.statut })
   return NextResponse.json(incident, { status: 201 })
 }

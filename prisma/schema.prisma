@@ -120,24 +120,25 @@ model Organization {
   // Date d'envoi du préavis de purge (mode démo) — anti-doublon ; réinitialisé quand l'org redevient active
   warnedAt       DateTime?
 
-  membres       OrgMembership[]
-  analyses      Analyse[]
-  config        OrganizationConfig?
-  conformites   Conformite[]
-  derogations   Derogation[]
-  processus     Processus[]
-  riskItems     RiskItem[]
-  riskActions   RiskAction[]
-  incidents     Incident[]
-  controles     Controle[]
-  campagnes     Campagne[]
-  auditMissions AuditMission[]
-  kris          Kri[]
-  arrangementsTic ArrangementTic[]
+  membres           OrgMembership[]
+  analyses          Analyse[]
+  config            OrganizationConfig?
+  conformites       Conformite[]
+  derogations       Derogation[]
+  processus         Processus[]
+  riskItems         RiskItem[]
+  riskActions       RiskAction[]
+  incidents         Incident[]
+  controles         Controle[]
+  campagnes         Campagne[]
+  auditMissions     AuditMission[]
+  kris              Kri[]
+  arrangementsTic   ArrangementTic[]
   campagnesControle CampagneControle[]
   referentiels      Referentiel[]
   documents         Document[]
   apiKeys           ApiKey[]
+  webhooks          Webhook[]
 
   @@index([parentId])
   @@index([path])
@@ -150,8 +151,8 @@ model ApiKey {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
-  prefix         String       @unique   // segment public « acra_<prefix>_… »
-  hashedKey      String                  // sha256 hex du jeton complet
+  prefix         String       @unique // segment public « acra_<prefix>_… »
+  hashedKey      String // sha256 hex du jeton complet
   scopes         Json         @default("[\"read\"]") // ['read'] | ['read','write']
   createdBy      String?
   lastUsedAt     DateTime?
@@ -161,6 +162,43 @@ model ApiKey {
 
   @@index([organizationId])
   @@index([prefix])
+}
+
+// Webhook sortant : notifie un SI tiers (URL https) lors d'événements de l'org.
+// `secret` sert à signer chaque envoi (HMAC-SHA256). `events` = liste d'événements
+// abonnés (ou ["*"] pour tous).
+model Webhook {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  url            String
+  secret         String // secret de signature (jamais renvoyé après création)
+  events         Json              @default("[]")
+  actif          Boolean           @default(true)
+  createdBy      String?
+  createdAt      DateTime          @default(now())
+  deliveries     WebhookDelivery[]
+
+  @@index([organizationId])
+}
+
+// Livraison d'un événement à un webhook : file d'attente + suivi des ré-essais.
+model WebhookDelivery {
+  id                 String   @id @default(cuid())
+  webhookId          String
+  webhook            Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event              String
+  payload            String // corps JSON sérialisé (signé tel quel)
+  statut             String   @default("EN_ATTENTE") // EN_ATTENTE | LIVRE | ECHEC
+  tentatives         Int      @default(0)
+  prochaineTentative DateTime @default(now())
+  dernierCode        Int?
+  derniereErreur     String?
+  createdAt          DateTime @default(now())
+
+  @@index([statut, prochaineTentative])
+  @@index([webhookId])
 }
 
 // ─── Socle GRC : référentiel de processus (macro-processus → processus) ──────
@@ -262,7 +300,7 @@ model Campagne {
   clotureePar String?
   clotureeLe  DateTime?
 
-  evaluations   CampagneEvaluation[]
+  evaluations CampagneEvaluation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,19 +416,19 @@ model ControleExecution {
   organizationId String
 
   // CONFORME | ANOMALIE | NON_APPLICABLE
-  resultat          String
-  dateRealisation   DateTime
-  constat           String?  @db.Text
-  tailleTestee      Int?
-  anomaliesTrouvees Int?
+  resultat           String
+  dateRealisation    DateTime
+  constat            String?  @db.Text
+  tailleTestee       Int?
+  anomaliesTrouvees  Int?
   // Pièces justificatives en data URL (cf. lib/preuves.ts) : [{nom,mime,taille,dataUrl}]
-  preuves           Json     @default("[]")
+  preuves            Json     @default("[]")
   // Cotation des points de la checklist : [{label,statut:OK|KO|NA,commentaire?}]
-  checklistResultats Json    @default("[]")
+  checklistResultats Json     @default("[]")
   // Indépendance de l'exécutant vis-à-vis de la 1ʳᵉ ligne (séparation des
   // fonctions, contrôle N2). null = non renseigné.
-  independant       Boolean?
-  executantId       String
+  independant        Boolean?
+  executantId        String
 
   createdAt DateTime @default(now())
 
@@ -449,10 +487,10 @@ model Incident {
   // Workflow de déclaration DORA (art. 19) — cf. lib/dora-reporting.ts.
   // Horodatage de classification « majeur » (démarre l'horloge des 4 h) et des
   // soumissions de chaque phase à l'autorité compétente.
-  doraClasseMajeurLe          DateTime?
-  doraInitialeSoumiseLe       DateTime?
-  doraIntermediaireSoumiseLe  DateTime?
-  doraFinaleSoumiseLe         DateTime?
+  doraClasseMajeurLe         DateTime?
+  doraInitialeSoumiseLe      DateTime?
+  doraIntermediaireSoumiseLe DateTime?
+  doraFinaleSoumiseLe        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -474,15 +512,15 @@ model CampagneControle {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   intitule    String
-  description String?  @db.Text
-  niveau      String   @default("N1") // N1 | N2
-  statut      String   @default("PLANIFIEE") // PLANIFIEE | EN_COURS | CLOTUREE
+  description String?   @db.Text
+  niveau      String    @default("N1") // N1 | N2
+  statut      String    @default("PLANIFIEE") // PLANIFIEE | EN_COURS | CLOTUREE
   // NONE | HEBDOMADAIRE | MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL. À la clôture
   // d'une campagne récurrente, la suivante est planifiée automatiquement.
-  recurrence  String   @default("NONE")
+  recurrence  String    @default("NONE")
   dateDebut   DateTime?
   dateFin     DateTime?
-  controleIds Json     @default("[]") // périmètre : identifiants de contrôles
+  controleIds Json      @default("[]") // périmètre : identifiants de contrôles
   createdBy   String?
 
   createdAt DateTime @default(now())
@@ -503,7 +541,7 @@ model Referentiel {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  code        String  // slug MAJUSCULES, unique par organisation (ex. PSSI-2026)
+  code        String // slug MAJUSCULES, unique par organisation (ex. PSSI-2026)
   nom         String
   // PSSI | POLITIQUE | REGLEMENTAIRE | STANDARD | CUSTOM
   type        String  @default("CUSTOM")
@@ -533,25 +571,25 @@ model Document {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  titre       String
+  titre           String
   // PSSI | STRATEGIE | POLITIQUE | PROCEDURE | PREUVE | AUTRE
-  type        String  @default("AUTRE")
+  type            String  @default("AUTRE")
   // REFERENTIEL | RISQUE | ORG
   portee          String  @default("ORG")
   referentielCode String? // code du référentiel (builtin ou custom) si portée REFERENTIEL
   risqueId        String? // identifiant de risque si portée RISQUE
 
-  version     String?
-  description String? @db.Text
+  version      String?
+  description  String?   @db.Text
   dateDocument DateTime?
   dateRevue    DateTime?
 
   // Fichier stocké hors base.
-  fichierNom String  // nom d'origine (affichage)
+  fichierNom String // nom d'origine (affichage)
   mime       String
   taille     Int
-  checksum   String  // sha256 hex
-  storageKey String  // clé dans le backend de stockage
+  checksum   String // sha256 hex
+  storageKey String // clé dans le backend de stockage
 
   // Chaînage de versions (version précédente remplacée).
   remplaceId String?
@@ -575,15 +613,15 @@ model ArrangementTic {
 
   reference         String
   prestataireNom    String
-  identifiant       String?  // LEI de préférence
-  pays              String?  // pays du prestataire (ISO)
-  typeService       String   @default("AUTRE") // cf. TYPES_SERVICE_TIC
+  identifiant       String? // LEI de préférence
+  pays              String? // pays du prestataire (ISO)
+  typeService       String    @default("AUTRE") // cf. TYPES_SERVICE_TIC
   fonctionSupportee String?
-  criticite         String   @default("NON_CRITIQUE") // CRITIQUE | IMPORTANTE | NON_CRITIQUE
+  criticite         String    @default("NON_CRITIQUE") // CRITIQUE | IMPORTANTE | NON_CRITIQUE
   dateDebut         DateTime?
   dateFin           DateTime?
-  paysDonnees       String?  // pays de stockage/traitement des données
-  sousTraitance     Boolean  @default(false)
+  paysDonnees       String? // pays de stockage/traitement des données
+  sousTraitance     Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -652,8 +690,8 @@ model AuditMission {
   programmeResultats Json @default("[]")
   // Périmètre audité (contrôle périodique N3 sur les 1ʳᵉ/2ᵉ lignes) : identifiants
   // des processus et des contrôles (N1/N2) couverts par la mission. Liens logiques.
-  processusIds Json @default("[]")
-  controleIds  Json @default("[]")
+  processusIds       Json @default("[]")
+  controleIds        Json @default("[]")
 
   constats AuditConstat[]
 
@@ -693,8 +731,8 @@ model AuditConstat {
   referentielCode String?
   exigenceRef     String?
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([missionId])
   @@index([organizationId])
@@ -711,17 +749,17 @@ model Kri {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  intitule    String
-  description String? @db.Text
-  unite       String?
+  intitule      String
+  description   String? @db.Text
+  unite         String?
   // HAUSSE (plus haut = pire) | BAISSE (plus bas = pire)
-  sens         String  @default("HAUSSE")
-  seuilAlerte  Float
+  sens          String  @default("HAUSSE")
+  seuilAlerte   Float
   seuilCritique Float
   // MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL
-  frequence   String  @default("MENSUEL")
-  responsable String?
-  actif       Boolean @default(true)
+  frequence     String  @default("MENSUEL")
+  responsable   String?
+  actif         Boolean @default(true)
 
   // Rattachement optionnel à la maille : catégorie de taxonomie / risque / processus.
   taxonomieCode String?
@@ -743,9 +781,9 @@ model Kri {
 
 // Mesure périodique d'un KRI (valeur relevée à une date).
 model KriMesure {
-  id             String   @id @default(cuid())
+  id             String @id @default(cuid())
   kriId          String
-  kri            Kri      @relation(fields: [kriId], references: [id], onDelete: Cascade)
+  kri            Kri    @relation(fields: [kriId], references: [id], onDelete: Cascade)
   organizationId String
 
   valeur      Float
