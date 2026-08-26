@@ -35,6 +35,15 @@ export function filtrerRegulateur<T extends { source: string }>(constats: T[]): 
   return constats.filter(c => c.source === 'REGULATEUR')
 }
 
+/**
+ * Ne conserve que les constats de CONTRÔLE EXTERNE (4ᵉ niveau) : autorité de
+ * contrôle (REGULATEUR) OU auditeur externe / commissaire aux comptes
+ * (AUDITEUR_EXTERNE).
+ */
+export function filtrerControleExterne<T extends { source: string }>(constats: T[]): T[] {
+  return constats.filter(c => c.source === 'REGULATEUR' || c.source === 'AUDITEUR_EXTERNE')
+}
+
 export interface SuiviRegulateurSynthese {
   total: number
   ouverts: number // non terminés

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   filtrerRegulateur,
+  filtrerControleExterne,
   synthetiserSuiviRegulateur,
   prochaineEcheanceRegulateur,
   suiviRegulateurToCsvRow,
@@ -24,6 +25,13 @@ describe('filtrerRegulateur', () => {
   it('ne garde que les constats de source REGULATEUR', () => {
     const list = [c({ id: '1', source: 'REGULATEUR' }), c({ id: '2', source: 'AUDIT_INTERNE' })]
     expect(filtrerRegulateur(list).map(x => x.id)).toEqual(['1'])
+  })
+})
+
+describe('filtrerControleExterne (4ᵉ niveau)', () => {
+  it('garde régulateur ET auditeur externe, exclut l\'audit interne', () => {
+    const list = [c({ id: '1', source: 'REGULATEUR' }), c({ id: '2', source: 'AUDIT_INTERNE' }), c({ id: '3', source: 'AUDITEUR_EXTERNE' })]
+    expect(filtrerControleExterne(list).map(x => x.id)).toEqual(['1', '3'])
   })
 })
 

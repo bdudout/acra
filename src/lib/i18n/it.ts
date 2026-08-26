@@ -1463,7 +1463,8 @@ export const it: Translations = {
     },
     sources: {
       AUDIT_INTERNE: 'Audit interno',
-      REGULATEUR: 'Regolatore',
+      REGULATEUR: 'Regolatore / autorità di controllo',
+      AUDITEUR_EXTERNE: 'Revisore esterno (conti / terzi)',
     },
     errors: {
       intitule_requis: 'Il titolo è obbligatorio.',

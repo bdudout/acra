@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
   if (!cfg.reglementaireActive) return NextResponse.json({ active: false, constats: [] })
 
   const rows = await prisma.auditConstat.findMany({
-    where: { organizationId: orgId, source: 'REGULATEUR' },
+    // Contrôle EXTERNE (4ᵉ niveau) : autorité de contrôle + auditeur externe.
+    where: { organizationId: orgId, source: { in: ['REGULATEUR', 'AUDITEUR_EXTERNE'] } },
     include: { mission: { select: { intitule: true } } },
     orderBy: [{ echeance: 'asc' }, { criticite: 'desc' }],
   })
