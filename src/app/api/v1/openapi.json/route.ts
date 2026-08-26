@@ -52,6 +52,32 @@ export async function GET() {
       '/risks': { get: { summary: 'Registre de risques', operationId: 'listRisks', responses: listResponse('#/components/schemas/Risk') } },
       '/controls': { get: { summary: 'Bibliothèque de contrôles', operationId: 'listControls', responses: listResponse('#/components/schemas/Control') } },
       '/incidents': { get: { summary: 'Incidents & pertes (LDC)', operationId: 'listIncidents', responses: listResponse('#/components/schemas/Incident') } },
+      '/import': {
+        post: {
+          summary: 'Import en masse (risques, contrôles)',
+          operationId: 'bulkImport',
+          description: 'Nécessite le scope write. Corps { risks?: [...], controls?: [...] }. Chaque item est validé ; les invalides sont remontés par index (l\'import continue). Plafond de 500 items par ressource.',
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    risks: { type: 'array', items: { type: 'object' } },
+                    controls: { type: 'array', items: { type: 'object' } },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '201': { description: 'Import traité', content: { 'application/json': { schema: { type: 'object', properties: { created: { type: 'object' }, skipped: { type: 'object' }, errors: { type: 'array', items: { type: 'object', properties: { resource: { type: 'string' }, index: { type: 'integer' }, error: { type: 'string' } } } } } } } } },
+            '400': { description: 'Aucun item créé (erreurs de validation ou module inactif)' },
+            '401': { description: 'Authentification requise' },
+            '403': { description: 'Scope write requis' },
+          },
+        },
+      },
     },
   }
   return NextResponse.json(spec)
