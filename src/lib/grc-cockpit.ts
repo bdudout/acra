@@ -9,7 +9,7 @@
 
 import { perteNette, estTerminal, type IncidentStatut } from './incident'
 import { evaluerEfficacite } from './controle'
-import { synthetiserConstats, type ConstatLite } from './audit'
+import { synthetiserConstats, niveauControle, type ConstatLite } from './audit'
 
 function groupByOrg<T extends { organizationId: string }>(rows: T[]): Map<string, T[]> {
   const m = new Map<string, T[]>()
@@ -140,4 +140,33 @@ export function auditByOrg(missions: { organizationId: string }[], constats: Coc
     out.set(org, rollupAudit(mg.get(org) ?? [], cg.get(org) ?? [], now))
   }
   return out
+}
+
+// ─── Suivi consolidé des 4 niveaux de contrôle ───────────────────────────────
+// N1 : contrôle permanent 1ʳᵉ ligne · N2 : contrôle permanent 2ᵉ ligne ·
+// N3 : audit interne (contrôle périodique) · N4 : contrôle externe (autorité de
+// contrôle / auditeur externe). Réutilise les rollups par niveau et la synthèse
+// de constats — aucune règle métier dupliquée.
+
+export type NiveauControleGlobal = 'N1' | 'N2' | 'N3' | 'N4'
+export interface NiveauSuivi {
+  niveau: NiveauControleGlobal
+  activite: number   // nombre d'objets pilotés (contrôles ou constats) au niveau
+  attention: number  // points d'attention : anomalies (N1/N2) ou constats ouverts (N3/N4)
+  enRetard: number   // constats en retard d'échéance (N3/N4 ; 0 pour le contrôle permanent)
+}
+
+/** Synthèse des 4 niveaux de contrôle pour le cockpit (pure, testée). */
+export function synthetiserQuatreNiveaux(
+  input: { n1: ControleTotals; n2: ControleTotals; constats: (ConstatLite & { source: string })[] },
+  now: Date = new Date(),
+): NiveauSuivi[] {
+  const s3 = synthetiserConstats(input.constats.filter(c => niveauControle(c.source) === 'N3'), now)
+  const s4 = synthetiserConstats(input.constats.filter(c => niveauControle(c.source) === 'N4'), now)
+  return [
+    { niveau: 'N1', activite: input.n1.controles, attention: input.n1.anomalies, enRetard: 0 },
+    { niveau: 'N2', activite: input.n2.controles, attention: input.n2.anomalies, enRetard: 0 },
+    { niveau: 'N3', activite: s3.total, attention: s3.ouverts, enRetard: s3.enRetard },
+    { niveau: 'N4', activite: s4.total, attention: s4.ouverts, enRetard: s4.enRetard },
+  ]
 }

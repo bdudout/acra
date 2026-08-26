@@ -10,7 +10,7 @@ import { summarizeActions } from '@/lib/risk-action'
 import { rollupRisks, rollupByOrg, type RiskLite, type ScopedAction } from '@/lib/grc-rollup'
 import {
   rollupIncidents, incidentsByOrg,
-  rollupControles, controlesByOrg,
+  rollupControles, controlesByOrg, rollupControlesParNiveau, synthetiserQuatreNiveaux,
   rollupAudit, auditByOrg,
   type CockpitIncident, type CockpitExecution, type CockpitConstat,
 } from '@/lib/grc-cockpit'
@@ -68,16 +68,16 @@ export async function GET(req: NextRequest) {
       ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true } })
       : Promise.resolve([]),
     withControles
-      ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true } })
+      ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true, niveau: true } })
       : Promise.resolve([]),
     withControles
-      ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true } })
+      ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true, controle: { select: { niveau: true } } } })
       : Promise.resolve([]),
     withAudit
       ? prisma.auditMission.findMany({ where: orgFilter, select: { organizationId: true } })
       : Promise.resolve([]),
     withAudit
-      ? prisma.auditConstat.findMany({ where: orgFilter, select: { organizationId: true, criticite: true, statut: true, echeance: true } })
+      ? prisma.auditConstat.findMany({ where: orgFilter, select: { organizationId: true, criticite: true, statut: true, echeance: true, source: true } })
       : Promise.resolve([]),
     withKri
       ? prisma.kri.findMany({
@@ -122,10 +122,12 @@ export async function GET(req: NextRequest) {
   }))
   const executions: CockpitExecution[] = executionRows.map(e => ({
     organizationId: e.organizationId, resultat: e.resultat, dateRealisation: e.dateRealisation,
+    niveau: (e as { controle?: { niveau?: string } }).controle?.niveau,
   }))
   const constats: CockpitConstat[] = constatRows.map(c => ({
     organizationId: c.organizationId, criticite: c.criticite, statut: c.statut, echeance: c.echeance,
   }))
+  const controlesNiv = controleRows.map(c => ({ organizationId: c.organizationId, niveau: (c as { niveau?: string }).niveau }))
 
   // Appétit au risque : dépassements calculés sur les risques retenus (post-filtre).
   const appetit = cleanAppetitConfig(orgConfig.appetitRisque)
@@ -199,6 +201,12 @@ export async function GET(req: NextRequest) {
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),
+      // Suivi consolidé des 4 niveaux de contrôle (N1/N2 permanent, N3 audit, N4 externe).
+      ...((withControles || withAudit) ? { quatreNiveaux: (() => {
+        const parNiv = rollupControlesParNiveau(controlesNiv, executions)
+        const constatsSrc = constatRows.map(c => ({ criticite: c.criticite, statut: c.statut, echeance: c.echeance, source: (c as { source?: string }).source ?? 'AUDIT_INTERNE' }))
+        return synthetiserQuatreNiveaux({ n1: parNiv.N1, n2: parNiv.N2, constats: constatsSrc }, now)
+      })() } : {}),
       ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
       ...(withKri ? { kri: synthetiserKri(kriStatuts.map(k => ({ statut: k.statut }))) } : {}),
       ...(withReglementaire ? { dora: synthetiserDora(doraClasses) } : {}),
