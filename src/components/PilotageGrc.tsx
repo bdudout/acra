@@ -16,6 +16,7 @@ interface AuditTotals { missions: number; constats: number; critiques: number; r
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
 interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface DoraSynthese { evalues: number; majeurs: number; significatifs: number; mineurs: number }
+interface NiveauSuivi { niveau: 'N1' | 'N2' | 'N3' | 'N4'; activite: number; attention: number; enRetard: number }
 interface OrgPosture {
   orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
   incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; horsAppetit?: number; kriEnAlerte?: number; doraMajeurs?: number
@@ -23,7 +24,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; quatreNiveaux?: NiveauSuivi[] }
   parOrg: OrgPosture[]
 }
 
@@ -128,6 +129,29 @@ export default function PilotageGrc() {
         <a href={`/api/reglementaire/rapport-controle-interne?lang=${locale}&format=pptx`} className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800" title={p.rapportControleInterne}>PPTX</a>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
+
+      {/* Suivi des 4 niveaux de contrôle (N1/N2 permanent, N3 audit, N4 externe). */}
+      {data.consolide.quatreNiveaux && (
+        <div className="card p-4 mb-5">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{p.quatreNiveauxTitre}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {data.consolide.quatreNiveaux.map(n => (
+              <div key={n.niveau} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs font-bold text-ebios-600 dark:text-ebios-300">{n.niveau}</span>
+                  <span className="text-[11px] text-gray-400">{(p.quatreNiveauxLibelles as Record<string, string>)[n.niveau]}</span>
+                </div>
+                <div className="mt-1 text-2xl font-bold text-gray-800 dark:text-gray-100 tabular-nums">{n.activite}</div>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400">{p.quatreNiveauxActivite}</div>
+                <div className="mt-1.5 flex items-center gap-3 text-xs">
+                  <span className={n.attention > 0 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-400'}>{n.attention} {p.quatreNiveauxAttention}</span>
+                  {n.enRetard > 0 && <span className="text-red-600 dark:text-red-400 font-medium">{n.enRetard} {p.quatreNiveauxRetard}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <RiskFiltersBar
         filters={filters} onChange={setFilters} taxo={taxo} tr={tr}

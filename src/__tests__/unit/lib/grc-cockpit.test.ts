@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   rollupIncidents, incidentsByOrg,
-  rollupControles, controlesByOrg, rollupControlesParNiveau,
+  rollupControles, controlesByOrg, rollupControlesParNiveau, synthetiserQuatreNiveaux,
   rollupAudit, auditByOrg,
   type CockpitIncident, type CockpitExecution, type CockpitConstat,
 } from '@/lib/grc-cockpit'
@@ -100,5 +100,26 @@ describe('grc-cockpit — audit', () => {
     const m = auditByOrg(missions, constats, NOW)
     expect(m.get('a')).toMatchObject({ missions: 1, constats: 2, critiques: 1 })
     expect(m.get('b')).toMatchObject({ missions: 1, constats: 1, critiques: 0 })
+  })
+})
+
+describe('synthetiserQuatreNiveaux', () => {
+  const ct = (controles: number, anomalies: number) => ({ controles, evaluees: controles, conformes: controles - anomalies, anomalies, tauxConformite: null })
+  const now = new Date('2026-06-01T00:00:00Z')
+  it('agrège N1/N2 (contrôle permanent) et N3/N4 (constats par source)', () => {
+    const r = synthetiserQuatreNiveaux({
+      n1: ct(5, 1), n2: ct(2, 0),
+      constats: [
+        { criticite: 4, statut: 'OUVERT', echeance: '2026-05-01', source: 'AUDIT_INTERNE' }, // N3, en retard
+        { criticite: 2, statut: 'RESOLU', echeance: null, source: 'AUDIT_INTERNE' },           // N3, terminé
+        { criticite: 3, statut: 'EN_COURS', echeance: '2026-05-01', source: 'REGULATEUR' },    // N4, en retard
+        { criticite: 3, statut: 'OUVERT', echeance: '2026-12-31', source: 'AUDITEUR_EXTERNE' },// N4, ouvert
+      ],
+    }, now)
+    expect(r.map(x => x.niveau)).toEqual(['N1', 'N2', 'N3', 'N4'])
+    expect(r[0]).toMatchObject({ niveau: 'N1', activite: 5, attention: 1, enRetard: 0 })
+    expect(r[1]).toMatchObject({ niveau: 'N2', activite: 2, attention: 0 })
+    expect(r[2]).toMatchObject({ niveau: 'N3', activite: 2, attention: 1, enRetard: 1 })
+    expect(r[3]).toMatchObject({ niveau: 'N4', activite: 2, attention: 2, enRetard: 1 })
   })
 })
