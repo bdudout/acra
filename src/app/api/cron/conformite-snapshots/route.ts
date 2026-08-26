@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { assertCronAuth } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { sanitizeConformite } from '@/lib/conformite'
@@ -16,11 +17,8 @@ import { sanitizeSnapshotMode, dueForAutoSnapshot } from '@/lib/conformite-confi
  * ne correspond pas. Aucune donnée métier retournée.
  */
 export async function POST(req: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return NextResponse.json({ error: 'Cron désactivé (CRON_SECRET absent)' }, { status: 503 })
-  const auth = req.headers.get('authorization') ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.nextUrl.searchParams.get('token') ?? ''
-  if (token !== secret) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const denied = assertCronAuth(req)
+  if (denied) return denied
 
   const now = new Date()
   const confs = await prisma.conformite.findMany({
