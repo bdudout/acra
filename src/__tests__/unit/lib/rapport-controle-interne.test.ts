@@ -85,4 +85,27 @@ describe('buildRapportControleInterne', () => {
     const sec = r.groupes.find(g => g.ligne === '1')!.sections.find(s => s.id === 'controles')!
     expect(sec.metrics.some(m => m.key.endsWith('N1') || m.key.endsWith('N2'))).toBe(false)
   })
+
+  it('mode ligne unique (2ᵉ ligne désactivée) : fusion 1ʳᵉ+2ᵉ ligne, pas de segmentation N1/N2', () => {
+    const c: ComiteConsolide = {
+      ...sain,
+      controles: { tauxConformite: 90, anomalies: 1, parNiveau: { N1: { tauxConformite: 88, anomalies: 1, controles: 3 }, N2: { tauxConformite: 100, anomalies: 0, controles: 1 } } },
+    }
+    const r = buildRapportControleInterne(c, ALL, { secondeLigneActive: false })
+    expect(r.ligneUnique).toBe(true)
+    // Plus aucune ligne « 2 » : ses domaines (appétit/kri/régulateur) sont fusionnés dans la « 1 ».
+    expect(r.groupes.some(g => g.ligne === '2')).toBe(false)
+    const l1 = r.groupes.find(g => g.ligne === '1')!
+    expect(l1.sections.map(s => s.id)).toEqual(expect.arrayContaining(['risques', 'appetit', 'kri']))
+    // Segmentation N1/N2 omise (attendu de 2ᵉ ligne).
+    const ctrl = l1.sections.find(s => s.id === 'controles')!
+    expect(ctrl.metrics.some(m => m.key.endsWith('N1') || m.key.endsWith('N2'))).toBe(false)
+    // Audit (3ᵉ) et TIC restent distincts.
+    expect(r.groupes.some(g => g.ligne === '3')).toBe(true)
+  })
+
+  it('mode réglementé (défaut) conserve la ligne 2', () => {
+    expect(buildRapportControleInterne(sain, ALL, { secondeLigneActive: true }).ligneUnique).toBe(false)
+    expect(buildRapportControleInterne(sain, ALL).groupes.some(g => g.ligne === '2')).toBe(true)
+  })
 })

@@ -21,6 +21,8 @@ export interface RapportControleInterne {
   groupes: RapportLigne[]
   highlights: ComiteHighlight[]
   appreciation: Appreciation
+  /** Mode « ligne unique » (2ᵉ ligne désactivée) : 1ʳᵉ et 2ᵉ lignes fusionnées. */
+  ligneUnique: boolean
 }
 
 // Rattachement de chaque domaine à une ligne de défense (modèle des 3 lignes).
@@ -32,14 +34,18 @@ const LIGNE_DE: Record<string, LigneDefense> = {
 }
 const ORDRE_LIGNES: LigneDefense[] = ['1', '2', '3', 'TIC']
 
-export function buildRapportControleInterne(consolide: ComiteConsolide, modules: ComiteModules): RapportControleInterne {
+export function buildRapportControleInterne(consolide: ComiteConsolide, modules: ComiteModules, opts: { secondeLigneActive?: boolean } = {}): RapportControleInterne {
+  // Mode « ligne unique » (org non régulée, 2ᵉ ligne désactivée) : 1ʳᵉ et 2ᵉ lignes
+  // fusionnées, et la segmentation N1/N2 (attendu de 2ᵉ ligne) est omise.
+  const ligneUnique = opts.secondeLigneActive === false
+
   // Vue « tous domaines » : le rapport annuel couvre l'ensemble du dispositif.
   const pack = buildComitePack('RISQUES', consolide, modules)
 
   // Segmentation du contrôle permanent N1 / N2 : si le consolidé fournit le détail
   // par niveau, on enrichit la section « controles » de métriques dédiées
   // (contrôle permanent 1ʳᵉ ligne N1 vs 2ᵉ ligne N2) — attendu du rapport annuel.
-  const parN = consolide.controles?.parNiveau
+  const parN = ligneUnique ? undefined : consolide.controles?.parNiveau
   const sections = parN
     ? pack.sections.map(sec => {
         if (sec.id !== 'controles') return sec
@@ -58,7 +64,9 @@ export function buildRapportControleInterne(consolide: ComiteConsolide, modules:
 
   const parLigne = new Map<LigneDefense, ComiteSection[]>()
   for (const sec of sections) {
-    const ligne = LIGNE_DE[sec.id] ?? '1'
+    let ligne = LIGNE_DE[sec.id] ?? '1'
+    // Mode ligne unique : les domaines de 2ᵉ ligne rejoignent la 1ʳᵉ (contrôle interne).
+    if (ligneUnique && ligne === '2') ligne = '1'
     const arr = parLigne.get(ligne) ?? []
     arr.push(sec)
     parLigne.set(ligne, arr)
@@ -70,5 +78,5 @@ export function buildRapportControleInterne(consolide: ComiteConsolide, modules:
   const alertes = pack.highlights.filter(h => h.niveau === 'alerte').length
   const appreciation: Appreciation = alertes === 0 ? 'SATISFAISANT' : alertes <= 3 ? 'A_RENFORCER' : 'INSUFFISANT'
 
-  return { groupes, highlights: pack.highlights, appreciation }
+  return { groupes, highlights: pack.highlights, appreciation, ligneUnique }
 }

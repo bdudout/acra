@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   const format = (searchParams.get('format') ?? 'pdf').toLowerCase() === 'pptx' ? 'pptx' : 'pdf'
   const { consolide, modules } = await gatherGrcConsolide(orgId, cfg, now)
-  const rapport = buildRapportControleInterne(consolide, modules)
+  const rapport = buildRapportControleInterne(consolide, modules, { secondeLigneActive: cfg.secondeLigneActive })
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: orgId, ip: getClientIp(req),

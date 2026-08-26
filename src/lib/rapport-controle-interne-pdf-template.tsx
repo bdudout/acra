@@ -42,6 +42,7 @@ type Dict = Record<string, string>
 type Strings = {
   title: string; subtitle: string; intro: string
   ligne: Record<LigneDefense, string>
+  ligneFusionnee: string
   appreciationLabel: string; appreciation: Dict
   section: Dict; metric: Dict; highlight: Dict
   highlightsTitle: string; noAlert: string; generatedOn: string; approval: string; year: string
@@ -60,6 +61,7 @@ const STRINGS: Record<string, Strings> = {
     title: 'Rapport annuel de contrôle interne', subtitle: 'Dispositif de maîtrise des risques — synthèse',
     intro: 'Ce rapport présente l\'état du dispositif de contrôle interne selon le modèle des trois lignes de défense (contrôle permanent de 1ᵉʳ niveau, gestion des risques et conformité de 2ᵉ niveau, audit interne de 3ᵉ niveau), complété d\'un volet de résilience opérationnelle TIC (DORA). Il consolide les indicateurs des modules actifs et formule une appréciation d\'ensemble.',
     ligne: { '1': '1ʳᵉ ligne de défense — Contrôle permanent (opérationnel)', '2': '2ᵉ ligne de défense — Gestion des risques & conformité', '3': '3ᵉ ligne de défense — Audit interne', TIC: 'Résilience opérationnelle numérique (DORA)' },
+    ligneFusionnee: 'Contrôle interne (1ʳᵉ et 2ᵉ lignes)',
     appreciationLabel: 'Appréciation globale du dispositif', appreciation: { SATISFAISANT: 'Satisfaisant', A_RENFORCER: 'À renforcer', INSUFFISANT: 'Insuffisant' },
     section: SECTION_FR, metric: METRIC_FR, highlight: HL_FR,
     highlightsTitle: 'Points d\'attention', noAlert: 'Aucun point d\'alerte : les indicateurs des modules actifs sont dans les seuils.', generatedOn: 'Généré le', approval: 'Approuvé par l\'organe de surveillance : ____________________   Date : __________', year: 'Exercice',
@@ -68,6 +70,7 @@ const STRINGS: Record<string, Strings> = {
     title: 'Annual internal control report', subtitle: 'Risk management framework — summary',
     intro: 'This report sets out the state of the internal control framework along the three-lines-of-defence model (first-line permanent control, second-line risk management and compliance, third-line internal audit), complemented by an ICT operational resilience section (DORA). It consolidates active-module indicators and states an overall assessment.',
     ligne: { '1': '1st line of defence — Permanent control (operational)', '2': '2nd line of defence — Risk management & compliance', '3': '3rd line of defence — Internal audit', TIC: 'Digital operational resilience (DORA)' },
+    ligneFusionnee: 'Internal control (1st & 2nd lines)',
     appreciationLabel: 'Overall assessment of the framework', appreciation: { SATISFAISANT: 'Satisfactory', A_RENFORCER: 'To be strengthened', INSUFFISANT: 'Insufficient' },
     section: SECTION_EN, metric: METRIC_EN, highlight: HL_EN,
     highlightsTitle: 'Points of attention', noAlert: 'No alert: active-module indicators are within thresholds.', generatedOn: 'Generated on', approval: 'Approved by the supervisory body: ____________________   Date: __________', year: 'Financial year',
@@ -76,6 +79,7 @@ const STRINGS: Record<string, Strings> = {
     title: 'Jährlicher Bericht über die interne Kontrolle', subtitle: 'Risikomanagement-Rahmenwerk — Zusammenfassung',
     intro: 'Dieser Bericht stellt den Zustand des internen Kontrollsystems nach dem Modell der drei Verteidigungslinien dar (permanente Kontrolle der 1. Ebene, Risikomanagement und Compliance der 2. Ebene, interne Revision der 3. Ebene), ergänzt um einen Abschnitt zur digitalen operationellen Resilienz (DORA).',
     ligne: { '1': '1. Verteidigungslinie — Permanente Kontrolle (operativ)', '2': '2. Verteidigungslinie — Risikomanagement & Compliance', '3': '3. Verteidigungslinie — Interne Revision', TIC: 'Digitale operationelle Resilienz (DORA)' },
+    ligneFusionnee: 'Interne Kontrolle (1. und 2. Linie)',
     appreciationLabel: 'Gesamtbeurteilung des Systems', appreciation: { SATISFAISANT: 'Zufriedenstellend', A_RENFORCER: 'Zu stärken', INSUFFISANT: 'Unzureichend' },
     section: SECTION_EN, metric: METRIC_EN, highlight: HL_EN,
     highlightsTitle: 'Aufmerksamkeitspunkte', noAlert: 'Kein Alarm: die Indikatoren der aktiven Module liegen innerhalb der Schwellen.', generatedOn: 'Erstellt am', approval: 'Vom Aufsichtsorgan genehmigt: ____________________   Datum: __________', year: 'Geschäftsjahr',
@@ -84,6 +88,7 @@ const STRINGS: Record<string, Strings> = {
     title: 'Informe anual de control interno', subtitle: 'Marco de gestión de riesgos — resumen',
     intro: 'Este informe presenta el estado del marco de control interno según el modelo de las tres líneas de defensa (control permanente de 1ª línea, gestión de riesgos y cumplimiento de 2ª línea, auditoría interna de 3ª línea), completado con un apartado de resiliencia operativa TIC (DORA).',
     ligne: { '1': '1ª línea de defensa — Control permanente (operativo)', '2': '2ª línea de defensa — Gestión de riesgos y cumplimiento', '3': '3ª línea de defensa — Auditoría interna', TIC: 'Resiliencia operativa digital (DORA)' },
+    ligneFusionnee: 'Control interno (1ª y 2ª líneas)',
     appreciationLabel: 'Valoración global del dispositivo', appreciation: { SATISFAISANT: 'Satisfactorio', A_RENFORCER: 'A reforzar', INSUFFISANT: 'Insuficiente' },
     section: SECTION_EN, metric: METRIC_EN, highlight: HL_EN,
     highlightsTitle: 'Puntos de atención', noAlert: 'Sin alertas: los indicadores de los módulos activos están dentro de los umbrales.', generatedOn: 'Generado el', approval: 'Aprobado por el órgano de supervisión: ____________________   Fecha: __________', year: 'Ejercicio',
@@ -92,6 +97,7 @@ const STRINGS: Record<string, Strings> = {
     title: 'Relazione annuale sul controllo interno', subtitle: 'Sistema di gestione dei rischi — sintesi',
     intro: 'La presente relazione illustra lo stato del sistema di controllo interno secondo il modello delle tre linee di difesa (controllo permanente di 1ª linea, gestione dei rischi e conformità di 2ª linea, audit interno di 3ª linea), integrato da una sezione sulla resilienza operativa TIC (DORA).',
     ligne: { '1': '1ª linea di difesa — Controllo permanente (operativo)', '2': '2ª linea di difesa — Gestione dei rischi e conformità', '3': '3ª linea di difesa — Audit interno', TIC: 'Resilienza operativa digitale (DORA)' },
+    ligneFusionnee: 'Controllo interno (1ª e 2ª linea)',
     appreciationLabel: 'Valutazione complessiva del dispositivo', appreciation: { SATISFAISANT: 'Soddisfacente', A_RENFORCER: 'Da rafforzare', INSUFFISANT: 'Insufficiente' },
     section: SECTION_EN, metric: METRIC_EN, highlight: HL_EN,
     highlightsTitle: 'Punti di attenzione', noAlert: 'Nessuna allerta: gli indicatori dei moduli attivi sono entro le soglie.', generatedOn: 'Generato il', approval: 'Approvato dall\'organo di vigilanza: ____________________   Data: __________', year: 'Esercizio',
@@ -143,7 +149,7 @@ function RapportPDF({ rapport, locale, orgNom, annee, dateStr }: { rapport: Rapp
         {/* Groupes par ligne de défense */}
         {rapport.groupes.map((g, gi) => (
           <View key={`g-${gi}`}>
-            <Text style={s.h2}>{S.ligne[g.ligne] ?? g.ligne}</Text>
+            <Text style={s.h2}>{rapport.ligneUnique && g.ligne === '1' ? S.ligneFusionnee : (S.ligne[g.ligne] ?? g.ligne)}</Text>
             {g.sections.map((sec, si) => (
               <View key={`s-${gi}-${si}`} wrap={false}>
                 <Text style={s.h3}>{S.section[sec.id] ?? sec.id}</Text>
