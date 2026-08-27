@@ -37,4 +37,17 @@ describe('sanitizePreuves', () => {
     expect(sanitizePreuves([null, 'x', ok('bon.pdf'), 42])).toHaveLength(1)
     expect(sanitizePreuves([null, ok('bon.pdf')])[0].nom).toBe('bon.pdf')
   })
+  it('#129 — écarte les data URL à média actif (text/html, svg), garde les médias inertes', () => {
+    // text/html et svg peuvent porter du script exécutable → XSS stocké si un jour
+    // la preuve est rendue/ouverte inline. On borne le type de média de la data URL.
+    expect(sanitizePreuves([{ ...ok(), mime: 'text/html', dataUrl: 'data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==' }])).toEqual([])
+    expect(sanitizePreuves([{ ...ok(), mime: 'image/svg+xml', dataUrl: 'data:image/svg+xml,<svg onload=alert(1)>' }])).toEqual([])
+    expect(sanitizePreuves([{ ...ok(), dataUrl: 'data:application/xhtml+xml;base64,AA' }])).toEqual([])
+    // médias inertes conservés (screenshots, PDF, logs texte)
+    expect(sanitizePreuves([ok()])).toHaveLength(1) // application/pdf
+    expect(sanitizePreuves([{ ...ok(), dataUrl: 'data:image/png;base64,iVBORw0KGgo=' }])).toHaveLength(1)
+    expect(sanitizePreuves([{ ...ok(), dataUrl: 'data:image/jpeg;base64,/9j/4AAQ' }])).toHaveLength(1)
+    expect(sanitizePreuves([{ ...ok(), dataUrl: 'data:text/plain;base64,AA' }])).toHaveLength(1)
+    expect(sanitizePreuves([{ ...ok(), dataUrl: 'data:text/csv;base64,AA' }])).toHaveLength(1)
+  })
 })

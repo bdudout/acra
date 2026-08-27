@@ -11,6 +11,24 @@
 export const PREUVES_MAX = 5
 export const PREUVE_DATAURL_MAX = 1_400_000
 
+// Types de média INERTES autorisés pour une preuve (data URL). Volontairement sans
+// text/html, image/svg+xml, application/xhtml+xml ni autre format à contenu actif :
+// ces formats peuvent porter du script et provoqueraient un XSS stocké si une preuve
+// était un jour rendue/ouverte inline (#129, CWE-79). Aligné sur ALLOWED_DOCUMENT_MIME.
+export const PREUVE_MIME_AUTORISES = new Set<string>([
+  'image/png',
+  'image/jpeg',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+])
+
+/** Type de média déclaré dans une data URL (`data:<média>[;...]` ), en minuscules. */
+export function dataUrlMediaType(dataUrl: string): string {
+  const m = /^data:([^;,]*)/i.exec(dataUrl)
+  return (m?.[1] ?? '').trim().toLowerCase()
+}
+
 export interface Preuve {
   nom: string
   mime: string
@@ -26,6 +44,8 @@ export function sanitizePreuves(v: unknown): Preuve[] {
     const o = p as Record<string, unknown>
     const dataUrl = typeof o.dataUrl === 'string' ? o.dataUrl : ''
     if (!/^data:/.test(dataUrl) || dataUrl.length > PREUVE_DATAURL_MAX) return []
+    // Borne le type de média au jeu inerte (anti-XSS stocké, #129).
+    if (!PREUVE_MIME_AUTORISES.has(dataUrlMediaType(dataUrl))) return []
     return [{
       nom: String(o.nom ?? 'preuve').slice(0, 200),
       mime: String(o.mime ?? '').slice(0, 100),
