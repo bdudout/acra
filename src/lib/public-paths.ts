@@ -21,6 +21,9 @@ export function isPublicPath(pathname: string): boolean {
     // API publique v1 : authentification propre par clé d'API (Bearer) dans le
     // handler, donc exemptée de l'auth par session du middleware.
     pathname.startsWith('/api/v1/') ||
+    // SCIM 2.0 : provisioning par l'IdP (SailPoint/Azure AD), auth Bearer (clé
+    // d'API scope provision) dans le handler → exempté de l'auth par session.
+    pathname.startsWith('/api/scim/') ||
     // Statut démo : lu par la page d'accueil (visiteur anonyme) pour afficher
     // l'encart « mode démonstration ». Ne renvoie aucune donnée sensible.
     pathname === '/api/demo/status' ||

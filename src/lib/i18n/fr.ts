@@ -1094,6 +1094,7 @@ export const fr = {
     namePlaceholder: 'ex. Intégration BI',
     expiry: 'Expiration',
     scopeWrite: 'Autoriser l’écriture (write)',
+    scopeProvision: 'Autoriser le provisioning SCIM (provision)',
     create: 'Créer une clé',
     empty: 'Aucune clé d’API.',
     colKey: 'Clé',

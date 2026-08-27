@@ -1071,6 +1071,7 @@ export const de: Translations = {
     namePlaceholder: 'z. B. BI-Integration',
     expiry: 'Ablauf',
     scopeWrite: 'Schreibzugriff erlauben',
+    scopeProvision: 'SCIM-Provisionierung erlauben (provision)',
     create: 'Schlüssel erstellen',
     empty: 'Keine API-Schlüssel.',
     colKey: 'Schlüssel',
