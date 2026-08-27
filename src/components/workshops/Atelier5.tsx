@@ -200,7 +200,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const regObligations = regulatoryObligations(analyse?.qualification?.statutReglementaire, analyse?.secteur)
   // Opportunités d'usage du rapport (DORA art. 8 / homologation SSI) — issues #70/#74
   const hasClassifiedVm = (analyse?.cadrage?.valeursMetier || []).some((vm: any) => isClassified(vm?.classification))
-  const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur, hasClassifiedVm)
+  const usageNotes = reportUsageNotes(recommendedFw, analyse?.secteur, hasClassifiedVm, analyse?.sousSecteur)
   // Ressource sectorielle : rapport ANSSI « cabinets d'avocats » (issue #57)
   const isJuridique = /juridique|avocat|barreau|legal/i.test(analyse?.secteur || '')
 

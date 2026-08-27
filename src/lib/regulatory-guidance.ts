@@ -44,14 +44,17 @@ export function suggestsComplianceModule(secteur?: string | null, statut?: strin
  * constituer la pièce d'analyse de risques du dossier d'homologation II 901
  * (déclenché seulement si une valeur métier est classifiée IGI-1300 ≠ NP). Pur, testé.
  */
-export function reportUsageNotes(frameworks?: string[] | null, secteur?: string | null, hasClassifiedVm?: boolean): string[] {
+export function reportUsageNotes(frameworks?: string[] | null, secteur?: string | null, hasClassifiedVm?: boolean, sousSecteur?: string | null): string[] {
   const notes: string[] = []
   if ((frameworks ?? []).includes('DORA')) notes.push('doraArt8')
   if (/administration|public|collectivit|état|etat|government|établissement public/i.test(secteur ?? '')) notes.push('homologationSSI')
   // Défense privée (BITD) opérant un SI DR → homologation II 901 (issue #103)
   if (hasClassifiedVm && /défense|defense|militaire|defence|armement|bitd|dga/i.test(secteur ?? '')) notes.push('homologationII901')
-  // Assurance : le rapport alimente l'évaluation ORSA (Solvabilité II art. 45) (issue #96)
-  if (/assur|mutuelle|insurance|réassur|reassur/i.test(secteur ?? '')) notes.push('orsaSolva2')
+  // Assurance : le rapport alimente l'évaluation ORSA (Solvabilité II art. 45) (issue #96).
+  // « Assurance » est un SOUS-secteur (id `banque-assurance`) sous le secteur top-level
+  // « Banque / Finance » → tester secteur ET sousSecteur, sinon la note n'atteint jamais
+  // l'assureur en prod (`analyse.secteur` = 'Banque / Finance') (issue #128).
+  if (/assur|mutuelle|insurance|réassur|reassur/i.test(`${secteur ?? ''} ${sousSecteur ?? ''}`)) notes.push('orsaSolva2')
   return notes
 }
 

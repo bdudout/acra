@@ -79,9 +79,16 @@ describe('reportUsageNotes (issues #70/#74)', () => {
     expect(reportUsageNotes(['ANSSI_HYG'], 'Administration publique')).toContain('homologationSSI')
     expect(reportUsageNotes([], 'Collectivité territoriale')).toContain('homologationSSI')
   })
-  it('assurance → note d’articulation ORSA (Solvabilité II) (issue #96)', () => {
+  it('assurance → note d’articulation ORSA (Solvabilité II) (issue #96/#128)', () => {
+    // En prod, un assureur a secteur = 'Banque / Finance' (libellé TOP-LEVEL de
+    // SECTEURS_ACTIVITE) + sousSecteur = 'banque-assurance' (id). La note ORSA doit
+    // se déclencher via le sous-secteur, pas seulement via le secteur top-level (#128).
+    expect(reportUsageNotes([], 'Banque / Finance', false, 'banque-assurance')).toContain('orsaSolva2')
+    // Le libellé de sous-secteur (« Assurance / mutuelle ») fonctionne aussi.
     expect(reportUsageNotes([], 'Assurance / mutuelle')).toContain('orsaSolva2')
+    // Banque hors assurance (sans sous-secteur, ou sous-secteur ≠ assurance) → pas d'ORSA.
     expect(reportUsageNotes(['DORA'], 'Banque / Finance')).not.toContain('orsaSolva2')
+    expect(reportUsageNotes(['DORA'], 'Banque / Finance', false, 'banque-detail')).not.toContain('orsaSolva2')
   })
   it('défense privée (BITD) avec VM classifiée → note homologation II 901 (issue #103)', () => {
     // Seulement si une valeur métier est classifiée (DR/SD)
