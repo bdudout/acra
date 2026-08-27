@@ -258,7 +258,7 @@ export const fr = {
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Permettez à vos utilisateurs de se connecter via votre fournisseur d\'identité d\'entreprise (IdP). Désactivé par défaut.',
-    comingSoonNotice: 'La connexion SSO sera disponible dans une prochaine version. Cette configuration sera appliquée automatiquement dès l\'activation de la fonctionnalité.',
+    comingSoonNotice: 'OIDC est désormais actif : cochez « Activer le SSO », renseignez l\'issuer et le client OIDC, puis enregistrez — le bouton apparaît sur la page de connexion. (SAML : bientôt.)',
     adminOnlyNotice: '🔒 Cette section n\'est visible et modifiable que par les administrateurs.',
     enableLabel:    'Activer le SSO',
     protocolLabel:  'Protocole',
@@ -326,6 +326,9 @@ export const fr = {
       noAccount:    'Pas encore de compte ?',
       createLink:   'Créer un compte gratuit',
       forgotPassword: 'Mot de passe oublié ?',
+      ssoButton: 'Se connecter via SSO',
+      ssoOr: 'ou',
+      ssoError: 'Connexion SSO refusée. Vérifiez que votre domaine e-mail est autorisé.',
     },
     forgot: {
       title:        'Mot de passe oublié',

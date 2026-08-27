@@ -12,6 +12,8 @@ import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
 import { createAndSendChallenge, verifyChallenge } from '@/lib/mfa-service'
+import { SSO_PROVIDER_ID } from '@/lib/sso'
+import { ssoSignInDecision, finalizeSsoProvisionedUser } from '@/lib/sso.server'
 
 // 🔴 Cookie de session aligné sur le défaut de getToken (middleware) : sa
 // sécurité dépend du SCHÉMA de NEXTAUTH_URL, pas de NODE_ENV. Sans cet
@@ -225,7 +227,28 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  // Finalise un compte provisionné par SSO (rôle par défaut + e-mail vérifié).
+  // No-op si le SSO est désactivé → aucun effet sur les autres créations.
+  events: {
+    async createUser({ user }: { user: any }) {
+      await finalizeSsoProvisionedUser(user.id)
+    },
+  },
   callbacks: {
+    // Gate d'admission SSO : n'affecte QUE le provider 'sso' (login classique
+    // et Credentials inchangés). Applique allowlist de domaines + email vérifié
+    // + règle d'auto-provisioning. Un refus redirige avec un code d'erreur.
+    async signIn(params: any) {
+      const { account, profile, user } = params
+      if (!account || account.provider !== SSO_PROVIDER_ID) return true
+      const decision = await ssoSignInDecision({
+        email: profile?.email ?? user?.email,
+        name: profile?.name ?? user?.name,
+        email_verified: profile?.email_verified,
+      })
+      // Refus → false : NextAuth redirige vers la page d'erreur (motif déjà audité).
+      return decision.ok
+    },
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.id = user.id

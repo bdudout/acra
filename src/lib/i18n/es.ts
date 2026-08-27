@@ -254,7 +254,7 @@ export const es: Translations = {
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Permita a sus usuarios iniciar sesión a través de su proveedor de identidad corporativo (IdP). Desactivado por defecto.',
-    comingSoonNotice: 'El inicio de sesión SSO estará disponible en una próxima versión. Esta configuración se aplicará automáticamente cuando se active la funcionalidad.',
+    comingSoonNotice: 'OIDC ya está activo: marca \'Activar SSO\', completa el issuer y el cliente OIDC y guarda — el botón aparece en la página de inicio de sesión. (SAML: próximamente.)',
     adminOnlyNotice: '🔒 Esta sección solo es visible y editable por los administradores.',
     enableLabel:    'Activar SSO',
     protocolLabel:  'Protocolo',
@@ -318,6 +318,9 @@ export const es: Translations = {
       noAccount:    '¿Aún no tienes cuenta?',
       createLink:   'Crear una cuenta gratuita',
       forgotPassword: '¿Olvidaste tu contraseña?',
+      ssoButton: 'Iniciar sesión con SSO',
+      ssoOr: 'o',
+      ssoError: 'Inicio de sesión SSO denegado. Comprueba que tu dominio de correo está permitido.',
     },
     forgot: {
       title:        'Contraseña olvidada',

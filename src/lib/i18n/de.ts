@@ -254,7 +254,7 @@ export const de: Translations = {
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Ermöglichen Sie Ihren Benutzern die Anmeldung über Ihren Unternehmens-Identitätsprovider (IdP). Standardmäßig deaktiviert.',
-    comingSoonNotice: 'Die SSO-Anmeldung wird in einer zukünftigen Version verfügbar sein. Diese Konfiguration wird automatisch angewendet, sobald die Funktion aktiviert wird.',
+    comingSoonNotice: 'OIDC ist jetzt aktiv: \'SSO aktivieren\' ankreuzen, OIDC-Issuer und Client eintragen, speichern — der Button erscheint auf der Anmeldeseite. (SAML: demnächst.)',
     adminOnlyNotice: '🔒 Dieser Bereich ist nur für Administratoren sichtbar und bearbeitbar.',
     enableLabel:    'SSO aktivieren',
     protocolLabel:  'Protokoll',
@@ -318,6 +318,9 @@ export const de: Translations = {
       noAccount:    'Noch kein Konto?',
       createLink:   'Kostenloses Konto erstellen',
       forgotPassword: 'Passwort vergessen?',
+      ssoButton: 'Mit SSO anmelden',
+      ssoOr: 'oder',
+      ssoError: 'SSO-Anmeldung abgelehnt. Prüfen Sie, ob Ihre E-Mail-Domain zugelassen ist.',
     },
     forgot: {
       title:        'Passwort vergessen',
