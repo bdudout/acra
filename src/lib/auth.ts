@@ -13,7 +13,7 @@ import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
 import { createAndSendChallenge, verifyChallenge } from '@/lib/mfa-service'
 import { SSO_PROVIDER_ID } from '@/lib/sso'
-import { ssoSignInDecision, finalizeSsoProvisionedUser } from '@/lib/sso.server'
+import { ssoSignInDecision, finalizeSsoProvisionedUser, syncSsoRoleFromClaims } from '@/lib/sso.server'
 
 // 🔴 Cookie de session aligné sur le défaut de getToken (middleware) : sa
 // sécurité dépend du SCHÉMA de NEXTAUTH_URL, pas de NODE_ENV. Sans cet
@@ -249,11 +249,17 @@ export const authOptions: NextAuthOptions = {
       // Refus → false : NextAuth redirige vers la page d'erreur (motif déjà audité).
       return decision.ok
     },
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user, account, profile }: { token: any; user: any; account?: any; profile?: any }) {
       if (user) {
         token.id = user.id
         token.role = (user as any).role ?? 'ANALYSTE'
         token.mustChangePassword = (user as any).mustChangePassword === true
+        // RBAC piloté par l'IdP : à la connexion SSO, synchronise le rôle depuis
+        // les groupes du jeton (no-op si aucun mapping de groupes n'est configuré).
+        if (account?.provider === SSO_PROVIDER_ID) {
+          const mapped = await syncSsoRoleFromClaims(user.id, profile)
+          if (mapped) token.role = mapped
+        }
       }
       // Rafraîchir le rôle, isActive ET mustChangePassword depuis la DB à chaque requête
       if (token.id && !user) {

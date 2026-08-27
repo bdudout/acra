@@ -10,6 +10,7 @@ import { auditLog } from '@/lib/logger'
 import {
   isSafeIssuerUrl,
   resolveJitProvisioning,
+  resolveSsoRole,
   SSO_PROVIDER_ID,
   type OidcClaims,
 } from '@/lib/sso'
@@ -22,6 +23,8 @@ export interface SsoOidcConfig {
   autoProvision: boolean
   defaultRole: string
   allowedDomains: string | null
+  groupsClaim: string
+  roleMapping: unknown
 }
 
 /**
@@ -45,6 +48,8 @@ export async function loadSsoOidcConfig(): Promise<SsoOidcConfig | null> {
       autoProvision: c.autoProvision !== false,
       defaultRole: c.defaultRole ?? 'ANALYSTE',
       allowedDomains: c.allowedDomains ?? null,
+      groupsClaim: (c.oidcGroupsClaim ?? 'groups') || 'groups',
+      roleMapping: c.roleMapping ?? {},
     }
   } catch {
     return null
@@ -110,6 +115,22 @@ export async function ssoSignInDecision(claims: OidcClaims): Promise<{ ok: true 
     return { ok: false, reason: decision.reason }
   }
   return { ok: true }
+}
+
+/**
+ * Synchronise le rôle ACRA depuis les groupes de l'IdP (RBAC piloté par l'IdP).
+ * Appelé à CHAQUE connexion SSO (callback jwt) avec les claims bruts. Renvoie le
+ * rôle effectif appliqué, ou null si aucune gouvernance par groupes n'est
+ * configurée (dans ce cas on ne modifie pas le rôle existant).
+ */
+export async function syncSsoRoleFromClaims(userId: string, profile: Record<string, unknown> | undefined): Promise<string | null> {
+  const cfg = await loadSsoOidcConfig()
+  if (!cfg || !profile) return null
+  const role = resolveSsoRole(profile[cfg.groupsClaim], cfg.roleMapping, cfg.defaultRole)
+  if (!role) return null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma.user as any).update({ where: { id: userId }, data: { role } }).catch(() => { /* best-effort */ })
+  return role
 }
 
 /**

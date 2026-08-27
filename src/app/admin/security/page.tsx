@@ -30,6 +30,9 @@ interface SSOConfig {
   autoProvision:    boolean
   defaultRole:      UserRoleEnum
   allowedDomains:   string | null
+  // RBAC piloté par l'IdP
+  oidcGroupsClaim:  string | null
+  roleMapping:      Record<string, string> | null
 }
 
 const SSO_DEFAULT: SSOConfig = {
@@ -37,6 +40,7 @@ const SSO_DEFAULT: SSOConfig = {
   samlEntityId: null, samlSsoUrl: null, samlCertificate: null, samlSignAlgorithm: 'RSA-SHA256',
   oidcIssuerUrl: null, oidcClientId: null, oidcClientSecret: null, oidcScopes: 'openid email profile',
   autoProvision: true, defaultRole: 'ANALYSTE', allowedDomains: null,
+  oidcGroupsClaim: 'groups', roleMapping: {},
 }
 
 interface Policy {
@@ -139,6 +143,10 @@ export default function AdminSecurityPage() {
   const [ssoSaving, setSsoSaving]     = useState(false)
   const [ssoSaved, setSsoSaved]       = useState(false)
   const [ssoError, setSsoError]       = useState('')
+  // RBAC IdP : le mapping groupe→rôle est édité en texte « groupe=RÔLE » (1/ligne).
+  const [roleMappingText, setRoleMappingText] = useState('')
+  const mappingToText = (m: Record<string, string> | null | undefined) =>
+    m ? Object.entries(m).map(([g, r]) => `${g}=${r}`).join('\n') : ''
 
   const loadPolicy = useCallback(() => {
     fetch('/api/admin/password-policy')
@@ -163,7 +171,7 @@ export default function AdminSecurityPage() {
   useEffect(() => {
     fetch('/api/admin/sso-config')
       .then(r => r.json())
-      .then(d => { if (d.id) setSso(d); setSsoLoading(false) })
+      .then(d => { if (d.id) { setSso(d); setRoleMappingText(mappingToText(d.roleMapping)) } setSsoLoading(false) })
       .catch(() => setSsoLoading(false))
   }, [])
 
@@ -227,12 +235,12 @@ export default function AdminSecurityPage() {
     const res = await fetch('/api/admin/sso-config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sso),
+      body: JSON.stringify({ ...sso, roleMapping: roleMappingText }),
     })
     setSsoSaving(false)
     if (res.ok) {
       const updated = await res.json()
-      if (updated.id) setSso(updated)
+      if (updated.id) { setSso(updated); setRoleMappingText(mappingToText(updated.roleMapping)) }
       setSsoSaved(true)
       setTimeout(() => setSsoSaved(false), 3000)
     } else {
@@ -891,6 +899,27 @@ export default function AdminSecurityPage() {
                         onChange={e => setSso(s => ({ ...s, allowedDomains: e.target.value || null }))}
                         className="input text-sm" />
                       <p className="mt-1 text-xs text-gray-400">{t.sso.allowedDomainsHint}</p>
+                    </div>
+
+                    {/* RBAC piloté par l'IdP : groupes → rôles */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-xs font-semibold text-gray-800 mb-2">{t.sso.rbacSection}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">{t.sso.groupsClaim}</label>
+                          <input type="text" value={sso.oidcGroupsClaim ?? ''} placeholder="groups"
+                            onChange={e => setSso(s => ({ ...s, oidcGroupsClaim: e.target.value || null }))}
+                            className="input text-sm" />
+                          <p className="mt-1 text-xs text-gray-400">{t.sso.groupsClaimHint}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">{t.sso.roleMapping}</label>
+                          <textarea value={roleMappingText} rows={4} placeholder={t.sso.roleMappingPh}
+                            onChange={e => setRoleMappingText(e.target.value)}
+                            className="input text-sm font-mono" />
+                          <p className="mt-1 text-xs text-gray-400">{t.sso.roleMappingHint}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
