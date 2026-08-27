@@ -35,6 +35,26 @@ domaines**). API `GET/PUT /api/admin/sso-config` (déjà en place).
 - **UI** : bouton « Se connecter via SSO » sur `/auth/signin`, affiché seulement si
   `GET /api/auth/sso-enabled` = true. Refus SSO ⇒ redirection `?error=` ⇒ message.
 
+## RBAC piloté par l'IdP (groupes → rôles)
+
+Un AD / SailPoint / Okta peut **gouverner les droits** : les groupes de
+l'utilisateur voyagent dans le jeton et sont mappés à un rôle ACRA **à chaque
+connexion**.
+
+- Config (`SSOConfig`) : `oidcGroupsClaim` (nom du claim portant les groupes,
+  défaut `groups`) + `roleMapping` (JSON `{ "<groupe idp>": "<rôle acra>" }`,
+  édité dans `/admin/security` en texte `groupe=RÔLE`, une paire par ligne).
+- Cœur pur (`lib/sso.ts`) : `cleanRoleMapping` (ne garde que les rôles
+  assignables — **SUPER_ADMIN exclu**), `resolveSsoRole` (plus haut privilège si
+  plusieurs groupes ; `defaultRole` si mapping configuré mais aucun match ;
+  **null** si aucun mapping = pas de gouvernance par groupes → on ne touche pas au
+  rôle existant).
+- Application (`lib/sso.server.ts` `syncSsoRoleFromClaims`, appelé dans le
+  callback `jwt` pour le provider `sso`) : met à jour `user.role` à chaque
+  connexion SSO. No-op si aucun mapping → login classique et rôles gérés en
+  interne inchangés. Scopes : penser à demander le scope `groups` côté IdP si
+  nécessaire.
+
 ## Cœur pur testé (`lib/sso.ts`)
 
 `isSafeIssuerUrl`, `emailDomain`, `parseAllowedDomains`, `emailDomainAllowed`

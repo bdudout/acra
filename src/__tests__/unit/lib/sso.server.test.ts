@@ -3,21 +3,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Mocks : Prisma (SSOConfig + User) et déchiffrement du secret.
 const ssoFindUnique = vi.fn()
 const userFindUnique = vi.fn()
+const userUpdate = vi.fn()
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     sSOConfig: { findUnique: (...a: unknown[]) => ssoFindUnique(...a) },
-    user: { findUnique: (...a: unknown[]) => userFindUnique(...a) },
+    user: { findUnique: (...a: unknown[]) => userFindUnique(...a), update: (...a: unknown[]) => userUpdate(...a) },
   },
 }))
 vi.mock('@/lib/secret-crypto', () => ({ decryptSecret: (v: string | null) => v }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn() }))
 
-import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision } from '@/lib/sso.server'
+import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision, syncSsoRoleFromClaims } from '@/lib/sso.server'
 
 const VALID = {
   id: 'global', enabled: true, protocol: 'OIDC',
   oidcIssuerUrl: 'https://acme.okta.com', oidcClientId: 'cid', oidcClientSecret: 'sec',
   oidcScopes: 'openid email profile', autoProvision: true, defaultRole: 'LECTEUR', allowedDomains: 'acme.com',
+  oidcGroupsClaim: 'groups', roleMapping: { 'grp-rssi': 'RSSI' },
 }
 
 describe('loadSsoOidcConfig', () => {
@@ -61,5 +63,24 @@ describe('ssoSignInDecision', () => {
   it('refuse quand le SSO est désactivé', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, enabled: false })
     expect(await ssoSignInDecision({ email: 'a@acme.com' })).toEqual({ ok: false, reason: 'sso_desactive' })
+  })
+})
+
+describe('syncSsoRoleFromClaims', () => {
+  beforeEach(() => { ssoFindUnique.mockReset(); userUpdate.mockReset(); ssoFindUnique.mockResolvedValue(VALID); userUpdate.mockResolvedValue({}) })
+
+  it('mappe un groupe IdP vers un rôle et met à jour l’utilisateur', async () => {
+    const role = await syncSsoRoleFromClaims('u1', { groups: ['grp-rssi'] })
+    expect(role).toBe('RSSI')
+    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1' }, data: { role: 'RSSI' } }))
+  })
+  it('sans mapping configuré → null, aucune écriture', async () => {
+    ssoFindUnique.mockResolvedValue({ ...VALID, roleMapping: {} })
+    expect(await syncSsoRoleFromClaims('u1', { groups: ['grp-rssi'] })).toBeNull()
+    expect(userUpdate).not.toHaveBeenCalled()
+  })
+  it('claim de groupes personnalisé (ex. "roles")', async () => {
+    ssoFindUnique.mockResolvedValue({ ...VALID, oidcGroupsClaim: 'roles' })
+    expect(await syncSsoRoleFromClaims('u1', { roles: ['grp-rssi'] })).toBe('RSSI')
   })
 })

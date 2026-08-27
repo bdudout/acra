@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { cleanRoleMapping } from '@/lib/sso'
 
 // [F005 corrigé] CWE-312 / OWASP A02:2021 — Secrets chiffrés au repos
 // oidcClientSecret est désormais chiffré (AES-256-GCM, src/lib/secret-crypto.ts) avant
@@ -40,6 +41,10 @@ const SSOSchema = z.object({
   autoProvision:  z.boolean().default(true),
   defaultRole:    z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']).default('ANALYSTE'),
   allowedDomains: z.string().max(4096).nullable().optional(),
+
+  // RBAC piloté par l'IdP : claim de groupes + mapping groupe→rôle
+  oidcGroupsClaim: z.string().max(128).nullable().optional(),
+  roleMapping:     z.union([z.string().max(8192), z.record(z.string())]).nullable().optional(),
 })
 
 async function requireAdmin(req: NextRequest) {
@@ -62,6 +67,7 @@ const SSO_DEFAULTS = {
   samlEntityId: null, samlSsoUrl: null, samlCertificate: null, samlSignAlgorithm: 'RSA-SHA256',
   oidcIssuerUrl: null, oidcClientId: null, oidcClientSecret: null, oidcScopes: 'openid email profile',
   autoProvision: true, defaultRole: 'ANALYSTE', allowedDomains: null,
+  oidcGroupsClaim: 'groups', roleMapping: {},
 }
 
 export async function GET(req: NextRequest) {
@@ -95,7 +101,13 @@ export async function PUT(req: NextRequest) {
   const auditData = { ...parsed.data, oidcClientSecret: parsed.data.oidcClientSecret ? '[REDACTED]' : null }
 
   // [F005 corrigé] Chiffrement au repos du Client Secret OIDC (AES-256-GCM) avant persistance.
-  const toStore = { ...parsed.data, oidcClientSecret: encryptSecret(parsed.data.oidcClientSecret) }
+  // roleMapping nettoyé (rôles assignables uniquement) ; claim de groupes normalisé.
+  const toStore = {
+    ...parsed.data,
+    oidcClientSecret: encryptSecret(parsed.data.oidcClientSecret),
+    oidcGroupsClaim: (parsed.data.oidcGroupsClaim ?? 'groups') || 'groups',
+    roleMapping: cleanRoleMapping(parsed.data.roleMapping),
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const config = await (prisma as any).sSOConfig.upsert({

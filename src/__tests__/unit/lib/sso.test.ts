@@ -5,6 +5,9 @@ import {
   parseAllowedDomains,
   emailDomainAllowed,
   resolveJitProvisioning,
+  normalizeGroups,
+  cleanRoleMapping,
+  resolveSsoRole,
 } from '@/lib/sso'
 
 describe('isSafeIssuerUrl', () => {
@@ -41,6 +44,41 @@ describe('emailDomainAllowed', () => {
   })
   it('e-mail invalide → refusé', () => {
     expect(emailDomainAllowed('invalide', '')).toBe(false)
+  })
+})
+
+describe('normalizeGroups', () => {
+  it('accepte un tableau ou une chaîne séparée', () => {
+    expect(normalizeGroups(['A', ' B ', ''])).toEqual(['A', 'B'])
+    expect(normalizeGroups('A, B; C')).toEqual(['A', 'B', 'C'])
+    expect(normalizeGroups(null)).toEqual([])
+  })
+})
+
+describe('cleanRoleMapping', () => {
+  it('parse « groupe = RÔLE », ne garde que les rôles assignables', () => {
+    const m = cleanRoleMapping('grp-rssi = RSSI\ngrp-lecture=lecteur\ngrp-bad = SUPER_ADMIN\ngrp-x = INEXISTANT\nligne_sans_egal')
+    expect(m).toEqual({ 'grp-rssi': 'RSSI', 'grp-lecture': 'LECTEUR' })
+  })
+  it('accepte aussi un objet', () => {
+    expect(cleanRoleMapping({ 'grp-admin': 'ADMIN', 'grp-bad': 'SUPER_ADMIN' })).toEqual({ 'grp-admin': 'ADMIN' })
+  })
+})
+
+describe('resolveSsoRole', () => {
+  const mapping = { 'grp-lecture': 'LECTEUR', 'grp-rm': 'RISK_MANAGER', 'grp-rssi': 'RSSI' }
+  it('null si aucun mapping (pas de gouvernance par groupes)', () => {
+    expect(resolveSsoRole(['grp-rssi'], {}, 'ANALYSTE')).toBeNull()
+    expect(resolveSsoRole(['grp-rssi'], '', 'ANALYSTE')).toBeNull()
+  })
+  it('rôle de plus haut privilège quand plusieurs groupes matchent', () => {
+    expect(resolveSsoRole(['grp-lecture', 'grp-rssi', 'grp-rm'], mapping, 'LECTEUR')).toBe('RSSI')
+  })
+  it('insensible à la casse sur les noms de groupes', () => {
+    expect(resolveSsoRole(['GRP-RM'], mapping, 'LECTEUR')).toBe('RISK_MANAGER')
+  })
+  it('defaultRole si mapping configuré mais aucun groupe mappé', () => {
+    expect(resolveSsoRole(['groupe-inconnu'], mapping, 'LECTEUR')).toBe('LECTEUR')
   })
 })
 

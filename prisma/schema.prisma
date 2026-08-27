@@ -1516,6 +1516,13 @@ model SSOConfig {
   // Si vide ou null, tous les domaines sont acceptés
   allowedDomains String? @db.Text
 
+  // ── RBAC piloté par l'IdP (AD / SailPoint / Okta) ─────────────────────────
+  // Nom du claim (OIDC) / attribut (SAML) portant les groupes de l'utilisateur.
+  oidcGroupsClaim String? @default("groups")
+  // Table de correspondance groupe IdP → rôle ACRA, ex: {"grp-rssi":"RSSI"}.
+  // Vide/null : pas de gouvernance par groupes (defaultRole pour les nouveaux).
+  roleMapping     Json?   @default("{}")
+
   updatedAt DateTime @updatedAt
 }
 
