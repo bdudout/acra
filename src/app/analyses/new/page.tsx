@@ -9,6 +9,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
 import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
+import AutocompleteInput from '@/components/AutocompleteInput'
 
 export default function NewAnalysePage() {
   const router = useRouter()
@@ -78,8 +79,8 @@ export default function NewAnalysePage() {
 
           <div>
             <label className="label">{t.newAnalysis.org}</label>
-            <input type="text" value={form.organisation}
-              onChange={e => setForm({ ...form, organisation: e.target.value })}
+            <AutocompleteInput field="organisation" value={form.organisation}
+              onChange={v => setForm({ ...form, organisation: v })}
               className="input" placeholder={t.newAnalysis.orgPh} />
           </div>
 
