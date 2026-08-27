@@ -9,7 +9,7 @@ import { promisify } from 'util'
 const scryptAsync = promisify(scrypt)
 
 export const API_KEY_PREFIX = 'acra'
-export const API_SCOPES = ['read', 'write'] as const
+export const API_SCOPES = ['read', 'write', 'provision'] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 
 const KEY_LEN = 32   // longueur du dérivé

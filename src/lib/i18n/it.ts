@@ -1071,6 +1071,7 @@ export const it: Translations = {
     namePlaceholder: 'es. Integrazione BI',
     expiry: 'Scadenza',
     scopeWrite: 'Consenti scrittura',
+    scopeProvision: 'Consentire il provisioning SCIM (provision)',
     create: 'Crea chiave',
     empty: 'Nessuna chiave API.',
     colKey: 'Chiave',

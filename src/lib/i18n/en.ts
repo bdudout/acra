@@ -1071,6 +1071,7 @@ export const en: Translations = {
     namePlaceholder: 'e.g. BI integration',
     expiry: 'Expiry',
     scopeWrite: 'Allow write access',
+    scopeProvision: 'Allow SCIM provisioning (provision)',
     create: 'Create key',
     empty: 'No API keys.',
     colKey: 'Key',

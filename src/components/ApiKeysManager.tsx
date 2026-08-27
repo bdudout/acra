@@ -16,6 +16,7 @@ export default function ApiKeysManager() {
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [scopeWrite, setScopeWrite] = useState(false)
+  const [scopeProvision, setScopeProvision] = useState(false)
   const [expiresAt, setExpiresAt] = useState('')
   const [busy, setBusy] = useState(false)
   const [secret, setSecret] = useState<string | null>(null)
@@ -33,12 +34,12 @@ export default function ApiKeysManager() {
     setBusy(true); setSecret(null)
     const res = await fetch('/api/config/api-keys', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name || undefined, scopes: scopeWrite ? ['read', 'write'] : ['read'], expiresAt: expiresAt || undefined }),
+      body: JSON.stringify({ name: name || undefined, scopes: ['read', ...(scopeWrite ? ['write'] : []), ...(scopeProvision ? ['provision'] : [])], expiresAt: expiresAt || undefined }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) return
-    setSecret(data.secret); setName(''); setScopeWrite(false); setExpiresAt(''); reload()
+    setSecret(data.secret); setName(''); setScopeWrite(false); setScopeProvision(false); setExpiresAt(''); reload()
   }
 
   async function revoquer(id: string) {
@@ -79,6 +80,9 @@ export default function ApiKeysManager() {
         </label>
         <label className="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center gap-1.5 pb-1.5">
           <input type="checkbox" checked={scopeWrite} onChange={e => setScopeWrite(e.target.checked)} /> {a.scopeWrite}
+        </label>
+        <label className="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center gap-1.5 pb-1.5">
+          <input type="checkbox" checked={scopeProvision} onChange={e => setScopeProvision(e.target.checked)} /> {a.scopeProvision}
         </label>
         <button onClick={creer} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{a.create}</button>
       </div>
