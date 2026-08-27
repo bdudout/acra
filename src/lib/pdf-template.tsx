@@ -452,6 +452,7 @@ function SummaryPage({ analyse, date, config, tp }: { analyse: any; date: string
     recommendedFrameworksForSector(analyse.secteur, analyse.cadrage?.tailleAnalyse, analyse.sousSecteur, analyse.qualification?.statutReglementaire, analyse.qualification?.entiteFinanciereAgreee),
     analyse.secteur,
     hasClassifiedVm,
+    analyse.sousSecteur,
   )
 
   const statutsMesures = [
