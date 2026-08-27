@@ -24,7 +24,9 @@ describe('champs whitelistés', () => {
   it('isSuggestionField', () => {
     expect(isSuggestionField('organisation')).toBe(true)
     expect(isSuggestionField('tag')).toBe(true)
+    expect(isSuggestionField('sourceRisque')).toBe(true)
+    expect(isSuggestionField('partiePrenante')).toBe(true)
     expect(isSuggestionField('password')).toBe(false)
-    expect(SUGGESTION_FIELDS.length).toBeGreaterThanOrEqual(2)
+    expect(SUGGESTION_FIELDS.length).toBeGreaterThanOrEqual(4)
   })
 })

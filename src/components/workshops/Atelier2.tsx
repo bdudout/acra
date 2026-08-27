@@ -38,6 +38,7 @@ import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import SrOvRadar from '@/components/SrOvRadar'
+import AutocompleteInput from '@/components/AutocompleteInput'
 
 interface Props {
   analyseId: string
@@ -382,7 +383,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="label" htmlFor={`sr-nom-${s.id}`}>{t.workshop.nameLabel}</label>
-                            <input id={`sr-nom-${s.id}`} value={s.nom} onChange={e => updateSource(s.id, 'nom', e.target.value)} className="input text-sm" />
+                            <AutocompleteInput id={`sr-nom-${s.id}`} field="sourceRisque" value={s.nom} onChange={v => updateSource(s.id, 'nom', v)} className="input text-sm" />
                           </div>
                           <div>
                             <label className="label" htmlFor={`sr-cat-${s.id}`}>{t.workshop.a2.srCatLabel}</label>
