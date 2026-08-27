@@ -71,6 +71,30 @@ connexion**.
   `POST /api/auth/signin/sso` redirige vers l'**authorize** de l'IdP
   (`client_id`, `scope`, PKCE, `state`) — flux OAuth correctement formé.
 
+## SAML 2.0 — en développement (mode maintenance)
+
+SAML est développé mais **inerte** : jamais actif tant que
+`SSO_SAML_ENABLED='true'` n'est pas posé **et** que la vérification d'assertion
+(dépendance `@node-saml`) n'est pas câblée + validée avec un IdP réel. Aucun
+impact sur OIDC ni sur le login Credentials.
+
+- **Flag** : `isSamlMaintenanceMode()` (`lib/saml.server.ts`) — maintenance ON par
+  défaut. `samlActive()` reste faux tant que flag + config valide ne sont pas réunis.
+- **Cœur pur testé** (`lib/saml.ts`) : `validateSamlConfig` (entityId requis,
+  URL SSO https/SSRF, certificat PEM), `isPemCertificate`, `extractSamlClaims`
+  (attributs d'assertion → `{ email, name, groups }`, noms usuels Azure AD/ADFS/
+  Okta/Shibboleth, insensible à la casse) → rebranche le **même** JIT + mapping de
+  rôles que OIDC.
+- **Routes inertes** : `POST /api/auth/saml/acs` (ACS) et `GET /api/auth/saml/login`
+  renvoient **503 « saml_en_maintenance »**. UI `/admin/security` : bandeau
+  « maintenance » sur la section SAML (config enregistrée mais inactive).
+
+**À faire pour l'activer (IdP dispo)** : `npm i @node-saml/node-saml`, câbler
+l'`AuthnRequest` signée (login) et la **vérification de signature** de l'assertion
+dans l'ACS, extraire via `extractSamlClaims`, appliquer JIT + rôles, émettre la
+session ; puis poser `SSO_SAML_ENABLED='true'`. Redirect/ACS URL à enregistrer
+chez l'IdP : `{origin}/api/auth/saml/acs`.
+
 ## Reste à valider avec un IdP réel
 
 Round-trip complet (callback → JIT create/link → session) : nécessite un client

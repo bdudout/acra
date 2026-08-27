@@ -259,6 +259,7 @@ export const es: Translations = {
     enableLabel:    'Activar SSO',
     protocolLabel:  'Protocolo',
     samlSection:    'Configuración SAML 2.0',
+    samlMaintenanceNotice: 'SAML está en desarrollo (modo mantenimiento): la configuración se guarda pero el inicio de sesión SAML aún no está activo. Se habilitará tras la validación con un proveedor de identidad real.',
     samlEntityId:   'SP Entity ID',
     samlEntityIdPh: 'https://acra.su-dominio.com',
     samlEntityIdHint: 'Identificador de su aplicación (Service Provider) ante el IdP. Generalmente la URL base de la aplicación.',
