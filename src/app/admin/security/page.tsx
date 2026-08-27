@@ -762,6 +762,9 @@ export default function AdminSecurityPage() {
                   {sso.protocol === 'SAML' && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-4 border border-gray-200">
                       <p className="text-xs font-semibold text-gray-800"><Lock size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.sso.samlSection}</p>
+                      <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                        {t.sso.samlMaintenanceNotice}
+                      </div>
 
                       {/* SP Entity ID */}
                       <div>

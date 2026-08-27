@@ -264,6 +264,7 @@ export const fr = {
     protocolLabel:  'Protocole',
     // SAML
     samlSection:    'Configuration SAML 2.0',
+    samlMaintenanceNotice: 'SAML est en cours de développement (mode maintenance) : la configuration est enregistrée mais la connexion SAML n\'est pas encore active. Elle le sera après validation avec un fournisseur d\'identité réel.',
     samlEntityId:   'SP Entity ID',
     samlEntityIdPh: 'https://acra.votre-domaine.com',
     samlEntityIdHint: 'Identifiant de votre application (Service Provider) auprès de l\'IdP. Souvent l\'URL de base de l\'application.',
