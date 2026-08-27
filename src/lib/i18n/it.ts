@@ -254,7 +254,7 @@ export const it: Translations = {
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Consenti agli utenti di accedere tramite il provider di identità aziendale (IdP). Disattivato per impostazione predefinita.',
-    comingSoonNotice: 'Il login SSO sarà disponibile in una prossima versione. Questa configurazione verrà applicata automaticamente all\'attivazione della funzionalità.',
+    comingSoonNotice: 'OIDC è ora attivo: seleziona \'Attiva SSO\', inserisci issuer e client OIDC e salva — il pulsante appare nella pagina di accesso. (SAML: prossimamente.)',
     adminOnlyNotice: '🔒 Questa sezione è visibile e modificabile solo dagli amministratori.',
     enableLabel:    'Attiva SSO',
     protocolLabel:  'Protocollo',
@@ -318,6 +318,9 @@ export const it: Translations = {
       noAccount:    'Non hai ancora un account?',
       createLink:   'Crea un account gratuito',
       forgotPassword: 'Password dimenticata?',
+      ssoButton: 'Accedi con SSO',
+      ssoOr: 'o',
+      ssoError: 'Accesso SSO negato. Verifica che il tuo dominio e-mail sia consentito.',
     },
     forgot: {
       title:        'Password dimenticata',

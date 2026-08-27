@@ -254,7 +254,7 @@ export const en: Translations = {
   sso: {
     sectionTitle:   '🔑 Single Sign-On (SSO)',
     sectionDesc:    'Allow your users to sign in via your enterprise identity provider (IdP). Disabled by default.',
-    comingSoonNotice: 'SSO login will be available in a future release. This configuration will be applied automatically once the feature is activated.',
+    comingSoonNotice: 'OIDC is now active: tick \'Enable SSO\', fill in the OIDC issuer and client, then save — the button appears on the sign-in page. (SAML: coming soon.)',
     adminOnlyNotice: '🔒 This section is visible and editable by administrators only.',
     enableLabel:    'Enable SSO',
     protocolLabel:  'Protocol',
@@ -318,6 +318,9 @@ export const en: Translations = {
       noAccount:    'No account yet?',
       createLink:   'Create a free account',
       forgotPassword: 'Forgot password?',
+      ssoButton: 'Sign in with SSO',
+      ssoOr: 'or',
+      ssoError: 'SSO sign-in denied. Check that your email domain is allowed.',
     },
     forgot: {
       title:        'Forgot password',

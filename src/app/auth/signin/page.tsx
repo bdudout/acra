@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
@@ -24,6 +24,15 @@ function SignInForm() {
   const [mfaMasked, setMfaMasked] = useState('')
 
   const callbackUrl = params.get('callbackUrl') || '/dashboard'
+
+  // SSO d'entreprise : bouton affiché seulement si un provider est configuré et actif.
+  const [ssoOn, setSsoOn] = useState(false)
+  useEffect(() => {
+    fetch('/api/auth/sso-enabled').then(r => r.ok ? r.json() : { enabled: false }).then(d => setSsoOn(!!d.enabled)).catch(() => {})
+    // Un refus SSO redirige ici avec ?error= → message générique.
+    if (params.get('error')) setError(t.auth.signIn.ssoError)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleResult(res: { error?: string | null } | undefined) {
     if (res?.error) {
@@ -157,6 +166,23 @@ function SignInForm() {
           {loading ? t.auth.signIn.submitting : t.auth.signIn.submit}
         </button>
       </form>
+
+      {ssoOn && (
+        <>
+          <div className="flex items-center gap-3 my-4">
+            <span className="h-px flex-1 bg-gray-200" />
+            <span className="text-xs uppercase text-gray-400">{t.auth.signIn.ssoOr}</span>
+            <span className="h-px flex-1 bg-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={() => signIn('sso', { callbackUrl })}
+            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
+          >
+            {t.auth.signIn.ssoButton}
+          </button>
+        </>
+      )}
 
       <p className="text-center text-sm mt-4">
         <Link href="/auth/forgot-password" className="text-gray-500 hover:text-ebios-600 hover:underline">
