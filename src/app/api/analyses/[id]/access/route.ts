@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { NextRequest, NextResponse } from 'next/server'
-import { canManageAccess } from '@/lib/permissions'
+import { canManageAccess, resolveAnalyseRole } from '@/lib/permissions'
 import type { AnalysePermission } from '@/lib/permissions'
 
 type Params = { params: Promise<{ id: string }> }
@@ -23,7 +23,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
-  if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
@@ -45,7 +48,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
-  if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
@@ -91,7 +97,10 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
-  if (!canManageAccess({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 

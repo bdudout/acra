@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { canEditAnalyse, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { validateDerogationInput, statutInitial, calcDateFin, type DerogationWorkflow } from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
@@ -60,7 +60,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!orgConfig.derogationsActive) {
     return NextResponse.json({ error: 'Les dérogations ne sont pas activées pour cette organisation' }, { status: 403 })
   }
-  if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — seul le porteur peut demander une dérogation' }, { status: 403 })
   }
 
