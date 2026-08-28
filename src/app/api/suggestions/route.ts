@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
-import { rankSuggestions, isSuggestionField } from '@/lib/suggestions'
+import { rankSuggestions, isSuggestionField, extractJsonNames } from '@/lib/suggestions'
 import { tagsUniques } from '@/lib/analyse-tags'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +39,15 @@ export async function GET(req: NextRequest) {
     if (scope.activeOrgId) {
       const rows = await db.riskItem.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 })
       candidates = rows.map((r: { entite: string | null }) => r.entite)
+    }
+  } else if (field === 'valeurMetier' || field === 'bienSupport') {
+    // Champs stockés en JSON dans le Cadrage (tableau d'objets {nom,…}).
+    const analyses = await db.analyse.findMany({ where, select: { id: true }, take: 1000 })
+    const ids = analyses.map((a: { id: string }) => a.id)
+    if (ids.length) {
+      const col = field === 'valeurMetier' ? 'valeursMetier' : 'biensSupports'
+      const rows = await db.cadrage.findMany({ where: { analyseId: { in: ids } }, select: { [col]: true }, take: 1000 })
+      candidates = extractJsonNames(rows.map((r: Record<string, unknown>) => r[col]))
     }
   } else {
     // Champs portés par des tables liées (SourceRisque, PartiePrenante) : scopés
