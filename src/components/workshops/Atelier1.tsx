@@ -23,7 +23,7 @@
  */
 
 import { AlertTriangle, BookOpen, Briefcase, Building2, Factory, Lightbulb, Link2, Lock, Monitor, Scale, ShieldCheck, Star, Target, Zap, type LucideIcon } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
@@ -46,6 +46,7 @@ import { suggestsComplianceModule, nis2Classification, doraPrevailsOverNis2 } fr
 import { showsHdsCaveat } from '@/lib/sous-secteurs'
 import { ETATS_SOCLE, etatSocleFromEntry, type EtatSocle } from '@/lib/socle-etat'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import { precheckReferentiels } from '@/lib/referentiels-precoche'
 
 // Styles statiques de l'indicateur d'état d'application du socle (EXI_M1_20).
 const ETAT_SOCLE_STYLE: Record<EtatSocle, { dot: string; active: string; idle: string }> = {
@@ -222,6 +223,21 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   const [referentielMesures, setReferentielMesures] = useState<string>(analyse?.referentielMesures || 'ISO27001')
   // Référentiels recommandés selon le secteur + la taille (suggestion non bloquante)
   const recommendedFw = recommendedFrameworksForSector(analyse?.secteur, tailleAnalyse, analyse?.sousSecteur, analyse?.qualification?.statutReglementaire, analyse?.qualification?.entiteFinanciereAgreee)
+
+  // Pré-cochage des référentiels recommandés — UNE fois, seulement pour un socle
+  // VIERGE (analyse jamais enregistrée : initialData.referentiels absent). N'écrase
+  // jamais un socle déjà saisi (même vide) ; l'utilisateur reste libre de décocher.
+  const prefilledRef = useRef(false)
+  useEffect(() => {
+    if (prefilledRef.current) return
+    if (initialData?.referentiels != null) { prefilledRef.current = true; return }
+    if (!orgReferentiels) return // socle de l'org pas encore chargé
+    const recommendedNoms = recommendedFw.map(fid => FRAMEWORK_META[fid]?.nom).filter(Boolean) as string[]
+    const pre = precheckReferentiels(recommendedNoms, orgReferentiels)
+    if (pre.length) setReferentiels(pre)
+    prefilledRef.current = true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgReferentiels])
   // Suggestion d'activer les modules Conformité/Qualification pour les secteurs
   // régulés où ils sont quasi-obligatoires (issue #73).
   const suggestCompliance = suggestsComplianceModule(analyse?.secteur, analyse?.qualification?.statutReglementaire) && (!conformiteActive || !qualificationActive)
