@@ -30,6 +30,18 @@ export default function NewAnalysePage() {
       .catch(() => {})
   }, [])
 
+  // Défaut intelligent : pré-remplit « organisation » avec le nom de l'org active
+  // (on analyse presque toujours sa propre organisation). N'écrase jamais une
+  // saisie déjà commencée ; null pour l'org racine générique.
+  useEffect(() => {
+    fetch('/api/analyses/default-org', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d?.name) setForm(f => (f.organisation ? f : { ...f, organisation: d.name }))
+      })
+      .catch(() => {})
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.nom.trim()) { setError(t.newAnalysis.nameRequired); return }
