@@ -6,6 +6,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
+import AutocompleteInput from '@/components/AutocompleteInput'
 
 interface Risk {
   id: string; intitule: string; taxonomieCode: string | null; processusId: string | null
@@ -147,7 +148,7 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
               <option value="">{r.processNone}</option>
               {procs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
-            <input value={form.entite} onChange={e => setForm(f => ({ ...f, entite: e.target.value }))} placeholder={r.entityPlaceholder} className={sel} />
+            <AutocompleteInput field="entite" value={form.entite} onChange={v => setForm(f => ({ ...f, entite: v }))} placeholder={r.entityPlaceholder} className={sel} />
           </div>
           <div className="flex flex-wrap gap-4 items-center text-xs text-gray-600 dark:text-gray-300">
             <span className="font-medium">{r.inherent}:</span> {cote(form.gi, v => setForm(f => ({ ...f, gi: v })), r.gravity)} {cote(form.vi, v => setForm(f => ({ ...f, vi: v })), r.likelihood)}

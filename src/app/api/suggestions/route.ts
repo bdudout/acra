@@ -34,6 +34,12 @@ export async function GET(req: NextRequest) {
   } else if (field === 'tag') {
     const rows = await db.analyse.findMany({ where, select: { tags: true }, take: 500 })
     candidates = tagsUniques(rows.map((r: { tags: unknown }) => ({ tags: Array.isArray(r.tags) ? (r.tags as string[]) : [] })))
+  } else if (field === 'entite') {
+    // Entité (registre de risques) : org-scopée directement via organizationId.
+    if (scope.activeOrgId) {
+      const rows = await db.riskItem.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 })
+      candidates = rows.map((r: { entite: string | null }) => r.entite)
+    }
   } else {
     // Champs portés par des tables liées (SourceRisque, PartiePrenante) : scopés
     // aux analyses VISIBLES de l'utilisateur via analyseId ∈ périmètre.
