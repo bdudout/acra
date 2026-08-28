@@ -45,6 +45,7 @@ import Link from 'next/link'
 import { suggestsComplianceModule, nis2Classification, doraPrevailsOverNis2 } from '@/lib/regulatory-guidance'
 import { showsHdsCaveat } from '@/lib/sous-secteurs'
 import { ETATS_SOCLE, etatSocleFromEntry, type EtatSocle } from '@/lib/socle-etat'
+import AutocompleteInput from '@/components/AutocompleteInput'
 
 // Styles statiques de l'indicateur d'état d'application du socle (EXI_M1_20).
 const ETAT_SOCLE_STYLE: Record<EtatSocle, { dot: string; active: string; idle: string }> = {
@@ -633,10 +634,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <label className="label" htmlFor={`vm-nom-${vm.id}`}>{t.workshop.a1.vmNamePh}</label>
-                      <input
-                         id={`vm-nom-${vm.id}`}
+                      <AutocompleteInput
+                        id={`vm-nom-${vm.id}`}
+                        field="valeurMetier"
                         value={vm.nom}
-                        onChange={e => updateVm(vm.id, 'nom', e.target.value)}
+                        onChange={v => updateVm(vm.id, 'nom', v)}
                         className="input text-sm"
                         placeholder={t.workshop.a1.vmNameExPh}
                       />
@@ -844,8 +846,9 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                 <div key={b.id} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1 space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <input
-                        value={b.nom} onChange={e => updateBien(b.id, 'nom', e.target.value)}
+                      <AutocompleteInput
+                        field="bienSupport"
+                        value={b.nom} onChange={v => updateBien(b.id, 'nom', v)}
                         className="input text-sm" placeholder={t.workshop.a1.bsNamePh}
                       />
                       <select

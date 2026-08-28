@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankSuggestions, SUGGESTION_FIELDS, isSuggestionField } from '@/lib/suggestions'
+import { rankSuggestions, SUGGESTION_FIELDS, isSuggestionField, extractJsonNames } from '@/lib/suggestions'
 
 describe('rankSuggestions', () => {
   it('déduplique (insensible à la casse) en gardant la 1ʳᵉ graphie', () => {
@@ -28,7 +28,24 @@ describe('champs whitelistés', () => {
     expect(isSuggestionField('partiePrenante')).toBe(true)
     expect(isSuggestionField('mesure')).toBe(true)
     expect(isSuggestionField('entite')).toBe(true)
+    expect(isSuggestionField('valeurMetier')).toBe(true)
+    expect(isSuggestionField('bienSupport')).toBe(true)
     expect(isSuggestionField('password')).toBe(false)
-    expect(SUGGESTION_FIELDS.length).toBeGreaterThanOrEqual(6)
+    expect(SUGGESTION_FIELDS.length).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('extractJsonNames', () => {
+  it('aplati les .nom des tableaux JSON, ignore malformés', () => {
+    const rows = [
+      [{ nom: 'Données clients' }, { nom: ' Système paiement ' }],
+      null,
+      'pas un tableau',
+      [{ nom: '' }, { pasnom: 'x' }, { nom: 'Référentiel RH' }],
+    ]
+    expect(extractJsonNames(rows)).toEqual(['Données clients', 'Système paiement', 'Référentiel RH'])
+  })
+  it('liste vide → []', () => {
+    expect(extractJsonNames([])).toEqual([])
   })
 })

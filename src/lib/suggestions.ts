@@ -4,11 +4,28 @@
 // Logique PURE et testable ; la collecte des candidats vit côté serveur.
 
 /** Champs texte libres proposant de l'autocomplétion (whitelist). */
-export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante', 'mesure', 'entite'] as const
+export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante', 'mesure', 'entite', 'valeurMetier', 'bienSupport'] as const
 export type SuggestionField = (typeof SUGGESTION_FIELDS)[number]
 
 export function isSuggestionField(v: unknown): v is SuggestionField {
   return typeof v === 'string' && (SUGGESTION_FIELDS as readonly string[]).includes(v)
+}
+
+/**
+ * Extrait les `.nom` (chaînes non vides) d'une liste de valeurs JSON, chacune
+ * étant un tableau d'objets (ex. Cadrage.valeursMetier, Cadrage.biensSupports).
+ * Robuste aux valeurs null / non-tableaux / éléments malformés.
+ */
+export function extractJsonNames(values: unknown[]): string[] {
+  const out: string[] = []
+  for (const v of values) {
+    if (!Array.isArray(v)) continue
+    for (const item of v) {
+      const nom = item && typeof item === 'object' ? (item as { nom?: unknown }).nom : undefined
+      if (typeof nom === 'string' && nom.trim()) out.push(nom.trim())
+    }
+  }
+  return out
 }
 
 /**
