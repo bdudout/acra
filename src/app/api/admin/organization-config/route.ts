@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeTaxonomie } from '@/lib/taxonomie'
+import { cleanActionDelais } from '@/lib/risk-action'
 import { sanitizeModulesPolicy } from '@/lib/module-policy'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -77,6 +78,7 @@ export async function GET(_req: NextRequest) {
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
+    actionDelaisMois: cfg.actionDelaisMois,
     taxonomieRisques: cfg.taxonomieRisques,
     registreRisquesActive: cfg.registreRisquesActive,
     incidentsActive: cfg.incidentsActive,
@@ -189,6 +191,9 @@ export async function PUT(req: NextRequest) {
   }
   if (typeof body.derogationAlerteJours === 'number' && Number.isFinite(body.derogationAlerteJours)) {
     data.derogationAlerteJours = Math.max(1, Math.min(365, Math.round(body.derogationAlerteJours)))
+  }
+  if (body.actionDelaisMois && typeof body.actionDelaisMois === 'object' && !Array.isArray(body.actionDelaisMois)) {
+    data.actionDelaisMois = cleanActionDelais(body.actionDelaisMois)
   }
   if (typeof body.derogationWorkflow === 'string' && ['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(body.derogationWorkflow)) {
     data.derogationWorkflow = body.derogationWorkflow

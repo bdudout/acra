@@ -646,6 +646,8 @@ model RiskAction {
   echeance    DateTime?
   // Statut stocké : A_FAIRE | EN_COURS | FAIT (EN_RETARD est dérivé).
   statut      String    @default("A_FAIRE")
+  // Priorité : CRITIQUE | MAJEUR | MODERE — pilote l'échéance par défaut.
+  priorite    String    @default("MAJEUR")
   ordre       Int       @default(0)
 
   createdAt DateTime @default(now())
@@ -1409,6 +1411,8 @@ model OrganizationConfig {
   // Un contrôle sous dérogation active sort-il du catalogue de vulnérabilités
   // (ateliers 3/4) ? Défaut oui ; désactivable par organisation.
   derogationSortCatalogue    Boolean       @default(true)
+  // Délais (mois) de l'échéance par défaut d'une action selon sa priorité.
+  actionDelaisMois           Json          @default("{\"CRITIQUE\":6,\"MAJEUR\":12,\"MODERE\":24}")
   // ── Socle GRC (modules non-cyber) ──
   // Taxonomie de risques personnalisée ([] ⇒ défaut Bâle, cf. lib/taxonomie).
   taxonomieRisques           Json          @default("[]")

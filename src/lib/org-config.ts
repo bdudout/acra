@@ -20,6 +20,7 @@ import {
   type StrategieTraitement,
 } from '@/lib/org-config-defaults'
 import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
+import { DEFAULT_ACTION_DELAIS_MOIS, cleanActionDelais, type ActionDelaisMois } from '@/lib/risk-action'
 
 /** Entités responsables de mesures par défaut. */
 export const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
@@ -54,6 +55,7 @@ export interface RawOrgConfig {
   reglementaireActive?: boolean
   secondeLigneActive?: boolean
   appetitRisque?: unknown
+  actionDelaisMois?: unknown
 }
 
 /** Configuration effective résolue (héritage appliqué). */
@@ -87,6 +89,8 @@ export interface OrgConfigResolved {
   /** 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut). */
   secondeLigneActive: boolean
   appetitRisque: AppetitConfig
+  /** Délais (mois) de l'échéance par défaut d'une action selon sa priorité. */
+  actionDelaisMois: ActionDelaisMois
 }
 
 export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
@@ -119,6 +123,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   reglementaireActive: false,
   secondeLigneActive: true,
   appetitRisque: APPETIT_DEFAULT,
+  actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
 }
 
 /** Une valeur JSON est « vide » (⇒ hérite) si null/undefined, [] ou {}. */
@@ -129,7 +134,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
@@ -194,5 +199,6 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     reglementaireActive: pickBool('reglementaireActive', defaults.reglementaireActive),
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
+    actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }
 }

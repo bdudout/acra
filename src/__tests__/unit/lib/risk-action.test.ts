@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   validateRiskActionInput, cleanRiskActionInput, effectiveStatut, summarizeActions, RISK_ACTION_STATUTS,
+  cleanPriorite, cleanActionDelais, defaultEcheanceForPriorite, DEFAULT_ACTION_DELAIS_MOIS,
 } from '@/lib/risk-action'
 
 describe('validateRiskActionInput', () => {
@@ -68,5 +69,34 @@ describe('summarizeActions', () => {
 describe('RISK_ACTION_STATUTS', () => {
   it('trois statuts stockés', () => {
     expect([...RISK_ACTION_STATUTS]).toEqual(['A_FAIRE', 'EN_COURS', 'FAIT'])
+  })
+})
+
+describe('priorité & échéance par défaut', () => {
+  it('cleanPriorite : défaut MAJEUR', () => {
+    expect(cleanPriorite('CRITIQUE')).toBe('CRITIQUE')
+    expect(cleanPriorite('inconnu')).toBe('MAJEUR')
+    expect(cleanPriorite(undefined)).toBe('MAJEUR')
+  })
+  it('DEFAULT : critique 6 mois, majeur 12, modéré 24', () => {
+    expect(DEFAULT_ACTION_DELAIS_MOIS).toEqual({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
+  })
+  it('cleanActionDelais : entiers 1..600, défauts par clé', () => {
+    expect(cleanActionDelais({ CRITIQUE: 3, MAJEUR: 0, MODERE: 999 })).toEqual({ CRITIQUE: 3, MAJEUR: 12, MODERE: 24 })
+    expect(cleanActionDelais(null)).toEqual({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
+  })
+  it('defaultEcheanceForPriorite : date de départ + N mois (YYYY-MM-DD)', () => {
+    const from = new Date('2026-01-15T00:00:00')
+    expect(defaultEcheanceForPriorite('CRITIQUE', DEFAULT_ACTION_DELAIS_MOIS, from)).toBe('2026-07-15')
+    expect(defaultEcheanceForPriorite('MAJEUR', DEFAULT_ACTION_DELAIS_MOIS, from)).toBe('2027-01-15')
+    expect(defaultEcheanceForPriorite('MODERE', DEFAULT_ACTION_DELAIS_MOIS, from)).toBe('2028-01-15')
+  })
+  it('borne le jour en fin de mois (31 janv + 1 mois → 28 févr)', () => {
+    const from = new Date('2026-01-31T00:00:00')
+    expect(defaultEcheanceForPriorite('CRITIQUE', { CRITIQUE: 1, MAJEUR: 12, MODERE: 24 }, from)).toBe('2026-02-28')
+  })
+  it('cleanRiskActionInput porte la priorité', () => {
+    expect(cleanRiskActionInput({ intitule: 'x', priorite: 'CRITIQUE' }).priorite).toBe('CRITIQUE')
+    expect(cleanRiskActionInput({ intitule: 'x' }).priorite).toBe('MAJEUR')
   })
 })

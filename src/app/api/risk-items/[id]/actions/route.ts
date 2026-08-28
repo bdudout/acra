@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { validateRiskActionInput, cleanRiskActionInput, effectiveStatut, summarizeActions } from '@/lib/risk-action'
+import { validateRiskActionInput, cleanRiskActionInput, effectiveStatut, summarizeActions, defaultEcheanceForPriorite } from '@/lib/risk-action'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,7 @@ async function loadRisk(session: { user: { id: string; role?: string } }, id: st
   if (!risk) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const orgConfig = await getOrgConfig(risk.organizationId)
   if (!orgConfig.registreRisquesActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, orgId: risk.organizationId }
+  return { userId, userRole, orgId: risk.organizationId, orgConfig }
 }
 
 // GET /api/risk-items/[id]/actions — plan d'action du risque (+ statut effectif, synthèse).
@@ -57,7 +57,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const erreur = validateRiskActionInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanRiskActionInput(body)
-  const action = await prisma.riskAction.create({ data: { ...data, riskItemId: id, organizationId: ctx.orgId } })
+  // Échéance par défaut (si non fournie) selon la priorité + délais configurés de l'org.
+  const echeance = data.echeance ?? new Date(defaultEcheanceForPriorite(data.priorite, ctx.orgConfig.actionDelaisMois))
+  const action = await prisma.riskAction.create({ data: { ...data, echeance, riskItemId: id, organizationId: ctx.orgId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-action', action: 'create', riskItemId: id, id: action.id } })
   return NextResponse.json(action, { status: 201 })
 }

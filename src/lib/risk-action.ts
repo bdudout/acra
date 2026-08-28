@@ -8,12 +8,59 @@ export type RiskActionStatut = (typeof RISK_ACTION_STATUTS)[number]
 // Le retard n'est PAS stocké : il se dérive de l'échéance vs. aujourd'hui.
 export type EffectiveStatut = RiskActionStatut | 'EN_RETARD'
 
+// Priorité d'une action de traitement (pilote l'échéance par défaut).
+export const ACTION_PRIORITES = ['CRITIQUE', 'MAJEUR', 'MODERE'] as const
+export type ActionPriorite = (typeof ACTION_PRIORITES)[number]
+
+export interface ActionDelaisMois { CRITIQUE: number; MAJEUR: number; MODERE: number }
+/** Délais par défaut (mois) : critique = 6 mois, majeur = 1 an, modéré = 2 ans. */
+export const DEFAULT_ACTION_DELAIS_MOIS: ActionDelaisMois = { CRITIQUE: 6, MAJEUR: 12, MODERE: 24 }
+
+export function cleanPriorite(v: unknown): ActionPriorite {
+  return ACTION_PRIORITES.includes(v as ActionPriorite) ? (v as ActionPriorite) : 'MAJEUR'
+}
+
+/** Nettoie/valide la table de délais (mois entiers 1..600), défauts par clé. */
+export function cleanActionDelais(input: unknown): ActionDelaisMois {
+  const src = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const one = (k: keyof ActionDelaisMois): number => {
+    const n = Number(src[k])
+    return Number.isInteger(n) && n >= 1 && n <= 600 ? n : DEFAULT_ACTION_DELAIS_MOIS[k]
+  }
+  return { CRITIQUE: one('CRITIQUE'), MAJEUR: one('MAJEUR'), MODERE: one('MODERE') }
+}
+
+/** Ajoute `n` mois à une date en bornant le jour (31 janv + 1 mois → 28/29 févr). */
+function addMonths(from: Date, n: number): Date {
+  const d = new Date(from.getTime())
+  const day = d.getDate()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + n)
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(day, lastDay))
+  return d
+}
+
+/**
+ * Échéance par défaut ('YYYY-MM-DD') pour une priorité, selon les délais
+ * configurés et une date de départ (aujourd'hui par défaut).
+ */
+export function defaultEcheanceForPriorite(priorite: unknown, delais: ActionDelaisMois, from: Date = new Date()): string {
+  const p = cleanPriorite(priorite)
+  const d = addMonths(from, delais[p])
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export interface RiskActionInput {
   intitule?: unknown
   description?: unknown
   responsable?: unknown
   echeance?: unknown // 'YYYY-MM-DD' | ISO | null
   statut?: unknown
+  priorite?: unknown
 }
 
 export interface CleanRiskAction {
@@ -22,6 +69,7 @@ export interface CleanRiskAction {
   responsable: string | null
   echeance: Date | null
   statut: RiskActionStatut
+  priorite: ActionPriorite
 }
 
 function parseDate(v: unknown): Date | null {
@@ -46,6 +94,7 @@ export function cleanRiskActionInput(body: RiskActionInput): CleanRiskAction {
     responsable: typeof body.responsable === 'string' && body.responsable.trim() ? body.responsable.trim() : null,
     echeance: parseDate(body.echeance),
     statut: RISK_ACTION_STATUTS.includes(s) ? s : 'A_FAIRE',
+    priorite: cleanPriorite(body.priorite),
   }
 }
 

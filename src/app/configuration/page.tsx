@@ -155,6 +155,7 @@ export default function ConfigurationPage() {
   const [derogationsActive, setDerogationsActive] = useState(false)
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
+  const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
   // Socle GRC
@@ -209,6 +210,7 @@ export default function ConfigurationPage() {
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
         setDerogationsActive(Boolean(data.derogationsActive))
+        if (data.actionDelaisMois && typeof data.actionDelaisMois === 'object') setActionDelais({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24, ...data.actionDelaisMois })
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
@@ -314,6 +316,19 @@ export default function ConfigurationPage() {
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
+  }
+
+  // Délais d'échéance par défaut d'une action selon sa priorité (mois).
+  async function saveActionDelai(key: 'CRITIQUE' | 'MAJEUR' | 'MODERE', value: number) {
+    const next = { ...actionDelais, [key]: value }
+    setActionDelais(next) // optimiste
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionDelaisMois: next }),
     })
     setSavingFeatures(false)
     return res.ok
@@ -747,6 +762,27 @@ export default function ConfigurationPage() {
         {/* Clés d'API (accès machine à l'API publique v1) — ADMIN */}
         {isAdmin && <ApiKeysManager />}
         {isAdmin && <WebhooksManager />}
+
+        {/* Délais d'échéance par défaut d'une action selon sa priorité — ADMIN */}
+        {isAdmin && (
+          <section className="mb-6 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.actionDelais.title}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.actionDelais.subtitle}</p>
+            <div className="flex flex-wrap gap-4">
+              {(['CRITIQUE', 'MAJEUR', 'MODERE'] as const).map(k => (
+                <label key={k} className="text-xs text-gray-500 dark:text-gray-400">
+                  {(t.riskActions.priorites as Record<string, string>)[k]}
+                  <span className="flex items-center gap-1.5 mt-1">
+                    <input type="number" min={1} max={600} defaultValue={actionDelais[k]}
+                      onBlur={e => saveActionDelai(k, Math.max(1, Math.min(600, Number(e.target.value) || actionDelais[k])))}
+                      className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-20" />
+                    <span className="text-xs text-gray-400">{t.actionDelais.monthsUnit}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (
