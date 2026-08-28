@@ -1,10 +1,12 @@
 // ─── Émission & livraison des webhooks sortants (couche serveur) ─────────────
 import { prisma } from '@/lib/prisma'
+import { lookup } from 'node:dns/promises'
 import {
   webhookSubscribers,
   signWebhookPayload,
   resolveDeliveryUpdate,
   isSafeWebhookUrl,
+  isPrivateIp,
   WEBHOOK_SIGNATURE_HEADER,
   type WebhookEvent,
 } from '@/lib/webhook'
@@ -73,6 +75,17 @@ export async function dispatchDueWebhooks(limit = 50): Promise<{ traitees: numbe
 async function deliverOne(url: string, secret: string, payload: string) {
   // Garde SSRF au moment de l'envoi (l'URL a pu être posée avant durcissement).
   if (!isSafeWebhookUrl(url)) return { ok: false, error: 'url_non_autorisee' }
+  // Anti-SSRF renforcé (#132) : `isSafeWebhookUrl` ne voit que le hostname littéral.
+  // On RÉSOUT le hostname et on refuse s'il pointe vers une IP privée/interne
+  // (hostname public → IP privée). Note : une réattribution DNS active (rebinding)
+  // entre cette résolution et le fetch reste théoriquement possible (le fetch
+  // re-résout) — l'épinglage de connexion serait le cran au-dessus.
+  try {
+    const addrs = await lookup(new URL(url).hostname, { all: true })
+    if (addrs.some(a => isPrivateIp(a.address))) return { ok: false, error: 'url_resout_ip_privee' }
+  } catch {
+    return { ok: false, error: 'dns_irresolvable' }
+  }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS)
   try {

@@ -115,6 +115,26 @@ function isPrivateV4(host: string): boolean {
   return false
 }
 
+/**
+ * Une IP (v4 ou v6) est-elle privée / interne (loopback, RFC1918, link-local /
+ * métadonnées cloud 169.254, ULA fc00::/7, IPv4-mapped) ? Utilisé pour valider
+ * l'IP RÉSOLUE d'un hostname de webhook au moment de l'envoi (anti-SSRF, #132) :
+ * `isSafeWebhookUrl` ne voit que le hostname littéral, pas ce vers quoi il résout.
+ * Fail-closed : une entrée vide/inconnue est considérée privée (on préfère refuser).
+ */
+export function isPrivateIp(ip: string): boolean {
+  const h = (ip ?? '').trim().toLowerCase().replace(/^\[|\]$/g, '')
+  if (!h) return true
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return isPrivateV4(h)
+  // IPv4-mapped IPv6 : ::ffff:a.b.c.d
+  const mapped = h.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)
+  if (mapped) return isPrivateV4(mapped[1])
+  if (h === '::1' || h === '::') return true          // loopback / non spécifié
+  if (/^f[cd][0-9a-f]{2}:/.test(h)) return true       // ULA fc00::/7
+  if (/^fe80:/.test(h)) return true                   // link-local fe80::/10
+  return false
+}
+
 export function isSafeWebhookUrl(raw: unknown): boolean {
   if (typeof raw !== 'string' || raw.trim() === '') return false
   let u: URL
