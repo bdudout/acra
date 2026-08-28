@@ -4,7 +4,7 @@
 // Logique PURE et testable ; la collecte des candidats vit côté serveur.
 
 /** Champs texte libres proposant de l'autocomplétion (whitelist). */
-export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante'] as const
+export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante', 'mesure'] as const
 export type SuggestionField = (typeof SUGGESTION_FIELDS)[number]
 
 export function isSuggestionField(v: unknown): v is SuggestionField {

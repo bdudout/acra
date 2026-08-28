@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     const analyses = await db.analyse.findMany({ where, select: { id: true }, take: 1000 })
     const ids = analyses.map((a: { id: string }) => a.id)
     if (ids.length) {
-      const table = field === 'sourceRisque' ? db.sourceRisque : db.partiePrenante
+      const table = field === 'sourceRisque' ? db.sourceRisque : field === 'mesure' ? db.mesure : db.partiePrenante
       const rows = await table.findMany({ where: { analyseId: { in: ids } }, select: { nom: true }, take: 1000 })
       candidates = rows.map((r: { nom: string | null }) => r.nom)
     }

@@ -10,6 +10,7 @@ interface Props {
   placeholder?: string
   required?: boolean
   id?: string
+  'aria-label'?: string
 }
 
 /**
@@ -19,7 +20,7 @@ interface Props {
  * fois — les ensembles (organisations, tags) sont petits. Dégrade proprement en
  * simple <input> si le fetch échoue.
  */
-export default function AutocompleteInput({ field, value, onChange, className, placeholder, required, id }: Props) {
+export default function AutocompleteInput({ field, value, onChange, className, placeholder, required, id, 'aria-label': ariaLabel }: Props) {
   const listId = useId()
   const [options, setOptions] = useState<string[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -47,6 +48,7 @@ export default function AutocompleteInput({ field, value, onChange, className, p
         autoComplete="off"
         className={className}
         placeholder={placeholder}
+        aria-label={ariaLabel}
       />
       <datalist id={listId}>
         {options.map(o => <option key={o} value={o} />)}

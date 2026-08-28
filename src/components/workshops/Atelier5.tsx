@@ -50,6 +50,7 @@ import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
 import { isClassified } from '@/lib/classification'
+import AutocompleteInput from '@/components/AutocompleteInput'
 
 interface Props {
   analyseId: string
@@ -838,7 +839,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                     <div className="flex items-start gap-3">
                       <div className="flex-1 space-y-2">
                         <div className="flex gap-2 items-center flex-wrap">
-                          <input value={m.nom} onChange={e => updateMesure(m.id, 'nom', e.target.value)}
+                          <AutocompleteInput field="mesure" value={m.nom} onChange={v => updateMesure(m.id, 'nom', v)}
                             aria-label={t.workshop.a5.measNamePh}
                             className="input text-sm flex-1 min-w-48" placeholder={t.workshop.a5.measNamePh} />
                           <select value={m.type} onChange={e => updateMesure(m.id, 'type', e.target.value)}
