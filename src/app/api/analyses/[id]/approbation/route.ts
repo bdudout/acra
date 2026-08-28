@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, countOrgMembers } from '@/lib/org-context.server'
+import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { NextRequest, NextResponse } from 'next/server'
-import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse } from '@/lib/permissions'
+import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 type Params = { params: Promise<{ id: string }> }
@@ -30,7 +30,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
-  const sessionUser = { id: userId, role: userRole }
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  const sessionUser = { id: userId, role: effRole }
 
   // Auto-validation (organisation MONO-UTILISATEUR) : le propriétaire valide
   // directement son analyse (EN_COURS/REJETE → APPROUVE) car il n'existe aucun

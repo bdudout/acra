@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { NextRequest, NextResponse } from 'next/server'
-import { canAcceptResidualRisks } from '@/lib/permissions'
+import { canAcceptResidualRisks, resolveAnalyseRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 type Params = { params: Promise<{ id: string }> }
@@ -34,7 +34,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // La fonctionnalité doit être activée pour l'organisation de l'analyse.
   const orgConfig = await getOrgConfig(analyse.organizationId)
-  if (!canAcceptResidualRisks({ id: userId, role: userRole }, orgConfig.acceptationRisquesActive)) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
+  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  if (!canAcceptResidualRisks({ id: userId, role: effRole }, orgConfig.acceptationRisquesActive)) {
     return NextResponse.json(
       { error: orgConfig.acceptationRisquesActive
           ? 'Réservé à la Direction métier'

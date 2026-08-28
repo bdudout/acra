@@ -13,6 +13,7 @@ import {
   canAutoValidateAnalyse,
   canManageAccess,
   canAcceptResidualRisks,
+  resolveAnalyseRole,
   analyseWhereClause,
   type SessionUser,
   type AnalyseOwnership,
@@ -390,5 +391,23 @@ describe('hasGlobalReadDispositif + analyseWhereClause (lecture globale — #126
     // ANALYSTE reste limité à ses propres analyses + partagées (pas de statuts globaux).
     const a = analyseWhereClause('u1', 'ANALYSTE') as { OR?: { statut?: string }[] }
     expect((a.OR ?? []).some(o => o.statut)).toBe(false)
+  })
+})
+
+describe('resolveAnalyseRole (#130 — rôle gouvernant les actions sur une analyse)', () => {
+  it('analyse SANS organisation (héritée/legacy) → rôle d\'instance (rétrocompat)', () => {
+    expect(resolveAnalyseRole('RISK_MANAGER', null, null)).toBe('RISK_MANAGER')
+    expect(resolveAnalyseRole('DIRECTION_METIER', undefined, 'LECTEUR')).toBe('DIRECTION_METIER')
+  })
+  it('analyse AVEC organisation → rôle EFFECTIF d\'org, pas l\'instance (#130)', () => {
+    // instance privilégié mais membre LECTEUR de l'org de l'analyse → LECTEUR gouverne (ferme le bypass)
+    expect(resolveAnalyseRole('RISK_MANAGER', 'org1', 'LECTEUR')).toBe('LECTEUR')
+    expect(resolveAnalyseRole('DIRECTION_METIER', 'org1', 'LECTEUR')).toBe('LECTEUR')
+    // instance ANALYSTE (défaut) mais membre RISK_MANAGER de l'org → RISK_MANAGER (corrige le faux-négatif)
+    expect(resolveAnalyseRole('ANALYSTE', 'org1', 'RISK_MANAGER')).toBe('RISK_MANAGER')
+  })
+  it('analyse AVEC organisation mais AUCUNE appartenance (accès par propriété/partage) → LECTEUR', () => {
+    expect(resolveAnalyseRole('DIRECTION_METIER', 'org1', null)).toBe('LECTEUR')
+    expect(resolveAnalyseRole('ADMIN', 'org1', null)).toBe('LECTEUR')
   })
 })

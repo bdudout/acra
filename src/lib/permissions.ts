@@ -152,6 +152,28 @@ export function canAcceptResidualRisks(user: SessionUser, featureActive: boolean
   return user.role === 'DIRECTION_METIER' || isAdminRole(user.role)
 }
 
+/**
+ * Rôle GOUVERNANT une action sur une analyse (#130). Les routes `analyses/[id]/*`
+ * doivent gater sur le rôle EFFECTIF de l'utilisateur DANS L'ORGANISATION de
+ * l'analyse — pas sur son rôle d'INSTANCE (`User.role`), qui peut être plus élevé
+ * que son appartenance et contournerait alors le RBAC d'org (même classe que #124 /
+ * CWE-863 : autorisation calculée au mauvais niveau de rôle).
+ *   - analyse SANS organisation (héritée/legacy) → rôle d'instance (rétrocompat) ;
+ *   - analyse AVEC organisation → rôle d'appartenance effectif (`membershipRole`),
+ *     ou `LECTEUR` si l'accès provient de la propriété/du partage sans appartenance
+ *     (les droits liés à la propriété et aux accès granulaires sont gérés à part par
+ *     `canEditAnalyse`/`canSubmitAnalyse`/etc.).
+ * Pur → testable sans DB (la résolution en base est faite par `getEffectiveRoleForOrg`).
+ */
+export function resolveAnalyseRole(
+  instanceRole: UserRole,
+  organizationId: string | null | undefined,
+  membershipRole: UserRole | null,
+): UserRole {
+  if (!organizationId) return instanceRole
+  return membershipRole ?? 'LECTEUR'
+}
+
 /** L'utilisateur peut modifier les ateliers de l'analyse */
 export function canEditAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
   if (isAdminRole(user.role)) return true
