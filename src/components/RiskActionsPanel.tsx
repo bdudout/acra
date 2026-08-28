@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { RISK_ACTION_STATUTS } from '@/lib/risk-action'
+import { RISK_ACTION_STATUTS, ACTION_PRIORITES, DEFAULT_ACTION_DELAIS_MOIS, defaultEcheanceForPriorite, type ActionDelaisMois } from '@/lib/risk-action'
 import { suggestionsFromValues } from '@/lib/form-defaults'
 
 export interface ActionsSummary {
@@ -10,10 +10,16 @@ export interface ActionsSummary {
 }
 interface Action {
   id: string; intitule: string; description: string | null; responsable: string | null
-  echeance: string | null; statut: string; statutEffectif: string
+  echeance: string | null; statut: string; statutEffectif: string; priorite?: string
 }
-type Form = { intitule: string; responsable: string; echeance: string; statut: string }
-const EMPTY: Form = { intitule: '', responsable: '', echeance: '', statut: 'A_FAIRE' }
+type Form = { intitule: string; responsable: string; echeance: string; statut: string; priorite: string }
+const EMPTY: Form = { intitule: '', responsable: '', echeance: '', statut: 'A_FAIRE', priorite: 'MAJEUR' }
+
+const PRIORITE_BADGE: Record<string, string> = {
+  CRITIQUE: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  MAJEUR: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  MODERE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+}
 
 const STATUT_BADGE: Record<string, string> = {
   A_FAIRE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -34,19 +40,35 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Délais d'échéance par défaut (mois) de l'org, et si l'échéance courante est auto.
+  const [delais, setDelais] = useState<ActionDelaisMois>(DEFAULT_ACTION_DELAIS_MOIS)
+  const [echeanceAuto, setEcheanceAuto] = useState(true)
 
   async function reload() {
     const d = await fetch(`/api/risk-items/${riskId}/actions`).then(x => x.ok ? x.json() : { actions: [] })
     setActions(d.actions ?? []); setLoading(false)
   }
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetch('/api/config/action-delais').then(r => r.ok ? r.json() : null).then(d => { if (d?.delais) setDelais(d.delais) }).catch(() => {})
+  }, [])
+
+  // Ouvre le formulaire d'ajout avec une échéance pré-calculée depuis la priorité par défaut.
+  function openAdd() {
+    setForm({ ...EMPTY, echeance: defaultEcheanceForPriorite('MAJEUR', delais) }); setEcheanceAuto(true); setEditId(null); setShowForm(true); setError(null)
+  }
+  // Changer la priorité recalcule l'échéance TANT QUE l'utilisateur ne l'a pas fixée à la main.
+  function changePriorite(p: string) {
+    setForm(f => ({ ...f, priorite: p, echeance: echeanceAuto ? defaultEcheanceForPriorite(p, delais) : f.echeance }))
+  }
+  function changeEcheance(v: string) { setForm(f => ({ ...f, echeance: v })); setEcheanceAuto(false) }
 
   function err(code: string) { return (a.errors as Record<string, string>)[code] ?? code }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }
     setBusy(true); setError(null)
-    const payload = { intitule: form.intitule, responsable: form.responsable || null, echeance: form.echeance || null, statut: form.statut }
+    const payload = { intitule: form.intitule, responsable: form.responsable || null, echeance: form.echeance || null, statut: form.statut, priorite: form.priorite }
     const res = await fetch(editId ? `/api/risk-items/${riskId}/actions/${editId}` : `/api/risk-items/${riskId}/actions`, {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     })
@@ -56,8 +78,8 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
     setForm(EMPTY); setEditId(null); setShowForm(false); reload(); onChange()
   }
   function startEdit(x: Action) {
-    setEditId(x.id); setShowForm(true); setError(null)
-    setForm({ intitule: x.intitule, responsable: x.responsable ?? '', echeance: x.echeance ? x.echeance.slice(0, 10) : '', statut: x.statut })
+    setEditId(x.id); setShowForm(true); setError(null); setEcheanceAuto(false)
+    setForm({ intitule: x.intitule, responsable: x.responsable ?? '', echeance: x.echeance ? x.echeance.slice(0, 10) : '', statut: x.statut, priorite: x.priorite ?? 'MAJEUR' })
   }
   async function remove(id: string) {
     if (!confirm(a.confirmDelete)) return
@@ -74,7 +96,7 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{a.title}</p>
-        {canEdit && !showForm && <button onClick={() => { setForm(EMPTY); setEditId(null); setShowForm(true) }} className="btn-secondary text-xs">{a.addBtn}</button>}
+        {canEdit && !showForm && <button onClick={openAdd} className="btn-secondary text-xs">{a.addBtn}</button>}
       </div>
 
       {canEdit && showForm && (
@@ -84,7 +106,10 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
           <div className="flex flex-wrap gap-2 items-center">
             <input value={form.responsable} onChange={e => setForm(f => ({ ...f, responsable: e.target.value }))} placeholder={a.responsablePlaceholder} list={respListId} className={inp} />
             <datalist id={respListId}>{responsableSug.map(s => <option key={s} value={s} />)}</datalist>
-            <input type="date" value={form.echeance} onChange={e => setForm(f => ({ ...f, echeance: e.target.value }))} className={inp} aria-label={a.echeance} />
+            <select value={form.priorite} onChange={e => changePriorite(e.target.value)} className={inp} aria-label={a.priorite}>
+              {ACTION_PRIORITES.map(p => <option key={p} value={p}>{(a.priorites as Record<string, string>)[p] ?? p}</option>)}
+            </select>
+            <input type="date" value={form.echeance} onChange={e => changeEcheance(e.target.value)} className={inp} aria-label={a.echeance} />
             <select value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))} className={inp}>
               {RISK_ACTION_STATUTS.map(s => <option key={s} value={s}>{(a.statuts as Record<string, string>)[s] ?? s}</option>)}
             </select>
@@ -102,6 +127,7 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
               <li key={x.id} className="flex items-center gap-3 text-sm">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUT_BADGE[x.statutEffectif] ?? STATUT_BADGE.A_FAIRE}`}>{(a.statuts as Record<string, string>)[x.statutEffectif] ?? x.statutEffectif}</span>
                 <span className="flex-1 text-gray-700 dark:text-gray-200 truncate" title={x.intitule}>{x.intitule}</span>
+                {x.priorite && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITE_BADGE[x.priorite] ?? PRIORITE_BADGE.MAJEUR}`}>{(a.priorites as Record<string, string>)[x.priorite] ?? x.priorite}</span>}
                 {x.responsable && <span className="text-xs text-gray-400">{x.responsable}</span>}
                 {x.echeance && <span className="text-xs text-gray-400">{x.echeance.slice(0, 10)}</span>}
                 {canEdit && <>
