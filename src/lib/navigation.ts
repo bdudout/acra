@@ -15,7 +15,7 @@
  * ⚠️ Règle d'or : le GATING (qui voit quoi) reste identique au comportement
  * historique — on ne change que la DISPOSITION selon le mode, jamais les droits.
  */
-import { isAdminRole, hasGlobalReadDispositif, type UserRole } from './permissions'
+import { isAdminRole, hasGlobalReadDispositif, canManageRopa, type UserRole } from './permissions'
 
 /** État effectif des modules GRC optionnels (renvoyé par /api/modules). */
 export interface NavModules {
@@ -32,7 +32,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -74,6 +74,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const gouvernance: NavKey[] = []
   if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
   if (canDerog) gouvernance.push('derogations')
+  // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
+  if (canManageRopa(role)) gouvernance.push('ropa')
 
   // Le mode GRC est déclenché par un module de 2ᵉ/3ᵉ ligne (le registre étant le
   // pivot GRC). Les incidents SEULS (1ʳᵉ ligne) ne basculent pas en mode GRC.

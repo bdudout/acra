@@ -152,6 +152,7 @@ export default function Navbar() {
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },
     registreTic:   { href: '/registre-tic',  Icon: ScrollText,      label: t.nav.registreTic },
     suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
+    ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).

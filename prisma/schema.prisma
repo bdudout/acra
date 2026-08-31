@@ -139,6 +139,7 @@ model Organization {
   documents         Document[]
   apiKeys           ApiKey[]
   webhooks          Webhook[]
+  traitements       Traitement[]
 
   @@index([parentId])
   @@index([path])
@@ -162,6 +163,32 @@ model ApiKey {
 
   @@index([organizationId])
   @@index([prefix])
+}
+
+// Registre des activités de traitement (RoPA — RGPD art. 30), par organisation.
+// Réservé au DPO (+ ADMIN). La logique métier vit dans lib/ropa.ts.
+model Traitement {
+  id                       String       @id @default(cuid())
+  organizationId           String
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nom                      String
+  finalite                 String       @db.Text
+  baseLegale               String       @default("")
+  categoriesPersonnes      Json         @default("[]")
+  categoriesDonnees        Json         @default("[]")
+  destinataires            Json         @default("[]")
+  transfertHorsUE          Boolean      @default(false)
+  paysTransfert            String?
+  garantiesTransfert       String?      @db.Text
+  dureeConservation        String       @default("")
+  mesuresSecurite          Json         @default("[]")
+  grandeEchelle            Boolean      @default(false)
+  surveillanceSystematique Boolean      @default(false)
+  createdBy                String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 
 // Webhook sortant : notifie un SI tiers (URL https) lors d'événements de l'org.

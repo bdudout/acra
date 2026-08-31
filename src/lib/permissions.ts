@@ -44,6 +44,11 @@ export function isAdminRole(role: UserRole): boolean {
   return role === 'ADMIN' || role === 'SUPER_ADMIN'
 }
 
+/** Peut gérer le registre des traitements (RoPA — RGPD art. 30) : DPO ou ADMIN. */
+export function canManageRopa(role: UserRole): boolean {
+  return role === 'DPO' || isAdminRole(role)
+}
+
 /**
  * Peut DÉFINIR les dispositifs de 2ᵉ ligne de défense (plan de contrôle permanent,
  * KRI, campagnes de contrôle). En plus de RISK_MANAGER / RSSI / admin, inclut les
