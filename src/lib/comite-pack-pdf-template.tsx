@@ -9,7 +9,14 @@
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import { verdictGlobal, type ComitePack, type VerdictNiveau } from '@/lib/comite-pack'
 import { formatNumber } from '@/lib/format'
+import { HeatmapGrid } from '@/lib/pdf-heatmap'
 import { isNonEmptyText } from '@/lib/pdf-guards'
+
+// Libellé d'axe de la heatmap (compacte) — évite d'alourdir le type Strings.
+const HEATMAP_AXIS: Record<string, string> = {
+  fr: 'Vraisemblance × Gravité (1-5)', en: 'Likelihood × Severity (1-5)', de: 'Wahrscheinlichkeit × Schwere (1-5)',
+  es: 'Probabilidad × Gravedad (1-5)', it: 'Probabilità × Gravità (1-5)',
+}
 
 const COLORS = {
   primary: '#4338CA', danger: '#DC2626', warn: '#EA580C', info: '#2563EB',
@@ -142,6 +149,11 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
         {pack.sections.map((sec, si) => (
           <View key={`s-${si}`} wrap={false}>
             <Text style={s.h2}>{S.section[sec.id] ?? sec.id}</Text>
+            {sec.id === 'risques' && pack.heatmap ? (
+              <View style={{ marginBottom: 6 }}>
+                <HeatmapGrid grid={pack.heatmap} axisLabel={HEATMAP_AXIS[locale] ?? HEATMAP_AXIS.fr} cellWidth={26} cellHeight={18} />
+              </View>
+            ) : null}
             <View style={s.kpiRow}>
               {sec.metrics.map((mt, mi) => (
                 <View key={`m-${si}-${mi}`} style={s.kpi}>

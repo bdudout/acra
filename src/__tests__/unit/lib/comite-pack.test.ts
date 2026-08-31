@@ -84,6 +84,16 @@ describe('verdictGlobal (#134 M5 — verdict RAG en tête du pack décideur)', (
   })
 })
 
+describe('buildComitePack — heatmap (#134 M5)', () => {
+  it('passe la grille heatmap du consolidé au pack ; absente si non fournie', () => {
+    const grid = { gravites: [5, 4, 3, 2, 1], vraisemblances: [1, 2, 3, 4, 5], counts: {}, buckets: {} } as never
+    const avec = buildComitePack('RISQUES', { risques: { total: 1, eleve: 0, moyen: 0, faible: 1, nonCote: 0, grid } }, MODULES_ON)
+    expect(avec.heatmap).toBe(grid)
+    const sans = buildComitePack('RISQUES', { risques: { total: 1, eleve: 0, moyen: 0, faible: 1, nonCote: 0 } }, MODULES_ON)
+    expect(sans.heatmap).toBeUndefined()
+  })
+})
+
 describe('buildComitePack — flag positif (RAG vert, #134)', () => {
   it('« dans l’appétit » positif ; conformité ≥ seuil positif, < seuil alerte', () => {
     const pack = buildComitePack('RISQUES', {
