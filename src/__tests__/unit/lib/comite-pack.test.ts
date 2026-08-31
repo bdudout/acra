@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildComitePack, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
+import { buildComitePack, verdictGlobal, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
+
+const MODULES_ON = { risques: true, appetit: true, incidents: true, controles: true, audit: true, regulateur: true, kri: true, dora: true }
 
 const base: ComiteConsolide = {
   risques: { total: 20, eleve: 3, moyen: 7, faible: 8, nonCote: 2 },
@@ -55,5 +57,44 @@ describe('buildComitePack', () => {
     expect(COMITE_TYPES).toContain('RISQUES')
     expect(COMITE_TYPES).toContain('CONFORMITE')
     expect(COMITE_TYPES).toContain('INCIDENTS')
+  })
+})
+
+describe('verdictGlobal (#134 M5 — verdict RAG en tête du pack décideur)', () => {
+  it('aucune alerte → MAITRISE', () => {
+    const pack = buildComitePack('RISQUES', { risques: { total: 5, eleve: 0, moyen: 2, faible: 3, nonCote: 0 } }, MODULES_ON)
+    expect(verdictGlobal(pack).niveau).toBe('MAITRISE')
+    expect(verdictGlobal(pack).alertes).toBe(0)
+  })
+  it('un signal de crise (constats critiques) → ELEVE', () => {
+    const pack = buildComitePack('RISQUES', { audit: { critiques: 1, recosEnRetard: 0 } }, MODULES_ON)
+    expect(verdictGlobal(pack).niveau).toBe('ELEVE')
+  })
+  it('des alertes non critiques (3) → MODERE', () => {
+    const pack = buildComitePack('RISQUES', {
+      appetit: { horsAppetit: 1, dansAppetit: 9, evalues: 10 },
+      risques: { total: 3, eleve: 0, moyen: 0, faible: 3, nonCote: 0 }, actions: { total: 5, faits: 1, enRetard: 2, tauxAvancement: 20 },
+      controles: { tauxConformite: 50, anomalies: 3 },
+    }, MODULES_ON)
+    expect(verdictGlobal(pack).niveau).toBe('MODERE')
+  })
+  it('une seule alerte non critique → MODERE', () => {
+    const pack = buildComitePack('RISQUES', { appetit: { horsAppetit: 2, dansAppetit: 8, evalues: 10 } }, MODULES_ON)
+    expect(verdictGlobal(pack).niveau).toBe('MODERE')
+  })
+})
+
+describe('buildComitePack — flag positif (RAG vert, #134)', () => {
+  it('« dans l’appétit » positif ; conformité ≥ seuil positif, < seuil alerte', () => {
+    const pack = buildComitePack('RISQUES', {
+      appetit: { horsAppetit: 0, dansAppetit: 10, evalues: 10 },
+      controles: { tauxConformite: 92, anomalies: 0 },
+    }, MODULES_ON)
+    expect(pack.sections.find(s => s.id === 'appetit')!.metrics.find(m => m.key === 'dansAppetit')?.positif).toBe(true)
+    expect(pack.sections.find(s => s.id === 'controles')!.metrics.find(m => m.key === 'tauxConformite')?.positif).toBe(true)
+    const bas = buildComitePack('RISQUES', { controles: { tauxConformite: 50, anomalies: 1 } }, MODULES_ON)
+    const ctrlBas = bas.sections.find(s => s.id === 'controles')!.metrics.find(m => m.key === 'tauxConformite')
+    expect(ctrlBas?.positif).toBeFalsy()
+    expect(ctrlBas?.alerte).toBe(true)
   })
 })

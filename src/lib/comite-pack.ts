@@ -29,7 +29,7 @@ export interface ComiteModules {
   audit: boolean; regulateur: boolean; kri: boolean; dora: boolean
 }
 
-export interface ComiteMetric { key: string; value: number | string; alerte?: boolean }
+export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean }
 export interface ComiteSection { id: string; metrics: ComiteMetric[] }
 export interface ComiteHighlight { key: string; niveau: 'alerte' | 'info'; value: number }
 export interface ComitePack {
@@ -73,7 +73,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.appetit && c.appetit) {
     sectionsById.set('appetit', { id: 'appetit', metrics: [
       { key: 'horsAppetit', value: c.appetit.horsAppetit, alerte: c.appetit.horsAppetit > 0 },
-      { key: 'dansAppetit', value: c.appetit.dansAppetit },
+      { key: 'dansAppetit', value: c.appetit.dansAppetit, positif: c.appetit.dansAppetit > 0 },
       { key: 'evalues', value: c.appetit.evalues },
     ] })
   }
@@ -89,7 +89,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.controles && c.controles) {
     const taux = c.controles.tauxConformite
     sectionsById.set('controles', { id: 'controles', metrics: [
-      { key: 'tauxConformite', value: taux == null ? '—' : `${taux}%`, alerte: taux != null && taux < CONFORMITE_SEUIL },
+      { key: 'tauxConformite', value: taux == null ? '—' : `${taux}%`, alerte: taux != null && taux < CONFORMITE_SEUIL, positif: taux != null && taux >= CONFORMITE_SEUIL },
       { key: 'anomalies', value: c.controles.anomalies, alerte: c.controles.anomalies > 0 },
     ] })
   }
@@ -141,4 +141,22 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.incidents && c.incidents) push(c.incidents.ouverts > 0, 'incidentsOuverts', 'info', c.incidents.ouverts)
 
   return { type, sections, highlights }
+}
+
+// Signaux d'alerte considérés comme « de crise » pour le verdict global (#134 M5).
+const HIGHLIGHTS_CRITIQUES = new Set(['doraMajeurs', 'kriCritique', 'constatsCritiques', 'regulateurEchu'])
+
+export type VerdictNiveau = 'ELEVE' | 'MODERE' | 'MAITRISE'
+
+/**
+ * Verdict global du dossier de comité (bandeau RAG en tête, pour que le décideur
+ * saisisse le message en < 10 s, #134). ÉLEVÉ si ≥1 signal de crise (constat critique,
+ * incident DORA majeur, KRI critique, recommandation régulateur échue) OU ≥4 alertes ;
+ * MODÉRÉ si ≥1 alerte ; MAÎTRISÉ sinon. Pur → testable.
+ */
+export function verdictGlobal(pack: ComitePack): { niveau: VerdictNiveau; alertes: number } {
+  const alertes = pack.highlights.filter(h => h.niveau === 'alerte')
+  const critiques = alertes.filter(h => HIGHLIGHTS_CRITIQUES.has(h.key)).length
+  const niveau: VerdictNiveau = critiques > 0 || alertes.length >= 4 ? 'ELEVE' : alertes.length > 0 ? 'MODERE' : 'MAITRISE'
+  return { niveau, alertes: alertes.length }
 }
