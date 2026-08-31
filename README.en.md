@@ -76,12 +76,12 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - Security measures from **14 frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + custom controls — controls **localized in 5 languages**
 - Configurable password policy (length, complexity, expiry, history, lockout)
 - Configurable **MFA** (one-time passcode by **email** or **SMS**) with a 60-min confirmation window to avoid accidental lockout
-- Configurable **SSO** (SAML 2.0 or OIDC) — automatic account provisioning
+- **Enterprise OIDC SSO** (Azure AD, Okta, Google Workspace…) wired into NextAuth — automatic (JIT) account provisioning and **IdP-driven RBAC**: map IdP **groups** (AD / SailPoint) to ACRA roles, re-synced on every sign-in. **SAML 2.0** built in maintenance mode. **SCIM 2.0** (provisioning/deprovisioning by the IdP)
 - Full, exportable audit trail (CSV)
 
 ### 👥 Collaboration & governance
 
-- **7-level RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · BUSINESS_MANAGEMENT · ANALYST · READER
+- **12-role RBAC** covering the **3 lines of defense**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · BUSINESS_MANAGEMENT · ANALYST · READER · **CONTROLLER** (permanent control) · **COMPLIANCE** · **DPO** (data protection) · **AUDITOR** (3rd line) · **OPERATIONAL** (1st line)
 - **Multi-organisation**: organisation tree with hierarchical scopes (node / subtree); an ADMIN manages **only the accounts of their organisation**, a SUPER_ADMIN manages the instance
 - Approval workflow: submission → review → approval (CISO or Risk Manager), with **separation of duties** — an approver cannot approve **their own** analysis (four-eyes principle) — and **self-validation** for single-user organisations (solo practices, where four-eyes is impossible)
 - **Residual risk acceptance** by **Business management** (dedicated read-only role), distinct from analysis validation (deliverable acceptance)
@@ -96,11 +96,26 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 - **Excel (.xlsx)** export with all tabular data per sheet
 - **JSON** export (full, re-importable backup) and **CSV** (tabular data)
 - Analysis import from JSON or CSV
+- **Committee packs** (PDF) with an **"overall risk level" banner** (traffic-light HIGH / MODERATE / UNDER CONTROL) plus a gravity × likelihood **risk heatmap** — the message of a board file at a glance
+
+### 🗄️ Data protection (DPO / GDPR)
+
+- **Record of Processing Activities (RoPA — GDPR Art. 30)**: per-organisation register reserved for the **DPO**, with **completeness checks** (purpose, categories of persons/data, recipients, retention period, security measures, non-EU transfer safeguards)
+- **DPIA decision support (Art. 35)**: automatic detection of processing needing an impact assessment (special-category data Art. 9, large-scale systematic monitoring)
+
+### 🔌 Interoperability & API
+
+- **Public v1 API** (REST, key-based Bearer auth): read the **risk register**, **controls** and **incidents**; built-in **OpenAPI** spec
+- **Bulk import** via API (risk register, controls), with per-row error reporting
+- **Signed outbound webhooks** (HMAC): notify a third-party system (SOAR/SIEM/ITSM) on events (risk created, incident declared…), with retries and an anti-SSRF guard
+- **OIDC SSO + SCIM** (see *Security*) to plug authentication and provisioning into the corporate directory
 
 ### 🌐 UX & accessibility
 
 - Interface in **5 languages**: Français · English · Deutsch · Español · Italiano
 - **Auto-save** on every change (no data loss)
+- **Autocomplete** on repetitive fields (organisation, risk sources, stakeholders, measures, business values, supporting assets, entity) from values already entered in scope — harmonises labels and cuts re-typing
+- **Smart defaults**: organisation pre-filled on a new analysis; **action due dates computed from priority** (Critical / Major / Moderate), per-organisation configurable delays; baseline frameworks **pre-ticked by sector**
 - Dashboard with KPIs, charts, critical-risk alerts, global search
 - Light / dark / automatic theme
 - RGAA-compliant: keyboard navigation, ARIA, accessible contrasts
@@ -663,8 +678,19 @@ To add a language, copy `src/lib/i18n/fr.ts`, translate all keys and save the fi
 | `ADMIN` | ✅ | ✅ all | ✅ | ✅ |
 | `RSSI` (CISO) | ✅ | ✅ own + shared | ✅ | ❌ |
 | `RISK_MANAGER` | ✅ | ✅ own + shared | ✅ | ❌ |
+| `DIRECTION_METIER` (Business mgmt) | ❌ | ❌ (read) | ❌ | ❌ — *accepts residual risks* |
 | `ANALYSTE` (Analyst) | ✅ | ✅ own + shared | ❌ | ❌ |
 | `LECTEUR` (Reader) | ❌ | ❌ | ❌ | ❌ |
+
+**GRC roles / 3 lines of defense** (global read of the framework + write on their module):
+
+| Role | Scope |
+|------|-------|
+| `CONTROLEUR` | Permanent control (1st/2nd line) — running & defining controls |
+| `CONFORMITE` | 2nd line — compliance, waivers, RCSA campaigns |
+| `DPO` | Data protection — **Record of Processing Activities (RoPA, GDPR Art. 30)** |
+| `AUDITEUR` | 3rd line — internal audit (missions, findings, recommendations) |
+| `METIER` | 1st-line operational — incident reporting, control execution |
 
 Access can also be granted **analysis by analysis** (ad-hoc sharing with any user).
 

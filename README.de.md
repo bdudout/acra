@@ -76,12 +76,12 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - Sicherheitsmaßnahmen aus **14 Frameworks**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI-Hygiene · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + benutzerdefinierte Kontrollen — Kontrollen **in 5 Sprachen lokalisiert**
 - Konfigurierbare Passwortrichtlinie (Länge, Komplexität, Ablauf, Verlauf, Sperrung)
 - Konfigurierbare **MFA** (Einmalcode per **E-Mail** oder **SMS**) mit 60-Minuten-Bestätigungsfenster zur Vermeidung versehentlicher Sperrung
-- Konfigurierbares **SSO** (SAML 2.0 oder OIDC) — automatische Kontobereitstellung
+- **Unternehmens-SSO OIDC** (Azure AD, Okta, Google Workspace…) in NextAuth integriert — automatische (JIT) Kontobereitstellung und **IdP-gesteuertes RBAC**: Zuordnung von IdP-**Gruppen** (AD / SailPoint) zu ACRA-Rollen, bei jeder Anmeldung synchronisiert. **SAML 2.0** im Wartungsmodus. **SCIM 2.0** (Bereitstellung/Deprovisionierung durch den IdP)
 - Vollständiger, exportierbarer Audit-Trail (CSV)
 
 ### 👥 Zusammenarbeit & Governance
 
-- **7-stufiges RBAC**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · FACHBEREICHSLEITUNG · ANALYST · LESER
+- **RBAC mit 12 Rollen** über die **3 Verteidigungslinien**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · FACHBEREICHSLEITUNG · ANALYST · LESER · **CONTROLLER** (permanente Kontrolle) · **COMPLIANCE** · **DSB** (Datenschutz) · **AUDITOR** (3. Linie) · **OPERATIV** (1. Linie)
 - **Multi-Organisation**: Organisationsbaum mit hierarchischen Bereichen (Knoten / Teilbaum); ein ADMIN verwaltet **nur die Konten seiner Organisation**, ein SUPER_ADMIN die Instanz
 - Freigabe-Workflow: Einreichung → Prüfung → Freigabe (CISO oder Risk Manager), mit **Funktionstrennung** — ein Genehmiger kann **seine eigene** Analyse nicht freigeben (Vier-Augen-Prinzip) — und **Selbstfreigabe** für Ein-Personen-Organisationen (wo Vier-Augen unmöglich ist)
 - **Restrisiko-Akzeptanz** durch die **Fachbereichsleitung** (dedizierte Nur-Lese-Rolle), getrennt von der Validierung der Analyse
@@ -96,11 +96,26 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - **Excel (.xlsx)**-Export mit allen tabellarischen Daten pro Blatt
 - **JSON**-Export (vollständiges, re-importierbares Backup) und **CSV** (tabellarische Daten)
 - Analyse-Import aus JSON oder CSV
+- **Gremien-Pakete** (PDF) mit einem **Banner „Gesamtrisikoniveau"** (Ampel HOCH / MITTEL / BEHERRSCHT) sowie einer **Risiko-Heatmap** (Schwere × Eintrittswahrscheinlichkeit) — die Kernaussage einer Vorstandsvorlage auf einen Blick
+
+### 🗄️ Datenschutz (DSB / DSGVO)
+
+- **Verzeichnis von Verarbeitungstätigkeiten (VVT — DSGVO Art. 30)**: organisationsbezogenes, dem **DSB** vorbehaltenes Register mit **Vollständigkeitsprüfung** (Zweck, Kategorien betroffener Personen/Daten, Empfänger, Speicherdauer, Sicherheitsmaßnahmen, Garantien bei Drittlandtransfer)
+- **DSFA-Entscheidungshilfe (Art. 35)**: automatische Erkennung von Verarbeitungen, die eine Folgenabschätzung erfordern (besondere Datenkategorien Art. 9, systematische Überwachung in großem Umfang)
+
+### 🔌 Interoperabilität & API
+
+- **Öffentliche v1-API** (REST, schlüsselbasierte Bearer-Authentifizierung): Lesen von **Risikoregister**, **Kontrollen** und **Vorfällen**; integrierte **OpenAPI**-Spezifikation
+- **Massenimport** per API (Risikoregister, Kontrollen), mit zeilenweiser Fehlermeldung
+- **Signierte ausgehende Webhooks** (HMAC): Benachrichtigung eines Drittsystems (SOAR/SIEM/ITSM) bei Ereignissen (Risiko erstellt, Vorfall gemeldet…), mit Wiederholungen und Anti-SSRF-Schutz
+- **OIDC-SSO + SCIM** (siehe *Sicherheit*) zur Anbindung von Authentifizierung und Bereitstellung an das Unternehmensverzeichnis
 
 ### 🌐 UX & Barrierefreiheit
 
 - Oberfläche in **5 Sprachen**: Français · English · Deutsch · Español · Italiano
 - **Auto-Speichern** bei jeder Änderung (kein Datenverlust)
+- **Autovervollständigung** wiederkehrender Felder (Organisation, Risikoquellen, Stakeholder, Maßnahmen, Geschäftswerte, unterstützende Werte, Einheit) aus bereits erfassten Werten im Bereich — vereinheitlicht Bezeichnungen und spart Tipparbeit
+- **Intelligente Standardwerte**: Organisation bei einer neuen Analyse vorausgefüllt; **Maßnahmenfristen nach Priorität berechnet** (Kritisch / Hoch / Mittel), pro Organisation konfigurierbare Fristen; Basis-Frameworks **nach Branche vorausgewählt**
 - Dashboard mit KPIs, Diagrammen, Warnungen zu kritischen Risiken, globaler Suche
 - Helles / dunkles / automatisches Theme
 - RGAA-konform: Tastaturnavigation, ARIA, barrierefreie Kontraste
@@ -664,7 +679,19 @@ Zum Hinzufügen einer Sprache `src/lib/i18n/fr.ts` kopieren, alle Schlüssel üb
 | `RSSI` (CISO) | ✅ | ✅ eigene + geteilte | ✅ | ❌ |
 | `RISK_MANAGER` | ✅ | ✅ eigene + geteilte | ✅ | ❌ |
 | `ANALYSTE` (Analyst) | ✅ | ✅ eigene + geteilte | ❌ | ❌ |
+| `DIRECTION_METIER` (Fachbereich) | ❌ | ❌ (Lesen) | ❌ | ❌ — *akzeptiert Restrisiken* |
+| `ANALYSTE` (Analyst) | ✅ | ✅ eigene + geteilte | ❌ | ❌ |
 | `LECTEUR` (Leser) | ❌ | ❌ | ❌ | ❌ |
+
+**GRC-Rollen / 3 Verteidigungslinien** (globaler Lesezugriff auf das Dispositiv + Schreibzugriff auf ihr Modul):
+
+| Rolle | Bereich |
+|------|-----------|
+| `CONTROLEUR` | Permanente Kontrolle (1./2. Linie) — Ausführung & Definition der Kontrollen |
+| `CONFORMITE` | 2. Linie — Compliance, Ausnahmegenehmigungen, RCSA-Kampagnen |
+| `DPO` | Datenschutz — **Verzeichnis von Verarbeitungstätigkeiten (VVT, DSGVO Art. 30)** |
+| `AUDITEUR` | 3. Linie — interne Revision (Prüfungen, Feststellungen, Empfehlungen) |
+| `METIER` | Operativ 1. Linie — Vorfallmeldung, Kontrollausführung |
 
 Zugriffe können auch **analyseweise** gewährt werden (punktuelles Teilen mit jedem Benutzer).
 
