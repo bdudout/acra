@@ -7,12 +7,18 @@
  */
 
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
-import type { ComitePack } from '@/lib/comite-pack'
+import { verdictGlobal, type ComitePack, type VerdictNiveau } from '@/lib/comite-pack'
+import { formatNumber } from '@/lib/format'
 import { isNonEmptyText } from '@/lib/pdf-guards'
 
 const COLORS = {
-  primary: '#4338CA', danger: '#DC2626', info: '#2563EB',
+  primary: '#4338CA', danger: '#DC2626', warn: '#EA580C', info: '#2563EB',
   border: '#E5E7EB', muted: '#6B7280', headerBg: '#EEF2FF', okBg: '#ECFDF5', ok: '#16A34A',
+}
+
+// Couleur du bandeau de verdict global (RAG) selon le niveau.
+const VERDICT_COLOR: Record<VerdictNiveau, string> = {
+  ELEVE: COLORS.danger, MODERE: COLORS.warn, MAITRISE: COLORS.ok,
 }
 
 const s = StyleSheet.create({
@@ -30,6 +36,9 @@ const s = StyleSheet.create({
   kpiInner: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 4, padding: 6 },
   kpiLabel: { fontSize: 7, color: COLORS.muted, marginBottom: 2 },
   kpiValue: { fontSize: 13, fontWeight: 'bold' },
+  verdictBox: { borderRadius: 4, padding: 10, marginBottom: 12, flexDirection: 'row', alignItems: 'baseline' },
+  verdictLabel: { fontSize: 14, fontWeight: 'bold', color: '#FFFFFF' },
+  verdictSub: { fontSize: 8, color: '#FFFFFF', marginLeft: 8 },
   footer: { position: 'absolute', bottom: 20, left: 36, right: 36, fontSize: 7, color: COLORS.muted, textAlign: 'center' },
 })
 
@@ -37,6 +46,7 @@ type Dict = Record<string, string>
 type Strings = {
   docTitle: string; comiteType: Dict; section: Dict; metric: Dict; highlight: Dict
   highlightsTitle: string; noAlert: string; generatedOn: string
+  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string
 }
 
 const COMMON_METRIC = {
@@ -54,6 +64,7 @@ const STRINGS: Record<string, Strings> = {
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'Élevés', moyen: 'Moyens', faible: 'Faibles', nonCote: 'Non cotés', actionsTotal: 'Actions', avancement: 'Avancement', actionsEnRetard: 'Actions en retard', horsAppetit: 'Hors appétit', dansAppetit: 'Dans l\'appétit', evalues: 'Évalués', ouverts: 'Ouverts', perteNette: 'Perte nette (€)', tauxConformite: 'Taux de conformité', anomalies: 'Anomalies', critiques: 'Constats critiques', recosEnRetard: 'Recos en retard', echues: 'Échéances dépassées', sous30j: 'Sous 30 jours', enAlerte: 'En alerte', critique: 'Critiques', majeurs: 'Incidents majeurs' },
     highlight: { horsAppetit: 'risque(s) hors appétit', actionsEnRetard: 'action(s) de traitement en retard', conformiteFaible: '% de conformité du contrôle permanent (sous le seuil)', constatsCritiques: 'constat(s) d\'audit critiques ouverts', regulateurEchu: 'recommandation(s) régulateur échue(s)', kriCritique: 'KRI en zone critique', doraMajeurs: 'incident(s) TIC majeur(s) (DORA)', incidentsOuverts: 'incident(s) opérationnel(s) ouvert(s)' },
     highlightsTitle: 'Points d\'attention', noAlert: 'Aucun point d\'alerte : les indicateurs des modules actifs sont dans les seuils.', generatedOn: 'Généré le',
+    verdictTitle: 'Niveau de risque global', verdict: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: 'point(s) d\'alerte',
   },
   en: {
     docTitle: 'Committee pack',
@@ -62,6 +73,7 @@ const STRINGS: Record<string, Strings> = {
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'High', moyen: 'Medium', faible: 'Low', nonCote: 'Unrated', actionsTotal: 'Actions', avancement: 'Progress', actionsEnRetard: 'Overdue actions', horsAppetit: 'Outside appetite', dansAppetit: 'Within appetite', evalues: 'Evaluated', ouverts: 'Open', perteNette: 'Net loss (€)', tauxConformite: 'Compliance rate', anomalies: 'Anomalies', critiques: 'Critical findings', recosEnRetard: 'Overdue recs', echues: 'Overdue', sous30j: 'Within 30 days', enAlerte: 'In alert', critique: 'Critical', majeurs: 'Major incidents' },
     highlight: { horsAppetit: 'risk(s) outside appetite', actionsEnRetard: 'overdue treatment action(s)', conformiteFaible: '% permanent-control compliance (below threshold)', constatsCritiques: 'open critical audit finding(s)', regulateurEchu: 'overdue regulator recommendation(s)', kriCritique: 'KRI in critical zone', doraMajeurs: 'major ICT incident(s) (DORA)', incidentsOuverts: 'open operational incident(s)' },
     highlightsTitle: 'Points of attention', noAlert: 'No alert: active-module indicators are within thresholds.', generatedOn: 'Generated on',
+    verdictTitle: 'Overall risk level', verdict: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
   },
   de: {
     docTitle: 'Ausschussunterlage',
@@ -70,6 +82,7 @@ const STRINGS: Record<string, Strings> = {
     metric: { ...COMMON_METRIC, total: 'Gesamt', eleve: 'Hoch', moyen: 'Mittel', faible: 'Niedrig', nonCote: 'Unbewertet', actionsTotal: 'Maßnahmen', avancement: 'Fortschritt', actionsEnRetard: 'Überfällige Maßnahmen', horsAppetit: 'Außerhalb', dansAppetit: 'Innerhalb', evalues: 'Bewertet', ouverts: 'Offen', perteNette: 'Nettoverlust (€)', tauxConformite: 'Konformitätsgrad', anomalies: 'Anomalien', critiques: 'Kritische Feststellungen', recosEnRetard: 'Überfällige Empf.', echues: 'Überfällig', sous30j: 'Binnen 30 Tagen', enAlerte: 'In Alarm', critique: 'Kritisch', majeurs: 'Schwere Vorfälle' },
     highlight: { horsAppetit: 'Risiko(en) außerhalb des Appetits', actionsEnRetard: 'überfällige Behandlungsmaßnahme(n)', conformiteFaible: '% Konformität der permanenten Kontrolle (unter Schwelle)', constatsCritiques: 'offene kritische Revisionsfeststellung(en)', regulateurEchu: 'überfällige Aufsichtsempfehlung(en)', kriCritique: 'KRI in kritischer Zone', doraMajeurs: 'schwere(r) IKT-Vorfall/-Vorfälle (DORA)', incidentsOuverts: 'offene(r) operative(r) Vorfall/Vorfälle' },
     highlightsTitle: 'Aufmerksamkeitspunkte', noAlert: 'Kein Alarm: die Indikatoren der aktiven Module liegen innerhalb der Schwellen.', generatedOn: 'Erstellt am',
+    verdictTitle: 'Gesamtrisikoniveau', verdict: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
   },
   es: {
     docTitle: 'Expediente de comité',
@@ -78,6 +91,7 @@ const STRINGS: Record<string, Strings> = {
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'Altos', moyen: 'Medios', faible: 'Bajos', nonCote: 'Sin valorar', actionsTotal: 'Acciones', avancement: 'Avance', actionsEnRetard: 'Acciones atrasadas', horsAppetit: 'Fuera del apetito', dansAppetit: 'Dentro del apetito', evalues: 'Evaluados', ouverts: 'Abiertos', perteNette: 'Pérdida neta (€)', tauxConformite: 'Tasa de conformidad', anomalies: 'Anomalías', critiques: 'Hallazgos críticos', recosEnRetard: 'Recs atrasadas', echues: 'Vencidos', sous30j: 'En 30 días', enAlerte: 'En alerta', critique: 'Críticos', majeurs: 'Incidentes graves' },
     highlight: { horsAppetit: 'riesgo(s) fuera del apetito', actionsEnRetard: 'acción(es) de tratamiento atrasada(s)', conformiteFaible: '% de conformidad del control permanente (bajo el umbral)', constatsCritiques: 'hallazgo(s) de auditoría crítico(s) abierto(s)', regulateurEchu: 'recomendación(es) del regulador vencida(s)', kriCritique: 'KRI en zona crítica', doraMajeurs: 'incidente(s) TIC grave(s) (DORA)', incidentsOuverts: 'incidente(s) operativo(s) abierto(s)' },
     highlightsTitle: 'Puntos de atención', noAlert: 'Sin alertas: los indicadores de los módulos activos están dentro de los umbrales.', generatedOn: 'Generado el',
+    verdictTitle: 'Nivel de riesgo global', verdict: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
   },
   it: {
     docTitle: 'Fascicolo di comitato',
@@ -86,18 +100,26 @@ const STRINGS: Record<string, Strings> = {
     metric: { ...COMMON_METRIC, total: 'Totale', eleve: 'Alti', moyen: 'Medi', faible: 'Bassi', nonCote: 'Non valutati', actionsTotal: 'Azioni', avancement: 'Avanzamento', actionsEnRetard: 'Azioni in ritardo', horsAppetit: 'Fuori propensione', dansAppetit: 'Entro la propensione', evalues: 'Valutati', ouverts: 'Aperti', perteNette: 'Perdita netta (€)', tauxConformite: 'Tasso di conformità', anomalies: 'Anomalie', critiques: 'Rilievi critici', recosEnRetard: 'Racc. in ritardo', echues: 'Scaduti', sous30j: 'Entro 30 giorni', enAlerte: 'In allerta', critique: 'Critici', majeurs: 'Incidenti gravi' },
     highlight: { horsAppetit: 'rischio/i fuori propensione', actionsEnRetard: 'azione/i di trattamento in ritardo', conformiteFaible: '% conformità del controllo permanente (sotto soglia)', constatsCritiques: 'rilievo/i di audit critici aperti', regulateurEchu: 'raccomandazione/i del regolatore scaduta/e', kriCritique: 'KRI in zona critica', doraMajeurs: 'incidente/i TIC grave/i (DORA)', incidentsOuverts: 'incidente/i operativo/i aperto/i' },
     highlightsTitle: 'Punti di attenzione', noAlert: 'Nessuna allerta: gli indicatori dei moduli attivi sono entro le soglie.', generatedOn: 'Generato il',
+    verdictTitle: 'Livello di rischio complessivo', verdict: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO' }, verdictAlertes: 'allerta/e',
   },
 }
 
 function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; locale: string; orgNom: string; dateStr: string }) {
   const S = STRINGS[locale] ?? STRINGS.fr
   const hasHighlights = pack.highlights.length > 0
+  const v = verdictGlobal(pack)
   return (
     <Document>
       <Page size="A4" style={s.page}>
         <Text style={s.h1}>{S.comiteType[pack.type] ?? S.docTitle}</Text>
         <View>
           <Text style={s.sub}>{isNonEmptyText(orgNom) ? `${orgNom} — ` : ''}{S.docTitle} — {dateStr}</Text>
+        </View>
+
+        {/* Verdict global (RAG) — l'essentiel en un coup d'œil */}
+        <View style={[s.verdictBox, { backgroundColor: VERDICT_COLOR[v.niveau] }]}>
+          <Text style={s.verdictLabel}>{`${S.verdictTitle} : ${S.verdict[v.niveau]}`}</Text>
+          <Text style={s.verdictSub}>{`${v.alertes} ${S.verdictAlertes}`}</Text>
         </View>
 
         {/* Points d'attention */}
@@ -125,7 +147,9 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
                 <View key={`m-${si}-${mi}`} style={s.kpi}>
                   <View style={s.kpiInner}>
                     <Text style={s.kpiLabel}>{S.metric[mt.key] ?? mt.key}</Text>
-                    <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : {}]}>{String(mt.value)}</Text>
+                    <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : mt.positif ? { color: COLORS.ok } : {}]}>
+                      {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[  ]/g, ' ')} €` : String(mt.value)}
+                    </Text>
                   </View>
                 </View>
               ))}
