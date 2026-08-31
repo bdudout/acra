@@ -109,7 +109,7 @@ function RasPDF({ data, locale, orgNom, dateStr }: { data: RasExportData; locale
         <View style={s.kpiRow}>
           <View style={s.kpi}><Text style={s.kpiLabel}>{S.compliance}</Text><Text style={[s.kpiValue, { color: data.tauxConformite >= 80 ? COLORS.ok : COLORS.danger }]}>{`${data.tauxConformite}%`}</Text></View>
           <View style={s.kpi}><Text style={s.kpiLabel}>{S.outside}</Text><Text style={[s.kpiValue, { color: data.synthese.horsAppetit > 0 ? COLORS.danger : COLORS.ok }]}>{String(data.synthese.horsAppetit)}</Text></View>
-          <View style={s.kpi}><Text style={s.kpiLabel}>{S.inside}</Text><Text style={s.kpiValue}>{String(data.synthese.dansAppetit)}</Text></View>
+          <View style={s.kpi}><Text style={s.kpiLabel}>{S.inside}</Text><Text style={[s.kpiValue, data.synthese.dansAppetit > 0 ? { color: COLORS.ok } : {}]}>{String(data.synthese.dansAppetit)}</Text></View>
           <View style={s.kpi}><Text style={s.kpiLabel}>{S.evaluated}</Text><Text style={s.kpiValue}>{String(data.synthese.evalues)}</Text></View>
         </View>
 
