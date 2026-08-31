@@ -77,12 +77,12 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - Mesures de sécurité issues de **14 référentiels** : ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiène · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + contrôles personnalisés — contrôles **localisés dans les 5 langues**
 - Politique de mot de passe configurable (longueur, complexité, expiration, historique, verrouillage)
 - **MFA** configurable (OTP à usage unique par **e-mail** ou **SMS**) avec fenêtre de confirmation de 60 min pour éviter tout verrouillage accidentel
-- **SSO** configurable (SAML 2.0 ou OIDC) — provisioning automatique des comptes
+- **SSO d'entreprise OIDC** (Azure AD, Okta, Google Workspace…) branché sur NextAuth — provisioning automatique des comptes (JIT) et **RBAC piloté par l'IdP** : mapping des **groupes** (AD / SailPoint) vers les rôles ACRA, resynchronisé à chaque connexion. **SAML 2.0** développé en mode maintenance. **SCIM 2.0** (provisioning/déprovisionnement par l'IdP)
 - Piste d'audit complète exportable (CSV)
 
 ### 👥 Collaboration & gouvernance
 
-- **RBAC 7 niveaux** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · DIRECTION_METIER · ANALYSTE · LECTEUR
+- **RBAC 12 rôles** couvrant les **3 lignes de défense** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · DIRECTION_METIER · ANALYSTE · LECTEUR · **CONTROLEUR** (contrôle permanent) · **CONFORMITE** · **DPO** (protection des données) · **AUDITEUR** (3ᵉ ligne) · **METIER** (opérationnel)
 - **Multi-organisation** : arbre d'organisations avec périmètres hiérarchiques (nœud / sous-arbre) ; un ADMIN administre **uniquement les comptes de son organisation**, un SUPER_ADMIN gère l'instance
 - Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager), avec **séparation des tâches** — un approbateur ne peut pas approuver **sa propre** analyse (principe des quatre-yeux) — et **auto-validation** pour les organisations mono-utilisateur (cabinet libéral, où le quatre-yeux est impossible)
 - **Acceptation des risques résiduels** par la **Direction métier** (rôle dédié, lecture seule sur les analyses), distincte de la validation de l'analyse (acceptation du livrable)
@@ -97,11 +97,26 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - Export **Excel (.xlsx)** avec toutes les données tabulaires par onglet
 - Export **JSON** (sauvegarde complète, réimportable) et **CSV** (données tabulaires)
 - Import d'analyse depuis JSON ou CSV
+- **Packs comités** (PDF) avec **bandeau « niveau de risque global »** (feux tricolores ÉLEVÉ / MODÉRÉ / MAÎTRISÉ) pour saisir le message d'un dossier en un coup d'œil
+
+### 🗄️ Protection des données (DPO / RGPD)
+
+- **Registre des activités de traitement (RoPA — RGPD art. 30)** : registre par organisation réservé au **DPO**, avec **contrôle de complétude** (finalité, catégories de personnes/données, destinataires, durée de conservation, mesures de sécurité, garanties de transfert hors UE)
+- **Aide à la décision AIPD / PIA (art. 35)** : détection automatique des traitements nécessitant une analyse d'impact (données sensibles art. 9, surveillance systématique à grande échelle)
+
+### 🔌 Interopérabilité & API
+
+- **API publique v1** (REST, authentification par clé — Bearer) : lecture du **registre de risques**, des **contrôles** et des **incidents** ; spécification **OpenAPI** intégrée
+- **Import en masse** par API (registre de risques, contrôles), avec remontée des erreurs par ligne
+- **Webhooks sortants** signés (HMAC) : notification d'un SI tiers (SOAR/SIEM/ITSM) lors d'événements (risque créé, incident déclaré…), avec ré-essais et garde anti-SSRF
+- **SSO OIDC + SCIM** (voir *Sécurité*) pour brancher l'authentification et le provisioning sur l'annuaire de l'entreprise
 
 ### 🌐 UX & accessibilité
 
 - Interface en **5 langues** : Français · English · Deutsch · Español · Italiano
 - **Auto-save** à chaque modification (aucune perte de données)
+- **Autocomplétion** des champs répétitifs (organisation, sources de risque, parties prenantes, mesures, valeurs métier, biens supports, entité) à partir des saisies déjà faites dans le périmètre — harmonise les libellés et réduit la re-frappe
+- **Défauts intelligents** : organisation d'une nouvelle analyse pré-remplie ; **échéance des actions calculée selon leur priorité** (Critique / Majeure / Modérée), délais configurables par organisation ; référentiels du socle **pré-cochés selon le secteur**
 - Tableau de bord avec KPIs, graphiques, alertes risques critiques, recherche globale
 - Thème clair / sombre / automatique
 - Conforme RGAA : navigation clavier, ARIA, contrastes accessibles
@@ -850,8 +865,19 @@ Pour ajouter une langue, copier `src/lib/i18n/fr.ts`, traduire toutes les clés 
 | `ADMIN` | ✅ | ✅ toutes (de son organisation) | ✅ | ✅ son organisation |
 | `RSSI` | ✅ | ✅ siennes + partagées | ✅ | ❌ |
 | `RISK_MANAGER` | ✅ | ✅ siennes + partagées | ✅ | ❌ |
+| `DIRECTION_METIER` | ❌ | ❌ (lecture) | ❌ | ❌ — *accepte les risques résiduels* |
 | `ANALYSTE` | ✅ | ✅ siennes + partagées | ❌ | ❌ |
 | `LECTEUR` | ❌ | ❌ | ❌ | ❌ |
+
+**Rôles GRC / 3 lignes de défense** (lecture globale du dispositif + écriture sur leur module) :
+
+| Rôle | Périmètre |
+|------|-----------|
+| `CONTROLEUR` | Contrôle permanent (1ʳᵉ/2ᵉ ligne) — exécution & définition des contrôles |
+| `CONFORMITE` | 2ᵉ ligne — conformité, dérogations, campagnes RCSA |
+| `DPO` | Protection des données — **registre des traitements RoPA (RGPD art. 30)** |
+| `AUDITEUR` | 3ᵉ ligne — audit interne (missions, constats, recommandations) |
+| `METIER` | Opérationnel 1ʳᵉ ligne — déclaration d'incidents, exécution de contrôles |
 
 En **multi-organisation**, le rôle est porté **par organisation** (un même compte peut être ADMIN d'un client et ANALYSTE d'un autre) et limité au périmètre de l'organisation active. Les accès peuvent également être accordés **analyse par analyse** (partage ponctuel avec n'importe quel utilisateur).
 
