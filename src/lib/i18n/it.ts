@@ -1154,6 +1154,8 @@ export const it: Translations = {
     err_generic: 'Creazione non riuscita.',
   },
   pilotage: {
+    heatmapTitle: 'Mappatura dei rischi (residuo)', heatmapAxis: 'Probabilità × Gravità (1-5)',
+    verdictTitle: 'Livello di rischio complessivo', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO' }, verdictAlertes: 'allerta/e',
     title: 'Pilotaggio GRC',
     subtitle: 'Vista consolidata del sottoalbero di organizzazioni: postura di rischio e avanzamento dei piani d\'azione per entità.',
     scope: '{n} organizzazione/i',

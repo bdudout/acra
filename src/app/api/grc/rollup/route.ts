@@ -8,6 +8,8 @@ import { type UserRole } from '@/lib/permissions'
 import { niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
 import { rollupRisks, rollupByOrg, type RiskLite, type ScopedAction } from '@/lib/grc-rollup'
+import { buildHeatGrid } from '@/lib/carto-export'
+import type { CartoRisk } from '@/lib/cartographie'
 import {
   rollupIncidents, incidentsByOrg,
   rollupControles, controlesByOrg, rollupControlesParNiveau, synthetiserQuatreNiveaux,
@@ -196,7 +198,11 @@ export async function GET(req: NextRequest) {
     orgCount: orgs.length,
     modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri, reglementaire: withReglementaire },
     consolide: {
-      risques: rollupRisks(risks),
+      risques: { ...rollupRisks(risks), grid: buildHeatGrid(kept.map((r): CartoRisk => ({
+        id: r.id, intitule: '', taxonomieCode: null, processusId: null, processusNom: null, entite: null,
+        graviteInherente: r.graviteInherente, vraisemblanceInherente: r.vraisemblanceInherente,
+        graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
+      })), 'residual') },
       actions: summarizeActions(actions, now),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),

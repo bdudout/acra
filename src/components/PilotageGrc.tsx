@@ -6,9 +6,12 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 import { type TaxonomieNode } from '@/lib/taxonomie'
 import { distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import { verdictDispositif } from '@/lib/comite-pack'
+import HeatmapGridHtml from '@/components/HeatmapGridHtml'
+import type { HeatGrid } from '@/lib/carto-export'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
 
-interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number }
+interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
 interface IncidentTotals { total: number; ouverts: number; perteNette: number }
 interface ControleTotals { controles: number; evaluees: number; conformes: number; anomalies: number; tauxConformite: number | null }
@@ -102,6 +105,13 @@ export default function PilotageGrc() {
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   const mod = data.modules
   const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0) + (mod.kri ? 1 : 0) + (mod.reglementaire ? 1 : 0)
+  // Verdict global du dispositif (RAG) pour un message décideur en < 10 s (#136).
+  const verdict = verdictDispositif({
+    constatsCritiques: cau?.critiques, doraMajeurs: cd?.majeurs, kriCritique: ck?.critique,
+    horsAppetit: cap?.horsAppetit, conformiteSousSeuil: cc?.tauxConformite != null && cc.tauxConformite < 80,
+    actionsEnRetard: ca?.enRetard,
+  })
+  const verdictBg = verdict.niveau === 'ELEVE' ? 'bg-red-600' : verdict.niveau === 'MODERE' ? 'bg-amber-500' : 'bg-green-600'
 
   return (
     <div>
@@ -116,6 +126,12 @@ export default function PilotageGrc() {
           )}
           <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
         </div>
+      </div>
+
+      {/* Verdict global (RAG) — l'essentiel en un coup d'œil (#136). */}
+      <div className={`${verdictBg} rounded-lg px-4 py-3 mb-4 flex items-baseline gap-3 flex-wrap`}>
+        <span className="text-white font-bold text-lg">{p.verdictTitle} : {(p.verdictNiveaux as Record<string, string>)[verdict.niveau]}</span>
+        <span className="text-white/90 text-sm">{verdict.alertes} {p.verdictAlertes}</span>
       </div>
 
       {/* Dossiers de comité (PDF) — assemblage des indicateurs des modules actifs. */}
@@ -159,6 +175,13 @@ export default function PilotageGrc() {
       />
 
       {/* Synthèse consolidée */}
+      {cr.grid && (cr.grid.gravites?.length ?? 0) > 0 && (
+        <div className="card p-4 mb-5">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{p.heatmapTitle}</h3>
+          <HeatmapGridHtml grid={cr.grid} axisLabel={p.heatmapAxis} />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <Tile label={p.total} value={cr.total} />
         <Tile label={p.eleves} value={cr.eleve} tone="red" />

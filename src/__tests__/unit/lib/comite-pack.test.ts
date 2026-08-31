@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildComitePack, verdictGlobal, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
+import { buildComitePack, verdictGlobal, verdictDispositif, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
 
 const MODULES_ON = { risques: true, appetit: true, incidents: true, controles: true, audit: true, regulateur: true, kri: true, dora: true }
 
@@ -91,6 +91,22 @@ describe('buildComitePack — heatmap (#134 M5)', () => {
     expect(avec.heatmap).toBe(grid)
     const sans = buildComitePack('RISQUES', { risques: { total: 1, eleve: 0, moyen: 0, faible: 1, nonCote: 0 } }, MODULES_ON)
     expect(sans.heatmap).toBeUndefined()
+  })
+})
+
+describe('verdictDispositif (#136 — verdict cockpit à partir des signaux bruts)', () => {
+  it('signal de crise (DORA majeur) → ELEVE', () => {
+    expect(verdictDispositif({ doraMajeurs: 3 }).niveau).toBe('ELEVE')
+    expect(verdictDispositif({ constatsCritiques: 1 }).niveau).toBe('ELEVE')
+  })
+  it('alertes non critiques : 1 → MODERE, ≥4 → ELEVE', () => {
+    expect(verdictDispositif({ horsAppetit: 2 }).niveau).toBe('MODERE')
+    expect(verdictDispositif({ horsAppetit: 1, conformiteSousSeuil: true, actionsEnRetard: 3 }).niveau).toBe('MODERE')
+    expect(verdictDispositif({ horsAppetit: 1, conformiteSousSeuil: true, actionsEnRetard: 3, doraMajeurs: 1 }).niveau).toBe('ELEVE')
+  })
+  it('aucun signal → MAITRISE', () => {
+    expect(verdictDispositif({}).niveau).toBe('MAITRISE')
+    expect(verdictDispositif({ horsAppetit: 0, conformiteSousSeuil: false }).alertes).toBe(0)
   })
 })
 

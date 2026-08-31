@@ -1154,6 +1154,8 @@ export const en: Translations = {
     err_generic: 'Creation failed.',
   },
   pilotage: {
+    heatmapTitle: 'Risk map (residual)', heatmapAxis: 'Likelihood × Severity (1-5)',
+    verdictTitle: 'Overall risk level', verdictNiveaux: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
     title: 'GRC steering',
     subtitle: 'Consolidated view of the organization subtree: risk posture and action-plan progress per entity.',
     scope: '{n} organization(s)',

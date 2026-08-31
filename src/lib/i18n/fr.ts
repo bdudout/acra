@@ -1177,6 +1177,8 @@ export const fr = {
     err_generic: 'Échec de la création.',
   },
   pilotage: {
+    heatmapTitle: 'Cartographie des risques (résiduel)', heatmapAxis: 'Vraisemblance × Gravité (1-5)',
+    verdictTitle: 'Niveau de risque global', verdictNiveaux: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: "point(s) d'alerte",
     title: 'Pilotage GRC',
     subtitle: 'Vue consolidée du sous-arbre d\'organisations : posture de risque et avancement des plans d\'action par entité.',
     scope: '{n} organisation(s)',
