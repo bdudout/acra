@@ -142,6 +142,61 @@ ACRA cambia tutto questo: è un **assistente metodologico interattivo** che guid
 
 ---
 
+## 🏛️ Modulo GRC — Governance, Rischi e Conformità
+
+Oltre all'analisi EBIOS RM, ACRA integra una **base GRC completa** strutturata secondo il modello delle **tre linee di difesa**, pensata per le entità regolamentate (banche, assicurazioni, sanità) e allineata a **DORA**, **NIS2** e **ISO/IEC 27001/27002**. Ogni modulo è attivabile per organizzazione; la navigazione passa automaticamente alla «modalità GRC» non appena un modulo di 2ª/3ª linea è attivo.
+
+> Gli screenshot seguenti provengono dal **set di dati demo realistico** (settore bancario), ancorato a minacce pubbliche (ENISA Threat Landscape). Caricabile e poi eliminabile: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
+
+### 📊 Pilotaggio GRC — cruscotto consolidato
+
+Vista direzionale che aggrega, per sottoalbero di organizzazioni, la **postura di rischio** e l'avanzamento dei piani d'azione: registro (alti/medi/bassi), perdite nette (LDC), incidenti aperti, tasso di conformità, anomalie di controllo, constatazioni critiche, appetito, KRI e incidenti **TIC gravi DORA**. Generazione con un clic dei **pacchetti per i comitati** e del **rapporto di controllo interno** (PDF/PPTX).
+
+<img src="docs/screenshots/grc-pilotage-light.png" width="49%"> <img src="docs/screenshots/grc-pilotage-dark.png" width="49%">
+
+### 📚 Framework e requisiti — conformità *dimostrata*
+
+I **framework forniti** (ISO 27001, NIST CSF/800-53, CIS, ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, RGS, ReCyF…) e i vostri **framework propri** (PSSI, politiche interne) declinati in **punti di controllo controllabili e verificabili**. Una **politica di sicurezza predefinita** (base DORA + ISO 27001/27002, con le sue missioni) si inizializza con un clic. La **copertura** di ogni requisito è **derivata dai controlli reali** e dalle constatazioni di audit — la conformità è *dimostrata*, non solo dichiarata.
+
+<img src="docs/screenshots/grc-referentiels-light.png" width="49%"> <img src="docs/screenshots/grc-referentiels-dark.png" width="49%">
+
+La **copertura derivata** di un framework: lo stato di ogni requisito (conforme / parziale / anomalia / non coperto) è calcolato a partire dai **controlli reali** che lo coprono e dalle constatazioni di audit — qui la PSSI di StarBank coperta dai controlli permanenti.
+
+<img src="docs/screenshots/grc-couverture-light.png" width="49%"> <img src="docs/screenshots/grc-couverture-dark.png" width="49%">
+
+### 🚨 Incidenti e perdite — reporting DORA (art. 19)
+
+Dichiarazione in 1ª linea, qualificazione in 2ª linea, perdite in logica **LDC** (lordo, recuperi, netto). Ogni incidente è **classificato automaticamente secondo DORA** (minore / significativo / grave); per gli incidenti gravi, le **scadenze di notifica dell'art. 19** (iniziale / intermedia / finale) sono calcolate e monitorate, e il **registro ITS** è esportabile.
+
+<img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
+
+### ✅ Controllo permanente (N1/N2) & 🔎 Audit interno (3ª linea)
+
+Biblioteca di **controlli permanenti** collegati alla maglia (rischio / processo / requisito di framework), eseguiti periodicamente, con **efficacia osservata** (ciclo RCSA) e **campagne di controllo N1**. In 3ª linea, l'**audit interno** pianifica missioni, formula **constatazioni** (criticità + raccomandazione) e ne segue la risoluzione; le raccomandazioni del **regolatore** (ACPR/BCE) sono monitorate nello stesso flusso.
+
+<img src="docs/screenshots/grc-controles-light.png" width="49%"> <img src="docs/screenshots/grc-audit-light.png" width="49%">
+
+### 🛡️ Conformità & 🗂️ Biblioteca documentale
+
+Monitoraggio della **conformità** per framework (heatmap multi-organizzazione, esportazione **SoA** CSV/PDF) e **biblioteca documentale** GRC (PSSI, strategie, politiche): deposito versionato, collegato a un framework / rischio / organizzazione, download autenticato.
+
+<img src="docs/screenshots/grc-conformite-light.png" width="49%"> <img src="docs/screenshots/grc-documents-light.png" width="49%">
+
+### 📄 Produzioni regolamentari pronte all'uso
+
+- **RAS** — Risk Appetite Statement (PDF)
+- **SoA** — Statement of Applicability / dichiarazione di applicabilità (PDF)
+- **Pacchetti per i comitati** — Rischi / Conformità / Incidenti (PDF)
+- **Rapporto annuale di controllo interno** — 3 linee di difesa + sezione resilienza DORA (PDF **e PPTX**)
+- **Registro DORA ITS** degli incidenti gravi (art. 19) e **registro informativo dei terzi TIC** (art. 28) — CSV
+- **Cartografia dei rischi** (PDF)
+
+Esempio — **rapporto annuale di controllo interno** (generato dai dati demo StarBank): valutazione complessiva, punti di attenzione, poi sintesi per linea di difesa (controllo permanente, gestione dei rischi e conformità, audit) e sezione resilienza DORA.
+
+<img src="docs/screenshots/grc-rapport-controle-interne.png" width="60%">
+
+---
+
 ## 🚀 Avvio rapido (Docker)
 
 **Non è richiesta alcuna installazione locale di Node, npm o Prisma**: l'immagine Docker

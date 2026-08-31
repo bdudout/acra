@@ -142,6 +142,61 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 
 ---
 
+## 🏛️ GRC module — Governance, Risk & Compliance
+
+Beyond the EBIOS RM analysis, ACRA ships a **complete GRC foundation** structured around the **three lines of defense** model, designed for regulated entities (banking, insurance, healthcare) and aligned with **DORA**, **NIS2** and **ISO/IEC 27001/27002**. Each module is enabled per organisation; the navigation automatically switches to "GRC mode" as soon as a 2nd/3rd-line module is active.
+
+> The screenshots below come from the **realistic demo dataset** (banking sector), anchored on public threats (ENISA Threat Landscape). Loadable then purgeable: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
+
+### 📊 GRC steering — consolidated cockpit
+
+Executive view aggregating, per organisation subtree, the **risk posture** and action-plan progress: register (high/medium/low), net losses (LDC), open incidents, compliance rate, control anomalies, critical findings, appetite, KRIs and **major DORA ICT** incidents. One-click generation of **committee packs** and the **internal control report** (PDF/PPTX).
+
+<img src="docs/screenshots/grc-pilotage-light.png" width="49%"> <img src="docs/screenshots/grc-pilotage-dark.png" width="49%">
+
+### 📚 Frameworks & requirements — *proven* compliance
+
+The **shipped frameworks** (ISO 27001, NIST CSF/800-53, CIS, ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, RGS, ReCyF…) and your **own frameworks** (ISSP, internal policies) broken down into **controllable, auditable control points**. A **default security policy** (DORA + ISO 27001/27002 baseline, with its missions) initialises in one click. Each requirement's **coverage** is **derived from real controls** and audit findings — compliance is *proven*, not merely declared.
+
+<img src="docs/screenshots/grc-referentiels-light.png" width="49%"> <img src="docs/screenshots/grc-referentiels-dark.png" width="49%">
+
+A framework's **derived coverage**: each requirement's status (compliant / partial / anomaly / not covered) is computed from the **real controls** that cover it and from audit findings — here StarBank's ISSP covered by permanent controls.
+
+<img src="docs/screenshots/grc-couverture-light.png" width="49%"> <img src="docs/screenshots/grc-couverture-dark.png" width="49%">
+
+### 🚨 Incidents & losses — DORA reporting (Art. 19)
+
+1st-line declaration, 2nd-line qualification, losses in **LDC** logic (gross, recoveries, net). Each incident is **automatically classified under DORA** (minor / significant / major); for major incidents the **Art. 19 notification deadlines** (initial / intermediate / final) are computed and tracked, and the **ITS register** is exportable.
+
+<img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
+
+### ✅ Permanent control (L1/L2) & 🔎 Internal audit (3rd line)
+
+A library of **permanent controls** attached to the mesh (risk / process / framework requirement), run periodically, with **observed effectiveness** (RCSA loop) and **L1 control campaigns**. On the 3rd line, **internal audit** plans missions, issues **findings** (criticality + recommendation) and tracks their resolution; **regulator** recommendations (ACPR/ECB) are tracked in the same flow.
+
+<img src="docs/screenshots/grc-controles-light.png" width="49%"> <img src="docs/screenshots/grc-audit-light.png" width="49%">
+
+### 🛡️ Compliance & 🗂️ Document library
+
+Tracking of **compliance** per framework (multi-organisation heatmap, **SoA** CSV/PDF export) and a GRC **document library** (ISSP, strategies, policies): versioned upload, linked to a framework / risk / organisation, authenticated download.
+
+<img src="docs/screenshots/grc-conformite-light.png" width="49%"> <img src="docs/screenshots/grc-documents-light.png" width="49%">
+
+### 📄 Ready-to-use regulatory outputs
+
+- **RAS** — Risk Appetite Statement (PDF)
+- **SoA** — Statement of Applicability (PDF)
+- **Committee packs** — Risk / Compliance / Incidents (PDF)
+- **Annual internal control report** — 3 lines of defense + DORA resilience section (PDF **and PPTX**)
+- **DORA ITS register** of major incidents (Art. 19) and **ICT third-party information register** (Art. 28) — CSV
+- **Risk map** (PDF)
+
+Example — **annual internal control report** (generated from the StarBank demo data): overall assessment, points of attention, then summary by line of defense (permanent control, risk management & compliance, audit) and DORA resilience section.
+
+<img src="docs/screenshots/grc-rapport-controle-interne.png" width="60%">
+
+---
+
 ## 🚀 Quick Start (Docker)
 
 **No local install of Node, npm or Prisma is required**: the Docker image bundles all
