@@ -9,6 +9,8 @@ import { prisma } from './prisma'
 import { niveauRisque } from './risk-item'
 import { summarizeActions } from './risk-action'
 import { rollupRisks, type RiskLite } from './grc-rollup'
+import { buildHeatGrid } from './carto-export'
+import type { CartoRisk } from './cartographie'
 import { rollupIncidents, rollupControles, rollupControlesParNiveau, rollupAudit, type CockpitIncident, type CockpitExecution, type CockpitConstat } from './grc-cockpit'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from './appetit'
 import { evaluerKri, synthetiserKri, type KriSens } from './kri'
@@ -58,7 +60,15 @@ export async function gatherGrcConsolide(
   const appetitDefini = appetit.seuilGlobal != null || Object.keys(appetit.parCategorie).length > 0
   const appetitRows: RiskAppetitLite[] = riskRows.map(r => ({ taxonomieCode: r.taxonomieCode, niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle) }))
 
-  const consolide: ComiteConsolide = { risques: rollupRisks(risks) }
+  // Heatmap gravité × vraisemblance (mode résiduel) pour le rendu décideur (#134).
+  const cartoRisks: CartoRisk[] = riskRows.map((r, i) => ({
+    id: String(i), intitule: '', taxonomieCode: r.taxonomieCode, processusId: null, processusNom: null, entite: null,
+    graviteInherente: r.graviteInherente, vraisemblanceInherente: r.vraisemblanceInherente,
+    graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
+  }))
+  const grid = buildHeatGrid(cartoRisks, 'residual')
+
+  const consolide: ComiteConsolide = { risques: { ...rollupRisks(risks), grid } }
   const act = summarizeActions(actionRows, now)
   consolide.actions = { total: act.total, faits: act.faits, enRetard: act.enRetard, tauxAvancement: act.tauxAvancement }
 
