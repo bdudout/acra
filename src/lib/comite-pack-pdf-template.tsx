@@ -148,7 +148,7 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
                   <View style={s.kpiInner}>
                     <Text style={s.kpiLabel}>{S.metric[mt.key] ?? mt.key}</Text>
                     <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : mt.positif ? { color: COLORS.ok } : {}]}>
-                      {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[  ]/g, ' ')} €` : String(mt.value)}
+                      {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[\u202f\u00a0]/g, ' ')} €` : String(mt.value)}
                     </Text>
                   </View>
                 </View>

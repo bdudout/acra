@@ -8,6 +8,7 @@
 
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import type { RapportControleInterne, LigneDefense } from '@/lib/rapport-controle-interne'
+import { formatNumber } from '@/lib/format'
 import { isNonEmptyText } from '@/lib/pdf-guards'
 
 const COLORS = {
@@ -49,7 +50,7 @@ type Strings = {
 }
 
 const SECTION_FR = { risques: 'Cartographie des risques', appetit: 'Appétit au risque', incidents: 'Incidents & pertes', controles: 'Contrôle permanent', audit: 'Audit interne', regulateur: 'Suivi régulateur', kri: 'Indicateurs clés (KRI)', dora: 'Résilience opérationnelle TIC (DORA)' }
-const METRIC_FR = { total: 'Total', eleve: 'Élevés', moyen: 'Moyens', faible: 'Faibles', nonCote: 'Non cotés', actionsTotal: 'Actions', avancement: 'Avancement', actionsEnRetard: 'Actions en retard', horsAppetit: 'Hors appétit', dansAppetit: 'Dans l\'appétit', evalues: 'Évalués', ouverts: 'Ouverts', perteNette: 'Perte nette (€)', tauxConformite: 'Taux de conformité', anomalies: 'Anomalies', tauxConformiteN1: 'Conformité N1 (1ʳᵉ ligne)', anomaliesN1: 'Anomalies N1', tauxConformiteN2: 'Conformité N2 (2ᵉ ligne)', anomaliesN2: 'Anomalies N2', critiques: 'Constats critiques', recosEnRetard: 'Recos en retard', echues: 'Échéances dépassées', sous30j: 'Sous 30 jours', enAlerte: 'En alerte', critique: 'Critiques', majeurs: 'Incidents majeurs' }
+const METRIC_FR = { total: 'Total', eleve: 'Élevés', moyen: 'Moyens', faible: 'Faibles', nonCote: 'Non cotés', actionsTotal: 'Actions', avancement: 'Avancement', actionsEnRetard: 'Actions en retard', horsAppetit: 'Hors appétit', dansAppetit: 'Dans l\'appétit', evalues: 'Évalués', ouverts: 'Ouverts', perteNette: 'Perte nette (€)', tauxConformite: 'Taux de conformité', anomalies: 'Anomalies', tauxConformiteN1: 'Conformité N1 (1re ligne)', anomaliesN1: 'Anomalies N1', tauxConformiteN2: 'Conformité N2 (2e ligne)', anomaliesN2: 'Anomalies N2', critiques: 'Constats critiques', recosEnRetard: 'Recos en retard', echues: 'Échéances dépassées', sous30j: 'Sous 30 jours', enAlerte: 'En alerte', critique: 'Critiques', majeurs: 'Incidents majeurs' }
 const HL_FR = { horsAppetit: 'risque(s) hors appétit', actionsEnRetard: 'action(s) de traitement en retard', conformiteFaible: '% de conformité du contrôle permanent (sous le seuil)', constatsCritiques: 'constat(s) d\'audit critiques ouverts', regulateurEchu: 'recommandation(s) régulateur échue(s)', kriCritique: 'KRI en zone critique', doraMajeurs: 'incident(s) TIC majeur(s) (DORA)', incidentsOuverts: 'incident(s) opérationnel(s) ouvert(s)' }
 
 const SECTION_EN = { risques: 'Risk map', appetit: 'Risk appetite', incidents: 'Incidents & losses', controles: 'Permanent control', audit: 'Internal audit', regulateur: 'Regulator tracking', kri: 'Key risk indicators (KRI)', dora: 'ICT operational resilience (DORA)' }
@@ -59,9 +60,9 @@ const HL_EN = { horsAppetit: 'risk(s) outside appetite', actionsEnRetard: 'overd
 const STRINGS: Record<string, Strings> = {
   fr: {
     title: 'Rapport annuel de contrôle interne', subtitle: 'Dispositif de maîtrise des risques — synthèse',
-    intro: 'Ce rapport présente l\'état du dispositif de contrôle interne selon le modèle des trois lignes de défense (contrôle permanent de 1ᵉʳ niveau, gestion des risques et conformité de 2ᵉ niveau, audit interne de 3ᵉ niveau), complété d\'un volet de résilience opérationnelle TIC (DORA). Il consolide les indicateurs des modules actifs et formule une appréciation d\'ensemble.',
-    ligne: { '1': '1ʳᵉ ligne de défense — Contrôle permanent (opérationnel)', '2': '2ᵉ ligne de défense — Gestion des risques & conformité', '3': '3ᵉ ligne de défense — Audit interne', TIC: 'Résilience opérationnelle numérique (DORA)' },
-    ligneFusionnee: 'Contrôle interne (1ʳᵉ et 2ᵉ lignes)',
+    intro: 'Ce rapport présente l\'état du dispositif de contrôle interne selon le modèle des trois lignes de défense (contrôle permanent de 1er niveau, gestion des risques et conformité de 2e niveau, audit interne de 3e niveau), complété d\'un volet de résilience opérationnelle TIC (DORA). Il consolide les indicateurs des modules actifs et formule une appréciation d\'ensemble.',
+    ligne: { '1': '1re ligne de défense — Contrôle permanent (opérationnel)', '2': '2e ligne de défense — Gestion des risques & conformité', '3': '3e ligne de défense — Audit interne', TIC: 'Résilience opérationnelle numérique (DORA)' },
+    ligneFusionnee: 'Contrôle interne (1re et 2e lignes)',
     appreciationLabel: 'Appréciation globale du dispositif', appreciation: { SATISFAISANT: 'Satisfaisant', A_RENFORCER: 'À renforcer', INSUFFISANT: 'Insuffisant' },
     section: SECTION_FR, metric: METRIC_FR, highlight: HL_FR,
     highlightsTitle: 'Points d\'attention', noAlert: 'Aucun point d\'alerte : les indicateurs des modules actifs sont dans les seuils.', generatedOn: 'Généré le', approval: 'Approuvé par l\'organe de surveillance : ____________________   Date : __________', year: 'Exercice',
@@ -158,7 +159,9 @@ function RapportPDF({ rapport, locale, orgNom, annee, dateStr }: { rapport: Rapp
                     <View key={`m-${gi}-${si}-${mi}`} style={s.kpi}>
                       <View style={s.kpiInner}>
                         <Text style={s.kpiLabel}>{S.metric[mt.key] ?? mt.key}</Text>
-                        <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : {}]}>{String(mt.value)}</Text>
+                        <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : mt.positif ? { color: COLORS.ok } : {}]}>
+                          {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[\u202f\u00a0]/g, ' ')} €` : String(mt.value)}
+                        </Text>
                       </View>
                     </View>
                   ))}
