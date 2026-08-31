@@ -4,11 +4,13 @@
 // et remonte des points d'alerte. PURE et testée ; le PDF ne fait que rendre.
 // Les libellés restent au template (i18n) : ce module ne produit que des CLÉS.
 
+import type { HeatGrid } from '@/lib/carto-export'
+
 export const COMITE_TYPES = ['RISQUES', 'CONFORMITE', 'INCIDENTS'] as const
 export type ComiteType = (typeof COMITE_TYPES)[number]
 
 export interface ComiteConsolide {
-  risques?: { total: number; eleve: number; moyen: number; faible: number; nonCote: number }
+  risques?: { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
   actions?: { total: number; faits: number; enRetard: number; tauxAvancement: number }
   appetit?: { horsAppetit: number; dansAppetit: number; evalues: number }
   incidents?: { total: number; ouverts: number; perteNette: number }
@@ -36,6 +38,8 @@ export interface ComitePack {
   type: ComiteType
   sections: ComiteSection[]
   highlights: ComiteHighlight[]
+  /** Heatmap gravité × vraisemblance (si le consolidé la fournit) — rendu décideur (#134). */
+  heatmap?: HeatGrid
 }
 
 const CONFORMITE_SEUIL = 80
@@ -140,7 +144,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.dora && c.dora) push(c.dora.majeurs > 0, 'doraMajeurs', 'alerte', c.dora.majeurs)
   if (m.incidents && c.incidents) push(c.incidents.ouverts > 0, 'incidentsOuverts', 'info', c.incidents.ouverts)
 
-  return { type, sections, highlights }
+  return { type, sections, highlights, ...(c.risques?.grid ? { heatmap: c.risques.grid } : {}) }
 }
 
 // Signaux d'alerte considérés comme « de crise » pour le verdict global (#134 M5).

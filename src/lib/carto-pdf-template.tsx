@@ -11,6 +11,7 @@
 
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import type { CartoExportData } from '@/lib/carto-export'
+import { HeatmapGrid } from '@/lib/pdf-heatmap'
 import { isNonEmptyText } from '@/lib/pdf-guards'
 
 const COLORS = {
@@ -63,13 +64,6 @@ const STRINGS: Record<string, Strings> = {
   it: { title: 'Mappatura dei rischi', subtitle: 'Sintesi del registro: heat map gravità × probabilità e ripartizioni', mode: 'Modalità', inherent: 'Inerente', residual: 'Residuo', total: 'Rischi', eleve: 'Alti', moyen: 'Medi', faible: 'Bassi', nonCote: 'Non valutati', heatmap: 'Heat map gravità × probabilità', gravite: 'Gravità', vraisemblance: 'Probabilità', byCategory: 'Ripartizione per categoria', byProcess: 'Ripartizione per processo', byEntity: 'Ripartizione per entità', colLabel: 'Etichetta', colCount: 'Numero', colMax: 'Livello max', notSet: 'Non indicato', generatedOn: 'Generato il' },
 }
 
-function bucketColor(b: string | undefined): string {
-  if (b === 'eleve') return COLORS.eleve
-  if (b === 'moyen') return COLORS.moyen
-  if (b === 'faible') return COLORS.faible
-  return '#F3F4F6'
-}
-
 function Breakdown({ titre, rows, S }: { titre: string; rows: { key: string; label?: string | null; count: number; maxNiveau: number | null }[]; S: Strings }) {
   return (
     <View wrap={false}>
@@ -119,30 +113,7 @@ function CartographiePDF({ data, locale, orgNom, dateStr }: { data: CartoExportD
         {/* Heat map */}
         <View wrap={false}>
           <Text style={s.h2}>{S.heatmap}</Text>
-          {data.grid.gravites.map(g => (
-            <View key={`g${g}`} style={s.gridRow}>
-              <View style={s.axisCell}><Text style={s.axisText}>{String(g)}</Text></View>
-              {data.grid.vraisemblances.map(v => {
-                const n = data.grid.counts[g][v]
-                return (
-                  <View key={`c${g}-${v}`} style={[s.cell, { backgroundColor: bucketColor(data.grid.buckets[g][v]) }]}>
-                    <Text style={s.cellText}>{n > 0 ? String(n) : ''}</Text>
-                  </View>
-                )
-              })}
-            </View>
-          ))}
-          <View style={s.gridRow}>
-            <View style={s.axisCell}><Text style={s.axisText}>{''}</Text></View>
-            {data.grid.vraisemblances.map(v => (
-              <View key={`v${v}`} style={[s.cell, { borderColor: '#FFFFFF', backgroundColor: '#FFFFFF' }]}>
-                <Text style={s.axisText}>{String(v)}</Text>
-              </View>
-            ))}
-          </View>
-          {/* Libellés d'axes en ASCII : la police par défaut (Helvetica) ne
-              contient pas les flèches Unicode (elles s'affichent en apostrophes). */}
-          <Text style={s.axisLabel}>{`${S.vraisemblance} (1-5) - ${S.gravite} (1-5)`}</Text>
+          <HeatmapGrid grid={data.grid} axisLabel={`${S.vraisemblance} (1-5) - ${S.gravite} (1-5)`} />
         </View>
 
         <Breakdown titre={S.byCategory} rows={data.parCategorie} S={S} />
