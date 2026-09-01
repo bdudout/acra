@@ -164,3 +164,24 @@ export function verdictGlobal(pack: ComitePack): { niveau: VerdictNiveau; alerte
   const niveau: VerdictNiveau = critiques > 0 || alertes.length >= 4 ? 'ELEVE' : alertes.length > 0 ? 'MODERE' : 'MAITRISE'
   return { niveau, alertes: alertes.length }
 }
+
+export interface VerdictSignaux {
+  constatsCritiques?: number; doraMajeurs?: number; kriCritique?: number; regulateurEchues?: number
+  horsAppetit?: number; conformiteSousSeuil?: boolean; actionsEnRetard?: number
+}
+
+/**
+ * Verdict global du DISPOSITIF pour le cockpit `/pilotage` (#136) — même logique que
+ * `verdictGlobal` mais à partir des signaux consolidés bruts (pas d'un ComitePack) :
+ * ÉLEVÉ si ≥1 signal de crise (constat critique, DORA majeur, KRI critique, régulateur
+ * échu) OU ≥4 alertes ; MODÉRÉ si ≥1 ; MAÎTRISÉ sinon. Pur → testable.
+ */
+export function verdictDispositif(s: VerdictSignaux): { niveau: VerdictNiveau; alertes: number } {
+  const critique = (s.constatsCritiques ?? 0) > 0 || (s.doraMajeurs ?? 0) > 0 || (s.kriCritique ?? 0) > 0 || (s.regulateurEchues ?? 0) > 0
+  const alertes = [
+    (s.horsAppetit ?? 0) > 0, s.conformiteSousSeuil === true, (s.actionsEnRetard ?? 0) > 0,
+    (s.constatsCritiques ?? 0) > 0, (s.doraMajeurs ?? 0) > 0, (s.kriCritique ?? 0) > 0, (s.regulateurEchues ?? 0) > 0,
+  ].filter(Boolean).length
+  const niveau: VerdictNiveau = critique || alertes >= 4 ? 'ELEVE' : alertes > 0 ? 'MODERE' : 'MAITRISE'
+  return { niveau, alertes }
+}

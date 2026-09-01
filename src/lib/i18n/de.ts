@@ -1154,6 +1154,8 @@ export const de: Translations = {
     err_generic: 'Erstellung fehlgeschlagen.',
   },
   pilotage: {
+    heatmapTitle: 'Risikokarte (Restrisiko)', heatmapAxis: 'Wahrscheinlichkeit × Schwere (1-5)',
+    verdictTitle: 'Gesamtrisikoniveau', verdictNiveaux: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
     title: 'GRC-Steuerung',
     subtitle: 'Konsolidierte Sicht des Organisationsteilbaums: Risikolage und Fortschritt der Maßnahmenpläne je Einheit.',
     scope: '{n} Organisation(en)',

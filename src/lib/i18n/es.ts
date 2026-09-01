@@ -1154,6 +1154,8 @@ export const es: Translations = {
     err_generic: 'Error al crear.',
   },
   pilotage: {
+    heatmapTitle: 'Mapa de riesgos (residual)', heatmapAxis: 'Probabilidad × Gravedad (1-5)',
+    verdictTitle: 'Nivel de riesgo global', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
     title: 'Pilotaje GRC',
     subtitle: 'Vista consolidada del subárbol de organizaciones: postura de riesgo y avance de los planes de acción por entidad.',
     scope: '{n} organización(es)',
