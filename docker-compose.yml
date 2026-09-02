@@ -50,8 +50,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Réconciliation P3009 sûre (voir scripts/migrate-recover.sh) PUIS migrate deploy.
+    # Le script est monté en volume (comme backup.sh) pour rester modifiable sans rebuild.
+    volumes:
+      - ./scripts/migrate-recover.sh:/app/scripts/migrate-recover.sh:ro
     command: >
-      sh -c "node node_modules/prisma/build/index.js migrate deploy"
+      sh -c "sh scripts/migrate-recover.sh"
 
   app:
     build:
