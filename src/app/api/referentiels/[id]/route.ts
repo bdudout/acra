@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const updated = await prisma.referentiel.update({
     where: { id },
     data: {
-      code: data.code, nom: data.nom, type: data.type, version: data.version, description: data.description,
+      code: data.code, nom: data.nom, type: data.type, domaine: data.domaine, version: data.version, description: data.description,
       exigences: data.exigences as unknown as Prisma.InputJsonValue,
       missions: data.missions as unknown as Prisma.InputJsonValue,
     },

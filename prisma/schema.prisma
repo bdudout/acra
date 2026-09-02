@@ -570,8 +570,12 @@ model Referentiel {
 
   code        String // slug MAJUSCULES, unique par organisation (ex. PSSI-2026)
   nom         String
-  // PSSI | POLITIQUE | REGLEMENTAIRE | STANDARD | CUSTOM
+  // Nature du référentiel : PSSI | POLITIQUE | REGLEMENTAIRE | STANDARD | CUSTOM
   type        String  @default("CUSTOM")
+  // Filière de contrôle/audit (cf. lib/referentiel-domaines.ts). Défaut SECURITE_SI
+  // pour rétrocompatibilité (l'existant est cyber). Ouvre le non-cyber (LCB-FT,
+  // gel des avoirs, comptable, octroi de crédit…).
+  domaine     String  @default("SECURITE_SI")
   version     String?
   description String? @db.Text
   // Exigences : FrameworkControl[] { ref, nom, description, type, categorie }.
@@ -586,6 +590,7 @@ model Referentiel {
 
   @@unique([organizationId, code])
   @@index([organizationId])
+  @@index([organizationId, domaine])
 }
 
 // ─── Bibliothèque documentaire GRC (PSSI, stratégies, politiques…) ───────────

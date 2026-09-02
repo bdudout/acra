@@ -1630,7 +1630,7 @@ export const es: Translations = {
     builtin: 'Marcos incluidos (solo lectura)',
     empty: 'Ningún marco propio. Cree su PSSI o sus políticas internas y sus requisitos.',
     readOnly: 'Solo lectura — la gestión de los marcos corresponde a la gobernanza (RSSI / cumplimiento).',
-    champ: { code: 'Código', nom: 'Nombre', type: 'Tipo', version: 'Versión', description: 'Descripción', exigences: 'Requisitos (puntos de control)', missions: 'Misiones (objetivos de seguridad)' },
+    champ: { code: 'Código', nom: 'Nombre', type: 'Tipo', domaine: 'Dominio', version: 'Versión', description: 'Descripción', exigences: 'Requisitos (puntos de control)', missions: 'Misiones (objetivos de seguridad)' },
     typeOpt: { PSSI: 'PSSI', POLITIQUE: 'Política', REGLEMENTAIRE: 'Regulatorio', STANDARD: 'Estándar', CUSTOM: 'Propio' },
     exigencesHint: 'Un requisito por línea: ref | título | categoría | tipo. Líneas vacías y # ignoradas.',
     exigencesCount: '{n} requisito(s) detectado(s)',

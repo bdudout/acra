@@ -6,6 +6,7 @@
 
 import { prisma } from './prisma'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, type FrameworkId } from './frameworks-data'
+import { coerceDomaine, type Domaine } from './referentiel-domaines'
 import type { Locale } from './i18n'
 import type { Exigence } from './referentiel'
 
@@ -16,6 +17,8 @@ export interface ReferentielSummary {
   nom: string
   source: ReferentielSource
   type: string
+  /** Filière de contrôle/audit (cf. referentiel-domaines.ts). */
+  domaine: Domaine
   version: string | null
   nbExigences: number
   actif: boolean
@@ -29,13 +32,19 @@ const BUILTIN_CODES = FRAMEWORK_IDS.filter(id => id !== 'CUSTOM')
 
 const isBuiltin = (code: string): code is FrameworkId => (BUILTIN_CODES as readonly string[]).includes(code)
 
-/** Résumés des référentiels visibles par l'organisation (livrés + custom). */
-export async function listReferentiels(orgId: string, locale: Locale): Promise<ReferentielSummary[]> {
+/**
+ * Résumés des référentiels visibles par l'organisation (livrés + custom).
+ * `domaine` (optionnel) filtre sur une filière de contrôle/audit (cyber, LCB-FT…).
+ */
+export async function listReferentiels(orgId: string, locale: Locale, domaine?: Domaine): Promise<ReferentielSummary[]> {
   const builtins: ReferentielSummary[] = BUILTIN_CODES.map(code => {
     const meta = FRAMEWORK_META[code]
     let nb = 0
     try { nb = getFrameworkControles(code, undefined, locale).length } catch { nb = 0 }
-    return { code, nom: meta.nom, source: 'BUILTIN', type: meta.cible, version: meta.version || null, nbExigences: nb, actif: true }
+    return {
+      code, nom: meta.nom, source: 'BUILTIN', type: meta.cible,
+      domaine: coerceDomaine(meta.domaine), version: meta.version || null, nbExigences: nb, actif: true,
+    }
   })
 
   const rows = await prisma.referentiel.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] })
@@ -45,12 +54,14 @@ export async function listReferentiels(orgId: string, locale: Locale): Promise<R
     nom: r.nom,
     source: 'CUSTOM',
     type: r.type,
+    domaine: coerceDomaine((r as { domaine?: unknown }).domaine),
     version: r.version,
     nbExigences: Array.isArray(r.exigences) ? (r.exigences as unknown[]).length : 0,
     actif: r.actif,
   }))
 
-  return [...customs, ...builtins]
+  const all = [...customs, ...builtins]
+  return domaine ? all.filter(r => r.domaine === domaine) : all
 }
 
 /** Exigences (points de contrôle) d'un référentiel, quelle que soit sa source. */

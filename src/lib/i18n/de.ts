@@ -1630,7 +1630,7 @@ export const de: Translations = {
     builtin: 'Gelieferte Rahmenwerke (nur Lesen)',
     empty: 'Noch kein eigener Referenzrahmen. Erstellen Sie Ihre Sicherheitsleitlinie oder interne Richtlinien und deren Anforderungen.',
     readOnly: 'Nur Lesezugriff — die Pflege der Referenzrahmen obliegt der Governance (CISO / Compliance).',
-    champ: { code: 'Code', nom: 'Name', type: 'Typ', version: 'Version', description: 'Beschreibung', exigences: 'Anforderungen (Kontrollpunkte)', missions: 'Missionen (Sicherheitsziele)' },
+    champ: { code: 'Code', nom: 'Name', type: 'Typ', domaine: 'Bereich', version: 'Version', description: 'Beschreibung', exigences: 'Anforderungen (Kontrollpunkte)', missions: 'Missionen (Sicherheitsziele)' },
     typeOpt: { PSSI: 'Sicherheitsleitlinie', POLITIQUE: 'Richtlinie', REGLEMENTAIRE: 'Regulatorisch', STANDARD: 'Standard', CUSTOM: 'Eigen' },
     exigencesHint: 'Eine Anforderung pro Zeile: Ref | Titel | Kategorie | Typ. Leerzeilen und # ignoriert.',
     exigencesCount: '{n} Anforderung(en) erkannt',

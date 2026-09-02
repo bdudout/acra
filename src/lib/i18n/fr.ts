@@ -1653,7 +1653,7 @@ export const fr = {
     builtin: 'Cadres livrés (lecture seule)',
     empty: 'Aucun référentiel propre. Créez votre PSSI ou vos politiques internes et leurs exigences.',
     readOnly: 'Lecture seule — la tenue des référentiels relève de la gouvernance (RSSI / conformité).',
-    champ: { code: 'Code', nom: 'Nom', type: 'Type', version: 'Version', description: 'Description', exigences: 'Exigences (points de contrôle)', missions: 'Missions (objectifs de sécurité)' },
+    champ: { code: 'Code', nom: 'Nom', type: 'Type', domaine: 'Domaine', version: 'Version', description: 'Description', exigences: 'Exigences (points de contrôle)', missions: 'Missions (objectifs de sécurité)' },
     typeOpt: { PSSI: 'PSSI', POLITIQUE: 'Politique', REGLEMENTAIRE: 'Réglementaire', STANDARD: 'Standard', CUSTOM: 'Custom' },
     exigencesHint: 'Une exigence par ligne : réf | intitulé | catégorie | type. Lignes vides et # ignorées.',
     exigencesCount: '{n} exigence(s) détectée(s)',

@@ -1630,7 +1630,7 @@ export const it: Translations = {
     builtin: 'Quadri forniti (sola lettura)',
     empty: 'Nessun riferimento proprio. Crea la tua PSSI o le tue politiche interne e i loro requisiti.',
     readOnly: 'Sola lettura — la gestione dei riferimenti spetta alla governance (RSSI / conformità).',
-    champ: { code: 'Codice', nom: 'Nome', type: 'Tipo', version: 'Versione', description: 'Descrizione', exigences: 'Requisiti (punti di controllo)', missions: 'Missioni (obiettivi di sicurezza)' },
+    champ: { code: 'Codice', nom: 'Nome', type: 'Tipo', domaine: 'Dominio', version: 'Versione', description: 'Descrizione', exigences: 'Requisiti (punti di controllo)', missions: 'Missioni (obiettivi di sicurezza)' },
     typeOpt: { PSSI: 'PSSI', POLITIQUE: 'Politica', REGLEMENTAIRE: 'Regolamentare', STANDARD: 'Standard', CUSTOM: 'Personalizzato' },
     exigencesHint: 'Un requisito per riga: rif | titolo | categoria | tipo. Righe vuote e # ignorate.',
     exigencesCount: '{n} requisito/i rilevato/i',

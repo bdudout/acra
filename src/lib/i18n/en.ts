@@ -1630,7 +1630,7 @@ export const en: Translations = {
     builtin: 'Built-in frameworks (read only)',
     empty: 'No custom framework yet. Create your ISSP or internal policies and their requirements.',
     readOnly: 'Read only — framework management belongs to governance (CISO / compliance).',
-    champ: { code: 'Code', nom: 'Name', type: 'Type', version: 'Version', description: 'Description', exigences: 'Requirements (control points)', missions: 'Missions (security objectives)' },
+    champ: { code: 'Code', nom: 'Name', type: 'Type', domaine: 'Domain', version: 'Version', description: 'Description', exigences: 'Requirements (control points)', missions: 'Missions (security objectives)' },
     typeOpt: { PSSI: 'ISSP', POLITIQUE: 'Policy', REGLEMENTAIRE: 'Regulatory', STANDARD: 'Standard', CUSTOM: 'Custom' },
     exigencesHint: 'One requirement per line: ref | title | category | type. Blank lines and # ignored.',
     exigencesCount: '{n} requirement(s) detected',
