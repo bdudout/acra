@@ -47,6 +47,7 @@ import { showsHdsCaveat } from '@/lib/sous-secteurs'
 import { ETATS_SOCLE, etatSocleFromEntry, type EtatSocle } from '@/lib/socle-etat'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { precheckReferentiels } from '@/lib/referentiels-precoche'
+import { resolveReferentielCode } from '@/lib/referentiel-catalogue'
 
 // Styles statiques de l'indicateur d'état d'application du socle (EXI_M1_20).
 const ETAT_SOCLE_STYLE: Record<EtatSocle, { dot: string; active: string; idle: string }> = {
@@ -91,7 +92,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   // Translated arrays (derived from t so they re-render on locale change)
   // Config organisation (#8) — types d'impacts + référentiels actifs ; null tant que non chargé
   const [orgImpacts, setOrgImpacts] = useState<{ id: string; label: string; icon: string }[] | null>(null)
-  const [orgReferentiels, setOrgReferentiels] = useState<{ nom: string; description: string }[] | null>(null)
+  const [orgReferentiels, setOrgReferentiels] = useState<{ nom: string; description: string; code: string | null }[] | null>(null)
   // Exemples personnalisés par l'organisation (override par catégorie) ; vide = défauts
   const [exOverride, setExOverride] = useState<Record<string, any[]>>({})
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
         if (!d) return
         if (Array.isArray(d.typesImpacts)) setOrgImpacts(d.typesImpacts)
         if (Array.isArray(d.referentielsActifs)) {
-          setOrgReferentiels(d.referentielsActifs.filter((r: any) => r.actif !== false).map((r: any) => ({ nom: r.nom, description: r.description })))
+          setOrgReferentiels(d.referentielsActifs.filter((r: any) => r.actif !== false).map((r: any) => ({ nom: r.nom, description: r.description, code: resolveReferentielCode(r) })))
         }
         if (d.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) {
           setExOverride(d.exemplesAteliers)
@@ -364,11 +365,13 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   }
 
   // ── Socle de sécurité ─────────────────────────────────────────────────────
-  function toggleReferentiel(nom: string) {
+  function toggleReferentiel(nom: string, code?: string | null) {
     setReferentiels(prev => {
       const exists = prev.find(r => r.nom === nom)
       if (exists) return prev.filter(r => r.nom !== nom)
-      return [...prev, { nom, applicable: true, ecarts: '', etatApplication: 'APPLIQUE' }]
+      // `code` (unification) relie le référentiel appliqué au cadre unifié → même
+      // objet côté conformité/contrôles. Résolu depuis le nom si non fourni.
+      return [...prev, { nom, code: code ?? resolveReferentielCode({ nom }), applicable: true, ecarts: '', etatApplication: 'APPLIQUE' }]
     })
   }
 
@@ -1282,7 +1285,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                 return (
                   <button
                     key={r.nom}
-                    onClick={() => toggleReferentiel(r.nom)}
+                    onClick={() => toggleReferentiel(r.nom, (r as { code?: string | null }).code ?? null)}
                     className={`text-left p-3 border rounded-lg transition-colors ${
                       selected ? 'border-ebios-500 bg-ebios-50' : 'border-gray-200 hover:border-ebios-300 hover:bg-ebios-50'
                     }`}

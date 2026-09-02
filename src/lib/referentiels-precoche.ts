@@ -3,8 +3,8 @@
 // socle de l'organisation qui correspondent aux cadres RECOMMANDÉS pour le
 // secteur de l'analyse (ISO 27001, NIS2, DORA…). L'utilisateur peut décocher.
 
-export interface OrgReferentiel { nom: string; description?: string | null }
-export interface PrecheckedRef { nom: string; applicable: boolean; ecarts: string; etatApplication: string }
+export interface OrgReferentiel { nom: string; description?: string | null; code?: string | null }
+export interface PrecheckedRef { nom: string; code: string | null; applicable: boolean; ecarts: string; etatApplication: string }
 
 /** Normalise un nom de référentiel : minuscules, sans espaces ni ponctuation. */
 const norm = (s: string): string => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -26,7 +26,7 @@ export function precheckReferentiels(recommendedNoms: string[], orgReferentiels:
     if (on.length < 3 || seen.has(on)) continue
     if (recs.some(rn => rn === on || rn.startsWith(on) || on.startsWith(rn))) {
       seen.add(on)
-      out.push({ nom: r.nom, applicable: true, ecarts: '', etatApplication: 'APPLIQUE' })
+      out.push({ nom: r.nom, code: r.code ?? null, applicable: true, ecarts: '', etatApplication: 'APPLIQUE' })
     }
   }
   return out
