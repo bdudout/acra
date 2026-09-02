@@ -9,6 +9,8 @@ import { DOMAINES, DOMAINE_META } from '@/lib/referentiel-domaines'
 
 interface CouvExigence { ref: string; nom: string; statut: string; nbControles: number; nbAnomaliesAudit: number }
 interface CouvSynthese { total: number; couverts: number; conformes: number; anomalies: number; nonCouverts: number; tauxCouverture: number; tauxConformite: number }
+interface AppAnalyse { analyseId: string; nom: string; etat: string }
+interface AppSynthese { total: number; appliques: number; partiels: number; nonAppliques: number; analyses: AppAnalyse[] }
 
 interface Ref {
   id?: string; code: string; nom: string; source: 'BUILTIN' | 'CUSTOM'
@@ -28,7 +30,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const [form, setForm] = useState({ ...emptyForm })
   const [err, setErr] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
-  const [couv, setCouv] = useState<{ code: string; nom: string; parExigence: CouvExigence[]; synthese: CouvSynthese } | null>(null)
+  const [couv, setCouv] = useState<{ code: string; nom: string; parExigence: CouvExigence[]; synthese: CouvSynthese; application?: AppSynthese } | null>(null)
   const [couvLoading, setCouvLoading] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [filterDomaine, setFilterDomaine] = useState<string>('')
@@ -40,7 +42,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     setCouvLoading(true)
     const d = await fetch(`/api/referentiels/couverture?code=${encodeURIComponent(code)}`).then(x => x.ok ? x.json() : null).catch(() => null)
     setCouvLoading(false)
-    if (d?.active) setCouv({ code, nom, parExigence: d.parExigence ?? [], synthese: d.synthese })
+    if (d?.active) setCouv({ code, nom, parExigence: d.parExigence ?? [], synthese: d.synthese, application: d.application })
   }
 
   async function reload() {
@@ -301,6 +303,31 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                 <div className="card p-3"><div className={`text-xl font-bold tabular-nums ${couv.synthese.anomalies > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{couv.synthese.anomalies}</div><div className="text-[11px] text-gray-500">{r.covKpi.anomalies}</div></div>
                 <div className="card p-3"><div className="text-xl font-bold tabular-nums">{couv.synthese.tauxCouverture}%</div><div className="text-[11px] text-gray-500">{r.covKpi.taux}</div></div>
               </div>
+              {/* Jointure visible : application du référentiel dans les analyses de risques */}
+              {couv.application && !couvLoading && (
+                <div className="mb-4 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">{r.covApp.title}</p>
+                  {couv.application.total === 0 ? (
+                    <p className="text-xs text-gray-400">{r.covApp.none}</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-1.5 text-[11px] mb-2">
+                        <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300">{r.covApp.applique} · {couv.application.appliques}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{r.covApp.partiel} · {couv.application.partiels}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">{r.covApp.nonApplique} · {couv.application.nonAppliques}</span>
+                      </div>
+                      <div className="space-y-1">
+                        {couv.application.analyses.map(a => (
+                          <div key={a.analyseId} className="flex items-center gap-2 text-sm">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${APP_DOT[a.etat] ?? 'bg-gray-300'}`} aria-hidden="true" />
+                            <span className="flex-1 truncate text-gray-700 dark:text-gray-200" title={a.nom}>{a.nom}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               {couvLoading ? <div className="text-center py-6 text-gray-400 text-sm">{t.loading}</div>
                 : couv.parExigence.length === 0 ? <div className="text-center py-6 text-gray-400 text-sm">{r.covEmpty}</div>
                 : (
@@ -332,4 +359,11 @@ const COV_BADGE: Record<string, string> = {
   CONFORME: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
   PARTIEL: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   ANOMALIE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
+}
+
+// Pastille d'état d'application d'un référentiel dans une analyse (socle).
+const APP_DOT: Record<string, string> = {
+  APPLIQUE: 'bg-green-500',
+  PARTIEL: 'bg-amber-500',
+  NON_APPLIQUE: 'bg-red-500',
 }

@@ -1643,6 +1643,7 @@ export const it: Translations = {
     couvertureTitle: 'Conformità derivata — copertura dai controlli reali',
     covKpi: { couverts: 'Coperte', conformes: 'Conformi', anomalies: 'Anomalie', taux: 'Tasso di copertura' },
     covStatut: { NON_COUVERT: 'Non coperto', CONFORME: 'Conforme', PARTIEL: 'Parziale', ANOMALIE: 'Anomalia' },
+    covApp: { title: 'Applicazione nelle analisi dei rischi', none: 'Nessuna analisi applica questo quadro', applique: 'Applicato', partiel: 'Parziale', nonApplique: 'Non applicato' },
     covControles: '{n} controlli',
     covEmpty: 'Nessun requisito in questo riferimento.',
   },

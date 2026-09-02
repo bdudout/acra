@@ -4,6 +4,9 @@
 // visent — « conformité prouvée par les contrôles », pas seulement déclarée.
 // Logique PURE et testée.
 
+import { resolveReferentielCode } from './referentiel-catalogue'
+import { etatSocleFromEntry, type EtatSocle } from './socle-etat'
+
 export type CouvertureStatut = 'NON_COUVERT' | 'CONFORME' | 'PARTIEL' | 'ANOMALIE'
 
 export type Efficacite = 'FORTE' | 'MOYENNE' | 'FAIBLE' | null
@@ -95,5 +98,56 @@ export function synthetiserCouverture(
   return {
     parExigence,
     synthese: { total, couverts, conformes, anomalies, nonCouverts, tauxCouverture: pct(couverts), tauxConformite: pct(conformes) },
+  }
+}
+
+// ─── Jointure visible : application d'un référentiel dans les analyses de risques ─
+// Croise un référentiel (par CODE) avec les analyses qui le déclarent dans leur
+// socle (Cadrage.referentiels), et leur état d'application (vert/orange/rouge).
+// Rend visible « ce référentiel est-il appliqué en analyse ET couvert par les
+// contrôles ? » — les deux faces de la même unité. PURE et testée.
+
+export interface AnalyseApplication {
+  analyseId: string
+  nom: string
+  etat: EtatSocle
+}
+
+export interface ApplicationSynthese {
+  total: number // analyses appliquant ce référentiel
+  appliques: number
+  partiels: number
+  nonAppliques: number
+  analyses: AnalyseApplication[]
+}
+
+interface AnalyseAvecReferentiels {
+  id: string
+  nom: string
+  referentiels: unknown // Cadrage.referentiels : [{nom, code?, etatApplication?, applicable?, ecarts?}]
+}
+
+/**
+ * Analyses appliquant le référentiel `code` (résolution nom→code incluse pour les
+ * socles historiques), avec leur état d'application. Une analyse compte une seule
+ * fois (première entrée correspondante).
+ */
+export function croiserApplicationsAnalyses(
+  analyses: AnalyseAvecReferentiels[],
+  code: string,
+): ApplicationSynthese {
+  const out: AnalyseApplication[] = []
+  for (const a of analyses ?? []) {
+    const refs = Array.isArray(a.referentiels) ? (a.referentiels as Record<string, unknown>[]) : []
+    const entry = refs.find(r => r && typeof r === 'object' && resolveReferentielCode(r as { code?: string | null; nom?: unknown }) === code)
+    if (!entry) continue
+    out.push({ analyseId: a.id, nom: a.nom, etat: etatSocleFromEntry(entry) })
+  }
+  return {
+    total: out.length,
+    appliques: out.filter(a => a.etat === 'APPLIQUE').length,
+    partiels: out.filter(a => a.etat === 'PARTIEL').length,
+    nonAppliques: out.filter(a => a.etat === 'NON_APPLIQUE').length,
+    analyses: out,
   }
 }
