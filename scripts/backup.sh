@@ -77,4 +77,21 @@ find "${BACKUP_DIR}" -maxdepth 1 -name "ebios_*.sql.gz" \
 
 REMAINING="$(find "${BACKUP_DIR}" -maxdepth 1 -name "ebios_*.sql.gz" | wc -l | tr -d ' ')"
 echo "[backup] Backups conservés : ${REMAINING}"
+
+# --- Copie hors-site (optionnelle) ------------------------------------------
+# Si BACKUP_OFFSITE_CMD est défini, il est exécuté avec le chemin du dump en
+# argument → permet de pousser le backup vers un stockage distant (OVH S3/Swift,
+# rsync, scp…). Exemples :
+#   BACKUP_OFFSITE_CMD="rclone copy"          → rclone copy "<fichier>" (config rclone requise)
+#   BACKUP_OFFSITE_CMD="aws s3 cp - s3://acra-backups/"   (adapter)
+# L'échec de la copie hors-site N'INVALIDE PAS le backup local (log d'alerte).
+if [ -n "${BACKUP_OFFSITE_CMD:-}" ]; then
+  echo "[backup] Copie hors-site : ${BACKUP_OFFSITE_CMD} ${FILENAME}"
+  if sh -c "${BACKUP_OFFSITE_CMD} \"${FILENAME}\""; then
+    echo "[backup] Copie hors-site OK."
+  else
+    echo "[backup] ⚠ Copie hors-site ÉCHOUÉE — le backup local est conservé."
+  fi
+fi
+
 echo "[backup] Terminé — $(date '+%Y-%m-%d %H:%M:%S')"

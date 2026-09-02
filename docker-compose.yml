@@ -121,23 +121,30 @@ services:
   # Lancer manuellement : docker compose run --rm backup
   # En prod, déclencher via cron host ou un scheduler (ex: ofelia, supercronic)
   # ---------------------------------------------------------------------------
+  # Sauvegarde AUTOMATIQUE : le planificateur exécute backup.sh au démarrage puis
+  # chaque jour à BACKUP_HOUR (dump compressé + rotation + copie hors-site optionnelle).
+  # Sauvegarde ponctuelle à la demande : docker compose run --rm backup /backup.sh
   backup:
     image: postgres:16-alpine
     container_name: ebios_backup
-    restart: "no"
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: db
       BACKUP_RETENTION: ${BACKUP_RETENTION:-7}
+      BACKUP_HOUR: ${BACKUP_HOUR:-02}
+      # Copie hors-site (optionnelle) : commande recevant le chemin du dump en argument.
+      BACKUP_OFFSITE_CMD: ${BACKUP_OFFSITE_CMD:-}
     volumes:
       - ./scripts/backup.sh:/backup.sh:ro
+      - ./scripts/backup-scheduler.sh:/backup-scheduler.sh:ro
       - backup_data:/backups
     depends_on:
       db:
         condition: service_healthy
-    command: ["/bin/sh", "/backup.sh"]
+    command: ["/bin/sh", "/backup-scheduler.sh"]
 
 volumes:
   postgres_data:
