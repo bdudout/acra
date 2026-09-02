@@ -151,6 +151,66 @@ export const GRC_BUILTINS: GrcBuiltinReferentiel[] = [
       ex('CI-5', 'Cartographie des risques', 'Risque', 'Cartographie des risques tenue à jour, alimentant le plan de contrôle.'),
     ],
   },
+  // ── Référentiels P2 (banque + assurance) ────────────────────────────────────
+  {
+    code: 'MIF2', nom: 'MiFID II (MIF 2)', domaine: 'PROTECTION_CLIENTELE', nature: 'REGLEMENTATION',
+    version: 'Dir. UE 2014/65',
+    description: 'Marchés d’instruments financiers — protection de l’investisseur et commercialisation.',
+    exigences: [
+      ex('MIF2-1', 'Gouvernance produit', 'Commercialisation', 'Marché cible défini et respecté pour chaque instrument (product governance).'),
+      ex('MIF2-2', 'Adéquation & caractère approprié', 'Conseil', 'Tests d’adéquation/caractère approprié documentés selon le service fourni.'),
+      ex('MIF2-3', 'Information & coûts', 'Transparence', 'Information précontractuelle, coûts et charges communiqués au client.'),
+      ex('MIF2-4', 'Meilleure exécution', 'Exécution', 'Politique de meilleure exécution et contrôle des ordres.'),
+      ex('MIF2-5', 'Incitations (inducements)', 'Conflits', 'Encadrement des rémunérations et avantages de tiers.'),
+    ],
+  },
+  {
+    code: 'IDD', nom: 'Distribution d’assurance (DDA/IDD)', domaine: 'PROTECTION_CLIENTELE', nature: 'REGLEMENTATION',
+    version: 'Dir. UE 2016/97',
+    description: 'Directive sur la distribution d’assurances — devoir de conseil et protection du souscripteur.',
+    exigences: [
+      ex('IDD-1', 'Exigences et besoins', 'Conseil', 'Recueil des exigences et besoins du client avant toute proposition.'),
+      ex('IDD-2', 'Document d’information (IPID)', 'Transparence', 'Remise du document d’information normalisé produit (IPID).'),
+      ex('IDD-3', 'Devoir de conseil formalisé', 'Conseil', 'Conseil formalisé et cohérent avec les besoins exprimés.'),
+      ex('IDD-4', 'Gouvernance produit (POG)', 'Commercialisation', 'Marché cible et surveillance produit (product oversight & governance).'),
+      ex('IDD-5', 'Formation continue', 'Compétence', 'Formation continue des distributeurs (15 h/an).'),
+    ],
+  },
+  {
+    code: 'GAFI', nom: 'Recommandations GAFI', domaine: 'LCB_FT', nature: 'STANDARD',
+    version: 'GAFI/FATF (40 recommandations)',
+    description: 'Standards internationaux de lutte anti-blanchiment et financement du terrorisme.',
+    exigences: [
+      ex('GAFI-1', 'Approche fondée sur les risques', 'Risque', 'Évaluation et atténuation des risques BC-FT (Rec. 1).'),
+      ex('GAFI-10', 'Devoir de vigilance clientèle', 'Vigilance', 'Mesures de vigilance à l’égard de la clientèle (Rec. 10).'),
+      ex('GAFI-12', 'Personnes politiquement exposées', 'Vigilance renforcée', 'Mesures spécifiques aux PPE (Rec. 12).'),
+      ex('GAFI-16', 'Virements électroniques', 'Traçabilité', 'Informations sur le donneur d’ordre et le bénéficiaire (Rec. 16).'),
+      ex('GAFI-20', 'Déclaration d’opérations suspectes', 'Déclaration', 'Déclaration des opérations suspectes (Rec. 20).'),
+    ],
+  },
+  {
+    code: 'MAR', nom: 'Abus de marché (MAR)', domaine: 'DEONTOLOGIE', nature: 'REGLEMENTATION',
+    version: 'Règl. UE 596/2014',
+    description: 'Prévention et détection des abus de marché (opérations d’initié, manipulation).',
+    exigences: [
+      ex('MAR-1', 'Détection des opérations suspectes', 'Surveillance', 'Dispositif de détection et de déclaration des opérations suspectes (STOR).'),
+      ex('MAR-2', 'Listes d’initiés', 'Contrôle', 'Tenue et mise à jour des listes d’initiés.'),
+      ex('MAR-3', 'Transactions des dirigeants', 'Transparence', 'Déclaration et fenêtres négatives pour les transactions des dirigeants.'),
+      ex('MAR-4', 'Barrières à l’information', 'Organisation', 'Murailles de Chine et gestion des informations privilégiées.'),
+    ],
+  },
+  {
+    code: 'SOLVA2', nom: 'Solvabilité II', domaine: 'GOUVERNANCE_CONTROLE', nature: 'REGLEMENTATION',
+    version: 'Dir. UE 2009/138',
+    description: 'Régime prudentiel des organismes d’assurance (gouvernance et gestion des risques).',
+    exigences: [
+      ex('SOLVA2-1', 'Système de gouvernance', 'Gouvernance', 'Système de gouvernance efficace et fonctions clés (actuariat, conformité, audit, gestion des risques).'),
+      ex('SOLVA2-2', 'ORSA', 'Risque', 'Évaluation interne des risques et de la solvabilité (ORSA) réalisée et documentée.'),
+      ex('SOLVA2-3', 'Exigences de capital', 'Prudentiel', 'Calcul et suivi du SCR/MCR.'),
+      ex('SOLVA2-4', 'Sous-traitance des activités critiques', 'Externalisation', 'Encadrement de la sous-traitance des activités importantes ou critiques.'),
+      ex('SOLVA2-5', 'Reporting prudentiel', 'Reporting', 'Reporting réglementaire (QRT, RSR, SFCR) produit dans les délais.'),
+    ],
+  },
 ]
 
 export const GRC_BUILTIN_CODES: string[] = GRC_BUILTINS.map(r => r.code)
@@ -183,6 +243,19 @@ const NOM_INDEX: Record<string, string> = {
   'sapin 2': 'SAPIN2',
   'sapin ii': 'SAPIN2',
   'anticorruption': 'SAPIN2',
+  'mif2': 'MIF2',
+  'mif 2': 'MIF2',
+  'mifid': 'MIF2',
+  'mifid ii': 'MIF2',
+  'idd': 'IDD',
+  'dda': 'IDD',
+  'gafi': 'GAFI',
+  'fatf': 'GAFI',
+  'mar': 'MAR',
+  'abus de marche': 'MAR',
+  'solvabilite 2': 'SOLVA2',
+  'solvabilite ii': 'SOLVA2',
+  'solvency ii': 'SOLVA2',
   ...Object.fromEntries(GRC_BUILTINS.map(r => [norm(r.nom), r.code])),
 }
 

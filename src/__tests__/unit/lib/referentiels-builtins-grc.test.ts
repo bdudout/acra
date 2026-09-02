@@ -9,10 +9,10 @@ import {
 import { DOMAINES } from '../../../lib/referentiel-domaines'
 
 describe('GRC_BUILTINS — catalogue non-cyber livré', () => {
-  it('couvre les filières P1 attendues (LCB-FT, gel des avoirs, RGPD, DSP2, Sapin II, compta, crédit, externalisation, contrôle interne)', () => {
+  it('couvre les filières P1 + P2 attendues (banque + assurance)', () => {
     expect(GRC_BUILTIN_CODES.sort()).toEqual([
       'COMPTA_CI', 'CONTROLE_INTERNE', 'CREDIT_OCTROI', 'DSP2', 'EXTERNALISATION',
-      'LCB_FT', 'RGPD', 'SANCTIONS_GEL', 'SAPIN2',
+      'GAFI', 'IDD', 'LCB_FT', 'MAR', 'MIF2', 'RGPD', 'SANCTIONS_GEL', 'SAPIN2', 'SOLVA2',
     ])
   })
 
