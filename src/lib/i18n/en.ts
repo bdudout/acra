@@ -1628,6 +1628,7 @@ export const en: Translations = {
     missionsHint: 'One mission per line: title | description. Security objectives (e.g. protect the CIA of client data and services).',
     yours: 'Your frameworks',
     builtin: 'Built-in frameworks (read only)',
+    tousDomaines: 'All domains',
     empty: 'No custom framework yet. Create your ISSP or internal policies and their requirements.',
     readOnly: 'Read only — framework management belongs to governance (CISO / compliance).',
     champ: { code: 'Code', nom: 'Name', type: 'Type', domaine: 'Domain', version: 'Version', description: 'Description', exigences: 'Requirements (control points)', missions: 'Missions (security objectives)' },

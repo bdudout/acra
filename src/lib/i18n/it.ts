@@ -1628,6 +1628,7 @@ export const it: Translations = {
     missionsHint: 'Una missione per riga: titolo | descrizione. Obiettivi di sicurezza (es. proteggere la RID dei dati e servizi ai clienti).',
     yours: 'I tuoi riferimenti',
     builtin: 'Quadri forniti (sola lettura)',
+    tousDomaines: 'Tutti i domini',
     empty: 'Nessun riferimento proprio. Crea la tua PSSI o le tue politiche interne e i loro requisiti.',
     readOnly: 'Sola lettura — la gestione dei riferimenti spetta alla governance (RSSI / conformità).',
     champ: { code: 'Codice', nom: 'Nome', type: 'Tipo', domaine: 'Dominio', version: 'Versione', description: 'Descrizione', exigences: 'Requisiti (punti di controllo)', missions: 'Missioni (obiettivi di sicurezza)' },

@@ -1651,6 +1651,7 @@ export const fr = {
     missionsHint: 'Une mission par ligne : intitulé | description. Objectifs de sécurité (ex. protéger le DIC des données et services clients).',
     yours: 'Vos référentiels',
     builtin: 'Cadres livrés (lecture seule)',
+    tousDomaines: 'Tous les domaines',
     empty: 'Aucun référentiel propre. Créez votre PSSI ou vos politiques internes et leurs exigences.',
     readOnly: 'Lecture seule — la tenue des référentiels relève de la gouvernance (RSSI / conformité).',
     champ: { code: 'Code', nom: 'Nom', type: 'Type', domaine: 'Domaine', version: 'Version', description: 'Description', exigences: 'Exigences (points de contrôle)', missions: 'Missions (objectifs de sécurité)' },

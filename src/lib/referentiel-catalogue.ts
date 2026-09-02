@@ -7,6 +7,7 @@
 
 import { FRAMEWORK_IDS, FRAMEWORK_META, type FrameworkId } from './frameworks-data'
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
+import { grcCodeFromNom } from './referentiels-builtins-grc'
 
 export interface CatalogueEntry {
   code: FrameworkId
@@ -96,5 +97,6 @@ export function resolveReferentielCode(entry: { code?: string | null; nom?: unkn
   if (!entry) return null
   const code = typeof entry.code === 'string' ? entry.code.trim() : ''
   if (code) return code
-  return referentielCodeFromNom(entry.nom)
+  // Cadre cyber livré, puis cadre GRC livré (RGPD, LCB-FT…), sinon null (custom/label).
+  return referentielCodeFromNom(entry.nom) ?? grcCodeFromNom(entry.nom)
 }

@@ -80,9 +80,13 @@ describe('resolveReferentielCode — point unique de résolution', () => {
   it('rétro-résout par le nom quand le code est absent (données historiques)', () => {
     expect(resolveReferentielCode({ nom: 'ISO/IEC 27001:2022' })).toBe('ISO27001')
   })
+  it('rétro-résout aussi les cadres GRC livrés (ex. RGPD)', () => {
+    expect(resolveReferentielCode({ code: null, nom: 'RGPD' })).toBe('RGPD')
+    expect(resolveReferentielCode({ nom: 'Gel des avoirs' })).toBe('SANCTIONS_GEL')
+  })
   it('retourne null pour un label sans cadre livré', () => {
     expect(resolveReferentielCode({ nom: 'LPM' })).toBeNull()
-    expect(resolveReferentielCode({ code: null, nom: 'RGPD' })).toBeNull()
+    expect(resolveReferentielCode({ nom: 'Politique interne maison' })).toBeNull()
     expect(resolveReferentielCode(null)).toBeNull()
   })
 })

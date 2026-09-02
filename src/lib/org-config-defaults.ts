@@ -63,7 +63,7 @@ export const DEFAULT_STRATEGIES: StrategieTraitement[] = [
 export const DEFAULT_REFERENTIELS: ReferentielActif[] = [
   { nom: 'ISO/IEC 27001:2022', description: "Système de Management de la Sécurité de l'Information", actif: true, code: 'ISO27001' },
   { nom: 'ISO/IEC 27002:2022', description: "Mesures de sécurité de l'information", actif: true, code: null },
-  { nom: 'RGPD',  description: 'Règlement Général sur la Protection des Données', actif: true, code: null },
+  { nom: 'RGPD',  description: 'Règlement Général sur la Protection des Données', actif: true, code: 'RGPD' },
   { nom: 'NIS2',  description: 'Directive européenne sécurité des réseaux et systèmes', actif: true, code: null },
   { nom: 'RGS',   description: 'Référentiel Général de Sécurité (ANSSI)', actif: true, code: 'RGS' },
   { nom: 'HDS',   description: 'Hébergeur de Données de Santé', actif: true, code: 'HDS' },
