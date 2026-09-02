@@ -1652,6 +1652,7 @@ export const fr = {
     yours: 'Vos référentiels',
     builtin: 'Cadres livrés (lecture seule)',
     tousDomaines: 'Tous les domaines',
+    domaines: { SECURITE_SI: 'Sécurité SI & résilience numérique', PROTECTION_DONNEES: 'Protection des données', LCB_FT: 'Lutte anti-blanchiment & FT', SANCTIONS_GEL: 'Sanctions & gel des avoirs', PROTECTION_CLIENTELE: 'Protection de la clientèle', DEONTOLOGIE: 'Déontologie & anticorruption', COMPTABLE_FINANCIER: 'Comptable & financier', CREDIT_CONTREPARTIE: 'Crédit & contrepartie', RISQUE_OPERATIONNEL: 'Risque opérationnel & externalisation', GOUVERNANCE_CONTROLE: 'Gouvernance & contrôle interne', AUTRE: 'Autre / interne' },
     empty: 'Aucun référentiel propre. Créez votre PSSI ou vos politiques internes et leurs exigences.',
     readOnly: 'Lecture seule — la tenue des référentiels relève de la gouvernance (RSSI / conformité).',
     champ: { code: 'Code', nom: 'Nom', type: 'Type', domaine: 'Domaine', version: 'Version', description: 'Description', exigences: 'Exigences (points de contrôle)', missions: 'Missions (objectifs de sécurité)' },

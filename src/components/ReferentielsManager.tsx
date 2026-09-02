@@ -100,6 +100,10 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const domainesPresents = DOMAINES.filter(d => refs.some(x => x.domaine === d))
   const hasPolitique = refs.some(x => x.source === 'CUSTOM' && (x.type === 'PSSI' || x.type === 'POLITIQUE'))
 
+  // Libellé localisé d'un domaine (fallback sur le libellé canonique FR).
+  const dLabel = (d: string) => (r.domaines as Record<string, string> | undefined)?.[d]
+    ?? DOMAINE_META[d as keyof typeof DOMAINE_META]?.label ?? d
+
   const typeBadge = (type: string, source: string) => (
     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${source === 'BUILTIN' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-ebios-100 text-ebios-700 dark:bg-ebios-500/15 dark:text-ebios-300'}`}>
       {source === 'CUSTOM' ? (r.typeOpt[type as keyof typeof r.typeOpt] ?? type) : type}
@@ -131,7 +135,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
           <select className="text-sm px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             value={filterDomaine} onChange={e => setFilterDomaine(e.target.value)}>
             <option value="">{r.tousDomaines}</option>
-            {domainesPresents.map(d => <option key={d} value={d}>{DOMAINE_META[d].label}</option>)}
+            {domainesPresents.map(d => <option key={d} value={d}>{dLabel(d)}</option>)}
           </select>
         </div>
       )}
@@ -167,7 +171,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               </select></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.domaine}</span>
               <select className={`mt-1 ${inputCls}`} value={form.domaine} onChange={e => setForm({ ...form, domaine: e.target.value })}>
-                {DOMAINES.map(d => <option key={d} value={d}>{DOMAINE_META[d].label}</option>)}
+                {DOMAINES.map(d => <option key={d} value={d}>{dLabel(d)}</option>)}
               </select></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.version}</span>
               <input className={`mt-1 ${inputCls}`} value={form.version} onChange={e => setForm({ ...form, version: e.target.value })} placeholder="v1.0" /></label>
@@ -225,7 +229,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                         {typeBadge(x.type, x.source)}
                         {x.domaine && x.domaine !== 'SECURITE_SI' && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                            {DOMAINE_META[x.domaine as keyof typeof DOMAINE_META]?.label ?? x.domaine}
+                            {dLabel(x.domaine)}
                           </span>
                         )}
                       </div>
@@ -268,7 +272,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                       <span className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</span>
                       {x.domaine && x.domaine !== 'SECURITE_SI' && (
                         <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                          {DOMAINE_META[x.domaine as keyof typeof DOMAINE_META]?.label ?? x.domaine}
+                          {dLabel(x.domaine)}
                         </span>
                       )}
                     </div>

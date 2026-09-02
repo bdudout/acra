@@ -1629,6 +1629,7 @@ export const de: Translations = {
     yours: 'Ihre Referenzrahmen',
     builtin: 'Gelieferte Rahmenwerke (nur Lesen)',
     tousDomaines: 'Alle Bereiche',
+    domaines: { SECURITE_SI: 'IT-Sicherheit & digitale Resilienz', PROTECTION_DONNEES: 'Datenschutz', LCB_FT: 'Geldwäsche- & Terrorismusbekämpfung', SANCTIONS_GEL: 'Sanktionen & Vermögenseinfrierung', PROTECTION_CLIENTELE: 'Kundenschutz', DEONTOLOGIE: 'Ethik & Korruptionsbekämpfung', COMPTABLE_FINANCIER: 'Rechnungswesen & Finanzen', CREDIT_CONTREPARTIE: 'Kredit & Gegenpartei', RISQUE_OPERATIONNEL: 'Operationelles Risiko & Auslagerung', GOUVERNANCE_CONTROLE: 'Governance & interne Kontrolle', AUTRE: 'Sonstige / intern' },
     empty: 'Noch kein eigener Referenzrahmen. Erstellen Sie Ihre Sicherheitsleitlinie oder interne Richtlinien und deren Anforderungen.',
     readOnly: 'Nur Lesezugriff — die Pflege der Referenzrahmen obliegt der Governance (CISO / Compliance).',
     champ: { code: 'Code', nom: 'Name', type: 'Typ', domaine: 'Bereich', version: 'Version', description: 'Beschreibung', exigences: 'Anforderungen (Kontrollpunkte)', missions: 'Missionen (Sicherheitsziele)' },

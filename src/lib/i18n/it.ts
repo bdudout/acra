@@ -1629,6 +1629,7 @@ export const it: Translations = {
     yours: 'I tuoi riferimenti',
     builtin: 'Quadri forniti (sola lettura)',
     tousDomaines: 'Tutti i domini',
+    domaines: { SECURITE_SI: 'Sicurezza IT e resilienza digitale', PROTECTION_DONNEES: 'Protezione dei dati', LCB_FT: 'Antiriciclaggio e FT', SANCTIONS_GEL: 'Sanzioni e congelamento dei beni', PROTECTION_CLIENTELE: 'Protezione della clientela', DEONTOLOGIE: 'Deontologia e anticorruzione', COMPTABLE_FINANCIER: 'Contabile e finanziario', CREDIT_CONTREPARTIE: 'Credito e controparte', RISQUE_OPERATIONNEL: 'Rischio operativo ed esternalizzazione', GOUVERNANCE_CONTROLE: 'Governance e controllo interno', AUTRE: 'Altro / interno' },
     empty: 'Nessun riferimento proprio. Crea la tua PSSI o le tue politiche interne e i loro requisiti.',
     readOnly: 'Sola lettura — la gestione dei riferimenti spetta alla governance (RSSI / conformità).',
     champ: { code: 'Codice', nom: 'Nome', type: 'Tipo', domaine: 'Dominio', version: 'Versione', description: 'Descrizione', exigences: 'Requisiti (punti di controllo)', missions: 'Missioni (obiettivi di sicurezza)' },
