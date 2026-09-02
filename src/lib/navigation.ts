@@ -36,6 +36,7 @@ export type NavKey =
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
+  | 'analyses' | 'controleAudit' | 'conformiteReglementaire'
 
 /** Une entrée de barre : soit un lien direct, soit un groupe déroulant. */
 export type NavEntry =
@@ -91,41 +92,39 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   }
 
   // ─── MODE GRC ──────────────────────────────────────────────────────────────
+  // Découpage « pilotage en tête » : max ~6 entrées de haut niveau, granularité
+  // homogène (que des menus déroulants thématiques + les 2 liens directs clés).
   const entries: NavEntry[] = [link('dashboard')]
 
-  // Cyber replié en sous-menu.
-  entries.push({ kind: 'group', id: 'cyber', items: [...CORE] })
+  // 1. Pilotage (cockpit consolidé) — la vue direction, promue en lien direct.
+  if (canPilotage) entries.push(link('pilotage'))
 
-  // Cartographie (pivot GRC) + registre.
+  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
+  const analyses: NavKey[] = [...CORE]
+  if (modules.registre && !firstLineOnly) analyses.push('cartographie')
+  entries.push(groupOrLink('analyses', analyses))
+
+  // 3. Registre de risques (cartographie GRC) : registre, campagnes RCSA, processus.
   if (modules.registre && !firstLineOnly) {
-    entries.push(link('cartographie'))
     const registre: NavKey[] = ['registre', 'campagnes']
     if (canGererProcessus) registre.push('processus')
-    if (canPilotage) registre.push('pilotage')
     entries.push(groupOrLink('registre', registre))
   }
 
-  // Incidents (1ʳᵉ ligne, ouvert à tous).
-  if (modules.incidents) entries.push(link('incidents'))
+  // 4. Contrôle & audit (les 3 lignes de défense) : incidents (1ʳᵉ ligne, ouvert à
+  //    tous), contrôle permanent + campagnes + KRI (2ᵉ ligne), audit interne (3ᵉ ligne).
+  const controleAudit: NavKey[] = []
+  if (modules.incidents) controleAudit.push('incidents')
+  if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
+  if (modules.kri && !firstLineOnly) controleAudit.push('kri')
+  if (modules.audit && !firstLineOnly) controleAudit.push('audit')
+  if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
-  // Contrôle permanent + KRI (2ᵉ ligne).
-  const controle: NavKey[] = []
-  if (modules.controles && !firstLineOnly) controle.push('controles', 'campagnesControle')
-  if (modules.kri && !firstLineOnly) controle.push('kri')
-  if (controle.length) entries.push(groupOrLink('controle', controle))
-
-  // Audit (3ᵉ ligne).
-  if (modules.audit && !firstLineOnly) entries.push(link('audit'))
-
-  // Domaine réglementaire : reporting incidents (DORA art. 19), registre
-  // d'information des tiers TIC (art. 28) et suivi consolidé des recommandations
-  // régulateur (ACPR/BCE) — regroupés en un menu « Réglementaire ».
-  if (modules.reglementaire && !firstLineOnly) {
-    entries.push(groupOrLink('reglementaire', ['reglementaire', 'registreTic', 'suiviRegulateur']))
-  }
-
-  // Gouvernance.
-  if (gouvernance.length) entries.push(groupOrLink('gouvernance', gouvernance))
+  // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
+  //    RGPD + reporting DORA (art. 19), registre TIC (art. 28), suivi régulateur.
+  const confReg: NavKey[] = [...gouvernance]
+  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', 'suiviRegulateur')
+  if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }
 }

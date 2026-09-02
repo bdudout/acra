@@ -58,22 +58,27 @@ describe('buildNav — mode cyber (aucun module 2ᵉ/3ᵉ ligne)', () => {
 })
 
 describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
-  it('bascule en mode grc et replie le cyber dans un sous-menu', () => {
+  it('bascule en mode grc : dashboard + pilotage en tête, analyse cyber en menu', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     expect(m.mode).toBe('grc')
-    const cyber = m.entries.find(e => e.kind === 'group' && e.id === 'cyber')
-    expect(cyber && cyber.kind === 'group' && cyber.items).toEqual(['analyses', 'risques', 'tiers', 'actions'])
-    // dashboard reste un lien direct en tête
+    // dashboard puis pilotage (cockpit) en liens directs de tête
     expect(m.entries[0]).toEqual({ kind: 'link', key: 'dashboard' })
+    expect(m.entries[1]).toEqual({ kind: 'link', key: 'pilotage' })
+    // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
+    const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
+    expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
   })
 
-  it('RISK_MANAGER (gouvernance) voit cartographie, registre, contrôle, audit, réglementaire, gouvernance', () => {
+  it('RISK_MANAGER (gouvernance) : découpage en ~6 entrées, tous les modules accessibles', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     const keys = allKeys(m)
     for (const k of ['cartographie', 'registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
       expect(keys).toContain(k)
     }
-    expect(groupIds(m)).toEqual(expect.arrayContaining(['cyber', 'registre', 'controle', 'gouvernance']))
+    // Nouveau découpage « pilotage en tête » : 3 menus thématiques.
+    expect(groupIds(m)).toEqual(expect.arrayContaining(['analyses', 'registre', 'controleAudit', 'conformiteReglementaire']))
+    // Plus de mélange lien isolé / menu au même niveau : audit & incidents sont dans un menu.
+    expect(groupIds(m)).not.toContain('cyber')
   })
 
   it('CONTROLEUR (2ᵉ ligne) voit les modules + le pilotage (lecture globale, #126) mais pas la gouvernance-écriture', () => {
