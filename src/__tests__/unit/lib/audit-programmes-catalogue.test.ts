@@ -3,9 +3,10 @@ import { PROGRAMMES_AUDIT, getProgrammeAudit } from '@/lib/audit-programmes-cata
 import { cleanChecklist } from '@/lib/controle'
 
 describe('audit-programmes-catalogue', () => {
-  it('expose les programmes cyber et non-cyber', () => {
+  it('expose les programmes cyber et non-cyber (P1 + P2)', () => {
     expect(PROGRAMMES_AUDIT.map(p => p.id).sort()).toEqual([
-      'CONTROLE_INTERNE', 'CREDIT_OCTROI', 'DORA', 'ISO27001', 'LCB_FT', 'RGPD', 'SANCTIONS_GEL',
+      'CONTROLE_INTERNE', 'CREDIT_OCTROI', 'DORA', 'GAFI', 'IDD', 'ISO27001', 'LCB_FT',
+      'MAR', 'MIF2', 'RGPD', 'SANCTIONS_GEL', 'SOLVA2',
     ])
   })
   it('getProgrammeAudit retrouve / renvoie undefined', () => {
