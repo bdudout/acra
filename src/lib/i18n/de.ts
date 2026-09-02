@@ -1643,6 +1643,7 @@ export const de: Translations = {
     couvertureTitle: 'Abgeleitete Konformität — Abdeckung durch reale Kontrollen',
     covKpi: { couverts: 'Abgedeckt', conformes: 'Konform', anomalies: 'Anomalien', taux: 'Abdeckungsgrad' },
     covStatut: { NON_COUVERT: 'Nicht abgedeckt', CONFORME: 'Konform', PARTIEL: 'Teilweise', ANOMALIE: 'Anomalie' },
+    covApp: { title: 'Anwendung in Risikoanalysen', none: 'Keine Analyse wendet dieses Rahmenwerk an', applique: 'Angewendet', partiel: 'Teilweise', nonApplique: 'Nicht angewendet' },
     covControles: '{n} Kontrolle(n)',
     covEmpty: 'Keine Anforderung in diesem Referenzrahmen.',
   },

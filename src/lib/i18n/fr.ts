@@ -1666,6 +1666,7 @@ export const fr = {
     couvertureTitle: 'Conformité dérivée — couverture par les contrôles réels',
     covKpi: { couverts: 'Couvertes', conformes: 'Conformes', anomalies: 'Anomalies', taux: 'Taux de couverture' },
     covStatut: { NON_COUVERT: 'Non couvert', CONFORME: 'Conforme', PARTIEL: 'Partiel', ANOMALIE: 'Anomalie' },
+    covApp: { title: 'Application dans les analyses de risques', none: 'Aucune analyse n’applique ce référentiel', applique: 'Appliqué', partiel: 'Partiel', nonApplique: 'Non appliqué' },
     covControles: '{n} contrôle(s)',
     covEmpty: 'Aucune exigence dans ce référentiel.',
   },

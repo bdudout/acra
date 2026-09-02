@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { synthetiserCouverture, type ControleCouvrant, type ConstatExigence } from '../../../lib/couverture-referentiel'
+import { synthetiserCouverture, croiserApplicationsAnalyses, type ControleCouvrant, type ConstatExigence } from '../../../lib/couverture-referentiel'
 
 const exigences = [{ ref: 'A1' }, { ref: 'A2' }, { ref: 'A3' }, { ref: 'A4' }]
 
@@ -59,5 +59,33 @@ describe('synthetiserCouverture', () => {
     expect(c.synthese.couverts).toBe(2)
     expect(c.synthese.tauxCouverture).toBe(50)
     expect(c.synthese.tauxConformite).toBe(50)
+  })
+})
+
+describe('croiserApplicationsAnalyses — jointure RA ↔ référentiel', () => {
+  const analyses = [
+    { id: 'a1', nom: 'Analyse SI', referentiels: [{ code: 'ISO27001', etatApplication: 'APPLIQUE' }, { nom: 'DORA', etatApplication: 'PARTIEL' }] },
+    { id: 'a2', nom: 'Analyse paiements', referentiels: [{ nom: 'DORA', code: 'DORA', applicable: false }] },
+    { id: 'a3', nom: 'Analyse RH', referentiels: [{ nom: 'ISO/IEC 27001:2022' }] }, // code résolu par le nom
+    { id: 'a4', nom: 'Analyse vide', referentiels: [] },
+  ]
+
+  it('compte les analyses appliquant un code + leur état (résolution nom→code incluse)', () => {
+    const r = croiserApplicationsAnalyses(analyses, 'ISO27001')
+    expect(r.total).toBe(2) // a1 (code) + a3 (résolu par le nom)
+    expect(r.appliques).toBe(2) // a1 APPLIQUE ; a3 défaut APPLIQUE
+    expect(r.analyses.map(a => a.analyseId).sort()).toEqual(['a1', 'a3'])
+  })
+
+  it('distingue appliqué / partiel / non appliqué', () => {
+    const r = croiserApplicationsAnalyses(analyses, 'DORA')
+    expect(r.total).toBe(2) // a1 (partiel) + a2 (non appliqué)
+    expect(r.partiels).toBe(1)
+    expect(r.nonAppliques).toBe(1)
+  })
+
+  it('retourne un total nul pour un code non appliqué', () => {
+    expect(croiserApplicationsAnalyses(analyses, 'LCB_FT').total).toBe(0)
+    expect(croiserApplicationsAnalyses([], 'ISO27001').total).toBe(0)
   })
 })

@@ -8,7 +8,7 @@ import { getServerLocale } from '@/lib/i18n'
 import { type UserRole } from '@/lib/permissions'
 import { getExigencesFor } from '@/lib/referentiel.server'
 import { evaluerEfficacite } from '@/lib/controle'
-import { synthetiserCouverture, type ControleCouvrant, type ConstatExigence } from '@/lib/couverture-referentiel'
+import { synthetiserCouverture, croiserApplicationsAnalyses, type ControleCouvrant, type ConstatExigence } from '@/lib/couverture-referentiel'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (!code) return NextResponse.json({ error: 'code_requis' }, { status: 400 })
   const locale = await getServerLocale()
 
-  const [exigences, controleRows, constatRows] = await Promise.all([
+  const [exigences, controleRows, constatRows, analyseRows] = await Promise.all([
     getExigencesFor(code, orgId, locale),
     prisma.controle.findMany({
       where: { organizationId: orgId, referentielCode: code },
@@ -38,6 +38,11 @@ export async function GET(req: NextRequest) {
     prisma.auditConstat.findMany({
       where: { organizationId: orgId, referentielCode: code },
       select: { exigenceRef: true, statut: true },
+    }),
+    // Jointure visible : analyses de risques appliquant ce référentiel (socle).
+    prisma.analyse.findMany({
+      where: { organizationId: orgId },
+      select: { id: true, nom: true, cadrage: { select: { referentiels: true } } },
     }),
   ])
 
@@ -52,5 +57,10 @@ export async function GET(req: NextRequest) {
   const nomByRef = new Map(exigences.map(e => [e.ref, e.nom]))
   const parExigence = cov.parExigence.map(e => ({ ...e, nom: nomByRef.get(e.ref) ?? e.ref }))
 
-  return NextResponse.json({ active: true, code, parExigence, synthese: cov.synthese })
+  const application = croiserApplicationsAnalyses(
+    analyseRows.map(a => ({ id: a.id, nom: a.nom, referentiels: a.cadrage?.referentiels ?? [] })),
+    code,
+  )
+
+  return NextResponse.json({ active: true, code, parExigence, synthese: cov.synthese, application })
 }
