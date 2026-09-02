@@ -109,8 +109,68 @@ const RGPD: CatalogueControle = {
   ],
 }
 
+// ── Socle MiFID II / MIF 2 (Dir. UE 2014/65) — protection clientèle ───────────
+const MIF2: CatalogueControle = {
+  id: 'MIF2', nom: 'MiFID II (MIF 2) — socle', referentielCode: 'MIF2',
+  controles: [
+    { intitule: 'Respect du marché cible (gouvernance produit)', description: 'Contrôler que les instruments distribués respectent le marché cible défini.', niveau: 'N2', periodicite: 'SEMESTRIEL', referentielCode: 'MIF2', exigenceRefs: ['MIF2-1'], checklist: ['Marché cible défini par produit', 'Distribution cohérente avec le marché cible', 'Écarts remontés'] },
+    { intitule: 'Tests d\'adéquation et caractère approprié', description: 'Vérifier par sondage la réalisation et la traçabilité des tests selon le service fourni.', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'MIF2', exigenceRefs: ['MIF2-2'], checklist: ['Questionnaire client renseigné', 'Adéquation documentée', 'Alertes d\'inadéquation traitées'] },
+    { intitule: 'Information sur les coûts et charges', description: 'Contrôler la communication précontractuelle des coûts et charges au client.', niveau: 'N1', periodicite: 'SEMESTRIEL', referentielCode: 'MIF2', exigenceRefs: ['MIF2-3'], checklist: ['Information ex ante remise', 'Récapitulatif ex post produit', 'Coûts agrégés présentés'] },
+    { intitule: 'Contrôle de la meilleure exécution', description: 'Vérifier l\'application de la politique de meilleure exécution et le contrôle des ordres.', niveau: 'N2', periodicite: 'SEMESTRIEL', referentielCode: 'MIF2', exigenceRefs: ['MIF2-4'], checklist: ['Politique d\'exécution à jour', 'Qualité d\'exécution suivie', 'Réclamations traitées'] },
+    { intitule: 'Encadrement des incitations (inducements)', description: 'Contrôler la conformité des rémunérations et avantages reçus/versés à des tiers.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'MIF2', exigenceRefs: ['MIF2-5'], checklist: ['Inventaire des incitations', 'Amélioration du service démontrée', 'Information du client'] },
+  ],
+}
+
+// ── Socle IDD / DDA (Dir. UE 2016/97) — distribution d'assurance ──────────────
+const IDD: CatalogueControle = {
+  id: 'IDD', nom: 'Distribution d\'assurance (IDD) — socle', referentielCode: 'IDD',
+  controles: [
+    { intitule: 'Recueil des exigences et besoins', description: 'Contrôler par sondage que les exigences et besoins du client sont recueillis avant proposition.', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'IDD', exigenceRefs: ['IDD-1'], checklist: ['Besoins recueillis et tracés', 'Proposition cohérente avec les besoins'] },
+    { intitule: 'Remise du document d\'information (IPID)', description: 'Vérifier la remise du document d\'information normalisé produit.', niveau: 'N1', periodicite: 'SEMESTRIEL', referentielCode: 'IDD', exigenceRefs: ['IDD-2'], checklist: ['IPID remis avant souscription', 'Version à jour du produit'] },
+    { intitule: 'Formalisation du devoir de conseil', description: 'Contrôler la formalisation et la cohérence du conseil délivré.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'IDD', exigenceRefs: ['IDD-3'], checklist: ['Conseil écrit et motivé', 'Cohérence avec les besoins', 'Traçabilité conservée'] },
+    { intitule: 'Surveillance produit (POG)', description: 'Vérifier le dispositif de gouvernance et surveillance des produits (marché cible).', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'IDD', exigenceRefs: ['IDD-4'], checklist: ['Marché cible défini', 'Revue produit réalisée', 'Distributeurs informés'] },
+    { intitule: 'Formation continue des distributeurs', description: 'Contrôler la réalisation de la formation continue (15 h/an).', niveau: 'N1', periodicite: 'ANNUEL', referentielCode: 'IDD', exigenceRefs: ['IDD-5'], checklist: ['15 h de formation par an', 'Justificatifs conservés', 'Couverture des distributeurs suivie'] },
+  ],
+}
+
+// ── Socle GAFI (40 recommandations) — LCB-FT international ─────────────────────
+const GAFI: CatalogueControle = {
+  id: 'GAFI', nom: 'Recommandations GAFI — socle', referentielCode: 'GAFI',
+  controles: [
+    { intitule: 'Évaluation des risques BC-FT (approche par les risques)', description: 'Contrôler l\'existence et l\'actualisation de l\'évaluation des risques (Rec. 1).', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'GAFI', exigenceRefs: ['GAFI-1'], checklist: ['Évaluation documentée', 'Mesures d\'atténuation définies', 'Revue périodique'] },
+    { intitule: 'Devoir de vigilance clientèle (CDD)', description: 'Vérifier par sondage la mise en œuvre des mesures de vigilance (Rec. 10).', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'GAFI', exigenceRefs: ['GAFI-10'], checklist: ['Identité et BE vérifiés', 'Objet de la relation compris', 'Vigilance adaptée au risque'] },
+    { intitule: 'Mesures spécifiques aux PPE', description: 'Contrôler l\'application des mesures renforcées aux personnes politiquement exposées (Rec. 12).', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'GAFI', exigenceRefs: ['GAFI-12'], checklist: ['Détection des PPE', 'Approbation hiérarchique', 'Origine des fonds examinée'] },
+    { intitule: 'Traçabilité des virements électroniques', description: 'Vérifier la présence des informations donneur d\'ordre / bénéficiaire (Rec. 16).', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'GAFI', exigenceRefs: ['GAFI-16'], checklist: ['Informations complètes sur les virements', 'Virements incomplets traités'] },
+    { intitule: 'Déclaration des opérations suspectes', description: 'Contrôler le dispositif de déclaration des opérations suspectes (Rec. 20).', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'GAFI', exigenceRefs: ['GAFI-20'], checklist: ['Déclarations réalisées sans délai', 'Analyses tracées', 'Confidentialité respectée'] },
+  ],
+}
+
+// ── Socle abus de marché (MAR, Règl. UE 596/2014) — déontologie ───────────────
+const MAR: CatalogueControle = {
+  id: 'MAR', nom: 'Abus de marché (MAR) — socle', referentielCode: 'MAR',
+  controles: [
+    { intitule: 'Détection et déclaration des opérations suspectes (STOR)', description: 'Contrôler le dispositif de détection et de déclaration des opérations suspectes.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'MAR', exigenceRefs: ['MAR-1'], checklist: ['Surveillance des ordres/transactions', 'STOR transmises à l\'AMF', 'Alertes tracées'] },
+    { intitule: 'Tenue des listes d\'initiés', description: 'Vérifier l\'exhaustivité et la mise à jour des listes d\'initiés.', niveau: 'N1', periodicite: 'SEMESTRIEL', referentielCode: 'MAR', exigenceRefs: ['MAR-2'], checklist: ['Listes à jour', 'Initiés informés de leurs obligations', 'Horodatage conservé'] },
+    { intitule: 'Transactions des dirigeants', description: 'Contrôler les déclarations et le respect des fenêtres négatives.', niveau: 'N2', periodicite: 'SEMESTRIEL', referentielCode: 'MAR', exigenceRefs: ['MAR-3'], checklist: ['Déclarations dans les délais', 'Fenêtres négatives respectées', 'Registre tenu'] },
+    { intitule: 'Barrières à l\'information (murailles de Chine)', description: 'Vérifier l\'efficacité des dispositifs de séparation de l\'information privilégiée.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'MAR', exigenceRefs: ['MAR-4'], checklist: ['Cloisonnement en place', 'Franchissements contrôlés', 'Watch/restricted lists tenues'] },
+  ],
+}
+
+// ── Socle Solvabilité II (Dir. UE 2009/138) — gouvernance assurance ───────────
+const SOLVA2: CatalogueControle = {
+  id: 'SOLVA2', nom: 'Solvabilité II — socle', referentielCode: 'SOLVA2',
+  controles: [
+    { intitule: 'Fonctionnement des fonctions clés', description: 'Contrôler l\'existence et l\'indépendance des 4 fonctions clés (actuariat, conformité, audit interne, gestion des risques).', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'SOLVA2', exigenceRefs: ['SOLVA2-1'], checklist: ['Fonctions clés désignées', 'Rapports produits', 'Indépendance respectée'] },
+    { intitule: 'Réalisation de l\'ORSA', description: 'Vérifier la réalisation et l\'utilisation de l\'évaluation interne des risques et de la solvabilité.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'SOLVA2', exigenceRefs: ['SOLVA2-2'], checklist: ['ORSA réalisée', 'Approuvée par l\'organe d\'administration', 'Intégrée aux décisions'] },
+    { intitule: 'Suivi des exigences de capital (SCR/MCR)', description: 'Contrôler le calcul et le suivi du SCR et du MCR.', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'SOLVA2', exigenceRefs: ['SOLVA2-3'], checklist: ['SCR/MCR calculés', 'Couverture suivie', 'Dépassements escaladés'] },
+    { intitule: 'Encadrement de la sous-traitance critique', description: 'Vérifier l\'encadrement des activités importantes ou critiques externalisées.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'SOLVA2', exigenceRefs: ['SOLVA2-4'], checklist: ['Notification ACPR le cas échéant', 'Clauses contractuelles', 'Suivi des prestataires'] },
+    { intitule: 'Production du reporting prudentiel', description: 'Contrôler la production dans les délais des états réglementaires (QRT, RSR, SFCR).', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'SOLVA2', exigenceRefs: ['SOLVA2-5'], checklist: ['QRT produits dans les délais', 'SFCR/RSR publiés', 'Contrôles de cohérence réalisés'] },
+  ],
+}
+
 export const CATALOGUES_CONTROLES: CatalogueControle[] = [
   ISO27001, DORA, LCB_FT, SANCTIONS_GEL, CREDIT_OCTROI, RGPD,
+  MIF2, IDD, GAFI, MAR, SOLVA2,
 ]
 
 /** Retourne un socle par son identifiant, ou undefined. */

@@ -4,9 +4,10 @@ import { CONTROLE_NIVEAUX, PERIODICITES, cleanControleInput, validateControleInp
 import { grcBuiltinByCode } from '@/lib/referentiels-builtins-grc'
 
 describe('controles-catalogue', () => {
-  it('expose les socles cyber (ISO27001, DORA) et non-cyber (LCB-FT, gel des avoirs, crédit, RGPD)', () => {
+  it('expose les socles cyber et non-cyber (P1 + P2 banque/assurance)', () => {
     expect(CATALOGUES_CONTROLES.map(c => c.id).sort()).toEqual([
-      'CREDIT_OCTROI', 'DORA', 'ISO27001', 'LCB_FT', 'RGPD', 'SANCTIONS_GEL',
+      'CREDIT_OCTROI', 'DORA', 'GAFI', 'IDD', 'ISO27001', 'LCB_FT', 'MAR', 'MIF2',
+      'RGPD', 'SANCTIONS_GEL', 'SOLVA2',
     ])
   })
 

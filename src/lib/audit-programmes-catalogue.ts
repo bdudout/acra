@@ -118,8 +118,74 @@ const CONTROLE_INTERNE: ProgrammeAuditType = {
   ],
 }
 
+const MIF2: ProgrammeAuditType = {
+  id: 'MIF2', nom: 'MiFID II (MIF 2) — programme type',
+  points: [
+    'Gouvernance produit : marché cible défini et respecté',
+    'Tests d\'adéquation et de caractère approprié documentés',
+    'Information précontractuelle sur les coûts et charges',
+    'Politique et contrôle de la meilleure exécution',
+    'Encadrement des incitations (inducements)',
+    'Enregistrement des communications et conservation',
+    'Gestion des conflits d\'intérêts',
+    'Traitement des réclamations clients',
+  ],
+}
+
+const IDD: ProgrammeAuditType = {
+  id: 'IDD', nom: 'Distribution d\'assurance (IDD) — programme type',
+  points: [
+    'Recueil des exigences et besoins avant proposition',
+    'Remise du document d\'information normalisé (IPID)',
+    'Devoir de conseil formalisé et cohérent',
+    'Surveillance et gouvernance des produits (POG)',
+    'Formation continue des distributeurs (15 h/an)',
+    'Gestion des conflits d\'intérêts et transparence des rémunérations',
+    'Traitement des réclamations',
+  ],
+}
+
+const GAFI: ProgrammeAuditType = {
+  id: 'GAFI', nom: 'Recommandations GAFI — programme type',
+  points: [
+    'Évaluation des risques BC-FT et approche fondée sur les risques (Rec. 1)',
+    'Devoir de vigilance clientèle (CDD) (Rec. 10)',
+    'Mesures renforcées pour les PPE (Rec. 12)',
+    'Traçabilité des virements électroniques (Rec. 16)',
+    'Déclaration des opérations suspectes (Rec. 20)',
+    'Conservation des documents (Rec. 11)',
+    'Contrôles internes et formation (Rec. 18)',
+  ],
+}
+
+const MAR: ProgrammeAuditType = {
+  id: 'MAR', nom: 'Abus de marché (MAR) — programme type',
+  points: [
+    'Détection et déclaration des opérations suspectes (STOR)',
+    'Tenue et mise à jour des listes d\'initiés',
+    'Déclarations des transactions des dirigeants et fenêtres négatives',
+    'Barrières à l\'information (murailles de Chine)',
+    'Gestion des informations privilégiées et sondages de marché',
+    'Watch lists / restricted lists tenues à jour',
+  ],
+}
+
+const SOLVA2: ProgrammeAuditType = {
+  id: 'SOLVA2', nom: 'Solvabilité II — programme type',
+  points: [
+    'Système de gouvernance et fonctions clés (actuariat, conformité, audit, risques)',
+    'Évaluation interne des risques et de la solvabilité (ORSA)',
+    'Calcul et suivi des exigences de capital (SCR/MCR)',
+    'Politique de gestion des risques et limites',
+    'Encadrement de la sous-traitance des activités critiques',
+    'Qualité des données et provisions techniques',
+    'Reporting prudentiel (QRT, RSR, SFCR) dans les délais',
+  ],
+}
+
 export const PROGRAMMES_AUDIT: ProgrammeAuditType[] = [
   ISO27001, DORA, LCB_FT, SANCTIONS_GEL, CREDIT_OCTROI, RGPD, CONTROLE_INTERNE,
+  MIF2, IDD, GAFI, MAR, SOLVA2,
 ]
 
 /** Retourne un programme type par identifiant, ou undefined. */
