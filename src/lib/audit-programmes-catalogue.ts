@@ -44,7 +44,83 @@ const DORA: ProgrammeAuditType = {
   ],
 }
 
-export const PROGRAMMES_AUDIT: ProgrammeAuditType[] = [ISO27001, DORA]
+const LCB_FT: ProgrammeAuditType = {
+  id: 'LCB_FT', nom: 'Dispositif LCB-FT — programme type',
+  points: [
+    'Classification des risques BC-FT documentée, actualisée et approuvée',
+    'Procédures internes LCB-FT formalisées et à jour',
+    'Identification client et bénéficiaire effectif à l\'entrée en relation (KYC)',
+    'Mesures de vigilance adaptées au risque et vigilance constante sur les opérations',
+    'Détection et traitement des personnes politiquement exposées (PPE)',
+    'Détection, analyse et déclaration des soupçons à Tracfin (délais, traçabilité)',
+    'Dispositif de gel et filtrage des mesures restrictives articulé avec la LCB-FT',
+    'Conservation des documents pendant la durée réglementaire',
+    'Formation et sensibilisation des personnels exposés',
+    'Organisation : responsable LCB-FT, déclarant/correspondant Tracfin, moyens',
+    'Contrôle interne du dispositif et suivi des recommandations',
+  ],
+}
+
+const SANCTIONS_GEL: ProgrammeAuditType = {
+  id: 'SANCTIONS_GEL', nom: 'Gel des avoirs & sanctions — programme type',
+  points: [
+    'Listes de sanctions (UE/ONU/OFAC) intégrées et mises à jour sans délai',
+    'Filtrage de la base clients et rescreening après chaque mise à jour',
+    'Filtrage des transactions et des correspondants bancaires',
+    'Paramétrage de l\'outil de filtrage revu et documenté',
+    'Traitement des alertes : délais, analyse et qualification des correspondances',
+    'Procédure de gel des fonds exécutable sans délai (testée)',
+    'Déclaration des mesures de gel à la Direction générale du Trésor',
+    'Traçabilité des décisions et pistes d\'audit',
+  ],
+}
+
+const CREDIT_OCTROI: ProgrammeAuditType = {
+  id: 'CREDIT_OCTROI', nom: 'Octroi & suivi des crédits — programme type',
+  points: [
+    'Analyse de la capacité de remboursement au dossier (solvabilité)',
+    'Respect des schémas de délégation et des limites d\'octroi',
+    'Complétude du dossier de crédit et formalisation des garanties',
+    'Passage en comité des engagements au-delà des seuils',
+    'Dispositif de notation / cotation des contreparties',
+    'Revue périodique des encours et détection précoce des impayés',
+    'Provisionnement et classification des créances douteuses',
+    'Suivi des dépassements et des exceptions à la politique de crédit',
+  ],
+}
+
+const RGPD: ProgrammeAuditType = {
+  id: 'RGPD', nom: 'RGPD — programme type',
+  points: [
+    'Registre des activités de traitement exhaustif et à jour (art. 30)',
+    'Bases légales et recueil du consentement le cas échéant (art. 6-7)',
+    'Information des personnes concernées (art. 13-14)',
+    'Traitement des demandes d\'exercice des droits dans les délais (art. 15-22)',
+    'Sécurité des traitements adaptée au risque (art. 32)',
+    'Gestion et notification des violations de données (art. 33-34)',
+    'Analyses d\'impact (AIPD) pour les traitements à risque élevé (art. 35)',
+    'Encadrement contractuel des sous-traitants (art. 28)',
+    'Désignation et positionnement du DPO le cas échéant',
+  ],
+}
+
+const CONTROLE_INTERNE: ProgrammeAuditType = {
+  id: 'CONTROLE_INTERNE', nom: 'Dispositif de contrôle interne — programme type',
+  points: [
+    'Contrôles permanents de 1er et 2e niveau formalisés et tracés',
+    'Indépendance et moyens de la fonction de contrôle périodique (3e ligne)',
+    'Rôles de l\'organe de surveillance et des dirigeants effectifs',
+    'Cartographie des risques tenue à jour et alimentant le plan de contrôle',
+    'Plan de contrôle pluriannuel et couverture des activités/risques',
+    'Rapport annuel de contrôle interne et information de l\'organe de surveillance',
+    'Suivi des recommandations et des plans d\'action',
+    'Externalisation : registre, criticité et clauses de réversibilité',
+  ],
+}
+
+export const PROGRAMMES_AUDIT: ProgrammeAuditType[] = [
+  ISO27001, DORA, LCB_FT, SANCTIONS_GEL, CREDIT_OCTROI, RGPD, CONTROLE_INTERNE,
+]
 
 /** Retourne un programme type par identifiant, ou undefined. */
 export function getProgrammeAudit(id: string): ProgrammeAuditType | undefined {

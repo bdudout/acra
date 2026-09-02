@@ -4,6 +4,7 @@ import { FlaskConical, Paperclip } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
+import { CATALOGUES_CONTROLES } from '@/lib/controles-catalogue'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 
 interface Efficacite {
@@ -230,8 +231,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
             <select value="" disabled={busy} onChange={e => { if (e.target.value) importerSocle(e.target.value); e.target.value = '' }}
               className={inp} aria-label={c.importLabel} title={c.importHint}>
               <option value="">{c.importLabel}</option>
-              <option value="ISO27001">ISO/IEC 27001:2022</option>
-              <option value="DORA">DORA</option>
+              {CATALOGUES_CONTROLES.map(cat => <option key={cat.id} value={cat.id}>{cat.nom}</option>)}
             </select>
             <button onClick={() => { setForm(emptyForm()); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>
           </div>
