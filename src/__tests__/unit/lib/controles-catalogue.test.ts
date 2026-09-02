@@ -1,10 +1,26 @@
 import { describe, it, expect } from 'vitest'
 import { CATALOGUES_CONTROLES, getCatalogueControle } from '@/lib/controles-catalogue'
 import { CONTROLE_NIVEAUX, PERIODICITES, cleanControleInput, validateControleInput } from '@/lib/controle'
+import { grcBuiltinByCode } from '@/lib/referentiels-builtins-grc'
 
 describe('controles-catalogue', () => {
-  it('expose les socles ISO27001 et DORA', () => {
-    expect(CATALOGUES_CONTROLES.map(c => c.id).sort()).toEqual(['DORA', 'ISO27001'])
+  it('expose les socles cyber (ISO27001, DORA) et non-cyber (LCB-FT, gel des avoirs, crédit, RGPD)', () => {
+    expect(CATALOGUES_CONTROLES.map(c => c.id).sort()).toEqual([
+      'CREDIT_OCTROI', 'DORA', 'ISO27001', 'LCB_FT', 'RGPD', 'SANCTIONS_GEL',
+    ])
+  })
+
+  it('les socles non-cyber pointent des exigences RÉELLES de leur cadre GRC livré', () => {
+    for (const cat of CATALOGUES_CONTROLES) {
+      const grc = grcBuiltinByCode(cat.referentielCode)
+      if (!grc) continue // socle cyber (ISO/DORA) — hors de ce contrôle
+      const refs = new Set(grc.exigences.map(e => e.ref))
+      for (const t of cat.controles) {
+        for (const r of t.exigenceRefs) {
+          expect(refs.has(r), `exigence ${r} absente de ${cat.referentielCode}`).toBe(true)
+        }
+      }
+    }
   })
 
   it('getCatalogueControle retrouve un socle et renvoie undefined sinon', () => {

@@ -60,7 +60,58 @@ const DORA: CatalogueControle = {
   ],
 }
 
-export const CATALOGUES_CONTROLES: CatalogueControle[] = [ISO27001, DORA]
+// ── Socle LCB-FT (CMF art. L.561-1 s.) — non-cyber ───────────────────────────
+const LCB_FT: CatalogueControle = {
+  id: 'LCB_FT', nom: 'Dispositif LCB-FT — socle', referentielCode: 'LCB_FT',
+  controles: [
+    { intitule: 'Actualisation de la classification des risques BC-FT', description: 'Vérifier que la classification des risques (clientèle, produits, canaux, géographie) est à jour et approuvée.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-1'], checklist: ['Classification documentée', 'Revue < 12 mois', 'Validée par le responsable LCB-FT'] },
+    { intitule: 'Contrôle des dossiers d\'entrée en relation (KYC)', description: 'Contrôler par sondage la complétude de l\'identification client et bénéficiaire effectif à l\'entrée en relation.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-2'], checklist: ['Identité vérifiée (pièces)', 'Bénéficiaire effectif identifié', 'Objet/nature de la relation renseignés'] },
+    { intitule: 'Vigilance constante sur les opérations', description: 'Vérifier le traitement des alertes de suivi des opérations et l\'actualisation de la connaissance client.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-3'], checklist: ['Alertes traitées dans les délais', 'Dossiers KYC actualisés', 'Opérations atypiques justifiées'] },
+    { intitule: 'Détection et suivi des PPE', description: 'Contrôler l\'identification des personnes politiquement exposées et l\'application des mesures de vigilance renforcée.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-4'], checklist: ['Screening PPE en place', 'Vigilance renforcée appliquée', 'Validation hiérarchique tracée'] },
+    { intitule: 'Qualité et délais des déclarations de soupçon', description: 'Contrôler la détection, l\'analyse et la transmission à Tracfin des opérations suspectes.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-5'], checklist: ['Analyses formalisées', 'Déclarations transmises sans délai', 'Traçabilité des décisions de non-déclaration'] },
+    { intitule: 'Conservation des documents LCB-FT', description: 'Vérifier la conservation des pièces d\'identification et documents d\'opérations pendant la durée légale.', niveau: 'N1', periodicite: 'ANNUEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-6'], checklist: ['Durée de conservation respectée (5 ans)', 'Pièces accessibles et intègres'] },
+    { intitule: 'Réalisation des formations LCB-FT', description: 'Contrôler la réalisation et la couverture des formations des personnels exposés.', niveau: 'N1', periodicite: 'ANNUEL', referentielCode: 'LCB_FT', exigenceRefs: ['LCBFT-7'], checklist: ['Formation réalisée sur la période', 'Taux de couverture suivi', 'Nouveaux arrivants formés'] },
+  ],
+}
+
+// ── Socle gel des avoirs & sanctions (Règl. UE + DG Trésor) — non-cyber ───────
+const SANCTIONS_GEL: CatalogueControle = {
+  id: 'SANCTIONS_GEL', nom: 'Gel des avoirs & sanctions — socle', referentielCode: 'SANCTIONS_GEL',
+  controles: [
+    { intitule: 'Filtrage de la base clients contre les listes', description: 'Vérifier le rescreening de la base clients à chaque mise à jour des listes de sanctions (UE/ONU/OFAC).', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'SANCTIONS_GEL', exigenceRefs: ['GEL-1'], checklist: ['Listes à jour', 'Rescreening réalisé après mise à jour', 'Correspondances tracées'] },
+    { intitule: 'Filtrage des transactions', description: 'Contrôler le filtrage des opérations (virements, correspondants) contre les mesures restrictives.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'SANCTIONS_GEL', exigenceRefs: ['GEL-2'], checklist: ['Filtrage actif sur les flux', 'Paramétrage revu', 'Alertes journalisées'] },
+    { intitule: 'Traitement des alertes de correspondance', description: 'Vérifier l\'analyse et la levée/qualification des correspondances dans des délais maîtrisés.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'SANCTIONS_GEL', exigenceRefs: ['GEL-3'], checklist: ['Délais de traitement respectés', 'Analyses formalisées', 'Escalade des vrais positifs'] },
+    { intitule: 'Mise en œuvre du gel sans délai', description: 'Contrôler la capacité à geler les fonds sans délai et à déclarer à la DG Trésor.', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'SANCTIONS_GEL', exigenceRefs: ['GEL-4', 'GEL-5'], checklist: ['Procédure de gel testée', 'Gel exécutable sans délai', 'Déclaration DG Trésor tracée'] },
+  ],
+}
+
+// ── Socle octroi & suivi des crédits (EBA/GL/2020/06) — non-cyber ─────────────
+const CREDIT_OCTROI: CatalogueControle = {
+  id: 'CREDIT_OCTROI', nom: 'Octroi & suivi des crédits — socle', referentielCode: 'CREDIT_OCTROI',
+  controles: [
+    { intitule: 'Analyse de la capacité de remboursement', description: 'Contrôler par sondage la réalisation et la qualité de l\'analyse de solvabilité au dossier.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'CREDIT_OCTROI', exigenceRefs: ['CRED-1'], checklist: ['Analyse de solvabilité présente', 'Revenus/charges vérifiés', 'Taux d\'endettement calculé'] },
+    { intitule: 'Respect des délégations d\'octroi', description: 'Vérifier que les décisions d\'octroi respectent les schémas de délégation et les limites.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'CREDIT_OCTROI', exigenceRefs: ['CRED-2'], checklist: ['Décision dans la limite de délégation', 'Dépassements escaladés', 'Traçabilité de la décision'] },
+    { intitule: 'Complétude du dossier et des garanties', description: 'Contrôler la complétude du dossier de crédit et la formalisation des garanties.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'CREDIT_OCTROI', exigenceRefs: ['CRED-3'], checklist: ['Pièces obligatoires présentes', 'Garanties évaluées et formalisées', 'Assurances vérifiées'] },
+    { intitule: 'Passage en comité des engagements', description: 'Vérifier le passage en comité des dossiers au-delà des seuils définis.', niveau: 'N2', periodicite: 'TRIMESTRIEL', referentielCode: 'CREDIT_OCTROI', exigenceRefs: ['CRED-4'], checklist: ['Seuils de passage respectés', 'Comptes rendus de comité', 'Avis motivés tracés'] },
+    { intitule: 'Revue des encours et détection des impayés', description: 'Contrôler la revue périodique des encours et la détection précoce des impayés.', niveau: 'N1', periodicite: 'MENSUEL', referentielCode: 'CREDIT_OCTROI', exigenceRefs: ['CRED-5'], checklist: ['Revue des encours réalisée', 'Impayés détectés et suivis', 'Provisions ajustées'] },
+  ],
+}
+
+// ── Socle RGPD (UE 2016/679) — non-cyber ─────────────────────────────────────
+const RGPD: CatalogueControle = {
+  id: 'RGPD', nom: 'RGPD — socle', referentielCode: 'RGPD',
+  controles: [
+    { intitule: 'Tenue du registre des traitements', description: 'Vérifier l\'exhaustivité et l\'actualisation du registre des activités de traitement (art. 30).', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'RGPD', exigenceRefs: ['RGPD-30'], checklist: ['Registre exhaustif', 'Finalités et durées renseignées', 'Revue < 12 mois'] },
+    { intitule: 'Traitement des demandes d\'exercice des droits', description: 'Contrôler le traitement des demandes (accès, effacement, opposition) dans les délais (art. 15-22).', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'RGPD', exigenceRefs: ['RGPD-15'], checklist: ['Demandes tracées', 'Délai d\'un mois respecté', 'Réponses formalisées'] },
+    { intitule: 'Gestion des violations de données', description: 'Vérifier la détection, la qualification et la notification des violations (art. 33-34).', niveau: 'N1', periodicite: 'TRIMESTRIEL', referentielCode: 'RGPD', exigenceRefs: ['RGPD-33'], checklist: ['Registre des violations tenu', 'Notification CNIL < 72 h', 'Information des personnes si requise'] },
+    { intitule: 'Encadrement des sous-traitants', description: 'Contrôler la présence de clauses et garanties suffisantes pour les sous-traitants (art. 28).', niveau: 'N2', periodicite: 'SEMESTRIEL', referentielCode: 'RGPD', exigenceRefs: ['RGPD-28'], checklist: ['Contrats art. 28 en place', 'Garanties évaluées', 'Sous-traitants ultérieurs encadrés'] },
+    { intitule: 'Réalisation des analyses d\'impact (AIPD)', description: 'Vérifier la réalisation d\'une AIPD pour les traitements à risque élevé (art. 35).', niveau: 'N2', periodicite: 'ANNUEL', referentielCode: 'RGPD', exigenceRefs: ['RGPD-35'], checklist: ['Traitements à risque identifiés', 'AIPD réalisées', 'Mesures d\'atténuation suivies'] },
+  ],
+}
+
+export const CATALOGUES_CONTROLES: CatalogueControle[] = [
+  ISO27001, DORA, LCB_FT, SANCTIONS_GEL, CREDIT_OCTROI, RGPD,
+]
 
 /** Retourne un socle par son identifiant, ou undefined. */
 export function getCatalogueControle(id: string): CatalogueControle | undefined {
