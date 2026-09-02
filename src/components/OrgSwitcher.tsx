@@ -6,7 +6,6 @@
  * Bascule via POST /api/org/active (cookie acra_org) puis rafraîchit la vue.
  */
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import OrgLogo from './OrgLogo'
 
@@ -20,7 +19,6 @@ function orgDepth(path?: string): number {
 
 export default function OrgSwitcher() {
   const { t } = useTranslation()
-  const router = useRouter()
   const [options, setOptions] = useState<OrgOption[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [canSelectAll, setCanSelectAll] = useState(false)
@@ -63,7 +61,11 @@ export default function OrgSwitcher() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ orgId: id }),
       })
-      if (res.ok) { setActiveId(id); setOpen(false); router.refresh() }
+      // Rechargement COMPLET (pas router.refresh) : la navbar est un composant
+      // client qui a chargé l'état des modules au montage — un simple refresh des
+      // Server Components ne la mettrait pas à jour, la navigation resterait figée
+      // sur l'organisation précédente. Le changement d'org est rare → reload OK.
+      if (res.ok) { setActiveId(id); setOpen(false); window.location.reload() }
     } finally {
       setBusy(false)
     }

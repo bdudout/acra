@@ -163,6 +163,9 @@ export default function Navbar() {
     registre:    { Icon: BookMarked,     label: t.nav.grpRegistre },
     reglementaire: { Icon: Landmark,     label: t.nav.grpReglementaire },
     gouvernance: { Icon: ShieldCheck,    label: t.nav.grpGouvernance },
+    analyses:    { Icon: Radar,          label: t.nav.grpAnalyses },
+    controleAudit: { Icon: ClipboardCheck, label: t.nav.grpControleAudit },
+    conformiteReglementaire: { Icon: ShieldCheck, label: t.nav.grpConformiteReglementaire },
   }
 
   const badge = (n: number, label: string) => (
