@@ -1629,6 +1629,7 @@ export const es: Translations = {
     yours: 'Sus marcos',
     builtin: 'Marcos incluidos (solo lectura)',
     tousDomaines: 'Todos los dominios',
+    domaines: { SECURITE_SI: 'Seguridad TI y resiliencia digital', PROTECTION_DONNEES: 'Protección de datos', LCB_FT: 'Prevención de blanqueo y FT', SANCTIONS_GEL: 'Sanciones y congelación de activos', PROTECTION_CLIENTELE: 'Protección del cliente', DEONTOLOGIE: 'Deontología y anticorrupción', COMPTABLE_FINANCIER: 'Contable y financiero', CREDIT_CONTREPARTIE: 'Crédito y contraparte', RISQUE_OPERATIONNEL: 'Riesgo operacional y externalización', GOUVERNANCE_CONTROLE: 'Gobernanza y control interno', AUTRE: 'Otro / interno' },
     empty: 'Ningún marco propio. Cree su PSSI o sus políticas internas y sus requisitos.',
     readOnly: 'Solo lectura — la gestión de los marcos corresponde a la gobernanza (RSSI / cumplimiento).',
     champ: { code: 'Código', nom: 'Nombre', type: 'Tipo', domaine: 'Dominio', version: 'Versión', description: 'Descripción', exigences: 'Requisitos (puntos de control)', missions: 'Misiones (objetivos de seguridad)' },

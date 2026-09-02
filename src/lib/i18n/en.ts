@@ -1629,6 +1629,7 @@ export const en: Translations = {
     yours: 'Your frameworks',
     builtin: 'Built-in frameworks (read only)',
     tousDomaines: 'All domains',
+    domaines: { SECURITE_SI: 'IT security & digital resilience', PROTECTION_DONNEES: 'Data protection', LCB_FT: 'Anti-money laundering & CFT', SANCTIONS_GEL: 'Sanctions & asset freezing', PROTECTION_CLIENTELE: 'Customer protection', DEONTOLOGIE: 'Ethics & anti-bribery', COMPTABLE_FINANCIER: 'Accounting & financial', CREDIT_CONTREPARTIE: 'Credit & counterparty', RISQUE_OPERATIONNEL: 'Operational risk & outsourcing', GOUVERNANCE_CONTROLE: 'Governance & internal control', AUTRE: 'Other / internal' },
     empty: 'No custom framework yet. Create your ISSP or internal policies and their requirements.',
     readOnly: 'Read only — framework management belongs to governance (CISO / compliance).',
     champ: { code: 'Code', nom: 'Name', type: 'Type', domaine: 'Domain', version: 'Version', description: 'Description', exigences: 'Requirements (control points)', missions: 'Missions (security objectives)' },
