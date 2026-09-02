@@ -5,17 +5,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { parseExigences, parseMissions, REFERENTIEL_TYPES } from '@/lib/referentiel'
+import { DOMAINES, DOMAINE_META } from '@/lib/referentiel-domaines'
 
 interface CouvExigence { ref: string; nom: string; statut: string; nbControles: number; nbAnomaliesAudit: number }
 interface CouvSynthese { total: number; couverts: number; conformes: number; anomalies: number; nonCouverts: number; tauxCouverture: number; tauxConformite: number }
 
 interface Ref {
   id?: string; code: string; nom: string; source: 'BUILTIN' | 'CUSTOM'
-  type: string; version: string | null; nbExigences: number; actif: boolean
+  type: string; domaine: string; version: string | null; nbExigences: number; actif: boolean
 }
-interface RefDetail { id: string; code: string; nom: string; type: string; version: string | null; description: string | null; exigences: { ref: string; nom: string; categorie?: string; type?: string }[]; missions?: { intitule: string; description?: string }[] }
+interface RefDetail { id: string; code: string; nom: string; type: string; domaine?: string; version: string | null; description: string | null; exigences: { ref: string; nom: string; categorie?: string; type?: string }[]; missions?: { intitule: string; description?: string }[] }
 
-const emptyForm = { code: '', nom: '', type: 'PSSI', version: '', description: '', exigencesText: '', missionsText: '' }
+const emptyForm = { code: '', nom: '', type: 'PSSI', domaine: 'SECURITE_SI', version: '', description: '', exigencesText: '', missionsText: '' }
 
 export default function ReferentielsManager({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation()
@@ -54,7 +55,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     if (!ref) return
     setEditing(id)
     setForm({
-      code: ref.code, nom: ref.nom, type: ref.type, version: ref.version ?? '', description: ref.description ?? '',
+      code: ref.code, nom: ref.nom, type: ref.type, domaine: ref.domaine ?? 'SECURITE_SI', version: ref.version ?? '', description: ref.description ?? '',
       exigencesText: (ref.exigences ?? []).map(e => [e.ref, e.nom, e.categorie ?? '', e.type ?? ''].filter(Boolean).join(' | ')).join('\n'),
       missionsText: (ref.missions ?? []).map(m => [m.intitule, m.description ?? ''].filter(Boolean).join(' | ')).join('\n'),
     })
@@ -66,7 +67,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     const url = editing ? `/api/referentiels/${editing}` : '/api/referentiels'
     const res = await fetch(url, {
       method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: form.code, nom: form.nom, type: form.type, version: form.version, description: form.description, exigences: exigencesParsed, missions: parseMissions(form.missionsText) }),
+      body: JSON.stringify({ code: form.code, nom: form.nom, type: form.type, domaine: form.domaine, version: form.version, description: form.description, exigences: exigencesParsed, missions: parseMissions(form.missionsText) }),
     })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
@@ -146,6 +147,10 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               <select className={`mt-1 ${inputCls}`} value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
                 {REFERENTIEL_TYPES.map(ty => <option key={ty} value={ty}>{r.typeOpt[ty]}</option>)}
               </select></label>
+            <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.domaine}</span>
+              <select className={`mt-1 ${inputCls}`} value={form.domaine} onChange={e => setForm({ ...form, domaine: e.target.value })}>
+                {DOMAINES.map(d => <option key={d} value={d}>{DOMAINE_META[d].label}</option>)}
+              </select></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.version}</span>
               <input className={`mt-1 ${inputCls}`} value={form.version} onChange={e => setForm({ ...form, version: e.target.value })} placeholder="v1.0" /></label>
             <label className="block sm:col-span-2"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.description}</span>
@@ -197,7 +202,16 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                       <div className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</div>
                       <div className="text-[11px] text-gray-400 font-mono">{x.code}</div>
                     </td>
-                    <td className="px-3 py-2">{typeBadge(x.type, x.source)}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-1">
+                        {typeBadge(x.type, x.source)}
+                        {x.domaine && x.domaine !== 'SECURITE_SI' && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                            {DOMAINE_META[x.domaine as keyof typeof DOMAINE_META]?.label ?? x.domaine}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                     <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">

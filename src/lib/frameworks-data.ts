@@ -18,6 +18,7 @@
  *  • CUSTOM                        (contrôles définis par l'analyste)
  */
 import type { Locale } from '@/lib/i18n'
+import type { Domaine } from '@/lib/referentiel-domaines'
 import { getEbiosData } from '@/lib/ebios-data-i18n'
 import {
   DORA_CONTROLES, DORA_CATEGORIES,
@@ -68,7 +69,10 @@ export interface Framework {
 export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'CUSTOM'] as const
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
-export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string }> = {
+// `domaine` (optionnel) classe le cadre dans une filière de contrôle/audit
+// (cf. referentiel-domaines.ts). Absent ⇒ SECURITE_SI (tous les cadres cyber livrés).
+// Les cadres non-cyber (phase 3 : LCB-FT, gel des avoirs, comptable…) le renseignent.
+export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string; icon: string; cible: string; domaine?: Domaine }> = {
   ISO27001:   { nom: 'ISO/IEC 27001',        version: '2022',     icon: '🌐', cible: 'Tout secteur — certification SMSI' },
   NIST_CSF:   { nom: 'NIST CSF',             version: '2.0',      icon: '🇺🇸', cible: 'Organisations US et internationales' },
   NIST_800_53:{ nom: 'NIST SP 800-53',       version: 'Rév. 5',   icon: '🔐', cible: 'Systèmes fédéraux US, secteur défense' },

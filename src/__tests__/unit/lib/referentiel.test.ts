@@ -74,6 +74,12 @@ describe('cleanReferentielInput', () => {
     expect(cleanReferentielInput({ code: 'x', nom: 'x', type: 'ZZZ' }).type).toBe('CUSTOM')
   })
 
+  it('borne le domaine ; domaine absent/invalide → SECURITE_SI (rétrocompatible)', () => {
+    expect(cleanReferentielInput({ code: 'x', nom: 'x', domaine: 'LCB_FT' }).domaine).toBe('LCB_FT')
+    expect(cleanReferentielInput({ code: 'x', nom: 'x' }).domaine).toBe('SECURITE_SI')
+    expect(cleanReferentielInput({ code: 'x', nom: 'x', domaine: 'CYBER' }).domaine).toBe('SECURITE_SI')
+  })
+
   it('expose la liste des types', () => {
     expect(REFERENTIEL_TYPES).toContain('PSSI')
     expect(REFERENTIEL_TYPES).toContain('CUSTOM')

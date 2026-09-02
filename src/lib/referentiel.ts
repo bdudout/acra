@@ -9,6 +9,7 @@
 // Logique PURE et testée ; l'API/UI ne font qu'appliquer ce moteur.
 
 import type { FrameworkControl, ControlType } from './frameworks-data'
+import { coerceDomaine, type Domaine } from './referentiel-domaines'
 
 export type Exigence = FrameworkControl
 
@@ -29,6 +30,7 @@ export interface ReferentielInput {
   code?: unknown
   nom?: unknown
   type?: unknown
+  domaine?: unknown
   version?: unknown
   description?: unknown
   exigences?: unknown
@@ -39,6 +41,7 @@ export interface CleanReferentiel {
   code: string
   nom: string
   type: ReferentielType
+  domaine: Domaine
   version: string | null
   description: string | null
   exigences: Exigence[]
@@ -135,6 +138,7 @@ export function cleanReferentielInput(body: ReferentielInput): CleanReferentiel 
     code: slugifyCode(body.code),
     nom: txt(body.nom),
     type,
+    domaine: coerceDomaine(body.domaine),
     version: txtOrNull(body.version),
     description: txtOrNull(body.description),
     exigences,
