@@ -31,6 +31,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const [couv, setCouv] = useState<{ code: string; nom: string; parExigence: CouvExigence[]; synthese: CouvSynthese } | null>(null)
   const [couvLoading, setCouvLoading] = useState(false)
   const [seeding, setSeeding] = useState(false)
+  const [filterDomaine, setFilterDomaine] = useState<string>('')
 
   const exigencesParsed = useMemo(() => parseExigences(form.exigencesText), [form.exigencesText])
 
@@ -90,9 +91,12 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
   const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ebios-500'
 
   if (loading) return <div className="text-center py-12 text-gray-500">{t.loading}</div>
-  const customs = refs.filter(x => x.source === 'CUSTOM')
-  const builtins = refs.filter(x => x.source === 'BUILTIN')
-  const hasPolitique = customs.some(x => x.type === 'PSSI' || x.type === 'POLITIQUE')
+  const byDomaine = (x: Ref) => !filterDomaine || x.domaine === filterDomaine
+  const customs = refs.filter(x => x.source === 'CUSTOM' && byDomaine(x))
+  const builtins = refs.filter(x => x.source === 'BUILTIN' && byDomaine(x))
+  // Domaines réellement présents dans le catalogue de l'org (pour le filtre).
+  const domainesPresents = DOMAINES.filter(d => refs.some(x => x.domaine === d))
+  const hasPolitique = refs.some(x => x.source === 'CUSTOM' && (x.type === 'PSSI' || x.type === 'POLITIQUE'))
 
   const typeBadge = (type: string, source: string) => (
     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${source === 'BUILTIN' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-ebios-100 text-ebios-700 dark:bg-ebios-500/15 dark:text-ebios-300'}`}>
@@ -116,6 +120,18 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
 
       {!canManage && (
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{r.readOnly}</div>
+      )}
+
+      {/* Filtre par filière (domaine) — cyber, LCB-FT, gel des avoirs, comptable… */}
+      {domainesPresents.length > 1 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">{r.champ.domaine}</span>
+          <select className="text-sm px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            value={filterDomaine} onChange={e => setFilterDomaine(e.target.value)}>
+            <option value="">{r.tousDomaines}</option>
+            {domainesPresents.map(d => <option key={d} value={d}>{DOMAINE_META[d].label}</option>)}
+          </select>
+        </div>
       )}
 
       {/* Aucune politique/stratégie : proposer d'initialiser le socle par défaut */}
@@ -246,7 +262,14 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               {builtins.map(x => (
                 <tr key={x.code} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-2">
-                    <div className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</div>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</span>
+                      {x.domaine && x.domaine !== 'SECURITE_SI' && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                          {DOMAINE_META[x.domaine as keyof typeof DOMAINE_META]?.label ?? x.domaine}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-gray-400">{x.type}</div>
                   </td>
                   <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>

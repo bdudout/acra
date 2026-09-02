@@ -249,12 +249,19 @@ Analyses (Atelier 1, cadrage, `socle-etat`, PDF), conformité, `controles-catalo
 - **Phase 2 — unification RA ↔ GRC**
   - `referentielsActifs` = codes ; migration des noms ; Atelier 1 / cadrage / PDF lisent
     la sélection unifiée. Conformité évalue la même sélection.
-- **Phase 3 — ouverture non-cyber**
-  - Seed des en-têtes + exigences P1 (RGPD, LCB-FT, SANCTIONS_GEL, DSP2, Sapin II,
-    comptable, octroi crédit, externalisation, contrôle interne).
-  - `controles-catalogue` / `audit-programmes-catalogue` ouverts par domaine + catalogues
-    de départ non-cyber.
-  - UI : filtre par domaine dans `ReferentielsManager`, contrôles, audit ; i18n ×5.
+- **Phase 3 — ouverture non-cyber — LIVRÉE (en-têtes + exigences P1)**
+  - ✅ Seed des 9 cadres GRC livrés (`referentiels-builtins-grc.ts`) : RGPD, LCB-FT,
+    SANCTIONS_GEL (gel des avoirs), DSP2, Sapin II, contrôle interne comptable, octroi
+    de crédit, externalisation, dispositif de contrôle interne — chacun avec domaine,
+    version canonique et exigences de départ. Exposés en BUILTIN par
+    `referentiel.server` (list + `getExigencesFor`) → contrôles, audit et conformité
+    (couverture dérivée) opérationnels dessus par `referentielCode`.
+  - ✅ UI : filtre par domaine dans `ReferentielsManager` + badge filière (custom &
+    builtin) ; i18n ×5 (« Domaine », « Tous les domaines »).
+  - Reste (P2/P3 de contenu) : catalogues de départ prêts-à-l'emploi de contrôles/audits
+    non-cyber (`controles-catalogue` / `audit-programmes-catalogue` par domaine) ;
+    localisation des libellés d'exigences non-cyber ; référentiels P2 (ACPR, EBA, GAFI,
+    MIF 2, IDD…).
 
 ---
 

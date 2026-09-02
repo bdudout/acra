@@ -1628,6 +1628,7 @@ export const de: Translations = {
     missionsHint: 'Eine Mission pro Zeile: Titel | Beschreibung. Sicherheitsziele (z. B. Schutz der VIV von Kundendaten und -diensten).',
     yours: 'Ihre Referenzrahmen',
     builtin: 'Gelieferte Rahmenwerke (nur Lesen)',
+    tousDomaines: 'Alle Bereiche',
     empty: 'Noch kein eigener Referenzrahmen. Erstellen Sie Ihre Sicherheitsleitlinie oder interne Richtlinien und deren Anforderungen.',
     readOnly: 'Nur Lesezugriff — die Pflege der Referenzrahmen obliegt der Governance (CISO / Compliance).',
     champ: { code: 'Code', nom: 'Name', type: 'Typ', domaine: 'Bereich', version: 'Version', description: 'Beschreibung', exigences: 'Anforderungen (Kontrollpunkte)', missions: 'Missionen (Sicherheitsziele)' },

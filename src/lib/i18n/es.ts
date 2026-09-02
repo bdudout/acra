@@ -1628,6 +1628,7 @@ export const es: Translations = {
     missionsHint: 'Una misión por línea: título | descripción. Objetivos de seguridad (p. ej. proteger la CID de los datos y servicios de clientes).',
     yours: 'Sus marcos',
     builtin: 'Marcos incluidos (solo lectura)',
+    tousDomaines: 'Todos los dominios',
     empty: 'Ningún marco propio. Cree su PSSI o sus políticas internas y sus requisitos.',
     readOnly: 'Solo lectura — la gestión de los marcos corresponde a la gobernanza (RSSI / cumplimiento).',
     champ: { code: 'Código', nom: 'Nombre', type: 'Tipo', domaine: 'Dominio', version: 'Versión', description: 'Descripción', exigences: 'Requisitos (puntos de control)', missions: 'Misiones (objetivos de seguridad)' },

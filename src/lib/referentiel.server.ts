@@ -7,6 +7,7 @@
 import { prisma } from './prisma'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, type FrameworkId } from './frameworks-data'
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
+import { GRC_BUILTINS, isGrcBuiltin, grcBuiltinByCode } from './referentiels-builtins-grc'
 import type { Locale } from './i18n'
 import type { Exigence } from './referentiel'
 
@@ -30,14 +31,14 @@ export interface ReferentielSummary {
 // analyse comme emplacement d'exigences ad hoc).
 const BUILTIN_CODES = FRAMEWORK_IDS.filter(id => id !== 'CUSTOM')
 
-const isBuiltin = (code: string): code is FrameworkId => (BUILTIN_CODES as readonly string[]).includes(code)
+const isCyberBuiltin = (code: string): code is FrameworkId => (BUILTIN_CODES as readonly string[]).includes(code)
 
 /**
  * Résumés des référentiels visibles par l'organisation (livrés + custom).
  * `domaine` (optionnel) filtre sur une filière de contrôle/audit (cyber, LCB-FT…).
  */
 export async function listReferentiels(orgId: string, locale: Locale, domaine?: Domaine): Promise<ReferentielSummary[]> {
-  const builtins: ReferentielSummary[] = BUILTIN_CODES.map(code => {
+  const cyberBuiltins: ReferentielSummary[] = BUILTIN_CODES.map(code => {
     const meta = FRAMEWORK_META[code]
     let nb = 0
     try { nb = getFrameworkControles(code, undefined, locale).length } catch { nb = 0 }
@@ -46,6 +47,14 @@ export async function listReferentiels(orgId: string, locale: Locale, domaine?: 
       domaine: coerceDomaine(meta.domaine), version: meta.version || null, nbExigences: nb, actif: true,
     }
   })
+
+  // Cadres GRC livrés (non-cyber : LCB-FT, gel des avoirs, RGPD, DSP2…).
+  const grcBuiltins: ReferentielSummary[] = GRC_BUILTINS.map(r => ({
+    code: r.code, nom: r.nom, source: 'BUILTIN', type: r.nature,
+    domaine: r.domaine, version: r.version || null, nbExigences: r.exigences.length, actif: true,
+  }))
+
+  const builtins = [...cyberBuiltins, ...grcBuiltins]
 
   const rows = await prisma.referentiel.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] })
   const customs: ReferentielSummary[] = rows.map(r => ({
@@ -66,8 +75,11 @@ export async function listReferentiels(orgId: string, locale: Locale, domaine?: 
 
 /** Exigences (points de contrôle) d'un référentiel, quelle que soit sa source. */
 export async function getExigencesFor(code: string, orgId: string, locale: Locale): Promise<Exigence[]> {
-  if (isBuiltin(code)) {
+  if (isCyberBuiltin(code)) {
     try { return getFrameworkControles(code, undefined, locale) as Exigence[] } catch { return [] }
+  }
+  if (isGrcBuiltin(code)) {
+    return grcBuiltinByCode(code)?.exigences ?? []
   }
   const row = await prisma.referentiel.findFirst({ where: { organizationId: orgId, code }, select: { exigences: true } })
   return Array.isArray(row?.exigences) ? (row!.exigences as unknown as Exigence[]) : []
