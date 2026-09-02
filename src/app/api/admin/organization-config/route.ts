@@ -11,6 +11,7 @@ import {
   DEFAULT_TYPES_IMPACTS, DEFAULT_REFERENTIELS, DEFAULT_STRATEGIES,
   type TypeImpact, type ReferentielActif, type StrategieTraitement,
 } from '@/lib/org-config-defaults'
+import { resolveReferentielCode } from '@/lib/referentiel-catalogue'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
 import { sanitizeConformiteNiveau, sanitizeSnapshotMode } from '@/lib/conformite-config'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
@@ -142,7 +143,11 @@ export async function PUT(req: NextRequest) {
       .map((r: any) => {
         const nom = String(r?.nom ?? '').trim().slice(0, 100)
         if (!nom) return null
-        return { nom, description: String(r?.description ?? '').trim().slice(0, 200), actif: r?.actif !== false }
+        // `code` (unification référentiels) : conservé s'il est fourni, sinon résolu
+        // depuis le nom (rétro-compat des sélections historiques keyées par nom).
+        const codeRaw = typeof r?.code === 'string' ? r.code.trim().slice(0, 60) : ''
+        const code = codeRaw || resolveReferentielCode({ nom }) || null
+        return { nom, description: String(r?.description ?? '').trim().slice(0, 200), actif: r?.actif !== false, code }
       })
       .filter(Boolean)
       .slice(0, 50)

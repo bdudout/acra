@@ -13,6 +13,13 @@ export interface ReferentielActif {
   nom: string
   description: string
   actif: boolean
+  /**
+   * Code canonique du référentiel unifié (cadre livré ou custom), reliant la
+   * sélection côté analyses aux exigences côté conformité/contrôles/audit.
+   * `null`/absent = référentiel « label » sans cadre livré (résolu à la lecture par
+   * referentielCodeFromNom, ou traité en custom). Cf. lib/referentiel-catalogue.ts.
+   */
+  code?: string | null
 }
 
 /** Types d'impacts par défaut (événements redoutés — Atelier 1). */
@@ -47,18 +54,23 @@ export const DEFAULT_STRATEGIES: StrategieTraitement[] = [
   { value: 'SURVEILLER', color: 'bg-purple-100 text-purple-700', label: 'Surveiller',       description: "Surveiller l'évolution du risque sans action immédiate",                        conseil: "Pour les risques émergents dont l'évolution est incertaine" },
 ]
 
-/** Référentiels de sécurité par défaut (tous actifs). */
+/**
+ * Référentiels de sécurité par défaut (tous actifs). `code` relie chaque entrée au
+ * catalogue canonique unifié — même objet côté analyses et côté conformité/contrôles.
+ * `null` = label sans cadre livré (RGPD → futur builtin P3 ; NIS2, LPM, ISO 27002
+ * tenus distincts / custom). Cf. lib/referentiel-catalogue.ts (table de correspondance).
+ */
 export const DEFAULT_REFERENTIELS: ReferentielActif[] = [
-  { nom: 'ISO/IEC 27001:2022', description: "Système de Management de la Sécurité de l'Information", actif: true },
-  { nom: 'ISO/IEC 27002:2022', description: "Mesures de sécurité de l'information", actif: true },
-  { nom: 'RGPD',  description: 'Règlement Général sur la Protection des Données', actif: true },
-  { nom: 'NIS2',  description: 'Directive européenne sécurité des réseaux et systèmes', actif: true },
-  { nom: 'RGS',   description: 'Référentiel Général de Sécurité (ANSSI)', actif: true },
-  { nom: 'HDS',   description: 'Hébergeur de Données de Santé', actif: true },
-  { nom: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', actif: true },
-  { nom: 'SOC 2', description: 'Service Organization Control 2', actif: true },
-  { nom: 'LPM',   description: 'Loi de Programmation Militaire (OIV)', actif: true },
-  { nom: 'DORA',  description: 'Digital Operational Resilience Act (secteur financier)', actif: true },
-  { nom: 'CIS Controls v8', description: 'Center for Internet Security Controls', actif: true },
-  { nom: 'NIST CSF 2.0', description: 'NIST Cybersecurity Framework', actif: true },
+  { nom: 'ISO/IEC 27001:2022', description: "Système de Management de la Sécurité de l'Information", actif: true, code: 'ISO27001' },
+  { nom: 'ISO/IEC 27002:2022', description: "Mesures de sécurité de l'information", actif: true, code: null },
+  { nom: 'RGPD',  description: 'Règlement Général sur la Protection des Données', actif: true, code: null },
+  { nom: 'NIS2',  description: 'Directive européenne sécurité des réseaux et systèmes', actif: true, code: null },
+  { nom: 'RGS',   description: 'Référentiel Général de Sécurité (ANSSI)', actif: true, code: 'RGS' },
+  { nom: 'HDS',   description: 'Hébergeur de Données de Santé', actif: true, code: 'HDS' },
+  { nom: 'PCI-DSS', description: 'Payment Card Industry Data Security Standard', actif: true, code: 'PCI_DSS' },
+  { nom: 'SOC 2', description: 'Service Organization Control 2', actif: true, code: 'SOC2' },
+  { nom: 'LPM',   description: 'Loi de Programmation Militaire (OIV)', actif: true, code: null },
+  { nom: 'DORA',  description: 'Digital Operational Resilience Act (secteur financier)', actif: true, code: 'DORA' },
+  { nom: 'CIS Controls v8', description: 'Center for Internet Security Controls', actif: true, code: 'CIS_V8' },
+  { nom: 'NIST CSF 2.0', description: 'NIST Cybersecurity Framework', actif: true, code: 'NIST_CSF' },
 ]
