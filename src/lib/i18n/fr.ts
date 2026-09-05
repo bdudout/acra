@@ -2553,6 +2553,8 @@ export const fr = {
       radarP1:      'Couple prioritaire (P1)',
       radarPert1:   'faible',
       radarPert4:   'forte',
+      radarCouples: 'Couples SR/OV',
+      radarHint:    'Chaque point = 1 source de risque × 1 objectif visé. Distance au centre = pertinence de la source.',
       synthEmpty:   'Aucune source de risque retenue. Complétez l\'onglet "Saisie" d\'abord.',
       thSR:         'Source de risque (SR)',
       thCat:        'Catégorie',

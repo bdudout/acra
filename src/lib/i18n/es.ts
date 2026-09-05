@@ -2509,6 +2509,8 @@ export const es: Translations = {
       radarP1:      'Par prioritario (P1)',
       radarPert1:   'baja',
       radarPert4:   'alta',
+      radarCouples: 'Pares FR/OB',
+      radarHint:    'Cada punto = 1 fuente de riesgo × 1 objetivo perseguido. Distancia al centro = pertinencia de la fuente.',
       synthEmpty:   'No hay fuentes de riesgo retenidas. Complete primero la pestaña "Entrada".',
       thSR:         'Fuente de riesgo (FR)',
       thCat:        'Categoría',

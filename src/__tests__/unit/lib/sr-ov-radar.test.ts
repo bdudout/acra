@@ -29,18 +29,23 @@ describe('sr-ov-radar (cartographie des couples SR/OV, EXI_M2_09)', () => {
       expect(couples.map(c => c.ovNom)).toEqual(['Rançon', 'Revente'])
     })
 
-    it('reporte la catégorie de la source et la pertinence du couple (pertinenceOV prioritaire)', () => {
+    it('reporte la catégorie de la source ; le RAYON = pertinence de la SOURCE', () => {
       const [c1] = srOvCouples(sources)
       expect(c1.categorie).toBe('CYBERCRIMINEL')
       expect(c1.sourceNom).toBe('Cybercriminel')
       expect(c1.priorite).toBe('P1')
-      expect(c1.pertinence).toBe(4) // pertinenceOV
+      expect(c1.pertinence).toBe(3) // pertinence de la source (pertinenceOV non saisissable)
     })
 
-    it('retombe sur la pertinence de la source si le couple n\'en a pas', () => {
-      const src = [{ nom: 'X', categorie: 'AMATEUR', retenu: true, pertinence: 3,
-        objectifsVises: [{ id: 'z', nom: 'OV', priorite: 'P2' }] }]
-      expect(srOvCouples(src)[0].pertinence).toBe(3)
+    it('les deux couples d\'une même source partagent la pertinence de la source', () => {
+      const couples = srOvCouples(sources)
+      expect(couples[0].pertinence).toBe(couples[1].pertinence) // même source → même niveau
+    })
+
+    it('retombe sur pertinenceOV si la source n\'a pas de pertinence', () => {
+      const src = [{ nom: 'X', categorie: 'AMATEUR', retenu: true,
+        objectifsVises: [{ id: 'z', nom: 'OV', priorite: 'P2', pertinenceOV: 2 }] }]
+      expect(srOvCouples(src)[0].pertinence).toBe(2)
     })
   })
 

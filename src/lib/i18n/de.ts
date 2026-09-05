@@ -2509,6 +2509,8 @@ export const de: Translations = {
       radarP1:      'Prioritäres Paar (P1)',
       radarPert1:   'gering',
       radarPert4:   'hoch',
+      radarCouples: 'RQ/ZO-Paare',
+      radarHint:    'Jeder Punkt = 1 Risikoquelle × 1 angestrebtes Ziel. Abstand zur Mitte = Relevanz der Quelle.',
       synthEmpty:   'Keine Risikoquellen ausgewählt. Füllen Sie zuerst den Tab "Eingabe" aus.',
       thSR:         'Risikoquelle (RQ)',
       thCat:        'Kategorie',

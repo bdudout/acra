@@ -2509,6 +2509,8 @@ export const it: Translations = {
       radarP1:      'Coppia prioritaria (P1)',
       radarPert1:   'bassa',
       radarPert4:   'alta',
+      radarCouples: 'Coppie FR/OB',
+      radarHint:    'Ogni punto = 1 fonte di rischio × 1 obiettivo perseguito. Distanza dal centro = pertinenza della fonte.',
       synthEmpty:   'Nessuna fonte di rischio selezionata. Completare prima la scheda "Inserimento".',
       thSR:         'Fonte di rischio (FR)',
       thCat:        'Categoria',

@@ -39,8 +39,12 @@ export function srOvCouples(sources: SourceLike[] | null | undefined): SrOvCoupl
         sourceNom: String(s.nom ?? ''),
         categorie: String(s.categorie ?? ''),
         ovNom: String(ov.nom ?? ''),
-        // pertinence du couple si présente, sinon celle de la source.
-        pertinence: clampPert(ov.pertinenceOV ?? s.pertinence ?? 2),
+        // Le RAYON = pertinence de la SOURCE (valeur réellement cotée en Atelier 2 :
+        // motivation/ressources/activité). La pertinence par objectif (pertinenceOV)
+        // n'est pas saisissable dans l'UI — on ne l'utilise donc pas ici (sinon tous
+        // les couples se retrouvent au même niveau, cf. recette). Les couples d'une
+        // même source partagent leur pertinence, ce qui est normal.
+        pertinence: clampPert(s.pertinence ?? ov.pertinenceOV ?? 2),
         priorite: ov.priorite === 'P1' ? 'P1' : 'P2',
       })
     }

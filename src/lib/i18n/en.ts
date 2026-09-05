@@ -2509,6 +2509,8 @@ export const en: Translations = {
       radarP1:      'Priority pair (P1)',
       radarPert1:   'low',
       radarPert4:   'high',
+      radarCouples: 'RS/TO pairs',
+      radarHint:    'Each dot = 1 risk source × 1 targeted objective. Distance to centre = source relevance.',
       synthEmpty:   'No risk sources retained. Complete the "Entry" tab first.',
       thSR:         'Risk source (RS)',
       thCat:        'Category',
