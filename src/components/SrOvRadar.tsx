@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import {
   srOvCouples, coupleRadiusFor, categoriesInOrder, couplePointSector,
   sectorCenterAngle, type SrOvCouple,
@@ -42,6 +45,8 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
   categoryLabels: Record<string, string>
 }) {
   const couples: SrOvCouple[] = srOvCouples(sources)
+  // Point survolé → infobulle stylée (comme la cartographie de l'écosystème).
+  const [active, setActive] = useState<{ c: SrOvCouple; x: number; y: number; num: number } | null>(null)
 
   if (couples.length === 0) {
     return <p className="text-sm text-gray-400 dark:text-gray-500">{labels.empty}</p>
@@ -72,6 +77,7 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
   })
   // P1 dessinés en dernier (au-dessus).
   placed.sort((a, b) => (a.c.priorite === 'P1' ? 1 : 0) - (b.c.priorite === 'P1' ? 1 : 0))
+  const placedById = new Map(placed.map(p => [p.c.id, p]))
 
   const rInner = coupleRadiusFor(4, RMAX) // limite de la zone prioritaire (pertinence 4)
 
@@ -103,22 +109,53 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
             {labels.pertinence1}
           </text>
 
-          {/* Points : un par couple SR/OV, numéroté (renvoie à la liste à droite) */}
-          {placed.map(({ c, x, y, num }) => {
+          {/* Points : un par couple SR/OV, numéroté + infobulle au survol */}
+          {placed.map((item) => {
+            const { c, x, y, num } = item
             const isP1 = c.priorite === 'P1'
+            const isActive = active?.c.id === c.id
             return (
-              <g key={c.id}>
-                {isP1 && <circle cx={x} cy={y} r={10} fill={hexFor(c.categorie)} opacity={0.18} />}
-                <circle cx={x} cy={y} r={isP1 ? 6.5 : 5} fill={hexFor(c.categorie)}
+              <g key={c.id} tabIndex={0} role="button" className="cursor-default outline-none"
+                aria-label={`${num}. ${c.sourceNom} → ${c.ovNom} — ${pertinenceLabel} ${c.pertinence}/4 — ${c.priorite}`}
+                onMouseEnter={() => setActive(item)} onMouseLeave={() => setActive(null)}
+                onFocus={() => setActive(item)} onBlur={() => setActive(null)}>
+                {(isP1 || isActive) && <circle cx={x} cy={y} r={isActive ? 12 : 10} fill={hexFor(c.categorie)} opacity={0.18} />}
+                <circle cx={x} cy={y} r={isActive ? 7.5 : isP1 ? 6.5 : 5} fill={hexFor(c.categorie)}
                   stroke={isP1 ? '#111827' : '#ffffff'} strokeWidth={isP1 ? 1.5 : 1}
-                  className={isP1 ? 'dark:[stroke:#f9fafb]' : ''}>
-                  <title>{`${num}. ${c.sourceNom} → ${c.ovNom} — ${pertinenceLabel} ${c.pertinence}/4${isP1 ? ` (${labels.p1})` : ''}`}</title>
-                </circle>
-                <text x={x} y={y - (isP1 ? 9 : 8)} textAnchor="middle"
+                  className={`transition-all ${isP1 ? 'dark:[stroke:#f9fafb]' : ''}`} />
+                <text x={x} y={y - (isP1 || isActive ? 9 : 8)} textAnchor="middle"
                   className="fill-gray-600 dark:fill-gray-300" fontSize={9} fontWeight={700}>{num}</text>
               </g>
             )
           })}
+
+          {/* Infobulle au survol (rendue au-dessus, non interactive) */}
+          {active && (() => {
+            const tipW = 172, tipH = 74
+            let tx = active.x + 12
+            if (tx + tipW > VB) tx = active.x - 12 - tipW
+            tx = Math.max(2, Math.min(tx, VB - tipW))
+            let ty = active.y - tipH - 8
+            if (ty < 2) ty = active.y + 12
+            ty = Math.max(2, Math.min(ty, VB - tipH))
+            return (
+              <foreignObject x={tx} y={ty} width={tipW} height={tipH} pointerEvents="none" style={{ pointerEvents: 'none', overflow: 'visible' }}>
+                <div style={{ pointerEvents: 'none' }} className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[11px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded bg-gray-200 px-1 text-[10px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.num}</span>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: hexFor(active.c.categorie) }} aria-hidden />
+                    <span className="text-gray-500 dark:text-gray-400">{categoryLabels[active.c.categorie] ?? active.c.categorie}</span>
+                  </div>
+                  <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-100">{active.c.sourceNom}</div>
+                  <div className="text-gray-600 dark:text-gray-300">→ {active.c.ovNom}</div>
+                  <div className="mt-0.5 text-gray-600 dark:text-gray-300">
+                    {pertinenceLabel} {active.c.pertinence}/4
+                    {active.c.priorite === 'P1' && <span className="ml-1 font-semibold text-ebios-600 dark:text-ebios-300">· {labels.p1}</span>}
+                  </div>
+                </div>
+              </foreignObject>
+            )
+          })()}
         </svg>
       </div>
 
@@ -131,7 +168,10 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
         </div>
         <ol className="space-y-1">
           {ordered.map(c => (
-            <li key={c.id} className="flex items-start gap-2">
+            <li key={c.id}
+              className={`flex items-start gap-2 rounded px-1 -mx-1 cursor-default transition-colors ${active?.c.id === c.id ? 'bg-ebios-50 dark:bg-ebios-500/15' : ''}`}
+              onMouseEnter={() => { const p = placedById.get(c.id); if (p) setActive(p) }}
+              onMouseLeave={() => setActive(null)}>
               <span className="w-4 text-right tabular-nums text-gray-400 dark:text-gray-500 flex-shrink-0">{numById.get(c.id)}</span>
               <span className="w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0" style={{ backgroundColor: hexFor(c.categorie) }} aria-hidden />
               <span className="text-gray-700 dark:text-gray-200">
