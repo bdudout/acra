@@ -24,7 +24,7 @@
  *  - flashMode   : mode « Flash » — conserve le flag dans la navigation vers A3
  */
 
-import { BarChart3, Bot, CheckCircle2, Clock, Sparkles, Star, Target, VenetianMask, Zap } from 'lucide-react'
+import { AlertTriangle, BarChart3, Bot, CheckCircle2, Clock, Sparkles, Star, Target, VenetianMask, Zap } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
@@ -51,15 +51,15 @@ interface Props {
 
 // Static color map for categories (keys don't change with locale)
 const CATEGORY_COLORS: Record<string, string> = {
-  CYBERCRIMINEL:       'bg-red-100 text-red-700',
-  ETAT_NATION:         'bg-purple-100 text-purple-700',
-  CONCURRENT:          'bg-orange-100 text-orange-700',
-  ACTIVISTE:           'bg-yellow-100 text-yellow-700',
-  EMPLOYE_MALVEILLANT: 'bg-rose-100 text-rose-700',
-  PRESTATAIRE:         'bg-blue-100 text-blue-700',
-  AMATEUR:             'bg-gray-100 text-gray-600',
-  TERRORISTE:          'bg-red-200 text-red-800',
-  AUTRE:               'bg-gray-100 text-gray-600',
+  CYBERCRIMINEL:       'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200',
+  ETAT_NATION:         'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-200',
+  CONCURRENT:          'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200',
+  ACTIVISTE:           'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-200',
+  EMPLOYE_MALVEILLANT: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200',
+  PRESTATAIRE:         'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200',
+  AMATEUR:             'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300',
+  TERRORISTE:          'bg-red-200 text-red-800 dark:bg-red-500/25 dark:text-red-100',
+  AUTRE:               'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300',
 }
 
 export default function Atelier2({ analyseId, initialData, analyse, flashMode }: Props) {
@@ -127,6 +127,20 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
   // [IA — désactivé] const [aiLoading, setAiLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'saisie' | 'synthese'>('saisie')
   const [showSrExamples, setShowSrExamples] = useState(true)
+  // Garde-fou EBIOS : une SR retenue SANS objectif visé ne forme aucun couple SR/OV.
+  // On empêche de passer à l'étape SR/OV tant que ce n'est pas complété, et on met
+  // les SR concernées en surbrillance (recette comité).
+  const [ovWarning, setOvWarning] = useState(false)
+  function goToCouples() {
+    const manquantes = sources.filter(s => s.retenu && !(s.objectifsVises?.length))
+    if (manquantes.length > 0) {
+      setOvWarning(true)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      return
+    }
+    setOvWarning(false)
+    setActiveTab('synthese')
+  }
 
   function addSource(exemple?: any) {
     const id = uid()
@@ -263,6 +277,12 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
 
       {activeTab === 'saisie' && (
         <>
+          {ovWarning && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>{t.workshop.a2.ovRequired}</span>
+            </div>
+          )}
           {/* [IA — désactivé] Bloc de suggestions IA à réactiver quand l'intégration sera prête.
           <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl">
             <span className="text-2xl"><Bot size={24} aria-hidden="true" /></span>
@@ -341,7 +361,13 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                 const cat = CATEGORIES.find(c => c.value === s.categorie)
                 const expanded = expandedId === s.id
                 return (
-                  <div key={s.id} className={`border rounded-xl overflow-hidden ${s.retenu ? 'border-gray-200' : 'border-gray-100 opacity-60'}`}>
+                  <div key={s.id} className={`border rounded-xl overflow-hidden ${
+                    s.retenu
+                      ? (ovWarning && !(s.objectifsVises?.length)
+                          ? 'border-amber-400 ring-1 ring-amber-300 dark:border-amber-500/60 dark:ring-amber-500/40'
+                          : 'border-gray-200')
+                      : 'border-gray-100 opacity-60'
+                  }`}>
                     <div
                       role="button"
                       tabIndex={0}
@@ -637,7 +663,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
       )}
 
       {activeTab === 'saisie' ? (
-        <button onClick={() => setActiveTab('synthese')} className="btn-primary w-full text-base py-3">
+        <button onClick={goToCouples} className="btn-primary w-full text-base py-3">
           {t.workshop.a2.nextCouples}
         </button>
       ) : (
