@@ -561,6 +561,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                   p1: t.workshop.a2.radarP1,
                   pertinence1: t.workshop.a2.radarPert1,
                   pertinence4: t.workshop.a2.radarPert4,
+                  couplesTitle: t.workshop.a2.radarCouples,
+                  hint: t.workshop.a2.radarHint,
                 }}
               />
             </div>
