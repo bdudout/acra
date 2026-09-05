@@ -2722,6 +2722,7 @@ export const en: Translations = {
       scenSummaryRetenu: 'scenario(s) retained out of',
       scenSummaryTotal:  'identified.',
       nextMesures:       'Go to ecosystem measures →',
+      scenErRequired:    'Each strategic scenario must be linked to at least one feared event. Complete the highlighted scenarios before continuing.',
     },
     a4: {
       title:        'Workshop 4 — Operational scenarios',
@@ -2785,6 +2786,7 @@ export const en: Translations = {
       desc:         'Link each risk to an operational scenario and a feared event, choose a treatment strategy, document residual vulnerabilities and aggravating factors, then assess the residual risk.',
       risquesTitle: 'Risk profiles',
       mesuresTitle: 'Security measures',
+      erRisqueRequired: 'Each risk must be linked to a feared event. Complete the highlighted risks before moving to measures.',
       planTitle:    'Risk treatment plan summary',
       stratLabel:   'Treatment strategy',
       residualLabel:'Residual level',

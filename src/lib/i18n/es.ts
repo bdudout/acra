@@ -2722,6 +2722,7 @@ export const es: Translations = {
       scenSummaryRetenu: 'escenario(s) retenido(s) de',
       scenSummaryTotal:  'identificado(s).',
       nextMesures:       'Ir a las medidas del ecosistema →',
+      scenErRequired:    'Cada escenario estratégico debe estar vinculado a al menos un evento temido. Complete los escenarios resaltados antes de continuar.',
     },
     a4: {
       title:        'Taller 4 — Escenarios operativos',
@@ -2785,6 +2786,7 @@ export const es: Translations = {
       desc:         'Vincula cada riesgo a un escenario operativo y un evento temido, elige una estrategia de tratamiento, documenta las vulnerabilidades residuales y factores agravantes, luego evalúa el riesgo residual.',
       risquesTitle: 'Perfiles de riesgo',
       mesuresTitle: 'Medidas de seguridad',
+      erRisqueRequired: 'Cada riesgo debe estar vinculado a un evento temido. Complete los riesgos resaltados antes de pasar a las medidas.',
       planTitle:    'Resumen del plan de tratamiento del riesgo',
       stratLabel:   'Estrategia de tratamiento',
       residualLabel:'Nivel residual',

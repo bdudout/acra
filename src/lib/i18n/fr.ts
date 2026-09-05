@@ -2767,6 +2767,7 @@ export const fr = {
       scenSummaryRetenu: 'scénario(s) retenu(s) sur',
       scenSummaryTotal:  'identifié(s).',
       nextMesures:       'Passer aux mesures de l\'écosystème →',
+      scenErRequired:    'Chaque scénario stratégique doit être rattaché à au moins un événement redouté. Complétez les scénarios en surbrillance avant de continuer.',
     },
     // Atelier 4
     a4: {
@@ -2832,6 +2833,7 @@ export const fr = {
       desc:         "Liez chaque risque à un scénario opérationnel et un événement redouté, choisissez une stratégie de traitement, documentez les vulnérabilités résiduelles et facteurs aggravants, puis évaluez le risque résiduel.",
       risquesTitle: 'Fiches de risque',
       mesuresTitle: 'Mesures de sécurité',
+      erRisqueRequired: 'Chaque risque doit être rattaché à un événement redouté. Complétez les risques en surbrillance avant de passer aux mesures.',
       planTitle:    "Synthèse du plan de traitement du risque",
       stratLabel:   'Stratégie de traitement',
       residualLabel:'Niveau résiduel',

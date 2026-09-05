@@ -217,6 +217,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     })
   })
   const [expanded, setExpanded] = useState<string | null>(null)
+  // Garde-fou : chaque scénario stratégique doit être rattaché à ≥1 événement redouté
+  // avant de passer aux mesures de l'écosystème (recette).
+  const [erGateWarning, setErGateWarning] = useState(false)
+  function goToMesures() {
+    const sansEr = scenarios.filter(s => erIdsOf(s).length === 0)
+    if (sansEr.length > 0) {
+      setErGateWarning(true)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      return
+    }
+    setErGateWarning(false)
+    setTab('mesures')
+  }
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -692,6 +705,12 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
               {couplesDisponibles.length === 0 && <strong className="text-orange-700"> {t.workshop.a3.scenNoCouples}</strong>}
             </p>
           </div>
+          {erGateWarning && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>{t.workshop.a3.scenErRequired}</span>
+            </div>
+          )}
 
           {/* ── Propositions par critère DICT ─────────────────────────── */}
           <div className="card p-5">
@@ -778,7 +797,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
 
             <div className="space-y-3">
               {scenarios.map(s => (
-                <div key={s.id} className={`border rounded-xl overflow-hidden ${s.retenu ? 'border-gray-200' : 'border-gray-100 opacity-60'}`}>
+                <div key={s.id} className={`border rounded-xl overflow-hidden ${
+                  erGateWarning && erIdsOf(s).length === 0
+                    ? 'border-amber-400 ring-1 ring-amber-300 dark:border-amber-500/60 dark:ring-amber-500/40'
+                    : s.retenu ? 'border-gray-200' : 'border-gray-100 opacity-60'
+                }`}>
                   <div
                     role="button"
                     tabIndex={0}
@@ -1077,7 +1100,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
             </p>
           </div>
 
-          <button onClick={() => setTab('mesures')} className="btn-primary w-full text-base py-3">
+          <button onClick={goToMesures} className="btn-primary w-full text-base py-3">
             {t.workshop.a3.nextMesures}
           </button>
         </div>

@@ -2722,6 +2722,7 @@ export const de: Translations = {
       scenSummaryRetenu: 'Szenario(en) ausgewählt von',
       scenSummaryTotal:  'identifiziert.',
       nextMesures:       'Zu den Ökosystem-Maßnahmen →',
+      scenErRequired:    'Jedes strategische Szenario muss mit mindestens einem befürchteten Ereignis verknüpft sein. Vervollständigen Sie die hervorgehobenen Szenarien, bevor Sie fortfahren.',
     },
     a4: {
       title:        'Workshop 4 — Operative Szenarien',
@@ -2785,6 +2786,7 @@ export const de: Translations = {
       desc:         'Verknüpfen Sie jedes Risiko mit einem operativen Szenario und einem befürchteten Ereignis, wählen Sie eine Behandlungsstrategie, dokumentieren Sie Restrisiken und Erschwerungsfaktoren, und bewerten Sie das Restrisiko.',
       risquesTitle: 'Risikoprofile',
       mesuresTitle: 'Sicherheitsmaßnahmen',
+      erRisqueRequired: 'Jedes Risiko muss mit einem befürchteten Ereignis verknüpft sein. Vervollständigen Sie die hervorgehobenen Risiken, bevor Sie zu den Maßnahmen übergehen.',
       planTitle:    'Zusammenfassung des Risikobehandlungsplans',
       stratLabel:   'Behandlungsstrategie',
       residualLabel:'Restrisiko',

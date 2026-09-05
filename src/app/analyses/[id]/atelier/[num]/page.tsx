@@ -133,6 +133,9 @@ export default async function AtelierPage({
     redirect(`/analyses/${id}?qualif=required`)
   }
   let nonConfItems: { ref: string; nom: string; statut: ConformiteStatut; commentaire?: string }[] = []
+  // Statut de conformité (Atelier 1) par référence de contrôle → réutilisé à l'Atelier 5
+  // pour préremplir le statut des mesures importées (conforme=réalisé, partiel=en cours…).
+  let conformiteByRef: Record<string, ConformiteStatut> = {}
   // Conformité EFFECTIVE : niveau ORGANISATION (entité), sinon propre à l'analyse
   // ou héritée du socle (Palier 1). Résolution centralisée (org-aware).
   const socleAnalyse = (analyse as any).socle as { id: string; nom: string; referentielMesures?: string; cadrage?: { socleSecurite?: unknown; customControles?: unknown } } | null
@@ -168,6 +171,7 @@ export default async function AtelierPage({
       statut: nc.statut,
       commentaire: nc.commentaire,
     }))
+    conformiteByRef = Object.fromEntries(confEntries.map(e => [e.ref, e.statut]))
   }
   const showCatalogue = conformiteActive && (atelierNum === 3 || atelierNum === 4)
 
@@ -309,6 +313,7 @@ export default async function AtelierPage({
                 flashMode={flashMode}
                 scaleConfig={await getEffectiveScaleConfig((analyse as any).organizationId)}
                 nonConformites={nonConfItems}
+                conformiteByRef={conformiteByRef}
               />
             )}
           </div>

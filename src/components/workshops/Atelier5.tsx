@@ -64,6 +64,8 @@ interface Props {
   scaleConfig?: ScaleConfig | null
   /** Écarts du socle (non-conformités) à traiter, importables comme mesures (issue #3). */
   nonConformites?: { ref: string; nom: string; statut: string; commentaire?: string }[]
+  /** Statut de conformité (Atelier 1) par réf. de contrôle → prérempli le statut des mesures importées. */
+  conformiteByRef?: Record<string, string>
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -83,7 +85,15 @@ const stratColors: Record<string, string> = {
   SURVEILLER: 'bg-purple-100 text-purple-700',
 }
 
-export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig, nonConformites = [] }: Props) {
+// Statut d'une mesure importée, déduit de la conformité cotée à l'Atelier 1 :
+// conforme → réalisé · partiel → en cours · sinon (non conforme / non évalué) → à faire.
+function statutMesureFromConf(confStatut: string | undefined): 'A_FAIRE' | 'EN_COURS' | 'REALISE' {
+  if (confStatut === 'conforme') return 'REALISE'
+  if (confStatut === 'partiel') return 'EN_COURS'
+  return 'A_FAIRE'
+}
+
+export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig, nonConformites = [], conformiteByRef = {} }: Props) {
   const router = useRouter()
   const { t } = useTranslation()
   const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
@@ -116,6 +126,18 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     s === 'mesures' ? 'mesures' : s === 'synthese' ? 'synthese' : 'risques'
 
   const [tab, setTab] = useState<'risques' | 'mesures' | 'synthese'>(() => validTab(initialTab))
+  // Garde-fou : tout risque doit être rattaché à un événement redouté avant les mesures.
+  const [erRisqueWarning, setErRisqueWarning] = useState(false)
+  function goToMesures5() {
+    const sansEr = risques.filter(r => !r.evenementRedouteRef)
+    if (sansEr.length > 0) {
+      setErRisqueWarning(true)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      return
+    }
+    setErRisqueWarning(false)
+    setTab('mesures')
+  }
   // ID de la mesure à mettre en évidence après navigation depuis /actions
   const [highlightId, setHighlightId] = useState<string | null>(null)
 
@@ -193,6 +215,21 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
 
   // Scénarios opérationnels pour lien de traçabilité
   const scenariosOp: any[] = analyse?.scenariosOperationnels || []
+  const scenariosStrat: any[] = analyse?.scenariosStrategiques || []
+  // Événement redouté déjà configuré pour un scénario opérationnel : porté par le SO,
+  // sinon récupéré via son scénario stratégique (ER lié en Atelier 3). Évite de
+  // redemander l'ER pour chaque risque (recette).
+  function erRefForSO(so: any): string {
+    if (!so) return ''
+    if (so.evenementRedouteRef) return String(so.evenementRedouteRef)
+    const ss = scenariosStrat.find((x: any) => x.id === so.scenarioStrategiqueId)
+    if (ss) {
+      const ids = Array.isArray(ss.evenementsRedoutesIds) ? ss.evenementsRedoutesIds
+        : (ss.evenementRedouteRef ? [ss.evenementRedouteRef] : [])
+      return ids[0] ? String(ids[0]) : ''
+    }
+    return ''
+  }
   // Événements redoutés de l'atelier 1
   const evenementsRedoutes: any[] = analyse?.cadrage?.evenementsRedoutes || []
   // EBIOS RM peut valoir AIPD (RGPD art. 35) si données particulières (art. 9) en jeu
@@ -214,7 +251,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       description: '',
       scenarioOpId: defaultSO?.id || '',
       scenarioOpNom: defaultSO?.nom || '',
-      evenementRedouteRef: defaultSO?.evenementRedouteRef || '',
+      evenementRedouteRef: erRefForSO(defaultSO),
       gravite: defaultSO?.gravite || 3,
       vraisemblance: defaultSO?.vraisemblance || 2,
       niveauRisque: (defaultSO?.gravite || 3) * (defaultSO?.vraisemblance || 2),
@@ -247,6 +284,9 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
           up.gravite = so.gravite
           up.vraisemblance = so.vraisemblance
           up.niveauRisque = so.gravite * so.vraisemblance
+          // Récupère l'ER déjà configuré pour ce scénario (sans écraser un choix manuel).
+          const er = erRefForSO(so)
+          if (er) up.evenementRedouteRef = er
         }
       }
       return up
@@ -301,7 +341,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       type: 'ORGANISATIONNELLE',
       categorieEbios: 'GOUVERNANCE',
       priorite: nc.statut === 'non_conforme' ? 1 : 2,
-      statut: 'A_FAIRE',
+      statut: statutMesureFromConf(nc.statut),
       responsable: '',
       entite: '',
       echeance: defaultEcheance(),
@@ -321,7 +361,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
            : controle.type === 'PHYSIQUE'      ? 'ORGANISATIONNELLE'
            : controle.type,
       priorite: 2,
-      statut: 'A_FAIRE',
+      statut: statutMesureFromConf(conformiteByRef[controle.ref]),
       responsable: '',
       entite: '',
       echeance: defaultEcheance(),
@@ -380,6 +420,12 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       {/* ── RISQUES ─────────────────────────────────────────────────────── */}
       {tab === 'risques' && (
         <div className="space-y-4">
+          {erRisqueWarning && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>{t.workshop.a5.erRisqueRequired}</span>
+            </div>
+          )}
           {/* Import depuis scénarios opérationnels (A4 réalisé, y compris en mode Flash) */}
           {scenariosOp.length > 0 && (
             <div className="card p-4">
@@ -427,7 +473,11 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                 const reduction = r.niveauResiduel ? Math.round(((r.niveauRisque - r.niveauResiduel) / r.niveauRisque) * 100) : 0
 
                 return (
-                  <div key={r.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div key={r.id} className={`border rounded-xl overflow-hidden ${
+                    erRisqueWarning && !r.evenementRedouteRef
+                      ? 'border-amber-400 ring-1 ring-amber-300 dark:border-amber-500/60 dark:ring-amber-500/40'
+                      : 'border-gray-200'
+                  }`}>
                     <div
                       role="button"
                       tabIndex={0}
@@ -634,7 +684,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               })}
             </div>
           </div>
-          <button onClick={() => setTab('mesures')} className="btn-primary">{`${t.workshop.a5.mesuresTitle} →`}</button>
+          <button onClick={goToMesures5} className="btn-primary">{`${t.workshop.a5.mesuresTitle} →`}</button>
         </div>
       )}
 
