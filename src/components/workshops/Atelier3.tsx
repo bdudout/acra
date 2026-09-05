@@ -704,10 +704,10 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                 <p className="text-xs text-gray-500 mb-3">{t.workshop.a3.scenExInfo}</p>
                 {(['D', 'I', 'C', 'T'] as const).map(critere => {
                   const critColors: Record<string, string> = {
-                    D: 'border-green-200 bg-green-50',
-                    I: 'border-blue-200 bg-blue-50',
-                    C: 'border-red-200 bg-red-50',
-                    T: 'border-yellow-200 bg-yellow-50',
+                    D: 'border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-500/10',
+                    I: 'border-blue-200 bg-blue-50 dark:border-blue-500/30 dark:bg-blue-500/10',
+                    C: 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10',
+                    T: 'border-yellow-200 bg-yellow-50 dark:border-yellow-500/30 dark:bg-yellow-500/10',
                   }
                   const critLabels: Record<string, string> = {
                     D: 'D — Disponibilité',
@@ -720,8 +720,8 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                   return (
                     <div key={critere} className={`mb-3 border rounded-lg p-3 ${critColors[critere]}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-700">{critLabels[critere]}</span>
-                        {alreadyHas && <span className="text-xs text-green-600 font-medium">✓ {t.workshop.a3.scenExCritere} couvert</span>}
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-100">{critLabels[critere]}</span>
+                        {alreadyHas && <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ {t.workshop.a3.scenExCritere} couvert</span>}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {exemples.map((ex, i) => {
@@ -733,16 +733,16 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                               disabled={alreadyAdded}
                               className={`text-left p-2.5 rounded-lg border transition-colors text-xs ${
                                 alreadyAdded
-                                  ? 'border-gray-200 bg-white opacity-50 cursor-not-allowed'
-                                  : 'border-dashed border-gray-300 bg-white hover:border-ebios-400 hover:bg-ebios-50 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20 cursor-pointer'
+                                  ? 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 opacity-50 cursor-not-allowed'
+                                  : 'border-dashed border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 hover:border-ebios-400 hover:bg-ebios-50 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20 cursor-pointer'
                               }`}
                             >
                               {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
-                              <div className="font-medium text-gray-700 mb-1 leading-tight">{ex.nom}</div>
-                              <div className="text-gray-500 leading-tight">{ex.description.slice(0, 80)}…</div>
+                              <div className="font-medium text-gray-700 dark:text-gray-100 mb-1 leading-tight">{ex.nom}</div>
+                              <div className="text-gray-500 dark:text-gray-400 leading-tight">{ex.description.slice(0, 80)}…</div>
                               <div className="flex gap-2 mt-1.5">
-                                <span className="text-gray-500">V{ex.vraisemblanceDefaut}</span>
-                                <span className="text-gray-500">G{ex.graviteDefaut}</span>
+                                <span className="text-gray-500 dark:text-gray-400">V{ex.vraisemblanceDefaut}</span>
+                                <span className="text-gray-500 dark:text-gray-400">G{ex.graviteDefaut}</span>
                                 <span className={`font-medium ${ex.vraisemblanceDefaut * ex.graviteDefaut >= 8 ? 'text-red-600' : 'text-yellow-600'}`}>
                                   ={ex.vraisemblanceDefaut * ex.graviteDefaut}
                                 </span>

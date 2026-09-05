@@ -9,14 +9,13 @@ import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/perm
 import { buildNav, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
-import { useTheme, type ThemeMode } from '@/lib/theme'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, Sun, Moon, Monitor, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -24,7 +23,6 @@ export default function Navbar() {
   const pathname = usePathname()
   const { t } = useTranslation()
   const branding = useBranding()
-  const { theme, setTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   // Un seul groupe déroulant ouvert à la fois (identifiant), + sa position viewport.
   // Les menus sont rendus en `fixed` pour ÉCHAPPER au clipping de la barre
@@ -285,33 +283,8 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                <hr className="my-1 border-gray-100" aria-hidden="true" />
-
-                {/* Bascule de thème rapide (Clair / Sombre / Auto) — câblée sur useTheme */}
-                <div className="px-3 py-2">
-                  <div className="text-[11px] text-gray-400 mb-1">{t.profile.themeTitle}</div>
-                  <div className="flex gap-1" role="group" aria-label={t.profile.themeTitle}>
-                    {([
-                      { value: 'light',  Icon: Sun,     label: t.profile.themeLight },
-                      { value: 'dark',   Icon: Moon,    label: t.profile.themeDark },
-                      { value: 'system', Icon: Monitor, label: t.profile.themeSystem },
-                    ] as { value: ThemeMode; Icon: LucideIcon; label: string }[]).map(({ value, Icon, label }) => (
-                      <button
-                        key={value}
-                        onClick={() => setTheme(value)}
-                        aria-pressed={theme === value}
-                        title={label}
-                        className={`flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          theme === value ? 'bg-ebios-100 text-ebios-700' : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Icon size={14} aria-hidden="true" />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+                {/* Le sélecteur de thème (peu utilisé) vit dans « Mon profil »,
+                    pas dans ce menu — cf. recette comité. */}
                 <hr className="my-1 border-gray-100" aria-hidden="true" />
 
                 <button

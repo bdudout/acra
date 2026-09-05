@@ -108,14 +108,14 @@ export const TYPES_BIEN_SUPPORT = [
 
 // Catégories de biens supports avec couleurs Tailwind
 export const CATEGORIES_BIENS_SUPPORTS = [
-  { value: 'MATERIEL',       label: 'Matériel',                emoji: '🖥️',  color: 'bg-blue-100   text-blue-800   border-blue-200'   },
-  { value: 'LOGICIEL',       label: 'Logiciel',                emoji: '💿',  color: 'bg-purple-100 text-purple-800 border-purple-200' },
-  { value: 'RESEAU',         label: 'Réseau',                  emoji: '🌐',  color: 'bg-cyan-100   text-cyan-800   border-cyan-200'   },
-  { value: 'DONNEES',        label: 'Données',                 emoji: '🗄️',  color: 'bg-amber-100  text-amber-800  border-amber-200'  },
-  { value: 'PERSONNEL',      label: 'Personnel',               emoji: '👤',  color: 'bg-green-100  text-green-800  border-green-200'  },
-  { value: 'SITE',           label: 'Site / Bâtiment',        emoji: '🏢',  color: 'bg-orange-100 text-orange-800 border-orange-200' },
-  { value: 'ORGANISATION',   label: 'Organisation / Processus',emoji: '⚙️',  color: 'bg-gray-100   text-gray-800   border-gray-200'   },
-  { value: 'SOUS_TRAITANCE', label: 'Cloud / Sous-traitance', emoji: '☁️',  color: 'bg-sky-100    text-sky-800    border-sky-200'    },
+  { value: 'MATERIEL',       label: 'Matériel',                emoji: '🖥️',  color: 'bg-blue-100   text-blue-800   border-blue-200   dark:bg-blue-500/15   dark:text-blue-200   dark:border-blue-500/30'   },
+  { value: 'LOGICIEL',       label: 'Logiciel',                emoji: '💿',  color: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-500/15 dark:text-purple-200 dark:border-purple-500/30' },
+  { value: 'RESEAU',         label: 'Réseau',                  emoji: '🌐',  color: 'bg-cyan-100   text-cyan-800   border-cyan-200   dark:bg-cyan-500/15   dark:text-cyan-200   dark:border-cyan-500/30'   },
+  { value: 'DONNEES',        label: 'Données',                 emoji: '🗄️',  color: 'bg-amber-100  text-amber-800  border-amber-200  dark:bg-amber-500/15  dark:text-amber-200  dark:border-amber-500/30'  },
+  { value: 'PERSONNEL',      label: 'Personnel',               emoji: '👤',  color: 'bg-green-100  text-green-800  border-green-200  dark:bg-green-500/15  dark:text-green-200  dark:border-green-500/30'  },
+  { value: 'SITE',           label: 'Site / Bâtiment',        emoji: '🏢',  color: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-500/15 dark:text-orange-200 dark:border-orange-500/30' },
+  { value: 'ORGANISATION',   label: 'Organisation / Processus',emoji: '⚙️',  color: 'bg-gray-100   text-gray-800   border-gray-200   dark:bg-gray-500/20   dark:text-gray-200   dark:border-gray-500/40'   },
+  { value: 'SOUS_TRAITANCE', label: 'Cloud / Sous-traitance', emoji: '☁️',  color: 'bg-sky-100    text-sky-800    border-sky-200    dark:bg-sky-500/15    dark:text-sky-200    dark:border-sky-500/30'    },
 ] as const
 
 export type CategorieBienSupport = typeof CATEGORIES_BIENS_SUPPORTS[number]['value']

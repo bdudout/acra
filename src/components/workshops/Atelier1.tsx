@@ -156,6 +156,13 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   // Confirmation non bloquante avant de passer à l'Atelier 2 si données minimales manquantes
   const [pendingProceed, setPendingProceed] = useState(false)
   const [activeTab, setActiveTab] = useState<'perimetre' | 'vm' | 'biens' | 'er' | 'socle'>('perimetre')
+  // Changer d'onglet (les boutons « Suivant » sont en bas de page) doit ramener
+  // en haut du nouvel écran — sinon on arrive au milieu (recette comité).
+  const didMountTab = useRef(false)
+  useEffect(() => {
+    if (!didMountTab.current) { didMountTab.current = true; return }
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [activeTab])
   const [showVmExamples, setShowVmExamples] = useState(true)
   const [showBsExamples, setShowBsExamples] = useState(true)
   const [showErExamples, setShowErExamples] = useState(true)
