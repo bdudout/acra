@@ -80,3 +80,53 @@ export function couplePoint(
     y: geom.cy - r * Math.cos(theta),
   }
 }
+
+// ─── Cartographie améliorée : l'ANGLE encode la catégorie de source ──────────
+// Chaque catégorie de source occupe un SECTEUR angulaire (une « part de camembert »),
+// dans lequel ses couples sont répartis symétriquement. Le rayon reste la pertinence
+// (centre = fort). Ainsi la position angulaire devient lisible : « ce secteur = tel
+// type de source », et les couples d'une même source sont regroupés.
+
+/** Catégories présentes, dans l'ordre stable d'apparition. */
+export function categoriesInOrder(couples: SrOvCouple[]): string[] {
+  const seen: string[] = []
+  for (const c of couples) if (!seen.includes(c.categorie)) seen.push(c.categorie)
+  return seen
+}
+
+/** Angle (radians, 0 = haut, horaire) du centre du secteur d'une catégorie. */
+export function sectorCenterAngle(catIndex: number, nCats: number): number {
+  const nc = Math.max(1, nCats)
+  return ((catIndex + 0.5) / nc) * 2 * Math.PI
+}
+
+/**
+ * Position d'un couple : angle = secteur de sa catégorie + répartition interne
+ * (±40 % du secteur), rayon = pertinence. `localIndex`/`localCount` = rang du
+ * couple parmi ceux de la même catégorie.
+ */
+export function couplePointSector(
+  catIndex: number, nCats: number,
+  localIndex: number, localCount: number,
+  pertinence: number,
+  geom: { cx: number; cy: number; rMax: number },
+): { x: number; y: number } {
+  const sector = (2 * Math.PI) / Math.max(1, nCats)
+  const lc = Math.max(1, localCount)
+  const offset = lc === 1 ? 0 : (localIndex / (lc - 1) - 0.5) * (sector * 0.8)
+  const theta = sectorCenterAngle(catIndex, nCats) + offset
+  const r = coupleRadiusFor(pertinence, geom.rMax)
+  return { x: geom.cx + r * Math.sin(theta), y: geom.cy - r * Math.cos(theta) }
+}
+
+/** Point + ancrage texte pour le libellé d'une catégorie, à la périphérie du secteur. */
+export function sectorLabelPoint(
+  catIndex: number, nCats: number,
+  geom: { cx: number; cy: number; rMax: number }, pad = 16,
+): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
+  const a = sectorCenterAngle(catIndex, nCats)
+  const r = geom.rMax + pad
+  const sinA = Math.sin(a)
+  const anchor: 'start' | 'middle' | 'end' = Math.abs(sinA) < 0.3 ? 'middle' : (sinA > 0 ? 'start' : 'end')
+  return { x: geom.cx + r * sinA, y: geom.cy - r * Math.cos(a), anchor }
+}
