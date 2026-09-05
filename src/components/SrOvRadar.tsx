@@ -1,4 +1,7 @@
-import { srOvCouples, couplePoint, coupleRadiusFor, type SrOvCouple } from '@/lib/sr-ov-radar'
+import {
+  srOvCouples, coupleRadiusFor, categoriesInOrder, couplePointSector,
+  sectorLabelPoint, sectorCenterAngle, type SrOvCouple,
+} from '@/lib/sr-ov-radar'
 
 // Couleurs (hex) par catégorie de source — cohérentes avec CATEGORY_COLORS d'Atelier2.
 const CAT_HEX: Record<string, string> = {
@@ -14,15 +17,22 @@ const CAT_HEX: Record<string, string> = {
 }
 const hexFor = (cat: string) => CAT_HEX[cat] ?? '#6b7280'
 
-const SIZE = 320
-const CX = SIZE / 2
-const CY = SIZE / 2
-const RMAX = 132
+// Repère plus grand + marge pour les libellés de catégorie en périphérie.
+const SIZE = 300
+const PAD = 58
+const VB = SIZE + PAD * 2
+const CX = VB / 2
+const CY = VB / 2
+const RMAX = SIZE / 2 - 6
+const GEOM = { cx: CX, cy: CY, rMax: RMAX }
 
 /**
- * Cartographie de type radar des couples SR/OV (EXI_M2_09) : chaque couple source
- * de risque / objectif visé est un point, coloré par catégorie de source ; plus il
- * est central, plus il est pertinent (prioritaire). Les couples P1 sont accentués.
+ * Cartographie « cible » des couples SR/OV (EXI_M2_09). Améliorations UX :
+ *  - le RAYON encode la pertinence (centre = prioritaire) ;
+ *  - l'ANGLE encode la CATÉGORIE de source (un secteur + un libellé par catégorie)
+ *    → la position devient lisible et les couples d'une même source sont regroupés ;
+ *  - la zone centrale (prioritaire) est teintée ; les couples P1 sont fortement
+ *    accentués (halo + anneau + nom) ; rendu compatible thème sombre.
  */
 export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
   sources: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -31,60 +41,106 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
   categoryLabels: Record<string, string>
 }) {
   const couples: SrOvCouple[] = srOvCouples(sources)
-  const geom = { cx: CX, cy: CY, rMax: RMAX }
 
   if (couples.length === 0) {
-    return <p className="text-sm text-gray-400">{labels.empty}</p>
+    return <p className="text-sm text-gray-400 dark:text-gray-500">{labels.empty}</p>
   }
 
-  // Catégories présentes (pour la légende).
-  const cats = Array.from(new Set(couples.map(c => c.categorie)))
+  const cats = categoriesInOrder(couples)
+  const nCats = cats.length
+  // Rang local de chaque couple au sein de sa catégorie (pour la répartition angulaire).
+  const localIndex = new Map<string, number>()
+  const localCount = new Map<string, number>()
+  for (const cat of cats) localCount.set(cat, couples.filter(c => c.categorie === cat).length)
+  const seen: Record<string, number> = {}
+  const placed = couples.map(c => {
+    const i = seen[c.categorie] ?? 0
+    seen[c.categorie] = i + 1
+    localIndex.set(c.id, i)
+    const ci = cats.indexOf(c.categorie)
+    return { c, ...couplePointSector(ci, nCats, i, localCount.get(c.categorie) ?? 1, c.pertinence, GEOM) }
+  })
+  // P1 dessinés en dernier (au-dessus).
+  placed.sort((a, b) => (a.c.priorite === 'P1' ? 1 : 0) - (b.c.priorite === 'P1' ? 1 : 0))
+
+  const rInner = coupleRadiusFor(4, RMAX) // limite de la zone prioritaire (pertinence 4)
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start">
-      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full max-w-[320px] flex-shrink-0" role="img" aria-label={pertinenceLabel}>
-        {/* Anneaux de pertinence (4 = centre, 1 = périphérie) */}
-        {[1, 2, 3, 4].map(p => (
-          <circle key={p} cx={CX} cy={CY} r={coupleRadiusFor(p, RMAX)} fill="none" stroke="#e5e7eb" strokeWidth={1} />
-        ))}
-        {/* Axes */}
-        <line x1={CX} y1={CY - RMAX} x2={CX} y2={CY + RMAX} stroke="#f3f4f6" strokeWidth={1} />
-        <line x1={CX - RMAX} y1={CY} x2={CX + RMAX} y2={CY} stroke="#f3f4f6" strokeWidth={1} />
-        {/* Repères de pertinence (centre = forte, périphérie = faible) */}
-        <text x={CX + 4} y={CY - coupleRadiusFor(4, RMAX) - 2} fontSize={8} fill="#9ca3af">{pertinenceLabel} {labels.pertinence4}</text>
-        <text x={CX + 4} y={CY - coupleRadiusFor(1, RMAX) + 12} fontSize={8} fill="#9ca3af">{pertinenceLabel} {labels.pertinence1}</text>
+      <div className="text-gray-300 dark:text-gray-600 w-full max-w-[380px] flex-shrink-0">
+        <svg viewBox={`0 0 ${VB} ${VB}`} className="w-full" role="img" aria-label={pertinenceLabel}>
+          {/* Zone centrale prioritaire (pertinence forte) */}
+          <circle cx={CX} cy={CY} r={rInner} className="fill-ebios-500/10 dark:fill-ebios-400/10" />
+          {/* Anneaux de pertinence */}
+          {[1, 2, 3, 4].map(p => (
+            <circle key={p} cx={CX} cy={CY} r={coupleRadiusFor(p, RMAX)} fill="none" stroke="currentColor" strokeWidth={1} opacity={0.5} />
+          ))}
+          {/* Séparateurs de secteurs (entre catégories) */}
+          {nCats > 1 && cats.map((_, ci) => {
+            const a = sectorCenterAngle(ci, nCats) - Math.PI / nCats // bord du secteur
+            return (
+              <line key={ci} x1={CX} y1={CY}
+                x2={CX + RMAX * Math.sin(a)} y2={CY - RMAX * Math.cos(a)}
+                stroke="currentColor" strokeWidth={1} opacity={0.35} />
+            )
+          })}
 
-        {/* Points : un par couple SR/OV */}
-        {couples.map((c, i) => {
-          const { x, y } = couplePoint(i, couples.length, c.pertinence, geom)
-          const isP1 = c.priorite === 'P1'
-          return (
-            <g key={c.id}>
-              <circle
-                cx={x} cy={y} r={isP1 ? 6 : 4}
-                fill={hexFor(c.categorie)}
-                stroke={isP1 ? '#111827' : '#ffffff'}
-                strokeWidth={isP1 ? 1.5 : 1}
-              >
-                <title>{`${c.sourceNom} → ${c.ovNom} — ${pertinenceLabel} ${c.pertinence}/4${isP1 ? ` (${labels.p1})` : ''}`}</title>
-              </circle>
-            </g>
-          )
-        })}
-      </svg>
+          {/* Libellés de catégorie en périphérie de chaque secteur */}
+          {cats.map((cat, ci) => {
+            const { x, y, anchor } = sectorLabelPoint(ci, nCats, GEOM, 20)
+            return (
+              <g key={cat}>
+                <circle cx={anchor === 'end' ? x + 6 : anchor === 'start' ? x - 6 : x} cy={y - 3} r={3} fill={hexFor(cat)} />
+                <text x={x} y={y} textAnchor={anchor} dominantBaseline="middle"
+                  className="fill-gray-600 dark:fill-gray-300" fontSize={11} fontWeight={600}>
+                  {categoryLabels[cat] ?? cat}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* Repère radial de pertinence, le long de l'axe vertical haut */}
+          <text x={CX} y={CY - rInner + 12} textAnchor="middle" className="fill-ebios-600 dark:fill-ebios-300" fontSize={9} fontWeight={600}>
+            {labels.pertinence4}
+          </text>
+          <text x={CX} y={CY - RMAX + 12} textAnchor="middle" className="fill-gray-400 dark:fill-gray-500" fontSize={9}>
+            {labels.pertinence1}
+          </text>
+
+          {/* Points : un par couple SR/OV */}
+          {placed.map(({ c, x, y }) => {
+            const isP1 = c.priorite === 'P1'
+            return (
+              <g key={c.id}>
+                {isP1 && <circle cx={x} cy={y} r={10} fill={hexFor(c.categorie)} opacity={0.18} />}
+                <circle cx={x} cy={y} r={isP1 ? 6 : 4} fill={hexFor(c.categorie)}
+                  stroke={isP1 ? '#111827' : '#ffffff'} strokeWidth={isP1 ? 1.5 : 1}
+                  className={isP1 ? 'dark:[stroke:#f9fafb]' : ''}>
+                  <title>{`${c.sourceNom} → ${c.ovNom} — ${pertinenceLabel} ${c.pertinence}/4${isP1 ? ` (${labels.p1})` : ''}`}</title>
+                </circle>
+                {isP1 && (
+                  <text x={x + 8} y={y + 3} className="fill-gray-700 dark:fill-gray-200" fontSize={9} fontWeight={600}>
+                    {c.ovNom.length > 22 ? c.ovNom.slice(0, 21) + '…' : c.ovNom}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
 
       {/* Légende */}
       <ul className="text-xs space-y-1">
         {cats.map(cat => (
           <li key={cat} className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: hexFor(cat) }} aria-hidden />
-            <span className="text-gray-700">{categoryLabels[cat] ?? cat}</span>
-            <span className="text-gray-400">({couples.filter(c => c.categorie === cat).length})</span>
+            <span className="text-gray-700 dark:text-gray-200">{categoryLabels[cat] ?? cat}</span>
+            <span className="text-gray-400 dark:text-gray-500">({couples.filter(c => c.categorie === cat).length})</span>
           </li>
         ))}
         <li className="flex items-center gap-2 pt-1">
-          <span className="w-3 h-3 rounded-full flex-shrink-0 border-2 border-gray-900" aria-hidden />
-          <span className="text-gray-500">{labels.p1}</span>
+          <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 border-2 border-gray-900 dark:border-gray-100" aria-hidden />
+          <span className="text-gray-500 dark:text-gray-400">{labels.p1}</span>
         </li>
       </ul>
     </div>
