@@ -478,10 +478,15 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
   const retained = scenarios.filter(s => s.retenu)
 
   // Zones de dangerosité (FM5)
+  // Source de vérité UNIQUE : on redérive exposition/fiabilité/menace/zone depuis les
+  // 4 sous-critères à chaque rendu, pour la cartographie ET le tableau des 3 zones.
+  // Évite qu'un `exposition`/`fiabilite` stocké (issu du chargement/seed) reste figé
+  // et que la carte ne se mette pas à jour quand on bouge les curseurs (recette).
+  const ppLive = parties.map(p => ({ ...p, ...ppDerived(p) }))
   const ppByZone: Record<EcosystemZone, any[]> = {
-    danger:   parties.filter(p => ppDerived(p).zone === 'danger'),
-    controle: parties.filter(p => ppDerived(p).zone === 'controle'),
-    veille:   parties.filter(p => ppDerived(p).zone === 'veille'),
+    danger:   ppLive.filter(p => p.zone === 'danger'),
+    controle: ppLive.filter(p => p.zone === 'controle'),
+    veille:   ppLive.filter(p => p.zone === 'veille'),
   }
   // Métadonnées d'affichage des 3 zones de dangerosité (cartographie FM5).
   const ZONE_INFO: Record<EcosystemZone, { title: string; desc: string; border: string; bg: string; titleColor: string; dot: string }> = {
@@ -575,7 +580,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
           {/* Radar de menace de l'écosystème (vue polaire) */}
           {parties.length > 0 && (
             <div className="mb-4">
-              <EcosystemRadar parties={parties} onSelect={focusPartiePrenante} echelles={echelles}
+              <EcosystemRadar parties={ppLive} onSelect={focusPartiePrenante} echelles={echelles}
                 onEditShortName={(id, v) => updatePP(id, 'nomCourt', v)} onHover={setHoverPP} />
             </div>
           )}
@@ -1329,8 +1334,8 @@ function PPZoneCard({ pp, getZoneLabel }: { pp: any; getZoneLabel: (z: Ecosystem
   const d = ppDerived(pp)
   const { color } = getZoneLabel(d.zone)
   return (
-    <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-100 mb-1">
-      <span className="text-xs font-medium text-gray-700">{pp.nom}</span>
+    <div className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700 mb-1">
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{pp.nom}</span>
       <span className={`text-xs font-bold ${color}`}>{d.menace.toFixed(2)}</span>
     </div>
   )
