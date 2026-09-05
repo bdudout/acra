@@ -45,6 +45,8 @@ export default function NewAnalysePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.nom.trim()) { setError(t.newAnalysis.nameRequired); return }
+    if (!form.organisation.trim()) { setError(t.newAnalysis.orgRequired); return }
+    if (!form.secteur) { setError(t.newAnalysis.sectorRequired); return }
     setLoading(true)
     setError('')
 
@@ -90,15 +92,15 @@ export default function NewAnalysePage() {
           </div>
 
           <div>
-            <label className="label">{t.newAnalysis.org}</label>
+            <label className="label">{t.newAnalysis.org} <span className="text-red-500">*</span></label>
             <AutocompleteInput field="organisation" value={form.organisation}
               onChange={v => setForm({ ...form, organisation: v })}
               className="input" placeholder={t.newAnalysis.orgPh} />
           </div>
 
           <div>
-            <label className="label">{t.newAnalysis.sector}</label>
-            <select value={form.secteur}
+            <label className="label">{t.newAnalysis.sector} <span className="text-red-500">*</span></label>
+            <select value={form.secteur} required
               onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteur: '' })}
               className="input">
               <option value="">{t.newAnalysis.sectorPh}</option>
