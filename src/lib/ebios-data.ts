@@ -1292,8 +1292,8 @@ export const CIS_V8_CONTROLES: FrameworkControl[] = [
   { ref:'CIS-1.2', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[1] Gérer les actifs non autorisés',                         description:'S\'assurer que les actifs non autorisés sont détectés et gérés (quarantaine, retrait).' },
   // CIS 2 — Inventaire et contrôle des logiciels
   { ref:'CIS-2.1', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[2] Inventaire des logiciels autorisés',                     description:'Inventaire de tous les logiciels autorisés, maintenu et actualisé.' },
-  { ref:'CIS-2.2', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[2] Blocage des logiciels non autorisés',                    description:'Seuls les logiciels autorisés sont utilisés — application d\'une liste blanche.' },
-  { ref:'CIS-2.3', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[2] Prise en charge des logiciels (EoL)',                    description:'Les logiciels en fin de support sont identifiés et remplacés ou isolés.' },
+  { ref:'CIS-2.2', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[2] Logiciels autorisés maintenus (support éditeur)',        description:'S\'assurer que les logiciels autorisés sont pris en charge (non en fin de support) ; sinon documenter une exception.' },
+  { ref:'CIS-2.3', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[2] Traiter les logiciels non autorisés',                    description:'Détecter les logiciels non autorisés et les supprimer ou documenter une exception (liste blanche).' },
   // CIS 3 — Protection des données
   { ref:'CIS-3.1', type:'ORGANISATIONNELLE', categorie:'IG1', nom:'[3] Classification des données',                            description:'Les données sont classifiées selon la sensibilité pour guider les contrôles de protection.' },
   { ref:'CIS-3.2', type:'TECHNOLOGIQUE',    categorie:'IG1', nom:'[3] Inventaire des données sensibles',                      description:'Un inventaire des données sensibles est maintenu à jour.' },
