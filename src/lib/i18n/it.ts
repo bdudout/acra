@@ -2722,6 +2722,7 @@ export const it: Translations = {
       scenSummaryRetenu: 'scenario/i mantenuto/i su',
       scenSummaryTotal:  'identificato/i.',
       nextMesures:       'Vai alle misure dell\'ecosistema →',
+      scenErRequired:    'Ogni scenario strategico deve essere collegato ad almeno un evento temuto. Completa gli scenari evidenziati prima di continuare.',
     },
     a4: {
       title:        'Workshop 4 — Scenari operativi',
@@ -2785,6 +2786,7 @@ export const it: Translations = {
       desc:         "Collega ogni rischio a uno scenario operativo e un evento temuto, scegli una strategia di trattamento, documenta le vulnerabilità residue e i fattori aggravanti, quindi valuta il rischio residuo.",
       risquesTitle: 'Profili di rischio',
       mesuresTitle: 'Misure di sicurezza',
+      erRisqueRequired: 'Ogni rischio deve essere collegato a un evento temuto. Completa i rischi evidenziati prima di passare alle misure.',
       planTitle:    'Sintesi del piano di trattamento del rischio',
       stratLabel:   'Strategia di trattamento',
       residualLabel:'Livello residuo',
