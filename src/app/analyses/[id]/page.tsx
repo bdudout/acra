@@ -18,6 +18,7 @@ import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
+import AnalyseMetaEditor from '@/components/AnalyseMetaEditor'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
 import ConformitePie from '@/components/ConformitePie'
@@ -158,9 +159,17 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               <Link href="/analyses" className="text-gray-500 hover:text-gray-600 text-sm">{t.analysis.backToList}</Link>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{analyse.nom}</h1>
-            {(analyse.organisation || analyse.secteur) && (
-              <p className="text-gray-500 mt-1">{[analyse.organisation, analyse.secteur].filter(Boolean).join(' · ')}</p>
-            )}
+            <p className="text-gray-500 mt-1 flex items-center gap-1.5">
+              <span>{[analyse.organisation, analyse.secteur].filter(Boolean).join(' · ') || t.analysis.metaMissing}</span>
+              <AnalyseMetaEditor
+                analyseId={analyse.id}
+                nom={analyse.nom}
+                organisation={analyse.organisation}
+                secteur={analyse.secteur}
+                sousSecteur={(analyse as any).sousSecteur ?? null}
+                canEdit={isOwner && !locked}
+              />
+            </p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statutInfo.color}`}>
                 {statutInfo.icon} {(t.statusLabels as Record<string, string>)[analyse.statut] ?? statutInfo.label}

@@ -760,6 +760,8 @@ export const fr = {
     notFound:         'Analyse introuvable',
     notFoundDesc:     "Cette analyse n'existe pas ou vous n'y avez pas accès.",
     backToList:       '← Mes analyses',
+    editMeta:         "Modifier l'organisation et le secteur",
+    metaMissing:      'Organisation et secteur à renseigner',
     doneStatus:       'Terminée',
     allDone:          '✅ 5/5',
     workshopLabel:    'A',

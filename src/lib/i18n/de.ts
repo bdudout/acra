@@ -745,6 +745,8 @@ export const de: Translations = {
     notFound:         'Analyse nicht gefunden',
     notFoundDesc:     'Diese Analyse existiert nicht oder Sie haben keinen Zugriff darauf.',
     backToList:       '← Meine Analysen',
+    editMeta:         'Organisation und Bereich bearbeiten',
+    metaMissing:      'Organisation und Bereich festzulegen',
     doneStatus:       'Abgeschlossen',
     allDone:          '✅ 5/5',
     workshopLabel:    'W',

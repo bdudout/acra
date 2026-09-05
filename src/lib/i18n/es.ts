@@ -745,6 +745,8 @@ export const es: Translations = {
     notFound:         'Análisis no encontrado',
     notFoundDesc:     'Este análisis no existe o no tienes acceso a él.',
     backToList:       '← Mis análisis',
+    editMeta:         'Editar organización y sector',
+    metaMissing:      'Organización y sector por definir',
     doneStatus:       'Completado',
     allDone:          '✅ 5/5',
     workshopLabel:    'T',
