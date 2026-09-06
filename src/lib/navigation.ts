@@ -51,6 +51,9 @@ export interface NavModel {
 /** Parcours EBIOS de base (cyber). */
 const CORE: NavKey[] = ['analyses', 'risques', 'tiers', 'actions']
 
+/** Nb max d'items secondaires (gouvernance/incidents) étalés inline avant regroupement. */
+export const SECONDARY_INLINE_MAX = 2
+
 const link = (key: NavKey): NavEntry => ({ kind: 'link', key })
 
 /** 1 item → lien direct ; 2+ → groupe déroulant. */
@@ -83,11 +86,18 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const grcMode = modules.registre || modules.controles || modules.audit || modules.kri || modules.reglementaire
 
   // ─── MODE CYBER ────────────────────────────────────────────────────────────
+  // La barre s'ADAPTE au nombre d'items : dashboard + le cœur EBIOS restent étalés ;
+  // les items secondaires (gouvernance, incidents) sont ÉTALÉS tant qu'ils sont peu
+  // nombreux (≤ SECONDARY_INLINE_MAX), sinon REGROUPÉS dans le menu « GRC ». Un seul
+  // item ne fait donc jamais un menu déroulant pour rien.
   if (!grcMode) {
-    const grc: NavKey[] = [...gouvernance]
-    if (modules.incidents) grc.push('incidents')
+    const secondary: NavKey[] = [...gouvernance]
+    if (modules.incidents) secondary.push('incidents')
     const entries: NavEntry[] = [link('dashboard'), ...CORE.map(link)]
-    if (grc.length) entries.push({ kind: 'group', id: 'grc', items: grc })
+    if (secondary.length > 0) {
+      if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
+      else entries.push({ kind: 'group', id: 'grc', items: secondary })
+    }
     return { mode: 'cyber', entries }
   }
 
