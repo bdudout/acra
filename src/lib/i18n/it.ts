@@ -1818,6 +1818,11 @@ export const it: Translations = {
       serviceCritique: 'Servizi critici colpiti',
     },
   },
+  instanceAdmin: {
+    title: 'Impostazioni di istanza',
+    subtitle: 'Identità dell’applicazione, attivazione dei moduli, chiavi API e webhook — solo amministrazione.',
+    back: 'Amministrazione',
+  },
   branding: {
     sectionTitle: 'Identità dell\'applicazione',
     sectionDesc: 'Nome e sottotitolo mostrati nell\'app (barra di navigazione, pagina di accesso). Lascia vuoto per mantenere il nome predefinito.',
@@ -1927,6 +1932,8 @@ export const it: Translations = {
     saveLong:          '💾 Salva configurazione',
     savedFull:         '✅ Configurazione salvata',
     backDash:          '← Torna alla dashboard',
+    instanceMoved:     'Identità, attivazione dei moduli, chiavi API e webhook ora si trovano nell’area Amministrazione.',
+    instanceMovedLink: 'Apri le impostazioni di istanza',
     levelsSectionTitle:'Numero di livelli nelle scale',
     levelWarning:      '⚠️ Modificare il numero di livelli reimposta le scale ai valori predefiniti corrispondenti.',
     level4label:       '4 livelli',

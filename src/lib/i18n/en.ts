@@ -1818,6 +1818,11 @@ export const en: Translations = {
       serviceCritique: 'Critical services affected',
     },
   },
+  instanceAdmin: {
+    title: 'Instance settings',
+    subtitle: 'App identity, module activation, API keys and webhooks — administration only.',
+    back: 'Administration',
+  },
   branding: {
     sectionTitle: 'Application identity',
     sectionDesc: 'Name and subtitle shown across the app (navigation bar, sign-in page). Leave blank to keep the default name.',
@@ -1927,6 +1932,8 @@ export const en: Translations = {
     saveLong:          '💾 Save configuration',
     savedFull:         '✅ Configuration saved',
     backDash:          '← Back to dashboard',
+    instanceMoved:     'App identity, module activation, API keys and webhooks now live in the Administration area.',
+    instanceMovedLink: 'Open instance settings',
     levelsSectionTitle:'Number of levels in the scales',
     levelWarning:      '⚠️ Changing the number of levels resets the scales to the corresponding default values.',
     level4label:       '4 levels',

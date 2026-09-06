@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, CheckCircle2, ClipboardList, Download, FileText, Home, KeyRound, Lock, LockOpen, Pin, ShieldCheck, Trash2, UserPlus, Users, XCircle, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ClipboardList, Download, FileText, Home, KeyRound, Lock, LockOpen, Pin, Server, ShieldCheck, Trash2, UserPlus, Users, XCircle, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -205,6 +205,13 @@ export default function AdminDashboardPage() {
             <div>
               <div className="font-semibold text-gray-800 text-sm">Journal d&apos;audit</div>
               <div className="text-xs text-gray-500">Tous les événements + export CSV</div>
+            </div>
+          </Link>
+          <Link href="/admin/instance" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
+            <span className="text-2xl"><Server size={24} aria-hidden="true" /></span>
+            <div>
+              <div className="font-semibold text-gray-800 text-sm">Paramètres d&apos;instance</div>
+              <div className="text-xs text-gray-500">Identité, modules, clés d&apos;API, webhooks</div>
             </div>
           </Link>
         </div>

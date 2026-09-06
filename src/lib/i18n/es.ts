@@ -1818,6 +1818,11 @@ export const es: Translations = {
       serviceCritique: 'Servicios críticos afectados',
     },
   },
+  instanceAdmin: {
+    title: 'Ajustes de instancia',
+    subtitle: 'Identidad de la aplicación, activación de módulos, claves de API y webhooks — solo administración.',
+    back: 'Administración',
+  },
   branding: {
     sectionTitle: 'Identidad de la aplicación',
     sectionDesc: 'Nombre y subtítulo mostrados en la aplicación (barra de navegación, página de inicio de sesión). Deja en blanco para conservar el nombre predeterminado.',
@@ -1927,6 +1932,8 @@ export const es: Translations = {
     saveLong:          '💾 Guardar configuración',
     savedFull:         '✅ Configuración guardada',
     backDash:          '← Volver al panel',
+    instanceMoved:     'Identidad, activación de módulos, claves de API y webhooks ahora están en el área de Administración.',
+    instanceMovedLink: 'Abrir ajustes de instancia',
     levelsSectionTitle:'Número de niveles en las escalas',
     levelWarning:      '⚠️ Cambiar el número de niveles restablece las escalas a los valores predeterminados correspondientes.',
     level4label:       '4 niveles',

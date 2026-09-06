@@ -1818,6 +1818,11 @@ export const de: Translations = {
       serviceCritique: 'Kritische Dienste betroffen',
     },
   },
+  instanceAdmin: {
+    title: 'Instanzeinstellungen',
+    subtitle: 'App-Identität, Modulaktivierung, API-Schlüssel und Webhooks — nur für die Administration.',
+    back: 'Administration',
+  },
   branding: {
     sectionTitle: 'Anwendungsidentität',
     sectionDesc: 'Name und Untertitel, die in der App angezeigt werden (Navigationsleiste, Anmeldeseite). Leer lassen, um den Standardnamen beizubehalten.',
@@ -1927,6 +1932,8 @@ export const de: Translations = {
     saveLong:          '💾 Konfiguration speichern',
     savedFull:         '✅ Konfiguration gespeichert',
     backDash:          '← Zurück zum Dashboard',
+    instanceMoved:     'App-Identität, Modulaktivierung, API-Schlüssel und Webhooks befinden sich jetzt im Administrationsbereich.',
+    instanceMovedLink: 'Instanzeinstellungen öffnen',
     levelsSectionTitle:'Anzahl der Stufen in den Skalen',
     levelWarning:      '⚠️ Das Ändern der Stufenanzahl setzt die Skalen auf die entsprechenden Standardwerte zurück.',
     level4label:       '4 Stufen',

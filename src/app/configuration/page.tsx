@@ -22,8 +22,7 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
-import ApiKeysManager from '@/components/ApiKeysManager'
-import WebhooksManager from '@/components/WebhooksManager'
+import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -708,80 +707,14 @@ export default function ConfigurationPage() {
           )}
         </div>
 
-        {/* Identité de l'application (instance) — SUPER_ADMIN uniquement */}
-        {isSuperAdmin && (
-          <section className="mb-6 card p-6">
-            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.branding.sectionTitle}</h2>
-            <p className="text-sm text-gray-500 mb-4">{t.branding.sectionDesc}</p>
-            <div className="flex flex-wrap gap-4 items-end">
-              <label className="text-sm text-gray-700 flex-1 min-w-[180px]">
-                <span className="block text-xs font-medium text-gray-600 mb-1">{t.branding.nameLabel}</span>
-                <input value={brandName} onChange={e => setBrandName(e.target.value)}
-                  placeholder={t.auth.appName} maxLength={120}
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 text-sm" />
-              </label>
-              <label className="text-sm text-gray-700 flex-1 min-w-[220px]">
-                <span className="block text-xs font-medium text-gray-600 mb-1">{t.branding.baselineLabel}</span>
-                <input value={brandBaseline} onChange={e => setBrandBaseline(e.target.value)}
-                  placeholder={t.auth.appSubtitle} maxLength={120}
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 text-sm" />
-              </label>
-              <button onClick={saveBranding} className="btn-primary text-sm">
-                {brandSaved ? t.config.savedLabel : t.config.saveShort}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">{t.branding.hint}</p>
-          </section>
-        )}
-
-        {/* Politique d'activation des modules (instance) — SUPER_ADMIN */}
-        {isSuperAdmin && (
-          <section className="mb-6 card p-6">
-            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.modulesPolicy.sectionTitle}</h2>
-            <p className="text-sm text-gray-500 mb-4">{t.modulesPolicy.sectionDesc}</p>
-            <div className="space-y-3">
-              {([{ key: 'registreRisques', label: t.features.registreRisquesTitle }, { key: 'incidents', label: t.features.incidentsTitle }, { key: 'controlePermanent', label: t.features.controlePermanentTitle }, { key: 'auditInterne', label: t.features.auditInterneTitle }, { key: 'kri', label: t.features.kriTitle }, { key: 'reglementaire', label: t.features.reglementaireTitle }, { key: 'secondeLigne', label: t.features.secondeLigneTitle }]).map(m => (
-                <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                  <span className="text-sm font-medium text-gray-800">{m.label}</span>
-                  <select
-                    value={modulesPolicy[m.key] ?? 'PER_ORG'}
-                    onChange={e => saveModulesPolicy(m.key, e.target.value)}
-                    className="px-2 py-1.5 rounded border border-gray-300 text-sm"
-                  >
-                    <option value="PER_ORG">{t.modulesPolicy.perOrg}</option>
-                    <option value="FORCE_ON">{t.modulesPolicy.forceOn}</option>
-                    <option value="FORCE_OFF">{t.modulesPolicy.forceOff}</option>
-                  </select>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-2">{t.modulesPolicy.hint}</p>
-          </section>
-        )}
-
-        {/* Clés d'API (accès machine à l'API publique v1) — ADMIN */}
-        {isAdmin && <ApiKeysManager />}
-        {isAdmin && <WebhooksManager />}
-
-        {/* Délais d'échéance par défaut d'une action selon sa priorité — ADMIN */}
+        {/* Identité de l'application, politique de modules, clés d'API et webhooks
+            ont été déplacés dans l'espace Administration (/admin/instance) — la
+            configuration ne concerne plus que le métier (échelles, exemples…). */}
         {isAdmin && (
-          <section className="mb-6 card p-6">
-            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.actionDelais.title}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.actionDelais.subtitle}</p>
-            <div className="flex flex-wrap gap-4">
-              {(['CRITIQUE', 'MAJEUR', 'MODERE'] as const).map(k => (
-                <label key={k} className="text-xs text-gray-500 dark:text-gray-400">
-                  {(t.riskActions.priorites as Record<string, string>)[k]}
-                  <span className="flex items-center gap-1.5 mt-1">
-                    <input type="number" min={1} max={600} defaultValue={actionDelais[k]}
-                      onBlur={e => saveActionDelai(k, Math.max(1, Math.min(600, Number(e.target.value) || actionDelais[k])))}
-                      className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-20" />
-                    <span className="text-xs text-gray-400">{t.actionDelais.monthsUnit}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </section>
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3">
+            <p className="text-sm text-gray-600 dark:text-gray-300">{t.config.instanceMoved}</p>
+            <Link href="/admin/instance" className="text-sm font-medium text-ebios-600 hover:text-ebios-700 whitespace-nowrap">{t.config.instanceMovedLink} →</Link>
+          </div>
         )}
 
         {/* Bannière lecture seule pour non-ADMIN */}
@@ -1152,6 +1085,27 @@ export default function ConfigurationPage() {
                 <strong>{t.config.maxScoreLabel}</strong> {config.nbNiveaux} × {config.nbNiveaux} = <strong>{config.nbNiveaux * config.nbNiveaux}</strong>
                 <br />
                 <strong>{t.config.coveredLabel}</strong> {config.seuilsMatrice[0]?.scoreMin || '?'} → {config.seuilsMatrice[config.seuilsMatrice.length - 1]?.scoreMax || '?'}
+              </div>
+            )}
+
+            {/* Délais d'échéance par défaut d'une action selon sa priorité — ADMIN (en dernier) */}
+            {isAdmin && (
+              <div className="pt-6 mt-2 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.actionDelais.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.actionDelais.subtitle}</p>
+                <div className="flex flex-wrap gap-4">
+                  {(['CRITIQUE', 'MAJEUR', 'MODERE'] as const).map(k => (
+                    <label key={k} className="text-xs text-gray-500 dark:text-gray-400">
+                      {(t.riskActions.priorites as Record<string, string>)[k]}
+                      <span className="flex items-center gap-1.5 mt-1">
+                        <input type="number" min={1} max={600} defaultValue={actionDelais[k]}
+                          onBlur={e => saveActionDelai(k, Math.max(1, Math.min(600, Number(e.target.value) || actionDelais[k])))}
+                          className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-20" />
+                        <span className="text-xs text-gray-400">{t.actionDelais.monthsUnit}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1749,19 +1703,14 @@ export default function ConfigurationPage() {
         </div>
 
         {/* Bouton sauvegarde bas de page (échelles) */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <button onClick={() => router.push('/dashboard')} className="btn-secondary">
-            {t.config.backDash}
-          </button>
-          {isAdmin && section === 'echelles' && (
-            <div className="flex items-center gap-3">
-              {saved && <span className="text-sm text-green-600 font-medium">{t.config.savedFull}</span>}
-              <button onClick={save} disabled={saving} className="btn-primary">
-                {saving ? t.config.savingLabel : t.config.saveLong}
-              </button>
-            </div>
-          )}
-        </div>{/* ═══ fin Section 3 — Exemples des ateliers ═══ */}
+        {isAdmin && section === 'echelles' && (
+          <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+            {saved && <span className="text-sm text-green-600 font-medium">{t.config.savedFull}</span>}
+            <button onClick={save} disabled={saving} className="btn-primary">
+              {saving ? t.config.savingLabel : t.config.saveLong}
+            </button>
+          </div>
+        )}{/* ═══ fin Section 3 — Exemples des ateliers ═══ */}
 
         {/* ═══ Section 4 — Écosystème (échelles de dangerosité des PP) ═════════ */}
         <div className={section === 'ecosysteme' ? '' : 'hidden'}>
