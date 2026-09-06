@@ -96,6 +96,30 @@ export async function GET(
     }
   }
 
+  if (format === 'pptx') {
+    // Présentation managériale (pptxgenjs = JS pur, pas de runtime esbuild).
+    try {
+      const { renderAnalysePptx } = await import('@/lib/analyse-pptx')
+      const { accesUtilisateurs: _ap, ...pptxData } = analyse
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      const langParam = searchParams.get('lang')
+      const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
+      const buffer = await renderAnalysePptx(pptxData as Record<string, unknown>, config, locale)
+      const safeName = analyse.nom.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 64)
+      return new NextResponse(buffer as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'Content-Disposition': `attachment; filename="acra-${safeName}.pptx"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export pptx] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du PowerPoint' }, { status: 500 })
+    }
+  }
+
   if (format === 'csv') {
     const lines: string[] = []
     // Neutralise l'injection de formules (=,+,-,@) AVANT l'échappement CSV des guillemets

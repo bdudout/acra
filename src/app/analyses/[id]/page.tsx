@@ -18,6 +18,7 @@ import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
+import PptxExportButton from '@/components/PptxExportButton'
 import AnalyseMetaEditor from '@/components/AnalyseMetaEditor'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
@@ -228,6 +229,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             {/* Export disponible pour toutes les analyses */}
             <>
               <PDFExportButton analyseId={analyse.id} />
+              <PptxExportButton analyseId={analyse.id} />
               <a href={`/api/export/${analyse.id}?format=xlsx`} className="btn-secondary">
                 <BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> Excel
               </a>
