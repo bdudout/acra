@@ -1856,6 +1856,11 @@ export const fr = {
       serviceCritique: 'Services critiques touchés',
     },
   },
+  instanceAdmin: {
+    title: 'Paramètres d’instance',
+    subtitle: 'Identité de l’application, activation des modules, clés d’API et webhooks — réservé à l’administration.',
+    back: 'Administration',
+  },
   branding: {
     sectionTitle: 'Identité de l\'application',
     sectionDesc: 'Nom et sous-titre affichés dans l\'application (barre de navigation, page de connexion). Laissez vide pour conserver le nom par défaut.',
@@ -1965,6 +1970,8 @@ export const fr = {
     saveLong:          '💾 Sauvegarder la configuration',
     savedFull:         '✅ Configuration sauvegardée',
     backDash:          '← Retour au tableau de bord',
+    instanceMoved:     'Identité, activation des modules, clés d’API et webhooks sont désormais dans l’espace Administration.',
+    instanceMovedLink: 'Ouvrir les paramètres d’instance',
     levelsSectionTitle:'Nombre de niveaux dans les échelles',
     levelWarning:      '⚠️ Changer le nombre de niveaux réinitialise les échelles aux valeurs par défaut correspondantes.',
     level4label:       '4 niveaux',

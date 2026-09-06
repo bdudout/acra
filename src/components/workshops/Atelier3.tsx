@@ -459,6 +459,15 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
     }))
   }
 
+  // Met à jour une mesure d'écosystème PARTOUT où elle vit (vue consolidée : on ne
+  // connaît pas le scénario propriétaire, la mesure peut être mutualisée).
+  function updateMesureEcoAny(mesureId: string, field: string, value: string) {
+    setScenarios(prev => prev.map(s => ({
+      ...s,
+      mesuresEcosysteme: (s.mesuresEcosysteme || []).map((m: any) => m.id === mesureId ? { ...m, [field]: value } : m),
+    })))
+  }
+
   /** Mutualise/retire une mesure vers un autre scénario stratégique (issue #2). */
   function toggleMesureScenario(scenarioId: string, mesureId: string, targetScenarioId: string) {
     setScenarios(prev => prev.map(s => {
@@ -1288,7 +1297,16 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                       <span className="ml-1 text-xs text-gray-400">· {m._ownerNom}</span>
                       {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
                     </span>
-                    <span className="text-xs text-gray-500 whitespace-nowrap">{m.priorite ? t.workshop.a3.measPriorites[m.priorite as 'P1'] : '—'}</span>
+                    <select value={m.priorite || 'P2'} onChange={e => updateMesureEcoAny(m.id, 'priorite', e.target.value)}
+                      className="input text-xs py-1 w-28 flex-shrink-0" title={t.workshop.a3.measPrioriteLabel}>
+                      {PRIORITES_MESURE.map(pr => <option key={pr} value={pr}>{t.workshop.a3.measPriorites[pr]}</option>)}
+                    </select>
+                    <select value={m.statut || 'A_FAIRE'} onChange={e => updateMesureEcoAny(m.id, 'statut', e.target.value)}
+                      className="input text-xs py-1 w-24 flex-shrink-0">
+                      <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
+                      <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
+                      <option value="REALISE">{t.workshop.a3.statutRealise}</option>
+                    </select>
                   </li>
                 ))}
               </ul>
@@ -1317,16 +1335,20 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                         {m._mutualisee ? <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-ebios-100 text-ebios-700 align-middle">{t.workshop.a3.measMutualisee}</span> : null}
                         {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
                       </td>
-                      <td className="p-2 text-gray-600">{m.priorite ? t.workshop.a3.measPriorites[m.priorite as 'P1'] : '—'}</td>
+                      <td className="p-2">
+                        <select value={m.priorite || 'P2'} onChange={e => updateMesureEcoAny(m.id, 'priorite', e.target.value)}
+                          className="input text-xs py-1" title={t.workshop.a3.measPrioriteLabel}>
+                          {PRIORITES_MESURE.map(pr => <option key={pr} value={pr}>{t.workshop.a3.measPriorites[pr]}</option>)}
+                        </select>
+                      </td>
                       <td className="p-2 text-gray-600">{m.partiePrenante || '—'}</td>
                       <td className="p-2">
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                          m.statut === 'REALISE' ? 'bg-green-100 text-green-700' :
-                          m.statut === 'EN_COURS' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {m.statut === 'REALISE' ? `✓ ${t.workshop.a3.statutRealise}` : m.statut === 'EN_COURS' ? `⏳ ${t.workshop.a3.statutEnCours}` : t.workshop.a3.statutFaire}
-                        </span>
+                        <select value={m.statut || 'A_FAIRE'} onChange={e => updateMesureEcoAny(m.id, 'statut', e.target.value)}
+                          className="input text-xs py-1">
+                          <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
+                          <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
+                          <option value="REALISE">{t.workshop.a3.statutRealise}</option>
+                        </select>
                       </td>
                     </tr>
                   ))}
