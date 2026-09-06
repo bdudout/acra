@@ -50,10 +50,22 @@ describe('buildNav — mode cyber (aucun module 2ᵉ/3ᵉ ligne)', () => {
     expect(groupIds(buildNav('LECTEUR', ALL_OFF))).toEqual([])
   })
 
-  it('incidents SEULS ne basculent pas en mode GRC (restent dans le menu « GRC »)', () => {
+  it('incidents SEULS ne basculent pas en mode GRC ; peu d’items → lien direct (pas de menu)', () => {
     const m = buildNav('ANALYSTE', { ...ALL_OFF, incidents: true })
     expect(m.mode).toBe('cyber')
     expect(allKeys(m)).toContain('incidents')
+    // 1 seul item secondaire → étalé en lien direct, aucun menu « GRC ».
+    expect(groupIds(m)).toEqual([])
+    expect(m.entries).toContainEqual({ kind: 'link', key: 'incidents' })
+  })
+
+  it('la barre s’adapte : ≤2 items secondaires étalés, ≥3 regroupés dans « GRC »', () => {
+    // DIRECTION_METIER : gouvernance = [derogations] (1) → étalé, pas de menu.
+    const dm = buildNav('DIRECTION_METIER', ALL_OFF)
+    expect(groupIds(dm)).toEqual([])
+    expect(dm.entries).toContainEqual({ kind: 'link', key: 'derogations' })
+    // RISK_MANAGER : 4 items de gouvernance → regroupés dans un menu « GRC ».
+    expect(groupIds(buildNav('RISK_MANAGER', ALL_OFF))).toEqual(['grc'])
   })
 })
 
