@@ -825,6 +825,10 @@ export const de: Translations = {
     reset: 'Zurücksetzen',
     commentPlaceholder: 'Kommentar (bei Ablehnung erforderlich)…',
     readOnlyHint: 'Nur die Fachbereichsleitung kann Restrisiken akzeptieren oder ablehnen.',
+    frozenNotice: 'Die Restrisiken wurden akzeptiert: Die Analyse ist eingefroren (schreibgeschützt). Öffnen Sie eine neue Version, um sie zu ändern — die Akzeptanzentscheidung muss dann erneut getroffen werden.',
+    reopen: 'Als neue Version öffnen',
+    reopenBusy: 'Wird geöffnet…',
+    reopenNote: 'Wiedereröffnung nach Akzeptanz der Restrisiken',
   },
 
   derogations: {
@@ -3058,6 +3062,8 @@ export const de: Translations = {
     conseilsDesc:       'Zeigt neben jedem Workshop die empfohlenen Teilnehmer (Fachbereich, IT, CISO…) und wesentliche Tipps (EBIOS RM / Club EBIOS). Von jedem Benutzer ausblendbar.',
     acceptationRisquesTitle: 'Akzeptanz von Restrisiken (Fachbereichsleitung)',
     acceptationRisquesDesc:  'Ermöglicht der Rolle „Fachbereichsleitung“, die Restrisiken einer Analyse zu akzeptieren (oder abzulehnen) — Risikoakzeptanz, getrennt von der Validierung der Analyse.',
+    gelApresAcceptationTitle: 'Analyse nach Risikoakzeptanz einfrieren',
+    gelApresAcceptationDesc:  'Sobald die Restrisiken akzeptiert sind, wird die Analyse eingefroren (schreibgeschützt); jede Änderung erfordert eine neue Version. In der Produktion empfohlen; für Testumgebungen deaktivierbar.',
     derogationsTitle:   'Ausnahmegenehmigungen (vorübergehende Akzeptanz von Nichtkonformität)',
     derogationsDesc:    'Ermöglicht die vorübergehende Akzeptanz einer Nichtkonformität der Sicherheitsbasis: Antrag des Verantwortlichen, CISO-Stellungnahme, Freigabe durch die Fachbereichsleitung, Ablaufdatum und Warnungen vor dem Ablauf.',
     derogationDureeLabel: 'Standarddauer einer Ausnahmegenehmigung (Tage)',

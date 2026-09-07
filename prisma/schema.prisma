@@ -1428,6 +1428,9 @@ model OrganizationConfig {
   // Fonctionnalité optionnelle : acceptation des risques résiduels par la Direction métier
   // (rôle DIRECTION_METIER), distincte de la validation de l'analyse.
   acceptationRisquesActive   Boolean       @default(false)
+  // Gel de l'analyse après acceptation des risques résiduels : une fois acceptés,
+  // l'analyse est figée (lecture seule) et toute modification exige une nouvelle version.
+  gelApresAcceptationActive  Boolean       @default(false)
   // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
   // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
   derogationsActive          Boolean       @default(false)

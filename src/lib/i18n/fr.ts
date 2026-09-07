@@ -842,6 +842,10 @@ export const fr = {
     reset: 'Réinitialiser',
     commentPlaceholder: 'Commentaire (obligatoire en cas de refus)…',
     readOnlyHint: 'Seule la Direction métier peut accepter ou refuser les risques résiduels.',
+    frozenNotice: 'Les risques résiduels ont été acceptés : l\'analyse est gelée (lecture seule). Pour la modifier, ouvrez une nouvelle version — la décision d\'acceptation devra alors être reprise.',
+    reopen: 'Rouvrir en nouvelle version',
+    reopenBusy: 'Réouverture…',
+    reopenNote: 'Réouverture après acceptation des risques résiduels',
   },
 
   derogations: {
@@ -3106,6 +3110,8 @@ export const fr = {
     conseilsDesc:       "Affiche, à côté de chaque atelier, les participants recommandés (Métier, DSI, RSSI…) et des conseils essentiels (EBIOS RM / Club EBIOS). Masquable par chaque utilisateur.",
     acceptationRisquesTitle: 'Acceptation des risques résiduels (Direction métier)',
     acceptationRisquesDesc:  "Permet au rôle « Direction métier » d'accepter (ou refuser) les risques résiduels d'une analyse — acceptation du risque, distincte de la validation de l'analyse.",
+    gelApresAcceptationTitle: 'Gel de l\'analyse après acceptation des risques',
+    gelApresAcceptationDesc:  'Une fois les risques résiduels acceptés, l\'analyse est figée (lecture seule) ; toute modification exige d\'ouvrir une nouvelle version. Recommandé en production ; désactivable pour les environnements de test.',
     derogationsTitle:   'Dérogations (acceptation temporaire de non-conformité)',
     derogationsDesc:    "Permet d'accepter temporairement une non-conformité au socle : demande du porteur, avis RSSI, validation par la Direction métier, échéance et alertes avant expiration.",
     derogationDureeLabel: 'Durée par défaut d\'une dérogation (jours)',

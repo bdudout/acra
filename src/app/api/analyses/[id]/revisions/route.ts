@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere } from '@/lib/org-context.server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { normalizeCycle, nextVersion, formatVersion } from '@/lib/version-analyse'
 
@@ -70,10 +72,18 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { maj, min } = nextVersion(analyse.versionMajeure, analyse.versionMineure, cycle)
   const version = formatVersion(maj, min)
 
+  // Réouverture d'une analyse gelée : une nouvelle version invalide l'acceptation
+  // des risques résiduels et rend l'analyse de nouveau modifiable → statut « en attente ».
+  const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
+  const rouvreGel = analyseGelee(analyse.risquesResiduelsStatut, orgConfig?.gelApresAcceptationActive ?? false)
+  const resetAcceptation = rouvreGel
+    ? { risquesResiduelsStatut: 'EN_ATTENTE', risquesResiduelsPar: null, risquesResiduelsLe: null, risquesResiduelsCommentaire: null }
+    : {}
+
   const [, revision] = await prisma.$transaction([
     prisma.analyse.update({
       where: { id },
-      data: { versionMajeure: maj, versionMineure: min, updatedAt: new Date() },
+      data: { versionMajeure: maj, versionMineure: min, updatedAt: new Date(), ...resetAcceptation },
     }),
     prisma.revisionAnalyse.create({
       data: { analyseId: id, version, cycle, note, ateliers, createdById: userId },

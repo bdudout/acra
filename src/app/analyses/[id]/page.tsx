@@ -16,6 +16,7 @@ import RiskMatrixTabs from '@/components/RiskMatrixTabs'
 import EcosystemRadar from '@/components/EcosystemRadar'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import PptxExportButton from '@/components/PptxExportButton'
@@ -135,8 +136,9 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const qualificationObligatoire = orgConfig.qualificationObligatoire
   const qualificationComplete = isQualificationComplete(sanitizeQualification((analyse as any).qualification))
 
-  // Verrouillage si analyse approuvée (sauf ADMIN)
-  const locked = analyse.statut === 'APPROUVE' && userRole !== 'ADMIN'
+  // Verrouillage si analyse approuvée (sauf ADMIN) OU gelée (risques résiduels acceptés)
+  const gelee = analyseGelee((analyse as any).risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)
+  const locked = (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') || gelee
   const isOwner = analyse.userId === userId
 
   // Mettre la qualification en avant (avant les ateliers) tant qu'elle est incomplète.
@@ -499,6 +501,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 le={(analyse as any).risquesResiduelsLe ? (analyse as any).risquesResiduelsLe.toISOString() : null}
                 commentaire={(analyse as any).risquesResiduelsCommentaire ?? null}
                 canAct={canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive)}
+                gelActive={orgConfig.gelApresAcceptationActive}
+                canReopen={editable}
                 locale={locale}
               />
             )}

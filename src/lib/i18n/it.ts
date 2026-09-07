@@ -825,6 +825,10 @@ export const it: Translations = {
     reset: 'Reimposta',
     commentPlaceholder: 'Commento (obbligatorio in caso di rifiuto)…',
     readOnlyHint: 'Solo la Direzione aziendale può accettare o rifiutare i rischi residui.',
+    frozenNotice: 'I rischi residui sono stati accettati: l\'analisi è congelata (sola lettura). Per modificarla, apri una nuova versione — la decisione di accettazione dovrà essere ripresa.',
+    reopen: 'Riapri in una nuova versione',
+    reopenBusy: 'Riapertura…',
+    reopenNote: 'Riapertura dopo l\'accettazione dei rischi residui',
   },
 
   derogations: {
@@ -3058,6 +3062,8 @@ export const it: Translations = {
     conseilsDesc:       'Mostra, accanto a ogni workshop, i partecipanti consigliati (Business, IT, CISO…) e consigli essenziali (EBIOS RM / Club EBIOS). Ogni utente può nasconderlo.',
     acceptationRisquesTitle: 'Accettazione dei rischi residui (Direzione aziendale)',
     acceptationRisquesDesc:  'Consente al ruolo «Direzione aziendale» di accettare (o rifiutare) i rischi residui di un\'analisi — accettazione del rischio, distinta dalla validazione dell\'analisi.',
+    gelApresAcceptationTitle: 'Congela l\'analisi dopo l\'accettazione dei rischi',
+    gelApresAcceptationDesc:  'Una volta accettati i rischi residui, l\'analisi è congelata (sola lettura); qualsiasi modifica richiede l\'apertura di una nuova versione. Consigliato in produzione; disattivabile per gli ambienti di test.',
     derogationsTitle:   'Deroghe (accettazione temporanea di non conformità)',
     derogationsDesc:    'Consente di accettare temporaneamente una non conformità della base di sicurezza: richiesta del responsabile, parere del CISO, validazione della Direzione aziendale, data di scadenza e avvisi prima della scadenza.',
     derogationDureeLabel: 'Durata predefinita di una deroga (giorni)',

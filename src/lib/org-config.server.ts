@@ -25,6 +25,7 @@ const CONFIG_SELECT = {
   conformiteSnapshotMode: true,
   conseilsAteliersActive: true,
   acceptationRisquesActive: true,
+  gelApresAcceptationActive: true,
   derogationsActive: true,
   derogationDureeDefautJours: true,
   derogationAlerteJours: true,

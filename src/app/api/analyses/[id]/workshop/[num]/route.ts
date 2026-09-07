@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere } from '@/lib/org-context.server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import { canEditAnalyse } from '@/lib/permissions'
 import {
   cleanSourceRisque,
@@ -67,6 +69,15 @@ export async function PUT(
   // Bloquer les modifications si l'analyse est approuvée
   if (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') {
     return NextResponse.json({ error: 'L\'analyse est approuvée et ne peut plus être modifiée' }, { status: 403 })
+  }
+
+  // Gel après acceptation des risques résiduels : l'analyse est figée tant que la
+  // fonctionnalité est active pour l'org. Réouverture = nouvelle version (révision).
+  if (analyse.risquesResiduelsStatut === 'ACCEPTES') {
+    const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
+    if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig?.gelApresAcceptationActive ?? false)) {
+      return NextResponse.json({ error: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.' }, { status: 403 })
+    }
   }
 
   const body = await req.json()

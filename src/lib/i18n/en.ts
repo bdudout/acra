@@ -825,6 +825,10 @@ export const en: Translations = {
     reset: 'Reset',
     commentPlaceholder: 'Comment (required when refusing)…',
     readOnlyHint: 'Only Business management can accept or refuse residual risks.',
+    frozenNotice: 'Residual risks have been accepted: the analysis is frozen (read-only). To modify it, open a new version — the acceptance decision will then need to be made again.',
+    reopen: 'Reopen as a new version',
+    reopenBusy: 'Reopening…',
+    reopenNote: 'Reopened after residual risk acceptance',
   },
 
   derogations: {
@@ -3058,6 +3062,8 @@ export const en: Translations = {
     conseilsDesc:       'Shows, next to each workshop, the recommended participants (Business, IT dept, CISO…) and essential tips (EBIOS RM / Club EBIOS). Can be hidden by each user.',
     acceptationRisquesTitle: 'Residual risk acceptance (Business management)',
     acceptationRisquesDesc:  'Lets the “Business management” role accept (or refuse) an analysis\'s residual risks — risk acceptance, distinct from analysis validation.',
+    gelApresAcceptationTitle: 'Freeze the analysis after risk acceptance',
+    gelApresAcceptationDesc:  'Once residual risks are accepted, the analysis is frozen (read-only); any change requires opening a new version. Recommended in production; can be turned off for test environments.',
     derogationsTitle:   'Waivers (temporary acceptance of non-conformity)',
     derogationsDesc:    'Allows temporary acceptance of a baseline non-conformity: request by the owner, CISO opinion, validation by Business management, expiry date and alerts before expiration.',
     derogationDureeLabel: 'Default waiver duration (days)',
