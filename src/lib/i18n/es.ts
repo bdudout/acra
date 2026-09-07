@@ -825,6 +825,10 @@ export const es: Translations = {
     reset: 'Restablecer',
     commentPlaceholder: 'Comentario (obligatorio en caso de rechazo)…',
     readOnlyHint: 'Solo la Dirección de negocio puede aceptar o rechazar los riesgos residuales.',
+    frozenNotice: 'Los riesgos residuales han sido aceptados: el análisis está congelado (solo lectura). Para modificarlo, abra una nueva versión — la decisión de aceptación deberá tomarse de nuevo.',
+    reopen: 'Reabrir en una nueva versión',
+    reopenBusy: 'Reabriendo…',
+    reopenNote: 'Reapertura tras la aceptación de los riesgos residuales',
   },
 
   derogations: {
@@ -3058,6 +3062,8 @@ export const es: Translations = {
     conseilsDesc:       'Muestra, junto a cada taller, los participantes recomendados (Negocio, TI, CISO…) y consejos esenciales (EBIOS RM / Club EBIOS). Cada usuario puede ocultarlo.',
     acceptationRisquesTitle: 'Aceptación de riesgos residuales (Dirección de negocio)',
     acceptationRisquesDesc:  'Permite al rol «Dirección de negocio» aceptar (o rechazar) los riesgos residuales de un análisis — aceptación del riesgo, distinta de la validación del análisis.',
+    gelApresAcceptationTitle: 'Congelar el análisis tras la aceptación de riesgos',
+    gelApresAcceptationDesc:  'Una vez aceptados los riesgos residuales, el análisis se congela (solo lectura); cualquier cambio requiere abrir una nueva versión. Recomendado en producción; se puede desactivar en entornos de prueba.',
     derogationsTitle:   'Exenciones (aceptación temporal de no conformidad)',
     derogationsDesc:    'Permite aceptar temporalmente una no conformidad de la base de seguridad: solicitud del responsable, dictamen del CISO, validación por la Dirección de negocio, fecha de vencimiento y alertas antes de la expiración.',
     derogationDureeLabel: 'Duración por defecto de una exención (días)',
