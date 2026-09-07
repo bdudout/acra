@@ -1430,7 +1430,8 @@ model OrganizationConfig {
   acceptationRisquesActive   Boolean       @default(false)
   // Gel de l'analyse après acceptation des risques résiduels : une fois acceptés,
   // l'analyse est figée (lecture seule) et toute modification exige une nouvelle version.
-  gelApresAcceptationActive  Boolean       @default(false)
+  // Activé par défaut (gouvernance) ; désactivable par l'ADMIN (ex. test/dev).
+  gelApresAcceptationActive  Boolean       @default(true)
   // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
   // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
   derogationsActive          Boolean       @default(false)
