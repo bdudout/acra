@@ -100,12 +100,22 @@ export async function GET(
     // Présentation managériale (pptxgenjs = JS pur, pas de runtime esbuild).
     try {
       const { renderAnalysePptx } = await import('@/lib/analyse-pptx')
+      const { getOrgConfig } = await import('@/lib/org-config.server')
       const { accesUtilisateurs: _ap, ...pptxData } = analyse
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      // Appétit au risque résolu dans l'arbre d'organisations (best-effort)
+      const orgCfg = await getOrgConfig(analyse.organizationId).catch(() => null)
+      // Nom de l'approbateur (si l'analyse a été approuvée)
+      const approbateur = analyse.approbateurId
+        ? await prisma.user.findUnique({ where: { id: analyse.approbateurId }, select: { name: true, email: true } }).catch(() => null)
+        : null
       const langParam = searchParams.get('lang')
       const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
-      const buffer = await renderAnalysePptx(pptxData as Record<string, unknown>, config, locale)
+      const buffer = await renderAnalysePptx(pptxData as Record<string, unknown>, config, locale, {
+        appetit: orgCfg?.appetitRisque,
+        approbateurNom: approbateur?.name ?? approbateur?.email ?? undefined,
+      })
       const safeName = analyse.nom.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 64)
       return new NextResponse(buffer as unknown as ArrayBuffer, {
         headers: {
