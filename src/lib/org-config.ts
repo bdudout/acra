@@ -110,7 +110,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,
   acceptationRisquesActive: false,
-  gelApresAcceptationActive: false,
+  gelApresAcceptationActive: true,
   derogationsActive: false,
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
