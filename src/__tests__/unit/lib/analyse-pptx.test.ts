@@ -1,6 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
+import JSZip from 'jszip'
 import { renderAnalysePptx, topScenarioNarratives } from '../../../lib/analyse-pptx'
+
+/** Concatène le XML de toutes les diapositives d'un PPTX (pour vérifier le contenu localisé). */
+async function slidesText(buf: Buffer): Promise<string> {
+  const zip = await JSZip.loadAsync(buf)
+  const files = Object.keys(zip.files).filter(n => /ppt\/slides\/slide\d+\.xml$/.test(n))
+  const parts = await Promise.all(files.map(n => zip.files[n].async('string')))
+  return parts.join('\n')
+}
 
 const analyse = {
   nom: 'Analyse SI hôpital', organisation: 'CHU Démo', secteur: 'Santé', sousSecteur: 'ES_PUBLIC',
@@ -74,6 +83,20 @@ describe('renderAnalysePptx', () => {
     )
     expect(Buffer.isBuffer(buf)).toBe(true)
     expect(buf.length).toBeGreaterThan(3000)
+  })
+
+  it('localise le contenu des diapositives en fr / de / es / it', async () => {
+    const titres: Record<string, string> = {
+      fr: 'Synthèse pour la direction',
+      de: 'Zusammenfassung für die Leitung',
+      es: 'Resumen para la dirección',
+      it: 'Sintesi per la direzione',
+    }
+    for (const [loc, titre] of Object.entries(titres)) {
+      const buf = await renderAnalysePptx(analyse as Record<string, unknown>, null, loc)
+      const xml = await slidesText(buf)
+      expect(xml).toContain(titre)
+    }
   })
 
   it('ne plante pas sur une analyse vide (aucun risque / mesure)', async () => {

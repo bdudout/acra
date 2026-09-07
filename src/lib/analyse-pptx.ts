@@ -55,7 +55,7 @@ interface L {
   axSrOv: string; axSource: string; axCat: string; axPert: string; axOv: string
   axEco: string; axPP: string; axType: string; axMenace: string
   axScen: string; axConf: string; axConfStatut: Record<string, string>; axConfNone: string
-  axRisksDetail: string; empty: string
+  axRisksDetail: string; empty: string; abbrevG: string; abbrevV: string
 }
 
 const FR: L = {
@@ -79,7 +79,7 @@ const FR: L = {
   axSrOv: 'Sources de risque & objectifs visés', axSource: 'Source', axCat: 'Catégorie', axPert: 'Pert.', axOv: 'Objectifs visés',
   axEco: 'Écosystème — parties prenantes', axPP: 'Partie prenante', axType: 'Type', axMenace: 'Menace',
   axScen: 'Scénarios stratégiques', axConf: 'Conformité au socle de sécurité', axConfStatut: { conforme: 'Conforme', partiel: 'Partiel', non_conforme: 'Non conforme', non_applicable: 'N/A' }, axConfNone: 'Socle non renseigné.',
-  axRisksDetail: 'Détail des risques', empty: '—',
+  axRisksDetail: 'Détail des risques', empty: '—', abbrevG: 'G', abbrevV: 'V',
 }
 
 const EN: L = {
@@ -103,10 +103,90 @@ const EN: L = {
   axSrOv: 'Risk sources & targeted objectives', axSource: 'Source', axCat: 'Category', axPert: 'Rel.', axOv: 'Targeted objectives',
   axEco: 'Ecosystem — stakeholders', axPP: 'Stakeholder', axType: 'Type', axMenace: 'Threat',
   axScen: 'Strategic scenarios', axConf: 'Compliance with the security baseline', axConfStatut: { conforme: 'Compliant', partiel: 'Partial', non_conforme: 'Non-compliant', non_applicable: 'N/A' }, axConfNone: 'Baseline not filled in.',
-  axRisksDetail: 'Risk details', empty: '—',
+  axRisksDetail: 'Risk details', empty: '—', abbrevG: 'S', abbrevV: 'L',
 }
 
-function strings(locale: string): L { return locale === 'fr' ? FR : EN }
+const DE: L = {
+  coverKicker: 'Cyber-Risikoanalyse — EBIOS Risk Manager', org: 'Organisation', secteur: 'Branche', versionLabel: 'Version', generatedOn: 'Erstellt am', approvedBy: 'Genehmigt von',
+  statutAnalyse: { EN_COURS: 'In Bearbeitung', SOUMIS: 'Zur Genehmigung eingereicht', APPROUVE: 'Genehmigt', REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert' },
+  mentionLabels: { NON_PROTEGEE: 'Nicht eingestuft', SENSIBLE: 'Sensibel', RESTREINTE: 'Eingeschränkt', CONFIDENTIELLE: 'Vertraulich' },
+  synthTitle: 'Zusammenfassung für die Leitung', globalLevel: { high: 'Hoch', medium: 'Mittel', low: 'Beherrscht', none: 'Nicht bewertet' }, globalLevelLead: 'Gesamtrisikoniveau',
+  appetitBanner: 'über dem Appetit', appetitNone: 'Risikoappetit nicht definiert', appetitThreshold: 'Schwelle', lastRevision: 'Letzte Revision', currentVersion: 'Aktuelle Version',
+  kpiRisks: 'Identifizierte Risiken', kpiHigh: 'Hoch', kpiOutAppetit: 'Über Appetit', kpiMeasures: 'Maßnahmen', kpiProgress: 'Fortschritt', kpiCompliance: 'Konformität Basis',
+  topRisks: 'Prioritäre Risiken', noRisks: 'Kein bewertetes Risiko.', outAppetit: 'über Appetit',
+  whyTitle: 'Warum diese Risiken — Hauptszenarien', whySource: 'Quelle', whyObjective: 'Ziel', whyPath: 'Angriffspfad', whyImpact: 'Auswirkung', whyNone: 'Kein strategisches Szenario vorhanden.',
+  cartoTitle: 'Risikokarte', cartoAxisG: 'Schwere →', cartoAxisV: 'Wahrscheinlichkeit ↑', scaleG: 'Schwere', scaleV: 'Wahrscheinlichkeit', seuilsLegend: 'Stufen', appetitZone: 'Dunkler Rahmen = über dem Appetit',
+  treatEffectTitle: 'Wirkung der Behandlung (brutto → Rest)', cartoBrut: 'Bruttorisiko', cartoResiduel: 'Nach Behandlung', treatEffectNote: 'Der Behandlungsplan verschiebt die Risiken nach unten links (weniger schwer, weniger wahrscheinlich).',
+  treatTitle: 'Prioritäre Risiken & Behandlung', thRisk: 'Risiko', thGV: 'S×W', thLevel: 'Niveau', thAppetit: 'Appetit', thStrategy: 'Strategie', thResidual: 'Rest',
+  planTitle: 'Behandlungsplan', thMeasure: 'Maßnahme', thReduces: 'Reduziert', thCost: 'Kosten', thEffic: 'Wirks.', thStatus: 'Status', thOwner: 'Verantwortl.', thDue: 'Fällig', overdue: 'überfällig',
+  strategies: { REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen', REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen' },
+  statuses: { A_FAIRE: 'Zu erledigen', EN_COURS: 'In Bearbeitung', REALISE: 'Erledigt' },
+  categoriesEbios: { GOUVERNANCE: 'Governance', PROTECTION: 'Schutz', DEFENSE: 'Abwehr', RESILIENCE: 'Resilienz' },
+  annexKicker: 'Anhang',
+  axPerimetre: 'Umfang & Geschäftswerte', axPerimetreTitle: 'Untersuchungsumfang', axVM: 'Geschäftswerte', axBiens: 'Unterstützende Werte', axER: 'Befürchtete Ereignisse',
+  axSrOv: 'Risikoquellen & angestrebte Ziele', axSource: 'Quelle', axCat: 'Kategorie', axPert: 'Rel.', axOv: 'Angestrebte Ziele',
+  axEco: 'Ökosystem — Beteiligte', axPP: 'Beteiligter', axType: 'Typ', axMenace: 'Bedrohung',
+  axScen: 'Strategische Szenarien', axConf: 'Konformität mit der Sicherheitsbasis', axConfStatut: { conforme: 'Konform', partiel: 'Teilweise', non_conforme: 'Nicht konform', non_applicable: 'N/V' }, axConfNone: 'Basis nicht ausgefüllt.',
+  axRisksDetail: 'Risikodetails', empty: '—', abbrevG: 'S', abbrevV: 'W',
+}
+
+const ES: L = {
+  coverKicker: 'Análisis de riesgos cibernéticos — EBIOS Risk Manager', org: 'Organización', secteur: 'Sector', versionLabel: 'Versión', generatedOn: 'Generado el', approvedBy: 'Aprobado por',
+  statutAnalyse: { EN_COURS: 'En curso', SOUMIS: 'Enviado para aprobación', APPROUVE: 'Aprobado', REJETE: 'Rechazado', TERMINE: 'Finalizado', ARCHIVE: 'Archivado' },
+  mentionLabels: { NON_PROTEGEE: 'Sin clasificar', SENSIBLE: 'Sensible', RESTREINTE: 'Restringido', CONFIDENTIELLE: 'Confidencial' },
+  synthTitle: 'Resumen para la dirección', globalLevel: { high: 'Alto', medium: 'Medio', low: 'Controlado', none: 'No evaluado' }, globalLevelLead: 'Nivel de riesgo global',
+  appetitBanner: 'por encima del apetito', appetitNone: 'Apetito de riesgo no definido', appetitThreshold: 'umbral', lastRevision: 'Última revisión', currentVersion: 'Versión actual',
+  kpiRisks: 'Riesgos identificados', kpiHigh: 'Altos', kpiOutAppetit: 'Fuera de apetito', kpiMeasures: 'Medidas', kpiProgress: 'Avance', kpiCompliance: 'Conformidad base',
+  topRisks: 'Riesgos prioritarios', noRisks: 'Ningún riesgo evaluado.', outAppetit: 'fuera de apetito',
+  whyTitle: 'Por qué estos riesgos — escenarios principales', whySource: 'Fuente', whyObjective: 'Objetivo', whyPath: 'Ruta de ataque', whyImpact: 'Impacto de negocio', whyNone: 'Ningún escenario estratégico registrado.',
+  cartoTitle: 'Mapa de riesgos', cartoAxisG: 'Gravedad →', cartoAxisV: 'Probabilidad ↑', scaleG: 'Gravedad', scaleV: 'Probabilidad', seuilsLegend: 'Niveles', appetitZone: 'Borde oscuro = por encima del apetito',
+  treatEffectTitle: 'Efecto del tratamiento (bruto → residual)', cartoBrut: 'Riesgo bruto', cartoResiduel: 'Tras el tratamiento', treatEffectNote: 'El plan de tratamiento desplaza los riesgos hacia abajo-izquierda (menos grave, menos probable).',
+  treatTitle: 'Riesgos prioritarios y tratamiento', thRisk: 'Riesgo', thGV: 'G×P', thLevel: 'Nivel', thAppetit: 'Apetito', thStrategy: 'Estrategia', thResidual: 'Residual',
+  planTitle: 'Plan de tratamiento', thMeasure: 'Medida', thReduces: 'Reduce', thCost: 'Coste', thEffic: 'Efic.', thStatus: 'Estado', thOwner: 'Responsable', thDue: 'Vencim.', overdue: 'vencida',
+  strategies: { REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir', REFUSER: 'Rechazar', SURVEILLER: 'Vigilar' },
+  statuses: { A_FAIRE: 'Por hacer', EN_COURS: 'En curso', REALISE: 'Hecho' },
+  categoriesEbios: { GOUVERNANCE: 'Gobernanza', PROTECTION: 'Protección', DEFENSE: 'Defensa', RESILIENCE: 'Resiliencia' },
+  annexKicker: 'Anexo',
+  axPerimetre: 'Alcance y valores de negocio', axPerimetreTitle: 'Alcance del estudio', axVM: 'Valores de negocio', axBiens: 'Activos de soporte', axER: 'Eventos temidos',
+  axSrOv: 'Fuentes de riesgo y objetivos', axSource: 'Fuente', axCat: 'Categoría', axPert: 'Rel.', axOv: 'Objetivos',
+  axEco: 'Ecosistema — partes interesadas', axPP: 'Parte interesada', axType: 'Tipo', axMenace: 'Amenaza',
+  axScen: 'Escenarios estratégicos', axConf: 'Conformidad con la base de seguridad', axConfStatut: { conforme: 'Conforme', partiel: 'Parcial', non_conforme: 'No conforme', non_applicable: 'N/A' }, axConfNone: 'Base no rellenada.',
+  axRisksDetail: 'Detalle de riesgos', empty: '—', abbrevG: 'G', abbrevV: 'P',
+}
+
+const IT: L = {
+  coverKicker: 'Analisi dei rischi cyber — EBIOS Risk Manager', org: 'Organizzazione', secteur: 'Settore', versionLabel: 'Versione', generatedOn: 'Generato il', approvedBy: 'Approvato da',
+  statutAnalyse: { EN_COURS: 'In corso', SOUMIS: 'Inviato per approvazione', APPROUVE: 'Approvato', REJETE: 'Respinto', TERMINE: 'Completato', ARCHIVE: 'Archiviato' },
+  mentionLabels: { NON_PROTEGEE: 'Non classificato', SENSIBLE: 'Sensibile', RESTREINTE: 'Riservato', CONFIDENTIELLE: 'Confidenziale' },
+  synthTitle: 'Sintesi per la direzione', globalLevel: { high: 'Alto', medium: 'Medio', low: 'Controllato', none: 'Non valutato' }, globalLevelLead: 'Livello di rischio globale',
+  appetitBanner: 'oltre la propensione', appetitNone: 'Propensione al rischio non definita', appetitThreshold: 'soglia', lastRevision: 'Ultima revisione', currentVersion: 'Versione corrente',
+  kpiRisks: 'Rischi identificati', kpiHigh: 'Alti', kpiOutAppetit: 'Oltre propensione', kpiMeasures: 'Misure', kpiProgress: 'Avanzamento', kpiCompliance: 'Conformità base',
+  topRisks: 'Rischi prioritari', noRisks: 'Nessun rischio valutato.', outAppetit: 'oltre propensione',
+  whyTitle: 'Perché questi rischi — scenari principali', whySource: 'Fonte', whyObjective: 'Obiettivo', whyPath: 'Percorso di attacco', whyImpact: 'Impatto di business', whyNone: 'Nessuno scenario strategico presente.',
+  cartoTitle: 'Mappa dei rischi', cartoAxisG: 'Gravità →', cartoAxisV: 'Probabilità ↑', scaleG: 'Gravità', scaleV: 'Probabilità', seuilsLegend: 'Livelli', appetitZone: 'Bordo scuro = oltre la propensione',
+  treatEffectTitle: 'Effetto del trattamento (lordo → residuo)', cartoBrut: 'Rischio lordo', cartoResiduel: 'Dopo il trattamento', treatEffectNote: 'Il piano di trattamento sposta i rischi verso il basso a sinistra (meno grave, meno probabile).',
+  treatTitle: 'Rischi prioritari e trattamento', thRisk: 'Rischio', thGV: 'G×P', thLevel: 'Livello', thAppetit: 'Propensione', thStrategy: 'Strategia', thResidual: 'Residuo',
+  planTitle: 'Piano di trattamento', thMeasure: 'Misura', thReduces: 'Riduce', thCost: 'Costo', thEffic: 'Effic.', thStatus: 'Stato', thOwner: 'Responsabile', thDue: 'Scadenza', overdue: 'in ritardo',
+  strategies: { REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire', REFUSER: 'Rifiutare', SURVEILLER: 'Sorvegliare' },
+  statuses: { A_FAIRE: 'Da fare', EN_COURS: 'In corso', REALISE: 'Fatto' },
+  categoriesEbios: { GOUVERNANCE: 'Governance', PROTECTION: 'Protezione', DEFENSE: 'Difesa', RESILIENCE: 'Resilienza' },
+  annexKicker: 'Allegato',
+  axPerimetre: 'Perimetro e valori di business', axPerimetreTitle: 'Perimetro dello studio', axVM: 'Valori di business', axBiens: 'Beni di supporto', axER: 'Eventi temuti',
+  axSrOv: 'Fonti di rischio e obiettivi', axSource: 'Fonte', axCat: 'Categoria', axPert: 'Ril.', axOv: 'Obiettivi',
+  axEco: 'Ecosistema — parti interessate', axPP: 'Parte interessata', axType: 'Tipo', axMenace: 'Minaccia',
+  axScen: 'Scenari strategici', axConf: 'Conformità alla base di sicurezza', axConfStatut: { conforme: 'Conforme', partiel: 'Parziale', non_conforme: 'Non conforme', non_applicable: 'N/D' }, axConfNone: 'Base non compilata.',
+  axRisksDetail: 'Dettaglio dei rischi', empty: '—', abbrevG: 'G', abbrevV: 'P',
+}
+
+function strings(locale: string): L {
+  switch (locale) {
+    case 'fr': return FR
+    case 'de': return DE
+    case 'es': return ES
+    case 'it': return IT
+    default: return EN
+  }
+}
 
 const asArr = (v: unknown): Any[] => (Array.isArray(v) ? (v as Any[]) : [])
 const s = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v))
@@ -318,7 +398,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
       top.forEach((r, i) => {
         const tier = getRiskTier(num(r.niveauRisque))
         const hors = appetitDefined && appetitStatut(r) === 'HORS'
-        runs.push({ text: `${i + 1}. ${trunc(s(r.nom), 74)}  —  ${num(r.niveauRisque)} (G${num(r.gravite)}×V${num(r.vraisemblance)})`, options: { color: tierHex[tier], fontSize: 13, breakLine: !hors, paraSpaceAfter: hors ? 0 : 6 } })
+        runs.push({ text: `${i + 1}. ${trunc(s(r.nom), 74)}  —  ${num(r.niveauRisque)} (${L.abbrevG}${num(r.gravite)}×${L.abbrevV}${num(r.vraisemblance)})`, options: { color: tierHex[tier], fontSize: 13, breakLine: !hors, paraSpaceAfter: hors ? 0 : 6 } })
         if (hors) runs.push({ text: `   · ${L.outAppetit}`, options: { color: C.high, fontSize: 11, bold: true, breakLine: true, paraSpaceAfter: 6 } })
       })
       slide.addText(runs, { x: 0.6, y: 4.4, w: 12.2, h: 2 })
@@ -341,7 +421,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
         slide.addShape(pptx.ShapeType.roundRect, { x: 0.7, y: y + 0.2, w: 1.15, h: 0.7, rectRadius: 0.05, fill: { color: tierHex[tier] }, line: { type: 'none' } })
         slide.addText([
           { text: `${sc.niveau}`, options: { fontSize: 18, bold: true, color: 'FFFFFF', breakLine: true } },
-          { text: `G${sc.gravite}×V${sc.vraisemblance}`, options: { fontSize: 9, color: 'FFFFFF' } },
+          { text: `${L.abbrevG}${sc.gravite}×${L.abbrevV}${sc.vraisemblance}`, options: { fontSize: 9, color: 'FFFFFF' } },
         ], { x: 0.7, y: y + 0.2, w: 1.15, h: 0.7, align: 'center', valign: 'middle' })
         slide.addText(trunc(sc.nom, 78), { x: 2.0, y: y + 0.14, w: 10.6, h: 0.34, fontSize: 13, bold: true, color: C.ink })
         const facts: PptxGenJS.TextProps[] = []
@@ -363,7 +443,9 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
     const dims = drawMatrix(slide, pptx, model, risques, ox, oy, cell, r => ({ g: num(r.gravite), v: num(r.vraisemblance) }), seuil)
     // Axes
     slide.addText(L.cartoAxisG, { x: ox, y: oy + dims.h + 0.3, w: dims.w, h: 0.3, align: 'center', fontSize: 11, color: C.muted })
-    slide.addText(L.cartoAxisV, { x: ox - 1.5, y: oy, w: 1.3, h: dims.h, align: 'center', valign: 'middle', fontSize: 11, color: C.muted, rotate: 270 })
+    // Étiquette verticale : boîte large (= hauteur de la grille) pivotée, pour que
+    // les libellés longs (ex. « Wahrscheinlichkeit ») tiennent sur une seule ligne.
+    slide.addText(L.cartoAxisV, { x: ox - 0.85 - dims.h / 2, y: oy + dims.h / 2 - 0.2, w: dims.h, h: 0.4, align: 'center', valign: 'middle', fontSize: 11, color: C.muted, rotate: 270 })
     // Légende des échelles (labels des niveaux) + paliers + appétit
     const lx = ox + dims.w + 0.5, lw = 13.33 - lx - 0.4
     let ly = oy
@@ -511,7 +593,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
     if (scen.length) {
       const slide = slideHeader(pptx, L.axScen, L.annexKicker)
       const mk = (t: string, c: boolean) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: C.primary }, fontSize: 11, ...(c ? { align: 'center' as const } : {}) } })
-      const head = [mk(L.thRisk, false), mk('G', true), mk('V', true), mk(L.thLevel, true)]
+      const head = [mk(L.thRisk, false), mk(L.abbrevG, true), mk(L.abbrevV, true), mk(L.thLevel, true)]
       const rows = scen.slice(0, 14).map(sc => {
         const tier = getRiskTier(num(sc.niveauRisque))
         return [
@@ -542,7 +624,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
   // F. Détail des risques (table complète)
   {
     const slide = slideHeader(pptx, L.axRisksDetail, L.annexKicker)
-    const head = [L.thRisk, 'G', 'V', L.thLevel, L.thStrategy, L.thResidual].map((t, i) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: C.primary }, fontSize: 10, align: (i === 0 ? 'left' : 'center') as 'left' | 'center' } }))
+    const head = [L.thRisk, L.abbrevG, L.abbrevV, L.thLevel, L.thStrategy, L.thResidual].map((t, i) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: C.primary }, fontSize: 10, align: (i === 0 ? 'left' : 'center') as 'left' | 'center' } }))
     const rows = risques.slice(0, 16).map((r, i) => {
       const tier = getRiskTier(num(r.niveauRisque))
       return [
