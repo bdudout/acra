@@ -126,7 +126,7 @@ export const es: Translations = {
     mergeConfirmTitle: '¿Fusionar estos terceros?',
     mergeConfirmMsg: 'Todas las apariciones se renombrarán «{cible}» en los análisis que puedes editar (los análisis enviados o aprobados no se modifican). Acción irreversible.',
     mergeDone: '{n} aparición(es) renombrada(s), {b} omitida(s) (fuera de tu ámbito de edición).',
-    mergeBlocked: 'Ninguna fusión posible: las {b} apariciones están en análisis finalizados (enviados, aprobados o terminados), no modificables. Reabra una nueva versión del análisis para armonizar el nombre.',
+    mergeBlocked: 'Ninguna fusión posible: las {b} apariciones están fuera de su ámbito de edición (análisis de otros usuarios o de solo lectura).',
     mergeError: 'La fusión falló. Inténtalo de nuevo.',
   },
 

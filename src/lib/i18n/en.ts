@@ -126,7 +126,7 @@ export const en: Translations = {
     mergeConfirmTitle: 'Merge these third parties?',
     mergeConfirmMsg: 'All occurrences will be renamed “{cible}” in the analyses you can edit (submitted or approved analyses are left untouched). This cannot be undone.',
     mergeDone: '{n} occurrence(s) renamed, {b} skipped (outside your edit scope).',
-    mergeBlocked: 'No merge possible: the {b} occurrence(s) are in finalized analyses (submitted, approved or completed), which cannot be modified. Reopen a new version of the analysis to harmonize the name.',
+    mergeBlocked: 'No merge possible: the {b} occurrence(s) are outside your edit scope (analyses owned by other users or read-only).',
     mergeError: 'Merge failed. Please try again.',
   },
 
