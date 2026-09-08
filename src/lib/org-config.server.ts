@@ -26,6 +26,7 @@ const CONFIG_SELECT = {
   conseilsAteliersActive: true,
   acceptationRisquesActive: true,
   gelApresAcceptationActive: true,
+  interdireAutoApprobation: true,
   derogationsActive: true,
   derogationDureeDefautJours: true,
   derogationAlerteJours: true,

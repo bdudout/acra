@@ -3071,6 +3071,8 @@ export const de: Translations = {
     acceptationRisquesDesc:  'Ermöglicht der Rolle „Fachbereichsleitung“, die Restrisiken einer Analyse zu akzeptieren (oder abzulehnen) — Risikoakzeptanz, getrennt von der Validierung der Analyse.',
     gelApresAcceptationTitle: 'Analyse nach Risikoakzeptanz einfrieren',
     gelApresAcceptationDesc:  'Sobald die Restrisiken akzeptiert sind, wird die Analyse eingefroren (schreibgeschützt); jede Änderung erfordert eine neue Version. In der Produktion empfohlen; für Testumgebungen deaktivierbar.',
+    interdireAutoApprobationTitle: 'Vier-Augen-Kontrolle (Funktionstrennung)',
+    interdireAutoApprobationDesc:  'Verhindert, dass der Autor einer Analyse seine eigene Analyse genehmigt oder seine eigenen Restrisiken akzeptiert — auch mit der Rolle (RSSI, Risk Manager, ADMIN). Ein zweiter Prüfer ist erforderlich. Standardmäßig aktiviert; für Einzelbenutzer-Organisationen deaktivierbar.',
     derogationsTitle:   'Ausnahmegenehmigungen (vorübergehende Akzeptanz von Nichtkonformität)',
     derogationsDesc:    'Ermöglicht die vorübergehende Akzeptanz einer Nichtkonformität der Sicherheitsbasis: Antrag des Verantwortlichen, CISO-Stellungnahme, Freigabe durch die Fachbereichsleitung, Ablaufdatum und Warnungen vor dem Ablauf.',
     derogationDureeLabel: 'Standarddauer einer Ausnahmegenehmigung (Tage)',

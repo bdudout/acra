@@ -1432,6 +1432,9 @@ model OrganizationConfig {
   // l'analyse est figée (lecture seule) et toute modification exige une nouvelle version.
   // Activé par défaut (gouvernance) ; désactivable par l'ADMIN (ex. test/dev).
   gelApresAcceptationActive  Boolean       @default(true)
+  // Four-eyes : interdit à l'auteur d'approuver sa propre analyse / d'accepter ses
+  // propres risques résiduels (séparation des tâches). Activé par défaut.
+  interdireAutoApprobation   Boolean       @default(true)
   // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
   // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
   derogationsActive          Boolean       @default(false)

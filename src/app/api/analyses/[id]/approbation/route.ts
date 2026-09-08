@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -74,6 +75,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (action === 'APPROUVER') {
     if (!canApproveAnalyse(sessionUser, ownership)) {
       return NextResponse.json({ error: 'Seul un Risk Manager peut approuver l\'analyse' }, { status: 403 })
+    }
+    // Four-eyes (config org, activé par défaut) : l'auteur ne peut pas approuver
+    // sa propre analyse, même s'il en a le rôle/les droits (ex. ADMIN).
+    if (analyse.userId === userId) {
+      const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
+      if (orgConfig?.interdireAutoApprobation) {
+        return NextResponse.json({ error: 'Séparation des tâches : vous ne pouvez pas approuver votre propre analyse. Un second valideur est requis.' }, { status: 403 })
+      }
     }
     if (analyse.statut !== 'SOUMIS') {
       return NextResponse.json({ error: 'L\'analyse doit être soumise pour être approuvée' }, { status: 400 })

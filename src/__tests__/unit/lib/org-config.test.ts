@@ -22,6 +22,7 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     conseilsAteliersActive: true,
     acceptationRisquesActive: false,
     gelApresAcceptationActive: false,
+    interdireAutoApprobation: true,
     derogationsActive: false,
     derogationDureeDefautJours: 180,
     derogationAlerteJours: 30,

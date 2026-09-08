@@ -3071,6 +3071,8 @@ export const en: Translations = {
     acceptationRisquesDesc:  'Lets the “Business management” role accept (or refuse) an analysis\'s residual risks — risk acceptance, distinct from analysis validation.',
     gelApresAcceptationTitle: 'Freeze the analysis after risk acceptance',
     gelApresAcceptationDesc:  'Once residual risks are accepted, the analysis is frozen (read-only); any change requires opening a new version. Recommended in production; can be turned off for test environments.',
+    interdireAutoApprobationTitle: 'Four-eyes control (segregation of duties)',
+    interdireAutoApprobationDesc:  'Prevents an analysis author from approving their own analysis or accepting their own residual risks — even with the role (RSSI, Risk Manager, ADMIN). A second validator is required. Enabled by default; can be disabled for single-user organizations (test/dev).',
     derogationsTitle:   'Waivers (temporary acceptance of non-conformity)',
     derogationsDesc:    'Allows temporary acceptance of a baseline non-conformity: request by the owner, CISO opinion, validation by Business management, expiry date and alerts before expiration.',
     derogationDureeLabel: 'Default waiver duration (days)',

@@ -74,6 +74,7 @@ export async function GET(_req: NextRequest) {
     conseilsAteliersActive: cfg.conseilsAteliersActive,
     acceptationRisquesActive: cfg.acceptationRisquesActive,
     gelApresAcceptationActive: cfg.gelApresAcceptationActive,
+    interdireAutoApprobation: cfg.interdireAutoApprobation,
     derogationsActive: cfg.derogationsActive,
     derogationDureeDefautJours: cfg.derogationDureeDefautJours,
     derogationAlerteJours: cfg.derogationAlerteJours,
@@ -192,6 +193,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
   if (typeof body.acceptationRisquesActive === 'boolean') data.acceptationRisquesActive = body.acceptationRisquesActive
   if (typeof body.gelApresAcceptationActive === 'boolean') data.gelApresAcceptationActive = body.gelApresAcceptationActive
+  if (typeof body.interdireAutoApprobation === 'boolean') data.interdireAutoApprobation = body.interdireAutoApprobation
   if (typeof body.derogationsActive === 'boolean') data.derogationsActive = body.derogationsActive
   // Durée par défaut (1 jour à 10 ans) et fenêtre d'alerte (1 à 365 jours), bornées.
   if (typeof body.derogationDureeDefautJours === 'number' && Number.isFinite(body.derogationDureeDefautJours)) {
