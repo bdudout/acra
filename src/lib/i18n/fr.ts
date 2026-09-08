@@ -1779,6 +1779,7 @@ export const fr = {
     commentairePlaceholder: 'Commentaire (facultatif)',
     addMesure: 'Relever',
     aucuneMesure: 'Aucune mesure.',
+    clearFilter: 'Tout afficher',
     statutLabels: {
       NORMAL: 'Normal',
       ALERTE: 'Alerte',

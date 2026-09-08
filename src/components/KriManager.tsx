@@ -1,7 +1,8 @@
 'use client'
 
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 
@@ -43,6 +44,10 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
   const [mesures, setMesures] = useState<Record<string, Mesure[]>>({})
   const [mesureForm, setMesureForm] = useState<{ valeur: string; commentaire: string }>({ valeur: '', commentaire: '' })
   const [err, setErr] = useState<string | null>(null)
+  // Filtre par statut piloté par l'URL (deep-link depuis le pilotage : ?statut=ALERTE|CRITIQUE).
+  const searchParams = useSearchParams()
+  const initialStatut = (searchParams.get('statut') || '').toUpperCase()
+  const [filtreStatut, setFiltreStatut] = useState<string>(['ALERTE', 'CRITIQUE', 'NORMAL', 'INCONNU'].includes(initialStatut) ? initialStatut : '')
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, kk) => (o as Record<string, unknown>)?.[kk], t) as string ?? '', [t])
 
@@ -169,9 +174,17 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
         </div>
       )}
 
-      {data!.kris.length === 0 ? <p className="text-sm text-gray-400 italic py-6 text-center">{k.empty}</p> : (
+      {filtreStatut && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">
+            {(k.statutLabels as Record<string, string> | undefined)?.[filtreStatut] ?? filtreStatut}
+          </span>
+          <button onClick={() => setFiltreStatut('')} className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><X size={14} /> {k.clearFilter}</button>
+        </div>
+      )}
+      {(() => { const visible = filtreStatut ? data!.kris.filter(r => r.statut === filtreStatut) : data!.kris; return visible.length === 0 ? <p className="text-sm text-gray-400 italic py-6 text-center">{k.empty}</p> : (
         <div className="space-y-2">
-          {data!.kris.map(row => (
+          {visible.map(row => (
             <div key={row.id} className={`card p-0 overflow-hidden ${!row.actif ? 'opacity-60' : ''}`}>
               <div className="flex items-center gap-3 px-4 py-3">
                 <button onClick={() => toggleExpand(row.id)} className="flex-1 text-left flex items-center gap-3 min-w-0">
@@ -218,7 +231,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
             </div>
           ))}
         </div>
-      )}
+      ) })()}
     </div>
   )
 }

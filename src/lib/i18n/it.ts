@@ -1741,6 +1741,7 @@ export const it: Translations = {
     commentairePlaceholder: 'Commento (facoltativo)',
     addMesure: 'Registra',
     aucuneMesure: 'Nessuna misurazione.',
+    clearFilter: 'Mostra tutto',
     statutLabels: {
       NORMAL: 'Normale',
       ALERTE: 'Allerta',
