@@ -130,6 +130,30 @@ export async function GET(
     }
   }
 
+  if (format === 'docx') {
+    // Rapport Word documentaire (lib « docx » = JS pur).
+    try {
+      const { renderAnalyseDocx } = await import('@/lib/analyse-docx')
+      const { accesUtilisateurs: _ad, ...docxData } = analyse
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      const langParam = searchParams.get('lang')
+      const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
+      const buffer = await renderAnalyseDocx(docxData as Record<string, unknown>, config, locale)
+      const safeName = analyse.nom.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 64)
+      return new NextResponse(buffer as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'Content-Disposition': `attachment; filename="acra-${safeName}.docx"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export docx] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du document Word' }, { status: 500 })
+    }
+  }
+
   if (format === 'csv') {
     const lines: string[] = []
     // Neutralise l'injection de formules (=,+,-,@) AVANT l'échappement CSV des guillemets
@@ -175,6 +199,32 @@ export async function GET(
     lines.push('Nom,Type,Priorité,Statut,Responsable,Entité,Échéance')
     for (const m of analyse.mesures) {
       lines.push(`${esc(m.nom)},${esc(m.type)},${m.priorite},${esc(m.statut)},${esc(m.responsable)},${esc((m as any).entite)},${m.echeance ? new Date(m.echeance).toLocaleDateString('fr-FR') : ''}`)
+    }
+    lines.push('')
+
+    // Écosystème — parties prenantes (cohérence avec PDF/XLSX)
+    lines.push('=== PARTIES PRENANTES ===')
+    lines.push('Nom,Type,Exposition,Fiabilité,Menace')
+    for (const pp of analyse.partiesPrenantes) {
+      const menace = pp.fiabilite ? (pp.exposition / pp.fiabilite).toFixed(2) : ''
+      lines.push(`${esc(pp.nom)},${esc(pp.type)},${pp.exposition ?? ''},${pp.fiabilite ?? ''},${menace}`)
+    }
+    lines.push('')
+
+    // Conformité au socle de sécurité
+    const socle = (analyse.cadrage as { socleSecurite?: { ref?: string; nom?: string; statut?: string }[] } | null)?.socleSecurite ?? []
+    lines.push('=== CONFORMITÉ AU SOCLE ===')
+    lines.push('Référence,Statut')
+    for (const e of socle) {
+      lines.push(`${esc(e.ref ?? e.nom ?? '')},${esc(e.statut ?? '')}`)
+    }
+    lines.push('')
+
+    // Historique des révisions
+    lines.push('=== RÉVISIONS ===')
+    lines.push('Version,Date,Cycle,Note')
+    for (const rev of analyse.revisions) {
+      lines.push(`${esc(rev.version)},${rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('fr-FR') : ''},${esc((rev as any).cycle)},${esc(rev.note)}`)
     }
 
     const csv = lines.join('\n')
@@ -358,6 +408,36 @@ export async function GET(
         men: Number((pp.exposition / pp.fiabilite).toFixed(2)),
       }))
       styleHeaderRow(wsPP)
+    }
+
+    // ── Feuille 8 : Conformité au socle (cohérence avec PDF/CSV) ───────
+    const socleXlsx = (analyse.cadrage as { socleSecurite?: { ref?: string; nom?: string; statut?: string }[] } | null)?.socleSecurite ?? []
+    if (socleXlsx.length > 0) {
+      const wsSocle = wb.addWorksheet('Conformité socle')
+      wsSocle.columns = [
+        { header: 'Référence', key: 'ref', width: 24 },
+        { header: 'Statut', key: 'statut', width: 18 },
+      ]
+      socleXlsx.forEach(e => wsSocle.addRow({ ref: S(e.ref ?? e.nom ?? ''), statut: S(e.statut ?? '') }))
+      styleHeaderRow(wsSocle)
+    }
+
+    // ── Feuille 9 : Révisions ─────────────────────────────────────────
+    if (analyse.revisions.length > 0) {
+      const wsRev = wb.addWorksheet('Révisions')
+      wsRev.columns = [
+        { header: 'Version', key: 'version', width: 12 },
+        { header: 'Date',    key: 'date',    width: 14 },
+        { header: 'Cycle',   key: 'cycle',   width: 16 },
+        { header: 'Note',    key: 'note',    width: 62 },
+      ]
+      analyse.revisions.forEach((rev: { version: string; createdAt: Date; cycle?: string; note: string | null }) => wsRev.addRow({
+        version: S(rev.version),
+        date: rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('fr-FR') : '',
+        cycle: S(rev.cycle ?? ''),
+        note: S(rev.note ?? ''),
+      }))
+      styleHeaderRow(wsRev)
     }
 
     const buf = await wb.xlsx.writeBuffer()
