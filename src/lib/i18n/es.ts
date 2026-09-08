@@ -1619,6 +1619,7 @@ export const es: Translations = {
     champ: { fichier: 'Archivo', titre: 'Título', type: 'Tipo', portee: 'Vínculo', referentiel: 'Marco', risque: 'Riesgo', version: 'Versión', description: 'Descripción', dateDocument: 'Fecha del documento', dateRevue: 'Próxima revisión' },
     typeOpt: { PSSI: 'PSSI', STRATEGIE: 'Estrategia', POLITIQUE: 'Política', PROCEDURE: 'Procedimiento', PREUVE: 'Evidencia', AUTRE: 'Otro' },
     porteeOpt: { REFERENTIEL: 'Marco', RISQUE: 'Riesgo', ORG: 'Organización' },
+    linkRefHint: 'Consejo: este documento parece un marco — elija el ámbito «Marco» para vincularlo a un marco existente (ISO, PSSI…).',
     col: { titre: 'Documento', type: 'Tipo', rattachement: 'Vínculo', taille: 'Tamaño', revue: 'Revisión' },
     deleteConfirm: '¿Eliminar este documento y su archivo?',
     errorRequired: 'El título es obligatorio.',
@@ -3130,6 +3131,7 @@ export const es: Translations = {
     subtitle: 'Tasa de conformidad por organización y marco, agregada sobre el árbol (organización → dirección → grupo).',
     orgCol: 'Organización',
     empty: 'Aún no hay conformidad a nivel de organización. Active «Por organización» en configuración y complete la base.',
+    emptyCta: 'Abrir la configuración',
     legend: 'Cada celda agrega la conformidad del subárbol de la organización (nº de org · controles evaluados/total). Haga clic para ver los análisis.',
   },
   qualification: {

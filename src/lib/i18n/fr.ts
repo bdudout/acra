@@ -1642,6 +1642,7 @@ export const fr = {
     champ: { fichier: 'Fichier', titre: 'Titre', type: 'Type', portee: 'Rattachement', referentiel: 'Référentiel', risque: 'Risque', version: 'Version', description: 'Description', dateDocument: 'Date du document', dateRevue: 'Prochaine revue' },
     typeOpt: { PSSI: 'PSSI', STRATEGIE: 'Stratégie', POLITIQUE: 'Politique', PROCEDURE: 'Procédure', PREUVE: 'Preuve', AUTRE: 'Autre' },
     porteeOpt: { REFERENTIEL: 'Référentiel', RISQUE: 'Risque', ORG: 'Organisation' },
+    linkRefHint: 'Astuce : ce document ressemble à un référentiel — choisissez le rattachement « Référentiel » pour le relier à un référentiel existant (ISO, PSSI…).',
     col: { titre: 'Document', type: 'Type', rattachement: 'Rattachement', taille: 'Taille', revue: 'Revue' },
     deleteConfirm: 'Supprimer ce document et son fichier ?',
     errorRequired: 'Le titre est requis.',
@@ -3178,6 +3179,7 @@ export const fr = {
     subtitle: 'Taux de conformité par organisation et référentiel, agrégé sur l\'arbre (organisation → direction → groupe).',
     orgCol: 'Organisation',
     empty: 'Aucune conformité au niveau organisation pour l\'instant. Activez « Par organisation » dans la configuration et renseignez le socle.',
+    emptyCta: 'Ouvrir la configuration',
     legend: 'Chaque cellule agrège la conformité du sous-arbre de l\'organisation (nombre d\'org · contrôles évalués/total). Cliquez pour voir les analyses.',
   },
   qualification: {
