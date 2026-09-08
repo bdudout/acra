@@ -84,3 +84,25 @@ export async function getExigencesFor(code: string, orgId: string, locale: Local
   const row = await prisma.referentiel.findFirst({ where: { organizationId: orgId, code }, select: { exigences: true } })
   return Array.isArray(row?.exigences) ? (row!.exigences as unknown as Exigence[]) : []
 }
+
+/**
+ * Libellés de TOUTES les exigences/contrôles des référentiels de l'organisation
+ * (cyber + GRC + custom), dédoublonnés et plafonnés. Sert de source aux
+ * suggestions de mesures (autocomplétion) : « sécurité » propose alors toutes les
+ * mesures des référentiels contenant ce mot, pas seulement celles déjà saisies.
+ */
+export async function allExigenceLabels(orgId: string, locale: Locale, max = 2000): Promise<string[]> {
+  const refs = await listReferentiels(orgId, locale)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const r of refs) {
+    let exs: Exigence[] = []
+    try { exs = await getExigencesFor(r.code, orgId, locale) } catch { exs = [] }
+    for (const e of exs) {
+      const nom = (e?.nom ?? '').trim()
+      if (nom && !seen.has(nom)) { seen.add(nom); out.push(nom) }
+      if (out.length >= max) return out
+    }
+  }
+  return out
+}

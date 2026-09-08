@@ -95,7 +95,7 @@ function statutMesureFromConf(confStatut: string | undefined): 'A_FAIRE' | 'EN_C
 
 export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig, nonConformites = [], conformiteByRef = {} }: Props) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
 
   const TYPES_MESURE = [
@@ -889,7 +889,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                     <div className="flex items-start gap-3">
                       <div className="flex-1 space-y-2">
                         <div className="flex gap-2 items-center flex-wrap">
-                          <AutocompleteInput field="mesure" value={m.nom} onChange={v => updateMesure(m.id, 'nom', v)}
+                          <AutocompleteInput field="mesure" lang={locale} value={m.nom} onChange={v => updateMesure(m.id, "nom", v)}
                             aria-label={t.workshop.a5.measNamePh}
                             className="input text-sm flex-1 min-w-48" placeholder={t.workshop.a5.measNamePh} />
                           <select value={m.type} onChange={e => updateMesure(m.id, 'type', e.target.value)}

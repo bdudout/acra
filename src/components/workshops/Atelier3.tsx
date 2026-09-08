@@ -24,6 +24,7 @@ import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileText, Handsha
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import AutocompleteInput from '@/components/AutocompleteInput'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
@@ -1034,9 +1035,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
                               return (
                               <div key={m.id} className="p-2 bg-white border border-gray-100 rounded space-y-1">
                                 <div className="flex gap-2 items-center">
-                                  <input value={m.mesure}
-                                    onChange={e => updateMesure(s.id, m.id, 'mesure', e.target.value)}
-                                    className="input text-xs flex-1" placeholder={t.workshop.a3.measPh} />
+                                  <div className="flex-1">
+                                    <AutocompleteInput field="mesure" lang={locale} value={m.mesure}
+                                      onChange={v => updateMesure(s.id, m.id, 'mesure', v)}
+                                      className="input text-xs w-full" placeholder={t.workshop.a3.measPh} />
+                                  </div>
                                   <select value={m.priorite || 'P2'}
                                     onChange={e => updateMesure(s.id, m.id, 'priorite', e.target.value)}
                                     className="input text-xs w-32" title={t.workshop.a3.measPrioriteLabel}>
