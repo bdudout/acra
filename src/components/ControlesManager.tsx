@@ -1,8 +1,9 @@
 'use client'
 
-import { FlaskConical, Paperclip } from 'lucide-react'
+import { FlaskConical, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { useSearchParams } from 'next/navigation'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
 import { CATALOGUES_CONTROLES } from '@/lib/controles-catalogue'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
@@ -216,7 +217,11 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
   const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
   const responsableSug = suggestionsFromValues(controles.map(x => x.responsable))
-  const controlesFiltres = filtrerControles(controles, filtre)
+  const controlesFiltresBase = filtrerControles(controles, filtre)
+  // Deep-link pilotage : ?vue=anomalies → ne montre que les contrôles avec anomalies.
+  const _sp = useSearchParams()
+  const [vueAnomalies, setVueAnomalies] = useState<boolean>(_sp.get('vue') === 'anomalies')
+  const controlesFiltres = vueAnomalies ? controlesFiltresBase.filter(x => x.efficacite.anomalies > 0) : controlesFiltresBase
   const filtreActif = Boolean(filtre.q || filtre.niveau || filtre.etat || filtre.referentielCode || filtre.actif)
   const enRetard = controles.filter(x => x.etatEcheance === 'EN_RETARD').length
   const dus = controles.filter(x => x.etatEcheance === 'DU').length
@@ -378,6 +383,12 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
           </select>
           {filtreActif && (
             <>
+              {vueAnomalies && (
+                <span className="mr-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 font-medium">
+                  {c.anomaliesTrouvees}
+                  <button onClick={() => setVueAnomalies(false)} className="hover:text-amber-950 dark:hover:text-amber-100"><X size={12} /></button>
+                </span>
+              )}
               <span className="text-xs text-gray-400">{c.filtreResultat.replace('{n}', String(controlesFiltres.length)).replace('{total}', String(controles.length))}</span>
               <button onClick={() => setFiltre({ q: '', niveau: '', etat: '', referentielCode: '', actif: '' })} className="text-xs text-ebios-600 hover:underline">✕ {c.filtreEffacer}</button>
             </>

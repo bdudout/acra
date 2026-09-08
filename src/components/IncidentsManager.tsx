@@ -1,7 +1,8 @@
 'use client'
 
-import { Siren, Info } from 'lucide-react'
+import { Siren, Info, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
@@ -51,6 +52,10 @@ const STATUT_BADGE: Record<string, string> = {
 export default function IncidentsManager({ canQualify }: { canQualify: boolean }) {
   const { t, locale } = useTranslation()
   const n = t.incidents
+  // Filtre par statut piloté par l'URL (deep-link pilotage : ?statut=DECLARE).
+  const _sp = useSearchParams()
+  const _stInit = (_sp.get('statut') || '').toUpperCase()
+  const [filtreStatut, setFiltreStatut] = useState<string>(INCIDENT_STATUTS.includes(_stInit as IncidentStatut) ? _stInit : '')
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
@@ -215,6 +220,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     await fetch(`/api/incidents/${id}`, { method: 'DELETE' }); reload()
   }
 
+  const visibleIncidents = filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'entités à partir des incidents déjà saisis (org courante).
   const entiteSug = suggestionsFromValues(incidents.map(i => i.entite))
@@ -286,6 +292,12 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
         </div>
       )}
 
+      {filtreStatut && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">{(n.statuts as Record<string,string>)[filtreStatut] ?? filtreStatut}</span>
+          <button onClick={() => setFiltreStatut('')} className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><X size={14} /> {t.actions.clearFilters}</button>
+        </div>
+      )}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -302,8 +314,8 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           </thead>
           <tbody>
             {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
-              : incidents.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
-              : incidents.map(i => (
+              : visibleIncidents.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
+              : visibleIncidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {i.intitule}

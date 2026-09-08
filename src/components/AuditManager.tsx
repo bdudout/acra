@@ -2,8 +2,9 @@
 
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
-import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
+import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
 import { PROGRAMMES_AUDIT, getProgrammeAudit } from '@/lib/audit-programmes-catalogue'
 
@@ -78,7 +79,10 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   const [coteId, setCoteId] = useState<string | null>(null)
   const [cote, setCote] = useState<ProgrammeResultat[]>([])
   const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
-  const [cFiltre, setCFiltre] = useState<ConstatFiltre>({ q: '', statut: '', criticite: '', source: '' })
+  // Deep-link pilotage : ?constat=critique → pré-filtre les constats de criticité maximale (4).
+  const _sp = useSearchParams()
+  const _critInit = _sp.get('constat') === 'critique' ? String(CRITICITE_MAX) : ''
+  const [cFiltre, setCFiltre] = useState<ConstatFiltre>({ q: '', statut: '', criticite: _critInit, source: '' })
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
@@ -444,6 +448,10 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                         <select value={cFiltre.source ?? ''} onChange={e => setCFiltre(f => ({ ...f, source: e.target.value }))} className={`${inp} text-xs`} aria-label={a.source}>
                           <option value="">{a.filtreSourceToutes}</option>
                           {CONSTAT_SOURCES.map(s => <option key={s} value={s}>{lbl(a.sources, s)}</option>)}
+                        </select>
+                        <select value={cFiltre.criticite ?? ''} onChange={e => setCFiltre(f => ({ ...f, criticite: e.target.value }))} className={`${inp} text-xs`} aria-label={a.constatsCritiques}>
+                          <option value="">{a.filtreCriticiteToutes}</option>
+                          {Array.from({ length: CRITICITE_MAX }, (_, i) => String(CRITICITE_MAX - i)).map(v => <option key={v} value={v}>{v}</option>)}
                         </select>
                       </div>
                     )}

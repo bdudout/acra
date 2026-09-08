@@ -1563,6 +1563,7 @@ export const fr = {
     filtreStatutTous: 'Tous statuts',
     filtreTypeTous: 'Tous types',
     filtreSourceToutes: 'Toutes sources',
+    filtreCriticiteToutes: 'Toutes criticités',
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Effacer',
     filtreAucun: 'Aucun résultat.',
