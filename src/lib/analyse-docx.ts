@@ -66,7 +66,63 @@ const EN: L = {
   statuses: { A_FAIRE: 'To do', EN_COURS: 'In progress', REALISE: 'Done' }, empty: '—', none: 'No item.',
 }
 
-function strings(locale: string): L { return locale === 'fr' ? FR : EN }
+const DE: L = {
+  coverKicker: 'Cyber-Risikoanalyse — EBIOS Risk Manager', org: 'Organisation', secteur: 'Branche', version: 'Version', statut: 'Status', generatedOn: 'Erstellt am',
+  statutAnalyse: { EN_COURS: 'In Bearbeitung', SOUMIS: 'Eingereicht', APPROUVE: 'Genehmigt', REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert' },
+  mentionLabels: { NON_PROTEGEE: 'Nicht eingestuft', SENSIBLE: 'Sensibel', RESTREINTE: 'Eingeschränkt', CONFIDENTIELLE: 'Vertraulich' },
+  perimetre: 'Untersuchungsumfang', valeursMetier: 'Geschäftswerte', biensSupports: 'Unterstützende Werte',
+  srOv: 'Risikoquellen & angestrebte Ziele', thSource: 'Quelle', thCat: 'Kategorie', thPert: 'Relevanz', thOv: 'Angestrebte Ziele',
+  scenarios: 'Strategische Szenarien', thRisk: 'Bezeichnung', thG: 'S', thV: 'W', thLevel: 'Niveau',
+  eco: 'Ökosystem — Beteiligte', thPP: 'Beteiligter', thType: 'Typ', thMenace: 'Bedrohung',
+  risques: 'Risiken & Behandlung', thStrategy: 'Strategie', thResidual: 'Rest',
+  plan: 'Behandlungsplan', thMeasure: 'Maßnahme', thMType: 'Typ', thPriority: 'Priorität', thStatus: 'Status', thOwner: 'Verantwortlich', thDue: 'Fällig',
+  conf: 'Konformität mit der Sicherheitsbasis', thRef: 'Referenz', confStatut: { conforme: 'Konform', partiel: 'Teilweise', non_conforme: 'Nicht konform', non_applicable: 'N/V' },
+  revisions: 'Revisionshistorie', thRevVersion: 'Version', thRevDate: 'Datum', thRevNote: 'Notiz',
+  strategies: { REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen', REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen' },
+  statuses: { A_FAIRE: 'Zu erledigen', EN_COURS: 'In Bearbeitung', REALISE: 'Erledigt' }, empty: '—', none: 'Kein Element.',
+}
+
+const ES: L = {
+  coverKicker: 'Análisis de riesgos cibernéticos — EBIOS Risk Manager', org: 'Organización', secteur: 'Sector', version: 'Versión', statut: 'Estado', generatedOn: 'Generado el',
+  statutAnalyse: { EN_COURS: 'En curso', SOUMIS: 'Enviado', APPROUVE: 'Aprobado', REJETE: 'Rechazado', TERMINE: 'Finalizado', ARCHIVE: 'Archivado' },
+  mentionLabels: { NON_PROTEGEE: 'Sin clasificar', SENSIBLE: 'Sensible', RESTREINTE: 'Restringido', CONFIDENTIELLE: 'Confidencial' },
+  perimetre: 'Alcance del estudio', valeursMetier: 'Valores de negocio', biensSupports: 'Activos de soporte',
+  srOv: 'Fuentes de riesgo y objetivos', thSource: 'Fuente', thCat: 'Categoría', thPert: 'Pertinencia', thOv: 'Objetivos',
+  scenarios: 'Escenarios estratégicos', thRisk: 'Título', thG: 'G', thV: 'P', thLevel: 'Nivel',
+  eco: 'Ecosistema — partes interesadas', thPP: 'Parte interesada', thType: 'Tipo', thMenace: 'Amenaza',
+  risques: 'Riesgos y tratamiento', thStrategy: 'Estrategia', thResidual: 'Residual',
+  plan: 'Plan de tratamiento', thMeasure: 'Medida', thMType: 'Tipo', thPriority: 'Prioridad', thStatus: 'Estado', thOwner: 'Responsable', thDue: 'Vencimiento',
+  conf: 'Conformidad con la base de seguridad', thRef: 'Referencia', confStatut: { conforme: 'Conforme', partiel: 'Parcial', non_conforme: 'No conforme', non_applicable: 'N/A' },
+  revisions: 'Historial de revisiones', thRevVersion: 'Versión', thRevDate: 'Fecha', thRevNote: 'Nota',
+  strategies: { REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir', REFUSER: 'Rechazar', SURVEILLER: 'Vigilar' },
+  statuses: { A_FAIRE: 'Por hacer', EN_COURS: 'En curso', REALISE: 'Hecho' }, empty: '—', none: 'Ningún elemento.',
+}
+
+const IT: L = {
+  coverKicker: 'Analisi dei rischi cyber — EBIOS Risk Manager', org: 'Organizzazione', secteur: 'Settore', version: 'Versione', statut: 'Stato', generatedOn: 'Generato il',
+  statutAnalyse: { EN_COURS: 'In corso', SOUMIS: 'Inviato', APPROUVE: 'Approvato', REJETE: 'Respinto', TERMINE: 'Completato', ARCHIVE: 'Archiviato' },
+  mentionLabels: { NON_PROTEGEE: 'Non classificato', SENSIBLE: 'Sensibile', RESTREINTE: 'Riservato', CONFIDENTIELLE: 'Confidenziale' },
+  perimetre: 'Perimetro dello studio', valeursMetier: 'Valori di business', biensSupports: 'Beni di supporto',
+  srOv: 'Fonti di rischio e obiettivi', thSource: 'Fonte', thCat: 'Categoria', thPert: 'Pertinenza', thOv: 'Obiettivi',
+  scenarios: 'Scenari strategici', thRisk: 'Titolo', thG: 'G', thV: 'P', thLevel: 'Livello',
+  eco: 'Ecosistema — parti interessate', thPP: 'Parte interessata', thType: 'Tipo', thMenace: 'Minaccia',
+  risques: 'Rischi e trattamento', thStrategy: 'Strategia', thResidual: 'Residuo',
+  plan: 'Piano di trattamento', thMeasure: 'Misura', thMType: 'Tipo', thPriority: 'Priorità', thStatus: 'Stato', thOwner: 'Responsabile', thDue: 'Scadenza',
+  conf: 'Conformità alla base di sicurezza', thRef: 'Riferimento', confStatut: { conforme: 'Conforme', partiel: 'Parziale', non_conforme: 'Non conforme', non_applicable: 'N/D' },
+  revisions: 'Cronologia delle revisioni', thRevVersion: 'Versione', thRevDate: 'Data', thRevNote: 'Nota',
+  strategies: { REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire', REFUSER: 'Rifiutare', SURVEILLER: 'Sorvegliare' },
+  statuses: { A_FAIRE: 'Da fare', EN_COURS: 'In corso', REALISE: 'Fatto' }, empty: '—', none: 'Nessun elemento.',
+}
+
+function strings(locale: string): L {
+  switch (locale) {
+    case 'fr': return FR
+    case 'de': return DE
+    case 'es': return ES
+    case 'it': return IT
+    default: return EN
+  }
+}
 
 const CELL_MARGINS = { top: 40, bottom: 40, left: 90, right: 90 }
 
