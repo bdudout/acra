@@ -91,6 +91,8 @@ export default async function ConformiteGlobalPage() {
             refs={refs}
             orgCol={t.conformiteGlobal.orgCol}
             emptyLabel={t.conformiteGlobal.empty}
+            emptyHref="/configuration"
+            emptyCta={t.conformiteGlobal.emptyCta}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
           />

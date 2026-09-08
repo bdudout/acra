@@ -1619,6 +1619,7 @@ export const it: Translations = {
     champ: { fichier: 'File', titre: 'Titolo', type: 'Tipo', portee: 'Collegamento', referentiel: 'Riferimento', risque: 'Rischio', version: 'Versione', description: 'Descrizione', dateDocument: 'Data del documento', dateRevue: 'Prossima revisione' },
     typeOpt: { PSSI: 'PSSI', STRATEGIE: 'Strategia', POLITIQUE: 'Politica', PROCEDURE: 'Procedura', PREUVE: 'Prova', AUTRE: 'Altro' },
     porteeOpt: { REFERENTIEL: 'Riferimento', RISQUE: 'Rischio', ORG: 'Organizzazione' },
+    linkRefHint: 'Suggerimento: questo documento sembra un quadro di riferimento — scegli l\'ambito «Quadro» per collegarlo a un riferimento esistente (ISO, PSSI…).',
     col: { titre: 'Documento', type: 'Tipo', rattachement: 'Collegamento', taille: 'Dimensione', revue: 'Revisione' },
     deleteConfirm: 'Eliminare questo documento e il suo file?',
     errorRequired: 'Il titolo è obbligatorio.',
@@ -3130,6 +3131,7 @@ export const it: Translations = {
     subtitle: 'Tasso di conformità per organizzazione e framework, aggregato sull\'albero (organizzazione → direzione → gruppo).',
     orgCol: 'Organizzazione',
     empty: 'Nessuna conformità a livello di organizzazione al momento. Attiva «Per organizzazione» in configurazione e compila la base.',
+    emptyCta: 'Apri la configurazione',
     legend: 'Ogni cella aggrega la conformità del sotto-albero dell\'organizzazione (n. org · controlli valutati/totale). Clicca per vedere le analisi.',
   },
   qualification: {

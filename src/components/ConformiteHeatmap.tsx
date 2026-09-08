@@ -18,18 +18,29 @@ function cellStyle(taux: number): string {
  * colonnes = référentiels, cellules = taux agrégé (roll-up sous-arbre).
  * Présentational — libellés fournis par l'appelant.
  */
-export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, hrefFor, pdfHrefFor }: {
+export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, emptyHref, emptyCta, hrefFor, pdfHrefFor }: {
   rows: HeatmapRow[]
   refs: HeatmapRef[]
   orgCol: string
   emptyLabel: string
+  /** Lien actionnable affiché sous le message vide (ex. /configuration). */
+  emptyHref?: string
+  /** Libellé du bouton d'action de l'état vide. */
+  emptyCta?: string
   /** Lien d'une cellule (ex. export SoA CSV). Défaut : liste des analyses. */
   hrefFor?: (orgId: string, refId: string) => string
   /** Lien secondaire d'export PDF (SoA formelle). Optionnel. */
   pdfHrefFor?: (orgId: string, refId: string) => string
 }) {
   if (rows.length === 0 || refs.length === 0) {
-    return <p className="text-sm text-gray-500 italic">{emptyLabel}</p>
+    return (
+      <div className="text-sm text-gray-500">
+        <p className="italic">{emptyLabel}</p>
+        {emptyHref && emptyCta && (
+          <Link href={emptyHref} className="inline-block mt-2 text-ebios-600 dark:text-ebios-300 font-medium hover:underline">{emptyCta} →</Link>
+        )}
+      </div>
+    )
   }
   return (
     <div className="overflow-x-auto">

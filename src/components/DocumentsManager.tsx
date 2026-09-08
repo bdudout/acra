@@ -128,6 +128,9 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
               <select className={`mt-1 ${inputCls}`} value={form.portee} onChange={e => setForm({ ...form, portee: e.target.value })}>
                 {DOCUMENT_PORTEES.map(p => <option key={p} value={p}>{d.porteeOpt[p]}</option>)}
               </select></label>
+            {['PSSI', 'POLITIQUE'].includes(form.type) && form.portee !== 'REFERENTIEL' && (
+              <p className="text-xs text-ebios-600 dark:text-ebios-300">{d.linkRefHint}</p>
+            )}
             {form.portee === 'REFERENTIEL' && (
               <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{d.champ.referentiel}</span>
                 <select className={`mt-1 ${inputCls}`} value={form.referentielId} onChange={e => setForm({ ...form, referentielId: e.target.value })} required>

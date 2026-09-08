@@ -1619,6 +1619,7 @@ export const de: Translations = {
     champ: { fichier: 'Datei', titre: 'Titel', type: 'Typ', portee: 'Zuordnung', referentiel: 'Referenzrahmen', risque: 'Risiko', version: 'Version', description: 'Beschreibung', dateDocument: 'Dokumentdatum', dateRevue: 'Nächste Überprüfung' },
     typeOpt: { PSSI: 'Sicherheitsleitlinie', STRATEGIE: 'Strategie', POLITIQUE: 'Richtlinie', PROCEDURE: 'Verfahren', PREUVE: 'Nachweis', AUTRE: 'Sonstiges' },
     porteeOpt: { REFERENTIEL: 'Referenzrahmen', RISQUE: 'Risiko', ORG: 'Organisation' },
+    linkRefHint: 'Tipp: Dieses Dokument ähnelt einem Rahmenwerk — wählen Sie die Zuordnung „Rahmenwerk“, um es mit einem bestehenden Rahmenwerk zu verknüpfen (ISO, PSSI…).',
     col: { titre: 'Dokument', type: 'Typ', rattachement: 'Zuordnung', taille: 'Größe', revue: 'Überprüfung' },
     deleteConfirm: 'Dieses Dokument und seine Datei löschen?',
     errorRequired: 'Titel ist erforderlich.',
@@ -3130,6 +3131,7 @@ export const de: Translations = {
     subtitle: 'Konformitätsgrad je Organisation und Rahmenwerk, über den Baum aggregiert (Organisation → Bereich → Gruppe).',
     orgCol: 'Organisation',
     empty: 'Noch keine Konformität auf Organisationsebene. Aktivieren Sie „Pro Organisation“ in der Konfiguration und füllen Sie den Sockel aus.',
+    emptyCta: 'Konfiguration öffnen',
     legend: 'Jede Zelle aggregiert die Konformität des Organisations-Teilbaums (Org-Anzahl · bewertete/gesamte Kontrollen). Klicken für Analysen.',
   },
   qualification: {

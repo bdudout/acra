@@ -1619,6 +1619,7 @@ export const en: Translations = {
     champ: { fichier: 'File', titre: 'Title', type: 'Type', portee: 'Attachment', referentiel: 'Framework', risque: 'Risk', version: 'Version', description: 'Description', dateDocument: 'Document date', dateRevue: 'Next review' },
     typeOpt: { PSSI: 'ISSP', STRATEGIE: 'Strategy', POLITIQUE: 'Policy', PROCEDURE: 'Procedure', PREUVE: 'Evidence', AUTRE: 'Other' },
     porteeOpt: { REFERENTIEL: 'Framework', RISQUE: 'Risk', ORG: 'Organization' },
+    linkRefHint: 'Tip: this document looks like a framework — choose the “Framework” scope to link it to an existing framework (ISO, PSSI…).',
     col: { titre: 'Document', type: 'Type', rattachement: 'Attachment', taille: 'Size', revue: 'Review' },
     deleteConfirm: 'Delete this document and its file?',
     errorRequired: 'Title is required.',
@@ -3130,6 +3131,7 @@ export const en: Translations = {
     subtitle: 'Compliance rate by organisation and framework, aggregated over the tree (organisation → division → group).',
     orgCol: 'Organisation',
     empty: 'No organisation-level compliance yet. Enable “Per organisation” in configuration and fill in the baseline.',
+    emptyCta: 'Open configuration',
     legend: 'Each cell aggregates the compliance of the organisation subtree (org count · evaluated/total controls). Click to view analyses.',
   },
   qualification: {
