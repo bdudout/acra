@@ -1741,6 +1741,7 @@ export const es: Translations = {
     commentairePlaceholder: 'Comentario (opcional)',
     addMesure: 'Registrar',
     aucuneMesure: 'Sin medición.',
+    clearFilter: 'Mostrar todo',
     statutLabels: {
       NORMAL: 'Normal',
       ALERTE: 'Alerta',

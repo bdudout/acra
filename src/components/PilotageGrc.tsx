@@ -183,10 +183,10 @@ export default function PilotageGrc() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <Tile label={p.total} value={cr.total} />
-        <Tile label={p.eleves} value={cr.eleve} tone="red" />
-        <Tile label={p.moyens} value={cr.moyen} tone="amber" />
-        <Tile label={p.faibles} value={cr.faible} tone="green" />
+        <Tile label={p.total} value={cr.total} href="/registre" />
+        <Tile label={p.eleves} value={cr.eleve} tone="red" href="/registre?niveau=eleve" />
+        <Tile label={p.moyens} value={cr.moyen} tone="amber" href="/registre?niveau=moyen" />
+        <Tile label={p.faibles} value={cr.faible} tone="green" href="/registre?niveau=faible" />
         <Tile label={p.avancement} value={`${ca.tauxAvancement}%`} />
         <Tile label={p.enRetard} value={ca.enRetard} tone={ca.enRetard > 0 ? 'red' : undefined} />
       </div>
@@ -195,24 +195,24 @@ export default function PilotageGrc() {
       {(ci || cc || cau || cap || ck || cd) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {ci && <>
-            <Tile label={p.perteNette} value={euros(ci.perteNette)} />
-            <Tile label={p.incidentsOuverts} value={ci.ouverts} tone={ci.ouverts > 0 ? 'amber' : undefined} />
+            <Tile label={p.perteNette} value={euros(ci.perteNette)} href="/incidents" />
+            <Tile label={p.incidentsOuverts} value={ci.ouverts} tone={ci.ouverts > 0 ? 'amber' : undefined} href="/incidents?statut=DECLARE" />
           </>}
           {cc && <>
-            <Tile label={p.tauxConformite} value={cc.tauxConformite == null ? '—' : `${cc.tauxConformite}%`} tone={cc.tauxConformite != null && cc.tauxConformite < 80 ? 'red' : undefined} />
-            <Tile label={p.anomalies} value={cc.anomalies} tone={cc.anomalies > 0 ? 'amber' : undefined} />
+            <Tile label={p.tauxConformite} value={cc.tauxConformite == null ? '—' : `${cc.tauxConformite}%`} tone={cc.tauxConformite != null && cc.tauxConformite < 80 ? 'red' : undefined} href="/controles" />
+            <Tile label={p.anomalies} value={cc.anomalies} tone={cc.anomalies > 0 ? 'amber' : undefined} href="/controles?vue=anomalies" />
           </>}
           {cau && <>
-            <Tile label={p.constatsCritiques} value={cau.critiques} tone={cau.critiques > 0 ? 'red' : undefined} />
-            <Tile label={p.recosEnRetard} value={cau.recosEnRetard} tone={cau.recosEnRetard > 0 ? 'red' : undefined} />
+            <Tile label={p.constatsCritiques} value={cau.critiques} tone={cau.critiques > 0 ? 'red' : undefined} href="/audit?constat=critique" />
+            <Tile label={p.recosEnRetard} value={cau.recosEnRetard} tone={cau.recosEnRetard > 0 ? 'red' : undefined} href="/audit?reco=retard" />
           </>}
           {cap && <>
-            <Tile label={p.horsAppetit} value={cap.horsAppetit} tone={cap.horsAppetit > 0 ? 'red' : undefined} />
-            <Tile label={p.dansAppetit} value={`${cap.dansAppetit}/${cap.evalues}`} tone="green" />
+            <Tile label={p.horsAppetit} value={cap.horsAppetit} tone={cap.horsAppetit > 0 ? 'red' : undefined} href="/cartographie" />
+            <Tile label={p.dansAppetit} value={`${cap.dansAppetit}/${cap.evalues}`} tone="green" href="/cartographie" />
           </>}
           {ck && <>
-            <Tile label={p.kriCritiques} value={ck.critique} tone={ck.critique > 0 ? 'red' : undefined} />
-            <Tile label={p.kriEnAlerte} value={ck.enAlerte} tone={ck.enAlerte > 0 ? 'amber' : undefined} />
+            <Tile label={p.kriCritiques} value={ck.critique} tone={ck.critique > 0 ? 'red' : undefined} href="/kri?statut=CRITIQUE" />
+            <Tile label={p.kriEnAlerte} value={ck.enAlerte} tone={ck.enAlerte > 0 ? 'amber' : undefined} href="/kri?statut=ALERTE" />
           </>}
           {cd && <>
             <Tile label={p.doraMajeurs} value={cd.majeurs} tone={cd.majeurs > 0 ? 'red' : undefined} />
@@ -310,12 +310,16 @@ export default function PilotageGrc() {
   )
 }
 
-function Tile({ label, value, tone }: { label: string; value: number | string; tone?: 'red' | 'amber' | 'green' }) {
+function Tile({ label, value, tone, href }: { label: string; value: number | string; tone?: 'red' | 'amber' | 'green'; href?: string }) {
   const color = tone === 'red' ? 'text-red-600 dark:text-red-400' : tone === 'amber' ? 'text-amber-600 dark:text-amber-400' : tone === 'green' ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-gray-100'
-  return (
-    <div className="card p-3">
+  const inner = (
+    <>
       <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
-    </div>
+    </>
   )
+  // Tuile cliquable : mène à la vue filtrée correspondante.
+  return href
+    ? <Link href={href} className="card p-3 block transition hover:ring-2 hover:ring-ebios-300 dark:hover:ring-ebios-500/40 hover:shadow-sm">{inner}</Link>
+    : <div className="card p-3">{inner}</div>
 }

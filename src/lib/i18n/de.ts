@@ -1741,6 +1741,7 @@ export const de: Translations = {
     commentairePlaceholder: 'Kommentar (optional)',
     addMesure: 'Erfassen',
     aucuneMesure: 'Keine Messung.',
+    clearFilter: 'Alle anzeigen',
     statutLabels: {
       NORMAL: 'Normal',
       ALERTE: 'Alarm',
