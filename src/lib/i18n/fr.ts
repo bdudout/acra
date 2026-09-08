@@ -3117,6 +3117,7 @@ export const fr = {
     derogationsDesc:    "Permet d'accepter temporairement une non-conformité au socle : demande du porteur, avis RSSI, validation par la Direction métier, échéance et alertes avant expiration.",
     derogationDureeLabel: 'Durée par défaut d\'une dérogation (jours)',
     derogationAlerteLabel: 'Alerte avant expiration (jours)',
+    derogationDureeMaxLabel: 'Délai maximal (jours)',
     derogationWorkflowLabel: 'Niveau de validation des dérogations',
     derogationWfAutonome: 'Autonomie (startup) — active immédiatement, sans validation',
     derogationWfRssi: 'Validation RSSI',

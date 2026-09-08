@@ -38,6 +38,24 @@ export function calcDateFin(dateDebut: Date, dureeJours: number): Date {
   return new Date(dateDebut.getTime() + dureeJours * JOUR_MS)
 }
 
+/** Date butoir maximale admissible = début + délai max (jours). */
+export function dateFinMax(dateDebut: Date, dureeMaxJours: number): Date {
+  return calcDateFin(dateDebut, dureeMaxJours)
+}
+
+/**
+ * Une date de fin dépasse-t-elle le délai maximal autorisé ?
+ * Vrai si `dateFin` est strictement au-delà de `dateDebut + dureeMaxJours`.
+ * Tolérance d'une journée pour absorber les décalages d'heure/fuseau. Pur, testé.
+ */
+export function depasseDelaiMax(dateDebut: Date | string, dateFin: Date | string, dureeMaxJours: number): boolean {
+  const debut = typeof dateDebut === 'string' ? new Date(dateDebut) : dateDebut
+  const fin = typeof dateFin === 'string' ? new Date(dateFin) : dateFin
+  if (isNaN(debut.getTime()) || isNaN(fin.getTime()) || !(dureeMaxJours > 0)) return false
+  const max = debut.getTime() + dureeMaxJours * JOUR_MS + JOUR_MS // +1 j de tolérance
+  return fin.getTime() > max
+}
+
 /** Jours (entiers) restants avant `dateFin` ; négatif si déjà dépassée. */
 export function joursAvantExpiration(dateFin: Date | string | null | undefined, now: Date = new Date()): number {
   if (!dateFin) return Infinity

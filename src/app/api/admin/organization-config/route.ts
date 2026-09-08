@@ -77,6 +77,7 @@ export async function GET(_req: NextRequest) {
     derogationsActive: cfg.derogationsActive,
     derogationDureeDefautJours: cfg.derogationDureeDefautJours,
     derogationAlerteJours: cfg.derogationAlerteJours,
+    derogationDureeMaxJours: cfg.derogationDureeMaxJours,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
@@ -198,6 +199,9 @@ export async function PUT(req: NextRequest) {
   }
   if (typeof body.derogationAlerteJours === 'number' && Number.isFinite(body.derogationAlerteJours)) {
     data.derogationAlerteJours = Math.max(1, Math.min(365, Math.round(body.derogationAlerteJours)))
+  }
+  if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {
+    data.derogationDureeMaxJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeMaxJours)))
   }
   if (body.actionDelaisMois && typeof body.actionDelaisMois === 'object' && !Array.isArray(body.actionDelaisMois)) {
     data.actionDelaisMois = cleanActionDelais(body.actionDelaisMois)

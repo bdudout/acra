@@ -3069,6 +3069,7 @@ export const it: Translations = {
     derogationsDesc:    'Consente di accettare temporaneamente una non conformità della base di sicurezza: richiesta del responsabile, parere del CISO, validazione della Direzione aziendale, data di scadenza e avvisi prima della scadenza.',
     derogationDureeLabel: 'Durata predefinita di una deroga (giorni)',
     derogationAlerteLabel: 'Avviso prima della scadenza (giorni)',
+    derogationDureeMaxLabel: 'Durata massima (giorni)',
     derogationWorkflowLabel: 'Livello di validazione delle deroghe',
     derogationWfAutonome: 'Autonomia (startup) — attiva subito, senza validazione',
     derogationWfRssi: 'Validazione CISO',
