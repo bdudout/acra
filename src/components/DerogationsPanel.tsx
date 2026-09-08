@@ -99,6 +99,11 @@ export default function DerogationsPanel({
       if (Array.isArray(d?.exigences)) setExigences(d.exigences.map((e: { ref: string; nom: string }) => ({ ref: e.ref, nom: e.nom })))
     }).catch(() => setExigences([]))
   }, [form.portee, form.referentiel, refs])
+
+  // À l'ouverture du formulaire, pré-remplir la durée ; date de fin calculée.
+  useEffect(() => { if (creating) setForm(f => (f.dureeJours ? f : { ...f, dureeJours: String(dureeDefaut) })) }, [creating, dureeDefaut])
+  const dureeSaisie = Number(form.dureeJours || dureeDefaut)
+  const dateFinCalc = dureeSaisie > 0 ? formatDate(new Date(Date.now() + dureeSaisie * 86400000).toISOString(), locale) : null
   async function submitCreate() {
     setBusy(true); setError(null)
     const res = await fetch(`/api/analyses/${analyseId}/derogations`, {
@@ -183,18 +188,28 @@ export default function DerogationsPanel({
               {risques.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
             </select>
           )}
-          <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
-            placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-          <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-          <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          <label className="block text-xs text-gray-600 dark:text-gray-300">
+            <span className="block mb-1 font-medium">{d.intitule}</span>
+            <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
+              placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          </label>
+          <label className="block text-xs text-gray-600 dark:text-gray-300">
+            <span className="block mb-1 font-medium">{d.motif}</span>
+            <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          </label>
+          <label className="block text-xs text-gray-600 dark:text-gray-300">
+            <span className="block mb-1 font-medium">{d.mesuresCompensatoires}</span>
+            <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          </label>
           {/* Date butoir = durée (jours), plafonnée au délai maximal configuré. */}
-          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-            <span>{d.dureeLabel}</span>
+          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-gray-300">
+            <span className="font-medium">{d.dureeLabel}</span>
             <input type="number" min={1} max={dureeMax} value={form.dureeJours}
               onChange={e => setForm(f => ({ ...f, dureeJours: e.target.value }))}
               placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
-          </label>
+            {dateFinCalc && <span className="ml-1">→ {d.dateFinLabel} : <strong className="text-gray-800 dark:text-gray-100">{dateFinCalc}</strong></span>}
+          </div>
           <button onClick={submitCreate} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{d.submit}</button>
         </div>
       )}

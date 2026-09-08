@@ -72,6 +72,12 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     }).catch(() => { /* repli texte libre */ })
   }, [creating])
 
+  // À l'ouverture, pré-remplir la durée avec la valeur par défaut de l'org.
+  useEffect(() => { if (creating) setForm(f => (f.dureeJours ? f : { ...f, dureeJours: String(dureeDefaut) })) }, [creating, dureeDefaut])
+  // Date de fin calculée = aujourd'hui + durée (jours).
+  const dureeSaisie = Number(form.dureeJours || dureeDefaut)
+  const dateFinCalc = dureeSaisie > 0 ? formatDate(new Date(Date.now() + dureeSaisie * 86400000).toISOString(), locale) : null
+
   useEffect(() => {
     if (!form.referentiel || !refs.some(r => r.code === form.referentiel)) { setExigences([]); return }
     fetch(`/api/referentiels/exigences?code=${encodeURIComponent(form.referentiel)}`).then(r => r.ok ? r.json() : null).then(dd => {
@@ -133,37 +139,53 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{d.orgLevelHint}</p>
             {error && <div className="p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
-            <div className="flex gap-2">
-              {refs.length > 0 ? (
-                <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
-                  <option value="">{d.referentiel}…</option>
-                  {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
-                </select>
-              ) : (
-                <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-              )}
-              {exigences.length > 0 ? (
-                <select value={form.ref}
-                  onChange={e => { const ex = exigences.find(x => x.ref === e.target.value); setForm(f => ({ ...f, ref: e.target.value, intitule: f.intitule || (ex ? `[${ex.ref}] ${ex.nom}` : f.intitule) })) }}
-                  className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
-                  <option value="">{d.controle}…</option>
-                  {exigences.map(ex => <option key={ex.ref} value={ex.ref}>[{ex.ref}] {ex.nom}</option>)}
-                </select>
-              ) : (
-                <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="block min-w-0 text-xs text-gray-600 dark:text-gray-300">
+                <span className="block mb-1 font-medium">{d.referentiel}</span>
+                {refs.length > 0 ? (
+                  <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                    <option value="">{d.referentiel}…</option>
+                    {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+                  </select>
+                ) : (
+                  <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                )}
+              </label>
+              <label className="block min-w-0 text-xs text-gray-600 dark:text-gray-300">
+                <span className="block mb-1 font-medium">{d.controle}</span>
+                {exigences.length > 0 ? (
+                  <select value={form.ref}
+                    onChange={e => { const ex = exigences.find(x => x.ref === e.target.value); setForm(f => ({ ...f, ref: e.target.value, intitule: f.intitule || (ex ? `[${ex.ref}] ${ex.nom}` : f.intitule) })) }}
+                    className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                    <option value="">{d.controle}…</option>
+                    {exigences.map(ex => <option key={ex.ref} value={ex.ref}>[{ex.ref}] {ex.nom}</option>)}
+                  </select>
+                ) : (
+                  <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                )}
+              </label>
             </div>
-            <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
-              placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-              <span>{d.dureeLabel}</span>
+            <label className="block text-xs text-gray-600 dark:text-gray-300">
+              <span className="block mb-1 font-medium">{d.intitule}</span>
+              <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
+                placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            </label>
+            <label className="block text-xs text-gray-600 dark:text-gray-300">
+              <span className="block mb-1 font-medium">{d.motif}</span>
+              <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            </label>
+            <label className="block text-xs text-gray-600 dark:text-gray-300">
+              <span className="block mb-1 font-medium">{d.mesuresCompensatoires}</span>
+              <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            </label>
+            <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-gray-300">
+              <span className="font-medium">{d.dureeLabel}</span>
               <input type="number" min={1} max={dureeMax} value={form.dureeJours}
                 onChange={e => setForm(f => ({ ...f, dureeJours: e.target.value }))}
                 placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
-            </label>
+              {dateFinCalc && <span className="ml-1">→ {d.dateFinLabel} : <strong className="text-gray-800 dark:text-gray-100">{dateFinCalc}</strong></span>}
+            </div>
             <div className="flex gap-2 pt-1">
               <button onClick={submitCreate} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{d.submit}</button>
               <button onClick={() => setCreating(false)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">{d.cancel}</button>
