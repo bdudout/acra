@@ -1439,6 +1439,8 @@ model OrganizationConfig {
   derogationDureeDefautJours Int           @default(180)
   // Fenêtre d'alerte avant expiration d'une dérogation, en jours (défaut 30).
   derogationAlerteJours      Int           @default(30)
+  // Délai MAXIMAL d'une dérogation, en jours (date butoir plafonnée ; défaut 365 = 1 an).
+  derogationDureeMaxJours    Int           @default(365)
   // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
   // (validation RSSI, défaut), "RSSI_METIER" (RSSI puis Direction métier).
   derogationWorkflow         String        @default("RSSI")

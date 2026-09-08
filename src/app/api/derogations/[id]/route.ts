@@ -5,7 +5,7 @@ import { analyseAccessWhere, getAccessibleOrgIds } from '@/lib/org-context.serve
 import { getOrgConfig } from '@/lib/org-config.server'
 import { canEditAnalyse, type UserRole } from '@/lib/permissions'
 import {
-  calcDateFin, statutApresAvisRssi, statutApresDoubleRegard, prolongationEntry,
+  calcDateFin, depasseDelaiMax, statutApresAvisRssi, statutApresDoubleRegard, prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
   canRevoquerDerogation, canCloturerDerogation,
   type DerogationStatut, type DerogationWorkflow,
@@ -132,6 +132,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un motif de prolongation est requis' }, { status: 400 })
       const nd = body.nouvelleDateFin ? new Date(String(body.nouvelleDateFin)) : calcDateFin(derog.dateFin ?? now, orgConfig.derogationDureeDefautJours)
       if (isNaN(nd.getTime())) return NextResponse.json({ error: 'Date de fin invalide' }, { status: 400 })
+      // Plafond : la date butoir ne peut dépasser le délai maximal (config org).
+      if (depasseDelaiMax(derog.dateDebut ?? now, nd, orgConfig.derogationDureeMaxJours)) {
+        return NextResponse.json({ error: `La date de fin dépasse le délai maximal autorisé (${orgConfig.derogationDureeMaxJours} jours).` }, { status: 400 })
+      }
       const historique = [...(Array.isArray(derog.prolongations) ? derog.prolongations : []), prolongationEntry(derog.dateFin, nd, commentaire, userId, now)]
       // En mode AUTONOME (aucun valideur), la prolongation s'applique directement ;
       // sinon elle rouvre un cycle de revue (retour DEMANDEE).

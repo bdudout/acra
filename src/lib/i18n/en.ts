@@ -3069,6 +3069,7 @@ export const en: Translations = {
     derogationsDesc:    'Allows temporary acceptance of a baseline non-conformity: request by the owner, CISO opinion, validation by Business management, expiry date and alerts before expiration.',
     derogationDureeLabel: 'Default waiver duration (days)',
     derogationAlerteLabel: 'Alert before expiry (days)',
+    derogationDureeMaxLabel: 'Maximum duration (days)',
     derogationWorkflowLabel: 'Waiver validation level',
     derogationWfAutonome: 'Self-service (startup) — active immediately, no validation',
     derogationWfRssi: 'CISO validation',

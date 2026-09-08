@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  calcDateFin, joursAvantExpiration, etatDerogation, needsExpiryAlert, buildDerogationDigest,
+  calcDateFin, dateFinMax, depasseDelaiMax, joursAvantExpiration, etatDerogation, needsExpiryAlert, buildDerogationDigest,
   validateDerogationInput, statutInitial, statutApresAvisRssi, statutApresDoubleRegard, estTerminale,
   prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
@@ -17,6 +17,22 @@ const inDays = (n: number) => new Date(NOW.getTime() + n * 86_400_000)
 describe('calcDateFin', () => {
   it('ajoute la durée en jours', () => {
     expect(calcDateFin(new Date('2026-01-01T00:00:00Z'), 180).toISOString()).toBe('2026-06-30T00:00:00.000Z')
+  })
+})
+
+describe('dateFinMax / depasseDelaiMax', () => {
+  const debut = new Date('2026-01-01T00:00:00Z')
+  it('dateFinMax = début + délai max', () => {
+    expect(dateFinMax(debut, 365).toISOString()).toBe('2027-01-01T00:00:00.000Z')
+  })
+  it('détecte un dépassement du délai max (1 an)', () => {
+    expect(depasseDelaiMax(debut, '2027-06-01T00:00:00Z', 365)).toBe(true) // > 1 an
+    expect(depasseDelaiMax(debut, '2026-12-31T00:00:00Z', 365)).toBe(false) // dans l'année
+    expect(depasseDelaiMax(debut, '2027-01-01T00:00:00Z', 365)).toBe(false) // pile (tolérance 1 j)
+  })
+  it('ne dépasse pas si entrées invalides ou délai max nul', () => {
+    expect(depasseDelaiMax(debut, '2030-01-01T00:00:00Z', 0)).toBe(false)
+    expect(depasseDelaiMax(debut, 'not-a-date', 365)).toBe(false)
   })
 })
 

@@ -3069,6 +3069,7 @@ export const es: Translations = {
     derogationsDesc:    'Permite aceptar temporalmente una no conformidad de la base de seguridad: solicitud del responsable, dictamen del CISO, validación por la Dirección de negocio, fecha de vencimiento y alertas antes de la expiración.',
     derogationDureeLabel: 'Duración por defecto de una exención (días)',
     derogationAlerteLabel: 'Alerta antes del vencimiento (días)',
+    derogationDureeMaxLabel: 'Duración máxima (días)',
     derogationWorkflowLabel: 'Nivel de validación de las exenciones',
     derogationWfAutonome: 'Autoservicio (startup) — activa de inmediato, sin validación',
     derogationWfRssi: 'Validación del CISO',

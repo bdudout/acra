@@ -44,6 +44,7 @@ export interface RawOrgConfig {
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
+  derogationDureeMaxJours: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -78,6 +79,7 @@ export interface OrgConfigResolved {
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
+  derogationDureeMaxJours: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -114,6 +116,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationsActive: false,
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
+  derogationDureeMaxJours: 365,
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -140,7 +143,7 @@ function isEmptyJson(v: unknown): boolean {
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
-type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours'
+type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -191,6 +194,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationsActive: pickBool('derogationsActive', defaults.derogationsActive),
     derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
+    derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),

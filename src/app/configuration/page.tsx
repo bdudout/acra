@@ -155,6 +155,7 @@ export default function ConfigurationPage() {
   const [derogationsActive, setDerogationsActive] = useState(false)
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
+  const [derogationDureeMax, setDerogationDureeMax] = useState(365)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -214,6 +215,7 @@ export default function ConfigurationPage() {
         if (data.actionDelaisMois && typeof data.actionDelaisMois === 'object') setActionDelais({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24, ...data.actionDelaisMois })
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
+        if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -311,8 +313,8 @@ export default function ConfigurationPage() {
   }
 
   // Paramètres numériques des dérogations (durée par défaut, fenêtre d'alerte).
-  async function saveDerogationInt(field: 'derogationDureeDefautJours' | 'derogationAlerteJours', value: number) {
-    const setter = field === 'derogationDureeDefautJours' ? setDerogationDuree : setDerogationAlerte
+  async function saveDerogationInt(field: 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours', value: number) {
+    const setter = field === 'derogationDureeDefautJours' ? setDerogationDuree : field === 'derogationDureeMaxJours' ? setDerogationDureeMax : setDerogationAlerte
     setter(value) // optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1344,6 +1346,14 @@ export default function ConfigurationPage() {
                     <input type="number" min={1} max={365} value={derogationAlerte}
                       onChange={e => setDerogationAlerte(Number(e.target.value))}
                       onBlur={e => saveDerogationInt('derogationAlerteJours', Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
+                      disabled={savingFeatures}
+                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                  </label>
+                  <label className="text-sm text-gray-700">
+                    <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationDureeMaxLabel}</span>
+                    <input type="number" min={1} max={3650} value={derogationDureeMax}
+                      onChange={e => setDerogationDureeMax(Number(e.target.value))}
+                      onBlur={e => saveDerogationInt('derogationDureeMaxJours', Math.max(1, Math.min(3650, Number(e.target.value) || 365)))}
                       disabled={savingFeatures}
                       className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
                   </label>

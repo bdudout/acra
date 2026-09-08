@@ -3069,6 +3069,7 @@ export const de: Translations = {
     derogationsDesc:    'Ermöglicht die vorübergehende Akzeptanz einer Nichtkonformität der Sicherheitsbasis: Antrag des Verantwortlichen, CISO-Stellungnahme, Freigabe durch die Fachbereichsleitung, Ablaufdatum und Warnungen vor dem Ablauf.',
     derogationDureeLabel: 'Standarddauer einer Ausnahmegenehmigung (Tage)',
     derogationAlerteLabel: 'Warnung vor Ablauf (Tage)',
+    derogationDureeMaxLabel: 'Maximale Dauer (Tage)',
     derogationWorkflowLabel: 'Freigabestufe für Ausnahmegenehmigungen',
     derogationWfAutonome: 'Eigenständig (Startup) — sofort aktiv, ohne Freigabe',
     derogationWfRssi: 'CISO-Freigabe',
