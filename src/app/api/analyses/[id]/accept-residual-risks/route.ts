@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(userId, userRole, id),
-    select: { id: true, nom: true, organizationId: true, deletedAt: true, risquesResiduelsStatut: true },
+    select: { id: true, nom: true, userId: true, organizationId: true, deletedAt: true, risquesResiduelsStatut: true },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
@@ -56,6 +56,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   else if (action === 'REFUSER')        statut = 'REFUSES'
   else if (action === 'REINITIALISER')  statut = 'EN_ATTENTE'
   else return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
+
+  // Four-eyes (config org) : l'auteur de l'analyse ne peut pas accepter ses propres
+  // risques résiduels (décision distincte de l'auteur).
+  if (action === 'ACCEPTER' && analyse.userId === userId && orgConfig.interdireAutoApprobation) {
+    return NextResponse.json({ error: 'Séparation des tâches : vous ne pouvez pas accepter les risques résiduels de votre propre analyse.' }, { status: 403 })
+  }
 
   // Un refus doit être motivé (traçabilité de la non-acceptation du risque).
   if (action === 'REFUSER' && !commentaire?.trim()) {

@@ -3071,6 +3071,8 @@ export const it: Translations = {
     acceptationRisquesDesc:  'Consente al ruolo «Direzione aziendale» di accettare (o rifiutare) i rischi residui di un\'analisi — accettazione del rischio, distinta dalla validazione dell\'analisi.',
     gelApresAcceptationTitle: 'Congela l\'analisi dopo l\'accettazione dei rischi',
     gelApresAcceptationDesc:  'Una volta accettati i rischi residui, l\'analisi è congelata (sola lettura); qualsiasi modifica richiede l\'apertura di una nuova versione. Consigliato in produzione; disattivabile per gli ambienti di test.',
+    interdireAutoApprobationTitle: 'Controllo a quattro occhi (separazione dei compiti)',
+    interdireAutoApprobationDesc:  'Impedisce all\'autore di un\'analisi di approvare la propria analisi o di accettare i propri rischi residui — anche con il ruolo (RSSI, Risk Manager, ADMIN). È richiesto un secondo validatore. Attivo per impostazione predefinita; disattivabile per organizzazioni mono-utente.',
     derogationsTitle:   'Deroghe (accettazione temporanea di non conformità)',
     derogationsDesc:    'Consente di accettare temporaneamente una non conformità della base di sicurezza: richiesta del responsabile, parere del CISO, validazione della Direzione aziendale, data di scadenza e avvisi prima della scadenza.',
     derogationDureeLabel: 'Durata predefinita di una deroga (giorni)',

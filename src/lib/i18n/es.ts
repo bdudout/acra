@@ -3071,6 +3071,8 @@ export const es: Translations = {
     acceptationRisquesDesc:  'Permite al rol «Dirección de negocio» aceptar (o rechazar) los riesgos residuales de un análisis — aceptación del riesgo, distinta de la validación del análisis.',
     gelApresAcceptationTitle: 'Congelar el análisis tras la aceptación de riesgos',
     gelApresAcceptationDesc:  'Una vez aceptados los riesgos residuales, el análisis se congela (solo lectura); cualquier cambio requiere abrir una nueva versión. Recomendado en producción; se puede desactivar en entornos de prueba.',
+    interdireAutoApprobationTitle: 'Control de cuatro ojos (segregación de funciones)',
+    interdireAutoApprobationDesc:  'Impide que el autor de un análisis apruebe su propio análisis o acepte sus propios riesgos residuales — incluso con el rol (RSSI, Risk Manager, ADMIN). Se requiere un segundo validador. Activado por defecto; desactivable para organizaciones de un solo usuario.',
     derogationsTitle:   'Exenciones (aceptación temporal de no conformidad)',
     derogationsDesc:    'Permite aceptar temporalmente una no conformidad de la base de seguridad: solicitud del responsable, dictamen del CISO, validación por la Dirección de negocio, fecha de vencimiento y alertas antes de la expiración.',
     derogationDureeLabel: 'Duración por defecto de una exención (días)',

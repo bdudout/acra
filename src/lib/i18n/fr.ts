@@ -3119,6 +3119,8 @@ export const fr = {
     acceptationRisquesDesc:  "Permet au rôle « Direction métier » d'accepter (ou refuser) les risques résiduels d'une analyse — acceptation du risque, distincte de la validation de l'analyse.",
     gelApresAcceptationTitle: 'Gel de l\'analyse après acceptation des risques',
     gelApresAcceptationDesc:  'Une fois les risques résiduels acceptés, l\'analyse est figée (lecture seule) ; toute modification exige d\'ouvrir une nouvelle version. Recommandé en production ; désactivable pour les environnements de test.',
+    interdireAutoApprobationTitle: 'Contrôle à quatre yeux (séparation des tâches)',
+    interdireAutoApprobationDesc:  'Interdit à l\'auteur d\'une analyse d\'approuver sa propre analyse ou d\'accepter ses propres risques résiduels — même s\'il en a le rôle (RSSI, Risk Manager, ADMIN). Un second valideur est requis. Activé par défaut ; désactivable pour les organisations mono-utilisateur (test/dev).',
     derogationsTitle:   'Dérogations (acceptation temporaire de non-conformité)',
     derogationsDesc:    "Permet d'accepter temporairement une non-conformité au socle : demande du porteur, avis RSSI, validation par la Direction métier, échéance et alertes avant expiration.",
     derogationDureeLabel: 'Durée par défaut d\'une dérogation (jours)',
