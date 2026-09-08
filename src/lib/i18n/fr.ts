@@ -874,6 +874,8 @@ export const fr = {
     // Formulaire
     intitule: 'Intitulé',
     intitulePlaceholder: 'Ex. MFA non déployé sur l\'application legacy',
+    dureeLabel: 'Durée (jours) :',
+    dureeMaxHint: 'max {max} j',
     portee: 'Portée',
     referentiel: 'Référentiel',
     controle: 'Contrôle',

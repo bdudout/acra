@@ -856,6 +856,8 @@ export const de: Translations = {
     empty: 'Keine Ausnahmegenehmigung für diese Analyse.',
     intitule: 'Titel',
     intitulePlaceholder: 'Z. B. MFA nicht auf der Legacy-Anwendung ausgerollt',
+    dureeLabel: 'Dauer (Tage):',
+    dureeMaxHint: 'max. {max} T',
     portee: 'Geltungsbereich',
     referentiel: 'Rahmenwerk',
     controle: 'Kontrolle',

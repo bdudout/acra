@@ -37,6 +37,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     derogations,
     config: {
       dureeDefautJours: orgConfig.derogationDureeDefautJours,
+      dureeMaxJours: orgConfig.derogationDureeMaxJours,
       alerteJours: orgConfig.derogationAlerteJours,
       active: orgConfig.derogationsActive,
       workflow: orgConfig.derogationWorkflow,
@@ -89,6 +90,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   // Niveau de workflow : AUTONOME (startup) → active immédiatement.
   const statut = statutInitial(orgConfig.derogationWorkflow as DerogationWorkflow)
   const now = new Date()
+  // Durée demandée (date butoir) bornée à [1, délai max configuré] ; défaut = durée par défaut.
+  const dureeDemandee = Number((body as { dureeJours?: unknown }).dureeJours)
+  const duree = Number.isFinite(dureeDemandee) && dureeDemandee > 0
+    ? Math.min(Math.round(dureeDemandee), orgConfig.derogationDureeMaxJours)
+    : orgConfig.derogationDureeDefautJours
   const derogation = await prisma.derogation.create({
     data: {
       organizationId: analyse.organizationId ?? 'global',
@@ -102,7 +108,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       mesuresCompensatoires: input.mesuresCompensatoires!,
       demandeurId: userId,
       statut,
-      ...(statut === 'ACTIVE' ? { dateDebut: now, dateFin: calcDateFin(now, orgConfig.derogationDureeDefautJours) } : {}),
+      ...(statut === 'ACTIVE' ? { dateDebut: now, dateFin: calcDateFin(now, duree) } : {}),
     },
   })
   await auditLog(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_REQUESTED', {

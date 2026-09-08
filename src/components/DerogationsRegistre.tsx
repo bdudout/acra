@@ -1,11 +1,12 @@
 'use client'
 
-import { IdCard } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { IdCard, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
+import AutocompleteInput from '@/components/AutocompleteInput'
 import { etatDerogation, joursAvantExpiration, type DerogationEtat, type DerogationStatut } from '@/lib/derogation'
 
 export interface RegistreRow {
@@ -51,7 +52,7 @@ function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
   }
 }
 
-export default function DerogationsRegistre({ rows, locale, canCreate = false }: { rows: RegistreRow[]; locale: string; canCreate?: boolean }) {
+export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365 }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number }) {
   const { t } = useTranslation()
   const d = t.derogations
   const router = useRouter()
@@ -59,18 +60,35 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false }:
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '' })
+  const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
+  const [refs, setRefs] = useState<{ code: string; nom: string }[]>([])
+  const [exigences, setExigences] = useState<{ ref: string; nom: string }[]>([])
+
+  // Référentiels de l'org (pour choisir une mesure de référentiel existant).
+  useEffect(() => {
+    if (!creating) return
+    fetch('/api/referentiels').then(r => r.ok ? r.json() : null).then(dd => {
+      if (Array.isArray(dd?.referentiels)) setRefs(dd.referentiels.map((x: { code: string; nom: string }) => ({ code: x.code, nom: x.nom })))
+    }).catch(() => { /* repli texte libre */ })
+  }, [creating])
+
+  useEffect(() => {
+    if (!form.referentiel || !refs.some(r => r.code === form.referentiel)) { setExigences([]); return }
+    fetch(`/api/referentiels/exigences?code=${encodeURIComponent(form.referentiel)}`).then(r => r.ok ? r.json() : null).then(dd => {
+      if (Array.isArray(dd?.exigences)) setExigences(dd.exigences.map((e: { ref: string; nom: string }) => ({ ref: e.ref, nom: e.nom })))
+    }).catch(() => setExigences([]))
+  }, [form.referentiel, refs])
 
   async function submitCreate() {
     setBusy(true); setError(null)
     const res = await fetch('/api/derogations', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ portee: 'CONTROLE', referentiel: form.referentiel, ref: form.ref, intitule: form.intitule, motif: form.motif, mesuresCompensatoires: form.mesures }),
+      body: JSON.stringify({ portee: 'CONTROLE', referentiel: form.referentiel, ref: form.ref, intitule: form.intitule, motif: form.motif, mesuresCompensatoires: form.mesures, dureeJours: form.dureeJours ? Number(form.dureeJours) : undefined }),
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
-    setCreating(false); setForm({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '' })
+    setCreating(false); setForm({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
     router.refresh()
   }
 
@@ -105,18 +123,52 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false }:
 
       {error && <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
 
-      {/* Création d'une dérogation autonome (niveau organisation) — portée contrôle. */}
+      {/* Création d'une dérogation autonome (niveau organisation) — MODALE, ne pousse plus le tableau. */}
       {creating && canCreate && (
-        <div className="mb-5 card p-4 space-y-2 max-w-2xl">
-          <p className="text-xs text-gray-500 dark:text-gray-400">{d.orgLevelHint}</p>
-          <div className="flex gap-2">
-            <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8" role="dialog" aria-modal="true" onClick={() => setCreating(false)}>
+          <div className="card p-5 space-y-2 w-full max-w-2xl mt-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-semibold text-gray-800 dark:text-gray-100">{d.newBtn}</h2>
+              <button onClick={() => setCreating(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" aria-label={d.cancel}><X size={18} /></button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{d.orgLevelHint}</p>
+            {error && <div className="p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
+            <div className="flex gap-2">
+              {refs.length > 0 ? (
+                <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                  <option value="">{d.referentiel}…</option>
+                  {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+                </select>
+              ) : (
+                <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              )}
+              {exigences.length > 0 ? (
+                <select value={form.ref}
+                  onChange={e => { const ex = exigences.find(x => x.ref === e.target.value); setForm(f => ({ ...f, ref: e.target.value, intitule: f.intitule || (ex ? `[${ex.ref}] ${ex.nom}` : f.intitule) })) }}
+                  className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                  <option value="">{d.controle}…</option>
+                  {exigences.map(ex => <option key={ex.ref} value={ex.ref}>[{ex.ref}] {ex.nom}</option>)}
+                </select>
+              ) : (
+                <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="flex-1 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              )}
+            </div>
+            <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
+              placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <span>{d.dureeLabel}</span>
+              <input type="number" min={1} max={dureeMax} value={form.dureeJours}
+                onChange={e => setForm(f => ({ ...f, dureeJours: e.target.value }))}
+                placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
+            </label>
+            <div className="flex gap-2 pt-1">
+              <button onClick={submitCreate} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{d.submit}</button>
+              <button onClick={() => setCreating(false)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200">{d.cancel}</button>
+            </div>
           </div>
-          <input value={form.intitule} onChange={e => setForm(f => ({ ...f, intitule: e.target.value }))} placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-          <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-          <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-          <button onClick={submitCreate} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{d.submit}</button>
         </div>
       )}
 

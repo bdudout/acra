@@ -856,6 +856,8 @@ export const es: Translations = {
     empty: 'Ninguna exención en este análisis.',
     intitule: 'Título',
     intitulePlaceholder: 'Ej. MFA no desplegado en la aplicación heredada',
+    dureeLabel: 'Duración (días):',
+    dureeMaxHint: 'máx {max} d',
     portee: 'Alcance',
     referentiel: 'Marco',
     controle: 'Control',
