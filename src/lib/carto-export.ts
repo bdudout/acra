@@ -4,6 +4,7 @@
 // Logique PURE (réutilise buildHeatmap/aggregateByDimension), testée.
 
 import { buildHeatmap, aggregateByDimension, CARTO_MAX, type CartoRisk, type CartoMode, type NiveauBucket } from './cartographie'
+import { getRiskLevel, type ScaleConfig } from './risk-scale'
 
 export interface CartoExportRisk extends CartoRisk {
   statut: string
@@ -22,6 +23,8 @@ export interface HeatGrid {
   counts: Record<number, Record<number, number>>
   /** Palier de chaque cellule non vide, pour la couleur. */
   buckets: Record<number, Record<number, NiveauBucket>>
+  /** Couleur (#rrggbb) de CHAQUE cellule selon la matrice configurée (si fournie). */
+  couleurs?: Record<number, Record<number, string>>
 }
 
 export interface CartoExportData {
@@ -36,22 +39,30 @@ export interface CartoExportData {
   parEntite: { key: string; label: string | null; count: number; maxNiveau: number | null }[]
 }
 
-/** Grille dense (toutes les cellules) à partir de la heat map creuse. */
-export function buildHeatGrid(risks: CartoRisk[], mode: CartoMode): HeatGrid {
+/**
+ * Grille dense (toutes les cellules) à partir de la heat map creuse.
+ * Si `config` (matrice configurée) est fourni, chaque cellule reçoit sa couleur
+ * de palier exacte (`couleurs`), pour une heat map FIDÈLE à /configuration.
+ */
+export function buildHeatGrid(risks: CartoRisk[], mode: CartoMode, config?: Partial<ScaleConfig> | null): HeatGrid {
   const heat = buildHeatmap(risks, mode)
   const gravites = Array.from({ length: CARTO_MAX }, (_, i) => CARTO_MAX - i)
   const vraisemblances = Array.from({ length: CARTO_MAX }, (_, i) => i + 1)
   const counts: Record<number, Record<number, number>> = {}
   const buckets: Record<number, Record<number, NiveauBucket>> = {}
+  const couleurs: Record<number, Record<number, string>> = {}
   for (const g of gravites) {
-    counts[g] = {}; buckets[g] = {}
-    for (const v of vraisemblances) counts[g][v] = 0
+    counts[g] = {}; buckets[g] = {}; couleurs[g] = {}
+    for (const v of vraisemblances) {
+      counts[g][v] = 0
+      if (config) couleurs[g][v] = getRiskLevel(g, v, config).couleur
+    }
   }
   for (const cell of heat.cells) {
     counts[cell.gravite][cell.vraisemblance] = cell.risqueIds.length
     buckets[cell.gravite][cell.vraisemblance] = cell.bucket
   }
-  return { gravites, vraisemblances, counts, buckets }
+  return config ? { gravites, vraisemblances, counts, buckets, couleurs } : { gravites, vraisemblances, counts, buckets }
 }
 
 /**
@@ -63,6 +74,7 @@ export function buildCartoExport(
   risks: CartoExportRisk[],
   mode: CartoMode,
   categorieLabel?: (code: string) => string | null,
+  config?: Partial<ScaleConfig> | null,
 ): CartoExportData {
   const heat = buildHeatmap(risks, mode)
   const strip = (b: { key: string; label: string | null; count: number; maxNiveau: number | null }) =>
@@ -72,7 +84,7 @@ export function buildCartoExport(
     total: risks.length,
     parBucket: heat.parBucket,
     nonCotes: heat.totalNonCote,
-    grid: buildHeatGrid(risks, mode),
+    grid: buildHeatGrid(risks, mode, config),
     parCategorie: aggregateByDimension(risks, 'taxonomie', mode).map(b => ({
       key: b.key,
       label: b.key && categorieLabel ? categorieLabel(b.key) : null,

@@ -10,6 +10,7 @@ import { niveauRisque } from './risk-item'
 import { summarizeActions } from './risk-action'
 import { rollupRisks, type RiskLite } from './grc-rollup'
 import { buildHeatGrid } from './carto-export'
+import { getEffectiveScaleConfig } from './configuration-server'
 import type { CartoRisk } from './cartographie'
 import { rollupIncidents, rollupControles, rollupControlesParNiveau, rollupAudit, type CockpitIncident, type CockpitExecution, type CockpitConstat } from './grc-cockpit'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from './appetit'
@@ -66,7 +67,8 @@ export async function gatherGrcConsolide(
     graviteInherente: r.graviteInherente, vraisemblanceInherente: r.vraisemblanceInherente,
     graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
   }))
-  const grid = buildHeatGrid(cartoRisks, 'residual')
+  const scaleConfig = await getEffectiveScaleConfig(orgId)
+  const grid = buildHeatGrid(cartoRisks, 'residual', scaleConfig)
 
   const consolide: ComiteConsolide = { risques: { ...rollupRisks(risks), grid } }
   const act = summarizeActions(actionRows, now)

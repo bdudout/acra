@@ -20,9 +20,12 @@ export default function HeatmapGridHtml({ grid, axisLabel }: { grid?: HeatGrid; 
           <div className="w-5 h-8 flex items-center justify-center text-[10px] text-gray-400">{g}</div>
           {grid.vraisemblances.map(v => {
             const n = grid.counts[g]?.[v] ?? 0
+            // Couleur fidèle à la matrice configurée si fournie, sinon palier 3 couleurs.
+            const couleur = grid.couleurs?.[g]?.[v]
             return (
               <div key={v}
-                className={`w-11 h-8 flex items-center justify-center text-xs font-bold text-white border border-white dark:border-gray-900 ${cellClass(grid.buckets[g]?.[v])}`}>
+                style={couleur ? { backgroundColor: couleur } : undefined}
+                className={`w-11 h-8 flex items-center justify-center text-xs font-bold text-white border border-white dark:border-gray-900 ${couleur ? '' : cellClass(grid.buckets[g]?.[v])}`}>
                 {n > 0 ? n : ''}
               </div>
             )

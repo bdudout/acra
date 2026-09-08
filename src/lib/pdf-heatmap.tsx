@@ -36,7 +36,7 @@ export function HeatmapGrid({ grid, axisLabel, cellWidth = 46, cellHeight = 26 }
           {grid.vraisemblances.map(v => {
             const n = grid.counts[g]?.[v] ?? 0
             return (
-              <View key={`c${g}-${v}`} style={{ width: cellWidth, height: cellHeight, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: heatCellColor(grid.buckets[g]?.[v]), alignItems: 'center', justifyContent: 'center' }}>
+              <View key={`c${g}-${v}`} style={{ width: cellWidth, height: cellHeight, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: grid.couleurs?.[g]?.[v] ?? heatCellColor(grid.buckets[g]?.[v]), alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: fs, fontWeight: 'bold', color: '#FFFFFF' }}>{n > 0 ? String(n) : ' '}</Text>
               </View>
             )

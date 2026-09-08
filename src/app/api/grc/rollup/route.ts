@@ -9,6 +9,7 @@ import { niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
 import { rollupRisks, rollupByOrg, type RiskLite, type ScopedAction } from '@/lib/grc-rollup'
 import { buildHeatGrid } from '@/lib/carto-export'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import type { CartoRisk } from '@/lib/cartographie'
 import {
   rollupIncidents, incidentsByOrg,
@@ -193,6 +194,9 @@ export async function GET(req: NextRequest) {
     ...(withReglementaire ? { doraMajeurs: doraByOrg.get(o.orgId) ?? 0 } : {}),
   }))
 
+  // Matrice configurée pour une heat map fidèle (roll-up : échelle de l'org visible / racine).
+  const scaleConfig = await getEffectiveScaleConfig(orgIds[0] ?? null)
+
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
@@ -202,7 +206,7 @@ export async function GET(req: NextRequest) {
         id: r.id, intitule: '', taxonomieCode: null, processusId: null, processusNom: null, entite: null,
         graviteInherente: r.graviteInherente, vraisemblanceInherente: r.vraisemblanceInherente,
         graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
-      })), 'residual') },
+      })), 'residual', scaleConfig) },
       actions: summarizeActions(actions, now),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
