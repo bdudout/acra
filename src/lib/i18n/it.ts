@@ -126,6 +126,7 @@ export const it: Translations = {
     mergeConfirmTitle: 'Unire queste terze parti?',
     mergeConfirmMsg: 'Tutte le occorrenze saranno rinominate «{cible}» nelle analisi che puoi modificare (le analisi inviate o approvate non vengono toccate). Azione irreversibile.',
     mergeDone: '{n} occorrenza/e rinominata/e, {b} ignorata/e (fuori dal tuo ambito di modifica).',
+    mergeBlocked: 'Nessuna fusione possibile: le {b} occorrenze sono in analisi finalizzate (inviate, approvate o completate), non modificabili. Riapri una nuova versione dell’analisi per armonizzare il nome.',
     mergeError: 'Unione non riuscita. Riprova.',
   },
 
