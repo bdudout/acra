@@ -59,7 +59,9 @@ export default async function DerogationsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <DerogationsRegistre rows={rows} locale={locale} canCreate={canCreate} />
+        <DerogationsRegistre rows={rows} locale={locale} canCreate={canCreate}
+          dureeDefaut={activeConfig?.derogationDureeDefautJours ?? 180}
+          dureeMax={activeConfig?.derogationDureeMaxJours ?? 365} />
       </main>
     </div>
   )

@@ -856,6 +856,8 @@ export const it: Translations = {
     empty: 'Nessuna deroga su questa analisi.',
     intitule: 'Titolo',
     intitulePlaceholder: 'Es. MFA non implementata sull\'applicazione legacy',
+    dureeLabel: 'Durata (giorni):',
+    dureeMaxHint: 'max {max} g',
     portee: 'Ambito',
     referentiel: 'Framework',
     controle: 'Controllo',

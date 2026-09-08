@@ -856,6 +856,8 @@ export const en: Translations = {
     empty: 'No waiver on this analysis.',
     intitule: 'Title',
     intitulePlaceholder: 'E.g. MFA not deployed on the legacy application',
+    dureeLabel: 'Duration (days):',
+    dureeMaxHint: 'max {max} d',
     portee: 'Scope',
     referentiel: 'Framework',
     controle: 'Control',
