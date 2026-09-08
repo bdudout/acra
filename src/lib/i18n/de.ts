@@ -1540,6 +1540,7 @@ export const de: Translations = {
     filtreStatutTous: 'Alle Status',
     filtreTypeTous: 'Alle Typen',
     filtreSourceToutes: 'Alle Quellen',
+    filtreCriticiteToutes: 'Alle Schweregrade',
     filtreResultat: '{n} / {total}',
     filtreEffacer: 'Löschen',
     filtreAucun: 'Kein Ergebnis.',

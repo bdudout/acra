@@ -1,8 +1,10 @@
 'use client'
 
-import { AlertTriangle, NotebookText } from 'lucide-react'
+import { AlertTriangle, NotebookText, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { useSearchParams } from 'next/navigation'
+import { niveauBucket } from '@/lib/cartographie'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
@@ -38,6 +40,10 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   const { t } = useTranslation()
   const r = t.registre
   const [risks, setRisks] = useState<Risk[]>([])
+  // Deep-link pilotage : ?niveau=eleve|moyen|faible → pré-filtre par palier du niveau résiduel.
+  const _sp = useSearchParams()
+  const _nivInit = (_sp.get('niveau') || '').toLowerCase()
+  const [filtreNiveau, setFiltreNiveau] = useState<string>(['eleve','moyen','faible'].includes(_nivInit) ? _nivInit : '')
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
   const [loading, setLoading] = useState(true)
@@ -164,6 +170,14 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
         </div>
       )}
 
+      {filtreNiveau && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">
+            {filtreNiveau === 'eleve' ? t.pilotage.eleves : filtreNiveau === 'moyen' ? t.pilotage.moyens : t.pilotage.faibles}
+          </span>
+          <button onClick={() => setFiltreNiveau('')} className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><X size={14} /> {t.actions.clearFilters}</button>
+        </div>
+      )}
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -180,8 +194,8 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
           </thead>
           <tbody>
             {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
-              : risks.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
-              : risks.map(x => (
+              : (filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks).length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
+              : (filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks).map(x => (
                 <Fragment key={x.id}>
                 <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
