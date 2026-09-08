@@ -1,6 +1,7 @@
 'use client'
 
 import { IdCard } from 'lucide-react'
+import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { FrameworkControl } from '@/lib/frameworks-data'
@@ -40,7 +41,7 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
 export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx }: Props) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
   const sLabels = t.conformite.statuts as Record<string, string>
   const d = t.derogations
@@ -51,6 +52,9 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
   const [derogFormRef, setDerogFormRef] = useState<string | null>(null) // formulaire ouvert sur ce contrôle
   const [derogMotif, setDerogMotif] = useState('')
   const [derogMesures, setDerogMesures] = useState('')
+  const [derogDuree, setDerogDuree] = useState('')
+  const [dureeDefaut, setDureeDefaut] = useState(180)
+  const [dureeMax, setDureeMax] = useState(365)
   const [derogBusy, setDerogBusy] = useState(false)
   const [derogError, setDerogError] = useState<string | null>(null)
 
@@ -60,6 +64,8 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     if (!res.ok) return
     const data = await res.json()
     setDerogActive(Boolean(data.config?.active))
+    if (typeof data.config?.dureeDefautJours === 'number') setDureeDefaut(data.config.dureeDefautJours)
+    if (typeof data.config?.dureeMaxJours === 'number') setDureeMax(data.config.dureeMaxJours)
     const alerte = typeof data.config?.alerteJours === 'number' ? data.config.alerteJours : 30
     const m = new Map<string, DerogEtat>()
     for (const x of (data.derogations ?? []) as { portee: string; referentiel: string | null; ref: string | null; statut: DerogationStatut; dateFin: string | null }[]) {
@@ -85,12 +91,13 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
         intitule: `${d.autoTitle} — ${c.ref} · ${c.nom}`.slice(0, 255),
         motif: derogMotif,
         mesuresCompensatoires: derogMesures,
+        dureeJours: derogDuree ? Number(derogDuree) : undefined,
       }),
     })
     const data = await res.json().catch(() => ({}))
     setDerogBusy(false)
     if (!res.ok) { setDerogError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
-    setDerogFormRef(null); setDerogMotif(''); setDerogMesures('')
+    setDerogFormRef(null); setDerogMotif(''); setDerogMesures(''); setDerogDuree('')
     reloadDerogations()
   }
 
@@ -223,10 +230,24 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                 return (
                   <div className="mt-2 space-y-1.5 p-2.5 rounded-lg bg-cyan-50/60 border border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-500/40">
                     {derogError && <p className="text-xs text-red-600">{derogError}</p>}
-                    <textarea value={derogMotif} onChange={e => setDerogMotif(e.target.value)}
-                      placeholder={d.motifPlaceholder} rows={2} className="input w-full text-xs" />
-                    <textarea value={derogMesures} onChange={e => setDerogMesures(e.target.value)}
-                      placeholder={d.mesuresPlaceholder} rows={2} className="input w-full text-xs" />
+                    <label className="block text-xs text-gray-600 dark:text-gray-300">
+                      <span className="block mb-1 font-medium">{d.motif}</span>
+                      <textarea value={derogMotif} onChange={e => setDerogMotif(e.target.value)}
+                        placeholder={d.motifPlaceholder} rows={2} className="input w-full text-xs" />
+                    </label>
+                    <label className="block text-xs text-gray-600 dark:text-gray-300">
+                      <span className="block mb-1 font-medium">{d.mesuresCompensatoires}</span>
+                      <textarea value={derogMesures} onChange={e => setDerogMesures(e.target.value)}
+                        placeholder={d.mesuresPlaceholder} rows={2} className="input w-full text-xs" />
+                    </label>
+                    <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-gray-300">
+                      <span className="font-medium">{d.dureeLabel}</span>
+                      <input type="number" min={1} max={dureeMax} value={derogDuree}
+                        onChange={e => setDerogDuree(e.target.value)}
+                        placeholder={String(dureeDefaut)} className="input w-24 text-xs" />
+                      <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
+                      {(() => { const j = Number(derogDuree || dureeDefaut); return j > 0 ? <span className="ml-1">→ {d.dateFinLabel} : <strong className="text-gray-800 dark:text-gray-100">{formatDate(new Date(Date.now() + j * 86400000).toISOString(), locale)}</strong></span> : null })()}
+                    </div>
                     <div className="flex gap-2">
                       <button type="button" disabled={derogBusy} onClick={() => submitDerogation(c)}
                         className="text-xs px-2.5 py-1 rounded bg-cyan-600 text-white font-medium disabled:opacity-50">
