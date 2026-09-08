@@ -15,15 +15,14 @@ import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-// Seules les analyses non finalisées sont modifiables par la fusion : on ne
-// touche jamais une analyse soumise/approuvée/terminée/archivée, même si
-// l'utilisateur en est propriétaire.
-const STATUTS_EDITABLES = new Set(['EN_COURS', 'REJETE'])
-
 /**
  * POST /api/tiers/merge — fusionne des tiers en doublon (issue #46, étape 2b) :
  * renomme vers `cible` toutes les parties prenantes portant l'un des `noms`,
- * UNIQUEMENT dans les analyses que l'utilisateur peut éditer ET non finalisées.
+ * dans TOUTES les analyses que l'utilisateur peut éditer. L'harmonisation d'un
+ * nom de tiers est un renommage COSMÉTIQUE (aucune cotation modifiée) : elle est
+ * donc autorisée même sur une analyse finalisée (soumise/approuvée/terminée),
+ * afin de pouvoir résoudre les doublons transverses. Seules les parties prenantes
+ * hors du périmètre d'ÉDITION de l'utilisateur sont laissées intactes (`blocked`).
  * Les PP situées dans des analyses verrouillées ou hors périmètre d'édition sont
  * laissées intactes et comptées dans `blocked`. Écriture auditée.
  */
@@ -83,8 +82,9 @@ export async function POST(request: Request) {
   const { renameIds, blocked } = planTierRename(
     rows,
     target,
+    // Renommage cosmétique : autorisé sur toute analyse ÉDITABLE par l'utilisateur,
+    // y compris finalisée (aucune cotation touchée).
     (r) =>
-      STATUTS_EDITABLES.has(r.analyse.statut) &&
       canEditAnalyse(user, {
         userId: r.analyse.userId,
         accesUtilisateurs: r.analyse.accesUtilisateurs,
