@@ -5,12 +5,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import {
-  buildHeatmap, aggregateByDimension, CARTO_MAX,
+  buildHeatmap, aggregateByDimension,
   type CartoRisk, type CartoMode, type CartoDimension, type NiveauBucket,
 } from '@/lib/cartographie'
+import { buildRiskMatrixModel, type ScaleConfig } from '@/lib/risk-scale'
+import { readableTextColor } from '@/lib/contrast-color'
 import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
 import { synthetiserAppetit, type AppetitConfig } from '@/lib/appetit'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
+
+/** Ajoute un canal alpha (hex 2 caractères) à une couleur hex #rrggbb. */
+function withAlpha(hex: string, alpha: string): string {
+  const h = String(hex ?? '').replace('#', '')
+  return /^[0-9a-fA-F]{6}$/.test(h) ? `#${h}${alpha}` : hex
+}
 
 type PublishAnalyse = { id: string; nom: string; organisation: string | null; risquesCount: number; dejaPublies: number }
 
@@ -26,15 +34,17 @@ const BUCKET_BG: Record<NiveauBucket, string> = {
   moyen: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   eleve: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300',
 }
-// Fond des cellules de la heat map, gradué par palier (vide = neutre).
-function cellBg(bucket: NiveauBucket | null, empty: boolean): string {
-  if (empty) return 'bg-gray-50 dark:bg-gray-800/40'
-  return bucket ? BUCKET_BG[bucket] : 'bg-gray-100'
-}
-
-export default function Cartographie({ canPublish }: { canPublish: boolean }) {
+export default function Cartographie({ canPublish, scaleConfig }: { canPublish: boolean; scaleConfig?: Partial<ScaleConfig> | null }) {
   const { t, locale } = useTranslation()
   const c = t.cartographie
+  // Matrice configurée (échelles + seuils) : la heat map reprend EXACTEMENT ses
+  // couleurs de paliers et sa taille d'échelle, comme la matrice de /configuration.
+  const matrix = useMemo(() => buildRiskMatrixModel(scaleConfig ?? null), [scaleConfig])
+  const cellColorAt = useMemo(() => {
+    const m = new Map<string, string>()
+    matrix.cells.flat().forEach(cl => m.set(`${cl.gravite}:${cl.vraisemblance}`, cl.couleur))
+    return m
+  }, [matrix])
   const [risks, setRisks] = useState<FilterableCartoRisk[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
@@ -132,8 +142,9 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
     else setFlash(c.publishErr)
   }
 
-  const gravites = Array.from({ length: CARTO_MAX }, (_, i) => CARTO_MAX - i) // 5..1 (haut → bas)
-  const vraisemblances = Array.from({ length: CARTO_MAX }, (_, i) => i + 1)   // 1..5 (gauche → droite)
+  // Dimensions de la grille = échelles configurées (gravité en lignes haut→bas, vraisemblance en colonnes)
+  const gravites = [...matrix.graviteLevels].map(l => l.niveau).sort((a, b) => b - a)
+  const vraisemblances = [...matrix.vraisemblanceLevels].map(l => l.niveau).sort((a, b) => a - b)
   const toggle = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors'
   const on = 'bg-ebios-100 text-ebios-700 dark:bg-ebios-500/20 dark:text-ebios-200'
   const off = 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -215,17 +226,21 @@ export default function Cartographie({ canPublish }: { canPublish: boolean }) {
               <div className="flex">
                 <div className="flex flex-col justify-around pr-2 text-[10px] font-medium text-gray-400 uppercase"><span className="[writing-mode:vertical-rl] rotate-180 self-center">{c.axisGravite}</span></div>
                 <div className="flex-1">
-                  <div className="grid" style={{ gridTemplateColumns: `auto repeat(${CARTO_MAX}, 1fr)` }}>
+                  <div className="grid" style={{ gridTemplateColumns: `auto repeat(${vraisemblances.length}, 1fr)` }}>
                     {gravites.map(g => (
                       <div key={g} className="contents">
                         <div className="flex items-center justify-center text-xs text-gray-400 font-medium pr-1">{g}</div>
                         {vraisemblances.map(v => {
                           const cell = cellIndex.get(`${g}:${v}`)
                           const n = cell?.risqueIds.length ?? 0
+                          // Couleur = palier de la matrice CONFIGURÉE (vide = tinté clair).
+                          const couleur = cellColorAt.get(`${g}:${v}`) ?? '#9ca3af'
                           // Cellule au-delà de l'appétit global (niveau produit > seuil).
                           const horsAppetit = seuilGlobal != null && g * v > seuilGlobal
                           return (
-                            <div key={v} title={`G${g} × V${v} — ${n}${horsAppetit ? ` · ${c.appetitHorsTile}` : ''}`} className={`aspect-square m-0.5 rounded flex items-center justify-center text-sm font-bold ${cellBg(cell?.bucket ?? null, n === 0)} ${horsAppetit ? 'ring-2 ring-inset ring-red-600/70 dark:ring-red-400/70' : ''}`}>
+                            <div key={v} title={`G${g} × V${v} — ${n}${horsAppetit ? ` · ${c.appetitHorsTile}` : ''}`}
+                              style={{ backgroundColor: n === 0 ? withAlpha(couleur, '26') : couleur, color: n === 0 ? undefined : readableTextColor(couleur) }}
+                              className={`aspect-square m-0.5 rounded flex items-center justify-center text-sm font-bold ${n === 0 ? 'text-gray-300 dark:text-gray-600' : ''} ${horsAppetit ? 'ring-2 ring-inset ring-red-600/70 dark:ring-red-400/70' : ''}`}>
                               {n > 0 ? n : ''}
                             </div>
                           )

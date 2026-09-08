@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import Cartographie from '@/components/Cartographie'
 
 export const dynamic = 'force-dynamic'
@@ -19,12 +20,14 @@ export default async function CartographiePage() {
   const scope = await getAnalyseScope(userId, userRole)
   const orgConfig = await getOrgConfig(scope.activeOrgId)
   if (!orgConfig.registreRisquesActive) redirect('/dashboard')
+  // Matrice configurée (mêmes échelles/seuils que /configuration) pour une heat map fidèle.
+  const scaleConfig = await getEffectiveScaleConfig(scope.activeOrgId)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <Cartographie canPublish={userRole !== 'LECTEUR'} />
+        <Cartographie canPublish={userRole !== 'LECTEUR'} scaleConfig={scaleConfig} />
       </main>
     </div>
   )
