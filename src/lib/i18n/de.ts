@@ -126,6 +126,7 @@ export const de: Translations = {
     mergeConfirmTitle: 'Diese Dritten zusammenführen?',
     mergeConfirmMsg: 'Alle Vorkommen werden in den von Ihnen bearbeitbaren Analysen in „{cible}“ umbenannt (eingereichte oder genehmigte Analysen bleiben unberührt). Dies kann nicht rückgängig gemacht werden.',
     mergeDone: '{n} Vorkommen umbenannt, {b} übersprungen (außerhalb Ihres Bearbeitungsbereichs).',
+    mergeBlocked: 'Keine Zusammenführung möglich: Die {b} Vorkommen liegen in abgeschlossenen Analysen (eingereicht, genehmigt oder abgeschlossen), die nicht änderbar sind. Öffnen Sie eine neue Version der Analyse, um den Namen zu vereinheitlichen.',
     mergeError: 'Zusammenführung fehlgeschlagen. Bitte erneut versuchen.',
   },
 

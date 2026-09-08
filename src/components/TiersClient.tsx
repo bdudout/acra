@@ -88,7 +88,13 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
       })
       if (res.ok) {
         const d = await res.json() as { renamed: number; blocked: number }
-        setMergeMsg(t.tiers.mergeDone.replace('{n}', String(d.renamed)).replace('{b}', String(d.blocked)))
+        // Aucun renommage possible : les doublons sont dans des analyses finalisées
+        // (soumises/approuvées/terminées), non modifiables → message explicite.
+        setMergeMsg(
+          d.renamed === 0 && d.blocked > 0
+            ? t.tiers.mergeBlocked.replace('{b}', String(d.blocked))
+            : t.tiers.mergeDone.replace('{n}', String(d.renamed)).replace('{b}', String(d.blocked))
+        )
         router.refresh()
       } else {
         setMergeMsg(t.tiers.mergeError)

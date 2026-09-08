@@ -127,6 +127,7 @@ export const fr = {
     mergeConfirmTitle: 'Fusionner ces tiers ?',
     mergeConfirmMsg: 'Toutes les occurrences seront renommées « {cible} » dans les analyses que vous pouvez modifier (les analyses soumises ou approuvées ne sont pas touchées). Action irréversible.',
     mergeDone: "{n} occurrence(s) renommée(s), {b} ignorée(s) (hors de votre périmètre d'édition).",
+    mergeBlocked: 'Aucune fusion possible : les {b} occurrence(s) sont dans des analyses finalisées (soumises, approuvées ou terminées), non modifiables. Rouvrez une nouvelle version de l’analyse concernée pour harmoniser le nom.',
     mergeError: 'La fusion a échoué. Réessayez.',
   },
 
