@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 interface Props {
   field: string
@@ -11,29 +11,41 @@ interface Props {
   required?: boolean
   id?: string
   'aria-label'?: string
+  /** Locale (pour les suggestions issues des référentiels). */
+  lang?: string
 }
 
 /**
  * Champ texte avec autocomplétion native (<datalist>) alimentée par
- * /api/suggestions?field=… (valeurs déjà saisies dans le périmètre de
- * l'utilisateur). Récupère les suggestions à la 1ʳᵉ interaction (focus), une
- * fois — les ensembles (organisations, tags) sont petits. Dégrade proprement en
- * simple <input> si le fetch échoue.
+ * /api/suggestions?field=…&q=… — valeurs déjà saisies dans le périmètre de
+ * l'utilisateur ENRICHIES, pour les mesures, des exigences/contrôles des
+ * référentiels. Piloté par la requête : refetch (debounced) à la frappe, pour
+ * ramener les meilleures correspondances (et pas seulement 8 items alphabétiques).
+ * Dégrade proprement en simple <input> si le fetch échoue.
  */
-export default function AutocompleteInput({ field, value, onChange, className, placeholder, required, id, 'aria-label': ariaLabel }: Props) {
+export default function AutocompleteInput({ field, value, onChange, className, placeholder, required, id, 'aria-label': ariaLabel, lang }: Props) {
   const listId = useId()
   const [options, setOptions] = useState<string[]>([])
-  const [loaded, setLoaded] = useState(false)
+  const [active, setActive] = useState(false) // le champ a reçu le focus au moins une fois
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function loadOnce() {
-    if (loaded) return
-    setLoaded(true)
+  async function fetchSuggestions(q: string) {
     try {
-      const d = await fetch(`/api/suggestions?field=${encodeURIComponent(field)}`).then(r => (r.ok ? r.json() : { suggestions: [] }))
+      const params = new URLSearchParams({ field, q, limit: '12' })
+      if (lang) params.set('lang', lang)
+      const d = await fetch(`/api/suggestions?${params.toString()}`).then(r => (r.ok ? r.json() : { suggestions: [] }))
       if (Array.isArray(d.suggestions)) setOptions(d.suggestions)
     } catch { /* dégradation : input simple */ }
   }
-  useEffect(() => () => { /* no-op cleanup */ }, [])
+
+  // Refetch (debounced) à la frappe, une fois le champ activé.
+  useEffect(() => {
+    if (!active) return
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => { fetchSuggestions(value) }, 180)
+    return () => { if (timer.current) clearTimeout(timer.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, active])
 
   return (
     <>
@@ -43,7 +55,7 @@ export default function AutocompleteInput({ field, value, onChange, className, p
         required={required}
         value={value}
         onChange={e => onChange(e.target.value)}
-        onFocus={loadOnce}
+        onFocus={() => setActive(true)}
         list={listId}
         autoComplete="off"
         className={className}

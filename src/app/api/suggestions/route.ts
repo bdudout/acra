@@ -61,5 +61,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ suggestions: rankSuggestions(candidates, q) })
+  // Mesures : enrichir avec les libellés des exigences/contrôles des référentiels
+  // de l'org (ISO, ANSSI, NIST, PSSI, custom…), pas seulement les mesures saisies.
+  if (field === 'mesure' && scope.activeOrgId) {
+    const { allExigenceLabels } = await import('@/lib/referentiel.server')
+    const langParam = req.nextUrl.searchParams.get('lang')
+    const locale = (['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? langParam : 'fr') as 'fr' | 'en' | 'de' | 'es' | 'it'
+    const refLabels = await allExigenceLabels(scope.activeOrgId, locale).catch(() => [])
+    candidates = [...candidates, ...refLabels]
+  }
+
+  const limit = Math.max(1, Math.min(20, Number(req.nextUrl.searchParams.get('limit')) || 8))
+  return NextResponse.json({ suggestions: rankSuggestions(candidates, q, limit) })
 }
