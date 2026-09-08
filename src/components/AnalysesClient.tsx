@@ -8,7 +8,7 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
-import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, ClipboardList, Clock, Download, FileJson, FileSpreadsheet, FileText, FolderOpen, Landmark, Link2, Pencil, Search, Settings, ShieldCheck, Sparkles, Trash2, Trophy, Upload, VenetianMask } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, ClipboardList, Clock, Download, FileJson, FileSpreadsheet, FileText, FolderOpen, Landmark, Link2, Pencil, Presentation, Search, Settings, ShieldCheck, Sparkles, Trash2, Trophy, Upload, VenetianMask } from 'lucide-react'
 import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
@@ -335,8 +335,11 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                       {/* Export toujours disponible */}
                       <div className="relative group">
                         <button className="btn-secondary text-sm py-1.5 inline-flex items-center gap-1.5"><Download size={15} aria-hidden="true" /> {t.analyses.exportBtn}</button>
-                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-2 hidden group-hover:flex flex-col z-10 w-44">
-                          <a href={`/api/export/${a.id}?format=pdf`} download className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileText size={15} aria-hidden="true" /> PDF</a>
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-2 hidden group-hover:flex flex-col z-10 w-48">
+                          <a href={`/api/export/${a.id}?format=pdf&lang=${locale}`} download className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileText size={15} aria-hidden="true" /> PDF</a>
+                          <a href={`/api/export/${a.id}?format=docx&lang=${locale}`} download className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileText size={15} aria-hidden="true" /> Word</a>
+                          <a href={`/api/export/${a.id}?format=pptx&lang=${locale}`} download className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><Presentation size={15} aria-hidden="true" /> PowerPoint</a>
+                          <a href={`/api/export/${a.id}?format=xlsx`} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileSpreadsheet size={15} aria-hidden="true" /> Excel</a>
                           <a href={`/api/export/${a.id}?format=csv`} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileSpreadsheet size={15} aria-hidden="true" /> CSV</a>
                           <a href={`/api/export/${a.id}?format=json`} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 rounded-lg"><FileJson size={15} aria-hidden="true" /> JSON</a>
                         </div>
