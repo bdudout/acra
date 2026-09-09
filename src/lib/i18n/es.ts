@@ -56,7 +56,7 @@ export const es: Translations = {
   },
 
   nav: {
-    dashboard:      'Panel de control',
+    dashboard:      'Panel cyber',
     organization:   'Organización',
     allOrganizations: 'Todas las organizaciones',
     analyses:       'Análisis',
@@ -70,7 +70,7 @@ export const es: Translations = {
     processus:      'Procesos',
     registre:       'Registro',
     cartographie:   'Cartografía',
-    pilotage:       'Pilotaje',
+    pilotage:       'Pilotaje GRC',
     incidents:      'Incidentes',
     controles:      'Controles',
     campagnesControle: 'Campañas N1',
@@ -2087,7 +2087,7 @@ export const es: Translations = {
       save:             'Guardar',
       saving:           'Guardando…',
       saved:            'Ajustes guardados.',
-      dashboardTitle:   'Panel',
+      dashboardTitle:   'Panel cyber',
       activeOrgs:       'Organizaciones demo activas',
       org:              'Organización',
       daysLeft:         'Días restantes',
