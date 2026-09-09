@@ -427,6 +427,13 @@ export const de: Translations = {
     footerDisclaim:  'Unabhängiges Open-Source-Tool.',
   },
 
+  ecosysteme: {
+    title: 'Ökosystem — Drittparteien-Karte',
+    subtitle: '{shown} von {total} Drittparteien angezeigt',
+    allEntities: 'Alle Einheiten',
+    categories: 'Kategorien',
+    empty: 'Keine Drittpartei in diesem Bereich.',
+  },
   dashboard: {
     greeting:       'Hallo',
     subtitle:       'ACRA Dashboard — Ihre Cyber-Risikoanalysen',
@@ -443,6 +450,8 @@ export const de: Translations = {
     viewAll:        'Alle anzeigen',
     ecosystemTitle:    'Bedrohungskarte des Ökosystems',
     ecosystemSubtitle: 'Alle Dritten aus allen Ihren Analysen',
+    ecosystemSeeAll: 'Alle anzeigen ({n})',
+    ecosystemLimited: '{max} vorrangige Dritte angezeigt',
     conformiteTitle: 'Konformität des Sicherheitssockels',
     conformiteSubtitle: 'Nachverfolgung der Rahmenwerk-Konformität, je Analyse (Sockel zuerst).',
     conformiteModify: 'Bearbeiten',

@@ -9,6 +9,10 @@ import { ATELIERS_META } from '@/lib/ebios-data'
 import { getRiskTier } from '@/lib/risk-scale'
 import AnalysesChart from '@/components/AnalysesChart'
 import EcosystemRadar from '@/components/EcosystemRadar'
+import { rankEcosystemTiers } from '@/lib/ecosystem-rank'
+
+/** Nombre maximal de tiers affichés sur le radar du tableau de bord (lisibilité). */
+const ECOSYSTEM_DASHBOARD_MAX = 40
 import EbiosGuide from '@/components/EbiosGuide'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import { analyseWhereClause, canCreateAnalyse, canEditAnalyse, isAdminRole, type UserRole } from '@/lib/permissions'
@@ -241,12 +245,21 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            {/* Radar global de la menace de l'écosystème — tous les tiers de toutes les analyses */}
+            {/* Radar de la menace de l'écosystème — limité aux tiers PRIORITAIRES (lisibilité).
+                La vue plein écran /ecosysteme affiche tous les tiers, filtrables. */}
             {allTiers.length > 0 && (
               <div className="card p-5">
-                <h2 className="font-semibold text-gray-800 mb-1"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.ecosystemTitle}</h2>
-                <p className="text-xs text-gray-500 mb-3">{t.dashboard.ecosystemSubtitle}</p>
-                <EcosystemRadar parties={allTiers} hideHeader aggregated manageTiersHref="/tiers" />
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <h2 className="font-semibold text-gray-800"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.ecosystemTitle}</h2>
+                  <Link href="/ecosysteme" className="text-xs text-ebios-600 dark:text-ebios-300 font-medium hover:underline whitespace-nowrap">
+                    {t.dashboard.ecosystemSeeAll.replace('{n}', String(allTiers.length))} →
+                  </Link>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  {t.dashboard.ecosystemSubtitle}
+                  {allTiers.length > ECOSYSTEM_DASHBOARD_MAX && <> · <span className="text-gray-400">{t.dashboard.ecosystemLimited.replace('{max}', String(ECOSYSTEM_DASHBOARD_MAX))}</span></>}
+                </p>
+                <EcosystemRadar parties={rankEcosystemTiers(allTiers, ECOSYSTEM_DASHBOARD_MAX)} hideHeader aggregated manageTiersHref="/ecosysteme" />
               </div>
             )}
 
