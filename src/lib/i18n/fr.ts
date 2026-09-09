@@ -437,6 +437,13 @@ export const fr = {
   },
 
   // ─── Dashboard ────────────────────────────────────────────────────────────
+  ecosysteme: {
+    title: 'Écosystème — cartographie des tiers',
+    subtitle: '{shown} tiers affichés sur {total}',
+    allEntities: 'Toutes les entités',
+    categories: 'Catégories',
+    empty: 'Aucun tiers dans ce périmètre.',
+  },
   dashboard: {
     greeting:       'Bonjour',
     subtitle:       'Tableau de bord ACRA — vos analyses de risques cyber',
@@ -453,6 +460,8 @@ export const fr = {
     viewAll:        'Voir tout',
     ecosystemTitle:    "Cartographie de menace de l'écosystème",
     ecosystemSubtitle: 'Tous les tiers de toutes vos analyses',
+    ecosystemSeeAll: 'Voir tout ({n})',
+    ecosystemLimited: '{max} tiers prioritaires affichés',
     conformiteTitle: 'Conformité du socle de sécurité',
     conformiteSubtitle: 'Suivi de la conformité au référentiel, par analyse (socle en priorité).',
     conformiteModify: 'Modifier',

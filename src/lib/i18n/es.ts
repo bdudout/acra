@@ -427,6 +427,13 @@ export const es: Translations = {
     footerDisclaim:  'Herramienta de código abierto independiente.',
   },
 
+  ecosysteme: {
+    title: 'Ecosistema — mapa de terceros',
+    subtitle: '{shown} de {total} terceros mostrados',
+    allEntities: 'Todas las entidades',
+    categories: 'Categorías',
+    empty: 'Ningún tercero en este ámbito.',
+  },
   dashboard: {
     greeting:       'Hola',
     subtitle:       'Panel ACRA — tus análisis de riesgos cibernéticos',
@@ -443,6 +450,8 @@ export const es: Translations = {
     viewAll:        'Ver todo',
     ecosystemTitle:    'Mapa de amenazas del ecosistema',
     ecosystemSubtitle: 'Todos los terceros de todos sus análisis',
+    ecosystemSeeAll: 'Ver todo ({n})',
+    ecosystemLimited: '{max} terceros prioritarios mostrados',
     conformiteTitle: 'Conformidad de la base de seguridad',
     conformiteSubtitle: 'Seguimiento de la conformidad con el marco, por análisis (base primero).',
     conformiteModify: 'Modificar',
