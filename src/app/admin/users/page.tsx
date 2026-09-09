@@ -298,7 +298,9 @@ export default function AdminUsersPage() {
         {/* KPI rôles */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           {roleStats.map(({ role, count }) => (
-            <div key={role} className="card p-4 text-center">
+            // La description du rôle est disponible au survol (tooltip), ici même —
+            // pas besoin de descendre jusqu'au guide en bas de page.
+            <div key={role} className="card p-4 text-center cursor-help" title={ROLE_DESCRIPTIONS[role]}>
               <div className="text-2xl font-bold text-gray-800">{count}</div>
               <div className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block font-medium ${ROLE_COLORS[role]}`}>
                 {ROLE_LABELS[role]}

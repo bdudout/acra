@@ -57,7 +57,7 @@ export const fr = {
 
   // ─── Navigation ──────────────────────────────────────────────────────────
   nav: {
-    dashboard:      'Tableau de bord',
+    dashboard:      'Tableau de bord cyber',
     organization:   'Organisation',
     allOrganizations: 'Toutes les organisations',
     analyses:       'Analyses',
@@ -71,7 +71,7 @@ export const fr = {
     processus:      'Processus',
     registre:       'Registre',
     cartographie:   'Cartographie',
-    pilotage:       'Pilotage',
+    pilotage:       'Pilotage GRC',
     incidents:      'Incidents',
     controles:      'Contrôles',
     campagnesControle: 'Campagnes N1',
@@ -2126,7 +2126,7 @@ export const fr = {
       save:             'Enregistrer',
       saving:           'Enregistrement…',
       saved:            'Réglages enregistrés.',
-      dashboardTitle:   'Tableau de bord',
+      dashboardTitle:   'Tableau de bord cyber',
       activeOrgs:       'Organisations démo actives',
       org:              'Organisation',
       daysLeft:         'Jours restants',

@@ -56,7 +56,7 @@ export const it: Translations = {
   },
 
   nav: {
-    dashboard:      'Dashboard',
+    dashboard:      'Dashboard cyber',
     organization:   'Organizzazione',
     allOrganizations: 'Tutte le organizzazioni',
     analyses:       'Analisi',
@@ -70,7 +70,7 @@ export const it: Translations = {
     processus:      'Processi',
     registre:       'Registro',
     cartographie:   'Mappatura',
-    pilotage:       'Pilotaggio',
+    pilotage:       'Pilotaggio GRC',
     incidents:      'Incidenti',
     controles:      'Controlli',
     campagnesControle: 'Campagne N1',
@@ -2087,7 +2087,7 @@ export const it: Translations = {
       save:             'Salva',
       saving:           'Salvataggio…',
       saved:            'Impostazioni salvate.',
-      dashboardTitle:   'Dashboard',
+      dashboardTitle:   'Dashboard cyber',
       activeOrgs:       'Organizzazioni demo attive',
       org:              'Organizzazione',
       daysLeft:         'Giorni rimanenti',

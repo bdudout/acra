@@ -319,12 +319,12 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   RSSI:         'Responsable SSI — apporte l\'expertise technique sécurité et approuve les analyses',
   ADMIN:        'Administre SON organisation : gère les comptes de son périmètre et les analyses. Pas les réglages d\'instance (SMTP, SSO, politique mdp), ni les autres organisations, ni la création de super-administrateurs',
   SUPER_ADMIN:  'Niveau instance : réglages globaux (SMTP, SSO, politique mdp), gestion des organisations et de tous les comptes, journal d\'audit, traverse tous les périmètres',
-  DIRECTION_METIER: 'Direction métier — consulte les analyses en lecture seule et accepte (ou refuse) les risques résiduels (acceptation du risque), distincte de la validation de l\'analyse',
-  AUDITEUR: 'Auditeur (3ᵉ ligne de défense) — lecture globale sur l\'ensemble du dispositif, écriture réservée au module Audit interne (missions, constats, recommandations) ; personne d\'autre ne modifie ses constats',
-  CONTROLEUR: 'Contrôleur (2ᵉ ligne de défense) — définit et exécute les contrôles permanents, avec une lecture globale du dispositif de risque ; distinct de l\'auditeur (3ᵉ ligne)',
-  METIER: 'Métier (1ʳᵉ ligne de défense) — acteur opérationnel : déclare les incidents et contribue aux analyses de son périmètre ; distinct de la direction métier, qui accepte les risques résiduels',
-  CONFORMITE: 'Conformité (2ᵉ ligne de défense) — pilote les référentiels de conformité (ISO 27001, NIS2, DORA…), les dérogations et la gouvernance associée ; lecture globale du dispositif ; distinct du RSSI',
-  DPO: 'Délégué à la protection des données (DPO) — supervise la conformité RGPD et le traitement des données personnelles ; lecture globale du dispositif de risque',
+  DIRECTION_METIER: 'Consulte les analyses en lecture seule et accepte (ou refuse) les risques résiduels (acceptation du risque), distincte de la validation de l\'analyse',
+  AUDITEUR: '3ᵉ ligne de défense — lecture globale sur l\'ensemble du dispositif, écriture réservée au module Audit interne (missions, constats, recommandations) ; personne d\'autre ne modifie ses constats',
+  CONTROLEUR: '2ᵉ ligne de défense — définit et exécute les contrôles permanents, avec une lecture globale du dispositif de risque ; distinct de l\'auditeur (3ᵉ ligne)',
+  METIER: '1ʳᵉ ligne de défense — acteur opérationnel : déclare les incidents et contribue aux analyses de son périmètre ; distinct de la direction métier, qui accepte les risques résiduels',
+  CONFORMITE: '2ᵉ ligne de défense — pilote les référentiels de conformité (ISO 27001, NIS2, DORA…), les dérogations et la gouvernance associée ; lecture globale du dispositif ; distinct du RSSI',
+  DPO: 'Supervise la conformité RGPD et le traitement des données personnelles ; lecture globale du dispositif de risque',
 }
 
 export const ROLE_COLORS: Record<UserRole, string> = {
