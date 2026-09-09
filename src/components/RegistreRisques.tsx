@@ -9,6 +9,7 @@ import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import { mostFrequentString } from '@/lib/most-frequent'
 
 interface Risk {
   id: string; intitule: string; taxonomieCode: string | null; processusId: string | null
@@ -52,6 +53,8 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Valeur par défaut de l'entité : la plus fréquemment saisie dans le registre.
+  const defaultEntite = useMemo(() => mostFrequentString(risks.map(x => x.entite)), [risks])
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
@@ -136,7 +139,7 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
     <div>
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><NotebookText size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {r.title}</h1>
-        {canEdit && !showForm && <button onClick={() => { setForm(EMPTY); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{r.newBtn}</button>}
+        {canEdit && !showForm && <button onClick={() => { setForm({ ...EMPTY, entite: defaultEntite }); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{r.newBtn}</button>}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
 

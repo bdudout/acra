@@ -35,10 +35,18 @@ export async function GET(req: NextRequest) {
     const rows = await db.analyse.findMany({ where, select: { tags: true }, take: 500 })
     candidates = tagsUniques(rows.map((r: { tags: unknown }) => ({ tags: Array.isArray(r.tags) ? (r.tags as string[]) : [] })))
   } else if (field === 'entite') {
-    // Entité (registre de risques) : org-scopée directement via organizationId.
+    // Entité : entités DÉJÀ saisies (registre + incidents) ENRICHIES des entités
+    // configurées par l'org (OrganizationConfig.entitesMesures), pour proposer des
+    // suggestions même sans données saisies.
     if (scope.activeOrgId) {
-      const rows = await db.riskItem.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 })
-      candidates = rows.map((r: { entite: string | null }) => r.entite)
+      const [risk, inc] = await Promise.all([
+        db.riskItem.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 }),
+        db.incident.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 }).catch(() => [] as { entite: string | null }[]),
+      ])
+      const { getOrgConfig } = await import('@/lib/org-config.server')
+      const cfg = await getOrgConfig(scope.activeOrgId).catch(() => null)
+      const configEntites = Array.isArray(cfg?.entitesMesures) ? (cfg!.entitesMesures as unknown[]).map(v => (typeof v === 'string' ? v : null)) : []
+      candidates = [...risk.map((r: { entite: string | null }) => r.entite), ...inc.map((r: { entite: string | null }) => r.entite), ...configEntites]
     }
   } else if (field === 'valeurMetier' || field === 'bienSupport') {
     // Champs stockés en JSON dans le Cadrage (tableau d'objets {nom,…}).
