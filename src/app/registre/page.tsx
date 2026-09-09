@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import RegistreRisques from '@/components/RegistreRisques'
 
 export const dynamic = 'force-dynamic'
@@ -19,12 +20,14 @@ export default async function RegistrePage() {
   const scope = await getAnalyseScope(userId, userRole)
   const orgConfig = await getOrgConfig(scope.activeOrgId)
   if (!orgConfig.registreRisquesActive) redirect('/dashboard')
+  // Échelle configurée (mêmes niveaux/seuils que l'analyse et /configuration) pour la cohérence.
+  const scaleConfig = await getEffectiveScaleConfig(scope.activeOrgId)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <RegistreRisques canEdit={userRole !== 'LECTEUR'} />
+        <RegistreRisques canEdit={userRole !== 'LECTEUR'} scaleConfig={scaleConfig} />
       </main>
     </div>
   )

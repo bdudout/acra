@@ -10,6 +10,15 @@ import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
+import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
+import { readableTextColor } from '@/lib/contrast-color'
+
+/** Couleur (#) d'un niveau selon les seuils CONFIGURÉS (repli gris si absent). */
+function niveauHex(n: number | null, seuils: Seuil[]): string | null {
+  if (n == null) return null
+  const h = (getRiskLevelFromSeuils(n, seuils)?.couleur ?? '').replace('#', '')
+  return /^[0-9a-fA-F]{6}$/.test(h) ? `#${h}` : '#9ca3af'
+}
 
 interface Risk {
   id: string; intitule: string; taxonomieCode: string | null; processusId: string | null
@@ -29,17 +38,13 @@ type Form = {
 }
 const EMPTY: Form = { intitule: '', taxonomieCode: '', processusId: '', entite: '', proprietaire: '', statut: 'IDENTIFIE', gi: '', vi: '', gr: '', vr: '' }
 
-// Couleur du niveau (produit 1-25) — 3 paliers simples.
-function niveauColor(n: number | null): string {
-  if (n == null) return 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'
-  if (n >= 12) return 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300'
-  if (n >= 6) return 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
-  return 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300'
-}
-
-export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
+export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boolean; scaleConfig?: Partial<ScaleConfig> | null }) {
   const { t } = useTranslation()
   const r = t.registre
+  // Échelle configurée (mêmes niveaux/seuils que l'analyse) → cohérence des cotations.
+  const scale = resolveScaleConfig(scaleConfig)
+  const graviteLevels = [...scale.echelleGravite].sort((a, b) => a.niveau - b.niveau)
+  const vraisLevels = [...scale.echelleVraisemblance].sort((a, b) => a.niveau - b.niveau)
   const [risks, setRisks] = useState<Risk[]>([])
   // Deep-link pilotage : ?niveau=eleve|moyen|faible → pré-filtre par palier du niveau résiduel.
   const _sp = useSearchParams()
@@ -131,8 +136,12 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
   }
 
   const sel = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
-  const cote = (v: string, set: (s: string) => void, ph: string) => (
-    <select value={v} onChange={e => set(e.target.value)} className={sel}><option value="">{ph}</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}</select>
+  // Sélecteur de cotation : niveaux et libellés de l'ÉCHELLE CONFIGURÉE (pas 1-5 codé en dur).
+  const cote = (v: string, set: (s: string) => void, ph: string, levels: EchelleNiveau[]) => (
+    <select value={v} onChange={e => set(e.target.value)} className={sel}>
+      <option value="">{ph}</option>
+      {levels.map(l => <option key={l.niveau} value={l.niveau}>{l.niveau} — {l.label}</option>)}
+    </select>
   )
 
   return (
@@ -160,8 +169,8 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
             <AutocompleteInput field="entite" value={form.entite} onChange={v => setForm(f => ({ ...f, entite: v }))} placeholder={r.entityPlaceholder} className={sel} />
           </div>
           <div className="flex flex-wrap gap-4 items-center text-xs text-gray-600 dark:text-gray-300">
-            <span className="font-medium">{r.inherent}:</span> {cote(form.gi, v => setForm(f => ({ ...f, gi: v })), r.gravity)} {cote(form.vi, v => setForm(f => ({ ...f, vi: v })), r.likelihood)}
-            <span className="font-medium">{r.residual}:</span> {cote(form.gr, v => setForm(f => ({ ...f, gr: v })), r.gravity)} {cote(form.vr, v => setForm(f => ({ ...f, vr: v })), r.likelihood)}
+            <span className="font-medium">{r.inherent}:</span> {cote(form.gi, v => setForm(f => ({ ...f, gi: v })), r.gravity, graviteLevels)} {cote(form.vi, v => setForm(f => ({ ...f, vi: v })), r.likelihood, vraisLevels)}
+            <span className="font-medium">{r.residual}:</span> {cote(form.gr, v => setForm(f => ({ ...f, gr: v })), r.gravity, graviteLevels)} {cote(form.vr, v => setForm(f => ({ ...f, vr: v })), r.likelihood, vraisLevels)}
             <select value={form.statut} onChange={e => setForm(f => ({ ...f, statut: e.target.value }))} className={sel}>
               {RISK_STATUTS.map(s => <option key={s} value={s}>{(r.statuts as Record<string, string>)[s] ?? s}</option>)}
             </select>
@@ -208,9 +217,9 @@ export default function RegistreRisques({ canEdit }: { canEdit: boolean }) {
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{taxoLabel(x.taxonomieCode)}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{x.processusNom ?? '—'}</td>
-                  <td className="px-4 py-3"><span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauInherent)}`}>{x.niveauInherent ?? '—'}</span></td>
+                  <td className="px-4 py-3">{(() => { const hex = niveauHex(x.niveauInherent, scale.seuilsMatrice); return <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={hex ? { backgroundColor: hex, color: readableTextColor(hex) } : undefined}>{x.niveauInherent ?? '—'}</span> })()}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${niveauColor(x.niveauResiduel)}`}>{x.niveauResiduel ?? '—'}</span>
+                    {(() => { const hex = niveauHex(x.niveauResiduel, scale.seuilsMatrice); return <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={hex ? { backgroundColor: hex, color: readableTextColor(hex) } : undefined}>{x.niveauResiduel ?? '—'}</span> })()}
                     {x.controleEfficacite && x.controleEfficacite.vraisemblanceSuggeree != null && x.controleEfficacite.evaluees > 0 && x.controleEfficacite.vraisemblanceSuggeree !== x.vraisemblanceResiduelle && (
                       <button
                         onClick={() => appliquerSuggestion(x, 'controles')}
