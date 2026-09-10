@@ -8,8 +8,16 @@ import { prisma } from './prisma'
 import { FRAMEWORK_IDS, FRAMEWORK_META, getFrameworkControles, type FrameworkId } from './frameworks-data'
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
 import { GRC_BUILTINS, isGrcBuiltin, grcBuiltinByCode } from './referentiels-builtins-grc'
+import { getOrgConfig } from './org-config.server'
 import type { Locale } from './i18n'
 import type { Exigence } from './referentiel'
+
+/** Ensemble des codes de référentiels désactivés pour une organisation (config). */
+export async function referentielsDesactivesForOrg(orgId: string): Promise<Set<string>> {
+  const cfg = await getOrgConfig(orgId)
+  const raw = (cfg as { referentielsDesactives?: unknown }).referentielsDesactives
+  return new Set(Array.isArray(raw) ? raw.filter((c): c is string => typeof c === 'string') : [])
+}
 
 export type ReferentielSource = 'BUILTIN' | 'CUSTOM'
 
@@ -38,20 +46,25 @@ const isCyberBuiltin = (code: string): code is FrameworkId => (BUILTIN_CODES as 
  * `domaine` (optionnel) filtre sur une filière de contrôle/audit (cyber, LCB-FT…).
  */
 export async function listReferentiels(orgId: string, locale: Locale, domaine?: Domaine): Promise<ReferentielSummary[]> {
+  // Codes désactivés pour l'org : marque le référentiel comme inactif (BUILTIN
+  // comme CUSTOM), sans le retirer de la liste — la page de gestion doit encore
+  // pouvoir le réactiver. Les consommateurs (pickers) filtrent sur `actif`.
+  const desactives = await referentielsDesactivesForOrg(orgId)
+
   const cyberBuiltins: ReferentielSummary[] = BUILTIN_CODES.map(code => {
     const meta = FRAMEWORK_META[code]
     let nb = 0
     try { nb = getFrameworkControles(code, undefined, locale).length } catch { nb = 0 }
     return {
       code, nom: meta.nom, source: 'BUILTIN', type: meta.cible,
-      domaine: coerceDomaine(meta.domaine), version: meta.version || null, nbExigences: nb, actif: true,
+      domaine: coerceDomaine(meta.domaine), version: meta.version || null, nbExigences: nb, actif: !desactives.has(code),
     }
   })
 
   // Cadres GRC livrés (non-cyber : LCB-FT, gel des avoirs, RGPD, DSP2…).
   const grcBuiltins: ReferentielSummary[] = GRC_BUILTINS.map(r => ({
     code: r.code, nom: r.nom, source: 'BUILTIN', type: r.nature,
-    domaine: r.domaine, version: r.version || null, nbExigences: r.exigences.length, actif: true,
+    domaine: r.domaine, version: r.version || null, nbExigences: r.exigences.length, actif: !desactives.has(r.code),
   }))
 
   const builtins = [...cyberBuiltins, ...grcBuiltins]
@@ -66,7 +79,8 @@ export async function listReferentiels(orgId: string, locale: Locale, domaine?: 
     domaine: coerceDomaine((r as { domaine?: unknown }).domaine),
     version: r.version,
     nbExigences: Array.isArray(r.exigences) ? (r.exigences as unknown[]).length : 0,
-    actif: r.actif,
+    // Custom : actif tant que le row l'est ET que le code n'est pas désactivé pour l'org.
+    actif: r.actif && !desactives.has(r.code),
   }))
 
   const all = [...customs, ...builtins]

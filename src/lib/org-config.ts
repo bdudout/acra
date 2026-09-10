@@ -30,6 +30,7 @@ export interface RawOrgConfig {
   entitesMesures: unknown
   typesImpacts: unknown
   referentielsActifs: unknown
+  referentielsDesactives: unknown
   strategiesTraitement: unknown
   exemplesAteliers: unknown
   echellesEcosysteme: unknown
@@ -67,6 +68,8 @@ export interface OrgConfigResolved {
   entitesMesures: string[]
   typesImpacts: TypeImpact[]
   referentielsActifs: ReferentielActif[]
+  /** Codes de référentiels GRC (BUILTIN + CUSTOM) désactivés pour l'organisation. */
+  referentielsDesactives: string[]
   strategiesTraitement: StrategieTraitement[]
   exemplesAteliers: Record<string, unknown[]>
   echellesEcosysteme: Record<string, unknown>
@@ -105,6 +108,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   entitesMesures: DEFAULT_ENTITES,
   typesImpacts: DEFAULT_TYPES_IMPACTS,
   referentielsActifs: DEFAULT_REFERENTIELS,
+  referentielsDesactives: [],
   strategiesTraitement: DEFAULT_STRATEGIES,
   exemplesAteliers: {},
   echellesEcosysteme: {},
@@ -146,7 +150,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
@@ -186,6 +190,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     entitesMesures: pickJson('entitesMesures', defaults.entitesMesures),
     typesImpacts: pickJson('typesImpacts', defaults.typesImpacts),
     referentielsActifs: pickJson('referentielsActifs', defaults.referentielsActifs),
+    referentielsDesactives: pickJson('referentielsDesactives', defaults.referentielsDesactives),
     strategiesTraitement: pickJson('strategiesTraitement', defaults.strategiesTraitement),
     exemplesAteliers: pickJson('exemplesAteliers', defaults.exemplesAteliers),
     echellesEcosysteme: pickJson('echellesEcosysteme', defaults.echellesEcosysteme),

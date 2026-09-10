@@ -1425,6 +1425,10 @@ model OrganizationConfig {
   typesImpacts               Json          @default("[]")
   // Référentiels de sécurité configurables — [{nom, description, actif}]
   referentielsActifs         Json          @default("[]")
+  // Codes des référentiels de la bibliothèque GRC (BUILTIN + CUSTOM) DÉSACTIVÉS
+  // pour cette organisation — ex. écarter les référentiels bancaires. Liste de
+  // codes ["DORA", "ANSSI_HYG", ...]. Vide = tous actifs.
+  referentielsDesactives     Json          @default("[]")
   // Options de traitement du risque personnalisables — [{value, label, description, conseil}]
   // value reste l'identifiant interne (REDUIRE/ACCEPTER/...) ; label/description/conseil éditables.
   strategiesTraitement       Json          @default("[]")

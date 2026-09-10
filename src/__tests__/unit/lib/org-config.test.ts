@@ -11,6 +11,7 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     entitesMesures: [],
     typesImpacts: [],
     referentielsActifs: [],
+    referentielsDesactives: [],
     strategiesTraitement: [],
     exemplesAteliers: {},
     echellesEcosysteme: {},
@@ -44,6 +45,15 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(c.conseilsAteliersActive).toBe(true)
     expect(c.qualificationActive).toBe(false)
     expect(c.echellesEcosysteme).toEqual({})
+  })
+
+  it('referentielsDesactives : défaut vide, renseigné par row, hérité comme un JSON', () => {
+    expect(resolveOrgConfig([]).referentielsDesactives).toEqual([])
+    expect(resolveOrgConfig([row({ referentielsDesactives: ['DORA', 'ANSSI_HYG'] })]).referentielsDesactives).toEqual(['DORA', 'ANSSI_HYG'])
+    // Enfant sans valeur (JSON vide) → hérite de l'ancêtre.
+    const enfant = row({ referentielsDesactives: [] })
+    const racine = row({ referentielsDesactives: ['DORA'] })
+    expect(resolveOrgConfig([enfant, racine]).referentielsDesactives).toEqual(['DORA'])
   })
 
   it('2ᵉ ligne de défense : active par défaut (rétrocompatible), désactivable par row', () => {

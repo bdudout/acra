@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck } from 'lucide-react'
+import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck, Power } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -49,6 +49,19 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     const d = await fetch('/api/referentiels').then(x => x.ok ? x.json() : null).catch(() => null)
     setRefs(d?.referentiels ?? [])
     setLoading(false)
+  }
+
+  // Active/désactive un référentiel (BUILTIN ou CUSTOM) pour l'organisation — ex.
+  // écarter les référentiels bancaires quand ils ne s'appliquent pas.
+  const [toggling, setToggling] = useState<string | null>(null)
+  async function toggleActif(ref: Ref) {
+    setToggling(ref.code)
+    await fetch('/api/referentiels', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: ref.code, actif: !ref.actif }),
+    }).catch(() => {})
+    setToggling(null)
+    reload()
   }
   useEffect(() => { reload() }, [])
 
@@ -220,9 +233,12 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               <tbody>
                 {customs.map(x => (
                   <tr key={x.id} onClick={() => openCouverture(x.code, x.nom)}
-                    className="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    className={`border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 ${x.actif ? '' : 'opacity-60'}`}>
                     <td className="px-3 py-2">
-                      <div className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</div>
+                      <div className="font-medium text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
+                        {x.nom}
+                        {!x.actif && <span className="text-[10px] px-1.5 py-px rounded-full font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{r.inactif}</span>}
+                      </div>
                       <div className="text-[11px] text-gray-400 font-mono">{x.code}</div>
                     </td>
                     <td className="px-3 py-2">
@@ -238,6 +254,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                     <td className="px-3 py-2 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
                       <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
                       {canManage && <>
+                        <button onClick={() => toggleActif(x)} disabled={toggling === x.code} className={`p-1 disabled:opacity-40 ${x.actif ? 'text-gray-400 hover:text-amber-600' : 'text-amber-600 hover:text-green-600'}`} aria-label={x.actif ? r.desactiver : r.activer} title={x.actif ? r.desactiver : r.activer}><Power size={15} aria-hidden="true" /></button>
                         <button onClick={() => x.id && openEdit(x.id)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={t.save}><Pencil size={15} aria-hidden="true" /></button>
                         <button onClick={() => x.id && setConfirmDel(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={t.delete}><Trash2 size={15} aria-hidden="true" /></button>
                       </>}
@@ -266,10 +283,11 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
             <tbody>
               {builtins.map(x => (
                 <tr key={x.code} onClick={() => openCouverture(x.code, x.nom)}
-                  className="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                  className={`border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 ${x.actif ? '' : 'opacity-60'}`}>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</span>
+                      {!x.actif && <span className="text-[10px] px-1.5 py-px rounded-full font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{r.inactif}</span>}
                       <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${domaineBadgeCls(x.domaine)}`}>
                         {dLabel(x.domaine ?? 'SECURITE_SI')}
                       </span>
@@ -279,6 +297,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
                   <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
                   <td className="px-3 py-2 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    {canManage && <button onClick={() => toggleActif(x)} disabled={toggling === x.code} className={`p-1 disabled:opacity-40 ${x.actif ? 'text-gray-400 hover:text-amber-600' : 'text-amber-600 hover:text-green-600'}`} aria-label={x.actif ? r.desactiver : r.activer} title={x.actif ? r.desactiver : r.activer}><Power size={15} aria-hidden="true" /></button>}
                     <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
                   </td>
                 </tr>

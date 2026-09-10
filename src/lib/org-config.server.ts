@@ -15,6 +15,7 @@ const CONFIG_SELECT = {
   entitesMesures: true,
   typesImpacts: true,
   referentielsActifs: true,
+  referentielsDesactives: true,
   strategiesTraitement: true,
   exemplesAteliers: true,
   echellesEcosysteme: true,
