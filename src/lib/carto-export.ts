@@ -46,8 +46,12 @@ export interface CartoExportData {
  */
 export function buildHeatGrid(risks: CartoRisk[], mode: CartoMode, config?: Partial<ScaleConfig> | null): HeatGrid {
   const heat = buildHeatmap(risks, mode)
-  const gravites = Array.from({ length: CARTO_MAX }, (_, i) => CARTO_MAX - i)
-  const vraisemblances = Array.from({ length: CARTO_MAX }, (_, i) => i + 1)
+  // Dimension de la grille FIDÈLE à l'échelle configurée (4 ou 5 niveaux) quand
+  // une config est fournie — cohérence avec le registre et la cartographie (qui
+  // utilisent buildRiskMatrixModel). Sans config : 5×5 par défaut (rétrocompat).
+  const max = config?.nbNiveaux === 4 ? 4 : config?.nbNiveaux === 5 ? 5 : CARTO_MAX
+  const gravites = Array.from({ length: max }, (_, i) => max - i)
+  const vraisemblances = Array.from({ length: max }, (_, i) => i + 1)
   const counts: Record<number, Record<number, number>> = {}
   const buckets: Record<number, Record<number, NiveauBucket>> = {}
   const couleurs: Record<number, Record<number, string>> = {}
@@ -59,6 +63,9 @@ export function buildHeatGrid(risks: CartoRisk[], mode: CartoMode, config?: Part
     }
   }
   for (const cell of heat.cells) {
+    // Ignore une cote hors de la grille configurée (données héritées d'une échelle
+    // plus large) — évite d'écrire dans une cellule inexistante.
+    if (counts[cell.gravite]?.[cell.vraisemblance] === undefined) continue
     counts[cell.gravite][cell.vraisemblance] = cell.risqueIds.length
     buckets[cell.gravite][cell.vraisemblance] = cell.bucket
   }

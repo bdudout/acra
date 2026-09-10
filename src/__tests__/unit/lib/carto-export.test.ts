@@ -30,6 +30,20 @@ describe('buildHeatGrid', () => {
     expect(g.counts[2][3]).toBe(2)
     expect(g.buckets[2][3]).toBe('moyen')            // 6
   })
+  it('grille FIDÈLE à l’échelle configurée : nbNiveaux=4 → 4×4 (cohérence registre/carto)', () => {
+    const g = buildHeatGrid([mk({ graviteResiduelle: 4, vraisemblanceResiduelle: 3 })], 'residual', { nbNiveaux: 4 })
+    expect(g.gravites).toEqual([4, 3, 2, 1])
+    expect(g.vraisemblances).toEqual([1, 2, 3, 4])
+    expect(g.counts[4][3]).toBe(1)
+    expect(g.couleurs).toBeDefined()
+    // Pas de 5e ligne/colonne fantôme.
+    expect(g.counts[5]).toBeUndefined()
+  })
+  it('nbNiveaux=5 → 5×5', () => {
+    const g = buildHeatGrid([mk({ graviteResiduelle: 5, vraisemblanceResiduelle: 5 })], 'residual', { nbNiveaux: 5 })
+    expect(g.gravites).toEqual([5, 4, 3, 2, 1])
+    expect(g.counts[5][5]).toBe(1)
+  })
 })
 
 describe('buildCartoExport', () => {
