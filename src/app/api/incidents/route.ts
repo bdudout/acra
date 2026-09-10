@@ -6,7 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection } from '@/lib/incident'
-import { findIncidentDuplicates, type IncidentDedupItem } from '@/lib/incident-dedup'
+import { findDuplicatesForAll, type IncidentDedupItem } from '@/lib/incident-dedup'
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
 import { type DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -71,9 +71,12 @@ export async function GET() {
     dateSurvenance: i.dateSurvenance, dateDetection: i.dateDetection,
     processusId: i.processusId, entite: i.entite, taxonomieCode: i.taxonomieCode,
   }))
-  const withDoublons = incidents.map((i, idx) => ({
+  // Un seul passage : chaque titre n'est tokenisé qu'une fois (O(n)) au lieu de
+  // re-tokeniser toute la liste à chaque incident (O(n²)).
+  const doublonsParId = findDuplicatesForAll(dedupItems)
+  const withDoublons = incidents.map(i => ({
     ...i,
-    doublons: findIncidentDuplicates(dedupItems[idx], dedupItems).slice(0, 3),
+    doublons: (doublonsParId.get(i.id) ?? []).slice(0, 3),
   }))
   return NextResponse.json({ incidents: withDoublons, active: true })
 }

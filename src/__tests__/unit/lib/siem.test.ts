@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   SIEM_CATEGORIES,
   categoryForAction,
+  categoryForEvent,
   cleanSiemCategories,
   isValidSiemEndpoint,
   shouldForward,
@@ -25,6 +26,23 @@ describe('categoryForAction', () => {
   })
   it('chaque catégorie retournée est déclarée dans SIEM_CATEGORIES', () => {
     expect(SIEM_CATEGORIES).toContain(categoryForAction('LOGIN_SUCCESS'))
+  })
+})
+
+describe('categoryForEvent (catégorie affinée par details.scope)', () => {
+  it('reclasse l’action générique ORGANIZATION_CONFIG_UPDATED selon le scope de données', () => {
+    // Sans scope → CONFIGURATION (rétrocompatible avec categoryForAction).
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED')).toBe('CONFIGURATION')
+    // Scopes « données métier » → DONNEES (upload/suppression de document, seeds, registres…).
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED', { scope: 'document' })).toBe('DONNEES')
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED', { scope: 'audit-mission' })).toBe('DONNEES')
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED', { scope: 'ropa' })).toBe('DONNEES')
+    // Scope de configuration/sécurité réelle → reste CONFIGURATION.
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED', { scope: 'branding' })).toBe('CONFIGURATION')
+    expect(categoryForEvent('ORGANIZATION_CONFIG_UPDATED', { scope: 'inconnu' })).toBe('CONFIGURATION')
+  })
+  it('n’affine PAS les actions non génériques (le scope est ignoré)', () => {
+    expect(categoryForEvent('LOGIN_FAILED', { scope: 'document' })).toBe('AUTHENTIFICATION')
   })
 })
 
@@ -67,6 +85,16 @@ describe('shouldForward', () => {
   it('n’émet pas si désactivé ou sans endpoint', () => {
     expect(shouldForward({ ...base, enabled: false }, 'LOGIN_FAILED')).toBe(false)
     expect(shouldForward({ ...base, endpoint: '' }, 'LOGIN_FAILED')).toBe(false)
+  })
+  it('décide selon la catégorie AFFINÉE par le scope (données vs config)', () => {
+    const cfgDonnees = { enabled: true, endpoint: 'https://siem/ingest', categories: ['DONNEES'] as string[] }
+    // Un upload de document (scope document) doit être forwardé au journal DONNEES…
+    expect(shouldForward(cfgDonnees, 'ORGANIZATION_CONFIG_UPDATED', { scope: 'document' })).toBe(true)
+    // …et PAS au journal CONFIGURATION seul.
+    const cfgConfig = { ...cfgDonnees, categories: ['CONFIGURATION'] as string[] }
+    expect(shouldForward(cfgConfig, 'ORGANIZATION_CONFIG_UPDATED', { scope: 'document' })).toBe(false)
+    // Une vraie modif de config (scope branding) reste dans CONFIGURATION.
+    expect(shouldForward(cfgConfig, 'ORGANIZATION_CONFIG_UPDATED', { scope: 'branding' })).toBe(true)
   })
 })
 

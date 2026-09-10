@@ -37,6 +37,35 @@ export async function emitWebhookEvent(
   }
 }
 
+/**
+ * Variante GROUPÉE : émet le MÊME `event` pour plusieurs `dataItems` en une seule
+ * lecture des abonnés + un seul `createMany` (au lieu d'un aller-retour par item,
+ * ex. import en masse). Best-effort — n'interrompt jamais l'appelant.
+ */
+export async function emitWebhookEvents(
+  organizationId: string,
+  event: WebhookEvent,
+  dataItems: Record<string, unknown>[],
+): Promise<void> {
+  if (dataItems.length === 0) return
+  try {
+    const hooks = await prisma.webhook.findMany({ where: { organizationId, actif: true } })
+    const abonnes = webhookSubscribers(
+      hooks.map(h => ({ ...h, events: Array.isArray(h.events) ? (h.events as string[]) : [] })),
+      event,
+    )
+    if (abonnes.length === 0) return
+    const emittedAt = new Date().toISOString()
+    const rows = dataItems.flatMap(data => {
+      const payload = JSON.stringify({ event, organizationId, data, emittedAt })
+      return abonnes.map(h => ({ webhookId: h.id, event, payload }))
+    })
+    await prisma.webhookDelivery.createMany({ data: rows })
+  } catch {
+    // Émission best-effort : ne jamais casser l'action métier.
+  }
+}
+
 const DELIVERY_TIMEOUT_MS = 10_000
 
 /**

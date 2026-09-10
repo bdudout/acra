@@ -271,7 +271,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
                 </tr>,
                 openQ === a.id && (
                   <tr key={a.id + '-q'} className="bg-gray-50 dark:bg-gray-800/40">
-                    <td colSpan={canManage ? 7 : 6} className="px-4 py-3">
+                    <td colSpan={canManage ? 9 : 8} className="px-4 py-3">
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-1.5">
                         <ClipboardCheck size={14} aria-hidden="true" /> {r.qualif.title}
                       </p>

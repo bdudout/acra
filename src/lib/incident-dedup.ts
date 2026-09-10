@@ -65,17 +65,31 @@ function dateProximity(a: IncidentDedupItem, b: IncidentDedupItem, fenetreJours:
 }
 
 /**
- * Similarité globale de deux incidents (0..1). Le titre porte l'essentiel du
- * signal ; la proximité de date, le même processus et la même entité renforcent.
+ * Cœur du calcul de similarité à partir des ensembles de tokens DÉJÀ calculés —
+ * évite de re-tokeniser les titres à chaque comparaison (cf. findDuplicatesForAll).
  */
-export function incidentSimilarity(a: IncidentDedupItem, b: IncidentDedupItem, opts: DedupOptions = {}): number {
-  const fenetre = opts.fenetreJours ?? 14
-  const titre = jaccard(tokens(a.intitule), tokens(b.intitule))
-  const date = dateProximity(a, b, fenetre)
+function similarityWithTokens(
+  a: IncidentDedupItem, b: IncidentDedupItem,
+  ta: Set<string>, tb: Set<string>, fenetreJours: number,
+): number {
+  const titre = jaccard(ta, tb)
+  const date = dateProximity(a, b, fenetreJours)
   const sameProc = a.processusId && b.processusId && a.processusId === b.processusId ? 1 : 0
   const sameEntite = a.entite && b.entite && a.entite.trim().toLowerCase() === b.entite.trim().toLowerCase() ? 1 : 0
   const score = 0.55 * titre + 0.2 * date + 0.15 * sameProc + 0.1 * sameEntite
   return Math.min(1, score)
+}
+
+/**
+ * Similarité globale de deux incidents (0..1). Le titre porte l'essentiel du
+ * signal ; la proximité de date, le même processus et la même entité renforcent.
+ */
+export function incidentSimilarity(a: IncidentDedupItem, b: IncidentDedupItem, opts: DedupOptions = {}): number {
+  return similarityWithTokens(a, b, tokens(a.intitule), tokens(b.intitule), opts.fenetreJours ?? 14)
+}
+
+function toMatch(e: IncidentDedupItem, score: number): DuplicateMatch {
+  return { id: e.id, intitule: e.intitule, statut: e.statut, score: Math.round(score * 100) / 100 }
 }
 
 /**
@@ -88,12 +102,44 @@ export function findIncidentDuplicates(
   opts: DedupOptions = {},
 ): DuplicateMatch[] {
   const seuil = opts.seuil ?? 0.5
+  const fenetre = opts.fenetreJours ?? 14
+  const candTokens = tokens(candidate.intitule)
   const out: DuplicateMatch[] = []
   for (const e of existing) {
     if (e.id === candidate.id) continue
     if (e.statut === 'REJETE') continue
-    const score = incidentSimilarity(candidate, e, opts)
-    if (score >= seuil) out.push({ id: e.id, intitule: e.intitule, statut: e.statut, score: Math.round(score * 100) / 100 })
+    const score = similarityWithTokens(candidate, e, candTokens, tokens(e.intitule), fenetre)
+    if (score >= seuil) out.push(toMatch(e, score))
   }
   return out.sort((x, y) => y.score - x.score)
+}
+
+/**
+ * Rapproche TOUS les incidents entre eux en UN passage. Chaque titre n'est
+ * tokenisé qu'UNE fois (O(n)) — au lieu de re-tokeniser à chaque appel item par
+ * item, qui donnait un coût O(n²) de tokenisation sur la liste. Renvoie, pour
+ * chaque id, ses doublons probables (mêmes règles que findIncidentDuplicates).
+ */
+export function findDuplicatesForAll(
+  items: IncidentDedupItem[],
+  opts: DedupOptions = {},
+): Map<string, DuplicateMatch[]> {
+  const seuil = opts.seuil ?? 0.5
+  const fenetre = opts.fenetreJours ?? 14
+  const toks = items.map((i) => tokens(i.intitule)) // O(n) tokenisation
+  const result = new Map<string, DuplicateMatch[]>()
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i]
+    const matches: DuplicateMatch[] = []
+    for (let j = 0; j < items.length; j++) {
+      const b = items[j]
+      if (b.id === a.id) continue
+      if (b.statut === 'REJETE') continue
+      const score = similarityWithTokens(a, b, toks[i], toks[j], fenetre)
+      if (score >= seuil) matches.push(toMatch(b, score))
+    }
+    matches.sort((x, y) => y.score - x.score)
+    result.set(a.id, matches)
+  }
+  return result
 }

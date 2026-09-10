@@ -27,9 +27,11 @@ export async function POST(req: NextRequest) {
   const dejaLa = new Set(existants.map((x) => x.nom.trim().toLowerCase()))
   const aInserer = socle.filter((t) => !dejaLa.has(t.nom.trim().toLowerCase()))
 
-  for (const t of aInserer) {
-    const { id: _drop, ...data } = t
-    await db.traitement.create({ data: { ...data, organizationId: orgId, createdBy: userId } })
+  if (aInserer.length > 0) {
+    // Insertion groupée (1 seul aller-retour) plutôt qu'un create() par ligne.
+    await db.traitement.createMany({
+      data: aInserer.map(({ id: _drop, ...data }) => ({ ...data, organizationId: orgId, createdBy: userId })),
+    })
   }
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

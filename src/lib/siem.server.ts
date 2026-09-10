@@ -23,7 +23,30 @@ const CACHE_TTL_MS = 10_000
 let cached: { at: number; cfg: SiemConfigRow | null } | null = null
 
 /** Invalide le cache (après mise à jour de la config). */
-export function invalidateSiemCache(): void { cached = null }
+export function invalidateSiemCache(): void { cached = null; lastPersist = null }
+
+// Persistance throttlée du dernier résultat de livraison. Écrire lastDelivery* en
+// base à CHAQUE événement transféré ferait une écriture DB par événement (flux
+// d'audit chargé). On ne persiste donc que si le statut ok change ou si un délai
+// minimal s'est écoulé — la trace reste fraîche pour l'UI admin sans marteler la DB.
+const PERSIST_MIN_INTERVAL_MS = 30_000
+let lastPersist: { at: number; ok: boolean } | null = null
+
+async function persistDeliveryTrace(res: { ok: boolean; code?: number; error?: string }): Promise<void> {
+  const now = Date.now()
+  if (lastPersist && lastPersist.ok === res.ok && now - lastPersist.at < PERSIST_MIN_INTERVAL_MS) return
+  lastPersist = { at: now, ok: res.ok }
+  try {
+    const { prisma } = await import('./prisma')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).siemConfig.update({
+      where: { id: 'global' },
+      data: { lastDeliveryOk: res.ok, lastDeliveryAt: new Date(), lastError: res.ok ? null : (res.error ?? `HTTP ${res.code}`) },
+    })
+    // NB : on NE vide PAS le cache de config ici — lastDelivery* ne fait pas partie
+    // des champs de décision (enabled/endpoint/categories) et le cache reste valide.
+  } catch { /* trace best-effort */ }
+}
 
 async function readConfig(): Promise<SiemConfigRow | null> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.cfg
@@ -83,7 +106,7 @@ export async function forwardToSiem(action: AuditAction, ctx: SiemEventCtx): Pro
   try {
     const cfg = await readConfig()
     if (!cfg) return
-    if (!shouldForward(cfg, action)) return
+    if (!shouldForward(cfg, action, ctx.details)) return
     const event = buildSiemEvent(action, ctx)
 
     // (1) Émission JSON structuré sur stdout (log-shipper Filebeat/Fluentd).
@@ -91,16 +114,7 @@ export async function forwardToSiem(action: AuditAction, ctx: SiemEventCtx): Pro
 
     // (2) Livraison HTTP au SIEM externe.
     const res = await deliverSiemEvent(cfg.endpoint!, decryptSecret(cfg.authHeader) ?? null, event)
-    // Trace best-effort du dernier résultat (ne bloque pas).
-    try {
-      const { prisma } = await import('./prisma')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (prisma as any).siemConfig.update({
-        where: { id: 'global' },
-        data: { lastDeliveryOk: res.ok, lastDeliveryAt: new Date(), lastError: res.ok ? null : (res.error ?? `HTTP ${res.code}`) },
-      })
-      invalidateSiemCache()
-    } catch { /* trace best-effort */ }
+    await persistDeliveryTrace(res)
   } catch {
     /* le transfert SIEM ne doit jamais casser une requête */
   }

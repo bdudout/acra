@@ -6,7 +6,7 @@ import { prepareImport, type ImportItemError } from '@/lib/api-import'
 import { validateRiskItemInput, cleanRiskItem } from '@/lib/risk-item'
 import { validateControleInput, cleanControleInput } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { emitWebhookEvent } from '@/lib/webhook.server'
+import { emitWebhookEvents } from '@/lib/webhook.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       const p = prepareImport(body.risks, validateRiskItemInput, cleanRiskItem)
       if (p.valid.length) {
         await prisma.riskItem.createMany({ data: p.valid.map(v => ({ ...v, organizationId: auth.organizationId, provenance: 'API' })) })
-        for (const v of p.valid) await emitWebhookEvent(auth.organizationId, 'risk.created', { intitule: (v as { intitule?: string }).intitule, source: 'import' })
+        await emitWebhookEvents(auth.organizationId, 'risk.created', p.valid.map(v => ({ intitule: (v as { intitule?: string }).intitule, source: 'import' })))
       }
       created.risks = p.valid.length
       skipped.risks = p.skipped

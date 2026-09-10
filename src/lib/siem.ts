@@ -49,6 +49,35 @@ export function categoryForAction(action: AuditAction): SiemCategory {
   return CATEGORY[action] ?? 'CONFIGURATION'
 }
 
+// L'action ORGANIZATION_CONFIG_UPDATED est un fourre-tout historique : la plupart
+// des écritures de données GRC (documents, registres, incidents, missions…) la
+// réutilisent en portant leur vraie nature dans `details.scope`. Sans affinage,
+// une SUPPRESSION de document serait classée « CONFIGURATION » côté SIEM. On
+// reclasse donc par scope les événements de données métier vers DONNEES ; les
+// scopes de configuration/sécurité réels restent CONFIGURATION (défaut).
+const SCOPE_CATEGORY: Record<string, SiemCategory> = {
+  document: 'DONNEES', ropa: 'DONNEES', 'risk-item': 'DONNEES', 'risk-action': 'DONNEES',
+  incident: 'DONNEES', 'registre-tic': 'DONNEES', processus: 'DONNEES', referentiel: 'DONNEES',
+  'audit-mission': 'DONNEES', 'audit-constat': 'DONNEES', 'campagne-controle': 'DONNEES',
+  controle: 'DONNEES', campagne: 'DONNEES', 'campagne-evaluation': 'DONNEES', kri: 'DONNEES',
+  'kri-mesure': 'DONNEES', 'reglementaire-dora': 'DONNEES', 'rapport-controle-interne': 'DONNEES',
+  'comite-pack': 'DONNEES', 'appetit-risque': 'DONNEES', 'appetit-ras': 'DONNEES', 'api-import': 'DONNEES',
+  // Non listés (branding, public-signup, api-key, webhook, scim, modules-policy…) → CONFIGURATION.
+}
+
+/**
+ * Catégorie EFFECTIVE d'un événement : comme categoryForAction, mais affine
+ * l'action générique ORGANIZATION_CONFIG_UPDATED selon `details.scope` pour
+ * router les opérations de données métier vers le journal DONNEES.
+ */
+export function categoryForEvent(action: AuditAction, details?: Record<string, unknown>): SiemCategory {
+  if (action === 'ORGANIZATION_CONFIG_UPDATED') {
+    const scope = typeof details?.scope === 'string' ? details.scope : undefined
+    if (scope && SCOPE_CATEGORY[scope]) return SCOPE_CATEGORY[scope]
+  }
+  return categoryForAction(action)
+}
+
 export type SiemSeverity = 'info' | 'warning'
 // Actions à surveiller (échecs d'auth, suppression/rejet) → warning ; sinon info.
 const WARN_ACTIONS = new Set<AuditAction>([
@@ -85,11 +114,12 @@ export interface SiemConfigLite {
   categories: string[]
 }
 
-/** Décide si une action doit être transférée au SIEM selon la config. */
-export function shouldForward(cfg: SiemConfigLite, action: AuditAction): boolean {
+/** Décide si une action doit être transférée au SIEM selon la config. Le `details`
+ * optionnel permet d'affiner la catégorie (scope) — cohérent avec buildSiemEvent. */
+export function shouldForward(cfg: SiemConfigLite, action: AuditAction, details?: Record<string, unknown>): boolean {
   if (!cfg.enabled) return false
   if (!isValidSiemEndpoint(cfg.endpoint ?? '')) return false
-  return cleanSiemCategories(cfg.categories).includes(categoryForAction(action))
+  return cleanSiemCategories(cfg.categories).includes(categoryForEvent(action, details))
 }
 
 export interface SiemEventCtx {
@@ -125,7 +155,7 @@ export function buildSiemEvent(action: AuditAction, ctx: SiemEventCtx, now: Date
     source: 'acra',
     timestamp: now.toISOString(),
     action,
-    category: categoryForAction(action),
+    category: categoryForEvent(action, ctx.details),
     severity: severityForAction(action),
     userId: ctx.userId,
     userEmail: ctx.userEmail,

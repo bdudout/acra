@@ -19,6 +19,7 @@ interface AuditTotals { missions: number; constats: number; critiques: number; r
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
 interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface DoraSynthese { evalues: number; majeurs: number; significatifs: number; mineurs: number }
+interface RegulateurSynthese { total: number; ouverts: number; echues: number; critiques: number }
 interface NiveauSuivi { niveau: 'N1' | 'N2' | 'N3' | 'N4'; activite: number; attention: number; enRetard: number }
 interface OrgPosture {
   orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
@@ -27,7 +28,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; quatreNiveaux?: NiveauSuivi[] }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
   parOrg: OrgPosture[]
 }
 
@@ -103,12 +104,14 @@ export default function PilotageGrc() {
   const cap = data.consolide.appetit
   const ck = data.consolide.kri
   const cd = data.consolide.dora
+  const creg = data.consolide.regulateur
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   const mod = data.modules
   const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0) + (mod.kri ? 1 : 0) + (mod.reglementaire ? 1 : 0)
   // Verdict global du dispositif (RAG) pour un message décideur en < 10 s (#136).
   const signauxVerdict = {
     constatsCritiques: cau?.critiques, doraMajeurs: cd?.majeurs, kriCritique: ck?.critique,
+    regulateurEchues: creg?.echues,
     horsAppetit: cap?.horsAppetit, conformiteSousSeuil: cc?.tauxConformite != null && cc.tauxConformite < 80,
     actionsEnRetard: ca?.enRetard,
   }

@@ -186,16 +186,18 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
   }
 
   // Transfert vers un SIEM externe si le journal correspondant est activé (config
-  // instance). Best-effort et non bloquant — chargé dynamiquement (évite un cycle
-  // logger ↔ prisma et ne pèse pas quand le SIEM est désactivé).
-  try {
-    const { forwardToSiem } = await import('@/lib/siem.server')
-    await forwardToSiem(action, {
+  // instance). Best-effort et VRAIMENT non bloquant : on NE l'attend PAS — sinon
+  // la livraison HTTP (jusqu'à DELIVERY_TIMEOUT_MS) retarderait chaque requête
+  // auditée (login, exports, etc.) quand le SIEM est lent/injoignable. Détaché en
+  // tâche de fond ; chargé dynamiquement (évite un cycle logger ↔ prisma et ne
+  // pèse pas quand le SIEM est désactivé). forwardToSiem n'émet jamais d'exception.
+  void import('@/lib/siem.server')
+    .then(({ forwardToSiem }) => forwardToSiem(action, {
       userId: ctx.userId, userEmail: ctx.userEmail, userRole: ctx.userRole,
       targetId: ctx.targetId, targetType: ctx.targetType, ip: ctx.ip,
       organizationId: ctx.organizationId ?? null, details: ctx.details,
-    })
-  } catch { /* le SIEM ne doit jamais casser une requête */ }
+    }))
+    .catch(() => { /* le SIEM ne doit jamais casser une requête */ })
 }
 
 /**

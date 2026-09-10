@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { incidentSimilarity, findIncidentDuplicates, type IncidentDedupItem } from '@/lib/incident-dedup'
+import { incidentSimilarity, findIncidentDuplicates, findDuplicatesForAll, type IncidentDedupItem } from '@/lib/incident-dedup'
 
 const item = (o: Partial<IncidentDedupItem> & { id: string; intitule: string }): IncidentDedupItem => ({
   statut: 'DECLARE', dateSurvenance: null, dateDetection: null, processusId: null, entite: null, taxonomieCode: null, ...o,
@@ -47,5 +47,26 @@ describe('findIncidentDuplicates', () => {
   })
   it('aucun doublon si rien ne dépasse le seuil', () => {
     expect(findIncidentDuplicates(item({ id: 'z', intitule: 'Sujet totalement unique xyz' }), existing)).toEqual([])
+  })
+})
+
+describe('findDuplicatesForAll', () => {
+  // Le batch tokenise chaque titre UNE fois (O(n)) au lieu de re-tokeniser à chaque
+  // paire (O(n²)) : le résultat doit être IDENTIQUE au calcul item par item.
+  const items: IncidentDedupItem[] = [
+    item({ id: 'a', intitule: 'Panne du service de paiement', dateSurvenance: '2026-03-01', processusId: 'p1' }),
+    item({ id: 'b', intitule: 'Panne service de paiement', dateSurvenance: '2026-03-01', processusId: 'p1' }),
+    item({ id: 'c', intitule: 'Incident RH sans rapport' }),
+    item({ id: 'd', intitule: 'Panne du service de paiement', statut: 'REJETE' }),
+  ]
+  it('équivaut, pour chaque item, à findIncidentDuplicates', () => {
+    const all = findDuplicatesForAll(items)
+    for (const it of items) {
+      expect(all.get(it.id)).toEqual(findIncidentDuplicates(it, items))
+    }
+  })
+  it('exclut self et les doublons REJETE de la liste des matches', () => {
+    const all = findDuplicatesForAll(items)
+    expect(all.get('a')!.map(d => d.id)).toEqual(['b'])   // 'd' (REJETE) et self exclus
   })
 })
