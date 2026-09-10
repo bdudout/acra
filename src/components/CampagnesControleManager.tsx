@@ -15,6 +15,8 @@ interface Campagne {
   recurrence: string
   dateDebut: string | null; dateFin: string | null; controleIds: string[]
   avancement: Avancement; enRetard: boolean
+  archiveLe?: string | null; archivable?: boolean; nbRapports?: number
+  rapports?: { id: string; nom: string; taille: number }[]
 }
 interface ControleLite { id: string; intitule: string; niveau: string; actif: boolean }
 
@@ -33,6 +35,7 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
   const [controles, setControles] = useState<ControleLite[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
   const [err, setErr] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
@@ -79,10 +82,28 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
     reload()
   }
 
+  async function archiver(a: Campagne, archive: boolean) {
+    if (archive && !confirm(c.archivage.confirmArchive)) return
+    await fetch(`/api/controles/campagnes/${a.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archive }) })
+    reload()
+  }
+  async function uploadRapport(a: Campagne, file: File) {
+    const fd = new FormData(); fd.append('file', file)
+    await fetch(`/api/controles/campagnes/${a.id}/rapports`, { method: 'POST', body: fd })
+    reload()
+  }
+  async function supprimerRapport(a: Campagne, rapportId: string) {
+    if (!confirm(c.archivage.confirmDeleteRapport)) return
+    await fetch(`/api/controles/campagnes/${a.id}/rapports/${rapportId}`, { method: 'DELETE' })
+    reload()
+  }
+
   const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ebios-500'
 
   if (loading) return <div className="text-center py-12 text-gray-500">{t.loading}</div>
 
+  const campagnesAff = campagnes.filter(x => showArchived || !x.archiveLe)
+  const nbArchivees = campagnes.filter(x => x.archiveLe).length
   const total = campagnes.length
   const enCours = campagnes.filter(x => x.statut === 'EN_COURS').length
   const enRetard = campagnes.filter(x => x.enRetard).length
@@ -185,6 +206,12 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
       )}
 
       {/* Tableau */}
+      {nbArchivees > 0 && (
+        <label className="mb-2 flex items-center justify-end gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
+          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+          {c.archivage.showArchived} ({nbArchivees})
+        </label>
+      )}
       {campagnes.length === 0 ? (
         <div className="card p-10 text-center text-gray-400 dark:text-gray-500 text-sm">{c.empty}</div>
       ) : (
@@ -201,18 +228,31 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
               </tr>
             </thead>
             <tbody>
-              {campagnes.map(a => {
+              {campagnesAff.map(a => {
                 const pct = Math.round(a.avancement.tauxAvancement * 100)
                 return (
                   <tr key={a.id} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
-                      <div className="font-medium text-gray-800 dark:text-gray-100">{a.intitule}</div>
+                      <div className="font-medium text-gray-800 dark:text-gray-100">
+                        {a.intitule}
+                        {a.archiveLe && <span className="ml-1.5 text-[10px] px-1.5 py-px rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 align-middle">{c.archivage.archived}</span>}
+                      </div>
                       <div className="text-[11px] text-gray-400">
                         {a.niveau} · {a.controleIds.length} {c.champ.controles.toLowerCase()}
                         {a.recurrence && a.recurrence !== 'NONE' && (
                           <span className="ml-1.5 text-ebios-600 dark:text-ebios-300" title={c.recurrenceHint}>↻ {c.recurrenceOpt[a.recurrence as keyof typeof c.recurrenceOpt] ?? a.recurrence}</span>
                         )}
                       </div>
+                      {(a.rapports?.length ?? 0) > 0 && (
+                        <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                          {a.rapports!.map(rp => (
+                            <span key={rp.id} className="text-[11px] inline-flex items-center gap-0.5">
+                              <a href={`/api/controles/campagnes/${a.id}/rapports/${rp.id}`} className="text-ebios-600 hover:underline" title={rp.nom}>📎 {rp.nom}</a>
+                              {canDefine && !a.archiveLe && <button onClick={() => supprimerRapport(a, rp.id)} className="text-red-400 hover:text-red-600">✕</button>}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
                       {fmtPeriode(a)}
@@ -243,7 +283,14 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
                     </td>
                     {canDefine && (
                       <td className="px-3 py-2 text-right whitespace-nowrap">
-                        <button onClick={() => setConfirmDel(a.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={t.delete}><Trash2 size={15} aria-hidden="true" /></button>
+                        {!a.archiveLe && (
+                          <label className="text-xs text-ebios-600 hover:underline cursor-pointer mr-2" title={c.archivage.rapportUpload}>
+                            📎<input type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadRapport(a, f); e.currentTarget.value = '' }} />
+                          </label>
+                        )}
+                        {a.archivable && !a.archiveLe && <button onClick={() => archiver(a, true)} className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mr-2" title={c.archivage.archiveHint}>{c.archivage.archive}</button>}
+                        {a.archiveLe && <button onClick={() => archiver(a, false)} className="text-xs text-ebios-600 hover:underline mr-2">{c.archivage.unarchive}</button>}
+                        {!a.archiveLe && <button onClick={() => setConfirmDel(a.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={t.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                       </td>
                     )}
                   </tr>

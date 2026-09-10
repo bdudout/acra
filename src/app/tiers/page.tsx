@@ -9,6 +9,9 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT } from '@/lib/i18n'
 import { menace, zoneOf } from '@/lib/ecosystem-radar'
 import { consolidateTiers } from '@/lib/tiers'
+import { joinTiersToTic } from '@/lib/tiers-tic-link'
+import { getOrgConfig } from '@/lib/org-config.server'
+import type { ArrangementTic } from '@/lib/registre-tic'
 import TiersClient, { type TiersRow } from '@/components/TiersClient'
 
 // Toujours afficher des données fraîches
@@ -83,8 +86,30 @@ export default async function TiersPage() {
           </div>
         </div>
 
-        <TiersClient tiers={consolidateTiers(tiers)} canMerge={userRole !== 'LECTEUR'} />
+        <TiersClient tiers={await withTicFlags(consolidateTiers(tiers), __org.activeOrgId)} canMerge={userRole !== 'LECTEUR'} />
       </main>
     </div>
   )
+}
+
+// Marque les tiers présents au registre TIC (DORA) de l'organisation active — jonction
+// par nom normalisé (cf. lib/tiers-tic-link). Silencieux si le module réglementaire est
+// inactif ou hors organisation.
+async function withTicFlags(
+  tiers: Awaited<ReturnType<typeof consolidateTiers>>,
+  orgId: string | null,
+) {
+  if (!orgId) return tiers
+  const cfg = await getOrgConfig(orgId)
+  if (!cfg.reglementaireActive) return tiers
+  const rows = await prisma.arrangementTic.findMany({
+    where: { organizationId: orgId },
+    select: { reference: true, prestataireNom: true, criticite: true, typeService: true },
+  })
+  const enrichis = joinTiersToTic(tiers, rows as unknown as ArrangementTic[])
+  return enrichis.map(e => ({
+    ...e,
+    estTic: e.estTic,
+    ticCriticite: e.tic[0]?.criticite ?? null,
+  }))
 }

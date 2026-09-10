@@ -157,6 +157,7 @@ export default function ConfigurationPage() {
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationDureeMax, setDerogationDureeMax] = useState(365)
+  const [archivageAnnees, setArchivageAnnees] = useState(5)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -218,6 +219,7 @@ export default function ConfigurationPage() {
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
+        if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -323,6 +325,18 @@ export default function ConfigurationPage() {
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
+  }
+
+  // Durée de conservation avant archivage des missions de contrôle/audit (années).
+  async function saveArchivageAnnees(value: number) {
+    setArchivageAnnees(value)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archivageMissionsAnnees: value }),
     })
     setSavingFeatures(false)
     return res.ok
@@ -1364,6 +1378,22 @@ export default function ConfigurationPage() {
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ── Archivage des missions de contrôle/audit ── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.archivageTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.features.archivageDesc}</p>
+            <label className="text-sm text-gray-700">
+              <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.archivageAnneesLabel}</span>
+              <input type="number" min={1} max={30} value={archivageAnnees}
+                onChange={e => setArchivageAnnees(Number(e.target.value))}
+                onBlur={e => saveArchivageAnnees(Math.max(1, Math.min(30, Number(e.target.value) || 5)))}
+                disabled={savingFeatures}
+                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+            </label>
           </section>
         )}
 

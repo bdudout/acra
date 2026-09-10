@@ -6,6 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection } from '@/lib/incident'
+import { findIncidentDuplicates, type IncidentDedupItem } from '@/lib/incident-dedup'
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
 import { type DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -62,7 +63,19 @@ export async function GET() {
       }),
     }
   })
-  return NextResponse.json({ incidents, active: true })
+
+  // Doublons probables (qualité des données de perte : 1 événement = 1 enregistrement).
+  // On rapproche chaque incident des autres (hors REJETE) pour aider la 2ᵉ ligne.
+  const dedupItems: IncidentDedupItem[] = incidents.map(i => ({
+    id: i.id, intitule: i.intitule, statut: i.statut,
+    dateSurvenance: i.dateSurvenance, dateDetection: i.dateDetection,
+    processusId: i.processusId, entite: i.entite, taxonomieCode: i.taxonomieCode,
+  }))
+  const withDoublons = incidents.map((i, idx) => ({
+    ...i,
+    doublons: findIncidentDuplicates(dedupItems[idx], dedupItems).slice(0, 3),
+  }))
+  return NextResponse.json({ incidents: withDoublons, active: true })
 }
 
 // POST /api/incidents — DÉCLARER un incident.

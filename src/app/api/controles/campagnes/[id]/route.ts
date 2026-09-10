@@ -35,6 +35,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if ('error' in g) return g.error
 
   const body = await req.json().catch(() => ({}))
+
+  // Archivage / désarchivage — action dédiée (indépendante du remplacement complet).
+  if (typeof body.archive === 'boolean') {
+    const updated = await prisma.campagneControle.update({ where: { id }, data: { archiveLe: body.archive ? new Date() : null } })
+    return NextResponse.json(updated)
+  }
+
   const erreur = validateCampagneControleInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanCampagneControleInput(body)

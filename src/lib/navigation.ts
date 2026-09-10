@@ -28,7 +28,7 @@ export interface NavModules {
 }
 
 export type NavKey =
-  | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions'
+  | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions' | 'plansActions'
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
@@ -36,7 +36,7 @@ export type NavKey =
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
-  | 'analyses' | 'controleAudit' | 'conformiteReglementaire'
+  | 'analyses' | 'controleAudit' | 'conformiteReglementaire' | 'pilotage'
 
 /** Une entrée de barre : soit un lien direct, soit un groupe déroulant. */
 export type NavEntry =
@@ -104,10 +104,14 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // ─── MODE GRC ──────────────────────────────────────────────────────────────
   // Découpage « pilotage en tête » : max ~6 entrées de haut niveau, granularité
   // homogène (que des menus déroulants thématiques + les 2 liens directs clés).
-  const entries: NavEntry[] = [link('dashboard')]
+  const entries: NavEntry[] = []
 
-  // 1. Pilotage (cockpit consolidé) — la vue direction, promue en lien direct.
-  if (canPilotage) entries.push(link('pilotage'))
+  // 1. Pilotage : tableau de bord cyber + cockpit GRC consolidé + plans d'action
+  //    unifiés (transverse). Toutes les vues de pilotage/suivi réunies. Si le rôle
+  //    n'a pas la lecture globale, le groupe se réduit au tableau de bord (lien direct).
+  const pilotage: NavKey[] = ['dashboard']
+  if (canPilotage) pilotage.push('pilotage', 'plansActions')
+  entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
   const analyses: NavKey[] = [...CORE]
@@ -128,12 +132,15 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
   if (modules.kri && !firstLineOnly) controleAudit.push('kri')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
+  // Suivi régulateur (plans d'action régulateurs) : rattaché au contrôle & audit
+  // (constats du superviseur + remédiation), aux côtés des 3 lignes de défense.
+  if (modules.reglementaire && !firstLineOnly) controleAudit.push('suiviRegulateur')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
   // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
-  //    RGPD + reporting DORA (art. 19), registre TIC (art. 28), suivi régulateur.
+  //    RGPD + reporting DORA (art. 19), registre TIC (art. 28).
   const confReg: NavKey[] = [...gouvernance]
-  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', 'suiviRegulateur')
+  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic')
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }

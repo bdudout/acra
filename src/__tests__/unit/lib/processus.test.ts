@@ -14,6 +14,14 @@ describe('validateProcessusInput', () => {
     expect(validateProcessusInput({ nom: 'X', criticite: 3 })).toBeNull()
     expect(validateProcessusInput({ nom: 'X', criticite: null })).toBeNull()
   })
+  it('valide la classification DORA et les objectifs de continuité', () => {
+    expect(validateProcessusInput({ nom: 'X', criticiteDora: 'INCONNU' })).toBe('criticite_dora_invalide')
+    expect(validateProcessusInput({ nom: 'X', criticiteDora: 'CRITIQUE' })).toBeNull()
+    expect(validateProcessusInput({ nom: 'X', criticiteDora: '' })).toBeNull()
+    expect(validateProcessusInput({ nom: 'X', rtoMinutes: -1 })).toBe('rto_invalide')
+    expect(validateProcessusInput({ nom: 'X', rpoMinutes: -5 })).toBe('rpo_invalide')
+    expect(validateProcessusInput({ nom: 'X', rtoMinutes: 240, rpoMinutes: 60 })).toBeNull()
+  })
 })
 
 describe('cleanProcessus', () => {
@@ -25,6 +33,15 @@ describe('cleanProcessus', () => {
     expect(c.parentId).toBe('p1')
     expect(c.actif).toBe(false)
     expect(c.ordre).toBe(0)
+  })
+  it('normalise les champs DORA (classification + RTO/RPO en minutes)', () => {
+    const c = cleanProcessus({ nom: 'Paie', criticiteDora: 'IMPORTANTE', rtoMinutes: 240, rpoMinutes: 30.6 })
+    expect(c.criticiteDora).toBe('IMPORTANTE')
+    expect(c.rtoMinutes).toBe(240)
+    expect(c.rpoMinutes).toBe(31)
+    const vide = cleanProcessus({ nom: 'X', criticiteDora: 'INCONNU', rtoMinutes: null })
+    expect(vide.criticiteDora).toBeNull()
+    expect(vide.rtoMinutes).toBeNull()
   })
 })
 

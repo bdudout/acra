@@ -110,6 +110,7 @@ export type AuditAction =
   | 'SSO_CONFIG_UPDATED'
   | 'SMTP_CONFIG_UPDATED'
   | 'SMTP_TEST_SENT'
+  | 'SIEM_CONFIG_UPDATED'
   | 'ACCESS_GRANTED'
   | 'ACCESS_REVOKED'
   | 'EXPORT'
@@ -183,6 +184,18 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
     // Ne jamais faire échouer une requête à cause du logging
     logger.error('auditLog DB write failed', { err })
   }
+
+  // Transfert vers un SIEM externe si le journal correspondant est activé (config
+  // instance). Best-effort et non bloquant — chargé dynamiquement (évite un cycle
+  // logger ↔ prisma et ne pèse pas quand le SIEM est désactivé).
+  try {
+    const { forwardToSiem } = await import('@/lib/siem.server')
+    await forwardToSiem(action, {
+      userId: ctx.userId, userEmail: ctx.userEmail, userRole: ctx.userRole,
+      targetId: ctx.targetId, targetType: ctx.targetType, ip: ctx.ip,
+      organizationId: ctx.organizationId ?? null, details: ctx.details,
+    })
+  } catch { /* le SIEM ne doit jamais casser une requête */ }
 }
 
 /**

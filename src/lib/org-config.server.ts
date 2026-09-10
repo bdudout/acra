@@ -31,6 +31,7 @@ const CONFIG_SELECT = {
   derogationDureeDefautJours: true,
   derogationAlerteJours: true,
   derogationDureeMaxJours: true,
+  archivageMissionsAnnees: true,
   derogationWorkflow: true,
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,

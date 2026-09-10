@@ -46,6 +46,7 @@ import ExportButtons from '@/components/ExportButtons'
 import FrameworkControlsPanel from '@/components/FrameworkControlsPanel'
 import { FRAMEWORK_META, recommendedFrameworksForSector, type FrameworkControl, type FrameworkId } from '@/lib/frameworks-data'
 import { CATEGORIES_MESURE_EBIOS, normalizeCategorieMesure } from '@/lib/mesure-categorie'
+import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { nis2CoverageForFramework } from '@/lib/nis2-mapping'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
@@ -196,6 +197,13 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       })
       .catch(() => {})
   }, [])
+
+  // Taxonomie des risques (catégories) — sert à appliquer l'appétit PAR CATÉGORIE.
+  const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
+  useEffect(() => {
+    fetch('/api/taxonomie').then(r => r.ok ? r.json() : { taxonomie: [] }).then(d => setTaxo(d.taxonomie ?? [])).catch(() => {})
+  }, [])
+  const trTaxo = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -546,6 +554,19 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                             <label className="label" htmlFor={`r-nom-${r.id}`}>{t.workshop.nameLabel}</label>
                             <input id={`r-nom-${r.id}`} value={r.nom} onChange={e => updateRisque(r.id, 'nom', e.target.value)}
                               className="input text-sm" placeholder={t.ph.a5Feared} />
+                            {taxo.length > 0 && (
+                              <div className="mt-2">
+                                <label className="label" htmlFor={`r-taxo-${r.id}`}>{t.workshop.a5.categorieLabel}</label>
+                                <select id={`r-taxo-${r.id}`} value={r.taxonomieCode || ''} onChange={e => updateRisque(r.id, 'taxonomieCode', e.target.value || null)}
+                                  className="input text-sm">
+                                  <option value="">{t.workshop.a5.categorieNone}</option>
+                                  {taxo.filter(x => x.actif !== false).map(x => (
+                                    <option key={x.code} value={x.code}>{taxonomieLabel(x, trTaxo)}</option>
+                                  ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">{t.workshop.a5.categorieHint}</p>
+                              </div>
+                            )}
                           </div>
                           <div>
                             <label className="label" htmlFor={`r-strat-${r.id}`}>{t.workshop.a5.stratLabel}</label>

@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { peutDefinir } from '../route'
 import { validateCampagneControleInput, cleanCampagneControleInput, avancementCampagne, campagneEnRetard, type ExecutionControleLite } from '@/lib/campagne-controle'
+import { estArchivable, cleanArchivageDuree } from '@/lib/archivage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -36,13 +37,18 @@ export async function GET() {
   const executions: ExecutionControleLite[] = execs.map(e => ({ controleId: e.controleId, dateRealisation: e.dateRealisation, resultat: e.resultat }))
   const now = new Date()
 
+  const dureeAnnees = cleanArchivageDuree(cfg.archivageMissionsAnnees)
   const campagnes = rows.map(c => {
     const controleIds = Array.isArray(c.controleIds) ? (c.controleIds as string[]) : []
     const av = avancementCampagne({ controleIds, dateDebut: c.dateDebut, dateFin: c.dateFin }, executions)
-    return { ...c, controleIds, avancement: av, enRetard: campagneEnRetard({ dateFin: c.dateFin }, av, now) }
+    return {
+      ...c, controleIds, avancement: av, enRetard: campagneEnRetard({ dateFin: c.dateFin }, av, now),
+      archivable: estArchivable({ statut: c.statut, dateFin: c.dateFin, archiveLe: c.archiveLe }, now, dureeAnnees),
+      nbRapports: Array.isArray(c.rapports) ? (c.rapports as unknown[]).length : 0,
+    }
   })
 
-  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive }) })
+  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive }), archivageDureeAnnees: dureeAnnees })
 }
 
 // POST /api/controles/campagnes — crée une campagne (2ᵉ ligne).

@@ -70,15 +70,22 @@ describe('buildNav — mode cyber (aucun module 2ᵉ/3ᵉ ligne)', () => {
 })
 
 describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
-  it('bascule en mode grc : dashboard + pilotage en tête, analyse cyber en menu', () => {
+  it('bascule en mode grc : menu Pilotage en tête (tableau de bord + cockpit + plans d’action), analyse cyber en menu', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     expect(m.mode).toBe('grc')
-    // dashboard puis pilotage (cockpit) en liens directs de tête
-    expect(m.entries[0]).toEqual({ kind: 'link', key: 'dashboard' })
-    expect(m.entries[1]).toEqual({ kind: 'link', key: 'pilotage' })
+    // 1re entrée = menu « Pilotage » regroupant tableau de bord, cockpit GRC et plans d'action.
+    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'plansActions'] })
     // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
     expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
+  })
+
+  it('suivi régulateur (plans d’action régulateurs) est dans le menu Contrôle & audit', () => {
+    const m = buildNav('RISK_MANAGER', ALL_ON)
+    const ca = m.entries.find(e => e.kind === 'group' && e.id === 'controleAudit')
+    expect(ca && ca.kind === 'group' && ca.items).toContain('suiviRegulateur')
+    const cr = m.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
+    expect(cr && cr.kind === 'group' && cr.items).not.toContain('suiviRegulateur')
   })
 
   it('RISK_MANAGER (gouvernance) : découpage en ~6 entrées, tous les modules accessibles', () => {

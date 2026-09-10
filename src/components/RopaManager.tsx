@@ -83,6 +83,16 @@ export default function RopaManager() {
     await fetch(`/api/ropa/${id}`, { method: 'DELETE' }); reload()
   }
 
+  const [seeding, setSeeding] = useState(false)
+  async function seedDefaut() {
+    if (!confirm(r.seedConfirm)) return
+    setSeeding(true); setError(null)
+    const res = await fetch('/api/ropa/seed-defaut', { method: 'POST' })
+    setSeeding(false)
+    if (!res.ok) { setError(r.err_generic); return }
+    reload()
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
@@ -90,7 +100,14 @@ export default function RopaManager() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100"><ShieldCheck size={22} className="inline align-[-0.2em] mr-2" aria-hidden="true" />{r.title}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{r.subtitle}</p>
         </div>
-        {!showForm && <button onClick={openCreate} className="btn-primary text-sm inline-flex items-center gap-1"><Plus size={16} />{r.add}</button>}
+        <div className="flex items-center gap-2">
+          {!showForm && !loading && items.length === 0 && (
+            <button onClick={seedDefaut} disabled={seeding} className="btn-secondary text-sm disabled:opacity-50" title={r.seedHint}>
+              {seeding ? r.seedBusy : r.seedBtn}
+            </button>
+          )}
+          {!showForm && <button onClick={openCreate} className="btn-primary text-sm inline-flex items-center gap-1"><Plus size={16} />{r.add}</button>}
+        </div>
       </div>
 
       {/* Synthèse */}

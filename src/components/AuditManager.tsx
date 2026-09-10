@@ -18,6 +18,8 @@ interface Mission {
   programme: string[]; programmeResultats: ProgrammeResultat[]
   processusIds: string[]; controleIds: string[]
   type: string; recurrence: string
+  archiveLe?: string | null; archivable?: boolean; nbRapports?: number
+  rapports?: { id: string; nom: string; taille: number }[]
 }
 type ProcLite = { id: string; nom: string }
 type CtrlLite = { id: string; intitule: string; niveau: string }
@@ -79,6 +81,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   const [coteId, setCoteId] = useState<string | null>(null)
   const [cote, setCote] = useState<ProgrammeResultat[]>([])
   const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
+  const [showArchived, setShowArchived] = useState(false)
   // Deep-link pilotage : ?constat=critique → pré-filtre les constats de criticité maximale (4).
   const _sp = useSearchParams()
   const _critInit = _sp.get('constat') === 'critique' ? String(CRITICITE_MAX) : ''
@@ -146,6 +149,28 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
     reload()
   }
 
+  async function archiver(m: Mission, archive: boolean) {
+    if (archive && !confirm(a.confirmArchive)) return
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/audit/missions/${m.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archive }) })
+    setBusy(false)
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(err(d.error ?? 'erreur')); return }
+    reload()
+  }
+  async function uploadRapport(m: Mission, file: File) {
+    setBusy(true); setError(null)
+    const fd = new FormData(); fd.append('file', file)
+    const res = await fetch(`/api/audit/missions/${m.id}/rapports`, { method: 'POST', body: fd })
+    setBusy(false)
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(err(d.error ?? 'erreur')); return }
+    reload()
+  }
+  async function supprimerRapport(m: Mission, rapportId: string) {
+    if (!confirm(a.confirmDeleteRapport)) return
+    await fetch(`/api/audit/missions/${m.id}/rapports/${rapportId}`, { method: 'DELETE' })
+    reload()
+  }
+
   async function supprimerMission(id: string) {
     if (!confirm(a.confirmDeleteMission)) return
     await fetch(`/api/audit/missions/${id}`, { method: 'DELETE' })
@@ -186,7 +211,8 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   }
 
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
-  const missionsAff = filtrerMissions(missions, mFiltre)
+  const missionsAff = filtrerMissions(missions, mFiltre).filter(m => showArchived || !m.archiveLe)
+  const nbArchivees = missions.filter(m => m.archiveLe).length
   const mFiltreActif = Boolean(mFiltre.q || mFiltre.statut || mFiltre.type)
   const totalRetard = missions.reduce((s, m) => s + m.synthese.enRetard, 0)
   const totalCritiques = missions.reduce((s, m) => s + m.synthese.critiques, 0)
@@ -303,6 +329,12 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
               <button onClick={() => setMFiltre({ q: '', statut: '', type: '' })} className="text-xs text-ebios-600 hover:underline">✕ {a.filtreEffacer}</button>
             </>
           )}
+          {nbArchivees > 0 && (
+            <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
+              <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+              {a.archivage.showArchived} ({nbArchivees})
+            </label>
+          )}
         </div>
       )}
 
@@ -327,16 +359,47 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
+                    {m.archiveLe && <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" title={a.archivage.archivedOn.replace('{d}', jour(m.archiveLe))}>{a.archivage.archived}</span>}
+                    {(m.nbRapports ?? 0) > 0 && <span className="text-[11px] text-gray-400" title={a.archivage.rapportsCount.replace('{n}', String(m.nbRapports))}>📎 {m.nbRapports}</span>}
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${MISSION_BADGE[m.statut]}`}>{lbl(a.missionStatuts, m.statut)}</span>
-                    {canWrite && MISSION_STATUTS.filter(sx => sx !== m.statut && transitionMissionAutorisee(m.statut as never, sx)).map(sx => (
+                    {canWrite && !m.archiveLe && MISSION_STATUTS.filter(sx => sx !== m.statut && transitionMissionAutorisee(m.statut as never, sx)).map(sx => (
                       <button key={sx} onClick={() => transitionnerMission(m, sx)} disabled={busy} className="btn-secondary text-xs disabled:opacity-50">{lbl(a.missionActions, sx)}</button>
                     ))}
-                    {canWrite && <button onClick={() => supprimerMission(m.id)} className="text-xs text-red-500 hover:underline">{a.delete}</button>}
+                    {canWrite && m.archivable && !m.archiveLe && (
+                      <button onClick={() => archiver(m, true)} disabled={busy} className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50" title={a.archivage.archiveHint}>{a.archivage.archive}</button>
+                    )}
+                    {canWrite && m.archiveLe && (
+                      <button onClick={() => archiver(m, false)} disabled={busy} className="text-xs text-ebios-600 hover:underline disabled:opacity-50">{a.archivage.unarchive}</button>
+                    )}
+                    {canWrite && !m.archiveLe && <button onClick={() => supprimerMission(m.id)} className="text-xs text-red-500 hover:underline">{a.delete}</button>}
                   </div>
                 </div>
 
                 {openId === m.id && (
                   <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                    {/* Rapports / preuves de la mission (PDF, docx…) */}
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{a.archivage.rapportsTitle}</div>
+                      {(m.rapports?.length ?? 0) === 0 ? (
+                        <p className="text-xs text-gray-400">{a.archivage.rapportsEmpty}</p>
+                      ) : (
+                        <ul className="space-y-1 mb-1.5">
+                          {m.rapports!.map(rp => (
+                            <li key={rp.id} className="flex items-center gap-2 text-xs">
+                              <a href={`/api/audit/missions/${m.id}/rapports/${rp.id}`} className="text-ebios-600 hover:underline truncate" title={rp.nom}>📎 {rp.nom}</a>
+                              <span className="text-gray-400">({Math.max(1, Math.round(rp.taille / 1024))} Ko)</span>
+                              {canWrite && !m.archiveLe && <button onClick={() => supprimerRapport(m, rp.id)} className="text-red-400 hover:text-red-600">✕</button>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {canWrite && !m.archiveLe && (
+                        <label className="text-xs text-ebios-600 hover:underline cursor-pointer">
+                          + {a.archivage.rapportUpload}
+                          <input type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadRapport(m, f); e.currentTarget.value = '' }} />
+                        </label>
+                      )}
+                    </div>
                     {/* Périmètre audité (N3 → 1ʳᵉ/2ᵉ ligne) */}
                     {(m.processusIds?.length > 0 || m.controleIds?.length > 0) && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">

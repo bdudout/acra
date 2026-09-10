@@ -244,6 +244,11 @@ model Processus {
   description  String?  @db.Text
   proprietaire String? // responsable du processus (texte libre pour l'instant)
   criticite    Int? // criticité optionnelle (1-4)
+  // Classification DORA (FCI = fonction critique ou importante) : CRITIQUE | IMPORTANTE | NON_CRITIQUE.
+  criticiteDora String?
+  // Objectifs de continuité optionnels (minutes) : RTO (=DIMA) et RPO (=PDMA).
+  rtoMinutes   Int?
+  rpoMinutes   Int?
   ordre        Int      @default(0)
   actif        Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -549,6 +554,10 @@ model CampagneControle {
   dateFin     DateTime?
   controleIds Json      @default("[]") // périmètre : identifiants de contrôles
   createdBy   String?
+  // Archivage (campagne close au-delà de la durée de conservation configurée).
+  archiveLe   DateTime?
+  // Rapports/preuves uploadés : [{nom, mime, taille, storageKey, checksum, uploadedLe, uploadedBy}].
+  rapports    Json      @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -655,6 +664,10 @@ model ArrangementTic {
   paysDonnees       String? // pays de stockage/traitement des données
   sousTraitance     Boolean   @default(false)
 
+  // Questionnaire de qualification risque/sécurité (due diligence DORA art. 28) :
+  // [{ id, reponse: OUI|NON|PARTIEL|NA, commentaire? }] — cf. lib/tic-questionnaire.ts.
+  questionnaire Json @default("[]")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -722,6 +735,11 @@ model AuditMission {
   programme          Json @default("[]")
   // Cotation du programme : [{label, statut: OK|KO|NA, commentaire?}]
   programmeResultats Json @default("[]")
+  // Archivage : date d'archivage (mission close + constats clos, au-delà de la durée
+  // de conservation configurée). Archivée = masquée par défaut, conservée pour la piste d'audit.
+  archiveLe DateTime?
+  // Rapports/preuves uploadés : [{nom, mime, taille, storageKey, checksum, uploadedLe, uploadedBy}].
+  rapports  Json      @default("[]")
   // Périmètre audité (contrôle périodique N3 sur les 1ʳᵉ/2ᵉ lignes) : identifiants
   // des processus et des contrôles (N1/N2) couverts par la mission. Liens logiques.
   processusIds       Json @default("[]")
@@ -1291,6 +1309,9 @@ model Risque {
   nom           String
   scenarioOpId  String?
   description   String?             @db.Text
+  // Catégorie de risque (taxonomie configurée) — permet d'appliquer les seuils
+  // d'appétit PAR CATÉGORIE aux risques d'analyse (pas seulement le seuil global).
+  taxonomieCode String?
   gravite       Int // 1-4
   vraisemblance Int // 1-4
   niveauRisque  Int // gravite * vraisemblance
@@ -1444,6 +1465,9 @@ model OrganizationConfig {
   derogationAlerteJours      Int           @default(30)
   // Délai MAXIMAL d'une dérogation, en jours (date butoir plafonnée ; défaut 365 = 1 an).
   derogationDureeMaxJours    Int           @default(365)
+  // Durée de conservation avant archivage des missions de contrôle/audit closes,
+  // en années (défaut 5 ; les missions closes plus anciennes deviennent archivables).
+  archivageMissionsAnnees    Int           @default(5)
   // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
   // (validation RSSI, défaut), "RSSI_METIER" (RSSI puis Direction métier).
   derogationWorkflow         String        @default("RSSI")
@@ -1569,6 +1593,25 @@ model SSOConfig {
   roleMapping     Json?   @default("{}")
 
   updatedAt DateTime @updatedAt
+}
+
+// ─── Transfert des journaux de sécurité vers un SIEM (singleton global) ──────
+// Émission configurable, journal par journal, des événements d'audit/sécurité
+// vers un SIEM externe. Cf. lib/siem.ts + lib/siem.server.ts.
+model SiemConfig {
+  id             String    @id @default("global")
+  enabled        Boolean   @default(false)
+  endpoint       String? // URL HTTP(S) d'ingestion SIEM
+  // En-tête d'autorisation (ex. "Splunk <token>", "Bearer …"), chiffré au repos.
+  authHeader     String?
+  // Journaux (catégories) activés : liste de codes (cf. SIEM_CATEGORIES).
+  categories     Json      @default("[]")
+  // Émettre aussi en JSON structuré sur stdout (pour un log-shipper Filebeat/Fluentd).
+  includeStdout  Boolean   @default(true)
+  lastDeliveryOk Boolean   @default(false)
+  lastDeliveryAt DateTime?
+  lastError      String?
+  updatedAt      DateTime  @updatedAt
 }
 
 // ─── Configuration SMTP (singleton global) ───────────────────────────────────
