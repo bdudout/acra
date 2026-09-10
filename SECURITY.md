@@ -38,3 +38,29 @@ To help us better understand and resolve the issue, please include:
 - **Public Disclosure:** Once the vulnerability is resolved, a security advisory will be published with credit given to the reporter (unless requested otherwise).
 
 Thank you for helping keep this project and its users safe!
+
+## Dependency advisories & remediations
+
+Dependency advisories that cannot be fixed by a normal upgrade are handled with a
+pinned `overrides` entry in `package.json` (the project's standard mechanism, also
+used for esbuild, postcss, js-yaml, etc.) and documented here for traceability.
+
+### `image-size` — CVE-2025-71330 / CVE-2025-71329 (High, DoS)
+
+- **Advisories:** GHSA-w3rx-r6r6-pgpr (ICNS parser, CVE-2025-71330) and
+  GHSA-5p2g-fcmc-qvqq (JXL/HEIF/JP2 parsers, CVE-2025-71329). Infinite-loop
+  denial of service on a crafted image buffer.
+- **Path:** transitive only — `image-size` is pulled by `pptxgenjs@4.0.1`; it is
+  not a direct dependency and is never imported by our code.
+- **Upstream status:** the original `image-size` repository is **archived** and its
+  last release (2.0.2) remains affected (no official patch expected). npm's only
+  proposed fix is a breaking major downgrade of `pptxgenjs` (4.0.1 → 1.1.5), which
+  would regress deck generation.
+- **Remediation applied:** `overrides` pins `image-size` to the maintained
+  community drop-in **`image-size-next@2.1.1`** (same public API, fixes both CVEs).
+  Version pinned exactly so fork updates are never pulled silently. After this,
+  `npm audit` reports **0 vulnerabilities** and the vulnerable package is no longer
+  in the tree. As a second line of defence, our PPTX generators embed no bitmaps
+  (**zero `addImage` calls**), so the parser code path is not reached regardless.
+- **Revisit** if/when `pptxgenjs` bumps its own `image-size` dependency to a fixed
+  release — the override can then be removed.
