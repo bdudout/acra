@@ -21,6 +21,7 @@ import { applyFilters, parseFilters } from '@/lib/risk-filters'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
 import { evaluerKri, synthetiserKri, type KriSens, type KriStatut } from '@/lib/kri'
 import { classifierIncident, estEvalueDora, synthetiserDora, type DoraCriteres, type DoraClasse } from '@/lib/dora'
+import { synthetiserSuiviRegulateur, type ConstatRegulateur } from '@/lib/suivi-regulateur'
 
 export const dynamic = 'force-dynamic'
 
@@ -220,6 +221,16 @@ export async function GET(req: NextRequest) {
       ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
       ...(withKri ? { kri: synthetiserKri(kriStatuts.map(k => ({ statut: k.statut }))) } : {}),
       ...(withReglementaire ? { dora: synthetiserDora(doraClasses) } : {}),
+      // Suivi régulateur (constats de source REGULATEUR) : alimente le signal
+      // « échéances régulateur dépassées » du verdict de pilotage. Les constats
+      // portant une source ne sont chargés qu'avec le module audit ; sinon vide.
+      ...(withReglementaire ? { regulateur: synthetiserSuiviRegulateur(
+        constatRows.map((c): ConstatRegulateur => ({
+          id: '', intitule: '', description: null, recommandation: null,
+          criticite: c.criticite, source: (c as { source?: string }).source ?? '',
+          statut: c.statut, echeance: c.echeance, responsableAction: null, missionIntitule: null,
+        })), now,
+      ) } : {}),
     },
     parOrg,
   })

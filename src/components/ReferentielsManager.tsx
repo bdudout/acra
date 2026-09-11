@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck } from 'lucide-react'
+import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck, Power } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -49,6 +49,19 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     const d = await fetch('/api/referentiels').then(x => x.ok ? x.json() : null).catch(() => null)
     setRefs(d?.referentiels ?? [])
     setLoading(false)
+  }
+
+  // Active/désactive un référentiel (BUILTIN ou CUSTOM) pour l'organisation — ex.
+  // écarter les référentiels bancaires quand ils ne s'appliquent pas.
+  const [toggling, setToggling] = useState<string | null>(null)
+  async function toggleActif(ref: Ref) {
+    setToggling(ref.code)
+    await fetch('/api/referentiels', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: ref.code, actif: !ref.actif }),
+    }).catch(() => {})
+    setToggling(null)
+    reload()
   }
   useEffect(() => { reload() }, [])
 
@@ -219,26 +232,29 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
               </thead>
               <tbody>
                 {customs.map(x => (
-                  <tr key={x.id} className="border-t border-gray-100 dark:border-gray-700">
+                  <tr key={x.id} onClick={() => openCouverture(x.code, x.nom)}
+                    className={`border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 ${x.actif ? '' : 'opacity-60'}`}>
                     <td className="px-3 py-2">
-                      <div className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</div>
+                      <div className="font-medium text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
+                        {x.nom}
+                        {!x.actif && <span className="text-[10px] px-1.5 py-px rounded-full font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{r.inactif}</span>}
+                      </div>
                       <div className="text-[11px] text-gray-400 font-mono">{x.code}</div>
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap items-center gap-1">
                         {typeBadge(x.type, x.source)}
-                        {x.domaine && x.domaine !== 'SECURITE_SI' && (
-                          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                            {dLabel(x.domaine)}
-                          </span>
-                        )}
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${domaineBadgeCls(x.domaine)}`}>
+                          {dLabel(x.domaine ?? 'SECURITE_SI')}
+                        </span>
                       </div>
                     </td>
                     <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                     <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <td className="px-3 py-2 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
                       <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
                       {canManage && <>
+                        <button onClick={() => toggleActif(x)} disabled={toggling === x.code} className={`p-1 disabled:opacity-40 ${x.actif ? 'text-gray-400 hover:text-amber-600' : 'text-amber-600 hover:text-green-600'}`} aria-label={x.actif ? r.desactiver : r.activer} title={x.actif ? r.desactiver : r.activer}><Power size={15} aria-hidden="true" /></button>
                         <button onClick={() => x.id && openEdit(x.id)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={t.save}><Pencil size={15} aria-hidden="true" /></button>
                         <button onClick={() => x.id && setConfirmDel(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={t.delete}><Trash2 size={15} aria-hidden="true" /></button>
                       </>}
@@ -266,21 +282,22 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
             </thead>
             <tbody>
               {builtins.map(x => (
-                <tr key={x.code} className="border-t border-gray-100 dark:border-gray-700">
+                <tr key={x.code} onClick={() => openCouverture(x.code, x.nom)}
+                  className={`border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 ${x.actif ? '' : 'opacity-60'}`}>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="font-medium text-gray-800 dark:text-gray-100">{x.nom}</span>
-                      {x.domaine && x.domaine !== 'SECURITE_SI' && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                          {dLabel(x.domaine)}
-                        </span>
-                      )}
+                      {!x.actif && <span className="text-[10px] px-1.5 py-px rounded-full font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{r.inactif}</span>}
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${domaineBadgeCls(x.domaine)}`}>
+                        {dLabel(x.domaine ?? 'SECURITE_SI')}
+                      </span>
                     </div>
                     <div className="text-[11px] text-gray-400">{x.type}</div>
                   </td>
                   <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{x.version ?? '—'}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-200">{x.nbExigences}</td>
-                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <td className="px-3 py-2 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    {canManage && <button onClick={() => toggleActif(x)} disabled={toggling === x.code} className={`p-1 disabled:opacity-40 ${x.actif ? 'text-gray-400 hover:text-amber-600' : 'text-amber-600 hover:text-green-600'}`} aria-label={x.actif ? r.desactiver : r.activer} title={x.actif ? r.desactiver : r.activer}><Power size={15} aria-hidden="true" /></button>}
                     <button onClick={() => openCouverture(x.code, x.nom)} className="text-gray-400 hover:text-ebios-600 p-1" aria-label={r.couverture} title={r.couverture}><Gauge size={15} aria-hidden="true" /></button>
                   </td>
                 </tr>
@@ -364,6 +381,23 @@ const COV_BADGE: Record<string, string> = {
   PARTIEL: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   ANOMALIE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
 }
+
+// Couleur distinctive par domaine (filière de contrôle) — pastille lisible au coup
+// d'œil. Statique (pas d'i18n) → hors composant. Défaut gris pour un code inconnu.
+const DOMAINE_BADGE: Record<string, string> = {
+  SECURITE_SI:          'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  PROTECTION_DONNEES:   'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
+  LCB_FT:               'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  SANCTIONS_GEL:        'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+  PROTECTION_CLIENTELE: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
+  DEONTOLOGIE:          'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+  COMPTABLE_FINANCIER:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  CREDIT_CONTREPARTIE:  'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  RISQUE_OPERATIONNEL:  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  GOUVERNANCE_CONTROLE: 'bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
+  AUTRE:                'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+}
+const domaineBadgeCls = (d?: string) => (d && DOMAINE_BADGE[d]) || DOMAINE_BADGE.AUTRE
 
 // Pastille d'état d'application d'un référentiel dans une analyse (socle).
 const APP_DOT: Record<string, string> = {

@@ -78,6 +78,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!peutEcrireAudit(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
+
+  // Archivage / désarchivage — action dédiée (indépendante des transitions de statut).
+  if (typeof body.archive === 'boolean') {
+    const updated = await prisma.auditMission.update({
+      where: { id }, data: { archiveLe: body.archive ? new Date() : null },
+    })
+    await auditLog('ORGANIZATION_CONFIG_UPDATED', {
+      userId: c.userId, userRole: c.userRole, organizationId: c.mission.organizationId, ip: getClientIp(req),
+      details: { scope: 'audit-mission', action: body.archive ? 'archive' : 'unarchive', id },
+    })
+    return NextResponse.json(updated)
+  }
+
   const depuis = c.mission.statut as MissionStatut
   const vers = (typeof body.statut === 'string' ? body.statut : depuis) as MissionStatut
   if (!transitionMissionAutorisee(depuis, vers)) {

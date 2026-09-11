@@ -1,11 +1,12 @@
 'use client'
 
-import { Siren, Info, X } from 'lucide-react'
+import { Siren, Info, X, Copy } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
+import { findIncidentDuplicates } from '@/lib/incident-dedup'
 import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
@@ -20,6 +21,7 @@ interface Incident {
   riskItemId: string | null; riskItemIntitule: string | null
   statut: string; createdAt: string
   doraReporting?: DoraReporting
+  doublons?: { id: string; intitule: string; statut: string; score: number }[]
 }
 interface DoraReporting {
   classe: 'MAJEUR' | 'SIGNIFICATIF' | 'MINEUR'
@@ -230,6 +232,16 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const totalPertes = incidents.reduce((s, i) => s + (i.perteNette ?? 0), 0)
   const ouverts = incidents.filter(i => i.statut === 'DECLARE').length
 
+  // Doublons probables du signalement en cours de saisie (avant création) — calculés
+  // côté client sur les incidents déjà chargés (1 événement = 1 enregistrement).
+  const declDoublons = useMemo(() => {
+    if (decl.intitule.trim().length < 4) return []
+    return findIncidentDuplicates(
+      { id: 'nouveau', intitule: decl.intitule, statut: 'DECLARE', dateSurvenance: decl.dateSurvenance || null, dateDetection: decl.dateDetection || null, processusId: decl.processusId || null, entite: decl.entite || null },
+      incidents.map(i => ({ id: i.id, intitule: i.intitule, statut: i.statut, dateSurvenance: i.dateSurvenance, dateDetection: i.dateDetection, processusId: i.processusId, entite: i.entite })),
+    ).slice(0, 4)
+  }, [decl.intitule, decl.dateSurvenance, decl.dateDetection, decl.processusId, decl.entite, incidents])
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
@@ -252,8 +264,10 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-          <Tile label={n.total} value={incidents.length} />
-          <Tile label={n.aQualifier} value={ouverts} tone={ouverts > 0 ? 'amber' : undefined} />
+          <button type="button" onClick={() => setFiltreStatut('')} className="text-left"><Tile label={n.total} value={incidents.length} /></button>
+          <button type="button" onClick={() => setFiltreStatut(filtreStatut === 'DECLARE' ? '' : 'DECLARE')} className="text-left" title={n.dedup.queueHint}>
+            <Tile label={n.aQualifier} value={ouverts} tone={ouverts > 0 ? 'amber' : undefined} />
+          </button>
           <Tile label={n.perteNetteTotale} value={euros(totalPertes)} />
         </div>
       )}
@@ -265,6 +279,17 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           <p className="text-xs text-gray-500 dark:text-gray-400">{n.declareHint}</p>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <input value={decl.intitule} onChange={e => setDecl(f => ({ ...f, intitule: e.target.value }))} placeholder={n.intitulePlaceholder} className={`${inp} w-full`} />
+          {declDoublons.length > 0 && (
+            <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+              <p className="font-semibold flex items-center gap-1.5"><Copy size={13} aria-hidden="true" /> {n.dedup.warnTitle}</p>
+              <ul className="mt-1 space-y-0.5">
+                {declDoublons.map(d => (
+                  <li key={d.id}>• {d.intitule} <span className="text-amber-600 dark:text-amber-300">({(n.statuts as Record<string, string>)[d.statut] ?? d.statut})</span></li>
+                ))}
+              </ul>
+              <p className="mt-1 text-amber-700 dark:text-amber-300/80">{n.dedup.warnHint}</p>
+            </div>
+          )}
           <textarea value={decl.description} onChange={e => setDecl(f => ({ ...f, description: e.target.value }))} placeholder={n.descriptionPlaceholder} rows={2} className={`${inp} w-full`} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="text-xs text-gray-500 dark:text-gray-400">{n.dateSurvenance}
@@ -321,6 +346,12 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {i.intitule}
+                    {i.doublons && i.doublons.length > 0 && (
+                      <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-px text-[10px] font-medium align-middle"
+                        title={`${n.dedup.badgeHint} : ${i.doublons.map(d => d.intitule).join(' · ')}`}>
+                        <Copy size={9} aria-hidden="true" /> {n.dedup.badge} ({i.doublons.length})
+                      </span>
+                    )}
                     <span className="block text-xs text-gray-400">
                       {i.dateSurvenance ? new Date(i.dateSurvenance).toLocaleDateString(locale) : '—'}
                       {i.delaiDetection != null && ` · ${n.detectedIn.replace('{n}', String(i.delaiDetection))}`}
@@ -368,6 +399,21 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           <div className="card p-4 mt-5 space-y-3">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{n.qualifyTitle} — {i.intitule}</p>
             {error && <p className="text-xs text-red-600">{error}</p>}
+            {i.doublons && i.doublons.length > 0 && (
+              <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                <p className="font-semibold flex items-center gap-1.5"><Copy size={13} aria-hidden="true" /> {n.dedup.qualTitle}</p>
+                <ul className="mt-1 space-y-0.5">
+                  {i.doublons.map(d => <li key={d.id}>• {d.intitule} <span className="text-amber-600 dark:text-amber-300">({(n.statuts as Record<string, string>)[d.statut] ?? d.statut})</span></li>)}
+                </ul>
+                {transitionAutorisee(depuis, 'REJETE') && (
+                  <button type="button"
+                    onClick={() => setQual(f => ({ ...f, statut: 'REJETE', clotureCommentaire: f.clotureCommentaire || `${n.dedup.commentPrefix} ${i.doublons![0].intitule}` }))}
+                    className="mt-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-200 underline hover:no-underline">
+                    {n.dedup.markDuplicate}
+                  </button>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="text-xs text-gray-500 dark:text-gray-400">{n.colCategory}
                 <select value={qual.taxonomieCode} onChange={e => setQual(f => ({ ...f, taxonomieCode: e.target.value }))} className={`${inp} w-full mt-1`}>
@@ -388,6 +434,10 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                 <input type="number" min="0" step="0.01" value={qual.recuperations} onChange={e => setQual(f => ({ ...f, recuperations: e.target.value }))} className={`${inp} w-full mt-1`} />
               </label>
             </div>
+            {(qual.statut === 'REJETE' || qual.statut === 'CLOTURE') && (
+              <input value={qual.clotureCommentaire} onChange={e => setQual(f => ({ ...f, clotureCommentaire: e.target.value }))}
+                placeholder={qual.statut === 'REJETE' ? n.dedup.rejetPlaceholder : n.cloturePlaceholder} className={`${inp} w-full`} />
+            )}
             <div className="flex flex-wrap gap-2 items-center">
               <select value={qual.statut} onChange={e => setQual(f => ({ ...f, statut: e.target.value }))} className={inp}>
                 {INCIDENT_STATUTS.filter(s => transitionAutorisee(depuis, s)).map(s => (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
@@ -39,7 +40,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanArrangementInput(body)
 
-  const updated = await prisma.arrangementTic.update({ where: { id }, data })
+  const updated = await prisma.arrangementTic.update({
+    where: { id },
+    data: { ...data, questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
+  })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),
     details: { scope: 'registre-tic', action: 'update', id },

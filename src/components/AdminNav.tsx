@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/context'
-import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2, FlaskConical } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2, FlaskConical, Share2 } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'audit' | 'recovery' | 'organizations' | 'demo'
+type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'journalisation' | 'audit' | 'recovery' | 'organizations' | 'demo'
 
 /**
  * Navigation interne de l'espace d'administration (composant partagé).
@@ -30,6 +30,8 @@ export default function AdminNav({ active }: { active: AdminTab }) {
     // Sécurité (politique mdp, SMTP, SSO) et SMTP = réglages d'INSTANCE → super-admin uniquement.
     ...(isSuperAdmin ? [{ key: 'security', href: '/admin/security', Icon: Shield, label: t.admin.navSecurity }] : []),
     ...(isSuperAdmin ? [{ key: 'smtp',     href: '/admin/smtp',     Icon: Mail,   label: t.admin.navSmtp }] : []),
+    // Journalisation & SIEM (transfert des journaux de sécurité) = réglage d'instance.
+    ...(isSuperAdmin ? [{ key: 'journalisation', href: '/admin/journalisation', Icon: Share2, label: t.admin.navJournalisation }] : []),
     // Journal d'audit : scopé par organisation → visible aussi par les ADMIN
     // (leur périmètre) ; le SUPER_ADMIN voit tout, événements d'instance inclus.
     { key: 'audit', href: '/admin/audit', Icon: ClipboardList, label: t.admin.navAudit },

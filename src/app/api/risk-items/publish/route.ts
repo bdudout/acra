@@ -82,28 +82,34 @@ export async function POST(req: NextRequest) {
   if (analyse.statut !== 'APPROUVE') return NextResponse.json({ error: 'analyse_non_approuvee' }, { status: 400 })
 
   const items = mapAnalyseRisques(analyse.risques, { id: analyse.id, nom: analyse.nom, organisation: analyse.organisation })
-  let crees = 0, maj = 0
-  for (const item of items) {
-    const existing = await prisma.riskItem.findFirst({
-      where: { organizationId: orgId, provenance: 'ACRA', sourceType: 'analyse', sourceId: item.sourceId },
-      select: { id: true },
-    })
-    if (existing) {
-      // On rafraîchit la cotation/intitulé mais on PRÉSERVE le statut décidé dans le registre.
-      await prisma.riskItem.update({
-        where: { id: existing.id },
-        data: {
-          intitule: item.intitule, description: item.description, entite: item.entite,
-          graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
-          graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
-        },
+
+  // Rapprochement en UN passage (au lieu d'un findFirst par risque) : on récupère
+  // en une requête les items déjà publiés pour cette analyse, puis on partitionne
+  // en créations (createMany) / mises à jour (parallélisées). Idempotent.
+  const sourceIds = items.map(i => i.sourceId).filter((s): s is string => !!s)
+  const existants = sourceIds.length
+    ? await prisma.riskItem.findMany({
+        where: { organizationId: orgId, provenance: 'ACRA', sourceType: 'analyse', sourceId: { in: sourceIds } },
+        select: { id: true, sourceId: true },
       })
-      maj++
-    } else {
-      await prisma.riskItem.create({ data: { ...item, organizationId: orgId } })
-      crees++
-    }
+    : []
+  const idParSource = new Map(existants.map(e => [e.sourceId, e.id]))
+  const aCreer = items.filter(i => !idParSource.has(i.sourceId))
+  const aMettreAJour = items.filter(i => idParSource.has(i.sourceId))
+
+  if (aCreer.length > 0) {
+    await prisma.riskItem.createMany({ data: aCreer.map(item => ({ ...item, organizationId: orgId })) })
   }
+  // On rafraîchit la cotation/intitulé mais on PRÉSERVE le statut décidé dans le registre.
+  await Promise.all(aMettreAJour.map(item => prisma.riskItem.update({
+    where: { id: idParSource.get(item.sourceId)! },
+    data: {
+      intitule: item.intitule, description: item.description, entite: item.entite,
+      graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
+      graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
+    },
+  })))
+  const crees = aCreer.length, maj = aMettreAJour.length
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'publish', analyseId, crees, maj } })
   return NextResponse.json({ ok: true, crees, maj, total: items.length })
 }

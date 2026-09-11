@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildComitePack, verdictGlobal, verdictDispositif, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
+import { buildComitePack, verdictGlobal, verdictDispositif, verdictSignauxActifs, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
 
 const MODULES_ON = { risques: true, appetit: true, incidents: true, controles: true, audit: true, regulateur: true, kri: true, dora: true }
 
@@ -107,6 +107,19 @@ describe('verdictDispositif (#136 — verdict cockpit à partir des signaux brut
   it('aucun signal → MAITRISE', () => {
     expect(verdictDispositif({}).niveau).toBe('MAITRISE')
     expect(verdictDispositif({ horsAppetit: 0, conformiteSousSeuil: false }).alertes).toBe(0)
+  })
+})
+
+describe('verdictSignauxActifs (détail « lesquels »)', () => {
+  it('liste les signaux actifs, critiques en tête, et cadre avec le compte', () => {
+    const s = { horsAppetit: 2, doraMajeurs: 1, actionsEnRetard: 5 }
+    expect(verdictSignauxActifs(s)).toEqual(['doraMajeurs', 'horsAppetit', 'actionsEnRetard'])
+    expect(verdictSignauxActifs(s).length).toBe(verdictDispositif(s).alertes)
+  })
+  it('conformiteSousSeuil ne compte que si true ; aucun → []', () => {
+    expect(verdictSignauxActifs({ conformiteSousSeuil: false })).toEqual([])
+    expect(verdictSignauxActifs({ conformiteSousSeuil: true })).toEqual(['conformiteSousSeuil'])
+    expect(verdictSignauxActifs({})).toEqual([])
   })
 })
 

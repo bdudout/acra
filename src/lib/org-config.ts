@@ -30,6 +30,7 @@ export interface RawOrgConfig {
   entitesMesures: unknown
   typesImpacts: unknown
   referentielsActifs: unknown
+  referentielsDesactives: unknown
   strategiesTraitement: unknown
   exemplesAteliers: unknown
   echellesEcosysteme: unknown
@@ -46,6 +47,7 @@ export interface RawOrgConfig {
   derogationDureeDefautJours: number
   derogationAlerteJours: number
   derogationDureeMaxJours: number
+  archivageMissionsAnnees: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -66,6 +68,8 @@ export interface OrgConfigResolved {
   entitesMesures: string[]
   typesImpacts: TypeImpact[]
   referentielsActifs: ReferentielActif[]
+  /** Codes de référentiels GRC (BUILTIN + CUSTOM) désactivés pour l'organisation. */
+  referentielsDesactives: string[]
   strategiesTraitement: StrategieTraitement[]
   exemplesAteliers: Record<string, unknown[]>
   echellesEcosysteme: Record<string, unknown>
@@ -82,6 +86,7 @@ export interface OrgConfigResolved {
   derogationDureeDefautJours: number
   derogationAlerteJours: number
   derogationDureeMaxJours: number
+  archivageMissionsAnnees: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -103,6 +108,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   entitesMesures: DEFAULT_ENTITES,
   typesImpacts: DEFAULT_TYPES_IMPACTS,
   referentielsActifs: DEFAULT_REFERENTIELS,
+  referentielsDesactives: [],
   strategiesTraitement: DEFAULT_STRATEGIES,
   exemplesAteliers: {},
   echellesEcosysteme: {},
@@ -120,6 +126,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
   derogationDureeMaxJours: 365,
+  archivageMissionsAnnees: 5,
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -143,10 +150,10 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
-type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours'
+type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -183,6 +190,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     entitesMesures: pickJson('entitesMesures', defaults.entitesMesures),
     typesImpacts: pickJson('typesImpacts', defaults.typesImpacts),
     referentielsActifs: pickJson('referentielsActifs', defaults.referentielsActifs),
+    referentielsDesactives: pickJson('referentielsDesactives', defaults.referentielsDesactives),
     strategiesTraitement: pickJson('strategiesTraitement', defaults.strategiesTraitement),
     exemplesAteliers: pickJson('exemplesAteliers', defaults.exemplesAteliers),
     echellesEcosysteme: pickJson('echellesEcosysteme', defaults.echellesEcosysteme),
@@ -199,6 +207,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
     derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
+    archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),

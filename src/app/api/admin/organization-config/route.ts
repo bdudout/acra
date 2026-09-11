@@ -79,6 +79,7 @@ export async function GET(_req: NextRequest) {
     derogationDureeDefautJours: cfg.derogationDureeDefautJours,
     derogationAlerteJours: cfg.derogationAlerteJours,
     derogationDureeMaxJours: cfg.derogationDureeMaxJours,
+    archivageMissionsAnnees: cfg.archivageMissionsAnnees,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
@@ -201,6 +202,9 @@ export async function PUT(req: NextRequest) {
   }
   if (typeof body.derogationAlerteJours === 'number' && Number.isFinite(body.derogationAlerteJours)) {
     data.derogationAlerteJours = Math.max(1, Math.min(365, Math.round(body.derogationAlerteJours)))
+  }
+  if (typeof body.archivageMissionsAnnees === 'number' && Number.isFinite(body.archivageMissionsAnnees)) {
+    data.archivageMissionsAnnees = Math.max(1, Math.min(30, Math.round(body.archivageMissionsAnnees)))
   }
   if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {
     data.derogationDureeMaxJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeMaxJours)))

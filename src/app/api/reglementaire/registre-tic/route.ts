@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
@@ -9,6 +10,9 @@ import {
   cleanArrangementInput, validateArrangementInput, validerArrangement,
   evaluerCompletude, synthetiserRegistre, arrangementToCsvRow, REGISTRE_CSV_HEADER, type ArrangementTic,
 } from '@/lib/registre-tic'
+import { evaluerQuestionnaire } from '@/lib/tic-questionnaire'
+import { joinArrangementsToEcosysteme } from '@/lib/tiers-tic-link'
+import { consolidatedTiersForOrg } from '@/lib/tiers.server'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -39,7 +43,6 @@ export async function GET(req: NextRequest) {
 
   const rows = await prisma.arrangementTic.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] })
   const asLib = rows as unknown as ArrangementTic[]
-  const arrangements = rows.map(r => ({ ...r, champsManquants: validerArrangement(r as unknown as ArrangementTic) }))
 
   if (new URL(req.url).searchParams.get('format') === 'csv') {
     const lignes = asLib.map(a => arrangementToCsvRow(a).map(toCsvCell).join(','))
@@ -51,6 +54,17 @@ export async function GET(req: NextRequest) {
       },
     })
   }
+
+  // Jonction avec l'écosystème EBIOS (par nom de prestataire) : profil de menace du
+  // tiers + verdict du questionnaire de qualification, pour chaque arrangement.
+  const tiers = await consolidatedTiersForOrg(orgId)
+  const enrichis = joinArrangementsToEcosysteme(asLib, tiers)
+  const arrangements = rows.map((r, i) => ({
+    ...r,
+    champsManquants: validerArrangement(r as unknown as ArrangementTic),
+    ecosysteme: enrichis[i]?.ecosysteme ?? null,
+    qualification: evaluerQuestionnaire((r as { questionnaire?: unknown }).questionnaire),
+  }))
 
   return NextResponse.json({
     active: true,
@@ -76,7 +90,9 @@ export async function POST(req: NextRequest) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanArrangementInput(body)
 
-  const created = await prisma.arrangementTic.create({ data: { organizationId: orgId, ...data } })
+  const created = await prisma.arrangementTic.create({
+    data: { organizationId: orgId, ...data, questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
+  })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'registre-tic', action: 'create', id: created.id },

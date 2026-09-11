@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Building2, Handshake, Search, Shuffle } from 'lucide-react'
+import { AlertTriangle, Building2, Handshake, Search, Shuffle, ScrollText } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from '@/lib/tiers'
@@ -39,7 +39,9 @@ const ZONE_STYLE: Record<EcosystemZone, { badge: string; dot: string }> = {
   veille:   { badge: 'bg-green-100 text-green-700 border-green-200',     dot: 'bg-green-500' },
 }
 
-export default function TiersClient({ tiers, canMerge = false }: { tiers: ConsolidatedTier[]; canMerge?: boolean }) {
+type TierRow = ConsolidatedTier & { estTic?: boolean; ticCriticite?: string | null }
+
+export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRow[]; canMerge?: boolean }) {
   const { t } = useTranslation()
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -315,6 +317,12 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: Consol
                       <div className="font-medium text-gray-800">
                         {x.critique && <span className="text-amber-500 mr-1" title={t.workshop.a3.ppCritiqueLabel}>★</span>}
                         {x.nom}
+                        {x.estTic && (
+                          <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200 px-1.5 py-px text-[10px] font-medium align-middle"
+                            title={t.tiers.ticBadgeHint}>
+                            <ScrollText size={9} aria-hidden="true" /> {t.tiers.ticBadge}
+                          </span>
+                        )}
                       </div>
                       {x.occurrences > 1 && (
                         <div className="text-[10px] text-gray-400 mt-0.5">{x.occurrences} {t.tiers.occurrences}</div>

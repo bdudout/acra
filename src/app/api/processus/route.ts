@@ -31,7 +31,7 @@ export async function GET() {
     ? await prisma.processus.findMany({
         where: { organizationId: orgId },
         orderBy: [{ ordre: 'asc' }, { nom: 'asc' }],
-        select: { id: true, parentId: true, nom: true, description: true, proprietaire: true, criticite: true, ordre: true, actif: true },
+        select: { id: true, parentId: true, nom: true, description: true, proprietaire: true, criticite: true, criticiteDora: true, rtoMinutes: true, rpoMinutes: true, ordre: true, actif: true },
       })
     : []
   return NextResponse.json({ processus, active: orgConfig.registreRisquesActive })

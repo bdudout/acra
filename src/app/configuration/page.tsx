@@ -157,6 +157,7 @@ export default function ConfigurationPage() {
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationDureeMax, setDerogationDureeMax] = useState(365)
+  const [archivageAnnees, setArchivageAnnees] = useState(5)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -218,6 +219,7 @@ export default function ConfigurationPage() {
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
+        if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -323,6 +325,18 @@ export default function ConfigurationPage() {
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
+  }
+
+  // Durée de conservation avant archivage des missions de contrôle/audit (années).
+  async function saveArchivageAnnees(value: number) {
+    setArchivageAnnees(value)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archivageMissionsAnnees: value }),
     })
     setSavingFeatures(false)
     return res.ok
@@ -1261,7 +1275,6 @@ export default function ConfigurationPage() {
                 { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'gelApresAcceptationActive' as const, value: gelApresAcceptationActive, title: t.features.gelApresAcceptationTitle, desc: t.features.gelApresAcceptationDesc, href: 'https://club-ebios.org/site/', disabled: !acceptationRisquesActive, indent: true },
                 { field: 'interdireAutoApprobation' as const, value: interdireAutoApprobation, title: t.features.interdireAutoApprobationTitle, desc: t.features.interdireAutoApprobationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
-                { field: 'derogationsActive' as const, value: derogationsActive, title: t.features.derogationsTitle, desc: t.features.derogationsDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.registreRisques === 'FORCE_ON' || modulesPolicy.registreRisques === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreRisques },
                 { field: 'incidentsActive' as const, value: incidentsActive, title: t.features.incidentsTitle, desc: t.features.incidentsDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.incidents === 'FORCE_ON' || modulesPolicy.incidents === 'FORCE_OFF', indent: false, forced: modulesPolicy.incidents },
                 { field: 'controlePermanentActive' as const, value: controlePermanentActive, title: t.features.controlePermanentTitle, desc: t.features.controlePermanentDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.controlePermanent === 'FORCE_ON' || modulesPolicy.controlePermanent === 'FORCE_OFF', indent: false, forced: modulesPolicy.controlePermanent },
@@ -1301,9 +1314,29 @@ export default function ConfigurationPage() {
                 )
               })}
             </div>
-            {/* Paramètres des dérogations — si activées */}
+          </section>
+        )}
+
+        {/* ── Dérogations : activation + paramétrage réunis (ADMIN uniquement) ── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.derogationsTitle}</h2>
+                <p className="text-sm text-gray-500">{t.features.derogationsDesc}</p>
+              </div>
+              <button
+                type="button" role="switch" aria-checked={derogationsActive} aria-label={t.features.derogationsTitle}
+                disabled={savingFeatures}
+                onClick={() => saveFeature('derogationsActive', !derogationsActive)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${derogationsActive ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${savingFeatures ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${derogationsActive ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            {/* Paramétrage fin — visible seulement quand les dérogations sont activées */}
             {derogationsActive && (
-              <div className="mt-3 ml-6 space-y-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
+              <div className="mt-4 space-y-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
                 {/* Niveau de workflow */}
                 <div>
                   <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationWorkflowLabel}</span>
@@ -1367,6 +1400,22 @@ export default function ConfigurationPage() {
           </section>
         )}
 
+        {/* ── Archivage des missions de contrôle/audit ── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.archivageTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.features.archivageDesc}</p>
+            <label className="text-sm text-gray-700">
+              <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.archivageAnneesLabel}</span>
+              <input type="number" min={1} max={30} value={archivageAnnees}
+                onChange={e => setArchivageAnnees(Number(e.target.value))}
+                onBlur={e => saveArchivageAnnees(Math.max(1, Math.min(30, Number(e.target.value) || 5)))}
+                disabled={savingFeatures}
+                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+            </label>
+          </section>
+        )}
+
         {/* ── Socle GRC : taxonomie de risques (si le registre est activé) ── */}
         {isAdmin && registreRisquesActive && taxonomieRisques !== null && (
           <section className="mt-8 card p-6">
@@ -1378,7 +1427,7 @@ export default function ConfigurationPage() {
 
         {/* ── Options de conformité (Palier 2 — ADMIN, si conformité active) ── */}
         {isAdmin && conformiteActive && (
-          <section className="mt-8 card p-6">
+          <section id="conformite-config" className="mt-8 card p-6 scroll-mt-24">
             <h2 className="text-base font-semibold text-gray-800 mb-1">{t.confOptions.sectionTitle}</h2>
             <p className="text-sm text-gray-500 mb-4">{t.confOptions.sectionDesc}</p>
             <div className="space-y-4">

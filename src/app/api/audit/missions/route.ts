@@ -6,6 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateMissionInput, cleanMissionInput, synthetiserConstats } from '@/lib/audit'
+import { estArchivable, cleanArchivageDuree } from '@/lib/archivage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -42,11 +43,19 @@ export async function GET() {
     include: { constats: { select: { criticite: true, statut: true, echeance: true } } },
   })
   const now = new Date()
-  const missions = rows.map(({ constats, ...m }) => ({
-    ...m,
-    synthese: synthetiserConstats(constats, now),
-  }))
-  return NextResponse.json({ missions, active: true })
+  const dureeAnnees = cleanArchivageDuree(cfg.archivageMissionsAnnees)
+  const constatOuvert = (s: string) => s !== 'RESOLU' && s !== 'ACCEPTE'
+  const missions = rows.map(({ constats, ...m }) => {
+    const constatsOuverts = constats.filter(x => constatOuvert(x.statut)).length
+    return {
+      ...m,
+      synthese: synthetiserConstats(constats, now),
+      constatsOuverts,
+      archivable: estArchivable({ statut: m.statut, dateFin: m.dateFin, archiveLe: m.archiveLe, constatsOuverts }, now, dureeAnnees),
+      nbRapports: Array.isArray(m.rapports) ? (m.rapports as unknown[]).length : 0,
+    }
+  })
+  return NextResponse.json({ missions, active: true, archivageDureeAnnees: dureeAnnees })
 }
 
 // POST /api/audit/missions — planifier une mission (auditeur / admin).

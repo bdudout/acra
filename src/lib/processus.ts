@@ -4,17 +4,24 @@
  * détection de cycle avant re-parentage.
  */
 
+import { cleanCriticiteDora, cleanDureeMinutes, type CriticiteDora, CRITICITES_DORA } from './processus-dora'
+
 export interface ProcessusInput {
   nom?: string | null
   description?: string | null
   proprietaire?: string | null
   criticite?: number | null
+  // Classification DORA (FCI) + objectifs de continuité (RTO=DIMA, RPO=PDMA, minutes).
+  criticiteDora?: string | null
+  rtoMinutes?: number | null
+  rpoMinutes?: number | null
   parentId?: string | null
   ordre?: number | null
   actif?: boolean
 }
 
-export type ProcessusInputError = 'nom_requis' | 'criticite_invalide'
+export type ProcessusInputError =
+  | 'nom_requis' | 'criticite_invalide' | 'criticite_dora_invalide' | 'rto_invalide' | 'rpo_invalide'
 
 /** Valide un processus AVANT écriture. Renvoie une clé d'erreur ou null. */
 export function validateProcessusInput(input: ProcessusInput): ProcessusInputError | null {
@@ -23,13 +30,24 @@ export function validateProcessusInput(input: ProcessusInput): ProcessusInputErr
     const c = Number(input.criticite)
     if (!Number.isFinite(c) || c < 1 || c > 4) return 'criticite_invalide'
   }
+  if (input.criticiteDora != null && input.criticiteDora !== '' && !CRITICITES_DORA.includes(input.criticiteDora as CriticiteDora)) {
+    return 'criticite_dora_invalide'
+  }
+  if (input.rtoMinutes != null && input.rtoMinutes !== ('' as unknown) && (!Number.isFinite(Number(input.rtoMinutes)) || Number(input.rtoMinutes) < 0)) {
+    return 'rto_invalide'
+  }
+  if (input.rpoMinutes != null && input.rpoMinutes !== ('' as unknown) && (!Number.isFinite(Number(input.rpoMinutes)) || Number(input.rpoMinutes) < 0)) {
+    return 'rpo_invalide'
+  }
   return null
 }
 
 /** Normalise les champs d'un processus (bornes de longueur, criticité 1-4|null). */
 export function cleanProcessus(input: ProcessusInput): {
   nom: string; description: string | null; proprietaire: string | null
-  criticite: number | null; parentId: string | null; ordre: number; actif: boolean
+  criticite: number | null; criticiteDora: CriticiteDora | null
+  rtoMinutes: number | null; rpoMinutes: number | null
+  parentId: string | null; ordre: number; actif: boolean
 } {
   const c = input.criticite != null ? Math.round(Number(input.criticite)) : null
   return {
@@ -37,6 +55,9 @@ export function cleanProcessus(input: ProcessusInput): {
     description: input.description != null ? String(input.description).slice(0, 2000) : null,
     proprietaire: input.proprietaire != null ? String(input.proprietaire).trim().slice(0, 200) || null : null,
     criticite: c != null && Number.isFinite(c) ? Math.max(1, Math.min(4, c)) : null,
+    criticiteDora: cleanCriticiteDora(input.criticiteDora),
+    rtoMinutes: cleanDureeMinutes(input.rtoMinutes),
+    rpoMinutes: cleanDureeMinutes(input.rpoMinutes),
     parentId: input.parentId?.trim() ? input.parentId.trim() : null,
     ordre: typeof input.ordre === 'number' && Number.isFinite(input.ordre) ? input.ordre : 0,
     actif: input.actif === false ? false : true,

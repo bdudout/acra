@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { DOCUMENT_TYPES, DOCUMENT_PORTEES } from '@/lib/document'
+import { DOCUMENT_TEMPLATES } from '@/lib/document-templates'
+import { FilePlus2, ChevronDown } from 'lucide-react'
 
 interface Doc {
   id: string; titre: string; type: string; portee: string; referentielCode: string | null; risqueId: string | null
@@ -87,6 +89,20 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
   }
   async function del(id: string) { await fetch(`/api/documents/${id}`, { method: 'DELETE' }); setConfirmDel(null); reload() }
 
+  // Modèles d'annexes (PAS, DPA, réversibilité…) : insertion en un clic comme document éditable.
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [insertingTpl, setInsertingTpl] = useState<string | null>(null)
+  const docTitres = new Set(docs.map(x => x.titre))
+  async function insertTemplate(id: string) {
+    setInsertingTpl(id); setErr(null)
+    const res = await fetch('/api/documents/template', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId: id }),
+    })
+    setInsertingTpl(null)
+    if (!res.ok && res.status !== 409) { const j = await res.json().catch(() => ({})); setErr(j.error ?? 'Erreur') }
+    reload()
+  }
+
   const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ebios-500'
   const jour = (s: string | null) => (s ? new Date(s).toLocaleDateString(locale) : '—')
   const refLabel = (code: string | null) => (code ? (refs.find(r => r.code === code)?.nom ?? code) : '—')
@@ -109,6 +125,45 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
 
       {!canManage && (
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{d.readOnly}</div>
+      )}
+
+      {/* Modèles d'annexes contractuelles classiques — insérables en un clic. */}
+      {canManage && !showForm && (
+        <div className="card overflow-hidden">
+          <button type="button" onClick={() => setShowTemplates(v => !v)} aria-expanded={showTemplates}
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+              <FilePlus2 size={16} className="text-ebios-600 dark:text-ebios-300" aria-hidden="true" /> {d.templates.title}
+            </span>
+            <ChevronDown size={16} aria-hidden="true" className={`text-gray-400 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
+          </button>
+          {showTemplates && (
+            <div className="border-t border-gray-100 dark:border-gray-700 p-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{d.templates.hint}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {DOCUMENT_TEMPLATES.map(tpl => {
+                  const deja = docTitres.has(tpl.titre)
+                  return (
+                    <div key={tpl.id} className="flex items-start justify-between gap-3 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{tpl.titre}</div>
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{tpl.description}</div>
+                      </div>
+                      {deja ? (
+                        <span className="text-[11px] text-green-700 dark:text-green-300 whitespace-nowrap mt-0.5">{d.templates.added}</span>
+                      ) : (
+                        <button onClick={() => insertTemplate(tpl.id)} disabled={insertingTpl === tpl.id}
+                          className="text-xs font-medium text-ebios-600 hover:text-ebios-700 whitespace-nowrap disabled:opacity-50 mt-0.5">
+                          {insertingTpl === tpl.id ? d.templates.inserting : d.templates.insert}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {showForm && canManage && (

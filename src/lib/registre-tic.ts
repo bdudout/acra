@@ -7,6 +7,8 @@
 //     sous-traitance, contrats proches de l'expiration.
 // Aide à la décision — ne vaut pas remise réglementaire. Logique testée.
 
+import { cleanReponses, type ReponseQuestion } from './tic-questionnaire'
+
 export const TYPES_SERVICE_TIC = ['HEBERGEMENT', 'CLOUD', 'LOGICIEL', 'RESEAU', 'SECURITE', 'DONNEES', 'SUPPORT', 'AUTRE'] as const
 export type TypeServiceTic = (typeof TYPES_SERVICE_TIC)[number]
 
@@ -33,6 +35,8 @@ export interface ArrangementTic {
   paysDonnees?: string | null
   /** L'arrangement implique-t-il une chaîne de sous-traitance TIC ? */
   sousTraitance?: boolean
+  /** Réponses du questionnaire de qualification (cf. lib/tic-questionnaire.ts). */
+  questionnaire?: ReponseQuestion[]
 }
 
 const rempli = (v: unknown): boolean => {
@@ -91,6 +95,7 @@ export function cleanArrangementInput(body: unknown): ArrangementTic {
     dateFin: toDate(b.dateFin),
     paysDonnees: str(b.paysDonnees),
     sousTraitance: b.sousTraitance === true || b.sousTraitance === 'true',
+    questionnaire: cleanReponses(b.questionnaire),
   }
 }
 

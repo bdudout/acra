@@ -178,10 +178,29 @@ export interface VerdictSignaux {
  */
 export function verdictDispositif(s: VerdictSignaux): { niveau: VerdictNiveau; alertes: number } {
   const critique = (s.constatsCritiques ?? 0) > 0 || (s.doraMajeurs ?? 0) > 0 || (s.kriCritique ?? 0) > 0 || (s.regulateurEchues ?? 0) > 0
-  const alertes = [
-    (s.horsAppetit ?? 0) > 0, s.conformiteSousSeuil === true, (s.actionsEnRetard ?? 0) > 0,
-    (s.constatsCritiques ?? 0) > 0, (s.doraMajeurs ?? 0) > 0, (s.kriCritique ?? 0) > 0, (s.regulateurEchues ?? 0) > 0,
-  ].filter(Boolean).length
+  const alertes = verdictSignauxActifs(s).length
   const niveau: VerdictNiveau = critique || alertes >= 4 ? 'ELEVE' : alertes > 0 ? 'MODERE' : 'MAITRISE'
   return { niveau, alertes }
+}
+
+// Clés des signaux d'alerte du verdict, ordonnées des plus critiques (crise) aux
+// moins critiques → sert à DÉTAILLER « X point(s) d'alerte » dans le cockpit.
+export const VERDICT_SIGNAUX_KEYS = [
+  'constatsCritiques', 'doraMajeurs', 'kriCritique', 'regulateurEchues',
+  'horsAppetit', 'conformiteSousSeuil', 'actionsEnRetard',
+] as const
+export type VerdictSignalKey = (typeof VERDICT_SIGNAUX_KEYS)[number]
+
+/** Liste ORDONNÉE des signaux d'alerte réellement actifs (pour lister « lesquels »). */
+export function verdictSignauxActifs(s: VerdictSignaux): VerdictSignalKey[] {
+  const actif: Record<VerdictSignalKey, boolean> = {
+    constatsCritiques: (s.constatsCritiques ?? 0) > 0,
+    doraMajeurs: (s.doraMajeurs ?? 0) > 0,
+    kriCritique: (s.kriCritique ?? 0) > 0,
+    regulateurEchues: (s.regulateurEchues ?? 0) > 0,
+    horsAppetit: (s.horsAppetit ?? 0) > 0,
+    conformiteSousSeuil: s.conformiteSousSeuil === true,
+    actionsEnRetard: (s.actionsEnRetard ?? 0) > 0,
+  }
+  return VERDICT_SIGNAUX_KEYS.filter((k) => actif[k])
 }

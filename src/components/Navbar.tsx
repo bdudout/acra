@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
 import { buildNav, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { peekNavModules, loadNavModules, setCachedNavModules } from '@/lib/nav-modules-cache'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
 import GlobalSearch from './GlobalSearch'
@@ -15,7 +16,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -51,20 +52,35 @@ export default function Navbar() {
   }, [isDerogActor, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Modules GRC actifs (état effectif) → alimentent le modèle de navigation.
-  const [modules, setModules] = useState<NavModules>({
-    registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false,
-  })
+  // Initialisé depuis le cache MÉMOIRE (peek) : null au 1er rendu (SSR + 1re
+  // hydratation → mode cyber par défaut, cohérent avec le HTML SSR), mais déjà
+  // renseigné lors des RE-montages (navigation SPA) → plus de « réorganisation »
+  // des entrées à chaque clic. Cf. lib/nav-modules-cache.
+  const [modules, setModules] = useState<NavModules>(
+    () => peekNavModules() ?? { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false },
+  )
+  // Rechargement complet : réhydrater depuis localStorage AVANT le fetch, pour
+  // afficher la bonne mise en page au plus tôt (sans attendre le réseau).
+  useEffect(() => {
+    if (peekNavModules()) return
+    const cached = loadNavModules()
+    if (cached) setModules(cached)
+  }, [])
   useEffect(() => {
     if (!session?.user) return
     fetch('/api/modules').then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setModules({
-        registre:      Boolean(d.registreRisquesActive),
-        incidents:     Boolean(d.incidentsActive),
-        controles:     Boolean(d.controlePermanentActive),
-        audit:         Boolean(d.auditInterneActive),
-        kri:           Boolean(d.kriActive),
-        reglementaire: Boolean(d.reglementaireActive),
-      }) })
+      .then(d => { if (d) {
+        const next: NavModules = {
+          registre:      Boolean(d.registreRisquesActive),
+          incidents:     Boolean(d.incidentsActive),
+          controles:     Boolean(d.controlePermanentActive),
+          audit:         Boolean(d.auditInterneActive),
+          kri:           Boolean(d.kriActive),
+          reglementaire: Boolean(d.reglementaireActive),
+        }
+        setModules(next)
+        setCachedNavModules(next)
+      } })
       .catch(() => {})
   }, [session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -133,6 +149,7 @@ export default function Navbar() {
     risques:       { href: '/risques',       Icon: AlertTriangle,   label: t.nav.risks },
     tiers:         { href: '/tiers',         Icon: Network,         label: t.nav.tiers },
     actions:       { href: '/actions',       Icon: Shield,          label: t.nav.actions },
+    plansActions:  { href: '/plans-actions', Icon: ListChecks,      label: t.nav.plansActions },
     conformite:    { href: '/conformite',    Icon: ShieldCheck,     label: t.nav.conformite },
     referentiels:  { href: '/referentiels',  Icon: BookMarked,      label: t.nav.referentiels },
     documents:     { href: '/documents',     Icon: FileText,        label: t.nav.documents },
@@ -155,6 +172,7 @@ export default function Navbar() {
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
   const NAV_GROUP_META: Record<NavGroupId, { Icon: LucideIcon; label: string }> = {
+    pilotage:    { Icon: BarChart3,      label: t.nav.grpPilotage },
     grc:         { Icon: LayoutGrid,     label: t.nav.grc },
     cyber:       { Icon: Radar,          label: t.nav.grpCyber },
     controle:    { Icon: ClipboardCheck, label: t.nav.grpControle },

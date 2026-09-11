@@ -71,3 +71,42 @@ export async function POST(req: NextRequest) {
   })
   return NextResponse.json(created, { status: 201 })
 }
+
+// PATCH /api/referentiels — active/désactive un référentiel (BUILTIN ou CUSTOM)
+// pour l'organisation, par code. Stocké dans OrganizationConfig.referentielsDesactives.
+// { code: string, actif: boolean }
+export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+  const cfg = await getOrgConfig(orgId)
+  if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
+  if (!peutGererReferentiels(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+
+  const body = await req.json().catch(() => ({}))
+  const code = typeof body.code === 'string' ? body.code.trim() : ''
+  if (!code || code.length > 100) return NextResponse.json({ error: 'code_invalide' }, { status: 400 })
+  const actif = body.actif !== false // défaut = activer
+
+  // On modifie la liste des DÉSACTIVÉS du row PROPRE de l'org (pas la valeur héritée).
+  // OrganizationConfig.id == organizationId (cf. schema).
+  const row = await prisma.organizationConfig.findUnique({ where: { id: orgId }, select: { referentielsDesactives: true } })
+  const current = Array.isArray(row?.referentielsDesactives)
+    ? (row!.referentielsDesactives as unknown[]).filter((c): c is string => typeof c === 'string')
+    : []
+  const set = new Set(current)
+  if (actif) set.delete(code); else set.add(code)
+  const next = [...set]
+
+  await prisma.organizationConfig.upsert({
+    where: { id: orgId },
+    create: { id: orgId, referentielsDesactives: next as unknown as Prisma.InputJsonValue },
+    update: { referentielsDesactives: next as unknown as Prisma.InputJsonValue },
+  })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', {
+    userId, userRole, organizationId: orgId, ip: getClientIp(req),
+    details: { scope: 'referentiel', action: actif ? 'activer' : 'desactiver', code },
+  })
+  return NextResponse.json({ ok: true, code, actif })
+}

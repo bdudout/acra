@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 import { type TaxonomieNode } from '@/lib/taxonomie'
 import { distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
-import { verdictDispositif } from '@/lib/comite-pack'
+import { verdictDispositif, verdictSignauxActifs, type VerdictSignalKey } from '@/lib/comite-pack'
 import HeatmapGridHtml from '@/components/HeatmapGridHtml'
 import type { HeatGrid } from '@/lib/carto-export'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
@@ -19,6 +19,7 @@ interface AuditTotals { missions: number; constats: number; critiques: number; r
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
 interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface DoraSynthese { evalues: number; majeurs: number; significatifs: number; mineurs: number }
+interface RegulateurSynthese { total: number; ouverts: number; echues: number; critiques: number }
 interface NiveauSuivi { niveau: 'N1' | 'N2' | 'N3' | 'N4'; activite: number; attention: number; enRetard: number }
 interface OrgPosture {
   orgId: string; orgNom: string; risques: RiskTotals; actions: ActionsSummary
@@ -27,7 +28,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; quatreNiveaux?: NiveauSuivi[] }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
   parOrg: OrgPosture[]
 }
 
@@ -63,6 +64,7 @@ export default function PilotageGrc() {
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
   const [entites, setEntites] = useState<string[]>([])
+  const [showAlertes, setShowAlertes] = useState(false)
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
 
@@ -102,16 +104,30 @@ export default function PilotageGrc() {
   const cap = data.consolide.appetit
   const ck = data.consolide.kri
   const cd = data.consolide.dora
+  const creg = data.consolide.regulateur
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
   const mod = data.modules
   const nbCols = 5 + (mod.incidents ? 1 : 0) + (mod.controles ? 1 : 0) + (mod.audit ? 1 : 0) + (mod.appetit ? 1 : 0) + (mod.kri ? 1 : 0) + (mod.reglementaire ? 1 : 0)
   // Verdict global du dispositif (RAG) pour un message décideur en < 10 s (#136).
-  const verdict = verdictDispositif({
+  const signauxVerdict = {
     constatsCritiques: cau?.critiques, doraMajeurs: cd?.majeurs, kriCritique: ck?.critique,
+    regulateurEchues: creg?.echues,
     horsAppetit: cap?.horsAppetit, conformiteSousSeuil: cc?.tauxConformite != null && cc.tauxConformite < 80,
     actionsEnRetard: ca?.enRetard,
-  })
+  }
+  const verdict = verdictDispositif(signauxVerdict)
+  const alertesActives = verdictSignauxActifs(signauxVerdict)
   const verdictBg = verdict.niveau === 'ELEVE' ? 'bg-red-600' : verdict.niveau === 'MODERE' ? 'bg-amber-500' : 'bg-green-600'
+  // Lien profond de chaque signal d'alerte vers la vue filtrée correspondante.
+  const SIGNAL_HREF: Record<VerdictSignalKey, string> = {
+    constatsCritiques: '/audit?constat=critique',
+    doraMajeurs: '/incidents',
+    kriCritique: '/kri?statut=critique',
+    regulateurEchues: '/reglementaire/suivi-regulateur',
+    horsAppetit: '/cartographie',
+    conformiteSousSeuil: '/conformite',
+    actionsEnRetard: '/plans-actions?statut=EN_RETARD',
+  }
 
   return (
     <div>
@@ -128,10 +144,34 @@ export default function PilotageGrc() {
         </div>
       </div>
 
-      {/* Verdict global (RAG) — l'essentiel en un coup d'œil (#136). */}
-      <div className={`${verdictBg} rounded-lg px-4 py-3 mb-4 flex items-baseline gap-3 flex-wrap`}>
-        <span className="text-white font-bold text-lg">{p.verdictTitle} : {(p.verdictNiveaux as Record<string, string>)[verdict.niveau]}</span>
-        <span className="text-white/90 text-sm">{verdict.alertes} {p.verdictAlertes}</span>
+      {/* Verdict global (RAG) — l'essentiel en un coup d'œil (#136). Le nombre de
+          points d'alerte est cliquable : il détaille LESQUELS + lien vers la vue. */}
+      <div className={`${verdictBg} rounded-lg px-4 py-3 mb-4`}>
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="text-white font-bold text-lg">{p.verdictTitle} : {(p.verdictNiveaux as Record<string, string>)[verdict.niveau]}</span>
+          {alertesActives.length > 0 ? (
+            <button type="button" onClick={() => setShowAlertes(v => !v)} aria-expanded={showAlertes}
+              className="text-white/90 text-sm underline decoration-white/40 underline-offset-2 hover:decoration-white inline-flex items-center gap-1">
+              {verdict.alertes} {p.verdictAlertes}
+              <span aria-hidden="true" className={`transition-transform ${showAlertes ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+          ) : (
+            <span className="text-white/90 text-sm">{verdict.alertes} {p.verdictAlertes}</span>
+          )}
+        </div>
+        {showAlertes && alertesActives.length > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {alertesActives.map(k => (
+              <li key={k}>
+                <Link href={SIGNAL_HREF[k]}
+                  className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white text-xs px-2.5 py-1 rounded-full">
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  {(p.verdictSignaux as Record<string, string>)[k] ?? k}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Dossiers de comité (PDF) — assemblage des indicateurs des modules actifs. */}
