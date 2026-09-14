@@ -9,6 +9,7 @@ import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { buildSoaExport, type SoaControleLite } from '@/lib/soa-export'
+import { renderSoaPptx } from '@/lib/soa-pptx'
 import { createRequire } from 'node:module'
 
 /**
@@ -58,15 +59,48 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
 
   const orgNom = conf?.organization?.nom ?? orgId
   const frameworkNom = refMeta.nom
+  const stamp = new Date().toISOString().slice(0, 10)
+  const safeBase = `soa-${orgNom}-${referentiel}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'soa'
+  const format = new URL(req.url).searchParams.get('format')
 
-  // ── PDF : déclaration d'applicabilité formelle ────────────────────────────
-  if (new URL(req.url).searchParams.get('format') === 'pdf') {
+  // ── PPTX : support de présentation (comité, direction) ─────────────────────
+  if (format === 'pptx') {
     try {
       const soaControles: SoaControleLite[] = controles.map(c => ({
         ref: c.ref, nom: c.nom, categorie: (c as { categorie?: string | null }).categorie ?? null,
       }))
       const soaData = buildSoaExport(soaControles, entries)
-      const stamp = new Date().toISOString().slice(0, 10)
+      const buffer = await renderSoaPptx(
+        soaData,
+        { tauxConformite: stats.tauxConformite, evalues: stats.evalues, total: stats.total },
+        orgNom, frameworkNom, stamp,
+        {
+          title: soa.title, org: soa.header, framework: soa.framework, rate: soa.rate, evaluated: soa.evaluated,
+          colRef: soa.colRef, colControl: soa.colControl, colCategory: soa.colCategory,
+          colStatus: soa.colStatus, colComment: soa.colComment, notEvaluated: soa.notEvaluated,
+          statuts: statutLabels,
+        },
+      )
+      return new NextResponse(buffer as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'Content-Disposition': `attachment; filename="${safeBase}.pptx"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export soa pptx] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du PPTX' }, { status: 500 })
+    }
+  }
+
+  // ── PDF : déclaration d'applicabilité formelle ────────────────────────────
+  if (format === 'pdf') {
+    try {
+      const soaControles: SoaControleLite[] = controles.map(c => ({
+        ref: c.ref, nom: c.nom, categorie: (c as { categorie?: string | null }).categorie ?? null,
+      }))
+      const soaData = buildSoaExport(soaControles, entries)
       const nodeRequire = createRequire(process.cwd() + '/package.json')
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { renderSoaPDF } = nodeRequire(process.cwd() + '/.pdf-runtime/soa-pdf-template.cjs')
@@ -75,11 +109,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
         { tauxConformite: stats.tauxConformite, evalues: stats.evalues, total: stats.total },
         locale, orgNom, frameworkNom, stamp,
       )
-      const safe = `soa-${orgNom}-${referentiel}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'soa'
       return new NextResponse(buffer as unknown as ArrayBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${safe}.pdf"`,
+          'Content-Disposition': `attachment; filename="${safeBase}.pdf"`,
           'Cache-Control': 'no-store',
         },
       })
@@ -111,11 +144,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   }
 
   const csv = '﻿' + lines.join('\r\n') // BOM UTF-8 pour Excel
-  const safeName = `soa-${orgNom}-${referentiel}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'soa'
   return new NextResponse(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${safeName}.csv"`,
+      'Content-Disposition': `attachment; filename="${safeBase}.csv"`,
     },
   })
 }

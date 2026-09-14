@@ -136,6 +136,7 @@ export default async function ConformiteGlobalPage() {
             cellTitleFor={(c) => t.conformiteGlobal.cellTip.replace('{evalues}', String(c.evalues)).replace('{total}', String(c.total))}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
+            pptxHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pptx`}
           />
           {rows.length > 0 && (
             <p className="text-xs text-gray-400 mt-3">{t.conformiteGlobal.legend}</p>
