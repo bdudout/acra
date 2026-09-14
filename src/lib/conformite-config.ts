@@ -11,9 +11,16 @@
  * Module PUR (pas de DB) → testé unitairement.
  */
 
-export const CONFORMITE_NIVEAUX = ['ANALYSE', 'ORGANISATION'] as const
+// Portée de la conformité de référence :
+//  - ORGANISATION (défaut) : 1 suivi par référentiel, au niveau organisation ;
+//  - ANALYSE : conformité portée par chaque analyse (Cadrage.socleSecurite) ;
+//  - ENTITE : PLUSIEURS suivis nommés (par entité / socle) par référentiel,
+//    réutilisables dans les analyses et visibles dans les dashboards.
+// ORGANISATION et ENTITE vivent tous deux dans l'entité `Conformite` (org-level) ;
+// ANALYSE vit dans l'analyse.
+export const CONFORMITE_NIVEAUX = ['ORGANISATION', 'ANALYSE', 'ENTITE'] as const
 export type ConformiteNiveau = typeof CONFORMITE_NIVEAUX[number]
-export const DEFAULT_CONFORMITE_NIVEAU: ConformiteNiveau = 'ANALYSE'
+export const DEFAULT_CONFORMITE_NIVEAU: ConformiteNiveau = 'ORGANISATION'
 
 export const CONFORMITE_SNAPSHOT_MODES = ['MANUEL', 'AUTO', 'CHANGEMENT'] as const
 export type ConformiteSnapshotMode = typeof CONFORMITE_SNAPSHOT_MODES[number]
@@ -33,9 +40,23 @@ export function sanitizeSnapshotMode(v: unknown): ConformiteSnapshotMode {
     : DEFAULT_CONFORMITE_SNAPSHOT_MODE
 }
 
-/** La conformité de référence est-elle portée au niveau organisation ? */
+/** La conformité de référence est-elle portée au niveau organisation (suivi unique) ? */
 export function isOrgLevelConformite(niveau: unknown): boolean {
   return sanitizeConformiteNiveau(niveau) === 'ORGANISATION'
+}
+
+/** Portée « par entité / socle » : plusieurs suivis nommés par référentiel. */
+export function isEntiteLevelConformite(niveau: unknown): boolean {
+  return sanitizeConformiteNiveau(niveau) === 'ENTITE'
+}
+
+/**
+ * La conformité de référence vit-elle dans l'entité `Conformite` (org-level) ?
+ * Vrai pour ORGANISATION et ENTITE ; faux pour ANALYSE (portée par l'analyse).
+ */
+export function usesConformiteEntity(niveau: unknown): boolean {
+  const n = sanitizeConformiteNiveau(niveau)
+  return n === 'ORGANISATION' || n === 'ENTITE'
 }
 
 /**

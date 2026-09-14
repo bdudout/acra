@@ -2,25 +2,40 @@ import { describe, it, expect } from 'vitest'
 import {
   CONFORMITE_NIVEAUX,
   CONFORMITE_SNAPSHOT_MODES,
+  DEFAULT_CONFORMITE_NIVEAU,
   sanitizeConformiteNiveau,
   sanitizeSnapshotMode,
   isOrgLevelConformite,
+  isEntiteLevelConformite,
+  usesConformiteEntity,
   shouldSnapshotOnChange,
   dueForAutoSnapshot,
 } from '../../../lib/conformite-config'
 
 describe('conformite-config — options Palier 2', () => {
-  it('niveaux et modes attendus', () => {
-    expect(CONFORMITE_NIVEAUX).toEqual(['ANALYSE', 'ORGANISATION'])
+  it('niveaux (org par défaut, + entité) et modes attendus', () => {
+    expect(CONFORMITE_NIVEAUX).toEqual(['ORGANISATION', 'ANALYSE', 'ENTITE'])
+    expect(DEFAULT_CONFORMITE_NIVEAU).toBe('ORGANISATION')
     expect(CONFORMITE_SNAPSHOT_MODES).toEqual(['MANUEL', 'AUTO', 'CHANGEMENT'])
   })
 
-  it('sanitizeConformiteNiveau : valeur valide gardée, sinon défaut ANALYSE', () => {
+  it('sanitizeConformiteNiveau : valeur valide gardée, sinon défaut ORGANISATION', () => {
     expect(sanitizeConformiteNiveau('ORGANISATION')).toBe('ORGANISATION')
     expect(sanitizeConformiteNiveau('ANALYSE')).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau('bidon')).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau(undefined)).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau(null)).toBe('ANALYSE')
+    expect(sanitizeConformiteNiveau('ENTITE')).toBe('ENTITE')
+    expect(sanitizeConformiteNiveau('bidon')).toBe('ORGANISATION')
+    expect(sanitizeConformiteNiveau(undefined)).toBe('ORGANISATION')
+    expect(sanitizeConformiteNiveau(null)).toBe('ORGANISATION')
+  })
+
+  it('isEntiteLevelConformite / usesConformiteEntity', () => {
+    expect(isEntiteLevelConformite('ENTITE')).toBe(true)
+    expect(isEntiteLevelConformite('ORGANISATION')).toBe(false)
+    // ORGANISATION et ENTITE vivent tous deux dans l'entité Conformite (org-level) ;
+    // ANALYSE non (portée par l'analyse).
+    expect(usesConformiteEntity('ORGANISATION')).toBe(true)
+    expect(usesConformiteEntity('ENTITE')).toBe(true)
+    expect(usesConformiteEntity('ANALYSE')).toBe(false)
   })
 
   it('sanitizeSnapshotMode : valeur valide gardée, sinon défaut MANUEL', () => {
@@ -34,7 +49,9 @@ describe('conformite-config — options Palier 2', () => {
   it('isOrgLevelConformite : vrai seulement pour ORGANISATION', () => {
     expect(isOrgLevelConformite('ORGANISATION')).toBe(true)
     expect(isOrgLevelConformite('ANALYSE')).toBe(false)
-    expect(isOrgLevelConformite('bidon')).toBe(false)
+    expect(isOrgLevelConformite('ENTITE')).toBe(false)
+    // Valeur inconnue → défaut ORGANISATION (org-level).
+    expect(isOrgLevelConformite('bidon')).toBe(true)
   })
 
   it('shouldSnapshotOnChange : vrai seulement en mode CHANGEMENT', () => {

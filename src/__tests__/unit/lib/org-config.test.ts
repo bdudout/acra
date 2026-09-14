@@ -90,11 +90,11 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
   })
 
   it('conformiteNiveau / conformiteSnapshotMode : défaut, puis 1re valeur non vide de la chaîne', () => {
-    expect(resolveOrgConfig([]).conformiteNiveau).toBe('ANALYSE')
+    expect(resolveOrgConfig([]).conformiteNiveau).toBe('ORGANISATION') // défaut basculé
     expect(resolveOrgConfig([]).conformiteSnapshotMode).toBe('MANUEL')
-    const enfant = row({ conformiteNiveau: 'ORGANISATION', conformiteSnapshotMode: 'AUTO' })
-    const racine = row({ conformiteNiveau: 'ANALYSE', conformiteSnapshotMode: 'MANUEL' })
-    expect(resolveOrgConfig([enfant, racine]).conformiteNiveau).toBe('ORGANISATION')
+    const enfant = row({ conformiteNiveau: 'ANALYSE', conformiteSnapshotMode: 'AUTO' })
+    const racine = row({ conformiteNiveau: 'ORGANISATION', conformiteSnapshotMode: 'MANUEL' })
+    expect(resolveOrgConfig([enfant, racine]).conformiteNiveau).toBe('ANALYSE')
     expect(resolveOrgConfig([enfant, racine]).conformiteSnapshotMode).toBe('AUTO')
   })
 

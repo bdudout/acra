@@ -860,12 +860,19 @@ model Conformite {
   organizationId String
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   referentiel    String // FrameworkId (ISO27001, NIST_CSF, …)
+  // Portée du suivi : "ORGANISATION" (org-wide, entite="") ou "ENTITE" (par entité/socle).
+  portee         String               @default("ORGANISATION")
+  // Discriminant permettant PLUSIEURS suivis par référentiel : "" = suivi org-wide,
+  // sinon nom d'entité / de socle. Fait partie de la clé d'unicité.
+  entite         String               @default("")
+  // Libellé lisible du suivi (ex. "Socle groupe", "Entité DSI"). Null pour l'org-wide.
+  nom            String?
   entries        Json                 @default("[]")
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   snapshots      ConformiteSnapshot[]
 
-  @@unique([organizationId, referentiel])
+  @@unique([organizationId, referentiel, entite])
   @@index([organizationId])
 }
 
@@ -995,6 +1002,9 @@ model Analyse {
   statut               StatutAnalyse @default(EN_COURS)
   atelierCourant       Int           @default(1)
   referentielMesures   String?       @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
+  // Suivi de conformité (entité Conformite) rattaché à l'analyse quand la portée est
+  // ORGANISATION/ENTITE — permet de réutiliser un suivi org/entité dans l'analyse. Null = non lié.
+  suiviConformiteId    String?
   // Mention de protection du document d'analyse (label EBIOS RM §3.2) — cf. lib/mention-protection.ts
   mentionProtection    String        @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
   // Version x.y de l'analyse (label EBIOS RM §3.4) — cf. lib/version-analyse.ts
@@ -1443,9 +1453,13 @@ model OrganizationConfig {
   // Grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle).
   // Activée par défaut.
   conformiteActive           Boolean       @default(true)
-  // Palier 2 — niveau de portage de la conformité : "ANALYSE" (par analyse/socle, défaut, rétrocompatible)
-  // ou "ORGANISATION" (une conformité de référence par organisation × référentiel, entité Conformite).
-  conformiteNiveau           String        @default("ANALYSE")
+  // Portée de la conformité de référence :
+  //  "ORGANISATION" (défaut) : 1 suivi par organisation × référentiel ;
+  //  "ANALYSE" : portée par chaque analyse (Cadrage.socleSecurite) ;
+  //  "ENTITE" : plusieurs suivis nommés (par entité / socle) par référentiel.
+  // Les orgs existantes ont déjà "ANALYSE" stocké → pas de changement ; le défaut
+  // ORGANISATION ne s'applique qu'aux nouveaux enregistrements.
+  conformiteNiveau           String        @default("ORGANISATION")
   // Palier 2 — mode de création des versions/snapshots : "MANUEL" (défaut) | "AUTO" | "CHANGEMENT".
   conformiteSnapshotMode     String        @default("MANUEL")
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier

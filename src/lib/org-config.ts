@@ -116,7 +116,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   qualificationObligatoire: false,
   // Module conformité activé par défaut (résolution des orgs sans valeur explicite).
   conformiteActive: true,
-  conformiteNiveau: 'ANALYSE',
+  conformiteNiveau: 'ORGANISATION',
   conformiteSnapshotMode: 'MANUEL',
   conseilsAteliersActive: true,
   acceptationRisquesActive: false,

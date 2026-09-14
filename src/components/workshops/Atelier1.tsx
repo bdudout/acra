@@ -63,7 +63,7 @@ interface Props {
   flashMode?: boolean
   /** La conformité est héritée (du socle ou de l'organisation) → lecture seule ici. */
   conformiteInherited?: boolean
-  conformiteLevel?: 'ANALYSE' | 'SOCLE' | 'ORGANISATION'
+  conformiteLevel?: 'ANALYSE' | 'SOCLE' | 'ORGANISATION' | 'ENTITE'
   conformiteSourceId?: string | null
   conformiteSourceNom?: string | null
 }
@@ -1251,7 +1251,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
           </div>
 
           {/* ── Grille de conformité au référentiel (fonctionnalité optionnelle) ── */}
-          {conformiteActive && conformiteInherited && conformiteLevel === 'ORGANISATION' && (
+          {conformiteActive && conformiteInherited && (conformiteLevel === 'ORGANISATION' || conformiteLevel === 'ENTITE') && (
             <div id="socle-conformite" className="card p-5 border-l-4 border-l-indigo-400 bg-indigo-50/40 scroll-mt-24">
               <h3 className="font-semibold text-gray-800 mb-1"><Building2 size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a1.conformiteOrgTitle}</h3>
               <p className="text-sm text-gray-600">
@@ -1259,7 +1259,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
               </p>
             </div>
           )}
-          {conformiteActive && conformiteInherited && conformiteLevel !== 'ORGANISATION' && (
+          {conformiteActive && conformiteInherited && conformiteLevel !== 'ORGANISATION' && conformiteLevel !== 'ENTITE' && (
             <div id="socle-conformite" className="card p-5 border-l-4 border-l-indigo-400 bg-indigo-50/40 scroll-mt-24">
               <h3 className="font-semibold text-gray-800 mb-1"><Link2 size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a1.conformiteInheritedTitle}</h3>
               <p className="text-sm text-gray-600">
