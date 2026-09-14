@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
+import VersionCard from '@/components/VersionCard'
 import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
@@ -105,6 +106,9 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900"><Home size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> Administration ACRA</h1>
           <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme</p>
         </div>
+
+        {/* Version & mises à jour (super-admin) */}
+        {currentRole === 'SUPER_ADMIN' && <VersionCard />}
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
