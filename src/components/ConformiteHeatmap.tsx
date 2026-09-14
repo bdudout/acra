@@ -18,7 +18,7 @@ function cellStyle(taux: number): string {
  * colonnes = référentiels, cellules = taux agrégé (roll-up sous-arbre).
  * Présentational — libellés fournis par l'appelant.
  */
-export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, emptyHref, emptyCta, hrefFor, pdfHrefFor }: {
+export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, emptyHref, emptyCta, hrefFor, pdfHrefFor, viewHrefFor, cellTitleFor }: {
   rows: HeatmapRow[]
   refs: HeatmapRef[]
   orgCol: string
@@ -27,10 +27,14 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
   emptyHref?: string
   /** Libellé du bouton d'action de l'état vide. */
   emptyCta?: string
-  /** Lien d'une cellule (ex. export SoA CSV). Défaut : liste des analyses. */
+  /** Lien d'export CSV (SoA). Utilisé par le petit lien « CSV ». */
   hrefFor?: (orgId: string, refId: string) => string
   /** Lien secondaire d'export PDF (SoA formelle). Optionnel. */
   pdfHrefFor?: (orgId: string, refId: string) => string
+  /** Lien principal du taux (clic sur la case) — ex. ouvrir le socle. */
+  viewHrefFor?: (orgId: string, refId: string) => string
+  /** Infobulle d'une case (traduite par l'appelant). Défaut : « évalués/total ». */
+  cellTitleFor?: (c: HeatmapCell) => string
 }) {
   if (rows.length === 0 || refs.length === 0) {
     return (
@@ -67,9 +71,12 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
                     {c ? (
                       <div
                         className={`inline-flex flex-col items-center rounded px-2 py-1 leading-tight ${cellStyle(c.taux)}`}
-                        title={`${c.orgCount} org · ${c.evalues}/${c.total}`}
+                        title={cellTitleFor ? cellTitleFor(c) : `${c.evalues}/${c.total}`}
                       >
-                        <Link href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'} className="hover:underline">
+                        <Link
+                          href={viewHrefFor ? viewHrefFor(row.orgId, r.id) : hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'}
+                          className="hover:underline"
+                        >
                           <span className="font-bold">{c.taux}%</span>
                         </Link>
                         <span className="text-[9px] opacity-70">{c.evalues}/{c.total}</span>

@@ -23,6 +23,8 @@ interface Props {
    *  grille (bouton « Déroger » + badges). La grille vérifie elle-même que la
    *  fonctionnalité est active pour l'organisation (via l'API). */
   derogationCtx?: { analyseId: string; referentiel: string }
+  /** Affiche le catalogue de vulnérabilités (écarts) — pertinent en analyse, pas en socle pur. */
+  showVulnCatalog?: boolean
 }
 
 /** État dérogation d'un contrôle, dérivé de la liste des dérogations de l'analyse. */
@@ -40,7 +42,7 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * est activée (OrganizationConfig.conformiteActive). Les non-conformités dérivées
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
-export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx }: Props) {
+export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, showVulnCatalog = true }: Props) {
   const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
   const sLabels = t.conformite.statuts as Record<string, string>
@@ -266,7 +268,9 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
         })}
       </div>
 
-      {/* Catalogue de vulnérabilités (non-conformités) */}
+      {/* Catalogue de vulnérabilités (non-conformités) — masqué hors contexte d'analyse
+          (ex. éditeur de socle org : conformité pure, sans lien ateliers 3/4). */}
+      {showVulnCatalog && (
       <div className="mt-5 p-4 rounded-lg bg-red-50 border border-red-100">
         <p className="text-sm font-semibold text-red-800 mb-1">{t.conformite.catalogueTitle}</p>
         <p className="text-xs text-gray-500 mb-2">{t.conformite.catalogueIntro}</p>
@@ -290,6 +294,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
           </ul>
         )}
       </div>
+      )}
     </div>
   )
 }

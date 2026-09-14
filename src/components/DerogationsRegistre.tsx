@@ -114,7 +114,8 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
   useEffect(() => {
     if (!creating) return
     fetch('/api/referentiels').then(r => r.ok ? r.json() : null).then(dd => {
-      if (Array.isArray(dd?.referentiels)) setRefs(dd.referentiels.map((x: { code: string; nom: string }) => ({ code: x.code, nom: x.nom })))
+      // Ne proposer que les référentiels ACTIFS (les désactivés pour l'org sont exclus).
+      if (Array.isArray(dd?.referentiels)) setRefs(dd.referentiels.filter((x: { actif?: boolean }) => x.actif !== false).map((x: { code: string; nom: string }) => ({ code: x.code, nom: x.nom })))
     }).catch(() => { /* repli texte libre */ })
   }, [creating])
 

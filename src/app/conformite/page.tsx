@@ -8,9 +8,10 @@ import { getServerT, getServerLocale } from '@/lib/i18n'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
-import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
+import ConformiteDonut from '@/components/ConformiteDonut'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -44,23 +45,42 @@ export default async function ConformiteGlobalPage() {
   }
   const orgs = [...orgMap.values()]
 
-  // Cellules (stats par org × référentiel) pour le roll-up.
-  const totalByRef = new Map<string, number>()
-  const totalFor = (ref: string) => {
-    if (!totalByRef.has(ref)) totalByRef.set(ref, getFrameworkControles(ref as FrameworkId, undefined, locale).length)
-    return totalByRef.get(ref)!
+  // Cellules (stats par org × référentiel) pour le roll-up. Le total est résolu
+  // par le résolveur unifié (livré cyber + GRC + custom), comme l'éditeur de socle.
+  // Custom = dépend de l'org → cache par (orgId, référentiel). Plusieurs suivis
+  // (org-wide + entités) d'un même org×référentiel sont mis en commun par le roll-up.
+  const totalByOrgRef = new Map<string, number>()
+  const totalFor = async (orgId: string, ref: string) => {
+    const key = `${orgId}|${ref}`
+    if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
+    return totalByOrgRef.get(key)!
   }
-  const cells: RollupConfInput[] = confs.map(c => {
-    const s = conformiteStats(sanitizeConformite(c.entries), totalFor(c.referentiel))
+  const cells: RollupConfInput[] = await Promise.all(confs.map(async c => {
+    const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
     return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, total: s.total }
-  })
+  }))
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
-  // Référentiels présents (colonnes), triés par nom.
-  const refIds = [...new Set(confs.map(c => c.referentiel))]
-  const refs: HeatmapRef[] = refIds
-    .map(id => ({ id, nom: FRAMEWORK_META[id as FrameworkId]?.nom ?? id }))
+  // Répartition globale (camembert) : somme de tous les suivis de conformité.
+  const g = cells.reduce((a, c) => ({
+    conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
+    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0 })
+  const gPertinents = g.conforme + g.partiel + g.nonConforme
+  const gTaux = gPertinents > 0 ? Math.round((g.conforme / gPertinents) * 100) : 0
+
+  // Référentiels présents (colonnes), triés par nom — noms résolus via le
+  // catalogue unifié (union des orgs visibles), avec repli sur le code.
+  const refIds = new Set(confs.map(c => c.referentiel))
+  const nomByCode = new Map<string, string>()
+  for (const o of orgs) {
+    for (const r of await listReferentiels(o.id, locale)) {
+      if (refIds.has(r.code)) nomByCode.set(r.code, r.nom)
+    }
+  }
+  const refs: HeatmapRef[] = [...refIds]
+    .map(id => ({ id, nom: nomByCode.get(id) ?? id }))
     .sort((a, b) => a.nom.localeCompare(b.nom))
 
   // Lignes = organisations ayant des données dans leur sous-arbre, ordre arbre (path).
@@ -88,6 +108,22 @@ export default async function ConformiteGlobalPage() {
           <a href="/conformite/socle" className="btn-primary text-sm shrink-0">{t.conformiteGlobal.editSocle}</a>
         </div>
 
+        {rows.length > 0 && (
+          <div className="card p-5 mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.conformiteGlobal.donutTitle}</h2>
+            <ConformiteDonut
+              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} taux={gTaux}
+              labels={{
+                conforme: t.conformite.statuts.conforme,
+                partiel: t.conformite.statuts.partiel,
+                nonConforme: t.conformite.statuts.non_conforme,
+                na: t.conformite.statuts.na,
+                centerHint: t.conformiteGlobal.donutHint,
+              }}
+            />
+          </div>
+        )}
+
         <div className="card p-5">
           <ConformiteHeatmap
             rows={rows}
@@ -96,6 +132,8 @@ export default async function ConformiteGlobalPage() {
             emptyLabel={t.conformiteGlobal.emptyNew}
             emptyHref="/conformite/socle"
             emptyCta={t.conformiteGlobal.editSocle}
+            viewHrefFor={(_orgId, refId) => `/conformite/socle?ref=${encodeURIComponent(refId)}`}
+            cellTitleFor={(c) => t.conformiteGlobal.cellTip.replace('{evalues}', String(c.evalues)).replace('{total}', String(c.total))}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
           />

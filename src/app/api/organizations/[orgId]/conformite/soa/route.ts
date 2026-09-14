@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { type UserRole } from '@/lib/permissions'
 import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
-import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { buildSoaExport, type SoaControleLite } from '@/lib/soa-export'
@@ -31,26 +31,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   }
 
   const referentiel = new URL(req.url).searchParams.get('referentiel') ?? ''
-  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
-    return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
-  }
+  // Suivi ciblé : "" (socle org-wide, défaut) ou un libellé d'entité/socle.
+  const entite = (new URL(req.url).searchParams.get('entite') ?? '').trim().slice(0, 80)
 
   const t = await getServerT()
   const locale = await getServerLocale()
   const soa = t.soa
   const statutLabels = t.conformite.statuts as Record<string, string>
 
+  // Référentiel valide = livré cyber OU GRC OU personnalisé de l'org (hors
+  // placeholder CUSTOM). La liste unifiée fournit aussi le nom d'affichage.
+  const refMeta = (await listReferentiels(orgId, locale)).find(r => r.code === referentiel)
+  if (!referentiel || referentiel === 'CUSTOM' || !refMeta) {
+    return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
+  }
+
   const conf = await prisma.conformite.findUnique({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
     select: { entries: true, updatedAt: true, organization: { select: { nom: true } } },
   })
   const entries = sanitizeConformite(conf?.entries)
   const byRef = new Map(entries.map(e => [e.ref, e]))
-  const controles = getFrameworkControles(referentiel as FrameworkId, undefined, locale)
+  // Contrôles résolus par le résolveur unifié (cyber livré + GRC + custom).
+  const controles = await getExigencesFor(referentiel, orgId, locale)
   const stats = conformiteStats(entries, controles.length)
 
   const orgNom = conf?.organization?.nom ?? orgId
-  const frameworkNom = FRAMEWORK_META[referentiel as FrameworkId]?.nom ?? referentiel
+  const frameworkNom = refMeta.nom
 
   // ── PDF : déclaration d'applicabilité formelle ────────────────────────────
   if (new URL(req.url).searchParams.get('format') === 'pdf') {

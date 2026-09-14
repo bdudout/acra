@@ -37,9 +37,15 @@ describe('OrgConformiteEditor', () => {
   beforeEach(() => { vi.restoreAllMocks() })
 
   it('charge le socle (GET) puis persiste un changement (PATCH) sur le bon référentiel', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ entries: [{ ref: 'A.5.1', statut: 'conforme' }] }) }) // GET
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, stats: {} }) }) // PATCH
+    // Chargement = 3 fetch en parallèle (conformité, exigences, import) + PATCH au changement.
+    const fetchMock = vi.fn((url: string, opts?: RequestInit) => {
+      const u = String(url)
+      if (opts?.method === 'PATCH') return Promise.resolve({ ok: true, json: async () => ({ ok: true, stats: {} }) })
+      if (u.includes('/conformite/import')) return Promise.resolve({ ok: true, json: async () => ({ analyses: [] }) })
+      if (u.includes('/referentiels/exigences')) return Promise.resolve({ ok: true, json: async () => ({ exigences: [{ ref: 'A.5.1', nom: 'Politique' }] }) })
+      if (u.includes('/conformite?referentiel')) return Promise.resolve({ ok: true, json: async () => ({ entries: [{ ref: 'A.5.1', statut: 'conforme' }] }) })
+      return Promise.resolve({ ok: true, json: async () => ({}) })
+    })
     global.fetch = fetchMock as unknown as typeof fetch
 
     render(<OrgConformiteEditor orgId="org1" orgNom="StarBank" referentiels={[{ code: 'ISO27001', nom: 'ISO 27001' }]} initialRef="ISO27001" />)

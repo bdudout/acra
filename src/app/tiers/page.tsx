@@ -1,4 +1,5 @@
-import { Handshake } from 'lucide-react'
+import { Handshake, Radar } from 'lucide-react'
+import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -84,6 +85,9 @@ export default async function TiersPage() {
             <h1 className="text-2xl font-bold text-gray-900"><Handshake size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.tiers.title}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{t.tiers.subtitle}</p>
           </div>
+          <Link href="/ecosysteme" className="btn-secondary text-sm inline-flex items-center gap-1.5 shrink-0" title={t.tiers.cartoLink}>
+            <Radar size={16} aria-hidden="true" /> {t.tiers.cartoLink}
+          </Link>
         </div>
 
         <TiersClient tiers={await withTicFlags(consolidateTiers(tiers), __org.activeOrgId)} canMerge={userRole !== 'LECTEUR'} />

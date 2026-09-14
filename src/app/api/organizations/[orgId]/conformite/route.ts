@@ -9,14 +9,20 @@ import {
   CONFORMITE_STATUTS, type ConformiteStatut,
 } from '@/lib/conformite'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { shouldSnapshotOnChange, isOrgLevelConformite } from '@/lib/conformite-config'
+import { shouldSnapshotOnChange, usesConformiteEntity } from '@/lib/conformite-config'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { getExigencesFor } from '@/lib/referentiel.server'
 import { getServerLocale } from '@/lib/i18n'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 /** Rôles de gouvernance autorisés à gérer la conformité au niveau organisation. */
 function canManageOrgConformite(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
+}
+
+/** Discriminant de suivi : "" = suivi org-wide ; sinon libellé d'entité/socle. */
+function cleanEntite(v: unknown): string {
+  return typeof v === 'string' ? v.trim().slice(0, 80) : ''
 }
 
 /** Contrôle commun : session, rôle, périmètre org, feature active, référentiel connu. */
@@ -37,21 +43,24 @@ async function guard(req: NextRequest, orgId: string) {
 
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.conformiteActive) return { error: NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 }) }
-  if (!isOrgLevelConformite(orgConfig.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
+  if (!usesConformiteEntity(orgConfig.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
 
   const body = await req.json().catch(() => null)
   const referentiel = String(body?.referentiel ?? '').trim()
-  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
+  if (!referentiel || referentiel === 'CUSTOM') {
     return { error: NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 }) }
   }
-  return { userId, userRole, orgConfig, body, referentiel }
+  // Suivi ciblé : "" (org-wide) ou un libellé d'entité/socle (multi-suivis).
+  const entite = cleanEntite(body?.entite)
+  return { userId, userRole, orgConfig, body, referentiel, entite }
 }
 
-/** Récupère (et crée si besoin) l'entité Conformite (organisation × référentiel). */
-async function getOrCreate(orgId: string, referentiel: string) {
+/** Récupère (et crée si besoin) le SUIVI Conformite (organisation × référentiel × entité). */
+async function getOrCreate(orgId: string, referentiel: string, entite: string) {
   return prisma.conformite.upsert({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
-    create: { organizationId: orgId, referentiel, entite: '', entries: [] },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
+    // À la création d'un suivi d'entité, on mémorise son libellé (nom = entité).
+    create: { organizationId: orgId, referentiel, entite, nom: entite || null, entries: [] },
     update: {},
     select: { id: true, entries: true },
   })
@@ -66,7 +75,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
   const { orgId } = await params
   const g = await guard(req, orgId)
   if ('error' in g) return g.error
-  const { body, referentiel, orgConfig, userId } = g
+  const { body, referentiel, entite, orgConfig, userId } = g
 
   const ref = String(body?.ref ?? '').trim()
   const statut = body?.statut as ConformiteStatut
@@ -74,12 +83,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
     return NextResponse.json({ error: 'Requête invalide (ref/statut)' }, { status: 400 })
   }
   const locale = await getServerLocale()
-  const controles = getFrameworkControles(referentiel as FrameworkId, undefined, locale)
+  const controles = await getExigencesFor(referentiel, orgId, locale)
   if (!new Set(controles.map(c => c.ref)).has(ref)) {
     return NextResponse.json({ error: 'Contrôle inconnu du référentiel' }, { status: 400 })
   }
 
-  const conf = await getOrCreate(orgId, referentiel)
+  const conf = await getOrCreate(orgId, referentiel, entite)
   const updated = applyConformiteStatut(sanitizeConformite(conf.entries), ref, statut)
   await prisma.conformite.update({ where: { id: conf.id }, data: { entries: updated as unknown as object } })
   if (shouldSnapshotOnChange(orgConfig.conformiteSnapshotMode)) {
@@ -96,9 +105,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ org
   const { orgId } = await params
   const g = await guard(req, orgId)
   if ('error' in g) return g.error
-  const { body, referentiel, userId } = g
+  const { body, referentiel, entite, userId } = g
 
-  const conf = await getOrCreate(orgId, referentiel)
+  const conf = await getOrCreate(orgId, referentiel, entite)
   const label = typeof body?.label === 'string' ? body.label.trim().slice(0, 120) || null : null
   const snap = await prisma.conformiteSnapshot.create({
     data: { conformiteId: conf.id, entries: sanitizeConformite(conf.entries) as unknown as object, label, createdById: userId },
@@ -125,15 +134,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
 
-  const referentiel = new URL(req.url).searchParams.get('referentiel') ?? ''
-  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
+  const sp = new URL(req.url).searchParams
+  const referentiel = sp.get('referentiel') ?? ''
+  const entite = cleanEntite(sp.get('entite'))
+  if (!referentiel || referentiel === 'CUSTOM') {
     return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
   }
   const locale = await getServerLocale()
-  const total = getFrameworkControles(referentiel as FrameworkId, undefined, locale).length
+  const total = (await getExigencesFor(referentiel, orgId, locale)).length
 
   const conf = await prisma.conformite.findUnique({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
     select: {
       id: true, entries: true, updatedAt: true,
       snapshots: { orderBy: { createdAt: 'asc' }, select: { id: true, label: true, createdAt: true, entries: true } },

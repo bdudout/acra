@@ -70,6 +70,8 @@ interface Props {
   conformitePortee?: string
   /** La config org porte la conformité au niveau organisation/entité (→ choix possible). */
   orgConformiteOrgScoped?: boolean
+  /** Codes de référentiels désactivés pour l'org → exclus du choix de référentiel. */
+  referentielsDesactives?: string[]
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -83,7 +85,7 @@ function getDictColor(v: number) {
   return 'bg-red-100 text-red-700'
 }
 
-export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false }: Props) {
+export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false, referentielsDesactives = [] }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   // Choix de portée de conformité propre à l'analyse (reprendre le socle org vs propre).
@@ -274,10 +276,15 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
   // sélection courante ; « Afficher tous » dévoile le catalogue complet.
   const [showAllFw, setShowAllFw] = useState(false)
   const filterFw = !!analyse?.secteur && recommendedFw.length > 0 && !showAllFw
+  // Référentiels désactivés pour l'org : exclus, sauf le référentiel déjà choisi
+  // (on ne casse pas une analyse existante) et CUSTOM.
+  const disabledFw = new Set(referentielsDesactives)
+  const notDisabled = (fid: string) => !disabledFw.has(fid) || fid === referentielMesures || fid === 'CUSTOM'
+  const baseFw = FRAMEWORK_IDS.filter(notDisabled)
   const visibleFw = filterFw
-    ? FRAMEWORK_IDS.filter(fid => recommendedFw.includes(fid) || fid === referentielMesures || fid === 'CUSTOM')
-    : FRAMEWORK_IDS
-  const hiddenFwCount = FRAMEWORK_IDS.length - visibleFw.length
+    ? baseFw.filter(fid => recommendedFw.includes(fid) || fid === referentielMesures || fid === 'CUSTOM')
+    : baseFw
+  const hiddenFwCount = baseFw.length - visibleFw.length
 
   // Contrôles custom (si référentiel CUSTOM) — stockés dans Cadrage.customControles
   const [customControles, setCustomControles] = useState<FrameworkControl[]>(
