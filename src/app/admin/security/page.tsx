@@ -738,6 +738,19 @@ export default function AdminSecurityPage() {
               {sso.enabled && (
                 <div className="space-y-6 pl-2 border-l-2 border-ebios-100">
 
+                  {/* Aide : brancher un LDAP via OIDC + exemple concret */}
+                  <div className="rounded-xl border border-ebios-200 bg-ebios-50 px-4 py-3 text-sm">
+                    <p className="font-semibold text-ebios-900">{t.sso.ldapHelpTitle}</p>
+                    <p className="text-ebios-800/90 mt-1 text-xs leading-relaxed">{t.sso.ldapHelpIntro}</p>
+                    <p className="font-medium text-ebios-900 mt-2 text-xs">{t.sso.ldapHelpExampleTitle}</p>
+                    <ul className="mt-1 space-y-0.5 text-xs text-ebios-800/90 font-mono">
+                      <li>• {t.sso.ldapHelpEx1}</li>
+                      <li>• {t.sso.ldapHelpEx2}</li>
+                      <li>• {t.sso.ldapHelpEx3}</li>
+                    </ul>
+                    <p className="text-xs text-ebios-800/90 mt-1.5">{t.sso.ldapHelpEx4}</p>
+                  </div>
+
                   {/* Sélecteur de protocole */}
                   <div>
                     <p className="text-xs font-medium text-gray-700 mb-2">{t.sso.protocolLabel}</p>
