@@ -91,22 +91,26 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
     setSavedAt(Date.now()); setReloadKey(k => k + 1)
   }
 
-  // Persiste le changement d'UN contrôle (l'API applique par contrôle + snapshot éventuel).
-  async function persist(controleRef: string, statut: ConformiteStatut) {
+  // Persiste le changement d'UN contrôle (statut + commentaire + traitement).
+  async function persist(e: ConformiteEntry) {
     const res = await fetch(`/api/organizations/${orgId}/conformite`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referentiel: ref, entite, ref: controleRef, statut }),
+      body: JSON.stringify({
+        referentiel: ref, entite, ref: e.ref, statut: e.statut,
+        commentaire: e.commentaire ?? null, traitement: e.traitement ?? null,
+      }),
     })
     if (!res.ok) { setError(c.saveError); return }
     setSavedAt(Date.now())
   }
 
   function onChange(next: ConformiteEntry[]) {
-    const avant = new Map(entries.map(e => [e.ref, e.statut]))
+    const avant = new Map(entries.map(e => [e.ref, e]))
     setEntries(next)
     setError(null)
     for (const e of next) {
-      if (avant.get(e.ref) !== e.statut) persist(e.ref, e.statut)
+      const b = avant.get(e.ref)
+      if (!b || b.statut !== e.statut || b.commentaire !== e.commentaire || b.traitement !== e.traitement) persist(e)
     }
   }
 
@@ -138,6 +142,11 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
           <p className="text-gray-500 text-sm mt-0.5 max-w-2xl">{c.subtitle.replace('{org}', orgNom)}</p>
         </div>
         <div className="flex items-end gap-3">
+          {savedAt && (
+            <span className="self-center inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-full px-2.5 py-1">
+              <CheckCircle2 size={14} aria-hidden="true" /> {c.saved}
+            </span>
+          )}
           <label className="text-xs text-gray-500">
             <span className="block font-medium mb-1">{c.referentiel}</span>
             <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
@@ -180,18 +189,12 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
         </div>
       )}
 
-      {/* Bandeau d'avancement */}
-      <div className="flex flex-wrap items-center gap-4 text-sm rounded-lg border border-gray-200 bg-white px-4 py-2.5">
-        <span className="font-semibold text-gray-900">{stats.tauxConformite}%</span>
-        <span className="text-gray-500">{c.evalues.replace('{n}', String(stats.evalues)).replace('{total}', String(controles.length))}</span>
-        {savedAt && <span className="text-green-600 inline-flex items-center gap-1 ml-auto"><CheckCircle2 size={14} aria-hidden="true" /> {c.saved}</span>}
-      </div>
-
-      {/* Reprendre la conformité d'une analyse existante (même référentiel) */}
-      {analysesDispo.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm rounded-lg border border-ebios-200 bg-ebios-50/50 px-4 py-2.5">
-          <span className="text-ebios-800">{c.importLabel}</span>
-          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white text-gray-800 min-w-[12rem]">
+      {/* Reprendre la conformité d'une analyse — proposé UNIQUEMENT tant que le suivi
+          est vide (première fois) ; inutile une fois le référentiel déjà renseigné. */}
+      {analysesDispo.length > 0 && stats.evalues === 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm rounded-lg border border-ebios-200 bg-ebios-50/60 px-4 py-2.5 dark:border-ebios-500/30 dark:bg-ebios-500/10">
+          <span className="text-ebios-800 dark:text-ebios-200">{c.importLabel}</span>
+          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-sm bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 min-w-[12rem]">
             <option value="">{c.importSelect}</option>
             {analysesDispo.map(a => <option key={a.id} value={a.id}>{a.nom} ({a.count})</option>)}
           </select>

@@ -55,20 +55,28 @@ export default async function ConformiteGlobalPage() {
     if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
     return totalByOrgRef.get(key)!
   }
-  const cells: (RollupConfInput & { deroge: number })[] = await Promise.all(confs.map(async c => {
+  type Cell = RollupConfInput & { deroge: number; couvDerog: number; couvAccept: number; couvPlan: number }
+  const cells: Cell[] = await Promise.all(confs.map(async c => {
     const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
-    return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, deroge: s.deroge, total: s.total }
+    return {
+      organizationId: c.organizationId, referentiel: c.referentiel,
+      conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, deroge: s.deroge,
+      couvDerog: s.couvertureDerogation, couvAccept: s.couvertureAcceptation, couvPlan: s.couverturePlanAction,
+      total: s.total,
+    }
   }))
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
-  // Répartition globale (cadrans) : somme de tous les suivis de conformité,
-  // avec le bucket « dérogé » (risques formellement acceptés) pour les cadrans
-  // « avec dérogations » et « cible ».
+  // Cadrans globaux : conforme + couvertures d'écarts (dérogation / acceptation /
+  // plan d'action) agrégées sur tous les suivis. pertinents = conforme + partiel +
+  // non conforme + dérogé.
   const g = cells.reduce((a, c) => ({
     conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
     nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na, deroge: a.deroge + c.deroge,
-  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0 })
+    couvDerog: a.couvDerog + c.couvDerog, couvAccept: a.couvAccept + c.couvAccept, couvPlan: a.couvPlan + c.couvPlan,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0, couvDerog: 0, couvAccept: 0, couvPlan: 0 })
+  const gPert = g.conforme + g.partiel + g.nonConforme + g.deroge
 
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
   // catalogue unifié (union des orgs visibles), avec repli sur le code.
@@ -112,13 +120,15 @@ export default async function ConformiteGlobalPage() {
           <div className="card p-5 mb-4">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">{t.conformiteGlobal.donutTitle}</h2>
             <ConformiteGauges
-              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} deroge={g.deroge}
+              conforme={g.conforme} pertinents={gPert}
+              couvDerog={g.couvDerog} couvAccept={g.couvAccept} couvPlan={g.couvPlan}
               labels={{
                 actuelle: t.conformiteGlobal.gaugeActuelle, actuelleHint: t.conformiteGlobal.gaugeActuelleHint,
                 avecDerog: t.conformiteGlobal.gaugeDerog, avecDerogHint: t.conformiteGlobal.gaugeDerogHint,
                 cible: t.conformiteGlobal.gaugeCible, cibleHint: t.conformiteGlobal.gaugeCibleHint,
                 legendConforme: t.conformiteGlobal.legendConforme, legendDeroge: t.conformiteGlobal.legendDeroge,
-                legendPartiel: t.conformiteGlobal.legendPartiel, legendReste: t.conformiteGlobal.legendReste,
+                legendAccept: t.conformiteGlobal.legendAccept, legendPlan: t.conformiteGlobal.legendPlan,
+                legendReste: t.conformiteGlobal.legendReste,
               }}
             />
           </div>

@@ -7,10 +7,12 @@ import { useTranslation } from '@/lib/i18n/context'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
   CONFORMITE_STATUTS,
+  CONFORMITE_TRAITEMENTS,
   conformiteStats,
   deriveNonConformites,
   type ConformiteEntry,
   type ConformiteStatut,
+  type ConformiteTraitement,
 } from '@/lib/conformite'
 import { etatDerogation, type DerogationStatut } from '@/lib/derogation'
 
@@ -124,7 +126,12 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     if (readOnly) return
     const next = entries.filter(e => e.ref !== ref)
     const prev = byRef.get(ref)
-    next.push({ ref, statut, ...(prev?.commentaire ? { commentaire: prev.commentaire } : {}) })
+    const ecart = statut === 'partiel' || statut === 'non_conforme'
+    next.push({
+      ref, statut,
+      ...(prev?.commentaire ? { commentaire: prev.commentaire } : {}),
+      ...(ecart && prev?.traitement ? { traitement: prev.traitement } : {}),
+    })
     onChange(next)
   }
 
@@ -132,8 +139,25 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     if (readOnly) return
     const prev = byRef.get(ref)
     const statut = prev?.statut ?? 'non_conforme'
+    const ecart = statut === 'partiel' || statut === 'non_conforme'
     const next = entries.filter(e => e.ref !== ref)
-    next.push({ ref, statut, ...(commentaire.trim() ? { commentaire } : {}) })
+    next.push({
+      ref, statut,
+      ...(commentaire.trim() ? { commentaire } : {}),
+      ...(ecart && prev?.traitement ? { traitement: prev.traitement } : {}),
+    })
+    onChange(next)
+  }
+
+  // Traitement de l'écart (partiel/non conforme) : clic = sélection, re-clic = retrait.
+  function setTraitement(ref: string, traitement: ConformiteTraitement) {
+    if (readOnly) return
+    const prev = byRef.get(ref)
+    if (!prev || (prev.statut !== 'partiel' && prev.statut !== 'non_conforme')) return
+    const next = entries.filter(e => e.ref !== ref)
+    const nextTr = prev.traitement === traitement ? undefined : traitement
+    next.push({ ...prev, ...(nextTr ? { traitement: nextTr } : {}), ...(nextTr ? {} : {}) })
+    if (!nextTr) delete (next[next.length - 1] as { traitement?: unknown }).traitement
     onChange(next)
   }
 
@@ -144,17 +168,17 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
 
       {/* Statistiques */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-          <div className="text-2xl font-bold text-ebios-700">{stats.tauxConformite}%</div>
-          <div className="text-xs text-gray-500">{t.conformite.statTaux}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="text-2xl font-bold text-ebios-700 dark:text-ebios-300">{stats.tauxConformite}%</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t.conformite.statTaux}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-          <div className="text-2xl font-bold text-gray-800">{stats.evalues}/{stats.total}</div>
-          <div className="text-xs text-gray-500">{t.conformite.statEvalues}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stats.evalues}/{stats.total}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t.conformite.statEvalues}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center">
-          <div className="text-2xl font-bold text-red-600">{nonConformites.length}</div>
-          <div className="text-xs text-gray-500">{t.conformite.statNonConf}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400">{nonConformites.length}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t.conformite.statNonConf}</div>
         </div>
       </div>
 
@@ -208,6 +232,25 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                   disabled={readOnly}
                   className="input w-full mt-2 text-xs"
                 />
+              )}
+              {/* Traitement de l'écart : plan d'action / dérogation / acceptation de risque */}
+              {showComment && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 mr-0.5">{t.conformite.traitementLabel} :</span>
+                  {CONFORMITE_TRAITEMENTS.map(tr => {
+                    const active = entry?.traitement === tr
+                    return (
+                      <button key={tr} type="button" disabled={readOnly} onClick={() => setTraitement(c.ref, tr)}
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                          active
+                            ? 'bg-ebios-600 text-white border-ebios-600'
+                            : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
+                        }`}>
+                        {(t.conformite.traitements as Record<string, string>)[tr] ?? tr}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
               {/* Dérogation : badge d'état, ou demande rapide sur une non-conformité */}
               {derogationCtx && derogActive && showComment && (() => {

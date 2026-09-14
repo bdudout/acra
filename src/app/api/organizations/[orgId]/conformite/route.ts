@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
-  sanitizeConformite, applyConformiteStatut, conformiteStats,
-  CONFORMITE_STATUTS, type ConformiteStatut,
+  sanitizeConformite, applyConformiteStatut, applyConformiteEntry, conformiteStats,
+  CONFORMITE_STATUTS, CONFORMITE_TRAITEMENTS, type ConformiteStatut, type ConformiteTraitement,
 } from '@/lib/conformite'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { shouldSnapshotOnChange, usesConformiteEntity } from '@/lib/conformite-config'
@@ -82,6 +82,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
   if (!ref || !(CONFORMITE_STATUTS as string[]).includes(statut)) {
     return NextResponse.json({ error: 'Requête invalide (ref/statut)' }, { status: 400 })
   }
+  // Commentaire et traitement de l'écart (optionnels). `null` = retrait explicite.
+  const commentaire = typeof body?.commentaire === 'string' ? body.commentaire
+    : body?.commentaire === null ? null : undefined
+  const traitement = (CONFORMITE_TRAITEMENTS as string[]).includes(body?.traitement) ? body.traitement as ConformiteTraitement
+    : body?.traitement === null ? null : undefined
   const locale = await getServerLocale()
   const controles = await getExigencesFor(referentiel, orgId, locale)
   if (!new Set(controles.map(c => c.ref)).has(ref)) {
@@ -89,7 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
   }
 
   const conf = await getOrCreate(orgId, referentiel, entite)
-  const updated = applyConformiteStatut(sanitizeConformite(conf.entries), ref, statut)
+  const updated = applyConformiteEntry(sanitizeConformite(conf.entries), ref, { statut, commentaire, traitement })
   await prisma.conformite.update({ where: { id: conf.id }, data: { entries: updated as unknown as object } })
   if (shouldSnapshotOnChange(orgConfig.conformiteSnapshotMode)) {
     await prisma.conformiteSnapshot.create({ data: { conformiteId: conf.id, entries: updated as unknown as object, createdById: userId } })
