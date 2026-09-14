@@ -3484,6 +3484,7 @@ export const es: Translations = {
     legendPlan: 'Plan de acción',
     legendPartiel2: 'Parcial',
     legendReste: 'Restante',
+    trendTitle: 'Historial y tendencia',
     donutTitle: 'Conformidad global (todos los marcos)',
     donutHint: 'conforme',
     cellTip: '{evalues} control(es) evaluado(s) de {total}',

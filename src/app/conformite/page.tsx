@@ -12,6 +12,8 @@ import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
 import ConformiteGauges from '@/components/ConformiteGauges'
+import ConformiteGlobalTrend from '@/components/ConformiteGlobalTrend'
+import { globalConformiteTrend } from '@/lib/conformite-trend'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,7 +35,11 @@ export default async function ConformiteGlobalPage() {
   // Entités de conformité des organisations visibles (ou toutes en mono-organisation).
   const confs = await prisma.conformite.findMany({
     where: visibleOrgIds.length > 0 ? { organizationId: { in: visibleOrgIds } } : {},
-    select: { organizationId: true, referentiel: true, entries: true, organization: { select: { nom: true, path: true } } },
+    select: {
+      organizationId: true, referentiel: true, entries: true, updatedAt: true,
+      organization: { select: { nom: true, path: true } },
+      snapshots: { select: { entries: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+    },
   })
 
   // Nœuds d'organisation (id, path, nom) — dédupliqués.
@@ -78,6 +84,16 @@ export default async function ConformiteGlobalPage() {
     partielNet: a.partielNet + c.partielNet,
   }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0, couvDerog: 0, couvAccept: 0, couvPlan: 0, partielNet: 0 })
   const gPert = g.conforme + g.partiel + g.nonConforme + g.deroge
+
+  // Tendance globale (as-of) : timeline de chaque suivi = ses snapshots + son état
+  // courant, agrégés par date. pertinents = conforme + partiel + non conforme + dérogé.
+  const pointOf = (entries: unknown, date: Date) => {
+    const s = conformiteStats(sanitizeConformite(entries), 0)
+    return { date, conforme: s.conforme, pertinents: s.conforme + s.partiel + s.nonConforme + s.deroge }
+  }
+  const trend = globalConformiteTrend(confs.map(cf => ({
+    points: [...cf.snapshots.map(sn => pointOf(sn.entries, sn.createdAt)), pointOf(cf.entries, cf.updatedAt)],
+  })))
 
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
   // catalogue unifié (union des orgs visibles), avec repli sur le code.
@@ -132,6 +148,7 @@ export default async function ConformiteGlobalPage() {
                 legendPartiel: t.conformiteGlobal.legendPartiel2, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
+            <ConformiteGlobalTrend points={trend} locale={locale} title={t.conformiteGlobal.trendTitle} />
           </div>
         )}
 

@@ -3533,6 +3533,7 @@ export const fr = {
     legendPlan: 'Plan d\'action',
     legendPartiel2: 'Partiel',
     legendReste: 'Restant',
+    trendTitle: 'Historique & tendance',
     donutTitle: 'Conformité globale (tous référentiels)',
     donutHint: 'conforme',
     cellTip: '{evalues} contrôle(s) évalué(s) sur {total}',

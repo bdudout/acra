@@ -3484,6 +3484,7 @@ export const en: Translations = {
     legendPlan: 'Action plan',
     legendPartiel2: 'Partial',
     legendReste: 'Remaining',
+    trendTitle: 'History & trend',
     donutTitle: 'Overall compliance (all frameworks)',
     donutHint: 'compliant',
     cellTip: '{evalues} control(s) assessed out of {total}',

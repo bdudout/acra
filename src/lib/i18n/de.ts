@@ -3484,6 +3484,7 @@ export const de: Translations = {
     legendPlan: 'Maßnahmenplan',
     legendPartiel2: 'Teilweise',
     legendReste: 'Verbleibend',
+    trendTitle: 'Verlauf & Trend',
     donutTitle: 'Gesamtkonformität (alle Rahmenwerke)',
     donutHint: 'konform',
     cellTip: '{evalues} von {total} Kontrolle(n) bewertet',
