@@ -2,6 +2,19 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import VersionCard from '@/components/VersionCard'
 
+vi.mock('@/lib/i18n/context', () => ({
+  useTranslation: () => ({
+    t: {
+      version: {
+        title: 'Version & mises à jour', installed: 'Version installée :', check: 'Vérifier', checking: 'Vérification…',
+        unreachable: 'Vérification indisponible (GitHub injoignable).', updateAvailable: 'Mise à jour disponible :',
+        seeNotes: 'Voir les notes', upToDate: 'Application à jour.', upToDateWithLatest: 'Application à jour ({v}).',
+        notInstalled: 'note',
+      },
+    },
+  }),
+}))
+
 function mockFetchOnce(data: Record<string, unknown>) {
   global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => data }) as unknown as typeof fetch
 }
