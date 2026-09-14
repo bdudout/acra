@@ -8,7 +8,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { storageKeyFor } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
-import { getDocumentTemplate, templateFilename } from '@/lib/document-templates'
+import { getDocumentTemplate, templateFilename, DOCX_MIME } from '@/lib/document-templates'
+import { markdownToDocxBuffer } from '@/lib/markdown-docx'
 import { peutGererDocuments } from '../route'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -42,13 +43,14 @@ export async function POST(req: NextRequest) {
   if (existant) return NextResponse.json({ error: 'document_existant', existant }, { status: 409 })
 
   const id = randomUUID()
-  const bytes = Buffer.from(template.contenu, 'utf-8')
+  // Génère un vrai .docx (annexe joignable à un contrat) à partir du Markdown du modèle.
+  const bytes = await markdownToDocxBuffer(template.titre, template.contenu)
   const checksum = createHash('sha256').update(bytes).digest('hex')
   const fichierNom = templateFilename(template)
   const storageKey = storageKeyFor(orgId, id, fichierNom)
 
   const storage = await getDocumentStorage()
-  await storage.put(storageKey, bytes, 'text/markdown')
+  await storage.put(storageKey, bytes, DOCX_MIME)
 
   try {
     const created = await prisma.document.create({
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
         id, organizationId: orgId, uploadedBy: userId,
         titre: template.titre, type: template.type, portee: 'ORG',
         description: template.description,
-        fichierNom, mime: 'text/markdown', taille: bytes.length, checksum, storageKey,
+        fichierNom, mime: DOCX_MIME, taille: bytes.length, checksum, storageKey,
       },
     })
     await auditLog('ORGANIZATION_CONFIG_UPDATED', {
