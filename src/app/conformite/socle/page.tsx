@@ -8,7 +8,7 @@ import { getServerT, getServerLocale } from '@/lib/i18n'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
-import { isOrgLevelConformite } from '@/lib/conformite-config'
+import { usesConformiteEntity, isEntiteLevelConformite } from '@/lib/conformite-config'
 import { listReferentiels } from '@/lib/referentiel.server'
 import OrgConformiteEditor from '@/components/OrgConformiteEditor'
 
@@ -40,7 +40,8 @@ export default async function ConformiteSoclePage() {
     .filter(r => r.actif && r.code !== 'CUSTOM')
     .map(r => ({ code: r.code, nom: r.nom }))
 
-  const applicable = cfg.conformiteActive && isOrgLevelConformite(cfg.conformiteNiveau)
+  const applicable = cfg.conformiteActive && usesConformiteEntity(cfg.conformiteNiveau)
+  const multiSuivi = isEntiteLevelConformite(cfg.conformiteNiveau)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,6 +73,7 @@ export default async function ConformiteSoclePage() {
                 orgNom={org?.nom ?? '—'}
                 referentiels={referentiels}
                 initialRef={referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001' : referentiels[0].code}
+                multiSuivi={multiSuivi}
               />
             </>
           )}

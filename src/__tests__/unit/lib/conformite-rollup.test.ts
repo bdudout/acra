@@ -43,6 +43,21 @@ describe('rollupConformiteTree', () => {
     expect(r.g.ISO27001.evalues).toBe(3)
   })
 
+  it('met en commun plusieurs suivis (socle org-wide + entités) d\'un même org × référentiel', () => {
+    // Multi-suivis (portée ENTITE) : le dashboard émet une cellule par suivi
+    // pour la MÊME organisation. Le roll-up doit les mettre en commun (comme il
+    // le fait pour des sous-organisations) et ne compter l'org qu'une fois.
+    const cells: RollupConfInput[] = [
+      { organizationId: 'g', referentiel: 'ISO27001', conforme: 6, partiel: 0, nonConforme: 0, na: 0, total: 93 }, // socle org-wide
+      { organizationId: 'g', referentiel: 'ISO27001', conforme: 2, partiel: 1, nonConforme: 1, na: 0, total: 93 }, // suivi entité A
+    ]
+    const r = rollupConformiteTree(orgs, cells)
+    // Pool : conforme 8, pertinents 10 → 80% ; total commun conservé (max, pas la somme).
+    expect(r.g.ISO27001).toMatchObject({ conforme: 8, partiel: 1, nonConforme: 1, taux: 80, total: 93 })
+    // Une seule organisation contribue, même avec deux suivis.
+    expect(r.g.ISO27001.orgCount).toBe(1)
+  })
+
   it('ignore les cellules d\'organisations inconnues', () => {
     const r = rollupConformiteTree(orgs, [
       { organizationId: 'inconnu', referentiel: 'ISO27001', conforme: 9, partiel: 0, nonConforme: 0, na: 0, total: 93 },

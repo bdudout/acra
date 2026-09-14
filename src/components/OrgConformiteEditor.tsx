@@ -15,15 +15,21 @@ import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/
 
 interface RefOpt { code: string; nom: string }
 
-export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef }: {
+export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false }: {
   orgId: string
   orgNom: string
   referentiels: RefOpt[]
   initialRef: string
+  /** Portée ENTITE : plusieurs suivis nommés par référentiel. */
+  multiSuivi?: boolean
 }) {
   const { t, locale } = useTranslation()
   const c = t.conformiteSocle
   const [ref, setRef] = useState(initialRef)
+  // Suivi ciblé : '' = org-wide ; sinon libellé d'entité/socle (multi-suivis).
+  const [entite, setEntite] = useState('')
+  const [suivis, setSuivis] = useState<{ entite: string; nom: string | null; taux: number }[]>([])
+  const [newSuivi, setNewSuivi] = useState('')
   const [entries, setEntries] = useState<ConformiteEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [savedAt, setSavedAt] = useState<number | null>(null)
@@ -39,32 +45,46 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   const [controles, setControles] = useState<FrameworkControl[]>([])
   const stats = useMemo(() => conformiteStats(entries, controles.length), [entries, controles.length])
 
+  // Changer de référentiel repart sur le suivi org-wide.
+  useEffect(() => { setEntite('') }, [ref])
+
   useEffect(() => {
     let annule = false
     setLoading(true); setError(null)
+    const qs = `referentiel=${encodeURIComponent(ref)}&entite=${encodeURIComponent(entite)}`
     Promise.all([
-      fetch(`/api/organizations/${orgId}/conformite?referentiel=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/organizations/${orgId}/conformite?${qs}`).then(r => r.ok ? r.json() : null),
       fetch(`/api/referentiels/exigences?code=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
       fetch(`/api/organizations/${orgId}/conformite/import?referentiel=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/organizations/${orgId}/conformite/suivis?referentiel=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
     ])
-      .then(([conf, exi, imp]) => {
+      .then(([conf, exi, imp, sv]) => {
         if (annule) return
         setEntries(Array.isArray(conf?.entries) ? conf.entries : [])
         setControles(Array.isArray(exi?.exigences) ? exi.exigences.map((e: { ref: string; nom: string; categorie?: string }) => ({ ref: e.ref, nom: e.nom, categorie: e.categorie })) : [])
         setAnalysesDispo(Array.isArray(imp?.analyses) ? imp.analyses : [])
+        setSuivis(Array.isArray(sv?.suivis) ? sv.suivis : [])
         setImportFrom('')
       })
       .catch(() => { if (!annule) setError(c.loadError) })
       .finally(() => { if (!annule) setLoading(false) })
     return () => { annule = true }
-  }, [orgId, ref, reloadKey, c.loadError])
+  }, [orgId, ref, entite, reloadKey, c.loadError])
+
+  function creerSuivi() {
+    const nom = newSuivi.trim().slice(0, 80)
+    if (!nom) return
+    // Optimiste : ajoute le suivi à la liste et bascule dessus (créé en base au 1er contrôle coté).
+    setSuivis(s => s.some(x => x.entite === nom) ? s : [...s, { entite: nom, nom, taux: 0 }])
+    setNewSuivi(''); setEntite(nom)
+  }
 
   async function reprendreAnalyse() {
     if (!importFrom) return
     setImporting(true); setError(null)
     const res = await fetch(`/api/organizations/${orgId}/conformite/import`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referentiel: ref, analyseId: importFrom }),
+      body: JSON.stringify({ referentiel: ref, entite, analyseId: importFrom }),
     })
     setImporting(false)
     if (!res.ok) { setError(c.saveError); return }
@@ -75,7 +95,7 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   async function persist(controleRef: string, statut: ConformiteStatut) {
     const res = await fetch(`/api/organizations/${orgId}/conformite`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referentiel: ref, ref: controleRef, statut }),
+      body: JSON.stringify({ referentiel: ref, entite, ref: controleRef, statut }),
     })
     if (!res.ok) { setError(c.saveError); return }
     setSavedAt(Date.now())
@@ -94,7 +114,7 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
     setSnapshotting(true); setError(null)
     const res = await fetch(`/api/organizations/${orgId}/conformite`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referentiel: ref, label: new Date().toLocaleDateString(locale) }),
+      body: JSON.stringify({ referentiel: ref, entite, label: new Date().toLocaleDateString(locale) }),
     })
     setSnapshotting(false)
     if (res.ok) setSavedAt(Date.now()); else setError(c.saveError)
@@ -120,6 +140,29 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
           </button>
         </div>
       </div>
+
+      {/* Sélecteur de suivi (portée ENTITE : plusieurs suivis nommés par référentiel) */}
+      {multiSuivi && (
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+          <label className="text-xs text-gray-500">
+            <span className="block font-medium mb-1">{c.suiviLabel}</span>
+            <select value={entite} onChange={e => setEntite(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[14rem]">
+              <option value="">{c.suiviOrg}</option>
+              {suivis.filter(s => s.entite).map(s => (
+                <option key={s.entite} value={s.entite}>{(s.nom || s.entite)} — {s.taux}%</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500 flex-1 min-w-[12rem]">
+            <span className="block font-medium mb-1">{c.suiviNew}</span>
+            <div className="flex gap-2">
+              <input value={newSuivi} onChange={e => setNewSuivi(e.target.value)} placeholder={c.suiviNewPh}
+                className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 flex-1" />
+              <button onClick={creerSuivi} disabled={!newSuivi.trim()} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50">{c.suiviAdd}</button>
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Bandeau d'avancement */}
       <div className="flex flex-wrap items-center gap-4 text-sm rounded-lg border border-gray-200 bg-white px-4 py-2.5">

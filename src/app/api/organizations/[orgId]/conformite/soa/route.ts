@@ -34,6 +34,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
     return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
   }
+  // Suivi ciblé : "" (socle org-wide, défaut) ou un libellé d'entité/socle.
+  const entite = (new URL(req.url).searchParams.get('entite') ?? '').trim().slice(0, 80)
 
   const t = await getServerT()
   const locale = await getServerLocale()
@@ -41,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const statutLabels = t.conformite.statuts as Record<string, string>
 
   const conf = await prisma.conformite.findUnique({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
     select: { entries: true, updatedAt: true, organization: { select: { nom: true } } },
   })
   const entries = sanitizeConformite(conf?.entries)

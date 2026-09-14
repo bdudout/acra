@@ -3404,6 +3404,11 @@ export const de: Translations = {
     notEvaluated: 'Nicht bewertet',
   },
   conformiteSocle: {
+    suiviLabel: 'Verfolgung',
+    suiviOrg: 'Organisation (globale Basis)',
+    suiviNew: 'Neue Verfolgung (Einheit / Basis)',
+    suiviNewPh: 'z. B. Tochter X, Gruppenbasis…',
+    suiviAdd: 'Erstellen',
     importLabel: 'Konformität aus einer Analyse übernehmen:',
     importSelect: 'Analyse wählen…',
     importBtn: 'Übernehmen',

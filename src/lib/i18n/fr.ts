@@ -3453,6 +3453,11 @@ export const fr = {
     notEvaluated: 'Non évalué',
   },
   conformiteSocle: {
+    suiviLabel: 'Suivi',
+    suiviOrg: 'Organisation (socle global)',
+    suiviNew: 'Nouveau suivi (entité / socle)',
+    suiviNewPh: 'Ex. Filiale X, Socle groupe…',
+    suiviAdd: 'Créer',
     importLabel: 'Reprendre la conformité d’une analyse :',
     importSelect: 'Choisir une analyse…',
     importBtn: 'Reprendre',

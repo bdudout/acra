@@ -12,7 +12,7 @@ import { Prisma } from '@prisma/client'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
-import { isOrgLevelConformite } from '@/lib/conformite-config'
+import { usesConformiteEntity } from '@/lib/conformite-config'
 import { sanitizeConformite } from '@/lib/conformite'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +32,7 @@ async function guard(orgId: string) {
   if (!canManage(role)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return { error: NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 }) }
-  if (!isOrgLevelConformite(cfg.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
+  if (!usesConformiteEntity(cfg.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
   return { userId, role }
 }
 
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const body = await req.json().catch(() => ({}))
   const referentiel = typeof body?.referentiel === 'string' ? body.referentiel.trim() : ''
   const analyseId = typeof body?.analyseId === 'string' ? body.analyseId : ''
+  const entite = typeof body?.entite === 'string' ? body.entite.trim().slice(0, 80) : ''
   if (!referentiel || referentiel === 'CUSTOM' || !analyseId) return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
 
   const analyse = await prisma.analyse.findFirst({
@@ -74,8 +75,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (entries.length === 0) return NextResponse.json({ error: 'Aucune conformité à reprendre' }, { status: 400 })
 
   await prisma.conformite.upsert({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
-    create: { organizationId: orgId, referentiel, entite: '', entries: entries as unknown as Prisma.InputJsonValue },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
+    create: { organizationId: orgId, referentiel, entite, nom: entite || null, entries: entries as unknown as Prisma.InputJsonValue },
     update: { entries: entries as unknown as Prisma.InputJsonValue },
   })
   return NextResponse.json({ ok: true, imported: entries.length })

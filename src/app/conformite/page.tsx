@@ -8,7 +8,7 @@ import { getServerT, getServerLocale } from '@/lib/i18n'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
-import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
 
@@ -44,23 +44,34 @@ export default async function ConformiteGlobalPage() {
   }
   const orgs = [...orgMap.values()]
 
-  // Cellules (stats par org × référentiel) pour le roll-up.
-  const totalByRef = new Map<string, number>()
-  const totalFor = (ref: string) => {
-    if (!totalByRef.has(ref)) totalByRef.set(ref, getFrameworkControles(ref as FrameworkId, undefined, locale).length)
-    return totalByRef.get(ref)!
+  // Cellules (stats par org × référentiel) pour le roll-up. Le total est résolu
+  // par le résolveur unifié (livré cyber + GRC + custom), comme l'éditeur de socle.
+  // Custom = dépend de l'org → cache par (orgId, référentiel). Plusieurs suivis
+  // (org-wide + entités) d'un même org×référentiel sont mis en commun par le roll-up.
+  const totalByOrgRef = new Map<string, number>()
+  const totalFor = async (orgId: string, ref: string) => {
+    const key = `${orgId}|${ref}`
+    if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
+    return totalByOrgRef.get(key)!
   }
-  const cells: RollupConfInput[] = confs.map(c => {
-    const s = conformiteStats(sanitizeConformite(c.entries), totalFor(c.referentiel))
+  const cells: RollupConfInput[] = await Promise.all(confs.map(async c => {
+    const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
     return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, total: s.total }
-  })
+  }))
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
-  // Référentiels présents (colonnes), triés par nom.
-  const refIds = [...new Set(confs.map(c => c.referentiel))]
-  const refs: HeatmapRef[] = refIds
-    .map(id => ({ id, nom: FRAMEWORK_META[id as FrameworkId]?.nom ?? id }))
+  // Référentiels présents (colonnes), triés par nom — noms résolus via le
+  // catalogue unifié (union des orgs visibles), avec repli sur le code.
+  const refIds = new Set(confs.map(c => c.referentiel))
+  const nomByCode = new Map<string, string>()
+  for (const o of orgs) {
+    for (const r of await listReferentiels(o.id, locale)) {
+      if (refIds.has(r.code)) nomByCode.set(r.code, r.nom)
+    }
+  }
+  const refs: HeatmapRef[] = [...refIds]
+    .map(id => ({ id, nom: nomByCode.get(id) ?? id }))
     .sort((a, b) => a.nom.localeCompare(b.nom))
 
   // Lignes = organisations ayant des données dans leur sous-arbre, ordre arbre (path).

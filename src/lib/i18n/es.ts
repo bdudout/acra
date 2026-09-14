@@ -3404,6 +3404,11 @@ export const es: Translations = {
     notEvaluated: 'No evaluado',
   },
   conformiteSocle: {
+    suiviLabel: 'Seguimiento',
+    suiviOrg: 'Organización (base global)',
+    suiviNew: 'Nuevo seguimiento (entidad / base)',
+    suiviNewPh: 'Ej. Filial X, Base del grupo…',
+    suiviAdd: 'Crear',
     importLabel: 'Reutilizar la conformidad de un análisis:',
     importSelect: 'Elegir un análisis…',
     importBtn: 'Reutilizar',

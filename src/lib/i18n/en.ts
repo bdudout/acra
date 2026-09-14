@@ -3404,6 +3404,11 @@ export const en: Translations = {
     notEvaluated: 'Not evaluated',
   },
   conformiteSocle: {
+    suiviLabel: 'Track',
+    suiviOrg: 'Organization (global baseline)',
+    suiviNew: 'New track (entity / baseline)',
+    suiviNewPh: 'e.g. Subsidiary X, Group baseline…',
+    suiviAdd: 'Create',
     importLabel: 'Reuse compliance from an analysis:',
     importSelect: 'Choose an analysis…',
     importBtn: 'Reuse',
