@@ -117,6 +117,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ org
 }
 
 /**
+ * DELETE /api/organizations/[orgId]/conformite?referentiel=X&entite=Y — ARRÊTE le
+ * suivi de conformité (supprime le suivi + ses snapshots par cascade). Réservé aux
+ * rôles de gouvernance ; sans effet si le suivi n'existe pas.
+ */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  const { orgId } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const userId = (session.user as any).id
+  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  const userRole = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
+  if (!userRole) return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
+  if (!canManageOrgConformite(userRole)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+
+  const sp = new URL(req.url).searchParams
+  const referentiel = (sp.get('referentiel') ?? '').trim()
+  const entite = cleanEntite(sp.get('entite'))
+  if (!referentiel || referentiel === 'CUSTOM') return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
+
+  await prisma.conformite.deleteMany({ where: { organizationId: orgId, referentiel, entite } })
+  return NextResponse.json({ ok: true })
+}
+
+/**
  * GET /api/organizations/[orgId]/conformite?referentiel=ISO27001 — état courant +
  * historique des snapshots (avec taux calculé). Lecture : utilisateur authentifié
  * dont le périmètre couvre l'organisation.

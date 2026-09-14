@@ -55,7 +55,7 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
           <tr>
             <th className="text-left px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">{orgCol}</th>
             {refs.map(r => (
-              <th key={r.id} className="px-2 py-1 text-xs font-semibold text-gray-500 text-center min-w-[80px]">{r.nom}</th>
+              <th key={r.id} style={{ width: 108 }} className="px-2 py-1 text-xs font-semibold text-gray-500 text-center align-bottom whitespace-normal leading-tight">{r.nom}</th>
             ))}
           </tr>
         </thead>
@@ -69,7 +69,7 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
               {refs.map(r => {
                 const c = row.cells[r.id]
                 return (
-                  <td key={r.id} className="text-center align-top px-1 py-1">
+                  <td key={r.id} style={{ width: 108 }} className="text-center align-top px-1 py-1">
                     {c ? (
                       <div className="inline-flex flex-col items-center gap-1">
                         {/* Toute la pastille est cliquable (ouvre le socle) */}

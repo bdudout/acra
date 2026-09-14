@@ -11,7 +11,7 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
-import ConformiteDonut from '@/components/ConformiteDonut'
+import ConformiteGauges from '@/components/ConformiteGauges'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -55,20 +55,20 @@ export default async function ConformiteGlobalPage() {
     if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
     return totalByOrgRef.get(key)!
   }
-  const cells: RollupConfInput[] = await Promise.all(confs.map(async c => {
+  const cells: (RollupConfInput & { deroge: number })[] = await Promise.all(confs.map(async c => {
     const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
-    return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, total: s.total }
+    return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, deroge: s.deroge, total: s.total }
   }))
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
-  // Répartition globale (camembert) : somme de tous les suivis de conformité.
+  // Répartition globale (cadrans) : somme de tous les suivis de conformité,
+  // avec le bucket « dérogé » (risques formellement acceptés) pour les cadrans
+  // « avec dérogations » et « cible ».
   const g = cells.reduce((a, c) => ({
     conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
-    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na,
-  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0 })
-  const gPertinents = g.conforme + g.partiel + g.nonConforme
-  const gTaux = gPertinents > 0 ? Math.round((g.conforme / gPertinents) * 100) : 0
+    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na, deroge: a.deroge + c.deroge,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0 })
 
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
   // catalogue unifié (union des orgs visibles), avec repli sur le code.
@@ -110,15 +110,15 @@ export default async function ConformiteGlobalPage() {
 
         {rows.length > 0 && (
           <div className="card p-5 mb-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.conformiteGlobal.donutTitle}</h2>
-            <ConformiteDonut
-              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} taux={gTaux}
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">{t.conformiteGlobal.donutTitle}</h2>
+            <ConformiteGauges
+              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} deroge={g.deroge}
               labels={{
-                conforme: t.conformite.statuts.conforme,
-                partiel: t.conformite.statuts.partiel,
-                nonConforme: t.conformite.statuts.non_conforme,
-                na: t.conformite.statuts.na,
-                centerHint: t.conformiteGlobal.donutHint,
+                actuelle: t.conformiteGlobal.gaugeActuelle, actuelleHint: t.conformiteGlobal.gaugeActuelleHint,
+                avecDerog: t.conformiteGlobal.gaugeDerog, avecDerogHint: t.conformiteGlobal.gaugeDerogHint,
+                cible: t.conformiteGlobal.gaugeCible, cibleHint: t.conformiteGlobal.gaugeCibleHint,
+                legendConforme: t.conformiteGlobal.legendConforme, legendDeroge: t.conformiteGlobal.legendDeroge,
+                legendPartiel: t.conformiteGlobal.legendPartiel, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
           </div>

@@ -58,7 +58,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const stats = conformiteStats(entries, controles.length)
 
   const orgNom = conf?.organization?.nom ?? orgId
-  const frameworkNom = refMeta.nom
+  // Nom versionné (ex. « ISO/IEC 27001 (2022) », « PCI-DSS (v4.0.1) ») pour un
+  // livrable non ambigu.
+  const frameworkNom = refMeta.version ? `${refMeta.nom} (${refMeta.version})` : refMeta.nom
   const stamp = new Date().toISOString().slice(0, 10)
   const safeBase = `soa-${orgNom}-${referentiel}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'soa'
   const format = new URL(req.url).searchParams.get('format')

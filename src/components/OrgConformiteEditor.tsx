@@ -7,7 +7,7 @@
 // grille ConformiteGrid + l'API /api/organizations/[orgId]/conformite.
 
 import { useEffect, useMemo, useState } from 'react'
-import { ShieldCheck, Save, CheckCircle2 } from 'lucide-react'
+import { ShieldCheck, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import type { FrameworkControl } from '@/lib/frameworks-data'
@@ -110,6 +110,16 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
     }
   }
 
+  async function arreterSuivi() {
+    const suffix = entite ? ` — ${entite}` : ''
+    if (!confirm(c.stopConfirm.replace('{ref}', ref).replace('{suffix}', suffix))) return
+    setError(null)
+    const qs = `referentiel=${encodeURIComponent(ref)}&entite=${encodeURIComponent(entite)}`
+    const res = await fetch(`/api/organizations/${orgId}/conformite?${qs}`, { method: 'DELETE' })
+    if (!res.ok) { setError(c.saveError); return }
+    setEntite(''); setEntries([]); setSavedAt(null); setReloadKey(k => k + 1)
+  }
+
   async function figerVersion() {
     setSnapshotting(true); setError(null)
     const res = await fetch(`/api/organizations/${orgId}/conformite`, {
@@ -138,6 +148,12 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
             className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 inline-flex items-center gap-1.5" title={c.snapshotHint}>
             <Save size={14} aria-hidden="true" /> {snapshotting ? c.snapshotting : c.snapshot}
           </button>
+          {stats.evalues > 0 && (
+            <button onClick={arreterSuivi}
+              className="text-sm py-1.5 px-3 inline-flex items-center gap-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10">
+              <Trash2 size={14} aria-hidden="true" /> {c.stopBtn}
+            </button>
+          )}
         </div>
       </div>
 
