@@ -164,8 +164,11 @@ describe('recommendedFrameworksForSector', () => {
     const ictEn = en.find(c => c.ref === 'DORA-ICT-1')!
     const ictDe = de.find(c => c.ref === 'DORA-ICT-1')!
     expect(ictEn.nom).not.toBe(ictFr.nom)
-    expect(ictEn.nom.toLowerCase()).toContain('risk')
+    // DORA-ICT-1 (art. 5) porte sur la gouvernance de l'organe de direction.
+    expect(ictEn.nom.toLowerCase()).toContain('governance')
     expect(ictDe.nom).not.toBe(ictFr.nom)
+    // Un contrôle traduit contenant « risk » côté EN (cadre de risque ICT, art. 6).
+    expect(en.find(c => c.ref === 'DORA-ICT-2')!.nom.toLowerCase()).toContain('risk')
   })
   it('getFrameworkControles sans locale reste en français (back-compat)', () => {
     expect(getFrameworkControles('SOC2')[0].nom).toBe(getFrameworkControles('SOC2', undefined, 'fr')[0].nom)
