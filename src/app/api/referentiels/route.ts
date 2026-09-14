@@ -13,9 +13,11 @@ import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-// Le socle référentiels relève de la gouvernance (RSSI / conformité / risques).
+// Le socle de référentiels & exigences n'est modifiable que par un ADMIN de
+// l'organisation (création, édition, activation/désactivation). Les autres rôles
+// le consultent en lecture.
 export function peutGererReferentiels(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
+  return isAdminRole(role)
 }
 
 async function ctx(session: { user: { id: string; role?: string } }) {

@@ -102,6 +102,7 @@ export const fr = {
 
   // ─── Page Tiers (écosystème agrégé) ───────────────────────────────────────
   tiers: {
+    cartoLink: 'Cartographie de l’écosystème',
     title:        'Tiers',
     subtitle:     'Parties prenantes (écosystème) identifiées dans vos analyses de risque',
     zoneLabel:    'Zone',
@@ -3452,6 +3453,10 @@ export const fr = {
     notEvaluated: 'Non évalué',
   },
   conformiteSocle: {
+    importLabel: 'Reprendre la conformité d’une analyse :',
+    importSelect: 'Choisir une analyse…',
+    importBtn: 'Reprendre',
+    importing: 'Reprise…',
     title: 'Socle de conformité de l’organisation',
     subtitle: 'Renseignez la conformité de référence de « {org} » par référentiel. Elle alimente les analyses et les tableaux de bord.',
     referentiel: 'Référentiel',
@@ -3464,6 +3469,8 @@ export const fr = {
     saveError: 'Enregistrement impossible.',
     nonApplicable: 'La conformité n’est pas portée au niveau organisation. Choisissez « Par organisation » dans la configuration pour éditer un socle.',
     aucunReferentiel: 'Aucun référentiel actif. Activez au moins un référentiel dans la bibliothèque.',
+    customNote: 'Vous pouvez évaluer un référentiel livré ou un référentiel personnalisé. Pour un référentiel personnalisé, créez-le d’abord dans « Référentiels & exigences ».',
+    customNoteLink: 'Gérer les référentiels',
   },
   conformiteGlobal: {
     editSocle: 'Renseigner le socle',

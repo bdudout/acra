@@ -11,6 +11,7 @@ import {
 import { getOrgConfig } from '@/lib/org-config.server'
 import { shouldSnapshotOnChange, isOrgLevelConformite } from '@/lib/conformite-config'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { getExigencesFor } from '@/lib/referentiel.server'
 import { getServerLocale } from '@/lib/i18n'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
@@ -41,7 +42,7 @@ async function guard(req: NextRequest, orgId: string) {
 
   const body = await req.json().catch(() => null)
   const referentiel = String(body?.referentiel ?? '').trim()
-  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
+  if (!referentiel || referentiel === 'CUSTOM') {
     return { error: NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 }) }
   }
   return { userId, userRole, orgConfig, body, referentiel }
@@ -74,7 +75,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
     return NextResponse.json({ error: 'Requête invalide (ref/statut)' }, { status: 400 })
   }
   const locale = await getServerLocale()
-  const controles = getFrameworkControles(referentiel as FrameworkId, undefined, locale)
+  const controles = await getExigencesFor(referentiel, orgId, locale)
   if (!new Set(controles.map(c => c.ref)).has(ref)) {
     return NextResponse.json({ error: 'Contrôle inconnu du référentiel' }, { status: 400 })
   }
@@ -126,11 +127,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   }
 
   const referentiel = new URL(req.url).searchParams.get('referentiel') ?? ''
-  if (!referentiel || !(referentiel in FRAMEWORK_META) || referentiel === 'CUSTOM') {
+  if (!referentiel || referentiel === 'CUSTOM') {
     return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
   }
   const locale = await getServerLocale()
-  const total = getFrameworkControles(referentiel as FrameworkId, undefined, locale).length
+  const total = (await getExigencesFor(referentiel, orgId, locale)).length
 
   const conf = await prisma.conformite.findUnique({
     where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },

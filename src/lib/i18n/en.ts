@@ -101,6 +101,7 @@ export const en: Translations = {
 
   // ─── Third parties page (aggregated ecosystem) ────────────────────────────
   tiers: {
+    cartoLink: 'Ecosystem map',
     title:        'Third parties',
     subtitle:     'Stakeholders (ecosystem) identified across your risk analyses',
     zoneLabel:    'Zone',
@@ -3403,6 +3404,10 @@ export const en: Translations = {
     notEvaluated: 'Not evaluated',
   },
   conformiteSocle: {
+    importLabel: 'Reuse compliance from an analysis:',
+    importSelect: 'Choose an analysis…',
+    importBtn: 'Reuse',
+    importing: 'Importing…',
     title: 'Organization compliance baseline',
     subtitle: 'Fill in the reference compliance of “{org}” per framework. It feeds analyses and dashboards.',
     referentiel: 'Framework',
@@ -3415,6 +3420,8 @@ export const en: Translations = {
     saveError: 'Unable to save.',
     nonApplicable: 'Compliance is not managed at organization level. Choose “By organization” in the configuration to edit a baseline.',
     aucunReferentiel: 'No active framework. Enable at least one framework in the library.',
+    customNote: 'You can assess a built-in framework or a custom one. For a custom framework, create it first in “Frameworks & requirements”.',
+    customNoteLink: 'Manage frameworks',
   },
   conformiteGlobal: {
     editSocle: 'Fill the baseline',

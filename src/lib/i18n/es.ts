@@ -101,6 +101,7 @@ export const es: Translations = {
 
   // ─── Página Terceros (ecosistema agregado) ────────────────────────────────
   tiers: {
+    cartoLink: 'Mapa del ecosistema',
     title:        'Terceros',
     subtitle:     'Partes interesadas (ecosistema) identificadas en sus análisis de riesgo',
     zoneLabel:    'Zona',
@@ -3403,6 +3404,10 @@ export const es: Translations = {
     notEvaluated: 'No evaluado',
   },
   conformiteSocle: {
+    importLabel: 'Reutilizar la conformidad de un análisis:',
+    importSelect: 'Elegir un análisis…',
+    importBtn: 'Reutilizar',
+    importing: 'Importando…',
     title: 'Base de conformidad de la organización',
     subtitle: 'Complete la conformidad de referencia de «{org}» por marco. Alimenta los análisis y los paneles.',
     referentiel: 'Marco',
@@ -3415,6 +3420,8 @@ export const es: Translations = {
     saveError: 'No se puede guardar.',
     nonApplicable: 'La conformidad no se gestiona a nivel de organización. Elija «Por organización» en la configuración para editar una base.',
     aucunReferentiel: 'Ningún marco activo. Active al menos uno en la biblioteca.',
+    customNote: 'Puede evaluar un marco integrado o uno personalizado. Para un marco personalizado, créelo primero en «Marcos y requisitos».',
+    customNoteLink: 'Gestionar marcos',
   },
   conformiteGlobal: {
     editSocle: 'Completar la base',

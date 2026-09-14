@@ -283,6 +283,7 @@ export default async function AtelierPage({
                 conformiteSourceNom={confCtx.sourceNom}
                 conformitePortee={(analyse as any).conformitePortee ?? ''}
                 orgConformiteOrgScoped={usesConformiteEntity(orgConfig.conformiteNiveau)}
+                referentielsDesactives={orgConfig.referentielsDesactives}
               />
             )}
             {atelierNum === 2 && (

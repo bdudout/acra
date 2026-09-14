@@ -101,6 +101,7 @@ export const de: Translations = {
 
   // ─── Seite Dritte (aggregiertes Ökosystem) ────────────────────────────────
   tiers: {
+    cartoLink: 'Ökosystem-Karte',
     title:        'Dritte',
     subtitle:     'In Ihren Risikoanalysen identifizierte Stakeholder (Ökosystem)',
     zoneLabel:    'Zone',
@@ -3403,6 +3404,10 @@ export const de: Translations = {
     notEvaluated: 'Nicht bewertet',
   },
   conformiteSocle: {
+    importLabel: 'Konformität aus einer Analyse übernehmen:',
+    importSelect: 'Analyse wählen…',
+    importBtn: 'Übernehmen',
+    importing: 'Übernahme…',
     title: 'Compliance-Basis der Organisation',
     subtitle: 'Erfassen Sie die Referenz-Compliance von „{org}“ je Rahmenwerk. Sie speist Analysen und Dashboards.',
     referentiel: 'Rahmenwerk',
@@ -3415,6 +3420,8 @@ export const de: Translations = {
     saveError: 'Speichern nicht möglich.',
     nonApplicable: 'Compliance wird nicht auf Organisationsebene geführt. Wählen Sie „Pro Organisation“ in der Konfiguration, um eine Basis zu bearbeiten.',
     aucunReferentiel: 'Kein aktives Rahmenwerk. Aktivieren Sie mindestens eines in der Bibliothek.',
+    customNote: 'Sie können ein integriertes oder ein eigenes Rahmenwerk bewerten. Erstellen Sie ein eigenes zuerst unter „Rahmenwerke & Anforderungen“.',
+    customNoteLink: 'Rahmenwerke verwalten',
   },
   conformiteGlobal: {
     editSocle: 'Basis erfassen',

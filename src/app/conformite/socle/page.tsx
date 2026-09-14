@@ -9,8 +9,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { isOrgLevelConformite } from '@/lib/conformite-config'
-import { referentielsDesactivesForOrg } from '@/lib/referentiel.server'
-import { FRAMEWORK_IDS, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
+import { listReferentiels } from '@/lib/referentiel.server'
 import OrgConformiteEditor from '@/components/OrgConformiteEditor'
 
 export const dynamic = 'force-dynamic'
@@ -33,11 +32,13 @@ export default async function ConformiteSoclePage() {
 
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
 
-  // Référentiels cyber livrés (FRAMEWORK_META), hors CUSTOM et hors désactivés pour l'org.
-  const desactives = await referentielsDesactivesForOrg(orgId)
-  const referentiels = (FRAMEWORK_IDS as readonly string[])
-    .filter(code => code !== 'CUSTOM' && !desactives.has(code))
-    .map(code => ({ code, nom: FRAMEWORK_META[code as FrameworkId]?.nom ?? code }))
+  // Référentiels ÉVALUABLES : tous les référentiels ACTIFS de l'org (livrés cyber +
+  // GRC + personnalisés), hors le placeholder CUSTOM. Un référentiel personnalisé
+  // doit d'abord être créé dans « Référentiels & exigences ».
+  const all = await listReferentiels(orgId, locale)
+  const referentiels = all
+    .filter(r => r.actif && r.code !== 'CUSTOM')
+    .map(r => ({ code: r.code, nom: r.nom }))
 
   const applicable = cfg.conformiteActive && isOrgLevelConformite(cfg.conformiteNiveau)
 
@@ -57,12 +58,22 @@ export default async function ConformiteSoclePage() {
           ) : referentiels.length === 0 ? (
             <div className="card p-6"><p className="text-gray-500 text-sm">{t.conformiteSocle.aucunReferentiel}</p></div>
           ) : (
-            <OrgConformiteEditor
-              orgId={orgId}
-              orgNom={org?.nom ?? '—'}
-              referentiels={referentiels}
-              initialRef={referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001' : referentiels[0].code}
-            />
+            <>
+              {isAdminRole(instanceRole) && (
+                <div className="card p-4 mb-4 border-l-4 border-l-ebios-300 bg-ebios-50/40">
+                  <p className="text-sm text-gray-700">{t.conformiteSocle.customNote}</p>
+                  <Link href="/referentiels" className="inline-block mt-1.5 text-sm font-medium text-ebios-600 hover:underline">
+                    {t.conformiteSocle.customNoteLink} →
+                  </Link>
+                </div>
+              )}
+              <OrgConformiteEditor
+                orgId={orgId}
+                orgNom={org?.nom ?? '—'}
+                referentiels={referentiels}
+                initialRef={referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001' : referentiels[0].code}
+              />
+            </>
           )}
         </div>
       </main>

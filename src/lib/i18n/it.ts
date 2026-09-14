@@ -101,6 +101,7 @@ export const it: Translations = {
 
   // ─── Pagina Terze parti (ecosistema aggregato) ────────────────────────────
   tiers: {
+    cartoLink: 'Mappa dell’ecosistema',
     title:        'Terze parti',
     subtitle:     'Parti interessate (ecosistema) identificate nelle tue analisi del rischio',
     zoneLabel:    'Zona',
@@ -3403,6 +3404,10 @@ export const it: Translations = {
     notEvaluated: 'Non valutato',
   },
   conformiteSocle: {
+    importLabel: 'Riprendi la conformità da un’analisi:',
+    importSelect: 'Scegli un’analisi…',
+    importBtn: 'Riprendi',
+    importing: 'Ripresa…',
     title: 'Base di conformità dell’organizzazione',
     subtitle: 'Compila la conformità di riferimento di «{org}» per framework. Alimenta analisi e dashboard.',
     referentiel: 'Framework',
@@ -3415,6 +3420,8 @@ export const it: Translations = {
     saveError: 'Impossibile salvare.',
     nonApplicable: 'La conformità non è gestita a livello di organizzazione. Scegli «Per organizzazione» nella configurazione per modificare una base.',
     aucunReferentiel: 'Nessun framework attivo. Attivane almeno uno nella libreria.',
+    customNote: 'Puoi valutare un framework integrato o uno personalizzato. Per un framework personalizzato, crealo prima in «Framework e requisiti».',
+    customNoteLink: 'Gestisci i framework',
   },
   conformiteGlobal: {
     editSocle: 'Compila la base',
