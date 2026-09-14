@@ -12,9 +12,10 @@ interface Point { id: string; label: string | null; createdAt: string; taux: num
  * (Palier 3). Chargé à la demande via GET /api/organizations/[orgId]/conformite.
  * Permet de figer une version (POST) si l'utilisateur a le droit.
  */
-export default function ConformiteHistory({ orgId, referentiel, locale, canEdit }: {
-  orgId: string; referentiel: string; locale: string; canEdit: boolean
+export default function ConformiteHistory({ orgId, referentiel, entite = '', locale, canEdit }: {
+  orgId: string; referentiel: string; entite?: string; locale: string; canEdit: boolean
 }) {
+  const qEntite = `&entite=${encodeURIComponent(entite)}`
   const { t } = useTranslation()
   const d = t.dashboard as unknown as Record<string, string>
   const [open, setOpen] = useState(false)
@@ -25,7 +26,7 @@ export default function ConformiteHistory({ orgId, referentiel, locale, canEdit 
   async function load() {
     setLoading(true)
     try {
-      const res = await fetch(`/api/organizations/${orgId}/conformite?referentiel=${encodeURIComponent(referentiel)}`)
+      const res = await fetch(`/api/organizations/${orgId}/conformite?referentiel=${encodeURIComponent(referentiel)}${qEntite}`)
       if (res.ok) setData(await res.json())
     } catch { /* silencieux */ } finally { setLoading(false) }
   }
@@ -43,7 +44,7 @@ export default function ConformiteHistory({ orgId, referentiel, locale, canEdit 
     try {
       const res = await fetch(`/api/organizations/${orgId}/conformite`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referentiel, label }),
+        body: JSON.stringify({ referentiel, entite, label }),
       })
       if (res.ok) await load()
     } catch { /* silencieux */ } finally { setBusy(false) }

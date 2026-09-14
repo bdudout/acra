@@ -3482,6 +3482,7 @@ export const es: Translations = {
     legendDeroge: 'Excepción',
     legendAccept: 'Aceptación de riesgo',
     legendPlan: 'Plan de acción',
+    legendPartiel2: 'Parcial',
     legendReste: 'Restante',
     donutTitle: 'Conformidad global (todos los marcos)',
     donutHint: 'conforme',

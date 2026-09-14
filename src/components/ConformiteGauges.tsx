@@ -4,13 +4,15 @@ export interface GaugesLabels {
   actuelle: string; actuelleHint: string
   avecDerog: string; avecDerogHint: string
   cible: string; cibleHint: string
-  legendConforme: string; legendDeroge: string; legendAccept: string; legendPlan: string; legendReste: string
+  legendConforme: string; legendDeroge: string; legendAccept: string; legendPlan: string
+  legendPartiel: string; legendReste: string
 }
 
 const C_CONFORME = '#16a34a' // vert
-const C_DEROGE = '#7c3aed'   // violet
-const C_ACCEPT = '#0ea5e9'   // bleu (acceptation de risque)
-const C_PLAN = '#f59e0b'     // ambre (plan d'action)
+const C_DEROGE = '#7c3aed'   // violet (dérogation)
+const C_ACCEPT = '#64748b'   // ardoise (acceptation de risque — parqué)
+const C_PLAN = '#2563eb'     // bleu (plan d'action — à venir)
+const C_PARTIEL = '#f59e0b'  // ambre (partiel non traité — en cours)
 
 // Un cadran (anneau) : parts « couvertes » colorées sur un total « pertinents »,
 // le reste laissant voir la piste neutre ; taux au centre.
@@ -58,30 +60,33 @@ function Gauge({ taux, covered, pertinents, title, hint, size = 116 }: {
  * couvDerog / couvAccept / couvPlan sont mutuellement exclusifs (cf. conformiteStats).
  * Thème clair/sombre géré.
  */
-export default function ConformiteGauges({ conforme, pertinents, couvDerog, couvAccept, couvPlan, labels }: {
-  conforme: number; pertinents: number; couvDerog: number; couvAccept: number; couvPlan: number
+export default function ConformiteGauges({ conforme, pertinents, couvDerog, couvAccept, couvPlan, partiel, labels }: {
+  conforme: number; pertinents: number; couvDerog: number; couvAccept: number; couvPlan: number; partiel: number
   labels: GaugesLabels
 }) {
   const pct = (n: number) => (pertinents > 0 ? Math.round((n / pertinents) * 100) : 0)
+  // Les partiels non traités (ambre) restent visibles dans les trois cadrans.
+  const p = { value: partiel, color: C_PARTIEL }
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Gauge taux={pct(conforme)} pertinents={pertinents} title={labels.actuelle} hint={labels.actuelleHint}
-          covered={[{ value: conforme, color: C_CONFORME }]} />
+          covered={[{ value: conforme, color: C_CONFORME }, p]} />
         <Gauge taux={pct(conforme + couvDerog + couvAccept)} pertinents={pertinents} title={labels.avecDerog} hint={labels.avecDerogHint}
-          covered={[{ value: conforme, color: C_CONFORME }, { value: couvDerog, color: C_DEROGE }, { value: couvAccept, color: C_ACCEPT }]} />
+          covered={[{ value: conforme, color: C_CONFORME }, { value: couvDerog, color: C_DEROGE }, { value: couvAccept, color: C_ACCEPT }, p]} />
         <Gauge taux={pct(conforme + couvDerog + couvPlan)} pertinents={pertinents} title={labels.cible} hint={labels.cibleHint}
-          covered={[{ value: conforme, color: C_CONFORME }, { value: couvDerog, color: C_DEROGE }, { value: couvPlan, color: C_PLAN }]} />
+          covered={[{ value: conforme, color: C_CONFORME }, { value: couvDerog, color: C_DEROGE }, { value: couvPlan, color: C_PLAN }, p]} />
       </div>
 
       {/* Légende partagée */}
       <ul className="flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs text-gray-600 dark:text-gray-300">
         {[
           { c: C_CONFORME, l: labels.legendConforme },
+          { c: C_PLAN, l: labels.legendPlan },
           { c: C_DEROGE, l: labels.legendDeroge },
           { c: C_ACCEPT, l: labels.legendAccept },
-          { c: C_PLAN, l: labels.legendPlan },
+          { c: C_PARTIEL, l: labels.legendPartiel },
         ].map(x => (
           <li key={x.l} className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: x.c }} aria-hidden="true" />{x.l}

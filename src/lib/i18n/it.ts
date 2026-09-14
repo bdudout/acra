@@ -3482,6 +3482,7 @@ export const it: Translations = {
     legendDeroge: 'Deroga',
     legendAccept: 'Accettazione del rischio',
     legendPlan: 'Piano d\'azione',
+    legendPartiel2: 'Parziale',
     legendReste: 'Restante',
     donutTitle: 'Conformità globale (tutti i framework)',
     donutHint: 'conforme',

@@ -3482,6 +3482,7 @@ export const de: Translations = {
     legendDeroge: 'Ausnahme',
     legendAccept: 'Risikoakzeptanz',
     legendPlan: 'Maßnahmenplan',
+    legendPartiel2: 'Teilweise',
     legendReste: 'Verbleibend',
     donutTitle: 'Gesamtkonformität (alle Rahmenwerke)',
     donutHint: 'konform',

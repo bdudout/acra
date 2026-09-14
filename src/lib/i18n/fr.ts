@@ -3531,6 +3531,7 @@ export const fr = {
     legendDeroge: 'Dérogation',
     legendAccept: 'Acceptation de risque',
     legendPlan: 'Plan d\'action',
+    legendPartiel2: 'Partiel',
     legendReste: 'Restant',
     donutTitle: 'Conformité globale (tous référentiels)',
     donutHint: 'conforme',

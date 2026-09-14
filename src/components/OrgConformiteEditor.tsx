@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ShieldCheck, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConformiteGrid from '@/components/ConformiteGrid'
+import ConformiteHistory from '@/components/ConformiteHistory'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/lib/conformite'
 
@@ -209,6 +210,14 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
       {loading
         ? <p className="text-gray-400 text-sm py-8 text-center">{t.loading}</p>
         : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false} />}
+
+      {/* Historique & tendance du taux (comme le dashboard) — la version se fige via
+          le bouton « Figer » de l'en-tête, donc canEdit=false ici (pas de doublon). */}
+      {!loading && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+          <ConformiteHistory key={`${ref}|${entite}|${reloadKey}`} orgId={orgId} referentiel={ref} entite={entite} locale={locale} canEdit={false} />
+        </div>
+      )}
     </div>
   )
 }

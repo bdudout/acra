@@ -76,12 +76,12 @@ export default function JournalisationPage() {
     setTestMsg(res.ok ? { ok: true, text: s.testOk } : { ok: false, text: `${s.testFail}${d.error ? ' — ' + d.error : ''}` })
   }
 
-  if (loading) return <div className="min-h-screen bg-gray-50"><Navbar /><main className="max-w-3xl mx-auto px-4 py-8"><AdminNav active="journalisation" /><p className="text-gray-400">{t.loading}</p></main></div>
+  if (loading) return <div className="min-h-screen bg-gray-50"><Navbar /><main className="max-w-6xl mx-auto px-4 py-8"><AdminNav active="journalisation" /><p className="text-gray-400">{t.loading}</p></main></div>
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         <AdminNav active="journalisation" />
         <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2"><Share2 size={22} aria-hidden="true" /> {s.title}</h1>
         <p className="text-gray-500 text-sm mb-6 max-w-2xl">{s.subtitle}</p>

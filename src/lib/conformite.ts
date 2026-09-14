@@ -112,6 +112,8 @@ export interface ConformiteStats {
   couvertureAcceptation: number
   /** Écarts couverts par un plan d'action (traitement=plan_action). */
   couverturePlanAction: number
+  /** Contrôles partiels non traités (ni dérogés, ni plan/dérogation/acceptation). */
+  partielNonTraite: number
   /** Nombre de contrôles évalués (toutes valeurs confondues). */
   evalues: number
   /** Nombre total de contrôles du référentiel. */
@@ -208,7 +210,7 @@ export function resolveEffectiveConformite(params: {
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0, deroge = 0
   // Couverture des écarts (mutuellement exclusive) — alimente les cadrans du dashboard.
-  let couvertureDerogation = 0, couvertureAcceptation = 0, couverturePlanAction = 0
+  let couvertureDerogation = 0, couvertureAcceptation = 0, couverturePlanAction = 0, partielNonTraite = 0
   for (const e of entries) {
     // Un contrôle dérogé (dérogation active formelle) bascule dans son propre bucket.
     if (e.derogee) { deroge++; couvertureDerogation++; continue }
@@ -219,6 +221,7 @@ export function conformiteStats(entries: ConformiteEntry[], total: number): Conf
       if (e.traitement === 'derogation') couvertureDerogation++
       else if (e.traitement === 'acceptation_risque') couvertureAcceptation++
       else if (e.traitement === 'plan_action') couverturePlanAction++
+      else if (e.statut === 'partiel') partielNonTraite++
     }
   }
   // Le dérogé reste au dénominateur (c'est une non-conformité assumée temporairement) : le
@@ -227,7 +230,7 @@ export function conformiteStats(entries: ConformiteEntry[], total: number): Conf
   const tauxConformite = pertinents > 0 ? Math.round((conforme / pertinents) * 100) : 0
   return {
     conforme, partiel, nonConforme, na, deroge,
-    couvertureDerogation, couvertureAcceptation, couverturePlanAction,
+    couvertureDerogation, couvertureAcceptation, couverturePlanAction, partielNonTraite,
     evalues: entries.length, total, tauxConformite,
   }
 }

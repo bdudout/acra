@@ -55,14 +55,14 @@ export default async function ConformiteGlobalPage() {
     if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
     return totalByOrgRef.get(key)!
   }
-  type Cell = RollupConfInput & { deroge: number; couvDerog: number; couvAccept: number; couvPlan: number }
+  type Cell = RollupConfInput & { deroge: number; couvDerog: number; couvAccept: number; couvPlan: number; partielNet: number }
   const cells: Cell[] = await Promise.all(confs.map(async c => {
     const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
     return {
       organizationId: c.organizationId, referentiel: c.referentiel,
       conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, deroge: s.deroge,
       couvDerog: s.couvertureDerogation, couvAccept: s.couvertureAcceptation, couvPlan: s.couverturePlanAction,
-      total: s.total,
+      partielNet: s.partielNonTraite, total: s.total,
     }
   }))
 
@@ -75,7 +75,8 @@ export default async function ConformiteGlobalPage() {
     conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
     nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na, deroge: a.deroge + c.deroge,
     couvDerog: a.couvDerog + c.couvDerog, couvAccept: a.couvAccept + c.couvAccept, couvPlan: a.couvPlan + c.couvPlan,
-  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0, couvDerog: 0, couvAccept: 0, couvPlan: 0 })
+    partielNet: a.partielNet + c.partielNet,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0, couvDerog: 0, couvAccept: 0, couvPlan: 0, partielNet: 0 })
   const gPert = g.conforme + g.partiel + g.nonConforme + g.deroge
 
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
@@ -121,14 +122,14 @@ export default async function ConformiteGlobalPage() {
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">{t.conformiteGlobal.donutTitle}</h2>
             <ConformiteGauges
               conforme={g.conforme} pertinents={gPert}
-              couvDerog={g.couvDerog} couvAccept={g.couvAccept} couvPlan={g.couvPlan}
+              couvDerog={g.couvDerog} couvAccept={g.couvAccept} couvPlan={g.couvPlan} partiel={g.partielNet}
               labels={{
                 actuelle: t.conformiteGlobal.gaugeActuelle, actuelleHint: t.conformiteGlobal.gaugeActuelleHint,
                 avecDerog: t.conformiteGlobal.gaugeDerog, avecDerogHint: t.conformiteGlobal.gaugeDerogHint,
                 cible: t.conformiteGlobal.gaugeCible, cibleHint: t.conformiteGlobal.gaugeCibleHint,
                 legendConforme: t.conformiteGlobal.legendConforme, legendDeroge: t.conformiteGlobal.legendDeroge,
                 legendAccept: t.conformiteGlobal.legendAccept, legendPlan: t.conformiteGlobal.legendPlan,
-                legendReste: t.conformiteGlobal.legendReste,
+                legendPartiel: t.conformiteGlobal.legendPartiel2, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
           </div>

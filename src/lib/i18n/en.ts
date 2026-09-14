@@ -3482,6 +3482,7 @@ export const en: Translations = {
     legendDeroge: 'Derogation',
     legendAccept: 'Risk acceptance',
     legendPlan: 'Action plan',
+    legendPartiel2: 'Partial',
     legendReste: 'Remaining',
     donutTitle: 'Overall compliance (all frameworks)',
     donutHint: 'compliant',
