@@ -11,6 +11,7 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
+import ConformiteDonut from '@/components/ConformiteDonut'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -61,6 +62,14 @@ export default async function ConformiteGlobalPage() {
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
+  // Répartition globale (camembert) : somme de tous les suivis de conformité.
+  const g = cells.reduce((a, c) => ({
+    conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
+    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0 })
+  const gPertinents = g.conforme + g.partiel + g.nonConforme
+  const gTaux = gPertinents > 0 ? Math.round((g.conforme / gPertinents) * 100) : 0
+
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
   // catalogue unifié (union des orgs visibles), avec repli sur le code.
   const refIds = new Set(confs.map(c => c.referentiel))
@@ -99,6 +108,22 @@ export default async function ConformiteGlobalPage() {
           <a href="/conformite/socle" className="btn-primary text-sm shrink-0">{t.conformiteGlobal.editSocle}</a>
         </div>
 
+        {rows.length > 0 && (
+          <div className="card p-5 mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.conformiteGlobal.donutTitle}</h2>
+            <ConformiteDonut
+              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} taux={gTaux}
+              labels={{
+                conforme: t.conformite.statuts.conforme,
+                partiel: t.conformite.statuts.partiel,
+                nonConforme: t.conformite.statuts.non_conforme,
+                na: t.conformite.statuts.na,
+                centerHint: t.conformiteGlobal.donutHint,
+              }}
+            />
+          </div>
+        )}
+
         <div className="card p-5">
           <ConformiteHeatmap
             rows={rows}
@@ -107,6 +132,8 @@ export default async function ConformiteGlobalPage() {
             emptyLabel={t.conformiteGlobal.emptyNew}
             emptyHref="/conformite/socle"
             emptyCta={t.conformiteGlobal.editSocle}
+            viewHrefFor={(_orgId, refId) => `/conformite/socle?ref=${encodeURIComponent(refId)}`}
+            cellTitleFor={(c) => t.conformiteGlobal.cellTip.replace('{evalues}', String(c.evalues)).replace('{total}', String(c.total))}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
           />

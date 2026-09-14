@@ -16,7 +16,10 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // Éditeur du socle de conformité au niveau organisation (ADMIN / RSSI / Risk Manager).
-export default async function ConformiteSoclePage() {
+export default async function ConformiteSoclePage({ searchParams }: {
+  searchParams: Promise<{ ref?: string }>
+}) {
+  const { ref: refParam } = await searchParams
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
@@ -72,7 +75,11 @@ export default async function ConformiteSoclePage() {
                 orgId={orgId}
                 orgNom={org?.nom ?? '—'}
                 referentiels={referentiels}
-                initialRef={referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001' : referentiels[0].code}
+                initialRef={
+                  refParam && referentiels.some(r => r.code === refParam) ? refParam
+                  : referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001'
+                  : referentiels[0].code
+                }
                 multiSuivi={multiSuivi}
               />
             </>
