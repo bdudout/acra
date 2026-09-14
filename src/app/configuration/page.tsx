@@ -148,6 +148,7 @@ export default function ConfigurationPage() {
   const [conformiteActive, setConformiteActive] = useState(true)
   const [conformiteNiveau, setConformiteNiveau] = useState('ANALYSE')
   const [conformiteSnapshotMode, setConformiteSnapshotMode] = useState('MANUEL')
+  const [conformiteSnapshotPeriode, setConformiteSnapshotPeriode] = useState('MENSUEL')
   const [savingConfOpt, setSavingConfOpt] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [acceptationRisquesActive, setAcceptationRisquesActive] = useState(false)
@@ -210,6 +211,7 @@ export default function ConfigurationPage() {
         setConformiteActive(Boolean(data.conformiteActive))
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
         setConformiteSnapshotMode(['MANUEL', 'AUTO', 'CHANGEMENT'].includes(data.conformiteSnapshotMode) ? data.conformiteSnapshotMode : 'MANUEL')
+        if (['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'].includes(data.conformiteSnapshotPeriode)) setConformiteSnapshotPeriode(data.conformiteSnapshotPeriode)
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
         setGelApresAcceptationActive(Boolean(data.gelApresAcceptationActive))
@@ -291,9 +293,9 @@ export default function ConfigurationPage() {
   }
 
   // Options conformité (Palier 2) — champs chaîne (niveau / mode de snapshot).
-  async function saveConformiteOption(field: 'conformiteNiveau' | 'conformiteSnapshotMode', value: string) {
-    const prev = field === 'conformiteNiveau' ? conformiteNiveau : conformiteSnapshotMode
-    const setter = field === 'conformiteNiveau' ? setConformiteNiveau : setConformiteSnapshotMode
+  async function saveConformiteOption(field: 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode', value: string) {
+    const prev = field === 'conformiteNiveau' ? conformiteNiveau : field === 'conformiteSnapshotPeriode' ? conformiteSnapshotPeriode : conformiteSnapshotMode
+    const setter = field === 'conformiteNiveau' ? setConformiteNiveau : field === 'conformiteSnapshotPeriode' ? setConformiteSnapshotPeriode : setConformiteSnapshotMode
     setter(value) // optimiste
     setSavingConfOpt(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1459,6 +1461,20 @@ export default function ConfigurationPage() {
                   <option value="AUTO">{t.confOptions.snapshotAuto}</option>
                   <option value="CHANGEMENT">{t.confOptions.snapshotChangement}</option>
                 </select>
+                {/* Périodicité — seulement en mode AUTO */}
+                {conformiteSnapshotMode === 'AUTO' && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">{t.confOptions.periodeLabel}</label>
+                    <p className="text-xs text-gray-500 mb-2">{t.confOptions.periodeDesc}</p>
+                    <select value={conformiteSnapshotPeriode} disabled={savingConfOpt}
+                      onChange={e => saveConformiteOption('conformiteSnapshotPeriode', e.target.value)} className="input max-w-md">
+                      <option value="MENSUEL">{t.confOptions.periodeMensuel}</option>
+                      <option value="TRIMESTRIEL">{t.confOptions.periodeTrimestriel}</option>
+                      <option value="SEMESTRIEL">{t.confOptions.periodeSemestriel}</option>
+                      <option value="ANNUEL">{t.confOptions.periodeAnnuel}</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </section>

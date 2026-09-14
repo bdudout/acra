@@ -24,6 +24,7 @@ const CONFIG_SELECT = {
   conformiteActive: true,
   conformiteNiveau: true,
   conformiteSnapshotMode: true,
+  conformiteSnapshotPeriode: true,
   conseilsAteliersActive: true,
   acceptationRisquesActive: true,
   gelApresAcceptationActive: true,

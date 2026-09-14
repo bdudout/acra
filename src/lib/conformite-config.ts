@@ -26,6 +26,26 @@ export const CONFORMITE_SNAPSHOT_MODES = ['MANUEL', 'AUTO', 'CHANGEMENT'] as con
 export type ConformiteSnapshotMode = typeof CONFORMITE_SNAPSHOT_MODES[number]
 export const DEFAULT_CONFORMITE_SNAPSHOT_MODE: ConformiteSnapshotMode = 'MANUEL'
 
+// Périodicité des snapshots AUTO (choisie par l'organisation).
+export const CONFORMITE_SNAPSHOT_PERIODES = ['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+export type ConformiteSnapshotPeriode = typeof CONFORMITE_SNAPSHOT_PERIODES[number]
+export const DEFAULT_CONFORMITE_SNAPSHOT_PERIODE: ConformiteSnapshotPeriode = 'MENSUEL'
+const PERIODE_JOURS: Record<ConformiteSnapshotPeriode, number> = {
+  MENSUEL: 30, TRIMESTRIEL: 91, SEMESTRIEL: 182, ANNUEL: 365,
+}
+
+/** Normalise une périodicité (valeur inconnue → défaut MENSUEL). */
+export function sanitizeSnapshotPeriode(v: unknown): ConformiteSnapshotPeriode {
+  return (CONFORMITE_SNAPSHOT_PERIODES as readonly string[]).includes(v as string)
+    ? (v as ConformiteSnapshotPeriode)
+    : DEFAULT_CONFORMITE_SNAPSHOT_PERIODE
+}
+
+/** Nombre de jours entre deux snapshots AUTO selon la périodicité configurée. */
+export function snapshotPeriodeDays(v: unknown): number {
+  return PERIODE_JOURS[sanitizeSnapshotPeriode(v)]
+}
+
 /** Normalise une valeur de niveau (valeur inconnue → défaut ANALYSE). */
 export function sanitizeConformiteNiveau(v: unknown): ConformiteNiveau {
   return (CONFORMITE_NIVEAUX as readonly string[]).includes(v as string)

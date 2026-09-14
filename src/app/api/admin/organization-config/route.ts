@@ -13,7 +13,7 @@ import {
 } from '@/lib/org-config-defaults'
 import { resolveReferentielCode } from '@/lib/referentiel-catalogue'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
-import { sanitizeConformiteNiveau, sanitizeSnapshotMode } from '@/lib/conformite-config'
+import { sanitizeConformiteNiveau, sanitizeSnapshotMode, sanitizeSnapshotPeriode } from '@/lib/conformite-config'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
@@ -71,6 +71,7 @@ export async function GET(_req: NextRequest) {
     conformiteActive: cfg.conformiteActive,
     conformiteNiveau: cfg.conformiteNiveau,
     conformiteSnapshotMode: cfg.conformiteSnapshotMode,
+    conformiteSnapshotPeriode: cfg.conformiteSnapshotPeriode,
     conseilsAteliersActive: cfg.conseilsAteliersActive,
     acceptationRisquesActive: cfg.acceptationRisquesActive,
     gelApresAcceptationActive: cfg.gelApresAcceptationActive,
@@ -191,6 +192,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
   if (typeof body.conformiteNiveau === 'string') data.conformiteNiveau = sanitizeConformiteNiveau(body.conformiteNiveau)
   if (typeof body.conformiteSnapshotMode === 'string') data.conformiteSnapshotMode = sanitizeSnapshotMode(body.conformiteSnapshotMode)
+  if (typeof body.conformiteSnapshotPeriode === 'string') data.conformiteSnapshotPeriode = sanitizeSnapshotPeriode(body.conformiteSnapshotPeriode)
   if (typeof body.conseilsAteliersActive === 'boolean') data.conseilsAteliersActive = body.conseilsAteliersActive
   if (typeof body.acceptationRisquesActive === 'boolean') data.acceptationRisquesActive = body.acceptationRisquesActive
   if (typeof body.gelApresAcceptationActive === 'boolean') data.gelApresAcceptationActive = body.gelApresAcceptationActive
@@ -258,6 +260,7 @@ export async function PUT(req: NextRequest) {
     conformiteActive: Boolean((config as any).conformiteActive),
     conformiteNiveau: sanitizeConformiteNiveau((config as any).conformiteNiveau),
     conformiteSnapshotMode: sanitizeSnapshotMode((config as any).conformiteSnapshotMode),
+    conformiteSnapshotPeriode: sanitizeSnapshotPeriode((config as any).conformiteSnapshotPeriode),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
     echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
   })

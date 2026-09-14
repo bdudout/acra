@@ -1462,6 +1462,8 @@ model OrganizationConfig {
   conformiteNiveau           String        @default("ORGANISATION")
   // Palier 2 — mode de création des versions/snapshots : "MANUEL" (défaut) | "AUTO" | "CHANGEMENT".
   conformiteSnapshotMode     String        @default("MANUEL")
+  // Périodicité des snapshots AUTO : "MENSUEL" (défaut) | "TRIMESTRIEL" | "SEMESTRIEL" | "ANNUEL".
+  conformiteSnapshotPeriode  String        @default("MENSUEL")
   // Fonctionnalité optionnelle (activée par défaut) : panneau de conseils & participants recommandés par atelier
   conseilsAteliersActive     Boolean       @default(true)
   // Fonctionnalité optionnelle : acceptation des risques résiduels par la Direction métier

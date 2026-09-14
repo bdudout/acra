@@ -10,6 +10,10 @@ import {
   usesConformiteEntity,
   shouldSnapshotOnChange,
   dueForAutoSnapshot,
+  CONFORMITE_SNAPSHOT_PERIODES,
+  DEFAULT_CONFORMITE_SNAPSHOT_PERIODE,
+  sanitizeSnapshotPeriode,
+  snapshotPeriodeDays,
 } from '../../../lib/conformite-config'
 
 describe('conformite-config — options Palier 2', () => {
@@ -59,6 +63,19 @@ describe('conformite-config — options Palier 2', () => {
     expect(shouldSnapshotOnChange('MANUEL')).toBe(false)
     expect(shouldSnapshotOnChange('AUTO')).toBe(false)
     expect(shouldSnapshotOnChange('x')).toBe(false)
+  })
+
+  it('périodes de snapshot : valeurs + jours + défaut MENSUEL', () => {
+    expect(CONFORMITE_SNAPSHOT_PERIODES).toEqual(['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
+    expect(DEFAULT_CONFORMITE_SNAPSHOT_PERIODE).toBe('MENSUEL')
+    expect(sanitizeSnapshotPeriode('TRIMESTRIEL')).toBe('TRIMESTRIEL')
+    expect(sanitizeSnapshotPeriode('bidon')).toBe('MENSUEL')
+    expect(sanitizeSnapshotPeriode(undefined)).toBe('MENSUEL')
+    expect(snapshotPeriodeDays('MENSUEL')).toBe(30)
+    expect(snapshotPeriodeDays('TRIMESTRIEL')).toBe(91)
+    expect(snapshotPeriodeDays('SEMESTRIEL')).toBe(182)
+    expect(snapshotPeriodeDays('ANNUEL')).toBe(365)
+    expect(snapshotPeriodeDays('bidon')).toBe(30) // défaut
   })
 
   it('dueForAutoSnapshot : jamais de snapshot → dû ; sinon selon la période', () => {

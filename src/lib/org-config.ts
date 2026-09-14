@@ -39,6 +39,7 @@ export interface RawOrgConfig {
   conformiteActive: boolean
   conformiteNiveau: string
   conformiteSnapshotMode: string
+  conformiteSnapshotPeriode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
@@ -78,6 +79,7 @@ export interface OrgConfigResolved {
   conformiteActive: boolean
   conformiteNiveau: string
   conformiteSnapshotMode: string
+  conformiteSnapshotPeriode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
@@ -118,6 +120,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   conformiteActive: true,
   conformiteNiveau: 'ORGANISATION',
   conformiteSnapshotMode: 'MANUEL',
+  conformiteSnapshotPeriode: 'MENSUEL',
   conseilsAteliersActive: true,
   acceptationRisquesActive: false,
   gelApresAcceptationActive: true,
@@ -152,7 +155,7 @@ function isEmptyJson(v: unknown): boolean {
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
-type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
+type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
 /**
@@ -199,6 +202,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     conformiteActive: pickBool('conformiteActive', defaults.conformiteActive),
     conformiteNiveau: pickStr('conformiteNiveau', defaults.conformiteNiveau),
     conformiteSnapshotMode: pickStr('conformiteSnapshotMode', defaults.conformiteSnapshotMode),
+    conformiteSnapshotPeriode: pickStr('conformiteSnapshotPeriode', defaults.conformiteSnapshotPeriode),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
     acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
     gelApresAcceptationActive: pickBool('gelApresAcceptationActive', defaults.gelApresAcceptationActive),

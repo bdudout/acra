@@ -3354,6 +3354,12 @@ export const fr = {
     snapshotManuel: 'Manuel — figer une version à la demande',
     snapshotAuto: 'Automatique — périodique',
     snapshotChangement: 'À chaque modification',
+    periodeLabel: 'Périodicité des versions automatiques',
+    periodeDesc: 'Fréquence de figement d’une version en mode automatique.',
+    periodeMensuel: 'Mensuelle',
+    periodeTrimestriel: 'Trimestrielle',
+    periodeSemestriel: 'Semestrielle',
+    periodeAnnuel: 'Annuelle',
   },
   soa: {
     header: 'Organisation',

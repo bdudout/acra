@@ -3,7 +3,7 @@ import { assertCronAuth } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { sanitizeConformite } from '@/lib/conformite'
-import { sanitizeSnapshotMode, dueForAutoSnapshot } from '@/lib/conformite-config'
+import { sanitizeSnapshotMode, snapshotPeriodeDays, dueForAutoSnapshot } from '@/lib/conformite-config'
 
 /**
  * POST /api/cron/conformite-snapshots — snapshots PÉRIODIQUES (mode AUTO).
@@ -28,18 +28,22 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Cache de config par organisation (évite N résolutions).
-  const cfgCache = new Map<string, string>()
-  const modeFor = async (orgId: string): Promise<string> => {
-    if (!cfgCache.has(orgId)) cfgCache.set(orgId, sanitizeSnapshotMode((await getOrgConfig(orgId)).conformiteSnapshotMode))
+  // Cache de config par organisation (évite N résolutions) : mode + périodicité.
+  const cfgCache = new Map<string, { mode: string; periodeJours: number }>()
+  const cfgFor = async (orgId: string) => {
+    if (!cfgCache.has(orgId)) {
+      const cfg = await getOrgConfig(orgId)
+      cfgCache.set(orgId, { mode: sanitizeSnapshotMode(cfg.conformiteSnapshotMode), periodeJours: snapshotPeriodeDays(cfg.conformiteSnapshotPeriode) })
+    }
     return cfgCache.get(orgId)!
   }
 
   let created = 0
   for (const c of confs) {
-    if ((await modeFor(c.organizationId)) !== 'AUTO') continue
+    const cfg = await cfgFor(c.organizationId)
+    if (cfg.mode !== 'AUTO') continue
     const lastAt = c.snapshots[0]?.createdAt ?? null
-    if (!dueForAutoSnapshot(lastAt, now)) continue
+    if (!dueForAutoSnapshot(lastAt, now, cfg.periodeJours)) continue
     await prisma.conformiteSnapshot.create({
       data: { conformiteId: c.id, entries: sanitizeConformite(c.entries) as unknown as object, createdById: null },
     })

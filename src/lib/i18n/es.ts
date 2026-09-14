@@ -3305,6 +3305,12 @@ export const es: Translations = {
     snapshotManuel: 'Manual — congelar una versión bajo demanda',
     snapshotAuto: 'Automática — periódica',
     snapshotChangement: 'En cada modificación',
+    periodeLabel: 'Periodicidad de versiones automáticas',
+    periodeDesc: 'Frecuencia con la que se congela una versión en modo automático.',
+    periodeMensuel: 'Mensual',
+    periodeTrimestriel: 'Trimestral',
+    periodeSemestriel: 'Semestral',
+    periodeAnnuel: 'Anual',
   },
   soa: {
     header: 'Organización',
