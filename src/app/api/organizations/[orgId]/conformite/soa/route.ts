@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const statutLabels = t.conformite.statuts as Record<string, string>
 
   const conf = await prisma.conformite.findUnique({
-    where: { organizationId_referentiel: { organizationId: orgId, referentiel } },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
     select: { entries: true, updatedAt: true, organization: { select: { nom: true } } },
   })
   const entries = sanitizeConformite(conf?.entries)

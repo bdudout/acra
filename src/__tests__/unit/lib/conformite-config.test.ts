@@ -2,25 +2,57 @@ import { describe, it, expect } from 'vitest'
 import {
   CONFORMITE_NIVEAUX,
   CONFORMITE_SNAPSHOT_MODES,
+  DEFAULT_CONFORMITE_NIVEAU,
   sanitizeConformiteNiveau,
   sanitizeSnapshotMode,
   isOrgLevelConformite,
+  isEntiteLevelConformite,
+  usesConformiteEntity,
   shouldSnapshotOnChange,
   dueForAutoSnapshot,
+  effectiveConformiteNiveau,
+  CONFORMITE_SNAPSHOT_PERIODES,
+  DEFAULT_CONFORMITE_SNAPSHOT_PERIODE,
+  sanitizeSnapshotPeriode,
+  snapshotPeriodeDays,
 } from '../../../lib/conformite-config'
 
 describe('conformite-config — options Palier 2', () => {
-  it('niveaux et modes attendus', () => {
-    expect(CONFORMITE_NIVEAUX).toEqual(['ANALYSE', 'ORGANISATION'])
+  it('niveaux (org par défaut, + entité) et modes attendus', () => {
+    expect(CONFORMITE_NIVEAUX).toEqual(['ORGANISATION', 'ANALYSE', 'ENTITE'])
+    expect(DEFAULT_CONFORMITE_NIVEAU).toBe('ORGANISATION')
     expect(CONFORMITE_SNAPSHOT_MODES).toEqual(['MANUEL', 'AUTO', 'CHANGEMENT'])
   })
 
-  it('sanitizeConformiteNiveau : valeur valide gardée, sinon défaut ANALYSE', () => {
+  it('sanitizeConformiteNiveau : valeur valide gardée, sinon défaut ORGANISATION', () => {
     expect(sanitizeConformiteNiveau('ORGANISATION')).toBe('ORGANISATION')
     expect(sanitizeConformiteNiveau('ANALYSE')).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau('bidon')).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau(undefined)).toBe('ANALYSE')
-    expect(sanitizeConformiteNiveau(null)).toBe('ANALYSE')
+    expect(sanitizeConformiteNiveau('ENTITE')).toBe('ENTITE')
+    expect(sanitizeConformiteNiveau('bidon')).toBe('ORGANISATION')
+    expect(sanitizeConformiteNiveau(undefined)).toBe('ORGANISATION')
+    expect(sanitizeConformiteNiveau(null)).toBe('ORGANISATION')
+  })
+
+  it('effectiveConformiteNiveau : override analyse (ANALYSE/ORGANISATION) sinon config org', () => {
+    // Override valide → gagne.
+    expect(effectiveConformiteNiveau('ANALYSE', 'ORGANISATION')).toBe('ANALYSE')
+    expect(effectiveConformiteNiveau('ORGANISATION', 'ANALYSE')).toBe('ORGANISATION')
+    // Pas d'override (null / vide / invalide) → config org.
+    expect(effectiveConformiteNiveau(null, 'ENTITE')).toBe('ENTITE')
+    expect(effectiveConformiteNiveau('', 'ANALYSE')).toBe('ANALYSE')
+    expect(effectiveConformiteNiveau('bidon', 'ORGANISATION')).toBe('ORGANISATION')
+    // ENTITE n'est pas un override d'analyse valide → retombe sur la config org.
+    expect(effectiveConformiteNiveau('ENTITE', 'ANALYSE')).toBe('ANALYSE')
+  })
+
+  it('isEntiteLevelConformite / usesConformiteEntity', () => {
+    expect(isEntiteLevelConformite('ENTITE')).toBe(true)
+    expect(isEntiteLevelConformite('ORGANISATION')).toBe(false)
+    // ORGANISATION et ENTITE vivent tous deux dans l'entité Conformite (org-level) ;
+    // ANALYSE non (portée par l'analyse).
+    expect(usesConformiteEntity('ORGANISATION')).toBe(true)
+    expect(usesConformiteEntity('ENTITE')).toBe(true)
+    expect(usesConformiteEntity('ANALYSE')).toBe(false)
   })
 
   it('sanitizeSnapshotMode : valeur valide gardée, sinon défaut MANUEL', () => {
@@ -34,7 +66,9 @@ describe('conformite-config — options Palier 2', () => {
   it('isOrgLevelConformite : vrai seulement pour ORGANISATION', () => {
     expect(isOrgLevelConformite('ORGANISATION')).toBe(true)
     expect(isOrgLevelConformite('ANALYSE')).toBe(false)
-    expect(isOrgLevelConformite('bidon')).toBe(false)
+    expect(isOrgLevelConformite('ENTITE')).toBe(false)
+    // Valeur inconnue → défaut ORGANISATION (org-level).
+    expect(isOrgLevelConformite('bidon')).toBe(true)
   })
 
   it('shouldSnapshotOnChange : vrai seulement en mode CHANGEMENT', () => {
@@ -42,6 +76,19 @@ describe('conformite-config — options Palier 2', () => {
     expect(shouldSnapshotOnChange('MANUEL')).toBe(false)
     expect(shouldSnapshotOnChange('AUTO')).toBe(false)
     expect(shouldSnapshotOnChange('x')).toBe(false)
+  })
+
+  it('périodes de snapshot : valeurs + jours + défaut MENSUEL', () => {
+    expect(CONFORMITE_SNAPSHOT_PERIODES).toEqual(['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'])
+    expect(DEFAULT_CONFORMITE_SNAPSHOT_PERIODE).toBe('MENSUEL')
+    expect(sanitizeSnapshotPeriode('TRIMESTRIEL')).toBe('TRIMESTRIEL')
+    expect(sanitizeSnapshotPeriode('bidon')).toBe('MENSUEL')
+    expect(sanitizeSnapshotPeriode(undefined)).toBe('MENSUEL')
+    expect(snapshotPeriodeDays('MENSUEL')).toBe(30)
+    expect(snapshotPeriodeDays('TRIMESTRIEL')).toBe(91)
+    expect(snapshotPeriodeDays('SEMESTRIEL')).toBe(182)
+    expect(snapshotPeriodeDays('ANNUEL')).toBe(365)
+    expect(snapshotPeriodeDays('bidon')).toBe(30) // défaut
   })
 
   it('dueForAutoSnapshot : jamais de snapshot → dû ; sinon selon la période', () => {

@@ -22,6 +22,8 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
+import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
+import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -144,10 +146,12 @@ export default function ConfigurationPage() {
 
   // Fonctionnalités optionnelles (toggles)
   const [qualificationActive, setQualificationActive] = useState(false)
+  const [qualifQuestionnaire, setQualifQuestionnaire] = useState<QualificationConfig>({ overrides: {}, custom: [] })
   const [qualificationObligatoire, setQualificationObligatoire] = useState(false)
   const [conformiteActive, setConformiteActive] = useState(true)
   const [conformiteNiveau, setConformiteNiveau] = useState('ANALYSE')
   const [conformiteSnapshotMode, setConformiteSnapshotMode] = useState('MANUEL')
+  const [conformiteSnapshotPeriode, setConformiteSnapshotPeriode] = useState('MENSUEL')
   const [savingConfOpt, setSavingConfOpt] = useState(false)
   const [conseilsAteliersActive, setConseilsAteliersActive] = useState(true)
   const [acceptationRisquesActive, setAcceptationRisquesActive] = useState(false)
@@ -206,10 +210,12 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
+        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [] })
         setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
         setConformiteSnapshotMode(['MANUEL', 'AUTO', 'CHANGEMENT'].includes(data.conformiteSnapshotMode) ? data.conformiteSnapshotMode : 'MANUEL')
+        if (['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'].includes(data.conformiteSnapshotPeriode)) setConformiteSnapshotPeriode(data.conformiteSnapshotPeriode)
         setConseilsAteliersActive(data.conseilsAteliersActive !== false)
         setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
         setGelApresAcceptationActive(Boolean(data.gelApresAcceptationActive))
@@ -291,9 +297,9 @@ export default function ConfigurationPage() {
   }
 
   // Options conformité (Palier 2) — champs chaîne (niveau / mode de snapshot).
-  async function saveConformiteOption(field: 'conformiteNiveau' | 'conformiteSnapshotMode', value: string) {
-    const prev = field === 'conformiteNiveau' ? conformiteNiveau : conformiteSnapshotMode
-    const setter = field === 'conformiteNiveau' ? setConformiteNiveau : setConformiteSnapshotMode
+  async function saveConformiteOption(field: 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode', value: string) {
+    const prev = field === 'conformiteNiveau' ? conformiteNiveau : field === 'conformiteSnapshotPeriode' ? conformiteSnapshotPeriode : conformiteSnapshotMode
+    const setter = field === 'conformiteNiveau' ? setConformiteNiveau : field === 'conformiteSnapshotPeriode' ? setConformiteSnapshotPeriode : setConformiteSnapshotMode
     setter(value) // optimiste
     setSavingConfOpt(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1459,8 +1465,34 @@ export default function ConfigurationPage() {
                   <option value="AUTO">{t.confOptions.snapshotAuto}</option>
                   <option value="CHANGEMENT">{t.confOptions.snapshotChangement}</option>
                 </select>
+                {/* Périodicité — seulement en mode AUTO */}
+                {conformiteSnapshotMode === 'AUTO' && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">{t.confOptions.periodeLabel}</label>
+                    <p className="text-xs text-gray-500 mb-2">{t.confOptions.periodeDesc}</p>
+                    <select value={conformiteSnapshotPeriode} disabled={savingConfOpt}
+                      onChange={e => saveConformiteOption('conformiteSnapshotPeriode', e.target.value)} className="input max-w-md">
+                      <option value="MENSUEL">{t.confOptions.periodeMensuel}</option>
+                      <option value="TRIMESTRIEL">{t.confOptions.periodeTrimestriel}</option>
+                      <option value="SEMESTRIEL">{t.confOptions.periodeSemestriel}</option>
+                      <option value="ANNUEL">{t.confOptions.periodeAnnuel}</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
+          </section>
+        )}
+
+        {/* ── Personnalisation du questionnaire de qualification (ADMIN, si actif) ── */}
+        {isAdmin && qualificationActive && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.qualifEditor.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.qualifEditor.sectionDesc}</p>
+            <QualificationQuestionnaireEditor
+              initial={qualifQuestionnaire}
+              builtins={QUALIFICATION_QUESTIONS.map(q => ({ id: q.id, label: (t.qualification.questions as Record<string, string>)[q.id] ?? q.id }))}
+            />
           </section>
         )}
 

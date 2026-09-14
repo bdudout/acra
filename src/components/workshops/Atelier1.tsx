@@ -63,9 +63,13 @@ interface Props {
   flashMode?: boolean
   /** La conformité est héritée (du socle ou de l'organisation) → lecture seule ici. */
   conformiteInherited?: boolean
-  conformiteLevel?: 'ANALYSE' | 'SOCLE' | 'ORGANISATION'
+  conformiteLevel?: 'ANALYSE' | 'SOCLE' | 'ORGANISATION' | 'ENTITE'
   conformiteSourceId?: string | null
   conformiteSourceNom?: string | null
+  /** Override de portée de conformité propre à l'analyse ('' | 'ANALYSE' | 'ORGANISATION'). */
+  conformitePortee?: string
+  /** La config org porte la conformité au niveau organisation/entité (→ choix possible). */
+  orgConformiteOrgScoped?: boolean
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -79,9 +83,20 @@ function getDictColor(v: number) {
   return 'bg-red-100 text-red-700'
 }
 
-export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null }: Props) {
+export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
+  // Choix de portée de conformité propre à l'analyse (reprendre le socle org vs propre).
+  const [savingPortee, setSavingPortee] = useState(false)
+  async function saveConformitePortee(value: string) {
+    setSavingPortee(true)
+    await fetch(`/api/analyses/${analyseId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conformitePortee: value }),
+    }).catch(() => {})
+    setSavingPortee(false)
+    router.refresh()
+  }
   const {
     CATEGORIES_BIENS_SUPPORTS, NIVEAUX_GRAVITE, REFERENTIELS_SECURITE,
     TYPES_BIEN_SUPPORT, NIVEAUX_DICT, SOUS_SECTEURS,
@@ -1250,8 +1265,28 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
             )}
           </div>
 
+          {/* ── Choix de portée : reprendre le socle org OU conformité propre à l'analyse ── */}
+          {conformiteActive && orgConformiteOrgScoped && (
+            <div className="card p-4 mb-4">
+              <p className="text-sm font-medium text-gray-800 mb-1">{t.workshop.a1.conformiteChoixTitle}</p>
+              <p className="text-xs text-gray-500 mb-2">{t.workshop.a1.conformiteChoixHint}</p>
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="radio" name="conformitePortee" checked={conformitePortee !== 'ANALYSE'} disabled={savingPortee}
+                    onChange={() => saveConformitePortee('')} />
+                  {t.workshop.a1.conformiteChoixOrg}
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="radio" name="conformitePortee" checked={conformitePortee === 'ANALYSE'} disabled={savingPortee}
+                    onChange={() => saveConformitePortee('ANALYSE')} />
+                  {t.workshop.a1.conformiteChoixAnalyse}
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* ── Grille de conformité au référentiel (fonctionnalité optionnelle) ── */}
-          {conformiteActive && conformiteInherited && conformiteLevel === 'ORGANISATION' && (
+          {conformiteActive && conformiteInherited && (conformiteLevel === 'ORGANISATION' || conformiteLevel === 'ENTITE') && (
             <div id="socle-conformite" className="card p-5 border-l-4 border-l-indigo-400 bg-indigo-50/40 scroll-mt-24">
               <h3 className="font-semibold text-gray-800 mb-1"><Building2 size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a1.conformiteOrgTitle}</h3>
               <p className="text-sm text-gray-600">
@@ -1259,7 +1294,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
               </p>
             </div>
           )}
-          {conformiteActive && conformiteInherited && conformiteLevel !== 'ORGANISATION' && (
+          {conformiteActive && conformiteInherited && conformiteLevel !== 'ORGANISATION' && conformiteLevel !== 'ENTITE' && (
             <div id="socle-conformite" className="card p-5 border-l-4 border-l-indigo-400 bg-indigo-50/40 scroll-mt-24">
               <h3 className="font-semibold text-gray-800 mb-1"><Link2 size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.workshop.a1.conformiteInheritedTitle}</h3>
               <p className="text-sm text-gray-600">

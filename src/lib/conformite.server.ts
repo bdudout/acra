@@ -10,16 +10,16 @@
  */
 import { prisma } from '@/lib/prisma'
 import { sanitizeConformite, resolveEffectiveConformite, type ConformiteEntry } from '@/lib/conformite'
-import { isOrgLevelConformite } from '@/lib/conformite-config'
+import { usesConformiteEntity, isEntiteLevelConformite } from '@/lib/conformite-config'
 
 export interface ConformiteContext {
   entries: ConformiteEntry[]
   referentiel: string
-  level: 'ORGANISATION' | 'ANALYSE' | 'SOCLE'
+  level: 'ORGANISATION' | 'ENTITE' | 'ANALYSE' | 'SOCLE'
   /** Id de la source (organisation si ORGANISATION, analyse socle si SOCLE). */
   sourceId: string | null
   sourceNom: string | null
-  /** Id de l'entité Conformite (présent seulement en niveau ORGANISATION). */
+  /** Id de l'entité Conformite (présent pour les portées ORGANISATION / ENTITE). */
   orgConformiteId: string | null
 }
 
@@ -29,19 +29,29 @@ export async function getConformiteContext(params: {
   ownEntries: ConformiteEntry[]
   socle?: { id: string; nom: string; referentielMesures?: string | null; entries: ConformiteEntry[] } | null
   conformiteNiveau: string
+  /** Suivi de conformité lié à l'analyse (portée ENTITE) — sélectionne le suivi par id. */
+  suiviConformiteId?: string | null
 }): Promise<ConformiteContext> {
-  if (isOrgLevelConformite(params.conformiteNiveau) && params.organizationId) {
+  // Portées ORGANISATION et ENTITE : la référence vit dans l'entité Conformite.
+  if (usesConformiteEntity(params.conformiteNiveau) && params.organizationId) {
     const referentiel = params.referentielMesures || 'ISO27001'
-    const row = await prisma.conformite.findUnique({
-      where: { organizationId_referentiel: { organizationId: params.organizationId, referentiel } },
-      select: { id: true, entries: true, organization: { select: { nom: true } } },
-    })
+    const entite = isEntiteLevelConformite(params.conformiteNiveau)
+    // ENTITE + suivi lié → sélection par id (scopée à l'org) ; sinon suivi org-wide (entite "").
+    const row = entite && params.suiviConformiteId
+      ? await prisma.conformite.findFirst({
+          where: { id: params.suiviConformiteId, organizationId: params.organizationId },
+          select: { id: true, entries: true, nom: true, entite: true, organization: { select: { nom: true } } },
+        })
+      : await prisma.conformite.findUnique({
+          where: { organizationId_referentiel_entite: { organizationId: params.organizationId, referentiel, entite: '' } },
+          select: { id: true, entries: true, nom: true, entite: true, organization: { select: { nom: true } } },
+        })
     return {
       entries: sanitizeConformite(row?.entries),
       referentiel,
-      level: 'ORGANISATION',
+      level: entite ? 'ENTITE' : 'ORGANISATION',
       sourceId: params.organizationId,
-      sourceNom: row?.organization?.nom ?? null,
+      sourceNom: row?.nom || row?.organization?.nom || null,
       orgConformiteId: row?.id ?? null,
     }
   }

@@ -21,6 +21,7 @@ import {
 } from '@/lib/org-config-defaults'
 import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
 import { DEFAULT_ACTION_DELAIS_MOIS, cleanActionDelais, type ActionDelaisMois } from '@/lib/risk-action'
+import { sanitizeQualificationConfig, EMPTY_QUALIFICATION_CONFIG, type QualificationConfig } from '@/lib/qualification'
 
 /** Entités responsables de mesures par défaut. */
 export const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
@@ -31,6 +32,7 @@ export interface RawOrgConfig {
   typesImpacts: unknown
   referentielsActifs: unknown
   referentielsDesactives: unknown
+  qualificationQuestionnaire: unknown
   strategiesTraitement: unknown
   exemplesAteliers: unknown
   echellesEcosysteme: unknown
@@ -39,6 +41,7 @@ export interface RawOrgConfig {
   conformiteActive: boolean
   conformiteNiveau: string
   conformiteSnapshotMode: string
+  conformiteSnapshotPeriode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
@@ -70,6 +73,8 @@ export interface OrgConfigResolved {
   referentielsActifs: ReferentielActif[]
   /** Codes de référentiels GRC (BUILTIN + CUSTOM) désactivés pour l'organisation. */
   referentielsDesactives: string[]
+  /** Personnalisation du questionnaire de qualification (overrides natifs + questions custom). */
+  qualificationQuestionnaire: QualificationConfig
   strategiesTraitement: StrategieTraitement[]
   exemplesAteliers: Record<string, unknown[]>
   echellesEcosysteme: Record<string, unknown>
@@ -78,6 +83,7 @@ export interface OrgConfigResolved {
   conformiteActive: boolean
   conformiteNiveau: string
   conformiteSnapshotMode: string
+  conformiteSnapshotPeriode: string
   conseilsAteliersActive: boolean
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
@@ -109,6 +115,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   typesImpacts: DEFAULT_TYPES_IMPACTS,
   referentielsActifs: DEFAULT_REFERENTIELS,
   referentielsDesactives: [],
+  qualificationQuestionnaire: EMPTY_QUALIFICATION_CONFIG,
   strategiesTraitement: DEFAULT_STRATEGIES,
   exemplesAteliers: {},
   echellesEcosysteme: {},
@@ -116,8 +123,9 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   qualificationObligatoire: false,
   // Module conformité activé par défaut (résolution des orgs sans valeur explicite).
   conformiteActive: true,
-  conformiteNiveau: 'ANALYSE',
+  conformiteNiveau: 'ORGANISATION',
   conformiteSnapshotMode: 'MANUEL',
+  conformiteSnapshotPeriode: 'MENSUEL',
   conseilsAteliersActive: true,
   acceptationRisquesActive: false,
   gelApresAcceptationActive: true,
@@ -150,9 +158,9 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive'
-type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'derogationWorkflow'
+type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
 /**
@@ -191,6 +199,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     typesImpacts: pickJson('typesImpacts', defaults.typesImpacts),
     referentielsActifs: pickJson('referentielsActifs', defaults.referentielsActifs),
     referentielsDesactives: pickJson('referentielsDesactives', defaults.referentielsDesactives),
+    qualificationQuestionnaire: sanitizeQualificationConfig(pickJson('qualificationQuestionnaire', defaults.qualificationQuestionnaire)),
     strategiesTraitement: pickJson('strategiesTraitement', defaults.strategiesTraitement),
     exemplesAteliers: pickJson('exemplesAteliers', defaults.exemplesAteliers),
     echellesEcosysteme: pickJson('echellesEcosysteme', defaults.echellesEcosysteme),
@@ -199,6 +208,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     conformiteActive: pickBool('conformiteActive', defaults.conformiteActive),
     conformiteNiveau: pickStr('conformiteNiveau', defaults.conformiteNiveau),
     conformiteSnapshotMode: pickStr('conformiteSnapshotMode', defaults.conformiteSnapshotMode),
+    conformiteSnapshotPeriode: pickStr('conformiteSnapshotPeriode', defaults.conformiteSnapshotPeriode),
     conseilsAteliersActive: pickBool('conseilsAteliersActive', defaults.conseilsAteliersActive),
     acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
     gelApresAcceptationActive: pickBool('gelApresAcceptationActive', defaults.gelApresAcceptationActive),

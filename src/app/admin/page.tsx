@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
+import VersionCard from '@/components/VersionCard'
 import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
@@ -102,27 +103,30 @@ export default function AdminDashboardPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900"><Home size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> Administration ACRA</h1>
-          <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme</p>
+          <h1 className="text-2xl font-bold text-gray-900"><Home size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.adminDashboard.title}</h1>
+          <p className="text-gray-500 mt-1">{t.adminDashboard.subtitle}</p>
         </div>
+
+        {/* Version & mises à jour (super-admin) */}
+        {currentRole === 'SUPER_ADMIN' && <VersionCard />}
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div className="card p-5 text-center">
             <div className="text-3xl font-bold text-gray-900">{stats?.totalUsers ?? 0}</div>
-            <div className="text-sm text-gray-500 mt-1">Utilisateurs total</div>
+            <div className="text-sm text-gray-500 mt-1">{t.adminDashboard.kpiTotalUsers}</div>
           </div>
           <div className="card p-5 text-center">
             <div className="text-3xl font-bold text-green-600">{stats?.activeUsers ?? 0}</div>
-            <div className="text-sm text-gray-500 mt-1">Comptes actifs</div>
+            <div className="text-sm text-gray-500 mt-1">{t.adminDashboard.kpiActiveUsers}</div>
           </div>
           <div className="card p-5 text-center">
             <div className="text-3xl font-bold text-amber-600">{stats?.suspendedUsers ?? 0}</div>
-            <div className="text-sm text-gray-500 mt-1">Comptes suspendus</div>
+            <div className="text-sm text-gray-500 mt-1">{t.adminDashboard.kpiSuspended}</div>
           </div>
           <Link href="/admin/audit" className="card p-5 text-center hover:shadow-md transition-shadow">
             <div className="text-3xl font-bold text-indigo-600"><ClipboardList size={28} aria-hidden="true" /></div>
-            <div className="text-sm text-gray-500 mt-1">Journal d&apos;audit</div>
+            <div className="text-sm text-gray-500 mt-1">{t.adminDashboard.kpiAudit}</div>
           </Link>
         </div>
 
@@ -131,8 +135,8 @@ export default function AdminDashboardPage() {
           {/* Répartition par rôle */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-800">Répartition des rôles</h2>
-              <Link href="/admin/users" className="text-xs text-ebios-600 hover:underline">Gérer →</Link>
+              <h2 className="font-semibold text-gray-800">{t.adminDashboard.rolesTitle}</h2>
+              <Link href="/admin/users" className="text-xs text-ebios-600 hover:underline">{t.adminDashboard.manage} →</Link>
             </div>
             <div className="space-y-2">
               {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as UserRole[]).map(role => {
@@ -160,12 +164,12 @@ export default function AdminDashboardPage() {
           {/* Activité récente */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-800">Activité récente</h2>
-              <Link href="/admin/audit" className="text-xs text-ebios-600 hover:underline">Tout voir →</Link>
+              <h2 className="font-semibold text-gray-800">{t.adminDashboard.recentTitle}</h2>
+              <Link href="/admin/audit" className="text-xs text-ebios-600 hover:underline">{t.adminDashboard.seeAll} →</Link>
             </div>
             <div className="space-y-2">
               {(stats?.recentEvents ?? []).length === 0 ? (
-                <p className="text-sm text-gray-500 italic text-center py-4">Aucun événement</p>
+                <p className="text-sm text-gray-500 italic text-center py-4">{t.adminDashboard.noEvents}</p>
               ) : stats?.recentEvents.map(ev => (
                 <div key={ev.id} className="flex items-start gap-3 py-1.5 border-b border-gray-50 last:border-0">
                   {(() => { const AI = ACTION_ICONS[ev.action] ?? Pin; return <span className="flex-shrink-0 text-gray-500"><AI size={16} aria-hidden="true" /></span> })()}
@@ -189,29 +193,29 @@ export default function AdminDashboardPage() {
           <Link href="/admin/users" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
             <span className="text-2xl"><Users size={24} aria-hidden="true" /></span>
             <div>
-              <div className="font-semibold text-gray-800 text-sm">Gestion des utilisateurs</div>
-              <div className="text-xs text-gray-500">Rôles, suspension, suppression</div>
+              <div className="font-semibold text-gray-800 text-sm">{t.adminDashboard.scUsers}</div>
+              <div className="text-xs text-gray-500">{t.adminDashboard.scUsersDesc}</div>
             </div>
           </Link>
           <Link href="/admin/security" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
             <span className="text-2xl"><ShieldCheck size={24} aria-hidden="true" /></span>
             <div>
-              <div className="font-semibold text-gray-800 text-sm">Politique de sécurité</div>
-              <div className="text-xs text-gray-500">Mots de passe, verrouillage</div>
+              <div className="font-semibold text-gray-800 text-sm">{t.adminDashboard.scSecurity}</div>
+              <div className="text-xs text-gray-500">{t.adminDashboard.scSecurityDesc}</div>
             </div>
           </Link>
           <Link href="/admin/audit" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
             <span className="text-2xl"><ClipboardList size={24} aria-hidden="true" /></span>
             <div>
-              <div className="font-semibold text-gray-800 text-sm">Journal d&apos;audit</div>
-              <div className="text-xs text-gray-500">Tous les événements + export CSV</div>
+              <div className="font-semibold text-gray-800 text-sm">{t.adminDashboard.scAudit}</div>
+              <div className="text-xs text-gray-500">{t.adminDashboard.scAuditDesc}</div>
             </div>
           </Link>
           <Link href="/admin/instance" className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3">
             <span className="text-2xl"><Server size={24} aria-hidden="true" /></span>
             <div>
-              <div className="font-semibold text-gray-800 text-sm">Paramètres d&apos;instance</div>
-              <div className="text-xs text-gray-500">Identité, modules, clés d&apos;API, webhooks</div>
+              <div className="font-semibold text-gray-800 text-sm">{t.adminDashboard.scInstance}</div>
+              <div className="text-xs text-gray-500">{t.adminDashboard.scInstanceDesc}</div>
             </div>
           </Link>
         </div>

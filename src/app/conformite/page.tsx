@@ -80,9 +80,12 @@ export default async function ConformiteGlobalPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.conformiteGlobal.title}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{t.conformiteGlobal.subtitle}</p>
+        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.conformiteGlobal.title}</h1>
+            <p className="text-gray-500 text-sm mt-0.5">{t.conformiteGlobal.subtitle}</p>
+          </div>
+          <a href="/conformite/socle" className="btn-primary text-sm shrink-0">{t.conformiteGlobal.editSocle}</a>
         </div>
 
         <div className="card p-5">
@@ -90,9 +93,9 @@ export default async function ConformiteGlobalPage() {
             rows={rows}
             refs={refs}
             orgCol={t.conformiteGlobal.orgCol}
-            emptyLabel={t.conformiteGlobal.empty}
-            emptyHref="/configuration#conformite-config"
-            emptyCta={t.conformiteGlobal.emptyCta}
+            emptyLabel={t.conformiteGlobal.emptyNew}
+            emptyHref="/conformite/socle"
+            emptyCta={t.conformiteGlobal.editSocle}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
           />

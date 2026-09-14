@@ -50,8 +50,8 @@ async function guard(req: NextRequest, orgId: string) {
 /** Récupère (et crée si besoin) l'entité Conformite (organisation × référentiel). */
 async function getOrCreate(orgId: string, referentiel: string) {
   return prisma.conformite.upsert({
-    where: { organizationId_referentiel: { organizationId: orgId, referentiel } },
-    create: { organizationId: orgId, referentiel, entries: [] },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
+    create: { organizationId: orgId, referentiel, entite: '', entries: [] },
     update: {},
     select: { id: true, entries: true },
   })
@@ -133,13 +133,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const total = getFrameworkControles(referentiel as FrameworkId, undefined, locale).length
 
   const conf = await prisma.conformite.findUnique({
-    where: { organizationId_referentiel: { organizationId: orgId, referentiel } },
+    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite: '' } },
     select: {
       id: true, entries: true, updatedAt: true,
       snapshots: { orderBy: { createdAt: 'asc' }, select: { id: true, label: true, createdAt: true, entries: true } },
     },
   })
-  if (!conf) return NextResponse.json({ current: null, snapshots: [] })
+  if (!conf) return NextResponse.json({ current: null, snapshots: [], entries: [] })
 
   const pointOf = (entries: unknown, at: Date, id: string, label: string | null) => {
     const s = conformiteStats(sanitizeConformite(entries), total)
@@ -148,5 +148,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   return NextResponse.json({
     current: pointOf(conf.entries, conf.updatedAt, conf.id, null),
     snapshots: conf.snapshots.map(s => pointOf(s.entries, s.createdAt, s.id, s.label)),
+    // Entrées brutes (par contrôle) pour hydrater l'éditeur de socle.
+    entries: sanitizeConformite(conf.entries),
   })
 }

@@ -33,9 +33,9 @@ describe('getDocumentTemplate', () => {
 })
 
 describe('templateFilename', () => {
-  it('produit un nom de fichier .md sûr', () => {
+  it('produit un nom de fichier .docx sûr', () => {
     const name = templateFilename(DOCUMENT_TEMPLATES[0])
-    expect(name.endsWith('.md')).toBe(true)
+    expect(name.endsWith('.docx')).toBe(true)
     expect(sanitizeFilename(name)).toBe(name) // déjà sûr
   })
 })

@@ -16,10 +16,13 @@ export interface DocumentTemplate {
   contenu: string // Markdown
 }
 
-/** Nom de fichier .md sûr et déterministe pour un modèle. */
+/** Nom de fichier .docx sûr et déterministe pour un modèle (annexe contractuelle). */
 export function templateFilename(t: DocumentTemplate): string {
-  return `${t.id}.md`
+  return `${t.id}.docx`
 }
+
+/** Type MIME des documents .docx générés. */
+export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 export function getDocumentTemplate(id: string): DocumentTemplate | undefined {
   return DOCUMENT_TEMPLATES.find((t) => t.id === id)
@@ -244,6 +247,140 @@ Conditions de sous-traitance des fonctions critiques/importantes ; information e
 Plan de sortie documenté garantissant la transition sans interruption : [renvoi annexe réversibilité].
 `
 
+const NDA = `# Accord de confidentialité (NDA)
+
+> Entre **[Partie A]** et **[Partie B]** — en date du [date].
+
+## 1. Objet
+Protéger les informations confidentielles échangées dans le cadre de **[objet de la relation]**.
+
+## 2. Informations confidentielles
+Toute information technique, commerciale, financière ou personnelle, écrite ou orale, communiquée par une partie à l'autre, sauf information publique ou déjà connue légitimement.
+
+## 3. Engagements
+- Utiliser les informations uniquement aux fins de la relation.
+- Ne pas divulguer à un tiers sans accord écrit préalable.
+- Limiter l'accès aux personnes ayant besoin d'en connaître, elles-mêmes tenues à la confidentialité.
+- Protéger les informations avec au moins le même soin que ses propres informations confidentielles.
+
+## 4. Durée
+Obligation de confidentialité pendant [durée] à compter de la divulgation, y compris après la fin de la relation.
+
+## 5. Restitution
+Restitution ou destruction des informations sur demande ou en fin de relation, avec attestation.
+
+## 6. Données personnelles
+Tout traitement de données personnelles est encadré par un accord distinct (art. 28 RGPD).
+`
+
+const SLA = `# Convention de niveau de service (SLA)
+
+> Annexe de service au contrat entre **[Client]** et **[Prestataire]**.
+
+## 1. Services couverts
+[Description des services concernés par les engagements de niveau de service.]
+
+## 2. Indicateurs et cibles
+| Indicateur | Cible | Mesure |
+|---|---|---|
+| Disponibilité | [ex. 99,9 %/mois] | [méthode] |
+| Délai de prise en compte (incident majeur) | [ex. 1 h] | [méthode] |
+| Délai de rétablissement | [ex. 4 h] | [méthode] |
+
+## 3. Horaires de service et support
+- Plage de service : [ex. 24/7 ou 8h-18h ouvrés]
+- Canaux de support : [portail, téléphone, e-mail]
+
+## 4. Gestion des incidents
+- Niveaux de criticité et délais associés : [à compléter]
+- Escalade : [à compléter]
+
+## 5. Reporting
+Rapport périodique [mensuel] des indicateurs et des incidents.
+
+## 6. Pénalités
+Modalités de pénalité en cas de non-atteinte des cibles : [à compléter].
+`
+
+const POL_ACCES = `# Politique de gestion des accès et des habilitations
+
+## 1. Objet et périmètre
+Définir les règles d'attribution, de revue et de retrait des accès au système d'information de **[organisation]**.
+
+## 2. Principes
+- Moindre privilège et besoin d'en connaître.
+- Séparation des tâches sur les fonctions sensibles.
+- Nominativité des comptes ; comptes à privilèges tracés et encadrés.
+
+## 3. Cycle de vie des accès
+- Attribution : sur demande validée par [responsable], selon un profil type.
+- Modification : à chaque changement de fonction.
+- Retrait : au départ ou à la fin de mission, sans délai.
+
+## 4. Revue des habilitations
+Revue périodique [semestrielle] des accès, en particulier des comptes à privilèges et des comptes dormants.
+
+## 5. Authentification
+- Politique de mot de passe conforme à [référence].
+- Authentification multifacteur pour les accès sensibles et distants.
+
+## 6. Journalisation et contrôle
+Journalisation des accès et des actions à privilèges ; contrôles réguliers.
+`
+
+const PROC_INCIDENT = `# Procédure de gestion des incidents de sécurité
+
+## 1. Objet
+Organiser la détection, le traitement et le retour d'expérience des incidents de sécurité de **[organisation]**.
+
+## 2. Détection et signalement
+- Sources : supervision, alertes, signalement utilisateur.
+- Point de contact : [contact / canal] — signalement sans délai.
+
+## 3. Qualification
+- Catégorisation (confidentialité / intégrité / disponibilité) et évaluation de la gravité.
+- Déclenchement de la cellule de crise si gravité élevée.
+
+## 4. Traitement
+- Endiguement, éradication, rétablissement.
+- Préservation des preuves (journaux, images).
+
+## 5. Notification
+- Interne : [direction, métiers concernés].
+- Externe : CNIL sous 72 h en cas de violation de données personnelles ; autorités sectorielles / régulateur selon obligations (ex. DORA).
+
+## 6. Clôture et retour d'expérience
+Analyse des causes, plan d'action correctif, mise à jour des mesures et de la présente procédure.
+`
+
+const FICHE_NC = `# Fiche de non-conformité
+
+## Identification
+- Référence : [NC-AAAA-NNN]
+- Date de constat : [date]
+- Constatée par : [nom / fonction]
+- Source : [audit, contrôle, incident, réclamation]
+
+## Description de l'écart
+[Description factuelle de la non-conformité, exigence concernée, référentiel.]
+
+## Analyse des causes
+[Causes racines identifiées.]
+
+## Traitement immédiat (correction)
+[Action de correction et date.]
+
+## Action corrective (pour éviter la récurrence)
+- Action : [à compléter]
+- Responsable : [à compléter]
+- Échéance : [à compléter]
+
+## Vérification d'efficacité
+- Date de vérification : [date]
+- Résultat : [efficace / non efficace]
+- Clôture : [date / responsable]
+`
+
 export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   { id: 'pas', titre: 'Plan d’Assurance Sécurité (PAS)', type: 'PROCEDURE',
     description: 'Annexe sécurité type à joindre à un contrat de prestation.', contenu: PAS },
@@ -259,4 +396,14 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Charte informatique type pour les utilisateurs du SI.', contenu: CHARTE_SI },
   { id: 'dora-tic', titre: 'Annexe DORA — Prestataire de services TIC (art. 30)', type: 'PROCEDURE',
     description: 'Clauses contractuelles DORA pour un prestataire TIC critique (art. 30).', contenu: DORA_TIC },
+  { id: 'nda', titre: 'Accord de confidentialité (NDA)', type: 'PROCEDURE',
+    description: 'Accord de confidentialité type entre deux parties.', contenu: NDA },
+  { id: 'sla', titre: 'Convention de niveau de service (SLA)', type: 'PROCEDURE',
+    description: 'Annexe de niveaux de service (disponibilité, délais, pénalités).', contenu: SLA },
+  { id: 'politique-acces', titre: 'Politique de gestion des accès et habilitations', type: 'POLITIQUE',
+    description: 'Règles d’attribution, de revue et de retrait des accès au SI.', contenu: POL_ACCES },
+  { id: 'procedure-incident', titre: 'Procédure de gestion des incidents de sécurité', type: 'PROCEDURE',
+    description: 'Détection, traitement, notification et retour d’expérience des incidents.', contenu: PROC_INCIDENT },
+  { id: 'fiche-nc', titre: 'Fiche de non-conformité', type: 'PROCEDURE',
+    description: 'Formulaire de constat, analyse et suivi d’une non-conformité.', contenu: FICHE_NC },
 ]

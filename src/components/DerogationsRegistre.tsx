@@ -1,13 +1,27 @@
 'use client'
 
-import { IdCard, X } from 'lucide-react'
+import { IdCard, X, ChevronDown, Check, Ban } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import AutocompleteInput from '@/components/AutocompleteInput'
-import { etatDerogation, joursAvantExpiration, type DerogationEtat, type DerogationStatut } from '@/lib/derogation'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
+import {
+  etatDerogation, joursAvantExpiration,
+  canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation, canCloturerDerogation, canRevoquerDerogation,
+  type DerogationEtat, type DerogationStatut,
+} from '@/lib/derogation'
+
+interface DerogDetail {
+  id: string; statut: string; portee: string; referentiel: string | null; ref: string | null; intitule: string
+  motif: string; mesuresCompensatoires: string; dateDebut: string | null; dateFin: string | null
+  demandeurId: string; avisRssiPar: string | null; avisRssiLe: string | null
+  avisRssiFavorable: boolean | null; avisRssiCommentaire: string | null
+  valideePar: string | null; valideeLe: string | null; rejetMotif: string | null; clotureCommentaire: string | null
+  createdAt: string
+}
 
 export interface RegistreRow {
   id: string
@@ -52,7 +66,7 @@ function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
   }
 }
 
-export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365 }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number }) {
+export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365, userId = '', userRole = 'ANALYSTE', secondeLigneActive = true }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number; userId?: string; userRole?: UserRole; secondeLigneActive?: boolean }) {
   const { t } = useTranslation()
   const d = t.derogations
   const router = useRouter()
@@ -60,6 +74,38 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Vue détail / actions de workflow.
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [detail, setDetail] = useState<DerogDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [actionBusy, setActionBusy] = useState(false)
+  const [actionComment, setActionComment] = useState('')
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const sessionUser = useMemo(() => ({ id: userId, role: userRole }), [userId, userRole])
+
+  async function toggleRow(id: string) {
+    setActionError(null); setActionComment('')
+    if (openId === id) { setOpenId(null); setDetail(null); return }
+    setOpenId(id); setDetail(null); setDetailLoading(true)
+    try {
+      const r = await fetch(`/api/derogations/${id}`)
+      setDetail(r.ok ? await r.json() : null)
+    } catch { setDetail(null) } finally { setDetailLoading(false) }
+  }
+
+  async function doAction(action: string, extra: Record<string, unknown> = {}) {
+    if (!openId) return
+    setActionBusy(true); setActionError(null)
+    const res = await fetch(`/api/derogations/${openId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra }),
+    })
+    setActionBusy(false)
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(j.error ?? 'Erreur'); return }
+    setOpenId(null); setDetail(null); setActionComment('')
+    router.refresh()
+  }
   const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
   const [refs, setRefs] = useState<{ code: string; nom: string }[]>([])
   const [exigences, setExigences] = useState<{ ref: string; nom: string }[]>([])
@@ -217,10 +263,16 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">{d.empty}</td></tr>
-            ) : filtered.map(r => (
-              <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
-                <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{r.intitule}</td>
-                <td className="px-4 py-3">
+            ) : filtered.flatMap(r => [
+              <tr key={r.id} onClick={() => toggleRow(r.id)}
+                className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer">
+                <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ChevronDown size={14} aria-hidden="true" className={`text-gray-400 transition-transform ${openId === r.id ? 'rotate-180' : ''}`} />
+                    {r.intitule}
+                  </span>
+                </td>
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                   {r.analyseId
                     ? <Link href={`/analyses/${r.analyseId}`} className="text-ebios-600 dark:text-ebios-300 hover:underline">{r.analyseNom}</Link>
                     : <span className="text-gray-400 dark:text-gray-500 italic">{d.orgLevel}</span>}
@@ -243,8 +295,80 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                     </>
                   ) : '—'}
                 </td>
-              </tr>
-            ))}
+              </tr>,
+              openId === r.id && (
+                <tr key={r.id + '-detail'} className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800">
+                  <td colSpan={5} className="px-4 py-4">
+                    {detailLoading ? <p className="text-sm text-gray-400">{t.loading}</p> : !detail ? <p className="text-sm text-gray-400">{d.detail.loadError}</p> : (
+                      <div className="space-y-3 max-w-4xl">
+                        <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500 uppercase mb-0.5">{d.detail.motif}</div>
+                            <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{detail.motif || '—'}</p>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-gray-500 uppercase mb-0.5">{d.detail.mesures}</div>
+                            <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{detail.mesuresCompensatoires || '—'}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+                          <span>{d.detail.demandeLe} {formatDate(detail.createdAt, locale)}</span>
+                          {detail.dateDebut && <span>{d.detail.debut} {formatDate(detail.dateDebut, locale)}</span>}
+                          {detail.dateFin && <span>{d.detail.fin} {formatDate(detail.dateFin, locale)}</span>}
+                        </div>
+                        {detail.avisRssiPar && (
+                          <div className={`text-xs rounded-lg border px-3 py-2 ${detail.avisRssiFavorable ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-300' : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300'}`}>
+                            <span className="font-semibold">{detail.avisRssiFavorable ? d.detail.avisFavorable : d.detail.avisDefavorable}</span>
+                            {detail.avisRssiCommentaire && <span> — {detail.avisRssiCommentaire}</span>}
+                          </div>
+                        )}
+                        {detail.rejetMotif && <p className="text-xs text-red-700 dark:text-red-300">{d.detail.motifRejet} {detail.rejetMotif}</p>}
+
+                        {(() => {
+                          const rbac = { statut: detail.statut as DerogationStatut, demandeurId: detail.demandeurId, avisRssiPar: detail.avisRssiPar }
+                          const st = detail.statut
+                          const peutEditer = detail.demandeurId === userId || isAdminRole(userRole)
+                          const avis = st === 'DEMANDEE' && canAvisRssiDerogation(sessionUser, rbac)
+                          const dbl = st === 'DOUBLE_REGARD' && canDoubleRegardDerogation(sessionUser, rbac)
+                          const valid = st === 'VALIDATION_METIER' && canValiderDerogation(sessionUser, rbac, { secondeLigneActive })
+                          const cloture = st === 'ACTIVE' && canCloturerDerogation(sessionUser, rbac, peutEditer)
+                          const revoque = st === 'ACTIVE' && canRevoquerDerogation(sessionUser, rbac)
+                          const needsComment = avis || dbl || valid || revoque
+                          const hasActions = avis || dbl || valid || cloture || revoque
+                          if (!hasActions) return <p className="text-xs text-gray-400 italic">{d.detail.aucuneAction}</p>
+                          return (
+                            <div className="space-y-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                              {actionError && <p className="text-xs text-red-600">{actionError}</p>}
+                              {needsComment && (
+                                <textarea value={actionComment} onChange={e => setActionComment(e.target.value)} rows={2}
+                                  placeholder={d.detail.commentairePlaceholder}
+                                  className="w-full text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100" />
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                {avis && <>
+                                  <button disabled={actionBusy} onClick={() => doAction('AVIS_RSSI', { favorable: true })} className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-50"><Check size={13} aria-hidden="true" /> {d.detail.avisFavorableBtn}</button>
+                                  <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('AVIS_RSSI', { favorable: false, commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 inline-flex items-center gap-1.5"><Ban size={13} aria-hidden="true" /> {d.detail.avisDefavorableBtn}</button>
+                                </>}
+                                {dbl && <>
+                                  <button disabled={actionBusy} onClick={() => doAction('DOUBLE_REGARD', { favorable: true })} className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-50"><Check size={13} aria-hidden="true" /> {d.detail.validerBtn}</button>
+                                  <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('DOUBLE_REGARD', { favorable: false, commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 inline-flex items-center gap-1.5"><Ban size={13} aria-hidden="true" /> {d.detail.rejeterBtn}</button>
+                                </>}
+                                {valid && <>
+                                  <button disabled={actionBusy} onClick={() => doAction('VALIDER')} className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-50"><Check size={13} aria-hidden="true" /> {d.detail.validerBtn}</button>
+                                  <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('REJETER', { commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 inline-flex items-center gap-1.5"><Ban size={13} aria-hidden="true" /> {d.detail.rejeterBtn}</button>
+                                </>}
+                                {cloture && <button disabled={actionBusy} onClick={() => doAction('CLOTURER', { commentaire: actionComment || undefined })} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.cloturerBtn}</button>}
+                                {revoque && <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('REVOQUER', { commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50">{d.detail.revoquerBtn}</button>}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ),
+            ])}
           </tbody>
         </table>
       </div>

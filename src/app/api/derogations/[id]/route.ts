@@ -16,6 +16,51 @@ import { NextRequest, NextResponse } from 'next/server'
 
 type Params = { params: Promise<{ id: string }> }
 
+// GET /api/derogations/[id] — détail complet d'une dérogation (motif, mesures
+// compensatoires, dates, avis RSSI…), pour la vue « voir le contenu » du registre.
+export async function GET(_req: NextRequest, { params }: Params) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const userId = (session.user as { id: string }).id
+  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+
+  const { id } = await params
+  const derog = await prisma.derogation.findUnique({
+    where: { id },
+    include: { analyse: { select: { nom: true } } },
+  })
+  if (!derog) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+
+  // Contrôle d'accès en LECTURE : analyse accessible OU organisation visible.
+  if (derog.analyseId) {
+    const analyse = await prisma.analyse.findFirst({
+      where: await analyseAccessWhere(userId, userRole, derog.analyseId),
+      select: { id: true, deletedAt: true },
+    })
+    if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  } else {
+    const { all, ids } = await getAccessibleOrgIds(userId, userRole)
+    if (!all && !ids.includes(derog.organizationId)) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  }
+
+  return NextResponse.json({
+    id: derog.id, statut: derog.statut, portee: derog.portee,
+    referentiel: derog.referentiel, ref: derog.ref, intitule: derog.intitule,
+    motif: derog.motif, mesuresCompensatoires: derog.mesuresCompensatoires,
+    dateDebut: derog.dateDebut, dateFin: derog.dateFin,
+    demandeurId: derog.demandeurId,
+    avisRssiPar: derog.avisRssiPar, avisRssiLe: derog.avisRssiLe,
+    avisRssiFavorable: derog.avisRssiFavorable, avisRssiCommentaire: derog.avisRssiCommentaire,
+    doubleRegardCommentaire: derog.doubleRegardCommentaire,
+    valideePar: derog.valideePar, valideeLe: derog.valideeLe,
+    rejeteeLe: derog.rejeteeLe, rejetMotif: derog.rejetMotif,
+    clotureCommentaire: derog.clotureCommentaire, revoqueMotif: derog.revoqueMotif,
+    prolongations: Array.isArray(derog.prolongations) ? derog.prolongations : [],
+    analyseId: derog.analyseId, analyseNom: derog.analyse?.nom ?? null,
+    createdAt: derog.createdAt,
+  })
+}
+
 // PATCH /api/derogations/[id] — transition du workflow (body: { action, ... }).
 export async function PATCH(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
