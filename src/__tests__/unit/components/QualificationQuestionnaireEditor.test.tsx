@@ -22,7 +22,7 @@ describe('QualificationQuestionnaireEditor', () => {
 
     render(<QualificationQuestionnaireEditor initial={{ overrides: {}, custom: [] }} builtins={[{ id: 'criticite', label: 'Criticité' }]} />)
 
-    fireEvent.change(screen.getByPlaceholderText('ph', { selector: 'input' }), { target: { value: 'Budget alloué ?' } })
+    fireEvent.change(screen.getByPlaceholderText('ph'), { target: { value: 'Budget alloué ?' } })
     fireEvent.click(screen.getByText('Ajouter'))
     fireEvent.click(screen.getByText('Enregistrer'))
 
