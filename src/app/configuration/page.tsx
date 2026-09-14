@@ -1267,6 +1267,15 @@ export default function ConfigurationPage() {
         {/* ═══ Section 2 — Référentiels et options ════════════════════════════ */}
         <div className={section === 'options' ? '' : 'hidden'}>
 
+        {/* ── Entités & rôles (ADMIN uniquement) ───────────────────────────── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.entites.navTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.entites.navDesc}</p>
+            <a href="/configuration/entites" className="btn-primary text-sm inline-flex items-center gap-1.5">{t.entites.title} →</a>
+          </section>
+        )}
+
         {/* ── Fonctionnalités optionnelles (ADMIN uniquement) ──────────────── */}
         {isAdmin && (
           <section className="mt-8 card p-6">
