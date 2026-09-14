@@ -1005,6 +1005,10 @@ model Analyse {
   // Suivi de conformité (entité Conformite) rattaché à l'analyse quand la portée est
   // ORGANISATION/ENTITE — permet de réutiliser un suivi org/entité dans l'analyse. Null = non lié.
   suiviConformiteId    String?
+  // Override par analyse de la portée de conformité : "ANALYSE" (conformité propre,
+  // périmètre différent/nouveau) ou "ORGANISATION" (reprendre le socle org). Null =
+  // suivre la configuration de l'organisation (conformiteNiveau).
+  conformitePortee     String?
   // Mention de protection du document d'analyse (label EBIOS RM §3.2) — cf. lib/mention-protection.ts
   mentionProtection    String        @default("NON_PROTEGEE") // NON_PROTEGEE | SENSIBLE | RESTREINTE | CONFIDENTIELLE
   // Version x.y de l'analyse (label EBIOS RM §3.4) — cf. lib/version-analyse.ts

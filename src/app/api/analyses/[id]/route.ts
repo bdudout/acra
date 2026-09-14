@@ -84,6 +84,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if ('mentionProtection' in body) {
     data.mentionProtection = normalizeMentionProtection(body.mentionProtection)
   }
+  // Override de portée de conformité propre à l'analyse : 'ANALYSE' | 'ORGANISATION'
+  // (autre / vide → null = suivre la config de l'organisation).
+  if ('conformitePortee' in body) {
+    data.conformitePortee = (body.conformitePortee === 'ANALYSE' || body.conformitePortee === 'ORGANISATION') ? body.conformitePortee : null
+  }
   // Méthode d'évaluation de la vraisemblance (label §EXI_M4_07).
   if ('methodeVraisemblance' in body) {
     data.methodeVraisemblance = normalizeMethode(body.methodeVraisemblance)

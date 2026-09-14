@@ -10,6 +10,7 @@ import {
   usesConformiteEntity,
   shouldSnapshotOnChange,
   dueForAutoSnapshot,
+  effectiveConformiteNiveau,
   CONFORMITE_SNAPSHOT_PERIODES,
   DEFAULT_CONFORMITE_SNAPSHOT_PERIODE,
   sanitizeSnapshotPeriode,
@@ -30,6 +31,18 @@ describe('conformite-config — options Palier 2', () => {
     expect(sanitizeConformiteNiveau('bidon')).toBe('ORGANISATION')
     expect(sanitizeConformiteNiveau(undefined)).toBe('ORGANISATION')
     expect(sanitizeConformiteNiveau(null)).toBe('ORGANISATION')
+  })
+
+  it('effectiveConformiteNiveau : override analyse (ANALYSE/ORGANISATION) sinon config org', () => {
+    // Override valide → gagne.
+    expect(effectiveConformiteNiveau('ANALYSE', 'ORGANISATION')).toBe('ANALYSE')
+    expect(effectiveConformiteNiveau('ORGANISATION', 'ANALYSE')).toBe('ORGANISATION')
+    // Pas d'override (null / vide / invalide) → config org.
+    expect(effectiveConformiteNiveau(null, 'ENTITE')).toBe('ENTITE')
+    expect(effectiveConformiteNiveau('', 'ANALYSE')).toBe('ANALYSE')
+    expect(effectiveConformiteNiveau('bidon', 'ORGANISATION')).toBe('ORGANISATION')
+    // ENTITE n'est pas un override d'analyse valide → retombe sur la config org.
+    expect(effectiveConformiteNiveau('ENTITE', 'ANALYSE')).toBe('ANALYSE')
   })
 
   it('isEntiteLevelConformite / usesConformiteEntity', () => {

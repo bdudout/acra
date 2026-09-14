@@ -22,6 +22,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, marquerDerogations, type ConformiteStatut } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
+import { effectiveConformiteNiveau, usesConformiteEntity } from '@/lib/conformite-config'
 import { derogRefsActives } from '@/lib/derogation.server'
 import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
 
@@ -146,7 +147,9 @@ export default async function AtelierPage({
     socle: socleAnalyse?.cadrage
       ? { id: socleAnalyse.id, nom: socleAnalyse.nom, referentielMesures: socleAnalyse.referentielMesures, entries: sanitizeConformite(socleAnalyse.cadrage.socleSecurite) }
       : null,
-    conformiteNiveau: orgConfig.conformiteNiveau,
+    // Portée EFFECTIVE : override de l'analyse (propre vs socle org) sinon config org.
+    conformiteNiveau: effectiveConformiteNiveau((analyse as any).conformitePortee, orgConfig.conformiteNiveau),
+    suiviConformiteId: (analyse as any).suiviConformiteId,
   })
   if (conformiteActive && confCtx.entries.length > 0) {
     // Contrôles personnalisés seulement en niveau ANALYSE (l'org utilise le référentiel standard).
@@ -278,6 +281,8 @@ export default async function AtelierPage({
                 conformiteLevel={confCtx.level}
                 conformiteSourceId={confCtx.sourceId}
                 conformiteSourceNom={confCtx.sourceNom}
+                conformitePortee={(analyse as any).conformitePortee ?? ''}
+                orgConformiteOrgScoped={usesConformiteEntity(orgConfig.conformiteNiveau)}
               />
             )}
             {atelierNum === 2 && (

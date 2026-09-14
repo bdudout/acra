@@ -70,6 +70,20 @@ export function isEntiteLevelConformite(niveau: unknown): boolean {
   return sanitizeConformiteNiveau(niveau) === 'ENTITE'
 }
 
+// Override par analyse : une analyse peut forcer sa conformité en « propre »
+// (ANALYSE) ou « reprendre le socle org » (ORGANISATION). Seules ces deux valeurs
+// sont des overrides valides ; toute autre (null, '', ENTITE, invalide) → on suit
+// la configuration de l'organisation.
+export const ANALYSE_CONFORMITE_OVERRIDES = ['ANALYSE', 'ORGANISATION'] as const
+export type AnalyseConformiteOverride = typeof ANALYSE_CONFORMITE_OVERRIDES[number]
+
+/** Portée EFFECTIVE de conformité d'une analyse : override d'analyse sinon config org. */
+export function effectiveConformiteNiveau(analyseOverride: unknown, orgNiveau: string): string {
+  return (ANALYSE_CONFORMITE_OVERRIDES as readonly string[]).includes(analyseOverride as string)
+    ? (analyseOverride as string)
+    : orgNiveau
+}
+
 /**
  * La conformité de référence vit-elle dans l'entité `Conformite` (org-level) ?
  * Vrai pour ORGANISATION et ENTITE ; faux pour ANALYSE (portée par l'analyse).
