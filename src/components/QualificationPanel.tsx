@@ -4,11 +4,14 @@ import { Compass } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import {
-  QUALIFICATION_QUESTIONS,
   FILIERE_OIV_OPTIONS,
   deriveOrientations,
   isQualificationComplete,
+  effectiveQualificationQuestions,
+  EMPTY_QUALIFICATION_CONFIG,
   type QualificationAnswers,
+  type QualificationConfig,
+  type EffectiveQualQuestion,
 } from '@/lib/qualification'
 
 interface Props {
@@ -19,6 +22,8 @@ interface Props {
   defaultOpen?: boolean
   /** Secteur de l'analyse — conditionne l'affichage de champs sectoriels (ex. finance/DORA). */
   secteur?: string | null
+  /** Personnalisation du questionnaire (overrides natifs + questions custom) — config org. */
+  config?: QualificationConfig | null
 }
 
 /**
@@ -26,7 +31,7 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null }: Props) {
   const isFinance = /banqu|financ|bancaire|assur|fintech/i.test(secteur ?? '')
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
@@ -36,32 +41,44 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
   // tant que la qualification est incomplète).
   const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
 
+  const cfg = config ?? EMPTY_QUALIFICATION_CONFIG
+  const customById = useMemo(() => new Map(cfg.custom.map(c => [c.id, c])), [cfg])
+  // Questions effectives = natives activées (selon overrides) + personnalisées.
+  const effQuestions = useMemo(() => effectiveQualificationQuestions(cfg), [cfg])
+
   const orientations = useMemo(() => deriveOrientations(answers), [answers])
-  const complete = useMemo(() => isQualificationComplete(answers), [answers])
+  const complete = useMemo(() => isQualificationComplete(answers, cfg), [answers, cfg])
   const qLabels = t.qualification.questions as Record<string, string>
   const critLabels = t.qualification.criticiteOptions as Record<string, string>
   const statutLabels = t.qualification.statutOptions as Record<string, string>
-  // Libellés d'options selon la question (criticité vs statut réglementaire…)
-  const optionLabels = (qid: string): Record<string, string> =>
-    qid === 'statutReglementaire' ? statutLabels : critLabels
   const oLabels = t.qualification.orientations as Record<string, string>
   const shortLabels = t.qualification.short as Record<string, string>
 
-  // Synthèse des points saillants pour la vue repliée (booléens « Oui » + criticité)
+  // Libellé d'une question : override org / i18n natif / libellé custom.
+  const questionLabel = (q: EffectiveQualQuestion): string =>
+    q.builtin ? (cfg.overrides[q.id]?.label || qLabels[q.id] || q.id) : (customById.get(q.id)?.label || q.id)
+  // Libellé d'une valeur d'option (natif via i18n ; custom via config).
+  const optLabel = (q: EffectiveQualQuestion, value: string): string => {
+    if (q.builtin) return (q.id === 'statutReglementaire' ? statutLabels : critLabels)[value] ?? value
+    return customById.get(q.id)?.options?.find(o => o.value === value)?.label ?? value
+  }
+  const shortLabel = (q: EffectiveQualQuestion): string => q.builtin ? (shortLabels[q.id] ?? questionLabel(q)) : questionLabel(q)
+
+  // Synthèse des points saillants pour la vue repliée (booléens « Oui » + choix)
   const summaryChips = useMemo(() => {
     const chips: { key: string; label: string; tone: 'pos' | 'warn' | 'neutral' }[] = []
-    for (const q of QUALIFICATION_QUESTIONS) {
+    for (const q of effQuestions) {
       const v = answers[q.id]
       if (q.type === 'bool') {
-        if (v === true) chips.push({ key: q.id, label: shortLabels[q.id] ?? q.id, tone: 'pos' })
+        if (v === true) chips.push({ key: q.id, label: shortLabel(q), tone: 'pos' })
       } else if (q.type === 'choice' && typeof v === 'string') {
         // 'aucun' (statut réglementaire neutre) n'est pas un point saillant
         if (q.id === 'statutReglementaire' && v === 'aucun') continue
-        chips.push({ key: q.id, label: `${shortLabels[q.id] ?? q.id} : ${optionLabels(q.id)[v] ?? v}`, tone: v === 'eleve' ? 'warn' : 'neutral' })
+        chips.push({ key: q.id, label: `${shortLabel(q)} : ${optLabel(q, v)}`, tone: v === 'eleve' ? 'warn' : 'neutral' })
       }
     }
     return chips
-  }, [answers]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [answers, effQuestions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const chipClass = (tone: 'pos' | 'warn' | 'neutral') =>
     tone === 'warn' ? 'bg-amber-100 text-amber-800 border-amber-200'
@@ -125,9 +142,9 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
       <p className="text-sm text-gray-500 mb-5">{t.qualification.intro}</p>
 
       <div className="space-y-4">
-        {QUALIFICATION_QUESTIONS.map(q => (
+        {effQuestions.map(q => (
           <div key={q.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <label className="text-sm text-gray-700 sm:max-w-[60%]">{qLabels[q.id] ?? q.id}</label>
+            <label className="text-sm text-gray-700 sm:max-w-[60%]">{questionLabel(q)}</label>
             {q.type === 'bool' ? (
               <div className="flex gap-2">
                 {[true, false].map(v => (
@@ -156,7 +173,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
                       answers[q.id] === opt.value ? 'bg-ebios-600 text-white border-ebios-600' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
                     }`}
                   >
-                    {optionLabels(q.id)[opt.value] ?? opt.value}
+                    {optLabel(q, opt.value)}
                   </button>
                 ))}
               </div>

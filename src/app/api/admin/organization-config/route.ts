@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeTaxonomie } from '@/lib/taxonomie'
 import { cleanActionDelais } from '@/lib/risk-action'
+import { sanitizeQualificationConfig } from '@/lib/qualification'
 import { sanitizeModulesPolicy } from '@/lib/module-policy'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -68,6 +69,7 @@ export async function GET(_req: NextRequest) {
     exemplesAteliers: cfg.exemplesAteliers,
     qualificationActive: cfg.qualificationActive,
     qualificationObligatoire: cfg.qualificationObligatoire,
+    qualificationQuestionnaire: cfg.qualificationQuestionnaire,
     conformiteActive: cfg.conformiteActive,
     conformiteNiveau: cfg.conformiteNiveau,
     conformiteSnapshotMode: cfg.conformiteSnapshotMode,
@@ -189,6 +191,7 @@ export async function PUT(req: NextRequest) {
 
   if (typeof body.qualificationActive === 'boolean') data.qualificationActive = body.qualificationActive
   if (typeof body.qualificationObligatoire === 'boolean') data.qualificationObligatoire = body.qualificationObligatoire
+  if ('qualificationQuestionnaire' in body) data.qualificationQuestionnaire = sanitizeQualificationConfig(body.qualificationQuestionnaire) as unknown as object
   if (typeof body.conformiteActive === 'boolean') data.conformiteActive = body.conformiteActive
   if (typeof body.conformiteNiveau === 'string') data.conformiteNiveau = sanitizeConformiteNiveau(body.conformiteNiveau)
   if (typeof body.conformiteSnapshotMode === 'string') data.conformiteSnapshotMode = sanitizeSnapshotMode(body.conformiteSnapshotMode)
@@ -257,6 +260,7 @@ export async function PUT(req: NextRequest) {
     exemplesAteliers: (config as any).exemplesAteliers ?? {},
     qualificationActive: Boolean((config as any).qualificationActive),
     qualificationObligatoire: Boolean((config as any).qualificationObligatoire),
+    qualificationQuestionnaire: sanitizeQualificationConfig((config as any).qualificationQuestionnaire),
     conformiteActive: Boolean((config as any).conformiteActive),
     conformiteNiveau: sanitizeConformiteNiveau((config as any).conformiteNiveau),
     conformiteSnapshotMode: sanitizeSnapshotMode((config as any).conformiteSnapshotMode),

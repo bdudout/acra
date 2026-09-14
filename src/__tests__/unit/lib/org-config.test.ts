@@ -12,6 +12,7 @@ function row(partial: Partial<RawOrgConfig>): RawOrgConfig {
     typesImpacts: [],
     referentielsActifs: [],
     referentielsDesactives: [],
+    qualificationQuestionnaire: {},
     strategiesTraitement: [],
     exemplesAteliers: {},
     echellesEcosysteme: {},

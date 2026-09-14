@@ -135,7 +135,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
     }
   }
   const qualificationObligatoire = orgConfig.qualificationObligatoire
-  const qualificationComplete = isQualificationComplete(sanitizeQualification((analyse as any).qualification))
+  const qualificationComplete = isQualificationComplete(sanitizeQualification((analyse as any).qualification, orgConfig.qualificationQuestionnaire), orgConfig.qualificationQuestionnaire)
 
   // Verrouillage si analyse approuvée (sauf ADMIN) OU gelée (risques résiduels acceptés)
   const gelee = analyseGelee((analyse as any).risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)
@@ -276,6 +276,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               initial={(analyse as any).qualification ?? null}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
+              config={orgConfig.qualificationQuestionnaire}
               defaultOpen
             />
           </div>
@@ -324,6 +325,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               initial={(analyse as any).qualification ?? null}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
+              config={orgConfig.qualificationQuestionnaire}
             />
           </div>
         )}

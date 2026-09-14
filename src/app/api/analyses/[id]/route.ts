@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere } from '@/lib/org-context.server'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
@@ -104,9 +105,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {
     data.statut = body.statut
   }
-  // Questionnaire de qualification (optionnel) — filtré aux questions connues
+  // Questionnaire de qualification (optionnel) — filtré aux questions effectives
+  // (natives activées + personnalisées) selon la config de l'organisation.
   if ('qualification' in body) {
-    data.qualification = sanitizeQualification(body.qualification)
+    const qCfg = (existing as { organizationId?: string | null }).organizationId
+      ? await getOrgConfig((existing as { organizationId: string }).organizationId)
+      : null
+    data.qualification = sanitizeQualification(body.qualification, qCfg?.qualificationQuestionnaire)
   }
 
   const updated = await prisma.analyse.update({ where: { id }, data })

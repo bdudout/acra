@@ -22,6 +22,8 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
+import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
+import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -144,6 +146,7 @@ export default function ConfigurationPage() {
 
   // Fonctionnalités optionnelles (toggles)
   const [qualificationActive, setQualificationActive] = useState(false)
+  const [qualifQuestionnaire, setQualifQuestionnaire] = useState<QualificationConfig>({ overrides: {}, custom: [] })
   const [qualificationObligatoire, setQualificationObligatoire] = useState(false)
   const [conformiteActive, setConformiteActive] = useState(true)
   const [conformiteNiveau, setConformiteNiveau] = useState('ANALYSE')
@@ -207,6 +210,7 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
+        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [] })
         setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
@@ -1477,6 +1481,18 @@ export default function ConfigurationPage() {
                 )}
               </div>
             </div>
+          </section>
+        )}
+
+        {/* ── Personnalisation du questionnaire de qualification (ADMIN, si actif) ── */}
+        {isAdmin && qualificationActive && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.qualifEditor.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.qualifEditor.sectionDesc}</p>
+            <QualificationQuestionnaireEditor
+              initial={qualifQuestionnaire}
+              builtins={QUALIFICATION_QUESTIONS.map(q => ({ id: q.id, label: (t.qualification.questions as Record<string, string>)[q.id] ?? q.id }))}
+            />
           </section>
         )}
 

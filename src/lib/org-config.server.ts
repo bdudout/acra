@@ -16,6 +16,7 @@ const CONFIG_SELECT = {
   typesImpacts: true,
   referentielsActifs: true,
   referentielsDesactives: true,
+  qualificationQuestionnaire: true,
   strategiesTraitement: true,
   exemplesAteliers: true,
   echellesEcosysteme: true,

@@ -1443,6 +1443,9 @@ model OrganizationConfig {
   // pour cette organisation — ex. écarter les référentiels bancaires. Liste de
   // codes ["DORA", "ANSSI_HYG", ...]. Vide = tous actifs.
   referentielsDesactives     Json          @default("[]")
+  // Personnalisation du questionnaire de qualification : { overrides: {<idNatif>:
+  // {label?, enabled?}}, custom: [{id, label, type, options?}] }. Vide = natif seul.
+  qualificationQuestionnaire Json          @default("{}")
   // Options de traitement du risque personnalisables — [{value, label, description, conseil}]
   // value reste l'identifiant interne (REDUIRE/ACCEPTER/...) ; label/description/conseil éditables.
   strategiesTraitement       Json          @default("[]")

@@ -86,16 +86,118 @@ export const QUALIFICATION_QUESTIONS: QualificationQuestion[] = [
   { id: 'rssiInterne', type: 'bool' }, // RSSI/responsable sécu dédié en interne ? (issue #59)
 ]
 
+// ─── Personnalisation du questionnaire (par organisation) ────────────────────
+// L'admin peut RENOMMER ou DÉSACTIVER une question native (sans changer son `id`
+// → le moteur d'orientations reste intact) et AJOUTER des questions propres
+// (informatives : elles n'alimentent pas deriveOrientations). Config PURE, testée.
+
+export interface CustomQualQuestion {
+  id: string
+  label: string
+  type: QualificationQuestionType
+  options?: { value: string; label: string }[] // pour type 'choice'
+}
+export interface QualificationConfig {
+  /** Surcharge des questions natives : libellé et/ou activation (par id natif). */
+  overrides: Record<string, { label?: string; enabled?: boolean }>
+  /** Questions supplémentaires propres à l'organisation. */
+  custom: CustomQualQuestion[]
+}
+export const EMPTY_QUALIFICATION_CONFIG: QualificationConfig = { overrides: {}, custom: [] }
+
+const BUILTIN_QUAL_IDS = new Set(QUALIFICATION_QUESTIONS.map(q => q.id))
+
+/** Identifiant sûr et stable (slug) pour une question/option personnalisée. */
+function slugId(s: string): string {
+  return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+}
+
+/** Nettoie/valide une configuration de questionnaire (overrides natifs + custom). */
+export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
+  const out: QualificationConfig = { overrides: {}, custom: [] }
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out
+  const src = v as Record<string, unknown>
+
+  const ov = src.overrides
+  if (ov && typeof ov === 'object' && !Array.isArray(ov)) {
+    for (const [id, val] of Object.entries(ov as Record<string, unknown>)) {
+      if (!BUILTIN_QUAL_IDS.has(id) || !val || typeof val !== 'object') continue
+      const o = val as Record<string, unknown>
+      const entry: { label?: string; enabled?: boolean } = {}
+      if (typeof o.label === 'string' && o.label.trim()) entry.label = o.label.trim().slice(0, 200)
+      if (typeof o.enabled === 'boolean') entry.enabled = o.enabled
+      if (Object.keys(entry).length) out.overrides[id] = entry
+    }
+  }
+
+  const seen = new Set<string>(BUILTIN_QUAL_IDS)
+  const cs = Array.isArray(src.custom) ? src.custom : []
+  for (const raw of cs) {
+    if (!raw || typeof raw !== 'object') continue
+    const q = raw as Record<string, unknown>
+    const label = typeof q.label === 'string' ? q.label.trim().slice(0, 200) : ''
+    if (!label) continue
+    const id = slugId(typeof q.id === 'string' && q.id.trim() ? q.id : label)
+    if (!id || seen.has(id)) continue // vide ou collision (natif ou déjà pris) → ignoré
+    const type: QualificationQuestionType = q.type === 'choice' ? 'choice' : 'bool'
+    const cq: CustomQualQuestion = { id, label, type }
+    if (type === 'choice') {
+      const opts = Array.isArray(q.options) ? q.options : []
+      const clean: { value: string; label: string }[] = []
+      const ovals = new Set<string>()
+      for (const o of opts) {
+        if (!o || typeof o !== 'object') continue
+        const oo = o as Record<string, unknown>
+        const olabel = typeof oo.label === 'string' ? oo.label.trim().slice(0, 120) : ''
+        const ovalue = slugId(typeof oo.value === 'string' && oo.value.trim() ? oo.value : olabel)
+        if (!olabel || !ovalue || ovals.has(ovalue)) continue
+        ovals.add(ovalue); clean.push({ value: ovalue, label: olabel })
+      }
+      if (clean.length < 2) continue // un choix a besoin d'au moins 2 options
+      cq.options = clean
+    }
+    seen.add(id); out.custom.push(cq)
+  }
+  return out
+}
+
+export interface EffectiveQualQuestion {
+  id: string
+  type: QualificationQuestionType
+  options?: QualificationOption[]
+  builtin: boolean
+}
+
+/**
+ * Questions EFFECTIVES du questionnaire : natives activées (dans l'ordre) puis
+ * questions personnalisées. Les libellés sont résolus par l'appelant (i18n pour
+ * les natives sauf override ; config pour les custom).
+ */
+export function effectiveQualificationQuestions(config?: QualificationConfig | null): EffectiveQualQuestion[] {
+  const c = config ?? EMPTY_QUALIFICATION_CONFIG
+  const out: EffectiveQualQuestion[] = []
+  for (const q of QUALIFICATION_QUESTIONS) {
+    if (c.overrides[q.id]?.enabled === false) continue
+    out.push({ id: q.id, type: q.type, options: q.options, builtin: true })
+  }
+  for (const q of c.custom) {
+    out.push({ id: q.id, type: q.type, options: q.options?.map(o => ({ value: o.value })), builtin: false })
+  }
+  return out
+}
+
 /**
  * Filtre des réponses brutes : ne conserve que les questions connues avec une
  * valeur du bon type (booléen pour 'bool', valeur d'option pour 'choice').
  * Pur — utilisé côté API avant persistance.
  */
-export function sanitizeQualification(answers: unknown): QualificationAnswers {
+export function sanitizeQualification(answers: unknown, config?: QualificationConfig | null): QualificationAnswers {
   const out: QualificationAnswers = {}
   if (!answers || typeof answers !== 'object' || Array.isArray(answers)) return out
   const src = answers as Record<string, unknown>
-  for (const q of QUALIFICATION_QUESTIONS) {
+  // Questions effectives = natives activées + personnalisées (selon la config org).
+  for (const q of effectiveQualificationQuestions(config)) {
     const v = src[q.id]
     if (q.type === 'bool') {
       if (typeof v === 'boolean') out[q.id] = v
@@ -112,10 +214,10 @@ export function sanitizeQualification(answers: unknown): QualificationAnswers {
   return out
 }
 
-/** Vrai si chaque question du questionnaire a reçu une réponse. */
-export function isQualificationComplete(answers: QualificationAnswers | null | undefined): boolean {
+/** Vrai si chaque question EFFECTIVE (natives activées + custom) a reçu une réponse. */
+export function isQualificationComplete(answers: QualificationAnswers | null | undefined, config?: QualificationConfig | null): boolean {
   if (!answers || typeof answers !== 'object') return false
-  return QUALIFICATION_QUESTIONS.every(q => answers[q.id] !== undefined && answers[q.id] !== null)
+  return effectiveQualificationQuestions(config).every(q => answers[q.id] !== undefined && answers[q.id] !== null)
 }
 
 /**

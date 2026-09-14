@@ -129,7 +129,7 @@ export default async function AtelierPage({
     orgConfig.qualificationActive &&
     orgConfig.qualificationObligatoire &&
     editable &&
-    !isQualificationComplete(sanitizeQualification((analyse as any).qualification))
+    !isQualificationComplete(sanitizeQualification((analyse as any).qualification, orgConfig.qualificationQuestionnaire), orgConfig.qualificationQuestionnaire)
   ) {
     redirect(`/analyses/${id}?qualif=required`)
   }
