@@ -19,13 +19,21 @@ import {
   summarizeActions,
 } from './risk-action'
 
-export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'AUDIT', 'CONTROLE', 'INCIDENT'] as const
+export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT'] as const
 export type ActionSource = (typeof ACTION_SOURCES)[number]
+
+// Typologie MÉTIER d'origine du plan d'action, exposée comme facette de filtre.
+// Les mesures d'analyse EBIOS et les actions du registre partagent l'origine
+// « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
+// « regulateur » (même objet, source différente — cf. lib/audit.ts).
+export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident'] as const
+export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
 /** Objet canonique d'un plan d'action, quelle que soit sa source d'origine. */
 export interface ActionItem {
   id: string // `${source}:${sourceId}` — stable et unique dans la vue agrégée
   source: ActionSource
+  origine: ActionOrigine // typologie métier (facette de filtre)
   sourceId: string
   titre: string
   description: string | null
@@ -80,7 +88,7 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'REALISE' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `MESURE:${row.id}`, source: 'MESURE', sourceId: row.id,
+    id: `MESURE:${row.id}`, source: 'MESURE', origine: 'risque', sourceId: row.id,
     titre: row.nom, description: str(row.description),
     porteur: str(row.responsable) ?? str(row.entite), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite: mapMesurePriorite(row.priorite),
@@ -99,7 +107,7 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   const priorite: ActionPriorite =
     row.priorite === 'CRITIQUE' ? 'CRITIQUE' : row.priorite === 'MODERE' ? 'MODERE' : 'MAJEUR'
   return {
-    id: `RISK_ACTION:${row.id}`, source: 'RISK_ACTION', sourceId: row.id,
+    id: `RISK_ACTION:${row.id}`, source: 'RISK_ACTION', origine: 'risque', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
     porteur: str(row.responsable), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite,
@@ -110,13 +118,14 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
 export interface AuditConstatRow {
   id: string; intitule: string; recommandation?: unknown; criticite?: unknown
   statut?: unknown; responsableAction?: unknown; echeance?: unknown; riskItemId?: unknown
+  source?: unknown // AUDIT_INTERNE | REGULATEUR | AUDITEUR_EXTERNE (cf. lib/audit.ts)
 }
 export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'RESOLU' || row.statut === 'ACCEPTE' ? 'FAIT'
       : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `AUDIT:${row.id}`, source: 'AUDIT', sourceId: row.id,
+    id: `AUDIT:${row.id}`, source: 'AUDIT', origine: row.source === 'REGULATEUR' ? 'regulateur' : 'audit', sourceId: row.id,
     titre: row.intitule, description: str(row.recommandation),
     porteur: str(row.responsableAction), entite: null,
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.criticite),
@@ -130,7 +139,7 @@ export interface ControleAnomalieRow {
 }
 export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt = {}): ActionItem {
   return {
-    id: `CONTROLE:${row.id}`, source: 'CONTROLE', sourceId: row.id,
+    id: `CONTROLE:${row.id}`, source: 'CONTROLE', origine: 'controle', sourceId: row.id,
     titre: `${row.controleNom} — anomalie`, description: str(row.constat),
     porteur: str(row.responsable), entite: str(row.entite),
     echeance: toDate(row.dateRealisation), statut: 'A_FAIRE', priorite: 'MAJEUR',
@@ -148,7 +157,7 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   const statut: RiskActionStatut =
     row.statut === 'CLOTURE' ? 'FAIT' : row.statut === 'QUALIFIE' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `INCIDENT:${row.id}`, source: 'INCIDENT', sourceId: row.id,
+    id: `INCIDENT:${row.id}`, source: 'INCIDENT', origine: 'incident', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
     porteur: str(row.entite), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.impactEstime),
@@ -156,10 +165,32 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   }
 }
 
+export interface ConformiteTraitementRow {
+  id: string; intitule: string; description?: unknown; responsable?: unknown
+  echeance?: unknown; statut?: unknown; referentiel?: unknown; refs?: unknown
+}
+/**
+ * Traitement « plan d'action » d'un écart de conformité. Statut socle
+ * EN_COURS | FAIT | CLOTURE → canonique (CLOTURE compte comme FAIT). Pas de
+ * priorité au niveau conformité → MAJEUR par défaut.
+ */
+export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'FAIT' || row.statut === 'CLOTURE' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  return {
+    id: `CONFORMITE:${row.id}`, source: 'CONFORMITE', origine: 'conformite', sourceId: row.id,
+    titre: row.intitule, description: str(row.description),
+    porteur: str(row.responsable), entite: null,
+    echeance: toDate(row.echeance), statut, priorite: 'MAJEUR',
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
 // ─── Filtre / tri / synthèse ─────────────────────────────────────────────────
 
 export interface ActionItemFiltre {
   source?: ActionSource
+  origine?: ActionOrigine // facette métier (risque / conformité / contrôle / audit / régulateur / incident)
   priorite?: ActionPriorite
   statut?: RiskActionStatut | 'EN_RETARD'
   porteur?: string
@@ -173,6 +204,7 @@ export function filterActionItems(items: ActionItem[], f: ActionItemFiltre, now:
   const q = f.q?.trim().toLowerCase()
   return items.filter((it) => {
     if (f.source && it.source !== f.source) return false
+    if (f.origine && it.origine !== f.origine) return false
     if (f.priorite && it.priorite !== f.priorite) return false
     if (f.statut && effectiveStatut(it, now) !== f.statut) return false
     if (porteur && !((it.porteur ?? '').toLowerCase().includes(porteur) || (it.entite ?? '').toLowerCase().includes(porteur))) return false

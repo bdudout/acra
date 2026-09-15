@@ -5,12 +5,14 @@ import {
   normalizeAuditConstat,
   normalizeControleAnomalie,
   normalizeIncident,
+  normalizeConformiteTraitement,
   mapMesurePriorite,
   mapCriticitePriorite,
   filterActionItems,
   sortActionItems,
   summarizeActionItems,
   ACTION_SOURCES,
+  ACTION_ORIGINES,
   type ActionItem,
 } from '@/lib/action-items'
 
@@ -130,6 +132,7 @@ describe('normalizeIncident', () => {
 function mk(partial: Partial<ActionItem>): ActionItem {
   return {
     id: partial.id ?? 'x', source: partial.source ?? 'MESURE', sourceId: partial.sourceId ?? 'x',
+    origine: partial.origine ?? 'risque',
     titre: partial.titre ?? 't', description: partial.description ?? null, porteur: partial.porteur ?? null,
     entite: partial.entite ?? null, echeance: partial.echeance ?? null,
     statut: partial.statut ?? 'A_FAIRE', priorite: partial.priorite ?? 'MAJEUR',
@@ -145,6 +148,15 @@ describe('filterActionItems', () => {
   ]
   it('filtre par source', () => {
     expect(filterActionItems(items, { source: 'MESURE' }, NOW).map(i => i.id)).toEqual(['1'])
+  })
+  it('filtre par origine (typologie de plan d\'action)', () => {
+    const parOrigine: ActionItem[] = [
+      mk({ id: 'r', origine: 'risque' }),
+      mk({ id: 'c', origine: 'conformite' }),
+      mk({ id: 'reg', origine: 'regulateur' }),
+    ]
+    expect(filterActionItems(parOrigine, { origine: 'conformite' }, NOW).map(i => i.id)).toEqual(['c'])
+    expect(filterActionItems(parOrigine, { origine: 'regulateur' }, NOW).map(i => i.id)).toEqual(['reg'])
   })
   it('filtre par priorité', () => {
     expect(filterActionItems(items, { priorite: 'CRITIQUE' }, NOW).map(i => i.id)).toEqual(['1'])
@@ -191,7 +203,37 @@ describe('summarizeActionItems', () => {
 })
 
 describe('ACTION_SOURCES', () => {
-  it('énumère les 5 sources', () => {
-    expect(ACTION_SOURCES).toEqual(['MESURE', 'RISK_ACTION', 'AUDIT', 'CONTROLE', 'INCIDENT'])
+  it('énumère les sources (dont conformité)', () => {
+    expect(ACTION_SOURCES).toEqual(['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT'])
+  })
+})
+
+describe('typologie d\'origine', () => {
+  it('ACTION_ORIGINES = 6 facettes métier', () => {
+    expect(ACTION_ORIGINES).toEqual(['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident'])
+  })
+  it('mesure et action de registre → origine « risque »', () => {
+    expect(normalizeMesure({ id: 'm', nom: 'x' }).origine).toBe('risque')
+    expect(normalizeRiskAction({ id: 'ra', intitule: 'x' }).origine).toBe('risque')
+  })
+  it('constat d\'audit interne → « audit », constat régulateur → « regulateur »', () => {
+    expect(normalizeAuditConstat({ id: 'a', intitule: 'x', source: 'AUDIT_INTERNE' }).origine).toBe('audit')
+    expect(normalizeAuditConstat({ id: 'a', intitule: 'x', source: 'AUDITEUR_EXTERNE' }).origine).toBe('audit')
+    expect(normalizeAuditConstat({ id: 'a', intitule: 'x', source: 'REGULATEUR' }).origine).toBe('regulateur')
+  })
+  it('anomalie de contrôle → « controle », incident → « incident »', () => {
+    expect(normalizeControleAnomalie({ id: 'c', controleNom: 'x' }).origine).toBe('controle')
+    expect(normalizeIncident({ id: 'i', intitule: 'x', statut: 'DECLARE' })!.origine).toBe('incident')
+  })
+  it('traitement de conformité (plan d\'action) → source CONFORMITE, origine « conformite »', () => {
+    const it = normalizeConformiteTraitement({
+      id: 'ct1', intitule: 'Corriger A.5.1', description: 'd', responsable: 'RSSI',
+      echeance: new Date('2026-06-01'), statut: 'EN_COURS', referentiel: 'ISO27001', refs: ['A.5.1'],
+    }, { lien: '/conformite/socle?ref=ISO27001' })
+    expect(it.source).toBe('CONFORMITE')
+    expect(it.origine).toBe('conformite')
+    expect(it.titre).toBe('Corriger A.5.1')
+    expect(it.porteur).toBe('RSSI')
+    expect(it.statut).toBe('EN_COURS')
   })
 })

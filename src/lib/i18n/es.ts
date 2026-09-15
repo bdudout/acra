@@ -611,11 +611,12 @@ export const es: Translations = {
   // ─── Planes de acción unificados (transversal GRC) ────────────────────────
   plansActions: {
     title:        'Planes de acción',
-    subtitle:     'Vista consolidada de todas las acciones a realizar — medidas de análisis, acciones del registro, recomendaciones de auditoría, anomalías de control e incidentes — filtrable por origen, prioridad, estado y responsable.',
+    subtitle:     'Vista consolidada de todas las acciones a realizar — riesgo, cumplimiento, control, auditoría, regulador e incidentes — filtrable por origen, prioridad, estado y responsable.',
     kpiTotal:     'Acciones',
     kpiRetard:    'Vencidas',
     kpiAvancement:'Avance',
     filterSource: 'Origen',
+    filterOrigine:'Origen',
     filterPriorite:'Prioridad',
     filterStatut: 'Estado',
     filterPorteur:'Responsable',
@@ -626,6 +627,7 @@ export const es: Translations = {
     empty:        'Ninguna acción coincide con estos filtros.',
     colTitre:     'Acción',
     colSource:    'Origen',
+    colOrigine:   'Origen',
     colPorteur:   'Responsable',
     colPriorite:  'Prioridad',
     colStatut:    'Estado',
@@ -639,6 +641,14 @@ export const es: Translations = {
       AUDIT:       'Recomendación de auditoría',
       CONTROLE:    'Anomalía de control',
       INCIDENT:    'Incidente',
+    },
+    origines: {
+      risque:     'Riesgo',
+      conformite: 'Cumplimiento',
+      controle:   'Control',
+      audit:      'Auditoría',
+      regulateur: 'Regulador',
+      incident:   'Incidente',
     },
     priorites: {
       CRITIQUE: 'Crítica',

@@ -10,12 +10,13 @@ vi.mock('@/lib/i18n/context', () => ({
       plansActions: {
         title: 'Plans d\'action', subtitle: 'sous-titre',
         kpiTotal: 'Actions', kpiRetard: 'En retard', kpiAvancement: 'Avancement',
-        filterSource: 'Source', filterPriorite: 'Priorité', filterStatut: 'Statut', filterPorteur: 'Porteur',
+        filterSource: 'Source', filterOrigine: 'Origine', filterPriorite: 'Priorité', filterStatut: 'Statut', filterPorteur: 'Porteur',
         filterAll: 'Toutes', searchPh: 'Rechercher', clear: 'Effacer',
         resultCount: '{n}/{total}', empty: 'Aucune action.',
-        colTitre: 'Action', colSource: 'Source', colPorteur: 'Porteur', colPriorite: 'Priorité',
+        colTitre: 'Action', colSource: 'Source', colOrigine: 'Origine', colPorteur: 'Porteur', colPriorite: 'Priorité',
         colStatut: 'Statut', colEcheance: 'Échéance', open: 'Ouvrir', sansEcheance: '—', sansPorteur: 'Non attribué',
-        sources: { MESURE: 'Mesure', RISK_ACTION: 'Registre', AUDIT: 'Audit', CONTROLE: 'Contrôle', INCIDENT: 'Incident' },
+        sources: { MESURE: 'Mesure', RISK_ACTION: 'Registre', CONFORMITE: 'Conformité', AUDIT: 'Audit', CONTROLE: 'Contrôle', INCIDENT: 'Incident' },
+        origines: { risque: 'Risque', conformite: 'Conformité', controle: 'Contrôle', audit: 'Audit', regulateur: 'Régulateur', incident: 'Incident' },
         priorites: { CRITIQUE: 'Critique', MAJEUR: 'Majeur', MODERE: 'Modéré' },
         statuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', FAIT: 'Fait', EN_RETARD: 'En retard' },
       },
@@ -24,16 +25,16 @@ vi.mock('@/lib/i18n/context', () => ({
 }))
 
 const mk = (p: Partial<SerializedActionItem>): SerializedActionItem => ({
-  id: p.id ?? 'x', source: p.source ?? 'MESURE', sourceId: p.sourceId ?? 'x',
+  id: p.id ?? 'x', source: p.source ?? 'MESURE', origine: p.origine ?? 'risque', sourceId: p.sourceId ?? 'x',
   titre: p.titre ?? 't', description: p.description ?? null, porteur: p.porteur ?? null,
   entite: p.entite ?? null, echeance: p.echeance ?? null, statut: p.statut ?? 'A_FAIRE',
   priorite: p.priorite ?? 'MAJEUR', lien: p.lien ?? '/x', riskItemId: p.riskItemId ?? null,
 })
 
 const items: SerializedActionItem[] = [
-  mk({ id: '1', source: 'MESURE', titre: 'Chiffrer les sauvegardes', priorite: 'CRITIQUE', statut: 'A_FAIRE', porteur: 'DSI' }),
-  mk({ id: '2', source: 'AUDIT', titre: 'Revue trimestrielle', priorite: 'MODERE', statut: 'FAIT', porteur: 'Audit' }),
-  mk({ id: '3', source: 'INCIDENT', titre: 'Fuite de données', priorite: 'MAJEUR', statut: 'A_FAIRE', porteur: 'RSSI', echeance: '2020-01-01T00:00:00.000Z' }),
+  mk({ id: '1', source: 'MESURE', origine: 'risque', titre: 'Chiffrer les sauvegardes', priorite: 'CRITIQUE', statut: 'A_FAIRE', porteur: 'DSI' }),
+  mk({ id: '2', source: 'AUDIT', origine: 'audit', titre: 'Revue trimestrielle', priorite: 'MODERE', statut: 'FAIT', porteur: 'Audit' }),
+  mk({ id: '3', source: 'INCIDENT', origine: 'incident', titre: 'Fuite de données', priorite: 'MAJEUR', statut: 'A_FAIRE', porteur: 'RSSI', echeance: '2020-01-01T00:00:00.000Z' }),
 ]
 
 describe('PlansActionsView', () => {
@@ -46,9 +47,9 @@ describe('PlansActionsView', () => {
     expect(screen.getByText('33%')).toBeInTheDocument()
   })
 
-  it('filtre par source', () => {
+  it('filtre par origine (typologie)', () => {
     render(<PlansActionsView items={items} />)
-    fireEvent.change(screen.getByLabelText('Source'), { target: { value: 'MESURE' } })
+    fireEvent.change(screen.getByLabelText('Origine'), { target: { value: 'risque' } })
     expect(screen.getByText('Chiffrer les sauvegardes')).toBeInTheDocument()
     expect(screen.queryByText('Revue trimestrielle')).not.toBeInTheDocument()
   })

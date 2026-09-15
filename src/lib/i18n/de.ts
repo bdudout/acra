@@ -611,11 +611,12 @@ export const de: Translations = {
   // ─── Einheitliche Aktionspläne (bereichsübergreifend GRC) ─────────────────
   plansActions: {
     title:        'Aktionspläne',
-    subtitle:     'Konsolidierte Ansicht aller umzusetzenden Aktionen — Analysemaßnahmen, Registeraktionen, Prüfungsempfehlungen, Kontrollabweichungen und Vorfälle — filterbar nach Quelle, Priorität, Status und Verantwortlichem.',
+    subtitle:     'Konsolidierte Ansicht aller umzusetzenden Aktionen — Risiko, Compliance, Kontrolle, Audit, Aufsichtsbehörde und Vorfälle — filterbar nach Herkunft, Priorität, Status und Verantwortlichem.',
     kpiTotal:     'Aktionen',
     kpiRetard:    'Überfällig',
     kpiAvancement:'Fortschritt',
     filterSource: 'Quelle',
+    filterOrigine:'Herkunft',
     filterPriorite:'Priorität',
     filterStatut: 'Status',
     filterPorteur:'Verantwortlicher',
@@ -626,6 +627,7 @@ export const de: Translations = {
     empty:        'Keine Aktion entspricht diesen Filtern.',
     colTitre:     'Aktion',
     colSource:    'Quelle',
+    colOrigine:   'Herkunft',
     colPorteur:   'Verantwortlicher',
     colPriorite:  'Priorität',
     colStatut:    'Status',
@@ -639,6 +641,14 @@ export const de: Translations = {
       AUDIT:       'Prüfungsempfehlung',
       CONTROLE:    'Kontrollabweichung',
       INCIDENT:    'Vorfall',
+    },
+    origines: {
+      risque:     'Risiko',
+      conformite: 'Compliance',
+      controle:   'Kontrolle',
+      audit:      'Audit',
+      regulateur: 'Aufsichtsbehörde',
+      incident:   'Vorfall',
     },
     priorites: {
       CRITIQUE: 'Kritisch',

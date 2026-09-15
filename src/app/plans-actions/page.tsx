@@ -26,6 +26,7 @@ export default async function PlansActionsPage() {
     controlePermanentActive: orgConfig.controlePermanentActive,
     auditInterneActive: orgConfig.auditInterneActive,
     registreRisquesActive: orgConfig.registreRisquesActive,
+    conformiteActive: orgConfig.conformiteActive,
   })
 
   // Sérialisation (Date → ISO) pour le passage au composant client.

@@ -12,6 +12,7 @@ import {
   normalizeAuditConstat,
   normalizeControleAnomalie,
   normalizeIncident,
+  normalizeConformiteTraitement,
   type ActionItem,
 } from './action-items'
 
@@ -20,6 +21,7 @@ interface ModulesLike {
   controlePermanentActive: boolean
   auditInterneActive: boolean
   registreRisquesActive: boolean
+  conformiteActive: boolean
 }
 
 /**
@@ -31,7 +33,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, riskActionRows, constatRows, execRows, incidentRows] = await Promise.all([
+  const [mesureRows, riskActionRows, conformiteRows, constatRows, execRows, incidentRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -50,12 +52,23 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
           },
         })
       : Promise.resolve([]),
+    // Traitements « plan d'action » de conformité (dérogations/acceptations exclues :
+    // ce ne sont pas des actions). Source de la facette « conformité ».
+    mod.conformiteActive
+      ? prisma.conformiteTraitement.findMany({
+          where: { ...orgFilter, type: 'PLAN_ACTION' },
+          select: {
+            id: true, intitule: true, description: true, responsable: true,
+            echeance: true, statut: true, referentiel: true, refs: true,
+          },
+        })
+      : Promise.resolve([]),
     mod.auditInterneActive
       ? prisma.auditConstat.findMany({
           where: orgFilter,
           select: {
             id: true, intitule: true, recommandation: true, criticite: true,
-            statut: true, responsableAction: true, echeance: true, riskItemId: true, missionId: true,
+            statut: true, responsableAction: true, echeance: true, riskItemId: true, missionId: true, source: true,
           },
         })
       : Promise.resolve([]),
@@ -90,6 +103,10 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
       { id: p.id, intitule: p.titre, description: p.description, responsable: p.porteur, echeance: p.echeance, statut: p.statut, priorite: p.priorite, riskItemId },
       { lien: riskItemId ? `/registre?item=${riskItemId}` : '/registre' },
     ))
+  }
+  for (const ct of conformiteRows) {
+    const ref = Array.isArray(ct.refs) && ct.refs.length ? `&ctrl=${encodeURIComponent(String(ct.refs[0]))}` : ''
+    items.push(normalizeConformiteTraitement(ct, { lien: `/conformite/socle?ref=${encodeURIComponent(ct.referentiel)}${ref}` }))
   }
   for (const c of constatRows) {
     items.push(normalizeAuditConstat(c, { lien: `/audit?mission=${c.missionId}` }))

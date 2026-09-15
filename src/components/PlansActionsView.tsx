@@ -12,9 +12,9 @@ import {
   filterActionItems,
   sortActionItems,
   summarizeActionItems,
-  ACTION_SOURCES,
+  ACTION_ORIGINES,
   type ActionItem,
-  type ActionSource,
+  type ActionOrigine,
   type ActionItemFiltre,
 } from '@/lib/action-items'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite } from '@/lib/risk-action'
@@ -38,19 +38,21 @@ const STATUT_STYLE: Record<string, string> = {
   FAIT: 'bg-green-100 text-green-800',
   EN_RETARD: 'bg-amber-100 text-amber-900',
 }
-const SOURCE_STYLE: Record<ActionSource, string> = {
-  MESURE: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  RISK_ACTION: 'bg-purple-50 text-purple-700 border-purple-200',
-  AUDIT: 'bg-teal-50 text-teal-700 border-teal-200',
-  CONTROLE: 'bg-sky-50 text-sky-700 border-sky-200',
-  INCIDENT: 'bg-rose-50 text-rose-700 border-rose-200',
+// Facette métier d'origine (typologie de plan d'action).
+const ORIGINE_STYLE: Record<ActionOrigine, string> = {
+  risque: 'bg-purple-50 text-purple-700 border-purple-200',
+  conformite: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  controle: 'bg-sky-50 text-sky-700 border-sky-200',
+  audit: 'bg-teal-50 text-teal-700 border-teal-200',
+  regulateur: 'bg-amber-50 text-amber-800 border-amber-200',
+  incident: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 export default function PlansActionsView({ items }: Props) {
   const { t, locale } = useTranslation()
   const now = useMemo(() => new Date(), [])
 
-  const [source, setSource] = useState<ActionSource | ''>('')
+  const [origine, setOrigine] = useState<ActionOrigine | ''>('')
   const [priorite, setPriorite] = useState<ActionPriorite | ''>('')
   const [statut, setStatut] = useState<string>('')
   const [porteur, setPorteur] = useState('')
@@ -64,13 +66,13 @@ export default function PlansActionsView({ items }: Props) {
 
   const filtre: ActionItemFiltre = useMemo(() => {
     const f: ActionItemFiltre = {}
-    if (source) f.source = source
+    if (origine) f.origine = origine
     if (priorite) f.priorite = priorite
     if (statut) f.statut = statut as ActionItemFiltre['statut']
     if (porteur.trim()) f.porteur = porteur
     if (q.trim()) f.q = q
     return f
-  }, [source, priorite, statut, porteur, q])
+  }, [origine, priorite, statut, porteur, q])
 
   const visibles = useMemo(
     () => sortActionItems(filterActionItems(hydrated, filtre, now), now),
@@ -78,8 +80,8 @@ export default function PlansActionsView({ items }: Props) {
   )
   const summary = useMemo(() => summarizeActionItems(hydrated, now), [hydrated, now])
 
-  const hasFilter = !!(source || priorite || statut || porteur.trim() || q.trim())
-  const clearAll = () => { setSource(''); setPriorite(''); setStatut(''); setPorteur(''); setQ('') }
+  const hasFilter = !!(origine || priorite || statut || porteur.trim() || q.trim())
+  const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setPorteur(''); setQ('') }
 
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : t.plansActions.sansEcheance
@@ -111,11 +113,11 @@ export default function PlansActionsView({ items }: Props) {
       {/* Filtres */}
       <div className="flex flex-wrap items-end gap-3 mb-4">
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
-          <span className="font-medium">{t.plansActions.filterSource}</span>
-          <select value={source} onChange={(e) => setSource(e.target.value as ActionSource | '')}
+          <span className="font-medium">{t.plansActions.filterOrigine}</span>
+          <select value={origine} onChange={(e) => setOrigine(e.target.value as ActionOrigine | '')}
             className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[10rem]">
             <option value="">{t.plansActions.filterAll}</option>
-            {ACTION_SOURCES.map((s) => <option key={s} value={s}>{t.plansActions.sources[s]}</option>)}
+            {ACTION_ORIGINES.map((o) => <option key={o} value={o}>{t.plansActions.origines[o]}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
@@ -163,7 +165,7 @@ export default function PlansActionsView({ items }: Props) {
           <thead>
             <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
               <th className="px-3 py-2 font-medium">{t.plansActions.colTitre}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colSource}</th>
+              <th className="px-3 py-2 font-medium">{t.plansActions.colOrigine}</th>
               <th className="px-3 py-2 font-medium">{t.plansActions.colPorteur}</th>
               <th className="px-3 py-2 font-medium">{t.plansActions.colPriorite}</th>
               <th className="px-3 py-2 font-medium">{t.plansActions.colStatut}</th>
@@ -184,8 +186,8 @@ export default function PlansActionsView({ items }: Props) {
                     {it.description && <div className="text-xs text-gray-500 line-clamp-1">{it.description}</div>}
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded border ${SOURCE_STYLE[it.source]}`}>
-                      {t.plansActions.sources[it.source]}
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded border ${ORIGINE_STYLE[it.origine]}`}>
+                      {t.plansActions.origines[it.origine]}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-gray-700">{it.porteur ?? <span className="text-gray-400">{t.plansActions.sansPorteur}</span>}</td>

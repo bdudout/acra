@@ -611,11 +611,12 @@ export const en: Translations = {
   // ─── Unified action plans (cross-cutting GRC) ─────────────────────────────
   plansActions: {
     title:        'Action plans',
-    subtitle:     'Consolidated view of every action to carry out — analysis measures, register actions, audit recommendations, control anomalies and incidents — filterable by source, priority, status and owner.',
+    subtitle:     'Consolidated view of every action to carry out — risk, compliance, control, audit, regulator and incidents — filterable by origin, priority, status and owner.',
     kpiTotal:     'Actions',
     kpiRetard:    'Overdue',
     kpiAvancement:'Progress',
     filterSource: 'Source',
+    filterOrigine:'Origin',
     filterPriorite:'Priority',
     filterStatut: 'Status',
     filterPorteur:'Owner',
@@ -626,6 +627,7 @@ export const en: Translations = {
     empty:        'No action matches these filters.',
     colTitre:     'Action',
     colSource:    'Source',
+    colOrigine:   'Origin',
     colPorteur:   'Owner',
     colPriorite:  'Priority',
     colStatut:    'Status',
@@ -639,6 +641,14 @@ export const en: Translations = {
       AUDIT:       'Audit recommendation',
       CONTROLE:    'Control anomaly',
       INCIDENT:    'Incident',
+    },
+    origines: {
+      risque:     'Risk',
+      conformite: 'Compliance',
+      controle:   'Control',
+      audit:      'Audit',
+      regulateur: 'Regulator',
+      incident:   'Incident',
     },
     priorites: {
       CRITIQUE: 'Critical',

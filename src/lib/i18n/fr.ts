@@ -623,11 +623,12 @@ export const fr = {
   // ─── Plans d'action unifiés (transverse GRC) ──────────────────────────────
   plansActions: {
     title:        'Plans d\'action',
-    subtitle:     'Vue consolidée de toutes les actions à mener — mesures d\'analyse, actions du registre, recommandations d\'audit, anomalies de contrôle et incidents — filtrable par source, priorité, statut et porteur.',
+    subtitle:     'Vue consolidée de toutes les actions à mener — risque, conformité, contrôle, audit, régulateur et incidents — filtrable par origine, priorité, statut et porteur.',
     kpiTotal:     'Actions',
     kpiRetard:    'En retard',
     kpiAvancement:'Avancement',
     filterSource: 'Source',
+    filterOrigine:'Origine',
     filterPriorite:'Priorité',
     filterStatut: 'Statut',
     filterPorteur:'Porteur',
@@ -638,6 +639,7 @@ export const fr = {
     empty:        'Aucune action ne correspond à ces filtres.',
     colTitre:     'Action',
     colSource:    'Source',
+    colOrigine:   'Origine',
     colPorteur:   'Porteur',
     colPriorite:  'Priorité',
     colStatut:    'Statut',
@@ -651,6 +653,14 @@ export const fr = {
       AUDIT:       'Recommandation d\'audit',
       CONTROLE:    'Anomalie de contrôle',
       INCIDENT:    'Incident',
+    },
+    origines: {
+      risque:     'Risque',
+      conformite: 'Conformité',
+      controle:   'Contrôle',
+      audit:      'Audit',
+      regulateur: 'Régulateur',
+      incident:   'Incident',
     },
     priorites: {
       CRITIQUE: 'Critique',
