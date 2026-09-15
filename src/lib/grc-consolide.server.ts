@@ -42,7 +42,7 @@ export async function gatherGrcConsolide(
 
   const [riskRows, actionRows, incidentRows, controleRows, executionRows, missionRows, constatRows, kriRows] = await Promise.all([
     prisma.riskItem.findMany({ where: orgFilter, select: { organizationId: true, taxonomieCode: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true } }),
-    prisma.riskAction.findMany({ where: orgFilter, select: { organizationId: true, statut: true, echeance: true } }),
+    prisma.planAction.findMany({ where: { ...orgFilter, liens: { some: { type: 'RISQUE' } } }, select: { organizationId: true, statut: true, echeance: true } }),
     withIncidents ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true, doraCriteres: true } }) : Promise.resolve([]),
     withControles ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true, niveau: true } }) : Promise.resolve([]),
     withControles ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true, controle: { select: { niveau: true } } } }) : Promise.resolve([]),

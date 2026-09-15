@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie, cleanChecklistResultats, deduireResultatChecklist } from '@/lib/controle'
 import { sanitizePreuves } from '@/lib/preuves'
+import { createRiskLinkedPlanAction } from '@/lib/plan-action.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -81,15 +82,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     await tx.controle.update({ where: { id }, data: { alerteeLe: null } })
     let actionCreee: string | null = null
     if (data.resultat === 'ANOMALIE' && controle.riskItemId && cfg.registreRisquesActive) {
-      const action = await tx.riskAction.create({
-        data: {
-          riskItemId: controle.riskItemId,
-          organizationId: controle.organizationId,
-          intitule: libelleActionAnomalie(controle.intitule),
-          description: data.constat,
-          responsable: controle.responsable,
-          statut: 'A_FAIRE',
-        },
+      const action = await createRiskLinkedPlanAction(tx, {
+        organizationId: controle.organizationId,
+        riskItemId: controle.riskItemId,
+        titre: libelleActionAnomalie(controle.intitule),
+        description: data.constat,
+        porteur: controle.responsable,
+        statut: 'A_FAIRE',
       })
       actionCreee = action.id
     }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   sanitizeLien, sanitizeLiens, lienHref, validatePlanActionInput, cleanPlanActionInput,
+  riskItemIdFromLiens, toRiskActionShape,
 } from '@/lib/plan-action'
 
 describe('plan-action — liens polymorphes', () => {
@@ -44,5 +45,26 @@ describe('plan-action — validation/nettoyage', () => {
     expect(c.priorite).toBe('MAJEUR') // défaut
     expect(c.statut).toBe('A_FAIRE')
     expect(c.description).toBe('d')
+  })
+})
+
+describe('plan-action — absorption RiskAction', () => {
+  it('extrait le riskItemId du premier lien RISQUE', () => {
+    expect(riskItemIdFromLiens([{ type: 'RISQUE', targetId: 'r1' }])).toBe('r1')
+    expect(riskItemIdFromLiens([{ type: 'CONFORMITE', targetId: 'ISO' }, { type: 'RISQUE', targetId: 'r2' }])).toBe('r2')
+    expect(riskItemIdFromLiens([{ type: 'AUDIT', targetId: 'm1' }])).toBeNull()
+    expect(riskItemIdFromLiens([])).toBeNull()
+    expect(riskItemIdFromLiens(undefined)).toBeNull()
+  })
+
+  it('projette un PlanAction vers la forme RiskAction (contrat du panneau registre)', () => {
+    const shape = toRiskActionShape({
+      id: 'p1', titre: 'Corriger', description: 'd', porteur: 'Alice',
+      echeance: null, statut: 'EN_COURS', priorite: 'CRITIQUE',
+    })
+    expect(shape).toEqual({
+      id: 'p1', intitule: 'Corriger', description: 'd', responsable: 'Alice',
+      echeance: null, statut: 'EN_COURS', priorite: 'CRITIQUE',
+    })
   })
 })

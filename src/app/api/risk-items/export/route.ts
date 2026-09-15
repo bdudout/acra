@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
+import { riskActionsByRiskItem } from '@/lib/plan-action.server'
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
 import { buildCartoExport, type CartoExportRisk } from '@/lib/carto-export'
 import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
@@ -44,8 +45,10 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.riskItem.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } }, actions: { select: { statut: true, echeance: true } } },
+    include: { processus: { select: { nom: true } } },
   })
+  // Actions du registre = PlanAction à lien RISQUE, regroupées par risque.
+  const actionsParRisque = await riskActionsByRiskItem(prisma, orgId)
 
   const now = new Date()
   const enriched = rows.map(r => ({
@@ -53,7 +56,7 @@ export async function GET(req: NextRequest) {
     processusNom: r.processus?.nom ?? null,
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
-    actionsSummary: summarizeActions(r.actions, now),
+    actionsSummary: summarizeActions(actionsParRisque.get(r.id) ?? [], now),
   }))
 
   const { searchParams } = new URL(req.url)

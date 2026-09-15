@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
+import { riskActionsByRiskItem } from '@/lib/plan-action.server'
 import { suggestCalibration, type IncidentLite } from '@/lib/incident'
 import { evaluerEfficacite } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -35,8 +36,10 @@ export async function GET() {
   const rows = await prisma.riskItem.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } }, actions: { select: { statut: true, echeance: true } } },
+    include: { processus: { select: { nom: true } } },
   })
+  // Actions du registre = PlanAction à lien RISQUE, regroupées par risque.
+  const actionsParRisque = await riskActionsByRiskItem(prisma, orgId)
 
   // Boucle M2 : si le module incidents est actif, on joint la fréquence observée
   // pour proposer une vraisemblance résiduelle (SUGGESTION, jamais appliquée).
@@ -71,12 +74,12 @@ export async function GET() {
   }
 
   const now = new Date()
-  const risks = rows.map(({ actions, processus, ...r }) => ({
+  const risks = rows.map(({ processus, ...r }) => ({
     ...r,
     processusNom: processus?.nom ?? null,
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
-    actionsSummary: summarizeActions(actions, now),
+    actionsSummary: summarizeActions(actionsParRisque.get(r.id) ?? [], now),
     calibration: orgConfig.incidentsActive ? suggestCalibration(incidentsLies, r.id) : null,
     controleEfficacite: orgConfig.controlePermanentActive ? evaluerEfficacite(execsParRisque.get(r.id) ?? []) : null,
   }))

@@ -41,11 +41,12 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
       },
     }),
     mod.registreRisquesActive
-      ? prisma.riskAction.findMany({
-          where: orgFilter,
+      ? prisma.planAction.findMany({
+          where: { ...orgFilter, liens: { some: { type: 'RISQUE' } } },
           select: {
-            id: true, intitule: true, description: true, responsable: true,
-            echeance: true, statut: true, priorite: true, riskItemId: true,
+            id: true, titre: true, description: true, porteur: true,
+            echeance: true, statut: true, priorite: true,
+            liens: { where: { type: 'RISQUE' }, select: { targetId: true }, take: 1 },
           },
         })
       : Promise.resolve([]),
@@ -83,8 +84,12 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
   for (const m of mesureRows) {
     items.push(normalizeMesure(m, { lien: `/analyses/${m.analyseId}` }))
   }
-  for (const a of riskActionRows) {
-    items.push(normalizeRiskAction(a, { lien: a.riskItemId ? `/registre?item=${a.riskItemId}` : '/registre' }))
+  for (const p of riskActionRows) {
+    const riskItemId = p.liens[0]?.targetId ?? null
+    items.push(normalizeRiskAction(
+      { id: p.id, intitule: p.titre, description: p.description, responsable: p.porteur, echeance: p.echeance, statut: p.statut, priorite: p.priorite, riskItemId },
+      { lien: riskItemId ? `/registre?item=${riskItemId}` : '/registre' },
+    ))
   }
   for (const c of constatRows) {
     items.push(normalizeAuditConstat(c, { lien: `/audit?mission=${c.missionId}` }))

@@ -64,9 +64,12 @@ export async function GET(req: NextRequest) {
         graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true,
       },
     }),
-    prisma.riskAction.findMany({
-      where: orgFilter,
-      select: { organizationId: true, riskItemId: true, statut: true, echeance: true },
+    prisma.planAction.findMany({
+      where: { ...orgFilter, liens: { some: { type: 'RISQUE' } } },
+      select: {
+        organizationId: true, statut: true, echeance: true,
+        liens: { where: { type: 'RISQUE' }, select: { targetId: true }, take: 1 },
+      },
     }),
     withIncidents
       ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true } })
@@ -113,7 +116,7 @@ export async function GET(req: NextRequest) {
     niveauResiduel: r.niveauResiduel,
   }))
   const actions: ScopedAction[] = actionRows
-    .filter(a => keptIds.has(a.riskItemId))
+    .filter(a => keptIds.has(a.liens[0]?.targetId ?? ''))
     .map(a => ({ organizationId: a.organizationId, statut: a.statut, echeance: a.echeance }))
   const now = new Date()
 

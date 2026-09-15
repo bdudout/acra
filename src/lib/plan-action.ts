@@ -62,6 +62,46 @@ export function lienHref(lien: PlanActionLien): string {
   }
 }
 
+// ─── Absorption de RiskAction ────────────────────────────────────────────────
+// Le registre de risques rattache ses actions via un lien RISQUE (targetId =
+// riskItemId). Ces helpers PURS relient le store unifié PlanAction au contrat
+// historique du panneau registre, sans dupliquer la logique côté serveur.
+
+type LienLike = { type: string; targetId: string }
+
+/** riskItemId porté par le 1ᵉʳ lien RISQUE d'un plan d'action, ou null. */
+export function riskItemIdFromLiens(liens: readonly LienLike[] | null | undefined): string | null {
+  if (!Array.isArray(liens)) return null
+  const l = liens.find(x => x?.type === 'RISQUE' && typeof x.targetId === 'string' && x.targetId)
+  return l ? l.targetId : null
+}
+
+export interface RiskActionShape {
+  id: string
+  intitule: string
+  description: string | null
+  responsable: string | null
+  echeance: Date | null
+  statut: string
+  priorite: string
+}
+
+/** Projette un PlanAction vers la forme RiskAction attendue par le panneau registre. */
+export function toRiskActionShape(p: {
+  id: string; titre: string; description: string | null; porteur: string | null
+  echeance: Date | null; statut: string; priorite: string
+}): RiskActionShape {
+  return {
+    id: p.id,
+    intitule: p.titre,
+    description: p.description ?? null,
+    responsable: p.porteur ?? null,
+    echeance: p.echeance ?? null,
+    statut: p.statut,
+    priorite: p.priorite,
+  }
+}
+
 export interface PlanActionInput {
   titre?: unknown
   description?: unknown
