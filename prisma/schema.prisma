@@ -141,6 +141,7 @@ model Organization {
   webhooks          Webhook[]
   traitements       Traitement[]
   traitementsConformite ConformiteTraitement[]
+  plansAction       PlanAction[]
 
   @@index([parentId])
   @@index([path])
@@ -875,6 +876,52 @@ model Conformite {
 
   @@unique([organizationId, referentiel, entite])
   @@index([organizationId])
+}
+
+// Plan d'action UNIFIÉ, objet de premier plan : une chose à faire, portée par
+// quelqu'un, avec échéance/priorité/statut. Il peut répondre à PLUSIEURS sources
+// à la fois (analyse de risque, suivi de conformité, contrôle permanent, audit,
+// incident) via des liens polymorphes (PlanActionLien).
+model PlanAction {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titre          String
+  description    String?      @db.Text
+  porteur        String?
+  entite         String?
+  echeance       DateTime?
+  // CRITIQUE | MAJEUR | MODERE
+  priorite       String       @default("MAJEUR")
+  // A_FAIRE | EN_COURS | FAIT (le retard est dérivé de l'échéance, jamais stocké)
+  statut         String       @default("A_FAIRE")
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  liens PlanActionLien[]
+
+  @@index([organizationId])
+  @@index([statut])
+}
+
+// Lien polymorphe entre un plan d'action et une source (analyse, conformité,
+// contrôle, audit, risque, incident). `targetId` = id de l'objet source ;
+// `label` = libellé lisible ; `ref` = sous-référence éventuelle (ex. contrôle
+// d'un référentiel de conformité).
+model PlanActionLien {
+  id           String     @id @default(cuid())
+  planActionId String
+  planAction   PlanAction @relation(fields: [planActionId], references: [id], onDelete: Cascade)
+  // ANALYSE | CONFORMITE | CONTROLE | AUDIT | RISQUE | INCIDENT
+  type         String
+  targetId     String
+  ref          String?
+  label        String?
+  createdAt    DateTime   @default(now())
+
+  @@index([planActionId])
+  @@index([type, targetId])
 }
 
 // Traitement RÉEL d'un ou plusieurs écarts de conformité (contrôles partiels /
