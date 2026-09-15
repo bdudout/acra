@@ -19,14 +19,14 @@ import {
   summarizeActions,
 } from './risk-action'
 
-export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT'] as const
+export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
 export type ActionSource = (typeof ACTION_SOURCES)[number]
 
 // Typologie MÉTIER d'origine du plan d'action, exposée comme facette de filtre.
 // Les mesures d'analyse EBIOS et les actions du registre partagent l'origine
 // « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
 // « regulateur » (même objet, source différente — cf. lib/audit.ts).
-export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident'] as const
+export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'] as const
 export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
 /** Objet canonique d'un plan d'action, quelle que soit sa source d'origine. */
@@ -184,6 +184,29 @@ export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt
     titre: String(row.nom ?? ''), description: str(row.description),
     porteur: null, entite: str(row.partiePrenante),
     echeance: null, statut, priorite,
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
+export interface OrphanPlanActionRow {
+  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
+  echeance?: unknown; statut?: unknown; priorite?: unknown
+}
+/**
+ * Action ORPHELINE : un PlanAction sans aucun lien (ni risque, ni conformité, ni
+ * contrôle…). À signaler et à éditer directement — elle ne se rattache à aucune
+ * source. Statut/priorité canoniques.
+ */
+export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  const priorite: ActionPriorite =
+    row.priorite === 'CRITIQUE' ? 'CRITIQUE' : row.priorite === 'MODERE' ? 'MODERE' : 'MAJEUR'
+  return {
+    id: `PLAN_ACTION:${row.id}`, source: 'PLAN_ACTION', origine: 'orpheline', sourceId: row.id,
+    titre: row.titre, description: str(row.description),
+    porteur: str(row.porteur), entite: str(row.entite),
+    echeance: toDate(row.echeance), statut, priorite,
     lien: opt.lien ?? null, riskItemId: null,
   }
 }

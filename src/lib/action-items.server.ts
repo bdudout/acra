@@ -14,6 +14,7 @@ import {
   normalizeIncident,
   normalizeConformiteTraitement,
   normalizeEcosystemeMesure,
+  normalizeOrphanPlanAction,
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
@@ -35,7 +36,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, ecoAnalyses, riskActionRows, conformiteData, constatRows, execRows, incidentRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -107,6 +108,11 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
           },
         })
       : Promise.resolve([]),
+    // Actions ORPHELINES : PlanAction sans aucun lien source (à signaler/éditer).
+    prisma.planAction.findMany({
+      where: { ...orgFilter, liens: { none: {} } },
+      select: { id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true },
+    }),
   ])
 
   const items: ActionItem[] = []
@@ -167,6 +173,9 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
   for (const i of incidentRows) {
     const it = normalizeIncident(i, { lien: `/incidents?incident=${i.id}` })
     if (it) items.push(it)
+  }
+  for (const o of orphanRows) {
+    items.push(normalizeOrphanPlanAction(o))
   }
 
   return items

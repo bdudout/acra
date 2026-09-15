@@ -6,6 +6,7 @@ import {
   normalizeControleAnomalie,
   normalizeIncident,
   normalizeConformiteTraitement,
+  normalizeOrphanPlanAction,
   mapMesurePriorite,
   mapCriticitePriorite,
   filterActionItems,
@@ -215,14 +216,14 @@ describe('summarizeActionItems', () => {
 })
 
 describe('ACTION_SOURCES', () => {
-  it('énumère les sources (dont conformité)', () => {
-    expect(ACTION_SOURCES).toEqual(['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT'])
+  it('énumère les sources (dont conformité + plan d\'action direct)', () => {
+    expect(ACTION_SOURCES).toEqual(['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'])
   })
 })
 
 describe('typologie d\'origine', () => {
-  it('ACTION_ORIGINES = 6 facettes métier', () => {
-    expect(ACTION_ORIGINES).toEqual(['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident'])
+  it('ACTION_ORIGINES = 6 facettes métier + orpheline', () => {
+    expect(ACTION_ORIGINES).toEqual(['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'])
   })
   it('mesure et action de registre → origine « risque »', () => {
     expect(normalizeMesure({ id: 'm', nom: 'x' }).origine).toBe('risque')
@@ -236,6 +237,14 @@ describe('typologie d\'origine', () => {
   it('anomalie de contrôle → « controle », incident → « incident »', () => {
     expect(normalizeControleAnomalie({ id: 'c', controleNom: 'x' }).origine).toBe('controle')
     expect(normalizeIncident({ id: 'i', intitule: 'x', statut: 'DECLARE' })!.origine).toBe('incident')
+  })
+  it('action sans lien → source PLAN_ACTION, origine « orpheline »', () => {
+    const it = normalizeOrphanPlanAction({ id: 'p1', titre: 'Action isolée', porteur: 'DSI', statut: 'EN_COURS', priorite: 'CRITIQUE' })
+    expect(it.source).toBe('PLAN_ACTION')
+    expect(it.origine).toBe('orpheline')
+    expect(it.titre).toBe('Action isolée')
+    expect(it.porteur).toBe('DSI')
+    expect(it.priorite).toBe('CRITIQUE')
   })
   it('traitement de conformité (plan d\'action) → source CONFORMITE, origine « conformite »', () => {
     const it = normalizeConformiteTraitement({

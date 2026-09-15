@@ -635,6 +635,7 @@ export const es: Translations = {
     colTitre:     'Acción',
     colSource:    'Origen',
     colOrigine:   'Origen',
+    orphanAlert:  '{n} acción(es) huérfana(s) — sin vincular a ninguna fuente (riesgo, cumplimiento, control…). Clic para filtrar.',
     colPorteur:   'Responsable',
     colPriorite:  'Prioridad',
     colStatut:    'Estado',
@@ -656,6 +657,7 @@ export const es: Translations = {
       audit:      'Auditoría',
       regulateur: 'Regulador',
       incident:   'Incidente',
+      orpheline:  'Huérfana',
     },
     priorites: {
       CRITIQUE: 'Crítica',

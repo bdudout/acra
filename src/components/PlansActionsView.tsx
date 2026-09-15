@@ -51,6 +51,8 @@ const ORIGINE_STYLE: Record<ActionOrigine, string> = {
   audit: 'bg-teal-50 text-teal-700 border-teal-200',
   regulateur: 'bg-amber-50 text-amber-800 border-amber-200',
   incident: 'bg-rose-50 text-rose-700 border-rose-200',
+  // Orpheline = alerte : action non rattachée à une source.
+  orpheline: 'bg-red-100 text-red-800 border-red-300 font-semibold',
 }
 
 export default function PlansActionsView({ items, initialPriorite = '', initialEcheance = '' }: Props) {
@@ -105,6 +107,7 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
     return sort ? sortRows(filtered, sort, accessor) : sortActionItems(filtered, now)
   }, [hydrated, filtre, now, sort]) // eslint-disable-line react-hooks/exhaustive-deps
   const summary = useMemo(() => summarizeActionItems(hydrated, now), [hydrated, now])
+  const orphanCount = useMemo(() => hydrated.filter((i) => i.origine === 'orpheline').length, [hydrated])
 
   const hasFilter = !!(origine || priorite || statut || echeance || porteur.trim() || q.trim())
   const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setEcheance(''); setPorteur(''); setQ('') }
@@ -135,6 +138,15 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
           <div className="text-xs text-gray-500 uppercase tracking-wide">{t.plansActions.kpiAvancement}</div>
         </div>
       </div>
+
+      {/* Alerte actions orphelines (non rattachées à une source) */}
+      {orphanCount > 0 && (
+        <button type="button" onClick={() => setOrigine('orpheline')}
+          className="mb-4 flex w-full items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-left text-sm text-red-800 hover:bg-red-100 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
+          <span aria-hidden="true">⚠</span>
+          <span>{t.plansActions.orphanAlert.replace('{n}', String(orphanCount))}</span>
+        </button>
+      )}
 
       {/* Filtres */}
       <div className="flex flex-wrap items-end gap-3 mb-4">
@@ -224,6 +236,7 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
                   </td>
                   <td className="px-3 py-2">
                     <span className={`inline-block text-xs px-2 py-0.5 rounded border ${ORIGINE_STYLE[it.origine]}`}>
+                      {it.origine === 'orpheline' && <span aria-hidden="true">⚠ </span>}
                       {t.plansActions.origines[it.origine]}
                     </span>
                   </td>

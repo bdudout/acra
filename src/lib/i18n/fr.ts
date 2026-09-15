@@ -647,6 +647,7 @@ export const fr = {
     colTitre:     'Action',
     colSource:    'Source',
     colOrigine:   'Origine',
+    orphanAlert:  '{n} action(s) orpheline(s) — non rattachée(s) à une source (risque, conformité, contrôle…). Cliquer pour filtrer.',
     colPorteur:   'Porteur',
     colPriorite:  'Priorité',
     colStatut:    'Statut',
@@ -668,6 +669,7 @@ export const fr = {
       audit:      'Audit',
       regulateur: 'Régulateur',
       incident:   'Incident',
+      orpheline:  'Orpheline',
     },
     priorites: {
       CRITIQUE: 'Critique',

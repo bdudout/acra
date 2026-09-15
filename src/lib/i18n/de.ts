@@ -635,6 +635,7 @@ export const de: Translations = {
     colTitre:     'Aktion',
     colSource:    'Quelle',
     colOrigine:   'Herkunft',
+    orphanAlert:  '{n} verwaiste Aktion(en) — mit keiner Quelle verknüpft (Risiko, Compliance, Kontrolle…). Zum Filtern klicken.',
     colPorteur:   'Verantwortlicher',
     colPriorite:  'Priorität',
     colStatut:    'Status',
@@ -656,6 +657,7 @@ export const de: Translations = {
       audit:      'Audit',
       regulateur: 'Aufsichtsbehörde',
       incident:   'Vorfall',
+      orpheline:  'Verwaist',
     },
     priorites: {
       CRITIQUE: 'Kritisch',

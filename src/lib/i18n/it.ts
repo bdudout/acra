@@ -635,6 +635,7 @@ export const it: Translations = {
     colTitre:     'Azione',
     colSource:    'Origine',
     colOrigine:   'Origine',
+    orphanAlert:  '{n} azione/i orfana/e — non collegata/e ad alcuna fonte (rischio, conformità, controllo…). Clicca per filtrare.',
     colPorteur:   'Responsabile',
     colPriorite:  'Priorità',
     colStatut:    'Stato',
@@ -656,6 +657,7 @@ export const it: Translations = {
       audit:      'Audit',
       regulateur: 'Regolatore',
       incident:   'Incidente',
+      orpheline:  'Orfana',
     },
     priorites: {
       CRITIQUE: 'Critica',
