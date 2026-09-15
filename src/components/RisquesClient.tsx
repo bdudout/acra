@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Ban, Building2, CheckCircle2, ChevronDown, Eye, Search, type LucideIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import ColumnMenu from '@/components/ColumnMenu'
+import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
 // Couleur badge selon score de risque
 function niveauColor(score: number) {
@@ -57,14 +60,46 @@ export default function RisquesClient({
 }: Props) {
   const { t } = useTranslation()
   const trL = (l: string) => (t.scaleDefaults as Record<string, string>)[l] ?? l
+  const stratLabel = (s: string) => (t.strategyLabels as Record<string, string>)[s] ?? s
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortState | null>(null)
+  const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
+  const [colFilters, setColFilters] = useState<ColumnFilters>({})
 
-  const filtered = search.trim()
+  const searched = search.trim()
     ? risques.filter(r =>
         r.nom.toLowerCase().includes(search.toLowerCase()) ||
         r.analyseNom.toLowerCase().includes(search.toLowerCase())
       )
     : risques
+
+  // Tri par rang (score/résiduel numériques) et filtres auto par libellé.
+  const accessor = (r: RisqueRow, key: string): unknown => {
+    switch (key) {
+      case 'analyse': return r.analyseNom
+      case 'risque': return r.nom
+      case 'score': return r.niveauRisque
+      case 'strategie': return stratLabel(r.strategie)
+      case 'residuel': return r.niveauResiduel
+      case 'mesures': return r.mesuresCount
+      default: return ''
+    }
+  }
+  const display = (r: RisqueRow, key: string): unknown => {
+    switch (key) {
+      case 'analyse': return r.analyseNom
+      case 'entite': return r.entite ?? ''
+      case 'strategie': return stratLabel(r.strategie)
+      default: return ''
+    }
+  }
+  const distinctFor = (key: string) => distinctValues(searched, (r) => display(r, key))
+  const colFiltered = applyColumnFilters(searched, colFilters, display)
+  const filtered = sort ? sortRows(colFiltered, sort, accessor) : colFiltered
+  const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctFor(key)))
+  const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
+  const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
 
   return (
     <>
@@ -104,12 +139,14 @@ export default function RisquesClient({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{colAnalyse}</th>
-                <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{colRisque}</th>
-                <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{colScore}</th>
-                <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">{colStrategie}</th>
-                <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">{colResiduel}</th>
-                <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">{colMesures}</th>
+                <ColumnMenu label={colAnalyse} sortKey="analyse" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                  values={distinctFor('analyse')} allowed={colFilters.analyse} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+                <ColumnMenu label={colRisque} sortKey="risque" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                <ColumnMenu label={colScore} sortKey="score" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                <ColumnMenu label={colStrategie} sortKey="strategie" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell"
+                  values={distinctFor('strategie')} allowed={colFilters.strategie} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+                <ColumnMenu label={colResiduel} sortKey="residuel" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell" />
+                <ColumnMenu label={colMesures} sortKey="mesures" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell" />
                 <th scope="col" className="px-4 py-3"></th>
               </tr>
             </thead>
