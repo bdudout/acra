@@ -470,6 +470,8 @@ export const it: Translations = {
     conformiteNonConfLabel: 'non conformità da trattare',
     conformiteOrgBadge: 'Conformità a livello di organizzazione',
     conformiteHistoryToggle: 'Cronologia e tendenza',
+    conformiteGranMonth: 'Mese', conformiteGranQuarter: 'Trimestre', conformiteGranSemester: 'Semestre',
+    conformiteGranHint: 'Clicca un anno per espandere i suoi periodi',
     conformiteFreeze: 'Congela una versione',
     conformiteFreezePrompt: 'Nome della versione (facoltativo), es. «Prima dell\'audit 2026»',
     conformiteNoHistory: 'Nessuna versione registrata.',

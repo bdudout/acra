@@ -4,6 +4,7 @@ import { Pin, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
+import ConformiteTrendChart from '@/components/ConformiteTrendChart'
 
 interface Point { id: string; label: string | null; createdAt: string; taux: number; evalues: number; total: number }
 
@@ -63,7 +64,11 @@ export default function ConformiteHistory({ orgId, referentiel, entite = '', loc
           {loading && <p className="text-xs text-gray-400">…</p>}
           {!loading && series.length > 0 && (
             <>
-              <Sparkline points={series.map(p => p.taux)} />
+              <ConformiteTrendChart
+                points={series.map(p => ({ id: p.id, label: p.label, createdAt: p.createdAt, taux: p.taux }))}
+                locale={locale}
+                granLabels={{ month: d.conformiteGranMonth, quarter: d.conformiteGranQuarter, semester: d.conformiteGranSemester, hint: d.conformiteGranHint }}
+              />
               <ul className="mt-2 space-y-1">
                 {[...series].reverse().map((p, i) => (
                   <li key={p.id + i} className="flex items-center justify-between gap-2 text-[11px] text-gray-600">
@@ -88,24 +93,5 @@ export default function ConformiteHistory({ orgId, referentiel, entite = '', loc
         </div>
       )}
     </div>
-  )
-}
-
-/** Mini-courbe SVG (taux 0–100) — tendance dans le temps. */
-function Sparkline({ points }: { points: number[] }) {
-  const W = 240, H = 44, P = 4
-  if (points.length === 0) return null
-  const n = points.length
-  const x = (i: number) => n === 1 ? W / 2 : P + (i * (W - 2 * P)) / (n - 1)
-  const y = (v: number) => H - P - (v / 100) * (H - 2 * P)
-  const line = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
-  const last = points[n - 1]
-  const color = last >= 80 ? '#22c55e' : last >= 50 ? '#fbbf24' : '#ef4444'
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={`${last}%`}>
-      <line x1={P} y1={y(50)} x2={W - P} y2={y(50)} stroke="#f3f4f6" strokeWidth={1} />
-      {points.length > 1 && <path d={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />}
-      {points.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={i === n - 1 ? 2.5 : 1.5} fill={color} />)}
-    </svg>
   )
 }

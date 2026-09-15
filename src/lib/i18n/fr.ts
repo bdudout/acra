@@ -480,6 +480,8 @@ export const fr = {
     conformiteNonConfLabel: 'non-conformité(s) à traiter',
     conformiteOrgBadge: 'Conformité au niveau organisation',
     conformiteHistoryToggle: 'Historique & tendance',
+    conformiteGranMonth: 'Mois', conformiteGranQuarter: 'Trimestre', conformiteGranSemester: 'Semestre',
+    conformiteGranHint: 'Cliquer une année pour déplier ses périodes',
     conformiteFreeze: 'Figer une version',
     conformiteFreezePrompt: 'Nom de la version (optionnel), ex. « Avant audit 2026 »',
     conformiteNoHistory: 'Aucune version enregistrée.',
