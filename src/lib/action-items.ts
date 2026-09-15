@@ -19,13 +19,21 @@ import {
   summarizeActions,
 } from './risk-action'
 
-export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'AUDIT', 'CONTROLE', 'INCIDENT'] as const
+export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
 export type ActionSource = (typeof ACTION_SOURCES)[number]
+
+// Typologie MÉTIER d'origine du plan d'action, exposée comme facette de filtre.
+// Les mesures d'analyse EBIOS et les actions du registre partagent l'origine
+// « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
+// « regulateur » (même objet, source différente — cf. lib/audit.ts).
+export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'] as const
+export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
 /** Objet canonique d'un plan d'action, quelle que soit sa source d'origine. */
 export interface ActionItem {
   id: string // `${source}:${sourceId}` — stable et unique dans la vue agrégée
   source: ActionSource
+  origine: ActionOrigine // typologie métier (facette de filtre)
   sourceId: string
   titre: string
   description: string | null
@@ -80,7 +88,7 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'REALISE' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `MESURE:${row.id}`, source: 'MESURE', sourceId: row.id,
+    id: `MESURE:${row.id}`, source: 'MESURE', origine: 'risque', sourceId: row.id,
     titre: row.nom, description: str(row.description),
     porteur: str(row.responsable) ?? str(row.entite), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite: mapMesurePriorite(row.priorite),
@@ -99,7 +107,7 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   const priorite: ActionPriorite =
     row.priorite === 'CRITIQUE' ? 'CRITIQUE' : row.priorite === 'MODERE' ? 'MODERE' : 'MAJEUR'
   return {
-    id: `RISK_ACTION:${row.id}`, source: 'RISK_ACTION', sourceId: row.id,
+    id: `RISK_ACTION:${row.id}`, source: 'RISK_ACTION', origine: 'risque', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
     porteur: str(row.responsable), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite,
@@ -110,13 +118,14 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
 export interface AuditConstatRow {
   id: string; intitule: string; recommandation?: unknown; criticite?: unknown
   statut?: unknown; responsableAction?: unknown; echeance?: unknown; riskItemId?: unknown
+  source?: unknown // AUDIT_INTERNE | REGULATEUR | AUDITEUR_EXTERNE (cf. lib/audit.ts)
 }
 export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'RESOLU' || row.statut === 'ACCEPTE' ? 'FAIT'
       : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `AUDIT:${row.id}`, source: 'AUDIT', sourceId: row.id,
+    id: `AUDIT:${row.id}`, source: 'AUDIT', origine: row.source === 'REGULATEUR' ? 'regulateur' : 'audit', sourceId: row.id,
     titre: row.intitule, description: str(row.recommandation),
     porteur: str(row.responsableAction), entite: null,
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.criticite),
@@ -130,7 +139,7 @@ export interface ControleAnomalieRow {
 }
 export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt = {}): ActionItem {
   return {
-    id: `CONTROLE:${row.id}`, source: 'CONTROLE', sourceId: row.id,
+    id: `CONTROLE:${row.id}`, source: 'CONTROLE', origine: 'controle', sourceId: row.id,
     titre: `${row.controleNom} — anomalie`, description: str(row.constat),
     porteur: str(row.responsable), entite: str(row.entite),
     echeance: toDate(row.dateRealisation), statut: 'A_FAIRE', priorite: 'MAJEUR',
@@ -148,7 +157,7 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   const statut: RiskActionStatut =
     row.statut === 'CLOTURE' ? 'FAIT' : row.statut === 'QUALIFIE' ? 'EN_COURS' : 'A_FAIRE'
   return {
-    id: `INCIDENT:${row.id}`, source: 'INCIDENT', sourceId: row.id,
+    id: `INCIDENT:${row.id}`, source: 'INCIDENT', origine: 'incident', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
     porteur: str(row.entite), entite: str(row.entite),
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.impactEstime),
@@ -156,14 +165,99 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   }
 }
 
+export interface EcosystemeMesureRow {
+  id: string; nom: string; description?: unknown; type?: unknown
+  priorite?: unknown; statut?: unknown; partiePrenante?: unknown
+}
+/**
+ * Mesure d'écosystème (Atelier 3, stockée en JSON sur les scénarios). Priorité
+ * 'P1'..'P4' → canonique ; rattachée à un prestataire (porté dans `entite`). Même
+ * origine « risque » qu'une mesure d'analyse — le lien profond mène à l'atelier 3.
+ */
+export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'REALISE' || row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  const p = String(row.priorite ?? '')
+  const priorite: ActionPriorite = p === 'P1' || p === '1' ? 'CRITIQUE' : p === 'P2' || p === '2' ? 'MAJEUR' : 'MODERE'
+  return {
+    id: `MESURE:eco-${row.id}`, source: 'MESURE', origine: 'risque', sourceId: `eco-${row.id}`,
+    titre: String(row.nom ?? ''), description: str(row.description),
+    porteur: null, entite: str(row.partiePrenante),
+    echeance: null, statut, priorite,
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
+export interface OrphanPlanActionRow {
+  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
+  echeance?: unknown; statut?: unknown; priorite?: unknown
+}
+/**
+ * Action ORPHELINE : un PlanAction sans aucun lien (ni risque, ni conformité, ni
+ * contrôle…). À signaler et à éditer directement — elle ne se rattache à aucune
+ * source. Statut/priorité canoniques.
+ */
+export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  const priorite: ActionPriorite =
+    row.priorite === 'CRITIQUE' ? 'CRITIQUE' : row.priorite === 'MODERE' ? 'MODERE' : 'MAJEUR'
+  return {
+    id: `PLAN_ACTION:${row.id}`, source: 'PLAN_ACTION', origine: 'orpheline', sourceId: row.id,
+    titre: row.titre, description: str(row.description),
+    porteur: str(row.porteur), entite: str(row.entite),
+    echeance: toDate(row.echeance), statut, priorite,
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
+export interface ConformiteTraitementRow {
+  id: string; intitule: string; description?: unknown; responsable?: unknown
+  echeance?: unknown; statut?: unknown; referentiel?: unknown; refs?: unknown
+}
+/**
+ * Traitement « plan d'action » d'un écart de conformité. Statut socle
+ * EN_COURS | FAIT | CLOTURE → canonique (CLOTURE compte comme FAIT). Pas de
+ * priorité au niveau conformité → MAJEUR par défaut.
+ */
+export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'FAIT' || row.statut === 'CLOTURE' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  return {
+    id: `CONFORMITE:${row.id}`, source: 'CONFORMITE', origine: 'conformite', sourceId: row.id,
+    titre: row.intitule, description: str(row.description),
+    porteur: str(row.responsable), entite: null,
+    echeance: toDate(row.echeance), statut, priorite: 'MAJEUR',
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
 // ─── Filtre / tri / synthèse ─────────────────────────────────────────────────
+
+// Fenêtre d'échéance (reprise de l'ancienne page /actions) : en retard, sous 7j,
+// sous 30j (hors retard), ou sans échéance.
+export type EcheanceBucket = 'retard' | 'semaine' | 'mois' | 'sans'
 
 export interface ActionItemFiltre {
   source?: ActionSource
+  origine?: ActionOrigine // facette métier (risque / conformité / contrôle / audit / régulateur / incident)
   priorite?: ActionPriorite
   statut?: RiskActionStatut | 'EN_RETARD'
   porteur?: string
+  echeanceBucket?: EcheanceBucket
   q?: string
+}
+
+/** Fenêtre d'échéance d'un item (retard dérivé de l'échéance vs statut effectif). */
+export function matchEcheanceBucket(it: ActionItem, bucket: EcheanceBucket, now: Date): boolean {
+  const enRetard = effectiveStatut(it, now) === 'EN_RETARD'
+  if (bucket === 'retard') return enRetard
+  if (bucket === 'sans') return it.echeance == null
+  if (it.echeance == null || enRetard) return false
+  const days = (it.echeance.getTime() - now.getTime()) / 86_400_000
+  if (bucket === 'semaine') return days <= 7
+  if (bucket === 'mois') return days <= 30
+  return true
 }
 
 import { effectiveStatut } from './risk-action'
@@ -173,8 +267,10 @@ export function filterActionItems(items: ActionItem[], f: ActionItemFiltre, now:
   const q = f.q?.trim().toLowerCase()
   return items.filter((it) => {
     if (f.source && it.source !== f.source) return false
+    if (f.origine && it.origine !== f.origine) return false
     if (f.priorite && it.priorite !== f.priorite) return false
     if (f.statut && effectiveStatut(it, now) !== f.statut) return false
+    if (f.echeanceBucket && !matchEcheanceBucket(it, f.echeanceBucket, now)) return false
     if (porteur && !((it.porteur ?? '').toLowerCase().includes(porteur) || (it.entite ?? '').toLowerCase().includes(porteur))) return false
     if (q && !(it.titre.toLowerCase().includes(q) || (it.description ?? '').toLowerCase().includes(q))) return false
     return true

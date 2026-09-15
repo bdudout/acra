@@ -110,7 +110,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   //    unifiés (transverse). Toutes les vues de pilotage/suivi réunies. Si le rôle
   //    n'a pas la lecture globale, le groupe se réduit au tableau de bord (lien direct).
   const pilotage: NavKey[] = ['dashboard']
-  if (canPilotage) pilotage.push('pilotage', 'plansActions')
+  // Le plan d'action unifié est un lien cœur (« actions ») → plus de doublon ici.
+  if (canPilotage) pilotage.push('pilotage')
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.

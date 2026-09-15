@@ -12,7 +12,7 @@ import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
 import ConformiteGauges from '@/components/ConformiteGauges'
-import ConformiteGlobalTrend from '@/components/ConformiteGlobalTrend'
+import ConformiteTrendTabs from '@/components/ConformiteTrendTabs'
 import { globalConformiteTrend } from '@/lib/conformite-trend'
 
 export const dynamic = 'force-dynamic'
@@ -108,6 +108,20 @@ export default async function ConformiteGlobalPage() {
     .map(id => ({ id, nom: nomByCode.get(id) ?? id }))
     .sort((a, b) => a.nom.localeCompare(b.nom))
 
+  // Séries de tendance : « Global » (tous référentiels) + un onglet par référentiel.
+  const trendGlobalLabel = t.conformiteGlobal.trendGlobalTab
+  const trendSeries = [
+    { key: '__global', label: trendGlobalLabel, points: trend },
+    ...refs.map(r => ({
+      key: r.id, label: r.nom,
+      points: globalConformiteTrend(
+        confs.filter(cf => cf.referentiel === r.id).map(cf => ({
+          points: [...cf.snapshots.map(sn => pointOf(sn.entries, sn.createdAt)), pointOf(cf.entries, cf.updatedAt)],
+        })),
+      ),
+    })),
+  ]
+
   // Lignes = organisations ayant des données dans leur sous-arbre, ordre arbre (path).
   const depthOf = (p: string) => p.split('/').filter(Boolean).length
   const minDepth = orgs.length ? Math.min(...orgs.map(o => depthOf(o.path))) : 0
@@ -148,7 +162,9 @@ export default async function ConformiteGlobalPage() {
                 legendPartiel: t.conformiteGlobal.legendPartiel2, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
-            <ConformiteGlobalTrend points={trend} locale={locale} title={t.conformiteGlobal.trendTitle} />
+            <ConformiteTrendTabs series={trendSeries} locale={locale} title={t.conformiteGlobal.trendTitle}
+              granLabels={{ month: t.dashboard.conformiteGranMonth, quarter: t.dashboard.conformiteGranQuarter, semester: t.dashboard.conformiteGranSemester, hint: t.dashboard.conformiteGranHint }} />
+
           </div>
         )}
 

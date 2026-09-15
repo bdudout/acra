@@ -93,7 +93,7 @@ export default function EcosystemFullView({ tiers, orgs }: { tiers: FullTier[]; 
       <div className="card p-4 mb-4">
         {shown.length === 0
           ? <p className="text-sm text-gray-400 italic py-10 text-center">{e.empty}</p>
-          : <EcosystemRadar parties={shown} hideHeader aggregated manageTiersHref="/tiers" />}
+          : <EcosystemRadar parties={shown} hideHeader aggregated manageTiersHref="/tiers" zoomable fill />}
       </div>
 
       {/* Filtres de catégories (en bas) */}

@@ -47,5 +47,14 @@ export function globalConformiteTrend(suivis: TrendSuivi[]): TrendPoint[] {
       taux: pertinents > 0 ? Math.round((conforme / pertinents) * 100) : 0,
     })
   }
-  return out
+
+  // Lisibilité : AU PLUS un point par jour calendaire (le plus récent du jour).
+  // `out` est chronologique → set() écrase par la valeur la plus récente en
+  // conservant la position (ordre) du jour.
+  const byDay = new Map<string, TrendPoint>()
+  for (const pt of out) {
+    const dt = new Date(pt.date)
+    byDay.set(`${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`, pt)
+  }
+  return [...byDay.values()]
 }

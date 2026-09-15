@@ -143,6 +143,14 @@ describe('polarToXY — degrés depuis le haut, sens horaire', () => {
     const [, y180] = polarToXY(100, 180, 200, 200)
     expect(y180).toBeCloseTo(300, 5) // vers le bas → y augmente
   })
+
+  it('arrondit à ≤6 décimales (évite les mismatch d\'hydratation SSR/client sur cos/sin)', () => {
+    for (const deg of [37, 113, 254, 359]) {
+      const [x, y] = polarToXY(190, deg, 240, 240)
+      expect(x).toBe(Math.round(x * 1e6) / 1e6)
+      expect(y).toBe(Math.round(y * 1e6) / 1e6)
+    }
+  })
 })
 
 describe('presentTypes — ordre canonique stable', () => {

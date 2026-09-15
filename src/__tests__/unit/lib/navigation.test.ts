@@ -70,11 +70,12 @@ describe('buildNav — mode cyber (aucun module 2ᵉ/3ᵉ ligne)', () => {
 })
 
 describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
-  it('bascule en mode grc : menu Pilotage en tête (tableau de bord + cockpit + plans d’action), analyse cyber en menu', () => {
+  it('bascule en mode grc : menu Pilotage en tête (tableau de bord + cockpit), analyse cyber en menu', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     expect(m.mode).toBe('grc')
-    // 1re entrée = menu « Pilotage » regroupant tableau de bord, cockpit GRC et plans d'action.
-    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'plansActions'] })
+    // 1re entrée = menu « Pilotage » (tableau de bord + cockpit GRC). Le plan d'action
+    // unifié est le lien cœur « actions » (plus de doublon « plansActions »).
+    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage'] })
     // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
     expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])

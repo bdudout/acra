@@ -6,6 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateRiskActionInput, cleanRiskActionInput, effectiveStatut, summarizeActions, defaultEcheanceForPriorite } from '@/lib/risk-action'
+import { toRiskActionShape } from '@/lib/plan-action'
+import { createRiskLinkedPlanAction, findRiskLinkedPlanActions } from '@/lib/plan-action.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const ctx = await loadRisk(session as unknown as { user: { id: string; role?: string } }, id, false)
   if ('error' in ctx) return ctx.error
 
-  const rows = await prisma.riskAction.findMany({ where: { riskItemId: id }, orderBy: [{ ordre: 'asc' }, { createdAt: 'asc' }] })
+  const rows = (await findRiskLinkedPlanActions(prisma, ctx.orgId, id)).map(toRiskActionShape)
   const now = new Date()
   const actions = rows.map(a => ({ ...a, statutEffectif: effectiveStatut(a, now) }))
   return NextResponse.json({ actions, summary: summarizeActions(rows, now) })
@@ -59,7 +61,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const data = cleanRiskActionInput(body)
   // Échéance par défaut (si non fournie) selon la priorité + délais configurés de l'org.
   const echeance = data.echeance ?? new Date(defaultEcheanceForPriorite(data.priorite, ctx.orgConfig.actionDelaisMois))
-  const action = await prisma.riskAction.create({ data: { ...data, echeance, riskItemId: id, organizationId: ctx.orgId } })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-action', action: 'create', riskItemId: id, id: action.id } })
-  return NextResponse.json(action, { status: 201 })
+  const created = await createRiskLinkedPlanAction(prisma, {
+    organizationId: ctx.orgId, riskItemId: id,
+    titre: data.intitule, description: data.description, porteur: data.responsable,
+    echeance, statut: data.statut, priorite: data.priorite, createdById: ctx.userId,
+  })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-action', action: 'create', riskItemId: id, id: created.id } })
+  return NextResponse.json(toRiskActionShape(created), { status: 201 })
 }

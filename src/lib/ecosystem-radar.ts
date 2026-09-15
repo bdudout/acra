@@ -224,7 +224,12 @@ export function expositionLevel(exposition: number, maxExpo = MENACE_MAX): 0 | 1
 /** Conversion polaire → cartésien. angleDeg mesuré depuis le haut (12 h), sens horaire. */
 export function polarToXY(r: number, angleDeg: number, cx: number, cy: number): [number, number] {
   const a = (angleDeg - 90) * Math.PI / 180
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+  // Arrondi à 6 décimales : Math.cos/sin peuvent différer d'1 ULP entre le
+  // rendu serveur (Node) et le client (navigateur), ce qui provoque un
+  // « hydration mismatch » React sur les coordonnées SVG. L'arrondi produit des
+  // nombres identiques des deux côtés (précision très au-delà du sous-pixel).
+  const round = (n: number): number => Math.round(n * 1e6) / 1e6
+  return [round(cx + r * Math.cos(a)), round(cy + r * Math.sin(a))]
 }
 
 /** Types distincts présents, triés selon l'ordre canonique (types inconnus en fin). */

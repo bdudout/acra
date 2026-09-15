@@ -63,7 +63,11 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     const qs = `referentiel=${encodeURIComponent(traitementCtx.referentiel)}&entite=${encodeURIComponent(traitementCtx.entite)}`
     const res = await fetch(`/api/organizations/${traitementCtx.orgId}/conformite/traitements?${qs}`).then(r => r.ok ? r.json() : null).catch(() => null)
     const rows = Array.isArray(res?.traitements) ? res.traitements : []
-    setTraitements(rows.map((x: { id: string; type: string; intitule: string; refs: unknown }) => ({ id: x.id, type: x.type, intitule: x.intitule, refs: Array.isArray(x.refs) ? x.refs as string[] : [] })))
+    setTraitements(rows.map((x: { id: string; type: string; intitule: string; refs: unknown; description?: string | null; responsable?: string | null; echeance?: string | null; statut?: string; niveauRisqueMaintenu?: boolean; niveauRisque?: string | null }) => ({
+      id: x.id, type: x.type, intitule: x.intitule, refs: Array.isArray(x.refs) ? x.refs as string[] : [],
+      description: x.description ?? null, responsable: x.responsable ?? null,
+      echeance: x.echeance ?? null, statut: x.statut, niveauRisqueMaintenu: x.niveauRisqueMaintenu, niveauRisque: x.niveauRisque ?? null,
+    })))
   }
   useEffect(() => { reloadTraitements() }, [traitementCtx?.orgId, traitementCtx?.referentiel, traitementCtx?.entite]) // eslint-disable-line react-hooks/exhaustive-deps
   const sLabels = t.conformite.statuts as Record<string, string>
@@ -270,6 +274,10 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     const onClick = () => {
                       if (!traitementCtx) return setTraitement(c.ref, tr)
                       if (active) return setTraitement(c.ref, tr) // retire l'étiquette
+                      // Le contrôle a déjà un plan d'action et on bascule vers un autre
+                      // traitement → demander si l'action doit être close (cf. #5).
+                      if (entry?.traitement === 'plan_action' && tr !== 'plan_action'
+                        && !window.confirm(t.conformite.confirmChangeTraitement)) return
                       setPopover({ ref: c.ref, type: typeForEntryTag(tr) })
                     }
                     return (
@@ -283,6 +291,14 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                       </button>
                     )
                   })}
+                  {/* Clore l'action : le contrôle passe conforme (l'écart est résolu). */}
+                  {entry?.traitement === 'plan_action' && !readOnly && (
+                    <button type="button" onClick={() => setStatut(c.ref, 'conforme')}
+                      title={t.conformite.cloreActionHint}
+                      className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-green-600 text-green-700 hover:bg-green-50 dark:text-green-300 dark:border-green-500/50 dark:hover:bg-green-500/10">
+                      ✓ {t.conformite.cloreAction}
+                    </button>
+                  )}
                 </div>
               )}
               {/* Popover de création / rattachement d'un traitement réel */}
