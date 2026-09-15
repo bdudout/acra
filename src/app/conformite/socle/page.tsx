@@ -82,6 +82,7 @@ export default async function ConformiteSoclePage({ searchParams }: {
                   : referentiels[0].code
                 }
                 multiSuivi={multiSuivi}
+                lockRef={!!(refParam && referentiels.some(r => r.code === refParam))}
               />
             </>
           )}

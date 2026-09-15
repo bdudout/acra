@@ -11,18 +11,21 @@ import { ShieldCheck, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConformiteGrid from '@/components/ConformiteGrid'
 import ConformiteHistory from '@/components/ConformiteHistory'
+import TraitementsRegistre from '@/components/TraitementsRegistre'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/lib/conformite'
 
 interface RefOpt { code: string; nom: string }
 
-export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false }: {
+export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false, lockRef = false }: {
   orgId: string
   orgNom: string
   referentiels: RefOpt[]
   initialRef: string
   /** Portée ENTITE : plusieurs suivis nommés par référentiel. */
   multiSuivi?: boolean
+  /** Page détaillée d'un référentiel ciblé (?ref=) → référentiel verrouillé (pas de sélecteur). */
+  lockRef?: boolean
 }) {
   const { t, locale } = useTranslation()
   const c = t.conformiteSocle
@@ -37,6 +40,8 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   const [snapshotting, setSnapshotting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  // Rafraîchit le registre des traitements après création/rattachement depuis la grille.
+  const [traitementsKey, setTraitementsKey] = useState(0)
   // Reprendre la conformité d'une analyse.
   const [analysesDispo, setAnalysesDispo] = useState<{ id: string; nom: string; count: number }[]>([])
   const [importFrom, setImportFrom] = useState('')
@@ -148,12 +153,21 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
               <CheckCircle2 size={14} aria-hidden="true" /> {c.saved}
             </span>
           )}
-          <label className="text-xs text-gray-500">
-            <span className="block font-medium mb-1">{c.referentiel}</span>
-            <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
-              {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
-            </select>
-          </label>
+          {lockRef ? (
+            <div className="text-xs text-gray-500">
+              <span className="block font-medium mb-1">{c.referentiel}</span>
+              <span className="inline-block border border-gray-200 dark:border-gray-700 rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 min-w-[12rem]">
+                {referentiels.find(r => r.code === ref)?.nom ?? ref}
+              </span>
+            </div>
+          ) : (
+            <label className="text-xs text-gray-500">
+              <span className="block font-medium mb-1">{c.referentiel}</span>
+              <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
+                {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+              </select>
+            </label>
+          )}
           <button onClick={figerVersion} disabled={snapshotting || stats.evalues === 0}
             className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 inline-flex items-center gap-1.5" title={c.snapshotHint}>
             <Save size={14} aria-hidden="true" /> {snapshotting ? c.snapshotting : c.snapshot}
@@ -209,7 +223,13 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
 
       {loading
         ? <p className="text-gray-400 text-sm py-8 text-center">{t.loading}</p>
-        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false} />}
+        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false}
+            traitementCtx={{ orgId, referentiel: ref, entite }} onTraitementsChanged={() => setTraitementsKey(k => k + 1)} />}
+
+      {/* Registre des traitements réels (plans / dérogations / acceptations de risque) */}
+      {!loading && (
+        <TraitementsRegistre key={`${ref}|${entite}|${traitementsKey}`} orgId={orgId} referentiel={ref} entite={entite} locale={locale} canEdit />
+      )}
 
       {/* Historique & tendance du taux (comme le dashboard) — la version se fige via
           le bouton « Figer » de l'en-tête, donc canEdit=false ici (pas de doublon). */}

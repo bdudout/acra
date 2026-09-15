@@ -15,6 +15,8 @@ import {
   type ConformiteTraitement,
 } from '@/lib/conformite'
 import { etatDerogation, type DerogationStatut } from '@/lib/derogation'
+import { typeForEntryTag } from '@/lib/conformite-traitement'
+import TraitementPopover, { type ExistingTraitement } from '@/components/TraitementPopover'
 
 interface Props {
   controles: FrameworkControl[]
@@ -25,6 +27,11 @@ interface Props {
    *  grille (bouton « Déroger » + badges). La grille vérifie elle-même que la
    *  fonctionnalité est active pour l'organisation (via l'API). */
   derogationCtx?: { analyseId: string; referentiel: string }
+  /** Contexte traitements réels (socle org) : choisir « plan/dérogation/acceptation »
+   *  crée/rattache un vrai ConformiteTraitement (multi-exigences). */
+  traitementCtx?: { orgId: string; referentiel: string; entite: string }
+  /** Notifie le parent (registre) après création/rattachement d'un traitement. */
+  onTraitementsChanged?: () => void
   /** Affiche le catalogue de vulnérabilités (écarts) — pertinent en analyse, pas en socle pur. */
   showVulnCatalog?: boolean
 }
@@ -44,9 +51,21 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * est activée (OrganizationConfig.conformiteActive). Les non-conformités dérivées
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
-export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, showVulnCatalog = true }: Props) {
+export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true }: Props) {
   const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
+
+  // Traitements réels (socle org) : liste chargée + popover création/rattachement.
+  const [traitements, setTraitements] = useState<ExistingTraitement[]>([])
+  const [popover, setPopover] = useState<{ ref: string; type: import('@/lib/conformite-traitement').TraitementType } | null>(null)
+  async function reloadTraitements() {
+    if (!traitementCtx) return
+    const qs = `referentiel=${encodeURIComponent(traitementCtx.referentiel)}&entite=${encodeURIComponent(traitementCtx.entite)}`
+    const res = await fetch(`/api/organizations/${traitementCtx.orgId}/conformite/traitements?${qs}`).then(r => r.ok ? r.json() : null).catch(() => null)
+    const rows = Array.isArray(res?.traitements) ? res.traitements : []
+    setTraitements(rows.map((x: { id: string; type: string; intitule: string; refs: unknown }) => ({ id: x.id, type: x.type, intitule: x.intitule, refs: Array.isArray(x.refs) ? x.refs as string[] : [] })))
+  }
+  useEffect(() => { reloadTraitements() }, [traitementCtx?.orgId, traitementCtx?.referentiel, traitementCtx?.entite]) // eslint-disable-line react-hooks/exhaustive-deps
   const sLabels = t.conformite.statuts as Record<string, string>
   const d = t.derogations
 
@@ -161,6 +180,13 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     onChange(next)
   }
 
+  // Applique une étiquette de traitement sans bascule (après création/rattachement réel).
+  function forceTraitement(ref: string, traitement: ConformiteTraitement) {
+    const prev = byRef.get(ref)
+    if (!prev || (prev.statut !== 'partiel' && prev.statut !== 'non_conforme')) return
+    onChange([...entries.filter(e => e.ref !== ref), { ...prev, traitement }])
+  }
+
   return (
     <div>
       <h3 className="font-semibold text-gray-800 mb-1">{t.conformite.gridTitle}</h3>
@@ -239,8 +265,15 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 mr-0.5">{t.conformite.traitementLabel} :</span>
                   {CONFORMITE_TRAITEMENTS.map(tr => {
                     const active = entry?.traitement === tr
+                    // En contexte socle (traitementCtx) : ouvrir le popover pour créer/rattacher un
+                    // vrai traitement ; un re-clic sur l'actif retire l'étiquette. Sinon simple bascule.
+                    const onClick = () => {
+                      if (!traitementCtx) return setTraitement(c.ref, tr)
+                      if (active) return setTraitement(c.ref, tr) // retire l'étiquette
+                      setPopover({ ref: c.ref, type: typeForEntryTag(tr) })
+                    }
                     return (
-                      <button key={tr} type="button" disabled={readOnly} onClick={() => setTraitement(c.ref, tr)}
+                      <button key={tr} type="button" disabled={readOnly} onClick={onClick}
                         className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
                           active
                             ? 'bg-ebios-600 text-white border-ebios-600'
@@ -251,6 +284,15 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     )
                   })}
                 </div>
+              )}
+              {/* Popover de création / rattachement d'un traitement réel */}
+              {traitementCtx && popover?.ref === c.ref && (
+                <TraitementPopover
+                  orgId={traitementCtx.orgId} referentiel={traitementCtx.referentiel} entite={traitementCtx.entite}
+                  controlRef={c.ref} controlNom={c.nom} type={popover.type} existing={traitements}
+                  onApplied={(tag) => { forceTraitement(c.ref, tag); setPopover(null); reloadTraitements(); onTraitementsChanged?.() }}
+                  onClose={() => setPopover(null)}
+                />
               )}
               {/* Dérogation : badge d'état, ou demande rapide sur une non-conformité */}
               {derogationCtx && derogActive && showComment && (() => {
