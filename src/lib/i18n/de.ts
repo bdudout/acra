@@ -3593,6 +3593,7 @@ export const de: Translations = {
     registreDelete: 'Diese Behandlung löschen?',
     registreNiveauMaintenu: 'Niveau beibehalten',
     traitementLabel: 'Behandlung',
+    cloreAction: 'Aktion abschließen', cloreActionHint: 'Die Kontrolle wird konform (Lücke behoben).',
     traitements: { plan_action: 'Maßnahmenplan', derogation: 'Ausnahme', acceptation_risque: 'Risikoakzeptanz' },
     statTaux:        'Konformitätsgrad',
     statEvalues:     'Bewertete Kontrollziele',

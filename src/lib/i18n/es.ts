@@ -3593,6 +3593,7 @@ export const es: Translations = {
     registreDelete: '¿Eliminar este tratamiento?',
     registreNiveauMaintenu: 'Nivel mantenido',
     traitementLabel: 'Tratamiento',
+    cloreAction: 'Cerrar la acción', cloreActionHint: 'El control pasa a conforme (brecha resuelta).',
     traitements: { plan_action: 'Plan de acción', derogation: 'Excepción', acceptation_risque: 'Aceptación del riesgo' },
     statTaux:        'Tasa de conformidad',
     statEvalues:     'Controles evaluados',

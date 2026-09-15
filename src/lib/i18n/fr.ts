@@ -3642,6 +3642,7 @@ export const fr = {
     registreDelete: 'Supprimer ce traitement ?',
     registreNiveauMaintenu: 'Niveau maintenu',
     traitementLabel: 'Traitement',
+    cloreAction: 'Clore l\'action', cloreActionHint: 'Le contrôle passe conforme (écart résolu).',
     traitements: { plan_action: 'Plan d\'action', derogation: 'Dérogation', acceptation_risque: 'Acceptation de risque' },
     statTaux:        'Taux de conformité',
     statEvalues:     'Contrôles évalués',

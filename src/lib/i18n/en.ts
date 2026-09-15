@@ -3593,6 +3593,7 @@ export const en: Translations = {
     registreDelete: 'Delete this treatment?',
     registreNiveauMaintenu: 'Level maintained',
     traitementLabel: 'Treatment',
+    cloreAction: 'Close the action', cloreActionHint: 'The control becomes compliant (gap resolved).',
     traitements: { plan_action: 'Action plan', derogation: 'Derogation', acceptation_risque: 'Risk acceptance' },
     statTaux:        'Compliance rate',
     statEvalues:     'Assessed controls',

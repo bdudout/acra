@@ -287,6 +287,14 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                       </button>
                     )
                   })}
+                  {/* Clore l'action : le contrôle passe conforme (l'écart est résolu). */}
+                  {entry?.traitement === 'plan_action' && !readOnly && (
+                    <button type="button" onClick={() => setStatut(c.ref, 'conforme')}
+                      title={t.conformite.cloreActionHint}
+                      className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-green-600 text-green-700 hover:bg-green-50 dark:text-green-300 dark:border-green-500/50 dark:hover:bg-green-500/10">
+                      ✓ {t.conformite.cloreAction}
+                    </button>
+                  )}
                 </div>
               )}
               {/* Popover de création / rattachement d'un traitement réel */}
