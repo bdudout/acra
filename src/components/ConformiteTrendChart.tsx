@@ -33,11 +33,21 @@ export default function ConformiteTrendChart({ points, locale, granLabels, now: 
   const [hover, setHover] = useState<number | null>(null)
 
   const now = useMemo(() => nowProp ?? new Date(), [nowProp])
-  // Points triés par date croissante (pour la ligne et les positions).
-  const pts = useMemo(
-    () => [...points].map(p => ({ ...p, ms: new Date(p.createdAt).getTime() })).sort((a, b) => a.ms - b.ms),
-    [points],
-  )
+  // Points triés par date croissante (pour la ligne et les positions). S'il n'y a
+  // qu'un seul point (pas de point de départ), on ancre une origine à 0 % au 1ᵉʳ
+  // janvier de son année → une droite minimale est tracée (point d'ancrage non
+  // dessiné : ni pastille ni %).
+  const pts = useMemo(() => {
+    const sorted = [...points].map(p => ({ ...p, ms: new Date(p.createdAt).getTime(), synthetic: false })).sort((a, b) => a.ms - b.ms)
+    if (sorted.length === 1) {
+      const only = sorted[0]
+      const yearStart = new Date(new Date(only.ms).getFullYear(), 0, 1)
+      if (yearStart.getTime() < only.ms) {
+        return [{ id: '__zero', label: null, createdAt: yearStart.toISOString(), taux: 0, ms: yearStart.getTime(), synthetic: true }, ...sorted]
+      }
+    }
+    return sorted
+  }, [points])
   const minYear = useMemo(() => minYearOf(pts.map(p => p.ms), now), [pts, now])
   const segs = useMemo(() => buildSegments(now, minYear, expanded, gran), [now, minYear, expanded, gran])
 
@@ -124,6 +134,7 @@ export default function ConformiteTrendChart({ points, locale, granLabels, now: 
 
         {/* Points + pourcentage au-dessus */}
         {pts.map((p, i) => {
+          if (p.synthetic) return null // origine 0 % : ancre la droite, non dessinée
           const cx = xOf(p.ms), cy = yOf(p.taux)
           const on = hover === i
           return (

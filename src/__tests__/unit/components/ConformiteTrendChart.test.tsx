@@ -43,6 +43,18 @@ describe('ConformiteTrendChart', () => {
     expect(within(svg()).getByText('T2')).toBeInTheDocument()
   })
 
+  it('un seul point → droite minimale tracée depuis 0 % (ancre non dessinée)', () => {
+    const one: TrendChartPoint[] = [{ id: 'x', label: null, createdAt: new Date(2026, 3, 1).toISOString(), taux: 60 }]
+    render(<ConformiteTrendChart points={one} locale="fr" granLabels={granLabels} now={NOW} />)
+    // Le % réel est affiché
+    expect(screen.getByText('60%')).toBeInTheDocument()
+    // Une ligne de tendance existe (2 points : ancre 0 % + point réel)
+    const lines = document.querySelectorAll('path[stroke]')
+    expect(lines.length).toBeGreaterThan(0)
+    // L'ancre 0 % n'est pas dessinée comme point (pas de « 0% » visible)
+    expect(screen.queryByText('0%')).not.toBeInTheDocument()
+  })
+
   it('survol d\'un point : infobulle avec %', () => {
     render(<ConformiteTrendChart points={points} locale="fr" granLabels={granLabels} now={NOW} />)
     const circles = svg().querySelectorAll('circle')
