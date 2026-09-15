@@ -11,6 +11,8 @@ import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from
 // Clé de persistance (par navigateur) des groupes de doublons « ignorés ».
 const IGNORED_DUPS_LS_KEY = 'acra:tiers:ignoredDups'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import SortableTh from '@/components/SortableTh'
+import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
 
 export interface TiersRow {
   id:          string
@@ -47,6 +49,8 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
   const [search, setSearch] = useState('')
   const [zone, setZone] = useState<EcosystemZone | 'all'>('all')
   const [onlyCritique, setOnlyCritique] = useState(false)
+  const [sort, setSort] = useState<SortState | null>(null)
+  const onSort = (key: string) => setSort((s) => nextSort(s, key))
   const critiqueCount = useMemo(() => tiers.filter(x => x.critique).length, [tiers])
   // Doublons potentiels (lecture seule) : tiers au nom proche à harmoniser.
   const dupGroups = useMemo(() => suggestTierDuplicates(tiers), [tiers])
@@ -133,6 +137,20 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
         || (ppTypes[x.type] ?? x.type).toLowerCase().includes(q)
     })
   }, [tiers, search, zone, onlyCritique, ppTypes])
+
+  // Tri de colonnes (menace par valeur, zone par sévérité, type par libellé).
+  const ZONE_RANK: Record<string, number> = { danger: 0, controle: 1, veille: 2 }
+  const tierAccessor = (x: TierRow, key: string): unknown => {
+    switch (key) {
+      case 'nom': return x.nom
+      case 'type': return ppTypes[x.type] ?? x.type
+      case 'analyse': return x.analyses?.[0]?.analyseNom
+      case 'menace': return x.menace
+      case 'zone': return ZONE_RANK[x.zone] ?? 9
+      default: return ''
+    }
+  }
+  const shown = sort ? sortRows(filtered, sort, tierAccessor) : filtered
 
   const filters: { key: EcosystemZone | 'all'; label: string; count: number; active: string }[] = [
     { key: 'all',      label: t.tiers.filterAll, count: counts.all,      active: 'bg-gray-100 text-gray-800' },
@@ -303,15 +321,15 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.tiers.colTiers}</th>
-                  <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">{t.tiers.colType}</th>
-                  <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.tiers.colAnalyse}</th>
-                  <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">{radar.menaceLabel}</th>
-                  <th scope="col" className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.tiers.colZone}</th>
+                  <SortableTh label={t.tiers.colTiers} sortKey="nom" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                  <SortableTh label={t.tiers.colType} sortKey="type" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell" />
+                  <SortableTh label={t.tiers.colAnalyse} sortKey="analyse" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                  <SortableTh label={radar.menaceLabel} sortKey="menace" sort={sort} onSort={onSort} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell" />
+                  <SortableTh label={t.tiers.colZone} sortKey="zone" sort={sort} onSort={onSort} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filtered.map(x => (
+                {shown.map(x => (
                   <tr key={x.key} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 max-w-xs">
                       <div className="font-medium text-gray-800">

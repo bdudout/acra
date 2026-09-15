@@ -12,6 +12,8 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
+import SortableTh from '@/components/SortableTh'
+import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
 
 /** Couleur (#) d'un niveau selon les seuils CONFIGURÉS (repli gris si absent). */
 function niveauHex(n: number | null, seuils: Seuil[]): string | null {
@@ -61,6 +63,8 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
   // Valeur par défaut de l'entité : la plus fréquemment saisie dans le registre.
   const defaultEntite = useMemo(() => mostFrequentString(risks.map(x => x.entite)), [risks])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [sort, setSort] = useState<SortState | null>(null)
+  const onSort = (key: string) => setSort((s) => nextSort(s, key))
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
   const taxoLabel = (code: string | null) => {
@@ -154,6 +158,23 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
     </select>
   )
 
+  // Tri de colonnes (statut par rang métier, catégorie par libellé, avancement par taux).
+  const RISK_STATUT_RANK: Record<string, number> = Object.fromEntries(RISK_STATUTS.map((s, i) => [s, i]))
+  const riskAccessor = (x: Risk, key: string): unknown => {
+    switch (key) {
+      case 'intitule': return x.intitule
+      case 'category': return taxoLabel(x.taxonomieCode)
+      case 'process': return x.processusNom
+      case 'inherent': return x.niveauInherent
+      case 'residual': return x.niveauResiduel
+      case 'statut': return RISK_STATUT_RANK[x.statut] ?? 99
+      case 'actions': return x.actionsSummary?.tauxAvancement
+      default: return ''
+    }
+  }
+  const baseRisks = filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks
+  const shown = sort ? sortRows(baseRisks, sort, riskAccessor) : baseRisks
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -211,20 +232,20 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="px-4 py-3">{r.colIntitule}</th>
-              <th className="px-4 py-3">{r.colCategory}</th>
-              <th className="px-4 py-3">{r.colProcess}</th>
-              <th className="px-4 py-3">{r.colInherent}</th>
-              <th className="px-4 py-3">{r.colResidual}</th>
-              <th className="px-4 py-3">{r.colStatut}</th>
-              <th className="px-4 py-3">{r.colActions}</th>
+              <SortableTh label={r.colIntitule} sortKey="intitule" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colCategory} sortKey="category" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colProcess} sortKey="process" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colInherent} sortKey="inherent" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colResidual} sortKey="residual" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colStatut} sortKey="statut" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <SortableTh label={r.colActions} sortKey="actions" sort={sort} onSort={onSort} className="px-4 py-3" />
               {canEdit && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
             {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
-              : (filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks).length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
-              : (filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks).map(x => (
+              : shown.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
+              : shown.map(x => (
                 <Fragment key={x.id}>
                 <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
