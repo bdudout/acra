@@ -6,6 +6,9 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
+import ColumnMenu from '@/components/ColumnMenu'
+import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 import { findIncidentDuplicates } from '@/lib/incident-dedup'
 import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
@@ -60,6 +63,10 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const _sp = useSearchParams()
   const _stInit = (_sp.get('statut') || '').toUpperCase()
   const [filtreStatut, setFiltreStatut] = useState<string>(INCIDENT_STATUTS.includes(_stInit as IncidentStatut) ? _stInit : '')
+  const [sort, setSort] = useState<SortState | null>(null)
+  const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
+  const [colFilters, setColFilters] = useState<ColumnFilters>({})
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
@@ -224,7 +231,34 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     await fetch(`/api/incidents/${id}`, { method: 'DELETE' }); reload()
   }
 
-  const visibleIncidents = filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents
+  const INC_STATUT_RANK: Record<string, number> = Object.fromEntries(INCIDENT_STATUTS.map((s, i) => [s, i]))
+  const incAccessor = (i: Incident, key: string): unknown => {
+    switch (key) {
+      case 'incident': return i.intitule
+      case 'category': return taxoLabel(i.taxonomieCode)
+      case 'process': return i.processusNom
+      case 'perte': return i.perteNette
+      case 'risque': return i.riskItemIntitule
+      case 'statut': return INC_STATUT_RANK[i.statut] ?? 99
+      default: return ''
+    }
+  }
+  const incDisplay = (i: Incident, key: string): unknown => {
+    switch (key) {
+      case 'category': return taxoLabel(i.taxonomieCode)
+      case 'process': return i.processusNom ?? ''
+      case 'risque': return i.riskItemIntitule ?? ''
+      case 'statut': return (n.statuts as Record<string, string>)[i.statut] ?? i.statut
+      default: return ''
+    }
+  }
+  const baseIncidents = filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents
+  const distinctInc = (key: string) => distinctValues(baseIncidents, (i) => incDisplay(i, key))
+  const incColFiltered = applyColumnFilters(baseIncidents, colFilters, incDisplay)
+  const visibleIncidents = sort ? sortRows(incColFiltered, sort, incAccessor) : incColFiltered
+  const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctInc(key)))
+  const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
+  const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'entités à partir des incidents déjà saisis (org courante).
   const entiteSug = suggestionsFromValues(incidents.map(i => i.entite))
@@ -329,12 +363,16 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="px-4 py-3">{n.colIncident}</th>
-              <th className="px-4 py-3">{n.colCategory}</th>
-              <th className="px-4 py-3">{n.colProcess}</th>
-              <th className="px-4 py-3 text-right">{n.colPerte}</th>
-              <th className="px-4 py-3">{n.colRisque}</th>
-              <th className="px-4 py-3">{n.colStatut}</th>
+              <ColumnMenu label={n.colIncident} sortKey="incident" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
+              <ColumnMenu label={n.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctInc('category')} allowed={colFilters.category} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={n.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctInc('process')} allowed={colFilters.process} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={n.colPerte} sortKey="perte" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="right" className="px-4 py-3" />
+              <ColumnMenu label={n.colRisque} sortKey="risque" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctInc('risque')} allowed={colFilters.risque} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={n.colStatut} sortKey="statut" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctInc('statut')} allowed={colFilters.statut} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
               <th className="px-4 py-3">{n.colDora}</th>
               {canQualify && <th className="px-4 py-3" />}
             </tr>
