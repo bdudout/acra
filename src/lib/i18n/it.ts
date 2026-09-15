@@ -3575,6 +3575,7 @@ export const it: Translations = {
       niveauRisqueMaintenu: 'Mantenere il livello di rischio', niveauRisque: 'Livello di rischio', niveauRisquePh: 'Es. Moderato',
       attachSelect: 'Scegli un trattamento…', attachEmpty: 'Nessun trattamento di questo tipo', attachBtn: 'Collega',
       create: 'Crea', creating: '…', cancel: 'Annulla', covers: '{n} requisito/i', error: 'Non riuscito. Riprova.',
+      searchExisting: 'Cerca un trattamento esistente…', update: 'Aggiorna', lockedHint: 'Trattamento esistente — titolo non modificabile qui', newInstead: 'Nuovo',
     },
     registreTitre: 'Trattamenti degli scostamenti',
     registreEmpty: 'Nessun trattamento registrato per questo framework.',

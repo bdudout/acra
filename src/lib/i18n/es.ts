@@ -3575,6 +3575,7 @@ export const es: Translations = {
       niveauRisqueMaintenu: 'Mantener el nivel de riesgo', niveauRisque: 'Nivel de riesgo', niveauRisquePh: 'Ej. Moderado',
       attachSelect: 'Elegir un tratamiento…', attachEmpty: 'Ningún tratamiento de este tipo', attachBtn: 'Vincular',
       create: 'Crear', creating: '…', cancel: 'Cancelar', covers: '{n} requisito(s)', error: 'Error. Reintente.',
+      searchExisting: 'Buscar un tratamiento existente…', update: 'Actualizar', lockedHint: 'Tratamiento existente — título no editable aquí', newInstead: 'Nuevo',
     },
     registreTitre: 'Tratamientos de brechas',
     registreEmpty: 'Ningún tratamiento registrado para este marco.',

@@ -3624,6 +3624,7 @@ export const fr = {
       niveauRisqueMaintenu: 'Maintenir le niveau de risque', niveauRisque: 'Niveau de risque', niveauRisquePh: 'Ex. Modéré',
       attachSelect: 'Choisir un traitement…', attachEmpty: 'Aucun traitement de ce type', attachBtn: 'Rattacher',
       create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec. Réessayez.',
+      searchExisting: 'Rechercher un traitement existant…', update: 'Mettre à jour', lockedHint: 'Traitement existant — libellé non modifiable ici', newInstead: 'Nouveau',
     },
     registreTitre: 'Traitements des écarts',
     registreEmpty: 'Aucun traitement enregistré pour ce référentiel.',

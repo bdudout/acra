@@ -3575,6 +3575,7 @@ export const de: Translations = {
       niveauRisqueMaintenu: 'Risikoniveau beibehalten', niveauRisque: 'Risikoniveau', niveauRisquePh: 'z. B. Mittel',
       attachSelect: 'Behandlung wählen…', attachEmpty: 'Keine Behandlung dieses Typs', attachBtn: 'Zuordnen',
       create: 'Erstellen', creating: '…', cancel: 'Abbrechen', covers: '{n} Anforderung(en)', error: 'Fehlgeschlagen. Bitte erneut.',
+      searchExisting: 'Bestehende Behandlung suchen…', update: 'Aktualisieren', lockedHint: 'Bestehende Behandlung — Titel hier nicht änderbar', newInstead: 'Neu',
     },
     registreTitre: 'Behandlung der Lücken',
     registreEmpty: 'Keine Behandlung für dieses Rahmenwerk erfasst.',

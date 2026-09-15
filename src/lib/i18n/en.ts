@@ -3575,6 +3575,7 @@ export const en: Translations = {
       niveauRisqueMaintenu: 'Maintain the risk level', niveauRisque: 'Risk level', niveauRisquePh: 'e.g. Moderate',
       attachSelect: 'Choose a treatment…', attachEmpty: 'No treatment of this type', attachBtn: 'Attach',
       create: 'Create', creating: '…', cancel: 'Cancel', covers: '{n} requirement(s)', error: 'Failed. Please retry.',
+      searchExisting: 'Search an existing treatment…', update: 'Update', lockedHint: 'Existing treatment — title not editable here', newInstead: 'New',
     },
     registreTitre: 'Gap treatments',
     registreEmpty: 'No treatment recorded for this framework.',

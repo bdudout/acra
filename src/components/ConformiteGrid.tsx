@@ -63,7 +63,11 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     const qs = `referentiel=${encodeURIComponent(traitementCtx.referentiel)}&entite=${encodeURIComponent(traitementCtx.entite)}`
     const res = await fetch(`/api/organizations/${traitementCtx.orgId}/conformite/traitements?${qs}`).then(r => r.ok ? r.json() : null).catch(() => null)
     const rows = Array.isArray(res?.traitements) ? res.traitements : []
-    setTraitements(rows.map((x: { id: string; type: string; intitule: string; refs: unknown }) => ({ id: x.id, type: x.type, intitule: x.intitule, refs: Array.isArray(x.refs) ? x.refs as string[] : [] })))
+    setTraitements(rows.map((x: { id: string; type: string; intitule: string; refs: unknown; description?: string | null; responsable?: string | null; echeance?: string | null; statut?: string; niveauRisqueMaintenu?: boolean; niveauRisque?: string | null }) => ({
+      id: x.id, type: x.type, intitule: x.intitule, refs: Array.isArray(x.refs) ? x.refs as string[] : [],
+      description: x.description ?? null, responsable: x.responsable ?? null,
+      echeance: x.echeance ?? null, statut: x.statut, niveauRisqueMaintenu: x.niveauRisqueMaintenu, niveauRisque: x.niveauRisque ?? null,
+    })))
   }
   useEffect(() => { reloadTraitements() }, [traitementCtx?.orgId, traitementCtx?.referentiel, traitementCtx?.entite]) // eslint-disable-line react-hooks/exhaustive-deps
   const sLabels = t.conformite.statuts as Record<string, string>
