@@ -8,6 +8,7 @@ vi.mock('@/lib/i18n/context', () => ({
   useTranslation: () => ({
     locale: 'fr',
     t: {
+      table: { sortAsc: 'A→Z', sortDesc: 'Z→A', sortNone: 'Sans tri', filterTitle: 'Filtrer', search: 'Rechercher', selectAll: 'Tout', selectNone: 'Aucun', onlyThis: 'Uniquement', clear: 'Effacer', menu: 'Trier et filtrer' },
       plansActions: {
         title: 'Plans d\'action', subtitle: 'sous-titre',
         kpiTotal: 'Actions', kpiRetard: 'En retard', kpiAvancement: 'Avancement',
@@ -88,6 +89,17 @@ describe('PlansActionsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /Porteur/ }))
     const rows = screen.getAllByRole('row').slice(1)
     expect(within(rows[0]).getByText('Revue trimestrielle')).toBeInTheDocument() // porteur Audit
+  })
+
+  it('filtre par colonne façon tableur : décocher une valeur retire les lignes', () => {
+    render(<PlansActionsView items={items} />)
+    // Ouvre le menu de la colonne Origine (2ᵉ colonne)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Trier et filtrer' })[1])
+    // Valeurs distinctes triées : Audit(0), Incident(1), Risque(2) → décocher Risque
+    const checks = screen.getAllByRole('checkbox')
+    fireEvent.click(checks[2])
+    expect(screen.queryByText('Chiffrer les sauvegardes')).not.toBeInTheDocument() // origine Risque
+    expect(screen.getByText('Revue trimestrielle')).toBeInTheDocument() // origine Audit
   })
 
   it('action orpheline : alerte + édition en place (PATCH plans-actions)', async () => {

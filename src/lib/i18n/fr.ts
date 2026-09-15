@@ -56,6 +56,10 @@ export const fr = {
   },
 
   // ─── Navigation ──────────────────────────────────────────────────────────
+  table: {
+    sortAsc: 'Tri croissant (A→Z)', sortDesc: 'Tri décroissant (Z→A)', sortNone: 'Sans tri',
+    filterTitle: 'Filtrer', search: 'Rechercher…', selectAll: 'Tout', selectNone: 'Aucun', onlyThis: 'Uniquement', clear: 'Effacer', menu: 'Trier et filtrer',
+  },
   nav: {
     dashboard:      'Tableau de bord cyber',
     organization:   'Organisation',

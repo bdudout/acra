@@ -19,8 +19,9 @@ import {
   type ActionItemFiltre,
 } from '@/lib/action-items'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite } from '@/lib/risk-action'
-import SortableTh from '@/components/SortableTh'
-import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
+import ColumnMenu from '@/components/ColumnMenu'
+import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
 export interface SerializedActionItem extends Omit<ActionItem, 'echeance'> {
   echeance: string | null
@@ -90,6 +91,8 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<SortState | null>(null)
   const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
+  const [colFilters, setColFilters] = useState<ColumnFilters>({})
 
   // Réhydratation ISO → Date (une fois).
   const hydrated = useMemo<ActionItem[]>(
@@ -124,16 +127,33 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
     }
   }
 
+  // Libellé affiché d'une colonne (base des filtres auto « façon tableur »).
+  const display = (it: ActionItem, key: string): unknown => {
+    switch (key) {
+      case 'origine': return t.plansActions.origines[it.origine]
+      case 'porteur': return it.porteur ?? ''
+      case 'priorite': return t.plansActions.priorites[it.priorite]
+      case 'statut': return t.plansActions.statuts[effectiveStatut(it, now)]
+      default: return ''
+    }
+  }
+  // Liste après filtres à facettes (barre) — base des valeurs distinctes des colonnes.
+  const facetted = useMemo(() => filterActionItems(hydrated, filtre, now), [hydrated, filtre, now])
+  const distinctFor = (key: string) => distinctValues(facetted, (it) => display(it, key)) // eslint-disable-line react-hooks/exhaustive-deps
+
   const visibles = useMemo(() => {
-    const filtered = filterActionItems(hydrated, filtre, now)
+    const colFiltered = applyColumnFilters(facetted, colFilters, display)
     // Tri par colonne si actif, sinon tri métier par défaut (retards/priorité).
-    return sort ? sortRows(filtered, sort, accessor) : sortActionItems(filtered, now)
-  }, [hydrated, filtre, now, sort]) // eslint-disable-line react-hooks/exhaustive-deps
+    return sort ? sortRows(colFiltered, sort, accessor) : sortActionItems(colFiltered, now)
+  }, [facetted, colFilters, now, sort]) // eslint-disable-line react-hooks/exhaustive-deps
   const summary = useMemo(() => summarizeActionItems(hydrated, now), [hydrated, now])
   const orphanCount = useMemo(() => hydrated.filter((i) => i.origine === 'orpheline').length, [hydrated])
 
-  const hasFilter = !!(origine || priorite || statut || echeance || porteur.trim() || q.trim())
-  const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setEcheance(''); setPorteur(''); setQ('') }
+  const hasFilter = !!(origine || priorite || statut || echeance || porteur.trim() || q.trim() || Object.keys(colFilters).length)
+  const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setEcheance(''); setPorteur(''); setQ(''); setColFilters({}) }
+  const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctFor(key)))
+  const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
+  const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
 
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : t.plansActions.sansEcheance
@@ -236,12 +256,16 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
-              <SortableTh label={t.plansActions.colTitre} sortKey="titre" sort={sort} onSort={onSort} />
-              <SortableTh label={t.plansActions.colOrigine} sortKey="origine" sort={sort} onSort={onSort} />
-              <SortableTh label={t.plansActions.colPorteur} sortKey="porteur" sort={sort} onSort={onSort} />
-              <SortableTh label={t.plansActions.colPriorite} sortKey="priorite" sort={sort} onSort={onSort} />
-              <SortableTh label={t.plansActions.colStatut} sortKey="statut" sort={sort} onSort={onSort} />
-              <SortableTh label={t.plansActions.colEcheance} sortKey="echeance" sort={sort} onSort={onSort} />
+              <ColumnMenu label={t.plansActions.colTitre} sortKey="titre" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} />
+              <ColumnMenu label={t.plansActions.colOrigine} sortKey="origine" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)}
+                values={distinctFor('origine')} allowed={colFilters.origine} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={t.plansActions.colPorteur} sortKey="porteur" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)}
+                values={distinctFor('porteur')} allowed={colFilters.porteur} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={t.plansActions.colPriorite} sortKey="priorite" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)}
+                values={distinctFor('priorite')} allowed={colFilters.priorite} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={t.plansActions.colStatut} sortKey="statut" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)}
+                values={distinctFor('statut')} allowed={colFilters.statut} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={t.plansActions.colEcheance} sortKey="echeance" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} />
               <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>

@@ -55,6 +55,10 @@ export const it: Translations = {
     analyse:    'Eliminare definitivamente questa analisi? Tutti i dati andranno persi.',
   },
 
+  table: {
+    sortAsc: 'Ordine crescente (A→Z)', sortDesc: 'Ordine decrescente (Z→A)', sortNone: 'Nessun ordine',
+    filterTitle: 'Filtra', search: 'Cerca…', selectAll: 'Tutto', selectNone: 'Nessuno', onlyThis: 'Solo', clear: 'Cancella', menu: 'Ordina e filtra',
+  },
   nav: {
     dashboard:      'Dashboard cyber',
     organization:   'Organizzazione',

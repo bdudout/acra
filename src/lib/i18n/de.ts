@@ -55,6 +55,10 @@ export const de: Translations = {
     analyse:    'Diese Analyse dauerhaft löschen? Alle Daten gehen verloren.',
   },
 
+  table: {
+    sortAsc: 'Aufsteigend sortieren (A→Z)', sortDesc: 'Absteigend sortieren (Z→A)', sortNone: 'Keine Sortierung',
+    filterTitle: 'Filtern', search: 'Suchen…', selectAll: 'Alle', selectNone: 'Keine', onlyThis: 'Nur', clear: 'Löschen', menu: 'Sortieren und filtern',
+  },
   nav: {
     dashboard:      'Cyber-Dashboard',
     organization:   'Organisation',
