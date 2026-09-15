@@ -29,6 +29,9 @@ export default function TraitementsRegistre({ orgId, referentiel, entite, locale
   const c = t.conformite
   const u = c.traitementUI
   const [rows, setRows] = useState<Row[]>([])
+  // Repliable : le registre peut être volumineux et limiter le défilement de la
+  // grille du référentiel → on peut le replier (ouvert par défaut).
+  const [open, setOpen] = useState(true)
   const base = `/api/organizations/${orgId}/conformite/traitements`
 
   const load = useCallback(async () => {
@@ -50,9 +53,13 @@ export default function TraitementsRegistre({ orgId, referentiel, entite, locale
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5 mb-2">
+      <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+        className="w-full flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+        <span className="text-gray-400">{open ? '▾' : '▸'}</span>
         <ClipboardList size={15} aria-hidden="true" /> {c.registreTitre}
-      </h3>
+        <span className="ml-1 text-[11px] font-normal text-gray-400">({rows.length})</span>
+      </button>
+      {open && (
       <ul className="divide-y divide-gray-100 dark:divide-gray-700">
         {rows.map(r => (
           <li key={r.id} className="py-2 flex items-start gap-2 text-sm">
@@ -81,6 +88,7 @@ export default function TraitementsRegistre({ orgId, referentiel, entite, locale
           </li>
         ))}
       </ul>
+      )}
     </div>
   )
 }

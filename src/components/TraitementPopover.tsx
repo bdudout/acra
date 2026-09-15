@@ -64,9 +64,11 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const [description, setDescription] = useState('')
   const [maintien, setMaintien] = useState(false)
   const [niveau, setNiveau] = useState('')
-  // Dérogation FORMELLE (workflow RSSI) : motif + mesures compensatoires requis.
+  // Dérogation FORMELLE (workflow RSSI) : motif + mesures compensatoires requis,
+  // + durée (jours) propre à la dérogation (date butoir ; défaut org si vide).
   const [motif, setMotif] = useState('')
   const [mesures, setMesures] = useState('')
+  const [duree, setDuree] = useState('')
   // id du traitement existant sélectionné (null = création d'un nouveau).
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // id de l'ACTION réelle (PlanAction) sélectionnée à rattacher (null = aucune).
@@ -167,6 +169,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
         body: JSON.stringify({
           portee: 'CONTROLE', referentiel, ref: controlRef,
           intitule: intitule.trim() || defaultTitle, motif: motif.trim(), mesuresCompensatoires: mesures.trim(),
+          ...(Number(duree) > 0 ? { dureeJours: Number(duree) } : {}),
         }),
       })
       setBusy(false)
@@ -272,6 +275,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           <>
             <textarea value={motif} onChange={e => setMotif(e.target.value)} placeholder={u.motifPh} rows={2} className={inputCls} />
             <textarea value={mesures} onChange={e => setMesures(e.target.value)} placeholder={u.mesuresPh} rows={2} className={inputCls} />
+            <input type="number" min={1} value={duree} onChange={e => setDuree(e.target.value)} placeholder={u.dureeJoursPh} title={u.dureeJours} className={inputCls} />
           </>
         )}
         {!isLinkAction && !isDerog && (

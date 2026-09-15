@@ -3595,6 +3595,7 @@ export const it: Translations = {
       searchExisting: 'Cerca un trattamento esistente…', update: 'Aggiorna', lockedHint: 'Trattamento esistente — titolo non modificabile qui', newInstead: 'Nuovo',
       actionTag: 'azione', linkActionHint: 'Azione esistente — collegata al controllo (titolo non modificabile qui)',
       motifPh: 'Motivo della deroga', mesuresPh: 'Misure compensative', derogWorkflowHint: 'Crea una richiesta di deroga sottoposta al parere del RSSI (registro delle deroghe).', derogChampsRequis: 'Motivo e misure compensative obbligatori.',
+      dureeJours: 'Durata (giorni)', dureeJoursPh: 'Durata in giorni (predef. org se vuoto)',
     },
     registreTitre: 'Trattamenti degli scostamenti',
     registreEmpty: 'Nessun trattamento registrato per questo framework.',

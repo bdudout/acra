@@ -3595,6 +3595,7 @@ export const en: Translations = {
       searchExisting: 'Search an existing treatment…', update: 'Update', lockedHint: 'Existing treatment — title not editable here', newInstead: 'New',
       actionTag: 'action', linkActionHint: 'Existing action — linked to the control (title not editable here)',
       motifPh: 'Waiver rationale (justification)', mesuresPh: 'Compensating controls', derogWorkflowHint: 'Creates a waiver request submitted for RSSI review (waiver register).', derogChampsRequis: 'Rationale and compensating controls are required.',
+      dureeJours: 'Duration (days)', dureeJoursPh: 'Duration in days (org default if empty)',
     },
     registreTitre: 'Gap treatments',
     registreEmpty: 'No treatment recorded for this framework.',

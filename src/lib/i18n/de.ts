@@ -3595,6 +3595,7 @@ export const de: Translations = {
       searchExisting: 'Bestehende Behandlung suchen…', update: 'Aktualisieren', lockedHint: 'Bestehende Behandlung — Titel hier nicht änderbar', newInstead: 'Neu',
       actionTag: 'Aktion', linkActionHint: 'Bestehende Aktion — mit der Kontrolle verknüpft (Titel hier nicht änderbar)',
       motifPh: 'Begründung der Ausnahme', mesuresPh: 'Kompensierende Maßnahmen', derogWorkflowHint: 'Erstellt einen Ausnahmeantrag zur Stellungnahme des RSSI (Ausnahmeregister).', derogChampsRequis: 'Begründung und kompensierende Maßnahmen erforderlich.',
+      dureeJours: 'Dauer (Tage)', dureeJoursPh: 'Dauer in Tagen (Org-Standard wenn leer)',
     },
     registreTitre: 'Behandlung der Lücken',
     registreEmpty: 'Keine Behandlung für dieses Rahmenwerk erfasst.',

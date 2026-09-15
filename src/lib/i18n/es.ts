@@ -3595,6 +3595,7 @@ export const es: Translations = {
       searchExisting: 'Buscar un tratamiento existente…', update: 'Actualizar', lockedHint: 'Tratamiento existente — título no editable aquí', newInstead: 'Nuevo',
       actionTag: 'acción', linkActionHint: 'Acción existente — vinculada al control (título no editable aquí)',
       motifPh: 'Motivo de la excepción', mesuresPh: 'Medidas compensatorias', derogWorkflowHint: 'Crea una solicitud de excepción sometida al dictamen del RSSI (registro de excepciones).', derogChampsRequis: 'Motivo y medidas compensatorias obligatorios.',
+      dureeJours: 'Duración (días)', dureeJoursPh: 'Duración en días (predet. org si vacío)',
     },
     registreTitre: 'Tratamientos de brechas',
     registreEmpty: 'Ningún tratamiento registrado para este marco.',
