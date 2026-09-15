@@ -13,8 +13,10 @@ import {
   normalizeControleAnomalie,
   normalizeIncident,
   normalizeConformiteTraitement,
+  normalizeEcosystemeMesure,
   type ActionItem,
 } from './action-items'
+import { uid } from './uid'
 
 interface ModulesLike {
   incidentsActive: boolean
@@ -33,7 +35,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, riskActionRows, conformiteRows, constatRows, execRows, incidentRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, conformiteRows, constatRows, execRows, incidentRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -41,6 +43,11 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
         id: true, nom: true, description: true, statut: true, priorite: true,
         responsable: true, entite: true, echeance: true, analyseId: true,
       },
+    }),
+    // Mesures d'écosystème (Atelier 3) — stockées en JSON sur les scénarios stratégiques.
+    prisma.analyse.findMany({
+      where: { organizationId: orgId },
+      select: { id: true, scenariosStrategiques: { select: { mesuresEcosysteme: true } } },
     }),
     mod.registreRisquesActive
       ? prisma.planAction.findMany({
@@ -95,7 +102,23 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
   const items: ActionItem[] = []
 
   for (const m of mesureRows) {
-    items.push(normalizeMesure(m, { lien: `/analyses/${m.analyseId}` }))
+    // Lien ancré : ouvre l'atelier 5 et défile jusqu'à la mesure concernée.
+    items.push(normalizeMesure(m, { lien: `/analyses/${m.analyseId}/atelier/5?tab=mesures#mesure-${m.id}` }))
+  }
+  // Mesures d'écosystème (A3) : rattachées à un prestataire, lien vers l'atelier 3.
+  for (const a of ecoAnalyses) {
+    for (const sc of a.scenariosStrategiques) {
+      const list = Array.isArray(sc.mesuresEcosysteme) ? (sc.mesuresEcosysteme as Array<Record<string, unknown>>) : []
+      for (const m of list) {
+        const nom = String(m?.mesure ?? '')
+        if (!nom.trim()) continue
+        const id = String(m?.id ?? uid())
+        items.push(normalizeEcosystemeMesure(
+          { id, nom, description: m?.description, type: m?.type, priorite: m?.priorite, statut: m?.statut, partiePrenante: m?.partiePrenante },
+          { lien: `/analyses/${a.id}/atelier/3?tab=mesures#mesure-${id}` },
+        ))
+      }
+    }
   }
   for (const p of riskActionRows) {
     const riskItemId = p.liens[0]?.targetId ?? null

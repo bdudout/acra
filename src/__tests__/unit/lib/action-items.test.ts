@@ -173,6 +173,18 @@ describe('filterActionItems', () => {
   it('sans filtre : tout', () => {
     expect(filterActionItems(items, {}, NOW)).toHaveLength(3)
   })
+  it('filtre par fenêtre d\'échéance (retard / semaine / sans)', () => {
+    const win: ActionItem[] = [
+      mk({ id: 'r', statut: 'A_FAIRE', echeance: new Date('2020-01-01') }),            // en retard
+      mk({ id: 's', statut: 'A_FAIRE', echeance: new Date(NOW.getTime() + 3 * 86400000) }), // dans 3j
+      mk({ id: 'm', statut: 'A_FAIRE', echeance: new Date(NOW.getTime() + 20 * 86400000) }), // dans 20j
+      mk({ id: 'n', statut: 'A_FAIRE', echeance: null }),                               // sans échéance
+    ]
+    expect(filterActionItems(win, { echeanceBucket: 'retard' }, NOW).map(i => i.id)).toEqual(['r'])
+    expect(filterActionItems(win, { echeanceBucket: 'semaine' }, NOW).map(i => i.id)).toEqual(['s'])
+    expect(filterActionItems(win, { echeanceBucket: 'mois' }, NOW).map(i => i.id).sort()).toEqual(['m', 's'])
+    expect(filterActionItems(win, { echeanceBucket: 'sans' }, NOW).map(i => i.id)).toEqual(['n'])
+  })
 })
 
 describe('sortActionItems', () => {

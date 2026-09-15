@@ -165,6 +165,29 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   }
 }
 
+export interface EcosystemeMesureRow {
+  id: string; nom: string; description?: unknown; type?: unknown
+  priorite?: unknown; statut?: unknown; partiePrenante?: unknown
+}
+/**
+ * Mesure d'écosystème (Atelier 3, stockée en JSON sur les scénarios). Priorité
+ * 'P1'..'P4' → canonique ; rattachée à un prestataire (porté dans `entite`). Même
+ * origine « risque » qu'une mesure d'analyse — le lien profond mène à l'atelier 3.
+ */
+export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'REALISE' || row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  const p = String(row.priorite ?? '')
+  const priorite: ActionPriorite = p === 'P1' || p === '1' ? 'CRITIQUE' : p === 'P2' || p === '2' ? 'MAJEUR' : 'MODERE'
+  return {
+    id: `MESURE:eco-${row.id}`, source: 'MESURE', origine: 'risque', sourceId: `eco-${row.id}`,
+    titre: String(row.nom ?? ''), description: str(row.description),
+    porteur: null, entite: str(row.partiePrenante),
+    echeance: null, statut, priorite,
+    lien: opt.lien ?? null, riskItemId: null,
+  }
+}
+
 export interface ConformiteTraitementRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; referentiel?: unknown; refs?: unknown
@@ -188,13 +211,30 @@ export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt:
 
 // ─── Filtre / tri / synthèse ─────────────────────────────────────────────────
 
+// Fenêtre d'échéance (reprise de l'ancienne page /actions) : en retard, sous 7j,
+// sous 30j (hors retard), ou sans échéance.
+export type EcheanceBucket = 'retard' | 'semaine' | 'mois' | 'sans'
+
 export interface ActionItemFiltre {
   source?: ActionSource
   origine?: ActionOrigine // facette métier (risque / conformité / contrôle / audit / régulateur / incident)
   priorite?: ActionPriorite
   statut?: RiskActionStatut | 'EN_RETARD'
   porteur?: string
+  echeanceBucket?: EcheanceBucket
   q?: string
+}
+
+/** Fenêtre d'échéance d'un item (retard dérivé de l'échéance vs statut effectif). */
+export function matchEcheanceBucket(it: ActionItem, bucket: EcheanceBucket, now: Date): boolean {
+  const enRetard = effectiveStatut(it, now) === 'EN_RETARD'
+  if (bucket === 'retard') return enRetard
+  if (bucket === 'sans') return it.echeance == null
+  if (it.echeance == null || enRetard) return false
+  const days = (it.echeance.getTime() - now.getTime()) / 86_400_000
+  if (bucket === 'semaine') return days <= 7
+  if (bucket === 'mois') return days <= 30
+  return true
 }
 
 import { effectiveStatut } from './risk-action'
@@ -207,6 +247,7 @@ export function filterActionItems(items: ActionItem[], f: ActionItemFiltre, now:
     if (f.origine && it.origine !== f.origine) return false
     if (f.priorite && it.priorite !== f.priorite) return false
     if (f.statut && effectiveStatut(it, now) !== f.statut) return false
+    if (f.echeanceBucket && !matchEcheanceBucket(it, f.echeanceBucket, now)) return false
     if (porteur && !((it.porteur ?? '').toLowerCase().includes(porteur) || (it.entite ?? '').toLowerCase().includes(porteur))) return false
     if (q && !(it.titre.toLowerCase().includes(q) || (it.description ?? '').toLowerCase().includes(q))) return false
     return true

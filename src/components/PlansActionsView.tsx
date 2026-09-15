@@ -25,6 +25,9 @@ export interface SerializedActionItem extends Omit<ActionItem, 'echeance'> {
 
 interface Props {
   items: SerializedActionItem[]
+  /** Filtres initiaux (deep-links, ex. /actions?priorite=1 → CRITIQUE, ?filtre=retard). */
+  initialPriorite?: ActionPriorite | ''
+  initialEcheance?: string
 }
 
 const PRIORITE_STYLE: Record<ActionPriorite, string> = {
@@ -48,13 +51,14 @@ const ORIGINE_STYLE: Record<ActionOrigine, string> = {
   incident: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
-export default function PlansActionsView({ items }: Props) {
+export default function PlansActionsView({ items, initialPriorite = '', initialEcheance = '' }: Props) {
   const { t, locale } = useTranslation()
   const now = useMemo(() => new Date(), [])
 
   const [origine, setOrigine] = useState<ActionOrigine | ''>('')
-  const [priorite, setPriorite] = useState<ActionPriorite | ''>('')
+  const [priorite, setPriorite] = useState<ActionPriorite | ''>(initialPriorite)
   const [statut, setStatut] = useState<string>('')
+  const [echeance, setEcheance] = useState<string>(initialEcheance)
   const [porteur, setPorteur] = useState('')
   const [q, setQ] = useState('')
 
@@ -69,10 +73,11 @@ export default function PlansActionsView({ items }: Props) {
     if (origine) f.origine = origine
     if (priorite) f.priorite = priorite
     if (statut) f.statut = statut as ActionItemFiltre['statut']
+    if (echeance) f.echeanceBucket = echeance as ActionItemFiltre['echeanceBucket']
     if (porteur.trim()) f.porteur = porteur
     if (q.trim()) f.q = q
     return f
-  }, [origine, priorite, statut, porteur, q])
+  }, [origine, priorite, statut, echeance, porteur, q])
 
   const visibles = useMemo(
     () => sortActionItems(filterActionItems(hydrated, filtre, now), now),
@@ -80,8 +85,8 @@ export default function PlansActionsView({ items }: Props) {
   )
   const summary = useMemo(() => summarizeActionItems(hydrated, now), [hydrated, now])
 
-  const hasFilter = !!(origine || priorite || statut || porteur.trim() || q.trim())
-  const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setPorteur(''); setQ('') }
+  const hasFilter = !!(origine || priorite || statut || echeance || porteur.trim() || q.trim())
+  const clearAll = () => { setOrigine(''); setPriorite(''); setStatut(''); setEcheance(''); setPorteur(''); setQ('') }
 
   const fmtDate = (d: Date | null) =>
     d ? new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d) : t.plansActions.sansEcheance
@@ -136,6 +141,17 @@ export default function PlansActionsView({ items }: Props) {
             {(['A_FAIRE', 'EN_COURS', 'FAIT', 'EN_RETARD'] as const).map((s) => (
               <option key={s} value={s}>{t.plansActions.statuts[s]}</option>
             ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
+          <span className="font-medium">{t.plansActions.filterEcheance}</span>
+          <select value={echeance} onChange={(e) => setEcheance(e.target.value)}
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[9rem]">
+            <option value="">{t.plansActions.filterAll}</option>
+            <option value="retard">{t.plansActions.echeanceRetard}</option>
+            <option value="semaine">{t.plansActions.echeanceSemaine}</option>
+            <option value="mois">{t.plansActions.echeanceMois}</option>
+            <option value="sans">{t.plansActions.echeanceSans}</option>
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
