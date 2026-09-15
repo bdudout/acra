@@ -18,6 +18,8 @@ import {
   type ActionItemFiltre,
 } from '@/lib/action-items'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite } from '@/lib/risk-action'
+import SortableTh from '@/components/SortableTh'
+import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
 
 export interface SerializedActionItem extends Omit<ActionItem, 'echeance'> {
   echeance: string | null
@@ -61,6 +63,8 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
   const [echeance, setEcheance] = useState<string>(initialEcheance)
   const [porteur, setPorteur] = useState('')
   const [q, setQ] = useState('')
+  const [sort, setSort] = useState<SortState | null>(null)
+  const onSort = (key: string) => setSort((s) => nextSort(s, key))
 
   // Réhydratation ISO → Date (une fois).
   const hydrated = useMemo<ActionItem[]>(
@@ -79,10 +83,27 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
     return f
   }, [origine, priorite, statut, echeance, porteur, q])
 
-  const visibles = useMemo(
-    () => sortActionItems(filterActionItems(hydrated, filtre, now), now),
-    [hydrated, filtre, now],
-  )
+  // Accès aux valeurs par colonne (tri). Priorité/statut triés par rang métier
+  // (pas alphabétique) ; origine par libellé traduit ; échéance par date.
+  const PRIORITE_RANK: Record<ActionPriorite, number> = { CRITIQUE: 0, MAJEUR: 1, MODERE: 2 }
+  const STATUT_RANK: Record<string, number> = { EN_RETARD: 0, A_FAIRE: 1, EN_COURS: 2, FAIT: 3 }
+  const accessor = (it: ActionItem, key: string): unknown => {
+    switch (key) {
+      case 'titre': return it.titre
+      case 'origine': return t.plansActions.origines[it.origine]
+      case 'porteur': return it.porteur
+      case 'priorite': return PRIORITE_RANK[it.priorite]
+      case 'statut': return STATUT_RANK[effectiveStatut(it, now)]
+      case 'echeance': return it.echeance
+      default: return ''
+    }
+  }
+
+  const visibles = useMemo(() => {
+    const filtered = filterActionItems(hydrated, filtre, now)
+    // Tri par colonne si actif, sinon tri métier par défaut (retards/priorité).
+    return sort ? sortRows(filtered, sort, accessor) : sortActionItems(filtered, now)
+  }, [hydrated, filtre, now, sort]) // eslint-disable-line react-hooks/exhaustive-deps
   const summary = useMemo(() => summarizeActionItems(hydrated, now), [hydrated, now])
 
   const hasFilter = !!(origine || priorite || statut || echeance || porteur.trim() || q.trim())
@@ -180,12 +201,12 @@ export default function PlansActionsView({ items, initialPriorite = '', initialE
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
-              <th className="px-3 py-2 font-medium">{t.plansActions.colTitre}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colOrigine}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colPorteur}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colPriorite}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colStatut}</th>
-              <th className="px-3 py-2 font-medium">{t.plansActions.colEcheance}</th>
+              <SortableTh label={t.plansActions.colTitre} sortKey="titre" sort={sort} onSort={onSort} />
+              <SortableTh label={t.plansActions.colOrigine} sortKey="origine" sort={sort} onSort={onSort} />
+              <SortableTh label={t.plansActions.colPorteur} sortKey="porteur" sort={sort} onSort={onSort} />
+              <SortableTh label={t.plansActions.colPriorite} sortKey="priorite" sort={sort} onSort={onSort} />
+              <SortableTh label={t.plansActions.colStatut} sortKey="statut" sort={sort} onSort={onSort} />
+              <SortableTh label={t.plansActions.colEcheance} sortKey="echeance" sort={sort} onSort={onSort} />
               <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>

@@ -79,4 +79,12 @@ describe('PlansActionsView', () => {
     const rows = screen.getAllByRole('row').slice(1) // hors en-tête
     expect(within(rows[0]).getByText('Fuite de données')).toBeInTheDocument()
   })
+
+  it('tri par colonne au clic sur l\'en-tête (porteur, asc)', () => {
+    render(<PlansActionsView items={items} />)
+    // Porteurs : DSI / Audit / RSSI → asc alpha = Audit en tête
+    fireEvent.click(screen.getByRole('button', { name: /Porteur/ }))
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(within(rows[0]).getByText('Revue trimestrielle')).toBeInTheDocument() // porteur Audit
+  })
 })
