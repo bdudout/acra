@@ -44,6 +44,8 @@ export default async function ConformiteSoclePage({ searchParams }: {
     // Nom versionné dans le sélecteur (ex. « ISO/IEC 27001 (2022) »).
     .map(r => ({ code: r.code, nom: r.version ? `${r.nom} (${r.version})` : r.nom }))
 
+  // Consultation d'un référentiel précis (arrivée via ?ref=…) → sélecteur verrouillé.
+  const lockRef = !!(refParam && referentiels.some(r => r.code === refParam))
   const applicable = cfg.conformiteActive && usesConformiteEntity(cfg.conformiteNiveau)
   const multiSuivi = isEntiteLevelConformite(cfg.conformiteNiveau)
 
@@ -64,7 +66,10 @@ export default async function ConformiteSoclePage({ searchParams }: {
             <div className="card p-6"><p className="text-gray-500 text-sm">{t.conformiteSocle.aucunReferentiel}</p></div>
           ) : (
             <>
-              {isAdminRole(instanceRole) && (
+              {/* Aide « ajouter un référentiel » : pertinente seulement quand on
+                  choisit librement un référentiel (sélecteur), pas quand on
+                  consulte la conformité d'un référentiel donné (lockRef). */}
+              {isAdminRole(instanceRole) && !lockRef && (
                 <div className="card p-4 mb-4 border-l-4 border-l-ebios-300 bg-ebios-50/40">
                   <p className="text-sm text-gray-700">{t.conformiteSocle.customNote}</p>
                   <Link href="/referentiels" className="inline-block mt-1.5 text-sm font-medium text-ebios-600 hover:underline">
@@ -82,7 +87,7 @@ export default async function ConformiteSoclePage({ searchParams }: {
                   : referentiels[0].code
                 }
                 multiSuivi={multiSuivi}
-                lockRef={!!(refParam && referentiels.some(r => r.code === refParam))}
+                lockRef={lockRef}
               />
             </>
           )}

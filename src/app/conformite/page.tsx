@@ -148,7 +148,9 @@ export default async function ConformiteGlobalPage() {
                 legendPartiel: t.conformiteGlobal.legendPartiel2, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
-            <ConformiteGlobalTrend points={trend} locale={locale} title={t.conformiteGlobal.trendTitle} />
+            <ConformiteGlobalTrend points={trend} locale={locale} title={t.conformiteGlobal.trendTitle}
+              granLabels={{ month: t.dashboard.conformiteGranMonth, quarter: t.dashboard.conformiteGranQuarter, semester: t.dashboard.conformiteGranSemester, hint: t.dashboard.conformiteGranHint }} />
+
           </div>
         )}
 
