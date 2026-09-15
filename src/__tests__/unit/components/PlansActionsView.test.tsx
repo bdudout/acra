@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react'
 import PlansActionsView, { type SerializedActionItem } from '@/components/PlansActionsView'
 
 vi.mock('next/link', () => ({ default: ({ children }: { children: React.ReactNode }) => <a>{children}</a> }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }))
 vi.mock('@/lib/i18n/context', () => ({
   useTranslation: () => ({
     locale: 'fr',
@@ -16,7 +17,8 @@ vi.mock('@/lib/i18n/context', () => ({
         colTitre: 'Action', colSource: 'Source', colOrigine: 'Origine', colPorteur: 'Porteur', colPriorite: 'Priorité',
         colStatut: 'Statut', colEcheance: 'Échéance', open: 'Ouvrir', sansEcheance: '—', sansPorteur: 'Non attribué',
         sources: { MESURE: 'Mesure', RISK_ACTION: 'Registre', CONFORMITE: 'Conformité', AUDIT: 'Audit', CONTROLE: 'Contrôle', INCIDENT: 'Incident' },
-        origines: { risque: 'Risque', conformite: 'Conformité', controle: 'Contrôle', audit: 'Audit', regulateur: 'Régulateur', incident: 'Incident' },
+        origines: { risque: 'Risque', conformite: 'Conformité', controle: 'Contrôle', audit: 'Audit', regulateur: 'Régulateur', incident: 'Incident', orpheline: 'Orpheline' },
+        orphanAlert: '{n} orpheline(s)', save: 'Enregistrer',
         priorites: { CRITIQUE: 'Critique', MAJEUR: 'Majeur', MODERE: 'Modéré' },
         statuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', FAIT: 'Fait', EN_RETARD: 'En retard' },
       },
@@ -86,5 +88,24 @@ describe('PlansActionsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /Porteur/ }))
     const rows = screen.getAllByRole('row').slice(1)
     expect(within(rows[0]).getByText('Revue trimestrielle')).toBeInTheDocument() // porteur Audit
+  })
+
+  it('action orpheline : alerte + édition en place (PATCH plans-actions)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    const orphan = { ...mk({ id: 'PLAN_ACTION:p7', sourceId: 'p7', source: 'PLAN_ACTION', origine: 'orpheline', titre: 'Action isolée' }), lien: null }
+    render(<PlansActionsView items={[orphan]} orgId="o1" />)
+    // Bandeau d'alerte présent
+    expect(screen.getByText('1 orpheline(s)')).toBeInTheDocument()
+    // Ouvre l'éditeur en place, modifie le titre, enregistre
+    fireEvent.click(screen.getByRole('button', { name: /Modifier|Ouvrir|Edit/ }))
+    const titre = screen.getByDisplayValue('Action isolée')
+    fireEvent.change(titre, { target: { value: 'Action corrigée' } })
+    fireEvent.click(screen.getByText('Enregistrer'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const [url, opts] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/organizations/o1/plans-actions/p7')
+    expect(opts.method).toBe('PATCH')
+    expect(JSON.parse(opts.body).titre).toBe('Action corrigée')
   })
 })

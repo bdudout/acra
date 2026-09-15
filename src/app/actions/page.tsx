@@ -51,7 +51,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <PlansActionsView items={serialized} initialPriorite={initialPriorite} initialEcheance={initialEcheance} />
+        <PlansActionsView items={serialized} orgId={scope.activeOrgId} initialPriorite={initialPriorite} initialEcheance={initialEcheance} />
       </main>
     </div>
   )

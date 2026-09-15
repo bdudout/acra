@@ -22,6 +22,22 @@ describe('globalConformiteTrend', () => {
     expect(trend[2]).toMatchObject({ conforme: 11, pertinents: 20, taux: 55 })
   })
 
+  it('au plus un point par jour (le plus récent) — lisibilité de la courbe globale', () => {
+    const trend = globalConformiteTrend([
+      { points: [
+        { date: '2026-01-10T08:00:00Z', conforme: 2, pertinents: 10 },
+        { date: '2026-01-10T14:00:00Z', conforme: 4, pertinents: 10 }, // même jour, plus récent
+        { date: '2026-01-10T18:00:00Z', conforme: 7, pertinents: 10 }, // même jour, encore plus récent
+        { date: '2026-01-12T09:00:00Z', conforme: 8, pertinents: 10 },
+      ] },
+    ])
+    // Deux jours distincts seulement (10 et 12 janvier)
+    expect(trend).toHaveLength(2)
+    // Le 10/01 conserve la valeur la plus récente (7/10 → 70%)
+    expect(trend[0]).toMatchObject({ conforme: 7, pertinents: 10, taux: 70 })
+    expect(trend[1]).toMatchObject({ conforme: 8, taux: 80 })
+  })
+
   it('renvoie une série vide sans point', () => {
     expect(globalConformiteTrend([])).toEqual([])
     expect(globalConformiteTrend([{ points: [] }])).toEqual([])

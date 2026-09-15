@@ -274,6 +274,10 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     const onClick = () => {
                       if (!traitementCtx) return setTraitement(c.ref, tr)
                       if (active) return setTraitement(c.ref, tr) // retire l'étiquette
+                      // Le contrôle a déjà un plan d'action et on bascule vers un autre
+                      // traitement → demander si l'action doit être close (cf. #5).
+                      if (entry?.traitement === 'plan_action' && tr !== 'plan_action'
+                        && !window.confirm(t.conformite.confirmChangeTraitement)) return
                       setPopover({ ref: c.ref, type: typeForEntryTag(tr) })
                     }
                     return (
