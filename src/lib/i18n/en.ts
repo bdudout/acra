@@ -3585,6 +3585,7 @@ export const en: Translations = {
       attachSelect: 'Choose a treatment…', attachEmpty: 'No treatment of this type', attachBtn: 'Attach',
       create: 'Create', creating: '…', cancel: 'Cancel', covers: '{n} requirement(s)', error: 'Failed. Please retry.',
       searchExisting: 'Search an existing treatment…', update: 'Update', lockedHint: 'Existing treatment — title not editable here', newInstead: 'New',
+      actionTag: 'action', linkActionHint: 'Existing action — linked to the control (title not editable here)',
     },
     registreTitre: 'Gap treatments',
     registreEmpty: 'No treatment recorded for this framework.',

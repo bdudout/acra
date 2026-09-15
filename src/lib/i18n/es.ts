@@ -3585,6 +3585,7 @@ export const es: Translations = {
       attachSelect: 'Elegir un tratamiento…', attachEmpty: 'Ningún tratamiento de este tipo', attachBtn: 'Vincular',
       create: 'Crear', creating: '…', cancel: 'Cancelar', covers: '{n} requisito(s)', error: 'Error. Reintente.',
       searchExisting: 'Buscar un tratamiento existente…', update: 'Actualizar', lockedHint: 'Tratamiento existente — título no editable aquí', newInstead: 'Nuevo',
+      actionTag: 'acción', linkActionHint: 'Acción existente — vinculada al control (título no editable aquí)',
     },
     registreTitre: 'Tratamientos de brechas',
     registreEmpty: 'Ningún tratamiento registrado para este marco.',

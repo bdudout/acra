@@ -3585,6 +3585,7 @@ export const it: Translations = {
       attachSelect: 'Scegli un trattamento…', attachEmpty: 'Nessun trattamento di questo tipo', attachBtn: 'Collega',
       create: 'Crea', creating: '…', cancel: 'Annulla', covers: '{n} requisito/i', error: 'Non riuscito. Riprova.',
       searchExisting: 'Cerca un trattamento esistente…', update: 'Aggiorna', lockedHint: 'Trattamento esistente — titolo non modificabile qui', newInstead: 'Nuovo',
+      actionTag: 'azione', linkActionHint: 'Azione esistente — collegata al controllo (titolo non modificabile qui)',
     },
     registreTitre: 'Trattamenti degli scostamenti',
     registreEmpty: 'Nessun trattamento registrato per questo framework.',

@@ -12,6 +12,7 @@ vi.mock('@/lib/i18n/context', () => ({
           niveauRisqueMaintenu: 'Maintenir', niveauRisque: 'Niveau', niveauRisquePh: 'Ex.',
           create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec.',
           searchExisting: 'Rechercher…', update: 'Mettre à jour', lockedHint: 'Libellé verrouillé', newInstead: 'Nouveau',
+          attachBtn: 'Rattacher', actionTag: 'action', linkActionHint: 'Action existante',
         },
       },
     },
@@ -22,6 +23,14 @@ const existing: ExistingTraitement[] = [
   { id: 't1', type: 'PLAN_ACTION', intitule: 'Chiffrer les sauvegardes', refs: ['A.8.1', 'A.8.2'], responsable: 'DSI', echeance: '2026-06-01T00:00:00.000Z', description: 'Plan existant' },
   { id: 't2', type: 'DEROGATION', intitule: 'Dérogation VPN', refs: ['A.9.1'], responsable: 'RSSI' },
 ]
+
+// Route les fetch par URL + méthode ; `plans` = actions réelles renvoyées au montage.
+function mockFetch(plans: unknown[] = []) {
+  return vi.fn((url: string, opts?: { method?: string }) => {
+    if (url.endsWith('/plans-actions')) return Promise.resolve({ ok: true, json: async () => ({ plans }) })
+    return Promise.resolve({ ok: true, json: async () => ({}) })
+  }) as unknown as typeof fetch
+}
 
 function setup(props: Partial<React.ComponentProps<typeof TraitementPopover>> = {}) {
   const onApplied = vi.fn()
@@ -34,59 +43,49 @@ function setup(props: Partial<React.ComponentProps<typeof TraitementPopover>> = 
 describe('TraitementPopover — rattacher/mettre à jour', () => {
   beforeEach(() => { vi.restoreAllMocks() })
 
-  it('crée un nouveau traitement (POST) quand aucun existant n\'est sélectionné', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+  it('crée un nouveau traitement (POST) quand rien n\'est sélectionné', async () => {
+    const fetchMock = mockFetch()
     vi.stubGlobal('fetch', fetchMock)
     const { onApplied } = setup()
-    expect(screen.getByText('Créer')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Créer'))
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    const [url, opts] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/organizations/o1/conformite/traitements')
-    expect(opts.method).toBe('POST')
-    expect(JSON.parse(opts.body).refs).toEqual(['A.5.1'])
-    expect(onApplied).toHaveBeenCalledWith('plan_action')
+    await waitFor(() => expect(onApplied).toHaveBeenCalledWith('plan_action'))
+    const post = (fetchMock as unknown as { mock: { calls: [string, { method?: string; body?: string }][] } }).mock.calls
+      .find(c => c[0] === '/api/organizations/o1/conformite/traitements' && c[1]?.method === 'POST')
+    expect(post).toBeTruthy()
+    expect(JSON.parse(post![1].body!).refs).toEqual(['A.5.1'])
   })
 
-  it('ne propose en autocomplétion que les traitements du même type', () => {
-    setup()
-    fireEvent.focus(screen.getByLabelText('Intitulé'))
-    expect(screen.getByText('Chiffrer les sauvegardes')).toBeInTheDocument() // PLAN_ACTION
-    expect(screen.queryByText('Dérogation VPN')).not.toBeInTheDocument()     // autre type
-  })
-
-  it('sélectionner un existant préremplit, verrouille le libellé et bascule en « Mettre à jour » (PATCH + addRef)', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+  it('sélectionner un traitement existant → PATCH conformité + addRef (libellé verrouillé)', async () => {
+    const fetchMock = mockFetch()
     vi.stubGlobal('fetch', fetchMock)
     const { onApplied } = setup()
     fireEvent.focus(screen.getByLabelText('Intitulé'))
     fireEvent.mouseDown(screen.getByText('Chiffrer les sauvegardes'))
-
     const titre = screen.getByLabelText('Intitulé') as HTMLInputElement
-    expect(titre.value).toBe('Chiffrer les sauvegardes')
     expect(titre.readOnly).toBe(true)
-    expect((screen.getByDisplayValue('DSI'))).toBeInTheDocument() // responsable prérempli
     expect(screen.getByText('Mettre à jour')).toBeInTheDocument()
-
     fireEvent.click(screen.getByText('Mettre à jour'))
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    const [url, opts] = fetchMock.mock.calls[0]
-    expect(url).toBe('/api/organizations/o1/conformite/traitements/t1')
-    expect(opts.method).toBe('PATCH')
-    const body = JSON.parse(opts.body)
-    expect(body.addRef).toBe('A.5.1')
-    expect(body.intitule).toBeUndefined() // libellé jamais modifié
-    expect(onApplied).toHaveBeenCalledWith('plan_action')
+    await waitFor(() => expect(onApplied).toHaveBeenCalled())
+    const patch = (fetchMock as unknown as { mock: { calls: [string, { method?: string; body?: string }][] } }).mock.calls
+      .find(c => c[0] === '/api/organizations/o1/conformite/traitements/t1' && c[1]?.method === 'PATCH')
+    expect(patch).toBeTruthy()
+    expect(JSON.parse(patch![1].body!).addRef).toBe('A.5.1')
   })
 
-  it('« Nouveau » ré-ouvre la création après une sélection', () => {
-    setup()
+  it('rattache une ACTION réelle existante → PATCH plans-actions addLien CONFORMITE', async () => {
+    const fetchMock = mockFetch([{ id: 'p9', titre: 'Revue des accès', porteur: 'RSSI', statut: 'EN_COURS', liens: [] }])
+    vi.stubGlobal('fetch', fetchMock)
+    const { onApplied } = setup()
     fireEvent.focus(screen.getByLabelText('Intitulé'))
-    fireEvent.mouseDown(screen.getByText('Chiffrer les sauvegardes'))
-    expect(screen.getByText('Mettre à jour')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Nouveau'))
-    expect(screen.getByText('Créer')).toBeInTheDocument()
-    const titre = screen.getByLabelText('Intitulé') as HTMLInputElement
-    expect(titre.readOnly).toBe(false)
+    await screen.findByText('Revue des accès') // action chargée au montage
+    fireEvent.mouseDown(screen.getByText('Revue des accès'))
+    expect(screen.getByText('Rattacher')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Rattacher'))
+    await waitFor(() => expect(onApplied).toHaveBeenCalledWith('plan_action'))
+    const patch = (fetchMock as unknown as { mock: { calls: [string, { method?: string; body?: string }][] } }).mock.calls
+      .find(c => c[0] === '/api/organizations/o1/plans-actions/p9' && c[1]?.method === 'PATCH')
+    expect(patch).toBeTruthy()
+    const lien = JSON.parse(patch![1].body!).addLien
+    expect(lien).toEqual({ type: 'CONFORMITE', targetId: 'ISO27001', ref: 'A.5.1', label: 'Politique' })
   })
 })

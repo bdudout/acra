@@ -3585,6 +3585,7 @@ export const de: Translations = {
       attachSelect: 'Behandlung wählen…', attachEmpty: 'Keine Behandlung dieses Typs', attachBtn: 'Zuordnen',
       create: 'Erstellen', creating: '…', cancel: 'Abbrechen', covers: '{n} Anforderung(en)', error: 'Fehlgeschlagen. Bitte erneut.',
       searchExisting: 'Bestehende Behandlung suchen…', update: 'Aktualisieren', lockedHint: 'Bestehende Behandlung — Titel hier nicht änderbar', newInstead: 'Neu',
+      actionTag: 'Aktion', linkActionHint: 'Bestehende Aktion — mit der Kontrolle verknüpft (Titel hier nicht änderbar)',
     },
     registreTitre: 'Behandlung der Lücken',
     registreEmpty: 'Keine Behandlung für dieses Rahmenwerk erfasst.',

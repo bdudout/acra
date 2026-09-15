@@ -35,7 +35,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, ecoAnalyses, riskActionRows, conformiteRows, constatRows, execRows, incidentRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, conformiteData, constatRows, execRows, incidentRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -59,17 +59,27 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
           },
         })
       : Promise.resolve([]),
-    // Traitements « plan d'action » de conformité (dérogations/acceptations exclues :
-    // ce ne sont pas des actions). Source de la facette « conformité ».
+    // Facette « conformité » = traitements « plan d'action » (ConformiteTraitement)
+    // + actions réelles rattachées à un contrôle (PlanAction porteur d'un lien
+    // CONFORMITE). Dérogations/acceptations exclues : ce ne sont pas des actions.
     mod.conformiteActive
-      ? prisma.conformiteTraitement.findMany({
-          where: { ...orgFilter, type: 'PLAN_ACTION' },
-          select: {
-            id: true, intitule: true, description: true, responsable: true,
-            echeance: true, statut: true, referentiel: true, refs: true,
-          },
-        })
-      : Promise.resolve([]),
+      ? Promise.all([
+          prisma.conformiteTraitement.findMany({
+            where: { ...orgFilter, type: 'PLAN_ACTION' },
+            select: {
+              id: true, intitule: true, description: true, responsable: true,
+              echeance: true, statut: true, referentiel: true, refs: true,
+            },
+          }),
+          prisma.planAction.findMany({
+            where: { ...orgFilter, liens: { some: { type: 'CONFORMITE' } } },
+            select: {
+              id: true, titre: true, description: true, porteur: true, echeance: true, statut: true,
+              liens: { where: { type: 'CONFORMITE' }, select: { targetId: true, ref: true }, take: 1 },
+            },
+          }),
+        ])
+      : Promise.resolve([[], []] as const),
     mod.auditInterneActive
       ? prisma.auditConstat.findMany({
           where: orgFilter,
@@ -127,9 +137,21 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
       { lien: riskItemId ? `/registre?item=${riskItemId}` : '/registre' },
     ))
   }
-  for (const ct of conformiteRows) {
+  const [conformiteTraitements, conformitePlanActions] = conformiteData
+  for (const ct of conformiteTraitements) {
     const ref = Array.isArray(ct.refs) && ct.refs.length ? `&ctrl=${encodeURIComponent(String(ct.refs[0]))}` : ''
     items.push(normalizeConformiteTraitement(ct, { lien: `/conformite/socle?ref=${encodeURIComponent(ct.referentiel)}${ref}` }))
+  }
+  // Actions réelles rattachées à un contrôle : projetées dans la facette conformité
+  // (l'action peut aussi apparaître sous une autre origine via ses autres liens).
+  for (const pa of conformitePlanActions) {
+    const referentiel = pa.liens[0]?.targetId ?? ''
+    const ctrl = pa.liens[0]?.ref
+    const lien = `/conformite/socle?ref=${encodeURIComponent(referentiel)}${ctrl ? `&ctrl=${encodeURIComponent(ctrl)}` : ''}`
+    items.push(normalizeConformiteTraitement(
+      { id: pa.id, intitule: pa.titre, description: pa.description, responsable: pa.porteur, echeance: pa.echeance, statut: pa.statut, referentiel, refs: ctrl ? [ctrl] : [] },
+      { lien },
+    ))
   }
   for (const c of constatRows) {
     items.push(normalizeAuditConstat(c, { lien: `/audit?mission=${c.missionId}` }))

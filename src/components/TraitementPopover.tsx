@@ -9,7 +9,7 @@
 // existant n'est PAS modifiable ici). Sans sélection, on crée un traitement neuf
 // couvrant l'exigence. Un traitement peut couvrir plusieurs exigences (`refs`).
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { entryTagForType, type TraitementType } from '@/lib/conformite-traitement'
 import type { ConformiteTraitement as EntryTag } from '@/lib/conformite'
@@ -25,6 +25,17 @@ export interface ExistingTraitement {
   statut?: string
   niveauRisqueMaintenu?: boolean
   niveauRisque?: string | null
+}
+
+// Action réelle du plan d'action unifié (PlanAction) — candidate au rattachement
+// d'un contrôle de conformité (ajout d'un lien CONFORMITE), pour un type PLAN_ACTION.
+interface PlanActionLite {
+  id: string
+  titre: string
+  porteur?: string | null
+  echeance?: string | null
+  statut?: string
+  liens?: { type: string; targetId: string; ref?: string | null }[]
 }
 
 export default function TraitementPopover({ orgId, referentiel, entite, controlRef, controlNom, type, existing, onApplied, onClose }: {
@@ -55,23 +66,49 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const [niveau, setNiveau] = useState('')
   // id du traitement existant sélectionné (null = création d'un nouveau).
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // id de l'ACTION réelle (PlanAction) sélectionnée à rattacher (null = aucune).
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null)
+  const [actions, setActions] = useState<PlanActionLite[]>([])
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const base = `/api/organizations/${orgId}/conformite/traitements`
+  const plansBase = `/api/organizations/${orgId}/plans-actions`
   const isUpdate = selectedId != null
+  const isLinkAction = selectedActionId != null
+  const locked = isUpdate || isLinkAction // libellé verrouillé (existant sélectionné)
 
-  // Suggestions : filtre par intitulé (insensible casse), hors traitement déjà
-  // sélectionné, limité pour rester lisible.
+  // Charge les actions réelles (plan d'action unifié) pour le rattachement — seulement
+  // pour un traitement de type PLAN_ACTION (une dérogation/acceptation n'est pas une action).
+  useEffect(() => {
+    if (type !== 'PLAN_ACTION') return
+    let alive = true
+    fetch(plansBase).then(r => r.ok ? r.json() : { plans: [] }).then(d => {
+      if (alive) setActions(Array.isArray(d.plans) ? d.plans : [])
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [type, plansBase])
+
+  // Une action déjà rattachée à CE contrôle (lien CONFORMITE ref=controlRef) est exclue.
+  const dejaLie = (a: PlanActionLite) =>
+    (a.liens ?? []).some(l => l.type === 'CONFORMITE' && l.targetId === referentiel && l.ref === controlRef)
+
+  // Suggestions : traitements de conformité existants (même type) + actions réelles
+  // (pour PLAN_ACTION), filtrées par le texte saisi.
   const suggestions = useMemo(() => {
-    if (isUpdate) return []
+    if (isUpdate || isLinkAction) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[] }
     const q = intitule.trim().toLowerCase()
-    return sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 8)
-  }, [sameType, intitule, isUpdate])
+    const tr = sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6)
+    const ac = type !== 'PLAN_ACTION' ? [] :
+      actions.filter(a => !dejaLie(a) && (!q || a.titre.toLowerCase().includes(q))).slice(0, 6)
+    return { traitements: tr, actions: ac }
+  }, [sameType, actions, intitule, isUpdate, isLinkAction, type]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasSuggestions = suggestions.traitements.length + suggestions.actions.length > 0
 
   function selectExisting(x: ExistingTraitement) {
-    setSelectedId(x.id)
+    setSelectedId(x.id); setSelectedActionId(null)
     setIntitule(x.intitule)
     setResponsable(x.responsable ?? '')
     setEcheance(x.echeance ? x.echeance.slice(0, 10) : '')
@@ -82,15 +119,40 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
     setError(null)
   }
 
+  // Sélection d'une action réelle : on la RATTACHE (lien CONFORMITE) sans modifier
+  // son libellé ; les champs ne sont qu'informatifs.
+  function selectAction(a: PlanActionLite) {
+    setSelectedActionId(a.id); setSelectedId(null)
+    setIntitule(a.titre)
+    setResponsable(a.porteur ?? '')
+    setEcheance(a.echeance ? a.echeance.slice(0, 10) : '')
+    setDescription('')
+    setOpen(false)
+    setError(null)
+  }
+
   // Repasse en création d'un nouveau traitement (réinitialise les champs).
   function resetToNew() {
-    setSelectedId(null)
+    setSelectedId(null); setSelectedActionId(null)
     setIntitule('')
     setResponsable(''); setEcheance(''); setDescription(''); setMaintien(false); setNiveau('')
     setError(null)
   }
 
   async function submit() {
+    if (isLinkAction) {
+      // Rattache une action réelle au contrôle : ajoute un lien CONFORMITE (pas de
+      // modification du libellé de l'action).
+      setBusy(true); setError(null)
+      const res = await fetch(`${plansBase}/${selectedActionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addLien: { type: 'CONFORMITE', targetId: referentiel, ref: controlRef, label: controlNom } }),
+      })
+      setBusy(false)
+      if (!res.ok) { setError(u.error); return }
+      onApplied(entryTagForType(type))
+      return
+    }
     if (isUpdate) {
       // Mise à jour : on ne touche PAS au libellé ; on rattache aussi cette exigence.
       setBusy(true); setError(null)
@@ -137,18 +199,27 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
         <div className="relative">
           <input
             value={intitule}
-            onChange={e => { if (!isUpdate) { setIntitule(e.target.value); setOpen(true) } }}
-            onFocus={() => { if (!isUpdate && sameType.length > 0) setOpen(true) }}
+            onChange={e => { if (!locked) { setIntitule(e.target.value); setOpen(true) } }}
+            onFocus={() => { if (!locked) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 120)}
-            readOnly={isUpdate}
+            readOnly={locked}
             placeholder={u.searchExisting}
             aria-label={u.intitule}
-            className={`${inputCls} ${isUpdate ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed' : ''}`}
+            className={`${inputCls} ${locked ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed' : ''}`}
           />
-          {open && suggestions.length > 0 && (
-            <ul className="absolute z-10 left-0 right-0 mt-0.5 max-h-44 overflow-auto rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg text-xs">
-              {suggestions.map(x => (
-                <li key={x.id}>
+          {open && hasSuggestions && (
+            <ul className="absolute z-10 left-0 right-0 mt-0.5 max-h-52 overflow-auto rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg text-xs">
+              {suggestions.actions.map(a => (
+                <li key={`a-${a.id}`}>
+                  <button type="button" onMouseDown={e => { e.preventDefault(); selectAction(a) }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-ebios-50 dark:hover:bg-ebios-500/10 flex items-center justify-between gap-2">
+                    <span className="truncate text-gray-800 dark:text-gray-100">{a.titre}</span>
+                    <span className="shrink-0 text-[9px] px-1 py-px rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 font-medium">{u.actionTag}</span>
+                  </button>
+                </li>
+              ))}
+              {suggestions.traitements.map(x => (
+                <li key={`t-${x.id}`}>
                   <button type="button" onMouseDown={e => { e.preventDefault(); selectExisting(x) }}
                     className="w-full text-left px-2 py-1.5 hover:bg-ebios-50 dark:hover:bg-ebios-500/10 flex items-center justify-between gap-2">
                     <span className="truncate text-gray-800 dark:text-gray-100">{x.intitule}</span>
@@ -160,19 +231,21 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           )}
         </div>
 
-        {isUpdate && (
+        {locked && (
           <div className="flex items-center justify-between text-[11px] text-ebios-700 dark:text-ebios-300">
-            <span className="truncate">{u.lockedHint}</span>
+            <span className="truncate">{isLinkAction ? u.linkActionHint : u.lockedHint}</span>
             <button type="button" onClick={resetToNew} className="shrink-0 text-gray-500 hover:text-gray-700 underline">{u.newInstead}</button>
           </div>
         )}
 
         <div className="flex gap-1.5">
-          <input value={responsable} onChange={e => setResponsable(e.target.value)} placeholder={u.responsable} className={inputCls} />
-          <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} title={u.echeance} className={inputCls} />
+          <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={u.responsable} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
+          <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} readOnly={isLinkAction} title={u.echeance} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
         </div>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={u.descriptionLabel} rows={2} className={inputCls} />
-        {type === 'ACCEPTATION_RISQUE' && (
+        {!isLinkAction && (
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={u.descriptionLabel} rows={2} className={inputCls} />
+        )}
+        {type === 'ACCEPTATION_RISQUE' && !isLinkAction && (
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={maintien} onChange={e => setMaintien(e.target.checked)} /> {u.niveauRisqueMaintenu}
@@ -183,7 +256,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
         <div className="flex gap-2 pt-0.5">
           <button type="button" disabled={busy} onClick={submit}
             className="text-xs px-3 py-1 rounded bg-ebios-600 text-white font-medium disabled:opacity-50">
-            {busy ? u.creating : isUpdate ? u.update : u.create}
+            {busy ? u.creating : isLinkAction ? u.attachBtn : isUpdate ? u.update : u.create}
           </button>
           <button type="button" onClick={onClose} className="text-xs px-2.5 py-1 rounded text-gray-500 hover:text-gray-700">{u.cancel}</button>
         </div>

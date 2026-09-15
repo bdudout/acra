@@ -3634,6 +3634,7 @@ export const fr = {
       attachSelect: 'Choisir un traitement…', attachEmpty: 'Aucun traitement de ce type', attachBtn: 'Rattacher',
       create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec. Réessayez.',
       searchExisting: 'Rechercher un traitement existant…', update: 'Mettre à jour', lockedHint: 'Traitement existant — libellé non modifiable ici', newInstead: 'Nouveau',
+      actionTag: 'action', linkActionHint: 'Action existante — rattachée au contrôle (libellé non modifiable ici)',
     },
     registreTitre: 'Traitements des écarts',
     registreEmpty: 'Aucun traitement enregistré pour ce référentiel.',
