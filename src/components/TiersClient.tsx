@@ -11,8 +11,9 @@ import { suggestTierDuplicates, tierGroupSignature, type ConsolidatedTier } from
 // Clé de persistance (par navigateur) des groupes de doublons « ignorés ».
 const IGNORED_DUPS_LS_KEY = 'acra:tiers:ignoredDups'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import SortableTh from '@/components/SortableTh'
-import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
+import ColumnMenu from '@/components/ColumnMenu'
+import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
 export interface TiersRow {
   id:          string
@@ -51,6 +52,8 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
   const [onlyCritique, setOnlyCritique] = useState(false)
   const [sort, setSort] = useState<SortState | null>(null)
   const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
+  const [colFilters, setColFilters] = useState<ColumnFilters>({})
   const critiqueCount = useMemo(() => tiers.filter(x => x.critique).length, [tiers])
   // Doublons potentiels (lecture seule) : tiers au nom proche à harmoniser.
   const dupGroups = useMemo(() => suggestTierDuplicates(tiers), [tiers])
@@ -150,7 +153,21 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
       default: return ''
     }
   }
-  const shown = sort ? sortRows(filtered, sort, tierAccessor) : filtered
+  // Libellé affiché d'une colonne (base des filtres auto « façon tableur »).
+  const tierDisplay = (x: TierRow, key: string): unknown => {
+    switch (key) {
+      case 'type': return ppTypes[x.type] ?? x.type
+      case 'analyse': return x.analyses?.[0]?.analyseNom ?? ''
+      case 'zone': return zoneLabel[x.zone]
+      default: return ''
+    }
+  }
+  const distinctTier = (key: string) => distinctValues(filtered, (x) => tierDisplay(x, key))
+  const colFiltered = applyColumnFilters(filtered, colFilters, tierDisplay)
+  const shown = sort ? sortRows(colFiltered, sort, tierAccessor) : colFiltered
+  const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctTier(key)))
+  const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
+  const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
 
   const filters: { key: EcosystemZone | 'all'; label: string; count: number; active: string }[] = [
     { key: 'all',      label: t.tiers.filterAll, count: counts.all,      active: 'bg-gray-100 text-gray-800' },
@@ -321,11 +338,14 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <SortableTh label={t.tiers.colTiers} sortKey="nom" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
-                  <SortableTh label={t.tiers.colType} sortKey="type" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell" />
-                  <SortableTh label={t.tiers.colAnalyse} sortKey="analyse" sort={sort} onSort={onSort} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
-                  <SortableTh label={radar.menaceLabel} sortKey="menace" sort={sort} onSort={onSort} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell" />
-                  <SortableTh label={t.tiers.colZone} sortKey="zone" sort={sort} onSort={onSort} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                  <ColumnMenu label={t.tiers.colTiers} sortKey="nom" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="text-xs font-semibold text-gray-500 uppercase tracking-wide" />
+                  <ColumnMenu label={t.tiers.colType} sortKey="type" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell"
+                    values={distinctTier('type')} allowed={colFilters.type} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+                  <ColumnMenu label={t.tiers.colAnalyse} sortKey="analyse" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    values={distinctTier('analyse')} allowed={colFilters.analyse} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+                  <ColumnMenu label={radar.menaceLabel} sortKey="menace" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell" />
+                  <ColumnMenu label={t.tiers.colZone} sortKey="zone" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="center" className="text-xs font-semibold text-gray-500 uppercase tracking-wide"
+                    values={distinctTier('zone')} allowed={colFilters.zone} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

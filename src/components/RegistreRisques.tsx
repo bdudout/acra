@@ -12,8 +12,9 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
-import SortableTh from '@/components/SortableTh'
-import { nextSort, sortRows, type SortState } from '@/lib/table-sort'
+import ColumnMenu from '@/components/ColumnMenu'
+import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
 /** Couleur (#) d'un niveau selon les seuils CONFIGURÉS (repli gris si absent). */
 function niveauHex(n: number | null, seuils: Seuil[]): string | null {
@@ -65,6 +66,8 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
   const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
+  const [colFilters, setColFilters] = useState<ColumnFilters>({})
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
   const taxoLabel = (code: string | null) => {
@@ -172,8 +175,22 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
       default: return ''
     }
   }
+  // Libellé affiché d'une colonne (base des filtres auto « façon tableur »).
+  const riskDisplay = (x: Risk, key: string): unknown => {
+    switch (key) {
+      case 'category': return taxoLabel(x.taxonomieCode)
+      case 'process': return x.processusNom ?? ''
+      case 'statut': return (r.statuts as Record<string, string>)[x.statut] ?? x.statut
+      default: return ''
+    }
+  }
   const baseRisks = filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks
-  const shown = sort ? sortRows(baseRisks, sort, riskAccessor) : baseRisks
+  const distinctRisk = (key: string) => distinctValues(baseRisks, (x) => riskDisplay(x, key))
+  const colFiltered = applyColumnFilters(baseRisks, colFilters, riskDisplay)
+  const shown = sort ? sortRows(colFiltered, sort, riskAccessor) : colFiltered
+  const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctRisk(key)))
+  const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
+  const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
 
   return (
     <div>
@@ -232,13 +249,16 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <SortableTh label={r.colIntitule} sortKey="intitule" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colCategory} sortKey="category" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colProcess} sortKey="process" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colInherent} sortKey="inherent" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colResidual} sortKey="residual" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colStatut} sortKey="statut" sort={sort} onSort={onSort} className="px-4 py-3" />
-              <SortableTh label={r.colActions} sortKey="actions" sort={sort} onSort={onSort} className="px-4 py-3" />
+              <ColumnMenu label={r.colIntitule} sortKey="intitule" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
+              <ColumnMenu label={r.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctRisk('category')} allowed={colFilters.category} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={r.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctRisk('process')} allowed={colFilters.process} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={r.colInherent} sortKey="inherent" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
+              <ColumnMenu label={r.colResidual} sortKey="residual" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
+              <ColumnMenu label={r.colStatut} sortKey="statut" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+                values={distinctRisk('statut')} allowed={colFilters.statut} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
+              <ColumnMenu label={r.colActions} sortKey="actions" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
               {canEdit && <th className="px-4 py-3" />}
             </tr>
           </thead>
