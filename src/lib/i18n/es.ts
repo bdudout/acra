@@ -3507,6 +3507,7 @@ export const es: Translations = {
     legendPartiel2: 'Parcial',
     legendReste: 'Restante',
     trendTitle: 'Historial y tendencia',
+    trendGlobalTab: 'Global',
     donutTitle: 'Conformidad global (todos los marcos)',
     donutHint: 'conforme',
     cellTip: '{evalues} control(es) evaluado(s) de {total}',
