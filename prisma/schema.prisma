@@ -140,6 +140,7 @@ model Organization {
   apiKeys           ApiKey[]
   webhooks          Webhook[]
   traitements       Traitement[]
+  traitementsConformite ConformiteTraitement[]
 
   @@index([parentId])
   @@index([path])
@@ -876,6 +877,41 @@ model Conformite {
   @@index([organizationId])
 }
 
+// Traitement RÉEL d'un ou plusieurs écarts de conformité (contrôles partiels /
+// non conformes) : plan d'action, dérogation, ou acceptation de risque. Un même
+// traitement peut couvrir PLUSIEURS exigences (refs). Pour une dérogation, un
+// lien optionnel vers le workflow formel Derogation est possible.
+model ConformiteTraitement {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  referentiel    String
+  entite         String       @default("")
+  // Contrôles couverts (multi-exigences) : liste de refs du référentiel.
+  refs           Json         @default("[]")
+  // PLAN_ACTION | DEROGATION | ACCEPTATION_RISQUE
+  type           String
+  intitule       String
+  description    String?      @db.Text
+  responsable    String?
+  echeance       DateTime?
+  // Plan : EN_COURS | FAIT | CLOTURE ; dérogation/acceptation : ACTIVE | CLOTUREE
+  statut         String       @default("EN_COURS")
+  // Acceptation de risque : maintien explicite du niveau de risque
+  niveauRisqueMaintenu Boolean @default(false)
+  niveauRisque         String?
+  // Lien optionnel vers une dérogation formelle (workflow complet)
+  derogationId   String?
+  derogation     Derogation?  @relation(fields: [derogationId], references: [id], onDelete: SetNull)
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, referentiel, entite])
+  @@index([type])
+  @@index([derogationId])
+}
+
 // Instantané daté de l'état de conformité (tendance dans le temps).
 model ConformiteSnapshot {
   id           String     @id @default(cuid())
@@ -962,6 +998,8 @@ model Derogation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  traitementsConformite ConformiteTraitement[]
 
   @@index([organizationId])
   @@index([analyseId])

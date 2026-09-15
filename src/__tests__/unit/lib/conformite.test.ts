@@ -146,6 +146,50 @@ describe('applyConformiteStatut — édition inline du socle', () => {
   })
 })
 
+describe('traitement des écarts (plan / dérogation / acceptation)', () => {
+  it('sanitize ne conserve le traitement que pour un écart (partiel/non conforme)', () => {
+    const out = sanitizeConformite([
+      { ref: 'a', statut: 'partiel', traitement: 'plan_action' },
+      { ref: 'b', statut: 'non_conforme', traitement: 'derogation' },
+      { ref: 'c', statut: 'conforme', traitement: 'derogation' }, // ignoré (pas un écart)
+      { ref: 'd', statut: 'partiel', traitement: 'bidon' },       // ignoré (invalide)
+    ])
+    expect(out.find(e => e.ref === 'a')?.traitement).toBe('plan_action')
+    expect(out.find(e => e.ref === 'b')?.traitement).toBe('derogation')
+    expect(out.find(e => e.ref === 'c')?.traitement).toBeUndefined()
+    expect(out.find(e => e.ref === 'd')?.traitement).toBeUndefined()
+  })
+
+  it('conformiteStats ventile la couverture des écarts (mutuellement exclusive)', () => {
+    const entries: ConformiteEntry[] = [
+      { ref: '1', statut: 'conforme' },
+      { ref: '2', statut: 'non_conforme', traitement: 'plan_action' },
+      { ref: '3', statut: 'partiel', traitement: 'derogation' },
+      { ref: '4', statut: 'non_conforme', traitement: 'acceptation_risque' },
+      { ref: '5', statut: 'non_conforme' }, // écart non traité
+    ]
+    const s = conformiteStats(entries, 5)
+    expect(s.couverturePlanAction).toBe(1)
+    expect(s.couvertureDerogation).toBe(1)
+    expect(s.couvertureAcceptation).toBe(1)
+  })
+
+  it('un contrôle dérogé (actif) compte comme couverture dérogation', () => {
+    const entries = marquerDerogations([{ ref: 'x', statut: 'non_conforme' }], new Set(['x']))
+    const s = conformiteStats(entries, 1)
+    expect(s.deroge).toBe(1)
+    expect(s.couvertureDerogation).toBe(1)
+  })
+
+  it('applyConformiteStatut retire le traitement en quittant l\'état d\'écart', () => {
+    const base: ConformiteEntry[] = [{ ref: '1', statut: 'non_conforme', traitement: 'plan_action' }]
+    const versConforme = applyConformiteStatut(base, '1', 'conforme')
+    expect(versConforme[0].traitement).toBeUndefined()
+    const versPartiel = applyConformiteStatut(base, '1', 'partiel')
+    expect(versPartiel[0].traitement).toBe('plan_action') // reste un écart → conservé
+  })
+})
+
 describe('resolveEffectiveConformite — héritage du socle (Palier 1)', () => {
   const own: ConformiteEntry[] = [{ ref: 'A.5.1', statut: 'conforme' }]
   const socleEntries: ConformiteEntry[] = [{ ref: 'A.8.1', statut: 'non_conforme' }]

@@ -41,7 +41,8 @@ export default async function ConformiteSoclePage({ searchParams }: {
   const all = await listReferentiels(orgId, locale)
   const referentiels = all
     .filter(r => r.actif && r.code !== 'CUSTOM')
-    .map(r => ({ code: r.code, nom: r.nom }))
+    // Nom versionné dans le sélecteur (ex. « ISO/IEC 27001 (2022) »).
+    .map(r => ({ code: r.code, nom: r.version ? `${r.nom} (${r.version})` : r.nom }))
 
   const applicable = cfg.conformiteActive && usesConformiteEntity(cfg.conformiteNiveau)
   const multiSuivi = isEntiteLevelConformite(cfg.conformiteNiveau)
@@ -81,6 +82,7 @@ export default async function ConformiteSoclePage({ searchParams }: {
                   : referentiels[0].code
                 }
                 multiSuivi={multiSuivi}
+                lockRef={!!(refParam && referentiels.some(r => r.code === refParam))}
               />
             </>
           )}

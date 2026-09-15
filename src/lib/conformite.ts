@@ -17,17 +17,34 @@ export type ConformiteStatut = 'conforme' | 'partiel' | 'non_conforme' | 'na'
 
 export const CONFORMITE_STATUTS: ConformiteStatut[] = ['conforme', 'partiel', 'non_conforme', 'na']
 
+/**
+ * Traitement d'un écart (contrôle partiel ou non conforme) :
+ *  - plan_action        : une remédiation est planifiée → mènera à la conformité (cible).
+ *  - derogation         : dérogation temporaire → couvre l'écart (avec dérogations) et
+ *                         vise la conformité à terme (cible).
+ *  - acceptation_risque : risque accepté durablement → couvre l'écart (avec dérogations)
+ *                         mais n'entre PAS dans la conformité cible.
+ */
+export type ConformiteTraitement = 'plan_action' | 'derogation' | 'acceptation_risque'
+
+export const CONFORMITE_TRAITEMENTS: ConformiteTraitement[] = ['plan_action', 'derogation', 'acceptation_risque']
+
 /** Évaluation de conformité d'un contrôle du référentiel (clé = ref du contrôle). */
 export interface ConformiteEntry {
   ref: string
   statut: ConformiteStatut
   commentaire?: string
+  /** Traitement de l'écart (partiel/non conforme uniquement). */
+  traitement?: ConformiteTraitement
   /** DÉRIVÉ (jamais stocké) : contrôle non-conforme couvert par une dérogation active. */
   derogee?: boolean
 }
 
 const isStatut = (s: unknown): s is ConformiteStatut =>
   typeof s === 'string' && (CONFORMITE_STATUTS as string[]).includes(s)
+
+const isTraitement = (s: unknown): s is ConformiteTraitement =>
+  typeof s === 'string' && (CONFORMITE_TRAITEMENTS as string[]).includes(s)
 
 /**
  * Filtre des évaluations : ne conserve que les entrées valides (ref non vide,
@@ -49,6 +66,9 @@ export function sanitizeConformite(entries: unknown, validRefs?: Set<string>): C
     const entry: ConformiteEntry = { ref, statut }
     const c = (e as any).commentaire
     if (typeof c === 'string' && c.trim()) entry.commentaire = c.trim().slice(0, 1000)
+    // Le traitement n'a de sens que pour un écart (partiel / non conforme).
+    const tr = (e as any).traitement
+    if (isTraitement(tr) && (statut === 'partiel' || statut === 'non_conforme')) entry.traitement = tr
     out.push(entry)
   }
   return out
@@ -86,6 +106,14 @@ export interface ConformiteStats {
   na: number
   /** Contrôles non-conformes couverts par une dérogation active (bucket dédié). */
   deroge: number
+  /** Écarts couverts par une dérogation (traitement=derogation OU dérogé actif). */
+  couvertureDerogation: number
+  /** Écarts couverts par une acceptation de risque (traitement=acceptation_risque). */
+  couvertureAcceptation: number
+  /** Écarts couverts par un plan d'action (traitement=plan_action). */
+  couverturePlanAction: number
+  /** Contrôles partiels non traités (ni dérogés, ni plan/dérogation/acceptation). */
+  partielNonTraite: number
   /** Nombre de contrôles évalués (toutes valeurs confondues). */
   evalues: number
   /** Nombre total de contrôles du référentiel. */
@@ -108,12 +136,42 @@ export function applyConformiteStatut(
   const r = String(ref ?? '').trim()
   if (!r || !isStatut(statut)) return entries
   let found = false
+  const ecart = statut === 'partiel' || statut === 'non_conforme'
   const out = entries.map(e => {
     if (e.ref !== r) return e
     found = true
-    return { ...e, statut }
+    // Quitter l'état d'écart (→ conforme/na) retire le traitement devenu sans objet.
+    const { traitement, ...rest } = e
+    return ecart ? { ...rest, statut, ...(traitement ? { traitement } : {}) } : { ...rest, statut }
   })
   if (!found) out.push({ ref: r, statut })
+  return out
+}
+
+/**
+ * Applique statut + commentaire + traitement à un contrôle (par `ref`), pour la
+ * persistance par contrôle du socle (PATCH). Le commentaire vide est retiré ; le
+ * traitement n'est conservé que pour un écart (partiel/non conforme). Pur, testé.
+ */
+export function applyConformiteEntry(
+  entries: ConformiteEntry[],
+  ref: string,
+  patch: { statut: ConformiteStatut; commentaire?: string | null; traitement?: ConformiteTraitement | null },
+): ConformiteEntry[] {
+  const r = String(ref ?? '').trim()
+  if (!r || !isStatut(patch.statut)) return entries
+  const ecart = patch.statut === 'partiel' || patch.statut === 'non_conforme'
+  const build = (prev?: ConformiteEntry): ConformiteEntry => {
+    const next: ConformiteEntry = { ref: r, statut: patch.statut }
+    const com = patch.commentaire !== undefined ? patch.commentaire : prev?.commentaire
+    if (typeof com === 'string' && com.trim()) next.commentaire = com.trim().slice(0, 1000)
+    const tr = patch.traitement !== undefined ? patch.traitement : prev?.traitement
+    if (ecart && isTraitement(tr)) next.traitement = tr
+    return next
+  }
+  let found = false
+  const out = entries.map(e => (e.ref === r ? (found = true, build(e)) : e))
+  if (!found) out.push(build())
   return out
 }
 
@@ -151,17 +209,28 @@ export function resolveEffectiveConformite(params: {
 
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0, deroge = 0
+  // Couverture des écarts (mutuellement exclusive) — alimente les cadrans du dashboard.
+  let couvertureDerogation = 0, couvertureAcceptation = 0, couverturePlanAction = 0, partielNonTraite = 0
   for (const e of entries) {
-    // Un contrôle dérogé bascule dans son propre bucket (retiré de conforme/partiel/non-conforme).
-    if (e.derogee) { deroge++; continue }
+    // Un contrôle dérogé (dérogation active formelle) bascule dans son propre bucket.
+    if (e.derogee) { deroge++; couvertureDerogation++; continue }
     if (e.statut === 'conforme') conforme++
-    else if (e.statut === 'partiel') partiel++
-    else if (e.statut === 'non_conforme') nonConforme++
     else if (e.statut === 'na') na++
+    else if (e.statut === 'partiel' || e.statut === 'non_conforme') {
+      if (e.statut === 'partiel') partiel++; else nonConforme++
+      if (e.traitement === 'derogation') couvertureDerogation++
+      else if (e.traitement === 'acceptation_risque') couvertureAcceptation++
+      else if (e.traitement === 'plan_action') couverturePlanAction++
+      else if (e.statut === 'partiel') partielNonTraite++
+    }
   }
   // Le dérogé reste au dénominateur (c'est une non-conformité assumée temporairement) : le
   // taux de conformité ne « gonfle » pas artificiellement.
   const pertinents = conforme + partiel + nonConforme + deroge
   const tauxConformite = pertinents > 0 ? Math.round((conforme / pertinents) * 100) : 0
-  return { conforme, partiel, nonConforme, na, deroge, evalues: entries.length, total, tauxConformite }
+  return {
+    conforme, partiel, nonConforme, na, deroge,
+    couvertureDerogation, couvertureAcceptation, couverturePlanAction, partielNonTraite,
+    evalues: entries.length, total, tauxConformite,
+  }
 }

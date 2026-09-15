@@ -18,7 +18,7 @@ function cellStyle(taux: number): string {
  * colonnes = référentiels, cellules = taux agrégé (roll-up sous-arbre).
  * Présentational — libellés fournis par l'appelant.
  */
-export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, emptyHref, emptyCta, hrefFor, pdfHrefFor, viewHrefFor, cellTitleFor }: {
+export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, emptyHref, emptyCta, hrefFor, pdfHrefFor, pptxHrefFor, viewHrefFor, cellTitleFor }: {
   rows: HeatmapRow[]
   refs: HeatmapRef[]
   orgCol: string
@@ -31,6 +31,8 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
   hrefFor?: (orgId: string, refId: string) => string
   /** Lien secondaire d'export PDF (SoA formelle). Optionnel. */
   pdfHrefFor?: (orgId: string, refId: string) => string
+  /** Lien d'export PPTX (support de présentation). Optionnel. */
+  pptxHrefFor?: (orgId: string, refId: string) => string
   /** Lien principal du taux (clic sur la case) — ex. ouvrir le socle. */
   viewHrefFor?: (orgId: string, refId: string) => string
   /** Infobulle d'une case (traduite par l'appelant). Défaut : « évalués/total ». */
@@ -53,7 +55,7 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
           <tr>
             <th className="text-left px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">{orgCol}</th>
             {refs.map(r => (
-              <th key={r.id} className="px-2 py-1 text-xs font-semibold text-gray-500 text-center min-w-[80px]">{r.nom}</th>
+              <th key={r.id} style={{ width: 108 }} className="px-2 py-1 text-xs font-semibold text-gray-500 text-center align-bottom whitespace-normal leading-tight">{r.nom}</th>
             ))}
           </tr>
         </thead>
@@ -67,23 +69,23 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
               {refs.map(r => {
                 const c = row.cells[r.id]
                 return (
-                  <td key={r.id} className="text-center">
+                  <td key={r.id} style={{ width: 108 }} className="text-center align-top px-1 py-1">
                     {c ? (
-                      <div
-                        className={`inline-flex flex-col items-center rounded px-2 py-1 leading-tight ${cellStyle(c.taux)}`}
-                        title={cellTitleFor ? cellTitleFor(c) : `${c.evalues}/${c.total}`}
-                      >
+                      <div className="inline-flex flex-col items-center gap-1">
+                        {/* Toute la pastille est cliquable (ouvre le socle) */}
                         <Link
                           href={viewHrefFor ? viewHrefFor(row.orgId, r.id) : hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'}
-                          className="hover:underline"
+                          title={cellTitleFor ? cellTitleFor(c) : `${c.evalues}/${c.total}`}
+                          className={`flex flex-col items-center justify-center rounded-md px-3 py-2 min-w-[72px] leading-tight cursor-pointer transition hover:ring-2 hover:ring-gray-400/50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${cellStyle(c.taux)}`}
                         >
-                          <span className="font-bold">{c.taux}%</span>
+                          <span className="text-base font-bold">{c.taux}%</span>
+                          <span className="text-[10px] opacity-70 mt-0.5">{c.evalues}/{c.total}</span>
                         </Link>
-                        <span className="text-[9px] opacity-70">{c.evalues}/{c.total}</span>
                         {pdfHrefFor && (
-                          <span className="text-[9px] mt-0.5 flex gap-1.5">
-                            <Link href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'} className="underline opacity-80 hover:opacity-100">CSV</Link>
-                            <Link href={pdfHrefFor(row.orgId, r.id)} className="underline opacity-80 hover:opacity-100">PDF</Link>
+                          <span className="text-[9px] flex gap-2 text-gray-400">
+                            <Link href={hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'} className="underline hover:text-gray-600">CSV</Link>
+                            <Link href={pdfHrefFor(row.orgId, r.id)} className="underline hover:text-gray-600">PDF</Link>
+                            {pptxHrefFor && <Link href={pptxHrefFor(row.orgId, r.id)} className="underline hover:text-gray-600">PPTX</Link>}
                           </span>
                         )}
                       </div>

@@ -7,21 +7,25 @@
 // grille ConformiteGrid + l'API /api/organizations/[orgId]/conformite.
 
 import { useEffect, useMemo, useState } from 'react'
-import { ShieldCheck, Save, CheckCircle2 } from 'lucide-react'
+import { ShieldCheck, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConformiteGrid from '@/components/ConformiteGrid'
+import ConformiteHistory from '@/components/ConformiteHistory'
+import TraitementsRegistre from '@/components/TraitementsRegistre'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/lib/conformite'
 
 interface RefOpt { code: string; nom: string }
 
-export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false }: {
+export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false, lockRef = false }: {
   orgId: string
   orgNom: string
   referentiels: RefOpt[]
   initialRef: string
   /** Portée ENTITE : plusieurs suivis nommés par référentiel. */
   multiSuivi?: boolean
+  /** Page détaillée d'un référentiel ciblé (?ref=) → référentiel verrouillé (pas de sélecteur). */
+  lockRef?: boolean
 }) {
   const { t, locale } = useTranslation()
   const c = t.conformiteSocle
@@ -36,6 +40,8 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   const [snapshotting, setSnapshotting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  // Rafraîchit le registre des traitements après création/rattachement depuis la grille.
+  const [traitementsKey, setTraitementsKey] = useState(0)
   // Reprendre la conformité d'une analyse.
   const [analysesDispo, setAnalysesDispo] = useState<{ id: string; nom: string; count: number }[]>([])
   const [importFrom, setImportFrom] = useState('')
@@ -91,23 +97,37 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
     setSavedAt(Date.now()); setReloadKey(k => k + 1)
   }
 
-  // Persiste le changement d'UN contrôle (l'API applique par contrôle + snapshot éventuel).
-  async function persist(controleRef: string, statut: ConformiteStatut) {
+  // Persiste le changement d'UN contrôle (statut + commentaire + traitement).
+  async function persist(e: ConformiteEntry) {
     const res = await fetch(`/api/organizations/${orgId}/conformite`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ referentiel: ref, entite, ref: controleRef, statut }),
+      body: JSON.stringify({
+        referentiel: ref, entite, ref: e.ref, statut: e.statut,
+        commentaire: e.commentaire ?? null, traitement: e.traitement ?? null,
+      }),
     })
     if (!res.ok) { setError(c.saveError); return }
     setSavedAt(Date.now())
   }
 
   function onChange(next: ConformiteEntry[]) {
-    const avant = new Map(entries.map(e => [e.ref, e.statut]))
+    const avant = new Map(entries.map(e => [e.ref, e]))
     setEntries(next)
     setError(null)
     for (const e of next) {
-      if (avant.get(e.ref) !== e.statut) persist(e.ref, e.statut)
+      const b = avant.get(e.ref)
+      if (!b || b.statut !== e.statut || b.commentaire !== e.commentaire || b.traitement !== e.traitement) persist(e)
     }
+  }
+
+  async function arreterSuivi() {
+    const suffix = entite ? ` — ${entite}` : ''
+    if (!confirm(c.stopConfirm.replace('{ref}', ref).replace('{suffix}', suffix))) return
+    setError(null)
+    const qs = `referentiel=${encodeURIComponent(ref)}&entite=${encodeURIComponent(entite)}`
+    const res = await fetch(`/api/organizations/${orgId}/conformite?${qs}`, { method: 'DELETE' })
+    if (!res.ok) { setError(c.saveError); return }
+    setEntite(''); setEntries([]); setSavedAt(null); setReloadKey(k => k + 1)
   }
 
   async function figerVersion() {
@@ -128,16 +148,36 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
           <p className="text-gray-500 text-sm mt-0.5 max-w-2xl">{c.subtitle.replace('{org}', orgNom)}</p>
         </div>
         <div className="flex items-end gap-3">
-          <label className="text-xs text-gray-500">
-            <span className="block font-medium mb-1">{c.referentiel}</span>
-            <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
-              {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
-            </select>
-          </label>
+          {savedAt && (
+            <span className="self-center inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-full px-2.5 py-1">
+              <CheckCircle2 size={14} aria-hidden="true" /> {c.saved}
+            </span>
+          )}
+          {lockRef ? (
+            <div className="text-xs text-gray-500">
+              <span className="block font-medium mb-1">{c.referentiel}</span>
+              <span className="inline-block border border-gray-200 dark:border-gray-700 rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 min-w-[12rem]">
+                {referentiels.find(r => r.code === ref)?.nom ?? ref}
+              </span>
+            </div>
+          ) : (
+            <label className="text-xs text-gray-500">
+              <span className="block font-medium mb-1">{c.referentiel}</span>
+              <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
+                {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+              </select>
+            </label>
+          )}
           <button onClick={figerVersion} disabled={snapshotting || stats.evalues === 0}
             className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 inline-flex items-center gap-1.5" title={c.snapshotHint}>
             <Save size={14} aria-hidden="true" /> {snapshotting ? c.snapshotting : c.snapshot}
           </button>
+          {stats.evalues > 0 && (
+            <button onClick={arreterSuivi}
+              className="text-sm py-1.5 px-3 inline-flex items-center gap-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10">
+              <Trash2 size={14} aria-hidden="true" /> {c.stopBtn}
+            </button>
+          )}
         </div>
       </div>
 
@@ -164,18 +204,12 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
         </div>
       )}
 
-      {/* Bandeau d'avancement */}
-      <div className="flex flex-wrap items-center gap-4 text-sm rounded-lg border border-gray-200 bg-white px-4 py-2.5">
-        <span className="font-semibold text-gray-900">{stats.tauxConformite}%</span>
-        <span className="text-gray-500">{c.evalues.replace('{n}', String(stats.evalues)).replace('{total}', String(controles.length))}</span>
-        {savedAt && <span className="text-green-600 inline-flex items-center gap-1 ml-auto"><CheckCircle2 size={14} aria-hidden="true" /> {c.saved}</span>}
-      </div>
-
-      {/* Reprendre la conformité d'une analyse existante (même référentiel) */}
-      {analysesDispo.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm rounded-lg border border-ebios-200 bg-ebios-50/50 px-4 py-2.5">
-          <span className="text-ebios-800">{c.importLabel}</span>
-          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white text-gray-800 min-w-[12rem]">
+      {/* Reprendre la conformité d'une analyse — proposé UNIQUEMENT tant que le suivi
+          est vide (première fois) ; inutile une fois le référentiel déjà renseigné. */}
+      {analysesDispo.length > 0 && stats.evalues === 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm rounded-lg border border-ebios-200 bg-ebios-50/60 px-4 py-2.5 dark:border-ebios-500/30 dark:bg-ebios-500/10">
+          <span className="text-ebios-800 dark:text-ebios-200">{c.importLabel}</span>
+          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-sm bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 min-w-[12rem]">
             <option value="">{c.importSelect}</option>
             {analysesDispo.map(a => <option key={a.id} value={a.id}>{a.nom} ({a.count})</option>)}
           </select>
@@ -189,7 +223,21 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
 
       {loading
         ? <p className="text-gray-400 text-sm py-8 text-center">{t.loading}</p>
-        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false} />}
+        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false}
+            traitementCtx={{ orgId, referentiel: ref, entite }} onTraitementsChanged={() => setTraitementsKey(k => k + 1)} />}
+
+      {/* Registre des traitements réels (plans / dérogations / acceptations de risque) */}
+      {!loading && (
+        <TraitementsRegistre key={`${ref}|${entite}|${traitementsKey}`} orgId={orgId} referentiel={ref} entite={entite} locale={locale} canEdit />
+      )}
+
+      {/* Historique & tendance du taux (comme le dashboard) — la version se fige via
+          le bouton « Figer » de l'en-tête, donc canEdit=false ici (pas de doublon). */}
+      {!loading && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+          <ConformiteHistory key={`${ref}|${entite}|${reloadKey}`} orgId={orgId} referentiel={ref} entite={entite} locale={locale} canEdit={false} />
+        </div>
+      )}
     </div>
   )
 }

@@ -11,7 +11,9 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
 import ConformiteHeatmap, { type HeatmapRow, type HeatmapRef } from '@/components/ConformiteHeatmap'
-import ConformiteDonut from '@/components/ConformiteDonut'
+import ConformiteGauges from '@/components/ConformiteGauges'
+import ConformiteGlobalTrend from '@/components/ConformiteGlobalTrend'
+import { globalConformiteTrend } from '@/lib/conformite-trend'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,7 +35,11 @@ export default async function ConformiteGlobalPage() {
   // Entités de conformité des organisations visibles (ou toutes en mono-organisation).
   const confs = await prisma.conformite.findMany({
     where: visibleOrgIds.length > 0 ? { organizationId: { in: visibleOrgIds } } : {},
-    select: { organizationId: true, referentiel: true, entries: true, organization: { select: { nom: true, path: true } } },
+    select: {
+      organizationId: true, referentiel: true, entries: true, updatedAt: true,
+      organization: { select: { nom: true, path: true } },
+      snapshots: { select: { entries: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+    },
   })
 
   // Nœuds d'organisation (id, path, nom) — dédupliqués.
@@ -55,20 +61,39 @@ export default async function ConformiteGlobalPage() {
     if (!totalByOrgRef.has(key)) totalByOrgRef.set(key, (await getExigencesFor(ref, orgId, locale)).length)
     return totalByOrgRef.get(key)!
   }
-  const cells: RollupConfInput[] = await Promise.all(confs.map(async c => {
+  type Cell = RollupConfInput & { deroge: number; couvDerog: number; couvAccept: number; couvPlan: number; partielNet: number }
+  const cells: Cell[] = await Promise.all(confs.map(async c => {
     const s = conformiteStats(sanitizeConformite(c.entries), await totalFor(c.organizationId, c.referentiel))
-    return { organizationId: c.organizationId, referentiel: c.referentiel, conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, total: s.total }
+    return {
+      organizationId: c.organizationId, referentiel: c.referentiel,
+      conforme: s.conforme, partiel: s.partiel, nonConforme: s.nonConforme, na: s.na, deroge: s.deroge,
+      couvDerog: s.couvertureDerogation, couvAccept: s.couvertureAcceptation, couvPlan: s.couverturePlanAction,
+      partielNet: s.partielNonTraite, total: s.total,
+    }
   }))
 
   const rollup = rollupConformiteTree(orgs.map(o => ({ id: o.id, path: o.path })), cells)
 
-  // Répartition globale (camembert) : somme de tous les suivis de conformité.
+  // Cadrans globaux : conforme + couvertures d'écarts (dérogation / acceptation /
+  // plan d'action) agrégées sur tous les suivis. pertinents = conforme + partiel +
+  // non conforme + dérogé.
   const g = cells.reduce((a, c) => ({
     conforme: a.conforme + c.conforme, partiel: a.partiel + c.partiel,
-    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na,
-  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0 })
-  const gPertinents = g.conforme + g.partiel + g.nonConforme
-  const gTaux = gPertinents > 0 ? Math.round((g.conforme / gPertinents) * 100) : 0
+    nonConforme: a.nonConforme + c.nonConforme, na: a.na + c.na, deroge: a.deroge + c.deroge,
+    couvDerog: a.couvDerog + c.couvDerog, couvAccept: a.couvAccept + c.couvAccept, couvPlan: a.couvPlan + c.couvPlan,
+    partielNet: a.partielNet + c.partielNet,
+  }), { conforme: 0, partiel: 0, nonConforme: 0, na: 0, deroge: 0, couvDerog: 0, couvAccept: 0, couvPlan: 0, partielNet: 0 })
+  const gPert = g.conforme + g.partiel + g.nonConforme + g.deroge
+
+  // Tendance globale (as-of) : timeline de chaque suivi = ses snapshots + son état
+  // courant, agrégés par date. pertinents = conforme + partiel + non conforme + dérogé.
+  const pointOf = (entries: unknown, date: Date) => {
+    const s = conformiteStats(sanitizeConformite(entries), 0)
+    return { date, conforme: s.conforme, pertinents: s.conforme + s.partiel + s.nonConforme + s.deroge }
+  }
+  const trend = globalConformiteTrend(confs.map(cf => ({
+    points: [...cf.snapshots.map(sn => pointOf(sn.entries, sn.createdAt)), pointOf(cf.entries, cf.updatedAt)],
+  })))
 
   // Référentiels présents (colonnes), triés par nom — noms résolus via le
   // catalogue unifié (union des orgs visibles), avec repli sur le code.
@@ -110,17 +135,20 @@ export default async function ConformiteGlobalPage() {
 
         {rows.length > 0 && (
           <div className="card p-5 mb-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t.conformiteGlobal.donutTitle}</h2>
-            <ConformiteDonut
-              conforme={g.conforme} partiel={g.partiel} nonConforme={g.nonConforme} na={g.na} taux={gTaux}
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">{t.conformiteGlobal.donutTitle}</h2>
+            <ConformiteGauges
+              conforme={g.conforme} pertinents={gPert}
+              couvDerog={g.couvDerog} couvAccept={g.couvAccept} couvPlan={g.couvPlan} partiel={g.partielNet}
               labels={{
-                conforme: t.conformite.statuts.conforme,
-                partiel: t.conformite.statuts.partiel,
-                nonConforme: t.conformite.statuts.non_conforme,
-                na: t.conformite.statuts.na,
-                centerHint: t.conformiteGlobal.donutHint,
+                actuelle: t.conformiteGlobal.gaugeActuelle, actuelleHint: t.conformiteGlobal.gaugeActuelleHint,
+                avecDerog: t.conformiteGlobal.gaugeDerog, avecDerogHint: t.conformiteGlobal.gaugeDerogHint,
+                cible: t.conformiteGlobal.gaugeCible, cibleHint: t.conformiteGlobal.gaugeCibleHint,
+                legendConforme: t.conformiteGlobal.legendConforme, legendDeroge: t.conformiteGlobal.legendDeroge,
+                legendAccept: t.conformiteGlobal.legendAccept, legendPlan: t.conformiteGlobal.legendPlan,
+                legendPartiel: t.conformiteGlobal.legendPartiel2, legendReste: t.conformiteGlobal.legendReste,
               }}
             />
+            <ConformiteGlobalTrend points={trend} locale={locale} title={t.conformiteGlobal.trendTitle} />
           </div>
         )}
 
@@ -136,6 +164,7 @@ export default async function ConformiteGlobalPage() {
             cellTitleFor={(c) => t.conformiteGlobal.cellTip.replace('{evalues}', String(c.evalues)).replace('{total}', String(c.total))}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}
+            pptxHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pptx`}
           />
           {rows.length > 0 && (
             <p className="text-xs text-gray-400 mt-3">{t.conformiteGlobal.legend}</p>

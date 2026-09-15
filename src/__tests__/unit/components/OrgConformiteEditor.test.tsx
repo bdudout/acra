@@ -18,6 +18,11 @@ vi.mock('@/lib/i18n/context', () => ({
   }),
 }))
 
+// Historique & tendance : composant enfant autonome (a ses propres i18n/fetch).
+vi.mock('@/components/ConformiteHistory', () => ({ default: () => <div data-testid="history" /> }))
+// Registre des traitements : composant enfant autonome (i18n/fetch propres).
+vi.mock('@/components/TraitementsRegistre', () => ({ default: () => <div data-testid="registre" /> }))
+
 // Grille : bouton qui simule le passage d'un contrôle à « non_conforme ».
 vi.mock('@/components/ConformiteGrid', () => ({
   default: ({ entries, onChange }: { entries: { ref: string; statut: string }[]; onChange: (e: { ref: string; statut: string }[]) => void }) => (
