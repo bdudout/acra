@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { entryTagForType, type TraitementType } from '@/lib/conformite-traitement'
+import { ACTION_PRIORITES } from '@/lib/risk-action'
 import type { ConformiteTraitement as EntryTag } from '@/lib/conformite'
 
 export interface ExistingTraitement {
@@ -64,6 +65,8 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const [description, setDescription] = useState('')
   const [maintien, setMaintien] = useState(false)
   const [niveau, setNiveau] = useState('')
+  // Plan d'action : priorité propre (le plan d'action a un porteur + une priorité).
+  const [priorite, setPriorite] = useState('MAJEUR')
   // Dérogation FORMELLE (workflow RSSI) : motif + mesures compensatoires requis,
   // + durée (jours) propre à la dérogation (date butoir ; défaut org si vide).
   const [motif, setMotif] = useState('')
@@ -105,7 +108,9 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const suggestions = useMemo(() => {
     if (isUpdate || isLinkAction || isDerog) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[] }
     const q = intitule.trim().toLowerCase()
-    const tr = sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6)
+    // Plan d'action : on ne suggère QUE des actions réelles (les nouveaux plans sont
+    // des PlanAction, plus des ConformiteTraitement). Acceptation : ses traitements.
+    const tr = type === 'ACCEPTATION_RISQUE' ? sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6) : []
     const ac = type !== 'PLAN_ACTION' ? [] :
       actions.filter(a => !dejaLie(a) && (!q || a.titre.toLowerCase().includes(q))).slice(0, 6)
     return { traitements: tr, actions: ac }
@@ -170,6 +175,22 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           portee: 'CONTROLE', referentiel, ref: controlRef,
           intitule: intitule.trim() || defaultTitle, motif: motif.trim(), mesuresCompensatoires: mesures.trim(),
           ...(Number(duree) > 0 ? { dureeJours: Number(duree) } : {}),
+        }),
+      })
+      setBusy(false)
+      if (!res.ok) { setError(u.error); return }
+      onApplied(entryTagForType(type))
+      return
+    }
+    if (type === 'PLAN_ACTION') {
+      // Nouveau plan d'action = un VRAI PlanAction (porteur + priorité) porteur d'un
+      // lien CONFORMITE vers ce contrôle.
+      setBusy(true); setError(null)
+      const res = await fetch(plansBase, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titre: intitule.trim() || defaultTitle, description, porteur: responsable, echeance, priorite,
+          liens: [{ type: 'CONFORMITE', targetId: referentiel, ref: controlRef, label: controlNom }],
         }),
       })
       setBusy(false)
@@ -269,6 +290,11 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           <div className="flex gap-1.5">
             <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={u.responsable} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
             <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} readOnly={isLinkAction} title={u.echeance} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
+            {type === 'PLAN_ACTION' && !isLinkAction && (
+              <select value={priorite} onChange={e => setPriorite(e.target.value)} title={t.riskActions.priorite} className={inputCls}>
+                {ACTION_PRIORITES.map(p => <option key={p} value={p}>{(t.riskActions.priorites as Record<string, string>)[p] ?? p}</option>)}
+              </select>
+            )}
           </div>
         )}
         {isDerog && (
