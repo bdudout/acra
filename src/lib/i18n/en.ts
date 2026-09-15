@@ -3586,6 +3586,7 @@ export const en: Translations = {
       create: 'Create', creating: '…', cancel: 'Cancel', covers: '{n} requirement(s)', error: 'Failed. Please retry.',
       searchExisting: 'Search an existing treatment…', update: 'Update', lockedHint: 'Existing treatment — title not editable here', newInstead: 'New',
       actionTag: 'action', linkActionHint: 'Existing action — linked to the control (title not editable here)',
+      motifPh: 'Waiver rationale (justification)', mesuresPh: 'Compensating controls', derogWorkflowHint: 'Creates a waiver request submitted for RSSI review (waiver register).', derogChampsRequis: 'Rationale and compensating controls are required.',
     },
     registreTitre: 'Gap treatments',
     registreEmpty: 'No treatment recorded for this framework.',

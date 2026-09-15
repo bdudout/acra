@@ -13,6 +13,7 @@ vi.mock('@/lib/i18n/context', () => ({
           create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec.',
           searchExisting: 'Rechercher…', update: 'Mettre à jour', lockedHint: 'Libellé verrouillé', newInstead: 'Nouveau',
           attachBtn: 'Rattacher', actionTag: 'action', linkActionHint: 'Action existante',
+          motifPh: 'Motif', mesuresPh: 'Mesures compensatoires', derogWorkflowHint: 'Avis RSSI', derogChampsRequis: 'Motif requis',
         },
       },
     },
@@ -87,5 +88,23 @@ describe('TraitementPopover — rattacher/mettre à jour', () => {
     expect(patch).toBeTruthy()
     const lien = JSON.parse(patch![1].body!).addLien
     expect(lien).toEqual({ type: 'CONFORMITE', targetId: 'ISO27001', ref: 'A.5.1', label: 'Politique' })
+  })
+
+  it('type DÉROGATION → crée une dérogation FORMELLE (POST /api/derogations, portée CONTROLE)', async () => {
+    const fetchMock = mockFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    const onApplied = vi.fn()
+    render(<TraitementPopover
+      orgId="o1" referentiel="ISO27001" entite="" controlRef="A.5.1" controlNom="Politique"
+      type="DEROGATION" existing={existing} onApplied={onApplied} onClose={() => {}} />)
+    fireEvent.change(screen.getByPlaceholderText('Motif'), { target: { value: 'Contrainte technique' } })
+    fireEvent.change(screen.getByPlaceholderText('Mesures compensatoires'), { target: { value: 'Surveillance renforcée' } })
+    fireEvent.click(screen.getByText('Créer'))
+    await waitFor(() => expect(onApplied).toHaveBeenCalledWith('derogation'))
+    const post = (fetchMock as unknown as { mock: { calls: [string, { method?: string; body?: string }][] } }).mock.calls
+      .find(c => c[0] === '/api/derogations' && c[1]?.method === 'POST')
+    expect(post).toBeTruthy()
+    const body = JSON.parse(post![1].body!)
+    expect(body).toMatchObject({ portee: 'CONTROLE', referentiel: 'ISO27001', ref: 'A.5.1', motif: 'Contrainte technique', mesuresCompensatoires: 'Surveillance renforcée' })
   })
 })

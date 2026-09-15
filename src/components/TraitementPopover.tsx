@@ -64,6 +64,9 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const [description, setDescription] = useState('')
   const [maintien, setMaintien] = useState(false)
   const [niveau, setNiveau] = useState('')
+  // Dérogation FORMELLE (workflow RSSI) : motif + mesures compensatoires requis.
+  const [motif, setMotif] = useState('')
+  const [mesures, setMesures] = useState('')
   // id du traitement existant sélectionné (null = création d'un nouveau).
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // id de l'ACTION réelle (PlanAction) sélectionnée à rattacher (null = aucune).
@@ -75,6 +78,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
 
   const base = `/api/organizations/${orgId}/conformite/traitements`
   const plansBase = `/api/organizations/${orgId}/plans-actions`
+  const isDerog = type === 'DEROGATION' // dérogation = workflow FORMEL (avis RSSI)
   const isUpdate = selectedId != null
   const isLinkAction = selectedActionId != null
   const locked = isUpdate || isLinkAction // libellé verrouillé (existant sélectionné)
@@ -97,7 +101,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   // Suggestions : traitements de conformité existants (même type) + actions réelles
   // (pour PLAN_ACTION), filtrées par le texte saisi.
   const suggestions = useMemo(() => {
-    if (isUpdate || isLinkAction) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[] }
+    if (isUpdate || isLinkAction || isDerog) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[] }
     const q = intitule.trim().toLowerCase()
     const tr = sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6)
     const ac = type !== 'PLAN_ACTION' ? [] :
@@ -147,6 +151,23 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
       const res = await fetch(`${plansBase}/${selectedActionId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ addLien: { type: 'CONFORMITE', targetId: referentiel, ref: controlRef, label: controlNom } }),
+      })
+      setBusy(false)
+      if (!res.ok) { setError(u.error); return }
+      onApplied(entryTagForType(type))
+      return
+    }
+    if (isDerog) {
+      // Dérogation FORMELLE : crée une Derogation (portée CONTROLE) qui suivra le
+      // workflow d'avis RSSI dans le registre /derogations.
+      if (!motif.trim() || !mesures.trim()) { setError(u.derogChampsRequis); return }
+      setBusy(true); setError(null)
+      const res = await fetch('/api/derogations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          portee: 'CONTROLE', referentiel, ref: controlRef,
+          intitule: intitule.trim() || defaultTitle, motif: motif.trim(), mesuresCompensatoires: mesures.trim(),
+        }),
       })
       setBusy(false)
       if (!res.ok) { setError(u.error); return }
@@ -203,7 +224,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
             onFocus={() => { if (!locked) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 120)}
             readOnly={locked}
-            placeholder={u.searchExisting}
+            placeholder={isDerog ? u.intitule : u.searchExisting}
             aria-label={u.intitule}
             className={`${inputCls} ${locked ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed' : ''}`}
           />
@@ -238,11 +259,22 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           </div>
         )}
 
-        <div className="flex gap-1.5">
-          <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={u.responsable} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
-          <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} readOnly={isLinkAction} title={u.echeance} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
-        </div>
-        {!isLinkAction && (
+        {isDerog && (
+          <p className="text-[11px] text-cyan-700 dark:text-cyan-300">{u.derogWorkflowHint}</p>
+        )}
+        {!isDerog && (
+          <div className="flex gap-1.5">
+            <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={u.responsable} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
+            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} readOnly={isLinkAction} title={u.echeance} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
+          </div>
+        )}
+        {isDerog && (
+          <>
+            <textarea value={motif} onChange={e => setMotif(e.target.value)} placeholder={u.motifPh} rows={2} className={inputCls} />
+            <textarea value={mesures} onChange={e => setMesures(e.target.value)} placeholder={u.mesuresPh} rows={2} className={inputCls} />
+          </>
+        )}
+        {!isLinkAction && !isDerog && (
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={u.descriptionLabel} rows={2} className={inputCls} />
         )}
         {type === 'ACCEPTATION_RISQUE' && !isLinkAction && (

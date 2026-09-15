@@ -3635,6 +3635,7 @@ export const fr = {
       create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec. Réessayez.',
       searchExisting: 'Rechercher un traitement existant…', update: 'Mettre à jour', lockedHint: 'Traitement existant — libellé non modifiable ici', newInstead: 'Nouveau',
       actionTag: 'action', linkActionHint: 'Action existante — rattachée au contrôle (libellé non modifiable ici)',
+      motifPh: 'Motif de la dérogation (justification)', mesuresPh: 'Mesures compensatoires', derogWorkflowHint: 'Crée une demande de dérogation soumise à l\'avis du RSSI (registre des dérogations).', derogChampsRequis: 'Motif et mesures compensatoires requis.',
     },
     registreTitre: 'Traitements des écarts',
     registreEmpty: 'Aucun traitement enregistré pour ce référentiel.',
