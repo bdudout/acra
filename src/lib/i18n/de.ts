@@ -2876,6 +2876,8 @@ export const de: Translations = {
       ppConfianceLabel:   'Vertrauen',
       ppMapTitle:   'Gefährdungskartierung — 3 Zonen (FM5)',
       radar: {
+        zoomIn: 'Vergrößern', zoomOut: 'Verkleinern', zoomReset: 'Ansicht zurücksetzen',
+        zoomHint: 'Mausrad zum Zoomen · ziehen zum Verschieben',
         title:        'Bedrohungskarte des Ökosystems',
         hint:         'Radius = Bedrohungsgrad · Zentrum = maximale Bedrohung · Sektor = Kategorie',
         empty:        'Fügen Sie Beteiligte hinzu, um das Radar anzuzeigen',

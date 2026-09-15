@@ -2876,6 +2876,8 @@ export const it: Translations = {
       ppConfianceLabel:   'Fiducia',
       ppMapTitle:   'Mappa della pericolosità — 3 zone (FM5)',
       radar: {
+        zoomIn: 'Ingrandisci', zoomOut: 'Riduci', zoomReset: 'Reimposta vista',
+        zoomHint: 'Rotella per zoomare · trascina per spostare',
         title:        'Mappa di minaccia dell\'ecosistema',
         hint:         'Raggio = livello di minaccia · centro = minaccia massima · settore = categoria',
         empty:        'Aggiungi parti interessate per visualizzare il radar',

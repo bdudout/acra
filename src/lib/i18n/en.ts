@@ -2876,6 +2876,8 @@ export const en: Translations = {
       ppConfianceLabel:   'Trust',
       ppMapTitle:   'Threat mapping — 3 zones (FM5)',
       radar: {
+        zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset view',
+        zoomHint: 'Scroll to zoom · drag to pan',
         title:        'Ecosystem threat map',
         hint:         'Radius = threat level · centre = maximum threat · sector = category',
         empty:        'Add stakeholders to display the radar',

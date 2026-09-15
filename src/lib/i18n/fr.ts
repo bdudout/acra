@@ -2922,6 +2922,8 @@ export const fr = {
       ppConfianceLabel:   'Confiance',
       ppMapTitle:   'Cartographie de dangerosité — 3 zones (FM5)',
       radar: {
+        zoomIn: 'Zoomer', zoomOut: 'Dézoomer', zoomReset: 'Réinitialiser la vue',
+        zoomHint: 'Molette pour zoomer · glisser pour déplacer',
         title:        'Cartographie de menace de l\'écosystème',
         hint:         'Rayon = niveau de menace · centre = menace maximale · secteur = catégorie',
         empty:        'Ajoutez des parties prenantes pour afficher le radar',

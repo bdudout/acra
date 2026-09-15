@@ -10,9 +10,11 @@
  *
  * Cohérence : zones et menace identiques au calcul vulnerabilite déjà affiché en listes.
  */
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { viewBox as computeViewBox, zoomAtCursor, panByPixels, clampZoom, ZOOM_STEP, ZOOM_MIN, type Box } from '@/lib/ecosystem-zoom'
 import {
   layoutStakeholders,
   sectorSpans,
@@ -64,9 +66,20 @@ interface Props {
   manageTiersHref?: string
   /** Si vrai, un clic sur un point navigue vers `manageTiersHref#pp-<cle>` (scroll vers le tiers). */
   manageTiersPerPoint?: boolean
+  /** Active zoom (molette + boutons), déplacement (glisser) et bouton « réinitialiser ». */
+  zoomable?: boolean
+  /** Canvas agrandi (page dédiée plein écran) au lieu du format compact (≤520px). */
+  fill?: boolean
 }
 
 const CX = 240, CY = 240, R_MAX = 190
+// Cadre de base du SVG (doit refléter le viewBox de référence ci-dessous).
+const VIEW_BASE: Box = { x: -58, y: 0, w: 596, h: 480 }
+// Au-delà de ce zoom (ou en-dessous de ce nombre de tiers), tous les libellés
+// s'affichent ; en-deçà, seuls les tiers critiques/survolés sont étiquetés pour
+// éviter les chevauchements sur les cartographies denses.
+const LABEL_ZOOM = 1.35
+const LABEL_ALWAYS_MAX = 24
 // Couleur des ANNEAUX de zone (du centre vers le bord) : danger=orange, contrôle=jaune, veille=vert.
 const ZONE_COLOR: Record<EcosystemZone, string> = {
   danger:   '#ea580c', // orange-600
@@ -79,7 +92,7 @@ const FIAB_COLOR = ['#dc2626', '#ea580c', '#eab308', '#16a34a']
 const EXPO_RADIUS = [7, 9, 11.5, 14]
 const STAR_COLOR = '#f59e0b' // amber-500 (tiers critique)
 
-export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false, onHover, manageTiersHref, manageTiersPerPoint }: Props) {
+export default function EcosystemRadar({ parties, onSelect, showRefs = true, hideHeader = false, echelles, onEditShortName, aggregated = false, onHover, manageTiersHref, manageTiersPerPoint, zoomable = false, fill = false }: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const r = t.workshop.a3.radar
@@ -89,6 +102,62 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
   const [showHelp, setShowHelp] = useState(false)
   const [showRanks, setShowRanks] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
+
+  // ─── Zoom / déplacement (opt-in via `zoomable`) ────────────────────────────
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const vb = zoomable ? computeViewBox(VIEW_BASE, zoom, pan.x, pan.y) : VIEW_BASE
+  const resetView = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
+  const stepZoom = (factor: number) => {
+    // Zoom centré (curseur au milieu) pour les boutons.
+    setZoom(z => {
+      const next = zoomAtCursor(VIEW_BASE, z, pan.x, pan.y, clampZoom(z * factor), 0.5, 0.5)
+      setPan({ x: next.panX, y: next.panY })
+      return next.zoom
+    })
+  }
+
+  // Molette = zoom au curseur. Listener natif (passive:false) pour pouvoir
+  // empêcher le défilement de page pendant le zoom.
+  useEffect(() => {
+    const el = svgRef.current
+    if (!zoomable || !el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      const px = (e.clientX - rect.left) / rect.width
+      const py = (e.clientY - rect.top) / rect.height
+      setZoom(z => {
+        const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP
+        const next = zoomAtCursor(VIEW_BASE, z, pan.x, pan.y, clampZoom(z * factor), px, py)
+        setPan({ x: next.panX, y: next.panY })
+        return next.zoom
+      })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [zoomable, pan.x, pan.y])
+
+  // Déplacement par glisser sur le fond (les points gardent leur clic propre).
+  const onBgPointerDown = useCallback((e: React.PointerEvent) => {
+    if (!zoomable) return
+    drag.current = { x: e.clientX, y: e.clientY, moved: false }
+    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+  }, [zoomable])
+  const onBgPointerMove = useCallback((e: React.PointerEvent) => {
+    const d = drag.current
+    if (!zoomable || !d || !svgRef.current) return
+    const dx = e.clientX - d.x, dy = e.clientY - d.y
+    if (Math.abs(dx) + Math.abs(dy) > 2) d.moved = true
+    const rect = svgRef.current.getBoundingClientRect()
+    setPan(p => {
+      const np = panByPixels(VIEW_BASE, zoom, p.x, p.y, dx, dy, rect.width, rect.height)
+      return { x: np.panX, y: np.panY }
+    })
+    drag.current = { x: e.clientX, y: e.clientY, moved: d.moved }
+  }, [zoomable, zoom])
+  const onBgPointerUp = useCallback(() => { drag.current = null }, [])
   // Présence de PP connexes (rang ≥ 2) → propose le basculement d'affichage.
   const hasRanks = parties.some(p => (p.rang ?? 1) >= 2)
 
@@ -164,6 +233,9 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
     return [words.slice(0, cut).join(' '), words.slice(cut).join(' ')]
   }
   const editable = !!onEditShortName
+  // Cartographie dense + dézoomée : on n'étiquette que les tiers critiques/survolés
+  // pour éviter les chevauchements ; tout réapparaît en zoomant.
+  const declutterLabels = zoomable && zoom < LABEL_ZOOM && shownParties.length > LABEL_ALWAYS_MAX
   // Libellé d'un point : nom court (≤12) si défini, sinon réf T1, T2…
   const pointLabel = (p: RadarPoint) => (p.nomCourt || (showRefs ? p.ref : ''))
   function commitShortName(id: string, value: string) {
@@ -202,15 +274,35 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
       </div>
 
       <div className="flex flex-col items-center gap-4">
+        <div className={`relative w-full ${fill ? 'max-w-[1100px]' : 'max-w-[520px]'} mx-auto`}>
+        {zoomable && (
+          <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
+            <button type="button" onClick={() => stepZoom(ZOOM_STEP)} aria-label={r.zoomIn ?? 'Zoom +'} title={r.zoomIn ?? 'Zoom +'}
+              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomIn size={16} /></button>
+            <button type="button" onClick={() => stepZoom(1 / ZOOM_STEP)} aria-label={r.zoomOut ?? 'Zoom −'} title={r.zoomOut ?? 'Zoom −'}
+              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomOut size={16} /></button>
+            <button type="button" onClick={resetView} disabled={zoom === ZOOM_MIN && pan.x === 0 && pan.y === 0}
+              aria-label={r.zoomReset ?? 'Réinitialiser'} title={r.zoomReset ?? 'Réinitialiser'}
+              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><Maximize2 size={16} /></button>
+          </div>
+        )}
         <svg
           ref={svgRef}
-          viewBox="-58 0 596 480"
-          className="w-full max-w-[520px] mx-auto"
+          viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+          className={`w-full mx-auto ${zoomable ? 'touch-none select-none ' + (drag.current ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+          style={fill ? { maxHeight: '72vh' } : undefined}
           role="img"
           aria-label={r.title}
+          onPointerDown={onBgPointerDown}
+          onPointerMove={onBgPointerMove}
+          onPointerUp={onBgPointerUp}
+          onPointerLeave={onBgPointerUp}
         >
           <title>{r.title}</title>
           <desc>{r.hint}</desc>
+
+          {/* Fond transparent : capte le glisser (déplacement) sans masquer les points. */}
+          {zoomable && <rect x={-2000} y={-2000} width={4000} height={4000} fill="transparent" />}
 
           {/* 3 anneaux concentriques : veille (extérieur, = bord) → contrôle → danger (centre).
               Tracés du plus grand au plus petit (le plus petit recouvre). */}
@@ -315,7 +407,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                       style={{ width: '100%', height: 18, fontSize: 10, padding: '0 3px', border: '1px solid #9ca3af', borderRadius: 3, outline: 'none' }}
                     />
                   </foreignObject>
-                ) : (
+                ) : (declutterLabels && !p.critique && !isActive) ? null : (
                   // ★ (si critique) juste avant le libellé, à droite du point — halo
                   // (blanc en clair, sombre en thème sombre) pour rester lisible sur les zones.
                   <text
@@ -340,8 +432,10 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           {active && editing === null && (() => {
             const a3 = t.workshop.a3
             const aR = EXPO_RADIUS[expositionLevel(active.exposition, bornes.maxExpo)]
-            const tipW = 210, tipH = 140
-            const VB_L = -58, VB_R = 538, VB_B = 480
+            // Infobulle dimensionnée dans les unités du viewBox courant (reste
+            // lisible quel que soit le zoom) et bornée à la zone visible.
+            const tipW = Math.min(210, vb.w * 0.9), tipH = Math.min(140, vb.h * 0.9)
+            const VB_L = vb.x, VB_R = vb.x + vb.w, VB_B = vb.y + vb.h
             let tx = active.x + aR + 2
             if (tx + tipW > VB_R) tx = active.x - aR - tipW - 2
             tx = Math.max(VB_L, Math.min(tx, VB_R - tipW))
@@ -365,6 +459,8 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             )
           })()}
         </svg>
+        {zoomable && <p className="mt-1 text-center text-[10px] text-gray-400 dark:text-gray-500">{r.zoomHint ?? ''}</p>}
+        </div>
 
         {/* Légende compacte (sous le radar) + aide dépliable */}
         <div className="w-full border-t border-gray-100 pt-3 dark:border-gray-700">
