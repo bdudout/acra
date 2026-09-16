@@ -3,6 +3,7 @@
 import { IdCard } from 'lucide-react'
 import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
@@ -54,6 +55,21 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
 export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true }: Props) {
   const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
+
+  // Deep-link vers un contrôle précis (ex. « Modifier » d'une action de conformité
+  // depuis /actions → ?ctrl=<ref>) : défilement + surlignage temporaire.
+  const searchParams = useSearchParams()
+  const targetCtrl = searchParams.get('ctrl')
+  const [highlight, setHighlight] = useState<string | null>(null)
+  useEffect(() => {
+    if (!targetCtrl) return
+    const el = document.getElementById(`ctrl-${targetCtrl}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlight(targetCtrl)
+    const timer = setTimeout(() => setHighlight(null), 2600)
+    return () => clearTimeout(timer)
+  }, [targetCtrl])
 
   // Traitements réels (socle org) : liste chargée + popover création/rattachement.
   const [traitements, setTraitements] = useState<ExistingTraitement[]>([])
@@ -226,7 +242,8 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
           const entry = byRef.get(c.ref)
           const showComment = entry && (entry.statut === 'partiel' || entry.statut === 'non_conforme')
           return (
-            <div key={c.ref} className="rounded-lg border border-gray-200 bg-white p-3">
+            <div key={c.ref} id={`ctrl-${c.ref}`}
+              className={`rounded-lg border bg-white p-3 scroll-mt-24 transition-shadow ${highlight === c.ref ? 'border-ebios-400 ring-2 ring-ebios-400/60' : 'border-gray-200'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-800">
