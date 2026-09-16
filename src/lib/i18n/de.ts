@@ -3597,6 +3597,7 @@ export const de: Translations = {
       actionTag: 'Aktion', linkActionHint: 'Bestehende Aktion — mit der Kontrolle verknüpft (Titel hier nicht änderbar)',
       motifPh: 'Begründung der Ausnahme', mesuresPh: 'Kompensierende Maßnahmen', derogWorkflowHint: 'Erstellt einen Ausnahmeantrag zur Stellungnahme des RSSI (Ausnahmeregister).', derogChampsRequis: 'Begründung und kompensierende Maßnahmen erforderlich.',
       dureeJours: 'Dauer (Tage)', dureeJoursPh: 'Dauer in Tagen (Org-Standard wenn leer)',
+      searchPlanAction: 'Bestehenden Aktionsplan suchen…', searchAcceptation: 'Bestehende Risikoakzeptanz suchen…', intituleDerog: 'Titel der Ausnahme', porteur: 'Verantwortlich',
     },
     registreTitre: 'Behandlung der Lücken',
     registreEmpty: 'Keine Behandlung für dieses Rahmenwerk erfasst.',

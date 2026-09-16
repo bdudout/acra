@@ -15,6 +15,7 @@ vi.mock('@/lib/i18n/context', () => ({
           attachBtn: 'Rattacher', actionTag: 'action', linkActionHint: 'Action existante',
           motifPh: 'Motif', mesuresPh: 'Mesures compensatoires', derogWorkflowHint: 'Avis RSSI', derogChampsRequis: 'Motif requis',
           dureeJours: 'Durée (jours)', dureeJoursPh: 'Durée',
+          searchPlanAction: 'Rechercher un plan d\'action…', searchAcceptation: 'Rechercher une acceptation…', intituleDerog: 'Intitulé dérogation', porteur: 'Porteur',
         },
       },
       riskActions: { priorite: 'Priorité', priorites: { CRITIQUE: 'Critique', MAJEUR: 'Majeure', MODERE: 'Modérée' } },

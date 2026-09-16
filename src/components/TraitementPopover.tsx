@@ -54,6 +54,11 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const u = t.conformite.traitementUI
   const typeLabel = (t.conformite.traitements as Record<string, string>)[entryTagForType(type)] ?? type
   const defaultTitle = `${typeLabel} — ${controlRef}`
+  // Placeholder du champ de recherche/intitulé, adapté au type de traitement.
+  const searchPlaceholder = type === 'DEROGATION' ? u.intituleDerog
+    : type === 'PLAN_ACTION' ? u.searchPlanAction
+    : u.searchAcceptation
+  const porteurLabel = type === 'PLAN_ACTION' ? u.porteur : u.responsable
   // Traitements existants du même type = candidats au rattachement/mise à jour.
   const sameType = useMemo(() => existing.filter(x => x.type === type), [existing, type])
 
@@ -248,7 +253,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
             onFocus={() => { if (!locked) setOpen(true) }}
             onBlur={() => setTimeout(() => setOpen(false), 120)}
             readOnly={locked}
-            placeholder={isDerog ? u.intitule : u.searchExisting}
+            placeholder={searchPlaceholder}
             aria-label={u.intitule}
             className={`${inputCls} ${locked ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed' : ''}`}
           />
@@ -288,7 +293,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
         )}
         {!isDerog && (
           <div className="flex gap-1.5">
-            <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={u.responsable} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
+            <input value={responsable} onChange={e => setResponsable(e.target.value)} readOnly={isLinkAction} placeholder={porteurLabel} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
             <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} readOnly={isLinkAction} title={u.echeance} className={`${inputCls} ${isLinkAction ? 'bg-gray-100 dark:bg-gray-900' : ''}`} />
             {type === 'PLAN_ACTION' && !isLinkAction && (
               <select value={priorite} onChange={e => setPriorite(e.target.value)} title={t.riskActions.priorite} className={inputCls}>
