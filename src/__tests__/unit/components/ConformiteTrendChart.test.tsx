@@ -55,6 +55,28 @@ describe('ConformiteTrendChart', () => {
     expect(screen.queryByText('0%')).not.toBeInTheDocument()
   })
 
+  it('première année (plusieurs points, une seule année) → ancre 0 % au 1ᵉʳ janvier', () => {
+    const sameYear: TrendChartPoint[] = [
+      { id: 'a', label: null, createdAt: new Date(2026, 2, 1).toISOString(), taux: 40 },
+      { id: 'b', label: null, createdAt: new Date(2026, 4, 1).toISOString(), taux: 70 },
+    ]
+    render(<ConformiteTrendChart points={sameYear} locale="fr" granLabels={granLabels} now={NOW} />)
+    expect(screen.getByText('40%')).toBeInTheDocument()
+    expect(screen.getByText('70%')).toBeInTheDocument()
+    expect(screen.queryByText('0%')).not.toBeInTheDocument() // ancre non dessinée
+  })
+
+  it('plusieurs années → pas d\'ancre 0 %', () => {
+    const multiYear: TrendChartPoint[] = [
+      { id: 'a', label: null, createdAt: new Date(2025, 5, 1).toISOString(), taux: 40 },
+      { id: 'b', label: null, createdAt: new Date(2026, 4, 1).toISOString(), taux: 70 },
+    ]
+    render(<ConformiteTrendChart points={multiYear} locale="fr" granLabels={granLabels} now={NOW} />)
+    // 2 points réels, aucune ancre ajoutée → 2 pastilles seulement (40 % et 70 %)
+    expect(screen.getByText('40%')).toBeInTheDocument()
+    expect(screen.getByText('70%')).toBeInTheDocument()
+  })
+
   it('survol d\'un point : infobulle avec %', () => {
     render(<ConformiteTrendChart points={points} locale="fr" granLabels={granLabels} now={NOW} />)
     const circles = svg().querySelectorAll('circle')
