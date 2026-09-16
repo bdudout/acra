@@ -20,6 +20,7 @@ import {
 } from '@/lib/action-items'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite } from '@/lib/risk-action'
 import ColumnMenu from '@/components/ColumnMenu'
+import PlanActionEditor from '@/components/PlanActionEditor'
 import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
 import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
@@ -64,24 +65,9 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
   const router = useRouter()
   const now = useMemo(() => new Date(), [])
 
-  // Édition en place d'une action ORPHELINE (aucune fiche source où l'ouvrir).
+  // Édition en place d'une action ORPHELINE (aucune fiche source où l'ouvrir) —
+  // réutilise l'éditeur commun PlanActionEditor (option 2, aussi utilisée en conformité).
   const [editId, setEditId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<{ titre: string; porteur: string; echeance: string; statut: string; priorite: string }>({ titre: '', porteur: '', echeance: '', statut: 'A_FAIRE', priorite: 'MAJEUR' })
-  const [editBusy, setEditBusy] = useState(false)
-  function openEdit(it: ActionItem) {
-    setEditId(it.sourceId)
-    setEditForm({ titre: it.titre, porteur: it.porteur ?? '', echeance: it.echeance ? new Intl.DateTimeFormat('en-CA').format(it.echeance) : '', statut: it.statut, priorite: it.priorite })
-  }
-  async function saveEdit() {
-    if (!orgId || !editId) return
-    setEditBusy(true)
-    const res = await fetch(`/api/organizations/${orgId}/plans-actions/${editId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titre: editForm.titre, porteur: editForm.porteur || null, echeance: editForm.echeance || null, statut: editForm.statut, priorite: editForm.priorite }),
-    })
-    setEditBusy(false)
-    if (res.ok) { setEditId(null); router.refresh() }
-  }
 
   const [origine, setOrigine] = useState<ActionOrigine | ''>('')
   const [priorite, setPriorite] = useState<ActionPriorite | ''>(initialPriorite)
@@ -306,32 +292,17 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
                     {it.lien
                       ? <Link href={it.lien} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</Link>
                       : isOrphan && orgId
-                        ? <button type="button" onClick={() => (editing ? setEditId(null) : openEdit(it))} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</button>
+                        ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</button>
                         : null}
                   </td>
                 </tr>
-                {editing && (
+                {editing && orgId && (
                   <tr className="bg-red-50/40 border-b border-gray-100">
                     <td colSpan={7} className="px-3 py-2">
-                      <div className="flex flex-wrap items-end gap-2">
-                        <input value={editForm.titre} onChange={(e) => setEditForm(f => ({ ...f, titre: e.target.value }))} placeholder={t.plansActions.colTitre}
-                          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm min-w-[14rem] flex-1" />
-                        <input value={editForm.porteur} onChange={(e) => setEditForm(f => ({ ...f, porteur: e.target.value }))} placeholder={t.plansActions.colPorteur}
-                          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm min-w-[9rem]" />
-                        <input type="date" value={editForm.echeance} onChange={(e) => setEditForm(f => ({ ...f, echeance: e.target.value }))}
-                          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm" />
-                        <select value={editForm.priorite} onChange={(e) => setEditForm(f => ({ ...f, priorite: e.target.value }))}
-                          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
-                          {ACTION_PRIORITES.map((p) => <option key={p} value={p}>{t.plansActions.priorites[p]}</option>)}
-                        </select>
-                        <select value={editForm.statut} onChange={(e) => setEditForm(f => ({ ...f, statut: e.target.value }))}
-                          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
-                          {(['A_FAIRE', 'EN_COURS', 'FAIT'] as const).map((s) => <option key={s} value={s}>{t.plansActions.statuts[s]}</option>)}
-                        </select>
-                        <button type="button" disabled={editBusy || !editForm.titre.trim()} onClick={saveEdit}
-                          className="text-xs px-3 py-1.5 rounded bg-ebios-600 text-white font-medium disabled:opacity-50">{t.plansActions.save}</button>
-                        <button type="button" onClick={() => setEditId(null)} className="text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700">{t.plansActions.clear}</button>
-                      </div>
+                      <PlanActionEditor orgId={orgId}
+                        action={{ id: it.sourceId, titre: it.titre, porteur: it.porteur, echeance: it.echeance ? it.echeance.toISOString() : null, priorite: it.priorite, statut: it.statut }}
+                        onSaved={() => { setEditId(null); router.refresh() }}
+                        onCancel={() => setEditId(null)} />
                     </td>
                   </tr>
                 )}

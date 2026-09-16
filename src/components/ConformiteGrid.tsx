@@ -18,6 +18,7 @@ import {
 import { etatDerogation, type DerogationStatut } from '@/lib/derogation'
 import { typeForEntryTag } from '@/lib/conformite-traitement'
 import TraitementPopover, { type ExistingTraitement } from '@/components/TraitementPopover'
+import PlanActionEditor, { type PlanActionEditValue } from '@/components/PlanActionEditor'
 
 interface Props {
   controles: FrameworkControl[]
@@ -86,6 +87,24 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     })))
   }
   useEffect(() => { reloadTraitements() }, [traitementCtx?.orgId, traitementCtx?.referentiel, traitementCtx?.entite]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Plans d'action RÉELS (PlanAction) rattachés à un contrôle de ce référentiel
+  // (lien CONFORMITE) → indexés par ref, pour l'édition en place au niveau du contrôle.
+  const [paByRef, setPaByRef] = useState<Map<string, PlanActionEditValue>>(new Map())
+  const [editingRef, setEditingRef] = useState<string | null>(null)
+  async function reloadPlanActions() {
+    if (!traitementCtx) return
+    const res = await fetch(`/api/organizations/${traitementCtx.orgId}/plans-actions?type=CONFORMITE&targetId=${encodeURIComponent(traitementCtx.referentiel)}`)
+      .then(r => r.ok ? r.json() : null).catch(() => null)
+    const plans: Array<{ id: string; titre: string; porteur: string | null; echeance: string | null; priorite: string; statut: string; liens?: { type: string; targetId: string; ref?: string | null }[] }> = Array.isArray(res?.plans) ? res.plans : []
+    const m = new Map<string, PlanActionEditValue>()
+    for (const p of plans) {
+      const lien = (p.liens ?? []).find(l => l.type === 'CONFORMITE' && l.targetId === traitementCtx.referentiel && l.ref)
+      if (lien?.ref && !m.has(lien.ref)) m.set(lien.ref, { id: p.id, titre: p.titre, porteur: p.porteur, echeance: p.echeance, priorite: p.priorite, statut: p.statut })
+    }
+    setPaByRef(m)
+  }
+  useEffect(() => { reloadPlanActions() }, [traitementCtx?.orgId, traitementCtx?.referentiel]) // eslint-disable-line react-hooks/exhaustive-deps
   const sLabels = t.conformite.statuts as Record<string, string>
   const d = t.derogations
 
@@ -308,6 +327,13 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                       </button>
                     )
                   })}
+                  {/* Modifier le plan d'action rattaché à ce contrôle (édition en place). */}
+                  {entry?.traitement === 'plan_action' && !readOnly && paByRef.has(c.ref) && (
+                    <button type="button" onClick={() => setEditingRef(editingRef === c.ref ? null : c.ref)}
+                      className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-ebios-300 text-ebios-700 hover:bg-ebios-50 dark:text-ebios-300 dark:border-ebios-500/50 dark:hover:bg-ebios-500/10">
+                      ✎ {t.conformite.editerAction}
+                    </button>
+                  )}
                   {/* Clore l'action : le contrôle passe conforme (l'écart est résolu). */}
                   {entry?.traitement === 'plan_action' && !readOnly && (
                     <button type="button" onClick={() => setStatut(c.ref, 'conforme')}
@@ -318,12 +344,18 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                   )}
                 </div>
               )}
+              {/* Éditeur en place du plan d'action rattaché à ce contrôle */}
+              {traitementCtx && editingRef === c.ref && paByRef.get(c.ref) && (
+                <PlanActionEditor orgId={traitementCtx.orgId} action={paByRef.get(c.ref)!}
+                  onSaved={() => { setEditingRef(null); reloadPlanActions(); onTraitementsChanged?.() }}
+                  onCancel={() => setEditingRef(null)} />
+              )}
               {/* Popover de création / rattachement d'un traitement réel */}
               {traitementCtx && popover?.ref === c.ref && (
                 <TraitementPopover
                   orgId={traitementCtx.orgId} referentiel={traitementCtx.referentiel} entite={traitementCtx.entite}
                   controlRef={c.ref} controlNom={c.nom} type={popover.type} existing={traitements}
-                  onApplied={(tag) => { forceTraitement(c.ref, tag); setPopover(null); reloadTraitements(); onTraitementsChanged?.() }}
+                  onApplied={(tag) => { forceTraitement(c.ref, tag); setPopover(null); reloadTraitements(); reloadPlanActions(); onTraitementsChanged?.() }}
                   onClose={() => setPopover(null)}
                 />
               )}
