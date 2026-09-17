@@ -1,13 +1,32 @@
 'use client'
 
-// Popover de traitement RÉEL d'un écart de conformité (plan d'action, dérogation,
-// acceptation de risque) au niveau du socle d'organisation.
+// ─── Popover de traitement d'un écart de conformité (socle d'organisation) ────
 //
-// Un seul flux : on recherche en autocomplétion un traitement EXISTANT du même
-// type (plan d'action / dérogation) ; le sélectionner préremplit les champs et
-// bascule le bouton « Créer » en « Mettre à jour » (le libellé d'un traitement
-// existant n'est PAS modifiable ici). Sans sélection, on crée un traitement neuf
-// couvrant l'exigence. Un traitement peut couvrir plusieurs exigences (`refs`).
+// Trois TYPES de traitement, chacun avec un comportement et des champs propres —
+// le placeholder de recherche et les libellés s'adaptent au type (cf. #3) :
+//
+// • PLAN_ACTION — plan d'action à mener. Le champ de recherche/intitulé propose
+//   en autocomplétion :
+//     – les ACTIONS réelles existantes (PlanAction) → « Rattacher » : ajoute un
+//       lien CONFORMITE à l'action (PATCH plans-actions, addLien) ;
+//     – les actions PROMOTABLES (mesures d'analyse, incidents — pas encore des
+//       PlanAction) → « Promouvoir » : crée un PlanAction reprenant leurs champs,
+//       porteur de 2 liens (CONFORMITE + le lien d'ORIGINE ANALYSE/INCIDENT) ;
+//     – sinon, saisir un intitulé → « Créer » un VRAI PlanAction (porteur +
+//       priorité) porteur d'un lien CONFORMITE. (POST plans-actions.)
+//
+// • DEROGATION — crée une dérogation FORMELLE (motif + mesures compensatoires +
+//   durée) qui suit le workflow d'avis RSSI dans le registre /derogations
+//   (POST /api/derogations, portée CONTROLE). Pas de recherche d'existant.
+//
+// • ACCEPTATION_RISQUE — crée/met à jour un ConformiteTraitement (justification +
+//   niveau de risque maintenu). L'autocomplétion propose les acceptations
+//   existantes ; en sélectionner une préremplit + verrouille le libellé et
+//   bascule « Créer » → « Mettre à jour » (+ rattache l'exigence via addRef).
+//   Un ConformiteTraitement couvre plusieurs exigences (`refs`).
+//
+// Règle commune : le libellé d'un ÉLÉMENT EXISTANT sélectionné (traitement,
+// action à rattacher, action à promouvoir) n'est PAS modifiable ici.
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
@@ -189,6 +208,10 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
     setError(null)
   }
 
+  // Aiguillage selon l'état sélectionné puis le type (ordre important) :
+  // rattachement d'action → promotion → dérogation formelle → création d'un
+  // PlanAction (plan d'action) → mise à jour d'un traitement existant →
+  // création d'un ConformiteTraitement (acceptation neuve).
   async function submit() {
     if (isLinkAction) {
       // Rattache une action réelle au contrôle : ajoute un lien CONFORMITE (pas de

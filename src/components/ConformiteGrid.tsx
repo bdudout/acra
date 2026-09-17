@@ -1,5 +1,21 @@
 'use client'
 
+// ─── Grille d'évaluation de conformité (contrôle par contrôle) ────────────────
+//
+// Pour chaque contrôle d'un référentiel : choix du statut (conforme / partiel /
+// non conforme / n/a), commentaire, et — sur un écart — un TRAITEMENT (plan
+// d'action / dérogation / acceptation), géré via TraitementPopover.
+//
+// Deux contextes optionnels changent le comportement des écarts :
+//   • traitementCtx (socle org) : ouvre le popover pour créer/rattacher/promouvoir
+//     un vrai traitement ; la grille charge alors les PlanAction rattachés au
+//     contrôle (lien CONFORMITE) pour permettre l'ÉDITION EN PLACE (PlanActionEditor)
+//     et le bouton « Clore l'action » (passe le contrôle conforme) ;
+//   • derogationCtx (analyse) : demande rapide de dérogation sur une non-conformité.
+//
+// Deep-link : `?ctrl=<ref>` (ex. « Modifier » depuis /actions) → défilement +
+// surlignage temporaire du contrôle visé.
+
 import { IdCard } from 'lucide-react'
 import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
