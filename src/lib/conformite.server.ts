@@ -23,6 +23,7 @@ export interface ConformiteContext {
   orgConformiteId: string | null
 }
 
+/** Résout le contexte de conformité d'une entité (entrées propres + héritage éventuel du socle) pour l'affichage/statistiques. */
 export async function getConformiteContext(params: {
   organizationId: string | null | undefined
   referentielMesures: string | null | undefined

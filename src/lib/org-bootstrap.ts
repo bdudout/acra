@@ -9,6 +9,7 @@
 
 import { prisma } from '@/lib/prisma'
 
+/** Amorçage : garantit qu'au moins un compte SUPER_ADMIN existe (no-op si déjà présent). */
 export async function ensureSuperAdmin(): Promise<void> {
   try {
     const existing = await prisma.user.count({ where: { role: 'SUPER_ADMIN' } })

@@ -28,6 +28,7 @@ interface OrgConfigLike {
   appetitRisque: unknown
 }
 
+/** Collecte et consolide la donnée GRC d'une organisation (risques, incidents, contrôles, audit) pour cockpit et packs comité. */
 export async function gatherGrcConsolide(
   orgId: string,
   cfg: OrgConfigLike,

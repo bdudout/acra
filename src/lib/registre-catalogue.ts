@@ -13,6 +13,7 @@ export interface RiskItemSeed {
   proprietaire: string // fonction responsable (générique, à préciser)
 }
 
+/** Socle de risques par défaut (registre GRC) : semences typées par taxonomie (catégories bâloises), pour amorcer une organisation. */
 export function buildRegistreDefaut(): RiskItemSeed[] {
   return [
     // BALE_1 — Fraude interne

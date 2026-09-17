@@ -36,6 +36,7 @@ export interface IncidentTotals {
   perteNette: number // € cumulés, net des récupérations (hors REJETE)
 }
 
+/** Consolide les incidents (M2) : total/ouverts + perte nette €, en excluant les REJETE (faux positifs). */
 export function rollupIncidents(rows: CockpitIncident[]): IncidentTotals {
   const t: IncidentTotals = { total: 0, ouverts: 0, perteNette: 0 }
   for (const i of rows) {
@@ -48,6 +49,7 @@ export function rollupIncidents(rows: CockpitIncident[]): IncidentTotals {
   return t
 }
 
+/** Idem rollupIncidents, mais ventilé par organisation (clé = organizationId). */
 export function incidentsByOrg(rows: CockpitIncident[]): Map<string, IncidentTotals> {
   const out = new Map<string, IncidentTotals>()
   for (const [org, arr] of groupByOrg(rows)) out.set(org, rollupIncidents(arr))
@@ -76,6 +78,7 @@ export interface ControleTotals {
   tauxConformite: number | null // % ; null si aucune exécution évaluable
 }
 
+/** Consolide le contrôle permanent (M3) : contrôles actifs + taux de conformité (même calcul qu'un contrôle isolé). */
 export function rollupControles(controles: CockpitControle[], execs: CockpitExecution[]): ControleTotals {
   const eff = evaluerEfficacite(execs) // même calcul que l'efficacité d'un contrôle isolé
   return {
@@ -97,6 +100,7 @@ export function rollupControlesParNiveau(controles: CockpitControle[], execs: Co
   return { N1: rollupControles(n1.c, n1.e), N2: rollupControles(n2.c, n2.e) }
 }
 
+/** Idem rollupControles, mais ventilé par organisation. */
 export function controlesByOrg(controles: CockpitControle[], execs: CockpitExecution[]): Map<string, ControleTotals> {
   const cg = groupByOrg(controles)
   const eg = groupByOrg(execs)
@@ -121,6 +125,7 @@ export interface AuditTotals {
   tauxResolution: number // % de constats terminés
 }
 
+/** Consolide l'audit interne (M4) : missions + constats, critiques, recommandations en retard, taux de résolution. */
 export function rollupAudit(missions: { organizationId: string }[], constats: CockpitConstat[], now: Date): AuditTotals {
   const s = synthetiserConstats(constats, now)
   return {
@@ -132,6 +137,7 @@ export function rollupAudit(missions: { organizationId: string }[], constats: Co
   }
 }
 
+/** Idem rollupAudit, mais ventilé par organisation. */
 export function auditByOrg(missions: { organizationId: string }[], constats: CockpitConstat[], now: Date): Map<string, AuditTotals> {
   const mg = groupByOrg(missions)
   const cg = groupByOrg(constats)

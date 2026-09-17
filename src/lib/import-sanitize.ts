@@ -39,6 +39,7 @@ export function clampInt(v: unknown, min: number, max: number, def?: number): nu
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/** Assainit le cadrage importé (atelier 1) : troncature des textes, allowlist de la taille, cap des tableaux. */
 export function cleanCadrage(obj: any): any {
   if (!obj) return obj
   const capJson = (a: unknown) => (Array.isArray(a) ? a.slice(0, IMPORT_MAX_ITEMS) : undefined)
@@ -61,6 +62,7 @@ const CATEGORIES_SOURCE = [
   'EMPLOYE_MALVEILLANT', 'PRESTATAIRE', 'AMATEUR', 'TERRORISTE', 'AUTRE',
 ]
 
+/** Assainit une source de risque importée : allowlist de catégorie (défaut AUTRE), scores clampés 1-4, textes tronqués. */
 export function cleanSourceRisque(obj: any): any {
   return {
     nom:            String(obj.nom        ?? '').slice(0, 255),
@@ -84,6 +86,7 @@ export function cleanSourceRisque(obj: any): any {
   }
 }
 
+/** Assainit une partie prenante importée : 4 sous-critères clampés 1-4, exposition/fiabilité recalculées (méthode Club EBIOS). */
 export function cleanPartiePrenante(obj: any): any {
   // Méthode Club EBIOS : 4 sous-critères 1-4 → exposition = dép×pén · fiabilité = mat×conf.
   const dependance  = clampInt(obj.dependance, 1, 4, 2) as number
@@ -100,6 +103,7 @@ export function cleanPartiePrenante(obj: any): any {
   }
 }
 
+/** Assainit un scénario stratégique importé (atelier 3) : cotations clampées, textes tronqués, mesures écosystème cappées. */
 export function cleanScenarioStrat(obj: any): any {
   return {
     nom:                  String(obj.nom             ?? '').slice(0, 255),
@@ -115,6 +119,7 @@ export function cleanScenarioStrat(obj: any): any {
   }
 }
 
+/** Assainit un scénario opérationnel importé (atelier 4) : cotations clampées, chemins/actions de menace cappés. */
 export function cleanScenarioOp(obj: any): any {
   return {
     nom:            String(obj.nom         ?? '').slice(0, 255),
@@ -126,6 +131,7 @@ export function cleanScenarioOp(obj: any): any {
   }
 }
 
+/** Assainit un risque importé (atelier 5) : gravité/vraisemblance/niveaux clampés dans leur plage EBIOS, textes tronqués. */
 export function cleanRisque(obj: any): any {
   return {
     nom:            String(obj.nom         ?? '').slice(0, 255),
@@ -139,6 +145,7 @@ export function cleanRisque(obj: any): any {
   }
 }
 
+/** Assainit une mesure de traitement importée : priorité/efficacité clampées, statut/responsable/échéance normalisés. */
 export function cleanMesure(obj: any): any {
   return {
     nom:         String(obj.nom       ?? '').slice(0, 255),

@@ -44,6 +44,7 @@ export interface RiskAppetitLite {
   niveauResiduel: number | null
 }
 
+/** Vrai si le risque résiduel dépasse le seuil d'appétit applicable (par taxonomie, sinon global). */
 export function estHorsAppetit(r: RiskAppetitLite, cfg: AppetitConfig): boolean {
   return evaluerAppetit(r.niveauResiduel, seuilApplicable(cfg, r.taxonomieCode)) === 'HORS'
 }
@@ -56,6 +57,7 @@ export interface AppetitSynthese {
   sansSeuil: number // non évaluables (pas de seuil ou non cotés)
 }
 
+/** Synthèse de l'appétit : total, évalués, hors/dans appétit, et risques sans seuil applicable. */
 export function synthetiserAppetit(risks: RiskAppetitLite[], cfg: AppetitConfig): AppetitSynthese {
   const s: AppetitSynthese = { total: risks.length, evalues: 0, horsAppetit: 0, dansAppetit: 0, sansSeuil: 0 }
   for (const r of risks) {

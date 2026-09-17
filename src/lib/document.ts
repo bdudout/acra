@@ -32,6 +32,7 @@ export const ALLOWED_DOCUMENT_MIME = new Set<string>([
   'image/jpeg',
 ])
 
+/** Vrai si le type MIME est dans l'allowlist des documents téléversables (ALLOWED_DOCUMENT_MIME). */
 export function mimeAutorise(mime: unknown): boolean {
   return typeof mime === 'string' && ALLOWED_DOCUMENT_MIME.has(mime)
 }
@@ -98,6 +99,7 @@ function parseDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/** Normalise les métadonnées d'un document (type/portée dans l'allowlist avec défauts AUTRE/ORG, textes trim). */
 export function cleanDocumentMeta(body: Record<string, unknown>): CleanDocumentMeta {
   const type: DocumentType = (DOCUMENT_TYPES as readonly string[]).includes(body.type as string) ? (body.type as DocumentType) : 'AUTRE'
   const portee: DocumentPortee = (DOCUMENT_PORTEES as readonly string[]).includes(body.portee as string) ? (body.portee as DocumentPortee) : 'ORG'

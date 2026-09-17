@@ -135,6 +135,7 @@ export function isPrivateIp(ip: string): boolean {
   return false
 }
 
+/** Valide qu'une URL de webhook est sûre (schéma https, pas d'adresse interne/loopback) — anti-SSRF. */
 export function isSafeWebhookUrl(raw: unknown): boolean {
   if (typeof raw !== 'string' || raw.trim() === '') return false
   let u: URL

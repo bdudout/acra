@@ -45,6 +45,7 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   DEROGATION_EXPIRED: 'GOUVERNANCE',
 }
 
+/** Catégorie SIEM d'une action d'audit (défaut CONFIGURATION si non mappée). */
 export function categoryForAction(action: AuditAction): SiemCategory {
   return CATEGORY[action] ?? 'CONFIGURATION'
 }
@@ -85,6 +86,7 @@ const WARN_ACTIONS = new Set<AuditAction>([
   'ACCESS_REVOKED', 'ANALYSE_DELETED', 'ANALYSE_PURGED', 'DEROGATION_REJECTED', 'DEROGATION_REVOKED',
   'MFA_AUTO_DISABLED', 'DEMO_MODE_REFUSED',
 ])
+/** Sévérité SIEM d'une action d'audit : « warning » pour les actions sensibles, « info » sinon. */
 export function severityForAction(action: AuditAction): SiemSeverity {
   return WARN_ACTIONS.has(action) ? 'warning' : 'info'
 }

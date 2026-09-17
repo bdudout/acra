@@ -16,6 +16,7 @@ export interface ActionDelaisMois { CRITIQUE: number; MAJEUR: number; MODERE: nu
 /** Délais par défaut (mois) : critique = 6 mois, majeur = 1 an, modéré = 2 ans. */
 export const DEFAULT_ACTION_DELAIS_MOIS: ActionDelaisMois = { CRITIQUE: 6, MAJEUR: 12, MODERE: 24 }
 
+/** Valide une priorité d'action (CRITIQUE/MAJEUR/MODERE) ; retombe sur MAJEUR si inconnue. */
 export function cleanPriorite(v: unknown): ActionPriorite {
   return ACTION_PRIORITES.includes(v as ActionPriorite) ? (v as ActionPriorite) : 'MAJEUR'
 }
@@ -86,6 +87,7 @@ export function validateRiskActionInput(body: RiskActionInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'une action de traitement d'un RiskItem (intitulé/responsable trim, statut typé, échéance). */
 export function cleanRiskActionInput(body: RiskActionInput): CleanRiskAction {
   const s = body.statut as RiskActionStatut
   return {
@@ -122,6 +124,7 @@ export interface ActionsSummary {
   tauxAvancement: number // pourcentage entier de FAIT sur le total (0 si aucune action)
 }
 
+/** Synthèse d'un lot d'actions : total, faits/en cours/à faire/en retard (statut effectif à `now`) et taux d'avancement. */
 export function summarizeActions(actions: ActionLike[], now: Date): ActionsSummary {
   const s: ActionsSummary = { total: actions.length, faits: 0, enCours: 0, aFaire: 0, enRetard: 0, tauxAvancement: 0 }
   for (const a of actions) {

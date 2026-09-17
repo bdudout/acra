@@ -117,6 +117,7 @@ export function eeiAuthorityKeys(secteur?: string | null): [string, string] {
   return ['eeiRegister', 'eeiIncident']
 }
 
+/** Liste les obligations réglementaires applicables selon le statut (OIV/OSE…) et le secteur de l'organisation. */
 export function regulatoryObligations(statut?: string | null, secteur?: string | null): string[] {
   switch (statut) {
     case 'OIV':

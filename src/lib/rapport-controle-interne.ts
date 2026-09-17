@@ -34,6 +34,7 @@ const LIGNE_DE: Record<string, LigneDefense> = {
 }
 const ORDRE_LIGNES: LigneDefense[] = ['1', '2', '3', 'TIC']
 
+/** Assemble le rapport annuel de contrôle interne à partir de la donnée consolidée ; fusionne 1ʳᵉ/2ᵉ lignes en mode « ligne unique ». */
 export function buildRapportControleInterne(consolide: ComiteConsolide, modules: ComiteModules, opts: { secondeLigneActive?: boolean } = {}): RapportControleInterne {
   // Mode « ligne unique » (org non régulée, 2ᵉ ligne désactivée) : 1ʳᵉ et 2ᵉ lignes
   // fusionnées, et la segmentation N1/N2 (attendu de 2ᵉ ligne) est omise.

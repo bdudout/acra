@@ -70,6 +70,7 @@ export function cleanScopes(v: unknown): ApiScope[] {
   return out.length ? out : ['read']
 }
 
+/** Vrai si la liste de scopes d'une clé d'API contient le scope requis. */
 export function hasScope(scopes: string[] | null | undefined, needed: ApiScope): boolean {
   return Array.isArray(scopes) && scopes.includes(needed)
 }

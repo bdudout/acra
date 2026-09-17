@@ -11,6 +11,7 @@
  */
 const REDACTED = '[REDACTED]'
 
+/** Masque les champs sensibles d'un objet (secrets, tokens) avant journalisation d'audit ; renvoie une copie. */
 export function redactSecrets<T extends Record<string, unknown>>(
   obj: T,
   keys: readonly (keyof T)[]

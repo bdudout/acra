@@ -53,6 +53,7 @@ function ordrePourType(type: ComiteType): readonly string[] {
   return ORDRE_BASE
 }
 
+/** Assemble le dossier de comité (sections + métriques) à partir de la donnée consolidée et des modules actifs. */
 export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteModules): ComitePack {
   const sectionsById = new Map<string, ComiteSection>()
 

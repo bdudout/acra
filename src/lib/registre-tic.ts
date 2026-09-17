@@ -147,6 +147,7 @@ export interface RegistreCompletude {
   taux: number
 }
 
+/** Complétude du registre TIC : proportion d'arrangements sans champ manquant (validerArrangement) → total/complets/taux. */
 export function evaluerCompletude(arrangements: ArrangementTic[]): RegistreCompletude {
   const total = arrangements.length
   const complets = arrangements.filter(a => validerArrangement(a).length === 0).length

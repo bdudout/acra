@@ -22,6 +22,7 @@ export const SOURCE_NIVEAU: Record<ConstatSource, NiveauControle> = {
   REGULATEUR: 'N4',          // contrôle externe — autorité de contrôle
   AUDITEUR_EXTERNE: 'N4',    // contrôle externe — audit tiers / commissaire aux comptes
 }
+/** Niveau de contrôle d'une source de constat : N3 (audit interne) ou N4 (régulateur / auditeur externe). */
 export function niveauControle(source: string): NiveauControle {
   return SOURCE_NIVEAU[source as ConstatSource] ?? 'N3'
 }
@@ -87,6 +88,7 @@ function parseDate(v: unknown): Date | null {
 const txt = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() ? v.trim() : null
 
+/** Valide l'entrée d'une mission d'audit (intitulé requis en création, dates cohérentes) → code d'erreur ou null. */
 export function validateMissionInput(body: MissionInput, opts: { partial?: boolean } = {}): string | null {
   // Sur une mise à jour PARTIELLE, on ne valide que les champs présents :
   // l'intitulé n'est requis qu'à la création (ou s'il est fourni).
@@ -103,6 +105,7 @@ export function validateMissionInput(body: MissionInput, opts: { partial?: boole
   return null
 }
 
+/** Normalise l'entrée d'une mission validée (trim des textes, parse des dates, nettoyage du programme). */
 export function cleanMissionInput(body: MissionInput): CleanMission {
   return {
     intitule: String(body.intitule).trim(),
@@ -185,6 +188,7 @@ export interface CleanConstat {
   exigenceRef: string | null
 }
 
+/** Valide l'entrée d'un constat (intitulé, criticité 1-4, source/statut/échéance) → code d'erreur ou null. */
 export function validateConstatInput(body: ConstatInput, opts: { partial?: boolean } = {}): string | null {
   const intitulePresent = 'intitule' in body
   if (!opts.partial || intitulePresent) {
@@ -200,6 +204,7 @@ export function validateConstatInput(body: ConstatInput, opts: { partial?: boole
   return null
 }
 
+/** Normalise l'entrée d'un constat validé (trim, source/statut typés, criticité en nombre ou null). */
 export function cleanConstatInput(body: ConstatInput): CleanConstat {
   const src = body.source as ConstatSource
   const st = body.statut as ConstatStatut
@@ -277,6 +282,7 @@ export interface ConstatsSynthese {
   tauxResolution: number // % de constats terminés
 }
 
+/** Synthèse d'une liste de constats : total, ouverts/résolus, en retard, critiques, taux de résolution. */
 export function synthetiserConstats(constats: ConstatLite[], now: Date = new Date()): ConstatsSynthese {
   const s: ConstatsSynthese = { total: constats.length, ouverts: 0, resolus: 0, enRetard: 0, critiques: 0, tauxResolution: 0 }
   for (const c of constats) {

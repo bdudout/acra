@@ -207,6 +207,7 @@ export function resolveEffectiveConformite(params: {
   return { entries: [], inherited: false, sourceAnalyseId: null, sourceAnalyseNom: null }
 }
 
+/** Statistiques de conformité : répartition des statuts + couverture des écarts (dérogation/acceptation/plan d'action) pour les cadrans. */
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0, deroge = 0
   // Couverture des écarts (mutuellement exclusive) — alimente les cadrans du dashboard.

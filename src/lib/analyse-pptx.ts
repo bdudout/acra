@@ -293,6 +293,7 @@ function drawMatrix(
   return { w: nCols * cell, h: nRows * cell }
 }
 
+/** Génère la présentation PowerPoint (.pptx) managériale d'une analyse, localisée, et la renvoie en Buffer. */
 export async function renderAnalysePptx(analyse: Any, config: Any | null, locale: string, opts?: RenderOpts): Promise<Buffer> {
   const L = strings(locale)
   const dateLocale = locale === 'en' ? 'en-GB' : locale === 'de' ? 'de-DE' : locale === 'es' ? 'es-ES' : locale === 'it' ? 'it-IT' : 'fr-FR'

@@ -45,6 +45,7 @@ export const DEFAULT_SEUILS_MATRICE = [
   { scoreMin: 12, scoreMax: 25, label: 'Critique',  couleur: '#ef4444' },
 ]
 
+/** Construit la config d'échelles par défaut (gravité + vraisemblance) pour 4 ou 5 niveaux. */
 export function buildDefaultConfig(nbNiveaux: number) {
   return {
     nbNiveaux,

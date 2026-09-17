@@ -183,6 +183,7 @@ export type SignupOutcome =
       enforceCap: boolean
     }
 
+/** Décide de l'issue d'une inscription : 1er utilisateur = exploitant SUPER_ADMIN (toujours autorisé), sinon selon signupOpen. */
 export function resolveSignupDecision(p: { isFirstUser: boolean; signupOpen: boolean }): SignupOutcome {
   // Amorçage : le tout premier compte de l'instance = l'exploitant (SUPER_ADMIN),
   // e-mail pré-vérifié, rattaché à la racine. Toujours autorisé, même inscription fermée.

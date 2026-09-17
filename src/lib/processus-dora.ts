@@ -14,6 +14,7 @@ export type CriticiteDora = (typeof CRITICITES_DORA)[number]
 /** Durée maximale admise pour un objectif de continuité : 1 an en minutes. */
 export const DUREE_MINUTES_MAX = 525600
 
+/** Valide une criticité DORA d'un processus ; renvoie null si inconnue. */
 export function cleanCriticiteDora(v: unknown): CriticiteDora | null {
   return CRITICITES_DORA.includes(v as CriticiteDora) ? (v as CriticiteDora) : null
 }

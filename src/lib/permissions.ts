@@ -251,6 +251,12 @@ export interface OrgScopeContext {
   isSuperAdmin?: boolean
 }
 
+/**
+ * Clause WHERE Prisma restreignant les analyses visibles par un utilisateur :
+ * exclut la corbeille, applique le périmètre d'organisation, puis ouvre selon le
+ * rôle (admin = tout le périmètre ; lecture globale = propres+partagées+soumises/
+ * approuvées/rejetées ; sinon propres+partagées uniquement).
+ */
 export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgScopeContext) {
   // Les analyses en corbeille (soft delete) sont masquées de toutes les vues
   // courantes — seul le module admin « Récupération » les requête séparément.

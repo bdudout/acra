@@ -821,6 +821,7 @@ const RISK_TIER_STYLE: Record<RiskTier, { label: string; color: string; bg: stri
   faible:   { label: 'Faible',   color: 'text-green-700',  bg: 'bg-green-100' },
 }
 
+/** Libellé et styles (texte/fond) d'un niveau de risque, dérivés du palier du score. */
 export function getNiveauRisqueLabel(score: number): { label: string; color: string; bg: string } {
   return RISK_TIER_STYLE[getRiskTier(score)]
 }

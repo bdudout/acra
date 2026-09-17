@@ -60,6 +60,7 @@ export function mapRisqueToRiskItem(risque: AcraRisqueSource, analyse: AcraAnaly
   }
 }
 
+/** Convertit les risques d'une analyse ACRA (cyber) en RiskItem canoniques publiés dans le registre GRC. */
 export function mapAnalyseRisques(risques: AcraRisqueSource[], analyse: AcraAnalyseSource): PublishedRiskItem[] {
   return risques.map(r => mapRisqueToRiskItem(r, analyse))
 }

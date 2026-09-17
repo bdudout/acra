@@ -60,6 +60,7 @@ export interface KriSynthese {
   enAlerte: number // alerte + critique (nécessitant attention)
 }
 
+/** Synthèse d'un jeu de KRI : répartition par statut (normal/alerte/critique/inconnu) et total en alerte. */
 export function synthetiserKri(kris: KriLite[]): KriSynthese {
   const s: KriSynthese = { total: kris.length, normal: 0, alerte: 0, critique: 0, inconnu: 0, enAlerte: 0 }
   for (const k of kris) {
@@ -139,6 +140,7 @@ export function validateKriInput(body: KriInput, opts: { partial?: boolean } = {
   return null
 }
 
+/** Normalise l'entrée d'un KRI (sens et fréquence typés avec défauts, textes trim, seuils numériques). */
 export function cleanKriInput(body: KriInput): CleanKri {
   const sens = KRI_SENS.includes(body.sens as KriSens) ? (body.sens as KriSens) : 'HAUSSE'
   const frequence = KRI_FREQUENCES.includes(body.frequence as KriFrequence) ? (body.frequence as KriFrequence) : 'MENSUEL'
@@ -178,12 +180,14 @@ function parseDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/** Valide un relevé de KRI (valeur numérique requise, date valide) → code d'erreur ou null. */
 export function validateMesureInput(body: MesureInput): string | null {
   if (num(body.valeur) == null) return 'valeur_requise'
   if (body.dateMesure != null && body.dateMesure !== '' && parseDate(body.dateMesure) == null) return 'date_invalide'
   return null
 }
 
+/** Normalise un relevé de KRI validé (valeur en nombre, date parsée, commentaire trim). */
 export function cleanMesureInput(body: MesureInput): CleanMesure {
   return {
     valeur: num(body.valeur) ?? 0,

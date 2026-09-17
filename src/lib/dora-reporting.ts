@@ -154,6 +154,7 @@ export interface IncidentReporting {
   synthese: DoraReportingSynthese
 }
 
+/** Évalue les obligations de déclaration DORA d'un incident : phases dues, échéances et retards selon seuils et délais réglementaires. */
 export function evaluerReportingIncident(
   rec: IncidentReportingRecord,
   maintenant: Date = new Date(),

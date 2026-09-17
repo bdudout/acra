@@ -188,6 +188,7 @@ export function validateControleInput(body: ControleInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'un contrôle (niveau/périodicité typés, textes trim, checklist nettoyée). */
 export function cleanControleInput(body: ControleInput): CleanControle {
   const niv = body.niveau as ControleNiveau
   const per = body.periodicite as Periodicite
@@ -234,6 +235,7 @@ function parseDate(v: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/** Valide l'entrée d'une exécution de contrôle (résultat connu, date valide, tailles ≥ 0) → code d'erreur ou null. */
 export function validateExecutionInput(body: ExecutionInput): string | null {
   if (!RESULTATS.includes(body.resultat as Resultat)) return 'resultat_invalide'
   if (body.dateRealisation != null && body.dateRealisation !== '' && parseDate(body.dateRealisation) == null) return 'date_invalide'
@@ -252,6 +254,7 @@ export function validateExecutionInput(body: ExecutionInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'une exécution validée (résultat typé, date par défaut = maintenant, tailles arrondies ≥ 0). */
 export function cleanExecutionInput(body: ExecutionInput, now: Date = new Date()): CleanExecution {
   return {
     resultat: body.resultat as Resultat,
