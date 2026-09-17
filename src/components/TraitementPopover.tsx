@@ -117,7 +117,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
     // des PlanAction, plus des ConformiteTraitement). Acceptation : ses traitements.
     const tr = type === 'ACCEPTATION_RISQUE' ? sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6) : []
     const ac = type !== 'PLAN_ACTION' ? [] :
-      actions.filter(a => !dejaLie(a) && (!q || a.titre.toLowerCase().includes(q))).slice(0, 6)
+      actions.filter(a => !dejaLie(a) && (!q || a.titre.toLowerCase().includes(q))).slice(0, 20)
     return { traitements: tr, actions: ac }
   }, [sameType, actions, intitule, isUpdate, isLinkAction, type]) // eslint-disable-line react-hooks/exhaustive-deps
 

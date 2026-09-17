@@ -3597,7 +3597,7 @@ export const it: Translations = {
       actionTag: 'azione', linkActionHint: 'Azione esistente — collegata al controllo (titolo non modificabile qui)',
       motifPh: 'Motivo della deroga', mesuresPh: 'Misure compensative', derogWorkflowHint: 'Crea una richiesta di deroga sottoposta al parere del RSSI (registro delle deroghe).', derogChampsRequis: 'Motivo e misure compensative obbligatori.',
       dureeJours: 'Durata (giorni)', dureeJoursPh: 'Durata in giorni (predef. org se vuoto)',
-      searchPlanAction: 'Cerca un piano d\'azione esistente…', searchAcceptation: 'Cerca un\'accettazione del rischio esistente…', intituleDerog: 'Titolo della deroga', porteur: 'Responsabile',
+      searchPlanAction: 'Cerca un piano d\'azione esistente o scrivine uno nuovo…', searchAcceptation: 'Cerca un\'accettazione del rischio esistente…', intituleDerog: 'Titolo della deroga', porteur: 'Responsabile',
     },
     registreTitre: 'Trattamenti degli scostamenti',
     registreEmpty: 'Nessun trattamento registrato per questo framework.',
