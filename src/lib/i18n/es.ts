@@ -3595,6 +3595,7 @@ export const es: Translations = {
       create: 'Crear', creating: '…', cancel: 'Cancelar', covers: '{n} requisito(s)', error: 'Error. Reintente.',
       searchExisting: 'Buscar un tratamiento existente…', update: 'Actualizar', lockedHint: 'Tratamiento existente — título no editable aquí', newInstead: 'Nuevo',
       actionTag: 'acción', linkActionHint: 'Acción existente — vinculada al control (título no editable aquí)',
+      promote: 'Promover', promoteTag: 'promover', promoteHint: 'Acción reutilizada (medida/incidente) — se creará un plan de acción vinculado al control y a su origen.',
       motifPh: 'Motivo de la excepción', mesuresPh: 'Medidas compensatorias', derogWorkflowHint: 'Crea una solicitud de excepción sometida al dictamen del RSSI (registro de excepciones).', derogChampsRequis: 'Motivo y medidas compensatorias obligatorios.',
       dureeJours: 'Duración (días)', dureeJoursPh: 'Duración en días (predet. org si vacío)',
       searchPlanAction: 'Buscar un plan de acción existente o escribir uno nuevo…', searchAcceptation: 'Buscar una aceptación de riesgo existente…', intituleDerog: 'Título de la excepción', porteur: 'Responsable',

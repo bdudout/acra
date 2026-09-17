@@ -3644,6 +3644,7 @@ export const fr = {
       create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec. Réessayez.',
       searchExisting: 'Rechercher un traitement existant…', update: 'Mettre à jour', lockedHint: 'Traitement existant — libellé non modifiable ici', newInstead: 'Nouveau',
       actionTag: 'action', linkActionHint: 'Action existante — rattachée au contrôle (libellé non modifiable ici)',
+      promote: 'Promouvoir', promoteTag: 'à promouvoir', promoteHint: 'Action reprise (mesure/incident) — un plan d\'action sera créé et rattaché au contrôle et à son origine.',
       motifPh: 'Motif de la dérogation (justification)', mesuresPh: 'Mesures compensatoires', derogWorkflowHint: 'Crée une demande de dérogation soumise à l\'avis du RSSI (registre des dérogations).', derogChampsRequis: 'Motif et mesures compensatoires requis.',
       dureeJours: 'Durée (jours)', dureeJoursPh: 'Durée en jours (défaut org si vide)',
       searchPlanAction: 'Rechercher un plan d\'action existant ou en saisir un nouveau…', searchAcceptation: 'Rechercher une acceptation de risque existante…', intituleDerog: 'Intitulé de la dérogation', porteur: 'Porteur',

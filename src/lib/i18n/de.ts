@@ -3595,6 +3595,7 @@ export const de: Translations = {
       create: 'Erstellen', creating: '…', cancel: 'Abbrechen', covers: '{n} Anforderung(en)', error: 'Fehlgeschlagen. Bitte erneut.',
       searchExisting: 'Bestehende Behandlung suchen…', update: 'Aktualisieren', lockedHint: 'Bestehende Behandlung — Titel hier nicht änderbar', newInstead: 'Neu',
       actionTag: 'Aktion', linkActionHint: 'Bestehende Aktion — mit der Kontrolle verknüpft (Titel hier nicht änderbar)',
+      promote: 'Übernehmen', promoteTag: 'übernehmen', promoteHint: 'Übernommene Aktion (Maßnahme/Vorfall) — ein Aktionsplan wird erstellt und mit der Kontrolle und ihrem Ursprung verknüpft.',
       motifPh: 'Begründung der Ausnahme', mesuresPh: 'Kompensierende Maßnahmen', derogWorkflowHint: 'Erstellt einen Ausnahmeantrag zur Stellungnahme des RSSI (Ausnahmeregister).', derogChampsRequis: 'Begründung und kompensierende Maßnahmen erforderlich.',
       dureeJours: 'Dauer (Tage)', dureeJoursPh: 'Dauer in Tagen (Org-Standard wenn leer)',
       searchPlanAction: 'Bestehenden Aktionsplan suchen oder neuen eingeben…', searchAcceptation: 'Bestehende Risikoakzeptanz suchen…', intituleDerog: 'Titel der Ausnahme', porteur: 'Verantwortlich',

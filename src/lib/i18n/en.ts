@@ -3595,6 +3595,7 @@ export const en: Translations = {
       create: 'Create', creating: '…', cancel: 'Cancel', covers: '{n} requirement(s)', error: 'Failed. Please retry.',
       searchExisting: 'Search an existing treatment…', update: 'Update', lockedHint: 'Existing treatment — title not editable here', newInstead: 'New',
       actionTag: 'action', linkActionHint: 'Existing action — linked to the control (title not editable here)',
+      promote: 'Promote', promoteTag: 'promote', promoteHint: 'Reused action (measure/incident) — an action plan will be created and linked to the control and its origin.',
       motifPh: 'Waiver rationale (justification)', mesuresPh: 'Compensating controls', derogWorkflowHint: 'Creates a waiver request submitted for RSSI review (waiver register).', derogChampsRequis: 'Rationale and compensating controls are required.',
       dureeJours: 'Duration (days)', dureeJoursPh: 'Duration in days (org default if empty)',
       searchPlanAction: 'Search an existing action plan or type a new one…', searchAcceptation: 'Search an existing risk acceptance…', intituleDerog: 'Waiver title', porteur: 'Owner',

@@ -39,6 +39,19 @@ interface PlanActionLite {
   liens?: { type: string; targetId: string; ref?: string | null }[]
 }
 
+// Action « promotable » (mesure d'analyse, incident…) : pas encore un PlanAction.
+// La sélectionner CRÉE un PlanAction (champs repris) rattaché au contrôle + à son origine.
+interface PromotableItem {
+  key: string
+  titre: string
+  porteur: string | null
+  echeance: string | null
+  priorite: string
+  statut: string
+  origine: string
+  originLien: { type: string; targetId: string; ref?: string; label?: string }
+}
+
 export default function TraitementPopover({ orgId, referentiel, entite, controlRef, controlNom, type, existing, onApplied, onClose }: {
   orgId: string
   referentiel: string
@@ -82,6 +95,9 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   // id de l'ACTION réelle (PlanAction) sélectionnée à rattacher (null = aucune).
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null)
   const [actions, setActions] = useState<PlanActionLite[]>([])
+  // Actions promotables (mesures/incidents) + celle sélectionnée pour promotion.
+  const [promotable, setPromotable] = useState<PromotableItem[]>([])
+  const [selectedPromote, setSelectedPromote] = useState<PromotableItem | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +107,8 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   const isDerog = type === 'DEROGATION' // dérogation = workflow FORMEL (avis RSSI)
   const isUpdate = selectedId != null
   const isLinkAction = selectedActionId != null
-  const locked = isUpdate || isLinkAction // libellé verrouillé (existant sélectionné)
+  const isPromote = selectedPromote != null
+  const locked = isUpdate || isLinkAction || isPromote // libellé verrouillé (existant sélectionné)
 
   // Charge les actions réelles (plan d'action unifié) pour le rattachement — seulement
   // pour un traitement de type PLAN_ACTION (une dérogation/acceptation n'est pas une action).
@@ -101,8 +118,11 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
     fetch(plansBase).then(r => r.ok ? r.json() : { plans: [] }).then(d => {
       if (alive) setActions(Array.isArray(d.plans) ? d.plans : [])
     }).catch(() => {})
+    fetch(`/api/organizations/${orgId}/action-items/promotable`).then(r => r.ok ? r.json() : { actions: [] }).then(d => {
+      if (alive) setPromotable(Array.isArray(d.actions) ? d.actions : [])
+    }).catch(() => {})
     return () => { alive = false }
-  }, [type, plansBase])
+  }, [type, plansBase, orgId])
 
   // Une action déjà rattachée à CE contrôle (lien CONFORMITE ref=controlRef) est exclue.
   const dejaLie = (a: PlanActionLite) =>
@@ -111,17 +131,19 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   // Suggestions : traitements de conformité existants (même type) + actions réelles
   // (pour PLAN_ACTION), filtrées par le texte saisi.
   const suggestions = useMemo(() => {
-    if (isUpdate || isLinkAction || isDerog) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[] }
+    if (isUpdate || isLinkAction || isPromote || isDerog) return { traitements: [] as ExistingTraitement[], actions: [] as PlanActionLite[], promotable: [] as PromotableItem[] }
     const q = intitule.trim().toLowerCase()
     // Plan d'action : on ne suggère QUE des actions réelles (les nouveaux plans sont
     // des PlanAction, plus des ConformiteTraitement). Acceptation : ses traitements.
     const tr = type === 'ACCEPTATION_RISQUE' ? sameType.filter(x => !q || x.intitule.toLowerCase().includes(q)).slice(0, 6) : []
     const ac = type !== 'PLAN_ACTION' ? [] :
       actions.filter(a => !dejaLie(a) && (!q || a.titre.toLowerCase().includes(q))).slice(0, 20)
-    return { traitements: tr, actions: ac }
-  }, [sameType, actions, intitule, isUpdate, isLinkAction, type]) // eslint-disable-line react-hooks/exhaustive-deps
+    const pr = type !== 'PLAN_ACTION' ? [] :
+      promotable.filter(p => !q || p.titre.toLowerCase().includes(q)).slice(0, 20)
+    return { traitements: tr, actions: ac, promotable: pr }
+  }, [sameType, actions, promotable, intitule, isUpdate, isLinkAction, isPromote, type]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasSuggestions = suggestions.traitements.length + suggestions.actions.length > 0
+  const hasSuggestions = suggestions.traitements.length + suggestions.actions.length + suggestions.promotable.length > 0
 
   function selectExisting(x: ExistingTraitement) {
     setSelectedId(x.id); setSelectedActionId(null)
@@ -138,7 +160,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
   // Sélection d'une action réelle : on la RATTACHE (lien CONFORMITE) sans modifier
   // son libellé ; les champs ne sont qu'informatifs.
   function selectAction(a: PlanActionLite) {
-    setSelectedActionId(a.id); setSelectedId(null)
+    setSelectedActionId(a.id); setSelectedId(null); setSelectedPromote(null)
     setIntitule(a.titre)
     setResponsable(a.porteur ?? '')
     setEcheance(a.echeance ? a.echeance.slice(0, 10) : '')
@@ -147,9 +169,21 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
     setError(null)
   }
 
+  // Sélection d'une action promotable : on la reprendra pour CRÉER un PlanAction
+  // rattaché au contrôle + à son origine (mesure/incident inchangés).
+  function selectPromote(p: PromotableItem) {
+    setSelectedPromote(p); setSelectedId(null); setSelectedActionId(null)
+    setIntitule(p.titre)
+    setResponsable(p.porteur ?? '')
+    setEcheance(p.echeance ? p.echeance.slice(0, 10) : '')
+    setPriorite(p.priorite)
+    setOpen(false)
+    setError(null)
+  }
+
   // Repasse en création d'un nouveau traitement (réinitialise les champs).
   function resetToNew() {
-    setSelectedId(null); setSelectedActionId(null)
+    setSelectedId(null); setSelectedActionId(null); setSelectedPromote(null)
     setIntitule('')
     setResponsable(''); setEcheance(''); setDescription(''); setMaintien(false); setNiveau('')
     setError(null)
@@ -180,6 +214,25 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
           portee: 'CONTROLE', referentiel, ref: controlRef,
           intitule: intitule.trim() || defaultTitle, motif: motif.trim(), mesuresCompensatoires: mesures.trim(),
           ...(Number(duree) > 0 ? { dureeJours: Number(duree) } : {}),
+        }),
+      })
+      setBusy(false)
+      if (!res.ok) { setError(u.error); return }
+      onApplied(entryTagForType(type))
+      return
+    }
+    if (isPromote && selectedPromote) {
+      // Promotion : crée un PlanAction reprenant l'action (mesure/incident), rattaché
+      // au contrôle (lien CONFORMITE) ET à son objet d'origine (ANALYSE/INCIDENT).
+      setBusy(true); setError(null)
+      const res = await fetch(plansBase, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titre: intitule.trim() || selectedPromote.titre, porteur: responsable, echeance, priorite, statut: selectedPromote.statut,
+          liens: [
+            { type: 'CONFORMITE', targetId: referentiel, ref: controlRef, label: controlNom },
+            selectedPromote.originLien,
+          ],
         }),
       })
       setBusy(false)
@@ -277,13 +330,22 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
                   </button>
                 </li>
               ))}
+              {suggestions.promotable.map(p => (
+                <li key={`p-${p.key}`}>
+                  <button type="button" onMouseDown={e => { e.preventDefault(); selectPromote(p) }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-ebios-50 dark:hover:bg-ebios-500/10 flex items-center justify-between gap-2">
+                    <span className="truncate text-gray-800 dark:text-gray-100">{p.titre}</span>
+                    <span className="shrink-0 text-[9px] px-1 py-px rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-medium">{u.promoteTag}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
           )}
         </div>
 
         {locked && (
           <div className="flex items-center justify-between text-[11px] text-ebios-700 dark:text-ebios-300">
-            <span className="truncate">{isLinkAction ? u.linkActionHint : u.lockedHint}</span>
+            <span className="truncate">{isPromote ? u.promoteHint : isLinkAction ? u.linkActionHint : u.lockedHint}</span>
             <button type="button" onClick={resetToNew} className="shrink-0 text-gray-500 hover:text-gray-700 underline">{u.newInstead}</button>
           </div>
         )}
@@ -323,7 +385,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
         <div className="flex gap-2 pt-0.5">
           <button type="button" disabled={busy} onClick={submit}
             className="text-xs px-3 py-1 rounded bg-ebios-600 text-white font-medium disabled:opacity-50">
-            {busy ? u.creating : isLinkAction ? u.attachBtn : isUpdate ? u.update : u.create}
+            {busy ? u.creating : isPromote ? u.promote : isLinkAction ? u.attachBtn : isUpdate ? u.update : u.create}
           </button>
           <button type="button" onClick={onClose} className="text-xs px-2.5 py-1 rounded text-gray-500 hover:text-gray-700">{u.cancel}</button>
         </div>
