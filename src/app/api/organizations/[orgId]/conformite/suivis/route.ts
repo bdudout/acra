@@ -16,6 +16,7 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
 
+// GET /api/organizations/[orgId]/conformite/suivis — historique des versions figées du taux de conformité (points de tendance) de l'org.
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)

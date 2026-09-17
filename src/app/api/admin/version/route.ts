@@ -38,6 +38,7 @@ async function fetchLatestRelease(): Promise<{ latest: Latest; reachable: boolea
   }
 }
 
+// GET /api/admin/version — version courante de l'application et disponibilité d'une mise à jour (notify-only).
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

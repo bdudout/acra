@@ -10,6 +10,7 @@ import { emailLayout } from '@/lib/email-html'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 
+// POST /api/admin/smtp-config/test — envoie un e-mail de test via la configuration SMTP (SUPER_ADMIN).
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

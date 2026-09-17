@@ -33,6 +33,7 @@ async function requireSuperAdmin() {
   return { error: null, session }
 }
 
+// GET /api/admin/siem-config — lit la configuration de transfert des journaux vers un SIEM (SUPER_ADMIN).
 export async function GET() {
   const { error } = await requireSuperAdmin()
   if (error) return error
@@ -41,6 +42,7 @@ export async function GET() {
   return NextResponse.json({ ...config, authHeader: decryptSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
 }
 
+// PUT /api/admin/siem-config — met à jour la configuration SIEM (endpoint, format, secret) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
   const { error, session } = await requireSuperAdmin()
   if (error) return error

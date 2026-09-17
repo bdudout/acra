@@ -199,6 +199,7 @@ async function importCSV(raw: string, userId: string) {
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
+// POST /api/import — importe une analyse complète (JSON) pour l'utilisateur connecté ; payload assaini via import-sanitize, limité à 10 imports/h.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

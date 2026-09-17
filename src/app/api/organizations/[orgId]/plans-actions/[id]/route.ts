@@ -31,6 +31,7 @@ async function guard(orgId: string, id: string) {
   return { userId }
 }
 
+// PATCH /api/organizations/[orgId]/plans-actions/[id] — met à jour un plan d'action unifié (champs et/ou liens de rattachement).
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { orgId, id } = await params
   const g = await guard(orgId, id)
@@ -59,6 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ plan: updated })
 }
 
+// DELETE /api/organizations/[orgId]/plans-actions/[id] — supprime un plan d'action unifié.
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { orgId, id } = await params
   const g = await guard(orgId, id)

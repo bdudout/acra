@@ -6,6 +6,7 @@ import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { rateLimit, rateLimitHeaders, LIMIT_SEARCH } from '@/lib/rate-limit'
 
+// GET /api/search — recherche globale (analyses, risques, actions) dans le périmètre de l'utilisateur ; alimente la barre GlobalSearch.
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

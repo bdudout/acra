@@ -12,6 +12,7 @@ import { createRequire } from 'node:module'
 // build standalone (le rendu réel passe par le CJS esbuild chargé au runtime).
 import '@react-pdf/renderer'
 
+// GET /api/export/[id] — exporte une analyse complète (format via ?format, défaut JSON) si l'utilisateur y a accès (canViewAnalyse) ; limité à 20 exports/h.
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

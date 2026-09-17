@@ -21,6 +21,7 @@ function canManage(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
 }
 
+// GET /api/organizations/[orgId]/plans-actions — liste les plans d'action unifiés de l'org (avec leurs liens d'origine).
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   return NextResponse.json({ plans: rows })
 }
 
+// POST /api/organizations/[orgId]/plans-actions — crée un plan d'action unifié, éventuellement rattaché à une origine (lien polymorphe).
 export async function POST(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)

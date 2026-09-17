@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 
+// POST /api/admin/password-policy/confirm — confirme un changement de politique de mot de passe en attente (MFA) — SUPER_ADMIN.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {

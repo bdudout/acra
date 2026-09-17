@@ -82,6 +82,7 @@ async function autoRevertMfaIfExpired(policy: any): Promise<any> {
   return policy
 }
 
+// GET /api/admin/password-policy — lit la politique de mot de passe de l'instance (SUPER_ADMIN).
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(decryptPolicySecrets(policy))
 }
 
+// PUT /api/admin/password-policy — met à jour la politique de mot de passe (peut exiger une confirmation MFA) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
   const { error, session } = await requireAdmin(req)
   if (error) return error

@@ -56,6 +56,7 @@ async function dashboard(cfg: DemoConfig) {
   return { activeOrgs: orgs.length, upcoming: upcoming.slice(0, 50) }
 }
 
+// GET /api/admin/demo-config — lit la configuration du mode démo de l'instance (SUPER_ADMIN).
 export async function GET() {
   const { error } = await requireSuperAdminDemo()
   if (error) return error
@@ -68,6 +69,7 @@ export async function GET() {
   })
 }
 
+// PUT /api/admin/demo-config — met à jour la configuration du mode démo (SUPER_ADMIN).
 export async function PUT(req: NextRequest) {
   const { error, session } = await requireSuperAdminDemo()
   if (error) return error
@@ -89,6 +91,7 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({ ok: true, config: resolved, ...(await dashboard(resolved)) })
 }
 
+// POST /api/admin/demo-config — action « purge » : supprime les organisations de démo expirées (SUPER_ADMIN).
 export async function POST(req: NextRequest) {
   const { error, session } = await requireSuperAdminDemo()
   if (error) return error

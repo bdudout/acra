@@ -22,6 +22,7 @@ const schema = z.object({
   action: z.enum(['verify', 'resend']).default('verify'),
 })
 
+// POST /api/auth/verify-email — vérifie un e-mail via son jeton et active le compte.
 export async function POST(req: NextRequest) {
   if (!(await isDemoInstance())) {
     return NextResponse.json({ error: 'Instance non démo' }, { status: 403 })

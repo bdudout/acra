@@ -9,6 +9,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 // Politique d'activation des modules au niveau instance (SUPER_ADMIN).
 // GET : lecture ; PUT : mise à jour (map { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }).
 
+// GET /api/admin/modules-policy — lit la politique d'instance d'activation des modules (SUPER_ADMIN).
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -20,6 +21,7 @@ export async function GET() {
   return NextResponse.json({ modulesPolicy: sanitizeModulesPolicy(cfg?.modulesPolicy), modules: GOVERNABLE_MODULES, etats: MODULE_POLICIES })
 }
 
+// PUT /api/admin/modules-policy — met à jour la politique d'instance (PER_ORG/FORCE_ON/FORCE_OFF) par module (SUPER_ADMIN).
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

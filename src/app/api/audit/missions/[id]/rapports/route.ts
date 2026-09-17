@@ -37,6 +37,7 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   return { userId, userRole, mission }
 }
 
+// POST /api/audit/missions/[id]/rapports — archive (téléverse) un rapport pour une mission d'audit.
 export async function POST(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
