@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Suivi des constats du régulateur ─────────────────────────────────────────
+//
+// Suivi des constats/recommandations émis par un régulateur ou superviseur :
+// criticité, échéances (échues / sous 30 j / à venir), responsable d'action,
+// statut de résolution. Synthèse (taux de résolution, retards) côté API.
+// Cf. lib/suivi-regulateur et page /reglementaire/suivi-regulateur.
+
 import { Download, CalendarClock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

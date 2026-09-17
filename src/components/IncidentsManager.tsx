@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Gestion des incidents ────────────────────────────────────────────────────
+//
+// Registre des incidents : saisie, taxonomie, transitions de statut gardées
+// (lib/incident), détection de doublons (lib/incident-dedup). Colonnes triables
+// et filtrables « façon tableur » via ColumnMenu (lib/table-sort + table-filter).
+// Un incident peut être promu en plan d'action (cf. TraitementPopover / conformité).
+
 import { Siren, Info, X, Copy } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'

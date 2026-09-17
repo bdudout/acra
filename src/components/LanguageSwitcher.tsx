@@ -1,5 +1,9 @@
 'use client'
 
+// ─── Sélecteur de langue ──────────────────────────────────────────────────────
+// Menu déroulant des 5 locales (fr/en/de/es/it) ; le choix est persisté via le
+// contexte i18n (useTranslation.setLocale). Variante `onDark` pour fond sombre.
+
 import { useState, useRef, useEffect } from 'react'
 import { Globe, ChevronDown, Check } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'

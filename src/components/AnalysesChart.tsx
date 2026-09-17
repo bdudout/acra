@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Vignette d'une analyse (liste /analyses) ─────────────────────────────────
+//
+// Carte récapitulative d'une analyse EBIOS : statut, atelier courant, compteurs
+// (sources de risque, scénarios, risques, mesures) et niveaux de risque
+// inhérent/résiduel via getRiskTier. Cliquable → ouvre l'analyse.
+
 import { CheckCircle2, Landmark, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'

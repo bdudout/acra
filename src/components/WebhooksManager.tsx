@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Gestion des webhooks sortants ────────────────────────────────────────────
+//
+// Configuration des webhooks : URL cible, événements souscrits (WEBHOOK_EVENTS),
+// activation/désactivation, secret de signature (montré une seule fois).
+// Cf. lib/webhook et lib/webhook.server (émission signée).
+
 import { Webhook as WebhookIcon, Copy, Check, Trash2, Power } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

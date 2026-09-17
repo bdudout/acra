@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Registre des arrangements TIC (DORA) ─────────────────────────────────────
+//
+// Registre d'information DORA des prestataires TIC : arrangements contractuels,
+// prestataire, pays, criticité (critique / importante / non critique),
+// questionnaire de qualification (lib/tic-questionnaire) et export réglementaire
+// (registre-tic). Lien avec les tiers (lib/tiers-tic-link).
+
 import { Plus, Download, Trash2, Pencil, AlertTriangle, ShieldAlert, ClipboardCheck, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

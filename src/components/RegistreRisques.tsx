@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Registre des risques (GRC, transverse) ───────────────────────────────────
+//
+// Registre org-wide des risques (page /registre) : niveaux inhérent/résiduel
+// selon l'échelle configurée (lib/risk-scale), taxonomie, actions par risque
+// (RiskActionsPanel). Colonnes triables et filtrables « façon tableur » via
+// ColumnMenu (lib/table-sort + table-filter). Pendant analyse : RisquesClient.
+
 import { AlertTriangle, NotebookText, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

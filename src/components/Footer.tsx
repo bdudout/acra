@@ -1,5 +1,8 @@
 'use client'
 
+// ─── Pied de page global ──────────────────────────────────────────────────────
+// Copyright + liens légaux (mentions, confidentialité). Présent sur toute l'app.
+
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 

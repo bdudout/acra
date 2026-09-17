@@ -1,5 +1,12 @@
 'use client'
 
+// ─── GED : documents & preuves ────────────────────────────────────────────────
+//
+// Gestion documentaire : documents typés (politique, procédure, preuve…) et
+// portés (organisation, référentiel, risque…), créés depuis un modèle
+// (lib/document-templates) ou téléversés. Upload/téléchargement, versions,
+// dates de revue. Cf. lib/document et /api/.../documents.
+
 import { Plus, Trash2, Download, FileText, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

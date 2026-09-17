@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Audit interne : missions & constats ──────────────────────────────────────
+//
+// Gestion des missions d'audit (types, récurrence, périmètre processus/contrôles,
+// programme + résultats de checklist) et de leurs constats (statuts, sources,
+// criticité). Transitions de statut gardées par lib/audit. Synthèse (taux de
+// résolution, retards, critiques) calculée côté API.
+
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'

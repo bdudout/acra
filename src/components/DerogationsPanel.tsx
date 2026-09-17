@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Dérogation : demande & workflow (panneau) ────────────────────────────────
+//
+// Cycle de vie d'une dérogation (écart de conformité assumé temporairement) :
+// demande, avis RSSI, double regard, validation métier, révocation, clôture.
+// Les droits de chaque transition sont décidés par lib/derogation (RBAC : avis
+// RSSI réservé au rôle RSSI, validation métier DIRECTION_METIER/admin, etc.).
+
 import { IdCard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

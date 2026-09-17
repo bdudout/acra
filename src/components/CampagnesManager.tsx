@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Campagnes d'évaluation du risque résiduel ────────────────────────────────
+//
+// Campagnes de cotation du risque résiduel : pour chaque risque, on évalue
+// l'efficacité des contrôles (FORTE/MOYENNE/FAIBLE) → vraisemblance résiduelle
+// suggérée (lib/campagne, suggestResiduel), puis validation/rejet. Avancement
+// (à coter / cotées / validées) et complétude côté API.
+
 import { ClipboardList } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

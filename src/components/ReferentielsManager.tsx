@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Gestion des référentiels de conformité ───────────────────────────────────
+//
+// Référentiels (PSSI, politique, réglementaire, standard, custom) et leurs
+// exigences : import/édition, activation, domaines (lib/referentiel-domaines),
+// couverture (exigences couvertes par des contrôles) et application par analyse.
+// Contenu réglementaire : terminologie officielle EUR-Lex/ISO (cf. CLAUDE.md).
+
 import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck, Power } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

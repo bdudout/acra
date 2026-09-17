@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Recherche globale (navbar) ───────────────────────────────────────────────
+//
+// Champ de recherche transverse (analyses, risques, actions) monté dans la
+// Navbar : debounce, appel /api/search, résultats groupés et navigables au
+// clavier. Niveaux de risque colorés par seuils.
+
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, FolderKanban, AlertTriangle, Shield, CheckCircle2, Loader } from 'lucide-react'

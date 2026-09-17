@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Cartographie des risques ─────────────────────────────────────────────────
+//
+// Vue cartographique transverse des risques : heatmap gravité × vraisemblance
+// (buildHeatmap) et agrégations par dimension (entité, processus, taxonomie…),
+// filtrables (lib/risk-filters) et confrontées à l'appétit au risque
+// (lib/appetit). Couleurs de la matrice configurée (lib/risk-scale).
+
 import { Map as MapIcon, Target } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Gestion des accès à une analyse ──────────────────────────────────────────
+//
+// Partage d'une analyse : liste des utilisateurs habilités et de leur permission
+// (lecture / écriture / approbation), ajout/retrait, et statut d'approbation.
+// Libellés de rôles/permissions issus de lib/permissions. CRUD via /api/analyses/[id]/access.
+
 import { AlertTriangle, CheckCircle2, ClipboardList, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'

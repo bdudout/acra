@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Cartographie des processus ───────────────────────────────────────────────
+//
+// Arbre des processus métier (buildProcessusTree) avec criticité DORA et
+// objectifs de continuité RTO/RPO (lib/processus-dora). Support des scénarios
+// (biens supports, DORA). CRUD via /api/.../processus.
+
 import { FolderTree } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

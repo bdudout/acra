@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Barre de navigation principale ───────────────────────────────────────────
+//
+// Navbar de l'app : construit les groupes de modules affichés selon les modules
+// actifs de l'organisation (buildNav + nav-modules-cache pour éviter le flash),
+// intègre la recherche globale, le sélecteur d'organisation et le rôle courant.
+// Les modules dépendent de la config résolue (lib/navigation).
+
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
