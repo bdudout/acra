@@ -56,6 +56,8 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
   const [busy, setBusy] = useState<string | null>(null)
 
   async function changeStatut(row: ConformiteCardRow, ref: string, statut: ConformiteStatut) {
+    const commentaire = statut === 'na' ? window.prompt(t.conformite.naJustification)?.trim() : undefined
+    if (statut === 'na' && !commentaire) return
     const busyKey = `${row.key}:${ref}`
     setBusy(busyKey)
     // Optimiste : refléter le nouveau statut localement.
@@ -67,7 +69,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
     const url = row.source === 'org'
       ? `/api/organizations/${row.orgId}/conformite`
       : `/api/analyses/${row.analyseId}/conformite`
-    const body = row.source === 'org' ? { referentiel: row.referentiel, ref, statut } : { ref, statut }
+    const body = row.source === 'org' ? { referentiel: row.referentiel, ref, statut, commentaire } : { ref, statut, commentaire }
     try {
       const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) {

@@ -10,8 +10,7 @@ COPY package.json package-lock.json* .npmrc* ./
 COPY prisma ./prisma/
 
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit --no-fund || \
-    npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
+    npm ci --prefer-offline --no-audit --no-fund
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -35,6 +34,12 @@ FROM base AS runner
 RUN apk add --no-cache openssl
 WORKDIR /app
 
+ARG ACRA_VERSION=development
+ARG ACRA_REVISION=unknown
+ENV ACRA_VERSION=$ACRA_VERSION
+ENV ACRA_REVISION=$ACRA_REVISION
+LABEL org.opencontainers.image.version=$ACRA_VERSION
+LABEL org.opencontainers.image.revision=$ACRA_REVISION
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
@@ -48,8 +53,11 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/create-admin.mjs ./scripts/create-admin.mjs
 # Template PDF pré-compilé par esbuild (chargé au runtime par la route d'export)
 COPY --from=builder --chown=nextjs:nodejs /app/.pdf-runtime ./.pdf-runtime
+
+RUN mkdir -p /app/.data/documents && chown -R nextjs:nodejs /app/.data
 
 USER nextjs
 

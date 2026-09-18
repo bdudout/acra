@@ -27,14 +27,22 @@ export const DEMO_EXAMPLE_NAME = 'CHU Métropole — Exemple guidé'
  */
 export async function createExampleAnalyse(
   userId: string,
-  organizationId?: string | null,
+  organizationId: string,
+  maxAnalyses = 50,
 ): Promise<{ id: string; nom: string; alreadyExisted: boolean }> {
+  if (!organizationId) throw new Error('ORGANIZATION_REQUIRED')
+  return prisma.$transaction(async tx => {
+  // Verrou transactionnel des chargements concurrents de cet exemple.
+  await tx.$queryRaw`SELECT id FROM "Organization" WHERE id = ${organizationId} FOR UPDATE`
   // Anti-doublon : un seul exemple par organisation (le testeur peut relancer sans risque).
-  const existing = await prisma.analyse.findFirst({
-    where: { organizationId: organizationId ?? undefined, nom: DEMO_EXAMPLE_NAME },
+  const existing = await tx.analyse.findFirst({
+    where: { organizationId: organizationId ?? undefined, nom: DEMO_EXAMPLE_NAME, deletedAt: null },
     select: { id: true, nom: true },
   })
   if (existing) return { ...existing, alreadyExisted: true }
+
+  const count = await tx.analyse.count({ where: { organizationId } })
+  if (count >= maxAnalyses) throw new Error('DEMO_ANALYSIS_LIMIT')
 
   // Références internes (valeurs métier, biens supports, événements redoutés, etc.).
   const VM_DOSSIER = id(), VM_PHARMACIE = id(), VM_URGENCES = id()
@@ -46,7 +54,7 @@ export async function createExampleAnalyse(
   const SO_PHISHING = id(), SO_VULN_VPN = id()
   const R_RANSOMWARE = id(), R_FUITE_DATA = id()
 
-  const analyse = await prisma.analyse.create({
+  const analyse = await tx.analyse.create({
     data: {
       userId,
       organizationId: organizationId ?? undefined,
@@ -63,7 +71,7 @@ export async function createExampleAnalyse(
   })
 
   // ── Atelier 1 — Cadrage ────────────────────────────────────────────────────
-  await prisma.cadrage.create({
+  await tx.cadrage.create({
     data: {
       analyseId: analyse.id,
       perimetre:
@@ -147,7 +155,7 @@ export async function createExampleAnalyse(
   })
 
   // ── Atelier 2 — Sources de risque ──────────────────────────────────────────
-  await prisma.sourceRisque.createMany({
+  await tx.sourceRisque.createMany({
     data: [
       {
         id: SR_CYBER, analyseId: analyse.id, nom: 'Cybercriminel / Ransomware-as-a-Service',
@@ -174,7 +182,7 @@ export async function createExampleAnalyse(
   })
 
   // ── Atelier 3 — Parties prenantes + scénarios stratégiques ──────────────────
-  await prisma.partiePrenante.createMany({
+  await tx.partiePrenante.createMany({
     data: [
       {
         id: PP_BIOMEDICAL, analyseId: analyse.id, nom: 'Prestataire de maintenance biomédicale', type: 'PRESTATAIRE',
@@ -189,7 +197,7 @@ export async function createExampleAnalyse(
     ],
   })
 
-  await prisma.scenarioStrategique.createMany({
+  await tx.scenarioStrategique.createMany({
     data: [
       {
         id: SS_RANSOMWARE, analyseId: analyse.id, nom: 'Ransomware via prestataire compromis',
@@ -231,7 +239,7 @@ export async function createExampleAnalyse(
   })
 
   // ── Atelier 4 — Scénarios opérationnels ─────────────────────────────────────
-  await prisma.scenarioOperationnel.createMany({
+  await tx.scenarioOperationnel.createMany({
     data: [
       {
         id: SO_PHISHING, analyseId: analyse.id, nom: 'Phishing prestataire → mouvement latéral',
@@ -260,7 +268,7 @@ export async function createExampleAnalyse(
   })
 
   // ── Atelier 5 — Risques et mesures ──────────────────────────────────────────
-  await prisma.risque.createMany({
+  await tx.risque.createMany({
     data: [
       {
         id: R_RANSOMWARE, analyseId: analyse.id, nom: 'Indisponibilité totale du SIS par ransomware',
@@ -299,7 +307,7 @@ export async function createExampleAnalyse(
     ],
   })
 
-  await prisma.mesure.createMany({
+  await tx.mesure.createMany({
     data: [
       {
         id: id(), analyseId: analyse.id, risqueId: R_RANSOMWARE, nom: 'Déploiement MFA sur tous les accès VPN',
@@ -325,4 +333,5 @@ export async function createExampleAnalyse(
   })
 
   return { id: analyse.id, nom: analyse.nom, alreadyExisted: false }
+  }, { timeout: 30000 })
 }

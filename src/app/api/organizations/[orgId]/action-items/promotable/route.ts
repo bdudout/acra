@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Actions « promotables » vers le plan d'action unifié (mesures d'analyse,
  * incidents…) — candidates au rattachement d'un contrôle de conformité. Lecture
@@ -22,8 +23,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
   const cfg = await getOrgConfig(orgId)

@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Plans d'action UNIFIÉS d'une organisation.
  *  GET  ?type=&targetId=&statut= — liste (filtrable par lien source / statut).
@@ -29,8 +30,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
   const sp = new URL(req.url).searchParams

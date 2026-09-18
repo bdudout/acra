@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { isDemoInstance, touchOrgActivity } from '@/lib/demo-server'
+import { isDemoInstance, touchOrgActivity, getDemoConfig } from '@/lib/demo-server'
 import { createExampleAnalyse } from '@/lib/demo-example'
 import { auditLog, getClientIp } from '@/lib/logger'
-import type { UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 
 /**
  * POST /api/demo/load-example — charge un exemple d'analyse complet (5 ateliers)
@@ -31,7 +31,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Aucune organisation active' }, { status: 403 })
   }
 
-  const result = await createExampleAnalyse(userId, scope.activeOrgId)
+  if (!canCreateAnalyse({ id: userId, role: userRole })) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
+  let result
+  try {
+    const config = await getDemoConfig()
+    result = await createExampleAnalyse(userId, scope.activeOrgId, config.maxAnalysesPerOrg)
+  } catch (error) {
+    if (error instanceof Error && error.message === 'DEMO_ANALYSIS_LIMIT') {
+      return NextResponse.json({ error: 'DEMO_ANALYSIS_LIMIT' }, { status: 403 })
+    }
+    throw error
+  }
   await touchOrgActivity(scope.activeOrgId).catch(() => {})
   if (!result.alreadyExisted) {
     await auditLog('ANALYSE_CREATED', {

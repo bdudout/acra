@@ -80,25 +80,15 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // AUDIT [F004b] MEDIUM — CWE-269 / OWASP A01:2021 — Amorçage de privilège (premier compte = ADMIN)
-    // CVSS: 6.5 (AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:N)
-    // EVIDENCE: si la table user est vide (déploiement neuf, ou base réinitialisée),
-    //   le PREMIER inscrit anonyme devient ADMIN. Course critique : un attaquant qui
-    //   s'inscrit avant l'exploitant légitime prend le contrôle complet (gestion des
-    //   comptes, rôles, politiques). Combiné à F004 (inscription ouverte) → fort impact.
-    // FIX: provisionner l'ADMIN initial hors-ligne (seed/CLI protégé, variable d'env),
-    //   ne jamais attribuer ADMIN via un endpoint public.
     // Inscription publique ouverte : instance de démo PROUVÉE (env + marqueur figé)
     // OU toggle runtime `publicSignupActive` (SUPER_ADMIN). Jamais isDemoMode() seul.
-    const signupOpen = await isSignupOpen()
-    const userCount = await prisma.user.count()
+    const [signupOpen, userCount] = await Promise.all([
+      isSignupOpen(), prisma.user.count(),
+    ])
     const isFirstUser = userCount === 0
 
-    // Amorçage : le PREMIER compte = l'exploitant (SUPER_ADMIN, e-mail pré-vérifié,
-    // rattaché à la racine), toujours autorisé. Inscrits SUIVANTS uniquement si
-    // l'inscription est ouverte → chacun obtient son organisation isolée (ADMIN) avec
-    // vérification d'e-mail + plafond. Sinon inscription FERMÉE (anti F004 : pas de
-    // rattachement anonyme à l'organisation racine sur une instance de production).
+    // Toute instance vide doit être initialisée localement par create-admin.mjs,
+    // avant son exposition réseau (anti CWE-269 / OWASP A01).
     const decision = resolveSignupDecision({ isFirstUser, signupOpen })
     if (!decision.allowed) {
       return NextResponse.json({ error: 'REGISTRATION_CLOSED' }, { status: 403 })
@@ -158,7 +148,6 @@ export async function POST(req: NextRequest) {
       })
       await auditLog('REGISTER', {
         userId: user.id, userEmail: user.email, ip: getClientIp(req),
-        details: isFirstUser ? { role: 'ADMIN', reason: 'premier compte créé' } : undefined,
       })
     }
 

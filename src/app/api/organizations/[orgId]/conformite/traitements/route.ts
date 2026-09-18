@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Traitements RÉELS des écarts de conformité (plan d'action / dérogation /
  * acceptation de risque), au niveau du socle d'organisation.
@@ -31,8 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
   const sp = new URL(req.url).searchParams

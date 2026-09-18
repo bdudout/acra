@@ -22,7 +22,9 @@ export default function RegisterPage() {
 
   useEffect(() => {
     fetch('/api/demo/status').then(r => r.ok ? r.json() : null).then(s => setIsDemo(!!s?.demo)).catch(() => {})
-    fetch('/api/auth/registration-open').then(r => r.ok ? r.json() : null).then(s => setOpen(s ? !!s.open : true)).catch(() => setOpen(true))
+    // L'ouverture d'inscription est une décision de sécurité : en cas d'erreur
+    // réseau ou serveur, ne jamais proposer un parcours public par défaut.
+    fetch('/api/auth/registration-open').then(r => r.ok ? r.json() : null).then(s => setOpen(s ? !!s.open : false)).catch(() => setOpen(false))
   }, [])
 
   // Libellé traduit d'une règle de mot de passe (code → texte i18n)

@@ -200,10 +200,15 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     if (readOnly) return
     const next = entries.filter(e => e.ref !== ref)
     const prev = byRef.get(ref)
+    let commentaire = prev?.commentaire
+    if (statut === 'na' && !commentaire?.trim()) {
+      commentaire = window.prompt(t.conformite.naJustification)?.trim()
+      if (!commentaire) return
+    }
     const ecart = statut === 'partiel' || statut === 'non_conforme'
     next.push({
       ref, statut,
-      ...(prev?.commentaire ? { commentaire: prev.commentaire } : {}),
+      ...(commentaire ? { commentaire } : {}),
       ...(ecart && prev?.traitement ? { traitement: prev.traitement } : {}),
     })
     onChange(next)
@@ -213,6 +218,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     if (readOnly) return
     const prev = byRef.get(ref)
     const statut = prev?.statut ?? 'non_conforme'
+    if (statut === 'na' && !commentaire.trim()) return
     const ecart = statut === 'partiel' || statut === 'non_conforme'
     const next = entries.filter(e => e.ref !== ref)
     next.push({
@@ -305,7 +311,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                   })}
                 </div>
               </div>
-              {showComment && (
+              {(showComment || entry?.statut === 'na') && (
                 <input
                   type="text"
                   value={entry?.commentaire ?? ''}

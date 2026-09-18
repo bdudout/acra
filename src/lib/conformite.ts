@@ -235,3 +235,8 @@ export function conformiteStats(entries: ConformiteEntry[], total: number): Conf
     evalues: entries.length, total, tauxConformite,
   }
 }
+
+/** Références exclues sans justification : conserve les données historiques, bloque les nouvelles écritures invalides. */
+export function missingExclusionJustifications(entries: unknown): string[] {
+  return sanitizeConformite(entries).filter(e => e.statut === 'na' && !e.commentaire?.trim()).map(e => e.ref)
+}

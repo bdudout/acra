@@ -1,3 +1,4 @@
+import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -75,6 +76,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
   }
 
+  const orgConfig = await getOrgConfig(existing.organizationId)
+  if (analyseGelee(existing.risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)) {
+    return NextResponse.json({ error: 'ANALYSE_GELEE' }, { status: 403 })
+  }
+
   const body = await req.json()
   const allowed = ['nom', 'description', 'organisation', 'secteur', 'sousSecteur', 'atelierCourant', 'dateEcheance', 'referentielMesures', 'isSocle']
   const data: Record<string, unknown> = {}
@@ -104,6 +110,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {
     data.statut = body.statut
+    if (body.statut === 'EN_COURS' && existing.statut !== 'EN_COURS') {
+      data.approbateurId = null
+      data.approuveLe = null
+      data.commentaireApprobation = null
+    }
   }
   // Questionnaire de qualification (optionnel) — filtré aux questions effectives
   // (natives activées + personnalisées) selon la config de l'organisation.

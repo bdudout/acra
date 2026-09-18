@@ -8,7 +8,7 @@ import { type UserRole } from '@/lib/permissions'
 import { gatherGrcConsolide } from '@/lib/grc-consolide.server'
 import { buildRapportControleInterne } from '@/lib/rapport-controle-interne'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { createRequire } from 'node:module'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,9 +64,9 @@ export async function GET(req: NextRequest) {
     }
   }
   try {
-    const nodeRequire = createRequire(process.cwd() + '/package.json')
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { renderRapportControleInternePDF } = nodeRequire(process.cwd() + '/.pdf-runtime/rapport-controle-interne-pdf-template.cjs')
+    const { renderRapportControleInternePDF } = loadPdfRuntime('rapport-controle-interne-pdf-template')
     const buffer = await renderRapportControleInternePDF(rapport, locale, org?.nom ?? '', annee, stamp)
     return new NextResponse(buffer as unknown as ArrayBuffer, {
       headers: {

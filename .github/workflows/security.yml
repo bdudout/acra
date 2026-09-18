@@ -130,3 +130,46 @@ jobs:
             exit 1
           fi
           echo "✓ .env.example présent"
+
+  production-build-e2e:
+    name: Production build & cyber E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: acra_test
+          POSTGRES_PASSWORD: ci-isolated-test-only
+          POSTGRES_DB: acra_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U acra_test -d acra_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://acra_test:ci-isolated-test-only@localhost:5432/acra_test
+      NEXTAUTH_URL: http://localhost:3101
+      NEXTAUTH_SECRET: ci-only-isolated-nextauth-secret-not-a-production-secret
+      ACRA_VERSION: ci
+      ACRA_REVISION: ${{ github.sha }}
+      E2E_PRODUCTION: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Migrations sur base vierge et réexécution idempotente
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate deploy
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cyber-e2e-failure
+          path: test-results/
+          retention-days: 7

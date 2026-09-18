@@ -1,3 +1,5 @@
+import { missingExclusionJustifications } from '@/lib/conformite'
+import { canReadOrgResource } from '@/lib/permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -95,6 +97,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
 
   const conf = await getOrCreate(orgId, referentiel, entite)
   const updated = applyConformiteEntry(sanitizeConformite(conf.entries), ref, { statut, commentaire, traitement })
+  if (missingExclusionJustifications(updated.filter(e => e.ref === ref)).length) {
+    return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
+  }
   await prisma.conformite.update({ where: { id: conf.id }, data: { entries: updated as unknown as object } })
   if (shouldSnapshotOnChange(orgConfig.conformiteSnapshotMode)) {
     await prisma.conformiteSnapshot.create({ data: { conformiteId: conf.id, entries: updated as unknown as object, createdById: userId } })
@@ -158,8 +163,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
 

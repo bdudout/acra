@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "purpose": "Jeu de démonstration fictif CLUSIR 23 septembre 2026. Ne pas injecter dans une organisation client.",
+    "organization": "Novera Services",
+    "analysisName": "Accès d'administration externalisés — données de facturation",
+    "locale": "fr",
+    "references": ["ISO/IEC 27001:2022", "NIST CSF 2.0", "PSSI de démonstration"]
+  },
+  "accounts": [
+    { "email": "analyste.novera@demo.acra", "role": "ANALYSTE", "name": "Alex Martin — Analyste" },
+    { "email": "rssi.novera@demo.acra", "role": "RSSI", "name": "Camille Leroy — RSSI" },
+    { "email": "direction.novera@demo.acra", "role": "DIRECTION_METIER", "name": "Morgan Petit — Direction métier" },
+    { "email": "superadmin.acra@demo.acra", "role": "SUPER_ADMIN", "name": "Sam Durand — Super-administrateur" }
+  ],
+  "analysis": {
+    "description": "Analyse EBIOS RM d'un accès d'administration externalisé sur la plateforme de gestion commerciale et de facturation.",
+    "sector": "Services B2B",
+    "statusBeforeDemo": "SOUMIS",
+    "protectionMarking": "RESTREINTE",
+    "likelihoodMethod": "STANDARD"
+  },
+  "atelier1": {
+    "scope": "Plateforme de gestion commerciale et de facturation, accès administrateur du prestataire Orion Admin, bastion d'administration, sauvegardes et restauration.",
+    "missions": "Émettre des factures fiables, suivre les commandes et assurer la continuité du service aux clients B2B.",
+    "businessValues": [
+      { "key": "vm-facturation", "name": "Production et facturation des services B2B", "type": "PROCESSUS", "description": "Création des commandes, calcul des prestations, émission et suivi des factures.", "owner": "Direction des opérations", "dict": { "availability": 3, "integrity": 4, "confidentiality": 3, "traceability": 4 } }
+    ],
+    "supportAssets": [
+      { "key": "bs-erp", "name": "Plateforme de gestion commerciale et de facturation", "type": "APPLICATION", "description": "Application métier hébergeant les commandes, référentiels clients et factures.", "businessValueKeys": ["vm-facturation"] },
+      { "key": "bs-bastion", "name": "Bastion d'administration et VPN prestataire", "type": "INFRASTRUCTURE", "description": "Point d'accès privilégié utilisé par Orion Admin pour l'administration de la plateforme.", "businessValueKeys": ["vm-facturation"] },
+      { "key": "bs-backup", "name": "Sauvegardes de la plateforme de facturation", "type": "SERVICE", "description": "Sauvegardes chiffrées et mécanisme de restauration des données métier.", "businessValueKeys": ["vm-facturation"] }
+    ],
+    "fearedEvents": [
+      { "key": "er-alteration", "businessValueKey": "vm-facturation", "description": "Altération non détectée de données de commandes et de facturation nécessaires à l'activité.", "impacts": ["Factures erronées", "Fraude ou litige client", "Interruption de la facturation", "Reprise manuelle coûteuse"], "severity": 4 }
+    ],
+    "securityBaseline": [
+      { "measure": "Comptes administrateurs nominatifs", "source": "PSSI de démonstration", "status": "PARTIEL" },
+      { "measure": "Authentification multifacteur sur les accès distants", "source": "ISO/IEC 27001:2022", "status": "PARTIEL" },
+      { "measure": "Test de restauration des sauvegardes", "source": "PSSI de démonstration", "status": "REALISE" }
+    ]
+  },
+  "atelier2": {
+    "riskSource": {
+      "name": "Cybercriminel opportuniste", "category": "CYBERCRIMINEL", "description": "Groupe cherchant un accès privilégié réutilisable pour altérer des données, commettre une fraude ou exercer une extorsion.", "motivationScore": 4, "resourcesScore": 3, "activityScore": 4, "relevance": 4, "justification": "Les accès d'administration externalisés concentrent une capacité technique élevée et une forte valeur pour un attaquant.",
+      "objectives": [{ "name": "Obtenir un accès privilégié pour altérer les données de facturation", "description": "Utiliser un accès administrateur compromis pour modifier des données métier sans détection immédiate.", "priority": "P1", "relevance": 4 }]
+    }
+  },
+  "atelier3": {
+    "stakeholders": [
+      { "key": "pp-orion", "name": "Orion Admin", "shortName": "ORION", "type": "PRESTATAIRE", "description": "Prestataire fictif d'administration d'infrastructure avec accès à privilèges sur la plateforme métier.", "dependency": 4, "penetration": 3, "maturity": 2, "trust": 2, "critical": true },
+      { "key": "pp-hebergeur", "name": "Hébergeur de sauvegardes", "shortName": "BACKUP", "type": "FOURNISSEUR", "description": "Fournisseur fictif du stockage de sauvegarde chiffré.", "dependency": 3, "penetration": 2, "maturity": 3, "trust": 3, "critical": false }
+    ],
+    "strategicScenario": {
+      "name": "Compromission d'un accès d'administration du prestataire Orion Admin", "description": "Un cybercriminel compromet l'accès d'un intervenant Orion Admin, puis exploite les privilèges pour modifier des données de facturation.", "fearedEventKey": "er-alteration", "likelihood": 3, "severity": 4,
+      "attackPath": [
+        { "step": 1, "stakeholder": "Orion Admin", "action": "Hameçonnage ciblé d'un intervenant disposant d'un accès administrateur.", "intermediateEvent": "Vol d'identifiants ou de jeton de session." },
+        { "step": 2, "stakeholder": "Orion Admin", "action": "Connexion au bastion ou au VPN avec un compte insuffisamment protégé.", "intermediateEvent": "Accès privilégié à la plateforme métier." },
+        { "step": 3, "stakeholder": "Novera Services", "action": "Modification de paramètres ou de données de facturation sans détection immédiate.", "intermediateEvent": "Altération des données de commandes et de facturation." }
+      ],
+      "ecosystemMeasures": [
+        { "measure": "Accès nominatif, MFA et restriction d'origine réseau", "type": "PREVENTIVE", "status": "EN_COURS" },
+        { "measure": "Revue mensuelle des accès du prestataire", "type": "DETECTIVE", "status": "A_FAIRE" }
+      ]
+    }
+  },
+  "atelier4": {
+    "operationalScenario": {
+      "name": "Altération de la base de facturation après compromission du bastion", "description": "Le compte compromis est utilisé pendant une fenêtre de maintenance pour modifier des enregistrements de facturation et masquer les traces immédiates.", "likelihood": 3, "severity": 4,
+      "elementaryActions": [
+        { "name": "Vol d'identifiants d'un intervenant prestataire", "type": "HAMECONNAGE", "supportAsset": "Bastion d'administration et VPN prestataire", "vulnerability": "MFA non systématique et comptes de secours insuffisamment revus.", "description": "Obtention d'un compte ou d'un jeton de session utilisable à distance." },
+        { "name": "Ouverture d'une session privilégiée", "type": "ACCES", "supportAsset": "Bastion d'administration et VPN prestataire", "vulnerability": "Sessions non enregistrées et droits trop larges.", "description": "Connexion avec un compte ayant accès à l'administration de l'application." },
+        { "name": "Modification des données de facturation", "type": "ALTERATION", "supportAsset": "Plateforme de gestion commerciale et de facturation", "vulnerability": "Absence de contrôle d'intégrité et de rapprochement quotidien sur les opérations sensibles.", "description": "Modification ciblée de données avant détection par les équipes métier." }
+      ]
+    }
+  },
+  "atelier5": {
+    "risk": {
+      "name": "Altération frauduleuse des données de facturation via un accès prestataire compromis", "description": "Risque de fraude, de litige et d'interruption du processus de facturation après compromission d'un accès d'administration externe.", "strategy": "REDUIRE", "initial": { "severity": 4, "likelihood": 3, "level": 12 }, "residualTarget": { "severity": 4, "likelihood": 1, "level": 4 }, "residualJustification": "La gravité métier reste élevée. La vraisemblance cible diminue seulement après généralisation du MFA, maîtrise des sessions privilégiées, revue des accès et test de restauration."
+    },
+    "measures": [
+      { "name": "Imposer des accès administrateurs nominatifs avec MFA", "description": "Supprimer les comptes partagés, appliquer le MFA et limiter les origines réseau autorisées.", "type": "TECHNIQUE", "priority": 1, "status": "EN_COURS", "owner": "Responsable infrastructure", "entity": "DSI", "dueDate": "2026-10-15", "category": "PROTECTION", "effectiveness": 3 },
+      { "name": "Enregistrer et approuver les sessions d'administration du prestataire", "description": "Passage obligatoire par le bastion, journalisation des sessions et validation préalable des opérations sensibles.", "type": "ORGANISATIONNELLE", "priority": 1, "status": "A_FAIRE", "owner": "RSSI", "entity": "Sécurité", "dueDate": "2026-11-15", "category": "GOUVERNANCE", "effectiveness": 3 },
+      { "name": "Tester la restauration et le rapprochement d'intégrité des factures", "description": "Tester mensuellement la restauration et vérifier les opérations sensibles avant clôture de facturation.", "type": "CORRECTIVE", "priority": 2, "status": "REALISE", "owner": "Responsable applications", "entity": "DSI", "dueDate": "2026-09-15", "category": "RESILIENCE", "effectiveness": 2 }
+    ]
+  },
+  "complianceProof": {
+    "framework": { "code": "PSSI-NOVERA", "name": "PSSI de démonstration — Novera Services", "version": "2026.1" },
+    "requirement": { "reference": "PSSI-ACC-01", "name": "Maîtrise des accès d'administration externes", "description": "Les accès d'administration externes sont nominatifs, authentifiés fortement, revus périodiquement et tracés. Ce point est présenté comme une politique interne de démonstration, inspirée du domaine contrôle d'accès d'ISO/IEC 27001:2022." },
+    "control": { "name": "Revue mensuelle des accès d'administration du prestataire", "level": "N2", "frequency": "MENSUEL", "result": "ANOMALIE", "finding": "Un compte de secours non nominatif reste actif après la revue. L'action MFA et comptes nominatifs porte le traitement de cet écart.", "evidence": "Compte rendu de revue d'accès daté, conservé dans la bibliothèque documentaire de démonstration." }
+  },
+  "demoChecklist": [
+    "Analyse soumise, ateliers 1 à 5 complets et sans données réelles.",
+    "Orion Admin visible dans la vue Tiers et marqué critique.",
+    "Risque Atelier 5 avec mesures, responsables, échéances et justification résiduelle.",
+    "PSSI-NOVERA, PSSI-ACC-01 et contrôle mensuel accessibles en moins de trois clics.",
+    "Export PDF généré avant la répétition et conservé localement.",
+    "Slides 7 à 13 et application ouvertes dans des fenêtres distinctes.",
+    "Séquence RSSI préparée pour la preuve et l'approbation ; séquence super-admin limitée à la configuration d'instance, sans comptes, clés, SMTP ni SSO."
+  ]
+}

@@ -9,9 +9,6 @@ const nextConfig = {
   // chargé au runtime. L'entrée ici garantit que react-pdf est tracé dans le
   // standalone (présent dans node_modules au runtime).
   serverExternalPackages: ['@prisma/client', 'bcryptjs', '@react-pdf/renderer', 'nodemailer'],
-  experimental: {
-    instrumentationHook: true,
-  },
 
   // ── Limite de taille des corps de requête ────────────────────────────────
   // Protège contre les DoS par payload surdimensionné (import JSON, workshop)

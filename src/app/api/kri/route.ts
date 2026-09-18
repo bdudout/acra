@@ -15,9 +15,7 @@ export const dynamic = 'force-dynamic'
 
 // La DÉFINITION d'un KRI relève de la 2ᵉ ligne (gouvernance) ; la SAISIE des
 // mesures est ouverte à la 1ʳᵉ ligne (cf. mesures/route.ts). L'admin gère aussi.
-export function peutDefinirKri(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
-  return peutDefinir2eLigne(role, opts)
-}
+import { peutDefinirKri } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

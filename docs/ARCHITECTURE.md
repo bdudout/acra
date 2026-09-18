@@ -14,11 +14,11 @@
 
 ## 1. Stack & démarrage
 
-- **Next.js 14 (App Router)** — ⚠️ lire `node_modules/next/dist/docs/` avant d'écrire du
+- **Next.js 16 (App Router)** — ⚠️ lire `node_modules/next/dist/docs/` avant d'écrire du
   code Next (voir `AGENTS.md`), les conventions diffèrent des versions connues.
 - **React 18** (composants serveur par défaut ; `'use client'` explicite sinon).
 - **Prisma** + **PostgreSQL** (49 modèles, `prisma/schema.prisma`).
-- **NextAuth** (Credentials + SSO OIDC/SAML).
+- **NextAuth** (Credentials + SSO OIDC ; SAML en chantier de maintenance).
 - **Tailwind** pour le style ; **lucide-react** pour les icônes.
 - **Vitest** + Testing Library pour les tests.
 

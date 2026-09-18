@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutGererReferentiels } from '@/app/api/referentiels/route'
+import { peutGererReferentiels } from '@/lib/permissions'
 import ReferentielsManager from '@/components/ReferentielsManager'
 
 export const dynamic = 'force-dynamic'

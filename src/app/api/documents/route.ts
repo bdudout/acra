@@ -13,9 +13,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 // La bibliothèque documentaire relève de la gouvernance (RSSI / conformité / risques).
-export function peutGererDocuments(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
-}
+import { peutGererDocuments } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

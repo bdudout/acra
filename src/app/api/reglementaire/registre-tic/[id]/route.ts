@@ -7,7 +7,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { cleanArrangementInput, validateArrangementInput } from '@/lib/registre-tic'
-import { peutGererRegistreTic } from '../route'
+import { peutGererRegistreTic } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'

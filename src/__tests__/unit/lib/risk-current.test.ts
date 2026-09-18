@@ -57,3 +57,9 @@ describe('risqueADate — interpolation brut→résiduel selon l\'avancement', (
     expect(res.vraisemblance).toBeLessThanOrEqual(4)
   })
 })
+
+ it('conserve le niveau 5 sans avancement et respecte une échelle à 5', () => {
+   const r = { id: 'r5', gravite: 5, vraisemblance: 5, graviteResiduelle: 5, vraisemblanceResiduelle: 3 }
+   expect(risqueADate(r, [], 5)).toEqual({ gravite: 5, vraisemblance: 5 })
+   expect(risqueADate(r, [{ risqueId: 'r5', statut: 'REALISE' }], 5)).toEqual({ gravite: 5, vraisemblance: 3 })
+ })

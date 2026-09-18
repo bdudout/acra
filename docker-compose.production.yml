@@ -1,0 +1,16 @@
+# =============================================================================
+# ACRA — surcouche de production (reverse proxy hôte ou réseau privé)
+#
+# Utilisation : docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build
+# - PostgreSQL reste uniquement sur le réseau Docker ; aucun port hôte n'est publié.
+# - L'application n'écoute que sur la boucle locale ; le reverse proxy hôte termine TLS.
+# - Requiert Docker Compose >= 2.24.4 pour `!reset` / `!override`.
+# =============================================================================
+
+services:
+  db:
+    ports: !reset []
+
+  app:
+    ports: !override
+      - "127.0.0.1:3000:3000"

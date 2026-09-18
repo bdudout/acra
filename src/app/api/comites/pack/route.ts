@@ -8,7 +8,7 @@ import { type UserRole } from '@/lib/permissions'
 import { gatherGrcConsolide } from '@/lib/grc-consolide.server'
 import { buildComitePack, COMITE_TYPES, type ComiteType } from '@/lib/comite-pack'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { createRequire } from 'node:module'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
 
   const stamp = now.toISOString().slice(0, 10)
   try {
-    const nodeRequire = createRequire(process.cwd() + '/package.json')
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { renderComitePackPDF } = nodeRequire(process.cwd() + '/.pdf-runtime/comite-pack-pdf-template.cjs')
+    const { renderComitePackPDF } = loadPdfRuntime('comite-pack-pdf-template')
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
     const buffer = await renderComitePackPDF(pack, locale, org?.nom ?? '', stamp)
     return new NextResponse(buffer as unknown as ArrayBuffer, {

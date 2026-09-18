@@ -35,7 +35,7 @@ export default function RiskMatrixTabs({
 
   const gross = risks.map(r => ({ nom: r.nom, gravite: r.gravite, vraisemblance: r.vraisemblance }))
   const current = risks.map(r => {
-    const c = risqueADate(r, mesures)
+    const c = risqueADate(r, mesures, config?.nbNiveaux)
     return { nom: r.nom, gravite: c.gravite, vraisemblance: c.vraisemblance }
   })
   const residual = risks

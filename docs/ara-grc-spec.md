@@ -3,6 +3,12 @@
 > Version 0.1 — 2026-07-23. Évolution de la vision « suite ARA » du 2026-06-24 :
 > **une seule application, des modules activables un à un**, renommage dynamique
 > quand l'organisation sort du périmètre purement cyber.
+>
+> **Statut : document de décision historique.** Les volumétriques et les lots
+> décrits ci-dessous sont ceux du 23 juillet 2026 ; ils ne décrivent pas l'état
+> livré courant. Pour la carte à jour du code, consulter
+> [`ARCHITECTURE.md`](ARCHITECTURE.md) ; pour l'écart documenté, consulter
+> [`AUDIT-DOCUMENTATION-2026-09-17.md`](AUDIT-DOCUMENTATION-2026-09-17.md).
 
 ---
 

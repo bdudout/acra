@@ -269,9 +269,19 @@ docker compose up -d
 PostgreSQL, `SECRETS_ENCRYPTION_KEY`) et **ne régénère que les valeurs manquantes**
 s'il est relancé (détails en section « Installation détaillée » ci-dessous).
 
-**L'application est disponible sur http://localhost:3000.**
-Créez votre compte sur `/auth/register` — **le premier compte créé devient
-automatiquement SUPER_ADMINISTRATEUR d’instance**.
+**L'application est disponible sur http://localhost:3000.** En production, créer
+l'administrateur initial depuis l'hôte ou le conteneur, avant toute exposition de
+l'URL :
+
+```bash
+docker compose exec app node scripts/create-admin.mjs admin@example.com SUPER_ADMIN
+```
+
+Le script demande le mot de passe de façon masquée. Pour une automatisation non
+interactive, fournir `ACRA_ADMIN_PASSWORD` via un gestionnaire de secrets.
+
+L'inscription publique reste fermée par défaut. Même en démonstration, le premier
+administrateur est créé par cette CLI ; `/auth/register` ne peut jamais l'amorcer.
 
 Pour charger les données de démonstration (optionnel, jamais en production) :
 
@@ -631,7 +641,8 @@ ebios-rm/
 - **Piste d'audit complète** (table `AuditLog`) pour toutes les actions sensibles, exportable CSV
 - Rate limiting sur les routes d'authentification
 - **MFA** configurable avec fenêtre de sécurité (auto-désactivation si non confirmé sous 60 min)
-- **SSO** SAML 2.0 / OIDC configurable
+- **SSO OIDC** configurable (SAML 2.0 est maintenu comme chantier séparé, non
+  disponible comme mécanisme de connexion opérationnel)
 
 ### Checklist production
 
@@ -648,15 +659,15 @@ ebios-rm/
 # 4. Ne PAS charger le seed de démo en production. S'il l'a été par erreur :
 #    connectez-vous sur /admin/users et supprimez/réinitialisez admin@chu-metropole.fr
 
-# 5. Démarrer et vérifier le health check
-docker compose up -d
+# 5. Démarrer avec le profil de production et vérifier le health check
+docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build
 curl https://votre-domaine.com/api/health
 # {"status":"ok","db":"connected",...}
 ```
 
-> Le **premier compte** créé sur `/auth/register` devient **ADMINISTRATEUR**.
-> Créez-le immédiatement après le déploiement pour éviter qu'un tiers ne s'attribue
-> ce rôle (l'inscription est ouverte par défaut).
+> L'instance de production ne crée jamais de SUPER_ADMIN via une route publique.
+> Utilisez `scripts/create-admin.mjs` depuis un accès local de confiance, puis
+> vérifiez la connexion avant de rendre le reverse proxy accessible.
 
 > Un audit de sécurité OWASP/WSTG complet a été conduit sur l'application. Voir le rapport dans [docs/](./docs/).
 
@@ -676,7 +687,7 @@ flowchart LR
   subgraph DC["Datacenter interne — zone de confiance cloisonnée"]
     FW --> RP["Reverse proxy TLS<br/>Nginx / Caddy / Traefik<br/>HSTS, en-têtes sécurité"]
     RP --> APP["ACRA (Next.js)<br/>conteneur Docker"]
-    IDP["IdP SSO<br/>SAML 2.0 / OIDC<br/>+ MFA admins"] -.->|fédération| APP
+    IDP["IdP SSO<br/>OIDC<br/>+ MFA admins"] -.->|fédération| APP
     APP --> DB[("PostgreSQL<br/>réseau privé<br/>chiffré au repos")]
     APP --> BK[("Sauvegardes<br/>chiffrées, hors-ligne")]
     APP --> SIEM["Journaux / SIEM"]
@@ -686,7 +697,7 @@ flowchart LR
 **Mesures clés :**
 - Réseau **cloisonné** (VLAN dédié), application **non exposée** sur Internet ; accès via LAN ou **VPN**.
 - **Pare-feu** + WAF en amont ; reverse proxy **TLS 1.2+** terminant le HTTPS (`NEXTAUTH_URL=https://…`), **HSTS** activé.
-- **SSO** (SAML/OIDC) + **MFA obligatoire pour les administrateurs** (OTP e-mail/SMS).
+- **SSO OIDC** + **MFA obligatoire pour les administrateurs** (OTP e-mail/SMS).
 - PostgreSQL **jamais exposé** publiquement, **chiffré au repos**, accès restreint à l'app.
 - **Sauvegardes chiffrées** régulières et testées (cf. section Sauvegarde) ; secrets via coffre (`SECRETS_ENCRYPTION_KEY`).
 - **Journalisation** centralisée (piste d'audit ACRA + logs Winston → SIEM) ; revue d'accès périodique.
@@ -713,12 +724,22 @@ flowchart LR
 - Secrets dans un **coffre managé** (KMS / Secrets Manager) ; rotation régulière.
 - Journaux exportés vers un **SIEM** ; alerting sur les événements sensibles (connexions, exports, suppressions).
 
+> **Important — compose fourni :** `docker-compose.yml` publie `5432` pour
+> faciliter le développement local. Ce port est donc à retirer d'un déploiement
+> de production, ou à lier explicitement à `127.0.0.1:5432:5432` si un accès local
+> d'exploitation est indispensable. Le réseau interne Docker permet toujours à
+> l'application de joindre `db:5432` sans publication de port.
+>
+> Le fichier `docker-compose.production.yml` applique ce durcissement : PostgreSQL
+> n'est pas publié et ACRA écoute uniquement sur `127.0.0.1:3000` pour un reverse
+> proxy TLS exécuté sur l'hôte. Il nécessite Docker Compose 2.24.4 ou plus récent.
+
 ### Ce qu'ACRA fournit pour appliquer ces bonnes pratiques
 
 | Bonne pratique ANSSI | Fonctionnalité ACRA |
 |---|---|
 | Authentification forte | **MFA** OTP e-mail/SMS, périmètre `ALL` ou `ADMIN_ONLY` |
-| Identité fédérée | **SSO** SAML 2.0 / OIDC avec provisioning auto |
+| Identité fédérée | **SSO OIDC** avec provisioning auto (SAML : chantier séparé) |
 | Moindre privilège | **RBAC** 5 rôles + partage par analyse |
 | Traçabilité | **Piste d'audit** complète, exportable CSV |
 | Confidentialité en transit | HTTPS imposé + **en-têtes de sécurité** (CSP, HSTS, X-Frame-Options…) |

@@ -34,9 +34,9 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: 'npm run dev',
+        command: process.env.E2E_PRODUCTION === 'true' ? 'npm run start' : 'npm run dev',
         url: BASE_URL,
-        reuseExistingServer: true,
+        reuseExistingServer: !process.env.CI,
         timeout: 120_000,
         env: { PORT: String(PORT), NEXTAUTH_URL: BASE_URL },
       },

@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutGererDocuments } from '@/app/api/documents/route'
+import { peutGererDocuments } from '@/lib/permissions'
 import DocumentsManager from '@/components/DocumentsManager'
 
 export const dynamic = 'force-dynamic'

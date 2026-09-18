@@ -19,9 +19,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 // La tenue du registre d'information relève de la 2ᵉ ligne (conformité / risques).
-export function peutGererRegistreTic(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
-}
+import { peutGererRegistreTic } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

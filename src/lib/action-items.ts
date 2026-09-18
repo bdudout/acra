@@ -20,6 +20,7 @@ import {
 } from './risk-action'
 
 export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
+/** Source technique d'un plan d'action (modèle Prisma d'origine). */
 export type ActionSource = (typeof ACTION_SOURCES)[number]
 
 // Typologie MÉTIER d'origine du plan d'action, exposée comme facette de filtre.
@@ -27,6 +28,7 @@ export type ActionSource = (typeof ACTION_SOURCES)[number]
 // « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
 // « regulateur » (même objet, source différente — cf. lib/audit.ts).
 export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'] as const
+/** Typologie métier d'origine d'un plan d'action, exposée comme facette de filtre (vue /actions). */
 export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
 /** Objet canonique d'un plan d'action, quelle que soit sa source d'origine. */
@@ -99,6 +101,7 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   }
 }
 
+/** Forme brute d'une action de traitement d'un RiskItem, en entrée de normalizeRiskAction. */
 export interface RiskActionRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown; riskItemId?: unknown
@@ -119,6 +122,7 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   }
 }
 
+/** Forme brute d'un constat d'audit/régulateur, en entrée de normalizeAuditConstat. */
 export interface AuditConstatRow {
   id: string; intitule: string; recommandation?: unknown; criticite?: unknown
   statut?: unknown; responsableAction?: unknown; echeance?: unknown; riskItemId?: unknown
@@ -138,6 +142,7 @@ export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): 
   }
 }
 
+/** Forme brute d'une anomalie de contrôle permanent, en entrée de normalizeControleAnomalie. */
 export interface ControleAnomalieRow {
   id: string; controleNom: string; constat?: unknown; dateRealisation?: unknown
   responsable?: unknown; entite?: unknown
@@ -153,6 +158,7 @@ export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un incident, en entrée de normalizeIncident (un incident REJETE est écarté). */
 export interface IncidentRow {
   id: string; intitule: string; statut?: unknown; impactEstime?: unknown
   entite?: unknown; echeance?: unknown; riskItemId?: unknown; description?: unknown
@@ -171,6 +177,7 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   }
 }
 
+/** Forme brute d'une mesure d'écosystème (partie prenante), en entrée de normalisation. */
 export interface EcosystemeMesureRow {
   id: string; nom: string; description?: unknown; type?: unknown
   priorite?: unknown; statut?: unknown; partiePrenante?: unknown
@@ -194,6 +201,7 @@ export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un PlanAction ORPHELIN (créé sans lien d'origine), en entrée de normalisation. */
 export interface OrphanPlanActionRow {
   id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown
@@ -217,6 +225,7 @@ export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un traitement de conformité (plan d'action), en entrée de normalisation. */
 export interface ConformiteTraitementRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; referentiel?: unknown; refs?: unknown
@@ -244,6 +253,7 @@ export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt:
 // sous 30j (hors retard), ou sans échéance.
 export type EcheanceBucket = 'retard' | 'semaine' | 'mois' | 'sans'
 
+/** Critères de filtre à facettes de la vue unifiée des plans d'action (source/origine/priorité/statut/échéance/porteur/q). */
 export interface ActionItemFiltre {
   source?: ActionSource
   origine?: ActionOrigine // facette métier (risque / conformité / contrôle / audit / régulateur / incident)

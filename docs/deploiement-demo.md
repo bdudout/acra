@@ -95,22 +95,24 @@ Le fichier `docker-compose.demo.yml` retire la publication du port `3000` via
 
 ---
 
-## 6. Premier compte : l'exploitant (aucune manipulation en base)
+## 6. Premier compte : amorçage local obligatoire
 
-Le **tout premier compte** inscrit sur l'instance devient automatiquement
-**SUPER_ADMIN** et son e-mail est **pré-vérifié** : il peut se connecter
-immédiatement, sans SMTP. Aucune commande SQL n'est nécessaire.
+Même en démo, aucune inscription publique ne crée le premier administrateur.
+Depuis le VPS, après migration et démarrage de l'application :
 
-1. Ouvrez `https://<DEMO_DOMAIN>/auth/register` et créez **votre** compte.
-2. Connectez-vous, allez dans **Admin → SMTP**, configurez et **testez** l'envoi.
-3. Réglez les fenêtres de purge et plafonds dans **Admin → Démo**.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.demo.yml exec app node scripts/create-admin.mjs admin@votredomaine.fr SUPER_ADMIN
+```
 
-À partir de là, les inscrits **suivants** sont des testeurs : organisation isolée +
-e-mail de vérification (d'où le SMTP configuré à l'étape 2).
+Le mot de passe est demandé de façon masquée ; ne pas le mettre en argument.
+Se connecter, configurer SMTP dans Admin et envoyer un message de test. Les
+inscrits suivants reçoivent une organisation isolée et doivent vérifier leur e-mail.
 
-> ⚠️ **Sécurité** : comme le premier inscrit devient administrateur de l'instance,
-> inscrivez-vous **avant** de communiquer l'URL (même logique que l'amorçage de
-> production).
+Configuration de cette démo : domaine `acra-cyber.com`, VPS
+`vps-8eb84369.vps.ovh.net`, utilisateur SSH `debian`, port `22`, SMTP
+`smtp.mail.ovh.net` (valeurs communiquées par l'exploitant). Les identifiants SMTP
+et les secrets d'application restent dans l'instance ; aucun secret dans GitHub
+hors secrets dédiés au déploiement et à la recette.
 
 ---
 
@@ -130,6 +132,12 @@ docker compose logs -f cron
 ---
 
 ## 8. Exploitation
+
+Pour la première démo publique, suivre le [plan de versions stables](VERSIONS-STABLES-DEMO.md)
+et fermer les points bloquants de l'[audit](AUDIT-CYBER-CONFORMITE-2026-09-18.md).
+La commande `git pull` ci-dessous est la procédure historique de reconstruction :
+elle ne garantit pas une version qualifiée. Les workflows de release et de déploiement d’image figée sont désormais versionnés ;
+leur qualification sur OVH reste nécessaire avant la première stable.
 
 ```bash
 # Mise à jour (nouveau code)
