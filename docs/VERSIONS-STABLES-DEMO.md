@@ -64,7 +64,9 @@ L'utilisateur SSH doit pouvoir utiliser Docker. Une seule planification doit êt
 active (sidecars ou tâches GitHub). Ne pas publier 3000/5432. Configurer dans `.env`
 `DEMO_DOMAIN=acra-cyber.com`, `NEXTAUTH_URL=https://acra-cyber.com`,
 `NEXT_PUBLIC_BASE_URL=https://acra-cyber.com`, `ACRA_DEMO_MODE=true`, les secrets DB,
-NextAuth, chiffrement et cron. SMTP confirmé : `smtp.mail.ovh.net` ; saisir les
+NextAuth, chiffrement et cron. SMTP : `smtp.mail.ovh.net` et `ssl0.ovh.net` sont valables (confirmation utilisateur).
+Le VPS conserve `ssl0.ovh.net:587` ; authentification TLS également testée avec
+succès sur `smtp.mail.ovh.net:587` le 19 septembre 2026. Saisir les
 paramètres du compte OVH dans Admin/SMTP et tester l'envoi réel. Aucun secret SMTP
 ne doit être collé dans un commit ou une conversation.
 

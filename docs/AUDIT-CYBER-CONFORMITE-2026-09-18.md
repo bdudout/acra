@@ -150,7 +150,9 @@ Le dump a été restauré avec `ON_ERROR_STOP` dans une base temporaire distinct
 sept analyses retrouvées, base temporaire ensuite supprimée. Cela qualifie la
 restauration du dump actuel, pas encore le rollback d’une nouvelle release.
 SMTP existant configuré sur `ssl0.ovh.net:587`, dernier test mémorisé du 9 juillet ;
-la cible demandée `smtp.mail.ovh.net` reste à tester avant changement.
+authentification et STARTTLS testés avec succès sur `smtp.mail.ovh.net:587`.
+Les deux hôtes sont valables selon confirmation utilisateur ; configuration
+existante conservée. Aucun e-mail envoyé par ce test.
 
 Restent bloquants : recette de l’image exacte, migration de l’existant, SMTP et
 inscription e-mail réels, purge sur données fictives, déploiement/rollback et
