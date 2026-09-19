@@ -399,7 +399,7 @@ export const fr = {
 
   // ─── Landing ──────────────────────────────────────────────────────────────
   landing: {
-    badge:        'Basée sur EBIOS RM (ANSSI) & ISO 27005',
+    badge:        'Basée sur EBIOS Risk Manager (ANSSI) et ISO/IEC 27001',
     heroLine1:    'Réalisez vos analyses de',
     heroLine2:    'risques cyber guidées',
     description:  "Plateforme gratuite et sécurisée pour créer des analyses de risques cyber complètes, basées sur EBIOS RM et ISO 27005. De très nombreux exemples et référentiels sont disponibles à chaque atelier, accélérant grandement la réalisation, même pour des profils expérimentés.",

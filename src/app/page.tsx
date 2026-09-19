@@ -66,7 +66,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto border-b border-slate-200/80">
+      <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto border-x border-b border-indigo-100 bg-gradient-to-r from-[#eef2ff] via-[#ffffff] to-[#e0f2fe] rounded-b-2xl shadow-sm">
         <div className="flex items-center gap-2">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-10 w-auto" />
           <div>
@@ -89,30 +89,6 @@ export default function HomePage() {
 
       {/* Hero */}
       <main className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-[#f0f4ff] border border-ebios-100 text-[#3730a3] rounded-full px-4 py-1.5 text-sm mb-6">
-          {/* Drapeau FR en SVG (les emojis drapeaux ne s'affichent pas sur Windows) */}
-          <svg width="16" height="11" viewBox="0 0 3 2" aria-hidden="true" className="rounded-[1px] flex-shrink-0">
-            <rect width="1" height="2" x="0" fill="#0055A4" />
-            <rect width="1" height="2" x="1" fill="#FFFFFF" />
-            <rect width="1" height="2" x="2" fill="#EF4135" />
-          </svg>
-          <span>{t.landing.badge}</span>
-        </div>
-
-        {/* Encart mode démonstration — règles pour le visiteur (ACRA-Demo). */}
-        {isDemo && (
-          <div className="max-w-2xl mx-auto mb-8 text-left bg-[#f0f4ff] border border-ebios-200 rounded-2xl px-6 py-5 shadow-sm">
-            <div className="flex items-center gap-2 font-semibold mb-2">
-              <span aria-hidden="true"><FlaskConical size={18} aria-hidden="true" /></span> {t.demo.homeTitle}
-            </div>
-            <ul className="space-y-1.5 text-sm text-slate-700">
-              <li>• {t.demo.homeRule1}</li>
-              <li>• {t.demo.homeRule2}</li>
-              <li>• {t.demo.homeRule3}</li>
-              <li>• {t.demo.homeRule4}</li>
-            </ul>
-          </div>
-        )}
 
         <h1 className="text-5xl font-bold mb-6 leading-tight">
           {t.landing.heroLine1}<br />
@@ -133,6 +109,33 @@ export default function HomePage() {
             {t.landing.connect}
           </Link>
         </div>
+
+        <div data-testid="method-badge" className="inline-flex items-center gap-2 mt-10 bg-[#f0f4ff] border border-ebios-100 text-[#3730a3] rounded-full px-4 py-1.5 text-sm">
+          {locale === 'fr' && (
+            <svg data-testid="fr-method-flag" width="16" height="11" viewBox="0 0 3 2" aria-hidden="true" className="rounded-[1px] flex-shrink-0">
+              <rect width="1" height="2" x="0" fill="#0055A4" />
+              <rect width="1" height="2" x="1" fill="#FFFFFF" />
+              <rect width="1" height="2" x="2" fill="#EF4135" />
+            </svg>
+          )}
+          <span>{t.landing.badge}</span>
+        </div>
+
+        {/* Encart mode démonstration — règles pour le visiteur (ACRA-Demo). */}
+        {isDemo && (
+          <section data-testid="demo-notice" className="max-w-4xl mx-auto mt-10 text-left overflow-hidden rounded-2xl border border-indigo-200 bg-[#f8faff] shadow-sm">
+            <div className="flex items-center gap-3 bg-gradient-to-r from-[#4f46e5] to-[#0284c7] px-6 py-4 text-white">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15" aria-hidden="true"><FlaskConical size={20} /></span>
+              <div className="font-semibold">{t.demo.homeTitle}</div>
+            </div>
+            <ul className="grid gap-x-8 gap-y-3 px-6 py-5 text-sm text-slate-700 md:grid-cols-2">
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule1}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule2}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule3}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule4}</li>
+            </ul>
+          </section>
+        )}
 
         {/* Features */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-24 text-left">
