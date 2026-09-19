@@ -51,6 +51,15 @@ describe('Landing — FAQ et stats internationalisées', () => {
     expect(screen.getByTestId('method-badge')).toHaveTextContent('ISO/IEC 27001')
   })
 
+  it('place l’avertissement de démonstration avant le contenu de la méthode', async () => {
+    global.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ demo: true }) } as Response)) as unknown as typeof fetch
+    render(<HomePage />)
+    const notice = await screen.findByTestId('demo-notice')
+    const method = screen.getByTestId('method-badge')
+    expect(notice.compareDocumentPosition(method) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(notice).toHaveClass('border-indigo-300')
+  })
+
   it('rend la FAQ depuis l’i18n (titre + toutes les questions)', () => {
     render(<HomePage />)
     expect(screen.getByText(fr.landing.faq.title)).toBeInTheDocument()

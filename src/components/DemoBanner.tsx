@@ -35,14 +35,14 @@ export default function DemoBanner() {
   })
   const contactExternal = !pc.contactUrl.startsWith('/')
   return (
-    <div className="w-full bg-indigo-600 text-white text-[13px] leading-tight">
-      <div className="max-w-7xl mx-auto px-4 py-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 sm:justify-between">
+    <div data-testid="demo-banner" className="w-full bg-gradient-to-r from-[#3730a3] via-[#4338ca] to-[#0369a1] text-white text-sm leading-snug shadow-sm">
+      <div data-testid="demo-banner-content" className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-2 px-4 py-2.5 text-center lg:flex-row lg:justify-between lg:text-left">
         {/* Info : badge démo + rappel RGPD + compte à rebours */}
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap">
             <FlaskConical size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.badge}
           </span>
-          <span className="text-indigo-100">{pc.notice}</span>
+          <span className="max-w-3xl text-indigo-50">{pc.notice}</span>
           {days !== null && (
             <span className="whitespace-nowrap text-indigo-50" title={d.expiresInTitle}>
               · <Calendar size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{d.expiresIn.replace('{n}', String(days))}
@@ -50,19 +50,19 @@ export default function DemoBanner() {
           )}
         </div>
         {/* Actions : deux boutons homogènes (secondaire ligné / primaire plein) */}
-        <div className="flex items-center gap-2 whitespace-nowrap">
+        <div data-testid="demo-banner-actions" className="flex flex-wrap items-center justify-center gap-2">
           <a href="/api/export/org"
-            className="rounded-md border border-white/40 px-2.5 py-1 font-medium text-white hover:bg-white/10 transition-colors">
+            className="rounded-lg border border-white/50 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
             {d.exportCta}
           </a>
           {contactExternal ? (
             <a href={pc.contactUrl} target="_blank" rel="noopener noreferrer"
-              className="rounded-md bg-white px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-50 transition-colors">
+              className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-50 transition-colors">
               {pc.contactLabel}
             </a>
           ) : (
             <Link href={pc.contactUrl}
-              className="rounded-md bg-white px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-50 transition-colors">
+              className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-50 transition-colors">
               {pc.contactLabel}
             </Link>
           )}

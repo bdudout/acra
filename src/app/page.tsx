@@ -92,6 +92,22 @@ export default function HomePage() {
       {/* Hero */}
       <main className="max-w-6xl mx-auto px-4 py-12 text-center sm:px-6 sm:py-20">
 
+        {/* Encart mode démonstration — prioritaire pour tout visiteur non connecté. */}
+        {isDemo && (
+          <section data-testid="demo-notice" className="max-w-4xl mx-auto mb-10 text-left overflow-hidden rounded-2xl border border-indigo-300 bg-[#f8faff] shadow-md shadow-indigo-900/10">
+            <div className="flex items-center gap-3 bg-gradient-to-r from-[#4338ca] to-[#0369a1] px-5 py-4 text-white sm:px-6">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15" aria-hidden="true"><FlaskConical size={20} /></span>
+              <div className="font-semibold">{t.demo.homeTitle}</div>
+            </div>
+            <ul className="grid gap-x-8 gap-y-3 px-5 py-5 text-sm text-slate-700 sm:px-6 md:grid-cols-2">
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule1}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule2}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule3}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule4}</li>
+            </ul>
+          </section>
+        )}
+
         <h1 className="text-4xl font-bold mb-6 leading-tight sm:text-5xl">
           {t.landing.heroLine1}<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600">
@@ -122,22 +138,6 @@ export default function HomePage() {
           )}
           <span>{t.landing.badge}</span>
         </div>
-
-        {/* Encart mode démonstration — règles pour le visiteur (ACRA-Demo). */}
-        {isDemo && (
-          <section data-testid="demo-notice" className="max-w-4xl mx-auto mt-10 text-left overflow-hidden rounded-2xl border border-indigo-200 bg-[#f8faff] shadow-sm">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-[#4f46e5] to-[#0284c7] px-6 py-4 text-white">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15" aria-hidden="true"><FlaskConical size={20} /></span>
-              <div className="font-semibold">{t.demo.homeTitle}</div>
-            </div>
-            <ul className="grid gap-x-8 gap-y-3 px-6 py-5 text-sm text-slate-700 md:grid-cols-2">
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule1}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule2}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule3}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule4}</li>
-            </ul>
-          </section>
-        )}
 
         {/* Features */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-24 text-left">
