@@ -284,15 +284,15 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
           const showComment = entry && (entry.statut === 'partiel' || entry.statut === 'non_conforme')
           return (
             <div key={c.ref} id={`ctrl-${c.ref}`}
-              className={`rounded-lg border bg-white p-3 scroll-mt-24 transition-shadow ${highlight === c.ref ? 'border-ebios-400 ring-2 ring-ebios-400/60' : 'border-gray-200'}`}>
-              <div className="flex items-start justify-between gap-3">
+              className={`rounded-lg border bg-white p-3 scroll-mt-24 transition-shadow dark:bg-gray-800 ${highlight === c.ref ? 'border-ebios-400 ring-2 ring-ebios-400/60' : 'border-gray-200 dark:border-gray-700'}`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800">
-                    <span className="text-gray-400 mr-1.5">{c.ref}</span>{c.nom}
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                    <span className="text-gray-400 dark:text-gray-500 mr-1.5">{c.ref}</span>{c.nom}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{c.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>
                 </div>
-                <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+                <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
                   {CONFORMITE_STATUTS.map(s => {
                     const active = entry?.statut === s
                     return (
@@ -302,7 +302,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                         disabled={readOnly}
                         onClick={() => setStatut(c.ref, s)}
                         className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
-                          active ? STATUT_STYLE[s].on : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400'
+                          active ? STATUT_STYLE[s].on : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-600'
                         }`}
                       >
                         {sLabels[s] ?? s}

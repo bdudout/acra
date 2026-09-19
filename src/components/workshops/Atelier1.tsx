@@ -78,11 +78,11 @@ interface Props {
 
 // Couleur selon niveau DICT (0–4)
 function getDictColor(v: number) {
-  if (v === 0) return 'bg-gray-100 text-gray-500'
-  if (v === 1) return 'bg-green-100 text-green-700'
-  if (v === 2) return 'bg-yellow-100 text-yellow-700'
-  if (v === 3) return 'bg-orange-100 text-orange-700'
-  return 'bg-red-100 text-red-700'
+  if (v === 0) return 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-200'
+  if (v === 1) return 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300'
+  if (v === 2) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-200'
+  if (v === 3) return 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-200'
+  return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200'
 }
 
 export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false, referentielsDesactives = [] }: Props) {
@@ -583,14 +583,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
           )}
 
           {/* Aide pédagogique : comprendre les critères DICT */}
-          <div className="border border-gray-200 rounded-xl bg-gray-50/60 p-3">
+          <div className="border border-gray-200 rounded-xl bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-800/60">
             <button
               type="button"
               onClick={() => setShowDictHelp(v => !v)}
               className="flex items-center justify-between w-full text-left"
             >
-              <span className="text-sm font-semibold text-gray-700"><BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.dictHelpTitle}</span>
-              <span className="text-xs text-blue-600 underline">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200"><BookOpen size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.dictHelpTitle}</span>
+              <span className="text-xs text-blue-600 underline dark:text-blue-300">
                 {showDictHelp ? t.workshop.hideExamples : t.workshop.showExamples}
               </span>
             </button>
@@ -603,8 +603,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                   ['T', t.workshop.a1.dictHelpT],
                 ].map(([k, def]) => (
                   <div key={k} className="text-xs">
-                    <dt className="inline font-semibold text-gray-800">{k} — </dt>
-                    <dd className="inline text-gray-600">{def}</dd>
+                    <dt className="inline font-semibold text-gray-800 dark:text-gray-100">{k} — </dt>
+                    <dd className="inline text-gray-600 dark:text-gray-300">{def}</dd>
                   </div>
                 ))}
               </dl>
@@ -641,13 +641,13 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     {!added && vm.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                        vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
+                        vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200' : 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-200'
                       }`}>
                         {vm.type === 'PROCESSUS' ? t.workshop.a1.vmTypeProcess : t.workshop.a1.vmTypeInfo}
                       </span>
                     </div>
-                    <div className="text-xs font-medium text-gray-700">{vm.nom}</div>
-                    <div className="text-xs text-gray-500 mt-0.5 mb-2">{vm.description}</div>
+                    <div className="text-xs font-medium text-gray-700 dark:text-gray-200">{vm.nom}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 mb-2 dark:text-gray-400">{vm.description}</div>
                     {/* Mini badges DICT */}
                     <div className="flex gap-1 flex-wrap">
                       {[
@@ -798,14 +798,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
 
           {/* Glossaire OT contextuel (secteurs industriels) */}
           {isOtSector && (
-            <div className="border border-amber-200 rounded-xl bg-amber-50/50 p-3">
+            <div className="border border-amber-200 rounded-xl bg-amber-50/50 p-3 dark:border-amber-500/40 dark:bg-amber-500/10">
               <button
                 type="button"
                 onClick={() => setShowOtGlossary(v => !v)}
                 className="flex items-center justify-between w-full text-left"
               >
-                <span className="text-sm font-semibold text-amber-900"><Factory size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.otGlossaryTitle}</span>
-                <span className="text-xs text-amber-700 underline">
+                <span className="text-sm font-semibold text-amber-900 dark:text-amber-100"><Factory size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a1.otGlossaryTitle}</span>
+                <span className="text-xs text-amber-700 underline dark:text-amber-300">
                   {showOtGlossary ? t.workshop.hideExamples : t.workshop.showExamples}
                 </span>
               </button>
@@ -821,8 +821,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
                     ['SIS', t.workshop.a1.otGlossarySIS],
                   ].map(([term, def]) => (
                     <div key={term} className="text-xs">
-                      <dt className="inline font-semibold text-amber-900">{term} — </dt>
-                      <dd className="inline text-amber-800">{def}</dd>
+                    <dt className="inline font-semibold text-amber-900 dark:text-amber-100">{term} — </dt>
+                    <dd className="inline text-amber-800 dark:text-amber-200">{def}</dd>
                     </div>
                   ))}
                 </dl>

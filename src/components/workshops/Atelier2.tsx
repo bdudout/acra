@@ -322,16 +322,16 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                       className={`text-left p-3 border rounded-lg transition-all ${
                         added
                           ? 'border-green-400 bg-green-50 opacity-70 cursor-default dark:border-green-600/60 dark:bg-green-500/10'
-                          : 'border-dashed border-gray-300 hover:border-red-300 hover:bg-red-50 dark:border-gray-600 dark:hover:border-red-500 dark:hover:bg-red-500/10'
+                        : 'border-dashed border-gray-300 bg-white hover:border-red-300 hover:bg-red-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-red-500 dark:hover:bg-red-500/10'
                       }`}
                     >
                       {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
                       {!added && s.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat?.color}`}>{cat?.label}</span>
-                        <span className="text-xs font-medium text-gray-700">{s.nom}</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{s.nom}</span>
                       </div>
-                      <p className="text-xs text-gray-500">{s.description}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{s.description}</p>
                     </button>
                   )
                 })}
@@ -371,7 +371,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                     <div
                       role="button"
                       tabIndex={0}
-                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50"
+                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60"
                       aria-expanded={expanded}
                       aria-controls={`sr-detail-${s.id}`}
                       onClick={() => setExpandedId(expanded ? null : s.id)}
@@ -384,11 +384,11 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat?.color}`}>
                         {cat?.label}
                       </span>
-                      <span className="font-medium text-gray-800 flex-1">
-                        {s.nom || <em className="text-gray-500">{t.workshop.a2.srNoName}</em>}
+                      <span className="font-medium text-gray-800 dark:text-gray-100 flex-1">
+                        {s.nom || <em className="text-gray-500 dark:text-gray-400">{t.workshop.a2.srNoName}</em>}
                       </span>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span title={t.workshop.a2.pertGlobalLabel} className="px-2 py-0.5 bg-gray-100 rounded font-medium">
+                        <span title={t.workshop.a2.pertGlobalLabel} className="px-2 py-0.5 bg-gray-100 rounded font-medium dark:bg-gray-700 dark:text-gray-200">
                           {t.workshop.a2.srPertLabel} {s.pertinence}/4
                         </span>
                         <span>{s.objectifsVises?.length || 0} OV
@@ -404,7 +404,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                     </div>
 
                     {expanded && (
-                      <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-5">
+                      <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-5 dark:border-gray-700 dark:bg-gray-800/60">
                         {/* Identification */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
@@ -425,8 +425,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
                         </div>
 
                         {/* Caractérisation FM4 — Motivation / Ressources / Activité */}
-                        <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        <div className="border border-gray-200 rounded-lg p-4 bg-white dark:border-gray-700 dark:bg-gray-900">
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                             <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.a2.fm4Title}
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -575,7 +575,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
           )}
 
           {retained.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
