@@ -100,6 +100,7 @@ export const it: Translations = {
     configuration:  'Configurazione',
     admin:          'Admin',
     logout:         'Disconnetti',
+    mobileMenu:     'Menu di navigazione',
     profile:        'Il mio profilo',
   },
 

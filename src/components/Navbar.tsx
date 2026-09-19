@@ -23,7 +23,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -32,6 +32,7 @@ export default function Navbar() {
   const { t } = useTranslation()
   const branding = useBranding()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   // Un seul groupe déroulant ouvert à la fois (identifiant), + sa position viewport.
   // Les menus sont rendus en `fixed` pour ÉCHAPPER au clipping de la barre
   // (overflow-x-auto force overflow-y:auto, ce qui masquerait le menu déroulé).
@@ -223,12 +224,22 @@ export default function Navbar() {
         <div className="flex-1" />
 
         {/* Recherche globale */}
-        <GlobalSearch />
+        <div className="hidden md:block"><GlobalSearch /></div>
 
         {/* Zone droite */}
         <div className="flex items-center gap-2">
           {/* Sélecteur d'organisation (masqué si une seule organisation accessible) */}
-          <OrgSwitcher />
+          <div className="hidden md:block"><OrgSwitcher /></div>
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(v => !v)}
+            aria-expanded={mobileNavOpen}
+            aria-controls="mobile-main-navigation"
+            aria-label={t.nav.mobileMenu}
+            className="inline-flex items-center justify-center rounded-lg p-2 text-gray-700 hover:bg-gray-100 md:hidden"
+          >
+            {mobileNavOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+          </button>
           {/* Menu utilisateur (le badge de rôle est dans l'en-tête du menu) */}
           <div className="relative" ref={menuRef}>
             <button
@@ -329,7 +340,23 @@ export default function Navbar() {
 
       {/* Rangée du bas : entrées de navigation (liens directs + groupes déroulants).
           La disposition (cyber inline vs domaines GRC groupés) vient de buildNav. */}
-      <div className="border-t border-gray-100">
+      <div id="mobile-main-navigation" className={`${mobileNavOpen ? 'block' : 'hidden'} border-t border-gray-100 bg-white md:hidden`}>
+        <div className="max-w-6xl mx-auto grid grid-cols-2 gap-1 px-3 py-3">
+          <div className="col-span-2 px-1 pb-2"><OrgSwitcher /></div>
+          {entries.flatMap(entry => entry.kind === 'link' ? [entry.key] : entry.items).map(key => {
+            const item = NAV_META[key]
+            const active = isActive(item.href)
+            const pending = key === 'derogations' ? derogPending : 0
+            return <Link key={key} href={item.href} onClick={() => setMobileNavOpen(false)} aria-current={active ? 'page' : undefined}
+              className={`${navClass(active)} flex min-w-0 items-center gap-2 px-3 py-2.5`}>
+              <item.Icon size={17} className="shrink-0" aria-hidden="true" />
+              <span className="truncate">{item.label}</span>
+              {pending > 0 && badge(pending, `${pending} en attente`)}
+            </Link>
+          })}
+        </div>
+      </div>
+      <div className="hidden border-t border-gray-100 md:block">
         <div ref={navRowRef} className="max-w-6xl mx-auto px-4 flex items-center gap-1 h-11 overflow-x-auto">
 
           {entries.map(entry => {

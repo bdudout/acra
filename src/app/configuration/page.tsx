@@ -756,21 +756,22 @@ export default function ConfigurationPage() {
           </div>
         )}
 
-        {/* ── Sous-navigation : 3 sections de la configuration ──────────────── */}
-        <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
+        {/* Les réglages de référentiels sont réservés aux administrateurs : un
+            utilisateur en lecture ne doit pas arriver sur une section vide. */}
+        <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-gray-200 bg-white p-1 sm:flex sm:flex-wrap sm:rounded-none sm:border-x-0 sm:border-t-0 sm:bg-transparent sm:p-0">
           {([
             ['echelles', t.config.tabScales],
-            ['options',  t.config.tabOptions],
             ['exemples', t.config.tabExamples],
             ['ecosysteme', t.config.tabEcosysteme],
+            ...(isAdmin ? [['options', t.config.tabOptions] as const] : []),
           ] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setSection(key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:rounded-none sm:border-b-2 sm:-mb-px sm:px-4 ${
                 section === key
-                  ? 'border-ebios-500 text-ebios-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                  ? 'bg-ebios-50 text-ebios-700 sm:border-ebios-500 sm:bg-transparent'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 sm:border-transparent sm:hover:bg-transparent'
               }`}
             >
               {label}
@@ -814,7 +815,7 @@ export default function ConfigurationPage() {
         </div>
 
         {/* Onglets */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="grid grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1 mb-6 sm:flex">
           {[
             { id: 'gravite',       label: t.config.tabGravityFull },
             { id: 'vraisemblance', label: t.config.tabProbFull },
@@ -824,7 +825,7 @@ export default function ConfigurationPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`min-w-0 py-2 rounded-lg text-xs font-medium transition-colors sm:flex-1 ${
                 activeTab === tab.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
               }`}
             >

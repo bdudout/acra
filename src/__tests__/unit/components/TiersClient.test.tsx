@@ -22,35 +22,41 @@ const rows: ConsolidatedTier[] = [
 describe('TiersClient', () => {
   it('liste les tiers de toutes les analyses', () => {
     render(<TiersClient tiers={rows} />)
-    expect(screen.getByText('Infogéreur')).toBeInTheDocument()
-    expect(screen.getByText('Client Final')).toBeInTheDocument()
-    expect(screen.getByText('Analyse Alpha')).toBeInTheDocument()
+    expect(screen.getAllByText('Infogéreur')).toHaveLength(2)
+    expect(screen.getAllByText('Client Final')).toHaveLength(2)
+    expect(screen.getAllByText('Analyse Alpha')).toHaveLength(2)
+  })
+
+  it('propose des cartes dédiées aux petits écrans', () => {
+    render(<TiersClient tiers={rows} />)
+    expect(screen.getByTestId('tiers-mobile-list')).toHaveClass('sm:hidden')
+    expect(screen.getByTestId('tiers-desktop-table')).toHaveClass('hidden')
   })
 
   it('filtre par recherche (nom)', () => {
     render(<TiersClient tiers={rows} />)
     fireEvent.change(screen.getByPlaceholderText(/Rechercher/i), { target: { value: 'client' } })
-    expect(screen.getByText('Client Final')).toBeInTheDocument()
-    expect(screen.queryByText('Infogéreur')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Client Final')).toHaveLength(2)
+    expect(screen.queryAllByText('Infogéreur')).toHaveLength(0)
   })
 
   it('filtre par zone (Danger)', () => {
     render(<TiersClient tiers={rows} />)
     fireEvent.click(screen.getByRole('button', { name: /Danger/i }))
-    expect(screen.getByText('Infogéreur')).toBeInTheDocument()
-    expect(screen.queryByText('Client Final')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Infogéreur')).toHaveLength(2)
+    expect(screen.queryAllByText('Client Final')).toHaveLength(0)
   })
 
   it('affiche un état vide sans correspondance', () => {
     render(<TiersClient tiers={rows} />)
     fireEvent.change(screen.getByPlaceholderText(/Rechercher/i), { target: { value: 'zzz-introuvable' } })
-    expect(screen.queryByText('Infogéreur')).not.toBeInTheDocument()
-    expect(screen.queryByText('Client Final')).not.toBeInTheDocument()
+    expect(screen.queryAllByText('Infogéreur')).toHaveLength(0)
+    expect(screen.queryAllByText('Client Final')).toHaveLength(0)
   })
 
   it('rend chaque tiers avec un lien vers son atelier 3', () => {
     render(<TiersClient tiers={rows} />)
-    const link = within(screen.getByText('Infogéreur').closest('tr')!).getByRole('link')
+    const link = within(screen.getByTestId('tiers-desktop-table')).getByRole('link', { name: /Analyse Alpha/ })
     expect(link).toHaveAttribute('href', '/analyses/a1/atelier/3')
   })
 

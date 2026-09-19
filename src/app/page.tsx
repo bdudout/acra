@@ -1,6 +1,6 @@
 'use client'
 
-import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, Check, Layers, type LucideIcon } from 'lucide-react'
+import { FlaskConical, Target, VenetianMask, Map as MapIcon, Settings, ShieldCheck, Lightbulb, BarChart3, Download, Lock, Check, Layers, LogIn, UserPlus, type LucideIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -66,37 +66,39 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto border-x border-b border-indigo-100 bg-gradient-to-r from-[#eef2ff] via-[#ffffff] to-[#e0f2fe] rounded-b-2xl shadow-sm">
-        <div className="flex items-center gap-2">
-          <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-10 w-auto" />
-          <div>
-            <div className="font-bold text-lg leading-tight">ACRA</div>
+      <header className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto border-x border-b border-indigo-100 bg-gradient-to-r from-[#eef2ff] via-[#ffffff] to-[#e0f2fe] rounded-b-2xl shadow-sm">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-8 w-auto sm:h-10" />
+          <div className="min-w-0">
+            <div className="font-bold text-base leading-tight sm:text-lg">ACRA</div>
             <div className="text-slate-500 text-[10px] leading-tight tracking-wide hidden sm:block">
               Augmented Cyber Risk Analysis
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div data-testid="landing-actions" className="flex shrink-0 items-center gap-0.5 sm:gap-3">
           <LanguageSwitcher />
-          <Link href="/auth/signin" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-ebios-700 transition-colors">
-            {t.landing.connect}
+          <Link href="/auth/signin" aria-label={t.landing.connect} className="inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-ebios-700 transition-colors sm:px-4">
+            <LogIn size={18} className="sm:hidden" aria-hidden="true" />
+            <span className="hidden sm:inline">{t.landing.connect}</span>
           </Link>
-          <Link href="/auth/register" className="px-4 py-2 bg-ebios-600 text-white text-sm font-medium rounded-lg hover:bg-ebios-700 transition-colors shadow-sm">
-            {t.auth.register.submit}
+          <Link href="/auth/register" aria-label={t.auth.register.submit} className="inline-flex items-center justify-center rounded-lg bg-ebios-600 p-2 text-sm font-medium text-white shadow-sm hover:bg-ebios-700 transition-colors sm:px-4">
+            <UserPlus size={18} className="sm:hidden" aria-hidden="true" />
+            <span className="hidden sm:inline">{t.auth.register.submit}</span>
           </Link>
         </div>
       </header>
 
       {/* Hero */}
-      <main className="max-w-6xl mx-auto px-6 py-20 text-center">
+      <main className="max-w-6xl mx-auto px-4 py-12 text-center sm:px-6 sm:py-20">
 
-        <h1 className="text-5xl font-bold mb-6 leading-tight">
+        <h1 className="text-4xl font-bold mb-6 leading-tight sm:text-5xl">
           {t.landing.heroLine1}<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600">
             {t.landing.heroLine2}
           </span>
         </h1>
-        <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+        <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto sm:text-xl">
           {t.landing.description}
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
@@ -158,9 +160,9 @@ export default function HomePage() {
         {/* Ateliers timeline */}
         <div className="mt-24">
           <h2 className="text-3xl font-bold mb-12">{t.landing.workshopsTitle}</h2>
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <div data-testid="landing-workshops" className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-4">
             {WORKSHOPS.map((w, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center">
+              <div key={i} className="flex w-full flex-col items-center sm:flex-1">
                 <div className="w-12 h-12 rounded-xl bg-[#f0f4ff] border border-ebios-100 text-[#4338ca] flex items-center justify-center text-2xl mb-3">
                   <w.Icon size={24} aria-hidden="true" />
                 </div>

@@ -134,8 +134,27 @@ export default function RisquesClient({
             {search ? `Aucun risque correspondant à « ${search} »` : noRisks}
           </p>
         </div>
-      ) : (
-        <div className="card overflow-hidden">
+      ) : (<>
+        <div className="space-y-2 sm:hidden">
+          {filtered.map(r => {
+            const c = niveauColor(r.niveauRisque)
+            const cRes = r.niveauResiduel !== null ? niveauColor(r.niveauResiduel) : null
+            return <div key={r.risqueId} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0"><div className="font-medium text-gray-800">{r.nom}</div><div className="mt-0.5 text-xs text-gray-500">{r.analyseNom}</div></div>
+                <span className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${c.bg} ${c.text} ${c.border}`}>{r.niveauRisque}/16</span>
+              </div>
+              {r.description && <div className="mt-2 text-xs text-gray-500 line-clamp-2">{r.description}</div>}
+              <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{stratLabel(r.strategie)}</span>
+                {cRes && <span className={`rounded-full border px-2 py-0.5 font-medium ${cRes.bg} ${cRes.text} ${cRes.border}`}>{colResiduel} {r.niveauResiduel}/16</span>}
+                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{colMesures} {r.mesuresCount}</span>
+              </div>
+              <Link href={`/analyses/${r.analyseId}/atelier/5`} className="mt-3 inline-block text-xs font-medium text-ebios-600 hover:underline">{goToAtelier}</Link>
+            </div>
+          })}
+        </div>
+        <div className="hidden card overflow-hidden sm:block">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -212,7 +231,7 @@ export default function RisquesClient({
               .replace('{total}', String(total))}
           </div>
         </div>
-      )}
+      </>)}
     </>
   )
 }

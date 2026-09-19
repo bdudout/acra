@@ -43,38 +43,44 @@ const items: SerializedActionItem[] = [
 describe('PlansActionsView', () => {
   it('affiche toutes les actions et les KPI (total/retard/avancement)', () => {
     render(<PlansActionsView items={items} />)
-    expect(screen.getByText('Chiffrer les sauvegardes')).toBeInTheDocument()
-    expect(screen.getByText('Revue trimestrielle')).toBeInTheDocument()
-    expect(screen.getByText('Fuite de données')).toBeInTheDocument()
+    expect(screen.getAllByText('Chiffrer les sauvegardes')).toHaveLength(2)
+    expect(screen.getAllByText('Revue trimestrielle')).toHaveLength(2)
+    expect(screen.getAllByText('Fuite de données')).toHaveLength(2)
     // 1 fait / 3 → 33 % ; 1 en retard (échéance 2020 + non fait)
     expect(screen.getByText('33%')).toBeInTheDocument()
+  })
+
+  it('propose des cartes dédiées aux petits écrans', () => {
+    render(<PlansActionsView items={items} />)
+    expect(screen.getByTestId('actions-mobile-list')).toHaveClass('md:hidden')
+    expect(screen.getByTestId('actions-desktop-table')).toHaveClass('hidden')
   })
 
   it('filtre par origine (typologie)', () => {
     render(<PlansActionsView items={items} />)
     fireEvent.change(screen.getByLabelText('Origine'), { target: { value: 'risque' } })
-    expect(screen.getByText('Chiffrer les sauvegardes')).toBeInTheDocument()
-    expect(screen.queryByText('Revue trimestrielle')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Chiffrer les sauvegardes')).toHaveLength(2)
+    expect(screen.queryAllByText('Revue trimestrielle')).toHaveLength(0)
   })
 
   it('filtre par statut effectif EN_RETARD', () => {
     render(<PlansActionsView items={items} />)
     fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'EN_RETARD' } })
-    expect(screen.getByText('Fuite de données')).toBeInTheDocument()
-    expect(screen.queryByText('Chiffrer les sauvegardes')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Fuite de données')).toHaveLength(2)
+    expect(screen.queryAllByText('Chiffrer les sauvegardes')).toHaveLength(0)
   })
 
   it('recherche texte sur le titre', () => {
     render(<PlansActionsView items={items} />)
     fireEvent.change(screen.getByPlaceholderText('Rechercher'), { target: { value: 'revue' } })
-    expect(screen.getByText('Revue trimestrielle')).toBeInTheDocument()
-    expect(screen.queryByText('Chiffrer les sauvegardes')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Revue trimestrielle')).toHaveLength(2)
+    expect(screen.queryAllByText('Chiffrer les sauvegardes')).toHaveLength(0)
   })
 
   it('affiche un message quand aucune action ne correspond', () => {
     render(<PlansActionsView items={items} />)
     fireEvent.change(screen.getByLabelText('Porteur'), { target: { value: 'inexistant' } })
-    expect(screen.getByText('Aucune action.')).toBeInTheDocument()
+    expect(screen.getAllByText('Aucune action.')).toHaveLength(2)
   })
 
   it('trie les retards en tête', () => {
@@ -98,8 +104,8 @@ describe('PlansActionsView', () => {
     // Valeurs distinctes triées : Audit(0), Incident(1), Risque(2) → décocher Risque
     const checks = screen.getAllByRole('checkbox')
     fireEvent.click(checks[2])
-    expect(screen.queryByText('Chiffrer les sauvegardes')).not.toBeInTheDocument() // origine Risque
-    expect(screen.getByText('Revue trimestrielle')).toBeInTheDocument() // origine Audit
+    expect(screen.queryAllByText('Chiffrer les sauvegardes')).toHaveLength(0) // origine Risque
+    expect(screen.getAllByText('Revue trimestrielle')).toHaveLength(2) // origine Audit
   })
 
   it('action orpheline : alerte + édition en place (PATCH plans-actions)', async () => {
@@ -110,10 +116,10 @@ describe('PlansActionsView', () => {
     // Bandeau d'alerte présent
     expect(screen.getByText('1 orpheline(s)')).toBeInTheDocument()
     // Ouvre l'éditeur en place, modifie le titre, enregistre
-    fireEvent.click(screen.getByRole('button', { name: /Modifier|Ouvrir|Edit/ }))
-    const titre = screen.getByDisplayValue('Action isolée')
+    fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getByRole('button', { name: /Modifier|Ouvrir|Edit/ }))
+    const titre = within(screen.getByTestId('actions-desktop-table')).getByDisplayValue('Action isolée')
     fireEvent.change(titre, { target: { value: 'Action corrigée' } })
-    fireEvent.click(screen.getByText('Enregistrer'))
+    fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getByText('Enregistrer'))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const [url, opts] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/organizations/o1/plans-actions/p7')

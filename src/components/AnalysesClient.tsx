@@ -134,7 +134,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             <h1 className="text-2xl font-bold text-gray-900">{t.analyses.title}</h1>
             <p className="text-gray-500 text-sm mt-1">{analyses.length} {analyses.length === 1 ? t.analyses.totalLabelSg : t.analyses.totalLabel}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             {/* Import */}
             <input
               ref={importRef}
@@ -147,7 +147,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             <button
               onClick={() => importRef.current?.click()}
               disabled={importing}
-              className="btn-secondary flex items-center gap-2 text-sm"
+              className="btn-secondary hidden items-center gap-2 text-sm sm:flex"
               title="Importer une analyse depuis un fichier JSON ou CSV"
             >
               {importing ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Import…</> : <><FolderOpen size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Importer</>}
@@ -157,13 +157,13 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               <button
                 onClick={loadExample}
                 disabled={loadingExample}
-                className="btn-secondary flex items-center gap-2 text-sm"
+                className="btn-secondary hidden items-center gap-2 text-sm sm:flex"
                 title={t.demo.loadExampleHint}
               >
                 {loadingExample ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />…</> : <><Sparkles size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.demo.loadExample}</>}
               </button>
             )}
-            <Link href="/analyses/new" className="btn-primary flex items-center gap-2">
+            <Link href="/analyses/new" className="btn-primary flex flex-1 items-center justify-center gap-2 sm:flex-none">
               {t.analyses.newBtn}
             </Link>
           </div>
@@ -177,7 +177,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             placeholder={t.analyses.searchPh}
             className="input max-w-xs text-sm"
           />
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+          <div className="grid w-full grid-cols-2 gap-1 bg-gray-100 rounded-xl p-1 sm:flex sm:w-auto">
             {[
               { value: 'ALL',      label: t.analyses.filterAll       },
               { value: 'EN_COURS', label: t.analyses.filterActive    },
@@ -250,10 +250,10 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               return (
                 <div
                   key={a.id}
-                  className="card p-5 hover:shadow-md transition-shadow cursor-pointer"
+                  className="card p-4 sm:p-5 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => router.push(`/analyses/${a.id}`)}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-semibold text-gray-900 text-lg">{a.nom}</span>
@@ -311,7 +311,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3 flex-wrap">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-500 mb-3 sm:flex sm:items-center sm:gap-4 sm:flex-wrap">
                         <span><span aria-hidden="true"><Calendar size={18} aria-hidden="true" /></span>{t.analyses.created} {formatDate(a.createdAt, locale)}</span>
                         <span><Pencil size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.analyses.modified} {formatDate(a.updatedAt, locale)}</span>
                         <span><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque} {a._count.sourcesRisque === 1 ? t.analyses.sourcesSg : t.analyses.sources}</span>
@@ -328,8 +328,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                       </div>
                     </div>
 
-                    <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <Link href={`/analyses/${a.id}`} className="btn-secondary text-sm py-1.5">
+                    <div className="flex w-full gap-2 sm:w-auto sm:flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <Link href={`/analyses/${a.id}`} className="btn-secondary flex-1 text-center text-sm py-1.5 sm:flex-none">
                         {t.analyses.openBtn}
                       </Link>
                       {/* Export toujours disponible */}

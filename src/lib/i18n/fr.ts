@@ -101,6 +101,7 @@ export const fr = {
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Déconnexion',
+    mobileMenu:     'Menu de navigation',
     profile:        'Mon profil',
   },
 

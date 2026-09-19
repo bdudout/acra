@@ -250,8 +250,36 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         {t.plansActions.resultCount.replace('{n}', String(visibles.length)).replace('{total}', String(hydrated.length))}
       </p>
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
+      {/* Lecture compacte : les informations déterminantes restent visibles sans
+          défilement horizontal sur téléphone. */}
+      <div data-testid="actions-mobile-list" className="space-y-2 md:hidden">
+        {visibles.length === 0 && <div className="rounded-lg border border-gray-200 bg-white px-3 py-8 text-center text-gray-400">{t.plansActions.empty}</div>}
+        {visibles.map(it => {
+          const eff = effectiveStatut(it, now)
+          const isOrphan = it.origine === 'orpheline'
+          const editing = editId === it.sourceId && isOrphan
+          return <div key={it.id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0"><div className="font-medium text-gray-900">{it.titre}</div>{it.description && <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">{it.description}</div>}</div>
+              <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${PRIORITE_STYLE[it.priorite]}`}>{t.plansActions.priorites[it.priorite]}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+              <span className={`rounded border px-2 py-0.5 ${ORIGINE_STYLE[it.origine]}`}>{t.plansActions.origines[it.origine]}</span>
+              <span className={`rounded-full px-2 py-0.5 ${STATUT_STYLE[eff]}`}>{t.plansActions.statuts[eff]}</span>
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{it.porteur ?? t.plansActions.sansPorteur}</span>
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{fmtDate(it.echeance)}</span>
+            </div>
+            <div className="mt-3">
+              {it.lien ? <Link href={it.lien} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</Link>
+                : isOrphan && orgId ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</button> : null}
+            </div>
+            {editing && orgId && <div className="mt-3 border-t border-gray-100 pt-3"><PlanActionEditor orgId={orgId} action={{ id: it.sourceId, titre: it.titre, porteur: it.porteur, echeance: it.echeance ? it.echeance.toISOString() : null, priorite: it.priorite, statut: it.statut }} onSaved={() => { setEditId(null); router.refresh() }} onCancel={() => setEditId(null)} /></div>}
+          </div>
+        })}
+      </div>
+
+      {/* Table complète à partir de la tablette. */}
+      <div data-testid="actions-desktop-table" className="hidden overflow-x-auto bg-white rounded-lg border border-gray-200 md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">

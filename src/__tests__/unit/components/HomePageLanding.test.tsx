@@ -33,6 +33,12 @@ describe('Landing — FAQ et stats internationalisées', () => {
     expect(screen.getByTestId('landing-shell')).toHaveClass('text-slate-900')
   })
 
+  it('garde les actions de l’en-tête lisibles sur un téléphone', () => {
+    render(<HomePage />)
+    expect(screen.getByTestId('landing-actions')).toHaveClass('shrink-0')
+    expect(screen.getByTestId('landing-workshops')).toHaveClass('items-center')
+  })
+
   it('réserve le drapeau français à la référence française et localise la méthode', () => {
     const { unmount } = render(<HomePage />)
     expect(screen.getByTestId('fr-method-flag')).toBeInTheDocument()
