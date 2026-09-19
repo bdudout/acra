@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { signIn } from 'next-auth/react'
 
 /**
  * Page de vérification d'e-mail (mode démo) : le testeur saisit le code OTP reçu par
@@ -37,8 +38,18 @@ function VerifyEmailForm() {
         setLoading(false)
         return
       }
-      // Succès : rediriger vers la connexion.
-      router.push('/auth/signin?verified=1')
+      const rawPending = sessionStorage.getItem('acra:pending-email-verification')
+      sessionStorage.removeItem('acra:pending-email-verification')
+      let pending: { email?: string; password?: string } | null = null
+      try { pending = rawPending ? JSON.parse(rawPending) : null } catch { /* fallback login */ }
+      if (pending?.email?.toLowerCase() === email.toLowerCase() && pending.password) {
+        const login = await signIn('credentials', { email: pending.email, password: pending.password, redirect: false })
+        if (!login?.error) {
+          router.replace('/dashboard')
+          return
+        }
+      }
+      router.replace('/auth/signin?verified=1')
     } catch {
       setError(t.auth.verifyEmail.invalid)
       setLoading(false)

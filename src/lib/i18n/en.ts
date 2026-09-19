@@ -362,6 +362,8 @@ export const en: Translations = {
       description:  'Perform guided cyber risk analyses based on EBIOS RM and ISO 27005, export to PDF/Excel.',
       name:         'Full name',
       namePh:       'Jane Smith',
+      organizationName: 'Organization name',
+      organizationNamePh: 'E.g. Seaside Workshop',
       emailPro:     'Professional email',
       passwordPh:   'At least 8 characters',
       confirm:      'Confirm password',

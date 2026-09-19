@@ -13,7 +13,7 @@ import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape, type Passwo
 export default function RegisterPage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ name: '', organizationName: '', email: '', password: '', confirm: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [policy, setPolicy] = useState<PasswordPolicyShape>(DEFAULT_POLICY)
@@ -61,7 +61,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
+      body: JSON.stringify({ name: form.name, organizationName: form.organizationName, email: form.email, password: form.password }),
     })
 
     const data = await res.json()
@@ -73,6 +73,7 @@ export default function RegisterPage() {
 
     // Mode démo : l'adresse doit être vérifiée (OTP) avant toute connexion.
     if (data.verificationRequired) {
+      sessionStorage.setItem('acra:pending-email-verification', JSON.stringify({ email: form.email, password: form.password }))
       router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`)
       return
     }
@@ -128,6 +129,16 @@ export default function RegisterPage() {
               placeholder={t.auth.register.namePh}
             />
           </div>
+
+          {isDemo && (
+            <div>
+              <label htmlFor="organization-name" className="block text-sm font-medium text-gray-700 mb-1">{t.auth.register.organizationName}</label>
+              <input id="organization-name" type="text" required minLength={2} value={form.organizationName}
+                onChange={e => setForm({ ...form, organizationName: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+                placeholder={t.auth.register.organizationNamePh} />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.auth.register.emailPro}</label>
