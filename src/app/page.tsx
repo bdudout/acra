@@ -59,29 +59,29 @@ export default function HomePage() {
   const ws = WS_TITLES[locale] ?? WS_TITLES.fr
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-ebios-950 text-white">
+    <div data-testid="landing-shell" className="min-h-screen bg-slate-50 text-slate-900">
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
+      <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto border-b border-slate-200/80">
         <div className="flex items-center gap-2">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-10 w-auto" />
           <div>
             <div className="font-bold text-lg leading-tight">ACRA</div>
-            <div className="text-white/40 text-[10px] leading-tight tracking-wide hidden sm:block">
+            <div className="text-slate-500 text-[10px] leading-tight tracking-wide hidden sm:block">
               Augmented Cyber Risk Analysis
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <LanguageSwitcher onDark />
-          <Link href="/auth/signin" className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors">
+          <LanguageSwitcher />
+          <Link href="/auth/signin" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-ebios-700 transition-colors">
             {t.landing.connect}
           </Link>
-          <Link href="/auth/register" className="px-4 py-2 bg-[white] text-[#312e81] text-sm font-medium rounded-lg hover:bg-white/90 transition-colors">
+          <Link href="/auth/register" className="px-4 py-2 bg-ebios-600 text-white text-sm font-medium rounded-lg hover:bg-ebios-700 transition-colors shadow-sm">
             {t.auth.register.submit}
           </Link>
         </div>
@@ -89,7 +89,7 @@ export default function HomePage() {
 
       {/* Hero */}
       <main className="max-w-6xl mx-auto px-6 py-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm mb-6">
+        <div className="inline-flex items-center gap-2 bg-[#f0f4ff] border border-ebios-100 text-[#3730a3] rounded-full px-4 py-1.5 text-sm mb-6">
           {/* Drapeau FR en SVG (les emojis drapeaux ne s'affichent pas sur Windows) */}
           <svg width="16" height="11" viewBox="0 0 3 2" aria-hidden="true" className="rounded-[1px] flex-shrink-0">
             <rect width="1" height="2" x="0" fill="#0055A4" />
@@ -101,11 +101,11 @@ export default function HomePage() {
 
         {/* Encart mode démonstration — règles pour le visiteur (ACRA-Demo). */}
         {isDemo && (
-          <div className="max-w-2xl mx-auto mb-8 text-left bg-indigo-500/15 border border-indigo-300/30 rounded-2xl px-6 py-5">
+          <div className="max-w-2xl mx-auto mb-8 text-left bg-[#f0f4ff] border border-ebios-200 rounded-2xl px-6 py-5 shadow-sm">
             <div className="flex items-center gap-2 font-semibold mb-2">
               <span aria-hidden="true"><FlaskConical size={18} aria-hidden="true" /></span> {t.demo.homeTitle}
             </div>
-            <ul className="space-y-1.5 text-sm text-white/85">
+            <ul className="space-y-1.5 text-sm text-slate-700">
               <li>• {t.demo.homeRule1}</li>
               <li>• {t.demo.homeRule2}</li>
               <li>• {t.demo.homeRule3}</li>
@@ -116,20 +116,20 @@ export default function HomePage() {
 
         <h1 className="text-5xl font-bold mb-6 leading-tight">
           {t.landing.heroLine1}<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-300">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600">
             {t.landing.heroLine2}
           </span>
         </h1>
-        <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto">
+        <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
           {t.landing.description}
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
           <Link href="/auth/register"
-            className="px-8 py-4 bg-[white] text-[#312e81] font-bold rounded-xl hover:bg-white/90 transition-all shadow-lg shadow-black/20 text-lg">
+            className="px-8 py-4 bg-ebios-600 text-white font-bold rounded-xl hover:bg-ebios-700 transition-all shadow-lg shadow-ebios-900/15 text-lg">
             {t.landing.startFree}
           </Link>
           <Link href="/auth/signin"
-            className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all text-lg">
+            className="px-8 py-4 border border-slate-300 bg-[#ffffff] hover:bg-slate-100 text-slate-700 font-medium rounded-xl transition-all text-lg">
             {t.landing.connect}
           </Link>
         </div>
@@ -144,10 +144,10 @@ export default function HomePage() {
             { Icon: Lock,        f: t.landing.features.secure     },
             { Icon: Layers,      f: t.landing.features.grc        },
           ] as { Icon: LucideIcon; f: { title: string; desc: string } }[]).map(({ Icon, f }, i) => (
-            <div key={i} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-              <div className="mb-3"><Icon size={28} aria-hidden="true" /></div>
+            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <div className="mb-3 text-[#4f46e5]"><Icon size={28} aria-hidden="true" /></div>
               <h3 className="font-bold text-lg mb-2">{f.title}</h3>
-              <p className="text-white/60 text-sm leading-relaxed">{f.desc}</p>
+              <p className="text-slate-600 text-sm leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -158,12 +158,12 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             {WORKSHOPS.map((w, i) => (
               <div key={i} className="flex-1 flex flex-col items-center">
-                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl mb-3">
+                <div className="w-12 h-12 rounded-xl bg-[#f0f4ff] border border-ebios-100 text-[#4338ca] flex items-center justify-center text-2xl mb-3">
                   <w.Icon size={24} aria-hidden="true" />
                 </div>
-                <div className="text-xs font-bold text-white/40 mb-1">ATELIER {w.num}</div>
+                <div className="text-xs font-bold text-slate-500 mb-1">ATELIER {w.num}</div>
                 <div className="font-semibold text-sm mb-1">{ws[w.titleKey]}</div>
-                <div className="text-xs text-white/50 text-center">{ws[w.descKey]}</div>
+                <div className="text-xs text-slate-500 text-center">{ws[w.descKey]}</div>
               </div>
             ))}
           </div>
@@ -172,27 +172,27 @@ export default function HomePage() {
         {/* Exemples concrets */}
         <div className="mt-24">
           <h2 className="text-3xl font-bold mb-3">{t.landing.examplesTitle}</h2>
-          <p className="text-white/70 mb-12 max-w-2xl mx-auto">{t.landing.examplesSubtitle}</p>
+          <p className="text-slate-600 mb-12 max-w-2xl mx-auto">{t.landing.examplesSubtitle}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
             {t.landing.examples.map((ex, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur border border-white/15 rounded-2xl p-6 flex flex-col gap-4">
+              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
                 {/* En-tête : secteur + profil type (pas une personne réelle) */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-200">{ex.sector}</span>
-                  <span className="text-xs bg-white/15 text-white/90 rounded-full px-3 py-0.5">{t.landing.examplesProfileLabel} : {ex.role}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#4f46e5]">{ex.sector}</span>
+                  <span className="text-xs bg-slate-100 text-slate-700 rounded-full px-3 py-0.5">{t.landing.examplesProfileLabel} : {ex.role}</span>
                 </div>
                 <div className="font-bold text-base">{ex.org}</div>
 
                 {/* Scénario illustratif — description de situation, PAS un témoignage. */}
-                <div className="border-l-2 border-indigo-300 pl-4">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-200/80 mb-1">{t.landing.examplesScenarioTag}</div>
-                  <p className="text-sm text-white/85 leading-relaxed">{ex.quote}</p>
+                <div className="border-l-2 border-ebios-300 pl-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#4f46e5] mb-1">{t.landing.examplesScenarioTag}</div>
+                  <p className="text-sm text-slate-700 leading-relaxed">{ex.quote}</p>
                 </div>
 
                 {/* Résultat */}
-                <div className="mt-auto flex items-start gap-2 bg-white/10 rounded-xl p-3">
-                  <Check size={16} className="text-green-300 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  <p className="text-xs text-white/85 leading-relaxed">{ex.result}</p>
+                <div className="mt-auto flex items-start gap-2 bg-[#ecfdf5] rounded-xl p-3">
+                  <Check size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <p className="text-xs text-slate-700 leading-relaxed">{ex.result}</p>
                 </div>
               </div>
             ))}
@@ -204,14 +204,14 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold mb-3">{t.landing.facts.title}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
             {t.landing.facts.items.map((fact, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
-                <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-indigo-300 mb-2">{fact.value}</div>
-                <p className="text-sm text-white/75 leading-relaxed mb-2">{fact.label}</p>
-                <span className="text-[11px] uppercase tracking-wide text-white/40">{fact.source}</span>
+              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
+                <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600 mb-2">{fact.value}</div>
+                <p className="text-sm text-slate-700 leading-relaxed mb-2">{fact.label}</p>
+                <span className="text-[11px] uppercase tracking-wide text-slate-500">{fact.source}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-white/40 mt-4 max-w-3xl">{t.landing.facts.note}</p>
+          <p className="text-xs text-slate-500 mt-4 max-w-3xl">{t.landing.facts.note}</p>
         </div>
 
         {/* Stats / social proof */}
@@ -222,9 +222,9 @@ export default function HomePage() {
             { value: '100%' },
             { value: 'ISO' },
           ].map((s, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-              <div className="text-3xl font-bold text-white mb-1">{s.value}</div>
-              <div className="text-xs text-white/50 leading-snug">{t.landing.statLabels[i]}</div>
+            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-5 text-center shadow-sm">
+              <div className="text-3xl font-bold text-[#4338ca] mb-1">{s.value}</div>
+              <div className="text-xs text-slate-500 leading-snug">{t.landing.statLabels[i]}</div>
             </div>
           ))}
         </div>
@@ -233,28 +233,28 @@ export default function HomePage() {
         <div className="mt-24 text-left max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold mb-10 text-center">{t.landing.faq.title}</h2>
           {t.landing.faq.items.map((item, i) => (
-            <details key={i} className="group border-b border-white/10 py-5">
-              <summary className="flex items-center justify-between cursor-pointer font-semibold text-white/90 hover:text-white list-none">
+            <details key={i} className="group border-b border-slate-200 py-5">
+              <summary className="flex items-center justify-between cursor-pointer font-semibold text-slate-800 hover:text-ebios-700 list-none">
                 {item.q}
-                <span className="text-white/40 group-open:rotate-45 transition-transform text-xl ml-4 flex-shrink-0">+</span>
+                <span className="text-slate-400 group-open:rotate-45 transition-transform text-xl ml-4 flex-shrink-0">+</span>
               </summary>
-              <p className="mt-3 text-white/60 text-sm leading-relaxed">{item.a}</p>
+              <p className="mt-3 text-slate-600 text-sm leading-relaxed">{item.a}</p>
             </details>
           ))}
         </div>
 
         {/* CTA final */}
-        <div className="mt-24 bg-white/5 border border-white/10 rounded-3xl p-12 text-center">
+        <div className="mt-24 bg-[#f0f4ff] border border-ebios-100 rounded-3xl p-12 text-center">
           <h2 className="text-3xl font-bold mb-4">{t.landing.heroLine1} {t.landing.heroLine2}</h2>
-          <p className="text-white/50 mb-8 max-w-lg mx-auto">{t.landing.description}</p>
+          <p className="text-slate-600 mb-8 max-w-lg mx-auto">{t.landing.description}</p>
           <Link href="/auth/register"
-            className="inline-block px-10 py-4 bg-[white] text-[#312e81] font-bold rounded-xl hover:bg-white/90 transition-all shadow-lg shadow-black/20 text-lg">
+            className="inline-block px-10 py-4 bg-ebios-600 text-white font-bold rounded-xl hover:bg-ebios-700 transition-all shadow-lg shadow-ebios-900/15 text-lg">
             {t.landing.startFree}
           </Link>
         </div>
       </main>
 
-      <footer className="text-center py-8 text-white/30 text-sm border-t border-white/10 mt-20">
+      <footer className="text-center py-8 text-slate-500 text-sm border-t border-slate-200 mt-20">
         <p>
           ACRA — Augmented Cyber Risk Analysis. {t.landing.footerMethod}{' '}
           <a href="https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/" target="_blank" rel="noopener" className="underline">{t.landing.footerGuideLink}</a>

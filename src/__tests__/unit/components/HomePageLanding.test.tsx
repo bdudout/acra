@@ -21,6 +21,12 @@ beforeEach(() => {
 })
 
 describe('Landing — FAQ et stats internationalisées', () => {
+  it('utilise la palette claire de l’application par défaut', () => {
+    render(<HomePage />)
+    expect(screen.getByTestId('landing-shell')).toHaveClass('bg-slate-50')
+    expect(screen.getByTestId('landing-shell')).toHaveClass('text-slate-900')
+  })
+
   it('rend la FAQ depuis l’i18n (titre + toutes les questions)', () => {
     render(<HomePage />)
     expect(screen.getByText(fr.landing.faq.title)).toBeInTheDocument()
