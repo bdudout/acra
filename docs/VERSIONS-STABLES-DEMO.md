@@ -22,6 +22,11 @@ Une release stable est préparée en brouillon, jamais publiée automatiquement.
 | Image / digest | Application construite, identifiable sans ambiguïté |
 | Migration | Changement de structure de la base ; à prendre en compte pour revenir en arrière |
 
+## Socle technique
+
+L’image et la CI utilisent Node.js 24 LTS. Node.js 20 est hors support et ne doit
+plus servir à construire la première stable ([calendrier officiel](https://nodejs.org/en/about/previous-releases)).
+
 ## Ce qui est livré
 
 - `security.yml` : tests, types, i18n, audit dépendances, **build de production et
