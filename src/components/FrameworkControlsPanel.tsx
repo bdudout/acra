@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Sélecteur de contrôles d'un référentiel-cadre ────────────────────────────
+//
+// Parcours et sélection des contrôles d'un cadre livré (ISO 27001, DORA,
+// PCI-DSS…) regroupés par catégorie (lib/frameworks-data). Réutilisable :
+// `onSelect(control)` remonte le contrôle choisi à l'appelant.
+
 import { useState, useMemo } from 'react'
 import {
   getFrameworkControles, getFrameworkCategories, FRAMEWORK_META,

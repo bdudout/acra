@@ -30,6 +30,7 @@ async function guard(orgId: string, id: string) {
   return { userId, row }
 }
 
+// PATCH /api/organizations/[orgId]/conformite/traitements/[id] — met à jour un traitement d'écart de conformité (plan d'action / dérogation / acceptation).
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { orgId, id } = await params
   const g = await guard(orgId, id)
@@ -62,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json({ traitement: updated })
 }
 
+// DELETE /api/organizations/[orgId]/conformite/traitements/[id] — supprime un traitement d'écart de conformité.
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { orgId, id } = await params
   const g = await guard(orgId, id)

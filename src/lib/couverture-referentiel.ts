@@ -46,6 +46,7 @@ export interface Couverture {
 
 const CONSTAT_TERMINES = new Set(['RESOLU', 'ACCEPTE'])
 
+/** Synthèse de couverture d'un référentiel : exigences couvertes par des contrôles/constats, conformes, anomalies, taux. */
 export function synthetiserCouverture(
   exigences: { ref: string }[],
   controles: ControleCouvrant[],

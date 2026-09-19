@@ -67,6 +67,7 @@ export type RiskTier = 'faible' | 'modere' | 'eleve' | 'critique'
 
 export const RISK_TIER_THRESHOLDS = { critique: 12, eleve: 8, modere: 4 } as const
 
+/** Palier de risque (faible/modéré/élevé/critique) d'un score selon les seuils RISK_TIER_THRESHOLDS. */
 export function getRiskTier(score: number): RiskTier {
   if (score >= RISK_TIER_THRESHOLDS.critique) return 'critique'
   if (score >= RISK_TIER_THRESHOLDS.eleve)    return 'eleve'

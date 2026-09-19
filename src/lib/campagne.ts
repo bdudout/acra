@@ -43,6 +43,7 @@ function parseDate(v: unknown): Date | null {
 const txt = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() ? v.trim() : null
 
+/** Valide l'entrée d'une campagne d'évaluation (intitulé requis, dates cohérentes) → code d'erreur ou null. */
 export function validateCampagneInput(body: CampagneInput): string | null {
   if (typeof body.intitule !== 'string' || body.intitule.trim() === '') return 'intitule_requis'
   for (const c of ['dateDebut', 'dateFin'] as const) {
@@ -54,6 +55,7 @@ export function validateCampagneInput(body: CampagneInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'une campagne validée (trim de l'intitulé/description, parse des dates). */
 export function cleanCampagneInput(body: CampagneInput): CleanCampagne {
   return {
     intitule: String(body.intitule).trim(),
@@ -93,6 +95,7 @@ export interface CleanEvaluation {
 
 const COTES = ['graviteInherente', 'vraisemblanceInherente', 'graviteResiduelle', 'vraisemblanceResiduelle'] as const
 
+/** Valide l'entrée d'une évaluation (cotations 1-N dans la plage, efficacité des contrôles connue) → code d'erreur ou null. */
 export function validateEvaluationInput(body: EvaluationInput): string | null {
   for (const c of COTES) {
     const v = body[c]
@@ -109,6 +112,7 @@ export function validateEvaluationInput(body: EvaluationInput): string | null {
 const cote = (v: unknown): number | null =>
   v == null || v === '' ? null : Math.min(COTE_MAX, Math.max(COTE_MIN, Math.round(Number(v))))
 
+/** Normalise l'entrée d'une évaluation validée (cotations clampées dans la plage, efficacité typée ou null). */
 export function cleanEvaluationInput(body: EvaluationInput): CleanEvaluation {
   const eff = body.efficaciteControles as EfficaciteControle
   return {
@@ -181,6 +185,7 @@ export interface CampagneAvancement {
   complete: boolean
 }
 
+/** Avancement d'une campagne : total, à coter/cotées/validées/rejetées, taux de validation, complétude (clôturable). */
 export function avancementCampagne(evaluations: EvaluationLite[]): CampagneAvancement {
   const a: CampagneAvancement = { total: evaluations.length, aCoter: 0, cotees: 0, validees: 0, rejetees: 0, tauxValidation: 0, complete: false }
   for (const e of evaluations) {

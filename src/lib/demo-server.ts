@@ -37,6 +37,7 @@ export async function getDemoConfig(): Promise<DemoConfig> {
  * `__resetInstanceModeCache` sert uniquement aux tests.
  */
 let cachedInstanceMode: InstanceMode | null = null
+/** Réinitialise le cache du mode d'instance (démo/prod). Réservé aux tests. */
 export function __resetInstanceModeCache(): void {
   cachedInstanceMode = null
 }

@@ -11,9 +11,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 /** Piloter une campagne relève de la 2ᵉ ligne (risk manager / RSSI / admin). */
-export function peutPiloter(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
-  return peutDefinir2eLigne(role, opts)
-}
+import { peutPiloter } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

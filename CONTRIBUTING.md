@@ -2,6 +2,11 @@
 
 Thank you for your interest in contributing! This guide explains how to work on the codebase.
 
+> 🗺️ **New to the codebase (human or AI agent)?** Read
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) first — it maps *where things live*
+> (`lib/` index by domain, API auth patterns, the unified action plan, the 3-level
+> config model). This file covers *how* to contribute; that one covers *where* to look.
+
 ## Table of Contents
 
 - [Getting started](#getting-started)

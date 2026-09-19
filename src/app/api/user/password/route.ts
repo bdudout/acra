@@ -13,6 +13,7 @@ const Schema = z.object({
   newPassword:     z.string().min(1),
 })
 
+// POST /api/user/password — change le mot de passe de l'utilisateur connecté (vérifie l'ancien, applique la politique).
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

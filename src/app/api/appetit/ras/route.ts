@@ -11,7 +11,7 @@ import { getT } from '@/lib/i18n'
 import { cleanAppetitConfig } from '@/lib/appetit'
 import { buildRasExport, type RasRiskLite } from '@/lib/ras-export'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { createRequire } from 'node:module'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,9 +61,9 @@ export async function GET(req: NextRequest) {
 
   const stamp = new Date().toISOString().slice(0, 10)
   try {
-    const nodeRequire = createRequire(process.cwd() + '/package.json')
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { renderRasPDF } = nodeRequire(process.cwd() + '/.pdf-runtime/ras-pdf-template.cjs')
+    const { renderRasPDF } = loadPdfRuntime('ras-pdf-template')
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
     const buffer = await renderRasPDF(data, locale, org?.nom ?? '', stamp)
     return new NextResponse(buffer as unknown as ArrayBuffer, {

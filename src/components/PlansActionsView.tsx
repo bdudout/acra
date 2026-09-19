@@ -1,9 +1,22 @@
 'use client'
 
-// Vue transverse des plans d'action : agrège mesures d'analyse, actions du
-// registre, recommandations d'audit, anomalies de contrôle et incidents. Les
-// items arrivent sérialisés (échéance en ISO) ; on réhydrate en Date puis on
-// délègue filtre/tri/synthèse à la lib pure `action-items`.
+// ─── Vue unifiée des plans d'action (page /actions) ───────────────────────────
+//
+// Table transverse agrégeant TOUTES les actions à mener, par ORIGINE métier
+// (7 facettes : risque, conformité, contrôle, audit, régulateur, incident,
+// orpheline). Les items arrivent sérialisés (échéance ISO) → réhydratés en Date.
+//
+// Pipeline d'affichage (dans cet ordre) :
+//   1. barre de filtres à facettes (origine/priorité/statut/échéance/porteur/q)
+//      → `filterActionItems` (lib pure action-items) ;
+//   2. filtres PAR COLONNE façon tableur → `applyColumnFilters` (lib table-filter);
+//   3. tri par colonne si actif, sinon tri métier par défaut → `sortRows`
+//      (lib table-sort) / `sortActionItems`.
+// Les valeurs distinctes des filtres de colonne sont calculées après la barre
+// de facettes. En-têtes = composant réutilisable `ColumnMenu` (tri + filtre auto).
+//
+// Actions ORPHELINES (aucun lien source) : bandeau d'alerte + édition EN PLACE
+// via l'éditeur réutilisable `PlanActionEditor` (PATCH plans-actions).
 
 import { Fragment, useMemo, useState } from 'react'
 import Link from 'next/link'

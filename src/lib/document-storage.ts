@@ -19,6 +19,7 @@ export interface DocumentStorage {
 
 // ── Adaptateur volume local ──────────────────────────────────────────────────
 
+/** Adaptateur de stockage documentaire sur volume local ; résout les clés sous `baseDir` et refuse toute évasion de chemin. */
 export function localStorage(baseDir: string): DocumentStorage {
   const root = path.resolve(baseDir)
 

@@ -11,6 +11,7 @@ const Schema = z.object({
   phone: z.string().trim().max(32).regex(/^\+?[0-9 .()-]*$/, 'Téléphone invalide').optional(),
 })
 
+// GET /api/user/profile — lit le profil de l'utilisateur connecté.
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -22,6 +23,7 @@ export async function GET() {
   return NextResponse.json({ user })
 }
 
+// PATCH /api/user/profile — met à jour le profil de l'utilisateur connecté (nom, langue…).
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

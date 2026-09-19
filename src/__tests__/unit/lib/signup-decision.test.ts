@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { resolveSignupDecision } from '@/lib/demo'
 
 describe('resolveSignupDecision', () => {
-  it('tout premier compte = exploitant SUPER_ADMIN (toujours autorisé)', () => {
-    expect(resolveSignupDecision({ isFirstUser: true, signupOpen: false })).toEqual({
-      allowed: true, instanceRole: 'SUPER_ADMIN', provisionOrg: false, requireEmailVerif: false, enforceCap: false,
+  it('refuse tout amorçage public, même sur une démo prouvée', () => {
+    expect(resolveSignupDecision({ isFirstUser: true, signupOpen: true })).toEqual({
+      allowed: false,
     })
-    // même si l'inscription est ouverte, le 1er reste l'exploitant
-    expect(resolveSignupDecision({ isFirstUser: true, signupOpen: true }).allowed).toBe(true)
+    expect(resolveSignupDecision({ isFirstUser: true, signupOpen: false })).toEqual({ allowed: false })
+    // Une ouverture temporaire de l'inscription ne doit jamais devenir un bootstrap prod.
+    expect(resolveSignupDecision({ isFirstUser: true, signupOpen: true })).toEqual({ allowed: false })
   })
   it('inscrit suivant avec inscription OUVERTE = org isolée + email verif + cap', () => {
     expect(resolveSignupDecision({ isFirstUser: false, signupOpen: true })).toEqual({

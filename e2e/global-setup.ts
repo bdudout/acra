@@ -24,6 +24,8 @@ export default async function globalSetup() {
         id: E2E.orgId,
         derogationsActive: true,
         conformiteActive: true,
+        conformiteNiveau: 'ANALYSE',
+        acceptationRisquesActive: true,
         derogationWorkflow: 'RSSI',
       },
     })
@@ -54,7 +56,7 @@ export default async function globalSetup() {
 export async function cleanup(prisma: any) {
   await prisma.derogation.deleteMany({ where: { organizationId: E2E.orgId } })
   await prisma.cadrage.deleteMany({ where: { analyseId: E2E.analyseId } })
-  await prisma.analyse.deleteMany({ where: { id: E2E.analyseId } })
+  await prisma.analyse.deleteMany({ where: { userId: { in: Object.values(E2E.users).map(u => u.id) } } })
   await prisma.orgMembership.deleteMany({ where: { organizationId: E2E.orgId } })
   await prisma.user.deleteMany({ where: { id: { in: Object.values(E2E.users).map(u => u.id) } } })
   await prisma.organizationConfig.deleteMany({ where: { id: E2E.orgId } })

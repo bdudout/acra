@@ -379,6 +379,7 @@ export function deOverlap(points: RadarPoint[], geom: RadarGeometry, spans: Sect
   }
 }
 
+/** Calcule la position (x/y) des parties prenantes sur le radar d'écosystème selon leur niveau de menace et la géométrie fournie. */
 export function layoutStakeholders(
   parties: StakeholderInput[],
   geom: RadarGeometry,

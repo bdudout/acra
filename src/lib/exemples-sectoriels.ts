@@ -719,6 +719,7 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
   return 'banque'
 }
 
+/** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale. */
 export function sectorExemplesFor(
   secteur: string | null | undefined,
   category: SectorExempleCategory,

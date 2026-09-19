@@ -30,6 +30,7 @@ export interface RiskTotals {
   nonCote: number
 }
 
+/** Consolide la posture risque : total + répartition par palier (élevé/moyen/faible/non coté). */
 export function rollupRisks(risks: RiskLite[]): RiskTotals {
   const t: RiskTotals = { total: risks.length, eleve: 0, moyen: 0, faible: 0, nonCote: 0 }
   for (const r of risks) t[postureBucket(r)]++

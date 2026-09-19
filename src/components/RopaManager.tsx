@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Registre des traitements (RGPD / ROPA) ───────────────────────────────────
+//
+// Registre des activités de traitement (art. 30 RGPD) : finalité, base légale
+// (lib/ropa), catégories de personnes/données, destinataires, transferts hors
+// UE, durée de conservation, mesures de sécurité. Évalue la complétude et le
+// besoin d'AIPD (PIA). Cf. /api/.../ropa.
+
 import { useEffect, useState } from 'react'
 import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'

@@ -37,6 +37,7 @@ async function requireAdmin() {
   return { error: null, session }
 }
 
+// GET /api/admin/smtp-config — lit la configuration SMTP d'envoi d'e-mails de l'instance (SUPER_ADMIN).
 export async function GET() {
   const { error } = await requireAdmin()
   if (error) return error
@@ -45,6 +46,7 @@ export async function GET() {
   return NextResponse.json({ ...config, password: decryptSecret(config.password) })
 }
 
+// PUT /api/admin/smtp-config — met à jour la configuration SMTP (hôte, port, identifiants) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
   const { error, session } = await requireAdmin()
   if (error) return error

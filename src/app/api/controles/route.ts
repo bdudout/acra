@@ -14,9 +14,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 /** Définir le plan de contrôle relève de la 2ᵉ ligne (ou de la 1ʳᵉ en mode ligne unique). */
-export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
-  return peutDefinir2eLigne(role, opts)
-}
+import { peutDefinir } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

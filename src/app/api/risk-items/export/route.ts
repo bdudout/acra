@@ -14,7 +14,7 @@ import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
 import { getT } from '@/lib/i18n'
 import { toCsvCell, sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { createRequire } from 'node:module'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 import ExcelJS from 'exceljs'
 
 export const dynamic = 'force-dynamic'
@@ -156,9 +156,9 @@ export async function GET(req: NextRequest) {
   if (format === 'pdf') {
     try {
       // Template pré-compilé par esbuild, chargé au RUNTIME (SWC casse react-pdf).
-      const nodeRequire = createRequire(process.cwd() + '/package.json')
+
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { renderCartographiePDF } = nodeRequire(process.cwd() + '/.pdf-runtime/carto-pdf-template.cjs')
+      const { renderCartographiePDF } = loadPdfRuntime('carto-pdf-template')
       const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } })
       const carto = buildCartoExport(filtered as unknown as CartoExportRisk[], mode, categorieLabel)
       const buffer = await renderCartographiePDF(carto, locale, org?.nom ?? '', stamp)

@@ -39,6 +39,7 @@ async function guard(orgId: string, entiteId: string) {
   return { userId, entiteId }
 }
 
+// GET /api/organizations/[orgId]/entites/[entiteId]/membres — liste les membres rattachés à une entité de l'organisation.
 export async function GET(_req: NextRequest, { params }: Params) {
   const { orgId, entiteId } = await params
   const g = await guard(orgId, entiteId)
@@ -58,6 +59,7 @@ const addSchema = z.object({
   scope: z.enum(['NODE', 'SUBTREE']).default('NODE'),
 })
 
+// POST /api/organizations/[orgId]/entites/[entiteId]/membres — rattache un membre à une entité de l'organisation.
 export async function POST(req: NextRequest, { params }: Params) {
   const { orgId, entiteId } = await params
   const g = await guard(orgId, entiteId)
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   return NextResponse.json({ membership }, { status: 201 })
 }
 
+// DELETE /api/organizations/[orgId]/entites/[entiteId]/membres — détache un membre d'une entité de l'organisation.
 export async function DELETE(req: NextRequest, { params }: Params) {
   const { orgId, entiteId } = await params
   const g = await guard(orgId, entiteId)

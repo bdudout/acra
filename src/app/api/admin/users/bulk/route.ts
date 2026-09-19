@@ -43,6 +43,7 @@ interface RowResult {
   reason?: string
 }
 
+// POST /api/admin/users/bulk — import en masse d'utilisateurs (CSV parsé) dans le périmètre de l'admin.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

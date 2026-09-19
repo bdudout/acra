@@ -1,0 +1,81 @@
+name: Deploy stable demo release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release stable publiée (ex. v1.0.0)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: demo-deployment
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: demo
+    env:
+      VERSION: ${{ inputs.version }}
+      SSH_HOST: vps-8eb84369.vps.ovh.net
+      SSH_USER: debian
+      SSH_PORT: '22'
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Vérifier la release publiée et son manifeste
+        id: manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$DEPLOY_PATH" =~ ^/[a-zA-Z0-9_./-]+$ ]]
+          gh release view "$VERSION" --json isDraft,isPrerelease --jq '(.isDraft == false) and (.isPrerelease == false)' | grep -qx true
+          gh release download "$VERSION" --pattern release.json --dir /tmp/acra-release
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import { validateManifest } from './scripts/release/manifest.mjs';
+          const m = validateManifest(JSON.parse(fs.readFileSync('/tmp/acra-release/release.json')), process.env.VERSION);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `image=${m.image}\nrevision=${m.revision}\nmigrations=${m.migrationsHash}\n`);
+          JS
+      - name: Configurer SSH avec clé d'hôte vérifiée
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY" && test -n "$SSH_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/acra_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/acra_deploy ~/.ssh/known_hosts
+      - name: Installer l'image sélectionnée
+        id: stage
+        env:
+          IMAGE: ${{ steps.manifest.outputs.image }}
+          REVISION: ${{ steps.manifest.outputs.revision }}
+          MIGRATIONS: ${{ steps.manifest.outputs.migrations }}
+        run: |
+          ssh -i ~/.ssh/acra_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "cd '$DEPLOY_PATH' && bash scripts/deploy-release.sh stage '$IMAGE' '$VERSION' '$REVISION' '$MIGRATIONS'"
+      - name: Recette publique sans seed ni modification métier
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          EXPECT_VERSION: ${{ inputs.version }}
+          EXPECT_REVISION: ${{ steps.manifest.outputs.revision }}
+        run: npx playwright test --config playwright.public.config.ts
+      - name: Confirmer la release
+        run: ssh -i ~/.ssh/acra_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "cd '$DEPLOY_PATH' && bash scripts/deploy-release.sh finalize"
+      - name: Retour arrière si la recette échoue
+        if: failure() && steps.stage.outcome == 'success'
+        run: ssh -i ~/.ssh/acra_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "cd '$DEPLOY_PATH' && bash scripts/deploy-release.sh rollback"
+      - name: Supprimer la clé temporaire
+        if: always()
+        run: rm -f ~/.ssh/acra_deploy

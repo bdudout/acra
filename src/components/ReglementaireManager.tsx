@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Classification réglementaire des incidents (DORA) ────────────────────────
+//
+// Qualifie les incidents au regard des critères DORA (clients affectés, durée
+// d'indisponibilité, impact économique, réputation, services critiques…) →
+// classe MAJEUR / SIGNIFICATIF / MINEUR et obligations de notification
+// déclenchées. Cf. lib/dora et lib/dora-reporting.
+
 import { Landmark } from 'lucide-react'
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

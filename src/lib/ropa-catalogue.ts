@@ -12,6 +12,7 @@ export const ROPA_PLACEHOLDER_NOM = 'Traitement métier spécifique (à complét
 
 const SECU_BASE = ['Contrôle d’accès (habilitations)', 'Journalisation des accès', 'Sauvegardes chiffrées']
 
+/** Socle RoPA par défaut (registre RGPD art. 30) : traitements types pré-remplis pour amorcer une organisation. */
 export function buildRopaDefaut(): Traitement[] {
   const t = (o: Partial<Traitement> & { nom: string; finalite: string; baseLegale: Traitement['baseLegale'] }): Traitement => ({
     nom: o.nom,

@@ -12,9 +12,7 @@ export const dynamic = 'force-dynamic'
 
 // L'ÉVALUATION DORA (classification réglementaire) relève de la gouvernance,
 // comme la qualification d'incident.
-export function peutEvaluerDora(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
-}
+import { peutEvaluerDora } from '@/lib/permissions'
 
 const num = (v: unknown): number | null => (v == null ? null : Number(v as unknown as string))
 

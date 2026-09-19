@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Gestion des clés d'API ───────────────────────────────────────────────────
+//
+// Création / révocation des clés d'API d'accès programmatique (scopes read /
+// write / provision, date d'expiration). La clé en clair n'est montrée qu'UNE
+// fois à la création (masque ensuite). CRUD via /api/api-keys. Cf. lib/api-key.
+
 import { KeyRound, Copy, Check, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

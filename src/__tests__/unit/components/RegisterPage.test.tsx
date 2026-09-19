@@ -20,10 +20,11 @@ function jsonResponse(data: unknown) {
 }
 
 /** Installe un mock de fetch routé par URL ; `openValue` pilote registration-open. */
-function mockFetch(openValue: boolean | 'pending') {
+function mockFetch(openValue: boolean | 'pending' | 'failure') {
   global.fetch = vi.fn((input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('/api/auth/registration-open')) {
+      if (openValue === 'failure') return Promise.reject(new Error('service unavailable'))
       return openValue === 'pending'
         ? new Promise<Response>(() => {}) // ne se résout jamais → état de chargement
         : jsonResponse({ open: openValue })
@@ -55,6 +56,13 @@ describe('RegisterPage — chemin public', () => {
 
   it('affiche le message « fermé » et aucun formulaire quand l’inscription est fermée', async () => {
     mockFetch(false)
+    render(<RegisterPage />)
+    expect(await screen.findByText(/inscription n’est pas ouverte|inscription n'est pas ouverte/i)).toBeInTheDocument()
+    expect(submitButton()).not.toBeInTheDocument()
+  })
+
+  it('ferme le parcours d’inscription si le contrôle public est indisponible', async () => {
+    mockFetch('failure')
     render(<RegisterPage />)
     expect(await screen.findByText(/inscription n’est pas ouverte|inscription n'est pas ouverte/i)).toBeInTheDocument()
     expect(submitButton()).not.toBeInTheDocument()

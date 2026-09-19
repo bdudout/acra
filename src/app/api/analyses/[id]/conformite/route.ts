@@ -1,3 +1,4 @@
+import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -6,7 +7,8 @@ import { analyseAccessWhere } from '@/lib/org-context.server'
 import { canEditAnalyse } from '@/lib/permissions'
 import {
   sanitizeConformite,
-  applyConformiteStatut,
+  applyConformiteEntry,
+  missingExclusionJustifications,
   conformiteStats,
   CONFORMITE_STATUTS,
   type ConformiteStatut,
@@ -56,6 +58,9 @@ export async function PATCH(
 
   // Cohérence : refuser l'édition si la fonctionnalité conformité est désactivée pour l'org.
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
+  if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)) {
+    return NextResponse.json({ error: 'ANALYSE_GELEE' }, { status: 403 })
+  }
   if (!orgConfig.conformiteActive) {
     return NextResponse.json({ error: 'Fonctionnalité de conformité désactivée' }, { status: 403 })
   }
@@ -83,7 +88,10 @@ export async function PATCH(
   if (!validRefs.has(ref)) return NextResponse.json({ error: 'Contrôle inconnu du référentiel' }, { status: 400 })
 
   const current = sanitizeConformite((analyse.cadrage as any).socleSecurite, validRefs)
-  const updated = applyConformiteStatut(current, ref, statut)
+  const updated = applyConformiteEntry(current, ref, { statut, commentaire: typeof body.commentaire === 'string' ? body.commentaire : undefined })
+  if (missingExclusionJustifications(updated.filter(e => e.ref === ref)).length) {
+    return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
+  }
 
   await prisma.cadrage.update({
     where: { analyseId },

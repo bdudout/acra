@@ -70,6 +70,7 @@ const SSO_DEFAULTS = {
   oidcGroupsClaim: 'groups', roleMapping: {},
 }
 
+// GET /api/admin/sso-config — lit la configuration SSO d'entreprise (OIDC/SAML) de l'instance (SUPER_ADMIN).
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ...config, oidcClientSecret: decryptSecret(config.oidcClientSecret) })
 }
 
+// PUT /api/admin/sso-config — met à jour la configuration SSO (fournisseur, endpoints, secrets) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
   const { error, session } = await requireAdmin(req)
   if (error) return error

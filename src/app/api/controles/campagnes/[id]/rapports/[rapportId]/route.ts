@@ -30,6 +30,7 @@ async function load(session: { user: { id: string; role?: string } }, id: string
   return { userId, userRole: scope.role, orgId, secondeLigneActive: cfg.secondeLigneActive, campagne }
 }
 
+// GET /api/controles/campagnes/[id]/rapports/[rapportId] — télécharge un rapport archivé d'une campagne de contrôle.
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -46,6 +47,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 }
 
+// DELETE /api/controles/campagnes/[id]/rapports/[rapportId] — supprime un rapport archivé d'une campagne de contrôle.
 export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

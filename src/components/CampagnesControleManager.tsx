@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Campagnes de contrôle permanent (N1 / N2) ────────────────────────────────
+//
+// Planification et suivi des campagnes de contrôle permanent : niveau (N1/N2),
+// récurrence, périmètre de contrôles, avancement (faits / à faire / anomalies),
+// clôture et rapports archivés. Cf. lib/campagne-controle. CRUD via
+// /api/organizations/[orgId]/campagnes-controle.
+
 import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

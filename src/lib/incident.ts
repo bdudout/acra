@@ -110,6 +110,7 @@ export function validateIncidentInput(body: IncidentInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'un incident (intitulé/description trim, statut typé, montants et dates). */
 export function cleanIncidentInput(body: IncidentInput): CleanIncident {
   const s = body.statut as IncidentStatut
   return {

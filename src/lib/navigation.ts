@@ -61,6 +61,7 @@ function groupOrLink(id: NavGroupId, items: NavKey[]): NavEntry {
   return items.length === 1 ? link(items[0]) : { kind: 'group', id, items }
 }
 
+/** Construit le modèle de navigation (groupes/liens visibles) selon le rôle et les modules GRC actifs de l'organisation. */
 export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const isAdmin = isAdminRole(role)
   // 1ʳᵉ ligne « pure » : LECTEUR (lecture seule) et METIER (opérationnel) ne gèrent

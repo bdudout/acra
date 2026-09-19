@@ -15,9 +15,7 @@ export const dynamic = 'force-dynamic'
  * Cloisonnement 3ᵉ ligne : SEUL l'auditeur écrit les objets d'audit (l'admin
  * aussi, pour l'administration). Tous les autres rôles consultent uniquement.
  */
-export function peutEcrireAudit(role: UserRole): boolean {
-  return role === 'AUDITEUR' || isAdminRole(role)
-}
+import { peutEcrireAudit } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

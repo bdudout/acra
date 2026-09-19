@@ -46,6 +46,7 @@ export function matchesFilters(r: FilterableRisk, f: RiskFilters): boolean {
   return true
 }
 
+/** Applique les filtres partagés (entité, taxonomie, palier…) à une liste de risques ; cœur de carto/pilotage/export. */
 export function applyFilters<T extends FilterableRisk>(risks: T[], f: RiskFilters): T[] {
   return risks.filter(r => matchesFilters(r, f))
 }

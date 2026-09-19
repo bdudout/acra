@@ -1,3 +1,4 @@
+import { releaseInfo } from '@/lib/release-info'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -23,7 +24,7 @@ export async function GET() {
       {
         status: 'degraded',
         db: 'error',
-        version: process.env.npm_package_version ?? 'unknown',
+        ...releaseInfo(process.env),
         uptime: Math.floor(process.uptime()),
         responseTimeMs: Date.now() - start,
       },
@@ -35,7 +36,7 @@ export async function GET() {
     {
       status: 'ok',
       db: dbStatus,
-      version: process.env.npm_package_version ?? 'unknown',
+      ...releaseInfo(process.env),
       uptime: Math.floor(process.uptime()),
       responseTimeMs: Date.now() - start,
     },

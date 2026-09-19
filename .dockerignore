@@ -36,3 +36,10 @@ docker-compose*.yml
 # Divers
 .DS_Store
 *.md
+
+# État et sauvegardes de livraison : jamais dans le contexte/image
+.release-state
+.agents
+test-results
+playwright-report
+.env.*

@@ -1,5 +1,9 @@
 'use client'
 
+// ─── Progression des ateliers EBIOS RM ────────────────────────────────────────
+// Barre des 5 ateliers d'une analyse : atelier courant vs dernier atelier
+// complété (sauvegardé en base), chacun cliquable. Métadonnées : ATELIERS_META.
+
 import Link from 'next/link'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { ATELIERS_META } from '@/lib/ebios-data'

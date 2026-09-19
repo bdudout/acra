@@ -7,7 +7,7 @@
  * résiduel cible selon la proportion de mesures déjà réalisées pour ce risque.
  *
  *   avancement c = (mesures REALISE liées) / (total mesures liées)   ∈ [0..1]
- *   coord_à_date = round(brut + c × (résiduel − brut))               (borné 1..4)
+ *   coord_à_date = round(brut + c × (résiduel − brut))               (borné selon l’échelle effective, 4 ou 5 niveaux)
  *
  * Règles : EN_COURS compte comme non fait ; sans mesure liée ou sans cible
  * résiduelle, le risque reste à sa position brute. Module pur → testé.
@@ -26,7 +26,7 @@ export interface RiskLike {
   vraisemblanceResiduelle?: number | null
 }
 
-const clamp14 = (n: number) => Math.max(1, Math.min(4, n))
+const clamp = (n: number, levels: number) => Math.max(1, Math.min(levels, n))
 
 /** Proportion de mesures REALISE parmi les mesures liées au risque (0 si aucune). */
 export function completionRatio(riskId: string, mesures: MeasureLike[]): number {
@@ -41,12 +41,12 @@ export function completionRatio(riskId: string, mesures: MeasureLike[]): number 
  * brut et résiduel cible selon l'avancement. Reste au brut si pas de cible
  * résiduelle définie ou pas de mesure réalisée.
  */
-export function risqueADate(risque: RiskLike, mesures: MeasureLike[]): { gravite: number; vraisemblance: number } {
+export function risqueADate(risque: RiskLike, mesures: MeasureLike[], nbNiveaux = 4): { gravite: number; vraisemblance: number } {
   const hasResidual = risque.graviteResiduelle != null && risque.vraisemblanceResiduelle != null
   if (!hasResidual) return { gravite: risque.gravite, vraisemblance: risque.vraisemblance }
 
   const c = completionRatio(risque.id, mesures)
   const g = Math.round(risque.gravite + c * (risque.graviteResiduelle! - risque.gravite))
   const v = Math.round(risque.vraisemblance + c * (risque.vraisemblanceResiduelle! - risque.vraisemblance))
-  return { gravite: clamp14(g), vraisemblance: clamp14(v) }
+  return { gravite: clamp(g, nbNiveaux === 5 ? 5 : 4), vraisemblance: clamp(v, nbNiveaux === 5 ? 5 : 4) }
 }

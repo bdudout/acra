@@ -251,6 +251,12 @@ export interface OrgScopeContext {
   isSuperAdmin?: boolean
 }
 
+/**
+ * Clause WHERE Prisma restreignant les analyses visibles par un utilisateur :
+ * exclut la corbeille, applique le périmètre d'organisation, puis ouvre selon le
+ * rôle (admin = tout le périmètre ; lecture globale = propres+partagées+soumises/
+ * approuvées/rejetées ; sinon propres+partagées uniquement).
+ */
 export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgScopeContext) {
   // Les analyses en corbeille (soft delete) sont masquées de toutes les vues
   // courantes — seul le module admin « Récupération » les requête séparément.
@@ -361,4 +367,44 @@ export const STATUT_APPROBATION_LABELS: Record<string, { label: string; color: s
   REJETE:   { label: 'Rejeté',    color: 'bg-red-100 text-red-700',       icon: '❌' },
   TERMINE:  { label: 'Terminée',  color: 'bg-green-100 text-green-700',   icon: '✅' },
   ARCHIVE:  { label: 'Archivée',  color: 'bg-gray-100 text-gray-600',     icon: '📦' },
+}
+
+/** Lecture d'une ressource d'organisation : périmètre vide = aucun accès.
+ * Le résolveur ne pose isSuperAdmin que pour un administrateur non focalisé.
+ */
+export function canReadOrgResource(orgId: string, scope?: OrgScopeContext): boolean {
+  return !!scope && (scope.isSuperAdmin === true || scope.visibleOrgIds.includes(orgId))
+}
+
+// Droits métier partagés : aucune dépendance aux handlers Next.
+export function peutPiloter(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+  return peutDefinir2eLigne(role, opts)
+}
+
+export function peutEvaluerDora(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+}
+
+export function peutGererRegistreTic(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
+}
+
+export function peutDefinirKri(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+  return peutDefinir2eLigne(role, opts)
+}
+
+export function peutEcrireAudit(role: UserRole): boolean {
+  return role === 'AUDITEUR' || isAdminRole(role)
+}
+
+export function peutGererReferentiels(role: UserRole): boolean {
+  return isAdminRole(role)
+}
+
+export function peutGererDocuments(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
+}
+
+export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+  return peutDefinir2eLigne(role, opts)
 }

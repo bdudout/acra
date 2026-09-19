@@ -7,6 +7,7 @@
 export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante', 'mesure', 'entite', 'valeurMetier', 'bienSupport'] as const
 export type SuggestionField = (typeof SUGGESTION_FIELDS)[number]
 
+/** Garde de type : vrai si la valeur est un champ d'autocomplétion connu (SUGGESTION_FIELDS). */
 export function isSuggestionField(v: unknown): v is SuggestionField {
   return typeof v === 'string' && (SUGGESTION_FIELDS as readonly string[]).includes(v)
 }

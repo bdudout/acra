@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Indicateurs clés de risque (KRI) ─────────────────────────────────────────
+//
+// Définition et suivi des KRI : seuils d'alerte/critique, sens (hausse/baisse),
+// fréquence, rattachement à un risque/taxonomie. Chaque relevé recalcule le
+// statut (NORMAL/ALERTE/CRITIQUE) et la tendance. Cf. lib/kri.
+
 import { TrendingUp, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'

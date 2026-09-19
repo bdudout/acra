@@ -13,6 +13,7 @@ vi.mock('@/lib/i18n/context', () => ({
           create: 'Créer', creating: '…', cancel: 'Annuler', covers: '{n} exigence(s)', error: 'Échec.',
           searchExisting: 'Rechercher…', update: 'Mettre à jour', lockedHint: 'Libellé verrouillé', newInstead: 'Nouveau',
           attachBtn: 'Rattacher', actionTag: 'action', linkActionHint: 'Action existante',
+          promote: 'Promouvoir', promoteTag: 'à promouvoir', promoteHint: 'Action reprise',
           motifPh: 'Motif', mesuresPh: 'Mesures compensatoires', derogWorkflowHint: 'Avis RSSI', derogChampsRequis: 'Motif requis',
           dureeJours: 'Durée (jours)', dureeJoursPh: 'Durée',
           searchPlanAction: 'Rechercher un plan d\'action…', searchAcceptation: 'Rechercher une acceptation…', intituleDerog: 'Intitulé dérogation', porteur: 'Porteur',
@@ -29,9 +30,10 @@ const existing: ExistingTraitement[] = [
   { id: 't3', type: 'ACCEPTATION_RISQUE', intitule: 'Acceptation legacy', refs: ['A.7.1'], responsable: 'RSSI', echeance: '2026-06-01T00:00:00.000Z' },
 ]
 
-// Route les fetch par URL + méthode ; `plans` = actions réelles renvoyées au montage.
-function mockFetch(plans: unknown[] = []) {
+// Route les fetch par URL + méthode ; `plans` = actions réelles, `promo` = promotables.
+function mockFetch(plans: unknown[] = [], promo: unknown[] = []) {
   return vi.fn((url: string, opts?: { method?: string }) => {
+    if (url.endsWith('/action-items/promotable')) return Promise.resolve({ ok: true, json: async () => ({ actions: promo }) })
     if (url.endsWith('/plans-actions')) return Promise.resolve({ ok: true, json: async () => ({ plans }) })
     return Promise.resolve({ ok: true, json: async () => ({}) })
   }) as unknown as typeof fetch
@@ -97,6 +99,24 @@ describe('TraitementPopover — rattacher/mettre à jour', () => {
     expect(patch).toBeTruthy()
     const lien = JSON.parse(patch![1].body!).addLien
     expect(lien).toEqual({ type: 'CONFORMITE', targetId: 'ISO27001', ref: 'A.5.1', label: 'Politique' })
+  })
+
+  it('promotion : une mesure/incident sélectionné crée un PlanAction (CONFORMITE + lien d\'origine)', async () => {
+    const fetchMock = mockFetch([], [{ key: 'MESURE:m1', titre: 'Chiffrer les sauvegardes', porteur: 'DSI', echeance: null, priorite: 'MAJEUR', statut: 'A_FAIRE', origine: 'risque', originLien: { type: 'ANALYSE', targetId: 'a1', label: 'Chiffrer les sauvegardes' } }])
+    vi.stubGlobal('fetch', fetchMock)
+    const { onApplied } = setup()
+    fireEvent.focus(screen.getByLabelText('Intitulé'))
+    await screen.findByText('Chiffrer les sauvegardes')
+    fireEvent.mouseDown(screen.getByText('Chiffrer les sauvegardes'))
+    expect(screen.getByText('Promouvoir')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Promouvoir'))
+    await waitFor(() => expect(onApplied).toHaveBeenCalledWith('plan_action'))
+    const post = (fetchMock as unknown as { mock: { calls: [string, { method?: string; body?: string }][] } }).mock.calls
+      .find(c => c[0] === '/api/organizations/o1/plans-actions' && c[1]?.method === 'POST')
+    expect(post).toBeTruthy()
+    const liens = JSON.parse(post![1].body!).liens
+    expect(liens).toContainEqual({ type: 'CONFORMITE', targetId: 'ISO27001', ref: 'A.5.1', label: 'Politique' })
+    expect(liens).toContainEqual({ type: 'ANALYSE', targetId: 'a1', label: 'Chiffrer les sauvegardes' })
   })
 
   it('type DÉROGATION → crée une dérogation FORMELLE (POST /api/derogations, portée CONTROLE)', async () => {

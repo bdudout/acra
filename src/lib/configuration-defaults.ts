@@ -1,3 +1,10 @@
+// ─── Échelles par défaut (gravité / vraisemblance) ────────────────────────────
+//
+// Valeurs de départ des échelles EBIOS RM (4 et 5 niveaux) : libellé,
+// description et couleur par niveau. Servent de défaut à la création d'une
+// organisation et de repli quand aucune échelle personnalisée n'est configurée.
+// Modifiables ensuite par l'ADMIN dans /configuration (cf. CLAUDE.md, RBAC).
+
 export const DEFAULT_ECHELLE_GRAVITE_4 = [
   { niveau: 1, label: 'Mineure',    description: "Conséquences négligeables pour l'organisation. Aucun impact opérationnel.", couleur: '#22c55e' },
   { niveau: 2, label: 'Limitée',   description: 'Conséquences significatives mais limitées. Fonctionnement en mode dégradé.', couleur: '#f59e0b' },
@@ -38,6 +45,7 @@ export const DEFAULT_SEUILS_MATRICE = [
   { scoreMin: 12, scoreMax: 25, label: 'Critique',  couleur: '#ef4444' },
 ]
 
+/** Construit la config d'échelles par défaut (gravité + vraisemblance) pour 4 ou 5 niveaux. */
 export function buildDefaultConfig(nbNiveaux: number) {
   return {
     nbNiveaux,

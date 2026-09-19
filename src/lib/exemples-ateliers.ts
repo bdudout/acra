@@ -192,6 +192,7 @@ export const EXEMPLES_CATEGORIES: CategoryDef[] = [
 
 const BY_KEY = new Map(EXEMPLES_CATEGORIES.map((c) => [c.key, c]))
 
+/** Définition d'une catégorie d'exemples d'atelier par sa clé, ou undefined. */
 export function getCategoryDef(key: ExempleCategoryKey): CategoryDef | undefined {
   return BY_KEY.get(key)
 }

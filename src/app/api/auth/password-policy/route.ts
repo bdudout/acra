@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { DEFAULT_POLICY } from '@/lib/password-policy'
 
+// GET /api/auth/password-policy — expose les règles de mot de passe (public) pour valider les formulaires côté client.
 export async function GET() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

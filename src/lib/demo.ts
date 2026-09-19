@@ -166,15 +166,16 @@ export function needsPurgeWarning(
 }
 
 // ─── Inscription publique en self-service (configurable, #Valider) ───────────
-// Décide du sort d'une inscription selon : est-ce le TOUT PREMIER compte
-// (exploitant) et l'inscription publique est-elle ouverte (mode démo OU toggle
-// `publicSignupActive` réglé par le SUPER_ADMIN au runtime). Pur → testé.
+// Décide du sort d'une inscription selon : est-ce le TOUT PREMIER compte,
+// l'inscription publique est-elle ouverte. Dans tous les modes, l'admin initial
+// passe par la CLI locale,
+// jamais par une route publique. Pur → testé.
 export type SignupOutcome =
   | { allowed: false }
   | {
       allowed: true
       /** Rôle d'INSTANCE du nouveau compte. */
-      instanceRole: 'SUPER_ADMIN' | 'ANALYSTE'
+      instanceRole: 'ANALYSTE'
       /** Provisionner une organisation isolée dont l'inscrit est ADMIN. */
       provisionOrg: boolean
       /** Exiger la vérification d'e-mail avant connexion. */
@@ -183,12 +184,10 @@ export type SignupOutcome =
       enforceCap: boolean
     }
 
+/** Décide de l'inscription publique ; l'amorçage initial exige la CLI locale. */
 export function resolveSignupDecision(p: { isFirstUser: boolean; signupOpen: boolean }): SignupOutcome {
-  // Amorçage : le tout premier compte de l'instance = l'exploitant (SUPER_ADMIN),
-  // e-mail pré-vérifié, rattaché à la racine. Toujours autorisé, même inscription fermée.
-  if (p.isFirstUser) {
-    return { allowed: true, instanceRole: 'SUPER_ADMIN', provisionOrg: false, requireEmailVerif: false, enforceCap: false }
-  }
+  // Aucun administrateur ne peut être créé via une inscription publique.
+  if (p.isFirstUser) return { allowed: false }
   // Inscrits suivants : uniquement si l'inscription publique est OUVERTE. Chacun
   // obtient son organisation isolée (ADMIN), avec vérification d'e-mail + plafond.
   // Fermée par défaut → ferme le risque d'inscription ouverte (F004) sur une instance

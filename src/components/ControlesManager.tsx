@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Dispositif de contrôle permanent ─────────────────────────────────────────
+//
+// Gestion des contrôles (niveau N1/N2, périodicité, checklist de points de
+// contrôle, pièces jointes). Le résultat se déduit de la checklist
+// (deduireResultatChecklist) ; l'efficacité agrégée alimente une vraisemblance
+// résiduelle suggérée. Catalogues prêts à l'emploi dans lib/controles-catalogue.
+
 import { FlaskConical, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'

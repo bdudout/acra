@@ -130,6 +130,7 @@ export function validatePlanActionInput(body: PlanActionInput): string | null {
   return null
 }
 
+/** Normalise l'entrée d'un plan d'action unifié (textes trim/tronqués, statut typé avec défaut A_FAIRE, échéance). */
 export function cleanPlanActionInput(body: PlanActionInput): CleanPlanAction {
   const s = (v: unknown, n: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null)
   const statut = (RISK_ACTION_STATUTS as readonly string[]).includes(String(body?.statut)) ? (body!.statut as RiskActionStatut) : 'A_FAIRE'

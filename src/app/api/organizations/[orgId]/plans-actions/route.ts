@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Plans d'action UNIFIÉS d'une organisation.
  *  GET  ?type=&targetId=&statut= — liste (filtrable par lien source / statut).
@@ -21,6 +22,7 @@ function canManage(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
 }
 
+// GET /api/organizations/[orgId]/plans-actions — liste les plans d'action unifiés de l'org (avec leurs liens d'origine).
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)
@@ -28,8 +30,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
   const sp = new URL(req.url).searchParams
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   return NextResponse.json({ plans: rows })
 }
 
+// POST /api/organizations/[orgId]/plans-actions — crée un plan d'action unifié, éventuellement rattaché à une origine (lien polymorphe).
 export async function POST(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)

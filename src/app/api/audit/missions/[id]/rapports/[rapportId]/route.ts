@@ -33,6 +33,7 @@ async function load(session: { user: { id: string; role?: string } }, id: string
   return { userId, userRole: scope.role, mission }
 }
 
+// GET /api/audit/missions/[id]/rapports/[rapportId] — télécharge un rapport archivé d'une mission d'audit.
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -53,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   })
 }
 
+// DELETE /api/audit/missions/[id]/rapports/[rapportId] — supprime un rapport archivé d'une mission d'audit.
 export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

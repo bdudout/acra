@@ -1,0 +1,15 @@
+# Overlay final : utiliser après les overlays base et demo. Compose >= 2.24.4.
+# App et migrations utilisent la même image déjà qualifiée ; aucune reconstruction.
+services:
+  app:
+    image: ${ACRA_IMAGE:?Sélectionner une release vérifiée}
+    build: !reset null
+    volumes:
+      - documents_data:/app/.data/documents
+  migrator:
+    image: ${ACRA_IMAGE:?Sélectionner une release vérifiée}
+    build: !reset null
+    volumes: !reset []
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+volumes:
+  documents_data:

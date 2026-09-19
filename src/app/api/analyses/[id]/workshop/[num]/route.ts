@@ -1,3 +1,4 @@
+import { missingExclusionJustifications } from '@/lib/conformite'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -107,6 +108,9 @@ export async function PUT(
       case 1: {
         // A1 : upsert simple — pas de delete, pas besoin de transaction
         const { referentielMesures, ...cadrageData } = body
+        if (missingExclusionJustifications(cadrageData.socleSecurite).length) {
+          return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
+        }
         await prisma.cadrage.upsert({
           where: { analyseId },
           create: { analyseId, ...cadrageData },

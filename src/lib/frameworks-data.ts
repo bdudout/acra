@@ -195,6 +195,7 @@ export const ANSSI_HYG_CONTROLES: FrameworkControl[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 
+/** Contrôles d'un cadre livré (ISO/DORA/PCI…), localisés si une locale est fournie (sinon FR source) ; custom passthrough. */
 export function getFrameworkControles(frameworkId: string, customControles?: any[], locale?: Locale): FrameworkControl[] {
   // Référentiels dont les contrôles sont externalisés en i18n (ebios-data) :
   // localisés si une locale est fournie (issue #66), sinon FR (source).
@@ -240,6 +241,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
   }
 }
 
+/** Catégories (regroupements) des contrôles d'un cadre livré, localisées si une locale est fournie. */
 export function getFrameworkCategories(frameworkId: string, locale?: Locale): Record<string, FrameworkCategory> {
   if (locale) {
     const d = getEbiosData(locale) as any

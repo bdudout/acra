@@ -53,6 +53,7 @@ function detectDelimiter(line: string): string {
   return line.split(';').length > line.split(',').length ? ';' : ','
 }
 
+/** Parse un CSV d'import d'utilisateurs (BOM retiré, délimiteur auto-détecté) → lignes typées. */
 export function parseUsersCsv(csv: string): ParsedUserRow[] {
   const lines = csv.replace(/^﻿/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
   if (lines.length === 0) return []

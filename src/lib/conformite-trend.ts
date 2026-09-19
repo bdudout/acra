@@ -22,6 +22,11 @@ export interface TrendPoint {
 
 const ts = (d: string | Date): number => (d instanceof Date ? d.getTime() : new Date(d).getTime())
 
+/**
+ * Courbe de tendance de la conformité GLOBALE. À chaque date distincte, somme le
+ * dernier point « as-of » (≤ date) de chaque référentiel puis en déduit le taux ;
+ * réduit ensuite à AU PLUS un point par jour calendaire (le plus récent du jour).
+ */
 export function globalConformiteTrend(suivis: TrendSuivi[]): TrendPoint[] {
   // Timelines triées par date croissante, dates valides uniquement.
   const timelines = suivis

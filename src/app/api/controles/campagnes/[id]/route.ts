@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { peutDefinir } from '../../route'
+import { peutDefinir } from '@/lib/permissions'
 import { validateCampagneControleInput, cleanCampagneControleInput, prochaineFenetreCampagne, type CampagneRecurrence } from '@/lib/campagne-controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 

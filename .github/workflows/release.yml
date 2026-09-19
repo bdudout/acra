@@ -1,0 +1,64 @@
+name: Prepare versioned release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (v1.0.0-rc.1 ou v1.0.0). Une stable reste brouillon avant recette.'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  image:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Vérifier version et CI du commit exact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then exit 1; fi
+          gh run list --workflow security.yml --commit "$GITHUB_SHA" --branch main --event push --json conclusion --jq '.[0].conclusion' | grep -qx success
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/bdudout/acra:${{ inputs.version }}
+          build-args: |
+            ACRA_VERSION=${{ inputs.version }}
+            ACRA_REVISION=${{ github.sha }}
+      - name: Manifeste et fiche de livraison
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          MIGRATIONS_HASH="$(find prisma/migrations -name migration.sql -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          export MIGRATIONS_HASH
+          node --input-type=module -e 'import fs from "node:fs"; fs.writeFileSync("release.json", JSON.stringify({version:process.env.VERSION, revision:process.env.GITHUB_SHA, image:"ghcr.io/bdudout/acra@"+process.env.DIGEST, migrationsHash:process.env.MIGRATIONS_HASH}, null, 2))'
+          cp docs/RELEASE-CHECKLIST.md release-notes.md
+          if [[ "$VERSION" == *-rc.* ]]; then
+            gh release create "$VERSION" release.json --target "$GITHUB_SHA" --prerelease --title "$VERSION" --notes-file release-notes.md
+          else
+            gh release create "$VERSION" release.json --target "$GITHUB_SHA" --draft --title "$VERSION — recette requise" --notes-file release-notes.md
+          fi

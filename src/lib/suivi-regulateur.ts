@@ -104,6 +104,7 @@ export const SUIVI_REGULATEUR_CSV_HEADER = [
   'Intitulé', 'Recommandation', 'Criticité', 'Statut', 'Échéance', 'Responsable', 'Mission / source',
 ] as const
 
+/** Convertit un constat régulateur en ligne CSV (cellules assainies) pour l'export du suivi. */
 export function suiviRegulateurToCsvRow(c: ConstatRegulateur): string[] {
   const e = parseDate(c.echeance)
   return [

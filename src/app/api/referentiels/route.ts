@@ -16,9 +16,7 @@ export const dynamic = 'force-dynamic'
 // Le socle de référentiels & exigences n'est modifiable que par un ADMIN de
 // l'organisation (création, édition, activation/désactivation). Les autres rôles
 // le consultent en lecture.
-export function peutGererReferentiels(role: UserRole): boolean {
-  return isAdminRole(role)
-}
+import { peutGererReferentiels } from '@/lib/permissions'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id

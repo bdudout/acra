@@ -32,6 +32,7 @@ export interface RasExportData {
   depassements: RasDepassement[]
 }
 
+/** Assemble les données d'export du Risk Appetit Statement (RAS) : risques confrontés aux seuils d'appétit, libellés résolus. */
 export function buildRasExport(
   risks: RasRiskLite[],
   cfg: AppetitConfig,

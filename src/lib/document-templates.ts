@@ -24,6 +24,7 @@ export function templateFilename(t: DocumentTemplate): string {
 /** Type MIME des documents .docx générés. */
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
+/** Retourne le modèle de document (PAS, annexe contractuelle…) par son identifiant, ou undefined. */
 export function getDocumentTemplate(id: string): DocumentTemplate | undefined {
   return DOCUMENT_TEMPLATES.find((t) => t.id === id)
 }

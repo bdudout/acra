@@ -123,6 +123,7 @@ export interface DoraSynthese {
   mineurs: number
 }
 
+/** Synthèse d'un lot d'incidents classés DORA : nombre d'évalués et répartition majeurs/significatifs/mineurs. */
 export function synthetiserDora(classes: DoraClasse[]): DoraSynthese {
   const s: DoraSynthese = { evalues: classes.length, majeurs: 0, significatifs: 0, mineurs: 0 }
   for (const c of classes) {
@@ -149,6 +150,7 @@ export interface LdcSynthese {
   perteNetteTotale: number
 }
 
+/** Synthèse de la ligne de conduite des pertes : nombre d'incidents et pertes brute/récupérations/nette (hors REJETE). */
 export function synthetiserLdc(lignes: LdcLigne[]): LdcSynthese {
   const s: LdcSynthese = { nbIncidents: 0, perteBruteTotale: 0, recuperationsTotales: 0, perteNetteTotale: 0 }
   for (const l of lignes) {

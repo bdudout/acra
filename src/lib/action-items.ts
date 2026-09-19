@@ -20,6 +20,7 @@ import {
 } from './risk-action'
 
 export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
+/** Source technique d'un plan d'action (modèle Prisma d'origine). */
 export type ActionSource = (typeof ACTION_SOURCES)[number]
 
 // Typologie MÉTIER d'origine du plan d'action, exposée comme facette de filtre.
@@ -27,6 +28,7 @@ export type ActionSource = (typeof ACTION_SOURCES)[number]
 // « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
 // « regulateur » (même objet, source différente — cf. lib/audit.ts).
 export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'] as const
+/** Typologie métier d'origine d'un plan d'action, exposée comme facette de filtre (vue /actions). */
 export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
 /** Objet canonique d'un plan d'action, quelle que soit sa source d'origine. */
@@ -61,6 +63,7 @@ function toDate(v: unknown): Date | null {
 // Mesure : Int 1-4 où 1 = plus prioritaire, défaut 2 (= MAJEUR, cohérent avec le
 // registre). Audit/Incident : Int 1-4 où 4 = plus critique (CRITICITE_MAX).
 
+/** Mesure (Int 1-4, 1 = plus prioritaire) → priorité unifiée CRITIQUE/MAJEUR/MODERE. */
 export function mapMesurePriorite(n: unknown): ActionPriorite {
   const v = Number(n)
   if (!Number.isFinite(v) || v < 1) return 'MAJEUR'
@@ -69,6 +72,7 @@ export function mapMesurePriorite(n: unknown): ActionPriorite {
   return 'MODERE'
 }
 
+/** Criticité audit/incident (Int 1-4, 4 = plus critique) → priorité unifiée. */
 export function mapCriticitePriorite(n: unknown): ActionPriorite {
   const v = Number(n)
   if (!Number.isFinite(v) || v < 1) return 'MAJEUR'
@@ -84,6 +88,7 @@ export interface MesureRow {
   responsable?: unknown; entite?: unknown; echeance?: unknown; risqueId?: unknown
   description?: unknown
 }
+/** Mesure de traitement (atelier 5) → ActionItem unifié (origine « risque »). */
 export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'REALISE' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
@@ -96,11 +101,13 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   }
 }
 
+/** Forme brute d'une action de traitement d'un RiskItem, en entrée de normalizeRiskAction. */
 export interface RiskActionRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown; riskItemId?: unknown
   entite?: unknown
 }
+/** Action de traitement d'un RiskItem (GRC M2) → ActionItem unifié (origine « risque »). */
 export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
@@ -115,11 +122,13 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   }
 }
 
+/** Forme brute d'un constat d'audit/régulateur, en entrée de normalizeAuditConstat. */
 export interface AuditConstatRow {
   id: string; intitule: string; recommandation?: unknown; criticite?: unknown
   statut?: unknown; responsableAction?: unknown; echeance?: unknown; riskItemId?: unknown
   source?: unknown // AUDIT_INTERNE | REGULATEUR | AUDITEUR_EXTERNE (cf. lib/audit.ts)
 }
+/** Constat d'audit/régulateur → ActionItem unifié (origine « audit » ou « regulateur »). */
 export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
     row.statut === 'RESOLU' || row.statut === 'ACCEPTE' ? 'FAIT'
@@ -133,10 +142,12 @@ export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): 
   }
 }
 
+/** Forme brute d'une anomalie de contrôle permanent, en entrée de normalizeControleAnomalie. */
 export interface ControleAnomalieRow {
   id: string; controleNom: string; constat?: unknown; dateRealisation?: unknown
   responsable?: unknown; entite?: unknown
 }
+/** Anomalie de contrôle permanent (M3) → ActionItem unifié (origine « controle », à faire). */
 export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt = {}): ActionItem {
   return {
     id: `CONTROLE:${row.id}`, source: 'CONTROLE', origine: 'controle', sourceId: row.id,
@@ -147,6 +158,7 @@ export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un incident, en entrée de normalizeIncident (un incident REJETE est écarté). */
 export interface IncidentRow {
   id: string; intitule: string; statut?: unknown; impactEstime?: unknown
   entite?: unknown; echeance?: unknown; riskItemId?: unknown; description?: unknown
@@ -165,6 +177,7 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   }
 }
 
+/** Forme brute d'une mesure d'écosystème (partie prenante), en entrée de normalisation. */
 export interface EcosystemeMesureRow {
   id: string; nom: string; description?: unknown; type?: unknown
   priorite?: unknown; statut?: unknown; partiePrenante?: unknown
@@ -188,6 +201,7 @@ export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un PlanAction ORPHELIN (créé sans lien d'origine), en entrée de normalisation. */
 export interface OrphanPlanActionRow {
   id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown
@@ -211,6 +225,7 @@ export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt
   }
 }
 
+/** Forme brute d'un traitement de conformité (plan d'action), en entrée de normalisation. */
 export interface ConformiteTraitementRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; referentiel?: unknown; refs?: unknown
@@ -238,6 +253,7 @@ export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt:
 // sous 30j (hors retard), ou sans échéance.
 export type EcheanceBucket = 'retard' | 'semaine' | 'mois' | 'sans'
 
+/** Critères de filtre à facettes de la vue unifiée des plans d'action (source/origine/priorité/statut/échéance/porteur/q). */
 export interface ActionItemFiltre {
   source?: ActionSource
   origine?: ActionOrigine // facette métier (risque / conformité / contrôle / audit / régulateur / incident)
@@ -262,6 +278,7 @@ export function matchEcheanceBucket(it: ActionItem, bucket: EcheanceBucket, now:
 
 import { effectiveStatut } from './risk-action'
 
+/** Applique les filtres à facettes (source/origine/priorité/statut/échéance/porteur/q) de la vue /actions. */
 export function filterActionItems(items: ActionItem[], f: ActionItemFiltre, now: Date): ActionItem[] {
   const porteur = f.porteur?.trim().toLowerCase()
   const q = f.q?.trim().toLowerCase()
@@ -292,6 +309,7 @@ export function sortActionItems(items: ActionItem[], now: Date): ActionItem[] {
   })
 }
 
+/** Synthèse (total / faits / en cours / à faire / en retard / taux) d'une liste d'ActionItem. */
 export function summarizeActionItems(items: ActionItem[], now: Date): ActionsSummary {
   return summarizeActions(items, now)
 }

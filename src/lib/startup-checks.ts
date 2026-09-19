@@ -52,6 +52,7 @@ function printSetupHelp() {
   console.error('')
 }
 
+/** Vérifie les variables d'environnement critiques au démarrage (secrets absents = bloquant ; valeurs par défaut = bloquant en prod). */
 export function runStartupChecks() {
   let hasMissing   = false  // variable absente → bloque toujours
   let hasDefault   = false  // valeur par défaut → bloque en prod seulement

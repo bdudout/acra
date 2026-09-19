@@ -207,6 +207,7 @@ export function resolveEffectiveConformite(params: {
   return { entries: [], inherited: false, sourceAnalyseId: null, sourceAnalyseNom: null }
 }
 
+/** Statistiques de conformité : répartition des statuts + couverture des écarts (dérogation/acceptation/plan d'action) pour les cadrans. */
 export function conformiteStats(entries: ConformiteEntry[], total: number): ConformiteStats {
   let conforme = 0, partiel = 0, nonConforme = 0, na = 0, deroge = 0
   // Couverture des écarts (mutuellement exclusive) — alimente les cadrans du dashboard.
@@ -233,4 +234,9 @@ export function conformiteStats(entries: ConformiteEntry[], total: number): Conf
     couvertureDerogation, couvertureAcceptation, couverturePlanAction, partielNonTraite,
     evalues: entries.length, total, tauxConformite,
   }
+}
+
+/** Références exclues sans justification : conserve les données historiques, bloque les nouvelles écritures invalides. */
+export function missingExclusionJustifications(entries: unknown): string[] {
+  return sanitizeConformite(entries).filter(e => e.statut === 'na' && !e.commentaire?.trim()).map(e => e.ref)
 }

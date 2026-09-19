@@ -1,5 +1,11 @@
 'use client'
 
+// ─── Registre des dérogations (vue transverse) ────────────────────────────────
+//
+// Registre org-wide des dérogations : filtres par état/statut et actions de
+// workflow inline (avis RSSI, double regard, validation, clôture, révocation),
+// mêmes gardes RBAC que DerogationsPanel (lib/derogation). Cf. page /derogations.
+
 import { IdCard, X, ChevronDown, Check, Ban } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'

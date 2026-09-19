@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Traitements RÉELS des écarts de conformité (plan d'action / dérogation /
  * acceptation de risque), au niveau du socle d'organisation.
@@ -23,6 +24,7 @@ function canManage(role: UserRole): boolean {
 }
 const cleanEntite = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 80) : '')
 
+// GET /api/organizations/[orgId]/conformite/traitements — liste les traitements d'écarts de conformité de l'org.
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)
@@ -30,8 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
   const sp = new URL(req.url).searchParams
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   return NextResponse.json({ traitements: rows })
 }
 
+// POST /api/organizations/[orgId]/conformite/traitements — crée un traitement d'écart (plan d'action / dérogation / acceptation) sur un contrôle.
 export async function POST(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)

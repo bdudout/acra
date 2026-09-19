@@ -11,6 +11,7 @@ import { isValidSiemEndpoint, buildSiemEvent } from '@/lib/siem'
 import { deliverSiemEvent, invalidateSiemCache } from '@/lib/siem.server'
 import { getClientIp } from '@/lib/logger'
 
+// POST /api/admin/siem-config/test — envoie un événement de test vers le SIEM configuré (SUPER_ADMIN).
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })

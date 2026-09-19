@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { peutGererDocuments } from '../route'
+import { peutGererDocuments } from '@/lib/permissions'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
 

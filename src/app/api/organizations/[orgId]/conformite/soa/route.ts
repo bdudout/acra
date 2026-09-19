@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -10,7 +11,7 @@ import { getServerT, getServerLocale } from '@/lib/i18n'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { buildSoaExport, type SoaControleLite } from '@/lib/soa-export'
 import { renderSoaPptx } from '@/lib/soa-pptx'
-import { createRequire } from 'node:module'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 
 /**
  * GET /api/organizations/[orgId]/conformite/soa?referentiel=ISO27001
@@ -26,8 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
 
@@ -103,9 +103,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orgI
         ref: c.ref, nom: c.nom, categorie: (c as { categorie?: string | null }).categorie ?? null,
       }))
       const soaData = buildSoaExport(soaControles, entries)
-      const nodeRequire = createRequire(process.cwd() + '/package.json')
+
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { renderSoaPDF } = nodeRequire(process.cwd() + '/.pdf-runtime/soa-pdf-template.cjs')
+      const { renderSoaPDF } = loadPdfRuntime('soa-pdf-template')
       const buffer = await renderSoaPDF(
         soaData,
         { tauxConformite: stats.tauxConformite, evalues: stats.evalues, total: stats.total },

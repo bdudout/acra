@@ -23,6 +23,7 @@ export interface AttemptState {
 
 // ── Fonctions pures ────────────────────────────────────────────────────────────
 
+/** État initial de suivi des tentatives de connexion (0 échec, non verrouillé). */
 export function initialState(): AttemptState {
   return { failedAttempts: 0, lockedUntil: null }
 }

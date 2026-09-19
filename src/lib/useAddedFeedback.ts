@@ -18,6 +18,7 @@ export interface AddedFeedbackResult {
   isAdded: (key: string) => boolean
 }
 
+/** Hook UI : feedback visuel temporaire (« ajouté ✓ ») par clé, effacé après `duration` ms. */
 export function useAddedFeedback(duration = 2000): AddedFeedbackResult {
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set())
 

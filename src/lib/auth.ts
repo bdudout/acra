@@ -1,3 +1,12 @@
+// ─── Configuration NextAuth (authentification) ────────────────────────────────
+//
+// Options NextAuth de l'application : provider Credentials (email + mot de passe
+// bcrypt), adaptateur Prisma, et toute la chaîne de sécurité à la connexion —
+// rate-limiting, verrouillage après échecs (login-lockout), expiration de mot de
+// passe (password-policy), vérification d'email, MFA (mfa/mfa-service),
+// journalisation d'audit et cookie de session résolu (auth-cookies).
+// Point d'entrée unique consommé par la route [...nextauth] et getServerSession.
+
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'

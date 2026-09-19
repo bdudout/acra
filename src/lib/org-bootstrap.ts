@@ -4,11 +4,13 @@
  * Idempotent et sûr au déploiement : si AUCUN super-administrateur n'existe
  * (instance migrée depuis le mono-tenant), promeut le plus ancien ADMIN actif en
  * SUPER_ADMIN, afin qu'un administrateur d'instance puisse piloter les organisations.
- * Sur une nouvelle installation, le 1ᵉʳ compte est déjà créé SUPER_ADMIN (register).
+ * Sur une nouvelle installation, le SUPER_ADMIN est créé localement via
+ * `scripts/create-admin.mjs` (aucun amorçage anonyme via l'inscription publique).
  */
 
 import { prisma } from '@/lib/prisma'
 
+/** Amorçage : garantit qu'au moins un compte SUPER_ADMIN existe (no-op si déjà présent). */
 export async function ensureSuperAdmin(): Promise<void> {
   try {
     const existing = await prisma.user.count({ where: { role: 'SUPER_ADMIN' } })

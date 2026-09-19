@@ -36,6 +36,7 @@ async function guard(orgId: string) {
   return { userId, role }
 }
 
+// GET /api/organizations/[orgId]/conformite/import?referentiel= — liste les analyses de l'org portant ce référentiel et dont la conformité (socle) est reprenable.
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const g = await guard(orgId)
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   return NextResponse.json({ analyses })
 }
 
+// POST /api/organizations/[orgId]/conformite/import — reprend la conformité (socle de sécurité) d'une analyse dans le suivi conformité de l'org (référentiel + entité).
 export async function POST(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const g = await guard(orgId)

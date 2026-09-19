@@ -1,3 +1,4 @@
+import { canReadOrgResource } from '@/lib/permissions'
 /**
  * GET /api/organizations/[orgId]/conformite/suivis?referentiel=X — liste les SUIVIS
  * de conformité (org-wide + par entité/socle) d'un référentiel, avec leur taux.
@@ -16,6 +17,7 @@ import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
 
+// GET /api/organizations/[orgId]/conformite/suivis — historique des versions figées du taux de conformité (points de tendance) de l'org.
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
   const session = await getServerSession(authOptions)
@@ -24,8 +26,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
 
   const scope = await getAnalyseScope(userId, userRole)
-  const visibles = scope.scope.visibleOrgIds ?? []
-  if (!(orgId === 'global' || visibles.length === 0 || visibles.includes(orgId))) {
+  if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
 

@@ -1,5 +1,12 @@
 'use client'
 
+// ─── Cockpit de pilotage GRC ──────────────────────────────────────────────────
+//
+// Tableau de bord GRC (page /pilotage) destiné au management : heatmap des
+// risques (HeatmapGridHtml), synthèses risques/actions, verdicts du dispositif
+// et des signaux actifs (lib/comite-pack), filtrables (lib/risk-filters).
+// Pendant « cyber » : cockpit /dashboard. Vue pensée mobile-first.
+
 import { AlertTriangle, BarChart3, FileText } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'

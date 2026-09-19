@@ -10,7 +10,7 @@ import { storageKeyFor } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { getDocumentTemplate, templateFilename, DOCX_MIME } from '@/lib/document-templates'
 import { markdownToDocxBuffer } from '@/lib/markdown-docx'
-import { peutGererDocuments } from '../route'
+import { peutGererDocuments } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'

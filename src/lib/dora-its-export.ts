@@ -36,6 +36,7 @@ function phase(reporting: IncidentReporting, p: DoraPhase) {
   return reporting.echeances.find(e => e.phase === p)
 }
 
+/** Construit une ligne du registre ITS de déclaration d'incident TIC majeur (DORA art. 19), phases initiale/intermédiaire/finale. */
 export function buildDoraItsRow(inc: DoraItsIncident, reporting: IncidentReporting): string[] {
   const ini = phase(reporting, 'INITIALE')
   const inter = phase(reporting, 'INTERMEDIAIRE')

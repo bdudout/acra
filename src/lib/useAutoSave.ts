@@ -29,6 +29,7 @@ export interface AutoSaveResult {
   saveNow: () => Promise<void>
 }
 
+/** Hook de sauvegarde automatique : appelle `saveFn` (débattue) quand `data` change ; expose l'état (idle/saving/saved/error). */
 export function useAutoSave<T>(
   data: T,
   saveFn: (data: T) => Promise<void>,

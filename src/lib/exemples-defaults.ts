@@ -24,6 +24,7 @@ export interface ExemplesTranslations {
   }
 }
 
+/** Exemples par défaut (non sectoriels) proposés pour une catégorie d'atelier, localisés. */
 export function defaultExemplesFor(
   category: ExempleCategoryKey,
   t: ExemplesTranslations,

@@ -14,6 +14,9 @@ function cellClass(bucket: string | undefined): string {
 export default function HeatmapGridHtml({ grid, axisLabel }: { grid?: HeatGrid; axisLabel: string }) {
   if (!grid?.gravites?.length) return null
   return (
+    // Conteneur scrollable : sur mobile / échelle large, la matrice défile dans sa
+    // propre boîte sans jamais pousser un scroll horizontal sur toute la page.
+    <div className="max-w-full overflow-x-auto -mx-1 px-1">
     <div className="inline-block">
       {grid.gravites.map(g => (
         <div key={g} className="flex">
@@ -39,6 +42,7 @@ export default function HeatmapGridHtml({ grid, axisLabel }: { grid?: HeatGrid; 
         ))}
       </div>
       <p className="text-[10px] text-gray-400 mt-1 ml-5">{axisLabel}</p>
+    </div>
     </div>
   )
 }

@@ -14,6 +14,7 @@
 // Caractères déclencheurs de formule en tête de cellule
 const FORMULA_TRIGGERS = ['=', '+', '-', '@', '\t', '\r', '\n']
 
+/** Neutralise l'injection de formules CSV/Excel : préfixe les valeurs commençant par =,+,-,@ (les nombres restent intacts). */
 export function sanitizeForSpreadsheet(value: unknown): string {
   if (value === null || value === undefined) return ''
   // Les nombres sont sûrs : on ne les altère pas (pas d'apostrophe parasite)

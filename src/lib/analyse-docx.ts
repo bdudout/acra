@@ -154,6 +154,7 @@ function heading(text: string): Paragraph {
   return new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 260, after: 120 }, children: [new TextRun({ text, color: PRIMARY, bold: true })] })
 }
 
+/** Génère le document Word (.docx) complet d'une analyse de risques, localisé, et le renvoie en Buffer. */
 export async function renderAnalyseDocx(analyse: Any, config: Any | null, locale: string): Promise<Buffer> {
   void config
   const L = strings(locale)
