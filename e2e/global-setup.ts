@@ -32,7 +32,7 @@ export default async function globalSetup() {
 
     for (const u of Object.values(E2E.users)) {
       await prisma.user.create({
-        data: { id: u.id, name: u.email, email: u.email, passwordHash: hash, role: u.role, isActive: true, mustChangePassword: false },
+        data: { id: u.id, name: u.email, email: u.email, passwordHash: hash, role: u.role, locale: 'fr', isActive: true, emailVerified: new Date(), mustChangePassword: false },
       })
       await prisma.orgMembership.create({
         data: { id: `m_${u.id}`, userId: u.id, organizationId: E2E.orgId, role: u.role, scope: 'SUBTREE' },

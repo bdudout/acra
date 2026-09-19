@@ -9,7 +9,8 @@ import { E2E } from './fixtures'
 export async function login(page: Page, email: string, password: string = E2E.password) {
   // Force la locale FR (cookie partagé server/client) — sinon Chromium hérite de
   // l'anglais et les libellés testés ne correspondent pas.
-  await page.context().addCookies([{ name: 'acra-locale', value: 'fr', domain: 'localhost', path: '/' }])
+  const host = new URL(process.env.E2E_BASE_URL ?? `http://localhost:${process.env.E2E_PORT ?? 3101}`).hostname
+  await page.context().addCookies([{ name: 'acra-locale', value: 'fr', domain: host, path: '/' }])
   const csrf = await (await page.request.get('/api/auth/csrf')).json()
   await page.request.post('/api/auth/callback/credentials', {
     form: { csrfToken: csrf.csrfToken, email, password, json: 'true' },
