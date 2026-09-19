@@ -157,3 +157,12 @@ existante conservée. Aucun e-mail envoyé par ce test.
 Restent bloquants : recette de l’image exacte, migration de l’existant, SMTP et
 inscription e-mail réels, purge sur données fictives, déploiement/rollback et
 recette publique. Les tests unitaires du rollback ne remplacent pas cet essai.
+
+
+### Complément de qualification : runtime Node.js
+
+La vérification du 19 septembre identifie Node.js 20 comme hors support selon
+le [calendrier officiel](https://nodejs.org/en/about/previous-releases). L’image et
+les jobs npm passent à Node.js 24 LTS ; la qualification de release doit porter
+sur ce nouveau socle. Le build initial Node 20 a abouti à un brouillon, supprimé avant publication
+pour reconstruire la candidate sur Node 24.
