@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
 
         // Clé par IP (en-têtes de proxy ; objet plat côté next-auth, pas un Headers).
         const xff = req?.headers?.['x-forwarded-for']
-        const ip = (typeof xff === 'string' ? xff.split(',')[0]?.trim() : undefined)
+        const ip = (typeof xff === 'string' ? xff.split(',').map(v => v.trim()).filter(Boolean).at(-1) : undefined)
           || req?.headers?.['x-real-ip']
           || 'unknown'
         if (ip !== 'unknown') {

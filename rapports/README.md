@@ -2,6 +2,13 @@
 
 Rapports d'audit et de validation de l'application ACRA.
 
+## Audit de mise en ligne — 20 septembre 2026
+
+| Rapport | Fichier | Verdict |
+|---|---|---|
+| Audit sécurité SAST / DAST (OWASP) | [ACRA-Audit-Securite-2026-09-20.md](ACRA-Audit-Securite-2026-09-20.md) | Aucun constat critique ou élevé confirmé ; un constat moyen corrigé |
+| Contre-audit après correction | [ACRA-Contre-Audit-Securite-2026-09-20.md](ACRA-Contre-Audit-Securite-2026-09-20.md) | Correctif et isolation IDOR validés en qualification |
+
 ## Rapports v1.0 — 14 juin 2026 (pré-publication)
 
 | Rapport | Fichier | Verdict |

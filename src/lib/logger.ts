@@ -206,18 +206,10 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
 /**
  * Helper : extraire l'IP réelle depuis les headers Next.js (NAT/proxy friendly).
  */
-// AUDIT [F003-src] MEDIUM — CWE-290 — Source d'IP non fiable (spoofable)
-// CVSS: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N)
-// EVIDENCE: X-Forwarded-For / X-Real-IP sont fournis par le client et falsifiables.
-//   Cette fonction est la source des IP du rate-limiting par IP (register) ET de
-//   l'audit trail. Conséquences : (1) contournement des limites par IP en faisant
-//   varier l'en-tête, (2) empoisonnement des logs d'audit avec de fausses IP.
-// FIX: ne faire confiance à XFF que derrière un proxy de confiance ; prendre le
-//   dernier hop fiable (et non le 1er élément, falsifiable) ou l'IP exposée par l'infra.
+// Caddy ajoute l'adresse du client DIRECT en fin de X-Forwarded-For. La première
+// valeur est contrôlable par le client ; prendre le dernier hop évite de fonder
+// une limite de débit ou la piste d'audit sur une valeur injectée.
 export function getClientIp(req: { headers: { get: (k: string) => string | null } }): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown'
-  )
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',').map(v => v.trim()).filter(Boolean)
+  return forwarded?.at(-1) ?? req.headers.get('x-real-ip') ?? 'unknown'
 }

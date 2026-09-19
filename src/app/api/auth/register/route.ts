@@ -26,17 +26,8 @@ const schema = z.object({
 //   feature-flag REGISTRATION_OPEN), ou supprimer ce endpoint au profit de la
 //   création par /api/admin/users.
 export async function POST(req: NextRequest) {
-  // AUDIT [F003] MEDIUM — CWE-290 / OWASP A07:2021 — Rate-limit contournable (XFF spoofé)
-  // CVSS: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N)
-  // EVIDENCE: l'IP provient de l'en-tête client X-Forwarded-For, falsifiable. Un
-  //   attaquant fait varier XFF à chaque requête → la limite "5/h par IP" ne
-  //   s'applique jamais (clé toujours différente). Le store est aussi in-memory,
-  //   donc non partagé entre instances (limite réinitialisée par instance).
-  // FIX: dériver l'IP d'une source de confiance (req.ip / dernier hop du proxy de
-  //   confiance), valider XFF contre une allowlist de proxys, et utiliser un store
-  //   distribué (Redis) en multi-instance.
   // Rate limiting : 5 inscriptions par IP par heure
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = getClientIp(req)
   const rl = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return NextResponse.json(
