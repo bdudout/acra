@@ -109,13 +109,17 @@ export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const userId   = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  if (!isAdminRole(userRole)) {
+  const userId = (session.user as any).id
+  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+  // En démo, un inscrit a le rôle d'instance ANALYSTE mais ADMIN dans sa propre
+  // organisation. Le droit d'écrire cette configuration est donc celui du
+  // périmètre actif, jamais le seul rôle d'instance.
+  const scope = await getAnalyseScope(userId, instanceRole)
+  const userRole = scope.role
+  if (!userRole || !isAdminRole(userRole)) {
     return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
   }
-  const orgId = await activeOrgId(session)
+  const orgId = scope.activeOrgId ?? 'global'
 
   const body = await req.json()
 
