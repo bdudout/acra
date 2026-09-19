@@ -10,6 +10,11 @@ Il reçoit une release choisie, dont l'image Docker est identifiée par son empr
 la première stable qu'après fermeture de la [fiche de recette](RELEASE-CHECKLIST.md)**.
 Une release stable est préparée en brouillon, jamais publiée automatiquement.
 
+En mode démo, chaque inscription crée une organisation racine distincte. Le compte
+est ADMIN de cette seule organisation, sans rôle SUPER_ADMIN. Les échelles et la
+configuration organisationnelle sont résolues par organisation : une modification
+par un testeur ne change pas l'espace d'un autre testeur.
+
 ## Les mots utiles
 
 | Terme | Sens |

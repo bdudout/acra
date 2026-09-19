@@ -10,9 +10,18 @@
 
 import { prisma } from '@/lib/prisma'
 import { resolveScaleConfig, type ScaleConfig } from '@/lib/risk-scale'
+import { isDemoMode } from '@/lib/demo'
 
 export const ROOT_ORG_ID = 'global'
 export type ScalesScope = 'SHARED' | 'PER_ORG'
+
+/**
+ * Une démo publique ne partage jamais les échelles entre organisations : chaque
+ * inscription y obtient son propre espace et ne doit pas influencer les autres.
+ */
+export function resolveEffectiveScalesScope(configured: ScalesScope, demoMode: boolean): ScalesScope {
+  return demoMode ? 'PER_ORG' : configured
+}
 
 /**
  * Portée des échelles (réglage INSTANCE, lu sur la config racine) :
@@ -21,7 +30,8 @@ export type ScalesScope = 'SHARED' | 'PER_ORG'
  */
 export async function getScalesScope(): Promise<ScalesScope> {
   const root = await prisma.organizationConfig.findUnique({ where: { id: ROOT_ORG_ID }, select: { scalesScope: true } })
-  return (root as any)?.scalesScope === 'PER_ORG' ? 'PER_ORG' : 'SHARED'
+  const configured: ScalesScope = (root as any)?.scalesScope === 'PER_ORG' ? 'PER_ORG' : 'SHARED'
+  return resolveEffectiveScalesScope(configured, isDemoMode())
 }
 
 /** Id de la Configuration à ÉDITER pour une organisation, selon le mode. */
