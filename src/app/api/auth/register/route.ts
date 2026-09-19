@@ -11,6 +11,7 @@ import { createAndSendChallenge } from '@/lib/mfa-service'
 
 const schema = z.object({
   name:     z.string().min(2).max(100),
+  organizationName: z.string().min(2).max(100).optional(),
   email:    z.string().email(),
   password: z.string().min(1).max(100),
 })
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { name, email, password } = schema.parse(body)
+    const { name, organizationName, email, password } = schema.parse(body)
 
     // Charger la politique de mot de passe configurée par l'admin
     let policy: PasswordPolicyShape = DEFAULT_POLICY
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     if (decision.provisionOrg) {
       // Chaque inscrit self-service = sa propre organisation, dont il est ADMIN (SUBTREE).
-      const org = await createDemoOrgForUser(user.id, name)
+      const org = await createDemoOrgForUser(user.id, organizationName?.trim() || name)
       await auditLog('REGISTER', {
         userId: user.id, userEmail: user.email, ip: getClientIp(req),
         details: { selfService: true, orgId: org.id, role: 'ADMIN' },

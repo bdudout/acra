@@ -59,7 +59,7 @@ export default function HomePage() {
   const ws = WS_TITLES[locale] ?? WS_TITLES.fr
 
   return (
-    <div data-testid="landing-shell" className="min-h-screen bg-slate-50 text-slate-900">
+    <div data-testid="landing-shell" className="min-h-screen bg-[#f7f9fc] bg-[radial-gradient(ellipse_at_top_left,_rgba(224,231,255,0.58),_transparent_42%),radial-gradient(ellipse_at_92%_18%,_rgba(224,242,254,0.5),_transparent_34%)] text-slate-900">
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"

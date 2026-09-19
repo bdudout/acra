@@ -370,6 +370,8 @@ export const fr = {
       description:  'Réalisez vos analyses de risques cyber guidées, basées sur EBIOS RM et ISO 27005, exportez en PDF/Excel.',
       name:         'Nom complet',
       namePh:       'Marie Dupont',
+      organizationName: 'Nom de votre organisation',
+      organizationNamePh: 'Ex. Atelier du Littoral',
       emailPro:     'Email professionnel',
       passwordPh:   '8 caractères minimum',
       confirm:      'Confirmer le mot de passe',

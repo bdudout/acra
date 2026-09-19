@@ -362,6 +362,8 @@ export const de: Translations = {
       description:  'Führen Sie geführte Cyber-Risikoanalysen auf Basis von EBIOS RM und ISO 27005 durch, exportieren Sie als PDF/Excel.',
       name:         'Vollständiger Name',
       namePh:       'Max Mustermann',
+      organizationName: 'Name Ihrer Organisation',
+      organizationNamePh: 'z. B. Küstenwerkstatt',
       emailPro:     'Geschäftliche E-Mail',
       passwordPh:   'Mindestens 8 Zeichen',
       confirm:      'Passwort bestätigen',

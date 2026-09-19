@@ -362,6 +362,8 @@ export const it: Translations = {
       description:  'Esegui analisi dei rischi cyber guidate, basate su EBIOS RM e ISO 27005, esporta in PDF/Excel.',
       name:         'Nome completo',
       namePh:       'Mario Rossi',
+      organizationName: 'Nome della tua organizzazione',
+      organizationNamePh: 'Es. Officina del Litorale',
       emailPro:     'Email professionale',
       passwordPh:   'Almeno 8 caratteri',
       confirm:      'Conferma password',

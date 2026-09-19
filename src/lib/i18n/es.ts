@@ -362,6 +362,8 @@ export const es: Translations = {
       description:  'Realiza análisis de riesgos cibernéticos guiados, basados en EBIOS RM e ISO 27005, exporta a PDF/Excel.',
       name:         'Nombre completo',
       namePh:       'Juan García',
+      organizationName: 'Nombre de su organización',
+      organizationNamePh: 'P. ej., Taller del Litoral',
       emailPro:     'Correo profesional',
       passwordPh:   'Al menos 8 caracteres',
       confirm:      'Confirmar contraseña',

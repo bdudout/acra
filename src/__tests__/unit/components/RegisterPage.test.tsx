@@ -20,7 +20,7 @@ function jsonResponse(data: unknown) {
 }
 
 /** Installe un mock de fetch routé par URL ; `openValue` pilote registration-open. */
-function mockFetch(openValue: boolean | 'pending' | 'failure') {
+function mockFetch(openValue: boolean | 'pending' | 'failure', demo = false) {
   global.fetch = vi.fn((input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('/api/auth/registration-open')) {
@@ -29,7 +29,7 @@ function mockFetch(openValue: boolean | 'pending' | 'failure') {
         ? new Promise<Response>(() => {}) // ne se résout jamais → état de chargement
         : jsonResponse({ open: openValue })
     }
-    if (url.includes('/api/demo/status')) return jsonResponse({ demo: false })
+    if (url.includes('/api/demo/status')) return jsonResponse({ demo })
     if (url.includes('/api/auth/password-policy')) return jsonResponse(null)
     return jsonResponse({})
   }) as unknown as typeof fetch
@@ -52,6 +52,12 @@ describe('RegisterPage — chemin public', () => {
     mockFetch(true)
     render(<RegisterPage />)
     expect(await screen.findByRole('button', { name: /Créer mon compte/i })).toBeInTheDocument()
+  })
+
+  it('demande le nom de l’organisation pour une inscription de démonstration', async () => {
+    mockFetch(true, true)
+    render(<RegisterPage />)
+    expect(await screen.findByLabelText(/organisation/i)).toBeInTheDocument()
   })
 
   it('affiche le message « fermé » et aucun formulaire quand l’inscription est fermée', async () => {
