@@ -9,12 +9,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import HomePage from '@/app/page'
-import { fr } from '@/lib/i18n'
+import { fr, getT, type Locale } from '@/lib/i18n'
 
 vi.mock('next-auth/react', () => ({ useSession: () => ({ data: null, status: 'unauthenticated' }) }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
+let locale: Locale = 'fr'
+vi.mock('@/lib/i18n/context', () => ({
+  useTranslation: () => ({ locale, setLocale: vi.fn(), t: getT(locale) }),
+}))
+
 beforeEach(() => {
+  locale = 'fr'
   global.fetch = vi.fn(() =>
     Promise.resolve({ ok: true, json: () => Promise.resolve({ demo: false }) } as Response),
   ) as unknown as typeof fetch
@@ -25,6 +31,18 @@ describe('Landing — FAQ et stats internationalisées', () => {
     render(<HomePage />)
     expect(screen.getByTestId('landing-shell')).toHaveClass('bg-slate-50')
     expect(screen.getByTestId('landing-shell')).toHaveClass('text-slate-900')
+  })
+
+  it('réserve le drapeau français à la référence française et localise la méthode', () => {
+    const { unmount } = render(<HomePage />)
+    expect(screen.getByTestId('fr-method-flag')).toBeInTheDocument()
+    expect(screen.getByTestId('method-badge')).toHaveTextContent('EBIOS Risk Manager')
+    unmount()
+
+    locale = 'en'
+    render(<HomePage />)
+    expect(screen.queryByTestId('fr-method-flag')).not.toBeInTheDocument()
+    expect(screen.getByTestId('method-badge')).toHaveTextContent('ISO/IEC 27001')
   })
 
   it('rend la FAQ depuis l’i18n (titre + toutes les questions)', () => {

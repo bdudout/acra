@@ -390,7 +390,7 @@ export const de: Translations = {
   },
 
   landing: {
-    badge:        'Auf Basis von EBIOS RM (ANSSI) & ISO 27005',
+    badge:        'Auf Basis von EBIOS Risk Manager (ANSSI) und ISO/IEC 27001',
     heroLine1:    'Führen Sie Ihre',
     heroLine2:    'geführten Cyber-Risikoanalysen durch',
     description:  'Kostenlose und sichere Plattform zur Erstellung vollständiger Cyber-Risikoanalysen auf Basis von EBIOS RM und ISO 27005. Eine umfangreiche Bibliothek von Beispielen und Referenzwerken steht in jedem Workshop zur Auswahl — auch für erfahrene Praktiker eine erhebliche Zeitersparnis.',

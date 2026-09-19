@@ -390,7 +390,7 @@ export const en: Translations = {
   },
 
   landing: {
-    badge:        'Based on EBIOS RM (ANSSI) & ISO 27005',
+    badge:        'Based on EBIOS Risk Manager (ANSSI) and ISO/IEC 27001',
     heroLine1:    'Perform your',
     heroLine2:    'guided cyber risk analyses',
     description:  'Free and secure platform to create complete cyber risk analyses based on EBIOS RM and ISO 27005. A large library of examples and referentials is available at every workshop, greatly speeding up analyses even for experienced practitioners.',
