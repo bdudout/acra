@@ -36,6 +36,8 @@ describe('Landing — FAQ et stats internationalisées', () => {
   it('garde les actions de l’en-tête lisibles sur un téléphone', () => {
     render(<HomePage />)
     expect(screen.getByTestId('landing-actions')).toHaveClass('shrink-0')
+    expect(screen.getByTestId('landing-header')).toHaveClass('from-[#312e81]')
+    expect(screen.getByTestId('landing-header').querySelector('a[href="/auth/signin"]')).toHaveClass('bg-white/15')
     expect(screen.getByTestId('landing-workshops')).toHaveClass('items-center')
   })
 

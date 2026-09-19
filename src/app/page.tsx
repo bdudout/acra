@@ -66,23 +66,23 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       {/* Header */}
-      <header className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto border-x border-b border-indigo-100 bg-gradient-to-r from-[#eef2ff] via-[#ffffff] to-[#e0f2fe] rounded-b-2xl shadow-sm">
+      <header data-testid="landing-header" className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto border-x border-b border-indigo-900/30 bg-gradient-to-r from-[#312e81] via-[#4338ca] to-[#075985] rounded-b-2xl shadow-lg shadow-indigo-950/15">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-8 w-auto sm:h-10" />
           <div className="min-w-0">
-            <div className="font-bold text-base leading-tight sm:text-lg">ACRA</div>
-            <div className="text-slate-500 text-[10px] leading-tight tracking-wide hidden sm:block">
+            <div className="font-bold text-base leading-tight text-white sm:text-lg">ACRA</div>
+            <div className="hidden text-[10px] leading-tight tracking-wide text-indigo-100 sm:block">
               Augmented Cyber Risk Analysis
             </div>
           </div>
         </div>
         <div data-testid="landing-actions" className="flex shrink-0 items-center gap-0.5 sm:gap-3">
-          <LanguageSwitcher />
-          <Link href="/auth/signin" aria-label={t.landing.connect} className="inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-ebios-700 transition-colors sm:px-4">
+          <LanguageSwitcher onDark />
+          <Link href="/auth/signin" aria-label={t.landing.connect} className="inline-flex items-center justify-center rounded-lg bg-white/15 p-2 text-sm font-semibold text-white hover:bg-white/25 transition-colors sm:px-4">
             <LogIn size={18} className="sm:hidden" aria-hidden="true" />
             <span className="hidden sm:inline">{t.landing.connect}</span>
           </Link>
-          <Link href="/auth/register" aria-label={t.auth.register.submit} className="inline-flex items-center justify-center rounded-lg bg-ebios-600 p-2 text-sm font-medium text-white shadow-sm hover:bg-ebios-700 transition-colors sm:px-4">
+          <Link href="/auth/register" aria-label={t.auth.register.submit} className="inline-flex items-center justify-center rounded-lg bg-white p-2 text-sm font-semibold text-indigo-800 shadow-sm hover:bg-indigo-50 transition-colors sm:px-4">
             <UserPlus size={18} className="sm:hidden" aria-hidden="true" />
             <span className="hidden sm:inline">{t.auth.register.submit}</span>
           </Link>
