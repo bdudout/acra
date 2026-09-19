@@ -41,12 +41,12 @@ export default function LanguageSwitcher({ onDark = false }: { onDark?: boolean 
         className={`flex items-center gap-1 px-2 py-1.5 text-sm font-medium rounded-lg transition-colors ${
           onDark
             ? 'text-white/80 hover:text-white hover:bg-white/10'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
         }`}
       >
         <Globe size={16} aria-hidden="true" />
         <span className="text-xs" aria-hidden="true">{LOCALE_SHORT[locale]}</span>
-        <ChevronDown size={14} className={onDark ? 'text-white/60' : 'text-gray-500'} aria-hidden="true" />
+        <ChevronDown size={14} className={onDark ? 'text-white/60' : 'text-slate-500'} aria-hidden="true" />
       </button>
 
       {open && (
@@ -54,7 +54,7 @@ export default function LanguageSwitcher({ onDark = false }: { onDark?: boolean 
           role="listbox"
           aria-label="Choisir une langue"
           aria-activedescendant={`lang-${locale}`}
-          className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50 min-w-[160px] list-none p-0 m-0"
+          className="absolute right-0 top-full mt-1 bg-slate-50 border border-slate-200 rounded-xl shadow-lg py-1 z-50 min-w-[160px] list-none p-0 m-0"
         >
           {LOCALES.map(l => (
             <li key={l} role="option" aria-selected={l === locale} id={`lang-${l}`}>
@@ -62,8 +62,8 @@ export default function LanguageSwitcher({ onDark = false }: { onDark?: boolean 
                 onClick={() => { setLocale(l); setOpen(false) }}
                 className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors ${
                   l === locale
-                    ? 'bg-ebios-50 text-ebios-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-slate-100 text-ebios-700 font-medium'
+                    : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span>{LOCALE_LABELS[l]}</span>
