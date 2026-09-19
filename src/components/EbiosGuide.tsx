@@ -54,7 +54,7 @@ export default function EbiosGuide() {
   // Ressources ANSSI — version anglaise du guide EBIOS RM pour les locales non-FR
   const isFr = locale === 'fr'
   const guidePageUrl = isFr
-    ? 'https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/'
+    ? 'https://cyber.gouv.fr/securisation/analyse-des-risques/methode-ebios-rm/'
     : 'https://messervices.cyber.gouv.fr/guides/en-ebios-risk-manager-method'
   const guidePdfUrl = isFr
     ? 'https://www.ssi.gouv.fr/uploads/2018/10/guide-methode-ebios-risk-manager.pdf'

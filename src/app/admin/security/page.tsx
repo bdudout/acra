@@ -9,6 +9,7 @@ import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
 
 type SmsProvider  = 'TWILIO' | 'OVH' | 'CUSTOM'
+type PasswordResetMode = 'ADMIN' | 'EMAIL'
 type SsoProtocol  = 'SAML' | 'OIDC'
 type SsoSignAlgo  = 'RSA-SHA256' | 'RSA-SHA1'
 type UserRoleEnum = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN'
@@ -52,6 +53,7 @@ interface Policy {
   maxAgeDays:               number
   maxFailedAttempts:        number
   lockoutDurationMinutes:   number
+  passwordResetMode:        PasswordResetMode
   requireEmailVerification: boolean
   inactivityDaysLimit:      number
   // MFA
@@ -78,6 +80,7 @@ const DEFAULT: Policy = {
   maxAgeDays: 90,
   maxFailedAttempts: 5,
   lockoutDurationMinutes: 15,
+  passwordResetMode: 'ADMIN',
   requireEmailVerification: false,
   inactivityDaysLimit: 180,
   mfaEnabled: false,
@@ -458,6 +461,20 @@ export default function AdminSecurityPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Désactivation par inactivité (#12) */}
+            <div className="border-t border-gray-100 pt-5">
+              <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.passwordPolicy.resetModeTitle}</h2>
+              <p className="text-xs text-gray-500 mb-3">{t.passwordPolicy.resetModeDesc}</p>
+              <select
+                value={policy.passwordResetMode}
+                onChange={e => setPolicy(p => ({ ...p, passwordResetMode: e.target.value as PasswordResetMode }))}
+                className="input max-w-md"
+              >
+                <option value="ADMIN">{t.passwordPolicy.resetModeAdmin}</option>
+                <option value="EMAIL">{t.passwordPolicy.resetModeEmail}</option>
+              </select>
             </div>
 
             {/* Désactivation par inactivité (#12) */}

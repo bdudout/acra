@@ -46,6 +46,8 @@ export interface EmailLayoutInput {
   footer?: string
   /** Couleur d'accent du titre. */
   tone?: Tone
+  /** Call-to-action with a server-validated absolute URL. */
+  action?: { label: string; url: string }
 }
 
 /**
@@ -111,6 +113,13 @@ export function emailLayout(input: EmailLayoutInput): string {
       )
     }
     parts.push(`</table>`)
+  }
+
+  if (input.action) {
+    // The URL comes from server configuration; encode quotes defensively before
+    // placing it in an attribute to preserve the HTML escaping contract.
+    const href = escapeHtml(input.action.url)
+    parts.push(`<p style="margin:0 0 16px"><a href="${href}" style="display:inline-block;background:${accent};color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:bold">${escapeHtml(input.action.label)}</a></p>`)
   }
 
   if (input.footer) {

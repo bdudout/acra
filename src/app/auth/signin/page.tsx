@@ -52,6 +52,12 @@ function SignInForm() {
         router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
         return
       }
+      if (err.includes('ACCOUNT_LOCKED::')) {
+        const ms = Number(err.split('::')[1])
+        const minutes = Number.isFinite(ms) ? Math.max(1, Math.ceil(ms / 60_000)) : 1
+        setError(t.auth.signIn.errorLockedFor(minutes))
+        return
+      }
       const blocked = ['ACCOUNT_LOCKED', 'ACCOUNT_SUSPENDED', 'TOO_MANY_ATTEMPTS']
       setError(blocked.some(c => err.includes(c)) ? t.auth.signIn.errorBlocked : t.auth.signIn.error)
     } else {
@@ -221,10 +227,13 @@ export default function SignInPage() {
           <SignInForm />
         </Suspense>
 
-        <div className="flex justify-center mt-6">
-          <LanguageSwitcher />
-        </div>
+      <div className="flex justify-center mt-6">
+        <LanguageSwitcher />
       </div>
+      <Link href="/" className="mt-4 flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-ebios-700">
+        {t.auth.signIn.backToHome}
+      </Link>
+    </div>
     </div>
   )
 }

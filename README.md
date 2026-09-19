@@ -12,7 +12,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![EBIOS RM](https://img.shields.io/badge/Méthode-EBIOS%20RM-red)](https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/)
+[![EBIOS RM](https://img.shields.io/badge/Méthode-EBIOS%20RM-red)](https://cyber.gouv.fr/securisation/analyse-des-risques/methode-ebios-rm/)
 [![ANSSI](https://img.shields.io/badge/Compatible-ISO%2027005-green)](https://www.iso.org/standard/75281.html)
 
 **🌐 Langue / Language :** 🇫🇷 Français · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇪🇸 Español](README.es.md) · [🇮🇹 Italiano](README.it.md)
@@ -967,4 +967,4 @@ Voir [CONTRIBUTING.md](./CONTRIBUTING.md) pour le guide complet.
 
 MIT — voir [LICENSE](./LICENSE)
 
-La méthode EBIOS RM est développée et maintenue par l'[ANSSI](https://www.ssi.gouv.fr/guide/ebios-risk-manager-la-methode/). Cette application n'est pas affiliée à l'ANSSI.
+La méthode EBIOS RM est développée et maintenue par l'[ANSSI](https://cyber.gouv.fr/securisation/analyse-des-risques/methode-ebios-rm/). Cette application n'est pas affiliée à l'ANSSI.

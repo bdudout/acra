@@ -95,7 +95,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Plan d'action unifié** | `plan-action`, `plan-action.server`, `action-items`, `action-items.server`, `promotable-actions.server`, `mesure-categorie` |
 | **Régulatoire** | `dora`, `dora-reporting`, `dora-its-export`, `nis2-mapping`, `ropa`, `ropa-catalogue`, `rgpd-sensitive`, `suivi-regulateur`, `registre-tic`, `tic-questionnaire`, `soa-*`, `politique-defaut` |
 | **Écosystème / tiers** | `tiers`, `tiers.server`, `ecosystem-*`, `tiers-tic-link`, `operateur-ae` |
-| **Sécurité / accès** | `auth`, `auth-cookies`, `permissions` (RBAC), `mfa*`, `sso*`, `saml*`, `scim*`, `login-lockout`, `password-policy`, `rate-limit`, `secret-crypto`, `recovery`, `api-auth.server`, `api-key`, `cron-auth`, `csp` |
+| **Sécurité / accès** | `auth`, `auth-cookies`, `permissions` (RBAC), `mfa*`, `sso*`, `saml*`, `scim*`, `login-lockout`, `password-policy`, `password-reset`, `rate-limit`, `secret-crypto`, `recovery`, `api-auth.server`, `api-key`, `cron-auth`, `csp` |
 | **Multi-org / config** | `org-*`, `module-policy`, `configuration-*`, `nav-modules-cache`, `navigation`, `branding*` |
 | **Interop** | `api-import`, `import-sanitize`, `webhook*`, `siem*`, `suggestions` |
 | **Exports** | `export-pdf`, `pdf-*`, `*-pdf-template.tsx`, `analyse-docx`, `analyse-pptx`, `markdown-docx`, `*-pptx`, `carto-export`, `ras-export`, `comite-pack`, `soa-export` |

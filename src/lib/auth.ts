@@ -133,9 +133,10 @@ export const authOptions: NextAuthOptions = {
         const loginPolicy = await loadLoginPolicy()
         const lockoutPolicy = loginPolicy
         const lockoutEnabled = lockoutPolicy.maxFailedAttempts > 0
-        if (lockoutEnabled && checkLockout(credentials.email).locked) {
+        const existingLockout = lockoutEnabled ? checkLockout(credentials.email) : null
+        if (existingLockout?.locked) {
           await auditLog('LOGIN_LOCKED', { userEmail: credentials.email })
-          throw new Error('ACCOUNT_LOCKED')
+          throw new Error(`ACCOUNT_LOCKED::${existingLockout.retryAfterMs}`)
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,7 +167,7 @@ export const authOptions: NextAuthOptions = {
             const state = recordFailure(credentials.email, lockoutPolicy)
             if (state.lockedUntil != null) {
               await auditLog('LOGIN_LOCKED', { userId: user.id, userEmail: user.email, details: { reason: 'max_failed_attempts' } })
-              throw new Error('ACCOUNT_LOCKED')
+              throw new Error(`ACCOUNT_LOCKED::${Math.max(0, state.lockedUntil - Date.now())}`)
             }
           }
           await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'bad_password' } })

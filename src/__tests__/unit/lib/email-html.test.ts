@@ -76,4 +76,9 @@ describe('emailLayout', () => {
   it('bloc code absent si non fourni', () => {
     expect(emailLayout({ heading: 'H' }).includes('letter-spacing')).toBe(false)
   })
+  it('rend un lien d’action en échappant son attribut URL', () => {
+    const html = emailLayout({ heading: 'H', action: { label: '<Réinitialiser>', url: 'https://acra-cyber.com/?q="x"' } })
+    expect(html).toContain('href="https://acra-cyber.com/?q=&quot;x&quot;"')
+    expect(html).toContain('&lt;Réinitialiser&gt;')
+  })
 })

@@ -25,6 +25,7 @@ const PolicySchema = z.object({
   maxAgeDays:               z.number().int().min(0).max(3650),
   maxFailedAttempts:        z.number().int().min(0).max(100).default(5),
   lockoutDurationMinutes:   z.number().int().min(1).max(1440).default(15),
+  passwordResetMode:        z.enum(['ADMIN', 'EMAIL']).default('ADMIN'),
   requireEmailVerification: z.boolean().default(false),
   inactivityDaysLimit:      z.number().int().min(0).max(3650).default(180),
   // MFA

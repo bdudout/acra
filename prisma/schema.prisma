@@ -61,6 +61,24 @@ model User {
   analyses      Analyse[]
   accesAnalyses AnalyseAcces[]
   memberships   OrgMembership[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+// Jetons de réinitialisation à usage unique. Seul le condensat SHA-256 du jeton
+// transmis par e-mail est stocké, afin qu'une lecture de base ne permette pas
+// d'usurper un compte.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Account {
@@ -1606,6 +1624,9 @@ model PasswordPolicy {
   maxAgeDays               Int     @default(90) // 0 = pas d'expiration
   maxFailedAttempts        Int     @default(5) // 0 = désactivé
   lockoutDurationMinutes   Int     @default(15) // durée de verrouillage en minutes
+  // ADMIN : mot de passe temporaire délivré par un administrateur ; EMAIL : lien
+  // autonome à usage unique. Le mode démo force EMAIL au moment de l'exécution.
+  passwordResetMode        String  @default("ADMIN")
   requireEmailVerification Boolean @default(false) // vérification email à l'inscription
   inactivityDaysLimit      Int     @default(180) // désactivation auto après N jours d'inactivité (0 = désactivé) — ne s'applique pas aux ADMIN
 
