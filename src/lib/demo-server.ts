@@ -186,6 +186,13 @@ export async function createDemoOrgForUser(userId: string, displayName: string):
   await prisma.orgMembership.create({
     data: { userId, organizationId: created.id, role: 'ADMIN', scope: 'SUBTREE' },
   })
+  // Parcours démo cyber : conformité (déjà active par défaut), référentiels/PSSI,
+  // documents et dérogations. Les modules GRC plus larges restent désactivés.
+  await prisma.organizationConfig.upsert({
+    where: { id: created.id },
+    create: { id: created.id, derogationsActive: true },
+    update: { derogationsActive: true },
+  })
   return created
 }
 
