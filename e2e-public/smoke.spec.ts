@@ -7,7 +7,7 @@ test('release publique : TLS, identité, connexion, analyse et PDF', async ({ pa
   expect(await health.json()).toMatchObject({ status: 'ok', db: 'connected', version: EXPECT_VERSION, revision: EXPECT_REVISION })
   expect(health.headers()['strict-transport-security']).toBeTruthy()
   expect(health.headers()['x-content-type-options']).toBe('nosniff')
-  expect((await page.request.get('/api/analyses')).status()).toBe(401)
+  expect((await page.request.get('/api/analyses', { maxRedirects: 0 })).status()).toBe(307)
   const csrf = await (await page.request.get('/api/auth/csrf')).json()
   await page.request.post('/api/auth/callback/credentials', { form: { csrfToken: csrf.csrfToken, email: SMOKE_EMAIL, password: SMOKE_PASSWORD, json: 'true' } })
   const response = await page.request.get('/api/analyses')
