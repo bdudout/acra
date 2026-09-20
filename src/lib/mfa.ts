@@ -52,6 +52,7 @@ export interface MfaPolicyView {
   mfaScope: string // 'ALL' | 'ADMIN_ONLY'
   mfaMethodEmail: boolean
   mfaMethodSms: boolean
+  trustedDeviceEnabled?: boolean
 }
 
 export type MfaChannel = 'EMAIL' | 'SMS'

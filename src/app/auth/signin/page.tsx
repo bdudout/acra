@@ -22,6 +22,8 @@ function SignInForm() {
   const [mfaCode, setMfaCode] = useState('')
   const [mfaChannel, setMfaChannel] = useState('EMAIL')
   const [mfaMasked, setMfaMasked] = useState('')
+  const [mfaTrustEligible, setMfaTrustEligible] = useState(false)
+  const [trustDevice, setTrustDevice] = useState(false)
 
   const callbackUrl = params.get('callbackUrl') || '/dashboard'
 
@@ -41,6 +43,8 @@ function SignInForm() {
         const parts = err.split('::')
         setMfaChannel(parts[1] || 'EMAIL')
         setMfaMasked(parts[2] || '')
+        setMfaTrustEligible(parts[3] === 'TRUSTED_DEVICE')
+        setTrustDevice(false)
         setStep('mfa'); setMfaCode(''); setError('')
         return
       }
@@ -74,7 +78,13 @@ function SignInForm() {
   async function submitMfa(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
     const res = await signIn('credentials', { email, password, mfaCode, mfaChannel, redirect: false })
-    setLoading(false); handleResult(res ?? undefined)
+    setLoading(false)
+    if (!res?.error) {
+      if (trustDevice) await fetch('/api/auth/trusted-device', { method: 'POST' }).catch(() => {})
+      router.push(callbackUrl)
+      return
+    }
+    handleResult(res)
   }
 
   async function resendCode() {
@@ -112,6 +122,18 @@ function SignInForm() {
             className="w-full bg-ebios-600 hover:bg-ebios-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors">
             {loading ? t.auth.signIn.submitting : t.auth.signIn.mfaSubmit}
           </button>
+
+          {mfaTrustEligible && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-ebios-100 bg-ebios-50 p-3 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={trustDevice}
+                onChange={e => setTrustDevice(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-ebios-600"
+              />
+              <span>{t.auth.signIn.trustDevice}</span>
+            </label>
+          )}
         </form>
 
         <div className="flex items-center justify-between mt-4 text-sm">

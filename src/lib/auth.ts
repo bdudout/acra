@@ -21,6 +21,8 @@ import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
 import { createAndSendChallenge, verifyChallenge } from '@/lib/mfa-service'
+import { TRUSTED_DEVICE_COOKIE, cookieValue } from '@/lib/trusted-device'
+import { hasValidTrustedDevice } from '@/lib/trusted-device.server'
 import { SSO_PROVIDER_ID } from '@/lib/sso'
 import { ssoSignInDecision, finalizeSsoProvisionedUser, syncSsoRoleFromClaims } from '@/lib/sso.server'
 
@@ -38,7 +40,7 @@ interface LoginPolicy extends LockoutPolicy {
 
 const MFA_DISABLED: MfaPolicyView = {
   mfaEnabled: false, mfaPendingConfirmation: false, mfaScope: 'ALL',
-  mfaMethodEmail: true, mfaMethodSms: false,
+  mfaMethodEmail: true, mfaMethodSms: false, trustedDeviceEnabled: false,
 }
 
 /**
@@ -61,6 +63,7 @@ async function loadLoginPolicy(): Promise<LoginPolicy> {
           mfaScope:               stored.mfaScope ?? 'ALL',
           mfaMethodEmail:         stored.mfaMethodEmail !== false,
           mfaMethodSms:           stored.mfaMethodSms === true,
+          trustedDeviceEnabled:    stored.trustedDeviceEnabled === true,
         },
       }
     }
@@ -190,7 +193,13 @@ export const authOptions: NextAuthOptions = {
         // Pattern next-auth « credentials 2 étapes » : 1re soumission (sans code) →
         // on génère et envoie un code, puis on lève MFA_REQUIRED ; 2e soumission
         // (avec mfaCode) → on vérifie le code avant d'émettre la session.
-        if (isMfaRequired(loginPolicy.mfa, user.role)) {
+        let mfaVerifiedAt: number | undefined
+        const trustedToken = cookieValue(req?.headers?.cookie, TRUSTED_DEVICE_COOKIE)
+        const mfaRequired = isMfaRequired(loginPolicy.mfa, user.role)
+        const trustedDevice = mfaRequired && loginPolicy.mfa.trustedDeviceEnabled && loginPolicy.mfa.mfaMethodEmail
+          ? await hasValidTrustedDevice(user.id, trustedToken)
+          : false
+        if (mfaRequired && !trustedDevice) {
           const code = (credentials.mfaCode ?? '').trim()
           if (!code) {
             const channel = resolveChannel(loginPolicy.mfa, !!user.phone, credentials.mfaChannel)
@@ -206,7 +215,8 @@ export const authOptions: NextAuthOptions = {
             }
             await auditLog('MFA_CHALLENGE_SENT', { userId: user.id, userEmail: user.email, details: { channel } })
             // Encode canal + destination masquée pour l'UI (séparateur ::)
-            throw new Error(`MFA_REQUIRED::${channel}::${sent.masked ?? ''}`)
+            const trustEligible = loginPolicy.mfa.trustedDeviceEnabled && channel === 'EMAIL'
+            throw new Error(`MFA_REQUIRED::${channel}::${sent.masked ?? ''}::${trustEligible ? 'TRUSTED_DEVICE' : ''}`)
           }
           const verified = await verifyChallenge(user.id, code)
           if (!verified.ok) {
@@ -214,6 +224,9 @@ export const authOptions: NextAuthOptions = {
             throw new Error(`MFA_INVALID::${verified.error ?? 'invalid'}`)
           }
           await auditLog('MFA_VERIFIED', { userId: user.id, userEmail: user.email })
+          mfaVerifiedAt = Date.now()
+        } else if (mfaRequired && trustedDevice) {
+          await auditLog('MFA_TRUSTED_DEVICE_USED', { userId: user.id, userEmail: user.email })
         }
 
         // #11 — expiration du mot de passe : force le changement à la connexion
@@ -233,7 +246,7 @@ export const authOptions: NextAuthOptions = {
         await auditLog('LOGIN_SUCCESS', { userId: user.id, userEmail: user.email, userRole: user.role })
         // Mode démo : la connexion compte comme activité (repousse la purge). No-op hors démo.
         await touchOrgActivityForUser(user.id).catch(() => { /* best-effort */ })
-        return { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: mustChange }
+        return { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: mustChange, mfaVerifiedAt }
       },
     }),
   ],
@@ -264,6 +277,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.role = (user as any).role ?? 'ANALYSTE'
         token.mustChangePassword = (user as any).mustChangePassword === true
+        token.mfaVerifiedAt = (user as any).mfaVerifiedAt
         // RBAC piloté par l'IdP : à la connexion SSO, synchronise le rôle depuis
         // les groupes du jeton (no-op si aucun mapping de groupes n'est configuré).
         if (account?.provider === SSO_PROVIDER_ID) {
@@ -295,6 +309,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id   = token.id   as string
         ;(session.user as any).role = token.role as string
         ;(session.user as any).mustChangePassword = token.mustChangePassword === true
+        ;(session.user as any).mfaVerifiedAt = token.mfaVerifiedAt as number | undefined
       }
       return session
     },

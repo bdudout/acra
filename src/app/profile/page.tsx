@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { LOCALES, LOCALE_LABELS } from '@/lib/i18n'
 import { useTheme, type ThemeMode } from '@/lib/theme'
+import SelfServiceDeletionPanel from '@/components/SelfServiceDeletionPanel'
 
 // Validation locale de la politique de mots de passe (miroir de src/lib/password-policy.ts)
 interface PolicyShape {
@@ -51,6 +52,7 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [profileError,   setProfileError]   = useState('')
+  const [selfServiceAccountDeletion, setSelfServiceAccountDeletion] = useState(false)
 
   // ── État mot de passe ────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState('')
@@ -72,6 +74,7 @@ export default function ProfilePage() {
           setName(d.user.name || '')
           setEmail(d.user.email || '')
           setPhone(d.user.phone || '')
+          setSelfServiceAccountDeletion(d.selfServiceAccountDeletion === true)
         }
       })
       .catch(() => {})
@@ -144,6 +147,17 @@ export default function ProfilePage() {
       <Navbar />
       <div className="max-w-lg mx-auto px-4 py-10 space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">{t.profile.title}</h1>
+
+        <SelfServiceDeletionPanel
+          enabled={selfServiceAccountDeletion}
+          labels={{
+            title: t.profile.deleteAccountTitle,
+            description: t.profile.deleteAccountDesc,
+            confirmation: t.profile.deleteAccountConfirm,
+            button: t.profile.deleteAccountButton,
+            error: t.profile.deleteAccountError,
+          }}
+        />
 
         {/* ── Section identité ──────────────────────────────────────── */}
         <div className="card p-6">

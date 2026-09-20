@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { isDemoInstance } from '@/lib/demo-server'
+import { canSelfDeleteAccount } from '@/lib/self-service-account'
 
 const Schema = z.object({
   name: z.string().min(1).max(100),
@@ -16,11 +18,15 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as any).id
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, phone: true },
+  const [user, demo, policy] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, role: true, phone: true } }),
+    isDemoInstance(),
+    prisma.passwordPolicy.findUnique({ where: { id: 'global' }, select: { selfServiceAccountDeletion: true } }),
+  ])
+  return NextResponse.json({
+    user,
+    selfServiceAccountDeletion: canSelfDeleteAccount({ demo, enabled: policy?.selfServiceAccountDeletion === true, authenticated: true }),
   })
-  return NextResponse.json({ user })
 }
 
 // PATCH /api/user/profile — met à jour le profil de l'utilisateur connecté (nom, langue…).
