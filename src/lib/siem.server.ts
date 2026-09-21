@@ -4,12 +4,15 @@
 // Appelé par `auditLog` (lib/logger) en best-effort : ne bloque ni ne fait
 // jamais échouer la requête. L'endpoint est réglé par un SUPER_ADMIN (de
 // confiance) : pas de blocage d'IP privée ici — un SIEM est souvent interne
-// (Splunk HEC localhost:8088, Elastic interne…).
+// (Splunk HEC localhost:8088, Elastic interne…). En revanche, l'ops peut BORNER
+// les destinations à une allowlist réseau (env SIEM_ALLOWED_HOSTS) — défense SSRF.
 
 import { logger, type AuditAction } from './logger'
 import { decryptSecret } from './secret-crypto'
 import {
-  shouldForward, buildSiemEvent, cleanSiemCategories, type SiemEventCtx, type SiemConfigLite,
+  shouldForward, buildSiemEvent, cleanSiemCategories,
+  parseSiemAllowlist, isSiemDestinationAllowed,
+  type SiemEventCtx, type SiemConfigLite,
 } from './siem'
 
 interface SiemConfigRow extends SiemConfigLite {
@@ -76,6 +79,15 @@ export async function deliverSiemEvent(
   authHeader: string | null,
   event: unknown,
 ): Promise<{ ok: boolean; code?: number; error?: string }> {
+  // Allowlist réseau (ops) : si SIEM_ALLOWED_HOSTS est défini, la destination DOIT
+  // en faire partie (hôte exact ou CIDR IPv4). Défense SSRF : un endpoint mal
+  // configuré/altéré ne peut plus pivoter vers un service interne arbitraire.
+  // Vide ⇒ non restreint (rétrocompatible) — l'allowlist est recommandée (runbook).
+  const allowlist = parseSiemAllowlist(process.env.SIEM_ALLOWED_HOSTS)
+  if (!isSiemDestinationAllowed(endpoint, allowlist)) {
+    return { ok: false, error: 'destination_not_allowed' }
+  }
+
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS)
   try {

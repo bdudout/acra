@@ -114,6 +114,71 @@ export function isValidSiemEndpoint(url: unknown): boolean {
   }
 }
 
+// ─── Allowlist réseau des destinations SIEM (défense SSRF) ───────────────────
+// Les destinations SIEM sont souvent INTERNES (Splunk HEC, Elastic) — on ne les
+// bloque donc pas par principe, mais on peut les BORNER à une allowlist d'hôtes /
+// CIDR réglée par l'ops (env SIEM_ALLOWED_HOSTS). Un endpoint hors allowlist ne
+// peut plus servir de pivot SSRF vers un service interne arbitraire.
+
+/** Parse une allowlist « host1, 10.0.0.0/8, siem.interne » → liste normalisée. */
+export function parseSiemAllowlist(raw: string | undefined | null): string[] {
+  if (!raw) return []
+  return raw.split(/[\s,]+/).map(s => s.trim()).filter(Boolean)
+}
+
+/** IPv4 pointée → entier 32 bits non signé, ou null si invalide. */
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split('.')
+  if (parts.length !== 4) return null
+  let n = 0
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return null
+    const b = Number(p)
+    if (b > 255) return null
+    n = ((n << 8) | b) >>> 0
+  }
+  return n >>> 0
+}
+
+/** Vrai si `ip` (IPv4) appartient au `cidr` (ex. « 10.0.0.0/8 »). */
+function ipv4InCidr(ip: string, cidr: string): boolean {
+  const [range, bitsStr] = cidr.split('/')
+  const bits = Number(bitsStr)
+  if (!Number.isInteger(bits) || bits < 0 || bits > 32) return false
+  const ipInt = ipv4ToInt(ip)
+  const rangeInt = ipv4ToInt(range)
+  if (ipInt === null || rangeInt === null) return false
+  if (bits === 0) return true
+  const mask = (0xFFFFFFFF << (32 - bits)) >>> 0
+  return (ipInt & mask) === (rangeInt & mask)
+}
+
+/**
+ * La destination est-elle autorisée par l'allowlist ? Allowlist VIDE ⇒ non
+ * restreint (true, rétrocompatible). Sinon l'hôte de l'endpoint doit correspondre
+ * à un hôte exact (insensible à la casse) ou à un CIDR IPv4 de l'allowlist. Une
+ * URL invalide est refusée. Pur → testé.
+ */
+export function isSiemDestinationAllowed(endpoint: string, allowlist: string[]): boolean {
+  if (!allowlist || allowlist.length === 0) return true
+  let host: string
+  try {
+    host = new URL(endpoint).hostname.replace(/^\[|\]$/g, '').toLowerCase()
+  } catch {
+    return false
+  }
+  for (const raw of allowlist) {
+    const e = raw.trim().toLowerCase()
+    if (!e) continue
+    if (e.includes('/')) {
+      if (ipv4InCidr(host, e)) return true
+    } else if (host === e) {
+      return true
+    }
+  }
+  return false
+}
+
 /** Configuration SIEM minimale (activation + endpoint/format) pour décider et router la livraison. */
 export interface SiemConfigLite {
   enabled: boolean
