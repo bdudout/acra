@@ -2,8 +2,8 @@
 // Une proposition « ne tombe pas du ciel » : son ancre (targetType + targetId)
 // doit désigner un objet CONCRET, EXISTANT et dans l'ORGANISATION de la clé. Ce
 // module centralise cette vérification pour tous les types d'ancre (mêmes origines
-// que le plan d'action unifié / PlanActionLien). Aucune divulgation : renvoie un
-// simple booléen.
+// que le plan d'action unifié / PlanActionLien, cf. docs/mcp-cadrage.md §6).
+// Aucune divulgation : renvoie un simple booléen.
 
 import { prisma } from '@/lib/prisma'
 
