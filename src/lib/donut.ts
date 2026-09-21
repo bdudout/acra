@@ -9,6 +9,7 @@
 
 export interface DonutPart { key: string; value: number; color: string }
 
+/** Segment d'un donut (part colorée) : clé, valeur et couleur. */
 export interface DonutSegment {
   key: string
   color: string
@@ -23,6 +24,7 @@ export interface DonutSegment {
   offset: number
 }
 
+/** Donut calculé : total + segments avec leurs arcs (offsets) prêts à dessiner. */
 export interface Donut {
   total: number
   segments: DonutSegment[]

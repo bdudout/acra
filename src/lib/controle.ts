@@ -6,18 +6,22 @@
 // une vraisemblance résiduelle (boucle RCSA). Logique PURE et testée.
 
 export const CONTROLE_NIVEAUX = ['N1', 'N2'] as const
+/** Niveau d'un contrôle permanent : N1 (1ʳᵉ ligne) ou N2 (2ᵉ ligne). */
 export type ControleNiveau = (typeof CONTROLE_NIVEAUX)[number]
 
 export const PERIODICITES = ['HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+/** Périodicité d'exécution d'un contrôle : hebdomadaire → annuelle. */
 export type Periodicite = (typeof PERIODICITES)[number]
 
 export const RESULTATS = ['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'] as const
+/** Résultat d'une exécution de contrôle : conforme, anomalie ou non applicable. */
 export type Resultat = (typeof RESULTATS)[number]
 
 // ─── Checklist (points à vérifier) ───────────────────────────────────────────
 // Un contrôle peut porter une liste de points à vérifier. À l'exécution, chaque
 // point est coté OK / KO / NA, et le résultat global se DÉDUIT (anomalie si un KO).
 export const CHECKLIST_STATUTS = ['OK', 'KO', 'NA'] as const
+/** Statut d'un point de checklist de contrôle : OK, KO ou NA (non applicable). */
 export type ChecklistStatut = (typeof CHECKLIST_STATUTS)[number]
 
 /** Résultat d'un point à l'exécution (label dénormalisé → l'historique reste lisible). */
@@ -64,6 +68,7 @@ export function cleanChecklistResultats(v: unknown): ChecklistResultat[] {
   return out
 }
 
+/** Résultat déduit d'une checklist (résultat global + compteurs), pour proposer le résultat d'une exécution. */
 export interface DeductionChecklist {
   resultat: Resultat
   anomaliesTrouvees: number
@@ -141,6 +146,7 @@ export interface ControleInput {
   superviseIds?: unknown
 }
 
+/** Entrée d'un contrôle normalisée (niveau/périodicité typés, checklist nettoyée), prête pour la persistance. */
 export interface CleanControle {
   intitule: string
   description: string | null
@@ -210,6 +216,7 @@ export function cleanControleInput(body: ControleInput): CleanControle {
   }
 }
 
+/** Entrée brute (non validée) d'une exécution de contrôle, telle que reçue de l'API. */
 export interface ExecutionInput {
   resultat?: unknown
   dateRealisation?: unknown
@@ -219,6 +226,7 @@ export interface ExecutionInput {
   independant?: unknown
 }
 
+/** Entrée d'une exécution normalisée (résultat typé, date, tailles ≥ 0), prête pour la persistance. */
 export interface CleanExecution {
   resultat: Resultat
   dateRealisation: Date
@@ -292,6 +300,7 @@ export function prochaineEcheance(periodicite: Periodicite, derniereExecution: D
   return periodicite === 'HEBDOMADAIRE' ? addDays(base, 7) : addMonths(base, MOIS_PAR_PERIODE[periodicite])
 }
 
+/** État d'échéance d'un contrôle vis-à-vis de sa périodicité : à venir, dû ou en retard. */
 export type EtatEcheance = 'A_VENIR' | 'DU' | 'EN_RETARD'
 
 /**
@@ -313,6 +322,7 @@ export interface ExecutionLite {
   dateRealisation: Date | string
 }
 
+/** Efficacité agrégée d'un contrôle : conformes/anomalies, taux, et vraisemblance résiduelle suggérée. */
 export interface ControleEfficacite {
   /** Exécutions retenues (NON_APPLICABLE exclues du calcul). */
   evaluees: number

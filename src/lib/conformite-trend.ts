@@ -13,6 +13,7 @@ export interface TrendSuivi {
   points: { date: string | Date; conforme: number; pertinents: number }[]
 }
 
+/** Point de la courbe de tendance de conformité : date ISO + taux et compteurs à cette date. */
 export interface TrendPoint {
   date: string        // ISO
   taux: number        // % entier

@@ -7,6 +7,7 @@
 import { type IncidentReporting, type DoraPhase } from './dora-reporting'
 import { toCsvCell } from './spreadsheet-safe'
 
+/** Incident en entrée de l'export ITS DORA (registre de déclaration des incidents TIC majeurs). */
 export interface DoraItsIncident {
   id: string
   intitule: string

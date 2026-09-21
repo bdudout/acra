@@ -1,6 +1,8 @@
 import { etatDerogation, type DerogationStatut } from '@/lib/derogation'
 
+/** Vue minimale d'une dérogation pour le tableau de bord (statut + date de fin). */
 export interface DerogationDashboardSource { statut: string; dateFin: string | Date | null }
+/** Compteurs du tableau de bord des dérogations : actives, bientôt expirées, expirées, en attente, total. */
 export interface DerogationDashboard { active: number; expiringSoon: number; expired: number; pending: number; total: number }
 
 const REVIEW_STATUSES = new Set<DerogationStatut>(['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'])

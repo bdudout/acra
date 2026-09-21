@@ -19,15 +19,18 @@
 // ORGANISATION et ENTITE vivent tous deux dans l'entité `Conformite` (org-level) ;
 // ANALYSE vit dans l'analyse.
 export const CONFORMITE_NIVEAUX = ['ORGANISATION', 'ANALYSE', 'ENTITE'] as const
+/** Niveau de pilotage de la conformité : par organisation, par analyse ou par entité. */
 export type ConformiteNiveau = typeof CONFORMITE_NIVEAUX[number]
 export const DEFAULT_CONFORMITE_NIVEAU: ConformiteNiveau = 'ORGANISATION'
 
 export const CONFORMITE_SNAPSHOT_MODES = ['MANUEL', 'AUTO', 'CHANGEMENT'] as const
+/** Mode de figeage des versions de conformité : manuel, automatique ou sur changement. */
 export type ConformiteSnapshotMode = typeof CONFORMITE_SNAPSHOT_MODES[number]
 export const DEFAULT_CONFORMITE_SNAPSHOT_MODE: ConformiteSnapshotMode = 'MANUEL'
 
 // Périodicité des snapshots AUTO (choisie par l'organisation).
 export const CONFORMITE_SNAPSHOT_PERIODES = ['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+/** Périodicité des versions automatiques de conformité : mensuelle, trimestrielle, semestrielle ou annuelle. */
 export type ConformiteSnapshotPeriode = typeof CONFORMITE_SNAPSHOT_PERIODES[number]
 export const DEFAULT_CONFORMITE_SNAPSHOT_PERIODE: ConformiteSnapshotPeriode = 'MENSUEL'
 const PERIODE_JOURS: Record<ConformiteSnapshotPeriode, number> = {
@@ -75,6 +78,7 @@ export function isEntiteLevelConformite(niveau: unknown): boolean {
 // sont des overrides valides ; toute autre (null, '', ENTITE, invalide) → on suit
 // la configuration de l'organisation.
 export const ANALYSE_CONFORMITE_OVERRIDES = ['ANALYSE', 'ORGANISATION'] as const
+/** Origine de la conformité d'une analyse : propre à l'analyse ou héritée de l'organisation. */
 export type AnalyseConformiteOverride = typeof ANALYSE_CONFORMITE_OVERRIDES[number]
 
 /** Portée EFFECTIVE de conformité d'une analyse : override d'analyse sinon config org. */

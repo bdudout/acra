@@ -11,6 +11,7 @@
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 
+/** Interface de stockage de documents (put/get/delete par clé) ; implémentée par l'adaptateur volume local. */
 export interface DocumentStorage {
   put(key: string, bytes: Buffer, mime?: string): Promise<void>
   get(key: string): Promise<Buffer>

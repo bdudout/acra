@@ -7,21 +7,26 @@
 import { resolveReferentielCode } from './referentiel-catalogue'
 import { etatSocleFromEntry, type EtatSocle } from './socle-etat'
 
+/** Statut de couverture d'une exigence par les contrôles/audits : non couverte, conforme, partielle ou en anomalie. */
 export type CouvertureStatut = 'NON_COUVERT' | 'CONFORME' | 'PARTIEL' | 'ANOMALIE'
 
+/** Efficacité d'un contrôle couvrant une exigence : forte, moyenne, faible ou inconnue (null). */
 export type Efficacite = 'FORTE' | 'MOYENNE' | 'FAIBLE' | null
 
+/** Contrôle rattaché à des exigences (avec son efficacité), pour calculer la couverture d'un référentiel. */
 export interface ControleCouvrant {
   exigenceRefs: string[]
   efficacite: Efficacite
   actif?: boolean
 }
 
+/** Constat d'audit rattaché à une exigence (anomalie), pris en compte dans la couverture. */
 export interface ConstatExigence {
   exigenceRef: string | null
   statut: string // OUVERT | EN_COURS | RESOLU | ACCEPTE
 }
 
+/** Couverture d'une exigence donnée : statut + compteurs de contrôles/anomalies. */
 export interface CouvertureExigence {
   ref: string
   statut: CouvertureStatut
@@ -29,6 +34,7 @@ export interface CouvertureExigence {
   nbAnomaliesAudit: number // constats non terminés visant l'exigence
 }
 
+/** Synthèse de couverture d'un référentiel : total, couverts, conformes, anomalies, taux. */
 export interface CouvertureSynthese {
   total: number
   couverts: number // exigences avec au moins un contrôle actif
@@ -39,6 +45,7 @@ export interface CouvertureSynthese {
   tauxConformite: number // % d'exigences conformes
 }
 
+/** Résultat complet de couverture d'un référentiel : détail par exigence + synthèse. */
 export interface Couverture {
   parExigence: CouvertureExigence[]
   synthese: CouvertureSynthese
@@ -114,6 +121,7 @@ export interface AnalyseApplication {
   etat: EtatSocle
 }
 
+/** Synthèse d'application d'un référentiel par les analyses (combien l'appliquent, complètement/partiellement). */
 export interface ApplicationSynthese {
   total: number // analyses appliquant ce référentiel
   appliques: number

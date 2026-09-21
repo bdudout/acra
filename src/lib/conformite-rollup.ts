@@ -12,6 +12,7 @@
 
 export interface RollupOrg { id: string; path: string }
 
+/** Entrée du roll-up de conformité : une organisation et ses entrées, pour consolider le sous-arbre. */
 export interface RollupConfInput {
   organizationId: string
   referentiel: string
@@ -22,6 +23,7 @@ export interface RollupConfInput {
   total: number
 }
 
+/** Cellule de conformité consolidée (conformes/évalués/total) d'une organisation × référentiel. */
 export interface RollupCell {
   conforme: number
   partiel: number

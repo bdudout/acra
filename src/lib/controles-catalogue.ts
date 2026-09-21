@@ -7,6 +7,7 @@
 
 import type { Periodicite, ControleNiveau } from './controle'
 
+/** Modèle de contrôle prêt à l'emploi (intitulé, checklist type…) proposé au catalogue. */
 export interface ControleTemplate {
   intitule: string
   description: string
@@ -17,6 +18,7 @@ export interface ControleTemplate {
   checklist: string[]
 }
 
+/** Entrée du catalogue de contrôles par défaut : identifiant stable + modèle de contrôle. */
 export interface CatalogueControle {
   id: string          // identifiant stable du socle
   nom: string         // libellé affiché

@@ -58,6 +58,7 @@ export function decideInstanceMode(input: {
   return { mode: 'PROD', persist: true, refusedDemo: false }
 }
 
+/** Configuration du mode démo de l'instance (délai de purge des organisations inactives, ouverture des inscriptions…). */
 export interface DemoConfig {
   /** Jours sans activité avant purge d'une organisation démo. */
   inactivityDays: number

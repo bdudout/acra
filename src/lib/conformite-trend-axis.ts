@@ -14,6 +14,7 @@
 
 export type TrendGranularity = 'month' | 'quarter' | 'semester'
 
+/** Segment de l'axe temporel de tendance (année/mois/trimestre/semestre) pour la courbe de conformité. */
 export interface TrendSegment {
   key: string
   start: number // epoch ms (inclus)
