@@ -37,7 +37,7 @@ describe('propose_risk', () => {
     const res = await proposeRiskTool.handler({ analyseId: 'an1', risque: { nom: 'Rançongiciel', gravite: 4, vraisemblance: 3 } }, ctx)
     expect(res.isError).toBeUndefined()
     const data = proposalCreate.mock.calls[0][0].data
-    expect(data).toMatchObject({ organizationId: 'orgA', apiKeyId: 'key1', type: 'risk', analyseId: 'an1', statut: 'EN_ATTENTE' })
+    expect(data).toMatchObject({ organizationId: 'orgA', apiKeyId: 'key1', type: 'risk', targetType: 'ANALYSE', targetId: 'an1', statut: 'EN_ATTENTE' })
     expect(data.payload).toMatchObject({ nom: 'Rançongiciel', niveauRisque: 12 }) // 4×3 recalculé
     expect(risqueCreate).not.toHaveBeenCalled() // JAMAIS de mutation directe
     expect(parse(res)).toMatchObject({ proposalId: 'prop1', statut: 'EN_ATTENTE' })
@@ -58,7 +58,7 @@ describe('propose_measure', () => {
     const res = await proposeMeasureTool.handler({ analyseId: 'an1', mesure: { nom: 'MFA', type: 'BOGUS', priorite: 1 } }, ctx)
     expect(res.isError).toBeUndefined()
     const data = proposalCreate.mock.calls[0][0].data
-    expect(data).toMatchObject({ organizationId: 'orgA', apiKeyId: 'key1', type: 'measure', analyseId: 'an1', statut: 'EN_ATTENTE' })
+    expect(data).toMatchObject({ organizationId: 'orgA', apiKeyId: 'key1', type: 'measure', targetType: 'ANALYSE', targetId: 'an1', statut: 'EN_ATTENTE' })
     expect(data.payload).toMatchObject({ nom: 'MFA', type: 'PREVENTIVE', priorite: 1 }) // type inconnu normalisé
   })
 

@@ -68,7 +68,7 @@ export const proposeRiskTool: McpTool<McpContext> = {
     if (!isRiskProposalValid(payload)) {
       return { content: [{ type: 'text', text: 'proposition_invalide: nom requis' }], isError: true }
     }
-    return depose('risk', analyseId, payload, ctx)
+    return depose('risk', 'ANALYSE', analyseId, payload, ctx)
   },
 }
 
@@ -117,18 +117,23 @@ export const proposeMeasureTool: McpTool<McpContext> = {
     if (!isMeasureProposalValid(payload)) {
       return { content: [{ type: 'text', text: 'proposition_invalide: nom requis' }], isError: true }
     }
-    return depose('measure', analyseId, payload, ctx)
+    return depose('measure', 'ANALYSE', analyseId, payload, ctx)
   },
 }
 
-/** Crée une proposition EN_ATTENTE et renvoie un résultat MCP standard. */
-async function depose(type: string, analyseId: string, payload: unknown, ctx: McpContext): Promise<McpToolResult> {
+/**
+ * Crée une proposition EN_ATTENTE ancrée à un objet concret (`targetType` +
+ * `targetId`) et renvoie un résultat MCP standard. Une proposition référence
+ * toujours une ancre existante — jamais « rien ».
+ */
+async function depose(type: string, targetType: string, targetId: string, payload: unknown, ctx: McpContext): Promise<McpToolResult> {
   const created = await prisma.mcpProposal.create({
     data: {
       organizationId: ctx.organizationId,
       apiKeyId: ctx.keyId,
       type,
-      analyseId,
+      targetType,
+      targetId,
       payload: payload as Prisma.InputJsonValue,
       statut: 'EN_ATTENTE',
     },

@@ -88,13 +88,25 @@ traçabilité.
 ## 6. Modèle « écritures validées »
 
 Les outils `propose_*` **n'écrivent pas** l'objet final : ils créent une
-**proposition** (brouillon typé, rattaché à l'org + à la clé/agent émetteur + à
-l'analyse ou au socle cible), présentée dans une **file de validation** de l'UI où
-un utilisateur habilité (selon le RBAC de la ressource) **accepte, édite ou
-rejette**. À l'acceptation, l'objet réel est créé/mis à jour via les chemins
-existants (mêmes validations, mêmes audits). Options d'implémentation à trancher en
-conception : réutiliser les mécanismes d'import/brouillon existants ou un modèle
-`McpProposal` dédié.
+**proposition** (brouillon typé, modèle **`McpProposal` dédié**), présentée dans une
+**file de validation** de l'UI où un utilisateur habilité **accepte ou rejette**. À
+l'acceptation, l'objet réel est créé via les chemins existants (mêmes validations,
+mêmes audits).
+
+**Ancrage obligatoire — « une proposition ne tombe pas du ciel ».** Toute
+proposition référence un **objet CONCRET et existant** via `targetType` +
+`targetId`. L'ensemble d'ancres est celui du **plan d'action unifié**
+(`PlanActionLien`) : **`ANALYSE | RISQUE | CONFORMITE | CONTROLE | AUDIT |
+INCIDENT`**. À l'acceptation, le serveur : (1) **résout l'ancre** — vérifie qu'elle
+existe et appartient à l'**organisation** de la clé (sinon 404, sans divulgation) ;
+(2) applique le **RBAC de l'ancre** (qui peut éditer le parent peut valider — une
+proposition n'élève jamais les droits) ; (3) crée l'enfant **intégré à l'ancre**
+(risque/mesure → dans l'analyse ; plan d'action → `PlanAction` + `PlanActionLien`
+vers l'ancre ; traitement de conformité → sur l'exigence, etc.).
+
+Actuellement : `propose_risk` et `propose_measure` s'ancrent à une **ANALYSE**. Les
+outils org-scopés à venir (`propose_plan_action`, `propose_conformite_treatment`,
+`recommend_*`) réutiliseront le même mécanisme d'ancre.
 
 ## 7. Sécurité & gouvernance (récapitulatif)
 

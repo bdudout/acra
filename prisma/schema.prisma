@@ -224,8 +224,14 @@ model McpProposal {
   id             String  @id @default(cuid())
   organizationId String // périmètre STRICT (org de la clé d'API émettrice)
   apiKeyId       String? // clé/agent émetteur (null si clé supprimée)
-  type           String // 'risk' (extensible : measure, plan_action…)
-  analyseId      String? // cible pour les propositions rattachées à une analyse
+  type           String // 'risk' | 'measure' | 'plan_action' | … (nature de l'objet proposé)
+  // ANCRE OBLIGATOIRE : une proposition « ne tombe pas du ciel ». Elle référence un
+  // objet CONCRET et existant (mêmes origines que le plan d'action unifié /
+  // PlanActionLien) : ANALYSE | RISQUE | CONFORMITE | CONTROLE | AUDIT | INCIDENT.
+  // À l'acceptation, l'ancre est vérifiée (existence + org), son RBAC appliqué, et
+  // l'enfant créé intégré à cette ancre.
+  targetType     String    @default("ANALYSE")
+  targetId       String // id de l'objet d'ancrage
   payload        Json // proposition typée assainie (brouillon)
   statut         String    @default("EN_ATTENTE") // EN_ATTENTE | ACCEPTEE | REJETEE
   reviewedById   String? // utilisateur ayant statué
@@ -236,7 +242,7 @@ model McpProposal {
   updatedAt      DateTime  @updatedAt
 
   @@index([organizationId, statut])
-  @@index([analyseId])
+  @@index([targetType, targetId])
 }
 
 // Registre des activités de traitement (RoPA — RGPD art. 30), par organisation.

@@ -28,11 +28,12 @@ export async function GET() {
     where: { organizationId: orgId, statut: 'EN_ATTENTE' },
     orderBy: { createdAt: 'desc' },
     take: 200,
-    select: { id: true, type: true, analyseId: true, payload: true, createdAt: true, apiKeyId: true },
+    select: { id: true, type: true, targetType: true, targetId: true, payload: true, createdAt: true, apiKeyId: true },
   })
 
-  // Enrichit avec le nom de l'analyse cible (org-scopé), sans exposer d'autres orgs.
-  const analyseIds = [...new Set(rows.map(r => r.analyseId).filter((v): v is string => !!v))]
+  // Enrichit avec le libellé de l'ANCRE quand c'est une analyse (org-scopé, sans
+  // exposer d'autres orgs). Les autres types d'ancre afficheront leur type/id.
+  const analyseIds = [...new Set(rows.filter(r => r.targetType === 'ANALYSE').map(r => r.targetId))]
   const analyses = analyseIds.length
     ? await prisma.analyse.findMany({
         where: { id: { in: analyseIds }, organizationId: orgId },
@@ -42,8 +43,8 @@ export async function GET() {
   const nomById = new Map(analyses.map(a => [a.id, a.nom]))
 
   const proposals = rows.map(r => ({
-    id: r.id, type: r.type, analyseId: r.analyseId,
-    analyseNom: r.analyseId ? (nomById.get(r.analyseId) ?? null) : null,
+    id: r.id, type: r.type, targetType: r.targetType, targetId: r.targetId,
+    ancreNom: r.targetType === 'ANALYSE' ? (nomById.get(r.targetId) ?? null) : null,
     payload: r.payload, createdAt: r.createdAt,
   }))
   return NextResponse.json({ proposals })

@@ -19,7 +19,7 @@ interface Payload {
   description?: string
 }
 interface Proposal {
-  id: string; type: string; analyseId: string | null; analyseNom: string | null
+  id: string; type: string; targetType: string; targetId: string; ancreNom: string | null
   payload: Payload; createdAt: string
 }
 
@@ -63,7 +63,7 @@ export default function McpProposalsQueue() {
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0">
                 <p className="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1.5 mb-1">
-                  <Bot size={14} aria-hidden="true" /> {kind} · {p.analyseNom ?? m.unknownAnalyse} · {jour(p.createdAt)}
+                  <Bot size={14} aria-hidden="true" /> {kind} · {p.ancreNom ?? `${p.targetType} ${p.targetId.slice(0, 8)}`} · {jour(p.createdAt)}
                 </p>
                 <p className="font-medium text-gray-800 dark:text-gray-100 break-words">{p.payload.nom || '—'}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{detail}</p>
