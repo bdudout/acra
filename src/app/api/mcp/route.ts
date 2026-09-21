@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   const tools = buildMcpTools()
-  const ctx: McpContext = { organizationId: auth.organizationId }
+  const ctx: McpContext = { organizationId: auth.organizationId, keyId: auth.keyId }
   const ip = getClientIp(req)
 
   // Journalise chaque invocation d'outil (best-effort ; alimente aussi le SIEM).

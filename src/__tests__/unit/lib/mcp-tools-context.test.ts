@@ -17,7 +17,7 @@ vi.mock('@/lib/prisma', () => ({
 
 import { readTaxonomieTool, readSectorExamplesTool, readRiskPostureTool } from '@/lib/mcp/tools-context.server'
 
-const ctx = { organizationId: 'orgA' }
+const ctx = { organizationId: 'orgA', keyId: 'k1' }
 const parse = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text)
 
 describe('read_taxonomie', () => {

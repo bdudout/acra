@@ -1,10 +1,11 @@
 # MCP — Expression de besoins & cadrage
 
-> Statut : **cadrage validé** ; **phases 1-2 implémentées** (§10.1 socle — scope
-> `mcp`, endpoint `/api/mcp` gardé, audit + rate limit, `read_referentiels` ; §10.2
-> contexte — `read_taxonomie`, `read_sector_examples`, `read_risk_posture`).
+> Statut : **cadrage validé** ; **phases 1-3 implémentées** (§10.1 socle ; §10.2
+> contexte ; §10.3 **file de propositions + validation UI + `propose_risk`**).
 > La surface MCP reste **gardée** par l'interrupteur d'instance `mcpEnabled`
-> (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`).
+> (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`). **Aucune écriture
+> directe par la machine** : les `propose_*` déposent des propositions validées en
+> UI (`/mcp-propositions`).
 
 ## 1. Objectif
 
@@ -131,8 +132,14 @@ conception : réutiliser les mécanismes d'import/brouillon existants ou un mod�
 - ✅ **(Phase 2)** Outils de contexte : `read_taxonomie` (vocabulaire méthode),
   `read_sector_examples` (catalogue sectoriel livré), `read_risk_posture` (synthèse
   org-scopée, lecture seule) — `lib/mcp/tools-context.server.ts`.
-- ⬜ File de **propositions** + validation UI (modèle et parcours) — phase 3.
-- ⬜ Outils `propose_*` (par vagues, cf. §10) + tests IDOR MCP.
+- ✅ **(Phase 3)** File de **propositions** (`McpProposal` + migration) + parcours de
+  validation UI (`/mcp-propositions`, `McpProposalsQueue`, API `mcp-proposals` :
+  accept/reject sous RBAC de l'analyse cible) + audit `MCP_PROPOSAL_REVIEWED`.
+- ✅ **(Phase 3)** Premier outil d'écriture validée `propose_risk` (dépose une
+  proposition, ne crée jamais le risque directement).
+- ⬜ Outils `propose_*` suivants (`propose_measure`, `propose_plan_action`,
+  `propose_conformite_treatment`, `recommend_risks_scenarios`) + intake assisté
+  (phases 4-5, cf. §10) + tests IDOR MCP étendus.
 
 ## 10. Phasage proposé
 
