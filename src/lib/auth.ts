@@ -14,12 +14,13 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/logger'
-import { checkLockout, recordFailure, recordSuccess, type LockoutPolicy } from '@/lib/login-lockout'
+import { checkLockout, recordFailure, recordSuccess } from '@/lib/login-lockout'
+import { resolveLoginPolicy, type LoginPolicy } from '@/lib/login-policy'
 import { touchOrgActivityForUser, isDemoInstance } from '@/lib/demo-server'
 import { requiresEmailVerification } from '@/lib/demo'
 import { isPasswordExpired } from '@/lib/password-policy'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
-import { isMfaRequired, resolveChannel, type MfaPolicyView } from '@/lib/mfa'
+import { isMfaRequired, resolveChannel } from '@/lib/mfa'
 import { createAndSendChallenge, verifyChallenge } from '@/lib/mfa-service'
 import { TRUSTED_DEVICE_COOKIE, cookieValue } from '@/lib/trusted-device'
 import { hasValidTrustedDevice } from '@/lib/trusted-device.server'
@@ -33,42 +34,21 @@ import { ssoSignInDecision, finalizeSsoProvisionedUser, syncSsoRoleFromClaims } 
 // inaccessibles. Voir auth-cookies.ts.
 const sessionCookie = resolveSessionCookie()
 
-interface LoginPolicy extends LockoutPolicy {
-  maxAgeDays: number
-  mfa: MfaPolicyView
-}
-
-const MFA_DISABLED: MfaPolicyView = {
-  mfaEnabled: false, mfaPendingConfirmation: false, mfaScope: 'ALL',
-  mfaMethodEmail: true, mfaMethodSms: false, trustedDeviceEnabled: false,
-}
 
 /**
  * Charge la politique (verrouillage + expiration + MFA) configurée par
- * l'administrateur. Retourne des valeurs neutres (MFA désactivé) si la table
- * est absente.
+ * l'administrateur. Distingue une politique ABSENTE (neutre) d'une ERREUR DE
+ * LECTURE (fail-closed : MFA imposée, cf. O01). Décision déléguée au résolveur
+ * pur `resolveLoginPolicy` (testé sans base).
  */
 async function loadLoginPolicy(): Promise<LoginPolicy> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stored = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
-    if (stored) {
-      return {
-        maxFailedAttempts:      stored.maxFailedAttempts ?? 0,
-        lockoutDurationMinutes: stored.lockoutDurationMinutes ?? 15,
-        maxAgeDays:             stored.maxAgeDays ?? 0,
-        mfa: {
-          mfaEnabled:             stored.mfaEnabled === true,
-          mfaPendingConfirmation: stored.mfaPendingConfirmation === true,
-          mfaScope:               stored.mfaScope ?? 'ALL',
-          mfaMethodEmail:         stored.mfaMethodEmail !== false,
-          mfaMethodSms:           stored.mfaMethodSms === true,
-          trustedDeviceEnabled:    stored.trustedDeviceEnabled === true,
-        },
-      }
-    }
-  } catch { /* table absente */ }
-  return { maxFailedAttempts: 0, lockoutDurationMinutes: 15, maxAgeDays: 0, mfa: MFA_DISABLED }
+    return resolveLoginPolicy(stored, false)
+  } catch {
+    return resolveLoginPolicy(null, true)
+  }
 }
 
 export const authOptions: NextAuthOptions = {

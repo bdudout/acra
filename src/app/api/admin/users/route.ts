@@ -194,11 +194,19 @@ export async function PATCH(req: NextRequest) {
     const tempPassword = generateCompliantPassword(policy)
     const passwordHash = await bcrypt.hash(tempPassword, 12)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updated = await (prisma.user as any).update({
-      where: { id: targetId },
-      data: { passwordHash, mustChangePassword: true, passwordChangedAt: null },
-      select: { id: true, name: true, email: true, role: true, isActive: true },
+    // F04 : une réinitialisation admin doit RÉVOQUER les sessions/JWT antérieurs
+    // (incrément de `sessionVersion`) ET les appareils de confiance, comme le
+    // changement de mot de passe par l'utilisateur (api/user/password). Sinon un
+    // mot de passe forcé ne coupe pas les sessions déjà ouvertes.
+    const updated = await prisma.$transaction(async tx => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const u = await (tx.user as any).update({
+        where: { id: targetId },
+        data: { passwordHash, mustChangePassword: true, passwordChangedAt: null, sessionVersion: { increment: 1 } },
+        select: { id: true, name: true, email: true, role: true, isActive: true },
+      })
+      await tx.trustedDevice.deleteMany({ where: { userId: targetId } })
+      return u
     })
 
     await auditLog('PASSWORD_CHANGED', {
