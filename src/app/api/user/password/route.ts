@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const userId = (session.user as any).id
 
   // Rate limiting : 5 changements de mot de passe / heure par utilisateur
-  const rl = rateLimit(`password:${userId}`, LIMIT_PASSWORD.limit, LIMIT_PASSWORD.windowMs)
+  const rl = await rateLimit(`password:${userId}`, LIMIT_PASSWORD.limit, LIMIT_PASSWORD.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans une heure.' },

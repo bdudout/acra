@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json(SUCCESS)
   const email = parsed.data.email.toLowerCase().trim()
   const ip = getClientIp(req)
-  const limit = rateLimit(`password-reset:${email}`, 3, 15 * 60 * 1000)
+  const limit = await rateLimit(`password-reset:${email}`, 3, 15 * 60 * 1000)
   if (!limit.allowed) return NextResponse.json(SUCCESS, { headers: rateLimitHeaders(limit.remaining, limit.resetAt) })
 
   try {

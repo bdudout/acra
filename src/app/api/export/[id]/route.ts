@@ -25,7 +25,7 @@ export async function GET(
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
   // Rate limiting : 20 exports / heure par utilisateur
-  const rl = rateLimit(`export:${userId}`, LIMIT_EXPORT.limit, LIMIT_EXPORT.windowMs)
+  const rl = await rateLimit(`export:${userId}`, LIMIT_EXPORT.limit, LIMIT_EXPORT.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Limite d\'export atteinte. Réessayez dans une heure.' },

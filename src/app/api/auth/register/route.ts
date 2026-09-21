@@ -28,7 +28,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   // Rate limiting : 5 inscriptions par IP par heure
   const ip = getClientIp(req)
-  const rl = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)
+  const rl = await rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez dans une heure.' },
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       // Vérification d'e-mail obligatoire (démo) : le compte reste emailVerified=null
       // et la connexion est bloquée tant que l'OTP envoyé ici n'est pas validé.
       // Anti mail-bombing : rate-limit supplémentaire par ADRESSE de destination.
-      const destRl = rateLimit(`emailverif:${user.email}`, 3, 15 * 60 * 1000)
+      const destRl = await rateLimit(`emailverif:${user.email}`, 3, 15 * 60 * 1000)
       if (destRl.allowed) {
         const sent = await createAndSendChallenge({ userId: user.id, channel: 'EMAIL', destination: user.email })
         if (sent.ok) {

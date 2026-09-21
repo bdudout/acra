@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_RESET_LINK' }, { status: 400 })
   const tokenHash = hashResetToken(parsed.data.token)
-  const limit = rateLimit(`password-reset-consume:${tokenHash}`, 5, 15 * 60 * 1000)
+  const limit = await rateLimit(`password-reset-consume:${tokenHash}`, 5, 15 * 60 * 1000)
   if (!limit.allowed) return NextResponse.json({ error: 'TOO_MANY_ATTEMPTS' }, { status: 429, headers: rateLimitHeaders(limit.remaining, limit.resetAt) })
 
   const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash }, include: { user: { select: { id: true, email: true } } } })

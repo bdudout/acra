@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
         // brancher un RedisRateLimitStore. L'IP provient des en-têtes de proxy — à
         // n'utiliser que derrière un reverse-proxy de confiance (voir README/ops).
         const emailKey = `login:email:${credentials.email.toLowerCase()}`
-        const rl = rateLimit(emailKey, 10, 15 * 60 * 1000)
+        const rl = await rateLimit(emailKey, 10, 15 * 60 * 1000)
         if (!rl.allowed) {
           await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email })
           throw new Error('TOO_MANY_ATTEMPTS')
@@ -125,7 +125,7 @@ export const authOptions: NextAuthOptions = {
           || req?.headers?.['x-real-ip']
           || 'unknown'
         if (ip !== 'unknown') {
-          const rlIp = rateLimit(`login:ip:${ip}`, 50, 15 * 60 * 1000)
+          const rlIp = await rateLimit(`login:ip:${ip}`, 50, 15 * 60 * 1000)
           if (!rlIp.allowed) {
             await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email, ip })
             throw new Error('TOO_MANY_ATTEMPTS')

@@ -34,7 +34,7 @@ async function guard(req: NextRequest, orgId: string) {
   const userId = (session.user as any).id
   const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
-  const rl = rateLimit(`org-conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  const rl = await rateLimit(`org-conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) return { error: NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }) }
 
   // Rôle EFFECTIF dans l'org CIBLE (orgId param), pas le rôle d'instance → A01/CWE-863.

@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
 
   if (parsed.action === 'resend') {
     // Anti mail-bombing : par adresse (3 / 15 min) ET par IP (5 / 15 min).
-    const byDest = rateLimit(`emailverif:${email}`, 3, 15 * 60 * 1000)
-    const byIp = rateLimit(`emailverif-ip:${ip}`, 5, 15 * 60 * 1000)
+    const byDest = await rateLimit(`emailverif:${email}`, 3, 15 * 60 * 1000)
+    const byIp = await rateLimit(`emailverif-ip:${ip}`, 5, 15 * 60 * 1000)
     if (!byDest.allowed || !byIp.allowed) {
       const rl = !byDest.allowed ? byDest : byIp
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   // action « verify »
-  const byIp = rateLimit(`emailverify-ip:${ip}`, 15, 15 * 60 * 1000)
+  const byIp = await rateLimit(`emailverify-ip:${ip}`, 15, 15 * 60 * 1000)
   if (!byIp.allowed) {
     return NextResponse.json(
       { error: 'Trop de tentatives. Réessayez plus tard.' },

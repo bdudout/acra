@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limiting : 10 imports / heure par utilisateur
   const { rateLimit: rl_fn, rateLimitHeaders: rlHeaders, LIMIT_IMPORT } = await import('@/lib/rate-limit')
-  const rl = rl_fn(`import:${userId}`, LIMIT_IMPORT.limit, LIMIT_IMPORT.windowMs)
+  const rl = await rl_fn(`import:${userId}`, LIMIT_IMPORT.limit, LIMIT_IMPORT.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Limite d\'import atteinte. Réessayez dans une heure.' },

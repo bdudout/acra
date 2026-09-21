@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const __org = await getAnalyseScope(userId, userRole)
 
   // Rate limiting : 60 requêtes / minute par utilisateur
-  const rl = rateLimit(`search:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
+  const rl = await rateLimit(`search:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de requêtes.' },
