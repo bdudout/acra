@@ -1371,6 +1371,8 @@ export const fr = {
     expiry: 'Expiration',
     scopeWrite: 'Autoriser l’écriture (write)',
     scopeProvision: 'Autoriser le provisioning SCIM (provision)',
+    scopeMcp: 'Autoriser l\'accès MCP (mcp)',
+    scopeMcpHint: 'Surface serveur MCP (/api/mcp) — distincte de l\'API v1 ; nécessite l\'activation MCP par le super-admin.',
     create: 'Créer une clé',
     empty: 'Aucune clé d’API.',
     colKey: 'Clé',

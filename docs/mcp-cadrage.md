@@ -1,8 +1,9 @@
 # MCP — Expression de besoins & cadrage
 
-> Statut : **cadrage validé** (choix structurants arrêtés). Implémentation non
-> démarrée. La surface MCP est déjà **gardée** par l'interrupteur d'instance
-> `mcpEnabled` (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`).
+> Statut : **cadrage validé** ; **phase 1 (socle) implémentée** (§10.1 — scope
+> `mcp`, endpoint `/api/mcp` gardé, audit + rate limit, outil `read_referentiels`).
+> La surface MCP reste **gardée** par l'interrupteur d'instance `mcpEnabled`
+> (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`).
 
 ## 1. Objectif
 
@@ -115,11 +116,20 @@ conception : réutiliser les mécanismes d'import/brouillon existants ou un mod�
 
 - ✅ Interrupteur d'instance `mcpEnabled` (SUPER_ADMIN, OFF par défaut) + helper
   `isMcpEnabled` (fail-closed) + UI `/admin/instance`.
-- ⬜ Scope `mcp` sur les clés d'API (+ UI de gestion) et garde d'auth MCP.
-- ⬜ Endpoint serveur MCP (`/api/mcp`, transport streamable) + enregistrement des outils.
-- ⬜ File de **propositions** + validation UI (modèle et parcours).
-- ⬜ Outils `read_*` puis `propose_*` (par vagues, cf. §10).
-- ⬜ Journalisation `MCP_TOOL_INVOKED` + SIEM + tests IDOR MCP.
+- ✅ **(Phase 1)** Scope `mcp` sur les clés d'API (`API_SCOPES`, case à cocher UI +
+  i18n) et garde d'auth MCP (`lib/mcp/auth.server.ts` : `mcpEnabled` + clé + scope
+  `mcp`, moindre privilège vis-à-vis de l'API v1).
+- ✅ **(Phase 1)** Endpoint serveur MCP (`app/api/mcp/route.ts`, JSON-RPC 2.0,
+  transport requête→réponse JSON) + cœur protocole **pur** (`lib/mcp/protocol.ts` :
+  initialize / ping / tools/list / tools/call) + enregistrement des outils
+  (`lib/mcp/tools.server.ts`).
+- ✅ **(Phase 1)** Journalisation `MCP_TOOL_INVOKED` (+ SIEM) par appel + rate limit
+  `mcp:<keyId>`.
+- ✅ **(Phase 1)** Premier outil `read_referentiels` (lecture org-scopée) — validation
+  de bout en bout.
+- ⬜ Outils de contexte (phase 2) : `read_taxonomie`, `read_sector_examples`, `read_risk_posture`.
+- ⬜ File de **propositions** + validation UI (modèle et parcours) — phase 3.
+- ⬜ Outils `propose_*` (par vagues, cf. §10) + tests IDOR MCP.
 
 ## 10. Phasage proposé
 
