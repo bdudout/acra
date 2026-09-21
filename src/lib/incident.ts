@@ -5,6 +5,7 @@
 // net = brut − récupérations. Logique PURE et testée.
 
 export const INCIDENT_STATUTS = ['DECLARE', 'QUALIFIE', 'CLOTURE', 'REJETE'] as const
+/** Statut d'un incident : déclaré → qualifié → clôturé (ou rejeté = faux positif). */
 export type IncidentStatut = (typeof INCIDENT_STATUTS)[number]
 
 // Gravité ressentie au moment de la déclaration (échelle 1-4, volontairement
@@ -12,6 +13,7 @@ export type IncidentStatut = (typeof INCIDENT_STATUTS)[number]
 export const IMPACT_MIN = 1
 export const IMPACT_MAX = 4
 
+/** Entrée brute (non validée) d'un incident, telle que reçue de l'API. */
 export interface IncidentInput {
   intitule?: unknown
   description?: unknown
@@ -32,6 +34,7 @@ export interface IncidentInput {
   doraFinaleSoumiseLe?: unknown
 }
 
+/** Entrée d'un incident normalisée (statut typé, montants/dates), prête pour la persistance. */
 export interface CleanIncident {
   intitule: string
   description: string | null
@@ -182,6 +185,7 @@ export interface IncidentLite {
   recuperations: number | null
 }
 
+/** Calibrage d'un risque par ses incidents observés (fréquence/gravité réelles → suggestions de cotation). */
 export interface RiskCalibration {
   /** Incidents rattachés au risque sur la fenêtre observée. */
   occurrences: number
@@ -228,6 +232,7 @@ export interface PromotableIncident {
   riskItemId: string | null
 }
 
+/** Risque candidat issu de la promotion d'un incident récurrent (intitulé + cotation proposée). */
 export interface PromotedRisk {
   intitule: string
   description: string | null

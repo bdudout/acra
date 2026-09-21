@@ -6,8 +6,10 @@
 import { niveauBucket } from './cartographie'
 import { summarizeActions, type ActionLike, type ActionsSummary } from './risk-action'
 
+/** Palier de posture d'un risque pour la consolidation : élevé, moyen, faible ou non coté. */
 export type PostureBucket = 'eleve' | 'moyen' | 'faible' | 'nonCote'
 
+/** Vue minimale d'un risque pour le roll-up (org + cotation), sans les détails. */
 export interface RiskLite {
   organizationId: string
   niveauInherent: number | null
@@ -22,6 +24,7 @@ export function postureBucket(r: RiskLite): PostureBucket {
   return niveauBucket(niveau)
 }
 
+/** Totaux de posture risque : total + répartition par palier (élevé/moyen/faible/non coté). */
 export interface RiskTotals {
   total: number
   eleve: number
@@ -37,9 +40,12 @@ export function rollupRisks(risks: RiskLite[]): RiskTotals {
   return t
 }
 
+/** Vue minimale d'une organisation (id + nom) pour la consolidation. */
 export interface OrgLite { id: string; nom: string }
+/** Action de traitement rattachée à une organisation (pour ventiler par org). */
 export interface ScopedAction extends ActionLike { organizationId: string }
 
+/** Posture consolidée d'une organisation : totaux risques + avancement des actions. */
 export interface OrgPosture {
   orgId: string
   orgNom: string

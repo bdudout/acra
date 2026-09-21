@@ -30,6 +30,7 @@ export interface CockpitIncident {
   recuperations: number | null
 }
 
+/** Totaux consolidés des incidents (M2) : retenus, ouverts, perte nette (hors REJETE). */
 export interface IncidentTotals {
   total: number // incidents retenus (les REJETE sont exclus : faux positifs)
   ouverts: number // non terminaux (DECLARE + QUALIFIE)
@@ -63,6 +64,7 @@ export interface CockpitControle {
   niveau?: string // N1 | N2 (facultatif : segmentation du reporting)
 }
 
+/** Exécution de contrôle en entrée du cockpit (org + résultat + date + niveau). */
 export interface CockpitExecution {
   organizationId: string
   resultat: string
@@ -70,6 +72,7 @@ export interface CockpitExecution {
   niveau?: string // niveau du contrôle parent (facultatif)
 }
 
+/** Totaux consolidés du contrôle permanent (M3) : contrôles actifs, évaluées, conformes, anomalies, taux. */
 export interface ControleTotals {
   controles: number // contrôles actifs
   evaluees: number // exécutions évaluables (hors NON_APPLICABLE)
@@ -117,6 +120,7 @@ export interface CockpitConstat extends ConstatLite {
   organizationId: string
 }
 
+/** Totaux consolidés de l'audit interne (M4) : missions, constats, critiques, recommandations en retard, taux de résolution. */
 export interface AuditTotals {
   missions: number
   constats: number
@@ -154,7 +158,9 @@ export function auditByOrg(missions: { organizationId: string }[], constats: Coc
 // contrôle / auditeur externe). Réutilise les rollups par niveau et la synthèse
 // de constats — aucune règle métier dupliquée.
 
+/** Niveau global du dispositif de contrôle : N1/N2 (contrôle permanent), N3 (audit interne), N4 (contrôle externe). */
 export type NiveauControleGlobal = 'N1' | 'N2' | 'N3' | 'N4'
+/** Suivi d'un niveau de contrôle : activité pilotée, points d'attention, retards. */
 export interface NiveauSuivi {
   niveau: NiveauControleGlobal
   activite: number   // nombre d'objets pilotés (contrôles ou constats) au niveau

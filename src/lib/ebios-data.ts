@@ -118,6 +118,7 @@ export const CATEGORIES_BIENS_SUPPORTS = [
   { value: 'SOUS_TRAITANCE', label: 'Cloud / Sous-traitance', emoji: '☁️',  color: 'bg-sky-100    text-sky-800    border-sky-200    dark:bg-sky-500/15    dark:text-sky-200    dark:border-sky-500/30'    },
 ] as const
 
+/** Catégorie d'un bien support EBIOS (valeur de l'énumération CATEGORIES_BIENS_SUPPORTS). */
 export type CategorieBienSupport = typeof CATEGORIES_BIENS_SUPPORTS[number]['value']
 
 export const BIENS_SUPPORTS_EXEMPLES: {

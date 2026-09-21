@@ -18,6 +18,7 @@ import de from '@/lib/i18n/exemples-sectoriels/de'
 import es from '@/lib/i18n/exemples-sectoriels/es'
 import it from '@/lib/i18n/exemples-sectoriels/it'
 
+/** Catégorie d'exemples sectoriels (sous-ensemble des catégories d'atelier proposées par secteur). */
 export type SectorExempleCategory =
   | 'valeursMetier'
   | 'biensSupports'
@@ -31,6 +32,7 @@ export type SectorExempleCategory =
 const DICTS: Partial<Record<Locale, Record<string, string>>> = { en, de, es, it }
 const TEXT_FIELDS = ['nom', 'description', 'motivation', 'ressources']
 
+/** Famille sectorielle : motifs reconnus dans le libellé du secteur + exemples associés. */
 export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]

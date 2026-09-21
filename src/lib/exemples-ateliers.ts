@@ -17,8 +17,10 @@ export const SCORE_MIN = 1
 export const SCORE_MAX = 5
 const SCORE_DEFAULT = 3
 
+/** Nature d'un champ d'exemple d'atelier : texte, texte long, énumération, score ou liste de chaînes. */
 export type FieldKind = 'text' | 'longtext' | 'enum' | 'score' | 'stringList'
 
+/** Schéma d'un champ d'exemple d'atelier (clé, type, contraintes) pour valider/générer les exemples. */
 export interface FieldSchema {
   /** Clé de la propriété dans l'objet exemple. */
   key: string
@@ -32,6 +34,7 @@ export interface FieldSchema {
   options?: readonly string[]
 }
 
+/** Catégorie d'exemples d'atelier (valeurs métier, biens supports, sources de risque…). */
 export type ExempleCategoryKey =
   | 'valeursMetier'
   | 'biensSupports'
@@ -43,6 +46,7 @@ export type ExempleCategoryKey =
   | 'actionsElementaires'
   | 'mesuresEcosysteme'
 
+/** Définition d'une catégorie d'exemples : clé + schéma des champs de ses exemples. */
 export interface CategoryDef {
   key: ExempleCategoryKey
   /** Numéro d'atelier (1..5). */

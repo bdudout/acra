@@ -17,18 +17,22 @@ export function escapeHtml(value: unknown): string {
   return String(value).replace(/[&<>"']/g, c => HTML_ESCAPES[c])
 }
 
+/** Tonalité visuelle d'un élément d'e-mail : neutre, avertissement, danger ou succès. */
 export type Tone = 'neutral' | 'warning' | 'danger' | 'success'
 
 const TONE_COLOR: Record<Tone, string> = {
   neutral: '#4338CA', warning: '#D97706', danger: '#DC2626', success: '#16A34A',
 }
 
+/** Statistique affichée dans un e-mail (libellé + valeur, avec tonalité). */
 export interface EmailStat { label: string; value: string | number; tone?: Tone }
+/** Élément de liste affiché dans un e-mail (libellé + détail, avec tonalité). */
 export interface EmailItem { label: string; detail?: string; tone?: Tone }
 
 /** Valeur à mettre en évidence en monospace (code MFA, mot de passe temporaire…). */
 export interface EmailCode { value: string; label?: string }
 
+/** Données d'assemblage d'un e-mail HTML (titre, corps, stats, items, CTA) via le gabarit partagé. */
 export interface EmailLayoutInput {
   /** Titre affiché en tête (échappé automatiquement). */
   heading: string

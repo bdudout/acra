@@ -39,6 +39,7 @@ import {
 
 export type ControlType = 'ORGANISATIONNELLE' | 'HUMAINE' | 'PHYSIQUE' | 'TECHNOLOGIQUE'
 
+/** Un contrôle d'un référentiel-cadre livré (référence + libellé + catégorie). */
 export interface FrameworkControl {
   ref: string
   nom: string
@@ -47,6 +48,7 @@ export interface FrameworkControl {
   categorie: string
 }
 
+/** Catégorie (regroupement) de contrôles d'un référentiel-cadre. */
 export interface FrameworkCategory {
   label: string
   icon: string
@@ -54,6 +56,7 @@ export interface FrameworkCategory {
   bg: string
 }
 
+/** Un référentiel-cadre livré (métadonnées, contrôles, catégories). */
 export interface Framework {
   id: string
   nom: string
@@ -67,6 +70,7 @@ export interface Framework {
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
 export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'CUSTOM'] as const
+/** Identifiant d'un référentiel-cadre livré (ISO27001, NIST_CSF, DORA, PCI_DSS, CUSTOM…). */
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
 // `domaine` (optionnel) classe le cadre dans une filière de contrôle/audit
@@ -290,6 +294,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
  * comportement neutre (par défaut). Stocké en JSON dans Cadrage (pas de migration).
  */
 export const TAILLES_ANALYSE = ['STANDARD', 'TPE', 'PME', 'ETI_GE'] as const
+/** Taille de l'analyse (calibre le socle proposé) : standard, TPE, PME ou ETI/GE. */
 export type TailleAnalyse = typeof TAILLES_ANALYSE[number]
 
 /** Réordonne les référentiels selon la taille (socle léger en tête pour TPE/PME). */

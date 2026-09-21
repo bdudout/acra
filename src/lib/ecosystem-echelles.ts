@@ -24,16 +24,19 @@ export type CritereEcosysteme = 'dependance' | 'penetration' | 'maturite' | 'con
 
 export const CRITERES_ECOSYSTEME: CritereEcosysteme[] = ['dependance', 'penetration', 'maturite', 'confiance']
 
+/** Un niveau d'une échelle d'écosystème : rang croissant + libellé/description. */
 export interface NiveauEchelle {
   valeur: number       // rang 1..N (croissant)
   nom: string          // libellé qualitatif du niveau
   description?: string // aide optionnelle
 }
 
+/** Échelle d'un critère d'écosystème (dépendance, pénétration, maturité, confiance) : ses niveaux. */
 export interface EchelleCritere {
   niveaux: NiveauEchelle[]
 }
 
+/** Jeu complet des échelles d'écosystème, indexé par critère. */
 export type EchellesEcosysteme = Record<CritereEcosysteme, EchelleCritere>
 
 // ─── Défauts EBIOS RM (échelles 1→4, libellés FR) ─────────────────────────────
@@ -106,6 +109,7 @@ export function nomNiveau(echelle: EchelleCritere, valeur: number): string {
   return best.nom
 }
 
+/** Bornes maximales dérivées des échelles (exposition, fiabilité, menace) pour normaliser le radar. */
 export interface BornesEcosysteme {
   maxExpo: number    // dépendanceMax × pénétrationMax
   maxFiab: number    // maturitéMax × confianceMax

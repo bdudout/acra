@@ -21,6 +21,7 @@ export interface RankableExemple {
   [k: string]: unknown
 }
 
+/** Contexte de classement des exemples (secteur, sous-secteur…) pour prioriser les plus pertinents. */
 export interface RankContext {
   secteur?: string | null
   /** Sous-secteur (libellé LOCALISÉ) — affine le scoring (issue #25). */
