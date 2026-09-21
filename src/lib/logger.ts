@@ -130,6 +130,7 @@ export type AuditAction =
   | 'ORG_MEMBER_ADDED'
   | 'ORG_MEMBER_REMOVED'
 
+/** Contexte joint à un événement d'audit (utilisateur, IP, organisation, cible…). */
 export interface AuditContext {
   userId?:      string
   userEmail?:   string

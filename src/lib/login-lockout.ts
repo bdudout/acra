@@ -16,6 +16,7 @@ export interface LockoutPolicy {
   lockoutDurationMinutes: number
 }
 
+/** État de suivi des tentatives de connexion d'un compte : échecs consécutifs + éventuel verrou jusqu'à une date. */
 export interface AttemptState {
   failedAttempts: number
   lockedUntil: number | null // timestamp epoch ms, ou null

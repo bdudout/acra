@@ -9,10 +9,12 @@
 import { cleanPriorite, RISK_ACTION_STATUTS, type ActionPriorite, type RiskActionStatut } from './risk-action'
 
 export const PLAN_ACTION_LIEN_TYPES = ['ANALYSE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'RISQUE', 'INCIDENT'] as const
+/** Type de lien polymorphe d'un plan d'action vers son origine : analyse, conformité, contrôle, audit, risque ou incident. */
 export type PlanActionLienType = (typeof PLAN_ACTION_LIEN_TYPES)[number]
 export const isLienType = (v: unknown): v is PlanActionLienType =>
   typeof v === 'string' && (PLAN_ACTION_LIEN_TYPES as readonly string[]).includes(v)
 
+/** Lien polymorphe rattachant un plan d'action à une origine (type + identifiant de l'objet source). */
 export interface PlanActionLien {
   type: PlanActionLienType
   targetId: string
@@ -76,6 +78,7 @@ export function riskItemIdFromLiens(liens: readonly LienLike[] | null | undefine
   return l ? l.targetId : null
 }
 
+/** Forme d'une action de risque absorbée dans le plan d'action unifié (compatibilité RiskAction). */
 export interface RiskActionShape {
   id: string
   intitule: string
@@ -102,6 +105,7 @@ export function toRiskActionShape(p: {
   }
 }
 
+/** Entrée brute (non validée) d'un plan d'action unifié, telle que reçue de l'API. */
 export interface PlanActionInput {
   titre?: unknown
   description?: unknown
@@ -112,6 +116,7 @@ export interface PlanActionInput {
   statut?: unknown
 }
 
+/** Entrée d'un plan d'action normalisée (statut typé, textes tronqués, échéance), prête pour la persistance. */
 export interface CleanPlanAction {
   titre: string
   description: string | null

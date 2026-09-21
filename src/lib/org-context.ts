@@ -12,14 +12,17 @@
 
 import type { UserRole } from '@/lib/permissions'
 
+/** Portée d'une appartenance : le nœud seul (NODE) ou le nœud et ses descendants (SUBTREE). */
 export type OrgScope = 'NODE' | 'SUBTREE'
 
+/** Nœud de l'arbre des organisations (id + parent) pour résoudre les sous-arbres. */
 export interface OrgNode {
   id: string
   path: string
   parentId?: string | null
 }
 
+/** Appartenance d'un utilisateur à une organisation : rôle effectif + portée (NODE/SUBTREE). */
 export interface Membership {
   organizationId: string
   role: UserRole

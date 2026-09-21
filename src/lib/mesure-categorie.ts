@@ -19,6 +19,7 @@ export const CATEGORIES_MESURE_EBIOS = [
   'RESILIENCE',
 ] as const
 
+/** Catégorie EBIOS d'une mesure de sécurité (gouvernance, protection, défense, résilience). */
 export type CategorieMesureEbios = typeof CATEGORIES_MESURE_EBIOS[number]
 
 /** Catégorie par défaut d'une mesure. */

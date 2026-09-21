@@ -9,6 +9,7 @@
 // Logique PURE : validation/normalisation + formatage de durée. L'UI/API consomme.
 
 export const CRITICITES_DORA = ['CRITIQUE', 'IMPORTANTE', 'NON_CRITIQUE'] as const
+/** Criticité DORA d'un processus : critique, importante ou non critique. */
 export type CriticiteDora = (typeof CRITICITES_DORA)[number]
 
 /** Durée maximale admise pour un objectif de continuité : 1 an en minutes. */
@@ -32,6 +33,7 @@ export function cleanDureeMinutes(v: unknown): number | null {
   return Math.min(DUREE_MINUTES_MAX, Math.round(n))
 }
 
+/** Libellés localisés des unités de durée (jours/heures/minutes) pour formater RTO/RPO. */
 export interface DureeUnites { j: string; h: string; min: string }
 
 /**

@@ -17,6 +17,7 @@ export const MODULE_POLICIES: ModulePolicy[] = ['PER_ORG', 'FORCE_ON', 'FORCE_OF
 
 /** Modules dont l'activation peut être gouvernée au niveau instance (extensible). */
 export const GOVERNABLE_MODULES = ['registreRisques', 'incidents', 'controlePermanent', 'auditInterne', 'kri', 'reglementaire', 'secondeLigne'] as const
+/** Module GRC pilotable par la politique d'instance (registre risques, incidents, contrôle, audit, KRI…). */
 export type GovernableModule = typeof GOVERNABLE_MODULES[number]
 
 /** Valeur effective d'activation d'un module : la politique d'instance prime. */

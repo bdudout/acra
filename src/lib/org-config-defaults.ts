@@ -9,6 +9,7 @@ export interface TypeImpact {
   icon: string
 }
 
+/** Référentiel activé par défaut pour une organisation (nom + code). */
 export interface ReferentielActif {
   nom: string
   description: string
@@ -32,6 +33,7 @@ export const DEFAULT_TYPES_IMPACTS: TypeImpact[] = [
   { id: 'image',       label: 'Image & réputation',    icon: '📣' },
 ]
 
+/** Stratégie de traitement du risque par défaut (identifiant interne stable + libellé). */
 export interface StrategieTraitement {
   /** Identifiant interne, NON modifiable (référencé par les risques). */
   value: string

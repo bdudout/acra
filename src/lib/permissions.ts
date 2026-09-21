@@ -21,14 +21,18 @@
  *  - APPROBATION → peut approuver (utilisé pour les Risk Managers sur une analyse spécifique)
  */
 
+/** Rôle d'un utilisateur (RBAC) — d'instance ou d'appartenance à une organisation ; voir la matrice en tête de fichier. */
 export type UserRole = 'LECTEUR' | 'ANALYSTE' | 'RISK_MANAGER' | 'RSSI' | 'ADMIN' | 'SUPER_ADMIN' | 'DIRECTION_METIER' | 'AUDITEUR' | 'CONTROLEUR' | 'METIER' | 'CONFORMITE' | 'DPO'
+/** Permission granulaire accordée à un utilisateur sur une analyse : lecture, édition ou approbation. */
 export type AnalysePermission = 'LECTURE' | 'EDITION' | 'APPROBATION'
 
+/** Utilisateur de session pour le calcul des droits (id + rôle). */
 export interface SessionUser {
   id: string
   role: UserRole
 }
 
+/** Données de propriété/partage d'une analyse (propriétaire + accès granulaires) pour décider des droits. */
 export interface AnalyseOwnership {
   userId: string          // propriétaire
   accesUtilisateurs?: {   // accès granulaires

@@ -46,6 +46,7 @@ export function isExpired(expiresAt: Date | number, now: number = Date.now()): b
   return now >= ts
 }
 
+/** Vue de la politique MFA applicable (activé, canaux autorisés, obligation…) pour décider du défi à la connexion. */
 export interface MfaPolicyView {
   mfaEnabled: boolean
   mfaPendingConfirmation: boolean
@@ -55,6 +56,7 @@ export interface MfaPolicyView {
   trustedDeviceEnabled?: boolean
 }
 
+/** Canal MFA supporté : e-mail ou SMS. */
 export type MfaChannel = 'EMAIL' | 'SMS'
 
 /** Le MFA doit-il être exigé à la connexion pour ce rôle ? (logique pure) */
