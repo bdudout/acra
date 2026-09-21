@@ -1,14 +1,22 @@
 # Chantiers ACRA — suivi de développement
 
-Dernière mise à jour : 20 septembre 2026. Ce document sert de backlog de travail et de support de priorisation. Les éléments « en cours » ne sont pas réputés disponibles avant tests complets, revue et publication d’une release stable.
+Dernière mise à jour : 21 septembre 2026. Ce document sert de backlog de travail et de support de priorisation. Les éléments « en cours » ne sont pas réputés disponibles avant tests complets, revue et publication d’une release stable.
 
-## En cours — sécurité et gouvernance
+## Sécurité et gouvernance — implémenté, recette runtime en attente
 
-| Chantier | État | Critères de fin |
-|---|---|---|
-| Dashboard des dérogations | En cours | Compteurs actif / échéance proche / expiré / en revue, priorités visibles, responsive, isolation multi-organisation, tests UI et logique. |
-| Suppression autonome de compte démo | En cours | Désactivée par défaut ; activation super-admin ; uniquement en démo ; confirmation explicite ; suppression transactionnelle du compte, sessions, jetons, organisation et données associées ; audit/SIEM ; tests. |
-| Appareil de confiance après OTP e-mail | À développer | Réglage super-admin désactivé par défaut ; jeton opaque haché, expiration, révocation, gestion des appareils ; OTP maintenu pour un nouvel appareil ; tests d’authentification. |
+Les trois chantiers ci-dessous sont implémentés et **validés par les tests automatisés** (logique pure, composants, suite complète verte, `tsc` propre). Il reste la **recette runtime** (parcours à deux comptes démo sur base réelle) — non exécutée ici car Docker n’était pas démarré.
+
+| Chantier | État | Vérifications faites | Reste à faire |
+|---|---|---|---|
+| Dashboard des dérogations | Implémenté, tests auto OK | Compteurs actif / échéance proche / expiré / en revue (`buildDerogationDashboard`), états terminaux non comptés « en revue », page scopée `visibleOrgIds` (isolation multi-org), tests logique + composant. | Recette visuelle responsive sur données réelles. |
+| Suppression autonome de compte démo | Implémenté, tests auto OK | Toggle `selfServiceAccountDeletion` `@default(false)` ; garde démo-only + authentifié (`canSelfDeleteAccount`) ; suppression **transactionnelle** du compte et de ses seules organisations démo non partagées (`deletableOrganizationIds`) ; audit `ACCOUNT_SELF_DELETED` ; tests logique + composant. | Recette sur vraie base : suppression réelle + vérification de l’isolation. |
+| Appareil de confiance après OTP e-mail | Implémenté, tests auto OK | Toggle `trustedDeviceEnabled` `@default(false)` ; garde MFA + OTP e-mail + OTP récent (`canIssueTrustedDevice`) ; jeton opaque haché, cookie **HttpOnly**, expiration 1–90 j ; invalidation au changement/réinitialisation de mot de passe ; audit `TRUSTED_DEVICE_CREATED` ; tests. | Interface de révocation par utilisateur ; recette multi-navigateurs (appareil approuvé → nouvel appareil redemande l’OTP). |
+
+## À faire avant la prochaine publication
+
+- Démarrer Docker Desktop, appliquer les deux migrations (`password_reset`/`self-service`, `trusted_devices`) et exécuter une recette intégrée locale.
+- Jouer un parcours à deux comptes démo : isolation organisationnelle, suppression réelle d’un compte, appareil approuvé puis nouvel appareil, expiration et réinitialisation de mot de passe.
+- Pousser le commit, vérifier la CI GitHub, créer une release stable puis déployer seulement après recette et validation explicite.
 
 ## Préparation de la démo et CLUSIR
 
