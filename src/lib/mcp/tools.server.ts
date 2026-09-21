@@ -8,9 +8,10 @@
 import { prisma } from '@/lib/prisma'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import { buildContextTools } from './tools-context.server'
+import { buildProposeTools } from './tools-propose.server'
 
-/** Contexte serveur injecté aux outils : périmètre organisationnel de la clé d'API. */
-export interface McpContext { organizationId: string }
+/** Contexte serveur injecté aux outils : périmètre organisationnel + clé d'API émettrice. */
+export interface McpContext { organizationId: string; keyId: string }
 
 const MAX_REFERENTIELS = 200 // borne de lecture (anti-volume, cf. cadrage §11)
 
@@ -78,5 +79,5 @@ export const readReferentielsTool: McpTool<McpContext> = {
  * (cf. `tools-context.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools()]
+  return [readReferentielsTool, ...buildContextTools(), ...buildProposeTools()]
 }

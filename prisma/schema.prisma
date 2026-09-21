@@ -213,6 +213,32 @@ model ApiKey {
   @@index([prefix])
 }
 
+// Proposition MCP (« écriture validée ») — cf. docs/mcp-cadrage.md §6. Un outil
+// `propose_*` NE crée PAS l'objet final : il dépose une PROPOSITION (brouillon
+// typé) rattachée à l'organisation + à la clé émettrice + à la cible, revue par un
+// humain habilité dans la file de validation UI (accepter/rejeter). À
+// l'acceptation, l'objet réel est créé via les chemins existants (mêmes RBAC/audit).
+// Clés étrangères SCALAIRES (pas de relation) pour éviter de modifier d'autres
+// modèles dans un worktree partagé ; la portée est garantie par organizationId.
+model McpProposal {
+  id             String  @id @default(cuid())
+  organizationId String // périmètre STRICT (org de la clé d'API émettrice)
+  apiKeyId       String? // clé/agent émetteur (null si clé supprimée)
+  type           String // 'risk' (extensible : measure, plan_action…)
+  analyseId      String? // cible pour les propositions rattachées à une analyse
+  payload        Json // proposition typée assainie (brouillon)
+  statut         String    @default("EN_ATTENTE") // EN_ATTENTE | ACCEPTEE | REJETEE
+  reviewedById   String? // utilisateur ayant statué
+  reviewedAt     DateTime?
+  reviewNote     String?   @db.Text
+  appliedId      String? // id de l'objet réel créé à l'acceptation (traçabilité)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId, statut])
+  @@index([analyseId])
+}
+
 // Registre des activités de traitement (RoPA — RGPD art. 30), par organisation.
 // Réservé au DPO (+ ADMIN). La logique métier vit dans lib/ropa.ts.
 model Traitement {
