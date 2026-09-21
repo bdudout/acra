@@ -102,6 +102,7 @@ export const es: Translations = {
     logout:         'Cerrar sesión',
     mobileMenu:     'Menú de navegación',
     profile:        'Mi perfil',
+    mcpProposals:   'Propuestas MCP',
   },
 
   // ─── Página Terceros (ecosistema agregado) ────────────────────────────────

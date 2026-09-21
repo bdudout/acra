@@ -102,6 +102,7 @@ export const de: Translations = {
     logout:         'Abmelden',
     mobileMenu:     'Navigationsmenü',
     profile:        'Mein Profil',
+    mcpProposals:   'MCP-Vorschläge',
   },
 
   // ─── Seite Dritte (aggregiertes Ökosystem) ────────────────────────────────

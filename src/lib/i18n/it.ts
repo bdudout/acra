@@ -102,6 +102,7 @@ export const it: Translations = {
     logout:         'Disconnetti',
     mobileMenu:     'Menu di navigazione',
     profile:        'Il mio profilo',
+    mcpProposals:   'Proposte MCP',
   },
 
   // ─── Pagina Terze parti (ecosistema aggregato) ────────────────────────────
