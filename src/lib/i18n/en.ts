@@ -1366,6 +1366,7 @@ export const en: Translations = {
     empty: 'No pending proposals.',
     typeRisk: 'Proposed risk',
     typeMesure: 'Proposed measure',
+    typePlanAction: 'Proposed action plan',
     type: 'Type',
     priorite: 'Priority',
     statut: 'Status',

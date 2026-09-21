@@ -1366,6 +1366,7 @@ export const es: Translations = {
     empty: 'No hay propuestas pendientes.',
     typeRisk: 'Riesgo propuesto',
     typeMesure: 'Medida propuesta',
+    typePlanAction: 'Plan de acción propuesto',
     type: 'Tipo',
     priorite: 'Prioridad',
     statut: 'Estado',

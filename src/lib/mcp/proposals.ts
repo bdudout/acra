@@ -6,6 +6,7 @@
 // vers les données de création Prisma. Testable sans DB.
 
 import { cleanRisque, cleanMesure } from '@/lib/import-sanitize'
+import { cleanPlanActionInput, type PlanActionInput, type CleanPlanAction } from '@/lib/plan-action'
 
 /** Statuts d'une proposition. */
 export const PROPOSAL_STATUS = ['EN_ATTENTE', 'ACCEPTEE', 'REJETEE'] as const
@@ -136,6 +137,44 @@ export function sanitizeMeasureProposal(input: unknown): MeasureProposalPayload 
 /** Vrai si la proposition de mesure est exploitable (nom requis). */
 export function isMeasureProposalValid(p: MeasureProposalPayload): boolean {
   return p.nom.trim().length > 0
+}
+
+// ── Propositions de PLAN D'ACTION (org-scopé, ancré à une origine) ───────────
+
+/** Payload assaini d'une proposition de plan d'action (réutilise le nettoyeur unifié). */
+export type PlanActionProposalPayload = CleanPlanAction
+
+/** Assainit une proposition de plan d'action (titre requis, champs tronqués/normalisés). */
+export function sanitizePlanActionProposal(input: unknown): PlanActionProposalPayload {
+  const obj = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
+  const titre = typeof obj.titre === 'string' ? obj.titre : ''
+  return cleanPlanActionInput({ ...(obj as PlanActionInput), titre })
+}
+
+/** Vrai si la proposition de plan d'action est exploitable (titre requis). */
+export function isPlanActionProposalValid(p: PlanActionProposalPayload): boolean {
+  return typeof p.titre === 'string' && p.titre.trim().length > 0
+}
+
+/**
+ * Mappe un payload de plan d'action ACCEPTÉ vers les données Prisma `PlanAction`,
+ * avec le **lien polymorphe** vers l'ancre (`type` = targetType, `targetId`).
+ */
+export function planActionProposalToCreate(
+  p: PlanActionProposalPayload, organizationId: string, targetType: string, targetId: string, createdById: string,
+) {
+  return {
+    organizationId,
+    titre: p.titre,
+    description: p.description,
+    porteur: p.porteur,
+    entite: p.entite,
+    echeance: p.echeance ? new Date(p.echeance) : null,
+    priorite: p.priorite,
+    statut: p.statut,
+    createdById,
+    liens: { create: [{ type: targetType, targetId }] },
+  }
 }
 
 /** Mappe un payload de proposition de mesure ACCEPTÉ vers les données Prisma `Mesure`. */

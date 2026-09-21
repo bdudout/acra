@@ -1390,6 +1390,7 @@ export const fr = {
     empty: 'Aucune proposition en attente.',
     typeRisk: 'Risque proposé',
     typeMesure: 'Mesure proposée',
+    typePlanAction: 'Plan d\'action proposé',
     type: 'Type',
     priorite: 'Priorité',
     statut: 'Statut',
