@@ -6,14 +6,17 @@
 // applique les cotations validées au registre. Logique PURE et testée.
 
 export const CAMPAGNE_STATUTS = ['BROUILLON', 'OUVERTE', 'CLOTUREE'] as const
+/** Statut d'une campagne d'évaluation : brouillon → ouverte → clôturée. */
 export type CampagneStatut = (typeof CAMPAGNE_STATUTS)[number]
 
 export const EVALUATION_STATUTS = ['A_COTER', 'COTEE', 'VALIDEE', 'REJETEE'] as const
+/** Statut d'une évaluation de risque dans une campagne : à coter → cotée → validée (ou rejetée). */
 export type EvaluationStatut = (typeof EVALUATION_STATUTS)[number]
 
 // Efficacité des contrôles telle que ressentie par le propriétaire du risque
 // (échelle courte ; l'efficacité MESURÉE vient du module M3).
 export const EFFICACITES = ['FORTE', 'MOYENNE', 'FAIBLE', 'INEXISTANTE'] as const
+/** Efficacité des contrôles ressentie par le propriétaire du risque : forte / moyenne / faible / inexistante. */
 export type EfficaciteControle = (typeof EFFICACITES)[number]
 
 export const COTE_MIN = 1
@@ -28,6 +31,7 @@ export interface CampagneInput {
   dateFin?: unknown
 }
 
+/** Entrée d'une campagne d'évaluation normalisée, prête pour la persistance. */
 export interface CleanCampagne {
   intitule: string
   description: string | null
@@ -84,6 +88,7 @@ export interface EvaluationInput {
   commentaire?: unknown
 }
 
+/** Entrée d'une évaluation normalisée (cotations clampées, efficacité typée), prête pour la persistance. */
 export interface CleanEvaluation {
   graviteInherente: number | null
   vraisemblanceInherente: number | null
@@ -173,6 +178,7 @@ export function statutApresCotation(secondeLigneActive?: boolean): EvaluationSta
 
 export interface EvaluationLite { statut: string }
 
+/** Avancement d'une campagne d'évaluation : total, à coter/cotées/validées/rejetées, taux de validation, complétude. */
 export interface CampagneAvancement {
   total: number
   aCoter: number

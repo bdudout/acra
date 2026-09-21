@@ -13,6 +13,7 @@ export interface Branding {
   baseline: string
 }
 
+/** Configuration d'identité de marque de l'instance (nom d'app, baseline…), source de la résolution du branding. */
 export interface BrandingConfig {
   appName?: string | null
   appBaseline?: string | null

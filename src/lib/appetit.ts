@@ -10,6 +10,7 @@ import { CARTO_MAX } from './cartographie'
 export const SEUIL_MIN = 1
 export const SEUIL_MAX = CARTO_MAX * CARTO_MAX // 25
 
+/** Configuration de l'appétit au risque : seuil global + seuils par taxonomie (niveau résiduel max acceptable). */
 export interface AppetitConfig {
   /** Seuil global (niveau max acceptable) ; null = aucun appétit défini. */
   seuilGlobal: number | null
@@ -27,6 +28,7 @@ export function seuilApplicable(cfg: AppetitConfig, taxonomieCode: string | null
   return cfg.seuilGlobal ?? null
 }
 
+/** Position d'un risque vis-à-vis de l'appétit : DANS (accepté), HORS (dépasse le seuil), INCONNU (pas de seuil applicable). */
 export type StatutAppetit = 'DANS' | 'HORS' | 'INCONNU'
 
 /**
@@ -39,6 +41,7 @@ export function evaluerAppetit(niveauResiduel: number | null, seuil: number | nu
   return niveauResiduel > seuil ? 'HORS' : 'DANS'
 }
 
+/** Vue minimale d'un risque pour l'évaluation d'appétit (taxonomie + niveau résiduel). */
 export interface RiskAppetitLite {
   taxonomieCode: string | null
   niveauResiduel: number | null
@@ -49,6 +52,7 @@ export function estHorsAppetit(r: RiskAppetitLite, cfg: AppetitConfig): boolean 
   return evaluerAppetit(r.niveauResiduel, seuilApplicable(cfg, r.taxonomieCode)) === 'HORS'
 }
 
+/** Synthèse d'appétit : total, évalués (avec seuil et cotés), hors/dans appétit, sans seuil. */
 export interface AppetitSynthese {
   total: number
   evalues: number // risques avec un seuil applicable ET cotés

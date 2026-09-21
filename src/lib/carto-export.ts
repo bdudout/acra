@@ -6,6 +6,7 @@
 import { buildHeatmap, aggregateByDimension, CARTO_MAX, type CartoRisk, type CartoMode, type NiveauBucket } from './cartographie'
 import { getRiskLevel, type ScaleConfig } from './risk-scale'
 
+/** Risque enrichi pour l'export de la cartographie (CartoRisk + statut + provenance). */
 export interface CartoExportRisk extends CartoRisk {
   statut: string
   provenance: string
@@ -14,6 +15,7 @@ export interface CartoExportRisk extends CartoRisk {
   niveauResiduel: number | null
 }
 
+/** Grille de heatmap gravité × vraisemblance (comptages par cellule) pour l'export et les cockpits. */
 export interface HeatGrid {
   /** Lignes de gravité, de la plus forte (CARTO_MAX) à la plus faible (1). */
   gravites: number[]
@@ -27,6 +29,7 @@ export interface HeatGrid {
   couleurs?: Record<number, Record<number, string>>
 }
 
+/** Jeu de données complet d'export de la cartographie (mode, totaux, grille, risques). */
 export interface CartoExportData {
   mode: CartoMode
   total: number

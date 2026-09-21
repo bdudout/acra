@@ -5,7 +5,9 @@
 
 export const API_IMPORT_MAX = 500
 
+/** Erreur d'un item rejeté lors d'un import (position dans le lot + motif). */
 export interface ImportItemError { index: number; error: string }
+/** Résultat d'un import préparé : items valides, erreurs par item, nombre d'items ignorés. */
 export interface PreparedImport<C> { valid: C[]; errors: ImportItemError[]; skipped: number }
 
 /**

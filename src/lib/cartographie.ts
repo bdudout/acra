@@ -8,10 +8,14 @@
 // MÊMES seuils que les pastilles du tableau (produit G×V) → cohérence visuelle.
 export const CARTO_MAX = 5
 
+/** Mode de cotation affiché : risque inhérent ou résiduel. */
 export type CartoMode = 'inherent' | 'residual'
+/** Dimension d'agrégation de la cartographie : taxonomie, processus ou entité. */
 export type CartoDimension = 'taxonomie' | 'processus' | 'entite'
+/** Palier de niveau de risque (bucket de couleur) : faible / moyen / élevé. */
 export type NiveauBucket = 'faible' | 'moyen' | 'eleve'
 
+/** Risque en entrée de la cartographie (cotations inhérentes/résiduelles + dimensions d'agrégation). */
 export interface CartoRisk {
   id: string
   intitule: string
@@ -47,6 +51,7 @@ export function niveauBucket(niveau: number): NiveauBucket {
   return 'faible'
 }
 
+/** Cellule de la heatmap : couple (gravité, vraisemblance) et les risques qui l'occupent. */
 export interface HeatCell {
   gravite: number
   vraisemblance: number
@@ -54,6 +59,7 @@ export interface HeatCell {
   bucket: NiveauBucket
   risqueIds: string[]
 }
+/** Heatmap complète : cellules non vides (triées) + total coté. */
 export interface Heatmap {
   cells: HeatCell[] // uniquement les cellules non vides, triées g asc puis v asc
   totalCote: number
@@ -87,6 +93,7 @@ export function buildHeatmap(risks: CartoRisk[], mode: CartoMode): Heatmap {
   return { cells, totalCote, totalNonCote, parBucket }
 }
 
+/** Agrégat par dimension : un « seau » (taxonomie/processus/entité) avec ses compteurs de risques. */
 export interface CartoBucket {
   key: string // code taxonomie / id processus / libellé entité ; '' = non renseigné
   label: string | null // libellé lisible connu (processusNom) sinon null → résolu par l'UI

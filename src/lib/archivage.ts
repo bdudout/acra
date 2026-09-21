@@ -16,6 +16,7 @@ export function cleanArchivageDuree(v: unknown): number {
   return Math.min(ARCHIVAGE_DUREE_MAX, Math.round(n))
 }
 
+/** Vue minimale d'une mission/campagne pour décider si elle est archivable (statut + date de fin). */
 export interface ArchivableInput {
   statut: string
   dateFin?: Date | string | null

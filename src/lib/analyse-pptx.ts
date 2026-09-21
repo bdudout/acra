@@ -21,6 +21,7 @@ import { SOUS_SECTEURS } from './ebios-data'
 
 type Any = Record<string, unknown> // eslint-disable-line @typescript-eslint/no-explicit-any
 
+/** Options de rendu de la présentation PPTX (appétit au risque, nom de l'approbateur…). */
 export interface RenderOpts {
   appetit?: AppetitConfig
   approbateurNom?: string

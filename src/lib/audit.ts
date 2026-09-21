@@ -7,12 +7,14 @@
 import { cleanChecklist, cleanChecklistResultats, cleanExigenceRefs, type ChecklistResultat } from './controle'
 
 export const MISSION_STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
+/** Statut d'une mission d'audit : planifiée → en cours → clôturée. */
 export type MissionStatut = (typeof MISSION_STATUTS)[number]
 
 // Source d'un constat : audit interne (3ᵉ ligne / N3), ou contrôle EXTERNE (4ᵉ
 // niveau) qui peut être une autorité de contrôle (REGULATEUR) ou un auditeur
 // externe / commissaire aux comptes (AUDITEUR_EXTERNE).
 export const CONSTAT_SOURCES = ['AUDIT_INTERNE', 'REGULATEUR', 'AUDITEUR_EXTERNE'] as const
+/** Source d'un constat : AUDIT_INTERNE (N3), REGULATEUR ou AUDITEUR_EXTERNE (contrôle externe N4). */
 export type ConstatSource = (typeof CONSTAT_SOURCES)[number]
 
 /** Niveau du dispositif de contrôle porté par la source du constat. */
@@ -32,6 +34,7 @@ export const SOURCES_EXTERNES: ConstatSource[] = ['REGULATEUR', 'AUDITEUR_EXTERN
 // Suivi d'un constat/recommandation : ouvert → en cours → résolu (ou accepté
 // par la direction si le risque est assumé sans remédiation).
 export const CONSTAT_STATUTS = ['OUVERT', 'EN_COURS', 'RESOLU', 'ACCEPTE'] as const
+/** Statut d'un constat : ouvert → en cours → résolu (ou accepté par la direction). */
 export type ConstatStatut = (typeof CONSTAT_STATUTS)[number]
 
 export const CRITICITE_MIN = 1
@@ -39,8 +42,10 @@ export const CRITICITE_MAX = 4
 
 // Plan d'audit pluriannuel : nature de la mission + récurrence (en années).
 export const MISSION_TYPES = ['THEMATIQUE', 'PERIODIQUE'] as const
+/** Nature d'une mission d'audit : thématique (ponctuelle) ou périodique (plan pluriannuel). */
 export type MissionType = (typeof MISSION_TYPES)[number]
 export const MISSION_RECURRENCES = ['NONE', 'ANNUEL', 'BIENNAL', 'TRIENNAL'] as const
+/** Récurrence d'une mission (en années) : aucune, annuelle, biennale ou triennale. */
 export type MissionRecurrence = (typeof MISSION_RECURRENCES)[number]
 const ANNEES_PAR_RECURRENCE: Record<Exclude<MissionRecurrence, 'NONE'>, number> = { ANNUEL: 1, BIENNAL: 2, TRIENNAL: 3 }
 
@@ -61,6 +66,7 @@ export interface MissionInput {
   recurrence?: unknown
 }
 
+/** Entrée d'une mission d'audit normalisée (issue de cleanMissionInput), prête pour la persistance. */
 export interface CleanMission {
   intitule: string
   objectif: string | null
@@ -174,6 +180,7 @@ export interface ConstatInput {
   exigenceRef?: unknown
 }
 
+/** Entrée d'un constat normalisée (issue de cleanConstatInput), prête pour la persistance. */
 export interface CleanConstat {
   intitule: string
   description: string | null
@@ -227,6 +234,7 @@ export function cleanConstatInput(body: ConstatInput): CleanConstat {
 // ─── Filtrage (recherche + facettes) ─────────────────────────────────────────
 const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase()
 
+/** Critères de filtre des missions d'audit : recherche texte, statut, type. */
 export interface MissionFiltre { q?: string; statut?: string; type?: string }
 /** Filtre (ET logique) une liste de missions : recherche intitulé/responsable + statut + type. */
 export function filtrerMissions<T extends { intitule: string; responsable: string | null; statut: string; type: string }>(list: T[], f: MissionFiltre): T[] {
@@ -239,6 +247,7 @@ export function filtrerMissions<T extends { intitule: string; responsable: strin
   })
 }
 
+/** Critères de filtre des constats : recherche texte, statut, criticité, source. */
 export interface ConstatFiltre { q?: string; statut?: string; criticite?: string; source?: string }
 /** Filtre (ET logique) une liste de constats : recherche + statut + criticité + source. */
 export function filtrerConstats<T extends { intitule: string; description: string | null; statut: string; criticite: number | null; source: string }>(list: T[], f: ConstatFiltre): T[] {
@@ -273,6 +282,7 @@ export interface ConstatLite {
   echeance: Date | string | null
 }
 
+/** Synthèse d'un lot de constats : total, ouverts/résolus, en retard, critiques, taux de résolution. */
 export interface ConstatsSynthese {
   total: number
   ouverts: number // OUVERT + EN_COURS
