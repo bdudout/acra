@@ -149,6 +149,7 @@ export const authOptions: NextAuthOptions = {
             id: true, email: true, name: true, role: true, phone: true,
             passwordHash: true, isActive: true, emailVerified: true,
             passwordChangedAt: true, mustChangePassword: true,
+            emailVerificationRequired: true, sessionVersion: true,
           },
         })
 
@@ -184,7 +185,11 @@ export const authOptions: NextAuthOptions = {
         // Le mot de passe est correct, mais tant que l'adresse n'est pas validée
         // (OTP reçu à l'inscription), la connexion est refusée. Gate isDemoInstance()
         // → aucun impact en production. L'UI redirige vers la page de vérification.
-        if (requiresEmailVerification(await isDemoInstance(), user.emailVerified)) {
+        if (requiresEmailVerification({
+          demo: await isDemoInstance(),
+          accountRequires: user.emailVerificationRequired === true,
+          emailVerified: user.emailVerified,
+        })) {
           await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'email_not_verified' } })
           throw new Error('EMAIL_NOT_VERIFIED')
         }
@@ -246,7 +251,7 @@ export const authOptions: NextAuthOptions = {
         await auditLog('LOGIN_SUCCESS', { userId: user.id, userEmail: user.email, userRole: user.role })
         // Mode démo : la connexion compte comme activité (repousse la purge). No-op hors démo.
         await touchOrgActivityForUser(user.id).catch(() => { /* best-effort */ })
-        return { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: mustChange, mfaVerifiedAt }
+        return { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: mustChange, mfaVerifiedAt, sessionVersion: user.sessionVersion ?? 0 }
       },
     }),
   ],
@@ -278,6 +283,8 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role ?? 'ANALYSTE'
         token.mustChangePassword = (user as any).mustChangePassword === true
         token.mfaVerifiedAt = (user as any).mfaVerifiedAt
+        // F04 (CWE-613) : fige la version de session à l'émission du JWT.
+        token.sessionVersion = (user as any).sessionVersion ?? 0
         // RBAC piloté par l'IdP : à la connexion SSO, synchronise le rôle depuis
         // les groupes du jeton (no-op si aucun mapping de groupes n'est configuré).
         if (account?.provider === SSO_PROVIDER_ID) {
@@ -290,10 +297,16 @@ export const authOptions: NextAuthOptions = {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dbUser = await (prisma.user as any).findUnique({
           where: { id: token.id as string },
-          select: { role: true, isActive: true, mustChangePassword: true },
+          select: { role: true, isActive: true, mustChangePassword: true, sessionVersion: true },
         })
         // Si l'utilisateur est suspendu ou supprimé, invalider le token
         if (!dbUser || dbUser.isActive === false) {
+          return { ...token, suspended: true }
+        }
+        // F04 (CWE-613) : un JWT dont la version est antérieure à celle du compte a
+        // été révoqué (changement/réinitialisation de mot de passe, suspension) →
+        // on l'invalide, sans attendre son expiration.
+        if ((dbUser.sessionVersion ?? 0) !== (token.sessionVersion ?? 0)) {
           return { ...token, suspended: true }
         }
         token.role = dbUser.role

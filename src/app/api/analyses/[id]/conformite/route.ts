@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
-import { canEditAnalyse } from '@/lib/permissions'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { canEditAnalyse, resolveAnalyseRole, isAdminRole } from '@/lib/permissions'
 import {
   sanitizeConformite,
   applyConformiteEntry,
@@ -65,10 +65,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Fonctionnalité de conformité désactivée' }, { status: 403 })
   }
 
-  if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
+  const analyseOrgId = (analyse as { organizationId: string | null }).organizationId
+  const effRole = resolveAnalyseRole(userRole, analyseOrgId, analyseOrgId ? await getEffectiveRoleForOrg(userId, userRole, analyseOrgId) : null)
+  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
   }
-  if (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') {
+  if (analyse.statut === 'APPROUVE' && !isAdminRole(effRole)) {
     return NextResponse.json({ error: 'L\'analyse est approuvée et ne peut plus être modifiée' }, { status: 403 })
   }
   if (!analyse.cadrage) return NextResponse.json({ error: 'Cadrage inexistant' }, { status: 400 })

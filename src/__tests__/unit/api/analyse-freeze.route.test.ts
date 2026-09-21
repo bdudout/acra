@@ -2,7 +2,9 @@ import { it, expect, vi, beforeEach } from 'vitest'
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'owner', role: 'ANALYSTE' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: vi.fn(), update: vi.fn(async () => ({})) } } }))
-vi.mock('@/lib/org-context.server', () => ({ analyseAccessWhere: vi.fn(async () => ({})) }))
+// F01 : les décisions RBAC utilisent le rôle EFFECTIF dans l'org de l'analyse.
+// Ici le propriétaire est ANALYSTE dans son org → peut éditer (on atteint le gel).
+vi.mock('@/lib/org-context.server', () => ({ analyseAccessWhere: vi.fn(async () => ({})), getEffectiveRoleForOrg: vi.fn(async () => 'ANALYSTE') }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: true })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn() }))
 import { PATCH } from '@/app/api/analyses/[id]/route'

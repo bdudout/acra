@@ -238,7 +238,9 @@ export async function PATCH(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updated = await (prisma.user as any).update({
       where: { id: targetId },
-      data: { isActive },
+      // F04 : la suspension révoque les sessions/JWT (incrément de version) →
+      // les jetons restent invalides même après une éventuelle réactivation.
+      data: { isActive, ...(action === 'suspend' ? { sessionVersion: { increment: 1 } } : {}) },
       select: { id: true, name: true, email: true, role: true, isActive: true },
     })
 

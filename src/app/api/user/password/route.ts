@@ -60,8 +60,9 @@ export async function POST(req: NextRequest) {
   await prisma.$transaction(async tx => {
     await tx.user.update({
       where: { id: userId },
-      // Efface le drapeau de changement forcé (#10/#11)
-      data: { passwordHash, passwordChangedAt: new Date(), mustChangePassword: false },
+      // Efface le drapeau de changement forcé (#10/#11) ; F04 : révoque les
+      // sessions/JWT antérieurs (incrément de version).
+      data: { passwordHash, passwordChangedAt: new Date(), mustChangePassword: false, sessionVersion: { increment: 1 } },
     })
     // Un changement de mot de passe invalide les cookies d'appareils approuvés.
     await tx.trustedDevice.deleteMany({ where: { userId } })

@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   const consumed = await prisma.$transaction(async tx => {
     const changed = await tx.passwordResetToken.updateMany({ where: { id: record.id, usedAt: null, expiresAt: { gt: usedAt } }, data: { usedAt } })
     if (changed.count !== 1) return false
-    await tx.user.update({ where: { id: record.userId }, data: { passwordHash, passwordChangedAt: usedAt, mustChangePassword: false } })
+    // F04 : la réinitialisation révoque les sessions/JWT antérieurs (incrément de version).
+    await tx.user.update({ where: { id: record.userId }, data: { passwordHash, passwordChangedAt: usedAt, mustChangePassword: false, sessionVersion: { increment: 1 } } })
     await tx.passwordResetToken.updateMany({ where: { userId: record.userId, usedAt: null }, data: { usedAt } })
     // Le lien de réinitialisation est un événement de sécurité : il invalide
     // aussi tous les appareils de confiance déjà enregistrés.

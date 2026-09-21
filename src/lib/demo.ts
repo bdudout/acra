@@ -108,12 +108,19 @@ export function analysisCapReached(count: number, cfg: DemoConfig = DEMO_DEFAULT
 }
 
 /**
- * Vrai si la connexion doit être bloquée faute de vérification d'e-mail. En mode
- * démo, chaque compte doit valider son adresse (OTP reçu à l'inscription) avant de
- * pouvoir se connecter. Hors démo, aucune vérification n'est imposée ici. Pur.
+ * Vrai si la connexion doit être bloquée faute de vérification d'e-mail.
+ * F07 (CWE-841) : l'obligation ne dépend plus SEULEMENT du mode démo. Elle est
+ * exigée si l'instance est en démo OU si le COMPTE la requiert
+ * (`accountRequires`, posé par l'inscription publique) — tant que l'adresse n'est
+ * pas validée. Les comptes provisionnés par un admin/IdP ont `accountRequires`
+ * false et ne sont pas bloqués hors démo. Pur.
  */
-export function requiresEmailVerification(demo: boolean, emailVerified: Date | string | null | undefined): boolean {
-  return demo && !emailVerified
+export function requiresEmailVerification(opts: {
+  demo: boolean
+  accountRequires: boolean
+  emailVerified: Date | string | null | undefined
+}): boolean {
+  return (opts.demo || opts.accountRequires) && !opts.emailVerified
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
