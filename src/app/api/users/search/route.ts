@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   const userId = (session.user as any).id
 
-  const rl = rateLimit(`user-search:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
+  const rl = await rateLimit(`user-search:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de requêtes. Réessayez dans une minute.' },

@@ -1,119 +1,129 @@
 /**
- * rate-limit.ts — Limiteur de débit avec abstraction de store
+ * rate-limit.ts — Limiteur de débit avec store remplaçable (single/multi-instance)
  *
- * Architecture Redis-ready :
- *  - En développement ou single-instance : store in-memory (Map)
- *  - En production multi-instance        : implémenter RedisRateLimitStore
- *    et le passer à createRateLimiter()
+ * Deux paliers de déploiement :
+ *  - **Mono-instance / développement** : store en mémoire (`InMemoryRateLimitStore`,
+ *    défaut). Chaque instance compte pour elle-même.
+ *  - **Multi-instance** : un **store partagé** (Redis via `RedisRateLimitStore`,
+ *    cf. `rate-limit-redis.ts`) est injecté UNE fois au démarrage par
+ *    `configureRateLimitStore(store)`. Aucune route à modifier : `rateLimit()`
+ *    délègue toujours au store courant.
+ *
+ * L'interface `RateLimitStore.hit()` est **asynchrone** (un store distribué fait
+ * de l'I/O) et reçoit explicitement la `limit` — l'ancienne interface synchrone
+ * masquait la limite derrière un cast et rendait tout store externe inopérant.
  *
  * Usage :
- *   import { rateLimit, rateLimitHeaders } from '@/lib/rate-limit'
- *   const rl = rateLimit('login:ip:1.2.3.4', 10, 15 * 60_000)
+ *   const rl = await rateLimit('login:ip:1.2.3.4', 10, 15 * 60_000)
  *   if (!rl.allowed) return 429
  *
- * Limites configurées par contexte (voir bas de fichier) :
- *   - login        : 10/15min par email + 50/15min par IP (anti credential-stuffing, R01)
- *   - register     : 5/h par IP
- *   - password     : 5/h par userId
- *   - export       : 20/h par userId
- *   - import       : 10/h par userId
- *   - search       : 60/min par userId
- *   - api-write    : 200/min par userId (workshop auto-save)
+ * Limites prédéfinies par contexte : voir le bas de fichier.
  */
 
-// ── Interface store (prête pour Redis) ────────────────────────────────────────
+// ── Contrat ───────────────────────────────────────────────────────────────────
 
 export interface RateLimitResult {
   allowed:   boolean
   remaining: number
-  resetAt:   number
+  resetAt:   number   // epoch ms de réinitialisation de la fenêtre
 }
 
-/** Magasin de compteurs de limitation de débit (incrémente par clé sur une fenêtre glissante). */
+/**
+ * Magasin de compteurs de limitation de débit. Implémentations : mémoire (défaut)
+ * ou store partagé (Redis…). `hit` incrémente le compteur de `key` sur une fenêtre
+ * `windowMs` et décide de l'autorisation vis-à-vis de `limit`. Asynchrone pour
+ * permettre un backend distribué.
+ */
 export interface RateLimitStore {
-  increment(key: string, windowMs: number): RateLimitResult
-  reset(key: string): void
+  hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>
+  reset(key: string): Promise<void>
 }
 
-// ── Store in-memory (défaut) ──────────────────────────────────────────────────
+// ── Store en mémoire (défaut, mono-instance) ─────────────────────────────────
 
-interface MemEntry {
-  count:  number
-  resetAt: number
-}
+interface MemEntry { count: number; resetAt: number }
 
-class InMemoryStore implements RateLimitStore {
+/** Store de rate limiting en mémoire (compteur par clé, fenêtre fixe). Non partagé entre instances. */
+export class InMemoryRateLimitStore implements RateLimitStore {
   private readonly map = new Map<string, MemEntry>()
-  private cleanupTimer: ReturnType<typeof setInterval>
+  private readonly cleanupTimer: ReturnType<typeof setInterval>
 
   constructor() {
-    // Nettoyage périodique pour éviter les fuites mémoire
+    // Nettoyage périodique pour éviter les fuites mémoire (entrées expirées).
     this.cleanupTimer = setInterval(() => {
       const now = Date.now()
       for (const [key, entry] of this.map.entries()) {
         if (entry.resetAt < now) this.map.delete(key)
       }
     }, 60_000)
-    // Permet à Node.js de se terminer proprement même avec le timer actif
+    // Ne bloque pas l'arrêt de Node.js.
     if (this.cleanupTimer.unref) this.cleanupTimer.unref()
   }
 
-  increment(key: string, windowMs: number, limit = Infinity): RateLimitResult {
+  async hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
     const now = Date.now()
     let entry = this.map.get(key)
-
     if (!entry || entry.resetAt < now) {
       entry = { count: 0, resetAt: now + windowMs }
       this.map.set(key, entry)
     }
-
     entry.count++
-    const remaining = Math.max(0, limit - entry.count)
+    const remaining = Number.isFinite(limit) ? Math.max(0, limit - entry.count) : Infinity
     return { allowed: entry.count <= limit, remaining, resetAt: entry.resetAt }
   }
 
-  reset(key: string): void {
+  async reset(key: string): Promise<void> {
     this.map.delete(key)
   }
 }
 
-// ── Store global (remplaçable par Redis) ──────────────────────────────────────
+// ── Store courant + injection (point de résolution UNIQUE) ────────────────────
 
-// En production multi-instance : instancier un RedisStore ici et l'exporter
-// via RATE_LIMIT_STORE pour que les routes puissent le surcharger.
-//
-// Exemple d'intégration Redis (à implémenter) :
-//   import { createClient } from 'redis'
-//   import { RedisRateLimitStore } from '@/lib/rate-limit-redis'
-//   const client = createClient({ url: process.env.REDIS_URL })
-//   export const RATE_LIMIT_STORE: RateLimitStore = new RedisRateLimitStore(client)
+// Persistance du store mémoire à travers les rechargements HMR en développement.
+const globalForStore = globalThis as unknown as { __rlStore?: InMemoryRateLimitStore }
+function defaultMemoryStore(): InMemoryRateLimitStore {
+  const store = globalForStore.__rlStore ?? new InMemoryRateLimitStore()
+  if (process.env.NODE_ENV !== 'production') globalForStore.__rlStore = store
+  return store
+}
 
-const globalForStore = globalThis as unknown as { __rlStore?: InMemoryStore }
-const defaultStore: InMemoryStore = globalForStore.__rlStore ?? new InMemoryStore()
-if (process.env.NODE_ENV !== 'production') globalForStore.__rlStore = defaultStore
+let currentStore: RateLimitStore = defaultMemoryStore()
+
+/**
+ * Remplace le store de rate limiting (à appeler UNE fois au démarrage en
+ * multi-instance, ex. `configureRateLimitStore(new RedisRateLimitStore(client))`).
+ * `null` rétablit le store mémoire par défaut (utile en test).
+ */
+export function configureRateLimitStore(store: RateLimitStore | null): void {
+  currentStore = store ?? defaultMemoryStore()
+}
+
+/** Store de rate limiting actuellement utilisé. */
+export function getRateLimitStore(): RateLimitStore {
+  return currentStore
+}
 
 // ── API publique ──────────────────────────────────────────────────────────────
 
 /**
- * Vérifie et incrémente le compteur pour une clé donnée.
+ * Vérifie et incrémente le compteur d'une clé. Délègue au store courant (mémoire
+ * par défaut, ou store partagé injecté). Asynchrone.
  *
- * @param key      Identifiant unique (ex: "login:email:user@example.com")
+ * @param key      Identifiant unique (ex. "login:email:user@example.com")
  * @param limit    Nombre maximum de requêtes autorisées dans la fenêtre
- * @param windowMs Durée de la fenêtre glissante en millisecondes
- * @param store    Store optionnel (défaut: in-memory)
+ * @param windowMs Durée de la fenêtre en millisecondes
+ * @param store    Store optionnel (défaut : le store courant)
  */
 export function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-  store: RateLimitStore = defaultStore
-): RateLimitResult {
-  return (store as InMemoryStore).increment(key, windowMs, limit)
+  store: RateLimitStore = currentStore
+): Promise<RateLimitResult> {
+  return store.hit(key, limit, windowMs)
 }
 
-/**
- * Headers standard HTTP de rate limiting (RFC 6585 + draft RateLimit-*).
- */
+/** Headers HTTP standard de rate limiting (RFC 6585 + draft RateLimit-*). */
 export function rateLimitHeaders(remaining: number, resetAt: number): Record<string, string> {
   const retryAfter = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000))
   return {
@@ -139,5 +149,3 @@ export const LIMIT_IMPORT   = { limit: 10,  windowMs: 60 * 60_000 } as const
 export const LIMIT_SEARCH   = { limit: 60,  windowMs: 60_000 }       as const
 /** Rate limit pour les écritures API (auto-save workshop) : 200 / minute par userId */
 export const LIMIT_API_WRITE = { limit: 200, windowMs: 60_000 }      as const
-// [IA — désactivé] Rate limit des suggestions IA (coût API Anthropic) — module IA retiré.
-// export const LIMIT_AI       = { limit: 20,  windowMs: 60 * 60_000 } as const

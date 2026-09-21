@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const userId = (session.user as { id: string }).id
   const userRole = ((session.user as { role?: UserRole }).role ?? 'ANALYSTE') as UserRole
 
-  const rl = rateLimit(`export:${userId}`, 20, 60 * 60 * 1000)
+  const rl = await rateLimit(`export:${userId}`, 20, 60 * 60 * 1000)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Limite d\'export atteinte. Réessayez dans une heure.' },

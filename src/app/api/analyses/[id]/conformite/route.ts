@@ -42,7 +42,7 @@ export async function PATCH(
   const userRole = (session.user as any).role ?? 'ANALYSTE'
 
   // Rate-limiting écriture (defense-in-depth), aligné sur les autres endpoints d'écriture.
-  const rl = rateLimit(`conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  const rl = await rateLimit(`conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de requêtes. Réessayez dans un instant.' },

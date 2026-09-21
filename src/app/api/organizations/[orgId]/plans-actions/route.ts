@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!role) return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   if (!canManage(role)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
-  const rl = rateLimit(`plans-actions:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  const rl = await rateLimit(`plans-actions:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
 
   const body = await req.json().catch(() => ({}))

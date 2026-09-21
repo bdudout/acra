@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest) {
   const userId = (session.user as any).id
 
   // Rate limiting : 60 req/min par utilisateur (partagé avec LIMIT_SEARCH)
-  const rl = rateLimit(`org-config:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
+  const rl = await rateLimit(`org-config:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de requêtes. Réessayez dans une minute.' },

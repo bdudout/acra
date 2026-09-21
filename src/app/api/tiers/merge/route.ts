@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const user: SessionUser = { id: userId, role: userRole }
 
   // Rate limiting (#118) : borne la fréquence des fusions comme les autres écritures.
-  const rl = rateLimit(`tiers-merge:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  const rl = await rateLimit(`tiers-merge:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Trop de requêtes. Réessayez dans un instant.' },

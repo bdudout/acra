@@ -65,7 +65,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const g = await guard(orgId, entiteId)
   if ('error' in g) return g.error
 
-  const rl = rateLimit(`entite-membres:${g.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  const rl = await rateLimit(`entite-membres:${g.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
   if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
 
   let data: z.infer<typeof addSchema>
