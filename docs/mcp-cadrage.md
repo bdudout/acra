@@ -1,7 +1,8 @@
 # MCP — Expression de besoins & cadrage
 
-> Statut : **cadrage validé** ; **phase 1 (socle) implémentée** (§10.1 — scope
-> `mcp`, endpoint `/api/mcp` gardé, audit + rate limit, outil `read_referentiels`).
+> Statut : **cadrage validé** ; **phases 1-2 implémentées** (§10.1 socle — scope
+> `mcp`, endpoint `/api/mcp` gardé, audit + rate limit, `read_referentiels` ; §10.2
+> contexte — `read_taxonomie`, `read_sector_examples`, `read_risk_posture`).
 > La surface MCP reste **gardée** par l'interrupteur d'instance `mcpEnabled`
 > (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`).
 
@@ -127,7 +128,9 @@ conception : réutiliser les mécanismes d'import/brouillon existants ou un mod�
   `mcp:<keyId>`.
 - ✅ **(Phase 1)** Premier outil `read_referentiels` (lecture org-scopée) — validation
   de bout en bout.
-- ⬜ Outils de contexte (phase 2) : `read_taxonomie`, `read_sector_examples`, `read_risk_posture`.
+- ✅ **(Phase 2)** Outils de contexte : `read_taxonomie` (vocabulaire méthode),
+  `read_sector_examples` (catalogue sectoriel livré), `read_risk_posture` (synthèse
+  org-scopée, lecture seule) — `lib/mcp/tools-context.server.ts`.
 - ⬜ File de **propositions** + validation UI (modèle et parcours) — phase 3.
 - ⬜ Outils `propose_*` (par vagues, cf. §10) + tests IDOR MCP.
 
