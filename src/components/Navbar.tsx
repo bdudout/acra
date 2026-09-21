@@ -301,6 +301,25 @@ export default function Navbar() {
                   </Link>
                 )}
 
+                {/* File de validation des propositions MCP (écritures assistées par
+                    un agent, human-in-the-loop). Réservée aux rôles éditeurs ;
+                    l'autorisation fine est vérifiée côté serveur. */}
+                {!isLecteur && (
+                  <Link
+                    href="/mcp-propositions"
+                    role="menuitem"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/mcp-propositions'
+                        ? 'bg-ebios-50 text-ebios-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <ListChecks size={16} aria-hidden="true" />
+                    {t.nav.mcpProposals}
+                  </Link>
+                )}
+
                 {/* L'espace /admin (instance) est réservé au super-admin ; un ADMIN
                     ne gère que /configuration (méthodologie). */}
                 {isSuperAdmin && (

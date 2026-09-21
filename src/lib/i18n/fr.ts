@@ -103,6 +103,7 @@ export const fr = {
     logout:         'Déconnexion',
     mobileMenu:     'Menu de navigation',
     profile:        'Mon profil',
+    mcpProposals:   'Propositions MCP',
   },
 
   // ─── Page Tiers (écosystème agrégé) ───────────────────────────────────────

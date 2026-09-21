@@ -102,6 +102,7 @@ export const en: Translations = {
     logout:         'Sign out',
     mobileMenu:     'Navigation menu',
     profile:        'My profile',
+    mcpProposals:   'MCP proposals',
   },
 
   // ─── Third parties page (aggregated ecosystem) ────────────────────────────
