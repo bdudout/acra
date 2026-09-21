@@ -13,7 +13,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { proposeRiskTool } from '@/lib/mcp/tools-propose.server'
+import { proposeRiskTool, proposeMeasureTool } from '@/lib/mcp/tools-propose.server'
 
 const ctx = { organizationId: 'orgA', keyId: 'key1' }
 const parse = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text)
@@ -46,6 +46,25 @@ describe('propose_risk', () => {
   it('proposition sans nom → isError, pas de création', async () => {
     analyseFindFirst.mockResolvedValue({ id: 'an1' })
     const res = await proposeRiskTool.handler({ analyseId: 'an1', risque: { nom: '   ' } }, ctx)
+    expect(res.isError).toBe(true)
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('propose_measure', () => {
+  it('valide → crée une McpProposal type "measure" EN_ATTENTE (pas de mesure réelle)', async () => {
+    analyseFindFirst.mockResolvedValue({ id: 'an1' })
+    proposalCreate.mockResolvedValue({ id: 'prop2', statut: 'EN_ATTENTE' })
+    const res = await proposeMeasureTool.handler({ analyseId: 'an1', mesure: { nom: 'MFA', type: 'BOGUS', priorite: 1 } }, ctx)
+    expect(res.isError).toBeUndefined()
+    const data = proposalCreate.mock.calls[0][0].data
+    expect(data).toMatchObject({ organizationId: 'orgA', apiKeyId: 'key1', type: 'measure', analyseId: 'an1', statut: 'EN_ATTENTE' })
+    expect(data.payload).toMatchObject({ nom: 'MFA', type: 'PREVENTIVE', priorite: 1 }) // type inconnu normalisé
+  })
+
+  it('analyse hors organisation → isError, aucune écriture', async () => {
+    analyseFindFirst.mockResolvedValue(null)
+    const res = await proposeMeasureTool.handler({ analyseId: 'other', mesure: { nom: 'X' } }, ctx)
     expect(res.isError).toBe(true)
     expect(proposalCreate).not.toHaveBeenCalled()
   })

@@ -1,7 +1,8 @@
 # MCP — Expression de besoins & cadrage
 
-> Statut : **cadrage validé** ; **phases 1-3 implémentées** (§10.1 socle ; §10.2
-> contexte ; §10.3 **file de propositions + validation UI + `propose_risk`**).
+> Statut : **cadrage validé** ; **phases 1-4 implémentées** (§10.1 socle ; §10.2
+> contexte ; §10.3 file de propositions + validation UI + `propose_risk` ; §10.5
+> **édition assistée** — `propose_measure`).
 > La surface MCP reste **gardée** par l'interrupteur d'instance `mcpEnabled`
 > (SUPER_ADMIN, désactivé par défaut — cf. `/admin/instance`). **Aucune écriture
 > directe par la machine** : les `propose_*` déposent des propositions validées en
@@ -137,9 +138,12 @@ conception : réutiliser les mécanismes d'import/brouillon existants ou un mod�
   accept/reject sous RBAC de l'analyse cible) + audit `MCP_PROPOSAL_REVIEWED`.
 - ✅ **(Phase 3)** Premier outil d'écriture validée `propose_risk` (dépose une
   proposition, ne crée jamais le risque directement).
-- ⬜ Outils `propose_*` suivants (`propose_measure`, `propose_plan_action`,
-  `propose_conformite_treatment`, `recommend_risks_scenarios`) + intake assisté
-  (phases 4-5, cf. §10) + tests IDOR MCP étendus.
+- ✅ **(Phase 4)** `propose_measure` (proposition de mesure de traitement,
+  analyse-scopée) + application à l'acceptation (crée une `Mesure` sous le RBAC de
+  l'analyse cible). La file de validation gère désormais risques ET mesures.
+- ⬜ Outils `propose_*` **org-scopés** (`propose_plan_action`,
+  `propose_conformite_treatment` — RBAC/cible au niveau organisation) +
+  `recommend_risks_scenarios` + intake assisté (phase 5) + tests IDOR MCP étendus.
 
 ## 10. Phasage proposé
 

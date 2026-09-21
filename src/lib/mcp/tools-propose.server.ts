@@ -8,7 +8,20 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import type { McpContext } from './tools.server'
-import { sanitizeRiskProposal, isRiskProposalValid } from './proposals'
+import {
+  sanitizeRiskProposal, isRiskProposalValid,
+  sanitizeMeasureProposal, isMeasureProposalValid, MEASURE_TYPES, MEASURE_STATUS,
+} from './proposals'
+
+/** Vérifie qu'une analyse appartient à l'organisation de la clé (sans divulgation). */
+async function analyseInOrg(analyseId: string, organizationId: string): Promise<boolean> {
+  if (!analyseId) return false
+  const a = await prisma.analyse.findFirst({
+    where: { id: analyseId, organizationId, deletedAt: null },
+    select: { id: true },
+  })
+  return !!a
+}
 
 /**
  * `propose_risk` — dépose une proposition de risque pour une analyse de
@@ -48,40 +61,87 @@ export const proposeRiskTool: McpTool<McpContext> = {
     const analyseId = typeof args.analyseId === 'string' ? args.analyseId : ''
     // Cible bornée à l'organisation : une analyse hors périmètre est « introuvable »
     // (aucune divulgation d'existence).
-    const analyse = analyseId
-      ? await prisma.analyse.findFirst({
-          where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null },
-          select: { id: true },
-        })
-      : null
-    if (!analyse) return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
-
+    if (!(await analyseInOrg(analyseId, ctx.organizationId))) {
+      return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
+    }
     const payload = sanitizeRiskProposal(args.risque)
     if (!isRiskProposalValid(payload)) {
       return { content: [{ type: 'text', text: 'proposition_invalide: nom requis' }], isError: true }
     }
-
-    const created = await prisma.mcpProposal.create({
-      data: {
-        organizationId: ctx.organizationId,
-        apiKeyId: ctx.keyId,
-        type: 'risk',
-        analyseId,
-        payload: payload as unknown as Prisma.InputJsonValue,
-        statut: 'EN_ATTENTE',
-      },
-      select: { id: true, statut: true },
-    })
-
-    return toolText({
-      proposalId: created.id,
-      statut: created.statut,
-      message: 'Proposition déposée. Elle doit être validée par un utilisateur habilité dans l\'interface.',
-    })
+    return depose('risk', analyseId, payload, ctx)
   },
 }
 
-/** Outils d'écriture validée (phase 3) : propositions déposées, jamais appliquées directement. */
+/**
+ * `propose_measure` — dépose une proposition de mesure de traitement pour une
+ * analyse de l'organisation. Ne crée AUCUNE mesure : validation humaine en UI.
+ */
+export const proposeMeasureTool: McpTool<McpContext> = {
+  name: 'propose_measure',
+  description:
+    "Propose l'ajout d'une mesure de traitement à une analyse (atelier 5). Ne crée PAS la mesure : " +
+    "dépose une proposition validée par un humain. Fournir `analyseId` et `mesure` " +
+    "{ nom, type, priorite 1-4, statut, description?, responsable?, entite?, echeance?, cout?, efficacite? 1-4 }.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      analyseId: { type: 'string', description: "Identifiant de l'analyse cible (dans l'organisation de la clé)." },
+      mesure: {
+        type: 'object',
+        description: 'Proposition de mesure.',
+        properties: {
+          nom: { type: 'string' },
+          type: { type: 'string', enum: [...MEASURE_TYPES] },
+          priorite: { type: 'integer', minimum: 1, maximum: 4 },
+          statut: { type: 'string', enum: [...MEASURE_STATUS] },
+          description: { type: 'string' },
+          responsable: { type: 'string' },
+          entite: { type: 'string' },
+          echeance: { type: 'string', description: 'Date ISO 8601.' },
+          cout: { type: 'string' },
+          efficacite: { type: 'integer', minimum: 1, maximum: 4 },
+        },
+        required: ['nom'],
+        additionalProperties: false,
+      },
+    },
+    required: ['analyseId', 'mesure'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const analyseId = typeof args.analyseId === 'string' ? args.analyseId : ''
+    if (!(await analyseInOrg(analyseId, ctx.organizationId))) {
+      return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
+    }
+    const payload = sanitizeMeasureProposal(args.mesure)
+    if (!isMeasureProposalValid(payload)) {
+      return { content: [{ type: 'text', text: 'proposition_invalide: nom requis' }], isError: true }
+    }
+    return depose('measure', analyseId, payload, ctx)
+  },
+}
+
+/** Crée une proposition EN_ATTENTE et renvoie un résultat MCP standard. */
+async function depose(type: string, analyseId: string, payload: unknown, ctx: McpContext): Promise<McpToolResult> {
+  const created = await prisma.mcpProposal.create({
+    data: {
+      organizationId: ctx.organizationId,
+      apiKeyId: ctx.keyId,
+      type,
+      analyseId,
+      payload: payload as Prisma.InputJsonValue,
+      statut: 'EN_ATTENTE',
+    },
+    select: { id: true, statut: true },
+  })
+  return toolText({
+    proposalId: created.id,
+    statut: created.statut,
+    message: 'Proposition déposée. Elle doit être validée par un utilisateur habilité dans l\'interface.',
+  })
+}
+
+/** Outils d'écriture validée : propositions déposées, jamais appliquées directement. */
 export function buildProposeTools(): McpTool<McpContext>[] {
-  return [proposeRiskTool]
+  return [proposeRiskTool, proposeMeasureTool]
 }

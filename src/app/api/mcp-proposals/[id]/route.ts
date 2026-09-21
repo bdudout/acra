@@ -11,7 +11,10 @@ import { prisma } from '@/lib/prisma'
 import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate } from '@/lib/mcp/proposals'
+import {
+  sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
+  sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
+} from '@/lib/mcp/proposals'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -35,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (proposal.statut !== 'EN_ATTENTE') {
     return NextResponse.json({ error: 'Proposition déjà traitée' }, { status: 409 })
   }
-  if (proposal.type !== 'risk') {
+  if (proposal.type !== 'risk' && proposal.type !== 'measure') {
     return NextResponse.json({ error: 'Type de proposition non supporté' }, { status: 400 })
   }
   if (!proposal.analyseId) return NextResponse.json({ error: 'Cible manquante' }, { status: 400 })
@@ -71,24 +74,50 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true, statut: 'REJETEE' })
   }
 
-  // accept : ré-assainit le payload stocké (défense en profondeur) puis crée le
-  // risque réel et marque la proposition, de façon atomique.
-  const payload = sanitizeRiskProposal(proposal.payload)
-  if (!isRiskProposalValid(payload)) {
-    return NextResponse.json({ error: 'Proposition invalide' }, { status: 422 })
-  }
-  const risque = await prisma.$transaction(async tx => {
-    const r = await tx.risque.create({ data: riskProposalToCreate(payload, analyse.id), select: { id: true } })
-    await tx.mcpProposal.update({
-      where: { id },
-      data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId: r.id, reviewNote: (body.note ?? '').slice(0, 2000) || null },
-    })
-    return r
-  })
+  // accept : ré-assainit le payload stocké (défense en profondeur), crée l'objet
+  // réel selon le type, et marque la proposition — de façon atomique.
+  const created = await applyAccepted(proposal.type, proposal.payload, analyse.id, id, userId, body.note)
+  if (!created.ok) return NextResponse.json({ error: created.error }, { status: 422 })
 
   await auditLog('MCP_PROPOSAL_REVIEWED', {
     userId, userRole: effRole, organizationId: proposal.organizationId,
-    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', type: proposal.type, analyseId: proposal.analyseId, appliedId: risque.id },
+    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', type: proposal.type, analyseId: proposal.analyseId, appliedId: created.appliedId },
   })
-  return NextResponse.json({ ok: true, statut: 'ACCEPTEE', riskId: risque.id })
+  return NextResponse.json({ ok: true, statut: 'ACCEPTEE', appliedId: created.appliedId })
+}
+
+/**
+ * Crée l'objet réel d'une proposition acceptée (risque ou mesure) et marque la
+ * proposition ACCEPTEE, atomiquement. Ré-assainit le payload (défense en profondeur).
+ */
+async function applyAccepted(
+  type: string, rawPayload: unknown, analyseId: string, proposalId: string, userId: string, note?: string,
+): Promise<{ ok: true; appliedId: string } | { ok: false; error: string }> {
+  const noteVal = (note ?? '').slice(0, 2000) || null
+  const markAccepted = (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], appliedId: string) =>
+    tx.mcpProposal.update({
+      where: { id: proposalId },
+      data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId, reviewNote: noteVal },
+    })
+
+  if (type === 'risk') {
+    const payload = sanitizeRiskProposal(rawPayload)
+    if (!isRiskProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+    const appliedId = await prisma.$transaction(async tx => {
+      const r = await tx.risque.create({ data: riskProposalToCreate(payload, analyseId), select: { id: true } })
+      await markAccepted(tx, r.id)
+      return r.id
+    })
+    return { ok: true, appliedId }
+  }
+
+  // type === 'measure'
+  const payload = sanitizeMeasureProposal(rawPayload)
+  if (!isMeasureProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+  const appliedId = await prisma.$transaction(async tx => {
+    const m = await tx.mesure.create({ data: measureProposalToCreate(payload, analyseId), select: { id: true } })
+    await markAccepted(tx, m.id)
+    return m.id
+  })
+  return { ok: true, appliedId }
 }
