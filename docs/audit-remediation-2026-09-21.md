@@ -6,7 +6,7 @@ Les vérifications automatisées passent (`tsc` propre, i18n synchronisé, suite
 
 | Constat | Sévérité | Correctif | Fichiers | Test |
 |---|---|---|---|---|
-| **F01** — Rôle global au lieu du rôle d'organisation (CWE-863) | Élevée | Les décisions d'écriture sur une analyse (édition, suppression, atelier, conformité, révision) utilisent le **rôle effectif dans l'organisation de l'analyse** (`getEffectiveRoleForOrg` + `resolveAnalyseRole`), comme approbation/access. Lecture inchangée (oversight admin). | `analyses/[id]/route.ts`, `.../workshop/[num]/route.ts`, `.../conformite/route.ts`, `.../revisions/route.ts` | `analyse-rbac-effective-role.route.test.ts` |
+| **F01** — Rôle global au lieu du rôle d'organisation (CWE-863) | Élevée | Les décisions de **lecture ET d'écriture** sur une analyse (détail, édition, suppression, atelier, conformité, révision) utilisent le **rôle effectif dans l'organisation de l'analyse** (`getEffectiveRoleForOrg` + `resolveAnalyseRole`), comme approbation/access. *(La lecture `GET` — `canViewAnalyse` — a été alignée sur le rôle effectif suite au contre-audit, cf. §Contre-audit.)* | `analyses/[id]/route.ts`, `.../workshop/[num]/route.ts`, `.../conformite/route.ts`, `.../revisions/route.ts` | `analyse-rbac-effective-role.route.test.ts` |
 | **F02** — SCIM d'org modifie l'identité globale (CWE-863) | Moyenne | Une clé limitée à une organisation **ne modifie plus l'identité globale** : provision/update d'un compte pré-existant n'écrit ni `isActive` (pas de levée de suspension d'instance) ni `name` ; le déprovisioning retire l'appartenance **sans** suspendre le compte global. | `lib/scim.server.ts` | (comportement couvert ; à compléter par un test dédié SCIM) |
 | **F03** — SUPER_ADMIN exclu du MFA en ADMIN_ONLY (CWE-287) | Élevée | `isMfaRequired` utilise `isAdminRole` → **tout rôle administrateur** (dont SUPER_ADMIN) est soumis au MFA en périmètre ADMIN_ONLY. | `lib/mfa.ts` | `mfa.test.ts` (cas SUPER_ADMIN) |
 | **F04** — Sessions survivent au changement de mot de passe (CWE-613) | Élevée | Ajout de `User.sessionVersion` : figée dans le JWT à l'émission, **comparée à chaque requête** ; incrémentée aux révocations (changement/réinitialisation de mot de passe, suspension) → invalide les JWT antérieurs sans attendre l'expiration. | `prisma/schema.prisma` (+ migration), `lib/auth.ts`, `user/password/route.ts`, `auth/reset-password/route.ts`, `admin/users/route.ts` | (compare de version dans le callback JWT) |
@@ -24,6 +24,23 @@ Les vérifications automatisées passent (`tsc` propre, i18n synchronisé, suite
   comparaison de version couvre toutes les routes.
 - **F06** : `verify-email` et `register` sont les seuls points anonymes exposant l'existence
   d'un compte (l'API v1 renvoie un 401 générique ; les autres routes sont authentifiées).
+
+## Contre-audit (2026-09-21) — résidus traités
+
+Le contre-audit (`rapports/contre-audit-owasp-wstg-2026-09-21/`) a confirmé les
+correctifs et relevé des **résidus** dans le code déjà livré. Trois d'entre eux,
+clairement corrigibles et testables, sont **clos** ici :
+
+| Réf | Résidu | Correctif | Fichiers | Tests |
+|---|---|---|---|---|
+| **O01** | `loadLoginPolicy` : sur **erreur de lecture** de la politique, repli **permissif** → connexion sans OTP possible. | Décision extraite en résolveur **pur** `resolveLoginPolicy` : politique **absente** → neutre ; **erreur de lecture** → **fail-closed** (MFA imposée, scope ALL). | `lib/login-policy.ts` (nouveau), `lib/auth.ts` | `login-policy.test.ts` |
+| **F04 (résidu)** | `admin/users action=reset-password` n'incrémentait **pas** `sessionVersion` ni ne révoquait les appareils de confiance. | Réinitialisation admin passée en **transaction** : `sessionVersion { increment: 1 }` + `trustedDevice.deleteMany` (aligné sur `user/password`). | `admin/users/route.ts` | `admin-users-reset-password.route.test.ts` |
+| **F01 (résidu)** | `GET /api/analyses/[id]` : `canViewAnalyse` utilisait encore le **rôle global** (un rôle de gouvernance global ouvrait la lecture d'une org où le rôle effectif est inférieur). | Lecture alignée sur le **rôle effectif** (comme PATCH/DELETE). | `analyses/[id]/route.ts` | `analyse-rbac-effective-role.route.test.ts` (cas GET) |
+
+**Résidus restants** (documentés, non clos ici) : F06/F07 (énumération sur inscription
+ouverte ; rattrapage des anciens comptes non vérifiés — arbitrage UX / migration de
+données), O02 (suppression de compte hors transaction), O03 (SSRF webhooks : DNS non
+épinglé, IPv6), O04/O05 (upload, appareils de confiance). Voir le contre-rapport.
 
 ## Reste (recette)
 

@@ -1,11 +1,12 @@
 /**
- * F01 (CWE-863) — les décisions d'écriture sur une analyse utilisent le rôle
- * EFFECTIF dans l'organisation de l'analyse, pas le rôle d'INSTANCE.
+ * F01 (CWE-863) — les décisions de LECTURE ET d'écriture sur une analyse utilisent
+ * le rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'INSTANCE.
  *
  * Scénario : un ADMIN d'instance qui n'est que LECTEUR dans l'organisation B
- * (et n'est pas propriétaire) voit l'analyse (visibilité admin) mais NE DOIT PAS
- * pouvoir l'éditer, la supprimer ni sauvegarder un atelier. Avant correctif, le
- * rôle global ADMIN accordait ces droits (403 attendu désormais).
+ * (et n'est pas propriétaire) NE DOIT PAS pouvoir lire le détail, éditer,
+ * supprimer ni sauvegarder un atelier. Avant correctif, le rôle global ADMIN
+ * accordait ces droits — dont la lecture via `canViewAnalyse` (résidu du
+ * contre-audit 2026-09-21) — désormais 403.
  */
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 
@@ -20,7 +21,7 @@ vi.mock('@/lib/org-context.server', () => ({
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false, conformiteActive: true })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 
-import { PATCH, DELETE } from '@/app/api/analyses/[id]/route'
+import { GET, PATCH, DELETE } from '@/app/api/analyses/[id]/route'
 import { PUT as workshopPut } from '@/app/api/analyses/[id]/workshop/[num]/route'
 import { prisma } from '@/lib/prisma'
 
@@ -33,6 +34,11 @@ beforeEach(() => {
 })
 
 describe('F01 — rôle effectif d\'organisation pour les écritures sur analyse', () => {
+  it('GET refuse la LECTURE du détail à un ADMIN d\'instance LECTEUR dans l\'org (403)', async () => {
+    const res = await GET({} as never, { params: Promise.resolve({ id: 'a' }) })
+    expect(res.status).toBe(403)
+  })
+
   it('PATCH refuse un ADMIN d\'instance LECTEUR dans l\'org (403), sans écrire', async () => {
     const res = await PATCH({ json: async () => ({ nom: 'Hijack' }) } as never, { params: Promise.resolve({ id: 'a' }) })
     expect(res.status).toBe(403)

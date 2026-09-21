@@ -50,13 +50,16 @@ export async function GET(req: NextRequest, { params }: Params) {
   // Une analyse en corbeille (soft delete) est introuvable pour tous (récupérable via /admin/recovery).
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
-  if (!canViewAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // F01 (CWE-863) : lecture ET édition se décident sur le rôle EFFECTIF dans
+  // l'organisation de l'analyse (pas le rôle d'instance) — un rôle de gouvernance
+  // GLOBAL (RSSI/AUDITEUR…) ne doit pas ouvrir la lecture d'une analyse d'une org
+  // où le rôle effectif de l'utilisateur est inférieur. Cohérent avec PATCH/DELETE.
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
+
+  if (!canViewAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
-  // F01 (CWE-863) : l'édition se décide sur le rôle EFFECTIF dans l'organisation de
-  // l'analyse (pas le rôle d'instance), comme les routes approbation/access.
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
   const editable = canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
 
   return NextResponse.json({ analyse, editable })
