@@ -32,7 +32,7 @@ Les trois chantiers ci-dessous sont implémentés et **validés par les tests au
 |---|---|---|
 | Haute | SBOM | Produire un SBOM CycloneDX ou SPDX à chaque release, incluant dépendances applicatives et image ; signer/archiver l’artefact ; documenter la consommation, en cohérence avec les bonnes pratiques ANSSI. |
 | Haute | Cyber Resilience Act (CRA) | Réaliser une analyse d’applicabilité et un plan de conformité : catégorie produit, exigences essentielles, gestion des vulnérabilités, SBOM, mises à jour de sécurité, signalement et documentation technique. |
-| Haute | Tests IDOR continus | Étendre les tests à deux comptes et deux organisations à l’ensemble des ressources organisationnelles sensibles. |
+| Haute | Tests IDOR continus | **En cours.** Toute la famille `/api/organizations/[orgId]/**` est couverte : GET via `getAnalyseScope` (`org-resource-scope.route.test.ts`) et désormais **toutes les mutations POST/PATCH/DELETE + GET restants** via `getEffectiveRoleForOrg` (`org-resource-scope-mutations.route.test.ts`, 16 handlers) — refus 403 pour une organisation étrangère, avant tout accès DB. **Reste** : étendre aux ressources scopées par analyse (audit, contrôles, incidents, KRI, documents, tiers) et à l’API publique v1. |
 | Moyenne | Rate limiting distribué | Remplacer le store mémoire par un store partagé avant un passage multi-instance. |
 | Moyenne | SIEM | Encadrer les destinations SIEM internes par une allowlist réseau et formaliser le runbook. |
 | Moyenne | IA gouvernée | Ne pas activer d’IA externe par défaut ; étudier une API MCP avec identité technique, RBAC, journalisation, révocation et choix explicite de localisation des données. |
