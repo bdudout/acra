@@ -385,30 +385,37 @@ export function peutPiloter(role: UserRole, opts?: { secondeLigneActive?: boolea
   return peutDefinir2eLigne(role, opts)
 }
 
+/** Peut évaluer/classer les incidents DORA : admin, RISK_MANAGER ou RSSI. */
 export function peutEvaluerDora(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
 }
 
+/** Peut gérer le registre TIC (DORA art. 28) : admin, RSSI, RISK_MANAGER, CONFORMITE ou DPO. */
 export function peutGererRegistreTic(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
 }
 
+/** Peut définir les KRI (délègue à peutDefinir2eLigne : rôles de 2ᵉ ligne). */
 export function peutDefinirKri(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
   return peutDefinir2eLigne(role, opts)
 }
 
+/** Peut écrire dans le module Audit interne (missions/constats) : AUDITEUR (3ᵉ ligne) ou admin. */
 export function peutEcrireAudit(role: UserRole): boolean {
   return role === 'AUDITEUR' || isAdminRole(role)
 }
 
+/** Peut gérer les référentiels de conformité (création/édition) : admin uniquement. */
 export function peutGererReferentiels(role: UserRole): boolean {
   return isAdminRole(role)
 }
 
+/** Peut gérer la bibliothèque documentaire : admin, RSSI, RISK_MANAGER, CONFORMITE ou DPO. */
 export function peutGererDocuments(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
 }
 
+/** Peut définir les dispositifs de 2ᵉ ligne (alias générique de peutDefinir2eLigne). */
 export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
   return peutDefinir2eLigne(role, opts)
 }

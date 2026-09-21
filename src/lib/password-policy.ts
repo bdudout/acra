@@ -1,3 +1,4 @@
+/** Forme de la politique de mot de passe : longueur minimale, classes de caractères requises et âge maximal. */
 export interface PasswordPolicyShape {
   minLength: number
   requireUppercase: boolean

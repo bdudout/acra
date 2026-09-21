@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { hashTrustedDeviceToken, isTrustedDeviceValid, trustedDeviceExpiry } from '@/lib/trusted-device'
 
+/** Génère un jeton aléatoire (base64url) identifiant un appareil de confiance MFA. */
 export function newTrustedDeviceToken(): string {
   return randomBytes(32).toString('base64url')
 }

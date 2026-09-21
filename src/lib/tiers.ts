@@ -12,6 +12,7 @@
  */
 import type { EcosystemZone } from '@/lib/ecosystem-radar'
 
+/** Tiers (partie prenante d'écosystème) en entrée de la consolidation par organisation. */
 export interface TierInput {
   nom: string
   type: string
@@ -30,6 +31,7 @@ export interface TierInput {
   critique?: boolean
 }
 
+/** Tiers consolidé : regroupement des occurrences d'un même tiers à travers les analyses (menace max, zones…). */
 export interface ConsolidatedTier {
   /** Clé normalisée du regroupement. */
   key: string

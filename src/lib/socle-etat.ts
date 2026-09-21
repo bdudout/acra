@@ -13,6 +13,7 @@
  */
 
 export const ETATS_SOCLE = ['APPLIQUE', 'PARTIEL', 'NON_APPLIQUE'] as const
+/** État d'application d'une mesure du socle de sécurité : appliquée, partielle ou non appliquée. */
 export type EtatSocle = typeof ETATS_SOCLE[number]
 
 /** État par défaut d'un référentiel ajouté au socle. */

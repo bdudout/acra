@@ -12,8 +12,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+/** Statut de la sauvegarde automatique : au repos, en attente, en cours, sauvegardé ou en erreur. */
 export type AutoSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 
+/** Options de useAutoSave (délai de debounce, activation…). */
 export interface AutoSaveOptions {
   /** Délai en ms avant déclenchement de la sauvegarde (default: 1500) */
   delay?: number
@@ -21,6 +23,7 @@ export interface AutoSaveOptions {
   disabled?: boolean
 }
 
+/** Valeur retournée par useAutoSave : statut courant + éventuels contrôles (sauvegarde forcée…). */
 export interface AutoSaveResult {
   status: AutoSaveStatus
   lastSaved: Date | null

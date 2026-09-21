@@ -9,6 +9,7 @@ import { toCsvCell } from './spreadsheet-safe'
 const DAY = 86_400_000
 const TERMINES = new Set(['RESOLU', 'ACCEPTE'])
 
+/** Constat/recommandation d'un régulateur ou superviseur suivi (criticité, échéance, statut de résolution). */
 export interface ConstatRegulateur {
   id: string
   intitule: string
@@ -44,6 +45,7 @@ export function filtrerControleExterne<T extends { source: string }>(constats: T
   return constats.filter(c => c.source === 'REGULATEUR' || c.source === 'AUDITEUR_EXTERNE')
 }
 
+/** Synthèse du suivi régulateur : total, ouverts/résolus, échus, à venir, critiques, taux de résolution. */
 export interface SuiviRegulateurSynthese {
   total: number
   ouverts: number // non terminés

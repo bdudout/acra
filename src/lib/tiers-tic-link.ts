@@ -18,6 +18,7 @@ export interface TicResume {
   criticite: string
   typeService: string
 }
+/** Tiers de l'écosystème enrichi de ses arrangements TIC rattachés (jonction écosystème ↔ registre TIC). */
 export interface TierAvecTic extends ConsolidatedTier {
   tic: TicResume[]
   estTic: boolean // le tiers figure au registre TIC (au moins un arrangement)
@@ -30,6 +31,7 @@ export interface EcoResume {
   critique: boolean
   occurrences: number
 }
+/** Arrangement TIC enrichi du tiers d'écosystème correspondant (jonction inverse). */
 export interface ArrangementAvecEcosysteme extends ArrangementTic {
   ecosysteme: EcoResume | null
 }

@@ -10,6 +10,7 @@
  */
 
 export const CYCLES_REVISION = ['OPERATIONNEL', 'STRATEGIQUE'] as const
+/** Cycle de révision d'une analyse : opérationnel (fréquent) ou stratégique (de fond). */
 export type CycleRevision = typeof CYCLES_REVISION[number]
 
 /** Cycle par défaut d'une révision. */

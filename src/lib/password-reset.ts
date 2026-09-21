@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 
+/** Mode de réinitialisation d'un mot de passe : déclenchée par un ADMIN ou par lien e-mail auto-service. */
 export type PasswordResetMode = 'ADMIN' | 'EMAIL'
 
 /** Reset links are single-use and valid for one hour. */
@@ -10,6 +11,7 @@ export function hashResetToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
+/** Vrai si un jeton de réinitialisation est encore utilisable : non consommé et non expiré. */
 export function isResetTokenUsable(token: { expiresAt: Date; usedAt: Date | null }, now = new Date()): boolean {
   return token.usedAt === null && token.expiresAt.getTime() > now.getTime()
 }

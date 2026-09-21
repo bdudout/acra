@@ -10,6 +10,7 @@
  */
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
+/** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
 export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.

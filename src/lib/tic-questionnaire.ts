@@ -26,8 +26,10 @@ export const QUESTIONNAIRE_TIC: QuestionTic[] = [
 ]
 
 export const REPONSES_TIC = ['OUI', 'NON', 'PARTIEL', 'NA'] as const
+/** Réponse à une question de qualification TIC : oui, non, partiel ou non applicable. */
 export type ReponseTic = (typeof REPONSES_TIC)[number]
 
+/** Réponse à une question du questionnaire TIC (id de question + réponse + commentaire). */
 export interface ReponseQuestion {
   id: string
   reponse: ReponseTic
@@ -54,6 +56,7 @@ export function cleanReponses(v: unknown): ReponseQuestion[] {
   return QUESTIONNAIRE_TIC.filter((q) => byId.has(q.id)).map((q) => byId.get(q.id)!)
 }
 
+/** Verdict de qualification TIC : total/répondues/pertinentes/conformes, écarts et score. */
 export interface QuestionnaireVerdict {
   total: number // nb de questions du socle
   repondu: number // nb de questions ayant une réponse

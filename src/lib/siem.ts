@@ -13,6 +13,7 @@ import type { AuditAction } from './logger'
 
 /** Journaux de sécurité activables indépendamment (« journal par journal »). */
 export const SIEM_CATEGORIES = ['AUTHENTIFICATION', 'COMPTES', 'CONFIGURATION', 'DONNEES', 'GOUVERNANCE'] as const
+/** Catégorie d'un événement transféré au SIEM : authentification, comptes, configuration, données, gouvernance. */
 export type SiemCategory = (typeof SIEM_CATEGORIES)[number]
 
 /** Classement de chaque action d'audit dans un journal de sécurité (exhaustif). */
@@ -81,6 +82,7 @@ export function categoryForEvent(action: AuditAction, details?: Record<string, u
   return categoryForAction(action)
 }
 
+/** Sévérité d'un événement SIEM : warning (actions sensibles) ou info. */
 export type SiemSeverity = 'info' | 'warning'
 // Actions à surveiller (échecs d'auth, suppression/rejet) → warning ; sinon info.
 const WARN_ACTIONS = new Set<AuditAction>([
@@ -112,6 +114,7 @@ export function isValidSiemEndpoint(url: unknown): boolean {
   }
 }
 
+/** Configuration SIEM minimale (activation + endpoint/format) pour décider et router la livraison. */
 export interface SiemConfigLite {
   enabled: boolean
   endpoint?: string | null
@@ -126,6 +129,7 @@ export function shouldForward(cfg: SiemConfigLite, action: AuditAction, details?
   return cleanSiemCategories(cfg.categories).includes(categoryForEvent(action, details))
 }
 
+/** Contexte joint à un événement SIEM (utilisateur, IP, organisation…). */
 export interface SiemEventCtx {
   userId?: string
   userEmail?: string
@@ -137,6 +141,7 @@ export interface SiemEventCtx {
   details?: Record<string, unknown>
 }
 
+/** Événement normalisé émis vers le SIEM (source, action, catégorie, sévérité, contexte). */
 export interface SiemEvent {
   source: 'acra'
   timestamp: string

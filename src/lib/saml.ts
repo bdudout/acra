@@ -10,6 +10,7 @@ import { isSafeIssuerUrl, type OidcClaims } from '@/lib/sso'
 /** Identifiant NextAuth du provider SAML (→ ACS /api/auth/saml/acs). */
 export const SAML_PROVIDER_ID = 'saml'
 
+/** Entrée brute (non validée) de la configuration SSO SAML 2.0, telle que reçue de l'API. */
 export interface SamlConfigInput {
   samlEntityId?: unknown
   samlSsoUrl?: unknown

@@ -6,6 +6,7 @@ export const TRUSTED_DEVICE_MAX_DAYS = 90
 export const TRUSTED_DEVICE_DEFAULT_DAYS = 30
 export const TRUSTED_DEVICE_MFA_WINDOW_MS = 10 * 60 * 1000
 
+/** Vue minimale d'un appareil de confiance (MFA) pour décider de sa validité : date d'expiration + révocation. */
 export interface TrustedDeviceValiditySource {
   expiresAt: Date | string
   revokedAt: Date | string | null
@@ -17,6 +18,7 @@ export function clampTrustedDeviceDurationDays(value: number): number {
   return Math.min(TRUSTED_DEVICE_MAX_DAYS, Math.max(TRUSTED_DEVICE_MIN_DAYS, Math.trunc(value)))
 }
 
+/** Calcule la date d'expiration d'un appareil de confiance à partir d'une durée en jours (bornée). */
 export function trustedDeviceExpiry(durationDays: number, now = new Date()): Date {
   return new Date(now.getTime() + clampTrustedDeviceDurationDays(durationDays) * 86_400_000)
 }
