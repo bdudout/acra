@@ -1,7 +1,10 @@
 // Logique pure des propositions MCP : assainissement d'une proposition de risque,
 // recalcul autoritaire du niveau, mapping vers la création Prisma.
 import { describe, it, expect } from 'vitest'
-import { sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate } from '@/lib/mcp/proposals'
+import {
+  sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
+  sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
+} from '@/lib/mcp/proposals'
 
 describe('sanitizeRiskProposal', () => {
   it('clampe gravité/vraisemblance et RECALCULE niveauRisque (jamais la valeur fournie)', () => {
@@ -51,5 +54,38 @@ describe('riskProposalToCreate', () => {
     const data = riskProposalToCreate(sanitizeRiskProposal({ nom: 'Min' }), 'an2')
     expect(data).not.toHaveProperty('description')
     expect(data).not.toHaveProperty('niveauResiduel')
+  })
+})
+
+describe('sanitizeMeasureProposal', () => {
+  it('normalise type/statut vers leurs enums (défauts PREVENTIVE / A_FAIRE)', () => {
+    const p = sanitizeMeasureProposal({ nom: 'MFA', type: 'MAGIQUE', statut: 'INVALIDE' })
+    expect(p.type).toBe('PREVENTIVE')
+    expect(p.statut).toBe('A_FAIRE')
+    const ok = sanitizeMeasureProposal({ nom: 'MFA', type: 'TECHNIQUE', statut: 'EN_COURS' })
+    expect(ok.type).toBe('TECHNIQUE')
+    expect(ok.statut).toBe('EN_COURS')
+  })
+
+  it('sérialise l\'échéance en ISO et clampe la priorité', () => {
+    const p = sanitizeMeasureProposal({ nom: 'x', echeance: '2027-01-15', priorite: 9, efficacite: 7 })
+    expect(p.echeance).toBe(new Date('2027-01-15').toISOString())
+    expect(p.priorite).toBe(4) // clampé à [1,4]
+    expect(p.efficacite).toBe(4) // clampé à [1,4]
+  })
+
+  it('échéance invalide → absente ; nom requis pour la validité', () => {
+    const p = sanitizeMeasureProposal({ nom: 'x', echeance: 'pas-une-date' })
+    expect(p).not.toHaveProperty('echeance')
+    expect(isMeasureProposalValid(sanitizeMeasureProposal({ nom: '  ' }))).toBe(false)
+  })
+})
+
+describe('measureProposalToCreate', () => {
+  it('mappe vers Prisma Mesure (échéance → Date) avec l\'analyseId', () => {
+    const payload = sanitizeMeasureProposal({ nom: 'Sauvegardes', type: 'CORRECTIVE', priorite: 1, statut: 'EN_COURS', echeance: '2027-03-01', responsable: 'DSI' })
+    const data = measureProposalToCreate(payload, 'an9')
+    expect(data).toMatchObject({ analyseId: 'an9', nom: 'Sauvegardes', type: 'CORRECTIVE', priorite: 1, statut: 'EN_COURS', responsable: 'DSI' })
+    expect(data.echeance).toBeInstanceOf(Date)
   })
 })

@@ -5,14 +5,14 @@
 // l'agent est de la DONNÉE, jamais des instructions) et mappe un payload accepté
 // vers les données de création Prisma. Testable sans DB.
 
-import { cleanRisque } from '@/lib/import-sanitize'
+import { cleanRisque, cleanMesure } from '@/lib/import-sanitize'
 
 /** Statuts d'une proposition. */
 export const PROPOSAL_STATUS = ['EN_ATTENTE', 'ACCEPTEE', 'REJETEE'] as const
 export type ProposalStatus = (typeof PROPOSAL_STATUS)[number]
 
 /** Types de propositions supportés (extensible aux phases suivantes). */
-export const PROPOSAL_TYPES = ['risk'] as const
+export const PROPOSAL_TYPES = ['risk', 'measure'] as const
 export type ProposalType = (typeof PROPOSAL_TYPES)[number]
 
 /** Stratégies de traitement valides (enum Prisma StrategieTraitement). */
@@ -74,5 +74,75 @@ export function riskProposalToCreate(payload: RiskProposalPayload, analyseId: st
     strategie: payload.strategie,
     ...(payload.description != null ? { description: payload.description } : {}),
     ...(payload.niveauResiduel != null ? { niveauResiduel: payload.niveauResiduel } : {}),
+  }
+}
+
+// ── Propositions de MESURE (atelier 5 — traitement) ──────────────────────────
+
+/** Types de mesure valides (enum Prisma TypeMesure). */
+export const MEASURE_TYPES = ['PREVENTIVE', 'DETECTIVE', 'CORRECTIVE', 'DISSUASIVE', 'ORGANISATIONNELLE', 'TECHNIQUE'] as const
+export type MeasureType = (typeof MEASURE_TYPES)[number]
+/** Statuts de mesure valides (enum Prisma StatutMesure). */
+export const MEASURE_STATUS = ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'] as const
+export type MeasureStatus = (typeof MEASURE_STATUS)[number]
+
+/** Payload assaini d'une proposition de mesure (échéance sérialisée en ISO). */
+export interface MeasureProposalPayload {
+  nom: string
+  type: MeasureType
+  priorite: number
+  statut: MeasureStatus
+  description?: string
+  responsable?: string
+  entite?: string
+  echeance?: string // ISO 8601 (JSON-sérialisable)
+  cout?: string
+  efficacite?: number
+}
+
+/**
+ * Assainit une proposition de mesure : réutilise `cleanMesure` (troncatures/clamps),
+ * normalise `type`/`statut` vers leurs enums (défauts PREVENTIVE / A_FAIRE) et
+ * sérialise l'échéance en ISO (stockage JSON). Ne fait jamais confiance aux entrées.
+ */
+export function sanitizeMeasureProposal(input: unknown): MeasureProposalPayload {
+  const obj = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
+  const c = cleanMesure(obj)
+  const type: MeasureType = MEASURE_TYPES.includes(String(c.type) as MeasureType) ? (String(c.type) as MeasureType) : 'PREVENTIVE'
+  const statut: MeasureStatus = MEASURE_STATUS.includes(String(c.statut) as MeasureStatus) ? (String(c.statut) as MeasureStatus) : 'A_FAIRE'
+  const echeance = c.echeance instanceof Date && !Number.isNaN(c.echeance.getTime()) ? c.echeance.toISOString() : undefined
+  return {
+    nom: c.nom as string,
+    type,
+    priorite: c.priorite as number,
+    statut,
+    ...(c.description != null ? { description: c.description as string } : {}),
+    ...(c.responsable != null ? { responsable: c.responsable as string } : {}),
+    ...(c.entite != null ? { entite: c.entite as string } : {}),
+    ...(echeance ? { echeance } : {}),
+    ...(c.cout != null ? { cout: c.cout as string } : {}),
+    ...(c.efficacite != null ? { efficacite: c.efficacite as number } : {}),
+  }
+}
+
+/** Vrai si la proposition de mesure est exploitable (nom requis). */
+export function isMeasureProposalValid(p: MeasureProposalPayload): boolean {
+  return p.nom.trim().length > 0
+}
+
+/** Mappe un payload de proposition de mesure ACCEPTÉ vers les données Prisma `Mesure`. */
+export function measureProposalToCreate(payload: MeasureProposalPayload, analyseId: string) {
+  return {
+    analyseId,
+    nom: payload.nom,
+    type: payload.type,
+    priorite: payload.priorite,
+    statut: payload.statut,
+    ...(payload.description != null ? { description: payload.description } : {}),
+    ...(payload.responsable != null ? { responsable: payload.responsable } : {}),
+    ...(payload.entite != null ? { entite: payload.entite } : {}),
+    ...(payload.echeance ? { echeance: new Date(payload.echeance) } : {}),
+    ...(payload.cout != null ? { cout: payload.cout } : {}),
+    ...(payload.efficacite != null ? { efficacite: payload.efficacite } : {}),
   }
 }
