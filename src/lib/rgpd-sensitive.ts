@@ -11,6 +11,7 @@ export const RGPD_ART9_CATEGORIES = [
   'sante', 'biometrie', 'genetique', 'opinions', 'religion', 'orientation', 'origine',
 ] as const
 
+/** Catégorie de données sensibles au sens de l'art. 9 RGPD (santé, opinions, biométrie…). */
 export type RgpdArt9Category = typeof RGPD_ART9_CATEGORIES[number]
 
 // Mots-clés (minuscules, sans accents) volontairement spécifiques pour limiter les

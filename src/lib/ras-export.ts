@@ -8,13 +8,16 @@ import {
   type AppetitConfig, seuilApplicable, evaluerAppetit, synthetiserAppetit, type AppetitSynthese,
 } from './appetit'
 
+/** Vue minimale d'un risque pour l'export RAS (intitulé + cotation + taxonomie). */
 export interface RasRiskLite {
   intitule: string
   taxonomieCode: string | null
   niveauResiduel: number | null
 }
 
+/** Seuil d'appétit par catégorie dans le RAS (code + libellé + niveau seuil). */
 export interface RasCategorieSeuil { code: string; label: string; seuil: number }
+/** Risque dépassant son seuil d'appétit, listé dans le Risk Appetite Statement. */
 export interface RasDepassement {
   intitule: string
   categorieLabel: string
@@ -23,6 +26,7 @@ export interface RasDepassement {
   ecart: number
 }
 
+/** Données d'export du Risk Appetite Statement : seuils (global + par catégorie) et dépassements. */
 export interface RasExportData {
   seuilGlobal: number | null
   categories: RasCategorieSeuil[]

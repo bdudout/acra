@@ -4,14 +4,17 @@
 // l'échéance) et synthèse d'avancement. L'UI/API ne fait que consommer.
 
 export const RISK_ACTION_STATUTS = ['A_FAIRE', 'EN_COURS', 'FAIT'] as const
+/** Statut d'une action de traitement : à faire → en cours → fait (le retard se dérive de l'échéance). */
 export type RiskActionStatut = (typeof RISK_ACTION_STATUTS)[number]
 // Le retard n'est PAS stocké : il se dérive de l'échéance vs. aujourd'hui.
 export type EffectiveStatut = RiskActionStatut | 'EN_RETARD'
 
 // Priorité d'une action de traitement (pilote l'échéance par défaut).
 export const ACTION_PRIORITES = ['CRITIQUE', 'MAJEUR', 'MODERE'] as const
+/** Priorité d'une action de traitement : critique, majeure ou modérée. */
 export type ActionPriorite = (typeof ACTION_PRIORITES)[number]
 
+/** Délais cibles (en mois) par priorité d'action, pour proposer une échéance par défaut. */
 export interface ActionDelaisMois { CRITIQUE: number; MAJEUR: number; MODERE: number }
 /** Délais par défaut (mois) : critique = 6 mois, majeur = 1 an, modéré = 2 ans. */
 export const DEFAULT_ACTION_DELAIS_MOIS: ActionDelaisMois = { CRITIQUE: 6, MAJEUR: 12, MODERE: 24 }
@@ -55,6 +58,7 @@ export function defaultEcheanceForPriorite(priorite: unknown, delais: ActionDela
   return `${yyyy}-${mm}-${dd}`
 }
 
+/** Entrée brute (non validée) d'une action de traitement d'un risque, telle que reçue de l'API. */
 export interface RiskActionInput {
   intitule?: unknown
   description?: unknown
@@ -64,6 +68,7 @@ export interface RiskActionInput {
   priorite?: unknown
 }
 
+/** Entrée d'une action de traitement normalisée (statut typé, échéance), prête pour la persistance. */
 export interface CleanRiskAction {
   intitule: string
   description: string | null
@@ -100,6 +105,7 @@ export function cleanRiskActionInput(body: RiskActionInput): CleanRiskAction {
   }
 }
 
+/** Forme minimale d'une action (statut + échéance) suffisante pour dériver son statut effectif et les synthèses. */
 export interface ActionLike {
   statut: string
   echeance: Date | string | null
@@ -115,6 +121,7 @@ export function effectiveStatut(action: ActionLike, now: Date): EffectiveStatut 
   return statut
 }
 
+/** Synthèse d'un lot d'actions : total, faits/en cours/à faire/en retard, taux d'avancement. */
 export interface ActionsSummary {
   total: number
   faits: number

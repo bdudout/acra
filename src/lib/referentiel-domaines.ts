@@ -19,12 +19,14 @@ export const DOMAINES = [
   'AUTRE',
 ] as const
 
+/** Domaine de l'univers de contrôle/audit GRC (regroupe les référentiels par thème). */
 export type Domaine = (typeof DOMAINES)[number]
 
 // Défaut : SECURITE_SI — tous les référentiels existants (cyber) y sont rattachés,
 // donc l'ajout du domaine est rétrocompatible (rien à migrer côté sens métier).
 export const DEFAULT_DOMAINE: Domaine = 'SECURITE_SI'
 
+/** Métadonnées d'un domaine de référentiel (libellé, icône, couleur) pour l'UI. */
 export interface DomaineMeta {
   /** Libellé lisible (FR). L'UI localisée passera par les clés i18n en phase 3. */
   label: string

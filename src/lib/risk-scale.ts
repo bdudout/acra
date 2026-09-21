@@ -18,6 +18,7 @@ import {
   DEFAULT_SEUILS_MATRICE,
 } from '@/lib/configuration-defaults'
 
+/** Un niveau d'une échelle (gravité/vraisemblance) : rang, libellé, description, couleur. */
 export interface EchelleNiveau {
   niveau: number
   label: string
@@ -25,6 +26,7 @@ export interface EchelleNiveau {
   couleur: string
 }
 
+/** Seuil d'un palier de risque : score minimal + libellé/couleur associés. */
 export interface Seuil {
   scoreMin: number
   scoreMax: number
@@ -32,6 +34,7 @@ export interface Seuil {
   couleur: string
 }
 
+/** Mode de la matrice des risques : quantitative (score = g × v) ou qualitative (niveau saisi par cellule). */
 export type MatriceMode = 'QUANTITATIVE' | 'QUALITATIVE'
 
 /** Niveau attribué manuellement à une case (mode qualitatif). */
@@ -41,6 +44,7 @@ export interface QualitativeCell {
   seuilLabel: string
 }
 
+/** Configuration complète des échelles et de la matrice d'une organisation (niveaux, seuils, mode, couleurs). */
 export interface ScaleConfig {
   nbNiveaux: number
   echelleGravite: EchelleNiveau[]
@@ -146,6 +150,7 @@ export function buildDefaultQualitativeMatrix(config?: Partial<ScaleConfig> | nu
   return cells
 }
 
+/** Cellule de la matrice des risques : couple (gravité, vraisemblance) + niveau/couleur résolus. */
 export interface MatrixCell {
   gravite: number
   vraisemblance: number
@@ -154,6 +159,7 @@ export interface MatrixCell {
   couleur: string
 }
 
+/** Modèle de matrice prêt à afficher : dimensions + toutes les cellules résolues (niveau, couleur). */
 export interface MatrixModel {
   nbNiveaux: number
   graviteLevels: EchelleNiveau[]       // colonnes (gravité croissante)

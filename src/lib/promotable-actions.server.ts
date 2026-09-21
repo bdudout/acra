@@ -12,6 +12,7 @@ import type { PlanActionLienType } from './plan-action'
 
 interface ModulesLike { incidentsActive: boolean }
 
+/** Action promotable en plan d'action (mesure d'analyse ou incident pas encore un PlanAction) : clé stable + champs repris. */
 export interface PromotableAction {
   key: string // stable, unique (source:id)
   titre: string

@@ -14,11 +14,13 @@
 
 export type QualificationQuestionType = 'bool' | 'choice'
 
+/** Option de réponse à une question de qualification (identifiant stable + libellé). */
 export interface QualificationOption {
   /** Identifiant interne stable (sert de clé i18n et de valeur stockée). */
   value: string
 }
 
+/** Question native du questionnaire de qualification (identifiant stable + options). */
 export interface QualificationQuestion {
   /** Identifiant interne stable (clé i18n + clé de réponse). */
   id: string
@@ -97,6 +99,7 @@ export interface CustomQualQuestion {
   type: QualificationQuestionType
   options?: { value: string; label: string }[] // pour type 'choice'
 }
+/** Configuration de qualification d'une organisation : surcharges des questions natives + questions personnalisées. */
 export interface QualificationConfig {
   /** Surcharge des questions natives : libellé et/ou activation (par id natif). */
   overrides: Record<string, { label?: string; enabled?: boolean }>
@@ -162,6 +165,7 @@ export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
   return out
 }
 
+/** Question de qualification effective (native + surcharges org fusionnées) présentée à l'utilisateur. */
 export interface EffectiveQualQuestion {
   id: string
   type: QualificationQuestionType

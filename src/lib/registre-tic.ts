@@ -10,12 +10,15 @@
 import { cleanReponses, type ReponseQuestion } from './tic-questionnaire'
 
 export const TYPES_SERVICE_TIC = ['HEBERGEMENT', 'CLOUD', 'LOGICIEL', 'RESEAU', 'SECURITE', 'DONNEES', 'SUPPORT', 'AUTRE'] as const
+/** Type de service TIC d'un prestataire : hébergement, cloud, logiciel, réseau, sécurité… */
 export type TypeServiceTic = (typeof TYPES_SERVICE_TIC)[number]
 
 /** Criticité de la FONCTION supportée par le service TIC (DORA). */
 export const NIVEAUX_CRITICITE = ['CRITIQUE', 'IMPORTANTE', 'NON_CRITIQUE'] as const
+/** Niveau de criticité d'un arrangement TIC : critique, importante ou non critique. */
 export type NiveauCriticite = (typeof NIVEAUX_CRITICITE)[number]
 
+/** Arrangement contractuel TIC (DORA art. 28) : prestataire, service, criticité, pays… */
 export interface ArrangementTic {
   /** Référence de l'accord contractuel. */
   reference: string
@@ -139,6 +142,7 @@ export function arrangementToCsvRow(a: ArrangementTic): (string | number)[] {
   ]
 }
 
+/** Complétude du registre TIC : total, arrangements complets/incomplets, taux. */
 export interface RegistreCompletude {
   total: number
   complets: number
@@ -154,6 +158,7 @@ export function evaluerCompletude(arrangements: ArrangementTic[]): RegistreCompl
   return { total, complets, incomplets: total - complets, taux: total ? complets / total : 1 }
 }
 
+/** Synthèse du registre TIC : nombre d'arrangements, répartition par criticité, prestataires critiques. */
 export interface RegistreSynthese {
   arrangements: number
   /** Nombre de prestataires distincts (nom normalisé). */

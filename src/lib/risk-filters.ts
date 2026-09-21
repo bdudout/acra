@@ -5,6 +5,7 @@
 
 import { niveauBucket } from './cartographie'
 
+/** Forme minimale d'un risque exposant les champs filtrables (taxonomie, entité, cotation…). */
 export interface FilterableRisk {
   taxonomieCode: string | null
   processusId: string | null
@@ -14,6 +15,7 @@ export interface FilterableRisk {
   niveauResiduel: number | null
 }
 
+/** Critères de filtre partagés des risques (taxonomie, entité, palier…) pour carto/pilotage/export. */
 export interface RiskFilters {
   taxonomieCode?: string | null // '' / null = toutes
   processusId?: string | null

@@ -15,6 +15,7 @@
 import type { Exigence } from './referentiel'
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
 
+/** Référentiel GRC livré (non-cyber) du catalogue canonique : code + métadonnées + exigences. */
 export interface GrcBuiltinReferentiel {
   code: string
   nom: string
