@@ -20,6 +20,11 @@ jobs:
       contents: write
       packages: write
       actions: read
+    env:
+      # Clé privée cosign (souveraine : signature SANS journal de transparence public).
+      # Absente ⇒ la signature du SBOM est simplement sautée (l'archivage + le SHA256 restent).
+      COSIGN_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,22 +48,54 @@ jobs:
         with:
           context: .
           push: true
+          # Attestations OCI attachées à l'image dans le registre :
+          #  - sbom : SBOM SPDX de l'image (généré par buildkit) ;
+          #  - provenance mode=max : provenance SLSA complète de la construction.
+          sbom: true
+          provenance: mode=max
           tags: ghcr.io/bdudout/acra:${{ inputs.version }}
           build-args: |
             ACRA_VERSION=${{ inputs.version }}
             ACRA_REVISION=${{ github.sha }}
+      # ── SBOM CycloneDX (dépendances applicatives + couches image) ──────────────
+      # Syft scanne l'image POUSSÉE (via son digest exact) → un SBOM CycloneDX JSON
+      # complet (npm + OS Alpine). Archivé comme asset de release + hashé (intégrité).
+      - name: Générer le SBOM CycloneDX de l'image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/bdudout/acra@${{ steps.build.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: false
+      - name: Signer le SBOM (cosign, clé souveraine — si configurée)
+        id: sign
+        if: env.COSIGN_KEY != ''
+        run: |
+          curl -sSfL "https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64" -o /usr/local/bin/cosign
+          chmod +x /usr/local/bin/cosign
+          # --tlog-upload=false : aucune écriture dans un journal de transparence public (souveraineté).
+          cosign sign-blob --yes --tlog-upload=false --key env://COSIGN_KEY \
+            --output-signature sbom.cdx.json.sig sbom.cdx.json
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       - name: Manifeste et fiche de livraison
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           DIGEST: ${{ steps.build.outputs.digest }}
+          SBOM_SIGNED: ${{ steps.sign.outputs.signed }}
         run: |
           MIGRATIONS_HASH="$(find prisma/migrations -name migration.sql -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
           export MIGRATIONS_HASH
-          node --input-type=module -e 'import fs from "node:fs"; fs.writeFileSync("release.json", JSON.stringify({version:process.env.VERSION, revision:process.env.GITHUB_SHA, image:"ghcr.io/bdudout/acra@"+process.env.DIGEST, migrationsHash:process.env.MIGRATIONS_HASH}, null, 2))'
+          SBOM_SHA256="$(sha256sum sbom.cdx.json | cut -d' ' -f1)"
+          export SBOM_SHA256
+          node --input-type=module -e 'import fs from "node:fs"; fs.writeFileSync("release.json", JSON.stringify({version:process.env.VERSION, revision:process.env.GITHUB_SHA, image:"ghcr.io/bdudout/acra@"+process.env.DIGEST, migrationsHash:process.env.MIGRATIONS_HASH, sbom:{file:"sbom.cdx.json", format:"CycloneDX", sha256:process.env.SBOM_SHA256, signed:process.env.SBOM_SIGNED==="true"}}, null, 2))'
           cp docs/RELEASE-CHECKLIST.md release-notes.md
+          # Assets : manifeste + SBOM (+ signature si produite).
+          ASSETS=(release.json sbom.cdx.json)
+          [ -f sbom.cdx.json.sig ] && ASSETS+=(sbom.cdx.json.sig)
           if [[ "$VERSION" == *-rc.* ]]; then
-            gh release create "$VERSION" release.json --target "$GITHUB_SHA" --prerelease --title "$VERSION" --notes-file release-notes.md
+            gh release create "$VERSION" "${ASSETS[@]}" --target "$GITHUB_SHA" --prerelease --title "$VERSION" --notes-file release-notes.md
           else
-            gh release create "$VERSION" release.json --target "$GITHUB_SHA" --draft --title "$VERSION — recette requise" --notes-file release-notes.md
+            gh release create "$VERSION" "${ASSETS[@]}" --target "$GITHUB_SHA" --draft --title "$VERSION — recette requise" --notes-file release-notes.md
           fi
