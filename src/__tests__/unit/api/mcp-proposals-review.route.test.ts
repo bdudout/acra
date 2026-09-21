@@ -17,16 +17,20 @@ const analyseFindFirst = vi.fn()
 const proposalUpdate = vi.fn(async (..._a: unknown[]) => ({}))
 const risqueCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'risk-new' }))
 const mesureCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'mesure-new' }))
+const planActionCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'plan-new' }))
+const riskItemCount = vi.fn(async (..._a: unknown[]) => 1)
 // Accès typé au 1er argument d'un appel de mock (Prisma { where?, data }).
 const argOf = (fn: { mock: { calls: unknown[][] } }, i = 0) => fn.mock.calls[i][0] as { where?: unknown; data: Record<string, unknown> }
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     mcpProposal: { findUnique: (...a: unknown[]) => proposalFindUnique(...a), update: (...a: unknown[]) => proposalUpdate(...a) },
     analyse: { findFirst: (...a: unknown[]) => analyseFindFirst(...a) },
+    riskItem: { count: (...a: unknown[]) => riskItemCount(...a) },
     risque: { create: (...a: unknown[]) => risqueCreate(...a) },
     mesure: { create: (...a: unknown[]) => mesureCreate(...a) },
+    planAction: { create: (...a: unknown[]) => planActionCreate(...a) },
     $transaction: vi.fn(async (cb: (tx: unknown) => unknown) =>
-      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate }, mcpProposal: { update: proposalUpdate } })),
+      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate }, planAction: { create: planActionCreate }, mcpProposal: { update: proposalUpdate } })),
   },
 }))
 const effRole = { value: 'ADMIN' as string | null }
@@ -96,11 +100,50 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     expect(res.status).toBe(400)
   })
 
-  it('type d\'ancre non encore supporté (ex. RISQUE) → 400, sans écriture', async () => {
+  it('risque/mesure : ancre non-ANALYSE → 400, sans écriture', async () => {
     proposalFindUnique.mockResolvedValue({ ...PENDING, targetType: 'RISQUE' })
     const res = await PATCH(req({ action: 'accept' }), params)
     expect(res.status).toBe(400)
     expect(risqueCreate).not.toHaveBeenCalled()
     expect(mesureCreate).not.toHaveBeenCalled()
+  })
+
+  it('accept d\'un plan_action ancré à un RISQUE → crée PlanAction + lien, sous RBAC gouvernance', async () => {
+    proposalFindUnique.mockResolvedValue({
+      id: 'p1', statut: 'EN_ATTENTE', type: 'plan_action', targetType: 'RISQUE', targetId: 'ri1',
+      organizationId: 'orgA', payload: { titre: 'Durcir le VPN', priorite: 'CRITIQUE', statut: 'A_FAIRE' },
+    })
+    riskItemCount.mockResolvedValue(1)  // ancre existe dans l'org
+    effRole.value = 'RISK_MANAGER'      // rôle de gouvernance
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).toBe(200)
+    expect(planActionCreate).toHaveBeenCalledTimes(1)
+    const data = argOf(planActionCreate).data
+    expect(data).toMatchObject({ organizationId: 'orgA', titre: 'Durcir le VPN' })
+    expect(data.liens).toEqual({ create: [{ type: 'RISQUE', targetId: 'ri1' }] })
+    expect(argOf(proposalUpdate).data).toMatchObject({ statut: 'ACCEPTEE', appliedId: 'plan-new' })
+  })
+
+  it('plan_action : rôle NON gouvernance (ANALYSTE) → 403, aucune écriture', async () => {
+    proposalFindUnique.mockResolvedValue({
+      id: 'p1', statut: 'EN_ATTENTE', type: 'plan_action', targetType: 'RISQUE', targetId: 'ri1',
+      organizationId: 'orgA', payload: { titre: 'X' },
+    })
+    riskItemCount.mockResolvedValue(1)
+    effRole.value = 'ANALYSTE'
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).toBe(403)
+    expect(planActionCreate).not.toHaveBeenCalled()
+  })
+
+  it('plan_action : ancre inexistante dans l\'org → 404', async () => {
+    proposalFindUnique.mockResolvedValue({
+      id: 'p1', statut: 'EN_ATTENTE', type: 'plan_action', targetType: 'RISQUE', targetId: 'ghost',
+      organizationId: 'orgA', payload: { titre: 'X' },
+    })
+    riskItemCount.mockResolvedValue(0)
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).toBe(404)
+    expect(planActionCreate).not.toHaveBeenCalled()
   })
 })

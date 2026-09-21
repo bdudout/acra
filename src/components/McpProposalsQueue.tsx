@@ -15,7 +15,9 @@ interface Payload {
   // risque
   gravite?: number; vraisemblance?: number; niveauRisque?: number; strategie?: string; niveauResiduel?: number
   // mesure
-  type?: string; priorite?: number; statut?: string; responsable?: string
+  type?: string; priorite?: number | string; statut?: string; responsable?: string
+  // plan d'action
+  titre?: string; porteur?: string
   description?: string
 }
 interface Proposal {
@@ -53,10 +55,12 @@ export default function McpProposalsQueue() {
   return (
     <ul className="space-y-3">
       {items.map(p => {
-        const isMeasure = p.type === 'measure'
-        const kind = isMeasure ? m.typeMesure : m.typeRisk
-        const detail = isMeasure
+        const kind = p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : m.typeRisk
+        const label = p.payload.titre || p.payload.nom || '—'
+        const detail = p.type === 'measure'
           ? `${m.type} ${p.payload.type ?? '—'} · ${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.responsable ? ` · ${m.responsable} ${p.payload.responsable}` : ''}`
+          : p.type === 'plan_action'
+          ? `${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.porteur ? ` · ${m.responsable} ${p.payload.porteur}` : ''}`
           : `${m.gravite} ${p.payload.gravite ?? '—'} · ${m.vraisemblance} ${p.payload.vraisemblance ?? '—'} · ${m.niveau} ${p.payload.niveauRisque ?? '—'} · ${m.strategie} ${p.payload.strategie ?? '—'}`
         return (
           <li key={p.id} className="card p-4">
@@ -65,7 +69,7 @@ export default function McpProposalsQueue() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1.5 mb-1">
                   <Bot size={14} aria-hidden="true" /> {kind} · {p.ancreNom ?? `${p.targetType} ${p.targetId.slice(0, 8)}`} · {jour(p.createdAt)}
                 </p>
-                <p className="font-medium text-gray-800 dark:text-gray-100 break-words">{p.payload.nom || '—'}</p>
+                <p className="font-medium text-gray-800 dark:text-gray-100 break-words">{label}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{detail}</p>
                 {p.payload.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 break-words">{p.payload.description}</p>}
               </div>

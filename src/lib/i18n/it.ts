@@ -1366,6 +1366,7 @@ export const it: Translations = {
     empty: 'Nessuna proposta in attesa.',
     typeRisk: 'Rischio proposto',
     typeMesure: 'Misura proposta',
+    typePlanAction: 'Piano d\'azione proposto',
     type: 'Tipo',
     priorite: 'Priorità',
     statut: 'Stato',

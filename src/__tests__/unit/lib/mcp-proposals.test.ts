@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
   sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
+  sanitizePlanActionProposal, isPlanActionProposalValid, planActionProposalToCreate,
 } from '@/lib/mcp/proposals'
 
 describe('sanitizeRiskProposal', () => {
@@ -87,5 +88,26 @@ describe('measureProposalToCreate', () => {
     const data = measureProposalToCreate(payload, 'an9')
     expect(data).toMatchObject({ analyseId: 'an9', nom: 'Sauvegardes', type: 'CORRECTIVE', priorite: 1, statut: 'EN_COURS', responsable: 'DSI' })
     expect(data.echeance).toBeInstanceOf(Date)
+  })
+})
+
+describe('sanitizePlanActionProposal', () => {
+  it('exige un titre ; tronque et normalise', () => {
+    expect(isPlanActionProposalValid(sanitizePlanActionProposal({}))).toBe(false)
+    const p = sanitizePlanActionProposal({ titre: 'a'.repeat(300), priorite: 'CRITIQUE', statut: 'ZZZ' })
+    expect(p.titre.length).toBe(200)
+    expect(p.priorite).toBe('CRITIQUE')
+    expect(p.statut).toBe('A_FAIRE') // statut inconnu → défaut
+    expect(isPlanActionProposalValid(p)).toBe(true)
+  })
+})
+
+describe('planActionProposalToCreate', () => {
+  it('mappe vers PlanAction + lien polymorphe vers l\'ancre', () => {
+    const payload = sanitizePlanActionProposal({ titre: 'Durcir le VPN', porteur: 'DSI', echeance: '2027-06-01' })
+    const data = planActionProposalToCreate(payload, 'orgA', 'RISQUE', 'ri1', 'u1')
+    expect(data).toMatchObject({ organizationId: 'orgA', titre: 'Durcir le VPN', porteur: 'DSI', createdById: 'u1' })
+    expect(data.echeance).toBeInstanceOf(Date)
+    expect(data.liens).toEqual({ create: [{ type: 'RISQUE', targetId: 'ri1' }] })
   })
 })

@@ -1,23 +1,37 @@
 // ─── File de propositions MCP (validation : accepter / rejeter) ───────────────
-// L'acceptation d'une proposition applique le RBAC de la RESSOURCE CIBLE : seul un
-// utilisateur pouvant ÉDITER l'analyse cible (rôle EFFECTIF dans son organisation,
-// cf. F01) peut accepter — l'objet réel est alors créé via le chemin normal (mêmes
-// contraintes/audit). Une proposition n'élève jamais les droits.
+// L'acceptation applique le RBAC de l'ANCRE (« qui peut agir sur le parent peut
+// valider » — une proposition n'élève jamais les droits) :
+//  • risk / measure → ancre ANALYSE : édition de l'analyse (rôle EFFECTIF, F01) ;
+//  • plan_action    → ancre org-scopée (RISQUE/CONFORMITE/CONTROLE/AUDIT/INCIDENT/
+//    ANALYSE) : rôle de gouvernance de l'organisation (comme /plans-actions).
+// L'ancre doit exister et être dans l'organisation (sinon 404, sans divulgation).
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { anchorExistsInOrg } from '@/lib/mcp/anchors.server'
 import {
   sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
   sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
+  sanitizePlanActionProposal, isPlanActionProposalValid, planActionProposalToCreate,
 } from '@/lib/mcp/proposals'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
+
+/** Rôles de gouvernance autorisés à gérer les plans d'action (cf. /plans-actions). */
+function canManagePlanAction(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
+}
+
+type ApplyResult = { ok: true; appliedId: string } | { ok: false; error: string }
+type Gate =
+  | { ok: true; validatorRole: UserRole; apply: (userId: string, note?: string) => Promise<ApplyResult> }
+  | { ok: false; status: number; error: string }
 
 // PATCH /api/mcp-proposals/:id — { action: 'accept' | 'reject', note?: string }
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -38,34 +52,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (proposal.statut !== 'EN_ATTENTE') {
     return NextResponse.json({ error: 'Proposition déjà traitée' }, { status: 409 })
   }
-  if (proposal.type !== 'risk' && proposal.type !== 'measure') {
-    return NextResponse.json({ error: 'Type de proposition non supporté' }, { status: 400 })
-  }
-  // Résolution de l'ANCRE. Les propositions actuelles (risk/measure) s'ancrent à
-  // une ANALYSE ; les autres types d'ancre (RISQUE/CONFORMITE/CONTROLE/AUDIT/
-  // INCIDENT) seront gérés avec les outils propose_* correspondants (phase 4b).
-  if (proposal.targetType !== 'ANALYSE') {
-    return NextResponse.json({ error: 'Type d\'ancre non supporté' }, { status: 400 })
-  }
 
-  // Ancre : l'analyse doit être ACCESSIBLE dans le périmètre de l'utilisateur
-  // (sinon 404, aucune divulgation).
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, instanceRole, proposal.targetId),
-    include: { accesUtilisateurs: true },
-  })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
-
-  // RBAC de la ressource cible : rôle EFFECTIF dans l'organisation (F01).
-  const effRole = resolveAnalyseRole(
-    instanceRole, analyse.organizationId,
-    analyse.organizationId ? await getEffectiveRoleForOrg(userId, instanceRole, analyse.organizationId) : null,
-  )
-  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Édition non autorisée sur l\'analyse cible' }, { status: 403 })
-  }
+  const gate = await resolveGate(proposal, userId, instanceRole)
+  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status })
 
   const ip = getClientIp(req)
+  const auditDetails = { type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId }
 
   if (action === 'reject') {
     await prisma.mcpProposal.update({
@@ -73,56 +65,105 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data: { statut: 'REJETEE', reviewedById: userId, reviewedAt: new Date(), reviewNote: (body.note ?? '').slice(0, 2000) || null },
     })
     await auditLog('MCP_PROPOSAL_REVIEWED', {
-      userId, userRole: effRole, organizationId: proposal.organizationId,
-      targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'reject', type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId },
+      userId, userRole: gate.validatorRole, organizationId: proposal.organizationId,
+      targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'reject', ...auditDetails },
     })
     return NextResponse.json({ ok: true, statut: 'REJETEE' })
   }
 
-  // accept : ré-assainit le payload stocké (défense en profondeur), crée l'objet
-  // réel selon le type, et marque la proposition — de façon atomique.
-  const created = await applyAccepted(proposal.type, proposal.payload, analyse.id, id, userId, body.note)
-  if (!created.ok) return NextResponse.json({ error: created.error }, { status: 422 })
+  // accept : crée l'objet réel (selon le type) + marque la proposition, atomiquement.
+  const applied = await gate.apply(userId, body.note)
+  if (!applied.ok) return NextResponse.json({ error: applied.error }, { status: 422 })
 
   await auditLog('MCP_PROPOSAL_REVIEWED', {
-    userId, userRole: effRole, organizationId: proposal.organizationId,
-    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId, appliedId: created.appliedId },
+    userId, userRole: gate.validatorRole, organizationId: proposal.organizationId,
+    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', ...auditDetails, appliedId: applied.appliedId },
   })
-  return NextResponse.json({ ok: true, statut: 'ACCEPTEE', appliedId: created.appliedId })
+  return NextResponse.json({ ok: true, statut: 'ACCEPTEE', appliedId: applied.appliedId })
 }
 
-/**
- * Crée l'objet réel d'une proposition acceptée (risque ou mesure) et marque la
- * proposition ACCEPTEE, atomiquement. Ré-assainit le payload (défense en profondeur).
- */
-async function applyAccepted(
-  type: string, rawPayload: unknown, analyseId: string, proposalId: string, userId: string, note?: string,
-): Promise<{ ok: true; appliedId: string } | { ok: false; error: string }> {
-  const noteVal = (note ?? '').slice(0, 2000) || null
-  const markAccepted = (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], appliedId: string) =>
-    tx.mcpProposal.update({
-      where: { id: proposalId },
-      data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId, reviewNote: noteVal },
-    })
+type ProposalRow = NonNullable<Awaited<ReturnType<typeof prisma.mcpProposal.findUnique>>>
 
-  if (type === 'risk') {
-    const payload = sanitizeRiskProposal(rawPayload)
+/**
+ * Résout, selon le type de proposition, l'ancre + le rôle validateur + la fonction
+ * d'application. Applique le RBAC de l'ancre (échec → status + message).
+ */
+async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: UserRole): Promise<Gate> {
+  // ── Enfants d'une ANALYSE (risque, mesure) : RBAC = édition de l'analyse ──
+  if (proposal.type === 'risk' || proposal.type === 'measure') {
+    if (proposal.targetType !== 'ANALYSE') return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
+    const analyse = await prisma.analyse.findFirst({
+      where: await analyseAccessWhere(userId, instanceRole, proposal.targetId),
+      include: { accesUtilisateurs: true },
+    })
+    if (!analyse || analyse.deletedAt) return { ok: false, status: 404, error: 'Analyse introuvable' }
+    const effRole = resolveAnalyseRole(
+      instanceRole, analyse.organizationId,
+      analyse.organizationId ? await getEffectiveRoleForOrg(userId, instanceRole, analyse.organizationId) : null,
+    )
+    if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+      return { ok: false, status: 403, error: 'Édition non autorisée sur l\'analyse cible' }
+    }
+    return { ok: true, validatorRole: effRole, apply: (uid, note) => applyAnalyseChild(proposal, analyse.id, uid, note) }
+  }
+
+  // ── Plan d'action : ancre org-scopée, RBAC = gouvernance de l'organisation ──
+  if (proposal.type === 'plan_action') {
+    if (!(await anchorExistsInOrg(proposal.targetType, proposal.targetId, proposal.organizationId))) {
+      return { ok: false, status: 404, error: 'Origine introuvable' }
+    }
+    const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
+    if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
+    if (!canManagePlanAction(role)) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    return { ok: true, validatorRole: role, apply: (uid, note) => applyPlanAction(proposal, uid, note) }
+  }
+
+  return { ok: false, status: 400, error: 'Type de proposition non supporté' }
+}
+
+/** Marque une proposition ACCEPTEE dans une transaction. */
+function markAccepted(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0], proposalId: string, appliedId: string, userId: string, note?: string,
+) {
+  return tx.mcpProposal.update({
+    where: { id: proposalId },
+    data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId, reviewNote: (note ?? '').slice(0, 2000) || null },
+  })
+}
+
+/** Applique un enfant d'analyse (risque ou mesure) à l'acceptation. */
+async function applyAnalyseChild(proposal: ProposalRow, analyseId: string, userId: string, note?: string): Promise<ApplyResult> {
+  if (proposal.type === 'risk') {
+    const payload = sanitizeRiskProposal(proposal.payload)
     if (!isRiskProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
     const appliedId = await prisma.$transaction(async tx => {
       const r = await tx.risque.create({ data: riskProposalToCreate(payload, analyseId), select: { id: true } })
-      await markAccepted(tx, r.id)
+      await markAccepted(tx, proposal.id, r.id, userId, note)
       return r.id
     })
     return { ok: true, appliedId }
   }
-
-  // type === 'measure'
-  const payload = sanitizeMeasureProposal(rawPayload)
+  const payload = sanitizeMeasureProposal(proposal.payload)
   if (!isMeasureProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
   const appliedId = await prisma.$transaction(async tx => {
     const m = await tx.mesure.create({ data: measureProposalToCreate(payload, analyseId), select: { id: true } })
-    await markAccepted(tx, m.id)
+    await markAccepted(tx, proposal.id, m.id, userId, note)
     return m.id
+  })
+  return { ok: true, appliedId }
+}
+
+/** Applique un plan d'action (org-scopé) + son lien polymorphe vers l'ancre. */
+async function applyPlanAction(proposal: ProposalRow, userId: string, note?: string): Promise<ApplyResult> {
+  const payload = sanitizePlanActionProposal(proposal.payload)
+  if (!isPlanActionProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+  const appliedId = await prisma.$transaction(async tx => {
+    const p = await tx.planAction.create({
+      data: planActionProposalToCreate(payload, proposal.organizationId, proposal.targetType, proposal.targetId, userId),
+      select: { id: true },
+    })
+    await markAccepted(tx, proposal.id, p.id, userId, note)
+    return p.id
   })
   return { ok: true, appliedId }
 }

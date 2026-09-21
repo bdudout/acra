@@ -11,16 +11,13 @@ import type { McpContext } from './tools.server'
 import {
   sanitizeRiskProposal, isRiskProposalValid,
   sanitizeMeasureProposal, isMeasureProposalValid, MEASURE_TYPES, MEASURE_STATUS,
+  sanitizePlanActionProposal, isPlanActionProposalValid, PROPOSAL_TARGET_TYPES,
 } from './proposals'
+import { anchorExistsInOrg } from './anchors.server'
 
-/** Vérifie qu'une analyse appartient à l'organisation de la clé (sans divulgation). */
+/** Vérifie qu'une analyse (ancre ANALYSE) appartient à l'organisation de la clé. */
 async function analyseInOrg(analyseId: string, organizationId: string): Promise<boolean> {
-  if (!analyseId) return false
-  const a = await prisma.analyse.findFirst({
-    where: { id: analyseId, organizationId, deletedAt: null },
-    select: { id: true },
-  })
-  return !!a
+  return anchorExistsInOrg('ANALYSE', analyseId, organizationId)
 }
 
 /**
@@ -122,6 +119,61 @@ export const proposeMeasureTool: McpTool<McpContext> = {
 }
 
 /**
+ * `propose_plan_action` — dépose une proposition de plan d'action rattaché à une
+ * ORIGINE concrète (`targetType` ∈ ANALYSE|RISQUE|CONFORMITE|CONTROLE|AUDIT|
+ * INCIDENT, `targetId`). Ne crée AUCUN plan d'action : à l'acceptation, un
+ * `PlanAction` + son lien polymorphe sont créés sous le RBAC de gouvernance.
+ */
+export const proposePlanActionTool: McpTool<McpContext> = {
+  name: 'propose_plan_action',
+  description:
+    "Propose un plan d'action rattaché à une origine (risque du registre, exigence de conformité, " +
+    "anomalie de contrôle, constat d'audit, incident, ou analyse). Ne crée PAS le plan : dépose une " +
+    "proposition validée par un humain. Fournir `targetType`, `targetId` (l'origine, dans l'organisation) " +
+    "et `planAction` { titre, description?, porteur?, entite?, echeance?, priorite?, statut? }.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      targetType: { type: 'string', enum: [...PROPOSAL_TARGET_TYPES], description: "Type de l'origine (ancre)." },
+      targetId: { type: 'string', description: "Identifiant de l'origine (dans l'organisation de la clé)." },
+      planAction: {
+        type: 'object',
+        description: "Proposition de plan d'action.",
+        properties: {
+          titre: { type: 'string' },
+          description: { type: 'string' },
+          porteur: { type: 'string' },
+          entite: { type: 'string' },
+          echeance: { type: 'string', description: 'Date ISO 8601.' },
+          priorite: { type: 'string', enum: ['CRITIQUE', 'MAJEUR', 'MODERE'] },
+          statut: { type: 'string', enum: ['A_FAIRE', 'EN_COURS', 'FAIT'] },
+        },
+        required: ['titre'],
+        additionalProperties: false,
+      },
+    },
+    required: ['targetType', 'targetId', 'planAction'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const targetType = typeof args.targetType === 'string' ? args.targetType : ''
+    const targetId = typeof args.targetId === 'string' ? args.targetId : ''
+    if (!(PROPOSAL_TARGET_TYPES as readonly string[]).includes(targetType)) {
+      return { content: [{ type: 'text', text: 'ancre_invalide' }], isError: true }
+    }
+    // Ancre bornée à l'organisation : une origine hors périmètre est « introuvable ».
+    if (!(await anchorExistsInOrg(targetType, targetId, ctx.organizationId))) {
+      return { content: [{ type: 'text', text: 'ancre_introuvable' }], isError: true }
+    }
+    const payload = sanitizePlanActionProposal(args.planAction)
+    if (!isPlanActionProposalValid(payload)) {
+      return { content: [{ type: 'text', text: 'proposition_invalide: titre requis' }], isError: true }
+    }
+    return depose('plan_action', targetType, targetId, payload, ctx)
+  },
+}
+
+/**
  * Crée une proposition EN_ATTENTE ancrée à un objet concret (`targetType` +
  * `targetId`) et renvoie un résultat MCP standard. Une proposition référence
  * toujours une ancre existante — jamais « rien ».
@@ -148,5 +200,5 @@ async function depose(type: string, targetType: string, targetId: string, payloa
 
 /** Outils d'écriture validée : propositions déposées, jamais appliquées directement. */
 export function buildProposeTools(): McpTool<McpContext>[] {
-  return [proposeRiskTool, proposeMeasureTool]
+  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool]
 }

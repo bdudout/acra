@@ -1366,6 +1366,7 @@ export const de: Translations = {
     empty: 'Keine ausstehenden Vorschläge.',
     typeRisk: 'Vorgeschlagenes Risiko',
     typeMesure: 'Vorgeschlagene Maßnahme',
+    typePlanAction: 'Vorgeschlagener Aktionsplan',
     type: 'Typ',
     priorite: 'Priorität',
     statut: 'Status',
