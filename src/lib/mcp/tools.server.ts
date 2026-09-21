@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
+import { buildContextTools } from './tools-context.server'
 
 /** Contexte serveur injecté aux outils : périmètre organisationnel de la clé d'API. */
 export interface McpContext { organizationId: string }
@@ -71,7 +72,11 @@ export const readReferentielsTool: McpTool<McpContext> = {
   },
 }
 
-/** Registre des outils MCP exposés (phase 1 : lecture `read_referentiels`). */
+/**
+ * Registre des outils MCP exposés. Phase 1 : `read_referentiels`. Phase 2
+ * (contexte) : `read_taxonomie`, `read_sector_examples`, `read_risk_posture`
+ * (cf. `tools-context.server.ts`).
+ */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool]
+  return [readReferentielsTool, ...buildContextTools()]
 }
