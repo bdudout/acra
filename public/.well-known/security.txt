@@ -1,0 +1,8 @@
+# Politique de sécurité ACRA — RFC 9116
+# Contact et divulgation coordonnée : voir SECURITY.md.
+Contact: https://github.com/bdudout/acra/security/advisories/new
+Contact: mailto:brice.dudout@gmail.com
+Expires: 2027-09-21T00:00:00.000Z
+Preferred-Languages: fr, en
+Policy: https://github.com/bdudout/acra/blob/main/SECURITY.md
+Canonical: https://acra-cyber.com/.well-known/security.txt
