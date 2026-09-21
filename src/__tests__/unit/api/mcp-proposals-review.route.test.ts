@@ -38,7 +38,7 @@ vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '')
 
 import { PATCH } from '@/app/api/mcp-proposals/[id]/route'
 
-const PENDING = { id: 'p1', statut: 'EN_ATTENTE', type: 'risk', analyseId: 'an1', organizationId: 'orgA', payload: { nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' } }
+const PENDING = { id: 'p1', statut: 'EN_ATTENTE', type: 'risk', targetType: 'ANALYSE', targetId: 'an1', organizationId: 'orgA', payload: { nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' } }
 const ANALYSE = { id: 'an1', userId: 'owner', organizationId: 'orgA', deletedAt: null, accesUtilisateurs: [] }
 const req = (body: unknown) => ({ json: async () => body }) as never
 const params = { params: Promise.resolve({ id: 'p1' }) }
@@ -94,5 +94,13 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
   it('action invalide → 400', async () => {
     const res = await PATCH(req({ action: 'delete' }), params)
     expect(res.status).toBe(400)
+  })
+
+  it('type d\'ancre non encore supporté (ex. RISQUE) → 400, sans écriture', async () => {
+    proposalFindUnique.mockResolvedValue({ ...PENDING, targetType: 'RISQUE' })
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).toBe(400)
+    expect(risqueCreate).not.toHaveBeenCalled()
+    expect(mesureCreate).not.toHaveBeenCalled()
   })
 })

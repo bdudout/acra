@@ -15,6 +15,14 @@ export type ProposalStatus = (typeof PROPOSAL_STATUS)[number]
 export const PROPOSAL_TYPES = ['risk', 'measure'] as const
 export type ProposalType = (typeof PROPOSAL_TYPES)[number]
 
+/**
+ * Types d'ANCRE d'une proposition — un objet concret et existant auquel la
+ * proposition se rattache (mêmes origines que le plan d'action unifié /
+ * `PlanActionLien`). Une proposition « ne tombe pas du ciel ».
+ */
+export const PROPOSAL_TARGET_TYPES = ['ANALYSE', 'RISQUE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'INCIDENT'] as const
+export type ProposalTargetType = (typeof PROPOSAL_TARGET_TYPES)[number]
+
 /** Stratégies de traitement valides (enum Prisma StrategieTraitement). */
 export const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 export type Strategie = (typeof STRATEGIES)[number]

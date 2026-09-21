@@ -41,12 +41,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (proposal.type !== 'risk' && proposal.type !== 'measure') {
     return NextResponse.json({ error: 'Type de proposition non supporté' }, { status: 400 })
   }
-  if (!proposal.analyseId) return NextResponse.json({ error: 'Cible manquante' }, { status: 400 })
+  // Résolution de l'ANCRE. Les propositions actuelles (risk/measure) s'ancrent à
+  // une ANALYSE ; les autres types d'ancre (RISQUE/CONFORMITE/CONTROLE/AUDIT/
+  // INCIDENT) seront gérés avec les outils propose_* correspondants (phase 4b).
+  if (proposal.targetType !== 'ANALYSE') {
+    return NextResponse.json({ error: 'Type d\'ancre non supporté' }, { status: 400 })
+  }
 
-  // Cible : l'analyse doit être ACCESSIBLE dans le périmètre de l'utilisateur
+  // Ancre : l'analyse doit être ACCESSIBLE dans le périmètre de l'utilisateur
   // (sinon 404, aucune divulgation).
   const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, instanceRole, proposal.analyseId),
+    where: await analyseAccessWhere(userId, instanceRole, proposal.targetId),
     include: { accesUtilisateurs: true },
   })
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
@@ -69,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     })
     await auditLog('MCP_PROPOSAL_REVIEWED', {
       userId, userRole: effRole, organizationId: proposal.organizationId,
-      targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'reject', type: proposal.type, analyseId: proposal.analyseId },
+      targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'reject', type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId },
     })
     return NextResponse.json({ ok: true, statut: 'REJETEE' })
   }
@@ -81,7 +86,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   await auditLog('MCP_PROPOSAL_REVIEWED', {
     userId, userRole: effRole, organizationId: proposal.organizationId,
-    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', type: proposal.type, analyseId: proposal.analyseId, appliedId: created.appliedId },
+    targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId, appliedId: created.appliedId },
   })
   return NextResponse.json({ ok: true, statut: 'ACCEPTEE', appliedId: created.appliedId })
 }
