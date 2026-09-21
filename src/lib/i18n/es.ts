@@ -1347,6 +1347,8 @@ export const es: Translations = {
     expiry: 'Caducidad',
     scopeWrite: 'Permitir escritura',
     scopeProvision: 'Permitir aprovisionamiento SCIM (provision)',
+    scopeMcp: 'Permitir acceso MCP (mcp)',
+    scopeMcpHint: 'Superficie del servidor MCP (/api/mcp) — distinta de la API v1; requiere que el superadministrador active MCP.',
     create: 'Crear clave',
     empty: 'Sin claves de API.',
     colKey: 'Clave',

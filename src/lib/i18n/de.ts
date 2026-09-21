@@ -1347,6 +1347,8 @@ export const de: Translations = {
     expiry: 'Ablauf',
     scopeWrite: 'Schreibzugriff erlauben',
     scopeProvision: 'SCIM-Provisionierung erlauben (provision)',
+    scopeMcp: 'MCP-Zugriff erlauben (mcp)',
+    scopeMcpHint: 'MCP-Server-Oberfläche (/api/mcp) — getrennt von API v1; erfordert die MCP-Aktivierung durch den Super-Admin.',
     create: 'Schlüssel erstellen',
     empty: 'Keine API-Schlüssel.',
     colKey: 'Schlüssel',

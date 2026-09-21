@@ -9,8 +9,9 @@ import { promisify } from 'util'
 const scryptAsync = promisify(scrypt)
 
 export const API_KEY_PREFIX = 'acra'
-export const API_SCOPES = ['read', 'write', 'provision'] as const
-/** Scope d'une clé d'API : read (lecture), write (écriture), provision (provisioning). */
+export const API_SCOPES = ['read', 'write', 'provision', 'mcp'] as const
+/** Scope d'une clé d'API : read (lecture), write (écriture), provision (provisioning),
+ *  mcp (surface serveur MCP — distincte de l'API v1, cf. docs/mcp-cadrage.md §3.5). */
 export type ApiScope = (typeof API_SCOPES)[number]
 
 const KEY_LEN = 32   // longueur du dérivé

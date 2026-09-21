@@ -39,6 +39,7 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   // Données & exports (accès/traitement de données)
   EXPORT: 'DONNEES', ANALYSE_CREATED: 'DONNEES', ANALYSE_DELETED: 'DONNEES', ANALYSE_RESTORED: 'DONNEES',
   ANALYSE_PURGED: 'DONNEES', WORKSHOP_SAVED: 'DONNEES', TIERS_MERGED: 'DONNEES',
+  MCP_TOOL_INVOKED: 'DONNEES', // accès machine (outil MCP) au plan de données, org-scopé
   // Gouvernance & GRC (piste d'audit décisionnelle)
   ANALYSE_APPROVED: 'GOUVERNANCE', ANALYSE_REJECTED: 'GOUVERNANCE', ANALYSE_SUBMITTED: 'GOUVERNANCE',
   ANALYSE_REVISED: 'GOUVERNANCE', RESIDUAL_RISKS_DECISION: 'GOUVERNANCE',
