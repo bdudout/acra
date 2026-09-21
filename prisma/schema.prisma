@@ -1846,6 +1846,16 @@ model Configuration {
   // OFF (défaut) ⇒ inscription fermée hors amorçage du 1er compte (anti F004).
   publicSignupActive Boolean @default(false)
 
+  // Interfaces PROGRAMMATIQUES, réglées au RUNTIME par le SUPER_ADMIN, DÉSACTIVÉES
+  // par défaut (surface d'attaque minimale par défaut) :
+  //  - apiEnabled : autorise l'API publique v1 (clés d'API). OFF ⇒ toute requête
+  //    /api/v1/* est refusée (503) même avec une clé valide. Point d'application
+  //    unique : lib/api-auth.server.
+  //  - mcpEnabled : autorise la surface MCP (serveur d'outils pour un agent/LLM
+  //    SOUVERAIN). OFF ⇒ MCP indisponible. Cf. docs/mcp-cadrage.md.
+  apiEnabled Boolean @default(false)
+  mcpEnabled Boolean @default(false)
+
   // Contenu public configurable (niveau instance, SUPER_ADMIN) : personnalise le
   // bandeau public et l'appel à l'action de contact/déploiement SANS toucher aux
   // fichiers i18n ni aux vars d'env. Vides ⇒ défauts i18n (cf. lib/public-content).

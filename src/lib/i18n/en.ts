@@ -1115,6 +1115,17 @@ export const en: Translations = {
     forceOff: 'Forbidden (unavailable)',
     hint: 'Instance-level setting (super-administrator).',
   },
+  interfacesConfig: {
+    sectionTitle: 'Programmatic interfaces (instance)',
+    sectionDesc: 'Enable or disable the public API and the MCP interface. Disabled by default.',
+    apiTitle: 'Public API (v1)',
+    apiDesc: 'Machine access via API key. Disabled: every /api/v1 request is refused, even with a valid key.',
+    mcpTitle: 'MCP interface (sovereign agent/LLM)',
+    mcpDesc: 'Tool surface for an internal, sovereign agent or LLM. Enable only with a controlled model — data must never leave to an external LLM.',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    hint: 'Instance-level setting (super-administrator). Disabled by default (minimal attack surface).',
+  },
   processus: {
     title: 'Process repository',
     subtitle: 'Map of the organisation\'s macro-processes and processes — the backbone of operational risk analysis.',

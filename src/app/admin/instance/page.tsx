@@ -28,6 +28,8 @@ export default function AdminInstancePage() {
   const [brandBaseline, setBrandBaseline] = useState('')
   const [brandSaved, setBrandSaved] = useState(false)
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
+  const [apiEnabled, setApiEnabled] = useState(false)
+  const [mcpEnabled, setMcpEnabled] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && !isAdmin) router.replace('/dashboard')
@@ -39,7 +41,20 @@ export default function AdminInstancePage() {
       .then(d => { if (d) { setBrandName(d.appName ?? ''); setBrandBaseline(d.appBaseline ?? '') } }).catch(() => {})
     fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.modulesPolicy && typeof d.modulesPolicy === 'object') setModulesPolicy(d.modulesPolicy) }).catch(() => {})
+    fetch('/api/admin/api-mcp-config').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { setApiEnabled(d.apiEnabled === true); setMcpEnabled(d.mcpEnabled === true) } }).catch(() => {})
   }, [isSuperAdmin])
+
+  // Interrupteurs des interfaces programmatiques (mise à jour optimiste, rollback sur échec).
+  async function saveInterfaceToggle(field: 'apiEnabled' | 'mcpEnabled', value: boolean) {
+    const setter = field === 'apiEnabled' ? setApiEnabled : setMcpEnabled
+    setter(value)
+    const res = await fetch('/api/admin/api-mcp-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    if (!res.ok) setter(!value)
+  }
 
   async function saveBranding() {
     setBrandSaved(false)
@@ -124,6 +139,32 @@ export default function AdminInstancePage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2">{t.modulesPolicy.hint}</p>
+          </section>
+        )}
+
+        {isSuperAdmin && (
+          <section className="card p-6">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.interfacesConfig.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.interfacesConfig.sectionDesc}</p>
+            <div className="space-y-3">
+              {([
+                { key: 'apiEnabled' as const, value: apiEnabled, title: t.interfacesConfig.apiTitle, desc: t.interfacesConfig.apiDesc },
+                { key: 'mcpEnabled' as const, value: mcpEnabled, title: t.interfacesConfig.mcpTitle, desc: t.interfacesConfig.mcpDesc },
+              ]).map(row => (
+                <div key={row.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{row.title}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{row.desc}</div>
+                  </div>
+                  <label className="inline-flex items-center gap-2 shrink-0 cursor-pointer">
+                    <input type="checkbox" checked={row.value} onChange={e => saveInterfaceToggle(row.key, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{row.value ? t.interfacesConfig.enabled : t.interfacesConfig.disabled}</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{t.interfacesConfig.hint}</p>
           </section>
         )}
 

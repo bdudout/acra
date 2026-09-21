@@ -1115,6 +1115,17 @@ export const it: Translations = {
     forceOff: 'Vietato (non disponibile)',
     hint: 'Impostazione a livello di istanza (super-amministratore).',
   },
+  interfacesConfig: {
+    sectionTitle: 'Interfacce programmatiche (istanza)',
+    sectionDesc: 'Attiva o disattiva l\'API pubblica e l\'interfaccia MCP. Disattivate per impostazione predefinita.',
+    apiTitle: 'API pubblica (v1)',
+    apiDesc: 'Accesso macchina tramite chiave API. Disattivata: ogni richiesta /api/v1 è rifiutata, anche con una chiave valida.',
+    mcpTitle: 'Interfaccia MCP (agente/LLM sovrano)',
+    mcpDesc: 'Superficie di strumenti per un agente o LLM interno e sovrano. Attivala solo con un modello controllato — i dati non devono mai uscire verso un LLM esterno.',
+    enabled: 'Attivato',
+    disabled: 'Disattivato',
+    hint: 'Impostazione a livello di istanza (super-amministratore). Disattivate per impostazione predefinita (superficie di attacco minima).',
+  },
   processus: {
     title: 'Repository dei processi',
     subtitle: 'Mappa dei macroprocessi e processi dell\'organizzazione — base dell\'analisi dei rischi operativi.',
