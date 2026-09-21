@@ -62,16 +62,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'PASSWORD_POLICY' }, { status: 400 })
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
-    })
-
-    if (existing) {
-      return NextResponse.json({ error: 'Un compte existe déjà avec cet email.' }, { status: 409 })
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12)
-
+    // F06 (CWE-204) : décider de l'OUVERTURE de l'inscription AVANT toute recherche
+    // d'e-mail. Une instance fermée renvoie le même 403 quel que soit l'e-mail —
+    // elle ne divulgue pas l'existence d'un compte à un visiteur anonyme.
     // Inscription publique ouverte : instance de démo PROUVÉE (env + marqueur figé)
     // OU toggle runtime `publicSignupActive` (SUPER_ADMIN). Jamais isDemoMode() seul.
     const [signupOpen, userCount] = await Promise.all([
@@ -91,6 +84,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'DEMO_FULL' }, { status: 503 })
     }
 
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    })
+
+    if (existing) {
+      return NextResponse.json({ error: 'Un compte existe déjà avec cet email.' }, { status: 409 })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12)
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -100,6 +103,9 @@ export async function POST(req: NextRequest) {
         // Vérification d'e-mail requise pour les inscrits self-service ; le 1er compte
         // (exploitant) est pré-vérifié pour se connecter immédiatement.
         emailVerified: decision.requireEmailVerif ? undefined : new Date(),
+        // F07 (CWE-841) : obligation portée par le compte (indépendante du mode démo)
+        // → la connexion est bloquée hors démo aussi tant que l'e-mail n'est pas validé.
+        emailVerificationRequired: decision.requireEmailVerif === true,
       },
       select: { id: true, email: true, name: true, role: true },
     })

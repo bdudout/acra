@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseGelee } from '@/lib/gel-analyse'
-import { canEditAnalyse } from '@/lib/permissions'
+import { canEditAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import {
   cleanSourceRisque,
   cleanPartiePrenante,
@@ -63,7 +63,9 @@ export async function PUT(
   // Analyse en corbeille (soft delete) = introuvable : interdit de sauvegarder dessus.
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
-  if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
+  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
   }
 

@@ -103,6 +103,13 @@ export async function verifyChallenge(userId: string, code: string): Promise<Ver
     return { ok: false, error: 'invalid', remaining: Math.max(0, MFA_MAX_ATTEMPTS - updated.attempts) }
   }
 
-  await p.mfaChallenge.update({ where: { id: ch.id }, data: { consumedAt: new Date() } })
+  // F05 (CWE-362) : consommation ATOMIQUE et conditionnelle → usage unique garanti
+  // même sous concurrence. Seule la requête qui bascule consumedAt de null → date
+  // gagne (updateMany où consumedAt:null) ; toute course perdante échoue.
+  const consumed = await p.mfaChallenge.updateMany({
+    where: { id: ch.id, consumedAt: null },
+    data: { consumedAt: new Date() },
+  })
+  if (consumed.count !== 1) return { ok: false, error: 'invalid' }
   return { ok: true }
 }

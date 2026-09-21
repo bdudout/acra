@@ -8,6 +8,7 @@
  * (TTL court + max tentatives) côté appelant.
  */
 import { createHmac, randomInt, timingSafeEqual } from 'crypto'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
 
 export const MFA_CODE_DIGITS = 6
 export const MFA_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -59,10 +60,15 @@ export interface MfaPolicyView {
 /** Canal MFA supporté : e-mail ou SMS. */
 export type MfaChannel = 'EMAIL' | 'SMS'
 
-/** Le MFA doit-il être exigé à la connexion pour ce rôle ? (logique pure) */
+/**
+ * Le MFA doit-il être exigé à la connexion pour ce rôle ? (logique pure)
+ * F03 (CWE-287) : en périmètre ADMIN_ONLY, TOUT rôle administrateur est concerné —
+ * y compris SUPER_ADMIN (le plus privilégié) — via `isAdminRole`, sinon le compte
+ * d'instance échapperait au second facteur.
+ */
 export function isMfaRequired(p: MfaPolicyView, role: string): boolean {
   if (!p.mfaEnabled || p.mfaPendingConfirmation) return false
-  return p.mfaScope === 'ALL' || role === 'ADMIN'
+  return p.mfaScope === 'ALL' || isAdminRole(role as UserRole)
 }
 
 /**

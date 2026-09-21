@@ -53,6 +53,15 @@ model User {
   passwordChangedAt  DateTime?
   mustChangePassword Boolean   @default(false) // changement de MDP forcé à la prochaine connexion
   lastLoginAt        DateTime? // dernière connexion réussie (désactivation par inactivité)
+  // F04 (CWE-613) : version de session. Embarquée dans le JWT à l'émission et
+  // comparée à chaque requête ; incrémentée aux événements de révocation
+  // (changement/réinitialisation de mot de passe, suspension) → invalide les
+  // sessions/JWT antérieurs même avant expiration.
+  sessionVersion     Int       @default(0)
+  // F07 (CWE-841) : ce compte doit valider son e-mail avant de se connecter,
+  // INDÉPENDAMMENT du mode démo (posé par l'inscription publique). Les comptes
+  // provisionnés par un admin ou un IdP restent à false (flux explicite).
+  emailVerificationRequired Boolean @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

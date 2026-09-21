@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, type UserRole } from '@/lib/permissions'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
@@ -54,8 +54,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
-  // Indiquer au client si l'utilisateur peut éditer
-  const editable = canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
+  // F01 (CWE-863) : l'édition se décide sur le rôle EFFECTIF dans l'organisation de
+  // l'analyse (pas le rôle d'instance), comme les routes approbation/access.
+  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
+  const editable = canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
 
   return NextResponse.json({ analyse, editable })
 }
@@ -72,7 +74,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const existing = await loadAnalyse(id, userId, userRole)
   if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
-  if (!canEditAnalyse({ id: userId, role: userRole }, { userId: existing.userId, accesUtilisateurs: existing.accesUtilisateurs })) {
+  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
+  const effRole = resolveAnalyseRole(userRole, existing.organizationId, existing.organizationId ? await getEffectiveRoleForOrg(userId, userRole, existing.organizationId) : null)
+  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: existing.userId, accesUtilisateurs: existing.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
   }
 
@@ -141,8 +145,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const existing = await loadAnalyse(id, userId, userRole)
   if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
-  // Seul le propriétaire ou un ADMIN peut supprimer
-  if (existing.userId !== userId && !isAdminRole(userRole)) {
+  // F01 (CWE-863) : « ADMIN » s'entend du rôle EFFECTIF dans l'organisation de
+  // l'analyse — un admin d'un autre périmètre ne peut pas supprimer ici.
+  const effRole = resolveAnalyseRole(userRole, existing.organizationId, existing.organizationId ? await getEffectiveRoleForOrg(userId, userRole, existing.organizationId) : null)
+  // Seul le propriétaire ou un ADMIN (effectif) peut supprimer
+  if (existing.userId !== userId && !isAdminRole(effRole)) {
     return NextResponse.json({ error: 'Seul le propriétaire peut supprimer cette analyse' }, { status: 403 })
   }
 

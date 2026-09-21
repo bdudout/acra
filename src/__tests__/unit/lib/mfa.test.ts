@@ -88,6 +88,8 @@ describe('mfa — isMfaRequired', () => {
   it('scope ADMIN_ONLY : requis seulement pour les ADMIN', () => {
     expect(isMfaRequired({ ...POL, mfaScope: 'ADMIN_ONLY' }, 'ANALYSTE')).toBe(false)
     expect(isMfaRequired({ ...POL, mfaScope: 'ADMIN_ONLY' }, 'ADMIN')).toBe(true)
+    // F03 (CWE-287) : le compte le plus privilégié ne doit PAS échapper au MFA.
+    expect(isMfaRequired({ ...POL, mfaScope: 'ADMIN_ONLY' }, 'SUPER_ADMIN')).toBe(true)
   })
 })
 

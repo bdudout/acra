@@ -132,16 +132,20 @@ describe('analysisCapReached — plafond d\'analyses par org démo', () => {
   })
 })
 
-describe('requiresEmailVerification — blocage connexion démo tant que non vérifié', () => {
+describe('requiresEmailVerification — blocage tant que l\'e-mail n\'est pas vérifié', () => {
   it('démo + e-mail non vérifié → bloque', () => {
-    expect(requiresEmailVerification(true, null)).toBe(true)
-    expect(requiresEmailVerification(true, undefined)).toBe(true)
+    expect(requiresEmailVerification({ demo: true, accountRequires: false, emailVerified: null })).toBe(true)
+    expect(requiresEmailVerification({ demo: true, accountRequires: false, emailVerified: undefined })).toBe(true)
   })
-  it('démo + e-mail vérifié → autorise', () => {
-    expect(requiresEmailVerification(true, new Date())).toBe(false)
+  it('e-mail vérifié → autorise (démo ou non)', () => {
+    expect(requiresEmailVerification({ demo: true, accountRequires: true, emailVerified: new Date() })).toBe(false)
+    expect(requiresEmailVerification({ demo: false, accountRequires: true, emailVerified: new Date() })).toBe(false)
   })
-  it('hors démo → jamais bloqué (même si non vérifié)', () => {
-    expect(requiresEmailVerification(false, null)).toBe(false)
+  it('F07 : hors démo, un compte qui EXIGE la vérification est bloqué s\'il n\'est pas vérifié', () => {
+    expect(requiresEmailVerification({ demo: false, accountRequires: true, emailVerified: null })).toBe(true)
+  })
+  it('hors démo, compte n\'exigeant PAS la vérification (admin/IdP) → autorisé', () => {
+    expect(requiresEmailVerification({ demo: false, accountRequires: false, emailVerified: null })).toBe(false)
   })
 })
 

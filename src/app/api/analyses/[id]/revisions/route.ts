@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { canViewAnalyse, canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -54,7 +54,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const analyse = await loadAnalyse(id, userId, userRole)
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
-  if (!canEditAnalyse({ id: userId, role: userRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
+  const analyseOrgId = (analyse as { organizationId: string | null }).organizationId
+  const effRole = resolveAnalyseRole(userRole, analyseOrgId, analyseOrgId ? await getEffectiveRoleForOrg(userId, userRole, analyseOrgId) : null)
+  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
   }
 
