@@ -4,6 +4,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { parseAuthorizationHeader, verifyApiKey, apiKeyUtilisable, hasScope, type ApiScope } from '@/lib/api-key'
+import { isApiEnabled } from '@/lib/interfaces-config.server'
 
 /** Résultat d'authentification d'une clé d'API : succès (org + scopes + keyId) ou échec (status + message). */
 export type ApiAuth =
@@ -16,6 +17,10 @@ export type ApiAuth =
  * le scope insuffisant (403).
  */
 export async function authenticateApiRequest(req: Request, needed: ApiScope = 'read'): Promise<ApiAuth> {
+  // Interrupteur d'instance (SUPER_ADMIN) : l'API v1 est DÉSACTIVÉE par défaut.
+  // Refus AVANT tout traitement de la clé (aucune divulgation, aucune écriture).
+  if (!(await isApiEnabled())) return { ok: false, status: 503, error: 'api_disabled' }
+
   const parsed = parseAuthorizationHeader(req.headers.get('authorization'))
   if (!parsed) return { ok: false, status: 401, error: 'missing_or_invalid_authorization' }
 

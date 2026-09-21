@@ -1138,6 +1138,17 @@ export const fr = {
     forceOff: 'Interdit (indisponible)',
     hint: 'Réglage au niveau de l\'instance (super-administrateur).',
   },
+  interfacesConfig: {
+    sectionTitle: 'Interfaces programmatiques (instance)',
+    sectionDesc: 'Active ou désactive l\'API publique et l\'interface MCP. Désactivées par défaut.',
+    apiTitle: 'API publique (v1)',
+    apiDesc: 'Accès machine par clé d\'API. Désactivée : toute requête /api/v1 est refusée, même avec une clé valide.',
+    mcpTitle: 'Interface MCP (agent/LLM souverain)',
+    mcpDesc: 'Surface d\'outils pour un agent ou LLM interne et souverain. À n\'activer qu\'avec un modèle maîtrisé — les données ne doivent jamais partir vers un LLM externe.',
+    enabled: 'Activé',
+    disabled: 'Désactivé',
+    hint: 'Réglage au niveau de l\'instance (super-administrateur). Désactivées par défaut (surface d\'attaque minimale).',
+  },
   processus: {
     title: 'Référentiel de processus',
     subtitle: 'Cartographie des macro-processus et processus de l\'organisation — ossature de l\'analyse des risques opérationnels.',

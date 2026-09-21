@@ -1115,6 +1115,17 @@ export const de: Translations = {
     forceOff: 'Verboten (nicht verfügbar)',
     hint: 'Einstellung auf Instanzebene (Super-Administrator).',
   },
+  interfacesConfig: {
+    sectionTitle: 'Programmatische Schnittstellen (Instanz)',
+    sectionDesc: 'Aktiviert oder deaktiviert die öffentliche API und die MCP-Schnittstelle. Standardmäßig deaktiviert.',
+    apiTitle: 'Öffentliche API (v1)',
+    apiDesc: 'Maschinenzugriff per API-Schlüssel. Deaktiviert: jede /api/v1-Anfrage wird abgelehnt, auch mit gültigem Schlüssel.',
+    mcpTitle: 'MCP-Schnittstelle (souveräner Agent/LLM)',
+    mcpDesc: 'Werkzeug-Oberfläche für einen internen, souveränen Agenten oder LLM. Nur mit einem kontrollierten Modell aktivieren — Daten dürfen niemals an ein externes LLM gehen.',
+    enabled: 'Aktiviert',
+    disabled: 'Deaktiviert',
+    hint: 'Einstellung auf Instanzebene (Super-Administrator). Standardmäßig deaktiviert (minimale Angriffsfläche).',
+  },
   processus: {
     title: 'Prozessverzeichnis',
     subtitle: 'Übersicht der Makroprozesse und Prozesse der Organisation — Grundlage der Analyse operationeller Risiken.',
