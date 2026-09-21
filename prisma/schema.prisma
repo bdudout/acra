@@ -62,6 +62,7 @@ model User {
   accesAnalyses AnalyseAcces[]
   memberships   OrgMembership[]
   passwordResetTokens PasswordResetToken[]
+  trustedDevices TrustedDevice[]
 }
 
 // Jetons de réinitialisation à usage unique. Seul le condensat SHA-256 du jeton
@@ -74,6 +75,25 @@ model PasswordResetToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Appareils approuvés après validation de l'OTP. Le cookie n'est jamais
+// enregistré : seul son SHA-256 est stocké, pour pouvoir le révoquer sans
+// exposer un jeton d'authentification lors d'une lecture de base.
+model TrustedDevice {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  label      String?
+  expiresAt  DateTime
+  lastUsedAt DateTime  @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1629,11 +1649,17 @@ model PasswordPolicy {
   passwordResetMode        String  @default("ADMIN")
   requireEmailVerification Boolean @default(false) // vérification email à l'inscription
   inactivityDaysLimit      Int     @default(180) // désactivation auto après N jours d'inactivité (0 = désactivé) — ne s'applique pas aux ADMIN
+  // Suppression autonome : désactivée par défaut, utilisable uniquement en instance démo.
+  selfServiceAccountDeletion Boolean @default(false)
 
   // ── Authentification forte (MFA) ─────────────────────────────────────────
   mfaEnabled     Boolean @default(false) // MFA activé globalement
   mfaMethodEmail Boolean @default(true) // OTP par e-mail
   mfaMethodSms   Boolean @default(false) // OTP par SMS
+  // Après un OTP e-mail réussi, l'utilisateur peut approuver son appareil pour
+  // une durée bornée. Désactivé par défaut ; l'OTP reste requis sans ce réglage.
+  trustedDeviceEnabled      Boolean @default(false)
+  trustedDeviceDurationDays Int     @default(30)
   // "ALL" = tous les utilisateurs | "ADMIN_ONLY" = ADMIN uniquement
   mfaScope       String  @default("ALL")
 

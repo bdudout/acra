@@ -8,6 +8,7 @@ export const SCIM_LIST_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:ListRespo
 export const SCIM_ERROR_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:Error'
 export const SCIM_PATCH_SCHEMA = 'urn:ietf:params:scim:api:messages:2.0:PatchOp'
 
+/** Champs d'un utilisateur extraits d'une ressource SCIM (email, nom, actif) pour le provisioning. */
 export interface AcraUserFields { email: string; name: string | null; active: boolean }
 
 const asStr = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
@@ -51,6 +52,7 @@ export function scimUserToAcra(resource: unknown): AcraUserFields | null {
   return { email, name: pickName(r), active: coerceBool(r.active, true) }
 }
 
+/** Utilisateur ACRA existant (forme minimale) à confronter à une ressource SCIM. */
 export interface AcraUserLike { id: string; email: string; name: string | null; isActive: boolean }
 
 /** Utilisateur ACRA → ressource SCIM User. */
@@ -74,6 +76,7 @@ export function parseScimUserNameFilter(filter: unknown): string | null {
   return m ? m[1].trim().toLowerCase() : null
 }
 
+/** Opération d'un PATCH SCIM 2.0 (op/path/value) appliquée à une ressource utilisateur. */
 export interface ScimPatchOp { op?: string; path?: string; value?: unknown }
 
 /**

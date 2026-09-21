@@ -18,6 +18,7 @@ export interface MeasureLike {
   statut?: string | null
 }
 
+/** Forme minimale d'un risque pour déterminer sa cotation courante (inhérente vs résiduelle). */
 export interface RiskLike {
   id: string
   gravite: number

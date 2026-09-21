@@ -7,6 +7,7 @@
 // réglementaire officielle. Logique PURE et testée.
 
 export const DORA_CLASSES = ['MAJEUR', 'SIGNIFICATIF', 'MINEUR'] as const
+/** Classe d'un incident au sens DORA : majeur, significatif ou mineur. */
 export type DoraClasse = (typeof DORA_CLASSES)[number]
 
 // Seuils par défaut (paramétrables ultérieurement). Alignés sur des repères DORA
@@ -41,6 +42,7 @@ export interface DoraCriteres {
 export const DORA_CRITERES_SECONDAIRES = [
   'clients', 'transactions', 'duree', 'economique', 'reputation', 'geo', 'donnees',
 ] as const
+/** Critère de classification DORA (secondaires + serviceCritique) entrant dans le calcul de la classe. */
 export type DoraCritere = (typeof DORA_CRITERES_SECONDAIRES)[number] | 'serviceCritique'
 
 const nb = (v: number | null | undefined): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
@@ -59,6 +61,7 @@ export function criteresDeclenches(c: DoraCriteres, seuils: DoraSeuils = DORA_SE
   return out
 }
 
+/** Résultat d'évaluation DORA d'un incident : classe retenue + critères déclencheurs. */
 export interface DoraEvaluation {
   classe: DoraClasse
   serviceCritique: boolean
@@ -143,6 +146,7 @@ export interface LdcLigne {
   statut: string // exclut les REJETE
 }
 
+/** Synthèse de la ligne de conduite des pertes : nombre d'incidents et pertes brute/récupérations/nette (hors REJETE). */
 export interface LdcSynthese {
   nbIncidents: number // hors REJETE
   perteBruteTotale: number

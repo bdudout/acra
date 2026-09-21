@@ -56,10 +56,13 @@ interface Policy {
   passwordResetMode:        PasswordResetMode
   requireEmailVerification: boolean
   inactivityDaysLimit:      number
+  selfServiceAccountDeletion: boolean
   // MFA
   mfaEnabled:               boolean
   mfaMethodEmail:           boolean
   mfaMethodSms:             boolean
+  trustedDeviceEnabled:     boolean
+  trustedDeviceDurationDays: number
   mfaScope:                 'ALL' | 'ADMIN_ONLY'
   smsProvider:              SmsProvider
   smsApiKey:                string | null
@@ -83,9 +86,12 @@ const DEFAULT: Policy = {
   passwordResetMode: 'ADMIN',
   requireEmailVerification: false,
   inactivityDaysLimit: 180,
+  selfServiceAccountDeletion: false,
   mfaEnabled: false,
   mfaMethodEmail: true,
   mfaMethodSms: false,
+  trustedDeviceEnabled: false,
+  trustedDeviceDurationDays: 30,
   mfaScope: 'ALL',
   smsProvider: 'TWILIO',
   smsApiKey: null,
@@ -497,6 +503,12 @@ export default function AdminSecurityPage() {
               </div>
             </div>
 
+            <div className="border-t border-gray-100 pt-5">
+              <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.passwordPolicy.selfDeleteTitle}</h2>
+              <p className="text-xs text-gray-500 mb-3">{t.passwordPolicy.selfDeleteDesc}</p>
+              <button type="button" onClick={() => setPolicy(p => ({ ...p, selfServiceAccountDeletion: !p.selfServiceAccountDeletion }))} className={`relative w-10 h-6 rounded-full ${policy.selfServiceAccountDeletion ? 'bg-ebios-500' : 'bg-gray-500'}`} aria-label={t.passwordPolicy.selfDeleteLabel}><span className={`absolute top-1 w-4 h-4 bg-white rounded-full ${policy.selfServiceAccountDeletion ? 'translate-x-5' : 'translate-x-1'}`} /></button>
+            </div>
+
             {/* Vérification email à l'inscription */}
             <div className="border-t border-gray-100 pt-5">
               <h2 className="text-sm font-semibold text-gray-800 mb-1">{t.passwordPolicy.emailVerifTitle}</h2>
@@ -587,6 +599,39 @@ export default function AdminSecurityPage() {
                       <p className="mt-2 text-xs text-red-600">{t.mfa.atLeastOneMethod}</p>
                     )}
                   </div>
+
+                  {policy.mfaMethodEmail && (
+                    <div className="rounded-xl border border-ebios-100 bg-ebios-50/50 p-4">
+                      <h3 className="text-sm font-semibold text-gray-800">{t.mfa.trustedDeviceTitle}</h3>
+                      <p className="mt-1 text-xs text-gray-600">{t.mfa.trustedDeviceDesc}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={policy.trustedDeviceEnabled}
+                          aria-label={t.mfa.trustedDeviceEnable}
+                          onClick={() => setPolicy(p => ({ ...p, trustedDeviceEnabled: !p.trustedDeviceEnabled }))}
+                          className={`relative h-6 w-10 rounded-full transition-colors ${policy.trustedDeviceEnabled ? 'bg-ebios-600' : 'bg-gray-400'}`}
+                        >
+                          <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${policy.trustedDeviceEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                        </button>
+                        <span className="text-sm text-gray-700">{t.mfa.trustedDeviceEnable}</span>
+                        {policy.trustedDeviceEnabled && (
+                          <label className="ml-auto flex items-center gap-2 text-sm text-gray-700">
+                            {t.mfa.trustedDeviceDuration}
+                            <input
+                              type="number"
+                              min={1}
+                              max={90}
+                              value={policy.trustedDeviceDurationDays}
+                              onChange={e => setPolicy(p => ({ ...p, trustedDeviceDurationDays: Math.max(1, Math.min(90, Number(e.target.value) || 1)) }))}
+                              className="input w-20 py-1 text-sm"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Portée */}
                   <div>

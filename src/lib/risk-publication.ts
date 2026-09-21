@@ -13,12 +13,14 @@ export interface AcraRisqueSource {
   vraisemblanceResiduelle: number | null
 }
 
+/** Analyse ACRA (cyber) source, en entrée de la publication vers le registre GRC canonique. */
 export interface AcraAnalyseSource {
   id: string
   nom: string
   organisation: string | null
 }
 
+/** RiskItem canonique produit par la publication d'un risque d'analyse dans le registre GRC. */
 export interface PublishedRiskItem {
   intitule: string
   description: string | null

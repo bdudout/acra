@@ -9,6 +9,7 @@ import { FRAMEWORK_IDS, FRAMEWORK_META, type FrameworkId } from './frameworks-da
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
 import { grcCodeFromNom } from './referentiels-builtins-grc'
 
+/** Entrée du catalogue canonique des cadres livrés (code + métadonnées + mapping nom→code). */
 export interface CatalogueEntry {
   code: FrameworkId
   nom: string

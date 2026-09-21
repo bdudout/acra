@@ -29,6 +29,7 @@ export interface RateLimitResult {
   resetAt:   number
 }
 
+/** Magasin de compteurs de limitation de débit (incrémente par clé sur une fenêtre glissante). */
 export interface RateLimitStore {
   increment(key: string, windowMs: number): RateLimitResult
   reset(key: string): void

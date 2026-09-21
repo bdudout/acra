@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma'
 import { sanitizeConformite, resolveEffectiveConformite, type ConformiteEntry } from '@/lib/conformite'
 import { usesConformiteEntity, isEntiteLevelConformite } from '@/lib/conformite-config'
 
+/** Contexte de conformité résolu d'une entité : entrées effectives + métadonnées d'héritage du socle. */
 export interface ConformiteContext {
   entries: ConformiteEntry[]
   referentiel: string

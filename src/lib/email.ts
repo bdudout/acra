@@ -12,6 +12,7 @@ import nodemailer from 'nodemailer'
 import { prisma } from '@/lib/prisma'
 import { decryptSecret } from '@/lib/secret-crypto'
 
+/** Réglages SMTP d'envoi d'e-mails (activation, hôte, port, identifiants, expéditeur). */
 export interface SmtpSettings {
   enabled: boolean
   host: string | null
@@ -23,6 +24,7 @@ export interface SmtpSettings {
   fromName: string | null
 }
 
+/** Résultat d'un envoi d'e-mail : succès + message d'erreur éventuel. */
 export interface SendResult {
   ok: boolean
   /** true si l'envoi a été ignoré (SMTP désactivé/incomplet). */
@@ -66,6 +68,7 @@ function fromHeader(s: SmtpSettings): string {
   return s.fromName ? `"${s.fromName}" <${s.fromAddress}>` : `${s.fromAddress}`
 }
 
+/** Message e-mail à envoyer (destinataire, sujet, corps HTML/texte). */
 export interface EmailMessage {
   to: string
   subject: string

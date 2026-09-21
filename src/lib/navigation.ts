@@ -27,6 +27,7 @@ export interface NavModules {
   reglementaire: boolean
 }
 
+/** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
 export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions' | 'plansActions'
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
@@ -43,6 +44,7 @@ export type NavEntry =
   | { kind: 'link'; key: NavKey }
   | { kind: 'group'; id: NavGroupId; items: NavKey[] }
 
+/** Modèle de navigation résolu : mode (cyber/grc) + groupes de liens visibles. */
 export interface NavModel {
   mode: 'cyber' | 'grc'
   entries: NavEntry[]

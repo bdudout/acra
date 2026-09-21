@@ -6,6 +6,7 @@
 
 import { cleanCriticiteDora, cleanDureeMinutes, type CriticiteDora, CRITICITES_DORA } from './processus-dora'
 
+/** Entrée brute (non validée) d'un processus métier, telle que reçue de l'API. */
 export interface ProcessusInput {
   nom?: string | null
   description?: string | null
@@ -20,6 +21,7 @@ export interface ProcessusInput {
   actif?: boolean
 }
 
+/** Code d'erreur de validation d'un processus (nom requis, criticité/RTO/RPO invalides…). */
 export type ProcessusInputError =
   | 'nom_requis' | 'criticite_invalide' | 'criticite_dora_invalide' | 'rto_invalide' | 'rpo_invalide'
 
@@ -64,7 +66,9 @@ export function cleanProcessus(input: ProcessusInput): {
   }
 }
 
+/** Processus « à plat » (id + parent + ordre) en entrée de la construction de l'arbre. */
 export interface ProcessusFlat { id: string; parentId?: string | null; ordre?: number | null }
+/** Processus arborescent : un processus enrichi de ses enfants récursifs. */
 export type ProcessusTree<T> = T & { enfants: ProcessusTree<T>[] }
 
 /**

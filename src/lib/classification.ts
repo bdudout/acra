@@ -11,6 +11,7 @@
  */
 
 export const CLASSIFICATIONS = ['NP', 'DR', 'S', 'TS'] as const
+/** Niveau de classification de l'information : NP (non protégé), DR (diffusion restreinte), S (secret), TS (très secret). */
 export type Classification = typeof CLASSIFICATIONS[number]
 
 /** Normalise une valeur arbitraire vers un niveau connu ; défaut « NP » (non protégé). */

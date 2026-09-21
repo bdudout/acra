@@ -13,6 +13,7 @@ import { resolveScaleConfig, type ScaleConfig } from '@/lib/risk-scale'
 import { isDemoMode } from '@/lib/demo'
 
 export const ROOT_ORG_ID = 'global'
+/** Portée des échelles de cotation : partagées par toute l'instance (SHARED) ou propres à chaque organisation (PER_ORG). */
 export type ScalesScope = 'SHARED' | 'PER_ORG'
 
 /**

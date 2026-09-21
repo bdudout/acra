@@ -4,11 +4,14 @@
  */
 
 export const RISK_STATUTS = ['IDENTIFIE', 'EVALUE', 'TRAITE', 'ACCEPTE', 'CLOTURE'] as const
+/** Statut d'un risque du registre : identifié → évalué → traité → accepté → clôturé. */
 export type RiskStatut = typeof RISK_STATUTS[number]
 
 export const RISK_PROVENANCES = ['MANUEL', 'ACRA', 'INCIDENT', 'CONTROLE', 'AUDIT'] as const
+/** Provenance d'un risque du registre : saisie manuelle, publié depuis ACRA, incident, contrôle ou audit. */
 export type RiskProvenance = typeof RISK_PROVENANCES[number]
 
+/** Entrée brute (non validée) d'un risque du registre GRC, telle que reçue de l'API. */
 export interface RiskItemInput {
   intitule?: string | null
   description?: string | null
@@ -24,6 +27,7 @@ export interface RiskItemInput {
   provenance?: string | null
 }
 
+/** Code d'erreur de validation d'un risque du registre : intitulé requis ou cotation invalide. */
 export type RiskItemInputError = 'intitule_requis' | 'cotation_invalide'
 
 /** Borne des échelles (les échelles ACRA font 4 ou 5 niveaux) : 1..5, ou null. */

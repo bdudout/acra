@@ -15,6 +15,7 @@
  */
 
 export const METHODES_VRAISEMBLANCE = ['EXPRESSE', 'STANDARD', 'AVANCEE'] as const
+/** Méthode d'évaluation de la vraisemblance : expresse (simple), standard ou avancée (détaillée). */
 export type MethodeVraisemblance = typeof METHODES_VRAISEMBLANCE[number]
 
 /** Méthode par défaut. */

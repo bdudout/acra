@@ -12,6 +12,7 @@ import type { Locale } from '@/lib/i18n'
 
 interface ScaleRow { label: string; description: string }
 
+/** Ensemble des libellés localisés utilisés dans les exports PDF (titres, sections, mentions…). */
 export interface PdfStrings {
   docSubject: string
   cover: {

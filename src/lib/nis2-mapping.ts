@@ -11,6 +11,7 @@
  */
 import { getFrameworkControles } from '@/lib/frameworks-data'
 
+/** Mesure de gestion des risques NIS2 (Art. 21 §2, a→j) et son libellé officiel. */
 export interface Nis2Measure {
   /** Lettre de l'Art. 21 §2 (a → j). */
   id: string
@@ -37,6 +38,7 @@ function normalize(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
+/** Couverture d'une mesure NIS2 par les contrôles/référentiels de l'organisation. */
 export interface Nis2Coverage {
   id: string
   label: string

@@ -23,6 +23,7 @@ export interface MenaceBounds {
   menaceMax: number
 }
 
+/** Partie prenante en entrée du radar d'écosystème (critères de menace à positionner). */
 export interface StakeholderInput {
   id?: string
   nom?: string
@@ -45,12 +46,14 @@ export interface StakeholderInput {
   confiance?: number
 }
 
+/** Géométrie de tracé du radar (centre, rayons des zones de danger) pour positionner les points. */
 export interface RadarGeometry {
   cx: number
   cy: number
   rMax: number
 }
 
+/** Point placé sur le radar : coordonnées x/y calculées + métadonnées de la partie prenante. */
 export interface RadarPoint {
   id: string
   /** Référence courte stable affichée sur le diagramme (T1, T2, …) pour croiser avec le tableau. */

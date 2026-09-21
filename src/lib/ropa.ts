@@ -15,8 +15,10 @@ export const BASES_LEGALES = [
   'mission_service_public',
   'interet_legitime',
 ] as const
+/** Base légale d'un traitement RGPD (art. 6) : consentement, contrat, obligation légale, intérêt légitime… */
 export type BaseLegale = (typeof BASES_LEGALES)[number]
 
+/** Activité de traitement du registre RGPD (art. 30) : finalité, base légale, données, destinataires, transferts, durée. */
 export interface Traitement {
   id?: string
   nom: string
@@ -85,6 +87,7 @@ export function champsManquantsArt30(t: Traitement): string[] {
   return manquants
 }
 
+/** Verdict sur le besoin d'une AIPD/PIA pour un traitement : requis ou non + motifs déclencheurs. */
 export interface PiaVerdict {
   requis: boolean
   motifs: string[]
@@ -104,6 +107,7 @@ export function piaRequis(t: Traitement): PiaVerdict {
   return { requis: motifs.length > 0, motifs }
 }
 
+/** Évaluation d'un traitement RGPD : complétude (champs manquants) + verdict AIPD. */
 export interface TraitementEvaluation {
   complet: boolean
   champsManquants: string[]

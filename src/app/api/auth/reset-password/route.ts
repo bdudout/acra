@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
     if (changed.count !== 1) return false
     await tx.user.update({ where: { id: record.userId }, data: { passwordHash, passwordChangedAt: usedAt, mustChangePassword: false } })
     await tx.passwordResetToken.updateMany({ where: { userId: record.userId, usedAt: null }, data: { usedAt } })
+    // Le lien de réinitialisation est un événement de sécurité : il invalide
+    // aussi tous les appareils de confiance déjà enregistrés.
+    await tx.trustedDevice.deleteMany({ where: { userId: record.userId } })
     return true
   })
   if (!consumed) return NextResponse.json({ error: 'INVALID_RESET_LINK' }, { status: 400 })

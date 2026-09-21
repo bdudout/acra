@@ -7,6 +7,7 @@
 import PptxGenJS from 'pptxgenjs'
 import type { SoaExportData, SoaLigne } from './soa-export'
 
+/** Libellés localisés de la présentation PPTX de la SoA (titres, en-têtes de colonnes…). */
 export interface SoaPptxLabels {
   title: string          // ex. « Déclaration d'applicabilité (SoA) »
   org: string            // libellé « Organisation »
@@ -22,6 +23,7 @@ export interface SoaPptxLabels {
   statuts: Record<string, string> // conforme/partiel/non_conforme/na → libellé
 }
 
+/** Statistiques affichées sur la présentation SoA (taux de conformité, évalués, total). */
 export interface SoaPptxStats { tauxConformite: number; evalues: number; total: number }
 
 // Couleurs de fond des cellules de statut (hex sans #), texte foncé lisible.

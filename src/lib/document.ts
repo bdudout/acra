@@ -5,10 +5,12 @@
 // sont en Postgres. Logique PURE et testée.
 
 export const DOCUMENT_TYPES = ['PSSI', 'STRATEGIE', 'POLITIQUE', 'PROCEDURE', 'PREUVE', 'AUTRE'] as const
+/** Type d'un document de la GED : PSSI, stratégie, politique, procédure, preuve ou autre. */
 export type DocumentType = (typeof DOCUMENT_TYPES)[number]
 
 // Portée : rattaché à un référentiel, à un risque, ou au niveau organisation.
 export const DOCUMENT_PORTEES = ['REFERENTIEL', 'RISQUE', 'ORG'] as const
+/** Portée de rattachement d'un document : référentiel, risque ou organisation. */
 export type DocumentPortee = (typeof DOCUMENT_PORTEES)[number]
 
 export const MAX_DOCUMENT_SIZE = 25 * 1024 * 1024 // 25 Mo
@@ -81,6 +83,7 @@ export function validateDocumentMeta(body: {
   return null
 }
 
+/** Métadonnées de document normalisées (type/portée dans l'allowlist, textes trim), prêtes pour la persistance. */
 export interface CleanDocumentMeta {
   titre: string
   type: DocumentType

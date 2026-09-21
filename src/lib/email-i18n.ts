@@ -5,6 +5,7 @@
 
 import { emailLayout } from './email-html'
 
+/** Langue d'un e-mail localisé (une des 5 locales de l'app). */
 export type EmailLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
 const LOCALES: EmailLocale[] = ['fr', 'en', 'de', 'es', 'it']
 
@@ -25,6 +26,7 @@ const echeancePhrase: Record<EmailLocale, (jours: number) => string> = {
   it: j => (j < 0 ? `scaduta da ${-j} giorno/i` : j === 0 ? 'scade oggi' : `scade tra ${j} giorno/i`),
 }
 
+/** Paramètres de l'e-mail d'expiration proche d'une dérogation (intitulé + jours restants). */
 export interface ExpiryParams { intitule: string; jours: number }
 
 const expiryTpl: Record<EmailLocale, (p: ExpiryParams, quand: string) => { subject: string; text: string }> = {
@@ -76,7 +78,9 @@ export function derogationExpiryEmail(locale: string | null | undefined, p: Expi
   return { subject, text, html }
 }
 
+/** Une dérogation listée dans l'e-mail de digest (intitulé + jours restants). */
 export interface DigestItem { intitule: string; joursRestants: number }
+/** Paramètres de l'e-mail de digest des dérogations (compteurs par état + items). */
 export interface DigestParams { orgNom: string; active: number; expireBientot: number; expiree: number; items: DigestItem[] }
 
 const digestLabels: Record<EmailLocale, { subject: (org: string) => string; heading: (org: string) => string; active: string; soon: string; expired: string; toHandle: string }> = {

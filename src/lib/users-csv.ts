@@ -8,6 +8,7 @@
  */
 import type { UserRole } from '@/lib/permissions'
 
+/** Ligne d'utilisateur parsée depuis un CSV d'import (numéro de ligne + champs + erreurs éventuelles). */
 export interface ParsedUserRow {
   line: number
   nom: string

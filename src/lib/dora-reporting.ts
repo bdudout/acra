@@ -15,10 +15,13 @@
 import { classifierIncident, DORA_SEUILS_DEFAUT, type DoraClasse, type DoraCriteres, type DoraSeuils } from './dora'
 
 export const DORA_PHASES = ['INITIALE', 'INTERMEDIAIRE', 'FINALE'] as const
+/** Phase de déclaration DORA d'un incident : initiale, intermédiaire, finale. */
 export type DoraPhase = (typeof DORA_PHASES)[number]
 
+/** Statut d'une phase de déclaration : inapplicable, soumise, en retard ou à faire. */
 export type DoraPhaseStatut = 'INAPPLICABLE' | 'SOUMIS' | 'EN_RETARD' | 'A_FAIRE'
 
+/** Délais réglementaires DORA (heures) de chaque phase de déclaration après classification « majeur ». */
 export interface DoraDelaisConfig {
   /** Délai max après la classification « majeur » pour la notification initiale (heures). */
   initialeApresClassifH: number
@@ -37,6 +40,7 @@ export const DORA_DELAIS_DEFAUT: DoraDelaisConfig = {
   finaleApresInitialeJours: 30,
 }
 
+/** Entrée d'évaluation du reporting DORA : classe de l'incident + jalons temporels des phases. */
 export interface DoraReportingInput {
   classe?: DoraClasse | null
   dateDetection?: Date | string | null
@@ -47,6 +51,7 @@ export interface DoraReportingInput {
   finaleSoumiseLe?: Date | string | null
 }
 
+/** Échéance calculée d'une phase de déclaration : date limite + statut. */
 export interface DoraEcheance {
   phase: DoraPhase
   /** Échéance calculée, ou null si les dates ne permettent pas de la déterminer. */
@@ -107,6 +112,7 @@ export function planifierDeclarationDora(
   ]
 }
 
+/** Synthèse du reporting DORA d'un incident : applicabilité, phases dues avec échéances et retards. */
 export interface DoraReportingSynthese {
   /** Vrai si la déclaration s'applique (incident majeur). */
   applicable: boolean
@@ -148,6 +154,7 @@ export interface IncidentReportingRecord {
   doraFinaleSoumiseLe?: Date | string | null
 }
 
+/** État de reporting d'un incident (classe + phases soumises), consommé par l'export ITS. */
 export interface IncidentReporting {
   classe: DoraClasse
   echeances: DoraEcheance[]

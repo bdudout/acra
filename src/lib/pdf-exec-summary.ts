@@ -5,6 +5,7 @@
  */
 import { getRiskTier } from '@/lib/risk-scale'
 
+/** Niveau d'un indicateur dans la synthèse exécutive PDF : élevé, moyen, faible ou nul. */
 export type ExecLevel = 'high' | 'medium' | 'low' | 'none'
 
 /** Niveau de risque global non technique : pire cas des risques évalués. */

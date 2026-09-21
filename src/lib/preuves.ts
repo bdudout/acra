@@ -29,6 +29,7 @@ export function dataUrlMediaType(dataUrl: string): string {
   return (m?.[1] ?? '').trim().toLowerCase()
 }
 
+/** Pièce justificative attachée (nom + contenu en data URL base64). */
 export interface Preuve {
   nom: string
   mime: string

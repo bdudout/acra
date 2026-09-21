@@ -10,6 +10,7 @@
 
 /** Priorités de traitement, de la plus urgente à la moins urgente. */
 export const PRIORITES_MESURE = ['P1', 'P2', 'P3', 'P4'] as const
+/** Priorité d'une mesure d'écosystème : P1 (la plus prioritaire) à P4. */
 export type PrioriteMesure = typeof PRIORITES_MESURE[number]
 
 const RANK: Record<string, number> = { P1: 0, P2: 1, P3: 2, P4: 3 }

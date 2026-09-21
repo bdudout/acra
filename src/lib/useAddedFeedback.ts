@@ -11,6 +11,7 @@
 
 import { useState, useCallback } from 'react'
 
+/** Valeur retournée par useAddedFeedback : ensemble des clés en feedback + fonction pour le déclencher. */
 export interface AddedFeedbackResult {
   /** Déclenche le feedback pour une clé donnée pendant `duration` ms */
   flash: (key: string) => void

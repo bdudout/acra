@@ -57,11 +57,14 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.user as any).update({
-    where: { id: userId },
-    // Efface le drapeau de changement forcé (#10/#11)
-    data: { passwordHash, passwordChangedAt: new Date(), mustChangePassword: false },
+  await prisma.$transaction(async tx => {
+    await tx.user.update({
+      where: { id: userId },
+      // Efface le drapeau de changement forcé (#10/#11)
+      data: { passwordHash, passwordChangedAt: new Date(), mustChangePassword: false },
+    })
+    // Un changement de mot de passe invalide les cookies d'appareils approuvés.
+    await tx.trustedDevice.deleteMany({ where: { userId } })
   })
 
   await auditLog('PASSWORD_CHANGED', {

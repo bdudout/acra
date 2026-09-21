@@ -16,6 +16,7 @@ export const WEBHOOK_EVENTS = [
   'analyse.approved',
 ] as const
 
+/** Événement auquel un webhook peut souscrire (création/modification d'objets GRC…). */
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]
 
 const EVENT_SET = new Set<string>(WEBHOOK_EVENTS)
@@ -61,7 +62,9 @@ export function nextBackoffDelayMs(attempt: number): number {
   return Math.min(delay, cap)
 }
 
+/** Résultat d'une tentative de livraison d'un webhook (succès + code HTTP / erreur). */
 export interface DeliveryResult { ok: boolean; code?: number; error?: string }
+/** Mise à jour de l'état de livraison d'un webhook (statut + prochaine tentative). */
 export interface DeliveryUpdate {
   statut: 'LIVRE' | 'EN_ATTENTE' | 'ECHEC'
   tentatives: number

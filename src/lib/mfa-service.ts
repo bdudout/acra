@@ -12,6 +12,7 @@ import { sendSms } from '@/lib/sms'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 
+/** Canal d'envoi d'un défi MFA : SMS ou e-mail. */
 export type MfaChannel = 'SMS' | 'EMAIL'
 
 function secret(): string {
@@ -29,6 +30,7 @@ export function maskDestination(channel: MfaChannel, dest: string): string {
   return `${dest.slice(0, 3)}•••••${tail}`
 }
 
+/** Résultat de création d'un défi MFA (succès + canal utilisé / message d'erreur). */
 export interface CreateChallengeResult {
   ok: boolean
   masked?: string
@@ -80,6 +82,7 @@ export async function createAndSendChallenge(opts: {
   return { ok: true, masked: maskDestination(channel, destination) }
 }
 
+/** Résultat de vérification d'un code MFA (succès / échec + motif). */
 export interface VerifyResult {
   ok: boolean
   error?: 'no_challenge' | 'expired' | 'too_many_attempts' | 'invalid'

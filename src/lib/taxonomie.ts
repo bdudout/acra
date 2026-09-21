@@ -13,6 +13,7 @@
 export type TaxonomieDomaine = 'OP_RISK' | 'CYBER' | 'GENERAL'
 export const TAXONOMIE_DOMAINES: TaxonomieDomaine[] = ['OP_RISK', 'CYBER', 'GENERAL']
 
+/** Nœud de la taxonomie des risques : code stable + libellé, éventuellement hiérarchisé. */
 export interface TaxonomieNode {
   /** Identifiant stable (référencé par les risques). Ex. « BALE_1 » ou un code custom. */
   code: string

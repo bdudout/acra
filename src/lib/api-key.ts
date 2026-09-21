@@ -10,6 +10,7 @@ const scryptAsync = promisify(scrypt)
 
 export const API_KEY_PREFIX = 'acra'
 export const API_SCOPES = ['read', 'write', 'provision'] as const
+/** Scope d'une clé d'API : read (lecture), write (écriture), provision (provisioning). */
 export type ApiScope = (typeof API_SCOPES)[number]
 
 const KEY_LEN = 32   // longueur du dérivé
@@ -35,6 +36,7 @@ export async function verifyApiKey(plaintext: string, stored: string): Promise<b
   return timingSafeEqual(cand, ref)
 }
 
+/** Clé d'API fraîchement générée : `plaintext` à ne montrer qu'une fois, `prefix` public stocké en clair pour le lookup. */
 export interface GeneratedApiKey {
   plaintext: string   // à montrer UNE fois au créateur
   prefix: string      // segment public, stocké en clair pour le lookup

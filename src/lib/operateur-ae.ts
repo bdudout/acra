@@ -13,6 +13,7 @@
  */
 
 export const OPERATEURS_AE = ['ET', 'OU'] as const
+/** Opérateur logique combinant les actions élémentaires d'un chemin d'attaque : ET ou OU. */
 export type OperateurAe = typeof OPERATEURS_AE[number]
 
 /** Opérateur par défaut : ET (enchaînement conjonctif). */

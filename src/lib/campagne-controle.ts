@@ -6,20 +6,24 @@
 // Logique PURE et testée ; l'orchestration ne duplique pas les exécutions.
 
 export const CAMPAGNE_CONTROLE_STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
+/** Statut d'une campagne de contrôle : planifiée → en cours → clôturée. */
 export type CampagneControleStatut = (typeof CAMPAGNE_CONTROLE_STATUTS)[number]
 
 export const CAMPAGNE_NIVEAUX = ['N1', 'N2'] as const
+/** Niveau d'une campagne de contrôle permanent : N1 (1ʳᵉ ligne) ou N2 (2ᵉ ligne). */
 export type CampagneNiveau = (typeof CAMPAGNE_NIVEAUX)[number]
 
 // Récurrence d'une campagne : à sa clôture, la suivante est planifiée automatiquement
 // (même périmètre, fenêtre décalée d'une période). NONE = campagne ponctuelle.
 export const CAMPAGNE_RECURRENCES = ['NONE', 'HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+/** Récurrence d'une campagne : ponctuelle (NONE) ou périodique (hebdo → annuel), la suivante étant planifiée à la clôture. */
 export type CampagneRecurrence = (typeof CAMPAGNE_RECURRENCES)[number]
 
 const MOIS_PAR_RECURRENCE: Record<Exclude<CampagneRecurrence, 'NONE' | 'HEBDOMADAIRE'>, number> = {
   MENSUEL: 1, TRIMESTRIEL: 3, SEMESTRIEL: 6, ANNUEL: 12,
 }
 
+/** Entrée brute (non validée) d'une campagne de contrôle, telle que reçue de l'API. */
 export interface CampagneControleInput {
   intitule?: unknown
   description?: unknown
@@ -31,6 +35,7 @@ export interface CampagneControleInput {
   recurrence?: unknown
 }
 
+/** Entrée d'une campagne de contrôle normalisée, prête pour la persistance. */
 export interface CleanCampagneControle {
   intitule: string
   description: string | null
@@ -114,12 +119,14 @@ export function prochaineFenetreCampagne(
   return { dateDebut: addMonths(d, mois), dateFin: addMonths(f, mois) }
 }
 
+/** Vue minimale d'une exécution de contrôle pour calculer l'avancement d'une campagne (contrôle + date). */
 export interface ExecutionControleLite {
   controleId: string
   dateRealisation: Date | string
   resultat: string
 }
 
+/** Avancement d'une campagne de contrôle : contrôles du périmètre exécutés/à faire dans la fenêtre, anomalies, taux. */
 export interface AvancementCampagne {
   total: number
   /** Contrôles du périmètre exécutés DANS la fenêtre. */

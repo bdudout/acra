@@ -9,6 +9,7 @@
 import { prisma } from '@/lib/prisma'
 import { decryptSecret } from '@/lib/secret-crypto'
 
+/** Configuration d'envoi de SMS (fournisseur, identifiants, expéditeur) pour les défis MFA. */
 export interface SmsConfig {
   provider: string
   apiKey: string | null    // Twilio Account SID
@@ -16,6 +17,7 @@ export interface SmsConfig {
   senderId: string | null  // Numéro/expéditeur
 }
 
+/** Résultat d'un envoi de SMS : succès + message d'erreur éventuel. */
 export interface SmsResult {
   ok: boolean
   skipped?: boolean

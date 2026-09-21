@@ -6,14 +6,18 @@
 // de la dernière mesure vs les seuils. Logique PURE et testée.
 
 export const KRI_SENS = ['HAUSSE', 'BAISSE'] as const
+/** Sens d'un KRI : une hausse ou une baisse de la valeur constitue la dégradation. */
 export type KriSens = (typeof KRI_SENS)[number]
 
 export const KRI_STATUTS = ['NORMAL', 'ALERTE', 'CRITIQUE', 'INCONNU'] as const
+/** Statut d'un KRI selon ses seuils : normal, alerte, critique ou inconnu (sans relevé). */
 export type KriStatut = (typeof KRI_STATUTS)[number]
 
 export const KRI_FREQUENCES = ['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const
+/** Fréquence de relevé d'un KRI : mensuelle → annuelle. */
 export type KriFrequence = (typeof KRI_FREQUENCES)[number]
 
+/** Seuils d'un KRI (sens + seuils alerte/critique) servant à déduire son statut. */
 export interface KriSeuils {
   sens: KriSens
   seuilAlerte: number
@@ -33,6 +37,7 @@ export function evaluerKri(valeur: number | null | undefined, def: KriSeuils): K
   return 'NORMAL'
 }
 
+/** Tendance d'un KRI entre deux relevés : amélioration, dégradation, stable ou inconnue. */
 export type KriTendance = 'AMELIORATION' | 'DEGRADATION' | 'STABLE' | 'INCONNU'
 
 /** Tendance entre la valeur courante et la précédente, selon le sens. */
@@ -51,6 +56,7 @@ export interface KriLite {
   statut: KriStatut
 }
 
+/** Synthèse d'un jeu de KRI : répartition par statut et nombre en alerte. */
 export interface KriSynthese {
   total: number
   normal: number
@@ -89,6 +95,7 @@ export interface KriInput {
   actif?: unknown
 }
 
+/** Définition d'un KRI normalisée (sens/fréquence typés, seuils), prête pour la persistance. */
 export interface CleanKri {
   intitule: string
   description: string | null
@@ -168,6 +175,7 @@ export interface MesureInput {
   commentaire?: unknown
 }
 
+/** Relevé de KRI normalisé (valeur, date, commentaire), prêt pour la persistance. */
 export interface CleanMesure {
   valeur: number
   dateMesure: Date | null

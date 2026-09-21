@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/prisma'
 import { parseAuthorizationHeader, verifyApiKey, apiKeyUtilisable, hasScope, type ApiScope } from '@/lib/api-key'
 
+/** Résultat d'authentification d'une clé d'API : succès (org + scopes + keyId) ou échec (status + message). */
 export type ApiAuth =
   | { ok: true; organizationId: string; scopes: string[]; keyId: string }
   | { ok: false; status: number; error: string }

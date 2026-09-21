@@ -63,6 +63,7 @@ export function joursAvantExpiration(dateFin: Date | string | null | undefined, 
   return Math.ceil((fin.getTime() - now.getTime()) / JOUR_MS)
 }
 
+/** Vue minimale d'une dérogation pour calculer son état effectif (statut + dates). */
 export interface DerogationEtatSource {
   statut: DerogationStatut
   dateFin?: Date | string | null
@@ -81,6 +82,7 @@ export function etatDerogation(d: DerogationEtatSource, alerteJours: number, now
   return 'ACTIVE'
 }
 
+/** Dérogation enrichie de sa date de dernière alerte, pour décider s'il faut (re)notifier une expiration proche. */
 export interface DerogationAlerteSource extends DerogationEtatSource {
   alerteeLe?: Date | string | null
 }
@@ -100,12 +102,14 @@ export interface DigestSource extends DerogationEtatSource {
   id: string
   intitule: string
 }
+/** Une dérogation dans le digest de notification (identité + échéance). */
 export interface DigestItem {
   id: string
   intitule: string
   joursRestants: number
   etat: DerogationEtat
 }
+/** Digest périodique des dérogations : compteurs par état + items à relancer (expiration proche/dépassée). */
 export interface DerogationDigest {
   active: number // ACTIVE non menacée
   expireBientot: number
@@ -145,6 +149,7 @@ export interface DerogationInput {
   mesuresCompensatoires?: string | null
 }
 
+/** Code d'erreur de validation d'une dérogation (intitulé/motif/mesures compensatoires requis, etc.). */
 export type DerogationInputError =
   | 'intitule_requis' | 'motif_requis' | 'mesures_requises'
   | 'portee_invalide' | 'controle_incomplet' | 'risque_manquant'

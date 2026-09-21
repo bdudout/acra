@@ -18,6 +18,7 @@ export interface IncidentDedupItem {
   taxonomieCode?: string | null
 }
 
+/** Incident candidat doublon détecté (id + score/raisons de proximité). */
 export interface DuplicateMatch {
   id: string
   intitule: string
@@ -25,6 +26,7 @@ export interface DuplicateMatch {
   score: number // 0..1
 }
 
+/** Options de détection de doublons d'incidents (fenêtre de proximité des dates, seuils…). */
 export interface DedupOptions {
   fenetreJours?: number // fenêtre de proximité des dates (défaut 14 j)
   seuil?: number // score minimal pour signaler un doublon (défaut 0.5)

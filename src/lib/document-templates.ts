@@ -8,6 +8,7 @@
 
 import type { DocumentType } from './document'
 
+/** Modèle de document socle (PAS, annexe contractuelle…) : identité + contenu Markdown pré-rempli. */
 export interface DocumentTemplate {
   id: string // kebab-case, sert aussi de base au nom de fichier
   titre: string

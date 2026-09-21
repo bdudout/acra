@@ -99,6 +99,7 @@ export function deriveNonConformites(entries: ConformiteEntry[]): ConformiteEntr
   return entries.filter(e => (e.statut === 'non_conforme' || e.statut === 'partiel') && !e.derogee)
 }
 
+/** Statistiques de conformité : répartition des statuts + couverture des écarts (dérogation/acceptation/plan d'action). */
 export interface ConformiteStats {
   conforme: number
   partiel: number

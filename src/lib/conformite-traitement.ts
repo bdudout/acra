@@ -8,11 +8,13 @@
  */
 import type { ConformiteTraitement as EntryTag } from './conformite'
 
+/** Type de traitement d'un écart de conformité : plan d'action, dérogation ou acceptation du risque. */
 export type TraitementType = 'PLAN_ACTION' | 'DEROGATION' | 'ACCEPTATION_RISQUE'
 export const TRAITEMENT_TYPES: TraitementType[] = ['PLAN_ACTION', 'DEROGATION', 'ACCEPTATION_RISQUE']
 export const isTraitementType = (v: unknown): v is TraitementType =>
   typeof v === 'string' && (TRAITEMENT_TYPES as string[]).includes(v)
 
+/** Statut d'un traitement d'écart (sens selon le type) : en cours, fait, active (dérogation) ou clôturé. */
 export type TraitementStatut = 'EN_COURS' | 'FAIT' | 'ACTIVE' | 'CLOTURE'
 export const TRAITEMENT_STATUTS: TraitementStatut[] = ['EN_COURS', 'FAIT', 'ACTIVE', 'CLOTURE']
 

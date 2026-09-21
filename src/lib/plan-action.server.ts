@@ -14,6 +14,7 @@ type Db = PrismaClient | Prisma.TransactionClient
 
 const RISQUE = 'RISQUE'
 
+/** Arguments de création d'un plan d'action rattaché à un risque (org + risque + champs de l'action). */
 export interface CreateRiskActionArgs {
   organizationId: string
   riskItemId: string

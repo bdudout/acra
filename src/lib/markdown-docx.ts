@@ -10,7 +10,9 @@ import {
   Table, TableRow, TableCell, WidthType, BorderStyle,
 } from 'docx'
 
+/** Fragment de texte inline avec sa mise en forme (gras), issu du parsing Markdown. */
 export interface InlineRun { text: string; bold: boolean }
+/** Bloc Markdown reconnu (titre, paragraphe, citation, puce) converti vers .docx. */
 export type MdBlock =
   | { type: 'h1' | 'h2' | 'p' | 'quote' | 'bullet'; runs: InlineRun[] }
   | { type: 'table'; rows: InlineRun[][][] } // rows → cells → runs

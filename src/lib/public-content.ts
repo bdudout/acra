@@ -20,6 +20,7 @@ export interface PublicContent {
   contactLabel: string
 }
 
+/** Contenu public configurable de l'instance (bandeau d'information, mentions affichées avant connexion). */
 export interface PublicContentConfig {
   publicNotice?: string | null
   publicContactUrl?: string | null

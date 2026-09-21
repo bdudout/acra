@@ -23,6 +23,7 @@ import {
 
 export const ACTIVE_ORG_COOKIE = 'acra_org'
 
+/** Contexte d'organisation résolu pour une requête : appartenances + périmètre visible (org active/sous-arbre). */
 export interface ResolvedOrgContext {
   /** Appartenances de l'utilisateur (organisation + rôle + portée). */
   memberships: (Membership & { nom: string })[]

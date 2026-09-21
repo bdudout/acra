@@ -3,7 +3,9 @@
 // socle de l'organisation qui correspondent aux cadres RECOMMANDÉS pour le
 // secteur de l'analyse (ISO 27001, NIS2, DORA…). L'utilisateur peut décocher.
 
+/** Référentiel d'une organisation en entrée du pré-cochage sectoriel (nom + code). */
 export interface OrgReferentiel { nom: string; description?: string | null; code?: string | null }
+/** Référentiel pré-coché selon le secteur (applicable ou non, écarts, état d'application proposés). */
 export interface PrecheckedRef { nom: string; code: string | null; applicable: boolean; ecarts: string; etatApplication: string }
 
 /** Normalise un nom de référentiel : minuscules, sans espaces ni ponctuation. */

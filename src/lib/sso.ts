@@ -113,8 +113,11 @@ export function resolveSsoRole(groups: unknown, mapping: unknown, defaultRole: s
   return matched.sort((a, b) => (ROLE_RANK[b] ?? -1) - (ROLE_RANK[a] ?? -1))[0]
 }
 
+/** Claims OIDC utiles issus du fournisseur SSO (email, nom, email vérifié). */
 export interface OidcClaims { email?: string; name?: string; email_verified?: boolean }
+/** Configuration du provisioning à la volée (JIT) au premier login SSO : auto-création, rôle par défaut, domaines autorisés. */
 export interface SsoJitConfig { autoProvision: boolean; defaultRole: string; allowedDomains: string | null }
+/** Décision de provisioning JIT après login SSO : lier un compte, en créer un, ou refuser. */
 export type JitDecision =
   | { action: 'link'; email: string; name: string | null }
   | { action: 'create'; email: string; name: string | null; role: string }

@@ -11,6 +11,7 @@
 import type { FrameworkControl, ControlType } from './frameworks-data'
 import { coerceDomaine, type Domaine } from './referentiel-domaines'
 
+/** Exigence d'un référentiel (alias de FrameworkControl : référence + libellé + catégorie). */
 export type Exigence = FrameworkControl
 
 export const EXIGENCE_TYPES: ControlType[] = ['ORGANISATIONNELLE', 'HUMAINE', 'PHYSIQUE', 'TECHNOLOGIQUE']
@@ -18,6 +19,7 @@ const DEFAULT_TYPE: ControlType = 'ORGANISATIONNELLE'
 
 // Nature d'un référentiel custom (au-delà des cadres livrés).
 export const REFERENTIEL_TYPES = ['PSSI', 'POLITIQUE', 'REGLEMENTAIRE', 'STANDARD', 'CUSTOM'] as const
+/** Type d'un référentiel : PSSI, politique, réglementaire, standard ou custom. */
 export type ReferentielType = (typeof REFERENTIEL_TYPES)[number]
 
 /** Objectif de sécurité (« mission ») porté par une politique/stratégie. */
@@ -26,6 +28,7 @@ export interface Mission {
   description: string | null
 }
 
+/** Entrée brute (non validée) d'un référentiel custom, telle que reçue de l'API. */
 export interface ReferentielInput {
   code?: unknown
   nom?: unknown
@@ -37,6 +40,7 @@ export interface ReferentielInput {
   missions?: unknown
 }
 
+/** Entrée d'un référentiel normalisée (type typé, exigences nettoyées), prête pour la persistance. */
 export interface CleanReferentiel {
   code: string
   nom: string

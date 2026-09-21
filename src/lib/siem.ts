@@ -13,6 +13,7 @@ import type { AuditAction } from './logger'
 
 /** Journaux de sécurité activables indépendamment (« journal par journal »). */
 export const SIEM_CATEGORIES = ['AUTHENTIFICATION', 'COMPTES', 'CONFIGURATION', 'DONNEES', 'GOUVERNANCE'] as const
+/** Catégorie d'un événement transféré au SIEM : authentification, comptes, configuration, données, gouvernance. */
 export type SiemCategory = (typeof SIEM_CATEGORIES)[number]
 
 /** Classement de chaque action d'audit dans un journal de sécurité (exhaustif). */
@@ -22,10 +23,11 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   LOGIN_LOCKED: 'AUTHENTIFICATION', LOGOUT: 'AUTHENTIFICATION', REGISTER: 'AUTHENTIFICATION',
   PASSWORD_CHANGED: 'AUTHENTIFICATION', MFA_AUTO_DISABLED: 'AUTHENTIFICATION', MFA_CONFIRMED: 'AUTHENTIFICATION',
   PASSWORD_RESET_REQUESTED: 'AUTHENTIFICATION', PASSWORD_RESET_REQUEST_FAILED: 'AUTHENTIFICATION', PASSWORD_RESET_COMPLETED: 'AUTHENTIFICATION',
-  MFA_CHALLENGE_SENT: 'AUTHENTIFICATION', MFA_VERIFIED: 'AUTHENTIFICATION',
+  MFA_CHALLENGE_SENT: 'AUTHENTIFICATION', MFA_VERIFIED: 'AUTHENTIFICATION', MFA_TRUSTED_DEVICE_USED: 'AUTHENTIFICATION',
+  TRUSTED_DEVICE_CREATED: 'AUTHENTIFICATION', TRUSTED_DEVICE_REVOKED: 'AUTHENTIFICATION',
   EMAIL_VERIFICATION_SENT: 'AUTHENTIFICATION', EMAIL_VERIFIED: 'AUTHENTIFICATION',
   // Comptes & habilitations
-  ROLE_CHANGED: 'COMPTES', USER_DELETED: 'COMPTES', USER_CREATED: 'COMPTES', USERS_BULK_IMPORTED: 'COMPTES',
+  ROLE_CHANGED: 'COMPTES', USER_DELETED: 'COMPTES', ACCOUNT_SELF_DELETED: 'COMPTES', USER_CREATED: 'COMPTES', USERS_BULK_IMPORTED: 'COMPTES',
   USER_SUSPENDED: 'COMPTES', USER_ACTIVATED: 'COMPTES', ACCESS_GRANTED: 'COMPTES', ACCESS_REVOKED: 'COMPTES',
   PROFILE_UPDATED: 'COMPTES', ORG_MEMBER_ADDED: 'COMPTES', ORG_MEMBER_REMOVED: 'COMPTES',
   // Configuration (sécurité & instance)
@@ -80,6 +82,7 @@ export function categoryForEvent(action: AuditAction, details?: Record<string, u
   return categoryForAction(action)
 }
 
+/** Sévérité d'un événement SIEM : warning (actions sensibles) ou info. */
 export type SiemSeverity = 'info' | 'warning'
 // Actions à surveiller (échecs d'auth, suppression/rejet) → warning ; sinon info.
 const WARN_ACTIONS = new Set<AuditAction>([
@@ -111,6 +114,7 @@ export function isValidSiemEndpoint(url: unknown): boolean {
   }
 }
 
+/** Configuration SIEM minimale (activation + endpoint/format) pour décider et router la livraison. */
 export interface SiemConfigLite {
   enabled: boolean
   endpoint?: string | null
@@ -125,6 +129,7 @@ export function shouldForward(cfg: SiemConfigLite, action: AuditAction, details?
   return cleanSiemCategories(cfg.categories).includes(categoryForEvent(action, details))
 }
 
+/** Contexte joint à un événement SIEM (utilisateur, IP, organisation…). */
 export interface SiemEventCtx {
   userId?: string
   userEmail?: string
@@ -136,6 +141,7 @@ export interface SiemEventCtx {
   details?: Record<string, unknown>
 }
 
+/** Événement normalisé émis vers le SIEM (source, action, catégorie, sévérité, contexte). */
 export interface SiemEvent {
   source: 'acra'
   timestamp: string

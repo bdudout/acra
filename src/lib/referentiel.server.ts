@@ -19,8 +19,10 @@ export async function referentielsDesactivesForOrg(orgId: string): Promise<Set<s
   return new Set(Array.isArray(raw) ? raw.filter((c): c is string => typeof c === 'string') : [])
 }
 
+/** Origine d'un référentiel résolu : livré avec l'app (BUILTIN) ou créé par l'organisation (CUSTOM). */
 export type ReferentielSource = 'BUILTIN' | 'CUSTOM'
 
+/** Résumé unifié d'un référentiel (BUILTIN ou CUSTOM) : code, nom, source, nombre d'exigences. */
 export interface ReferentielSummary {
   code: string
   nom: string

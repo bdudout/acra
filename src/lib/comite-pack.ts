@@ -7,8 +7,10 @@
 import type { HeatGrid } from '@/lib/carto-export'
 
 export const COMITE_TYPES = ['RISQUES', 'CONFORMITE', 'INCIDENTS'] as const
+/** Type de comité (dossier assemblé) : risques, conformité ou incidents. */
 export type ComiteType = (typeof COMITE_TYPES)[number]
 
+/** Données GRC consolidées en entrée d'un pack comité (risques, actions, incidents, contrôles, audit…). */
 export interface ComiteConsolide {
   risques?: { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
   actions?: { total: number; faits: number; enRetard: number; tauxAvancement: number }
@@ -26,14 +28,19 @@ export interface ComiteConsolide {
   dora?: { majeurs: number; evalues: number }
 }
 
+/** Modules GRC actifs déterminant les sections incluses dans un pack comité. */
 export interface ComiteModules {
   risques: boolean; appetit: boolean; incidents: boolean; controles: boolean
   audit: boolean; regulateur: boolean; kri: boolean; dora: boolean
 }
 
+/** Une métrique d'un pack comité (clé i18n + valeur, avec drapeaux alerte/positif). */
 export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean }
+/** Une section d'un pack comité : un groupe de métriques identifié. */
 export interface ComiteSection { id: string; metrics: ComiteMetric[] }
+/** Un point saillant d'un pack comité (signal d'alerte ou d'information chiffré). */
 export interface ComiteHighlight { key: string; niveau: 'alerte' | 'info'; value: number }
+/** Pack comité assemblé : type + sections de métriques prêtes à présenter. */
 export interface ComitePack {
   type: ComiteType
   sections: ComiteSection[]
@@ -151,6 +158,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
 // Signaux d'alerte considérés comme « de crise » pour le verdict global (#134 M5).
 const HIGHLIGHTS_CRITIQUES = new Set(['doraMajeurs', 'kriCritique', 'constatsCritiques', 'regulateurEchu'])
 
+/** Verdict global du dispositif : élevé (préoccupant), modéré ou maîtrisé. */
 export type VerdictNiveau = 'ELEVE' | 'MODERE' | 'MAITRISE'
 
 /**
@@ -166,6 +174,7 @@ export function verdictGlobal(pack: ComitePack): { niveau: VerdictNiveau; alerte
   return { niveau, alertes: alertes.length }
 }
 
+/** Signaux d'alerte agrégés servant à calculer le verdict du dispositif (constats critiques, DORA majeurs, KRI…). */
 export interface VerdictSignaux {
   constatsCritiques?: number; doraMajeurs?: number; kriCritique?: number; regulateurEchues?: number
   horsAppetit?: number; conformiteSousSeuil?: boolean; actionsEnRetard?: number
@@ -190,6 +199,7 @@ export const VERDICT_SIGNAUX_KEYS = [
   'constatsCritiques', 'doraMajeurs', 'kriCritique', 'regulateurEchues',
   'horsAppetit', 'conformiteSousSeuil', 'actionsEnRetard',
 ] as const
+/** Clé d'un signal d'alerte du verdict (identifie « lequel » parmi les signaux actifs). */
 export type VerdictSignalKey = (typeof VERDICT_SIGNAUX_KEYS)[number]
 
 /** Liste ORDONNÉE des signaux d'alerte réellement actifs (pour lister « lesquels »). */

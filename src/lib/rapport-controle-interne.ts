@@ -8,15 +8,19 @@
 import { buildComitePack, type ComiteConsolide, type ComiteModules, type ComiteSection, type ComiteHighlight } from './comite-pack'
 
 export const APPRECIATIONS = ['SATISFAISANT', 'A_RENFORCER', 'INSUFFISANT'] as const
+/** Appréciation d'une ligne de défense dans le rapport : satisfaisant, à renforcer ou insuffisant. */
 export type Appreciation = (typeof APPRECIATIONS)[number]
 
+/** Ligne de défense d'un groupe du rapport : 1ʳᵉ, 2ᵉ, 3ᵉ ligne ou volet TIC. */
 export type LigneDefense = '1' | '2' | '3' | 'TIC'
 
+/** Groupe du rapport de contrôle interne pour une ligne de défense : appréciation + métriques. */
 export interface RapportLigne {
   ligne: LigneDefense
   sections: ComiteSection[]
 }
 
+/** Rapport annuel de contrôle interne assemblé : groupes par ligne de défense. */
 export interface RapportControleInterne {
   groupes: RapportLigne[]
   highlights: ComiteHighlight[]

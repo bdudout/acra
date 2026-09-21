@@ -6,8 +6,10 @@ import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { getServerLocale } from '@/lib/i18n'
+import { getServerLocale, getServerT } from '@/lib/i18n'
 import DerogationsRegistre, { type RegistreRow } from '@/components/DerogationsRegistre'
+import DerogationsDashboard from '@/components/DerogationsDashboard'
+import { buildDerogationDashboard } from '@/lib/derogation-dashboard'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -17,6 +19,7 @@ export default async function DerogationsPage() {
   if (!session?.user) redirect('/auth/signin')
 
   const locale = await getServerLocale()
+  const t = await getServerT()
   const userId = (session.user as { id: string }).id
   const userRole: UserRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
@@ -59,6 +62,7 @@ export default async function DerogationsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-8">
+        <DerogationsDashboard dashboard={buildDerogationDashboard(rows, activeConfig?.derogationAlerteJours ?? 30)} labels={{ title: t.derogations.title, active: t.derogations.filterCurrent, expiringSoon: t.derogations.filterDue, expired: t.derogations.filterExpired, pending: t.derogations.filterReview }} />
         <DerogationsRegistre rows={rows} locale={locale} canCreate={canCreate}
           dureeDefaut={activeConfig?.derogationDureeDefautJours ?? 180}
           dureeMax={activeConfig?.derogationDureeMaxJours ?? 365}

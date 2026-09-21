@@ -74,6 +74,7 @@ export type AuditAction =
   | 'PASSWORD_RESET_COMPLETED'
   | 'ROLE_CHANGED'
   | 'USER_DELETED'
+  | 'ACCOUNT_SELF_DELETED'
   | 'USER_CREATED'
   | 'USERS_BULK_IMPORTED'
   | 'USER_SUSPENDED'
@@ -108,6 +109,9 @@ export type AuditAction =
   | 'MFA_CONFIRMED'
   | 'MFA_CHALLENGE_SENT'
   | 'MFA_VERIFIED'
+  | 'MFA_TRUSTED_DEVICE_USED'
+  | 'TRUSTED_DEVICE_CREATED'
+  | 'TRUSTED_DEVICE_REVOKED'
   | 'EMAIL_VERIFICATION_SENT'
   | 'EMAIL_VERIFIED'
   | 'SSO_CONFIG_UPDATED'
@@ -126,6 +130,7 @@ export type AuditAction =
   | 'ORG_MEMBER_ADDED'
   | 'ORG_MEMBER_REMOVED'
 
+/** Contexte joint à un événement d'audit (utilisateur, IP, organisation, cible…). */
 export interface AuditContext {
   userId?:      string
   userEmail?:   string

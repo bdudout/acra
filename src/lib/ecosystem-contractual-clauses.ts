@@ -26,6 +26,7 @@ export const CONTRACTUAL_CLAUSE_KEYS = [
   'sla',
 ] as const
 
+/** Clé d'une clause contractuelle type proposée pour encadrer un tiers de l'écosystème. */
 export type ContractualClauseKey = typeof CONTRACTUAL_CLAUSE_KEYS[number]
 
 /** Vrai si la mesure est une clause contractuelle. */

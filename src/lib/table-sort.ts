@@ -5,7 +5,9 @@
  * restent TOUJOURS en fin, quel que soit le sens.
  */
 
+/** Sens de tri d'une colonne : ascendant ou descendant. */
 export type SortDir = 'asc' | 'desc'
+/** État de tri d'un tableau : colonne active + sens. */
 export interface SortState { key: string; dir: SortDir }
 
 /** Cycle d'un en-tête : aucun → asc → desc → aucun (null). */

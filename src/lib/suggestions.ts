@@ -5,6 +5,7 @@
 
 /** Champs texte libres proposant de l'autocomplétion (whitelist). */
 export const SUGGESTION_FIELDS = ['organisation', 'tag', 'sourceRisque', 'partiePrenante', 'mesure', 'entite', 'valeurMetier', 'bienSupport'] as const
+/** Champ éligible à l'autocomplétion (organisation, tag, source de risque, partie prenante, mesure, entité…). */
 export type SuggestionField = (typeof SUGGESTION_FIELDS)[number]
 
 /** Garde de type : vrai si la valeur est un champ d'autocomplétion connu (SUGGESTION_FIELDS). */

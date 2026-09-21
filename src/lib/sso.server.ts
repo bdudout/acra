@@ -15,6 +15,7 @@ import {
   type OidcClaims,
 } from '@/lib/sso'
 
+/** Configuration SSO OIDC résolue (issuer, client, endpoints) pour câbler NextAuth au fournisseur d'entreprise. */
 export interface SsoOidcConfig {
   issuer: string
   clientId: string

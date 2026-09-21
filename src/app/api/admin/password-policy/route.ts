@@ -28,10 +28,13 @@ const PolicySchema = z.object({
   passwordResetMode:        z.enum(['ADMIN', 'EMAIL']).default('ADMIN'),
   requireEmailVerification: z.boolean().default(false),
   inactivityDaysLimit:      z.number().int().min(0).max(3650).default(180),
+  selfServiceAccountDeletion: z.boolean().default(false),
   // MFA
   mfaEnabled:     z.boolean().default(false),
   mfaMethodEmail: z.boolean().default(true),
   mfaMethodSms:   z.boolean().default(false),
+  trustedDeviceEnabled: z.boolean().default(false),
+  trustedDeviceDurationDays: z.number().int().min(1).max(90).default(30),
   mfaScope:       z.enum(['ALL', 'ADMIN_ONLY']).default('ALL'),
   smsProvider:    z.enum(['TWILIO', 'OVH', 'CUSTOM']).default('TWILIO'),
   // [F005b corrigé] CWE-312 / CWE-532 — Secrets SMS
@@ -95,8 +98,8 @@ export async function GET(req: NextRequest) {
     create: {
       id: 'global',
       minLength: 12, requireUppercase: true, requireLowercase: true, requireNumbers: true, requireSpecial: true,
-      maxAgeDays: 90, maxFailedAttempts: 5, requireEmailVerification: false,
-      mfaEnabled: false, mfaMethodEmail: true, mfaMethodSms: false, mfaScope: 'ALL', smsProvider: 'TWILIO',
+      maxAgeDays: 90, maxFailedAttempts: 5, requireEmailVerification: false, selfServiceAccountDeletion: false,
+      mfaEnabled: false, mfaMethodEmail: true, mfaMethodSms: false, trustedDeviceEnabled: false, trustedDeviceDurationDays: 30, mfaScope: 'ALL', smsProvider: 'TWILIO',
       mfaPendingConfirmation: false, mfaConfirmationDeadline: null,
     },
     update: {},

@@ -20,6 +20,7 @@ export const MENTIONS_PROTECTION = [
   'CONFIDENTIELLE',
 ] as const
 
+/** Mention de protection d'un document (ex. « diffusion restreinte ») apposée sur les exports. */
 export type MentionProtection = typeof MENTIONS_PROTECTION[number]
 
 /** Mention par défaut d'une nouvelle analyse. */
