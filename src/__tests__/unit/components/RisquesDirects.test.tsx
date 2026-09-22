@@ -9,6 +9,7 @@ const M = {
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
   tier_eleve: 'Élevé', tier_critique: 'Critique',
   strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
+  suggestionsLabel: 'Suggestions pour votre secteur', suggestionsHint: 'Cliquez pour pré-remplir.',
 }
 vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
 
@@ -56,5 +57,31 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable={false} />)
     await screen.findByText('Aucun risque pour l\'instant.')
     expect(screen.queryByText('Ajouter')).toBeNull()
+  })
+
+  it('suggestion sectorielle : clic pré-remplit le formulaire puis POST avec les G/V suggérés', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [] }))
+    const suggestions = [{ intitule: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3, pertinent: true }]
+    render(<RisquesDirects analyseId="an1" editable suggestions={suggestions} />)
+    await screen.findByText('Aucun risque pour l\'instant.')
+
+    // La puce est visible ; le clic pré-remplit l'intitulé (le formulaire, pas de création).
+    fireEvent.click(screen.getByRole('button', { name: /Arrêt du SIH par rançongiciel/ }))
+    expect((screen.getByPlaceholderText('Intitulé') as HTMLInputElement).value).toBe('Arrêt du SIH par rançongiciel')
+    expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(false) // rien créé au clic
+
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r9' } }))
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [{ id: 'r9', nom: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' }] }))
+    fireEvent.click(screen.getByText('Ajouter'))
+    await waitFor(() => expect(screen.getByText('Arrêt du SIH par rançongiciel')).toBeInTheDocument())
+    const postCall = fetchMock.mock.calls.find(c => c[1]?.method === 'POST')
+    expect(JSON.parse(postCall![1].body)).toMatchObject({ nom: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3 })
+  })
+
+  it('lecture seule : les suggestions ne sont pas affichées', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [] }))
+    render(<RisquesDirects analyseId="an1" editable={false} suggestions={[{ intitule: 'X', gravite: 2, vraisemblance: 2, pertinent: false }]} />)
+    await screen.findByText('Aucun risque pour l\'instant.')
+    expect(screen.queryByText('Suggestions pour votre secteur')).toBeNull()
   })
 })

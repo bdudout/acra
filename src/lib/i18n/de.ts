@@ -1457,6 +1457,8 @@ export const de: Translations = {
     tier_eleve: 'Hoch',
     tier_critique: 'Kritisch',
     strategies: { REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen', REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen' },
+    suggestionsLabel: 'Vorschläge für Ihre Branche',
+    suggestionsHint: 'Klicken, um das Formular vorauszufüllen (Werte vor dem Hinzufügen änderbar).',
     guidance: { intro: 'Bewerten Sie jedes Risiko einfach: beschreiben Sie es, dann Schwere und Wahrscheinlichkeit einschätzen, um das Niveau abzuleiten.', points: ['Beschreiben Sie das Risiko in einem klaren Satz.', 'Bewerten Sie Schwere und Wahrscheinlichkeit auf der vorgesehenen Skala.', 'Wählen Sie eine Behandlung: reduzieren, akzeptieren, übertragen, ablehnen oder überwachen.'] },
   },
   webhooks: {

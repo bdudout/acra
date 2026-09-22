@@ -18,6 +18,7 @@ import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
+import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -113,6 +114,10 @@ export default async function AtelierPage({
       key: s.key, type: s.type ?? 'appreciation', label: cfg.labels[s.key] ?? '', desc: cfg.descByKey[s.key],
       guidance: cfg.guidanceByKey[s.key],
     }))
+    // R3 — suggestions de risques sectoriels (pré-remplissent le formulaire).
+    const risqueSuggestions = editable
+      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale })
+      : []
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -134,6 +139,7 @@ export default async function AtelierPage({
             perimetreLabel={cfg.perimetreLabel} objectifsLabel={cfg.objectifsLabel}
             noContext={cfg.noContext} phasesLabel={cfg.phasesLabel}
             guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
+            risqueSuggestions={risqueSuggestions}
           />
         </main>
       </div>

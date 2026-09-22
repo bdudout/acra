@@ -1457,6 +1457,8 @@ export const it: Translations = {
     tier_eleve: 'Alto',
     tier_critique: 'Critico',
     strategies: { REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire', REFUSER: 'Rifiutare', SURVEILLER: 'Monitorare' },
+    suggestionsLabel: 'Suggerimenti per il tuo settore',
+    suggestionsHint: 'Clicca per precompilare il modulo (valori modificabili prima di aggiungere).',
     guidance: { intro: 'Valuta ogni rischio in modo semplice: descrivilo, poi valuta gravità e probabilità per dedurne il livello.', points: ['Descrivi il rischio in una frase chiara.', 'Valuta gravità e probabilità sulla scala proposta.', 'Scegli un trattamento: ridurre, accettare, trasferire, rifiutare o monitorare.'] },
   },
   webhooks: {
