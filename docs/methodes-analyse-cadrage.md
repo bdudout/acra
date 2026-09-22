@@ -112,9 +112,14 @@ conversion silencieuse d'un jeu d'étapes à un autre).
      `/api/analyses/[id]/risques` (GET/POST/PATCH/DELETE) **gardée** aux méthodes à
      saisie directe (`usesDirectRiskEntry`, garde `analyse-direct-risk.server.ts` :
      accès + méthode + édition F01 + gel). Tests purs + route.
-   - **2b. Parcours ISO 31000** — ⬜ page d'ateliers méthode-aware (3 étapes :
-     cadrage réutilisé · saisie directe · traitement réutilisé), bornage
-     `atelierCourant` par `methodStepCount`, `IMPLEMENTED_METHODS += ISO_31000`.
+   - **2b. Parcours ISO 31000** — ✅ **livré** : `ISO_31000` câblé
+     (`IMPLEMENTED_METHODS`). Comme la méthode est une **évaluation simple** (risque
+     opérationnel), le parcours n'est **pas** un tunnel d'ateliers EBIOS mais un
+     **écran unique d'appréciation** : composant `RisquesDirects` (tableau
+     gravité × vraisemblance → niveau via la matrice, stratégie de traitement,
+     CRUD via l'API 2a). La page d'ateliers court-circuite tout le parcours EBIOS
+     quand `methode === 'ISO_31000'` (aucune fuite de contenu EBIOS). i18n
+     `risquesDirects` + `methodes` (5 langues). Tests composant.
    - **2c. Activation + sélecteur** — ⬜ `Configuration.methodesActives` (défaut
      `["EBIOS_RM"]`) + toggle SUPER_ADMIN + sélecteur à la création (config
      avancée) + i18n libellés **officiels** ISO 31000.

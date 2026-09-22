@@ -16,6 +16,7 @@ import Atelier2 from '@/components/workshops/Atelier2'
 import Atelier3 from '@/components/workshops/Atelier3'
 import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
+import RisquesDirects from '@/components/RisquesDirects'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -71,6 +72,31 @@ export default async function AtelierPage({
   const sessionUser = { id: userId, role: userRole }
   if (!canViewAnalyse(sessionUser, ownership)) notFound()
   const editable = canEditAnalyse(sessionUser, ownership)
+
+  // ── Méthode ISO 31000 « simple » (risque opérationnel) : une SEULE page
+  // d'appréciation directe (gravité × vraisemblance), sans le tunnel d'ateliers
+  // EBIOS. On court-circuite tout le parcours EBIOS ci-dessous. cf. lib/methodes.ts.
+  if ((analyse as { methode?: string }).methode === 'ISO_31000') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+          <header className="mb-6">
+            <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+              <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
+                <span aria-hidden="true">← </span>{analyse.nom}
+              </Link>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{t.methodes?.iso31000 ?? 'ISO 31000:2018'}</span>
+            </nav>
+            <h1 className="text-2xl font-bold text-gray-900">{t.risquesDirects.pageTitle}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t.risquesDirects.pageSubtitle}</p>
+          </header>
+          <RisquesDirects analyseId={analyse.id} editable={editable} />
+        </main>
+      </div>
+    )
+  }
 
   // Bloquer l'accès aux ateliers non encore débloqués
   if (atelierNum > analyse.atelierCourant) {
