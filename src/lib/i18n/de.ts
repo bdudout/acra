@@ -1388,6 +1388,7 @@ export const de: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  phaseGuidance: { title: 'Über diese Phase', hide: 'Ausblenden', show: 'Über diese Phase' },
   iso27005: {
     pageTitle: 'Risikomanagementprozess',
     pageSubtitle: 'ISO/IEC 27005:2022-Prozess, nach Phasen.',
@@ -1404,6 +1405,13 @@ export const de: Translations = {
     objectifsLabel: 'Ziele / Kriterien',
     noContext: 'Nicht angegeben.',
     evaluationNote: 'Priorisierung der Risiken nach Kriterien (schreibgeschützt).',
+    guidance: {
+      contexte: { intro: 'Bevor Sie Risiken bewerten, legen Sie fest, was Sie untersuchen und nach welchen Kriterien Sie ihre Bedeutung beurteilen.', points: ['Legen Sie den Geltungsbereich fest: betroffene Aktivitäten, Systeme und Beteiligte.', 'Definieren Sie die Bewertungs- und Akzeptanzkriterien.', 'Sammeln Sie relevante Informationen zum internen und externen Kontext.'] },
+      identification: { intro: 'Erfassen Sie alles, was Ihre Ziele gefährden könnte, ohne die Bedeutung schon zu bewerten.', points: ['Listen Sie die Risiken auf: befürchtete Ereignisse und ihre möglichen Ursachen.', 'Nutzen Sie vielfältige Quellen: Vorfälle, Erfahrungen, Experten.', 'Streben Sie Vollständigkeit an: ein nicht erkanntes Risiko wird nicht behandelt.'] },
+      analyse: { intro: 'Schätzen Sie für jedes Risiko seine Schwere (Auswirkung) und seine Eintrittswahrscheinlichkeit.', points: ['Bewerten Sie die Folgen, falls das Risiko eintritt.', 'Schätzen Sie die Wahrscheinlichkeit angesichts bestehender Maßnahmen.', 'Das Risikoniveau verbindet Schwere und Wahrscheinlichkeit.'] },
+      evaluation: { intro: 'Vergleichen Sie die Risikoniveaus mit den Kriterien, um Prioritäten zu setzen.', points: ['Priorisieren Sie die höchsten Risiken.', 'Gleichen Sie jedes Risiko mit den Akzeptanzkriterien ab.', 'Nur-Lese-Phase: die Niveaus stammen aus der Analyse.'] },
+      traitement: { intro: 'Wählen Sie für jedes Risiko, wie Sie es beherrschen: reduzieren, akzeptieren, übertragen oder ablehnen.', points: ['Wählen Sie eine dem Risikoniveau angemessene Strategie.', 'Ein akzeptables Risiko kann einfach überwacht werden.', 'Dokumentieren Sie die Entscheidung und das erwartete Restrisiko.'] },
+    },
   },
   nist80030: {
     pageTitle: 'Risikobewertungsprozess',
@@ -1416,6 +1424,12 @@ export const de: Translations = {
     noContext: 'Nicht angegeben.',
     communicateNote: 'Ergebnisse kommunizieren (schreibgeschützt).',
     maintainNote: 'Die Bewertung aktuell halten.',
+    guidance: {
+      prepare: { intro: 'Bereiten Sie die Bewertung vor: Zweck, Geltungsbereich und getroffene Annahmen.', points: ['Legen Sie das Ziel und die Nutzung der Ergebnisse fest.', 'Grenzen Sie den Geltungsbereich und die Informationsquellen ab.', 'Halten Sie Annahmen und Einschränkungen fest.'] },
+      conduct: { intro: 'Führen Sie die Bewertung durch: Risiken erkennen, dann Wahrscheinlichkeit und Auswirkung schätzen.', points: ['Erkennen Sie Bedrohungen, Schwachstellen und befürchtete Ereignisse.', 'Schätzen Sie Wahrscheinlichkeit und Auswirkung jedes Risikos.', 'Bestimmen Sie das daraus resultierende Risikoniveau.'] },
+      communicate: { intro: 'Teilen Sie die Ergebnisse mit den Beteiligten, um Entscheidungen zu unterstützen.', points: ['Berichten Sie den Entscheidern die Risiken und ihr Niveau.', 'Passen Sie die Botschaft an jede Zielgruppe an.', 'Nur-Lese-Phase: hier wird nichts eingegeben.'] },
+      maintain: { intro: 'Halten Sie die Bewertung aktuell, während sich Kontext und Risiken ändern.', points: ['Bewerten Sie die Risiken regelmäßig neu.', 'Berücksichtigen Sie Änderungen: neue Systeme, Vorfälle.', 'Bewahren Sie die Nachvollziehbarkeit der Aktualisierungen.'] },
+    },
   },
   methodesConfig: {
     sectionTitle: 'Analysemethoden',
@@ -1443,6 +1457,7 @@ export const de: Translations = {
     tier_eleve: 'Hoch',
     tier_critique: 'Kritisch',
     strategies: { REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen', REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen' },
+    guidance: { intro: 'Bewerten Sie jedes Risiko einfach: beschreiben Sie es, dann Schwere und Wahrscheinlichkeit einschätzen, um das Niveau abzuleiten.', points: ['Beschreiben Sie das Risiko in einem klaren Satz.', 'Bewerten Sie Schwere und Wahrscheinlichkeit auf der vorgesehenen Skala.', 'Wählen Sie eine Behandlung: reduzieren, akzeptieren, übertragen, ablehnen oder überwachen.'] },
   },
   webhooks: {
     title: 'Webhooks',

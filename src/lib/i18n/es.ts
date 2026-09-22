@@ -1388,6 +1388,7 @@ export const es: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  phaseGuidance: { title: 'Acerca de esta fase', hide: 'Ocultar', show: 'Acerca de esta fase' },
   iso27005: {
     pageTitle: 'Proceso de gestión de riesgos',
     pageSubtitle: 'Proceso ISO/IEC 27005:2022, por fases.',
@@ -1404,6 +1405,13 @@ export const es: Translations = {
     objectifsLabel: 'Objetivos / criterios',
     noContext: 'No indicado.',
     evaluationNote: 'Priorización de los riesgos según los criterios (solo lectura).',
+    guidance: {
+      contexte: { intro: 'Antes de evaluar los riesgos, delimite qué estudia y según qué criterios juzgará su importancia.', points: ['Precise el alcance: actividades, sistemas y partes interesadas implicadas.', 'Defina los criterios de evaluación y de aceptación de los riesgos.', 'Reúna la información útil sobre el contexto interno y externo.'] },
+      identification: { intro: 'Enumere lo que podría afectar a sus objetivos, sin juzgar todavía su importancia.', points: ['Liste los riesgos: eventos temidos y sus posibles causas.', 'Apóyese en fuentes variadas: incidentes, experiencias, expertos.', 'Busque la exhaustividad: un riesgo no identificado no se tratará.'] },
+      analyse: { intro: 'Para cada riesgo, estime su gravedad (impacto) y su probabilidad.', points: ['Evalúe las consecuencias si el riesgo se materializa.', 'Estime la probabilidad teniendo en cuenta las medidas ya existentes.', 'El nivel de riesgo combina gravedad y probabilidad.'] },
+      evaluation: { intro: 'Compare los niveles de riesgo con los criterios para decidir cuáles tratar primero.', points: ['Priorice los riesgos más elevados.', 'Contraste cada riesgo con los criterios de aceptación.', 'Fase de solo lectura: los niveles provienen del análisis.'] },
+      traitement: { intro: 'Para cada riesgo, elija cómo controlarlo: reducir, aceptar, transferir o rechazar.', points: ['Seleccione una estrategia adaptada al nivel del riesgo.', 'Un riesgo aceptable puede simplemente vigilarse.', 'Documente la decisión y el riesgo residual esperado.'] },
+    },
   },
   nist80030: {
     pageTitle: 'Proceso de evaluación de riesgos',
@@ -1416,6 +1424,12 @@ export const es: Translations = {
     noContext: 'No indicado.',
     communicateNote: 'Comunicar los resultados (solo lectura).',
     maintainNote: 'Mantener la evaluación actualizada.',
+    guidance: {
+      prepare: { intro: 'Prepare la evaluación: su finalidad, su alcance y las hipótesis adoptadas.', points: ['Defina el objetivo y el uso de los resultados.', 'Delimite el alcance y las fuentes de información.', 'Anote las hipótesis y las restricciones.'] },
+      conduct: { intro: 'Realice la evaluación: identifique los riesgos y estime su probabilidad e impacto.', points: ['Identifique amenazas, vulnerabilidades y eventos temidos.', 'Estime la probabilidad y el impacto de cada riesgo.', 'Determine el nivel de riesgo resultante.'] },
+      communicate: { intro: 'Comparta los resultados con las partes interesadas para orientar las decisiones.', points: ['Comunique los riesgos y su nivel a los responsables.', 'Adapte el mensaje a cada audiencia.', 'Fase de solo lectura: aquí no se introduce nada.'] },
+      maintain: { intro: 'Mantenga la evaluación actualizada a medida que evolucionan el contexto y los riesgos.', points: ['Reevalúe los riesgos periódicamente.', 'Incorpore los cambios: nuevos sistemas, incidentes.', 'Conserve la trazabilidad de las actualizaciones.'] },
+    },
   },
   methodesConfig: {
     sectionTitle: 'Métodos de análisis',
@@ -1443,6 +1457,7 @@ export const es: Translations = {
     tier_eleve: 'Alto',
     tier_critique: 'Crítico',
     strategies: { REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir', REFUSER: 'Rechazar', SURVEILLER: 'Vigilar' },
+    guidance: { intro: 'Evalúe cada riesgo de forma sencilla: descríbalo y valore su gravedad y probabilidad para deducir el nivel.', points: ['Describa el riesgo en una frase clara.', 'Valore la gravedad y la probabilidad en la escala propuesta.', 'Elija un tratamiento: reducir, aceptar, transferir, rechazar o vigilar.'] },
   },
   webhooks: {
     title: 'Webhooks',

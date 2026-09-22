@@ -1412,6 +1412,7 @@ export const fr = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  phaseGuidance: { title: 'À propos de cette phase', hide: 'Masquer', show: 'À propos de cette phase' },
   iso27005: {
     pageTitle: 'Processus de gestion des risques',
     pageSubtitle: 'Processus ISO/IEC 27005:2022, par phases.',
@@ -1428,6 +1429,13 @@ export const fr = {
     objectifsLabel: 'Objectifs / critères',
     noContext: 'Non renseigné.',
     evaluationNote: 'Priorisation des risques selon les critères (lecture seule).',
+    guidance: {
+      contexte: { intro: 'Avant d’apprécier les risques, délimitez ce que vous étudiez et selon quels critères vous jugerez leur importance.', points: ['Précisez le périmètre : activités, systèmes et parties prenantes concernés.', 'Fixez les critères d’appréciation et d’acceptation des risques.', 'Réunissez les informations utiles sur le contexte interne et externe.'] },
+      identification: { intro: 'Recensez ce qui pourrait porter atteinte à vos objectifs, sans encore juger de leur importance.', points: ['Listez les risques : événements redoutés et leurs causes possibles.', 'Appuyez-vous sur des sources variées : incidents, retours d’expérience, experts.', 'Visez l’exhaustivité : un risque non identifié ne sera pas traité.'] },
+      analyse: { intro: 'Pour chaque risque, estimez sa gravité (impact) et sa vraisemblance (probabilité).', points: ['Évaluez les conséquences si le risque se réalise.', 'Estimez la probabilité au regard des mesures déjà en place.', 'Le niveau de risque combine gravité et vraisemblance.'] },
+      evaluation: { intro: 'Comparez les niveaux de risque aux critères pour décider lesquels traiter en priorité.', points: ['Priorisez les risques les plus élevés.', 'Confrontez chaque risque aux critères d’acceptation.', 'Phase de lecture : les niveaux proviennent de l’analyse.'] },
+      traitement: { intro: 'Choisissez, pour chaque risque, comment le maîtriser : réduire, accepter, transférer ou refuser.', points: ['Sélectionnez une stratégie adaptée au niveau du risque.', 'Un risque acceptable peut simplement être surveillé.', 'Documentez la décision et le risque résiduel attendu.'] },
+    },
   },
   nist80030: {
     pageTitle: "Processus d'appréciation des risques",
@@ -1440,6 +1448,12 @@ export const fr = {
     noContext: 'Non renseigné.',
     communicateNote: 'Communication des résultats (lecture seule).',
     maintainNote: "Tenir l'appréciation à jour dans le temps.",
+    guidance: {
+      prepare: { intro: 'Préparez l’appréciation : son but, son périmètre et les hypothèses retenues.', points: ['Définissez l’objectif et l’usage des résultats.', 'Délimitez le périmètre et les sources d’information.', 'Notez les hypothèses et les contraintes.'] },
+      conduct: { intro: 'Menez l’appréciation : identifiez les risques puis estimez leur vraisemblance et leur impact.', points: ['Identifiez menaces, vulnérabilités et événements redoutés.', 'Estimez la vraisemblance et l’impact de chaque risque.', 'Déterminez le niveau de risque qui en résulte.'] },
+      communicate: { intro: 'Partagez les résultats avec les parties prenantes pour éclairer les décisions.', points: ['Restituez les risques et leur niveau aux décideurs.', 'Adaptez le message à chaque audience.', 'Phase de lecture : rien n’est saisi ici.'] },
+      maintain: { intro: 'Tenez l’appréciation à jour à mesure que le contexte et les risques évoluent.', points: ['Réévaluez périodiquement les risques.', 'Intégrez les changements : nouveaux systèmes, incidents.', 'Conservez la traçabilité des mises à jour.'] },
+    },
   },
   methodesConfig: {
     sectionTitle: "Méthodes d'analyse",
@@ -1467,6 +1481,7 @@ export const fr = {
     tier_eleve: 'Élevé',
     tier_critique: 'Critique',
     strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
+    guidance: { intro: 'Appréciez chaque risque simplement : décrivez-le, puis évaluez sa gravité et sa vraisemblance pour en déduire le niveau.', points: ['Décrivez le risque en une phrase claire.', 'Évaluez gravité et vraisemblance sur l’échelle proposée.', 'Choisissez un traitement : réduire, accepter, transférer, refuser ou surveiller.'] },
   },
   webhooks: {
     title: 'Webhooks',

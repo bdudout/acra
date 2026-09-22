@@ -1388,6 +1388,7 @@ export const en: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  phaseGuidance: { title: 'About this phase', hide: 'Hide', show: 'About this phase' },
   iso27005: {
     pageTitle: 'Risk management process',
     pageSubtitle: 'ISO/IEC 27005:2022 process, by phases.',
@@ -1404,6 +1405,13 @@ export const en: Translations = {
     objectifsLabel: 'Objectives / criteria',
     noContext: 'Not provided.',
     evaluationNote: 'Risk prioritisation against criteria (read-only).',
+    guidance: {
+      contexte: { intro: 'Before assessing risks, define what you are studying and the criteria used to judge their importance.', points: ['Set the scope: activities, systems and stakeholders involved.', 'Define the risk assessment and acceptance criteria.', 'Gather relevant information on the internal and external context.'] },
+      identification: { intro: 'List whatever could harm your objectives, without yet judging their importance.', points: ['List the risks: feared events and their possible causes.', 'Draw on varied sources: incidents, lessons learned, experts.', 'Aim for completeness: an unidentified risk will not be treated.'] },
+      analyse: { intro: 'For each risk, estimate its severity (impact) and its likelihood (probability).', points: ['Assess the consequences if the risk materialises.', 'Estimate the probability given the controls already in place.', 'The risk level combines severity and likelihood.'] },
+      evaluation: { intro: 'Compare risk levels against the criteria to decide which to treat first.', points: ['Prioritise the highest risks.', 'Check each risk against the acceptance criteria.', 'Read-only phase: levels come from the analysis.'] },
+      traitement: { intro: 'For each risk, choose how to control it: reduce, accept, transfer or refuse.', points: ['Pick a strategy suited to the risk level.', 'An acceptable risk can simply be monitored.', 'Record the decision and the expected residual risk.'] },
+    },
   },
   nist80030: {
     pageTitle: 'Risk assessment process',
@@ -1416,6 +1424,12 @@ export const en: Translations = {
     noContext: 'Not provided.',
     communicateNote: 'Communicate results (read-only).',
     maintainNote: 'Keep the assessment current over time.',
+    guidance: {
+      prepare: { intro: 'Prepare the assessment: its purpose, scope and the assumptions made.', points: ['Define the goal and how the results will be used.', 'Set the scope and the information sources.', 'Note the assumptions and constraints.'] },
+      conduct: { intro: 'Conduct the assessment: identify the risks, then estimate their likelihood and impact.', points: ['Identify threats, vulnerabilities and feared events.', 'Estimate each risk’s likelihood and impact.', 'Determine the resulting risk level.'] },
+      communicate: { intro: 'Share the results with stakeholders to inform decisions.', points: ['Report the risks and their level to decision-makers.', 'Tailor the message to each audience.', 'Read-only phase: nothing is entered here.'] },
+      maintain: { intro: 'Keep the assessment current as the context and risks evolve.', points: ['Reassess the risks periodically.', 'Incorporate changes: new systems, incidents.', 'Keep a trace of the updates.'] },
+    },
   },
   methodesConfig: {
     sectionTitle: 'Analysis methods',
@@ -1443,6 +1457,7 @@ export const en: Translations = {
     tier_eleve: 'High',
     tier_critique: 'Critical',
     strategies: { REDUIRE: 'Reduce', ACCEPTER: 'Accept', TRANSFERER: 'Transfer', REFUSER: 'Refuse', SURVEILLER: 'Monitor' },
+    guidance: { intro: 'Assess each risk simply: describe it, then rate its severity and likelihood to derive the level.', points: ['Describe the risk in one clear sentence.', 'Rate severity and likelihood on the scale provided.', 'Choose a treatment: reduce, accept, transfer, refuse or monitor.'] },
   },
   webhooks: {
     title: 'Webhooks',
