@@ -853,6 +853,9 @@ export const en: Translations = {
     submit:      '🚀 Start analysis →',
     submitting:  'Creating…',
     cancelBtn:   'Cancel',
+    advanced:    'Advanced settings',
+    methodLabel: 'Analysis method',
+    methodHint:  'EBIOS RM by default. Pick a simpler method depending on the context.',
   },
 
   analysis: {
@@ -1384,6 +1387,12 @@ export const en: Translations = {
     iso27005: 'ISO/IEC 27005:2022',
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
+  },
+  methodesConfig: {
+    sectionTitle: 'Analysis methods',
+    sectionDesc: 'Enable the risk-analysis methods offered at creation. EBIOS RM is always available.',
+    ebiosLocked: 'Always available (default method).',
+    hint: 'A method disabled here is offered in no organisation.',
   },
   risquesDirects: {
     pageTitle: 'Risk assessment',

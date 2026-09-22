@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   RISK_METHODS, DEFAULT_METHOD, IMPLEMENTED_METHODS, isRiskMethod,
-  methodSteps, methodStepCount, resolveMethodes, METHOD_STEPS,
+  methodSteps, methodStepCount, resolveMethodes, METHOD_STEPS, cleanActiveMethodes,
 } from '@/lib/methodes'
 
 describe('registre des méthodes', () => {
@@ -53,5 +53,14 @@ describe('resolveMethodes — ensemble effectif', () => {
 
   it('défaut d\'organisation honoré s\'il est disponible (ISO 31000)', () => {
     expect(resolveMethodes({ orgDefault: 'ISO_31000' }).default).toBe('ISO_31000')
+  })
+})
+
+describe('cleanActiveMethodes — activation instance', () => {
+  it('impose EBIOS RM et ne garde que les méthodes câblées connues', () => {
+    expect(cleanActiveMethodes(['ISO_31000'])).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(cleanActiveMethodes(null)).toEqual(['EBIOS_RM'])
+    expect(cleanActiveMethodes(['ISO_27005'])).toEqual(['EBIOS_RM']) // non câblée → écartée
+    expect(cleanActiveMethodes(['garbage', 'EBIOS_RM'])).toEqual(['EBIOS_RM'])
   })
 })

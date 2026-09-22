@@ -1899,6 +1899,10 @@ model Configuration {
   //    SOUVERAIN). OFF ⇒ MCP indisponible. Cf. docs/mcp-cadrage.md.
   apiEnabled Boolean @default(false)
   mcpEnabled Boolean @default(false)
+  // Méthodes d'analyse activées au niveau instance (SUPER_ADMIN). Défaut : EBIOS RM
+  // seul ; les autres méthodes câblées se débloquent ici. Cf. lib/methodes.ts et
+  // docs/methodes-analyse-cadrage.md.
+  methodesActives Json @default("[\"EBIOS_RM\"]")
 
   // Contenu public configurable (niveau instance, SUPER_ADMIN) : personnalise le
   // bandeau public et l'appel à l'action de contact/déploiement SANS toucher aux

@@ -120,9 +120,15 @@ conversion silencieuse d'un jeu d'étapes à un autre).
      CRUD via l'API 2a). La page d'ateliers court-circuite tout le parcours EBIOS
      quand `methode === 'ISO_31000'` (aucune fuite de contenu EBIOS). i18n
      `risquesDirects` + `methodes` (5 langues). Tests composant.
-   - **2c. Activation + sélecteur** — ⬜ `Configuration.methodesActives` (défaut
-     `["EBIOS_RM"]`) + toggle SUPER_ADMIN + sélecteur à la création (config
-     avancée) + i18n libellés **officiels** ISO 31000.
+   - **2c. Activation + sélecteur** — ✅ **livré** : `Configuration.methodesActives`
+     (défaut `["EBIOS_RM"]`, + migration) ; helper `getActiveMethodes` (fail-closed) ;
+     API SUPER_ADMIN `/api/admin/methodes-config` (GET/PUT assainis) + **section de
+     bascule** dans `/admin/instance` (EBIOS RM verrouillé) ; `/api/methodes` +
+     **sélecteur à la création** (config avancée, affiché si >1 méthode active) ;
+     création `/api/analyses` **gardée** sur l'ensemble actif. i18n `methodes`,
+     `methodesConfig`, `newAnalysis.*` (5 langues).
+   - **Résultat** : ISO 31000 est **activable par le SUPER_ADMIN**, puis
+     **choisissable à la création** ; EBIOS RM reste le défaut partout.
 
 Incréments suivants : **ISO 27005** (phases), **NIST 800‑30** (Prepare/Conduct/…),
 option **quantitative** (FAIR‑like) si besoin.
