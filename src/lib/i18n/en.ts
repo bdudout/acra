@@ -2496,6 +2496,7 @@ export const en: Translations = {
     navJournalisation: 'Logging',
     navRecovery:    'Recovery',
     navOrganizations: 'Organizations',
+    navInstance: 'Instance',
     navDemo:        'Demo',
     demoConfig: {
       title:            'Demo site settings',

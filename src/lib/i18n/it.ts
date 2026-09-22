@@ -2496,6 +2496,7 @@ export const it: Translations = {
     navJournalisation: 'Registrazione',
     navRecovery:    'Recupero',
     navOrganizations: 'Organizzazioni',
+    navInstance: 'Istanza',
     navDemo:        'Demo',
     demoConfig: {
       title:            'Impostazioni del sito dimostrativo',

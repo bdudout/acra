@@ -2536,6 +2536,7 @@ export const fr = {
     navJournalisation: 'Journalisation',
     navRecovery:    'Récupération',
     navOrganizations: 'Organisations',
+    navInstance: 'Instance',
     navDemo:        'Démo',
     demoConfig: {
       title:            'Réglages du site de démonstration',
