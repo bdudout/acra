@@ -105,10 +105,19 @@ conversion silencieuse d'un jeu d'étapes à un autre).
    proposable). `IMPLEMENTED_METHODS = ['EBIOS_RM']` : seule EBIOS RM est câblée
    → **zéro changement fonctionnel**, les autres méthodes se « débloquent » en
    ajoutant leur parcours. Tests purs (`methodes.test.ts`).
-2. **ISO 31000 simple** — ⬜ à suivre : jeu d'étapes court (périmètre/critères →
-   appréciation G×V → traitement), câblage UI + passage dans `IMPLEMENTED_METHODS`
-   + activation instance/org, réutilisant échelles + matrice qualitative + plans
-   d'action. Pas d'ateliers cyber (sources de risque, scénarios masqués).
+2. **ISO 31000 simple** — en cours, en **3 sous-étapes** (les risques EBIOS
+   dérivent des scénarios ; ISO 31000 exige une **saisie directe**, donc du neuf) :
+   - **2a. Saisie directe des risques** — ✅ **livré** : logique pure
+     `lib/risque-direct.ts` (appréciation G×V, `computeRiskScore`) + API
+     `/api/analyses/[id]/risques` (GET/POST/PATCH/DELETE) **gardée** aux méthodes à
+     saisie directe (`usesDirectRiskEntry`, garde `analyse-direct-risk.server.ts` :
+     accès + méthode + édition F01 + gel). Tests purs + route.
+   - **2b. Parcours ISO 31000** — ⬜ page d'ateliers méthode-aware (3 étapes :
+     cadrage réutilisé · saisie directe · traitement réutilisé), bornage
+     `atelierCourant` par `methodStepCount`, `IMPLEMENTED_METHODS += ISO_31000`.
+   - **2c. Activation + sélecteur** — ⬜ `Configuration.methodesActives` (défaut
+     `["EBIOS_RM"]`) + toggle SUPER_ADMIN + sélecteur à la création (config
+     avancée) + i18n libellés **officiels** ISO 31000.
 
 Incréments suivants : **ISO 27005** (phases), **NIST 800‑30** (Prepare/Conduct/…),
 option **quantitative** (FAIR‑like) si besoin.
