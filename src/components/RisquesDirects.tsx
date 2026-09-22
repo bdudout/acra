@@ -7,9 +7,10 @@
 // niveau est recalculé côté serveur ; on l'affiche via le palier de la matrice.
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Lightbulb } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
+import type { RisqueExemple } from '@/lib/risque-exemples'
 
 interface RisqueRow {
   id: string; nom: string; description?: string | null
@@ -23,7 +24,7 @@ const TIER_CLASS: Record<string, string> = {
   critique: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-200',
 }
 
-export default function RisquesDirects({ analyseId, editable }: { analyseId: string; editable: boolean }) {
+export default function RisquesDirects({ analyseId, editable, suggestions }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[] }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
   const [rows, setRows] = useState<RisqueRow[]>([])
@@ -63,6 +64,12 @@ export default function RisquesDirects({ analyseId, editable }: { analyseId: str
     if (res && res.ok) setRows(prev => prev.filter(r => r.id !== id))
   }
 
+  // Pré-remplit le formulaire à partir d'une suggestion sectorielle (R3). Ne crée
+  // rien : l'utilisateur revoit l'intitulé + G/V (modifiables) puis « Ajoute ».
+  function prefill(ex: RisqueExemple) {
+    setNom(ex.intitule); setGravite(ex.gravite); setVraisemblance(ex.vraisemblance)
+  }
+
   const niveauBadge = (n: number, g: number, v: number) => {
     const tier = getRiskTier(g * v)
     return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TIER_CLASS[tier]}`}>{n} · {m[`tier_${tier}` as keyof typeof m] as string}</span>
@@ -93,6 +100,26 @@ export default function RisquesDirects({ analyseId, editable }: { analyseId: str
           <button onClick={ajouter} disabled={busy || !nom.trim()} className="btn-primary text-sm inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={15} aria-hidden="true" /> {m.add}
           </button>
+        </div>
+      )}
+
+      {/* Suggestions sectorielles (R3) : pré-remplissent le formulaire, modifiables avant ajout. */}
+      {editable && suggestions && suggestions.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Lightbulb size={14} aria-hidden="true" />{m.suggestionsLabel}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestions.map((ex, i) => (
+              <button key={i} type="button" onClick={() => prefill(ex)}
+                title={m.suggestionsHint}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20">
+                <Plus size={12} aria-hidden="true" />
+                <span>{ex.intitule}</span>
+                <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

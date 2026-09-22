@@ -14,6 +14,7 @@ import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
 import PhaseGuidance from '@/components/PhaseGuidance'
 import type { PhaseType } from '@/lib/methodes'
+import type { RisqueExemple } from '@/lib/risque-exemples'
 
 export interface WorkshopPhase {
   key: string
@@ -27,7 +28,7 @@ export interface WorkshopPhase {
 
 export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
-  guidanceTitle, guidanceHide, guidanceShow,
+  guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
 }: {
   analyseId: string
   editable: boolean
@@ -41,6 +42,8 @@ export default function PhasedRiskWorkshop({
   guidanceTitle?: string
   guidanceHide?: string
   guidanceShow?: string
+  /** Suggestions de risques sectoriels (R3) — proposées en phase d'appréciation. */
+  risqueSuggestions?: RisqueExemple[]
 }) {
   const [active, setActive] = useState(0)
   const phase = phases[active] ?? phases[0]
@@ -92,7 +95,8 @@ export default function PhasedRiskWorkshop({
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
           {/* appreciation = éditable ; review = lecture seule (priorisation). */}
-          <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'} />
+          <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
+            suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
         </>
       )}
     </div>
