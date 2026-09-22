@@ -13,6 +13,7 @@
 import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
 import PhaseGuidance from '@/components/PhaseGuidance'
+import ContexteEditor from '@/components/ContexteEditor'
 import type { PhaseType } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 
@@ -29,6 +30,7 @@ export interface WorkshopPhase {
 export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
+  contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder,
 }: {
   analyseId: string
   editable: boolean
@@ -44,6 +46,11 @@ export default function PhasedRiskWorkshop({
   guidanceShow?: string
   /** Suggestions de risques sectoriels (R3) — proposées en phase d'appréciation. */
   risqueSuggestions?: RisqueExemple[]
+  /** Libellés d'édition du contexte (phase « context » éditable). */
+  contexteSave?: string
+  contexteSaved?: string
+  perimetrePlaceholder?: string
+  objectifsPlaceholder?: string
 }) {
   const [active, setActive] = useState(0)
   const phase = phases[active] ?? phases[0]
@@ -75,16 +82,26 @@ export default function PhasedRiskWorkshop({
         <section className="card p-6">
           <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{phase.label}</h2>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{phase.desc}</p>}
-          <dl className="space-y-3">
-            <div>
-              <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">{perimetreLabel}</dt>
-              <dd className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 whitespace-pre-wrap">{perimetre?.trim() || <span className="text-gray-400 italic">{noContext}</span>}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">{objectifsLabel}</dt>
-              <dd className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 whitespace-pre-wrap">{objectifs?.trim() || <span className="text-gray-400 italic">{noContext}</span>}</dd>
-            </div>
-          </dl>
+          {editable && contexteSave !== undefined ? (
+            // Contexte ÉDITABLE (périmètre + objectifs/critères) — persistance PATCH.
+            <ContexteEditor
+              analyseId={analyseId} perimetre={perimetre} objectifs={objectifs}
+              perimetreLabel={perimetreLabel ?? ''} objectifsLabel={objectifsLabel ?? ''}
+              perimetrePlaceholder={perimetrePlaceholder} objectifsPlaceholder={objectifsPlaceholder}
+              save={contexteSave} saved={contexteSaved ?? ''}
+            />
+          ) : (
+            <dl className="space-y-3">
+              <div>
+                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">{perimetreLabel}</dt>
+                <dd className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 whitespace-pre-wrap">{perimetre?.trim() || <span className="text-gray-400 italic">{noContext}</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">{objectifsLabel}</dt>
+                <dd className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 whitespace-pre-wrap">{objectifs?.trim() || <span className="text-gray-400 italic">{noContext}</span>}</dd>
+              </div>
+            </dl>
+          )}
         </section>
       ) : phase.type === 'note' ? (
         <section className="card p-6">

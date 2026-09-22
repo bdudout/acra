@@ -140,6 +140,8 @@ export default async function AtelierPage({
             noContext={cfg.noContext} phasesLabel={cfg.phasesLabel}
             guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
             risqueSuggestions={risqueSuggestions}
+            contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
+            perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
           />
         </main>
       </div>
