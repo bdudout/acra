@@ -9,7 +9,7 @@ const M = {
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
   tier_eleve: 'Élevé', tier_critique: 'Critique',
   strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
-  suggestionsLabel: 'Suggestions pour votre secteur', suggestionsHint: 'Cliquez pour pré-remplir.',
+  suggestionsLabel: 'Suggestions pour votre secteur', suggestionsHint: 'Cliquez pour ajouter.', undo: 'Annuler',
   colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable',
   prioSummary: '{treat} à traiter · {accept} acceptable(s)',
   subtitleReadonly: 'Consultez et priorisez vos risques (lecture seule).',
@@ -62,23 +62,30 @@ describe('RisquesDirects', () => {
     expect(screen.queryByText('Ajouter')).toBeNull()
   })
 
-  it('suggestion sectorielle : clic pré-remplit le formulaire puis POST avec les G/V suggérés', async () => {
-    fetchMock.mockReturnValueOnce(jsonOk({ risques: [] }))
+  it('suggestion : le clic AJOUTE directement le risque (POST) + surlignage « Annuler » (undo)', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [] })) // chargement initial
     const suggestions = [{ intitule: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3, pertinent: true }]
     render(<RisquesDirects analyseId="an1" editable suggestions={suggestions} />)
     await screen.findByText('Aucun risque pour l\'instant.')
 
-    // La puce est visible ; le clic pré-remplit l'intitulé (le formulaire, pas de création).
+    // Le clic sur la puce crée le risque directement (POST), sans passer par le formulaire.
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r9' } }))               // POST
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [{ id: 'r9', nom: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' }] })) // reload
     fireEvent.click(screen.getByRole('button', { name: /Arrêt du SIH par rançongiciel/ }))
-    expect((screen.getByPlaceholderText('Intitulé') as HTMLInputElement).value).toBe('Arrêt du SIH par rançongiciel')
-    expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(false) // rien créé au clic
-
-    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r9' } }))
-    fetchMock.mockReturnValueOnce(jsonOk({ risques: [{ id: 'r9', nom: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' }] }))
-    fireEvent.click(screen.getByText('Ajouter'))
     await waitFor(() => expect(screen.getByText('Arrêt du SIH par rançongiciel')).toBeInTheDocument())
     const postCall = fetchMock.mock.calls.find(c => c[1]?.method === 'POST')
+    expect(postCall?.[0]).toBe('/api/analyses/an1/risques')
     expect(JSON.parse(postCall![1].body)).toMatchObject({ nom: 'Arrêt du SIH par rançongiciel', gravite: 4, vraisemblance: 3 })
+
+    // Undo : « Annuler » retire immédiatement le risque du registre (retrait optimiste
+    // + DELETE). Le registre redevient vide (la puce de suggestion, elle, réapparaît).
+    const undo = await screen.findByText('Annuler')
+    fetchMock.mockReturnValueOnce(jsonOk({ ok: true }))                            // DELETE
+    fireEvent.click(undo)
+    await waitFor(() => expect(screen.getByText('Aucun risque pour l\'instant.')).toBeInTheDocument())
+    expect(screen.queryByText('Annuler')).toBeNull() // plus de ligne surlignée
+    const delCall = fetchMock.mock.calls.find(c => c[1]?.method === 'DELETE')
+    expect(delCall?.[0]).toBe('/api/analyses/an1/risques/r9')
   })
 
   it('lecture seule : les suggestions ne sont pas affichées', async () => {

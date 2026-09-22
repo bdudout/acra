@@ -50,12 +50,14 @@ export function suggestRisqueExemples(opts: {
   sousSecteur?: string | null
   locale?: Locale
   limit?: number
+  /** Socle de risques TRANSVERSES (tous secteurs), résolu i18n par la page.
+   *  Toujours proposé — même sans secteur — pour ne jamais laisser l'écran vide. */
+  base?: readonly { intitule: string; gravite: number; vraisemblance: number }[]
 }): RisqueExemple[] {
-  const { secteur, sousSecteur, locale = 'fr', limit = 8 } = opts
-  if (!secteur) return []
+  const { secteur, sousSecteur, locale = 'fr', limit = 12, base = [] } = opts
 
-  const scen = sectorExemplesFor(secteur, 'scenariosStrategiques', locale, sousSecteur)
-  const evt = sectorExemplesFor(secteur, 'evenementsRedoutes', locale, sousSecteur)
+  const scen = secteur ? sectorExemplesFor(secteur, 'scenariosStrategiques', locale, sousSecteur) : []
+  const evt = secteur ? sectorExemplesFor(secteur, 'evenementsRedoutes', locale, sousSecteur) : []
 
   // Objets « rankables » (conservent nom/description/impacts pour le scoring) +
   // champs privés portant l'intitulé et les notes suggérées.
@@ -76,13 +78,25 @@ export function suggestRisqueExemples(opts: {
 
   const ranked = rankExemples(raw, { secteur, sousSecteur })
 
+  // Candidats : sectoriels (les plus pertinents en tête) PUIS socle transverse.
+  // Le socle transverse est toujours proposé (pertinent=false) — jamais d'écran vide.
+  const candidates: RisqueExemple[] = [
+    ...ranked.map(r => ({ intitule: r._intitule, gravite: r._g, vraisemblance: r._v, pertinent: r.pertinent })),
+    ...base.map(b => ({
+      intitule: stripEbiosCritere(String(b.intitule ?? '').trim()),
+      gravite: clamp1to4(b.gravite, V_DEFAULT),
+      vraisemblance: clamp1to4(b.vraisemblance, V_DEFAULT),
+      pertinent: false,
+    })),
+  ].filter(c => c.intitule.length > 0)
+
   const seen = new Set<string>()
   const out: RisqueExemple[] = []
-  for (const r of ranked) {
-    const key = r._intitule.toLowerCase()
+  for (const c of candidates) {
+    const key = c.intitule.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
-    out.push({ intitule: r._intitule, gravite: r._g, vraisemblance: r._v, pertinent: r.pertinent })
+    out.push(c)
     if (out.length >= limit) break
   }
   return out

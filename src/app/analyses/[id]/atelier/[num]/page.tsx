@@ -116,7 +116,7 @@ export default async function AtelierPage({
     }))
     // R3 — suggestions de risques sectoriels (pré-remplissent le formulaire).
     const risqueSuggestions = editable
-      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale })
+      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
       : []
     return (
       <div className="min-h-screen bg-gray-50">
