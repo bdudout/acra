@@ -18,6 +18,8 @@ interface Payload {
   type?: string; priorite?: number | string; statut?: string; responsable?: string
   // plan d'action
   titre?: string; porteur?: string
+  // conformité
+  ref?: string; commentaire?: string
   description?: string
 }
 interface Proposal {
@@ -55,12 +57,14 @@ export default function McpProposalsQueue() {
   return (
     <ul className="space-y-3">
       {items.map(p => {
-        const kind = p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : m.typeRisk
-        const label = p.payload.titre || p.payload.nom || '—'
+        const kind = p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : p.type === 'conformite' ? m.typeConformite : m.typeRisk
+        const label = p.payload.titre || p.payload.nom || p.payload.ref || '—'
         const detail = p.type === 'measure'
           ? `${m.type} ${p.payload.type ?? '—'} · ${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.responsable ? ` · ${m.responsable} ${p.payload.responsable}` : ''}`
           : p.type === 'plan_action'
           ? `${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.porteur ? ` · ${m.responsable} ${p.payload.porteur}` : ''}`
+          : p.type === 'conformite'
+          ? `${m.statut} ${(m.conformiteStatuts as Record<string, string>)?.[String(p.payload.statut)] ?? p.payload.statut ?? '—'}${p.payload.commentaire ? ` · ${p.payload.commentaire}` : ''}`
           : `${m.gravite} ${p.payload.gravite ?? '—'} · ${m.vraisemblance} ${p.payload.vraisemblance ?? '—'} · ${m.niveau} ${p.payload.niveauRisque ?? '—'} · ${m.strategie} ${p.payload.strategie ?? '—'}`
         return (
           <li key={p.id} className="card p-4">

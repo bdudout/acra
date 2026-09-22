@@ -1371,6 +1371,8 @@ export const en: Translations = {
     typeRisk: 'Proposed risk',
     typeMesure: 'Proposed measure',
     typePlanAction: 'Proposed action plan',
+    typeConformite: 'Proposed compliance status',
+    conformiteStatuts: { conforme: 'Compliant', partiel: 'Partial', non_conforme: 'Non-compliant', na: 'N/A' },
     type: 'Type',
     priorite: 'Priority',
     statut: 'Status',

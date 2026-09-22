@@ -5,6 +5,7 @@ import {
   sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
   sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
   sanitizePlanActionProposal, isPlanActionProposalValid, planActionProposalToCreate,
+  sanitizeConformiteProposal, isConformiteProposalValid,
 } from '@/lib/mcp/proposals'
 
 describe('sanitizeRiskProposal', () => {
@@ -109,5 +110,29 @@ describe('planActionProposalToCreate', () => {
     expect(data).toMatchObject({ organizationId: 'orgA', titre: 'Durcir le VPN', porteur: 'DSI', createdById: 'u1' })
     expect(data.echeance).toBeInstanceOf(Date)
     expect(data.liens).toEqual({ create: [{ type: 'RISQUE', targetId: 'ri1' }] })
+  })
+})
+
+describe('sanitizeConformiteProposal / isConformiteProposalValid', () => {
+  it('borne ref/commentaire et valide le statut', () => {
+    const p = sanitizeConformiteProposal({ ref: '  A.5.1  ', statut: 'non_conforme', commentaire: '  MFA absente  ' })
+    expect(p).toEqual({ ref: 'A.5.1', statut: 'non_conforme', commentaire: 'MFA absente' })
+    expect(isConformiteProposalValid(p)).toBe(true)
+  })
+
+  it('statut inconnu → invalide (pas de défaut trompeur)', () => {
+    const p = sanitizeConformiteProposal({ ref: 'A.5.1', statut: 'PEUT_ETRE' })
+    expect(p.statut).toBe('')
+    expect(isConformiteProposalValid(p)).toBe(false)
+  })
+
+  it('ref vide → invalide', () => {
+    expect(isConformiteProposalValid(sanitizeConformiteProposal({ ref: '   ', statut: 'conforme' }))).toBe(false)
+  })
+
+  it('accepte tous les statuts connus', () => {
+    for (const s of ['conforme', 'partiel', 'non_conforme', 'na']) {
+      expect(isConformiteProposalValid(sanitizeConformiteProposal({ ref: 'X', statut: s }))).toBe(true)
+    }
   })
 })

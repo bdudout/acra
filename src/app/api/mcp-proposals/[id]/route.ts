@@ -18,7 +18,10 @@ import {
   sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
   sanitizeMeasureProposal, isMeasureProposalValid, measureProposalToCreate,
   sanitizePlanActionProposal, isPlanActionProposalValid, planActionProposalToCreate,
+  sanitizeConformiteProposal, isConformiteProposalValid,
 } from '@/lib/mcp/proposals'
+import { sanitizeConformite, applyConformiteEntry } from '@/lib/conformite'
+import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -26,6 +29,11 @@ type Params = { params: Promise<{ id: string }> }
 /** Rôles de gouvernance autorisés à gérer les plans d'action (cf. /plans-actions). */
 function canManagePlanAction(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
+}
+
+/** Rôles autorisés à gérer la conformité d'une organisation (cf. /organizations/[orgId]/conformite). */
+function canManageOrgConformite(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
 }
 
 type ApplyResult = { ok: true; appliedId: string } | { ok: false; error: string }
@@ -118,6 +126,18 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     return { ok: true, validatorRole: role, apply: (uid, note) => applyPlanAction(proposal, uid, note) }
   }
 
+  // ── Conformité : ancre CONFORMITE (référentiel org), RBAC = gestion conformité ──
+  if (proposal.type === 'conformite') {
+    if (proposal.targetType !== 'CONFORMITE') return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
+    if (!(await anchorExistsInOrg('CONFORMITE', proposal.targetId, proposal.organizationId))) {
+      return { ok: false, status: 404, error: 'Référentiel de conformité introuvable' }
+    }
+    const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
+    if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
+    if (!canManageOrgConformite(role)) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    return { ok: true, validatorRole: role, apply: (uid, note) => applyConformite(proposal, uid, note) }
+  }
+
   return { ok: false, status: 400, error: 'Type de proposition non supporté' }
 }
 
@@ -164,6 +184,25 @@ async function applyPlanAction(proposal: ProposalRow, userId: string, note?: str
     })
     await markAccepted(tx, proposal.id, p.id, userId, note)
     return p.id
+  })
+  return { ok: true, appliedId }
+}
+
+/** Applique un statut de conformité (par `ref`) aux entrées du référentiel cible. */
+async function applyConformite(proposal: ProposalRow, userId: string, note?: string): Promise<ApplyResult> {
+  const payload = sanitizeConformiteProposal(proposal.payload)
+  if (!isConformiteProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+  const record = await prisma.conformite.findFirst({
+    where: { id: proposal.targetId, organizationId: proposal.organizationId },
+    select: { id: true, entries: true },
+  })
+  if (!record) return { ok: false, error: 'Référentiel de conformité introuvable' }
+  const entries = sanitizeConformite(record.entries)
+  const next = applyConformiteEntry(entries, payload.ref, { statut: payload.statut, commentaire: payload.commentaire ?? null })
+  const appliedId = await prisma.$transaction(async tx => {
+    await tx.conformite.update({ where: { id: record.id }, data: { entries: next as unknown as Prisma.InputJsonValue } })
+    await markAccepted(tx, proposal.id, record.id, userId, note)
+    return record.id
   })
   return { ok: true, appliedId }
 }

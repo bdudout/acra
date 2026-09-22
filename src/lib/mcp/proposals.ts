@@ -7,13 +7,14 @@
 
 import { cleanRisque, cleanMesure } from '@/lib/import-sanitize'
 import { cleanPlanActionInput, type PlanActionInput, type CleanPlanAction } from '@/lib/plan-action'
+import { CONFORMITE_STATUTS, type ConformiteStatut } from '@/lib/conformite'
 
 /** Statuts d'une proposition. */
 export const PROPOSAL_STATUS = ['EN_ATTENTE', 'ACCEPTEE', 'REJETEE'] as const
 export type ProposalStatus = (typeof PROPOSAL_STATUS)[number]
 
 /** Types de propositions supportés (extensible aux phases suivantes). */
-export const PROPOSAL_TYPES = ['risk', 'measure'] as const
+export const PROPOSAL_TYPES = ['risk', 'measure', 'plan_action', 'conformite'] as const
 export type ProposalType = (typeof PROPOSAL_TYPES)[number]
 
 /**
@@ -175,6 +176,36 @@ export function planActionProposalToCreate(
     createdById,
     liens: { create: [{ type: targetType, targetId }] },
   }
+}
+
+// ── Propositions de CONFORMITÉ (statut d'un contrôle, ancré à un référentiel) ─
+
+/**
+ * Payload assaini d'une proposition de conformité : un nouveau STATUT (+ commentaire)
+ * pour un contrôle (`ref`) d'un référentiel de conformité (ancre CONFORMITE). La
+ * proposition ne modifie rien : à l'acceptation, le statut est appliqué aux entrées
+ * du `Conformite` cible via `applyConformiteEntry`.
+ */
+export interface ConformiteProposalPayload {
+  ref: string
+  statut: ConformiteStatut
+  commentaire?: string
+}
+
+/** Assainit une proposition de conformité : `ref` borné, `statut` validé, commentaire borné. */
+export function sanitizeConformiteProposal(input: unknown): ConformiteProposalPayload {
+  const obj = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
+  const ref = (typeof obj.ref === 'string' ? obj.ref : '').trim().slice(0, 120)
+  const rawStatut = typeof obj.statut === 'string' ? obj.statut : ''
+  // Statut invalide → chaîne vide : `isConformiteProposalValid` rejette (pas de défaut trompeur).
+  const statut = ((CONFORMITE_STATUTS as string[]).includes(rawStatut) ? rawStatut : '') as ConformiteStatut
+  const commentaire = typeof obj.commentaire === 'string' ? obj.commentaire.trim().slice(0, 1000) : ''
+  return { ref, statut, ...(commentaire ? { commentaire } : {}) }
+}
+
+/** Vrai si la proposition de conformité est exploitable (ref non vide + statut connu). */
+export function isConformiteProposalValid(p: ConformiteProposalPayload): boolean {
+  return p.ref.trim().length > 0 && (CONFORMITE_STATUTS as string[]).includes(p.statut)
 }
 
 /** Mappe un payload de proposition de mesure ACCEPTÉ vers les données Prisma `Mesure`. */

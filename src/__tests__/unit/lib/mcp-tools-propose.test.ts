@@ -5,23 +5,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Existence de l'ancre = prisma.<modèle>.count. On pilote analyse/riskItem.
 const analyseCount = vi.fn()
 const riskItemCount = vi.fn()
+const conformiteCount = vi.fn()
 const proposalCreate = vi.fn()
 const risqueCreate = vi.fn()
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     analyse: { count: (...a: unknown[]) => analyseCount(...a) },
     riskItem: { count: (...a: unknown[]) => riskItemCount(...a) },
+    conformite: { count: (...a: unknown[]) => conformiteCount(...a) },
     mcpProposal: { create: (...a: unknown[]) => proposalCreate(...a) },
     risque: { create: (...a: unknown[]) => risqueCreate(...a) },
   },
 }))
 
-import { proposeRiskTool, proposeMeasureTool, proposePlanActionTool } from '@/lib/mcp/tools-propose.server'
+import { proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool } from '@/lib/mcp/tools-propose.server'
 
 const ctx = { organizationId: 'orgA', keyId: 'key1' }
 const parse = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text)
 
-beforeEach(() => { analyseCount.mockReset(); riskItemCount.mockReset(); proposalCreate.mockReset(); risqueCreate.mockReset() })
+beforeEach(() => { analyseCount.mockReset(); riskItemCount.mockReset(); conformiteCount.mockReset(); proposalCreate.mockReset(); risqueCreate.mockReset() })
 
 describe('propose_risk', () => {
   it('analyse hors organisation → isError, aucune écriture', async () => {
@@ -106,6 +108,36 @@ describe('propose_plan_action', () => {
     riskItemCount.mockResolvedValue(1)
     const res = await proposePlanActionTool.handler(
       { targetType: 'RISQUE', targetId: 'ri1', planAction: { titre: '  ' } }, ctx)
+    expect(res.isError).toBe(true)
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('propose_conformite', () => {
+  it('ancré à un référentiel de conformité existant → McpProposal type "conformite"', async () => {
+    conformiteCount.mockResolvedValue(1)
+    proposalCreate.mockResolvedValue({ id: 'prop4', statut: 'EN_ATTENTE' })
+    const res = await proposeConformiteTool.handler(
+      { targetId: 'cf1', conformite: { ref: 'A.5.1', statut: 'non_conforme', commentaire: 'MFA absente' } }, ctx)
+    expect(res.isError).toBeUndefined()
+    // Existence bornée à l'org, ancre FIXE CONFORMITE.
+    expect(conformiteCount.mock.calls[0][0].where).toMatchObject({ id: 'cf1', organizationId: 'orgA' })
+    const data = proposalCreate.mock.calls[0][0].data
+    expect(data).toMatchObject({ type: 'conformite', targetType: 'CONFORMITE', targetId: 'cf1', statut: 'EN_ATTENTE' })
+    expect(data.payload).toMatchObject({ ref: 'A.5.1', statut: 'non_conforme', commentaire: 'MFA absente' })
+    expect(parse(res)).toMatchObject({ proposalId: 'prop4', statut: 'EN_ATTENTE' })
+  })
+
+  it('référentiel hors organisation → isError, aucune écriture', async () => {
+    conformiteCount.mockResolvedValue(0)
+    const res = await proposeConformiteTool.handler({ targetId: 'nope', conformite: { ref: 'A.5.1', statut: 'conforme' } }, ctx)
+    expect(res.isError).toBe(true)
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
+
+  it('statut inconnu → isError (ref + statut connu requis)', async () => {
+    conformiteCount.mockResolvedValue(1)
+    const res = await proposeConformiteTool.handler({ targetId: 'cf1', conformite: { ref: 'A.5.1', statut: 'BOF' } }, ctx)
     expect(res.isError).toBe(true)
     expect(proposalCreate).not.toHaveBeenCalled()
   })
