@@ -81,31 +81,37 @@ export default async function AtelierPage({
   if (isRiskMethod(methode) && methode !== 'EBIOS_RM') {
     const perimetre = (analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null
     const objectifs = (analyse.cadrage as { objectifsEtude?: string } | null)?.objectifsEtude ?? null
+    type Guidance = { intro?: string; points?: readonly string[] }
     let cfg: {
       breadcrumb: string; title: string; subtitle: string; phasesLabel: string
       perimetreLabel: string; objectifsLabel: string; noContext: string
       labels: Record<string, string>; descByKey: Record<string, string | undefined>
+      guidanceByKey: Record<string, Guidance | undefined>
     }
     if (methode === 'ISO_27005') {
       cfg = {
         breadcrumb: t.methodes.iso27005, title: t.iso27005.pageTitle, subtitle: t.iso27005.pageSubtitle,
         phasesLabel: t.iso27005.phasesLabel, perimetreLabel: t.iso27005.perimetreLabel, objectifsLabel: t.iso27005.objectifsLabel, noContext: t.iso27005.noContext,
         labels: t.iso27005.phases as Record<string, string>, descByKey: { contexte: t.iso27005.contexteDesc, evaluation: t.iso27005.evaluationNote },
+        guidanceByKey: t.iso27005.guidance as Record<string, Guidance>,
       }
     } else if (methode === 'NIST_800_30') {
       cfg = {
         breadcrumb: t.methodes.nist80030, title: t.nist80030.pageTitle, subtitle: t.nist80030.pageSubtitle,
         phasesLabel: t.nist80030.phasesLabel, perimetreLabel: t.nist80030.perimetreLabel, objectifsLabel: t.nist80030.objectifsLabel, noContext: t.nist80030.noContext,
         labels: t.nist80030.phases as Record<string, string>, descByKey: { prepare: t.nist80030.prepareDesc, communicate: t.nist80030.communicateNote, maintain: t.nist80030.maintainNote },
+        guidanceByKey: t.nist80030.guidance as Record<string, Guidance>,
       }
     } else { // ISO_31000 — phase unique d'appréciation (écran simple, sans onglets)
       cfg = {
         breadcrumb: t.methodes.iso31000, title: t.risquesDirects.pageTitle, subtitle: t.risquesDirects.pageSubtitle,
         phasesLabel: '', perimetreLabel: '', objectifsLabel: '', noContext: '', labels: { appreciation: '' }, descByKey: {},
+        guidanceByKey: { appreciation: t.risquesDirects.guidance as Guidance },
       }
     }
     const phases = methodSteps(methode).map(s => ({
       key: s.key, type: s.type ?? 'appreciation', label: cfg.labels[s.key] ?? '', desc: cfg.descByKey[s.key],
+      guidance: cfg.guidanceByKey[s.key],
     }))
     return (
       <div className="min-h-screen bg-gray-50">
@@ -127,6 +133,7 @@ export default async function AtelierPage({
             perimetre={perimetre} objectifs={objectifs}
             perimetreLabel={cfg.perimetreLabel} objectifsLabel={cfg.objectifsLabel}
             noContext={cfg.noContext} phasesLabel={cfg.phasesLabel}
+            guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
           />
         </main>
       </div>

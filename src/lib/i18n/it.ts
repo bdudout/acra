@@ -1388,6 +1388,7 @@ export const it: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  phaseGuidance: { title: 'Informazioni su questa fase', hide: 'Nascondi', show: 'Informazioni su questa fase' },
   iso27005: {
     pageTitle: 'Processo di gestione dei rischi',
     pageSubtitle: 'Processo ISO/IEC 27005:2022, per fasi.',
@@ -1404,6 +1405,13 @@ export const it: Translations = {
     objectifsLabel: 'Obiettivi / criteri',
     noContext: 'Non indicato.',
     evaluationNote: 'Prioritizzazione dei rischi secondo i criteri (sola lettura).',
+    guidance: {
+      contexte: { intro: 'Prima di valutare i rischi, delimita ciò che studi e i criteri con cui ne giudicherai l’importanza.', points: ['Precisa il perimetro: attività, sistemi e parti interessate coinvolte.', 'Definisci i criteri di valutazione e di accettazione dei rischi.', 'Raccogli le informazioni utili sul contesto interno ed esterno.'] },
+      identification: { intro: 'Elenca ciò che potrebbe compromettere i tuoi obiettivi, senza ancora giudicarne l’importanza.', points: ['Elenca i rischi: eventi temuti e le loro possibili cause.', 'Basati su fonti diverse: incidenti, esperienze, esperti.', 'Punta alla completezza: un rischio non identificato non sarà trattato.'] },
+      analyse: { intro: 'Per ogni rischio, stima la sua gravità (impatto) e la sua probabilità.', points: ['Valuta le conseguenze se il rischio si concretizza.', 'Stima la probabilità alla luce delle misure già in atto.', 'Il livello di rischio combina gravità e probabilità.'] },
+      evaluation: { intro: 'Confronta i livelli di rischio con i criteri per decidere quali trattare per primi.', points: ['Dai priorità ai rischi più elevati.', 'Confronta ogni rischio con i criteri di accettazione.', 'Fase di sola lettura: i livelli provengono dall’analisi.'] },
+      traitement: { intro: 'Per ogni rischio, scegli come gestirlo: ridurre, accettare, trasferire o rifiutare.', points: ['Scegli una strategia adeguata al livello del rischio.', 'Un rischio accettabile può semplicemente essere monitorato.', 'Documenta la decisione e il rischio residuo atteso.'] },
+    },
   },
   nist80030: {
     pageTitle: 'Processo di valutazione dei rischi',
@@ -1416,6 +1424,12 @@ export const it: Translations = {
     noContext: 'Non indicato.',
     communicateNote: 'Comunicare i risultati (sola lettura).',
     maintainNote: 'Mantenere aggiornata la valutazione.',
+    guidance: {
+      prepare: { intro: 'Prepara la valutazione: il suo scopo, il perimetro e le ipotesi adottate.', points: ['Definisci l’obiettivo e l’uso dei risultati.', 'Delimita il perimetro e le fonti di informazione.', 'Annota le ipotesi e i vincoli.'] },
+      conduct: { intro: 'Conduci la valutazione: identifica i rischi e stima la loro probabilità e impatto.', points: ['Identifica minacce, vulnerabilità ed eventi temuti.', 'Stima la probabilità e l’impatto di ogni rischio.', 'Determina il livello di rischio risultante.'] },
+      communicate: { intro: 'Condividi i risultati con le parti interessate per orientare le decisioni.', points: ['Comunica i rischi e il loro livello ai decisori.', 'Adatta il messaggio a ciascun pubblico.', 'Fase di sola lettura: qui non si inserisce nulla.'] },
+      maintain: { intro: 'Mantieni aggiornata la valutazione man mano che il contesto e i rischi evolvono.', points: ['Rivaluta periodicamente i rischi.', 'Integra i cambiamenti: nuovi sistemi, incidenti.', 'Conserva la tracciabilità degli aggiornamenti.'] },
+    },
   },
   methodesConfig: {
     sectionTitle: 'Metodi di analisi',
@@ -1443,6 +1457,7 @@ export const it: Translations = {
     tier_eleve: 'Alto',
     tier_critique: 'Critico',
     strategies: { REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire', REFUSER: 'Rifiutare', SURVEILLER: 'Monitorare' },
+    guidance: { intro: 'Valuta ogni rischio in modo semplice: descrivilo, poi valuta gravità e probabilità per dedurne il livello.', points: ['Descrivi il rischio in una frase chiara.', 'Valuta gravità e probabilità sulla scala proposta.', 'Scegli un trattamento: ridurre, accettare, trasferire, rifiutare o monitorare.'] },
   },
   webhooks: {
     title: 'Webhook',

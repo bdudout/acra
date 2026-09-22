@@ -12,6 +12,7 @@
 
 import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
+import PhaseGuidance from '@/components/PhaseGuidance'
 import type { PhaseType } from '@/lib/methodes'
 
 export interface WorkshopPhase {
@@ -20,10 +21,13 @@ export interface WorkshopPhase {
   label: string
   /** Texte de conseils/description affiché au-dessus de la phase (optionnel). */
   desc?: string
+  /** Conseils pédagogiques repliables (R2) : démarche de la phase. */
+  guidance?: { intro?: string; points?: readonly string[] }
 }
 
 export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
+  guidanceTitle, guidanceHide, guidanceShow,
 }: {
   analyseId: string
   editable: boolean
@@ -34,6 +38,9 @@ export default function PhasedRiskWorkshop({
   objectifsLabel?: string
   noContext?: string
   phasesLabel?: string
+  guidanceTitle?: string
+  guidanceHide?: string
+  guidanceShow?: string
 }) {
   const [active, setActive] = useState(0)
   const phase = phases[active] ?? phases[0]
@@ -52,6 +59,13 @@ export default function PhasedRiskWorkshop({
             </button>
           ))}
         </nav>
+      )}
+
+      {phase.guidance && (guidanceTitle !== undefined) && (
+        <PhaseGuidance
+          intro={phase.guidance.intro} points={phase.guidance.points}
+          title={guidanceTitle} hideLabel={guidanceHide ?? ''} showLabel={guidanceShow ?? guidanceTitle}
+        />
       )}
 
       {phase.type === 'context' ? (
