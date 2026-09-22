@@ -1371,6 +1371,8 @@ export const it: Translations = {
     typeRisk: 'Rischio proposto',
     typeMesure: 'Misura proposta',
     typePlanAction: 'Piano d\'azione proposto',
+    typeConformite: 'Conformità proposta',
+    conformiteStatuts: { conforme: 'Conforme', partiel: 'Parziale', non_conforme: 'Non conforme', na: 'N/D' },
     type: 'Tipo',
     priorite: 'Priorità',
     statut: 'Stato',

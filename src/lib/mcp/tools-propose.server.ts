@@ -12,7 +12,9 @@ import {
   sanitizeRiskProposal, isRiskProposalValid,
   sanitizeMeasureProposal, isMeasureProposalValid, MEASURE_TYPES, MEASURE_STATUS,
   sanitizePlanActionProposal, isPlanActionProposalValid, PROPOSAL_TARGET_TYPES,
+  sanitizeConformiteProposal, isConformiteProposalValid,
 } from './proposals'
+import { CONFORMITE_STATUTS } from '@/lib/conformite'
 import { anchorExistsInOrg } from './anchors.server'
 
 /** Vérifie qu'une analyse (ancre ANALYSE) appartient à l'organisation de la clé. */
@@ -174,6 +176,52 @@ export const proposePlanActionTool: McpTool<McpContext> = {
 }
 
 /**
+ * `propose_conformite` — dépose une proposition de STATUT de conformité pour un
+ * contrôle (`ref`) d'un référentiel de conformité (ancre CONFORMITE = un
+ * enregistrement `Conformite` de l'organisation). Ne modifie RIEN : à l'acceptation,
+ * le statut (+ commentaire) est appliqué aux entrées du référentiel, sous RBAC.
+ */
+export const proposeConformiteTool: McpTool<McpContext> = {
+  name: 'propose_conformite',
+  description:
+    "Propose un nouveau statut de conformité pour un contrôle d'un référentiel (ISO 27001, DORA, PCI-DSS…). " +
+    "Ne modifie PAS la conformité : dépose une proposition validée par un humain habilité. Fournir `targetId` " +
+    "(l'identifiant du référentiel de conformité, dans l'organisation de la clé) et `conformite` " +
+    "{ ref (référence du contrôle), statut (conforme|partiel|non_conforme|na), commentaire? }.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      targetId: { type: 'string', description: "Identifiant du référentiel de conformité (Conformite) dans l'organisation." },
+      conformite: {
+        type: 'object',
+        description: 'Proposition de statut de conformité pour un contrôle.',
+        properties: {
+          ref: { type: 'string', description: 'Référence du contrôle (ex. « A.5.1 »).' },
+          statut: { type: 'string', enum: [...CONFORMITE_STATUTS], description: 'Statut proposé.' },
+          commentaire: { type: 'string', description: 'Justification (optionnelle).' },
+        },
+        required: ['ref', 'statut'],
+        additionalProperties: false,
+      },
+    },
+    required: ['targetId', 'conformite'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const targetId = typeof args.targetId === 'string' ? args.targetId : ''
+    // Ancre FIXE CONFORMITE bornée à l'organisation : un référentiel hors périmètre est « introuvable ».
+    if (!(await anchorExistsInOrg('CONFORMITE', targetId, ctx.organizationId))) {
+      return { content: [{ type: 'text', text: 'ancre_introuvable' }], isError: true }
+    }
+    const payload = sanitizeConformiteProposal(args.conformite)
+    if (!isConformiteProposalValid(payload)) {
+      return { content: [{ type: 'text', text: 'proposition_invalide: ref + statut connu requis' }], isError: true }
+    }
+    return depose('conformite', 'CONFORMITE', targetId, payload, ctx)
+  },
+}
+
+/**
  * Crée une proposition EN_ATTENTE ancrée à un objet concret (`targetType` +
  * `targetId`) et renvoie un résultat MCP standard. Une proposition référence
  * toujours une ancre existante — jamais « rien ».
@@ -200,5 +248,5 @@ async function depose(type: string, targetType: string, targetId: string, payloa
 
 /** Outils d'écriture validée : propositions déposées, jamais appliquées directement. */
 export function buildProposeTools(): McpTool<McpContext>[] {
-  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool]
+  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool]
 }

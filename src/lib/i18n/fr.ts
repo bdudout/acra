@@ -1395,6 +1395,8 @@ export const fr = {
     typeRisk: 'Risque proposé',
     typeMesure: 'Mesure proposée',
     typePlanAction: 'Plan d\'action proposé',
+    typeConformite: 'Conformité proposée',
+    conformiteStatuts: { conforme: 'Conforme', partiel: 'Partiel', non_conforme: 'Non conforme', na: 'N/A' },
     type: 'Type',
     priorite: 'Priorité',
     statut: 'Statut',
