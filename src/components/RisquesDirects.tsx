@@ -55,6 +55,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [gravite, setGravite] = useState(2)
   const [vraisemblance, setVraisemblance] = useState(2)
   const [busy, setBusy] = useState(false)
+  const [justAddedId, setJustAddedId] = useState<string | null>(null)
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -86,10 +87,31 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     if (res && res.ok) setRows(prev => prev.filter(r => r.id !== id))
   }
 
-  // Pré-remplit le formulaire à partir d'une suggestion sectorielle (R3). Ne crée
-  // rien : l'utilisateur revoit l'intitulé + G/V (modifiables) puis « Ajoute ».
-  function prefill(ex: RisqueExemple) {
-    setNom(ex.intitule); setGravite(ex.gravite); setVraisemblance(ex.vraisemblance)
+  // Clic sur une suggestion = AJOUT DIRECT au registre (le plus simple possible),
+  // avec surlignage + « Annuler » (undo) le temps que l'utilisateur vérifie. Les
+  // G/V restent modifiables ensuite dans la ligne.
+  async function addSuggestion(ex: RisqueExemple) {
+    if (busy) return
+    setBusy(true)
+    const res = await fetch(`/api/analyses/${analyseId}/risques`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom: ex.intitule, gravite: ex.gravite, vraisemblance: ex.vraisemblance }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null)
+    setBusy(false)
+    const newId = res?.risque?.id as string | undefined
+    await reload()
+    if (newId) {
+      setJustAddedId(newId)
+      window.setTimeout(() => setJustAddedId(cur => (cur === newId ? null : cur)), 6000)
+    }
+  }
+
+  // Undo d'un ajout : retrait OPTIMISTE immédiat (sans confirmation — l'action vient
+  // d'être faite) puis suppression best-effort côté serveur.
+  async function undoAdd(id: string) {
+    setJustAddedId(cur => (cur === id ? null : cur))
+    setRows(prev => prev.filter(r => r.id !== id))
+    await fetch(`/api/analyses/${analyseId}/risques/${id}`, { method: 'DELETE' }).catch(() => null)
   }
 
   const niveauBadge = (n: number, g: number, v: number) => {
@@ -146,9 +168,9 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
           </p>
           <div className="flex flex-wrap gap-1.5">
             {shownSuggestions.map((ex, i) => (
-              <button key={i} type="button" onClick={() => prefill(ex)}
+              <button key={i} type="button" onClick={() => addSuggestion(ex)} disabled={busy}
                 title={m.suggestionsHint}
-                className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20">
+                className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20 disabled:opacity-50">
                 <Plus size={12} aria-hidden="true" />
                 <span>{ex.intitule}</span>
                 <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
@@ -201,8 +223,13 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
               </tr></thead>
               <tbody>
                 {rows.map(r => (
-                  <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
+                  <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
+                    <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">
+                      {r.nom}
+                      {r.id === justAddedId && (
+                        <button onClick={() => undoAdd(r.id)} className="ml-2 text-xs font-normal text-ebios-600 hover:text-ebios-800 underline">{m.undo}</button>
+                      )}
+                    </td>
                     {col.gravite && <td className="px-3 py-2">
                       <select disabled={!editable} value={r.gravite} onChange={e => maj(r.id, { gravite: Number(e.target.value) })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {echelle.map(n => <option key={n} value={n}>{n}</option>)}

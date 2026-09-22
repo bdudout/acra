@@ -15,9 +15,30 @@ describe('stripEbiosCritere', () => {
 })
 
 describe('suggestRisqueExemples', () => {
-  it('secteur inconnu ou vide → aucune suggestion', () => {
+  it('secteur inconnu ou vide, sans socle → aucune suggestion', () => {
     expect(suggestRisqueExemples({ secteur: null })).toEqual([])
     expect(suggestRisqueExemples({ secteur: 'licorne-arc-en-ciel' })).toEqual([])
+  })
+
+  it('socle transverse : toujours proposé (même sans secteur), pertinent=false', () => {
+    const base = [
+      { intitule: 'Rançongiciel chiffrant l’Active Directory', gravite: 4, vraisemblance: 3 },
+      { intitule: 'Fuite de données via un tiers', gravite: 4, vraisemblance: 2 },
+    ]
+    const s = suggestRisqueExemples({ secteur: null, base })
+    expect(s.map(e => e.intitule)).toEqual(['Rançongiciel chiffrant l’Active Directory', 'Fuite de données via un tiers'])
+    expect(s.every(e => e.pertinent === false)).toBe(true)
+    expect(s[0]).toMatchObject({ gravite: 4, vraisemblance: 3 })
+  })
+
+  it('secteur connu + socle : sectoriels (pertinents) en tête, puis socle, dédupliqués', () => {
+    const base = [{ intitule: 'Fuite de données via un tiers', gravite: 4, vraisemblance: 2 }]
+    const s = suggestRisqueExemples({ secteur: 'Santé', base })
+    // Au moins un sectoriel pertinent, et le socle transverse présent.
+    expect(s.some(e => e.pertinent)).toBe(true)
+    expect(s.some(e => /Fuite de données via un tiers/.test(e.intitule))).toBe(true)
+    // Dédup : le socle n'apparaît pas deux fois.
+    expect(s.filter(e => /Fuite de données via un tiers/.test(e.intitule)).length).toBe(1)
   })
 
   it('secteur santé → suggestions avec intitulé + G/V dans l’échelle 1..4', () => {
