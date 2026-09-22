@@ -10,6 +10,8 @@ const M = {
   tier_eleve: 'Élevé', tier_critique: 'Critique',
   strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
   suggestionsLabel: 'Suggestions pour votre secteur', suggestionsHint: 'Cliquez pour pré-remplir.',
+  colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable',
+  prioSummary: '{treat} à traiter · {accept} acceptable(s)',
 }
 vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
 
@@ -117,5 +119,25 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Traitement')).toBeInTheDocument()
     expect(screen.getByText('Niveau')).toBeInTheDocument()
     expect(screen.queryByText('Gravité')).toBeNull()
+  })
+
+  it('mode review : priorisation lecture seule + décision d’acceptation + résumé', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'a', nom: 'Risque faible', gravite: 2, vraisemblance: 2, niveauRisque: 4, strategie: 'ACCEPTER' },
+      { id: 'b', nom: 'Risque critique', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" />)
+    expect(await screen.findByText('Risque critique')).toBeInTheDocument()
+    // Colonne décision + badges dérivés du niveau.
+    expect(screen.getByText('Décision')).toBeInTheDocument()
+    expect(screen.getByText('À traiter')).toBeInTheDocument()
+    expect(screen.getByText('Acceptable')).toBeInTheDocument()
+    // Résumé (1 à traiter, 1 acceptable) + priorisation (critique avant faible).
+    expect(screen.getByText('1 à traiter · 1 acceptable(s)')).toBeInTheDocument()
+    const noms = screen.getAllByText(/Risque (critique|faible)/).map(n => n.textContent)
+    expect(noms).toEqual(['Risque critique', 'Risque faible'])
+    // Lecture seule : pas d’ajout, pas de sélecteur de traitement.
+    expect(screen.queryByText('Ajouter')).toBeNull()
+    expect(screen.queryByText('Traitement')).toBeNull()
   })
 })

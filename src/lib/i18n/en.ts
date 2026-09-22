@@ -1460,6 +1460,7 @@ export const en: Translations = {
     strategies: { REDUIRE: 'Reduce', ACCEPTER: 'Accept', TRANSFERER: 'Transfer', REFUSER: 'Refuse', SURVEILLER: 'Monitor' },
     suggestionsLabel: 'Suggestions for your sector',
     suggestionsHint: 'Click to pre-fill the form (values editable before adding).',
+    colDecision: 'Decision', decisionTreat: 'To treat', decisionAccept: 'Acceptable', prioSummary: '{treat} to treat · {accept} acceptable',
     guidance: { intro: 'Assess each risk simply: describe it, then rate its severity and likelihood to derive the level.', points: ['Describe the risk in one clear sentence.', 'Rate severity and likelihood on the scale provided.', 'Choose a treatment: reduce, accept, transfer, refuse or monitor.'] },
   },
   webhooks: {

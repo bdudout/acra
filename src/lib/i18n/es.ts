@@ -1460,6 +1460,7 @@ export const es: Translations = {
     strategies: { REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir', REFUSER: 'Rechazar', SURVEILLER: 'Vigilar' },
     suggestionsLabel: 'Sugerencias para su sector',
     suggestionsHint: 'Haga clic para rellenar el formulario (valores modificables antes de añadir).',
+    colDecision: 'Decisión', decisionTreat: 'A tratar', decisionAccept: 'Aceptable', prioSummary: '{treat} a tratar · {accept} aceptable(s)',
     guidance: { intro: 'Evalúe cada riesgo de forma sencilla: descríbalo y valore su gravedad y probabilidad para deducir el nivel.', points: ['Describa el riesgo en una frase clara.', 'Valore la gravedad y la probabilidad en la escala propuesta.', 'Elija un tratamiento: reducir, aceptar, transferir, rechazar o vigilar.'] },
   },
   webhooks: {

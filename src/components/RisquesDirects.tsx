@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Trash2, Lightbulb } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
+import { prioritise, countDecisions } from '@/lib/risque-priorisation'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 
 interface RisqueRow {
@@ -30,8 +31,9 @@ const TIER_CLASS: Record<string, string> = {
  *  - identify      : construire la liste (intitulés + suggestions), sans cotation.
  *  - rate          : coter gravité × vraisemblance → niveau (pas d'ajout).
  *  - treat         : choisir la stratégie de traitement (pas de cotation).
+ *  - review        : priorisation lecture seule + décision d'acceptation (Évaluation).
  */
-export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat'
+export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 
 export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full' }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode }) {
   const { t } = useTranslation()
@@ -96,6 +98,15 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   }
   const echelle = [1, 2, 3, 4]
 
+  // ── Mode review (Évaluation) : priorisation lecture seule + décision d'acceptation.
+  const prioritized = prioritise(rows)
+  const counts = countDecisions(rows)
+  const decisionBadge = (d: 'treat' | 'accept') => (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${d === 'treat' ? TIER_CLASS.critique : TIER_CLASS.faible}`}>
+      {d === 'treat' ? m.decisionTreat : m.decisionAccept}
+    </span>
+  )
+
   return (
     <section className="card p-6">
       <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{m.title}</h2>
@@ -143,7 +154,35 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
         </div>
       )}
 
-      {loading ? <p className="text-xs text-gray-400">…</p>
+      {mode === 'review' ? (
+        loading ? <p className="text-xs text-gray-400">…</p>
+        : rows.length === 0 ? <p className="text-xs text-gray-400 italic">{m.empty}</p>
+        : (
+          <div>
+            <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+              {m.prioSummary.replace('{treat}', String(counts.treat)).replace('{accept}', String(counts.accept))}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-3 py-2">{m.colNom}</th>
+                  <th className="px-3 py-2">{m.colNiveau}</th>
+                  <th className="px-3 py-2">{m.colDecision}</th>
+                </tr></thead>
+                <tbody>
+                  {prioritized.map(({ row: r, decision }) => (
+                    <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
+                      <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
+                      <td className="px-3 py-2">{niveauBadge(r.niveauRisque, r.gravite, r.vraisemblance)}</td>
+                      <td className="px-3 py-2">{decisionBadge(decision)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      ) : loading ? <p className="text-xs text-gray-400">…</p>
         : rows.length === 0 ? <p className="text-xs text-gray-400 italic">{m.empty}</p>
         : (
           <div className="overflow-x-auto">
