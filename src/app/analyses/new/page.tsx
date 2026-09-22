@@ -90,7 +90,7 @@ export default function NewAnalysePage() {
 
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-8">
           <h3 className="font-semibold text-indigo-900 mb-1"><Lightbulb size={18} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.newAnalysis.howTitle}</h3>
-          <p className="text-sm text-indigo-800">{t.newAnalysis.howDesc}</p>
+          <p className="text-sm text-indigo-800">{(t.newAnalysis.howDescByMethode as Record<string, string>)?.[methode] ?? t.newAnalysis.howDesc}</p>
         </div>
 
         {error && (

@@ -98,6 +98,10 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   }
   const echelle = [1, 2, 3, 4]
 
+  // #5 — masque les suggestions déjà présentes dans le registre (dédup par intitulé).
+  const existingNames = new Set(rows.map(r => (r.nom ?? '').trim().toLowerCase()))
+  const shownSuggestions = (suggestions ?? []).filter(s => !existingNames.has(s.intitule.trim().toLowerCase()))
+
   // ── Mode review (Évaluation) : priorisation lecture seule + décision d'acceptation.
   const prioritized = prioritise(rows)
   const counts = countDecisions(rows)
@@ -110,7 +114,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   return (
     <section className="card p-6">
       <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{m.title}</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{m.subtitle}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{editable ? m.subtitle : m.subtitleReadonly}</p>
 
       {editable && showAdd && (
         <div className="flex flex-wrap items-end gap-3 mb-4">
@@ -135,13 +139,13 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
       )}
 
       {/* Suggestions sectorielles (R3) : pré-remplissent le formulaire, modifiables avant ajout. */}
-      {editable && showAdd && suggestions && suggestions.length > 0 && (
+      {editable && showAdd && shownSuggestions.length > 0 && (
         <div className="mb-5">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
             <Lightbulb size={14} aria-hidden="true" />{m.suggestionsLabel}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {suggestions.map((ex, i) => (
+            {shownSuggestions.map((ex, i) => (
               <button key={i} type="button" onClick={() => prefill(ex)}
                 title={m.suggestionsHint}
                 className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20">

@@ -1,6 +1,18 @@
 // Suggestions de risques sectoriels (saisie directe) — module pur.
 import { describe, it, expect } from 'vitest'
-import { suggestRisqueExemples } from '@/lib/risque-exemples'
+import { suggestRisqueExemples, stripEbiosCritere } from '@/lib/risque-exemples'
+
+describe('stripEbiosCritere', () => {
+  it('retire le suffixe de critère EBIOS (C/I/D/T) en fin d’intitulé', () => {
+    expect(stripEbiosCritere('Arrêt du SIH par rançongiciel (D)')).toBe('Arrêt du SIH par rançongiciel')
+    expect(stripEbiosCritere('Exfiltration de données de santé (C)')).toBe('Exfiltration de données de santé')
+    expect(stripEbiosCritere('Sabotage (I)')).toBe('Sabotage')
+  })
+  it('laisse intact un intitulé sans suffixe de critère', () => {
+    expect(stripEbiosCritere('Panne du SI')).toBe('Panne du SI')
+    expect(stripEbiosCritere('Incident (majeur)')).toBe('Incident (majeur)') // (majeur) n’est pas un critère
+  })
+})
 
 describe('suggestRisqueExemples', () => {
   it('secteur inconnu ou vide → aucune suggestion', () => {

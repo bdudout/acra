@@ -12,6 +12,7 @@ const M = {
   suggestionsLabel: 'Suggestions pour votre secteur', suggestionsHint: 'Cliquez pour pré-remplir.',
   colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable',
   prioSummary: '{treat} à traiter · {accept} acceptable(s)',
+  subtitleReadonly: 'Consultez et priorisez vos risques (lecture seule).',
 }
 vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
 
@@ -119,6 +120,29 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Traitement')).toBeInTheDocument()
     expect(screen.getByText('Niveau')).toBeInTheDocument()
     expect(screen.queryByText('Gravité')).toBeNull()
+  })
+
+  it('#5 — masque les suggestions déjà présentes dans le registre', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' },
+    ] }))
+    const suggestions = [
+      { intitule: 'Panne SI', gravite: 4, vraisemblance: 3, pertinent: true },        // déjà présent → masqué
+      { intitule: 'Fuite de données', gravite: 3, vraisemblance: 2, pertinent: true }, // absent → affiché
+    ]
+    render(<RisquesDirects analyseId="an1" editable suggestions={suggestions} />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument() // ligne du registre
+    // La suggestion « Fuite de données » est proposée ; « Panne SI » ne l'est pas (déjà ajoutée).
+    expect(screen.getByRole('button', { name: /Fuite de données/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Panne SI/ })).toBeNull()
+  })
+
+  it('#7 — lecture seule : sous-titre dédié (pas « Ajoutez… »)', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [] }))
+    render(<RisquesDirects analyseId="an1" editable={false} />)
+    await screen.findByText('Aucun risque pour l\'instant.')
+    expect(screen.getByText('Consultez et priorisez vos risques (lecture seule).')).toBeInTheDocument()
+    expect(screen.queryByText('Ajoutez…')).toBeNull()
   })
 
   it('mode review : priorisation lecture seule + décision d’acceptation + résumé', async () => {
