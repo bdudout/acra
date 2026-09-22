@@ -31,6 +31,16 @@ function clamp1to4(v: unknown, def: number): number {
 }
 
 /**
+ * Retire le suffixe de critère EBIOS « (C) / (I) / (D) / (T) » d'un intitulé
+ * (Confidentialité/Intégrité/Disponibilité/Traçabilité). Ces suffixes viennent des
+ * scénarios stratégiques EBIOS et n'ont pas de sens pour les méthodes à saisie
+ * directe (ISO 31000 / ISO 27005 / NIST), où ces suggestions sont proposées.
+ */
+export function stripEbiosCritere(intitule: string): string {
+  return intitule.replace(/\s*\([CIDT]\)\s*$/, '').trim()
+}
+
+/**
  * Suggestions de risques pour le secteur/sous-secteur de l'analyse. `[]` si le
  * secteur n'appartient à aucune famille connue. Déduplique par intitulé (insensible
  * à la casse), classe les plus pertinents en tête, borne la liste à `limit`.
@@ -52,13 +62,13 @@ export function suggestRisqueExemples(opts: {
   const raw = [
     ...scen.map(x => ({
       ...x,
-      _intitule: String(x.nom ?? x.description ?? '').trim(),
+      _intitule: stripEbiosCritere(String(x.nom ?? x.description ?? '').trim()),
       _g: clamp1to4(x.graviteDefaut, V_DEFAULT),
       _v: clamp1to4(x.vraisemblanceDefaut, V_DEFAULT),
     })),
     ...evt.map(x => ({
       ...x,
-      _intitule: String(x.description ?? '').trim(),
+      _intitule: stripEbiosCritere(String(x.description ?? '').trim()),
       _g: clamp1to4(x.graviteDefaut, V_DEFAULT),
       _v: V_DEFAULT,
     })),
