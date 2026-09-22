@@ -1484,6 +1484,7 @@ export const fr = {
     strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
     suggestionsLabel: 'Suggestions pour votre secteur',
     suggestionsHint: 'Cliquez pour pré-remplir le formulaire (valeurs modifiables avant ajout).',
+    colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable', prioSummary: '{treat} à traiter · {accept} acceptable(s)',
     guidance: { intro: 'Appréciez chaque risque simplement : décrivez-le, puis évaluez sa gravité et sa vraisemblance pour en déduire le niveau.', points: ['Décrivez le risque en une phrase claire.', 'Évaluez gravité et vraisemblance sur l’échelle proposée.', 'Choisissez un traitement : réduire, accepter, transférer, refuser ou surveiller.'] },
   },
   webhooks: {

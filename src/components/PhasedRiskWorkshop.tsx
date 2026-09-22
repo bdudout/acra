@@ -113,10 +113,11 @@ export default function PhasedRiskWorkshop({
       ) : (
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
-          {/* appreciation = éditable ; review = lecture seule (priorisation). Le
-              sous-mode (identify/rate/treat) différencie les phases ISO 27005. */}
+          {/* appreciation = éditable ; review = lecture seule (priorisation +
+              décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
+              les phases d'appréciation ISO 27005. */}
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
-            mode={phase.apprMode ?? 'full'}
+            mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
         </>
       )}
