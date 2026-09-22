@@ -16,6 +16,18 @@ export const DEFAULT_METHOD: RiskMethod = 'EBIOS_RM'
 /** Méthodes dont le parcours (UI/étapes) est réellement câblé — phase 1 : EBIOS RM seul. */
 export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM']
 
+/**
+ * Méthodes à **saisie directe** des risques (gravité × vraisemblance saisis
+ * directement), par opposition à EBIOS RM où les risques sont **dérivés** des
+ * scénarios opérationnels. Détermine si l'API de saisie directe est autorisée.
+ */
+export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000']
+
+/** Vrai si la méthode apprécie les risques par saisie directe (pas via scénarios). */
+export function usesDirectRiskEntry(m: string): boolean {
+  return isRiskMethod(m) && DIRECT_RISK_METHODS.includes(m)
+}
+
 /** Vrai si `v` est une méthode connue. */
 export function isRiskMethod(v: unknown): v is RiskMethod {
   return typeof v === 'string' && (RISK_METHODS as readonly string[]).includes(v)
