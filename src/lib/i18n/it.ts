@@ -1405,6 +1405,18 @@ export const it: Translations = {
     noContext: 'Non indicato.',
     evaluationNote: 'Prioritizzazione dei rischi secondo i criteri (sola lettura).',
   },
+  nist80030: {
+    pageTitle: 'Processo di valutazione dei rischi',
+    pageSubtitle: 'Processo NIST SP 800-30 Rev. 1, per fasi.',
+    phasesLabel: 'Fasi del processo',
+    phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
+    prepareDesc: 'Preparare la valutazione: ambito, obiettivi e ipotesi.',
+    perimetreLabel: 'Ambito',
+    objectifsLabel: 'Obiettivi / criteri',
+    noContext: 'Non indicato.',
+    communicateNote: 'Comunicare i risultati (sola lettura).',
+    maintainNote: 'Mantenere aggiornata la valutazione.',
+  },
   methodesConfig: {
     sectionTitle: 'Metodi di analisi',
     sectionDesc: 'Attiva i metodi di analisi del rischio proposti alla creazione. EBIOS RM è sempre disponibile.',

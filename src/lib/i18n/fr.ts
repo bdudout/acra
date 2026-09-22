@@ -1429,6 +1429,18 @@ export const fr = {
     noContext: 'Non renseigné.',
     evaluationNote: 'Priorisation des risques selon les critères (lecture seule).',
   },
+  nist80030: {
+    pageTitle: "Processus d'appréciation des risques",
+    pageSubtitle: 'Processus NIST SP 800-30 Rev. 1, par phases.',
+    phasesLabel: 'Phases du processus',
+    phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
+    prepareDesc: "Préparer l'appréciation : périmètre, objectifs et hypothèses.",
+    perimetreLabel: 'Périmètre',
+    objectifsLabel: 'Objectifs / critères',
+    noContext: 'Non renseigné.',
+    communicateNote: 'Communication des résultats (lecture seule).',
+    maintainNote: "Tenir l'appréciation à jour dans le temps.",
+  },
   methodesConfig: {
     sectionTitle: "Méthodes d'analyse",
     sectionDesc: "Activez les méthodes d'analyse de risque proposées à la création. EBIOS RM est toujours disponible.",

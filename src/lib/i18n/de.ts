@@ -1405,6 +1405,18 @@ export const de: Translations = {
     noContext: 'Nicht angegeben.',
     evaluationNote: 'Priorisierung der Risiken nach Kriterien (schreibgeschützt).',
   },
+  nist80030: {
+    pageTitle: 'Risikobewertungsprozess',
+    pageSubtitle: 'NIST SP 800-30 Rev. 1-Prozess, nach Phasen.',
+    phasesLabel: 'Prozessphasen',
+    phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
+    prepareDesc: 'Bewertung vorbereiten: Umfang, Ziele und Annahmen.',
+    perimetreLabel: 'Umfang',
+    objectifsLabel: 'Ziele / Kriterien',
+    noContext: 'Nicht angegeben.',
+    communicateNote: 'Ergebnisse kommunizieren (schreibgeschützt).',
+    maintainNote: 'Die Bewertung aktuell halten.',
+  },
   methodesConfig: {
     sectionTitle: 'Analysemethoden',
     sectionDesc: 'Aktivieren Sie die bei der Erstellung angebotenen Risikoanalysemethoden. EBIOS RM ist immer verfügbar.',

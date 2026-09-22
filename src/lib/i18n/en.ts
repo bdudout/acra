@@ -1405,6 +1405,18 @@ export const en: Translations = {
     noContext: 'Not provided.',
     evaluationNote: 'Risk prioritisation against criteria (read-only).',
   },
+  nist80030: {
+    pageTitle: 'Risk assessment process',
+    pageSubtitle: 'NIST SP 800-30 Rev. 1 process, by phases.',
+    phasesLabel: 'Process phases',
+    phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
+    prepareDesc: 'Prepare for the assessment: scope, objectives and assumptions.',
+    perimetreLabel: 'Scope',
+    objectifsLabel: 'Objectives / criteria',
+    noContext: 'Not provided.',
+    communicateNote: 'Communicate results (read-only).',
+    maintainNote: 'Keep the assessment current over time.',
+  },
   methodesConfig: {
     sectionTitle: 'Analysis methods',
     sectionDesc: 'Enable the risk-analysis methods offered at creation. EBIOS RM is always available.',

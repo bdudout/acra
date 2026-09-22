@@ -139,9 +139,16 @@ conversion silencieuse d'un jeu d'étapes à un autre).
    (pilotés par `IMPLEMENTED_METHODS`). Libellés de phases à confirmer sur la
    traduction **AFNOR** d'ISO/IEC 27005:2022.
 
-Incréments suivants : **NIST 800‑30** (Prepare/Conduct/…), option **quantitative**
-(FAIR‑like) si besoin, et enrichissement des écrans de phase ISO 27005 (contexte/
-critères éditables, mesures).
+4. **NIST SP 800‑30 Rev. 1** — ✅ **livré** : câblé (`IMPLEMENTED_METHODS`) en
+   **processus par phases** (onglets **Prepare → Conduct → Communicate → Maintain**,
+   libellés officiels NIST). L'appréciation (Conduct/Maintain) réutilise le registre
+   à **saisie directe** (`NIST_800_30` ∈ `DIRECT_RISK_METHODS`) ; Communicate en
+   lecture seule. Composant `Nist80030Workshop` + i18n `nist80030` (5 langues).
+   Activation/ sélecteur **automatiques**.
+
+Incréments suivants : option **quantitative** (FAIR‑like) si besoin, et
+enrichissement des écrans de phase ISO 27005 / NIST (contexte/critères éditables,
+mesures, communication).
 
 ## 8. Points de vigilance
 
