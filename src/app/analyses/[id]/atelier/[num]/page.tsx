@@ -16,9 +16,8 @@ import Atelier2 from '@/components/workshops/Atelier2'
 import Atelier3 from '@/components/workshops/Atelier3'
 import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
-import RisquesDirects from '@/components/RisquesDirects'
-import Iso27005Workshop from '@/components/Iso27005Workshop'
-import Nist80030Workshop from '@/components/Nist80030Workshop'
+import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
+import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -75,10 +74,39 @@ export default async function AtelierPage({
   if (!canViewAnalyse(sessionUser, ownership)) notFound()
   const editable = canEditAnalyse(sessionUser, ownership)
 
-  // ── Méthode ISO 31000 « simple » (risque opérationnel) : une SEULE page
-  // d'appréciation directe (gravité × vraisemblance), sans le tunnel d'ateliers
-  // EBIOS. On court-circuite tout le parcours EBIOS ci-dessous. cf. lib/methodes.ts.
-  if ((analyse as { methode?: string }).methode === 'ISO_31000') {
+  // ── Méthodes à parcours PAR PHASES (ISO 31000 / ISO 27005 / NIST 800-30) : un
+  // composant générique piloté par le registre (lib/methodes.ts), distinct des
+  // ateliers EBIOS RM. Les libellés/desc de phases sont résolus i18n ici.
+  const methode = (analyse as { methode?: string }).methode ?? 'EBIOS_RM'
+  if (isRiskMethod(methode) && methode !== 'EBIOS_RM') {
+    const perimetre = (analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null
+    const objectifs = (analyse.cadrage as { objectifsEtude?: string } | null)?.objectifsEtude ?? null
+    let cfg: {
+      breadcrumb: string; title: string; subtitle: string; phasesLabel: string
+      perimetreLabel: string; objectifsLabel: string; noContext: string
+      labels: Record<string, string>; descByKey: Record<string, string | undefined>
+    }
+    if (methode === 'ISO_27005') {
+      cfg = {
+        breadcrumb: t.methodes.iso27005, title: t.iso27005.pageTitle, subtitle: t.iso27005.pageSubtitle,
+        phasesLabel: t.iso27005.phasesLabel, perimetreLabel: t.iso27005.perimetreLabel, objectifsLabel: t.iso27005.objectifsLabel, noContext: t.iso27005.noContext,
+        labels: t.iso27005.phases as Record<string, string>, descByKey: { contexte: t.iso27005.contexteDesc, evaluation: t.iso27005.evaluationNote },
+      }
+    } else if (methode === 'NIST_800_30') {
+      cfg = {
+        breadcrumb: t.methodes.nist80030, title: t.nist80030.pageTitle, subtitle: t.nist80030.pageSubtitle,
+        phasesLabel: t.nist80030.phasesLabel, perimetreLabel: t.nist80030.perimetreLabel, objectifsLabel: t.nist80030.objectifsLabel, noContext: t.nist80030.noContext,
+        labels: t.nist80030.phases as Record<string, string>, descByKey: { prepare: t.nist80030.prepareDesc, communicate: t.nist80030.communicateNote, maintain: t.nist80030.maintainNote },
+      }
+    } else { // ISO_31000 — phase unique d'appréciation (écran simple, sans onglets)
+      cfg = {
+        breadcrumb: t.methodes.iso31000, title: t.risquesDirects.pageTitle, subtitle: t.risquesDirects.pageSubtitle,
+        phasesLabel: '', perimetreLabel: '', objectifsLabel: '', noContext: '', labels: { appreciation: '' }, descByKey: {},
+      }
+    }
+    const phases = methodSteps(methode).map(s => ({
+      key: s.key, type: s.type ?? 'appreciation', label: cfg.labels[s.key] ?? '', desc: cfg.descByKey[s.key],
+    }))
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -89,70 +117,16 @@ export default async function AtelierPage({
                 <span aria-hidden="true">← </span>{analyse.nom}
               </Link>
               <span aria-hidden="true">›</span>
-              <span aria-current="page">{t.methodes?.iso31000 ?? 'ISO 31000:2018'}</span>
+              <span aria-current="page">{cfg.breadcrumb}</span>
             </nav>
-            <h1 className="text-2xl font-bold text-gray-900">{t.risquesDirects.pageTitle}</h1>
-            <p className="text-sm text-gray-500 mt-1">{t.risquesDirects.pageSubtitle}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{cfg.title}</h1>
+            <p className="text-sm text-gray-500 mt-1">{cfg.subtitle}</p>
           </header>
-          <RisquesDirects analyseId={analyse.id} editable={editable} />
-        </main>
-      </div>
-    )
-  }
-
-  // ── Méthode ISO/IEC 27005:2022 : processus PAR PHASES (contexte → identification
-  // → analyse → évaluation → traitement), distinct des ateliers EBIOS. L'appréciation
-  // réutilise le registre de risques à saisie directe. cf. lib/methodes.ts.
-  if ((analyse as { methode?: string }).methode === 'ISO_27005') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
-          <header className="mb-6">
-            <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-              <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
-                <span aria-hidden="true">← </span>{analyse.nom}
-              </Link>
-              <span aria-hidden="true">›</span>
-              <span aria-current="page">{t.methodes?.iso27005 ?? 'ISO/IEC 27005:2022'}</span>
-            </nav>
-            <h1 className="text-2xl font-bold text-gray-900">{t.iso27005.pageTitle}</h1>
-            <p className="text-sm text-gray-500 mt-1">{t.iso27005.pageSubtitle}</p>
-          </header>
-          <Iso27005Workshop
-            analyseId={analyse.id}
-            editable={editable}
-            perimetre={(analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null}
-            objectifs={(analyse.cadrage as { objectifsEtude?: string } | null)?.objectifsEtude ?? null}
-          />
-        </main>
-      </div>
-    )
-  }
-
-  // ── Méthode NIST SP 800-30 Rev.1 : processus PAR PHASES (Prepare → Conduct →
-  // Communicate → Maintain). L'appréciation réutilise le registre à saisie directe.
-  if ((analyse as { methode?: string }).methode === 'NIST_800_30') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
-          <header className="mb-6">
-            <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-              <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
-                <span aria-hidden="true">← </span>{analyse.nom}
-              </Link>
-              <span aria-hidden="true">›</span>
-              <span aria-current="page">{t.methodes?.nist80030 ?? 'NIST SP 800-30'}</span>
-            </nav>
-            <h1 className="text-2xl font-bold text-gray-900">{t.nist80030.pageTitle}</h1>
-            <p className="text-sm text-gray-500 mt-1">{t.nist80030.pageSubtitle}</p>
-          </header>
-          <Nist80030Workshop
-            analyseId={analyse.id}
-            editable={editable}
-            perimetre={(analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null}
-            objectifs={(analyse.cadrage as { objectifsEtude?: string } | null)?.objectifsEtude ?? null}
+          <PhasedRiskWorkshop
+            analyseId={analyse.id} editable={editable} phases={phases}
+            perimetre={perimetre} objectifs={objectifs}
+            perimetreLabel={cfg.perimetreLabel} objectifsLabel={cfg.objectifsLabel}
+            noContext={cfg.noContext} phasesLabel={cfg.phasesLabel}
           />
         </main>
       </div>

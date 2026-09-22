@@ -20,9 +20,12 @@ describe('registre des méthodes', () => {
     expect(isRiskMethod(null)).toBe(false)
   })
 
-  it('EBIOS RM = 5 étapes ; ISO 31000 = 3 étapes ; méthode inconnue → EBIOS RM', () => {
+  it('EBIOS RM = 5 étapes ; ISO 31000 = 1 phase (écran simple) ; ISO 27005 = 5 phases ; méthode inconnue → EBIOS RM', () => {
     expect(methodStepCount('EBIOS_RM')).toBe(5)
-    expect(methodStepCount('ISO_31000')).toBe(3)
+    expect(methodStepCount('ISO_31000')).toBe(1)
+    expect(methodStepCount('ISO_27005')).toBe(5)
+    // Les phases des méthodes phasées portent un type.
+    expect(methodSteps('ISO_27005').map(s => s.type)).toEqual(['context', 'appreciation', 'appreciation', 'review', 'appreciation'])
     expect(methodSteps('ZZZ')).toEqual(METHOD_STEPS.EBIOS_RM) // repli
     // étapes ordonnées et numérotées
     expect(methodSteps('EBIOS_RM').map(s => s.num)).toEqual([1, 2, 3, 4, 5])

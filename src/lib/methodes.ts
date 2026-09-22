@@ -63,10 +63,20 @@ export const METHOD_META: Record<RiskMethod, MethodMeta> = {
 }
 
 /** Étape d'une méthode (ordre + clé stable + clé i18n de libellé). */
+/** Nature d'une phase pour le parcours phasé générique (`PhasedRiskWorkshop`) :
+ *  context = périmètre/objectifs ; appreciation = registre éditable ; review =
+ *  registre en lecture seule (priorisation) ; note = conseils seuls. */
+export type PhaseType = 'context' | 'appreciation' | 'review' | 'note'
+
 export interface MethodStep {
   num: number
   key: string
   labelKey: string
+  /** Type de phase (parcours générique). Absent = non phasé (EBIOS RM). */
+  type?: PhaseType
+  /** Clés d'enrichissement (R2 conseils / R3 exemples) — non utilisées en R1. */
+  guidanceKey?: string
+  exemplesCategory?: string
 }
 
 // Jeux d'étapes par méthode. EBIOS RM = les 5 ateliers existants (inchangés).
@@ -81,25 +91,24 @@ export const METHOD_STEPS: Record<RiskMethod, MethodStep[]> = {
     { num: 5, key: 'traitement',           labelKey: 'methodes.ebiosRm.a5' },
   ],
   // ISO 31000:2018 « simple » (risque opérationnel) : appréciation qualitative G×V.
+  // Écran unique → une seule phase d'appréciation (parcours générique sans onglets).
   ISO_31000: [
-    { num: 1, key: 'perimetre-criteres',   labelKey: 'methodes.iso31000.s1' },
-    { num: 2, key: 'appreciation',         labelKey: 'methodes.iso31000.s2' },
-    { num: 3, key: 'traitement',           labelKey: 'methodes.iso31000.s3' },
+    { num: 1, key: 'appreciation',         labelKey: 'methodes.iso31000.s2', type: 'appreciation' },
   ],
-  // ISO/IEC 27005:2022 (phases) — libellés officiels à reprendre à l'implémentation.
+  // ISO/IEC 27005:2022 (phases). Libellés dans t.iso27005.phases (clés = `key`).
   ISO_27005: [
-    { num: 1, key: 'contexte',             labelKey: 'methodes.iso27005.s1' },
-    { num: 2, key: 'identification',       labelKey: 'methodes.iso27005.s2' },
-    { num: 3, key: 'analyse',              labelKey: 'methodes.iso27005.s3' },
-    { num: 4, key: 'evaluation',           labelKey: 'methodes.iso27005.s4' },
-    { num: 5, key: 'traitement',           labelKey: 'methodes.iso27005.s5' },
+    { num: 1, key: 'contexte',             labelKey: 'methodes.iso27005.s1', type: 'context' },
+    { num: 2, key: 'identification',       labelKey: 'methodes.iso27005.s2', type: 'appreciation' },
+    { num: 3, key: 'analyse',              labelKey: 'methodes.iso27005.s3', type: 'appreciation' },
+    { num: 4, key: 'evaluation',           labelKey: 'methodes.iso27005.s4', type: 'review' },
+    { num: 5, key: 'traitement',           labelKey: 'methodes.iso27005.s5', type: 'appreciation' },
   ],
   // NIST SP 800-30 Rev.1 — Prepare / Conduct / Communicate / Maintain.
   NIST_800_30: [
-    { num: 1, key: 'prepare',              labelKey: 'methodes.nist80030.s1' },
-    { num: 2, key: 'conduct',              labelKey: 'methodes.nist80030.s2' },
-    { num: 3, key: 'communicate',          labelKey: 'methodes.nist80030.s3' },
-    { num: 4, key: 'maintain',             labelKey: 'methodes.nist80030.s4' },
+    { num: 1, key: 'prepare',              labelKey: 'methodes.nist80030.s1', type: 'context' },
+    { num: 2, key: 'conduct',              labelKey: 'methodes.nist80030.s2', type: 'appreciation' },
+    { num: 3, key: 'communicate',          labelKey: 'methodes.nist80030.s3', type: 'review' },
+    { num: 4, key: 'maintain',             labelKey: 'methodes.nist80030.s4', type: 'appreciation' },
   ],
 }
 
