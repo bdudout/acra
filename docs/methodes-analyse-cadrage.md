@@ -97,12 +97,18 @@ conversion silencieuse d'un jeu d'étapes à un autre).
 
 ## 7. Périmètre v1 (proposé)
 
-1. **Socle multi‑méthode** : champ `methode` + `lib/methodes.ts` (registre d'étapes) +
-   résolution de config (défaut/org/instance) + sélecteur à la création (config avancée)
-   + garde serveur. EBIOS RM = jeu d'étapes existant, **zéro changement fonctionnel**.
-2. **ISO 31000 simple** : jeu d'étapes court (périmètre/critères → appréciation G×V →
-   traitement), réutilisant échelles + matrice qualitative + plans d'action. Pas
-   d'ateliers cyber (sources de risque, scénarios stratégiques/opérationnels masqués).
+1. **Socle multi‑méthode** — ✅ **livré (phase 1)** : champ `Analyse.methode`
+   `@default("EBIOS_RM")` (+ migration) ; registre **pur** `lib/methodes.ts`
+   (métadonnées + jeux d'étapes des 4 méthodes + `resolveMethodes` = ensemble
+   effectif avec **garde-fou EBIOS RM toujours disponible**) ; validation de la
+   méthode à la **création** (`/api/analyses`, retombe sur le défaut si non
+   proposable). `IMPLEMENTED_METHODS = ['EBIOS_RM']` : seule EBIOS RM est câblée
+   → **zéro changement fonctionnel**, les autres méthodes se « débloquent » en
+   ajoutant leur parcours. Tests purs (`methodes.test.ts`).
+2. **ISO 31000 simple** — ⬜ à suivre : jeu d'étapes court (périmètre/critères →
+   appréciation G×V → traitement), câblage UI + passage dans `IMPLEMENTED_METHODS`
+   + activation instance/org, réutilisant échelles + matrice qualitative + plans
+   d'action. Pas d'ateliers cyber (sources de risque, scénarios masqués).
 
 Incréments suivants : **ISO 27005** (phases), **NIST 800‑30** (Prepare/Conduct/…),
 option **quantitative** (FAIR‑like) si besoin.

@@ -9,6 +9,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
+import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { analysisCapReached } from '@/lib/demo'
 import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
 
@@ -23,6 +24,7 @@ const createSchema = z.object({
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
+  methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
@@ -82,6 +84,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createSchema.parse(body)
 
+    // Méthode d'analyse : validée contre l'ensemble EFFECTIF (phase 1 : EBIOS RM
+    // seul câblé). Une méthode non proposable retombe sur le défaut — jamais de
+    // méthode arbitraire persistée.
+    const { available, default: defMethode } = resolveMethodes()
+    const methode = isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
+
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
     let socleData: { cadrage?: any; sourcesRisque?: any[] } = {}
     if (data.socleId) {
@@ -122,6 +130,7 @@ export async function POST(req: NextRequest) {
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,
         mentionProtection: normalizeMentionProtection(data.mentionProtection),
+        methode,
         // Cadrage : copier du socle ou créer vide
         cadrage: {
           create: socleData.cadrage
