@@ -29,6 +29,15 @@ describe('PhasedRiskWorkshop', () => {
     expect(screen.getByText('Confidentialité')).toBeInTheDocument()
   })
 
+  it('phase contexte éditable : rend l’éditeur (textarea + bouton) quand les libellés sont fournis', () => {
+    render(<PhasedRiskWorkshop analyseId="an1" editable phases={isoPhases}
+      perimetre="SI prod" objectifs="Confidentialité" perimetreLabel="Périmètre" objectifsLabel="Objectifs"
+      noContext="—" phasesLabel="Phases" contexteSave="Enregistrer le contexte" contexteSaved="Enregistré" />)
+    // Champ éditable pré-rempli (textarea), pas seulement du texte en lecture seule.
+    expect((screen.getByLabelText('Périmètre') as HTMLTextAreaElement).value).toBe('SI prod')
+    expect(screen.getByText('Enregistrer le contexte')).toBeInTheDocument()
+  })
+
   it('phase appreciation = registre éditable ; review = lecture seule', async () => {
     render(<PhasedRiskWorkshop analyseId="an1" editable phases={isoPhases} perimetreLabel="P" objectifsLabel="O" noContext="—" phasesLabel="Phases" />)
     fireEvent.click(screen.getByRole('button', { name: /Identification/ }))

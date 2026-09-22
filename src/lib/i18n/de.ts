@@ -1388,6 +1388,7 @@ export const de: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  contexteEditor: { save: 'Kontext speichern', saved: 'Kontext gespeichert', perimetrePlaceholder: 'Beschreiben Sie den Geltungsbereich: Aktivitäten, Systeme und Beteiligte.', objectifsPlaceholder: 'Ziele der Bewertung und Akzeptanzkriterien für Risiken.' },
   phaseGuidance: { title: 'Über diese Phase', hide: 'Ausblenden', show: 'Über diese Phase' },
   iso27005: {
     pageTitle: 'Risikomanagementprozess',

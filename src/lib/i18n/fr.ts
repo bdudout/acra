@@ -1412,6 +1412,7 @@ export const fr = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  contexteEditor: { save: 'Enregistrer le contexte', saved: 'Contexte enregistré', perimetrePlaceholder: 'Décrivez le périmètre : activités, systèmes et parties prenantes concernés.', objectifsPlaceholder: 'Objectifs de l’appréciation et critères d’acceptation des risques.' },
   phaseGuidance: { title: 'À propos de cette phase', hide: 'Masquer', show: 'À propos de cette phase' },
   iso27005: {
     pageTitle: 'Processus de gestion des risques',
