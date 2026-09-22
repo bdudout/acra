@@ -2498,6 +2498,7 @@ export const es: Translations = {
     navJournalisation: 'Registro',
     navRecovery:    'Recuperación',
     navOrganizations: 'Organizaciones',
+    navInstance: 'Instancia',
     navDemo:        'Demo',
     demoConfig: {
       title:            'Ajustes del sitio de demostración',

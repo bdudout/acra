@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import Link from 'next/link'
-import { Home, Server } from 'lucide-react'
+import { Server } from 'lucide-react'
 import Navbar from '@/components/Navbar'
+import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
 import { isAdminRole } from '@/lib/permissions'
 import ApiKeysManager from '@/components/ApiKeysManager'
@@ -115,8 +115,8 @@ export default function AdminInstancePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <AdminNav active="instance" />
         <div>
-          <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"><Home size={14} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> {t.instanceAdmin.back}</Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2"><Server size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.instanceAdmin.title}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.instanceAdmin.subtitle}</p>
         </div>
