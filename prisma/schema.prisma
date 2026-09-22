@@ -1156,6 +1156,9 @@ model Analyse {
   versionMineure       Int           @default(0) // « y » — incrémenté lors d'une révision opérationnelle
   // Méthode d'évaluation de la vraisemblance (label §EXI_M4_07) — cf. lib/vraisemblance-methode.ts
   methodeVraisemblance String        @default("EXPRESSE") // EXPRESSE | STANDARD | AVANCEE
+  // Méthode d'analyse de risque (figée à la création) — cf. lib/methodes.ts et
+  // docs/methodes-analyse-cadrage.md. Défaut EBIOS RM = rétrocompatibilité totale.
+  methode              String        @default("EBIOS_RM") // EBIOS_RM | ISO_27005 | NIST_800_30 | ISO_31000
 
   // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
   organizationId String?
