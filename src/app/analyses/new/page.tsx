@@ -11,6 +11,11 @@ import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
 
+// Clé i18n du nom de chaque méthode (t.methodes.*).
+const METHODE_I18N: Record<string, string> = {
+  EBIOS_RM: 'ebiosRm', ISO_27005: 'iso27005', NIST_800_30: 'nist80030', ISO_31000: 'iso31000',
+}
+
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
@@ -22,6 +27,18 @@ export default function NewAnalysePage() {
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // Méthode d'analyse (config avancée) : proposée seulement si l'instance en active
+  // plus d'une. Défaut EBIOS RM. cf. lib/methodes.ts.
+  const [methode, setMethode] = useState('EBIOS_RM')
+  const [methodes, setMethodes] = useState<string[]>(['EBIOS_RM'])
+  const [advOpen, setAdvOpen] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/methodes')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.available?.length) { setMethodes(d.available); setMethode(d.default ?? 'EBIOS_RM') } })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch('/api/analyses/socles')
@@ -53,7 +70,7 @@ export default function NewAnalysePage() {
     const res = await fetch('/api/analyses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), ...(socleId ? { socleId } : {}) }),
+      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, ...(socleId ? { socleId } : {}) }),
     })
 
     const data = await res.json()
@@ -186,6 +203,26 @@ export default function NewAnalysePage() {
               {socleId && (
                 <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-xs text-indigo-800">
                   <CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> Les éléments du socle sélectionné seront copiés dans cette analyse. Vous pourrez les modifier librement.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Méthode d'analyse (config avancée) — seulement si l'instance en active plusieurs */}
+          {methodes.length > 1 && (
+            <div className="border-t border-gray-100 pt-4">
+              <button type="button" onClick={() => setAdvOpen(o => !o)} className="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                {advOpen ? '▾' : '▸'} {t.newAnalysis.advanced}
+              </button>
+              {advOpen && (
+                <div className="mt-3">
+                  <label className="label">{t.newAnalysis.methodLabel}</label>
+                  <select value={methode} onChange={e => setMethode(e.target.value)} className="input">
+                    {methodes.map(mk => (
+                      <option key={mk} value={mk}>{(t.methodes as Record<string, string>)[METHODE_I18N[mk] ?? ''] ?? mk}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.methodHint}</p>
                 </div>
               )}
             </div>

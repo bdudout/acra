@@ -10,6 +10,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
 import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
+import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { analysisCapReached } from '@/lib/demo'
 import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
 
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Méthode d'analyse : validée contre l'ensemble EFFECTIF (phase 1 : EBIOS RM
     // seul câblé). Une méthode non proposable retombe sur le défaut — jamais de
     // méthode arbitraire persistée.
-    const { available, default: defMethode } = resolveMethodes()
+    const { available, default: defMethode } = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
     const methode = isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
 
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès

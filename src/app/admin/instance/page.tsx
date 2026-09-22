@@ -11,6 +11,11 @@ import { isAdminRole } from '@/lib/permissions'
 import ApiKeysManager from '@/components/ApiKeysManager'
 import WebhooksManager from '@/components/WebhooksManager'
 
+// Clé i18n du nom de chaque méthode d'analyse (t.methodes.*).
+const METHODE_I18N: Record<string, string> = {
+  EBIOS_RM: 'ebiosRm', ISO_27005: 'iso27005', NIST_800_30: 'nist80030', ISO_31000: 'iso31000',
+}
+
 /**
  * Administration — Paramètres d'instance (identité, politique de modules, API,
  * webhooks). Regroupés dans l'espace ADMIN, distinct de la /configuration métier
@@ -30,6 +35,8 @@ export default function AdminInstancePage() {
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [apiEnabled, setApiEnabled] = useState(false)
   const [mcpEnabled, setMcpEnabled] = useState(false)
+  const [methodesActives, setMethodesActives] = useState<string[]>(['EBIOS_RM'])
+  const [methodesImplemented, setMethodesImplemented] = useState<string[]>(['EBIOS_RM'])
 
   useEffect(() => {
     if (status === 'authenticated' && !isAdmin) router.replace('/dashboard')
@@ -43,7 +50,21 @@ export default function AdminInstancePage() {
       .then(d => { if (d?.modulesPolicy && typeof d.modulesPolicy === 'object') setModulesPolicy(d.modulesPolicy) }).catch(() => {})
     fetch('/api/admin/api-mcp-config').then(r => r.ok ? r.json() : null)
       .then(d => { if (d) { setApiEnabled(d.apiEnabled === true); setMcpEnabled(d.mcpEnabled === true) } }).catch(() => {})
+    fetch('/api/admin/methodes-config').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { if (Array.isArray(d.active)) setMethodesActives(d.active); if (Array.isArray(d.implemented)) setMethodesImplemented(d.implemented) } }).catch(() => {})
   }, [isSuperAdmin])
+
+  // Active/désactive une méthode d'analyse au niveau instance (EBIOS RM verrouillé).
+  async function toggleMethode(methode: string, on: boolean) {
+    const next = on ? [...new Set([...methodesActives, methode])] : methodesActives.filter(x => x !== methode)
+    const prev = methodesActives
+    setMethodesActives(next)
+    const res = await fetch('/api/admin/methodes-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ methodes: next }),
+    })
+    if (res.ok) { const d = await res.json().catch(() => null); if (d?.active) setMethodesActives(d.active) }
+    else setMethodesActives(prev)
+  }
 
   // Interrupteurs des interfaces programmatiques (mise à jour optimiste, rollback sur échec).
   async function saveInterfaceToggle(field: 'apiEnabled' | 'mcpEnabled', value: boolean) {
@@ -165,6 +186,34 @@ export default function AdminInstancePage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2">{t.interfacesConfig.hint}</p>
+          </section>
+        )}
+
+        {isSuperAdmin && (
+          <section className="card p-6">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.methodesConfig.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.methodesConfig.sectionDesc}</p>
+            <div className="space-y-3">
+              {methodesImplemented.map(mk => {
+                const locked = mk === 'EBIOS_RM'
+                const on = locked || methodesActives.includes(mk)
+                const name = (t.methodes as Record<string, string>)[METHODE_I18N[mk] ?? ''] ?? mk
+                return (
+                  <div key={mk} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{name}</div>
+                      {locked && <div className="text-xs text-gray-400 mt-0.5">{t.methodesConfig.ebiosLocked}</div>}
+                    </div>
+                    <label className={`inline-flex items-center gap-2 shrink-0 ${locked ? 'opacity-60' : 'cursor-pointer'}`}>
+                      <input type="checkbox" checked={on} disabled={locked} onChange={e => toggleMethode(mk, e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{on ? t.interfacesConfig.enabled : t.interfacesConfig.disabled}</span>
+                    </label>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{t.methodesConfig.hint}</p>
           </section>
         )}
 

@@ -28,6 +28,18 @@ export function usesDirectRiskEntry(m: string): boolean {
   return isRiskMethod(m) && DIRECT_RISK_METHODS.includes(m)
 }
 
+/**
+ * Assainit la liste des méthodes ACTIVÉES au niveau instance (SUPER_ADMIN) : ne
+ * garde que des méthodes connues **et câblées** (`IMPLEMENTED_METHODS`), et
+ * **impose EBIOS RM** (garde-fou : l'instance a toujours au moins EBIOS RM).
+ */
+export function cleanActiveMethodes(v: unknown): RiskMethod[] {
+  const arr = Array.isArray(v) ? v : []
+  const set = new Set<RiskMethod>([DEFAULT_METHOD])
+  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x)) set.add(x)
+  return RISK_METHODS.filter(m => set.has(m))
+}
+
 /** Vrai si `v` est une méthode connue. */
 export function isRiskMethod(v: unknown): v is RiskMethod {
   return typeof v === 'string' && (RISK_METHODS as readonly string[]).includes(v)
