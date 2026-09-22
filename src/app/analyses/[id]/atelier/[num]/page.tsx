@@ -18,6 +18,7 @@ import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import RisquesDirects from '@/components/RisquesDirects'
 import Iso27005Workshop from '@/components/Iso27005Workshop'
+import Nist80030Workshop from '@/components/Nist80030Workshop'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -119,6 +120,35 @@ export default async function AtelierPage({
             <p className="text-sm text-gray-500 mt-1">{t.iso27005.pageSubtitle}</p>
           </header>
           <Iso27005Workshop
+            analyseId={analyse.id}
+            editable={editable}
+            perimetre={(analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null}
+            objectifs={(analyse.cadrage as { objectifsEtude?: string } | null)?.objectifsEtude ?? null}
+          />
+        </main>
+      </div>
+    )
+  }
+
+  // ── Méthode NIST SP 800-30 Rev.1 : processus PAR PHASES (Prepare → Conduct →
+  // Communicate → Maintain). L'appréciation réutilise le registre à saisie directe.
+  if ((analyse as { methode?: string }).methode === 'NIST_800_30') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+          <header className="mb-6">
+            <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+              <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
+                <span aria-hidden="true">← </span>{analyse.nom}
+              </Link>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{t.methodes?.nist80030 ?? 'NIST SP 800-30'}</span>
+            </nav>
+            <h1 className="text-2xl font-bold text-gray-900">{t.nist80030.pageTitle}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t.nist80030.pageSubtitle}</p>
+          </header>
+          <Nist80030Workshop
             analyseId={analyse.id}
             editable={editable}
             perimetre={(analyse.cadrage as { perimetre?: string } | null)?.perimetre ?? null}

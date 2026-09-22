@@ -14,14 +14,14 @@ export type RiskMethod = (typeof RISK_METHODS)[number]
 export const DEFAULT_METHOD: RiskMethod = 'EBIOS_RM'
 
 /** Méthodes dont le parcours (UI) est réellement câblé : EBIOS RM + ISO 31000 + ISO 27005. */
-export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_31000', 'ISO_27005']
+export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_31000', 'ISO_27005', 'NIST_800_30']
 
 /**
  * Méthodes à **saisie directe** des risques (gravité × vraisemblance saisis
  * directement), par opposition à EBIOS RM où les risques sont **dérivés** des
  * scénarios opérationnels. Détermine si l'API de saisie directe est autorisée.
  */
-export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000', 'ISO_27005']
+export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000', 'ISO_27005', 'NIST_800_30']
 
 /** Vrai si la méthode apprécie les risques par saisie directe (pas via scénarios). */
 export function usesDirectRiskEntry(m: string): boolean {
