@@ -37,7 +37,8 @@ describe('methodes-config', () => {
   })
 
   it('PUT assainit : EBIOS RM imposé, méthode non câblée écartée', async () => {
-    const res = await PUT(req({ methodes: ['ISO_31000', 'ISO_27005'] }))
+    // NIST_800_30 n'est pas câblée → écartée ; EBIOS RM imposé.
+    const res = await PUT(req({ methodes: ['ISO_31000', 'NIST_800_30'] }))
     expect(res.status).toBe(200)
     expect(argOf(configUpdate).data.methodesActives).toEqual(['EBIOS_RM', 'ISO_31000'])
   })

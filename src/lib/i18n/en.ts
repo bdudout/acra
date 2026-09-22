@@ -1388,6 +1388,23 @@ export const en: Translations = {
     nist80030: 'NIST SP 800-30',
     iso31000: 'ISO 31000:2018',
   },
+  iso27005: {
+    pageTitle: 'Risk management process',
+    pageSubtitle: 'ISO/IEC 27005:2022 process, by phases.',
+    phasesLabel: 'Process phases',
+    phases: {
+      contexte: 'Context establishment',
+      identification: 'Risk identification',
+      analyse: 'Risk analysis',
+      evaluation: 'Risk evaluation',
+      traitement: 'Risk treatment',
+    },
+    contexteDesc: 'Scope and criteria for risk assessment.',
+    perimetreLabel: 'Scope',
+    objectifsLabel: 'Objectives / criteria',
+    noContext: 'Not provided.',
+    evaluationNote: 'Risk prioritisation against criteria (read-only).',
+  },
   methodesConfig: {
     sectionTitle: 'Analysis methods',
     sectionDesc: 'Enable the risk-analysis methods offered at creation. EBIOS RM is always available.',
