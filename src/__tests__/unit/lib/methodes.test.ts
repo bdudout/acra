@@ -30,21 +30,28 @@ describe('registre des méthodes', () => {
 })
 
 describe('resolveMethodes — ensemble effectif', () => {
-  it('par défaut : seul EBIOS RM (seule méthode câblée)', () => {
-    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM'], default: 'EBIOS_RM' })
+  it('EBIOS RM et ISO 31000 sont câblés', () => {
+    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM', 'ISO_31000'])
+  })
+
+  it('sans restriction : les méthodes câblées, défaut EBIOS RM', () => {
+    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_31000'], default: 'EBIOS_RM' })
   })
 
   it('EBIOS RM reste disponible même si l\'instance ne l\'a pas explicitement activé (garde-fou)', () => {
     const r = resolveMethodes({ instanceEnabled: ['ISO_31000'] })
-    expect(r.available).toContain('EBIOS_RM')
+    expect(r.available).toEqual(['EBIOS_RM', 'ISO_31000'])
     expect(r.default).toBe('EBIOS_RM')
   })
 
   it('une méthode non câblée demandée par défaut retombe sur EBIOS RM', () => {
-    // ISO_31000 n'est pas encore dans IMPLEMENTED_METHODS → indisponible.
-    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM'])
-    const r = resolveMethodes({ orgDefault: 'ISO_31000' })
-    expect(r.available).not.toContain('ISO_31000')
+    // ISO_27005 n'est pas encore dans IMPLEMENTED_METHODS → indisponible.
+    const r = resolveMethodes({ orgDefault: 'ISO_27005' })
+    expect(r.available).not.toContain('ISO_27005')
     expect(r.default).toBe('EBIOS_RM')
+  })
+
+  it('défaut d\'organisation honoré s\'il est disponible (ISO 31000)', () => {
+    expect(resolveMethodes({ orgDefault: 'ISO_31000' }).default).toBe('ISO_31000')
   })
 })

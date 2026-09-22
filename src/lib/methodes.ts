@@ -13,8 +13,8 @@ export type RiskMethod = (typeof RISK_METHODS)[number]
 /** Méthode par défaut (rétrocompatibilité : toute analyse sans méthode = EBIOS RM). */
 export const DEFAULT_METHOD: RiskMethod = 'EBIOS_RM'
 
-/** Méthodes dont le parcours (UI/étapes) est réellement câblé — phase 1 : EBIOS RM seul. */
-export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM']
+/** Méthodes dont le parcours (UI) est réellement câblé : EBIOS RM + ISO 31000 simple. */
+export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_31000']
 
 /**
  * Méthodes à **saisie directe** des risques (gravité × vraisemblance saisis
