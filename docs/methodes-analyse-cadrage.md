@@ -130,8 +130,18 @@ conversion silencieuse d'un jeu d'étapes à un autre).
    - **Résultat** : ISO 31000 est **activable par le SUPER_ADMIN**, puis
      **choisissable à la création** ; EBIOS RM reste le défaut partout.
 
-Incréments suivants : **ISO 27005** (phases), **NIST 800‑30** (Prepare/Conduct/…),
-option **quantitative** (FAIR‑like) si besoin.
+3. **ISO/IEC 27005:2022** — ✅ **livré** : câblé (`IMPLEMENTED_METHODS`) en **processus
+   par phases** (onglets : établissement du contexte → identification → analyse →
+   évaluation → traitement), distinct des ateliers EBIOS. L'appréciation réutilise
+   le registre de risques à **saisie directe** (`ISO_27005` ∈ `DIRECT_RISK_METHODS`) ;
+   la phase Évaluation est en lecture seule (priorisation). Composant
+   `Iso27005Workshop` + i18n `iso27005` (5 langues). Activation/ sélecteur **automatiques**
+   (pilotés par `IMPLEMENTED_METHODS`). Libellés de phases à confirmer sur la
+   traduction **AFNOR** d'ISO/IEC 27005:2022.
+
+Incréments suivants : **NIST 800‑30** (Prepare/Conduct/…), option **quantitative**
+(FAIR‑like) si besoin, et enrichissement des écrans de phase ISO 27005 (contexte/
+critères éditables, mesures).
 
 ## 8. Points de vigilance
 

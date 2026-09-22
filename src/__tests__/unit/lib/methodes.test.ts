@@ -30,12 +30,13 @@ describe('registre des méthodes', () => {
 })
 
 describe('resolveMethodes — ensemble effectif', () => {
-  it('EBIOS RM et ISO 31000 sont câblés', () => {
-    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM', 'ISO_31000'])
+  it('EBIOS RM, ISO 31000 et ISO 27005 sont câblés', () => {
+    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM', 'ISO_31000', 'ISO_27005'])
   })
 
-  it('sans restriction : les méthodes câblées, défaut EBIOS RM', () => {
-    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_31000'], default: 'EBIOS_RM' })
+  it('sans restriction : les méthodes câblées (ordonnées), défaut EBIOS RM', () => {
+    // Ordre = RISK_METHODS : EBIOS_RM, ISO_27005, ISO_31000.
+    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_27005', 'ISO_31000'], default: 'EBIOS_RM' })
   })
 
   it('EBIOS RM reste disponible même si l\'instance ne l\'a pas explicitement activé (garde-fou)', () => {
@@ -45,9 +46,9 @@ describe('resolveMethodes — ensemble effectif', () => {
   })
 
   it('une méthode non câblée demandée par défaut retombe sur EBIOS RM', () => {
-    // ISO_27005 n'est pas encore dans IMPLEMENTED_METHODS → indisponible.
-    const r = resolveMethodes({ orgDefault: 'ISO_27005' })
-    expect(r.available).not.toContain('ISO_27005')
+    // NIST_800_30 n'est pas encore dans IMPLEMENTED_METHODS → indisponible.
+    const r = resolveMethodes({ orgDefault: 'NIST_800_30' })
+    expect(r.available).not.toContain('NIST_800_30')
     expect(r.default).toBe('EBIOS_RM')
   })
 
@@ -60,7 +61,7 @@ describe('cleanActiveMethodes — activation instance', () => {
   it('impose EBIOS RM et ne garde que les méthodes câblées connues', () => {
     expect(cleanActiveMethodes(['ISO_31000'])).toEqual(['EBIOS_RM', 'ISO_31000'])
     expect(cleanActiveMethodes(null)).toEqual(['EBIOS_RM'])
-    expect(cleanActiveMethodes(['ISO_27005'])).toEqual(['EBIOS_RM']) // non câblée → écartée
+    expect(cleanActiveMethodes(['NIST_800_30'])).toEqual(['EBIOS_RM']) // non câblée → écartée
     expect(cleanActiveMethodes(['garbage', 'EBIOS_RM'])).toEqual(['EBIOS_RM'])
   })
 })
