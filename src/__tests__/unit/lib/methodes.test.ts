@@ -26,6 +26,8 @@ describe('registre des méthodes', () => {
     expect(methodStepCount('ISO_27005')).toBe(5)
     // Les phases des méthodes phasées portent un type.
     expect(methodSteps('ISO_27005').map(s => s.type)).toEqual(['context', 'appreciation', 'appreciation', 'review', 'appreciation'])
+    // ISO 27005 différencie les phases d'appréciation (identification / analyse / traitement).
+    expect(methodSteps('ISO_27005').map(s => s.apprMode)).toEqual([undefined, 'identify', 'rate', undefined, 'treat'])
     expect(methodSteps('ZZZ')).toEqual(METHOD_STEPS.EBIOS_RM) // repli
     // étapes ordonnées et numérotées
     expect(methodSteps('EBIOS_RM').map(s => s.num)).toEqual([1, 2, 3, 4, 5])

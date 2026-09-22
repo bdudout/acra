@@ -24,9 +24,29 @@ const TIER_CLASS: Record<string, string> = {
   critique: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-200',
 }
 
-export default function RisquesDirects({ analyseId, editable, suggestions }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[] }) {
+/**
+ * Mode d'affichage (différenciation des phases ISO 27005) :
+ *  - full          : tout (ajout + cotation + traitement) — ISO 31000, NIST.
+ *  - identify      : construire la liste (intitulés + suggestions), sans cotation.
+ *  - rate          : coter gravité × vraisemblance → niveau (pas d'ajout).
+ *  - treat         : choisir la stratégie de traitement (pas de cotation).
+ */
+export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat'
+
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full' }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
+  // Colonnes / actions visibles selon le mode (phase). L'ajout n'existe qu'en
+  // identification (et en mode complet) ; la cotation en analyse ; le traitement en
+  // traitement. Le niveau est masqué tant qu'on n'a pas coté (identification).
+  const showAdd = mode === 'full' || mode === 'identify'
+  const showAddScoring = mode === 'full' // pas de G/V dans l'ajout en identification
+  const col = {
+    gravite: mode === 'full' || mode === 'rate',
+    vraisemblance: mode === 'full' || mode === 'rate',
+    niveau: mode !== 'identify',
+    strategie: mode === 'full' || mode === 'treat',
+  }
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
   const [nom, setNom] = useState('')
@@ -81,22 +101,22 @@ export default function RisquesDirects({ analyseId, editable, suggestions }: { a
       <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{m.title}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{m.subtitle}</p>
 
-      {editable && (
+      {editable && showAdd && (
         <div className="flex flex-wrap items-end gap-3 mb-4">
           <label className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-[12rem]">{m.colNom}
             <input value={nom} onChange={e => setNom(e.target.value)} placeholder={m.nomPlaceholder}
               className="block mt-1 w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
-          <label className="text-xs text-gray-500 dark:text-gray-400">{m.colGravite}
+          {showAddScoring && <label className="text-xs text-gray-500 dark:text-gray-400">{m.colGravite}
             <select value={gravite} onChange={e => setGravite(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               {echelle.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-          </label>
-          <label className="text-xs text-gray-500 dark:text-gray-400">{m.colVraisemblance}
+          </label>}
+          {showAddScoring && <label className="text-xs text-gray-500 dark:text-gray-400">{m.colVraisemblance}
             <select value={vraisemblance} onChange={e => setVraisemblance(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               {echelle.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-          </label>
+          </label>}
           <button onClick={ajouter} disabled={busy || !nom.trim()} className="btn-primary text-sm inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={15} aria-hidden="true" /> {m.add}
           </button>
@@ -104,7 +124,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions }: { a
       )}
 
       {/* Suggestions sectorielles (R3) : pré-remplissent le formulaire, modifiables avant ajout. */}
-      {editable && suggestions && suggestions.length > 0 && (
+      {editable && showAdd && suggestions && suggestions.length > 0 && (
         <div className="mb-5">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
             <Lightbulb size={14} aria-hidden="true" />{m.suggestionsLabel}
@@ -129,30 +149,33 @@ export default function RisquesDirects({ analyseId, editable, suggestions }: { a
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2">{m.colNom}</th><th className="px-3 py-2">{m.colGravite}</th>
-                <th className="px-3 py-2">{m.colVraisemblance}</th><th className="px-3 py-2">{m.colNiveau}</th>
-                <th className="px-3 py-2">{m.colStrategie}</th><th className="px-3 py-2" />
+                <th className="px-3 py-2">{m.colNom}</th>
+                {col.gravite && <th className="px-3 py-2">{m.colGravite}</th>}
+                {col.vraisemblance && <th className="px-3 py-2">{m.colVraisemblance}</th>}
+                {col.niveau && <th className="px-3 py-2">{m.colNiveau}</th>}
+                {col.strategie && <th className="px-3 py-2">{m.colStrategie}</th>}
+                <th className="px-3 py-2" />
               </tr></thead>
               <tbody>
                 {rows.map(r => (
                   <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
                     <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
-                    <td className="px-3 py-2">
+                    {col.gravite && <td className="px-3 py-2">
                       <select disabled={!editable} value={r.gravite} onChange={e => maj(r.id, { gravite: Number(e.target.value) })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {echelle.map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
-                    </td>
-                    <td className="px-3 py-2">
+                    </td>}
+                    {col.vraisemblance && <td className="px-3 py-2">
                       <select disabled={!editable} value={r.vraisemblance} onChange={e => maj(r.id, { vraisemblance: Number(e.target.value) })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {echelle.map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
-                    </td>
-                    <td className="px-3 py-2">{niveauBadge(r.niveauRisque, r.gravite, r.vraisemblance)}</td>
-                    <td className="px-3 py-2">
+                    </td>}
+                    {col.niveau && <td className="px-3 py-2">{niveauBadge(r.niveauRisque, r.gravite, r.vraisemblance)}</td>}
+                    {col.strategie && <td className="px-3 py-2">
                       <select disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
                       </select>
-                    </td>
+                    </td>}
                     <td className="px-3 py-2 text-right">
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
