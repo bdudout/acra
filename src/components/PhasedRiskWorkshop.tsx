@@ -14,7 +14,7 @@ import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
 import PhaseGuidance from '@/components/PhaseGuidance'
 import ContexteEditor from '@/components/ContexteEditor'
-import type { PhaseType } from '@/lib/methodes'
+import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 
 export interface WorkshopPhase {
@@ -25,6 +25,8 @@ export interface WorkshopPhase {
   desc?: string
   /** Conseils pédagogiques repliables (R2) : démarche de la phase. */
   guidance?: { intro?: string; points?: readonly string[] }
+  /** Sous-mode d'appréciation (différenciation ISO 27005). */
+  apprMode?: ApprMode
 }
 
 export default function PhasedRiskWorkshop({
@@ -111,8 +113,10 @@ export default function PhasedRiskWorkshop({
       ) : (
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
-          {/* appreciation = éditable ; review = lecture seule (priorisation). */}
+          {/* appreciation = éditable ; review = lecture seule (priorisation). Le
+              sous-mode (identify/rate/treat) différencie les phases ISO 27005. */}
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
+            mode={phase.apprMode ?? 'full'}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
         </>
       )}

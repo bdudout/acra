@@ -84,4 +84,38 @@ describe('RisquesDirects', () => {
     await screen.findByText('Aucun risque pour l\'instant.')
     expect(screen.queryByText('Suggestions pour votre secteur')).toBeNull()
   })
+
+  const oneRow = () => jsonOk({ risques: [{ id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' }] })
+
+  it('mode identify : formulaire d’ajout sans cotation, table réduite (pas de niveau ni traitement)', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="identify" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    // Ajout présent, mais pas de sélecteurs de cotation dans l’en-tête.
+    expect(screen.getByText('Ajouter')).toBeInTheDocument()
+    expect(screen.queryByText('Niveau')).toBeNull()
+    expect(screen.queryByText('Traitement')).toBeNull()
+    // Pas de colonne Gravité (cotation) en identification.
+    expect(screen.queryByText('Gravité')).toBeNull()
+  })
+
+  it('mode rate : pas d’ajout ; cotation G/V éditable ; pas de traitement', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="rate" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.queryByText('Ajouter')).toBeNull()
+    expect(screen.getByText('Niveau')).toBeInTheDocument()
+    expect(screen.getAllByText('Gravité').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Traitement')).toBeNull()
+  })
+
+  it('mode treat : pas d’ajout ; traitement éditable ; pas de cotation G/V', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="treat" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.queryByText('Ajouter')).toBeNull()
+    expect(screen.getByText('Traitement')).toBeInTheDocument()
+    expect(screen.getByText('Niveau')).toBeInTheDocument()
+    expect(screen.queryByText('Gravité')).toBeNull()
+  })
 })

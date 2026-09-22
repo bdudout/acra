@@ -68,12 +68,19 @@ export const METHOD_META: Record<RiskMethod, MethodMeta> = {
  *  registre en lecture seule (priorisation) ; note = conseils seuls. */
 export type PhaseType = 'context' | 'appreciation' | 'review' | 'note'
 
+/** Sous-mode d'une phase d'appréciation (différenciation ISO 27005) :
+ *  identify = construire la liste ; rate = coter G×V ; treat = traiter.
+ *  Absent = appréciation complète (ISO 31000, NIST : étape holistique). */
+export type ApprMode = 'identify' | 'rate' | 'treat'
+
 export interface MethodStep {
   num: number
   key: string
   labelKey: string
   /** Type de phase (parcours générique). Absent = non phasé (EBIOS RM). */
   type?: PhaseType
+  /** Sous-mode d'appréciation (différencie identification / analyse / traitement). */
+  apprMode?: ApprMode
   /** Clés d'enrichissement (R2 conseils / R3 exemples) — non utilisées en R1. */
   guidanceKey?: string
   exemplesCategory?: string
@@ -98,10 +105,10 @@ export const METHOD_STEPS: Record<RiskMethod, MethodStep[]> = {
   // ISO/IEC 27005:2022 (phases). Libellés dans t.iso27005.phases (clés = `key`).
   ISO_27005: [
     { num: 1, key: 'contexte',             labelKey: 'methodes.iso27005.s1', type: 'context' },
-    { num: 2, key: 'identification',       labelKey: 'methodes.iso27005.s2', type: 'appreciation' },
-    { num: 3, key: 'analyse',              labelKey: 'methodes.iso27005.s3', type: 'appreciation' },
+    { num: 2, key: 'identification',       labelKey: 'methodes.iso27005.s2', type: 'appreciation', apprMode: 'identify' },
+    { num: 3, key: 'analyse',              labelKey: 'methodes.iso27005.s3', type: 'appreciation', apprMode: 'rate' },
     { num: 4, key: 'evaluation',           labelKey: 'methodes.iso27005.s4', type: 'review' },
-    { num: 5, key: 'traitement',           labelKey: 'methodes.iso27005.s5', type: 'appreciation' },
+    { num: 5, key: 'traitement',           labelKey: 'methodes.iso27005.s5', type: 'appreciation', apprMode: 'treat' },
   ],
   // NIST SP 800-30 Rev.1 — Prepare / Conduct / Communicate / Maintain.
   NIST_800_30: [

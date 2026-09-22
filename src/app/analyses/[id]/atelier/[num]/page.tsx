@@ -112,7 +112,7 @@ export default async function AtelierPage({
     }
     const phases = methodSteps(methode).map(s => ({
       key: s.key, type: s.type ?? 'appreciation', label: cfg.labels[s.key] ?? '', desc: cfg.descByKey[s.key],
-      guidance: cfg.guidanceByKey[s.key],
+      guidance: cfg.guidanceByKey[s.key], apprMode: s.apprMode,
     }))
     // R3 — suggestions de risques sectoriels (pré-remplissent le formulaire).
     const risqueSuggestions = editable
