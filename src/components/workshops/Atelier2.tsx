@@ -112,6 +112,21 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const autoSaveData = useMemo(() => ({ sourcesRisque: sources }), [sources])
+  // Props stables pour <SrOvRadar> (mémoïsé) : sans ça, ces objets recréés à
+  // chaque rendu casseraient la comparaison de props et re-déclencheraient la
+  // dérivation lourde du radar (ex. à chaque tick d'auto-save).
+  const radarCategoryLabels = useMemo(
+    () => Object.fromEntries(CATEGORIES.map(c => [c.value, c.label])),
+    [t], // eslint-disable-line react-hooks/exhaustive-deps
+  )
+  const radarLabels = useMemo(() => ({
+    empty: t.workshop.a2.radarEmpty,
+    p1: t.workshop.a2.radarP1,
+    pertinence1: t.workshop.a2.radarPert1,
+    pertinence4: t.workshop.a2.radarPert4,
+    couplesTitle: t.workshop.a2.radarCouples,
+    hint: t.workshop.a2.radarHint,
+  }), [t])
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
     async (data) => {
@@ -557,15 +572,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
               <SrOvRadar
                 sources={sources}
                 pertinenceLabel={t.workshop.a2.thPert}
-                categoryLabels={Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]))}
-                labels={{
-                  empty: t.workshop.a2.radarEmpty,
-                  p1: t.workshop.a2.radarP1,
-                  pertinence1: t.workshop.a2.radarPert1,
-                  pertinence4: t.workshop.a2.radarPert4,
-                  couplesTitle: t.workshop.a2.radarCouples,
-                  hint: t.workshop.a2.radarHint,
-                }}
+                categoryLabels={radarCategoryLabels}
+                labels={radarLabels}
               />
             </div>
           )}

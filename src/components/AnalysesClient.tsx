@@ -275,7 +275,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                             className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700 hover:opacity-80 transition-opacity"
                             onClick={e => e.stopPropagation()}
                           >
-                            <ArrowDown size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{risquesReduire} {risquesReduire === 1 ? t.analyses.riskSg : t.analyses.risks} à réduire
+                            <ArrowDown size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{risquesReduire} {risquesReduire === 1 ? t.analyses.riskSg : t.analyses.risks} {t.analyses.toReduce}
                           </Link>
                         )}
                         {mesuresP1AFaire > 0 && (
@@ -284,7 +284,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                             className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 hover:opacity-80 transition-opacity"
                             onClick={e => e.stopPropagation()}
                           >
-                            <ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {mesuresP1AFaire} P1 à faire
+                            <ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {mesuresP1AFaire} {t.analyses.p1ToDo}
                           </Link>
                         )}
                         {(a as any).isSocle && (
