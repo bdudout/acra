@@ -11,7 +11,8 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
-import { sanitizeDirectRisquePatch, directNiveau } from '@/lib/risque-direct'
+import { sanitizeDirectRisquePatch, recomputeDirectNiveaux } from '@/lib/risque-direct'
+import { DIRECT_RISK_SELECT } from '../route'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string; riskId: string }> }
@@ -26,7 +27,11 @@ function auth(session: unknown): { userId: string; role: UserRole } | null {
 async function riskOfAnalyse(riskId: string, analyseId: string) {
   return prisma.risque.findFirst({
     where: { id: riskId, analyseId },
-    select: { id: true, gravite: true, vraisemblance: true },
+    select: {
+      id: true, gravite: true, vraisemblance: true,
+      graviteActuelle: true, vraisemblanceActuelle: true,
+      graviteResiduelle: true, vraisemblanceResiduelle: true,
+    },
   })
 }
 
@@ -45,16 +50,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (patch.nom !== undefined && patch.nom.trim() === '') {
     return NextResponse.json({ error: 'intitule_requis' }, { status: 400 })
   }
-  // Recalcule le niveau à partir des valeurs FUSIONNÉES (existant ⊕ patch).
-  const data: Record<string, unknown> = { ...patch }
-  if (patch.gravite !== undefined || patch.vraisemblance !== undefined) {
-    data.niveauRisque = directNiveau(patch.gravite ?? existing.gravite, patch.vraisemblance ?? existing.vraisemblance)
-  }
+  // Recalcule les niveaux (brut/actuel/résiduel) touchés, valeurs FUSIONNÉES (existant ⊕ patch).
+  const data: Record<string, unknown> = { ...patch, ...recomputeDirectNiveaux(patch, existing) }
 
   const risque = await prisma.risque.update({
     where: { id: riskId },
     data,
-    select: { id: true, nom: true, description: true, gravite: true, vraisemblance: true, niveauRisque: true, strategie: true },
+    select: DIRECT_RISK_SELECT,
   })
   await auditLog('WORKSHOP_SAVED', {
     userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,

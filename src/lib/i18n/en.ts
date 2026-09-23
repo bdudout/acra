@@ -1452,6 +1452,7 @@ export const en: Translations = {
     colGravite: 'Severity',
     colVraisemblance: 'Likelihood',
     colNiveau: 'Level',
+    niveauBrut: 'Inherent', niveauActuel: 'Current', niveauResiduel: 'Residual', colResiduelCible: 'Residual (target)',
     colStrategie: 'Treatment',
     add: 'Add',
     empty: 'No risks yet.',
