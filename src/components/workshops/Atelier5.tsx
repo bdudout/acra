@@ -61,6 +61,8 @@ interface Props {
   initialTab?: string
   /** Mode « Flash » (Club EBIOS) — parcours rapide complet (A4 réalisé) */
   flashMode?: boolean
+  /** Édition autorisée (faux = analyse gelée → lecture seule). */
+  editable?: boolean
   /** Échelle/seuils configurés (admin) pour la matrice des risques */
   scaleConfig?: ScaleConfig | null
   /** Écarts du socle (non-conformités) à traiter, importables comme mesures (issue #3). */
@@ -94,7 +96,7 @@ function statutMesureFromConf(confStatut: string | undefined): 'A_FAIRE' | 'EN_C
   return 'A_FAIRE'
 }
 
-export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, scaleConfig, nonConformites = [], conformiteByRef = {} }: Props) {
+export default function Atelier5({ analyseId, initialData, analyse, initialTab, flashMode, editable = true, scaleConfig, nonConformites = [], conformiteByRef = {} }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { STRATEGIES_TRAITEMENT, NIVEAUX_GRAVITE, NIVEAUX_VRAISEMBLANCE } = useEbiosData()
@@ -218,7 +220,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
       })
       if (!res.ok) throw new Error('Sauvegarde échouée')
     },
-    { delay: 1500 }
+    { delay: 1500, disabled: !editable }
   )
 
   // Scénarios opérationnels pour lien de traçabilité

@@ -142,6 +142,8 @@ export const fr = {
   },
 
   // ─── Profil utilisateur ───────────────────────────────────────────────────
+  autoSave: { notSaved: 'Non sauvegardé…', saving: 'Sauvegarde…', saved: 'Sauvegardé', error: 'Erreur de sauvegarde', errorAria: 'Erreur de sauvegarde : {error}', savedAtAria: 'Sauvegardé à {time}', savingAria: 'Sauvegarde en cours…', pendingAria: 'Modifications non sauvegardées…', lastAria: 'Dernière sauvegarde : {time}', unknown: 'inconnue' },
+  interfaceLanguage: 'Langue de l’interface',
   profile: {
     title:           'Mon profil',
     identityTitle:   'Informations personnelles',

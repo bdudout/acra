@@ -22,6 +22,7 @@ import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, marquerDerogations, type ConformiteStatut } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
@@ -196,6 +197,10 @@ export default async function AtelierPage({
   // Config résolue par l'organisation de l'analyse (héritage des ancêtres).
   const orgConfig = await getOrgConfig((analyse as any).organizationId)
   const conformiteActive = orgConfig.conformiteActive
+  // Édition des ateliers : droit d'édition (F01) ET analyse non gelée (risques
+  // résiduels acceptés). Une analyse gelée/validée est en LECTURE SEULE → pas
+  // d'auto-sauvegarde (sinon PUT 403 → erreur d'exécution). cf. gel-analyse.
+  const workshopsEditable = editable && !analyseGelee((analyse as any).risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)
   const conseilsActive = orgConfig.conseilsAteliersActive
 
   // Qualification obligatoire (config org) : bloque l'ENTRÉE en atelier 1 tant que
@@ -351,6 +356,7 @@ export default async function AtelierPage({
             {atelierNum === 1 && (
               <Atelier1
                 analyseId={analyse.id}
+                editable={workshopsEditable}
                 initialData={initialData}
                 analyse={analyse}
                 flashMode={flashMode}
@@ -366,6 +372,7 @@ export default async function AtelierPage({
             {atelierNum === 2 && (
               <Atelier2
                 analyseId={analyse.id}
+                editable={workshopsEditable}
                 initialData={initialData}
                 analyse={analyse}
                 flashMode={flashMode}
@@ -374,6 +381,7 @@ export default async function AtelierPage({
             {atelierNum === 3 && (
               <Atelier3
                 analyseId={analyse.id}
+                editable={workshopsEditable}
                 initialData={initialData}
                 analyse={analyse}
                 flashMode={flashMode}
@@ -382,6 +390,7 @@ export default async function AtelierPage({
             {atelierNum === 4 && (
               <Atelier4
                 analyseId={analyse.id}
+                editable={workshopsEditable}
                 initialData={initialData}
                 analyse={analyse}
                 flashMode={flashMode}
@@ -390,6 +399,7 @@ export default async function AtelierPage({
             {atelierNum === 5 && (
               <Atelier5
                 analyseId={analyse.id}
+                editable={workshopsEditable}
                 initialData={initialData}
                 analyse={analyse}
                 initialTab={resolvedSearchParams.tab}

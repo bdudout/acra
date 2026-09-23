@@ -140,6 +140,8 @@ export const es: Translations = {
     mergeError: 'La fusión falló. Inténtalo de nuevo.',
   },
 
+  autoSave: { notSaved: 'Sin guardar…', saving: 'Guardando…', saved: 'Guardado', error: 'Error al guardar', errorAria: 'Error al guardar: {error}', savedAtAria: 'Guardado a las {time}', savingAria: 'Guardando…', pendingAria: 'Cambios sin guardar…', lastAria: 'Último guardado: {time}', unknown: 'desconocido' },
+  interfaceLanguage: 'Idioma de la interfaz',
   profile: {
     title:           'Mi perfil',
     identityTitle:   'Información personal',

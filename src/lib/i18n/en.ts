@@ -140,6 +140,8 @@ export const en: Translations = {
     mergeError: 'Merge failed. Please try again.',
   },
 
+  autoSave: { notSaved: 'Not saved…', saving: 'Saving…', saved: 'Saved', error: 'Save failed', errorAria: 'Save failed: {error}', savedAtAria: 'Saved at {time}', savingAria: 'Saving…', pendingAria: 'Unsaved changes…', lastAria: 'Last saved: {time}', unknown: 'unknown' },
+  interfaceLanguage: 'Interface language',
   profile: {
     title:           'My profile',
     identityTitle:   'Personal information',

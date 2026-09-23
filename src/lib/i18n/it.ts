@@ -140,6 +140,8 @@ export const it: Translations = {
     mergeError: 'Unione non riuscita. Riprova.',
   },
 
+  autoSave: { notSaved: 'Non salvato…', saving: 'Salvataggio…', saved: 'Salvato', error: 'Errore di salvataggio', errorAria: 'Errore di salvataggio: {error}', savedAtAria: 'Salvato alle {time}', savingAria: 'Salvataggio…', pendingAria: 'Modifiche non salvate…', lastAria: 'Ultimo salvataggio: {time}', unknown: 'sconosciuto' },
+  interfaceLanguage: 'Lingua dell’interfaccia',
   profile: {
     title:           'Il mio profilo',
     identityTitle:   'Informazioni personali',

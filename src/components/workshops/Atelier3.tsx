@@ -51,6 +51,8 @@ interface Props {
   analyse: any
   /** Mode « Flash » (Club EBIOS) — parcours rapide guidé, propage le flag */
   flashMode?: boolean
+  /** Édition autorisée (faux = analyse gelée/validée → lecture seule, pas d'auto-save). */
+  editable?: boolean
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -106,7 +108,7 @@ function getNiveauRisqueColor(score: number) {
   return NIVEAU_RISQUE_COLOR[getRiskTier(score)]
 }
 
-export default function Atelier3({ analyseId, initialData, analyse, flashMode }: Props) {
+export default function Atelier3({ analyseId, initialData, analyse, flashMode, editable = true }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE, SOUS_SECTEURS } = useEbiosData()
@@ -245,7 +247,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode }:
       })
       if (!res.ok) throw new Error('Sauvegarde échouée')
     },
-    { delay: 1500 }
+    { delay: 1500, disabled: !editable }
   )
 
   // Récupérer les couples SR/OV depuis l'analyse si disponibles
