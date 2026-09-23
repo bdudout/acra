@@ -16,6 +16,9 @@ import type { RisqueExemple } from '@/lib/risque-exemples'
 interface RisqueRow {
   id: string; nom: string; description?: string | null
   gravite: number; vraisemblance: number; niveauRisque: number; strategie: string
+  // 3 niveaux : brut (ci-dessus) → actuel (mesures existantes) → résiduel (plans d'action).
+  graviteActuelle?: number | null; vraisemblanceActuelle?: number | null; niveauActuel?: number | null
+  graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null; niveauResiduel?: number | null
 }
 const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 const TIER_CLASS: Record<string, string> = {
@@ -48,6 +51,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     vraisemblance: mode === 'full' || mode === 'rate',
     niveau: mode !== 'identify',
     strategie: mode === 'full' || mode === 'treat',
+    // Cotation RÉSIDUELLE (cible après traitement) : phase traitement + écran complet.
+    residuel: mode === 'full' || mode === 'treat',
   }
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,6 +122,29 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const niveauBadge = (n: number, g: number, v: number) => {
     const tier = getRiskTier(g * v)
     return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TIER_CLASS[tier]}`}>{n} · {m[`tier_${tier}` as keyof typeof m] as string}</span>
+  }
+
+  // Badge d'un niveau préfixé par son libellé (Brut / Actuel / Résiduel).
+  const niveauTag = (label: string, n: number) => {
+    const tier = getRiskTier(n)
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TIER_CLASS[tier]}`}>
+      <span className="opacity-70">{label}</span> {n}
+    </span>
+  }
+
+  // Cellule « niveaux » : BRUT toujours ; ACTUEL/RÉSIDUEL seulement s'ils sont
+  // RÉDUITS (mesures existantes / plans d'action) — pas de bruit quand tout est égal.
+  const niveauxCell = (r: RisqueRow) => {
+    const brut = r.niveauRisque
+    const actuel = r.niveauActuel ?? brut
+    const residuel = r.niveauResiduel ?? actuel
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {niveauTag(m.niveauBrut, brut)}
+        {actuel < brut && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauActuel, actuel)}</>}
+        {residuel < actuel && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauResiduel, residuel)}</>}
+      </div>
+    )
   }
   const echelle = [1, 2, 3, 4]
 
@@ -218,6 +246,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 {col.gravite && <th className="px-3 py-2">{m.colGravite}</th>}
                 {col.vraisemblance && <th className="px-3 py-2">{m.colVraisemblance}</th>}
                 {col.niveau && <th className="px-3 py-2">{m.colNiveau}</th>}
+                {col.residuel && <th className="px-3 py-2">{m.colResiduelCible}</th>}
                 {col.strategie && <th className="px-3 py-2">{m.colStrategie}</th>}
                 <th className="px-3 py-2" />
               </tr></thead>
@@ -240,7 +269,19 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                         {echelle.map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
                     </td>}
-                    {col.niveau && <td className="px-3 py-2">{niveauBadge(r.niveauRisque, r.gravite, r.vraisemblance)}</td>}
+                    {col.niveau && <td className="px-3 py-2">{niveauxCell(r)}</td>}
+                    {col.residuel && <td className="px-3 py-2">
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span>G</span>
+                        <select disabled={!editable} value={r.graviteResiduelle ?? r.gravite} onChange={e => maj(r.id, { graviteResiduelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
+                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <span>V</span>
+                        <select disabled={!editable} value={r.vraisemblanceResiduelle ?? r.vraisemblance} onChange={e => maj(r.id, { vraisemblanceResiduelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
+                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                    </td>}
                     {col.strategie && <td className="px-3 py-2">
                       <select disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}

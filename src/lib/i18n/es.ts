@@ -1452,6 +1452,7 @@ export const es: Translations = {
     colGravite: 'Gravedad',
     colVraisemblance: 'Probabilidad',
     colNiveau: 'Nivel',
+    niveauBrut: 'Bruto', niveauActuel: 'Actual', niveauResiduel: 'Residual', colResiduelCible: 'Residual (objetivo)',
     colStrategie: 'Tratamiento',
     add: 'Añadir',
     empty: 'Aún no hay riesgos.',

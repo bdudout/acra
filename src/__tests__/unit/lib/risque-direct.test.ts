@@ -1,7 +1,7 @@
 // Saisie directe de risque (pur) — appréciation G×V pour méthodes type ISO 31000.
 import { describe, it, expect } from 'vitest'
 import {
-  sanitizeDirectRisque, isDirectRisqueValid, sanitizeDirectRisquePatch, directNiveau,
+  sanitizeDirectRisque, isDirectRisqueValid, sanitizeDirectRisquePatch, directNiveau, recomputeDirectNiveaux,
 } from '@/lib/risque-direct'
 import { usesDirectRiskEntry } from '@/lib/methodes'
 
@@ -36,6 +36,32 @@ describe('sanitizeDirectRisquePatch + directNiveau', () => {
   it('directNiveau = gravité × vraisemblance (recalcul par l\'appelant)', () => {
     expect(directNiveau(4, 3)).toBe(12)
     expect(directNiveau(1, 1)).toBe(1)
+  })
+})
+
+describe('sanitizeDirectRisque — 3 niveaux (brut / actuel / résiduel)', () => {
+  it('défauts chaînés : actuel ← brut, résiduel ← actuel', () => {
+    const p = sanitizeDirectRisque({ nom: 'x', gravite: 4, vraisemblance: 3 })
+    expect(p.niveauRisque).toBe(12)
+    expect(p.graviteActuelle).toBe(4); expect(p.vraisemblanceActuelle).toBe(3); expect(p.niveauActuel).toBe(12)
+    expect(p.graviteResiduelle).toBe(4); expect(p.vraisemblanceResiduelle).toBe(3); expect(p.niveauResiduel).toBe(12)
+  })
+
+  it('actuel/résiduel fournis : bornés et recalculés indépendamment', () => {
+    const p = sanitizeDirectRisque({ nom: 'x', gravite: 4, vraisemblance: 3, graviteActuelle: 2, vraisemblanceActuelle: 3, graviteResiduelle: 1, vraisemblanceResiduelle: 2 })
+    expect(p.niveauRisque).toBe(12)   // brut
+    expect(p.niveauActuel).toBe(6)    // 2×3, avec mesures existantes
+    expect(p.niveauResiduel).toBe(2)  // 1×2, après plans d'action
+  })
+})
+
+describe('recomputeDirectNiveaux', () => {
+  it('recalcule uniquement le niveau du niveau touché (valeurs fusionnées)', () => {
+    const existing = { gravite: 4, vraisemblance: 3, graviteActuelle: 4, vraisemblanceActuelle: 3, graviteResiduelle: 4, vraisemblanceResiduelle: 3 }
+    expect(recomputeDirectNiveaux({ graviteActuelle: 2 }, existing)).toEqual({ niveauActuel: 6 })
+    expect(recomputeDirectNiveaux({ vraisemblanceResiduelle: 1 }, existing)).toEqual({ niveauResiduel: 4 })
+    expect(recomputeDirectNiveaux({ gravite: 1 }, existing)).toEqual({ niveauRisque: 3 })
+    expect(recomputeDirectNiveaux({ strategie: 'ACCEPTER' } as never, existing)).toEqual({})
   })
 })
 

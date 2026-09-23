@@ -6,6 +6,7 @@ const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
   colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
+  niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
   tier_eleve: 'Élevé', tier_critique: 'Critique',
   strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
@@ -28,8 +29,23 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    // niveau 12 → palier critique (seuil ≥12)
-    expect(screen.getByText(/12 · Critique/)).toBeInTheDocument()
+    // niveau brut affiché (badge « Brut 12 ») ; actuel/résiduel masqués car non réduits.
+    expect(screen.getByText('Brut')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.queryByText('Actuel')).toBeNull()
+  })
+
+  it('3 niveaux : affiche Brut, puis Actuel/Résiduel seulement s\'ils sont réduits', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12,
+        graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6,
+        graviteResiduelle: 1, vraisemblanceResiduelle: 3, niveauResiduel: 3, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
+    expect(screen.getByText('Brut')).toBeInTheDocument()
+    expect(screen.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
+    expect(screen.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
   })
 
   it('état vide', async () => {

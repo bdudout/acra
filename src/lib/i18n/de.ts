@@ -1452,6 +1452,7 @@ export const de: Translations = {
     colGravite: 'Schweregrad',
     colVraisemblance: 'Eintrittswahrscheinlichkeit',
     colNiveau: 'Stufe',
+    niveauBrut: 'Brutto', niveauActuel: 'Aktuell', niveauResiduel: 'Restrisiko', colResiduelCible: 'Restrisiko (Ziel)',
     colStrategie: 'Behandlung',
     add: 'Hinzufügen',
     empty: 'Noch keine Risiken.',

@@ -1479,6 +1479,11 @@ model Risque {
   vulnerabilitesResiduelles Json? // [{description, niveau}]
   facteursAggravants        Json? // [{description}]
 
+  // Risque ACTUEL (net) — après prise en compte des mesures de sécurité existantes
+  graviteActuelle       Int?
+  vraisemblanceActuelle Int?
+  niveauActuel          Int?
+
   // Risque résiduel après traitement
   graviteResiduelle       Int?
   vraisemblanceResiduelle Int?

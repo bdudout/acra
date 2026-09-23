@@ -1452,6 +1452,7 @@ export const it: Translations = {
     colGravite: 'Gravità',
     colVraisemblance: 'Verosimiglianza',
     colNiveau: 'Livello',
+    niveauBrut: 'Lordo', niveauActuel: 'Attuale', niveauResiduel: 'Residuo', colResiduelCible: 'Residuo (obiettivo)',
     colStrategie: 'Trattamento',
     add: 'Aggiungi',
     empty: 'Ancora nessun rischio.',

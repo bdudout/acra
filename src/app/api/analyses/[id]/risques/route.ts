@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
-import { sanitizeDirectRisque, isDirectRisqueValid } from '@/lib/risque-direct'
+import { sanitizeDirectRisque, isDirectRisqueValid, DIRECT_RISK_SELECT } from '@/lib/risque-direct'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const risques = await prisma.risque.findMany({
     where: { analyseId: g.analyse.id },
     orderBy: [{ niveauRisque: 'desc' }, { createdAt: 'asc' }],
-    select: { id: true, nom: true, description: true, gravite: true, vraisemblance: true, niveauRisque: true, strategie: true },
+    select: DIRECT_RISK_SELECT,
   })
   return NextResponse.json({ risques })
 }
@@ -59,9 +59,15 @@ export async function POST(req: NextRequest, { params }: Params) {
       gravite: payload.gravite,
       vraisemblance: payload.vraisemblance,
       niveauRisque: payload.niveauRisque,
+      graviteActuelle: payload.graviteActuelle,
+      vraisemblanceActuelle: payload.vraisemblanceActuelle,
+      niveauActuel: payload.niveauActuel,
+      graviteResiduelle: payload.graviteResiduelle,
+      vraisemblanceResiduelle: payload.vraisemblanceResiduelle,
+      niveauResiduel: payload.niveauResiduel,
       strategie: payload.strategie,
     },
-    select: { id: true, nom: true, description: true, gravite: true, vraisemblance: true, niveauRisque: true, strategie: true },
+    select: DIRECT_RISK_SELECT,
   })
   await auditLog('WORKSHOP_SAVED', {
     userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
