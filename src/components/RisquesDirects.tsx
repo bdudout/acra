@@ -12,6 +12,8 @@ import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
 import { prioritise, countDecisions } from '@/lib/risque-priorisation'
 import RiskMesures from '@/components/RiskMesures'
+import RiskPlans from '@/components/RiskPlans'
+import RiskVulnerabilites from '@/components/RiskVulnerabilites'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 
 interface RisqueRow {
@@ -20,6 +22,7 @@ interface RisqueRow {
   // 3 niveaux : brut (ci-dessus) → actuel (mesures existantes) → résiduel (plans d'action).
   graviteActuelle?: number | null; vraisemblanceActuelle?: number | null; niveauActuel?: number | null
   graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null; niveauResiduel?: number | null
+  vulnerabilites?: { description: string }[] | null
 }
 const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 const TIER_CLASS: Record<string, string> = {
@@ -39,9 +42,15 @@ const TIER_CLASS: Record<string, string> = {
  */
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full' }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode }) {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
+  // Sections du panneau « détails » (déplié) selon la phase :
+  //  - vulnérabilités : identification (ISO 27005 uniquement) ;
+  //  - mesures + plans d'action : traitement (et écran complet).
+  const showVulnSection = withVulnerabilites && (mode === 'identify' || mode === 'full')
+  const showTreatSections = mode === 'treat' || mode === 'full'
+  const hasDetails = showVulnSection || showTreatSections
   // Colonnes / actions visibles selon le mode (phase). L'ajout n'existe qu'en
   // identification (et en mode complet) ; la cotation en analyse ; le traitement en
   // traitement. Le niveau est masqué tant qu'on n'a pas coté (identification).
@@ -66,7 +75,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [vraisemblance, setVraisemblance] = useState(2)
   const [busy, setBusy] = useState(false)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
-  const [mesuresOpenId, setMesuresOpenId] = useState<string | null>(null)
+  const [detailsOpenId, setDetailsOpenId] = useState<string | null>(null)
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -307,18 +316,22 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       </select>
                     </td>}
                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                      <button onClick={() => setMesuresOpenId(cur => cur === r.id ? null : r.id)}
-                        aria-expanded={mesuresOpenId === r.id} title={m.mesuresTitle}
-                        className={`p-1 ${mesuresOpenId === r.id ? 'text-ebios-600' : 'text-gray-400 hover:text-ebios-600'}`}>
+                      {hasDetails && <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)}
+                        aria-expanded={detailsOpenId === r.id} title={m.detailsTitle}
+                        className={`p-1 ${detailsOpenId === r.id ? 'text-ebios-600' : 'text-gray-400 hover:text-ebios-600'}`}>
                         <ShieldCheck size={15} aria-hidden="true" />
-                      </button>
+                      </button>}
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
                   </tr>,
-                  mesuresOpenId === r.id && (
-                    <tr key={`${r.id}-mesures`} className="bg-gray-50/50 dark:bg-gray-900/20">
+                  hasDetails && detailsOpenId === r.id && (
+                    <tr key={`${r.id}-details`} className="bg-gray-50/50 dark:bg-gray-900/20">
                       <td className="px-3 pb-3" colSpan={colCount}>
-                        <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />
+                        <div className="space-y-2">
+                          {showVulnSection && <RiskVulnerabilites analyseId={analyseId} riskId={r.id} editable={editable} initial={r.vulnerabilites ?? []} />}
+                          {showTreatSections && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />}
+                          {showTreatSections && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} />}
+                        </div>
                       </td>
                     </tr>
                   ),

@@ -33,9 +33,12 @@ export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
   contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
+  withVulnerabilites,
 }: {
   analyseId: string
   editable: boolean
+  /** Active la saisie des vulnérabilités (ISO 27005) en phase d'identification. */
+  withVulnerabilites?: boolean
   phases: WorkshopPhase[]
   perimetre?: string | null
   objectifs?: string | null
@@ -121,6 +124,7 @@ export default function PhasedRiskWorkshop({
               les phases d'appréciation ISO 27005. */}
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
+            withVulnerabilites={withVulnerabilites}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
         </>
       )}

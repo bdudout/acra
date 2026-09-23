@@ -13,6 +13,10 @@ import { type RiskActionStatut, type ActionPriorite } from './risk-action'
 type Db = PrismaClient | Prisma.TransactionClient
 
 const RISQUE = 'RISQUE'
+// Risque d'ANALYSE (méthodes à saisie directe ISO 27005 / 31000) : targetId =
+// Risque.id, ref = analyseId (lien profond vers l'atelier). Distinct de RISQUE
+// (registre d'organisation) pour ne pas mélanger les deux origines.
+const RISQUE_ANALYSE = 'RISQUE_ANALYSE'
 
 /** Arguments de création d'un plan d'action rattaché à un risque (org + risque + champs de l'action). */
 export interface CreateRiskActionArgs {
@@ -55,6 +59,58 @@ export function riskActionWhere(organizationId: string, riskItemId: string): Pri
 export function findRiskLinkedPlanActions(db: Db, organizationId: string, riskItemId: string) {
   return db.planAction.findMany({
     where: riskActionWhere(organizationId, riskItemId),
+    orderBy: [{ echeance: 'asc' }, { createdAt: 'asc' }],
+  })
+}
+
+// ─── Plans d'action rattachés à un risque d'ANALYSE (RISQUE_ANALYSE) ──────────
+
+/** Arguments de création d'un plan d'action rattaché à un risque d'analyse. */
+export interface CreateAnalyseRiskActionArgs {
+  organizationId: string
+  /** Risque d'analyse ciblé (Risque.id) — porté par targetId du lien. */
+  risqueId: string
+  /** Analyse parente — portée par `ref` du lien (pour le lien profond vers l'atelier). */
+  analyseId: string
+  titre: string
+  description?: string | null
+  porteur?: string | null
+  entite?: string | null
+  echeance?: Date | null
+  statut?: RiskActionStatut
+  priorite?: ActionPriorite
+  createdById?: string | null
+  riskLabel?: string | null
+}
+
+/** Crée un PlanAction rattaché à un risque d'analyse (lien RISQUE_ANALYSE). */
+export function createAnalyseRiskPlanAction(db: Db, a: CreateAnalyseRiskActionArgs) {
+  return db.planAction.create({
+    data: {
+      organizationId: a.organizationId,
+      titre: a.titre,
+      description: a.description ?? null,
+      porteur: a.porteur ?? null,
+      entite: a.entite ?? null,
+      echeance: a.echeance ?? null,
+      statut: a.statut ?? 'A_FAIRE',
+      priorite: a.priorite ?? 'MAJEUR',
+      createdById: a.createdById ?? null,
+      liens: { create: [{ type: RISQUE_ANALYSE, targetId: a.risqueId, ref: a.analyseId, label: a.riskLabel ?? null }] },
+    },
+    include: { liens: true },
+  })
+}
+
+/** Where Prisma ciblant les PlanAction rattachés à un risque d'analyse donné. */
+export function analyseRiskActionWhere(organizationId: string, risqueId: string): Prisma.PlanActionWhereInput {
+  return { organizationId, liens: { some: { type: RISQUE_ANALYSE, targetId: risqueId } } }
+}
+
+/** Charge les PlanAction rattachés à un risque d'analyse, triés (échéance puis création). */
+export function findAnalyseRiskPlanActions(db: Db, organizationId: string, risqueId: string) {
+  return db.planAction.findMany({
+    where: analyseRiskActionWhere(organizationId, risqueId),
     orderBy: [{ echeance: 'asc' }, { createdAt: 'asc' }],
   })
 }

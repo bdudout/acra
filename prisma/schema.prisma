@@ -1477,6 +1477,9 @@ model Risque {
   // Traçabilité (FM) — référence à l'événement redouté et au scénario
   evenementRedouteRef       String? // libellé ou id de l'ER associé
   vulnerabilitesResiduelles Json? // [{description, niveau}]
+  // Vulnérabilités identifiées (ISO/IEC 27005:2022 — menace × VULNÉRABILITÉ × bien),
+  // saisies en phase d'identification pour les méthodes à saisie directe. [{description}]
+  vulnerabilites            Json?
   facteursAggravants        Json? // [{description}]
 
   // Risque ACTUEL (net) — après prise en compte des mesures de sécurité existantes

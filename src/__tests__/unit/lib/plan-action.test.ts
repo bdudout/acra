@@ -29,6 +29,14 @@ describe('plan-action — liens polymorphes', () => {
     expect(lienHref({ type: 'RISQUE', targetId: 'r1' })).toBe('/registre?item=r1')
     expect(lienHref({ type: 'CONFORMITE', targetId: 'ISO27001' })).toBe('/conformite/socle?ref=ISO27001')
     expect(lienHref({ type: 'AUDIT', targetId: 'm1' })).toBe('/audit?mission=m1')
+    // Risque d'analyse : le href profond vise l'atelier (ref = analyseId), pas targetId.
+    expect(lienHref({ type: 'RISQUE_ANALYSE', targetId: 'risk1', ref: 'an1' })).toBe('/analyses/an1/atelier/1')
+    expect(lienHref({ type: 'RISQUE_ANALYSE', targetId: 'risk1' })).toBe('/analyses/risk1/atelier/1')
+  })
+
+  it('accepte le type de lien RISQUE_ANALYSE', () => {
+    expect(sanitizeLien({ type: 'RISQUE_ANALYSE', targetId: 'r1', ref: 'a1' }))
+      .toEqual({ type: 'RISQUE_ANALYSE', targetId: 'r1', ref: 'a1' })
   })
 })
 
