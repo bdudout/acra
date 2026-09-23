@@ -100,6 +100,18 @@ export function directNiveau(gravite: number, vraisemblance: number): number {
 }
 
 /**
+ * Champs Prisma renvoyés pour un risque à saisie directe (3 niveaux : brut / actuel
+ * / résiduel). Défini ici (module non-route) car un fichier `route.ts` Next.js ne
+ * peut exporter que ses handlers HTTP.
+ */
+export const DIRECT_RISK_SELECT = {
+  id: true, nom: true, description: true, strategie: true,
+  gravite: true, vraisemblance: true, niveauRisque: true,
+  graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
+  graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,
+} as const
+
+/**
  * Recalcule les niveaux à mettre à jour pour un PATCH, à partir des valeurs
  * FUSIONNÉES (existant ⊕ patch). Ne renvoie un niveau que si le G ou le V du niveau
  * concerné a été touché par le patch (recalcul ciblé, cohérent).

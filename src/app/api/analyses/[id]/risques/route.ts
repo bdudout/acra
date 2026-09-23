@@ -11,18 +11,10 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
-import { sanitizeDirectRisque, isDirectRisqueValid } from '@/lib/risque-direct'
+import { sanitizeDirectRisque, isDirectRisqueValid, DIRECT_RISK_SELECT } from '@/lib/risque-direct'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
-
-/** Champs renvoyés pour un risque à saisie directe (3 niveaux : brut / actuel / résiduel). */
-export const DIRECT_RISK_SELECT = {
-  id: true, nom: true, description: true, strategie: true,
-  gravite: true, vraisemblance: true, niveauRisque: true,
-  graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
-  graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,
-} as const
 
 function auth(session: unknown): { userId: string; role: UserRole } | null {
   const u = (session as { user?: { id?: string; role?: string } } | null)?.user

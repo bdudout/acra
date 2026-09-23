@@ -11,8 +11,7 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
-import { sanitizeDirectRisquePatch, recomputeDirectNiveaux } from '@/lib/risque-direct'
-import { DIRECT_RISK_SELECT } from '../route'
+import { sanitizeDirectRisquePatch, recomputeDirectNiveaux, DIRECT_RISK_SELECT } from '@/lib/risque-direct'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string; riskId: string }> }
