@@ -226,7 +226,7 @@ export default function ProfilePage() {
 
         {/* ── Section langue ────────────────────────────────────────── */}
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> Langue de l&apos;interface</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4"><Globe size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.interfaceLanguage}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {LOCALES.map(l => (
               <button

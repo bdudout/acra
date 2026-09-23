@@ -37,6 +37,7 @@ export default async function RisquesPage({ searchParams }: PageProps) {
       id: true,
       nom: true,
       organisation: true,
+      methode: true,
       organization: { select: { nom: true } },
       risques: {
         select: {
@@ -67,6 +68,7 @@ export default async function RisquesPage({ searchParams }: PageProps) {
       analyseId:     a.id,
       analyseNom:    a.nom,
       analyseOrg:    a.organisation,
+      methode:       (a as { methode?: string }).methode ?? 'EBIOS_RM',
       entite:        consolidated ? (a.organization?.nom ?? null) : null,
       risqueId:      r.id,
       nom:           r.nom,

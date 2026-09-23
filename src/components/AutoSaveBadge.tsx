@@ -14,6 +14,7 @@
  */
 
 import type { AutoSaveStatus } from '@/lib/useAutoSave'
+import { useTranslation } from '@/lib/i18n/context'
 
 interface AutoSaveBadgeProps {
   status: AutoSaveStatus
@@ -22,11 +23,14 @@ interface AutoSaveBadgeProps {
   className?: string
 }
 
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+function formatTime(date: Date, locale: string): string {
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
 export default function AutoSaveBadge({ status, lastSaved, error, className = '' }: AutoSaveBadgeProps) {
+  const { t, locale } = useTranslation()
+  const a = t.autoSave
+  const time = lastSaved ? formatTime(lastSaved, locale) : ''
   if (status === 'idle' && !lastSaved) return null
 
   return (
@@ -44,20 +48,20 @@ export default function AutoSaveBadge({ status, lastSaved, error, className = ''
       aria-live="polite"
       aria-label={
         status === 'error'
-          ? `Erreur de sauvegarde : ${error ?? 'inconnue'}`
+          ? a.errorAria.replace('{error}', error ?? a.unknown)
           : status === 'saved'
-          ? `Sauvegardé à ${lastSaved ? formatTime(lastSaved) : ''}`
+          ? a.savedAtAria.replace('{time}', time)
           : status === 'saving'
-          ? 'Sauvegarde en cours…'
+          ? a.savingAria
           : status === 'pending'
-          ? 'Modifications non sauvegardées…'
-          : `Dernière sauvegarde : ${lastSaved ? formatTime(lastSaved) : ''}`
+          ? a.pendingAria
+          : a.lastAria.replace('{time}', time)
       }
     >
       {status === 'pending' && (
         <>
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" aria-hidden="true" />
-          <span>Non sauvegardé…</span>
+          <span>{a.notSaved}</span>
         </>
       )}
       {status === 'saving' && (
@@ -66,7 +70,7 @@ export default function AutoSaveBadge({ status, lastSaved, error, className = ''
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
           </svg>
-          <span>Sauvegarde…</span>
+          <span>{a.saving}</span>
         </>
       )}
       {status === 'saved' && (
@@ -74,7 +78,7 @@ export default function AutoSaveBadge({ status, lastSaved, error, className = ''
           <svg className="w-3 h-3 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
-          <span>Sauvegardé {lastSaved ? `à ${formatTime(lastSaved)}` : ''}</span>
+          <span>{a.saved}{time ? ` · ${time}` : ''}</span>
         </>
       )}
       {status === 'error' && (
@@ -82,13 +86,13 @@ export default function AutoSaveBadge({ status, lastSaved, error, className = ''
           <svg className="w-3 h-3 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
-          <span>Erreur de sauvegarde</span>
+          <span>{a.error}</span>
         </>
       )}
       {status === 'idle' && lastSaved && (
         <>
           <span className="w-1.5 h-1.5 rounded-full bg-gray-400" aria-hidden="true" />
-          <span>{formatTime(lastSaved)}</span>
+          <span>{time}</span>
         </>
       )}
     </div>

@@ -61,6 +61,8 @@ interface Props {
   initialData?: any
   analyse: any
   flashMode?: boolean
+  /** Édition autorisée (faux = analyse gelée → lecture seule). */
+  editable?: boolean
   /** La conformité est héritée (du socle ou de l'organisation) → lecture seule ici. */
   conformiteInherited?: boolean
   conformiteLevel?: 'ANALYSE' | 'SOCLE' | 'ORGANISATION' | 'ENTITE'
@@ -85,7 +87,7 @@ function getDictColor(v: number) {
   return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-200'
 }
 
-export default function Atelier1({ analyseId, initialData, analyse, flashMode, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false, referentielsDesactives = [] }: Props) {
+export default function Atelier1({ analyseId, initialData, analyse, flashMode, editable = true, conformiteInherited = false, conformiteLevel = 'ANALYSE', conformiteSourceId = null, conformiteSourceNom = null, conformitePortee = '', orgConformiteOrgScoped = false, referentielsDesactives = [] }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   // Choix de portée de conformité propre à l'analyse (reprendre le socle org vs propre).
@@ -307,7 +309,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, c
       })
       if (!res.ok) throw new Error('Sauvegarde échouée')
     },
-    { delay: 1500 }
+    { delay: 1500, disabled: !editable }
   )
 
   // ── Valeurs métier ────────────────────────────────────────────────────────

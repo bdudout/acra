@@ -43,6 +43,8 @@ interface Props {
   analyse: any
   /** Mode « Flash » (Club EBIOS) — A4 réduit : ≥1 scénario opérationnel par scénario stratégique */
   flashMode?: boolean
+  /** Édition autorisée (faux = analyse gelée/validée → lecture seule, pas d'auto-save). */
+  editable?: boolean
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -54,7 +56,7 @@ function getNiveauRisqueColor(score: number) {
   return 'bg-green-100 text-green-700 border-green-200'
 }
 
-export default function Atelier4({ analyseId, initialData, analyse, flashMode }: Props) {
+export default function Atelier4({ analyseId, initialData, analyse, flashMode, editable = true }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { TYPES_ACTION_ELEMENTAIRE, NIVEAUX_VRAISEMBLANCE, NIVEAUX_GRAVITE } = useEbiosData()
@@ -113,7 +115,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode }:
       })
       if (!res.ok) throw new Error('Sauvegarde échouée')
     },
-    { delay: 1500 }
+    { delay: 1500, disabled: !editable }
   )
 
   // Scénarios stratégiques retenus de l'atelier 3

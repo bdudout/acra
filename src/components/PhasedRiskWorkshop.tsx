@@ -32,7 +32,7 @@ export interface WorkshopPhase {
 export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
-  contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder,
+  contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
 }: {
   analyseId: string
   editable: boolean
@@ -53,8 +53,11 @@ export default function PhasedRiskWorkshop({
   contexteSaved?: string
   perimetrePlaceholder?: string
   objectifsPlaceholder?: string
+  /** Ouvre directement cette phase (deep-link `?phase=`), ex. depuis le registre. */
+  initialPhaseKey?: string
 }) {
-  const [active, setActive] = useState(0)
+  const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
+  const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
   const phase = phases[active] ?? phases[0]
   const multi = phases.length > 1
 

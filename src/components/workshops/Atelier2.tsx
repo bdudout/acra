@@ -45,6 +45,8 @@ interface Props {
   initialData?: { sourcesRisque: any[] }
   analyse: any
   flashMode?: boolean
+  /** Édition autorisée (faux = analyse gelée → lecture seule). */
+  editable?: boolean
 }
 
 // uid() centralisé dans @/lib/uid (audit R05)
@@ -62,7 +64,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   AUTRE:               'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-300',
 }
 
-export default function Atelier2({ analyseId, initialData, analyse, flashMode }: Props) {
+export default function Atelier2({ analyseId, initialData, analyse, flashMode, editable = true }: Props) {
   const router = useRouter()
   const { t, locale } = useTranslation()
   const { SOUS_SECTEURS } = useEbiosData()
@@ -120,7 +122,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode }:
       })
       if (!res.ok) throw new Error('Sauvegarde échouée')
     },
-    { delay: 1500 }
+    { delay: 1500, disabled: !editable }
   )
 
   const [expandedId, setExpandedId] = useState<string | null>(null)

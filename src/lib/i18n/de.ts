@@ -140,6 +140,8 @@ export const de: Translations = {
     mergeError: 'Zusammenführung fehlgeschlagen. Bitte erneut versuchen.',
   },
 
+  autoSave: { notSaved: 'Nicht gespeichert…', saving: 'Speichern…', saved: 'Gespeichert', error: 'Speichern fehlgeschlagen', errorAria: 'Speichern fehlgeschlagen: {error}', savedAtAria: 'Gespeichert um {time}', savingAria: 'Speichern…', pendingAria: 'Nicht gespeicherte Änderungen…', lastAria: 'Zuletzt gespeichert: {time}', unknown: 'unbekannt' },
+  interfaceLanguage: 'Sprache der Oberfläche',
   profile: {
     title:           'Mein Profil',
     identityTitle:   'Persönliche Informationen',
