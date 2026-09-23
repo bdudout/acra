@@ -728,6 +728,8 @@ export const en: Translations = {
     scenarioSg:   'scenario',
     risks:        'risks',
     riskSg:       'risk',
+    toReduce:     'to reduce',
+    p1ToDo:       'P1 to do',
     workshop:     'Workshop',
     inProgStatus: 'In progress',
     doneStatus:   'Completed',

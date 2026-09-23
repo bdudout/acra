@@ -741,6 +741,8 @@ export const fr = {
     scenarioSg:   'scénario',
     risks:        'risques',
     riskSg:       'risque',
+    toReduce:     'à réduire',
+    p1ToDo:       'P1 à faire',
     workshop:     'Atelier',
     inProgStatus: 'En cours',
     doneStatus:   'Terminée',

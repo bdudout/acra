@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import {
   srOvCouples, coupleRadiusFor, categoriesInOrder, couplePointSector,
   sectorCenterAngle, type SrOvCouple,
@@ -38,7 +38,7 @@ const GEOM = { cx: CX, cy: CY, rMax: RMAX }
  *  - la zone centrale (prioritaire) est teintée ; les couples P1 sont fortement
  *    accentués (halo + anneau + nom) ; rendu compatible thème sombre.
  */
-export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
+function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
   sources: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
   labels: { empty: string; p1: string; pertinence1: string; pertinence4: string; couplesTitle: string; hint: string }
   pertinenceLabel: string
@@ -188,3 +188,7 @@ export default function SrOvRadar({ sources, labels, pertinenceLabel, categoryLa
     </div>
   )
 }
+
+// Mémoïsé : la dérivation (couples, secteurs, placement) ne dépend que de `sources`.
+// Évite un re-rendu lourd à chaque tick d'auto-save du parent (onglet Synthèse).
+export default memo(SrOvRadar)
