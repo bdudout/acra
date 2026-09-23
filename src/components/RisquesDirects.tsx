@@ -53,6 +53,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     strategie: mode === 'full' || mode === 'treat',
     // Cotation RÉSIDUELLE (cible après traitement) : phase traitement + écran complet.
     residuel: mode === 'full' || mode === 'treat',
+    // Cotation ACTUELLE (avec mesures de sécurité existantes) : analyse + écran complet.
+    actuel: mode === 'full' || mode === 'rate',
   }
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -246,6 +248,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 {col.gravite && <th className="px-3 py-2">{m.colGravite}</th>}
                 {col.vraisemblance && <th className="px-3 py-2">{m.colVraisemblance}</th>}
                 {col.niveau && <th className="px-3 py-2">{m.colNiveau}</th>}
+                {col.actuel && <th className="px-3 py-2">{m.colActuelAvecMesures}</th>}
                 {col.residuel && <th className="px-3 py-2">{m.colResiduelCible}</th>}
                 {col.strategie && <th className="px-3 py-2">{m.colStrategie}</th>}
                 <th className="px-3 py-2" />
@@ -270,6 +273,18 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       </select>
                     </td>}
                     {col.niveau && <td className="px-3 py-2">{niveauxCell(r)}</td>}
+                    {col.actuel && <td className="px-3 py-2">
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span>G</span>
+                        <select disabled={!editable} value={r.graviteActuelle ?? r.gravite} onChange={e => maj(r.id, { graviteActuelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
+                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <span>V</span>
+                        <select disabled={!editable} value={r.vraisemblanceActuelle ?? r.vraisemblance} onChange={e => maj(r.id, { vraisemblanceActuelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
+                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                    </td>}
                     {col.residuel && <td className="px-3 py-2">
                       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <span>G</span>

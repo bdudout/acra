@@ -1476,7 +1476,7 @@ export const fr = {
     colGravite: 'Gravité',
     colVraisemblance: 'Vraisemblance',
     colNiveau: 'Niveau',
-    niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)',
+    niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
     colStrategie: 'Traitement',
     add: 'Ajouter',
     empty: 'Aucun risque pour l\'instant.',
