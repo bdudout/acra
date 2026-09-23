@@ -7,10 +7,11 @@
 // niveau est recalculé côté serveur ; on l'affiche via le palier de la matrice.
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Lightbulb } from 'lucide-react'
+import { Plus, Trash2, Lightbulb, ShieldCheck } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
 import { prioritise, countDecisions } from '@/lib/risque-priorisation'
+import RiskMesures from '@/components/RiskMesures'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 
 interface RisqueRow {
@@ -56,6 +57,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     // Cotation ACTUELLE (avec mesures de sécurité existantes) : analyse + écran complet.
     actuel: mode === 'full' || mode === 'rate',
   }
+  // Nombre de colonnes du tableau standard (pour le colSpan de la sous-ligne mesures).
+  const colCount = 1 + [col.gravite, col.vraisemblance, col.niveau, col.actuel, col.residuel, col.strategie].filter(Boolean).length + 1
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
   const [nom, setNom] = useState('')
@@ -63,6 +66,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [vraisemblance, setVraisemblance] = useState(2)
   const [busy, setBusy] = useState(false)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
+  const [mesuresOpenId, setMesuresOpenId] = useState<string | null>(null)
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -254,7 +258,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 <th className="px-3 py-2" />
               </tr></thead>
               <tbody>
-                {rows.map(r => (
+                {rows.map(r => [
                   <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
                     <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">
                       {r.nom}
@@ -302,11 +306,23 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
                       </select>
                     </td>}
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <button onClick={() => setMesuresOpenId(cur => cur === r.id ? null : r.id)}
+                        aria-expanded={mesuresOpenId === r.id} title={m.mesuresTitle}
+                        className={`p-1 ${mesuresOpenId === r.id ? 'text-ebios-600' : 'text-gray-400 hover:text-ebios-600'}`}>
+                        <ShieldCheck size={15} aria-hidden="true" />
+                      </button>
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
-                  </tr>
-                ))}
+                  </tr>,
+                  mesuresOpenId === r.id && (
+                    <tr key={`${r.id}-mesures`} className="bg-gray-50/50 dark:bg-gray-900/20">
+                      <td className="px-3 pb-3" colSpan={colCount}>
+                        <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />
+                      </td>
+                    </tr>
+                  ),
+                ])}
               </tbody>
             </table>
           </div>

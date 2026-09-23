@@ -1452,7 +1452,7 @@ export const it: Translations = {
     colGravite: 'Gravità',
     colVraisemblance: 'Verosimiglianza',
     colNiveau: 'Livello',
-    niveauBrut: 'Lordo', niveauActuel: 'Attuale', niveauResiduel: 'Residuo', colResiduelCible: 'Residuo (obiettivo)', colActuelAvecMesures: 'Attuale (con misure)',
+    niveauBrut: 'Lordo', niveauActuel: 'Attuale', niveauResiduel: 'Residuo', colResiduelCible: 'Residuo (obiettivo)', colActuelAvecMesures: 'Attuale (con misure)', mesuresTitle: 'Misure di sicurezza esistenti', mesuresEmpty: 'Nessuna misura per ora.', mesuresNomPlaceholder: 'Nome della misura', mesuresEfficacite: 'Efficacia',
     colStrategie: 'Trattamento',
     add: 'Aggiungi',
     empty: 'Ancora nessun rischio.',
