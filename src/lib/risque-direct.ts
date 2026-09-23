@@ -12,6 +12,33 @@ export const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURV
 export type Strategie = (typeof STRATEGIES)[number]
 
 /**
+ * Vulnérabilité identifiée sur un risque (ISO/IEC 27005:2022 : une menace exploite
+ * une VULNÉRABILITÉ d'un bien). Capturée en phase d'identification. Liste simple.
+ */
+export interface RisqueVulnerabilite { description: string }
+
+/**
+ * Assainit une liste de vulnérabilités : ne garde que des `{description}` non vides
+ * (accepte aussi des chaînes brutes), tronque à 300 caractères, dédoublonne
+ * (insensible à la casse) et plafonne à 50 entrées.
+ */
+export function sanitizeVulnerabilites(raw: unknown): RisqueVulnerabilite[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: RisqueVulnerabilite[] = []
+  for (const v of raw) {
+    const src = typeof v === 'string' ? v : (v && typeof v === 'object' ? (v as Record<string, unknown>).description : '')
+    const description = typeof src === 'string' ? src.trim().slice(0, 300) : ''
+    if (!description) continue
+    const key = description.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ description })
+  }
+  return out.slice(0, 50)
+}
+
+/**
  * Risque saisi directement, assaini — TROIS niveaux :
  *  - BRUT (inhérent)  : `gravite/vraisemblance/niveauRisque` — le risque sans mesure ;
  *  - ACTUEL (net)     : `*Actuelle/niveauActuel` — avec les mesures de sécurité existantes ;
@@ -32,6 +59,8 @@ export interface DirectRisquePayload {
   niveauResiduel: number
   strategie: Strategie
   description?: string
+  /** Vulnérabilités identifiées (ISO 27005) — liste simple, optionnelle. */
+  vulnerabilites?: RisqueVulnerabilite[]
 }
 
 /**
@@ -65,6 +94,7 @@ export function sanitizeDirectRisque(input: unknown): DirectRisquePayload {
     niveauResiduel: computeRiskScore(graviteResiduelle, vraisemblanceResiduelle),
     strategie,
     ...(o.description != null ? { description: String(o.description).slice(0, 2000) } : {}),
+    ...('vulnerabilites' in o ? { vulnerabilites: sanitizeVulnerabilites(o.vulnerabilites) } : {}),
   }
 }
 
@@ -91,6 +121,7 @@ export function sanitizeDirectRisquePatch(input: unknown): Partial<Omit<DirectRi
   if ('vraisemblanceActuelle' in o) out.vraisemblanceActuelle = clampInt(o.vraisemblanceActuelle, 1, 4, 2) as number
   if ('graviteResiduelle' in o) out.graviteResiduelle = clampInt(o.graviteResiduelle, 1, 4, 2) as number
   if ('vraisemblanceResiduelle' in o) out.vraisemblanceResiduelle = clampInt(o.vraisemblanceResiduelle, 1, 4, 2) as number
+  if ('vulnerabilites' in o) out.vulnerabilites = sanitizeVulnerabilites(o.vulnerabilites)
   return out
 }
 
@@ -109,6 +140,7 @@ export const DIRECT_RISK_SELECT = {
   gravite: true, vraisemblance: true, niveauRisque: true,
   graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
   graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,
+  vulnerabilites: true,
 } as const
 
 /**

@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   sanitizeDirectRisque, isDirectRisqueValid, sanitizeDirectRisquePatch, directNiveau, recomputeDirectNiveaux,
+  sanitizeVulnerabilites,
 } from '@/lib/risque-direct'
 import { usesDirectRiskEntry } from '@/lib/methodes'
 
@@ -70,5 +71,33 @@ describe('usesDirectRiskEntry', () => {
     expect(usesDirectRiskEntry('ISO_31000')).toBe(true)
     expect(usesDirectRiskEntry('EBIOS_RM')).toBe(false)
     expect(usesDirectRiskEntry('ZZZ')).toBe(false)
+  })
+})
+
+describe('sanitizeVulnerabilites', () => {
+  it('normalise chaînes et objets, dédoublonne (casse), tronque, plafonne', () => {
+    const out = sanitizeVulnerabilites([
+      'Absence de MFA',
+      { description: '  Absence de MFA  ' },      // doublon (casse/espaces)
+      { description: 'ABSENCE DE MFA' },           // doublon (casse)
+      { description: 'Correctifs non appliqués' },
+      '',                                          // vide → ignoré
+      { description: '   ' },                       // blanc → ignoré
+      42,                                          // non exploitable → ignoré
+    ])
+    expect(out).toEqual([
+      { description: 'Absence de MFA' },
+      { description: 'Correctifs non appliqués' },
+    ])
+  })
+
+  it('renvoie [] pour une entrée non tableau', () => {
+    expect(sanitizeVulnerabilites(null)).toEqual([])
+    expect(sanitizeVulnerabilites('x')).toEqual([])
+  })
+
+  it('est intégré au patch (clé fournie → liste assainie)', () => {
+    const patch = sanitizeDirectRisquePatch({ vulnerabilites: ['Faille XSS', 'Faille XSS'] })
+    expect(patch.vulnerabilites).toEqual([{ description: 'Faille XSS' }])
   })
 })

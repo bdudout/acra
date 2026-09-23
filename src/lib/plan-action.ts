@@ -8,7 +8,10 @@
  */
 import { cleanPriorite, RISK_ACTION_STATUTS, type ActionPriorite, type RiskActionStatut } from './risk-action'
 
-export const PLAN_ACTION_LIEN_TYPES = ['ANALYSE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'RISQUE', 'INCIDENT'] as const
+// RISQUE = risque du registre d'organisation (RiskItem) ; RISQUE_ANALYSE = risque
+// saisi dans une analyse (méthodes à saisie directe ISO 27005 / 31000), targetId =
+// Risque.id, ref = analyseId (pour reconstruire le lien profond vers l'atelier).
+export const PLAN_ACTION_LIEN_TYPES = ['ANALYSE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'RISQUE', 'RISQUE_ANALYSE', 'INCIDENT'] as const
 /** Type de lien polymorphe d'un plan d'action vers son origine : analyse, conformité, contrôle, audit, risque ou incident. */
 export type PlanActionLienType = (typeof PLAN_ACTION_LIEN_TYPES)[number]
 export const isLienType = (v: unknown): v is PlanActionLienType =>
@@ -57,6 +60,8 @@ export function lienHref(lien: PlanActionLien): string {
   switch (lien.type) {
     case 'ANALYSE': return `/analyses/${id}`
     case 'RISQUE': return `/registre?item=${id}`
+    // Risque d'analyse : lien profond vers l'atelier de la méthode (ref = analyseId).
+    case 'RISQUE_ANALYSE': return `/analyses/${encodeURIComponent(lien.ref ?? lien.targetId)}/atelier/1`
     case 'CONFORMITE': return `/conformite/socle?ref=${id}`
     case 'CONTROLE': return `/controle-permanent?controle=${id}`
     case 'AUDIT': return `/audit?mission=${id}`
