@@ -21,6 +21,8 @@ export interface RiskMesurePayload {
   statut: MesureStatut
   efficacite?: number
   description?: string
+  responsable?: string
+  echeance?: string // ISO 8601 (JSON-sérialisable)
 }
 
 /**
@@ -32,12 +34,16 @@ export function sanitizeRiskMesure(input: unknown): RiskMesurePayload {
   const o = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
   const type: MesureType = MESURE_TYPES.includes(String(o.type) as MesureType) ? (String(o.type) as MesureType) : 'PREVENTIVE'
   const statut: MesureStatut = MESURE_STATUTS.includes(String(o.statut) as MesureStatut) ? (String(o.statut) as MesureStatut) : 'REALISE'
+  const echeance = o.echeance != null && !Number.isNaN(new Date(o.echeance as string).getTime())
+    ? new Date(o.echeance as string).toISOString() : undefined
   return {
     nom: String(o.nom ?? '').slice(0, 255),
     type,
     statut,
     ...(o.efficacite != null ? { efficacite: clampInt(o.efficacite, 1, 4, 2) as number } : {}),
     ...(o.description != null ? { description: String(o.description).slice(0, 2000) } : {}),
+    ...(o.responsable != null ? { responsable: String(o.responsable).slice(0, 200) } : {}),
+    ...(echeance ? { echeance } : {}),
   }
 }
 
@@ -47,4 +53,4 @@ export function isRiskMesureValid(p: RiskMesurePayload): boolean {
 }
 
 /** Champs Prisma renvoyés pour une mesure rattachée à un risque (module non-route). */
-export const RISK_MESURE_SELECT = { id: true, nom: true, type: true, statut: true, efficacite: true, description: true } as const
+export const RISK_MESURE_SELECT = { id: true, nom: true, type: true, statut: true, efficacite: true, description: true, responsable: true, echeance: true } as const

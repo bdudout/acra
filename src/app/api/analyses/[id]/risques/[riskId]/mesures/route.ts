@@ -65,6 +65,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       statut: payload.statut,
       ...(payload.efficacite != null ? { efficacite: payload.efficacite } : {}),
       ...(payload.description != null ? { description: payload.description } : {}),
+      ...(payload.responsable != null ? { responsable: payload.responsable } : {}),
+      ...(payload.echeance ? { echeance: new Date(payload.echeance) } : {}),
     },
     select: RISK_MESURE_SELECT,
   })
