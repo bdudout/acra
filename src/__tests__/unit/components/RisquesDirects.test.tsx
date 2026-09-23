@@ -6,7 +6,7 @@ const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
   colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
-  niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)',
+  niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
   tier_eleve: 'Élevé', tier_critique: 'Critique',
   strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
@@ -46,6 +46,24 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Brut')).toBeInTheDocument()
     expect(screen.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
     expect(screen.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
+  })
+
+  it('éditeur « Actuel » (avec mesures) : modifier G met à jour graviteActuelle (PATCH)', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable mode="rate" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByText('Actuel (avec mesures)')).toBeInTheDocument()
+    // La colonne « Actuel » a ses selects G/V (valeur initiale = brut) ; on abaisse G à 2.
+    const selects = screen.getAllByRole('combobox')
+    // Le dernier bloc de selects est l'éditeur actuel (rate mode : brut G,V + actuel G,V).
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6, strategie: 'REDUIRE' } }))
+    fireEvent.change(selects[selects.length - 2], { target: { value: '2' } })
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
+      expect(patch && JSON.parse(patch[1].body)).toMatchObject({ graviteActuelle: 2 })
+    })
   })
 
   it('état vide', async () => {
