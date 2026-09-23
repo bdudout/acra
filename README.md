@@ -55,6 +55,17 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ## ✨ Fonctionnalités
 
+### 🧭 Méthodes d'analyse configurables (multi-méthode)
+
+ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable au niveau **instance** (SUPER_ADMIN) et **par analyse** (à la création, config avancée) — **EBIOS RM reste le défaut**.
+
+- **4 méthodes livrées** : **EBIOS RM** (ANSSI, 5 ateliers) · **ISO/IEC 27005:2022** (processus par phases) · **NIST SP 800-30 Rev. 1** (Prepare/Conduct/Communicate/Maintain) · **ISO 31000:2018** (appréciation simple).
+- **Parcours à saisie directe** (ISO 31000 / 27005 / NIST) : les risques sont saisis directement (gravité × vraisemblance), sans passer par les scénarios EBIOS.
+- **Contexte éditable** (périmètre, objectifs, critères d'acceptation), **conseils de phase** repliables, **suggestions de risques** — sectorielles **et** transverses (rançongiciel AD, fuite via tiers, phishing, DDoS…), **clic = ajout direct** au registre avec annulation.
+- **Risque à 3 niveaux** : **brut** (inhérent) → **actuel** (avec mesures existantes) → **résiduel** (après plan d'action).
+- **Mesures & plan d'action par risque** : mesures existantes (→ actuel) et actions planifiées avec échéance/responsable (→ résiduel).
+- **Évaluation** : priorisation par niveau + décision d'acceptation (à traiter / acceptable).
+
 ### 📋 Méthode EBIOS RM complète
 
 - **5 ateliers guidés** avec bibliothèque d'exemples cliquables (valeurs métier, sources de risque, scénarios, mesures…)
