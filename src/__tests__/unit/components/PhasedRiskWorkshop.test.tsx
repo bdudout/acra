@@ -54,6 +54,14 @@ describe('PhasedRiskWorkshop', () => {
     expect(screen.queryByText('Risques')).toBeNull()
   })
 
+  it('deep-link de phase : initialPhaseKey ouvre directement l\'onglet ciblé', async () => {
+    render(<PhasedRiskWorkshop analyseId="an1" editable phases={isoPhases} perimetreLabel="P" objectifsLabel="O"
+      noContext="—" phasesLabel="Phases" initialPhaseKey="evaluation" />)
+    // La phase « Évaluation » (review) est active d'emblée → note affichée, pas le contexte.
+    await waitFor(() => expect(screen.getByText('note')).toBeInTheDocument())
+    expect(screen.queryByText('SI prod')).toBeNull()
+  })
+
   it('phase unique appreciation : pas d\'onglets (écran simple, ex. ISO 31000)', async () => {
     render(<PhasedRiskWorkshop analyseId="an1" editable phases={[{ key: 'appreciation', type: 'appreciation', label: 'Appréciation' }]} />)
     // Aucune barre d'onglets (une seule phase) mais le registre est rendu.

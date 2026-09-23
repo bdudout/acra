@@ -34,7 +34,7 @@ export default async function AtelierPage({
   searchParams,
 }: {
   params: Promise<{ id: string; num: string }>
-  searchParams: Promise<{ mode?: string; tab?: string }>
+  searchParams: Promise<{ mode?: string; tab?: string; phase?: string }>
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
@@ -142,6 +142,7 @@ export default async function AtelierPage({
             risqueSuggestions={risqueSuggestions}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
+            initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
           />
         </main>
       </div>

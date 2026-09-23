@@ -129,6 +129,30 @@ export function methodStepCount(m: string): number {
   return methodSteps(m).length
 }
 
+/**
+ * Phase de TRAITEMENT (là où l'on agit sur un risque) d'une méthode à saisie
+ * directe : la dernière phase de type `appreciation` (ISO 27005 = « traitement »,
+ * ISO 31000 = l'écran unique, NIST = « maintain »). `null` pour EBIOS RM.
+ */
+export function directTreatmentPhaseKey(m: string): string | null {
+  if (!isRiskMethod(m) || m === 'EBIOS_RM') return null
+  const appr = methodSteps(m).filter(s => s.type === 'appreciation')
+  return appr.length ? appr[appr.length - 1].key : (methodSteps(m)[0]?.key ?? null)
+}
+
+/**
+ * Lien vers la zone de TRAITEMENT d'un risque selon la méthode de l'analyse.
+ * EBIOS RM → atelier 5 (traitement). Méthodes à saisie directe → parcours phasé,
+ * en ouvrant directement la phase de traitement (deep-link `?phase=`), pour ne pas
+ * retomber sur la phase « contexte » (corrige le lien qui semblait mener « à l'accueil »).
+ */
+export function riskTreatmentHref(analyseId: string, methode: string): string {
+  const key = directTreatmentPhaseKey(methode)
+  return key
+    ? `/analyses/${analyseId}/atelier/1?phase=${key}`
+    : `/analyses/${analyseId}/atelier/5`
+}
+
 // ── Résolution de l'ensemble effectif (config à 3 niveaux) ───────────────────
 
 /** Entrées de résolution (toutes optionnelles ; absentes = pas de restriction). */

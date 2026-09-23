@@ -6,6 +6,7 @@ import { ArrowUpRight, Ban, Building2, CheckCircle2, ChevronDown, Eye, Search, t
 import { useTranslation } from '@/lib/i18n/context'
 import ColumnMenu from '@/components/ColumnMenu'
 import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
+import { riskTreatmentHref } from '@/lib/methodes'
 import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 
 // Couleur badge selon score de risque
@@ -25,6 +26,7 @@ export interface RisqueRow {
   analyseId:    string
   analyseNom:   string
   analyseOrg:   string | null
+  methode?:     string
   entite?:      string | null  // organisation (multi-org), en vue consolidée uniquement
   risqueId:     string
   nom:          string
@@ -150,7 +152,7 @@ export default function RisquesClient({
                 {cRes && <span className={`rounded-full border px-2 py-0.5 font-medium ${cRes.bg} ${cRes.text} ${cRes.border}`}>{colResiduel} {r.niveauResiduel}/16</span>}
                 <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{colMesures} {r.mesuresCount}</span>
               </div>
-              <Link href={`/analyses/${r.analyseId}/atelier/5`} className="mt-3 inline-block text-xs font-medium text-ebios-600 hover:underline">{goToAtelier}</Link>
+              <Link href={riskTreatmentHref(r.analyseId, r.methode ?? "EBIOS_RM")} className="mt-3 inline-block text-xs font-medium text-ebios-600 hover:underline">{goToAtelier}</Link>
             </div>
           })}
         </div>
@@ -213,7 +215,7 @@ export default function RisquesClient({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/analyses/${r.analyseId}/atelier/5`}
+                        href={riskTreatmentHref(r.analyseId, r.methode ?? "EBIOS_RM")}
                         className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline whitespace-nowrap"
                       >
                         {goToAtelier}

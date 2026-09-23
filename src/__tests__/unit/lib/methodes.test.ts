@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   RISK_METHODS, DEFAULT_METHOD, IMPLEMENTED_METHODS, isRiskMethod,
   methodSteps, methodStepCount, resolveMethodes, METHOD_STEPS, cleanActiveMethodes,
+  directTreatmentPhaseKey, riskTreatmentHref,
 } from '@/lib/methodes'
 
 describe('registre des méthodes', () => {
@@ -66,5 +67,22 @@ describe('cleanActiveMethodes — activation instance', () => {
     expect(cleanActiveMethodes(null)).toEqual(['EBIOS_RM'])
     expect(cleanActiveMethodes(['garbage'])).toEqual(['EBIOS_RM']) // inconnue → écartée
     expect(cleanActiveMethodes(['garbage', 'EBIOS_RM'])).toEqual(['EBIOS_RM'])
+  })
+})
+
+describe('directTreatmentPhaseKey / riskTreatmentHref', () => {
+  it('phase de traitement des méthodes directes (dernière phase appreciation)', () => {
+    expect(directTreatmentPhaseKey('ISO_27005')).toBe('traitement')
+    expect(directTreatmentPhaseKey('ISO_31000')).toBe('appreciation')
+    expect(directTreatmentPhaseKey('NIST_800_30')).toBe('maintain')
+    expect(directTreatmentPhaseKey('EBIOS_RM')).toBeNull()
+  })
+
+  it('lien de traitement : EBIOS → atelier 5 ; direct → parcours phasé + deep-link phase', () => {
+    expect(riskTreatmentHref('an1', 'EBIOS_RM')).toBe('/analyses/an1/atelier/5')
+    expect(riskTreatmentHref('an1', 'ISO_27005')).toBe('/analyses/an1/atelier/1?phase=traitement')
+    expect(riskTreatmentHref('an1', 'ISO_31000')).toBe('/analyses/an1/atelier/1?phase=appreciation')
+    // méthode inconnue → repli EBIOS (atelier 5)
+    expect(riskTreatmentHref('an1', 'ZZZ')).toBe('/analyses/an1/atelier/5')
   })
 })
