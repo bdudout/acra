@@ -1452,7 +1452,7 @@ export const en: Translations = {
     colGravite: 'Severity',
     colVraisemblance: 'Likelihood',
     colNiveau: 'Level',
-    niveauBrut: 'Inherent', niveauActuel: 'Current', niveauResiduel: 'Residual', colResiduelCible: 'Residual (target)', colActuelAvecMesures: 'Current (with controls)', mesuresTitle: 'Existing security controls', mesuresEmpty: 'No control yet.', mesuresNomPlaceholder: 'Control name', mesuresEfficacite: 'Effectiveness',
+    niveauBrut: 'Inherent', niveauActuel: 'Current', niveauResiduel: 'Residual', colResiduelCible: 'Residual (target)', colActuelAvecMesures: 'Current (with controls)', mesuresTitle: 'Existing security controls', mesuresEmpty: 'No control yet.', mesuresNomPlaceholder: 'Control name', mesuresEfficacite: 'Effectiveness', mesuresStatut: 'Status', mesuresStatuts: { A_FAIRE: 'To do', EN_COURS: 'In progress', REALISE: 'Done', REPORTE: 'Deferred' }, mesuresEcheance: 'Due date', mesuresTitrePlan: 'Controls & action plan',
     colStrategie: 'Treatment',
     add: 'Add',
     empty: 'No risks yet.',

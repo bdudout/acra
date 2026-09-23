@@ -4,8 +4,10 @@ import RiskMesures from '@/components/RiskMesures'
 
 const M = {
   add: 'Ajouter', delete: 'Supprimer',
-  mesuresTitle: 'Mesures de sécurité existantes', mesuresEmpty: 'Aucune mesure.',
+  mesuresTitle: 'Mesures de sécurité existantes', mesuresTitrePlan: 'Mesures & plan d’action', mesuresEmpty: 'Aucune mesure.',
   mesuresNomPlaceholder: 'Intitulé de la mesure', mesuresEfficacite: 'Efficacité',
+  mesuresStatut: 'Statut', mesuresEcheance: 'Échéance',
+  mesuresStatuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', REALISE: 'Réalisé', REPORTE: 'Reporté' },
 }
 vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
 const fetchMock = vi.fn()
@@ -17,7 +19,8 @@ describe('RiskMesures', () => {
     fetchMock.mockReturnValueOnce(jsonOk({ mesures: [{ id: 'm1', nom: 'MFA', type: 'PREVENTIVE', statut: 'REALISE', efficacite: 3 }] }))
     render(<RiskMesures analyseId="an1" riskId="r1" editable />)
     expect(await screen.findByText('MFA')).toBeInTheDocument()
-    expect(screen.getByText('Mesures de sécurité existantes')).toBeInTheDocument()
+    expect(screen.getByText('Mesures & plan d’action')).toBeInTheDocument()
+    expect(screen.getAllByText('Réalisé').length).toBeGreaterThan(0) // badge de statut (+ option)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/analyses/an1/risques/r1/mesures')
   })
 
