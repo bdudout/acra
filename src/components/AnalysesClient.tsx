@@ -12,6 +12,8 @@ import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, 
 import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
+import AnalyseImportMenu from '@/components/AnalyseImportMenu'
+import HistoricImportPreview, { type HistoricPreviewSheet } from '@/components/HistoricImportPreview'
 
 type FilterValue = 'ALL' | 'EN_COURS' | 'TERMINE' | 'SOUMIS' | 'APPROUVE'
 
@@ -42,8 +44,10 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
   const [deleting, setDeleting] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const excelImportRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
   const [loadingExample, setLoadingExample] = useState(false)
+  const [excelPreview, setExcelPreview] = useState<{ filename: string; data: string; sheets: HistoricPreviewSheet[] } | null>(null)
 
   // Site de démo : charge un exemple complet dans l'organisation du testeur.
   async function loadExample() {
@@ -100,6 +104,39 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
     if (importRef.current) importRef.current.value = ''
   }
 
+  async function handleExcelPreview(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    try {
+      const buffer = await file.arrayBuffer()
+      const bytes = new Uint8Array(buffer)
+      let binary = ''
+      bytes.forEach(byte => { binary += String.fromCharCode(byte) })
+      const res = await fetch('/api/analysis-imports/preview', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, data: btoa(binary) }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Erreur de prévisualisation')
+      setExcelPreview({ filename: file.name, data: btoa(binary), sheets: result.sheets })
+    } catch (err: any) { alert(`Erreur : ${err.message}`) }
+    finally { setImporting(false); if (excelImportRef.current) excelImportRef.current.value = '' }
+  }
+
+  async function confirmExcelImport(mappings: Record<string, Record<string, string | undefined>>) {
+    if (!excelPreview) return
+    setImporting(true)
+    try {
+      const res = await fetch('/api/analysis-imports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: excelPreview.filename, data: excelPreview.data, mappings }) })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Erreur import')
+      const d = await fetch('/api/analyses').then(r => r.json())
+      setAnalyses(d.analyses || []); setExcelPreview(null)
+      alert(`✅ ${result.replayed ? 'Import déjà traité' : 'Analyse importée'} : "${result.nom}"`)
+    } catch (err: any) { alert(`Erreur : ${err.message}`) } finally { setImporting(false) }
+  }
+
   async function confirmDeleteAnalyse(id: string) {
     setDeleting(id)
     setPendingDelete(null)
@@ -144,14 +181,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               onChange={handleImport}
               aria-label="Importer une analyse"
             />
-            <button
-              onClick={() => importRef.current?.click()}
-              disabled={importing}
-              className="btn-secondary hidden items-center gap-2 text-sm sm:flex"
-              title="Importer une analyse depuis un fichier JSON ou CSV"
-            >
-              {importing ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Import…</> : <><FolderOpen size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />Importer</>}
-            </button>
+            <input ref={excelImportRef} type="file" accept=".xlsx" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
+            <AnalyseImportMenu disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
             <ExpressAnalyseButton variant="button" />
             {demo && (
               <button
@@ -168,6 +199,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             </Link>
           </div>
         </div>
+        {excelPreview && <HistoricImportPreview sheets={excelPreview.sheets} onCancel={() => setExcelPreview(null)} onConfirm={confirmExcelImport} labels={{ title: t.analyses.importMenu.previewTitle, confirm: t.analyses.importMenu.previewConfirm, cancel: t.analyses.importMenu.previewCancel, missing: t.analyses.importMenu.previewMissing, noSheets: t.analyses.importMenu.previewNoSheets, rows: t.analyses.importMenu.previewRows, mappingName: t.analyses.importMenu.mappingName, saveMapping: t.analyses.importMenu.saveMapping, loadMapping: t.analyses.importMenu.loadMapping, fieldLabels: t.analyses.importMenu.previewFields }} />}
 
         {/* Filters */}
         <div className="flex gap-3 mb-6 flex-wrap">

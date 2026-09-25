@@ -749,6 +749,7 @@ export const it: Translations = {
     expressRequired: 'Il nome è obbligatorio',
     expressStart:    '⚡ Avvia',
     expressStarting: '⏳ Creazione…',
+    importMenu: { trigger: 'Importa', acraTitle: 'Esportazione ACRA', acraDesc: 'Importa un’esportazione JSON o CSV prodotta da ACRA.', excelTitle: 'Excel storico', excelDesc: 'Visualizza i fogli e correggi il mapping prima dell’importazione.', apiTitle: 'API / integrazione', apiDesc: 'Per importazioni industriali tramite una chiave API limitata all’organizzazione.', mcpTitle: 'MCP assistito', mcpDesc: 'Preparazione e validazione umana prima di ogni importazione.', previewTitle: 'Preparare importazione Excel', previewConfirm: 'Importare i dati convalidati', previewCancel: 'Annulla', previewMissing: 'obbligatorio', previewNoSheets: 'Nessun foglio importabile riconosciuto.', previewRows: 'righe', mappingName: 'Nome mapping', saveMapping: 'Salva mapping', loadMapping: 'Carica mapping', previewFields: { title: 'Titolo', externalId: 'Riferimento esterno', analysisExternalId: 'Riferimento analisi', riskExternalId: 'Riferimento rischio', actionExternalId: 'Riferimento azione', gravity: 'Gravità', likelihood: 'Probabilità', strategy: 'Strategia', status: 'Stato', responsible: 'Responsabile', dueDate: 'Scadenza' } },
   },
 
   revisions: {
@@ -981,6 +982,7 @@ export const it: Translations = {
     upToDate: 'Applicazione aggiornata.',
     upToDateWithLatest: 'Applicazione aggiornata (ultima release {v}).',
     notInstalled: 'L’aggiornamento non viene installato automaticamente: viene distribuito tramite la procedura di deployment (CI / server).',
+    deploy: 'Aggiorna', deploying: 'Distribuzione in corso…', deployConfirm: 'Avviare la distribuzione di {version}?', deployStarted: 'Distribuzione avviata. GitHub Actions si apre per il monitoraggio.', deployError: 'Impossibile avviare la distribuzione.', helpTitle: 'Come funziona l’aggiornamento?', helpOneClick: 'Il pulsante avvia solo l’ultima release pubblicata e protegge dati, migrazioni e rollback.', helpManual: 'Senza pulsante, eseguire «Deploy stable demo release» in GitHub Actions. Un git pull non aggiorna l’immagine Docker.',
   },
   qualifEditor: {
     sectionTitle: 'Questionario di qualificazione',
@@ -1376,6 +1378,7 @@ export const it: Translations = {
     typeMesure: 'Misura proposta',
     typePlanAction: 'Piano d\'azione proposto',
     typeConformite: 'Conformità proposta',
+    typeAnalysisImport: 'Importazione storica proposta',
     conformiteStatuts: { conforme: 'Conforme', partiel: 'Parziale', non_conforme: 'Non conforme', na: 'N/D' },
     type: 'Tipo',
     priorite: 'Priorità',
@@ -1474,6 +1477,7 @@ export const it: Translations = {
     colDecision: 'Decisione', decisionTreat: 'Da trattare', decisionAccept: 'Accettabile', prioSummary: '{treat} da trattare · {accept} accettabile/i',
     guidance: { intro: 'Valuta ogni rischio in modo semplice: descrivilo, poi valuta gravità e probabilità per dedurne il livello.', points: ['Descrivi il rischio in una frase chiara.', 'Valuta gravità e probabilità sulla scala proposta.', 'Scegli un trattamento: ridurre, accettare, trasferire, rifiutare o monitorare.'] },
     detailsTitle: 'Dettagli del rischio',
+    manageTreatment: 'Gestisci misure e piani d’azione', manageMesures: 'Gestisci misure di sicurezza', managePlans: 'Gestisci piani d’azione', treatmentCounts: '{mesures} misure · {plans} piani d’azione', mesuresCount: '{count} misure', plansCount: '{count} piani d’azione',
     vulnTitle: 'Vulnerabilità',
     vulnEmpty: 'Nessuna vulnerabilità identificata.',
     vulnPlaceholder: 'Vulnerabilità sfruttata (es. assenza di MFA)',
@@ -2573,6 +2577,20 @@ export const it: Translations = {
       scalesNote: 'Modificabile qui in qualsiasi momento.',
       logoChange: 'Cambia logo',
       logoReset: 'Ripristina logo automatico',
+      editTitle: 'Modifica l’organizzazione',
+      save: 'Salva',
+      parentHint: 'Anche le eventuali sotto-organizzazioni vengono spostate.',
+      delete: 'Elimina',
+      deleteHint: 'Disponibile solo se l’organizzazione non contiene sotto-organizzazioni, membri o dati aziendali.',
+      deleteConfirm: 'Eliminare definitivamente questa organizzazione vuota?',
+      exportData: 'Esporta dati',
+      closeOrganization: 'Chiudi ed elimina i dati',
+      closeHint: 'Per un’azienda chiusa: esportare prima i dati, quindi confermare la chiusura irreversibile.',
+      closePrompt: 'Digitare esattamente “{name}” per eliminare definitivamente questa organizzazione e i suoi dati.',
+      dataManagement: 'Dati e chiusura', memberSearch: 'Cerca un membro…',
+      deleteBlockedChildren: 'Non è possibile eliminare un’organizzazione con sotto-organizzazioni.',
+      deleteBlockedMembers: 'Non è possibile eliminare un’organizzazione con membri.',
+      deleteBlockedData: 'Non è possibile eliminare un’organizzazione con dati aziendali.',
     },
     recovery: {
       title:          'Recupero delle analisi',
@@ -3785,6 +3803,9 @@ export const it: Translations = {
     vulnPanelEmpty:  'Nessuna non conformità al livello base. Attiva e completa la griglia di conformità nel workshop 1.',
     tunnelWarningTitle: '⚠️ Evitare il «tunnel di conformità»',
     tunnelWarning:   'Una non conformità non è un rischio di per sé: inseriscila nella sintesi solo se è collegata a uno scenario di rischio pertinente (cfr. scheda metodologica Club EBIOS).',
+  },
+  scrollNavigation: {
+    group: 'Navigazione nella pagina', top: 'Vai all’inizio della pagina', bottom: 'Vai alla fine della pagina',
   },
   atelierGuidance: {
     panelTitle:        'Consigli e partecipanti',

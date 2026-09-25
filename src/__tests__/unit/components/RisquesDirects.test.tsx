@@ -14,6 +14,7 @@ const M = {
   colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable',
   prioSummary: '{treat} à traiter · {accept} acceptable(s)',
   subtitleReadonly: 'Consultez et priorisez vos risques (lecture seule).',
+  manageTreatment: 'Gérer les mesures et plans d’action', manageMesures: 'Gérer les mesures de sécurité', managePlans: 'Gérer les plans d’action', treatmentCounts: '{mesures} mesures · {plans} plans', mesuresCount: '{count} mesures', plansCount: '{count} plans',
 }
 vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
 
@@ -23,6 +24,16 @@ beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock) })
 const jsonOk = (body: unknown) => Promise.resolve({ ok: true, json: async () => body } as Response)
 
 describe('RisquesDirects', () => {
+  it('rend le traitement explicite et affiche ses compteurs', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE', mesuresCount: 2, plansCount: 1 },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gérer les mesures et plans d’action' })).toBeInTheDocument()
+    expect(screen.getByText('2 mesures · 1 plans')).toBeInTheDocument()
+  })
+
   it('affiche les risques chargés (nom + palier de niveau)', async () => {
     fetchMock.mockReturnValueOnce(jsonOk({ risques: [
       { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' },
@@ -151,6 +162,20 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Niveau')).toBeInTheDocument()
     expect(screen.getAllByText('Gravité').length).toBeGreaterThan(0)
     expect(screen.queryByText('Traitement')).toBeNull()
+  })
+
+  it('peut exposer uniquement les mesures pendant la phase d’analyse ISO 27005', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="rate" treatmentSections="mesures" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gérer les mesures de sécurité' })).toBeInTheDocument()
+  })
+
+  it('peut exposer uniquement les plans pendant la phase de traitement ISO 27005', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="treat" treatmentSections="plans" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gérer les plans d’action' })).toBeInTheDocument()
   })
 
   it('mode treat : pas d’ajout ; traitement éditable ; pas de cotation G/V', async () => {

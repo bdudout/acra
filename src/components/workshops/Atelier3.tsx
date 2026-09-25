@@ -317,7 +317,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
     const gr = exemple?.graviteDefaut ?? 3
     const defaultCouple = couplesDisponibles[0]
     const defaultEr = evenementsRedoutes[0]
-    setScenarios(prev => [...prev, {
+    setScenarios(prev => [{
       id,
       nom: exemple?.nom || '',
       sourceRisqueId: exemple?.sourceRisqueId || defaultCouple?.srId || '',
@@ -331,7 +331,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
       cheminAttaque: [],
       mesuresEcosysteme: [],
       vraisemblance: vr, gravite: gr, niveauRisque: vr * gr, retenu: true,
-    }])
+    }, ...prev])
     setExpanded(id)
     // Passer automatiquement à l'onglet scénarios si on était ailleurs
     setTab('scenarios')

@@ -12,6 +12,9 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 
 const analyseFindFirst = vi.fn()
 const risqueCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'r-new' }))
+const risqueFindMany = vi.fn<(...args: unknown[]) => Promise<unknown[]>>(async () => [])
+const mesureFindMany = vi.fn<(...args: unknown[]) => Promise<unknown[]>>(async () => [])
+const planActionFindMany = vi.fn<(...args: unknown[]) => Promise<unknown[]>>(async () => [])
 const risqueFindFirst = vi.fn()
 const risqueUpdate = vi.fn(async (..._a: unknown[]) => ({ id: 'r1' }))
 const risqueDelete = vi.fn(async (..._a: unknown[]) => ({}))
@@ -22,10 +25,12 @@ vi.mock('@/lib/prisma', () => ({
     risque: {
       create: (...a: unknown[]) => risqueCreate(...a),
       findFirst: (...a: unknown[]) => risqueFindFirst(...a),
-      findMany: vi.fn(async () => []),
+      findMany: () => risqueFindMany(),
       update: (...a: unknown[]) => risqueUpdate(...a),
       delete: (...a: unknown[]) => risqueDelete(...a),
     },
+    mesure: { findMany: () => mesureFindMany() },
+    planAction: { findMany: () => planActionFindMany() },
   },
 }))
 const effRole = { value: 'ADMIN' as string | null }
@@ -36,7 +41,7 @@ vi.mock('@/lib/org-context.server', () => ({
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 
-import { POST } from '@/app/api/analyses/[id]/risques/route'
+import { GET, POST } from '@/app/api/analyses/[id]/risques/route'
 import { PATCH, DELETE } from '@/app/api/analyses/[id]/risques/[riskId]/route'
 
 const ISO = { id: 'an1', userId: 'owner', organizationId: 'orgA', methode: 'ISO_31000', deletedAt: null, risquesResiduelsStatut: 'EN_ATTENTE', accesUtilisateurs: [] }
@@ -49,6 +54,21 @@ beforeEach(() => {
   sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'
   analyseFindFirst.mockResolvedValue({ ...ISO })
   risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2 })
+  risqueFindMany.mockResolvedValue([])
+  mesureFindMany.mockResolvedValue([])
+  planActionFindMany.mockResolvedValue([])
+})
+
+describe('GET /risques (compteurs de traitement)', () => {
+  it('annote chaque risque avec ses mesures existantes et ses plans d’action', async () => {
+    risqueFindMany.mockResolvedValue([{ id: 'r1', nom: 'VPN', gravite: 3, vraisemblance: 2, niveauRisque: 6, strategie: 'REDUIRE' }])
+    mesureFindMany.mockResolvedValue([{ risqueId: 'r1' }, { risqueId: 'r1' }])
+    planActionFindMany.mockResolvedValue([{ liens: [{ targetId: 'r1' }] }])
+
+    const res = await GET({} as never, P)
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ risques: [{ id: 'r1', nom: 'VPN', gravite: 3, vraisemblance: 2, niveauRisque: 6, strategie: 'REDUIRE', mesuresCount: 2, plansCount: 1 }] })
+  })
 })
 
 describe('POST /risques (création directe)', () => {

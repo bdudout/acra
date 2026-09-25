@@ -749,6 +749,7 @@ export const de: Translations = {
     expressRequired: 'Name ist erforderlich',
     expressStart:    '⚡ Starten',
     expressStarting: '⏳ Erstellen…',
+    importMenu: { trigger: 'Importieren', acraTitle: 'ACRA-Export', acraDesc: 'Einen von ACRA erzeugten JSON- oder CSV-Export importieren.', excelTitle: 'Historisches Excel', excelDesc: 'Blätter anzeigen und Zuordnung vor dem Import korrigieren.', apiTitle: 'API / Integration', apiDesc: 'Für industrielle Importe über einen organisationsgebundenen API-Schlüssel.', mcpTitle: 'Unterstütztes MCP', mcpDesc: 'Menschliche Vorbereitung und Validierung vor jedem Import.', previewTitle: 'Excel-Import vorbereiten', previewConfirm: 'Validierte Daten importieren', previewCancel: 'Abbrechen', previewMissing: 'erforderlich', previewNoSheets: 'Kein importierbares Blatt erkannt.', previewRows: 'Zeilen', mappingName: 'Mapping-Name', saveMapping: 'Mapping speichern', loadMapping: 'Mapping laden', previewFields: { title: 'Titel', externalId: 'Externe Referenz', analysisExternalId: 'Analysereferenz', riskExternalId: 'Risikoreferenz', actionExternalId: 'Aktionsreferenz', gravity: 'Schweregrad', likelihood: 'Wahrscheinlichkeit', strategy: 'Strategie', status: 'Status', responsible: 'Verantwortlich', dueDate: 'Fälligkeitsdatum' } },
   },
 
   revisions: {
@@ -981,6 +982,7 @@ export const de: Translations = {
     upToDate: 'Anwendung aktuell.',
     upToDateWithLatest: 'Anwendung aktuell (neueste Release {v}).',
     notInstalled: 'Das Update wird nicht automatisch installiert: Es wird über das Deployment-Verfahren (CI / Server) ausgerollt.',
+    deploy: 'Aktualisieren', deploying: 'Bereitstellung läuft…', deployConfirm: 'Bereitstellung von {version} starten?', deployStarted: 'Bereitstellung gestartet. GitHub Actions öffnet sich zur Nachverfolgung.', deployError: 'Bereitstellung konnte nicht gestartet werden.', helpTitle: 'Wie funktioniert das Update?', helpOneClick: 'Die Schaltfläche startet nur die letzte veröffentlichte Release und sichert Daten, Migrationen und Rollback ab.', helpManual: 'Ohne Schaltfläche starten Sie „Deploy stable demo release“ in GitHub Actions. Ein git pull aktualisiert das Docker-Image nicht.',
   },
   qualifEditor: {
     sectionTitle: 'Qualifizierungsfragebogen',
@@ -1376,6 +1378,7 @@ export const de: Translations = {
     typeMesure: 'Vorgeschlagene Maßnahme',
     typePlanAction: 'Vorgeschlagener Aktionsplan',
     typeConformite: 'Vorgeschlagener Konformitätsstatus',
+    typeAnalysisImport: 'Vorgeschlagener historischer Import',
     conformiteStatuts: { conforme: 'Konform', partiel: 'Teilweise', non_conforme: 'Nicht konform', na: 'N/A' },
     type: 'Typ',
     priorite: 'Priorität',
@@ -1474,6 +1477,7 @@ export const de: Translations = {
     colDecision: 'Entscheidung', decisionTreat: 'Zu behandeln', decisionAccept: 'Akzeptabel', prioSummary: '{treat} zu behandeln · {accept} akzeptabel',
     guidance: { intro: 'Bewerten Sie jedes Risiko einfach: beschreiben Sie es, dann Schwere und Wahrscheinlichkeit einschätzen, um das Niveau abzuleiten.', points: ['Beschreiben Sie das Risiko in einem klaren Satz.', 'Bewerten Sie Schwere und Wahrscheinlichkeit auf der vorgesehenen Skala.', 'Wählen Sie eine Behandlung: reduzieren, akzeptieren, übertragen, ablehnen oder überwachen.'] },
     detailsTitle: 'Risikodetails',
+    manageTreatment: 'Sicherheitsmaßnahmen und Aktionspläne verwalten', manageMesures: 'Sicherheitsmaßnahmen verwalten', managePlans: 'Aktionspläne verwalten', treatmentCounts: '{mesures} Maßnahmen · {plans} Aktionspläne', mesuresCount: '{count} Maßnahmen', plansCount: '{count} Aktionspläne',
     vulnTitle: 'Schwachstellen',
     vulnEmpty: 'Keine Schwachstelle identifiziert.',
     vulnPlaceholder: 'Ausgenutzte Schwachstelle (z. B. keine MFA)',
@@ -2573,6 +2577,20 @@ export const de: Translations = {
       scalesNote: 'Hier jederzeit änderbar.',
       logoChange: 'Logo ändern',
       logoReset: 'Auto-Logo wiederherstellen',
+      editTitle: 'Organisation bearbeiten',
+      save: 'Speichern',
+      parentHint: 'Vorhandene Unterorganisationen werden ebenfalls verschoben.',
+      delete: 'Löschen',
+      deleteHint: 'Nur möglich, wenn die Organisation weder Unterorganisationen noch Mitglieder oder Geschäftsdaten enthält.',
+      deleteConfirm: 'Diese leere Organisation endgültig löschen?',
+      exportData: 'Daten exportieren',
+      closeOrganization: 'Schließen und Daten löschen',
+      closeHint: 'Bei einer geschlossenen Firma: Exportieren Sie zuerst die Daten und bestätigen Sie dann die irreversible Schließung.',
+      closePrompt: 'Geben Sie genau „{name}“ ein, um diese Organisation und ihre Daten endgültig zu löschen.',
+      dataManagement: 'Daten und Schließung', memberSearch: 'Mitglied suchen…',
+      deleteBlockedChildren: 'Eine Organisation mit Unterorganisationen kann nicht gelöscht werden.',
+      deleteBlockedMembers: 'Eine Organisation mit Mitgliedern kann nicht gelöscht werden.',
+      deleteBlockedData: 'Eine Organisation mit Geschäftsdaten kann nicht gelöscht werden.',
     },
     recovery: {
       title:          'Analysen-Wiederherstellung',
@@ -3785,6 +3803,9 @@ export const de: Translations = {
     vulnPanelEmpty:  'Keine Nichtkonformität zum Grundniveau. Aktivieren und vervollständigen Sie das Konformitätsraster in Workshop 1.',
     tunnelWarningTitle: '⚠️ Den „Konformitätstunnel“ vermeiden',
     tunnelWarning:   'Eine Nichtkonformität ist an sich kein Risiko: Nehmen Sie sie nur in die Synthese auf, wenn sie mit einem relevanten Risikoszenario verknüpft ist (siehe Club-EBIOS-Methodenblatt).',
+  },
+  scrollNavigation: {
+    group: 'Seitennavigation', top: 'Zum Seitenanfang', bottom: 'Zum Seitenende',
   },
   atelierGuidance: {
     panelTitle:        'Tipps & Teilnehmer',

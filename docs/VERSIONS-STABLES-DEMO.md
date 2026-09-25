@@ -55,6 +55,15 @@ OVH ou une première stable a déjà été validé. Voir le rapport de qualifica
 
 ## Mise en place, une seule fois
 
+### Déploiement depuis le tableau de bord (optionnel)
+
+Pour afficher le bouton « Mettre à jour » au SUPER_ADMIN, définir uniquement côté
+serveur `GITHUB_DEPLOY_TOKEN` : un fine-grained PAT GitHub limité au dépôt ACRA,
+avec le droit minimal **Actions: write**. Il sert exclusivement à déclencher le
+workflow `deploy-release.yml` pour la dernière release stable ; les secrets SSH
+et le déploiement restent dans GitHub Actions. Sans ce secret, le tableau de bord
+affiche toujours la note dépliable et la procédure manuelle.
+
 Cible confirmée : `debian@vps-8eb84369.vps.ovh.net`, SSH port 22. Le répertoire
 `DEPLOY_PATH=/home/debian/acra` est confirmé par inspection du VPS. Installer le dépôt et les
 scripts de cette livraison à cet emplacement, Docker Compose >= 2.24.4, `.env`

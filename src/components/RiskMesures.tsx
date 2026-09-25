@@ -69,9 +69,9 @@ export default function RiskMesures({ analyseId, riskId, editable }: { analyseId
           </ul>
         )}
       {editable && (
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
           <input value={nom} onChange={e => setNom(e.target.value)} placeholder={m.mesuresNomPlaceholder}
-            className="flex-1 min-w-[10rem] px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            className="min-w-0 w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresStatut}
             <select value={statut} onChange={e => setStatut(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {MESURE_STATUTS.map(s => <option key={s} value={s}>{statutLabel(s)}</option>)}

@@ -32,7 +32,7 @@ async function requireSuperAdmin() {
   return { session }
 }
 
-// GET /api/admin/organizations — arbre des organisations (+ nb membres / analyses)
+// GET /api/admin/organizations — arbre des organisations (+ dépendances de suppression)
 export async function GET() {
   const auth = await requireSuperAdmin()
   if (auth.error) return auth.error
@@ -41,7 +41,7 @@ export async function GET() {
     orderBy: { path: 'asc' },
     select: {
       id: true, nom: true, slug: true, parentId: true, path: true, actif: true, logo: true,
-      _count: { select: { membres: true, analyses: true } },
+      _count: { select: { enfants: true, membres: true, analyses: true } },
     },
   })
   return NextResponse.json({ organizations: orgs })

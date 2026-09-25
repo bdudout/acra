@@ -143,3 +143,12 @@ L'instance mono-org continue de fonctionner à l'identique (une racine, tout le 
 - **Unicité e-mail** : **globale** (un compte = une personne, plusieurs appartenances) — plus simple et adapté au consultant.
 - **Récupération (corbeille)** et **journal d'audit** : scopés par organisation (sauf SUPER_ADMIN).
 - **Déplacement d'org** : réécrit le `path` du sous-arbre (opération admin atomique).
+- **Correction administrative** : le SUPER_ADMIN peut renommer une organisation et la déplacer
+  sous un autre parent (ou à la racine) ; tout son sous-arbre est déplacé dans la même
+  transaction et les cycles sont refusés. Une suppression est autorisée uniquement pour
+  une organisation sans enfant, appartenance ni donnée métier ; elle ne déclenche donc
+  jamais de suppression en cascade de contenu utilisateur.
+- **Fermeture d'entreprise** : le SUPER_ADMIN peut exporter un paquet JSON limité à
+  l'organisation (analyses, risques et plans d'action), puis demander une fermeture
+  définitive. Cette dernière exige la saisie exacte du nom et supprime explicitement
+  les analyses avant l'organisation ; les sous-organisations restent toujours bloquantes.

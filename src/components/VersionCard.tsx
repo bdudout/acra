@@ -5,7 +5,7 @@
 // disponible — sans l'installer (déploiement manuel/CI). Cf. /api/admin/version.
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, CheckCircle2, ArrowUpCircle, AlertTriangle } from 'lucide-react'
+import { RefreshCw, CheckCircle2, ArrowUpCircle, AlertTriangle, Rocket } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
 interface VersionInfo {
@@ -17,6 +17,7 @@ interface VersionInfo {
   updateAvailable: boolean
   reachable: boolean
   repo: string
+  deployConfigured: boolean
 }
 
 export default function VersionCard() {
@@ -24,6 +25,8 @@ export default function VersionCard() {
   const v = t.version
   const [info, setInfo] = useState<VersionInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deploying, setDeploying] = useState(false)
+  const [deployMessage, setDeployMessage] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -33,6 +36,17 @@ export default function VersionCard() {
     } catch { setInfo(null) } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
+
+  async function deploy() {
+    if (!info?.latest || !window.confirm(v.deployConfirm.replace('{version}', info.latest))) return
+    setDeploying(true); setDeployMessage(null)
+    try {
+      const r = await fetch('/api/admin/version/deploy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ version: info.latest }) })
+      const data = await r.json().catch(() => ({}))
+      setDeployMessage(r.ok ? v.deployStarted : (data.error ?? v.deployError))
+      if (r.ok && data.workflowUrl) window.open(data.workflowUrl, '_blank', 'noopener,noreferrer')
+    } catch { setDeployMessage(v.deployError) } finally { setDeploying(false) }
+  }
 
   return (
     <div className="card p-5 mb-8">
@@ -65,6 +79,7 @@ export default function VersionCard() {
                 {v.seeNotes} →
               </a>
             )}
+            {info.deployConfigured && <button onClick={deploy} disabled={deploying} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50"><Rocket size={14} /> {deploying ? v.deploying : v.deploy}</button>}
           </div>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-green-700">
@@ -73,6 +88,12 @@ export default function VersionCard() {
         )}
       </div>
       <p className="text-[11px] text-gray-400 mt-2">{v.notInstalled}</p>
+      {deployMessage && <p className="mt-2 text-sm text-ebios-700">{deployMessage}</p>}
+      <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+        <summary className="cursor-pointer font-medium text-gray-700">{v.helpTitle}</summary>
+        <p className="mt-2">{v.helpOneClick}</p>
+        <p className="mt-2">{v.helpManual}</p>
+      </details>
     </div>
   )
 }

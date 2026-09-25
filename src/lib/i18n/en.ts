@@ -749,6 +749,7 @@ export const en: Translations = {
     expressRequired: 'Name is required',
     expressStart:    '⚡ Start',
     expressStarting: '⏳ Creating…',
+    importMenu: { trigger: 'Import', acraTitle: 'ACRA export', acraDesc: 'Import a JSON or CSV export produced by ACRA.', excelTitle: 'Historical Excel', excelDesc: 'Preview sheets and correct mapping before import.', apiTitle: 'API / integration', apiDesc: 'For industrial imports, through an API key scoped to the organization.', mcpTitle: 'Assisted MCP', mcpDesc: 'Human preparation and validation before any import.', previewTitle: 'Prepare Excel import', previewConfirm: 'Import validated data', previewCancel: 'Cancel', previewMissing: 'required', previewNoSheets: 'No importable sheet was recognized.', previewRows: 'rows', mappingName: 'Mapping name', saveMapping: 'Save mapping', loadMapping: 'Load mapping', previewFields: { title: 'Title', externalId: 'External reference', analysisExternalId: 'Analysis reference', riskExternalId: 'Risk reference', actionExternalId: 'Action reference', gravity: 'Severity', likelihood: 'Likelihood', strategy: 'Strategy', status: 'Status', responsible: 'Owner', dueDate: 'Due date' } },
   },
 
   revisions: {
@@ -981,6 +982,7 @@ export const en: Translations = {
     upToDate: 'Application up to date.',
     upToDateWithLatest: 'Application up to date (latest release {v}).',
     notInstalled: 'The update is not installed automatically: it is deployed via the deployment procedure (CI / server).',
+    deploy: 'Update', deploying: 'Deployment in progress…', deployConfirm: 'Start deployment of {version}? A brief interruption is possible.', deployStarted: 'Deployment started. GitHub Actions opens to follow its progress.', deployError: 'Deployment could not be started.', helpTitle: 'How does the update work?', helpOneClick: 'The button starts only the latest published release; GitHub backs up data, applies migrations, checks health and rolls back if needed.', helpManual: 'Without the button, run “Deploy stable demo release” in GitHub Actions with the proposed version. A git pull alone does not update the deployed Docker image.',
   },
   qualifEditor: {
     sectionTitle: 'Qualification questionnaire',
@@ -1376,6 +1378,7 @@ export const en: Translations = {
     typeMesure: 'Proposed measure',
     typePlanAction: 'Proposed action plan',
     typeConformite: 'Proposed compliance status',
+    typeAnalysisImport: 'Proposed historical import',
     conformiteStatuts: { conforme: 'Compliant', partiel: 'Partial', non_conforme: 'Non-compliant', na: 'N/A' },
     type: 'Type',
     priorite: 'Priority',
@@ -1474,6 +1477,7 @@ export const en: Translations = {
     colDecision: 'Decision', decisionTreat: 'To treat', decisionAccept: 'Acceptable', prioSummary: '{treat} to treat · {accept} acceptable',
     guidance: { intro: 'Assess each risk simply: describe it, then rate its severity and likelihood to derive the level.', points: ['Describe the risk in one clear sentence.', 'Rate severity and likelihood on the scale provided.', 'Choose a treatment: reduce, accept, transfer, refuse or monitor.'] },
     detailsTitle: 'Risk details',
+    manageTreatment: 'Manage safeguards and action plans', manageMesures: 'Manage safeguards', managePlans: 'Manage action plans', treatmentCounts: '{mesures} safeguards · {plans} action plans', mesuresCount: '{count} safeguards', plansCount: '{count} action plans',
     vulnTitle: 'Vulnerabilities',
     vulnEmpty: 'No vulnerability identified.',
     vulnPlaceholder: 'Exploited vulnerability (e.g. no MFA)',
@@ -2573,6 +2577,20 @@ export const en: Translations = {
       scalesNote: 'Editable here at any time.',
       logoChange: 'Change logo',
       logoReset: 'Reset to auto logo',
+      editTitle: 'Edit organization',
+      save: 'Save',
+      parentHint: 'Any sub-organizations are moved as well.',
+      delete: 'Delete',
+      deleteHint: 'Available only when the organization has no sub-organization, member or business data.',
+      deleteConfirm: 'Permanently delete this empty organization?',
+      exportData: 'Export data',
+      closeOrganization: 'Close and delete data',
+      closeHint: 'For a closed company: export data first, then confirm irreversible closure.',
+      closePrompt: 'Type exactly “{name}” to permanently delete this organization and its data.',
+      dataManagement: 'Data and closure', memberSearch: 'Search member…',
+      deleteBlockedChildren: 'An organization with sub-organizations cannot be deleted.',
+      deleteBlockedMembers: 'An organization with members cannot be deleted.',
+      deleteBlockedData: 'An organization with business data cannot be deleted.',
     },
     recovery: {
       title:          'Analysis recovery',
@@ -3785,6 +3803,9 @@ export const en: Translations = {
     vulnPanelEmpty:  'No baseline non-conformity. Enable and complete the compliance grid in workshop 1.',
     tunnelWarningTitle: '⚠️ Avoid the "compliance tunnel"',
     tunnelWarning:   'A non-conformity is not a risk in itself: only include it in the synthesis if it is tied to a relevant risk scenario (see the Club EBIOS method sheet).',
+  },
+  scrollNavigation: {
+    group: 'Page navigation', top: 'Go to top of page', bottom: 'Go to bottom of page',
   },
   atelierGuidance: {
     panelTitle:        'Tips & participants',

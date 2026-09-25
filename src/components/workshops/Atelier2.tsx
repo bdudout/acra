@@ -161,7 +161,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
 
   function addSource(exemple?: any) {
     const id = uid()
-    setSources(prev => [...prev, {
+    setSources(prev => [{
       id,
       nom: exemple?.nom || '',
       categorie: exemple?.categorie || 'CYBERCRIMINEL',
@@ -175,7 +175,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
       pertinence: exemple?.pertinenceDefaut || 2,
       retenu: true,
       objectifsVises: [],
-    }])
+    }, ...prev])
     setExpandedId(id)
   }
 

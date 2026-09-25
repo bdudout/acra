@@ -762,6 +762,7 @@ export const fr = {
     expressRequired: 'Le nom est requis',
     expressStart:    '⚡ Démarrer',
     expressStarting: '⏳ Création…',
+    importMenu: { trigger: 'Importer', acraTitle: 'Export ACRA', acraDesc: 'Importer un export JSON ou CSV produit par ACRA.', excelTitle: 'Excel historique', excelDesc: 'Prévisualiser les feuilles et corriger le mapping avant import.', apiTitle: 'API / intégration', apiDesc: 'Pour les imports industrialisés, via une clé API bornée à l’organisation.', mcpTitle: 'MCP assisté', mcpDesc: 'Préparation et validation humaine avant tout import.', previewTitle: 'Préparer l’import Excel', previewConfirm: 'Importer les données validées', previewCancel: 'Annuler', previewMissing: 'requis', previewNoSheets: 'Aucune feuille importable n’a été reconnue.', previewRows: 'lignes', mappingName: 'Nom du mapping', saveMapping: 'Enregistrer le mapping', loadMapping: 'Charger un mapping', previewFields: { title: 'Intitulé', externalId: 'Référence externe', analysisExternalId: 'Référence analyse', riskExternalId: 'Référence risque', actionExternalId: 'Référence action', gravity: 'Gravité', likelihood: 'Vraisemblance', strategy: 'Stratégie', status: 'Statut', responsible: 'Responsable', dueDate: 'Échéance' } },
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
@@ -998,6 +999,7 @@ export const fr = {
     upToDate: 'Application à jour.',
     upToDateWithLatest: 'Application à jour (dernière release {v}).',
     notInstalled: 'La mise à jour n’est pas installée automatiquement : elle se déploie via la procédure de déploiement (CI / serveur).',
+    deploy: 'Mettre à jour', deploying: 'Déploiement en cours…', deployConfirm: 'Lancer le déploiement de {version} ? Une courte interruption est possible.', deployStarted: 'Déploiement lancé. GitHub Actions s’ouvre pour suivre les sauvegardes, contrôles et le résultat.', deployError: 'Impossible de lancer le déploiement.', helpTitle: 'Comment fonctionne la mise à jour ?', helpOneClick: 'Le bouton lance uniquement la dernière release publiée. GitHub sauvegarde les données, applique les migrations, vérifie la santé puis restaure la version précédente si la recette échoue.', helpManual: 'Sans bouton, lancez le workflow « Deploy stable demo release » dans GitHub Actions avec la version proposée. Un simple git pull ne met pas à jour l’image Docker déployée.',
   },
   qualifEditor: {
     sectionTitle: 'Questionnaire de qualification',
@@ -1400,6 +1402,7 @@ export const fr = {
     typeMesure: 'Mesure proposée',
     typePlanAction: 'Plan d\'action proposé',
     typeConformite: 'Conformité proposée',
+    typeAnalysisImport: 'Import historique proposé',
     conformiteStatuts: { conforme: 'Conforme', partiel: 'Partiel', non_conforme: 'Non conforme', na: 'N/A' },
     type: 'Type',
     priorite: 'Priorité',
@@ -1498,6 +1501,7 @@ export const fr = {
     colDecision: 'Décision', decisionTreat: 'À traiter', decisionAccept: 'Acceptable', prioSummary: '{treat} à traiter · {accept} acceptable(s)',
     guidance: { intro: 'Appréciez chaque risque simplement : décrivez-le, puis évaluez sa gravité et sa vraisemblance pour en déduire le niveau.', points: ['Décrivez le risque en une phrase claire.', 'Évaluez gravité et vraisemblance sur l’échelle proposée.', 'Choisissez un traitement : réduire, accepter, transférer, refuser ou surveiller.'] },
     detailsTitle: 'Détails du risque',
+    manageTreatment: 'Gérer les mesures et plans d’action', manageMesures: 'Gérer les mesures de sécurité', managePlans: 'Gérer les plans d’action', treatmentCounts: '{mesures} mesures · {plans} plans', mesuresCount: '{count} mesures', plansCount: '{count} plans',
     vulnTitle: 'Vulnérabilités',
     vulnEmpty: 'Aucune vulnérabilité identifiée.',
     vulnPlaceholder: 'Vulnérabilité exploitée (ex. absence de MFA)',
@@ -2613,6 +2617,20 @@ export const fr = {
       scalesNote: 'Modifiable à tout moment ici.',
       logoChange: 'Changer le logo',
       logoReset: 'Revenir au logo auto',
+      editTitle: 'Modifier l’organisation',
+      save: 'Enregistrer',
+      parentHint: 'Déplace aussi les sous-organisations éventuelles.',
+      delete: 'Supprimer',
+      deleteHint: 'Possible uniquement si l’organisation ne contient ni sous-organisation, ni membre, ni donnée métier.',
+      deleteConfirm: 'Supprimer définitivement cette organisation vide ?',
+      exportData: 'Exporter les données',
+      closeOrganization: 'Fermer et supprimer les données',
+      closeHint: 'Pour une entreprise fermée : exportez d’abord les données, puis confirmez la fermeture irréversible.',
+      closePrompt: 'Saisissez exactement « {name} » pour supprimer définitivement cette organisation et ses données.',
+      dataManagement: 'Données et fermeture', memberSearch: 'Rechercher un membre…',
+      deleteBlockedChildren: 'Impossible de supprimer une organisation qui possède des sous-organisations.',
+      deleteBlockedMembers: 'Impossible de supprimer une organisation qui possède des membres.',
+      deleteBlockedData: 'Impossible de supprimer une organisation qui contient des données métier.',
     },
     recovery: {
       title:          'Récupération des analyses',
@@ -3834,6 +3852,9 @@ export const fr = {
     vulnPanelEmpty:  "Aucune non-conformité au socle. Activez et complétez la grille de conformité en atelier 1.",
     tunnelWarningTitle: '⚠️ Éviter le « tunnel de conformité »',
     tunnelWarning:   "Une non-conformité n'est pas un risque en soi : ne l'inscrivez dans la synthèse que si elle est rattachée à un scénario de risque pertinent (cf. fiche méthode Club EBIOS).",
+  },
+  scrollNavigation: {
+    group: 'Navigation dans la page', top: 'Aller en haut de la page', bottom: 'Aller en bas de la page',
   },
   // ─── Conseils & participants par atelier (panneau latéral) ────────────────
   atelierGuidance: {

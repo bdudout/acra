@@ -22,6 +22,7 @@ import {
 } from '@/lib/mcp/proposals'
 import { sanitizeConformite, applyConformiteEntry } from '@/lib/conformite'
 import type { Prisma } from '@prisma/client'
+import { applyAnalysisImportContent, parseAnalysisImportRequest } from '@/lib/analysis-import'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -98,7 +99,7 @@ type ProposalRow = NonNullable<Awaited<ReturnType<typeof prisma.mcpProposal.find
  */
 async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: UserRole): Promise<Gate> {
   // ── Enfants d'une ANALYSE (risque, mesure) : RBAC = édition de l'analyse ──
-  if (proposal.type === 'risk' || proposal.type === 'measure') {
+  if (proposal.type === 'risk' || proposal.type === 'measure' || proposal.type === 'analysis_import') {
     if (proposal.targetType !== 'ANALYSE') return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
     const analyse = await prisma.analyse.findFirst({
       where: await analyseAccessWhere(userId, instanceRole, proposal.targetId),
@@ -112,7 +113,7 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
       return { ok: false, status: 403, error: 'Édition non autorisée sur l\'analyse cible' }
     }
-    return { ok: true, validatorRole: effRole, apply: (uid, note) => applyAnalyseChild(proposal, analyse.id, uid, note) }
+    return { ok: true, validatorRole: effRole, apply: (uid, note) => proposal.type === 'analysis_import' ? applyAnalysisImportProposal(proposal, analyse.id, uid, note) : applyAnalyseChild(proposal, analyse.id, uid, note) }
   }
 
   // ── Plan d'action : ancre org-scopée, RBAC = gouvernance de l'organisation ──
@@ -139,6 +140,16 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
   }
 
   return { ok: false, status: 400, error: 'Type de proposition non supporté' }
+}
+
+/** Applique atomiquement le paquet MCP après l'accord explicite du relecteur. */
+async function applyAnalysisImportProposal(proposal: ProposalRow, analyseId: string, userId: string, note?: string): Promise<ApplyResult> {
+  try {
+    const payload = parseAnalysisImportRequest(proposal.payload)
+    await applyAnalysisImportContent(payload, { organizationId: proposal.organizationId, userId, analyseId })
+    await prisma.mcpProposal.update({ where: { id: proposal.id }, data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId: analyseId, reviewNote: (note ?? '').slice(0, 2000) || null } })
+    return { ok: true, appliedId: analyseId }
+  } catch { return { ok: false, error: 'Proposition d’import invalide' } }
 }
 
 /** Marque une proposition ACCEPTEE dans une transaction. */

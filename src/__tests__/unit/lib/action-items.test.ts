@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeMesure,
   normalizeRiskAction,
+  normalizeAnalyseRiskPlanAction,
   normalizeAuditConstat,
   normalizeControleAnomalie,
   normalizeIncident,
@@ -81,6 +82,21 @@ describe('normalizeRiskAction', () => {
     expect(item.statut).toBe('EN_COURS')
     expect(item.priorite).toBe('MAJEUR')
     expect(item.riskItemId).toBe('ri1')
+  })
+})
+
+describe('normalizeAnalyseRiskPlanAction', () => {
+  it('expose un PlanAction lié à un risque d’analyse dans la facette risque', () => {
+    const item = normalizeAnalyseRiskPlanAction({
+      id: 'pa-iso', titre: 'Déployer le MFA', statut: 'EN_COURS', priorite: 'CRITIQUE',
+      porteur: 'RSSI', echeance: new Date('2026-10-01'), risqueId: 'r-iso',
+    }, { lien: '/analyses/an-iso/atelier/1' })
+
+    expect(item).toMatchObject({
+      id: 'PLAN_ACTION:pa-iso', source: 'PLAN_ACTION', origine: 'risque',
+      sourceId: 'pa-iso', titre: 'Déployer le MFA', statut: 'EN_COURS',
+      priorite: 'CRITIQUE', riskItemId: 'r-iso', lien: '/analyses/an-iso/atelier/1',
+    })
   })
 })
 

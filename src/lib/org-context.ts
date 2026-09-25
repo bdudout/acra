@@ -39,6 +39,60 @@ export function childPath(parentPath: string, id: string): string {
   return `${parentPath}${id}/`
 }
 
+export type OrganizationReparentingPlan =
+  | { ok: true; pathUpdates: Array<{ id: string; path: string }> }
+  | { ok: false; reason: 'ORGANIZATION_NOT_FOUND' | 'PARENT_NOT_FOUND' | 'CYCLE' }
+
+export type OrganizationDeletionState = {
+  children: number
+  memberships: number
+  data: number
+}
+
+/** La suppression ne doit jamais cascade des données ni casser l'arbre. */
+export function organizationDeletionBlocker(
+  state: OrganizationDeletionState,
+): 'HAS_CHILDREN' | 'HAS_MEMBERS' | 'HAS_DATA' | null {
+  if (state.children > 0) return 'HAS_CHILDREN'
+  if (state.memberships > 0) return 'HAS_MEMBERS'
+  if (state.data > 0) return 'HAS_DATA'
+  return null
+}
+
+/** Confirmation volontairement stricte pour une fermeture avec effacement des données. */
+export function isOrganizationClosureConfirmed(organizationName: string, confirmation: string): boolean {
+  return confirmation === organizationName
+}
+
+/**
+ * Prépare le déplacement d'une organisation dans l'arbre sans modifier la base.
+ * Tous les chemins du sous-arbre sont recalculés : la route appelante applique
+ * ensuite ce plan dans une transaction.
+ */
+export function planOrganizationReparenting(
+  orgs: OrgNode[],
+  id: string,
+  newParentId: string | null,
+): OrganizationReparentingPlan {
+  const org = orgs.find(candidate => candidate.id === id)
+  if (!org) return { ok: false, reason: 'ORGANIZATION_NOT_FOUND' }
+
+  const parent = newParentId ? orgs.find(candidate => candidate.id === newParentId) : null
+  if (newParentId && !parent) return { ok: false, reason: 'PARENT_NOT_FOUND' }
+  if (parent && isInSubtree(parent.path, org.path)) return { ok: false, reason: 'CYCLE' }
+
+  const newPath = parent ? childPath(parent.path, org.id) : rootPath(org.id)
+  return {
+    ok: true,
+    pathUpdates: orgs
+      .filter(candidate => isInSubtree(candidate.path, org.path))
+      .map(candidate => ({
+        id: candidate.id,
+        path: `${newPath}${candidate.path.slice(org.path.length)}`,
+      })),
+  }
+}
+
 /** `path` appartient-il au sous-arbre de `ancestorPath` (le nœud lui-même inclus) ? */
 export function isInSubtree(path: string, ancestorPath: string): boolean {
   return path === ancestorPath || path.startsWith(ancestorPath)

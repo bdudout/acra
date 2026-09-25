@@ -125,6 +125,8 @@ export default function PhasedRiskWorkshop({
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}
+            treatmentSections={withVulnerabilites && phase.key === 'analyse' ? 'mesures'
+              : withVulnerabilites && phase.key === 'traitement' ? 'plans' : undefined}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
         </>
       )}

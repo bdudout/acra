@@ -16,6 +16,7 @@ import {
 } from './proposals'
 import { CONFORMITE_STATUTS } from '@/lib/conformite'
 import { anchorExistsInOrg } from './anchors.server'
+import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analysis-import'
 
 /** Vérifie qu'une analyse (ancre ANALYSE) appartient à l'organisation de la clé. */
 async function analyseInOrg(analyseId: string, organizationId: string): Promise<boolean> {
@@ -221,6 +222,37 @@ export const proposeConformiteTool: McpTool<McpContext> = {
   },
 }
 
+/** Dépose un lot historique complet, qui reste obligatoirement revu avant écriture. */
+export const proposeAnalysisImportTool: McpTool<McpContext> = {
+  name: 'propose_analysis_import',
+  description: "Propose l'import de risques, mesures et plans d'action dans une analyse existante. Ne crée rien directement : un utilisateur habilité doit accepter la proposition.",
+  inputSchema: {
+    type: 'object', properties: {
+      analyseId: { type: 'string' },
+      import: { type: 'object', description: 'Paquet canonique : analysis { title }, risks[], measures[], actions[], links[].', properties: { analysis: { type: 'object' }, risks: { type: 'array' }, measures: { type: 'array' }, actions: { type: 'array' }, links: { type: 'array' } }, required: ['analysis'], additionalProperties: false },
+    }, required: ['analyseId', 'import'], additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const analyseId = typeof args.analyseId === 'string' ? args.analyseId : ''
+    if (!(await analyseInOrg(analyseId, ctx.organizationId))) return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
+    try {
+      const payload = parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: `mcp-${Date.now()}-${Math.random().toString(36).slice(2)}` })
+      return depose('analysis_import', 'ANALYSE', analyseId, payload, ctx)
+    } catch { return { content: [{ type: 'text', text: 'proposition_invalide: paquet historique invalide' }], isError: true } }
+  },
+}
+
+/** Aperçu MCP sans écriture : l'agent peut détecter les liens orphelins avant proposition. */
+export const previewAnalysisImportTool: McpTool<McpContext> = {
+  name: 'analyse_import_preview',
+  description: "Valide et résume un paquet d'import historique sans écrire de donnée. Renvoie les volumes et références risques/actions introuvables.",
+  inputSchema: { type: 'object', properties: { import: { type: 'object', properties: { analysis: { type: 'object' }, risks: { type: 'array' }, vulnerabilities: { type: 'array' }, measures: { type: 'array' }, actions: { type: 'array' }, links: { type: 'array' } }, required: ['analysis'], additionalProperties: false } }, required: ['import'], additionalProperties: false },
+  async handler(args): Promise<McpToolResult> {
+    try { return toolText({ valid: true, ...summarizeAnalysisImport(parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: 'mcp-preview-0001' })) }) }
+    catch { return { content: [{ type: 'text', text: 'import_invalide' }], isError: true } }
+  },
+}
+
 /**
  * Crée une proposition EN_ATTENTE ancrée à un objet concret (`targetType` +
  * `targetId`) et renvoie un résultat MCP standard. Une proposition référence
@@ -248,5 +280,5 @@ async function depose(type: string, targetType: string, targetId: string, payloa
 
 /** Outils d'écriture validée : propositions déposées, jamais appliquées directement. */
 export function buildProposeTools(): McpTool<McpContext>[] {
-  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool]
+  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool, previewAnalysisImportTool, proposeAnalysisImportTool]
 }

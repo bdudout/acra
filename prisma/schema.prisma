@@ -188,9 +188,44 @@ model Organization {
   traitements       Traitement[]
   traitementsConformite ConformiteTraitement[]
   plansAction       PlanAction[]
+  analysisImports   AnalysisImport[]
+  analysisImportMappings AnalysisImportMapping[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// Modèle de correspondance Excel réutilisable, strictement propre à une organisation.
+model AnalysisImportMapping {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  mappings       Json
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+// Reçu d'import historique/API v2. La clé d'idempotence est propre à une
+// organisation : rejouer exactement la même demande ne duplique jamais les
+// risques, mesures ni plans d'action.
+model AnalysisImport {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  idempotencyKey String
+  source         String       @default("API_V2") // API_V2 | EXCEL_WEB | MCP
+  payloadHash    String
+  analyseId      String
+  response       Json
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([analyseId])
 }
 
 // Clé d'API : accès machine (Bearer) à l'API publique v1, portée à une organisation.
@@ -968,7 +1003,7 @@ model PlanActionLien {
   id           String     @id @default(cuid())
   planActionId String
   planAction   PlanAction @relation(fields: [planActionId], references: [id], onDelete: Cascade)
-  // ANALYSE | CONFORMITE | CONTROLE | AUDIT | RISQUE | INCIDENT
+  // ANALYSE | CONFORMITE | CONTROLE | AUDIT | RISQUE | RISQUE_ANALYSE | INCIDENT
   type         String
   targetId     String
   ref          String?

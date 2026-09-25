@@ -137,7 +137,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
 
   function addScenario(scenarioStratRef?: any) {
     const id = uid()
-    setScenarios(prev => [...prev, {
+    setScenarios(prev => [{
       id,
       nom: scenarioStratRef ? `${scenarioStratRef.nom} — déclinaison opérationnelle` : '',
       scenarioStrategiqueId: scenarioStratRef?.id || '',
@@ -146,7 +146,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
       actionsElementaires: [],
       vraisemblance: 2,
       gravite: scenarioStratRef?.gravite || 3,
-    }])
+    }, ...prev])
     setExpanded(id)
   }
 

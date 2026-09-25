@@ -124,7 +124,9 @@ l'**extraire en fonction pure testée** (cf. CLAUDE.md).
 ## 6. Plan d'action unifié (à comprendre avant d'y toucher)
 
 - Store **`PlanAction`** + **liens polymorphes** `PlanActionLien` (types : `ANALYSE`,
-  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `INCIDENT`).
+  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `RISQUE_ANALYSE`, `INCIDENT`).
+  `RISQUE_ANALYSE` ancre un risque des méthodes à saisie directe (ISO/IEC 27005,
+  ISO 31000, NIST SP 800-30) et conserve l'identifiant d'analyse dans `ref`.
 - `lib/action-items` **agrège** 7 origines en une liste unifiée (vue `/actions` =
   `PlansActionsView`). Filtrage à facettes + tri/filtre colonne (`table-sort`/`table-filter`).
 - **Promotion** : une mesure d'analyse ou un incident (pas encore un `PlanAction`) peut

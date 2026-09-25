@@ -8,12 +8,12 @@ import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
 import { ROLE_LABELS } from '@/lib/permissions'
 import OrgLogo from '@/components/OrgLogo'
-import { Building2, Plus, X, Users } from 'lucide-react'
+import { Building2, Download, Plus, Save, Trash2, X, Users } from 'lucide-react'
 
 interface OrgRow {
   id: string; nom: string; slug: string; parentId: string | null; path: string; actif: boolean
   logo?: string | null
-  _count: { membres: number; analyses: number }
+  _count: { enfants: number; membres: number; analyses: number }
 }
 interface Member {
   id: string; role: string; scope: string
@@ -32,11 +32,14 @@ export default function OrganizationsAdminPage() {
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [newParent, setNewParent] = useState<string>('')
+  const [editName, setEditName] = useState('')
+  const [editParent, setEditParent] = useState<string>('')
   const [selected, setSelected] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [mEmail, setMEmail] = useState('')
   const [mRole, setMRole] = useState<typeof ASSIGNABLE_ROLES[number]>('ANALYSTE')
   const [mScope, setMScope] = useState<'NODE' | 'SUBTREE'>('NODE')
+  const [memberSearch, setMemberSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [scalesScope, setScalesScope] = useState<'SHARED' | 'PER_ORG'>('SHARED')
@@ -60,6 +63,13 @@ export default function OrganizationsAdminPage() {
 
   useEffect(() => { loadOrgs() }, [loadOrgs])
   useEffect(() => { if (selected) loadMembers(selected) }, [selected, loadMembers])
+  useEffect(() => {
+    const org = orgs.find(candidate => candidate.id === selected)
+    if (org) {
+      setEditName(org.nom)
+      setEditParent(org.parentId ?? '')
+    }
+  }, [selected, orgs])
   useEffect(() => {
     fetch('/api/admin/scales-scope', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -140,6 +150,40 @@ export default function OrganizationsAdminPage() {
     if (res.ok) await loadOrgs()
     else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
   }
+
+  async function saveOrganization(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selected || busy) return
+    setError(null); setBusy(true)
+    try {
+      const res = await fetch(`/api/admin/organizations/${selected}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ nom: editName, parentId: editParent || null }),
+      })
+      if (res.ok) await loadOrgs()
+      else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    } finally { setBusy(false) }
+  }
+
+  async function deleteOrganization(closeWithData = false) {
+    if (!selectedOrg || busy) return
+    const confirmed = closeWithData
+      ? window.prompt(o.closePrompt.replace('{name}', selectedOrg.nom))
+      : window.confirm(o.deleteConfirm) ? selectedOrg.nom : null
+    if (confirmed === null) return
+    setError(null); setBusy(true)
+    try {
+      const res = await fetch(`/api/admin/organizations/${selectedOrg.id}`, {
+        method: 'DELETE', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mode: closeWithData ? 'CLOSED' : 'EMPTY', confirmation: confirmed }),
+      })
+      if (res.ok) {
+        setSelected(null)
+        setMembers([])
+        await loadOrgs()
+      } else setError((await res.json().catch(() => ({}))).error ?? 'Erreur')
+    } finally { setBusy(false) }
+  }
   async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) { try { await setLogo(await resizeImage(f, 64)) } catch { /* ignore */ } }
@@ -148,6 +192,11 @@ export default function OrganizationsAdminPage() {
 
   const depth = (org: OrgRow) => Math.max(0, org.path.split('/').filter(Boolean).length - 1)
   const selectedOrg = orgs.find(x => x.id === selected) ?? null
+  const deleteBlocker = !selectedOrg ? null
+    : selectedOrg._count.enfants > 0 ? o.deleteBlockedChildren
+      : selectedOrg._count.membres > 0 ? o.deleteBlockedMembers
+        : selectedOrg._count.analyses > 0 ? o.deleteBlockedData : null
+  const filteredMembers = members.filter(member => `${member.user.name ?? ''} ${member.user.email}`.toLowerCase().includes(memberSearch.toLowerCase()))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -217,6 +266,24 @@ export default function OrganizationsAdminPage() {
               <p className="text-sm text-gray-400">{o.selectHint}</p>
             ) : (
               <>
+                <form onSubmit={saveOrganization} className="mb-4 space-y-2 border-b border-gray-100 pb-4">
+                  <h3 className="text-sm font-medium text-gray-800">{o.editTitle}</h3>
+                  <input
+                    value={editName} onChange={e => setEditName(e.target.value)} required maxLength={120}
+                    aria-label={o.name}
+                    className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+                  />
+                  <select value={editParent} onChange={e => setEditParent(e.target.value)} aria-label={o.parent} className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm">
+                    <option value="">{o.noParent}</option>
+                    {orgs.filter(org => !org.path.startsWith(selectedOrg.path)).map(org => (
+                      <option key={org.id} value={org.id}>{org.nom}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500">{o.parentHint}</p>
+                  <button type="submit" disabled={busy} className="inline-flex items-center gap-1.5 rounded-md bg-ebios-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-ebios-700 disabled:opacity-50">
+                    <Save size={15} /> {o.save}
+                  </button>
+                </form>
                 {/* Logo de l'organisation : auto-généré, remplaçable par un logo personnalisé. */}
                 <div className="mb-4 flex items-center gap-3 border-b border-gray-100 pb-3">
                   <OrgLogo id={selectedOrg.id} nom={selectedOrg.nom} logo={selectedOrg.logo} size={40} className="rounded-md" />
@@ -230,23 +297,7 @@ export default function OrganizationsAdminPage() {
                     )}
                   </div>
                 </div>
-                <ul className="mb-4 space-y-1">
-                  {members.map(m => (
-                    <li key={m.id} className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-gray-50">
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-gray-700">{m.user.name || m.user.email}</span>
-                        <span className="block truncate text-xs text-gray-400">
-                          {m.user.email} · {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS] ?? m.role} · {m.scope === 'SUBTREE' ? o.scopeSubtree : o.scopeNode}
-                        </span>
-                      </span>
-                      <button onClick={() => removeMember(m.id)} title={o.remove} aria-label={o.remove} className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
-                        <X size={15} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-
-                <form onSubmit={addMember} className="space-y-2 border-t border-gray-100 pt-4">
+                <form onSubmit={addMember} className="mb-4 space-y-2 border-b border-gray-100 pb-4">
                   <input
                     value={mEmail} onChange={e => setMEmail(e.target.value)} required type="email"
                     placeholder={o.email}
@@ -265,6 +316,30 @@ export default function OrganizationsAdminPage() {
                     <Plus size={15} /> {o.addMember}
                   </button>
                 </form>
+                <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder={o.memberSearch} aria-label={o.memberSearch} className="mb-2 w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+                <ul className="mb-4 max-h-80 space-y-1 overflow-y-auto pr-1">
+                  {filteredMembers.map(m => (
+                    <li key={m.id} className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-gray-50">
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-gray-700">{m.user.name || m.user.email}</span>
+                        <span className="block truncate text-xs text-gray-400">
+                          {m.user.email} · {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS] ?? m.role} · {m.scope === 'SUBTREE' ? o.scopeSubtree : o.scopeNode}
+                        </span>
+                      </span>
+                      <button onClick={() => removeMember(m.id)} title={o.remove} aria-label={o.remove} className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"><X size={15} /></button>
+                    </li>
+                  ))}
+                </ul>
+                <section className="border-t border-gray-200 pt-4">
+                  <h3 className="mb-1 text-sm font-medium text-gray-800">{o.dataManagement}</h3>
+                  <p className="mb-2 text-xs text-gray-500">{deleteBlocker ?? o.deleteHint}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => deleteOrganization()} disabled={busy || Boolean(deleteBlocker)} title={deleteBlocker ?? undefined} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"><Trash2 size={15} /> {o.delete}</button>
+                    <a href={`/api/admin/organizations/${selectedOrg.id}/export`} className="inline-flex items-center gap-1.5 rounded-md border border-ebios-200 px-2 py-1.5 text-xs font-medium text-ebios-700 hover:bg-ebios-50"><Download size={14} /> {o.exportData}</a>
+                    <button type="button" onClick={() => deleteOrganization(true)} disabled={busy || selectedOrg._count.enfants > 0} title={selectedOrg._count.enfants > 0 ? o.deleteBlockedChildren : undefined} className="text-xs font-medium text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50">{o.closeOrganization}</button>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">{o.closeHint}</p>
+                </section>
               </>
             )}
           </section>

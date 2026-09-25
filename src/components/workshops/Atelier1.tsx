@@ -314,7 +314,9 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
 
   // ── Valeurs métier ────────────────────────────────────────────────────────
   function addVm(exemple?: any) {
-    setVms(prev => [...prev, {
+    // Le nouveau formulaire reste juste sous le titre de la liste : même avec de
+    // nombreuses valeurs existantes, l'utilisateur n'a pas à faire défiler la page.
+    setVms(prev => [{
       id: uid(),
       nom: exemple?.nom || '',
       type: exemple?.type || 'PROCESSUS',
@@ -325,7 +327,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
       integrite:       exemple?.integrite       ?? 2,
       confidentialite: exemple?.confidentialite ?? 2,
       tracabilite:     exemple?.tracabilite     ?? 2,
-    }])
+    }, ...prev])
   }
 
   function updateVm(id: string, field: string, value: string | number) {
@@ -339,14 +341,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   // ── Biens supports ────────────────────────────────────────────────────────
   function addBien(exemple?: any) {
     const exIds = bienValeurMetierIds(exemple)
-    setBiens(prev => [...prev, {
+    setBiens(prev => [{
       id: uid(),
       nom: exemple?.nom || '',
       type: exemple?.type || 'MATERIEL',
       description: exemple?.description || '',
       // N‑N : rattachement à plusieurs valeurs métier ; défaut = la 1re VM si dispo
       valeurMetierIds: exIds.length ? exIds : (vms[0]?.id ? [vms[0].id] : []),
-    }])
+    }, ...prev])
   }
 
   /** Bascule le rattachement d'un bien support à une valeur métier (N‑N). */
@@ -369,14 +371,14 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
 
   // ── Événements redoutés ───────────────────────────────────────────────────
   function addEr(exemple?: any) {
-    setErs(prev => [...prev, {
+    setErs(prev => [{
       id: uid(),
       description: exemple?.description || '',
       impacts: exemple?.impacts?.join(', ') || '',
       categoriesImpacts: [],
       valeurMetierId: exemple?.valeurMetierId || vms[0]?.id || '',
       gravite: exemple?.graviteDefaut || 3,
-    }])
+    }, ...prev])
   }
 
   function updateEr(id: string, field: string, value: any) {
