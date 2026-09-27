@@ -35,9 +35,10 @@ test.describe('Import d’analyses historiques', () => {
     await expect(page.getByRole('region', { name: 'Préparer l’import Excel' })).toBeVisible()
     await expect(page.getByLabel('Risques — Intitulé')).toHaveValue('Libellé de risque')
     await expect(page.getByLabel('Vulnérabilités — Référence risque')).toHaveValue('Référence risque')
-    page.once('dialog', dialog => dialog.accept())
     await page.getByRole('button', { name: 'Importer les données validées' }).click()
-    await expect(page.getByText('historique', { exact: false })).toBeVisible()
+    const report = page.getByRole('dialog', { name: 'Bilan de l’import' })
+    await expect(report).toBeVisible()
+    await expect(report.getByText('historique', { exact: true })).toBeVisible()
   })
 
   test('importe les trois formats de recette : minimal, consultant et multi-feuilles', async ({ page }) => {
@@ -52,9 +53,11 @@ test.describe('Import d’analyses historiques', () => {
       scenario.sheets.forEach(([name, rows]) => { const sheet = workbook.addWorksheet(name); rows.forEach(row => sheet.addRow(row)) })
       await page.goto('/analyses'); await page.getByRole('button', { name: 'Importer' }).click()
       await page.locator('input[accept=".xlsx"]').setInputFiles({ name: scenario.name, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(await workbook.xlsx.writeBuffer()) })
-      if (scenario.role === 'MEASURES') { await page.getByLabel('Dispositifs — Utiliser cette feuille comme').selectOption('MEASURES'); await page.getByLabel('Dispositifs — Intitulé').selectOption('Mesure') }
-      const submit = page.getByRole('button', { name: 'Importer les données validées' }); await expect(submit).toBeEnabled(); page.once('dialog', dialog => dialog.accept()); await submit.click()
-      await expect(page.getByText(scenario.name.replace('.xlsx', ''), { exact: false })).toBeVisible()
+      if (scenario.role === 'MEASURES') { await page.getByLabel('Dispositifs — Utiliser cette feuille comme').selectOption('MEASURES'); await page.getByLabel('Dispositifs — Intitulé', { exact: true }).selectOption('Mesure') }
+      const submit = page.getByRole('button', { name: 'Importer les données validées' }); await expect(submit).toBeEnabled(); await submit.click()
+      const report = page.getByRole('dialog', { name: 'Bilan de l’import' })
+      await expect(report).toBeVisible()
+      await expect(report.getByText(scenario.name.replace('.xlsx', ''), { exact: true })).toBeVisible()
     }
   })
 })
