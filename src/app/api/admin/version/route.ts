@@ -55,5 +55,6 @@ export async function GET() {
     updateAvailable: updateAvailable(APP_VERSION, latest.version),
     reachable,
     repo: GITHUB_REPO,
+    deployConfigured: Boolean(process.env.GITHUB_DEPLOY_TOKEN),
   })
 }

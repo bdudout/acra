@@ -9,6 +9,7 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
 import AtelierGuidancePanel from '@/components/AtelierGuidancePanel'
+import PageScrollNavigation from '@/components/PageScrollNavigation'
 import { ATELIERS_META } from '@/lib/ebios-data'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import Atelier1 from '@/components/workshops/Atelier1'
@@ -147,6 +148,7 @@ export default async function AtelierPage({
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
           />
         </main>
+        <PageScrollNavigation {...t.scrollNavigation} />
       </div>
     )
   }
@@ -414,6 +416,7 @@ export default async function AtelierPage({
           {conseilsActive && <AtelierGuidancePanel num={atelierNum} />}
         </div>
       </main>
+      <PageScrollNavigation {...t.scrollNavigation} />
     </div>
   )
 }

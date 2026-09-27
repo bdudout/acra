@@ -18,7 +18,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool } from '@/lib/mcp/tools-propose.server'
+import { previewAnalysisImportTool, proposeAnalysisImportTool, proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool } from '@/lib/mcp/tools-propose.server'
 
 const ctx = { organizationId: 'orgA', keyId: 'key1' }
 const parse = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text)
@@ -140,5 +140,35 @@ describe('propose_conformite', () => {
     const res = await proposeConformiteTool.handler({ targetId: 'cf1', conformite: { ref: 'A.5.1', statut: 'BOF' } }, ctx)
     expect(res.isError).toBe(true)
     expect(proposalCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('import historique MCP', () => {
+  it('prévisualise sans déposer de proposition ni créer de risque', async () => {
+    const res = await previewAnalysisImportTool.handler({
+      import: { analysis: { title: 'PRA' }, risks: [{ externalId: 'R-1', title: 'Indisponibilité' }] },
+    }, ctx)
+
+    expect(res.isError).toBeUndefined()
+    expect(parse(res)).toMatchObject({ valid: true, created: { risks: 1 } })
+    expect(proposalCreate).not.toHaveBeenCalled()
+    expect(risqueCreate).not.toHaveBeenCalled()
+  })
+
+  it('dépose l’import sur une analyse de la bonne organisation sans créer les objets métier', async () => {
+    analyseCount.mockResolvedValue(1)
+    proposalCreate.mockResolvedValue({ id: 'prop-import', statut: 'EN_ATTENTE' })
+
+    const res = await proposeAnalysisImportTool.handler({
+      analyseId: 'an1',
+      import: { analysis: { title: 'PRA' }, risks: [{ externalId: 'R-1', title: 'Indisponibilité' }] },
+    }, ctx)
+
+    expect(res.isError).toBeUndefined()
+    expect(analyseCount.mock.calls[0][0].where).toMatchObject({ id: 'an1', organizationId: 'orgA' })
+    expect(proposalCreate.mock.calls[0][0].data).toMatchObject({
+      organizationId: 'orgA', type: 'analysis_import', targetType: 'ANALYSE', targetId: 'an1', statut: 'EN_ATTENTE',
+    })
+    expect(risqueCreate).not.toHaveBeenCalled()
   })
 })

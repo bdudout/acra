@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   rootPath,
   childPath,
+  planOrganizationReparenting,
+  organizationDeletionBlocker,
+  isOrganizationClosureConfirmed,
   isInSubtree,
   isStrictDescendant,
   subtreeIds,
@@ -57,6 +60,53 @@ describe('subtreeIds — sous-arbre d\'une organisation', () => {
   })
   it('une racine isolée est indépendante', () => {
     expect(subtreeIds(orgs, '/c/')).toEqual(['c'])
+  })
+})
+
+describe('planOrganizationReparenting — déplacement atomique d’un sous-arbre', () => {
+  it('déplace un sous-arbre et recalcule les chemins de tous ses descendants', () => {
+    expect(planOrganizationReparenting(orgs, 'a', 'b')).toEqual({
+      ok: true,
+      pathUpdates: [
+        { id: 'a', path: '/g/b/a/' },
+        { id: 'a1', path: '/g/b/a/a1/' },
+      ],
+    })
+  })
+
+  it('peut déplacer une organisation à la racine', () => {
+    expect(planOrganizationReparenting(orgs, 'a', null)).toEqual({
+      ok: true,
+      pathUpdates: [
+        { id: 'a', path: '/a/' },
+        { id: 'a1', path: '/a/a1/' },
+      ],
+    })
+  })
+
+  it('refuse un parent inexistant ou un cycle', () => {
+    expect(planOrganizationReparenting(orgs, 'a', 'absente')).toEqual({ ok: false, reason: 'PARENT_NOT_FOUND' })
+    expect(planOrganizationReparenting(orgs, 'a', 'a1')).toEqual({ ok: false, reason: 'CYCLE' })
+  })
+})
+
+describe('organizationDeletionBlocker — suppression sûre', () => {
+  it('autorise la suppression d’une organisation sans enfant, membre ni donnée métier', () => {
+    expect(organizationDeletionBlocker({ children: 0, memberships: 0, data: 0 })).toBeNull()
+  })
+
+  it('privilégie le blocage de la hiérarchie, puis des membres, puis des données', () => {
+    expect(organizationDeletionBlocker({ children: 1, memberships: 2, data: 3 })).toBe('HAS_CHILDREN')
+    expect(organizationDeletionBlocker({ children: 0, memberships: 2, data: 3 })).toBe('HAS_MEMBERS')
+    expect(organizationDeletionBlocker({ children: 0, memberships: 0, data: 3 })).toBe('HAS_DATA')
+  })
+})
+
+describe('isOrganizationClosureConfirmed — fermeture irréversible', () => {
+  it('exige le nom exact de l’organisation avant suppression des données', () => {
+    expect(isOrganizationClosureConfirmed('Acme France', 'Acme France')).toBe(true)
+    expect(isOrganizationClosureConfirmed('Acme France', 'acme france')).toBe(false)
+    expect(isOrganizationClosureConfirmed('Acme France', '')).toBe(false)
   })
 })
 

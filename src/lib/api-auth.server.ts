@@ -8,7 +8,7 @@ import { isApiEnabled } from '@/lib/interfaces-config.server'
 
 /** Résultat d'authentification d'une clé d'API : succès (org + scopes + keyId) ou échec (status + message). */
 export type ApiAuth =
-  | { ok: true; organizationId: string; scopes: string[]; keyId: string }
+  | { ok: true; organizationId: string; scopes: string[]; keyId: string; actorUserId: string | null }
   | { ok: false; status: number; error: string }
 
 /**
@@ -37,5 +37,7 @@ export async function authenticateApiRequest(req: Request, needed: ApiScope = 'r
   // Trace d'utilisation (best-effort, hors chemin critique).
   prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } }).catch(() => {})
 
-  return { ok: true, organizationId: key.organizationId, scopes, keyId: key.id }
+  // L'auteur technique est conservé pour les routes qui créent des objets reliés
+  // à User. Une ancienne clé sans créateur est explicitement refusée par ces routes.
+  return { ok: true, organizationId: key.organizationId, scopes, keyId: key.id, actorUserId: key.createdBy ?? null }
 }

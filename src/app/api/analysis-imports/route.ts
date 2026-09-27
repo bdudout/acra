@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import ExcelJS from 'exceljs'
+import { z } from 'zod'
+import { authOptions } from '@/lib/auth'
+import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { applyHistoricRowOverrides, buildHistoricImportPackages, detectHistoricHeaderLayout, detectHistoricImportSheet, partitionHistoricImportSheets, profileHistoricColumn, resolveHistoricImportSheetType, type HistoricColumnMapping, type HistoricFieldTransforms, type HistoricRowOverrides, validateHistoricColumnMapping, validateHistoricImportFormats, validateHistoricImportSelection } from '@/lib/historic-import'
+import { executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysis-import'
+import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempotency'
+
+const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
+const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
+const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.string().trim().max(10_000)))).default({})
+const schema = z.object({ filename: z.string().max(255).regex(/\.xlsx$/i), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
+const cell = (value: unknown) => value instanceof Date ? value.toISOString().slice(0, 10) : typeof value === 'object' && value !== null && 'text' in value ? String(value.text) : String(value ?? '').trim()
+
+/** Exécute un import Excel après la prévisualisation et le mapping humain obligatoire. */
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const userId = (session.user as { id: string }).id
+  const role = ((session.user as { role?: UserRole }).role ?? 'LECTEUR') as UserRole
+  const scope = await getAnalyseScope(userId, role)
+  try {
+    const body = schema.parse(await req.json())
+    const organizationId = body.organizationId ?? scope.activeOrgId
+    const targetRole = organizationId ? await getEffectiveRoleForOrg(userId, role, organizationId) : null
+    if (!organizationId || !targetRole || !canCreateAnalyse({ id: userId, role: targetRole })) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
+    const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(body.data, 'base64') as never)
+    const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
+      const sampleRows = Array.from({ length: Math.min(20, sheet.rowCount) }, (_, offset) => Array.from({ length: 100 }, (_, index) => cell(sheet.getRow(offset + 1).getCell(index + 1).value)))
+      const layout = detectHistoricHeaderLayout(sampleRows)
+      const headers = layout.columns.map(column => column.key)
+      const detection = detectHistoricImportSheet(sheet.name, headers)
+      const type = resolveHistoricImportSheetType(detection.type, body.sheetTypes[sheet.name])
+      const mapping = (body.mappings[sheet.name] ?? {}) as HistoricColumnMapping
+      if (type !== 'UNKNOWN' && validateHistoricColumnMapping(type, mapping).length) throw new Error(`MAPPING_INCOMPLET:${sheet.name}`)
+      const rows = Array.from({ length: Math.min(500, Math.max(0, sheet.rowCount - layout.headerRowIndex - 1)) }, (_, offset) => {
+        const row = sheet.getRow(layout.headerRowIndex + offset + 2)
+        return Object.fromEntries(layout.columns.map(column => [column.key, cell(row.getCell(column.index + 1).value)]))
+      })
+      const profiles = Object.fromEntries(headers.map(header => [header, profileHistoricColumn(rows.map(row => row[header] ?? ''))]))
+      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers: rows.map((_, index) => layout.headerRowIndex + index + 2), profiles }
+    })
+    const correctedSheets = applyHistoricRowOverrides(sheets, body.rowOverrides as HistoricRowOverrides)
+    if (validateHistoricImportSelection(sheets).length || (!body.partialImport && validateHistoricImportFormats(sheets).length)) throw new Error('MAPPING_INCOMPLET:cross_sheet_reference_or_format')
+    const partition = body.partialImport ? partitionHistoricImportSheets(correctedSheets) : { sheets: correctedSheets, decisions: [] }
+    if (body.dryRun) return NextResponse.json({ decisions: partition.decisions, requiredValueGaps: partition.decisions.filter(decision => decision.status === 'REJECTED' && decision.reason === 'MISSING_REQUIRED_VALUE') })
+    if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && sheet.rows.length > 0)) throw new Error('NO_IMPORTABLE_SHEET')
+    const fallback = body.filename.replace(/\.xlsx$/i, '')
+    const packageData = buildHistoricImportPackages(partition.sheets, fallback)
+    const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides })
+    const results = await Promise.all(packageData.map((item, index) => executeAnalysisImport(parseAnalysisImportRequest({ ...item, idempotencyKey: `${key}:${index}` }), { organizationId, userId, source: 'EXCEL_WEB' })))
+    return NextResponse.json({ results, decisions: partition.decisions, imported: results.length, ...results[0] }, { status: results.every(result => result.replayed) ? 200 : 201 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Import Excel invalide'
+    const errorCode = message.startsWith('MAPPING_INCOMPLET') ? 'excel_mapping_incomplete'
+      : message === 'NO_IMPORTABLE_SHEET' ? 'excel_no_importable_sheet'
+        : message.startsWith('duplicate_external_id:') ? 'excel_duplicate_reference'
+          : 'excel_import_invalid'
+    return NextResponse.json({ error: errorCode, details: message }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : 422 })
+  }
+}

@@ -122,6 +122,25 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   }
 }
 
+/** PlanAction unifié rattaché à un risque d'analyse directe (ISO/NIST) → facette « risque ». */
+export interface AnalyseRiskPlanActionRow {
+  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
+  echeance?: unknown; statut?: unknown; priorite?: unknown; risqueId: string
+}
+export function normalizeAnalyseRiskPlanAction(row: AnalyseRiskPlanActionRow, opt: LienOpt = {}): ActionItem {
+  const statut: RiskActionStatut =
+    row.statut === 'FAIT' ? 'FAIT' : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
+  const priorite: ActionPriorite =
+    row.priorite === 'CRITIQUE' ? 'CRITIQUE' : row.priorite === 'MODERE' ? 'MODERE' : 'MAJEUR'
+  return {
+    id: `PLAN_ACTION:${row.id}`, source: 'PLAN_ACTION', origine: 'risque', sourceId: row.id,
+    titre: row.titre, description: str(row.description),
+    porteur: str(row.porteur), entite: str(row.entite),
+    echeance: toDate(row.echeance), statut, priorite,
+    lien: opt.lien ?? null, riskItemId: row.risqueId,
+  }
+}
+
 /** Forme brute d'un constat d'audit/régulateur, en entrée de normalizeAuditConstat. */
 export interface AuditConstatRow {
   id: string; intitule: string; recommandation?: unknown; criticite?: unknown

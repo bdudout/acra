@@ -30,12 +30,39 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const g = await guardDirectRisk(id, a.userId, a.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
 
-  const risques = await prisma.risque.findMany({
-    where: { analyseId: g.analyse.id },
-    orderBy: [{ niveauRisque: 'desc' }, { createdAt: 'asc' }],
-    select: DIRECT_RISK_SELECT,
+  const [risques, mesures, plans] = await Promise.all([
+    prisma.risque.findMany({
+      where: { analyseId: g.analyse.id },
+      orderBy: [{ niveauRisque: 'desc' }, { createdAt: 'asc' }],
+      select: DIRECT_RISK_SELECT,
+    }),
+    prisma.mesure.findMany({
+      where: { analyseId: g.analyse.id, risqueId: { not: null } },
+      select: { risqueId: true },
+    }),
+    prisma.planAction.findMany({
+      where: {
+        organizationId: g.analyse.organizationId ?? undefined,
+        liens: { some: { type: 'RISQUE_ANALYSE', ref: g.analyse.id } },
+      },
+      select: { liens: { where: { type: 'RISQUE_ANALYSE', ref: g.analyse.id }, select: { targetId: true } } },
+    }),
+  ])
+  const mesuresCount = new Map<string, number>()
+  for (const mesure of mesures) {
+    if (mesure.risqueId) mesuresCount.set(mesure.risqueId, (mesuresCount.get(mesure.risqueId) ?? 0) + 1)
+  }
+  const plansCount = new Map<string, number>()
+  for (const plan of plans) {
+    for (const lien of plan.liens) plansCount.set(lien.targetId, (plansCount.get(lien.targetId) ?? 0) + 1)
+  }
+  return NextResponse.json({
+    risques: risques.map(risque => ({
+      ...risque,
+      mesuresCount: mesuresCount.get(risque.id) ?? 0,
+      plansCount: plansCount.get(risque.id) ?? 0,
+    })),
   })
-  return NextResponse.json({ risques })
 }
 
 // POST /api/analyses/:id/risques — crée un risque directement.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseSemver, compareSemver, updateAvailable } from '@/lib/version-check'
+import { parseSemver, compareSemver, updateAvailable, canDispatchReleaseDeployment } from '@/lib/version-check'
 
 describe('parseSemver', () => {
   it('accepte le préfixe v et ignore le pré-release', () => {
@@ -32,5 +32,14 @@ describe('updateAvailable', () => {
   it('versions invalides → false (pas de fausse alerte)', () => {
     expect(updateAvailable('1.0.0', 'nightly')).toBe(false)
     expect(updateAvailable(null, '1.0.0')).toBe(false)
+  })
+})
+
+describe('canDispatchReleaseDeployment', () => {
+  it('n’accepte que la dernière release strictement plus récente', () => {
+    expect(canDispatchReleaseDeployment('1.0.0', 'v1.0.2', 'v1.0.2')).toBe(true)
+    expect(canDispatchReleaseDeployment('1.0.0', 'v4.5.3', '4.5.3')).toBe(true)
+    expect(canDispatchReleaseDeployment('1.0.0', 'v1.0.2', 'v1.0.1')).toBe(false)
+    expect(canDispatchReleaseDeployment('1.0.2', 'v1.0.2', 'v1.0.2')).toBe(false)
   })
 })

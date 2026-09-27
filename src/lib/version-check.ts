@@ -27,3 +27,11 @@ export function updateAvailable(current: unknown, latest: unknown): boolean {
   if (!parseSemver(current) || !parseSemver(latest)) return false
   return compareSemver(current, latest) === -1
 }
+
+/** Le serveur ne déclenche que la dernière release, et jamais une régression. */
+export function canDispatchReleaseDeployment(current: unknown, latest: unknown, requested: unknown): boolean {
+  // Les tags GitHub ont souvent un préfixe « v », alors que la version applicative
+  // n'en a pas : l'autorisation porte sur la version SemVer, pas sur sa mise en forme.
+  if (!parseSemver(latest) || !parseSemver(requested)) return false
+  return compareSemver(latest, requested) === 0 && updateAvailable(current, requested)
+}

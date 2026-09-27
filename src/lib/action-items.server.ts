@@ -9,6 +9,7 @@ import { prisma } from './prisma'
 import {
   normalizeMesure,
   normalizeRiskAction,
+  normalizeAnalyseRiskPlanAction,
   normalizeAuditConstat,
   normalizeControleAnomalie,
   normalizeIncident,
@@ -36,7 +37,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, ecoAnalyses, riskActionRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -60,6 +61,17 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
           },
         })
       : Promise.resolve([]),
+    // Plans d'action des risques saisis directement (ISO/IEC 27005, ISO 31000,
+    // NIST SP 800-30). Ce sont les mêmes objets PlanAction unifiés ; ils restent
+    // visibles même si le module de registre M1 est désactivé.
+    prisma.planAction.findMany({
+      where: { ...orgFilter, liens: { some: { type: 'RISQUE_ANALYSE' } } },
+      select: {
+        id: true, titre: true, description: true, porteur: true, entite: true,
+        echeance: true, statut: true, priorite: true,
+        liens: { where: { type: 'RISQUE_ANALYSE' }, select: { targetId: true, ref: true }, take: 1 },
+      },
+    }),
     // Facette « conformité » = traitements « plan d'action » (ConformiteTraitement)
     // + actions réelles rattachées à un contrôle (PlanAction porteur d'un lien
     // CONFORMITE). Dérogations/acceptations exclues : ce ne sont pas des actions.
@@ -141,6 +153,18 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
     items.push(normalizeRiskAction(
       { id: p.id, intitule: p.titre, description: p.description, responsable: p.porteur, echeance: p.echeance, statut: p.statut, priorite: p.priorite, riskItemId },
       { lien: riskItemId ? `/registre?item=${riskItemId}` : '/registre' },
+    ))
+  }
+  for (const p of analyseRiskPlanRows) {
+    const lien = p.liens[0]
+    if (!lien) continue
+    items.push(normalizeAnalyseRiskPlanAction(
+      {
+        id: p.id, titre: p.titre, description: p.description, porteur: p.porteur,
+        entite: p.entite, echeance: p.echeance, statut: p.statut, priorite: p.priorite,
+        risqueId: lien.targetId,
+      },
+      { lien: lien.ref ? `/analyses/${encodeURIComponent(lien.ref)}/atelier/1` : null },
     ))
   }
   const [conformiteTraitements, conformitePlanActions] = conformiteData

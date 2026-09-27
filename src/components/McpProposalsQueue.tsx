@@ -57,7 +57,7 @@ export default function McpProposalsQueue() {
   return (
     <ul className="space-y-3">
       {items.map(p => {
-        const kind = p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : p.type === 'conformite' ? m.typeConformite : m.typeRisk
+        const kind = p.type === 'analysis_import' ? m.typeAnalysisImport : p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : p.type === 'conformite' ? m.typeConformite : m.typeRisk
         const label = p.payload.titre || p.payload.nom || p.payload.ref || '—'
         const detail = p.type === 'measure'
           ? `${m.type} ${p.payload.type ?? '—'} · ${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.responsable ? ` · ${m.responsable} ${p.payload.responsable}` : ''}`

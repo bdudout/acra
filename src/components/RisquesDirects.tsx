@@ -7,7 +7,7 @@
 // niveau est recalculé côté serveur ; on l'affiche via le palier de la matrice.
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Lightbulb, ShieldCheck } from 'lucide-react'
+import { Plus, Trash2, Lightbulb, ShieldCheck, Shield, ListChecks } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
 import { prioritise, countDecisions } from '@/lib/risque-priorisation'
@@ -23,6 +23,8 @@ interface RisqueRow {
   graviteActuelle?: number | null; vraisemblanceActuelle?: number | null; niveauActuel?: number | null
   graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null; niveauResiduel?: number | null
   vulnerabilites?: { description: string }[] | null
+  mesuresCount?: number
+  plansCount?: number
 }
 const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 const TIER_CLASS: Record<string, string> = {
@@ -41,16 +43,21 @@ const TIER_CLASS: Record<string, string> = {
  *  - review        : priorisation lecture seule + décision d'acceptation (Évaluation).
  */
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
+export type TreatmentSections = 'mesures' | 'plans' | 'both'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean }) {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
   // Sections du panneau « détails » (déplié) selon la phase :
   //  - vulnérabilités : identification (ISO 27005 uniquement) ;
   //  - mesures + plans d'action : traitement (et écran complet).
   const showVulnSection = withVulnerabilites && (mode === 'identify' || mode === 'full')
-  const showTreatSections = mode === 'treat' || mode === 'full'
-  const hasDetails = showVulnSection || showTreatSections
+  const resolvedTreatmentSections = treatmentSections ?? (mode === 'treat' || mode === 'full' ? 'both' : undefined)
+  const showMesuresSection = resolvedTreatmentSections === 'mesures' || resolvedTreatmentSections === 'both'
+  const showPlansSection = resolvedTreatmentSections === 'plans' || resolvedTreatmentSections === 'both'
+  const hasDetails = showVulnSection || showMesuresSection || showPlansSection
+  const treatmentLabel = showMesuresSection && !showPlansSection ? m.manageMesures
+    : showPlansSection && !showMesuresSection ? m.managePlans : m.manageTreatment
   // Colonnes / actions visibles selon le mode (phase). L'ajout n'existe qu'en
   // identification (et en mode complet) ; la cotation en analyse ; le traitement en
   // traitement. Le niveau est masqué tant qu'on n'a pas coté (identification).
@@ -270,7 +277,19 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 {rows.map(r => [
                   <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
                     <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">
-                      {r.nom}
+                      <div className="flex items-center gap-2">
+                        {hasDetails && <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
+                          aria-label={treatmentLabel} title={treatmentLabel}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                          {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
+                          {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
+                          <span className="hidden lg:inline text-[10px] text-gray-500">{showMesuresSection && showPlansSection
+                            ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
+                            : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
+                              : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
+                        </button>}
+                        <span>{r.nom}</span>
+                      </div>
                       {r.id === justAddedId && (
                         <button onClick={() => undoAdd(r.id)} className="ml-2 text-xs font-normal text-ebios-600 hover:text-ebios-800 underline">{m.undo}</button>
                       )}
@@ -316,11 +335,6 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       </select>
                     </td>}
                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                      {hasDetails && <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)}
-                        aria-expanded={detailsOpenId === r.id} title={m.detailsTitle}
-                        className={`p-1 ${detailsOpenId === r.id ? 'text-ebios-600' : 'text-gray-400 hover:text-ebios-600'}`}>
-                        <ShieldCheck size={15} aria-hidden="true" />
-                      </button>}
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
                   </tr>,
@@ -329,8 +343,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       <td className="px-3 pb-3" colSpan={colCount}>
                         <div className="space-y-2">
                           {showVulnSection && <RiskVulnerabilites analyseId={analyseId} riskId={r.id} editable={editable} initial={r.vulnerabilites ?? []} />}
-                          {showTreatSections && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />}
-                          {showTreatSections && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} />}
+                          {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />}
+                          {showPlansSection && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} />}
                         </div>
                       </td>
                     </tr>
