@@ -3,15 +3,27 @@ import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { prisma } from '@/lib/prisma'
 
-const schema = z.object({ name: z.string().trim().min(1).max(100), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())) })
-async function context() {
+const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
+const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
+const mappingRecord = z.record(z.string(), z.record(z.string(), z.string().optional()))
+const scoreMappings = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4']))))
+const schema = z.object({ name: z.string().trim().min(1).max(100), organizationId: z.string().trim().min(1).max(191).optional(), mappings: mappingRecord, sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: scoreMappings.default({}) })
+type SavedMapping = { mappings: z.infer<typeof mappingRecord>; sheetTypes: Record<string, z.infer<typeof sheetType>>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, 'A_FAIRE' | 'EN_COURS' | 'REALISE' | 'REPORTE'>>; scoreMappings: z.infer<typeof scoreMappings> }
+function normalizeMapping(value: unknown): SavedMapping {
+  const parsed = z.object({ version: z.literal(2), mappings: mappingRecord, sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: scoreMappings.default({}) }).safeParse(value)
+  if (parsed.success) return parsed.data
+  return { mappings: mappingRecord.parse(value), sheetTypes: {}, transforms: {}, statusMappings: {}, scoreMappings: {} }
+}
+async function context(targetOrganizationId?: string) {
   const session = await getServerSession(authOptions); if (!session?.user) return null
   const userId = (session.user as { id: string }).id; const role = ((session.user as { role?: UserRole }).role ?? 'LECTEUR') as UserRole
   const scope = await getAnalyseScope(userId, role)
-  return scope.activeOrgId && canCreateAnalyse({ id: userId, role: scope.role }) ? { userId, organizationId: scope.activeOrgId } : null
+  const organizationId = targetOrganizationId ?? scope.activeOrgId
+  const effectiveRole = organizationId ? await getEffectiveRoleForOrg(userId, role, organizationId) : null
+  return organizationId && effectiveRole && canCreateAnalyse({ id: userId, role: effectiveRole }) ? { userId, organizationId } : null
 }
-export async function GET() { const ctx = await context(); if (!ctx) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 }); return NextResponse.json({ mappings: await prisma.analysisImportMapping.findMany({ where: { organizationId: ctx.organizationId }, select: { id: true, name: true, mappings: true, updatedAt: true }, orderBy: { name: 'asc' } }) }) }
-export async function POST(req: NextRequest) { const ctx = await context(); if (!ctx) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 }); try { const data = schema.parse(await req.json()); const mapping = await prisma.analysisImportMapping.upsert({ where: { organizationId_name: { organizationId: ctx.organizationId, name: data.name } }, create: { organizationId: ctx.organizationId, name: data.name, mappings: data.mappings, createdById: ctx.userId }, update: { mappings: data.mappings, createdById: ctx.userId }, select: { id: true, name: true, mappings: true, updatedAt: true } }); return NextResponse.json({ mapping }, { status: 201 }) } catch { return NextResponse.json({ error: 'mapping_invalide' }, { status: 400 }) } }
+export async function GET(req: NextRequest) { const ctx = await context(req.nextUrl.searchParams.get('organizationId') ?? undefined); if (!ctx) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 }); const mappings = await prisma.analysisImportMapping.findMany({ where: { organizationId: ctx.organizationId }, select: { id: true, name: true, mappings: true, updatedAt: true }, orderBy: { name: 'asc' } }); return NextResponse.json({ mappings: mappings.map(mapping => ({ ...mapping, ...normalizeMapping(mapping.mappings) })) }) }
+export async function POST(req: NextRequest) { try { const data = schema.parse(await req.json()); const ctx = await context(data.organizationId); if (!ctx) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 }); const stored = { version: 2 as const, mappings: data.mappings, sheetTypes: data.sheetTypes, transforms: data.transforms, statusMappings: data.statusMappings, scoreMappings: data.scoreMappings }; const mapping = await prisma.analysisImportMapping.upsert({ where: { organizationId_name: { organizationId: ctx.organizationId, name: data.name } }, create: { organizationId: ctx.organizationId, name: data.name, mappings: stored, createdById: ctx.userId }, update: { mappings: stored, createdById: ctx.userId }, select: { id: true, name: true, mappings: true, updatedAt: true } }); return NextResponse.json({ mapping: { ...mapping, ...normalizeMapping(mapping.mappings) } }, { status: 201 }) } catch { return NextResponse.json({ error: 'mapping_invalide' }, { status: 400 }) } }

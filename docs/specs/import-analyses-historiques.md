@@ -64,6 +64,159 @@ Le fichier ne doit jamais être envoyé directement dans les tables métier sans
 étape de prévisualisation. Pour un gros classeur, l'import devient un job asynchrone
 avec progression, annulation avant validation et rapport téléchargeable.
 
+#### Patching d'un classeur consultant
+
+Le patching consiste à adapter le classeur source dans l'assistant, sans le
+réécrire ni supprimer ses feuilles métier :
+
+1. Pour chaque feuille non reconnue ou mal reconnue, choisir son rôle : analyse,
+   risques, vulnérabilités, mesures, plans d'action ou liens risque–action. Les
+   feuilles de valeurs métier, biens supports, entretiens et hypothèses peuvent
+   rester explicitement « ne pas importer ».
+2. Associer les colonnes réellement utilisées. Les champs marqués requis sont :
+   l'intitulé de chaque objet, la référence de risque pour une vulnérabilité et les
+   deux références pour un lien risque–action.
+3. Conserver une référence externe stable et unique dans chaque feuille pour les
+   risques, vulnérabilités, mesures et actions. Ne pas utiliser un libellé comme
+   clé de rapprochement.
+4. Vérifier le résumé : seules les feuilles affectées à un rôle sont importées;
+   les feuilles ignorées restent dans le fichier mais n'écrivent aucune donnée.
+5. Choisir l'organisation cible : l'organisation active est proposée par défaut;
+   seules les organisations dans lesquelles l'utilisateur peut créer une analyse
+   sont proposées et contrôlées à nouveau par le serveur.
+6. Enregistrer le mapping si le même format de cabinet ou de GRC sera réutilisé,
+   puis relancer l'aperçu avant confirmation.
+
+#### Principe produit : importer le meilleur sous-ensemble fiable
+
+Un classeur hétérogène ne doit pas placer l'utilisateur devant un choix binaire
+« tout importer ou abandonner ». L'assistant cherche le plus grand sous-ensemble
+dont les objets, relations et formats peuvent être établis sans interprétation
+hasardeuse. Il propose cet import partiel, laisse l'utilisateur retirer une feuille
+ou une colonne problématique, et produit un rapport des éléments non repris.
+
+Lorsqu'une **valeur requise est absente sur une ligne**, l'import n'est jamais
+déclenché silencieusement. Une revue avant écriture liste la feuille, le numéro
+de ligne Excel et tous les champs obligatoires absents. Pour chaque ligne,
+l'utilisateur choisit explicitement soit **« ne pas importer la ligne »** (choix
+par défaut), soit **« compléter la ligne »**. Dans ce second cas, tous les champs
+listés doivent être renseignés dans l'assistant avant que le bouton de
+confirmation soit activé. Les compléments ne s'appliquent qu'aux cellules
+requises mappées de cette ligne et font partie de la clé d'idempotence.
+
+- Une feuille valide peut être importée même si une autre feuille du classeur est
+  ignorée ; l'utilisateur peut déjà le faire avec le rôle « ne pas importer ».
+- Une colonne de cotation, statut ou date invalide peut être exclue du mapping :
+  l'objet reste importable, le champ absent reste absent ou reçoit uniquement le
+  défaut documenté du modèle métier.
+- Une ligne sans intitulé, une référence dupliquée, ou un lien vers une référence
+  absente n'est jamais transformé en objet ou lien arbitraire. Elle apparaît dans
+  le rapport avec feuille, ligne, cellule brute et motif du rejet.
+- Si plusieurs valeurs figurent dans une cellule, l'utilisateur doit sélectionner
+  une règle explicite de séparation (lignes/puces, point-virgule ou barre
+  verticale). Sans ce choix, la cellule est conservée comme texte unique : aucune
+  séparation sur virgule n'est déduite automatiquement.
+- Pour deux listes corrélées (références et intitulés, responsables et actions),
+  l'assistant exige une cardinalité égale avant un appariement par position. Le
+  produit cartésien est interdit par défaut et un écart est proposé au rapport.
+
+Le résultat d'aperçu distingue donc : **prêt à importer**, **importable sans ce
+champ**, **à confirmer**, et **non importable**. Après l'écriture, une unique
+fenêtre de bilan remplace l'assistant : elle comptabilise les analyses, risques,
+vulnérabilités, mesures et actions créés, et détaille chaque champ écarté ou ligne
+non importée (valeur source, règle attendue et motif). Cette fenêtre propose,
+facultativement, d'enregistrer le mapping sous un nouveau nom ou de mettre à jour
+un mapping de l'organisation cible. Sa fermeture ferme entièrement l'assistant.
+Un import partiel reste atomique
+pour les objets effectivement retenus dans chaque analyse.
+
+L'endpoint web d'exécution active ce comportement par défaut (`partialImport`)
+et restitue un tableau `decisions` : `READY`, `FIELD_OMITTED` ou `REJECTED`, avec
+le nom de feuille, la ligne source, le champ et le motif (`INVALID_FORMAT` ou
+`MISSING_REQUIRED_VALUE`). Un mapping structurel incohérent ou une relation dont
+les clés obligatoires sont absentes demeure bloquant : ce mécanisme ne contourne
+jamais les prérequis d'intégrité.
+
+Avant le mapping, l'assistant recherche la ligne d'en-têtes la plus plausible dans
+les vingt premières lignes : les titres de couverture et lignes vides en amont ne
+font donc pas échouer un classeur consultant. Les positions physiques des colonnes
+sont conservées, y compris lorsqu'une colonne sans en-tête est intercalée ; deux
+en-têtes identiques reçoivent un suffixe de colonne (`ID [B]`) afin que l'utilisateur
+puisse choisir le bon sans écrasement.
+
+#### Contrat de transformation des cellules
+
+Le mapping sauvegardable doit évoluer de « champ ACRA → colonne » vers « champ
+ACRA → colonne(s) + règle ». Une règle porte au minimum le mode `SCALAR`, `LINES`,
+`SEMICOLON` ou `PIPE`, et à terme `CARRY_FORWARD`, `PAIR_BY_POSITION` et
+`REFERENCE_EXTRACT`. Chaque valeur normalisée conserve sa provenance
+`feuille/ligne/colonne`, la valeur brute et la règle appliquée, afin que le rapport
+soit explicable et rejouable.
+
+| Source historique | Règle | Résultat proposé |
+|---|---|---|
+| `• Sauvegardes non testées` sur plusieurs lignes | `LINES` | Une vulnérabilité par ligne, liée au même risque |
+| `Tester PRA ; Former équipes` | `SEMICOLON` | Un plan par intitulé, rattaché au risque de la ligne |
+| `A-01 | A-02` dans une cellule de références | `PIPE` + résolution de références | Un lien par référence résolue ; les inconnues restent exclues et signalées |
+| Cellule de texte libre contenant des virgules | `SCALAR` par défaut | Texte conservé intact ; aucune découpe implicite |
+
+Une feuille affectée au rôle **Risques** peut également mapper les champs
+« vulnérabilités de cette ligne » et « plans d'action de cette ligne ». Après une
+règle de séparation explicite, chaque élément devient un objet enfant rattaché au
+risque de la ligne. Dans ce cas, la référence externe du risque est obligatoire :
+le système ne génère pas de rapprochement à partir de son intitulé.
+
+Pour une feuille de liens, les deux références peuvent aussi être des listes.
+Une référence risque unique est diffusée vers tous les plans, et inversement ;
+deux listes de même longueur sont appariées par position. Deux listes de tailles
+différentes sont rejetées avec `CARDINALITY_MISMATCH` : le système ne produit
+jamais automatiquement toutes les combinaisons risque × action.
+
+Pour les exports utilisant des cellules fusionnées, l'utilisateur peut activer
+« reprendre la dernière valeur non vide » sur une colonne de référence. La règle
+est volontairement explicite et s'applique de haut en bas dans la feuille ; elle
+permet par exemple de rattacher plusieurs vulnérabilités aux lignes suivant une
+référence risque affichée une seule fois.
+
+Un mapping enregistré par organisation inclut sa version, les rôles de feuilles,
+les correspondances de colonnes, les règles de séparation, la reprise de valeurs
+fusionnées et les correspondances de statut. Les mappings historiques limités aux
+colonnes restent lisibles ; ils sont interprétés comme des profils sans règles
+supplémentaires et peuvent être réenregistrés au nouveau format.
+
+Les cotations de gravité et vraisemblance disposent d'un mapping de valeurs
+source vers l'échelle ACRA 1–4. Il est renseigné dans l'assistant, transporté à
+l'import et sauvegardé avec le profil ; ainsi une échelle 1–5 ou des libellés
+source ne sont jamais réduits sans décision explicite.
+
+#### Minimum de données par sous-ensemble
+
+Le libellé à gauche du sélecteur est le **champ ACRA cible** ; la liste déroulante
+contient exclusivement les **en-têtes de colonnes de la feuille Excel source**.
+Le contrôle visuel indique une correspondance reconnue (vert), un champ bloquant
+vide (rouge), ou une colonne inhabituelle à vérifier manuellement (orange).
+Après sélection, l'assistant affiche jusqu'à trois valeurs réellement lues dans
+la colonne et signale les formats contrôlables : cotations `1–4`, dates
+`YYYY-MM-DD`, statuts de mesure et stratégies de traitement. Une incohérence de
+format n'empêche pas l'import du sous-ensemble fiable : la ligne ou le champ non
+interprétable est écarté et rapporté. Seuls les prérequis structurels empêchent
+la confirmation. Le message indique le nombre de valeurs incompatibles et le
+format attendu.
+
+| Sous-ensemble sélectionné | Colonnes ACRA minimales | Règle appliquée |
+|---|---|---|
+| Risques seuls | `Intitulé` | Valide : une analyse `EN_COURS` est créée avec le nom du fichier ; gravité et vraisemblance absentes prennent la valeur 2. |
+| Analyse seule | `Intitulé` | Valide : crée l'analyse sans risque. |
+| Vulnérabilités avec risques | Risques : `Référence externe`, `Intitulé` ; vulnérabilités : `Référence risque`, `Intitulé` | Les deux références doivent correspondre. |
+| Mesures seules | `Intitulé` | Valide : mesure non rattachée à un risque, statut par défaut `RÉALISÉ`. Si une référence risque est choisie, celle du risque devient obligatoire. |
+| Plans d'action seuls | `Intitulé` | Valide : plan non rattaché à un risque. Si une référence risque est choisie, celle du risque devient obligatoire. |
+| Liens risque–action | Risques : `Référence externe` ; plans : `Référence externe` ; liens : `Référence risque`, `Référence action` | Tous les identifiants doivent être présents et reliés. |
+
+Les champs de description, responsable, échéance, stratégie et cotation restent
+facultatifs. Une colonne dont le nom est inhabituel peut être affectée
+manuellement : l'avertissement orange n'empêche pas l'import, contrairement à une
+croix rouge sur un champ requis ou nécessaire à un lien.
+
 ### 3.2 API
 
 Conserver `/api/v1/import` pour les risques et contrôles GRC existants. Ajouter une

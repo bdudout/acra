@@ -1,16 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import type { HistoricColumnMapping, HistoricSheetType } from '@/lib/historic-import'
+import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
 export type HistoricPreviewSheet = {
   name: string
   columns: string[]
+  profiles?: Record<string, HistoricColumnProfile>
   rows: number
   detection: { type: HistoricSheetType }
   mapping: HistoricColumnMapping
   missing: string[]
 }
+export type HistoricRequiredValueGap = { sheetName: string; row: number; field: string; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
+export type HistoricImportOrganizationOption = { id: string; nom: string }
 
 export type HistoricImportPreviewLabels = {
   title: string
@@ -19,68 +22,160 @@ export type HistoricImportPreviewLabels = {
   missing: string
   noSheets: string
   rows: string
-  fieldLabels: Record<string, string>
   mappingName: string
   saveMapping: string
   loadMapping: string
+  sheetRole: string
+  ignoreSheet: string
+  summaryTitle: string
+  importableSheets: string
+  ignoredSheets: string
+  mappingHelpTitle: string
+  mappingHelp: string
+  targetOrganization?: string
+  fieldLabels: Record<string, string>
+  sheetTypes: Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>
+  validation?: { acraField: string; sourceColumn: string; expected: string; examples: string; compatible: string; review: string; invalidValues: string; externalReference: string }
+  listTransform?: { label: string; none: string; lines: string; semicolon: string; pipe: string; carryForward?: string }
+  completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string }
 }
 
 const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
-  ANALYSES: ['title', 'description'],
-  RISKS: ['analysisExternalId', 'externalId', 'title', 'description', 'gravity', 'likelihood', 'strategy'],
+  ANALYSES: ['externalId', 'title', 'description'],
+  RISKS: ['analysisExternalId', 'externalId', 'title', 'description', 'gravity', 'likelihood', 'strategy', 'embeddedVulnerabilities', 'embeddedActions'],
   VULNERABILITIES: ['riskExternalId', 'title', 'description'],
   MEASURES: ['externalId', 'riskExternalId', 'title', 'description', 'status', 'responsible', 'dueDate'],
   ACTIONS: ['externalId', 'riskExternalId', 'title', 'description', 'responsible', 'dueDate'],
   RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
 }
 
-export default function HistoricImportPreview({ sheets, labels, onCancel, onConfirm }: {
+export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
   sheets: HistoricPreviewSheet[]
   labels: HistoricImportPreviewLabels
+  requiredValueGaps?: HistoricRequiredValueGap[]
+  organizationOptions?: HistoricImportOrganizationOption[]
+  defaultOrganizationId?: string
   onCancel: () => void
-  onConfirm: (mappings: Record<string, HistoricColumnMapping>) => void
+  onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; organizationId?: string }) => void | Promise<void>
 }) {
-  const usable = sheets.filter(sheet => sheet.detection.type !== 'UNKNOWN' && sheet.rows > 0)
-  const [mappings, setMappings] = useState<Record<string, HistoricColumnMapping>>(() => Object.fromEntries(usable.map(sheet => [sheet.name, sheet.mapping])))
-  const [mappingName, setMappingName] = useState('')
-  const [savedMappings, setSavedMappings] = useState<Array<{ id: string; name: string; mappings: Record<string, HistoricColumnMapping> }>>([])
-  useEffect(() => { fetch('/api/analysis-imports/mappings').then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [])
-  const invalid = useMemo(() => usable.some(sheet => (mappingFields[sheet.detection.type] ?? []).filter(field =>
-    (field === 'title' || sheet.detection.type === 'RISK_ACTION_LINKS' || (sheet.detection.type === 'VULNERABILITIES' && field === 'riskExternalId')) && !mappings[sheet.name]?.[field]?.trim(),
-  ).length > 0), [mappings, usable])
+  const visibleSheets = sheets.filter(sheet => sheet.rows > 0)
+  const validationLabels = labels.validation ?? { acraField: 'ACRA field', sourceColumn: 'Excel column', expected: 'Expected type', examples: 'Examples', compatible: 'Compatible', review: 'Review', invalidValues: 'invalid values', externalReference: 'Matching identifier' }
+  const [mappings, setMappings] = useState<Record<string, HistoricColumnMapping>>(() => Object.fromEntries(visibleSheets.map(sheet => [sheet.name, sheet.mapping])))
+  const [sheetTypes, setSheetTypes] = useState<Record<string, HistoricSheetType>>(() => Object.fromEntries(visibleSheets.map(sheet => [sheet.name, sheet.detection.type])))
+  const [statusMappings, setStatusMappings] = useState<Record<string, Record<string, string>>>({})
+  const [scoreMappings, setScoreMappings] = useState<Record<string, Record<string, Record<string, string>>>>({})
+  const [transforms, setTransforms] = useState<Record<string, HistoricFieldTransforms>>({})
+  const [rowActions, setRowActions] = useState<Record<string, 'SKIP' | 'COMPLETE'>>({})
+  const [rowOverrides, setRowOverrides] = useState<Record<string, Record<string, Record<string, string>>>>({})
+  const [loadedOrganizations, setLoadedOrganizations] = useState<HistoricImportOrganizationOption[]>([])
+  const [targetOrganizationId, setTargetOrganizationId] = useState(defaultOrganizationId ?? '')
+  const [savedMappings, setSavedMappings] = useState<Array<{ id: string; name: string; mappings: Record<string, HistoricColumnMapping>; sheetTypes?: Record<string, HistoricSheetType>; transforms?: Record<string, HistoricFieldTransforms>; statusMappings?: Record<string, Record<string, string>>; scoreMappings?: Record<string, Record<string, Record<string, string>>> }>>([])
+  useEffect(() => { if (!organizationOptions) fetch('/api/org/active').then(response => response.ok ? response.json() : null).then(data => { if (data) { setLoadedOrganizations(data.options ?? []); setTargetOrganizationId(current => current || data.activeOrgId || '') } }).catch(() => {}) }, [organizationOptions])
+  const availableOrganizations = organizationOptions ?? loadedOrganizations
+  useEffect(() => { fetch(`/api/analysis-imports/mappings${targetOrganizationId ? `?organizationId=${encodeURIComponent(targetOrganizationId)}` : ''}`).then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [targetOrganizationId])
+  const selectedSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] !== 'UNKNOWN')
+  const ignoredSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] === 'UNKNOWN')
+  const blockers = useMemo(() => {
+    const selection = selectedSheets.map(sheet => ({ name: sheet.name, type: sheetTypes[sheet.name], mapping: mappings[sheet.name] ?? {}, profiles: sheet.profiles, statusMapping: statusMappings[sheet.name] }))
+    // Les défauts de format sont signalés sur chaque champ et traités ligne par
+    // ligne par l'import partiel. Seuls les prérequis structurels doivent donc
+    // empêcher l'utilisateur de lancer l'import du sous-ensemble sain.
+    return validateHistoricImportSelection(selection)
+  }, [mappings, selectedSheets, sheetTypes, statusMappings])
+  const invalid = blockers.length > 0
+  const incompleteRows = requiredValueGaps.reduce<Record<string, HistoricRequiredValueGap[]>>((result, gap) => {
+    const key = `${gap.sheetName}:${gap.row}`
+    ;(result[key] ??= []).push(gap)
+    return result
+  }, {})
+  const incompleteRowEntries = Object.entries(incompleteRows)
+  const completedRows = incompleteRowEntries.filter(([key]) => rowActions[key] === 'COMPLETE')
+  const skippedRows = incompleteRowEntries.filter(([key]) => rowActions[key] !== 'COMPLETE')
+  const completionIncomplete = completedRows.some(([, gaps]) => gaps.some(gap => !rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field]?.trim()))
+  const completion = labels.completion
 
   return (
     <section className="card mt-4 p-4" aria-label={labels.title}>
       <div className="flex items-start justify-between gap-3">
-        <div><h2 className="font-semibold text-gray-900">{labels.title}</h2><p className="text-sm text-gray-500">{usable.reduce((sum, s) => sum + s.rows, 0)} {labels.rows}</p></div>
+        <div><h2 className="font-semibold text-gray-900">{labels.title}</h2><p className="text-sm text-gray-500">{selectedSheets.reduce((sum, s) => sum + s.rows, 0)} {labels.rows}</p></div>
         <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-900">{labels.cancel}</button>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="text-xs font-medium text-gray-700">{labels.loadMapping}<select className="input mt-1 block text-sm" value="" onChange={event => { const selected = savedMappings.find(item => item.id === event.target.value); if (selected) setMappings(selected.mappings) }}><option value="">—</option>{savedMappings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label className="text-xs font-medium text-gray-700">{labels.mappingName}<input className="input mt-1 block text-sm" value={mappingName} onChange={event => setMappingName(event.target.value)} /></label>
-        <button type="button" className="btn-secondary text-sm" disabled={!mappingName.trim()} onClick={async () => { const response = await fetch('/api/analysis-imports/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: mappingName, mappings }) }); if (response.ok) { const data = await response.json(); setSavedMappings(previous => [...previous.filter(item => item.id !== data.mapping.id && item.name !== data.mapping.name), data.mapping]); setMappingName('') } }}>{labels.saveMapping}</button>
+        {availableOrganizations.length > 1 && labels.targetOrganization && <label className="text-xs font-medium text-gray-700">{labels.targetOrganization}<select aria-label={labels.targetOrganization} className="input mt-1 block text-sm" value={targetOrganizationId} onChange={event => setTargetOrganizationId(event.target.value)}>{availableOrganizations.map(organization => <option key={organization.id} value={organization.id}>{organization.nom}</option>)}</select></label>}
+        <label className="text-xs font-medium text-gray-700">{labels.loadMapping}<select className="input mt-1 block text-sm" value="" onChange={event => { const selected = savedMappings.find(item => item.id === event.target.value); if (selected) { setMappings(selected.mappings); if (selected.sheetTypes) setSheetTypes(previous => ({ ...previous, ...selected.sheetTypes })); if (selected.transforms) setTransforms(selected.transforms); if (selected.statusMappings) setStatusMappings(selected.statusMappings); if (selected.scoreMappings) setScoreMappings(selected.scoreMappings) } }}><option value="">—</option>{savedMappings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       </div>
-      {usable.length === 0 ? <p className="mt-3 text-sm text-amber-700">{labels.noSheets}</p> : <div className="mt-4 space-y-4">
-        {usable.map(sheet => {
-          const fields = mappingFields[sheet.detection.type] ?? []
+      <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+        <p className="font-semibold">{labels.mappingHelpTitle}</p><p className="mt-1">{labels.mappingHelp}</p>
+        <p className="mt-2"><span className="font-medium">{labels.summaryTitle} :</span> {selectedSheets.length} {labels.importableSheets.toLowerCase()} · {ignoredSheets.length} {labels.ignoredSheets.toLowerCase()}</p>
+        {selectedSheets.length > 0 && <p className="mt-1 text-xs"><span className="font-medium">{labels.importableSheets} :</span> {selectedSheets.map(sheet => `${sheet.name} (${labels.sheetTypes[sheetTypes[sheet.name] as Exclude<HistoricSheetType, 'UNKNOWN'>]})`).join(', ')}</p>}
+        {ignoredSheets.length > 0 && <p className="mt-1 text-xs"><span className="font-medium">{labels.ignoredSheets} :</span> {ignoredSheets.map(sheet => sheet.name).join(', ')}</p>}
+        <p className="mt-2 text-xs">✓ compatible · ⚠ à vérifier manuellement · ✕ bloquant avant import</p>
+      </div>
+      {visibleSheets.length === 0 ? <p className="mt-3 text-sm text-amber-700">{labels.noSheets}</p> : <div className="mt-4 space-y-4">
+        {visibleSheets.map(sheet => {
+          const type = sheetTypes[sheet.name]
+          const fields = mappingFields[type] ?? []
           return <div key={sheet.name} className="rounded-lg border border-gray-200 p-3">
-            <p className="font-medium text-sm text-gray-800">{sheet.name} <span className="font-normal text-gray-500">· {sheet.rows} {labels.rows} · {sheet.detection.type}</span></p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <p className="font-medium text-sm text-gray-800">{sheet.name} <span className="font-normal text-gray-500">· {sheet.rows} {labels.rows} · {type === 'UNKNOWN' ? labels.ignoreSheet : labels.sheetTypes[type]}</span></p>
+            <label className="mt-3 block text-xs font-medium text-gray-700">{sheet.name} — {labels.sheetRole}
+              <select aria-label={`${sheet.name} — ${labels.sheetRole}`} value={type} onChange={event => setSheetTypes(previous => ({ ...previous, [sheet.name]: event.target.value as HistoricSheetType }))} className="input mt-1 block w-full text-sm">
+                <option value="UNKNOWN">{labels.ignoreSheet}</option>
+                {Object.entries(labels.sheetTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            {type !== 'UNKNOWN' && <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {fields.map(field => {
-                const required = field === 'title' || sheet.detection.type === 'RISK_ACTION_LINKS' || (sheet.detection.type === 'VULNERABILITIES' && field === 'riskExternalId')
+                const required = field === 'title' || type === 'RISK_ACTION_LINKS' || (type === 'VULNERABILITIES' && field === 'riskExternalId') || (type === 'RISKS' && field === 'externalId' && Boolean(mappings[sheet.name]?.embeddedVulnerabilities || mappings[sheet.name]?.embeddedActions))
                 const value = mappings[sheet.name]?.[field] ?? ''
+                const compatibility = field === 'description' && value ? 'COMPATIBLE' : getHistoricColumnCompatibility(field, value, required)
+                const selectedColumns = splitHistoricMappedColumns(value)
+                const profile = selectedColumns.length === 1 ? sheet.profiles?.[selectedColumns[0]] : undefined
+                const profileValidation = profile ? validateHistoricColumnProfile(field, profile, field === 'status' ? statusMappings[sheet.name] : field === 'gravity' || field === 'likelihood' ? scoreMappings[sheet.name]?.[field] : undefined) : undefined
+                const hasInvalidValues = Boolean(field !== 'status' && profileValidation && profileValidation.invalidCount > 0)
+                const indicator = hasInvalidValues || compatibility === 'MISSING' ? '✕' : compatibility === 'COMPATIBLE' ? '✓' : '⚠'
+                const indicatorClass = hasInvalidValues || compatibility === 'MISSING' ? 'text-red-700' : compatibility === 'COMPATIBLE' ? 'text-green-700' : 'text-amber-700'
+                const supportsList = field === 'embeddedVulnerabilities' || field === 'embeddedActions' || type === 'RISK_ACTION_LINKS' && (field === 'riskExternalId' || field === 'actionExternalId') || field === 'title' && (type === 'VULNERABILITIES' || type === 'MEASURES' || type === 'ACTIONS')
+                const supportsCarryForward = field === 'externalId' || field === 'riskExternalId' || field === 'analysisExternalId'
                 return <label key={field} className="text-xs font-medium text-gray-700">
-                  {sheet.name} — {labels.fieldLabels[field] ?? field}{required ? ` (${labels.missing})` : ''}
-                  <select aria-label={`${sheet.name} — ${labels.fieldLabels[field] ?? field}`} value={value} onChange={event => setMappings(prev => ({ ...prev, [sheet.name]: { ...prev[sheet.name], [field]: event.target.value || undefined } }))} className="input mt-1 w-full text-sm">
-                    <option value="">—</option>{sheet.columns.map(column => <option key={column} value={column}>{column}</option>)}
-                  </select>
+                  <span>{validationLabels.acraField} — {field === 'externalId' ? validationLabels.externalReference : labels.fieldLabels[field] ?? field}</span>
+                  {required && <span className="ml-1 inline-flex rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-800">{labels.missing}</span>}
+                  <span className="ml-1 font-semibold" aria-label={`${labels.fieldLabels[field] ?? field}: ${hasInvalidValues ? 'INVALID' : compatibility}`}><span aria-hidden className={indicatorClass}>{indicator}</span></span>
+                  <span className="mt-1 block text-[11px] font-normal text-gray-500">{validationLabels.sourceColumn}</span>
+                  {field === 'description' ? <div className="mt-1 max-h-32 space-y-1 overflow-y-auto rounded border border-gray-200 p-2">{sheet.columns.map(column => <label key={column} className="flex items-center gap-2 font-normal"><input type="checkbox" checked={selectedColumns.includes(column)} onChange={event => { const selected = event.target.checked ? [...selectedColumns, column] : selectedColumns.filter(item => item !== column); setMappings(prev => ({ ...prev, [sheet.name]: { ...prev[sheet.name], [field]: selected.join(HISTORIC_MULTI_COLUMN_SEPARATOR) || undefined } })) }} />{column}</label>)}</div> : <select aria-label={`${sheet.name} — ${labels.fieldLabels[field] ?? field}`} value={value} onChange={event => setMappings(prev => ({ ...prev, [sheet.name]: { ...prev[sheet.name], [field]: event.target.value || undefined } }))} className="input w-full text-sm"><option value="">—</option>{sheet.columns.map(column => <option key={column} value={column}>{column}</option>)}</select>}
+                  <span className="mt-1 block font-normal text-gray-500">{validationLabels.expected}: {profileValidation?.expected ?? validateHistoricColumnProfile(field, { examples: [], values: [], total: 0, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 }).expected}</span>
+                  {profile && <span className={hasInvalidValues ? 'mt-1 block font-normal text-red-700' : 'mt-1 block font-normal text-gray-500'}>{hasInvalidValues ? `${profileValidation!.invalidCount}/${profileValidation!.total} ${validationLabels.invalidValues}` : compatibility === 'COMPATIBLE' ? validationLabels.compatible : validationLabels.review} · {validationLabels.examples}: {profile.examples.join(', ') || '—'}</span>}
+                  {field === 'status' && profile && <div className="mt-2 space-y-1 rounded border border-amber-200 bg-amber-50 p-2 font-normal">{profile.values.map(source => <label key={source} className="flex items-center justify-between gap-2">{source}<select value={statusMappings[sheet.name]?.[source] ?? ''} onChange={event => setStatusMappings(previous => ({ ...previous, [sheet.name]: { ...previous[sheet.name], [source]: event.target.value } }))} className="input text-xs"><option value="">—</option><option value="A_FAIRE">À faire</option><option value="EN_COURS">En cours</option><option value="REALISE">Réalisé</option><option value="REPORTE">Reporté</option></select></label>)}</div>}
+                  {(field === 'gravity' || field === 'likelihood') && profile && <div className="mt-2 space-y-1 rounded border border-amber-200 bg-amber-50 p-2 font-normal">{profile.values.map(source => <label key={source} className="flex items-center justify-between gap-2">{source}<select value={scoreMappings[sheet.name]?.[field]?.[source] ?? ''} onChange={event => setScoreMappings(previous => ({ ...previous, [sheet.name]: { ...previous[sheet.name], [field]: { ...previous[sheet.name]?.[field], [source]: event.target.value } } }))} className="input text-xs"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>)}</div>}
+                  {supportsList && labels.listTransform && <span className="mt-2 block font-normal"><span className="text-[11px] text-gray-500">{labels.listTransform.label}</span><select aria-label={`${sheet.name} — ${labels.fieldLabels[field] ?? field} — ${labels.listTransform.label}`} className="input mt-1 w-full text-xs" value={transforms[sheet.name]?.[field]?.mode ?? ''} onChange={event => setTransforms(previous => ({ ...previous, [sheet.name]: { ...previous[sheet.name], [field]: event.target.value ? { ...previous[sheet.name]?.[field], mode: event.target.value as HistoricValueTransform['mode'] } : previous[sheet.name]?.[field]?.carryForward ? { carryForward: true } : undefined } }))}><option value="">{labels.listTransform.none}</option><option value="LINES">{labels.listTransform.lines}</option><option value="SEMICOLON">{labels.listTransform.semicolon}</option><option value="PIPE">{labels.listTransform.pipe}</option></select></span>}
+                  {supportsCarryForward && labels.listTransform?.carryForward && <label className="mt-2 flex items-center gap-2 font-normal"><input type="checkbox" checked={Boolean(transforms[sheet.name]?.[field]?.carryForward)} onChange={event => setTransforms(previous => ({ ...previous, [sheet.name]: { ...previous[sheet.name], [field]: event.target.checked ? { ...previous[sheet.name]?.[field], carryForward: true } : undefined } }))} />{labels.listTransform.carryForward}</label>}
                 </label>
               })}
-            </div>
+            </div>}
           </div>
         })}
       </div>}
-      <div className="mt-4 flex justify-end"><button type="button" className="btn-primary" disabled={usable.length === 0 || invalid} onClick={() => onConfirm(mappings)}>{labels.confirm}</button></div>
+      {incompleteRowEntries.length > 0 && completion && <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/50 dark:text-amber-50" aria-label={completion.title}>
+        <h3 className="font-semibold">{completion.title}</h3>
+        <p className="mt-1">{completion.explanation}</p>
+        <div className="mt-3 space-y-3">
+          {incompleteRowEntries.map(([key, gaps]) => {
+            const first = gaps[0]
+            const action = rowActions[key] ?? 'SKIP'
+            const lineLabel = `${first.sheetName} — ligne ${first.row}`
+            return <fieldset key={key} className="rounded border border-amber-200 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100"><legend className="px-1 font-medium">{lineLabel} — {gaps.map(gap => labels.fieldLabels[gap.field] ?? gap.field).join(', ')}</legend>
+              <div className="mb-3 space-y-1 text-xs text-gray-700 dark:text-slate-300">{gaps.map(gap => <p key={gap.field}><span className="font-semibold">{completion.sourceValue} :</span> {gap.sourceColumn ?? labels.fieldLabels[gap.field] ?? gap.field} = <code className="rounded bg-amber-100 px-1 py-0.5 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100">{gap.sourceValue?.trim() || completion.emptyValue}</code>{gap.expectedValue && <><span className="mx-1">·</span><span className="font-semibold">{completion.expectedValue} :</span> {gap.expectedValue}</>}</p>)}</div>
+              <label className="mr-4 inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'SKIP'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'SKIP' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.skip}`} />{completion.skip}</label>
+              <label className="inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'COMPLETE'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'COMPLETE' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.complete}`} />{completion.complete}</label>
+              {action === 'COMPLETE' && <div className="mt-3 grid gap-2 sm:grid-cols-2">{gaps.map(gap => <label key={gap.field} className="text-xs font-medium">{labels.fieldLabels[gap.field] ?? gap.field}<input aria-label={`${lineLabel} — ${labels.fieldLabels[gap.field] ?? gap.field} — ${completion.value}`} className="input mt-1 block w-full text-sm" value={rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field] ?? ''} onChange={event => setRowOverrides(previous => ({ ...previous, [gap.sheetName]: { ...previous[gap.sheetName], [String(gap.row)]: { ...previous[gap.sheetName]?.[String(gap.row)], [gap.field]: event.target.value } } }))} /></label>)}</div>}
+            </fieldset>
+          })}
+        </div>
+        <p className="mt-3 text-xs">{skippedRows.length} {completion.skipSummary} · {completedRows.length} {completion.completeSummary}</p>
+      </section>}
+      <div data-testid="historic-import-footer" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
+        {blockers.length > 0 ? <ul role="alert" className="list-inside list-disc text-xs text-red-800">{blockers.map(blocker => <li key={`${blocker.sheetName}:${blocker.field}`}>✕ {blocker.sheetName} — ACRA : {blocker.field === '__RISK_SHEET__' ? labels.sheetTypes.RISKS : blocker.field === '__ACTION_SHEET__' ? labels.sheetTypes.ACTIONS : labels.fieldLabels[blocker.field] ?? blocker.field} ({labels.missing})</li>)}</ul> : <span />}
+        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
+      </div>
     </section>
   )
 }
