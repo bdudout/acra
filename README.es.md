@@ -4,7 +4,7 @@
 
 # ACRA — Augmented Cyber Risk Analysis
 
-**La plataforma open-source que hace accesible el análisis de riesgos EBIOS RM a todos**
+**La plataforma open-source de análisis de riesgos y GRC cibernético — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -13,7 +13,8 @@
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![EBIOS RM](https://img.shields.io/badge/M%C3%A9todo-EBIOS%20RM-red)](https://cyber.gouv.fr/la-methode-ebios-risk-manager)
-[![ANSSI](https://img.shields.io/badge/Compatible-ISO%2027005-green)](https://www.iso.org/standard/75281.html)
+[![Métodos](https://img.shields.io/badge/Métodos-EBIOS%20RM%20·%20ISO%2027005%20·%20ISO%2031000%20·%20NIST%20800--30-red)](#-métodos-de-análisis-configurables)
+[![GRC](https://img.shields.io/badge/GRC-3%20líneas%20de%20defensa-green)](#️-módulo-grc--gobernanza-riesgos-y-cumplimiento)
 
 **🌐 Langue / Language:** [🇫🇷 Français](README.md) · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · 🇪🇸 Español · [🇮🇹 Italiano](README.it.md)
 
@@ -23,13 +24,18 @@
 
 ## 🎯 Presentación
 
-**ACRA (Augmented Cyber Risk Analysis)** es una aplicación web guiada que permite a cualquier equipo de seguridad — incluso sin gran experiencia — llevar a cabo un análisis de riesgos completo según el método **EBIOS Risk Manager** de la ANSSI francesa, compatible con **ISO 27005**.
+**ACRA (Augmented Cyber Risk Analysis)** es una plataforma web autoalojada de **gestión de riesgos y GRC cibernético**. Permite a un equipo de seguridad — incluso sin gran experiencia — realizar análisis de riesgos con el método que elija y, después, gestionar el cumplimiento, los controles, los incidentes y los planes de acción en una sola herramienta:
+
+- **Análisis de riesgos multimétodo**: **EBIOS Risk Manager** (ANSSI, por defecto), **ISO/IEC 27005:2022**, **ISO 31000:2018** y **NIST SP 800-30 Rev. 1**;
+- **GRC completo, organizado en tres líneas de defensa**: registro de riesgos, cumplimiento multimarco, **madurez** (perfiles objetivo CMMI), exenciones, control permanente, auditoría interna, incidentes (DORA), KRI, registro RGPD, plan de acción unificado, pilotaje y dosieres de comité.
+
+Cada módulo se activa por organización: una consultora puede limitarse al análisis de riesgos y un banco activar toda la cadena de gobernanza.
 
 ### El problema que resuelve ACRA
 
-Los análisis de riesgos EBIOS RM son exigentes: el método consta de 5 talleres interconectados, decenas de conceptos que dominar, y el menor error de coherencia puede invalidar todo el estudio. En la práctica, los equipos recurren a hojas de cálculo Excel complejas, a consultores caros, o renuncian al rigor metodológico.
+Un análisis de riesgos riguroso es exigente (EBIOS RM tiene 5 talleres interconectados; ISO/IEC 27005 y NIST SP 800-30 imponen cada uno su propio proceso) y solo sirve si sus conclusiones se siguen: cumplimiento, controles, exenciones, acciones. En la práctica, esta información vive en hojas de cálculo separadas mantenidas a mano.
 
-ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a paso, propone ejemplos clicables en cada etapa, mantiene la coherencia entre los talleres y produce automáticamente un informe PDF estructurado.
+ACRA une estas piezas: un **asistente metodológico** que guía paso a paso con ejemplos clicables y mantiene la coherencia del análisis, conectado a los **marcos, controles y planes de acción** de la organización, con exportaciones (PDF, Word, PowerPoint, Excel) listas para el comité o el auditor.
 
 ### ¿Para quién?
 
@@ -38,21 +44,36 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 | 🔒 CISO y Risk Managers | Dirigir los análisis, aprobar, supervisar la cartera de riesgos |
 | 🔍 Analistas de seguridad | Realizar los talleres, documentar los escenarios, planificar las medidas |
 | 🏢 TI y Dirección | Leer las síntesis, seguir el tratamiento, validar los presupuestos de medidas |
-| 🎓 Estudiantes y formadores | Aprender el método EBIOS RM con una herramienta concreta |
+| ✅ Cumplimiento, control permanente, auditoría | Evaluar marcos, dirigir la madurez, probar controles, seguir hallazgos |
+| 🗄️ DPD | Llevar el registro de actividades de tratamiento (RGPD art. 30), detectar EIPD |
+| 🎓 Estudiantes y formadores | Aprender EBIOS RM, ISO/IEC 27005 o NIST SP 800-30 con una herramienta concreta |
 
 ### Lo que diferencia a ACRA
 
 - **Guía metodológica integrada**: cada campo dispone de un tooltip, un enlace a la guía ANSSI y ejemplos contextuales
 - **Coherencia automática**: los elementos de un taller alimentan automáticamente los siguientes
-- **14 marcos de medidas**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, Higiene ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA — desde una única interfaz
+- **Varios métodos, una herramienta**: EBIOS RM, ISO/IEC 27005, ISO 31000 y NIST SP 800-30, elegidos por instancia o por análisis
+- **GRC completo**: del análisis de riesgos al plan de acción, pasando por el cumplimiento, la madurez, las exenciones, los controles, la auditoría y los incidentes — módulos activables por organización
+- **15 marcos de medidas**: ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, Higiene ANSSI, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA, NCSC CAF v4.0 — desde una única interfaz
 - **Guía sectorial y conformidad**: ejemplos de negocio adaptados al sector y subsector, recomendación de marcos, detección del estatus regulatorio (NIS2, OIV…) — [ver detalles](#-guía-sectorial-y-conformidad)
 - **Método Flash (Club EBIOS)**: un recorrido guiado de los 5 talleres en una sola pasada, apoyándose en la capitalización (ejemplos, base de seguridad) — ideal para un primer análisis o un contexto restringido
 - **Guías del Club EBIOS integradas**: el método Flash y la ficha de método 5 (peligrosidad de las partes interesadas) están implementados directamente en el recorrido
+- **Madurez (perfiles objetivo CMMI)**: nivel actual y objetivo en cualquier marco de cumplimiento (incluidos NIST CSF 2.0 y NCSC CAF v4.0), brechas por dominio, acciones — [ver detalle](#-madurez--perfiles-objetivo-cmmi)
+- **Actualizaciones sencillas**: canales stable / beta, `git pull` o botón «Actualizar» en la administración — [ver detalle](#actualización)
 - **100 % autoalojado**: tus datos nunca salen de tu infraestructura
 
 ---
 
 ## ✨ Funcionalidades
+
+### 🧭 Métodos de análisis configurables
+
+El **método de análisis** se configura a nivel de **instancia** (SUPER_ADMIN) y **por análisis** — **EBIOS RM sigue siendo el predeterminado**.
+
+- **4 métodos**: **EBIOS RM** (ANSSI, 5 talleres) · **ISO/IEC 27005:2022** (proceso por fases) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (apreciación simple).
+- **Recorrido de introducción directa** (ISO 31000 / 27005 / NIST): los riesgos se introducen directamente (impacto × probabilidad) en la escala de la organización, sin escenarios EBIOS; contexto editable, consejos de fase, sugerencias de riesgos sectoriales y transversales.
+- **Tres niveles de riesgo**: **bruto** (inherente) → **actual** (con las medidas existentes) → **residual** (tras el plan de acción); propietario del riesgo, medidas y acciones por riesgo, evaluación frente al apetito de riesgo.
+- **Informe por método** en PDF y Excel.
 
 ### 📋 Método EBIOS RM completo
 
@@ -73,7 +94,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 
 ### 🔐 Seguridad y marcos
 
-- Medidas de seguridad de **14 marcos**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + controles personalizados — controles **localizados en 5 idiomas**
+- Medidas de seguridad de **15 marcos**: ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · Higiene ANSSI · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA · NCSC CAF v4.0 + controles personalizados — controles **localizados en 5 idiomas**
 - Política de contraseñas configurable (longitud, complejidad, caducidad, historial, bloqueo)
 - **MFA** configurable (código de un solo uso por **correo electrónico** o **SMS**) con ventana de confirmación de 60 min para evitar bloqueos accidentales
 - **SSO de empresa OIDC** (Azure AD, Okta, Google Workspace…) integrado en NextAuth — aprovisionamiento automático (JIT) de cuentas y **RBAC gobernado por el IdP**: asignación de **grupos** del IdP (AD / SailPoint) a los roles de ACRA, resincronizados en cada inicio de sesión. **SAML 2.0** en modo mantenimiento. **SCIM 2.0** (aprovisionamiento/desaprovisionamiento por el IdP)
@@ -82,14 +103,24 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 ### 👥 Colaboración y gobernanza
 
 - **RBAC de 12 roles** que cubre las **3 líneas de defensa**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · DIRECCIÓN_DE_NEGOCIO · ANALISTA · LECTOR · **CONTROLADOR** (control permanente) · **CUMPLIMIENTO** · **DPD** (protección de datos) · **AUDITOR** (3ª línea) · **OPERATIVO** (1ª línea)
-- **Perfiles operativos EE. UU./Reino Unido** (módulo opcional, desactivado por defecto): autoevaluación del estado actual y objetivo en las 22 categorías de **NIST CSF 2.0** (Tiers 1–4) y los 14 principios de **NCSC CAF v4.0** (Basic / Enhanced Profile), historial por punto, promoción de brechas al plan de acción sin duplicados, exportación CSV
 - **Multiorganización**: árbol de organizaciones con perímetros jerárquicos (nodo / subárbol); un ADMIN administra **solo las cuentas de su organización**, un SUPER_ADMIN gestiona la instancia
 - Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager), con **separación de funciones** — un aprobador no puede aprobar **su propio** análisis (principio de cuatro ojos) — y **autovalidación** para organizaciones de un solo usuario (despachos individuales, donde los cuatro ojos son imposibles)
 - **Aceptación de riesgos residuales** por la **Dirección de negocio** (rol dedicado de solo lectura), distinta de la validación del análisis
 - **Exenciones** — aceptación *temporal* de una no conformidad de la base de seguridad: vinculada a un control de un marco o a un riesgo, **justificada, compensada, acotada en el tiempo y supervisada**. Flujo configurable por organización (**autoservicio** / validación **CISO** / CISO + **Dirección de negocio**, segunda revisión opcional por el CISO de grupo), **alertas de vencimiento**, cierre con **pruebas** y un **registro de exenciones** transversal — un entregable de cumplimiento (ISO 27001, registro de excepciones DORA)
+  - Dictamen del RSSI **favorable, favorable con reservas** o desfavorable; el solicitante puede **modificar** la solicitud antes de cualquier dictamen y **retirarla** durante la revisión (conservada para la auditoría)
 - Compartición de acceso por análisis con permisos individuales
 - Panel de administración: gestión de usuarios (perímetro de la organización), creación de cuentas, suspensión, registros de auditoría
 - **Recuperación (papelera)**: un análisis eliminado por un usuario sigue siendo restaurable por un administrador durante **30 días** antes de su purga definitiva
+
+### 📈 Madurez — perfiles objetivo CMMI
+
+Módulo activable por organización (desactivado por defecto). La madurez es una **capa del cumplimiento**: mismo marco, mismos puntos de control, mismas acciones — el cumplimiento indica si un control se cumple; la madurez, en qué nivel está la organización y cuál persigue.
+
+- **Escala CMMI de 0 a 5** (Incompleto → En optimización), etiquetas y definiciones **modificables por el ADMIN** en la configuración
+- **Nivel objetivo global** (la «declaración de apetito», RAS) y un objetivo propio por punto si es necesario
+- **Cuadro de mando** (lectura RAD): madurez media actual y objetivo, brechas por dominio, mayores brechas, acciones abiertas y con retraso, última revisión
+- Cualquier marco activo puede llevar un perfil: **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, marcos personalizados…
+- Una brecha se convierte en una **acción del plan de acción unificado**, compartida con el cumplimiento (sin duplicados); historial por punto, exportación CSV
 
 ### 📊 Exportación y reporting
 
@@ -145,7 +176,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 
 ## 🏛️ Módulo GRC — Gobernanza, Riesgos y Cumplimiento
 
-Más allá del análisis EBIOS RM, ACRA incorpora una **base GRC completa** estructurada según el modelo de las **tres líneas de defensa**, pensada para entidades reguladas (banca, seguros, salud) y alineada con **DORA**, **NIS2** e **ISO/IEC 27001/27002**. Cada módulo se activa por organización; la navegación cambia automáticamente al «modo GRC» en cuanto un módulo de 2.ª/3.ª línea está activo.
+Más allá del análisis de riesgos (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30), ACRA incorpora una **base GRC completa** estructurada según el modelo de las **tres líneas de defensa**, pensada para entidades reguladas (banca, seguros, salud) y alineada con **DORA**, **NIS2** e **ISO/IEC 27001/27002**. Cada módulo se activa por organización; la navegación cambia automáticamente al «modo GRC» en cuanto un módulo de 2.ª/3.ª línea está activo.
 
 > Las capturas siguientes proceden del **conjunto de demostración realista** (sector bancario), anclado en amenazas públicas (ENISA Threat Landscape). Cargable y purgable: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
 
