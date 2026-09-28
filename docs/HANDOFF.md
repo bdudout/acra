@@ -6,6 +6,27 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-28 (3) — Claude Code : qualification pour toutes les orgs, tableau responsive, audit des méthodes
+
+**Branche** : `feat/historical-excel-import`. **Non poussé.**
+
+**Commits** : `695b711` migration — qualification activée pour toutes les
+organisations existantes (décision utilisateur ; 4/5 en local) · `af0bfc6` tableau
+des risques directs responsive (conteneur `max-w-6xl`, une colonne par niveau
+Brut/Actuel/Résiduel, cartes sous `md`, abréviations G/V traduites, `aria-label`) ·
+commit d'audit (`docs/methodes-directes-comparatif-iso.md`, réécrit, NIST inclus).
+
+**Vérifié** : 2091 tests verts, `tsc` 0, `i18n:check` OK ; navigateur ISO 31000 :
+1280 px → 1070 px utiles, plus de défilement horizontal ; 375 px → cartes, pas de
+débordement de page.
+
+**À décider par l'utilisateur** : lots P1 à P8 de l'audit (§7 du document).
+Principaux : P1 échelles/critères de l'org non appliqués aux méthodes directes
+(figées 1–4) ; P2 évaluation sur le brut au lieu de l'actuel, appétit ignoré ;
+P3 pas de propriétaire du risque ; P4 aucun rapport/export pour ces méthodes.
+
+---
+
 ## 2026-09-28 (suite) — Claude Code : qualification finalisée + correctifs d'audit
 
 **Branche** : `feat/historical-excel-import` (inchangée). **Non poussé** (aucune demande).

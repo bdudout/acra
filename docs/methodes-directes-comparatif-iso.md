@@ -1,138 +1,98 @@
-# Analyse comparative — ISO/IEC 27005:2022 & ISO 31000:2018 vs ACRA (parcours à saisie directe)
+# Audit des méthodes à saisie directe — ISO/IEC 27005:2022, ISO 31000:2018, NIST SP 800-30 Rev. 1
 
-> Cadrage produit en réponse au retour terrain sur les parcours ISO 27005 / ISO 31000.
-> Objectif : dire **ce qu'une analyse de risque conforme à la norme doit contenir**,
-> **ce qu'ACRA propose aujourd'hui**, l'**écart**, et un **plan priorisé**.
-> Constat transversal : **le modèle de données porte déjà l'essentiel** (risque brut
-> ET résiduel, mesures liables au risque, vulnérabilités) — **les manques sont dans le
-> parcours/UI des méthodes directes**, qui n'exposent qu'un tableau plat `nom + G×V +
-> stratégie`. EBIOS RM, lui, expose déjà mesures (atelier 5), résiduel et plans d'action.
+*Mis à jour le 2026-09-28 (remplace le comparatif du 2026-09-22). Audit sur le
+code (`lib/methodes.ts`, `components/PhasedRiskWorkshop.tsx`, `RisquesDirects.tsx`,
+`lib/risque-priorisation.ts`, routes `api/analyses/[id]/risques/**`, export) et
+recette navigateur. Références : ISO/IEC 27005:2022 (clauses 6 à 10), ISO 31000:2018
+(clause 6), NIST SP 800-30 Rev. 1 (chapitre 3, annexes D à I). Les renvois ISO 27005
+plus fins que la clause sont indicatifs : à confirmer sur le texte publié (AFNOR/ISO).*
 
----
+Légende : ✅ conforme · 🟠 partiel · 🔴 absent.
 
-## Partie A — ISO/IEC 27005:2022
+## 1. Ce qui a été comblé depuis le 2026-09-22
 
-### A.1 Ce que la norme attend (processus de gestion des risques SI)
+Vulnérabilités (ISO 27005), mesures existantes (`Mesure`, brut → actuel), plans
+d'action (`PlanAction` via `RISQUE_ANALYSE`), trois niveaux brut / actuel / résiduel,
+suggestions transverses + sectorielles, ajout direct avec annulation, risques
+proposés/imposés par la qualification, tableau responsive (`max-w-6xl`, cartes sur
+mobile), gardes d'accès / gel / isolation testés.
 
-1. **Établissement du contexte** — périmètre, parties prenantes, **critères de risque**
-   (critères d'évaluation ET critères d'**acceptation**).
-2. **Appréciation des risques** :
-   - **Identification** — approche *par événement* ou *par actif*. En approche par
-     actif : **actifs → menaces → mesures existantes → vulnérabilités → conséquences**,
-     et **propriétaire du risque**.
-   - **Analyse** — estimer **conséquence** et **vraisemblance** en **tenant compte des
-     mesures existantes** → **niveau de risque** (le risque « actuel »).
-   - **Évaluation** — **comparer aux critères**, **prioriser** les risques à traiter,
-     décider lesquels sont **acceptables**.
-3. **Traitement des risques** — choisir les options (réduire par des **mesures/contrôles**,
-   accepter, éviter, partager), bâtir un **plan de traitement**, déterminer le **risque
-   résiduel**, le faire **approuver par le propriétaire du risque**.
-4. **Communication & consultation**, **surveillance & revue** (continu).
+## 2. Écarts transverses (les trois méthodes)
 
-Notions clés : **menace + vulnérabilité**, **mesures existantes**, **risque inhérent
-(brut) vs résiduel**, **critère d'acceptation**, **propriétaire du risque**, **plan de
-traitement**.
+| # | Attendu | ACRA aujourd'hui | Écart | Normes |
+|---|---|---|---|---|
+| T1 | **Critères de risque de l'organisation** (échelles, seuils, matrice) appliqués à l'appréciation | EBIOS utilise `getEffectiveScaleConfig` (4 ou 5 niveaux, seuils, matrice qualitative). Les méthodes directes restent **figées en 1–4** (`echelle = [1,2,3,4]`, `clampInt(…,1,4)`) avec les paliers **codés en dur** (`getRiskTier`). Une org configurée en 5 niveaux voit deux échelles différentes selon la méthode. | 🔴 | 27005 §6.4, 7.3.4 · 31000 §6.3.4 · NIST annexes G, H, I (échelles à 5 niveaux) |
+| T2 | **Évaluation** : comparer le risque analysé aux critères d'**acceptation** et prioriser | Phase « Évaluation » : décision *à traiter / acceptable* sur le niveau **brut** (et non actuel, qui intègre les mesures existantes), seuil = paliers figés ; l'**appétit au risque** configuré (`appetitRisque`, par catégorie) n'est pas utilisé. | 🟠 | 27005 §7.4.1–7.4.2 · 31000 §6.4.4 |
+| T3 | **Propriétaire du risque** (identifié, approuve le traitement et le résiduel) | Aucun champ propriétaire sur `Risque` d'analyse (le registre d'org `RiskItem` en a un). L'acceptation du résiduel existe mais au niveau de l'analyse entière (Direction métier). | 🔴 | 27005 §7.2.2 et §8 (approbation du plan et du résiduel par les propriétaires) · ISO/IEC 27001:2022 §6.1.2 c) 2), §6.1.3 f) |
+| T4 | **Rapport / information documentée** | Bouton d'export (PDF/CSV) seulement dans l'atelier 5 EBIOS ; le modèle PDF est structuré en ateliers EBIOS et ignore `analyse.methode` → pas de rapport ISO 27005 / 31000 / NIST (registre 3 niveaux, mesures, plans, vulnérabilités). | 🔴 | 27005 clause 10 (information documentée) · 31000 §6.7 · NIST étape 3 |
+| T5 | **Surveillance et revue** | Aucune date de revue, fréquence ni déclencheur sur le risque d'analyse ; la phase NIST « Maintain » réaffiche simplement le registre complet. | 🔴 | 27005 clause 10 (surveillance et revue) · 31000 §6.6 · NIST étape 4 |
+| T6 | **Catégorie de risque** | `Risque.taxonomieCode` existe en base mais n'est ni saisi ni affiché en saisie directe (la qualification en a pourtant une : cyber / projet / opérationnel / fraude). | 🟠 | 31000 §6.3.4 · appétit par catégorie |
+| T7 | **Options de traitement** dans les termes de la norme | Libellés EBIOS : Réduire / Accepter / Transférer / Refuser / **Surveiller**. ISO 27005 : *modification, maintien, refus, partage* ; « surveiller » n'est pas une option de traitement (c'est un processus). | 🟠 | 27005 §8 (options de traitement) · 31000 §6.5.2 |
 
-### A.2 Ce qu'ACRA propose aujourd'hui (méthode ISO_27005)
+## 3. ISO/IEC 27005:2022
 
-- Parcours par phases (contexte / identification / analyse / évaluation / traitement).
-- **Contexte éditable** (périmètre + objectifs/critères) — livré (#171).
-- **Phases différenciées** (identification = liste, analyse = cotation G×V, traitement =
-  stratégie) — livré (#172).
-- **Évaluation** = priorisation par niveau + décision acceptable/à traiter — livré (#173),
-  mais **lecture seule et sans seuil configurable**.
-- Registre de risques : `nom`, `gravité`, `vraisemblance`, `niveau`, `stratégie`.
-
-### A.3 Écarts (gap analysis)
-
-| Attendu ISO 27005 | ACRA aujourd'hui | Écart | Le modèle le porte déjà ? |
+| Clause | Attendu | ACRA | Écart |
 |---|---|---|---|
-| Menaces **+ vulnérabilités** rattachées au risque | Absent (juste un intitulé) | 🔴 majeur | `Risque.vulnerabilitesResiduelles`, `evenementRedouteRef` existent (non exposés) |
-| **Mesures de sécurité** (contrôles) rattachées au risque | Absent en direct (existe en EBIOS A5) | 🔴 majeur | `Mesure.risqueId` existe |
-| **Risque brut / actuel (avec mesures) / résiduel (après plan)** | Un seul niveau (G×V) | 🔴 majeur | `niveauRisque` + `graviteResiduelle/vraisemblanceResiduelle/niveauResiduel` existent |
-| **Plans d'action** de traitement | Un simple libellé de stratégie | 🔴 majeur | `PlanAction` + lien polymorphe `RISQUE` existent |
-| **Évaluation** réellement actionnable (seuil d'acceptation, décision tracée) | Lecture seule, seuil = paliers figés | 🟠 moyen | seuil à ajouter |
-| **Propriétaire du risque** | Absent | 🟠 moyen | à ajouter (champ) |
-| Exemples de risques par actif/menace | Suggestions sectorielles (bien), mais estampillées EBIOS et par secteur seulement | 🟠 moyen | packs existants |
+| 6 | Contexte : périmètre, exigences des parties intéressées, **critères d'appréciation et d'acceptation** | Phase « Établissement du contexte » : périmètre + objectifs en texte libre ; les critères ne sont pas structurés ni reliés à l'évaluation (T1, T2) | 🟠 |
+| 7.2.1 | Identifier les risques — approche par **événements** ou par **biens** (actifs, menaces, vulnérabilités) | Intitulé + vulnérabilités (✅) ; ni **bien support / actif**, ni **menace / source de risque** rattachés | 🟠 |
+| 7.2.2 | Identifier les **propriétaires** | Absent (T3) | 🔴 |
+| 7.3 | Conséquences (critères DICT touchés) et vraisemblance | Cotation G×V ✅ ; **conséquences** non décrites (pas de critères de sécurité impactés) | 🟠 |
+| 7.3.4 | Niveau de risque selon les critères | 3 niveaux ✅ mais échelle figée (T1) | 🟠 |
+| 7.4 | Évaluation + priorisation | T2 | 🟠 |
+| 8 (options) | Options de traitement | ✅ (libellés, T7) | 🟠 |
+| 8 (mesures) | Mesures nécessaires, **comparaison avec l'annexe A d'ISO/IEC 27001**, déclaration d'applicabilité | Mesures libres, **sans référence à un contrôle** (l'EBIOS A5 a `referentiel`/`codeRef`, pas le panneau direct) ; le module conformité/SoA existe mais n'est pas relié | 🟠 |
+| 8 (plan) | Plan de traitement (actions, responsables, échéances) | `PlanAction` ✅ | ✅ |
+| 8 | Approbation du plan et acceptation du **résiduel par le propriétaire** | Acceptation globale de l'analyse ✅ ; pas par propriétaire / par risque (T3) | 🟠 |
+| 10 | Processus SMSI associés : communication, information documentée, surveillance et revue | T4, T5 | 🔴 |
 
----
+Terminologie : intitulés de phases proches de la norme ; la version AFNOR ajoute
+« des risques **de sécurité de l'information** » (§7.2 à §8).
 
-## Partie B — ISO 31000:2018
+## 4. ISO 31000:2018
 
-### B.1 Ce que la norme attend (lignes directrices génériques)
+| Clause | Attendu | ACRA | Écart |
+|---|---|---|---|
+| 6.2 | Communication et consultation | Collaborateurs de l'analyse ✅ ; pas de trace des parties consultées | 🟠 |
+| 6.3 | **Domaine d'application, contexte, critères** | **Aucune phase de contexte** : ISO 31000 est un écran unique (`METHOD_STEPS.ISO_31000` = une phase « appréciation »), alors qu'ISO 27005 et NIST en ont une | 🔴 |
+| 6.4.2–6.4.4 | Identification, analyse, évaluation | Tout sur un écran (mode *full*) ✅ ; **évaluation** (décision d'acceptation) absente de cet écran | 🟠 |
+| 6.5 | Traitement : options, **plans de traitement** | Mesures + plans ✅ | ✅ |
+| 6.6 | Suivi et revue | T5 | 🔴 |
+| 6.7 | Enregistrement et compte rendu | T4 | 🔴 |
+| — | Risques non cyber (stratégiques, opérationnels, financiers…) ; effets **positifs** (opportunités) | Suggestions et libellés orientés cyber ; pas de catégorie (T6) ; pas d'opportunités (hors périmètre produit, à décider) | 🟠 |
 
-Processus : **communication & consultation** · **périmètre, contexte & critères** ·
-**appréciation** (identification / analyse / évaluation) · **traitement** · **surveillance
-& revue** · **enregistrement & reporting**.
-Le **traitement** est **itératif** : choisir les options, planifier & mettre en œuvre,
-**apprécier le risque résiduel**, décider s'il est acceptable, sinon re-traiter.
-ISO 31000 est **générique** (pas de taxonomie actifs/menaces imposée) — mais **traitement
-+ risque résiduel** sont bien au cœur.
+## 5. NIST SP 800-30 Rev. 1
 
-### B.2 Ce qu'ACRA propose aujourd'hui (méthode ISO_31000)
+| Élément | Attendu | ACRA | Écart |
+|---|---|---|---|
+| Étape 1 | *Prepare for Assessment* : finalité, périmètre, hypothèses et contraintes, sources d'information, **modèle de risque et approche analytique** | Phase « Prepare » : périmètre + objectifs en texte libre ; hypothèses/contraintes, modèle de risque, approche (qualitative / semi-quantitative) non structurés | 🟠 |
+| Tâche 2-1 | **Sources de menace** : adversariales (capacité, intention, ciblage) / non adversariales (portée des effets) — annexe D | Absent | 🔴 |
+| Tâche 2-2 | **Événements de menace** — annexe E | Intitulé libre | 🟠 |
+| Tâche 2-3 | **Vulnérabilités et conditions prédisposantes** (sévérité) — annexe F | Vulnérabilités activées **seulement pour ISO 27005** (`withVulnerabilites = methode === 'ISO_27005'`) → absentes en NIST, alors que le guide de la phase « Conduct » demande de les identifier | 🔴 |
+| Tâche 2-4 | Vraisemblance = initiation/occurrence × impact défavorable — annexe G | Une seule vraisemblance 1–4 | 🟠 |
+| Tâche 2-5 | Impact — annexe H | Gravité 1–4 | 🟠 |
+| Tâche 2-6 | **Risque sur 5 niveaux** (*Very Low … Very High*) — annexe I | Paliers 4 niveaux (T1) | 🔴 |
+| Étape 3 | *Communicate Results* | Phase en lecture seule ✅ ; pas de livrable exportable (T4) | 🟠 |
+| Étape 4 | *Maintain Assessment* : surveiller les facteurs de risque, mettre à jour | Duplique le registre complet ; pas de suivi (T5) | 🟠 |
 
-- **Écran unique** d'appréciation « simple » : `nom + G×V + stratégie`.
-- Suggestions sectorielles cliquables (pré-remplissent le formulaire).
-- Panneau de conseils (repliable).
+Terminologie : les intitulés officiels sont *Prepare for Assessment*, *Conduct
+Assessment*, *Communicate Results*, *Maintain Assessment* (ACRA : versions courtes).
+NIST n'a pas de traduction officielle : garder l'intitulé anglais en référence.
 
-### B.3 Écarts
+## 6. Sécurité et robustesse (rappel)
 
-| Attendu ISO 31000 | ACRA aujourd'hui | Écart |
-|---|---|---|
-| **Traitement** (mesures) + **plans d'action** | Libellé de stratégie seul | 🔴 majeur |
-| **Risque résiduel** (après traitement) | Un seul niveau | 🔴 majeur |
-| **Critères** de risque + décision d'acceptation | Contexte non exposé en ISO 31000 (écran unique) | 🟠 moyen |
-| **Liste de risques par défaut large** (pas seulement sectorielle) | Uniquement suggestions par secteur | 🟠 moyen |
-| Surveillance & revue (réévaluation périodique) | Absent | 🟢 mineur (v2) |
+Accès (404 hors périmètre), édition (403), gel après acceptation, isolation d'org,
+recalcul serveur des niveaux, liens `RISQUE_ANALYSE` avec `ref` : couverts par des
+tests de route. Aucun nouveau constat de sécurité propre à ces méthodes.
 
-> ISO 31000 « simple » **peut rester léger**, mais « léger » ≠ « sans traitement ni
-> résiduel » : au minimum **mesures + plan d'action + niveau résiduel** sont nécessaires
-> pour que l'écran ait une valeur de gestion (sinon c'est un simple tableur de cotation).
+## 7. Plan proposé (par valeur / effort)
 
----
-
-## Partie C — Points transversaux (retour terrain)
-
-1. **Clic sur un exemple → ajout AUTOMATIQUE au registre** (aujourd'hui : pré-remplit le
-   formulaire). Décision : ajouter directement (avec undo/suppression facile) plutôt que
-   pré-remplir. 🔴
-2. **Exemples valables pour TOUS les secteurs** (rançongiciel sur l'AD, fuite de données
-   via un tiers, phishing → compromission, indisponibilité d'un SaaS critique, perte de
-   sauvegardes…). Aujourd'hui : suggestions **uniquement** sectorielles → écran vide si
-   secteur non couvert. 🔴 Ajouter un **socle de risques transverses**.
-3. **Liens « Réduire » (origine d'un plan d'action / registre) qui mènent à l'accueil de
-   l'analyse** au lieu de la bonne phase/objet, pour les analyses ISO. 🔴 Bug de
-   navigation (résolution d'URL d'ancre par méthode).
-4. **Risques proposés/imposés selon la QUALIFICATION** : dans la config du questionnaire
-   de qualification, permettre d'attacher des risques **proposés** (suggérés) ou
-   **imposés** (injectés) selon les réponses (ex. « traite des données de santé » →
-   impose « fuite de données de santé (RGPD art. 9) »). 🟠 Nouveau moteur de règles.
-
----
-
-## Partie D — Plan priorisé (proposé)
-
-> Principe directeur : **exposer dans les parcours directs la machinerie qu'ACRA a déjà**
-> (mesures liées au risque, résiduel, plans d'action), plutôt que de réinventer.
-
-**Lot 1 — Traitement & niveaux de risque (cœur, le plus fort impact)**
-- Registre direct : colonnes **brut → actuel (mesures existantes) → résiduel (plans)**.
-- **Mesures de sécurité** rattachables au risque (réutilise `Mesure.risqueId`, `efficacite`).
-- **Plans d'action** rattachables au risque (réutilise `PlanAction` + lien `RISQUE`).
-- Recalcul du **niveau résiduel** (réutilise `niveauResiduel`).
-- Corrige #3 (liens origine → bonne cible) et rend l'écran **Évaluation** actionnable (#4).
-
-**Lot 2 — Identification enrichie (ISO 27005)**
-- **Menaces + vulnérabilités** par risque (phase identification/analyse).
-- **Socle de risques transverses** (tous secteurs) + clic = **ajout auto** (#1, #2).
-- Suggestions débarrassées des libellés EBIOS (déjà fait #4-léger), enrichies menace/vuln.
-
-**Lot 3 — Qualification → risques**
-- Config questionnaire : attacher des **risques proposés/imposés** par réponse.
-- À la création/qualification : injecter/suggérer ces risques dans le registre.
-
-**Lot 4 — Finitions**
-- Seuil d'acceptation **configurable** (échelle ADMIN) pour l'Évaluation.
-- Propriétaire du risque ; surveillance/revue (réévaluation).
-
-Chaque lot = incréments TDD, EBIOS RM inchangé, i18n 5 langues.
+| Lot | Contenu | Effort | Normes couvertes |
+|---|---|---|---|
+| **P1** | **Échelles et critères de l'org** dans les méthodes directes (4/5 niveaux, seuils, libellés) — lib pure partagée avec l'EBIOS ; NIST en 5 niveaux par défaut | M | T1 · NIST 2-6 |
+| **P2** | **Évaluation** sur le niveau actuel + **seuil d'acceptation / appétit** de l'org ; décision affichée aussi en ISO 31000 | S | T2 |
+| **P3** | **Propriétaire du risque** (membre de l'org) + filtre ; acceptation du résiduel par risque (optionnelle) | M | T3 · 27005 §7.2.2 et §8 |
+| **P4** | **Rapport par méthode** (PDF/Excel : contexte, registre 3 niveaux, vulnérabilités, mesures, plans, décisions) + bouton d'export dans le parcours | M-L | T4 |
+| **P5** | ISO 31000 : phases **Contexte** et **Évaluation** ; catégorie de risque (T6) | S | 31000 §6.3, 6.4.4 |
+| **P6** | NIST : vulnérabilités activées, **sources de menace** (adversariale / non), hypothèses et modèle de risque en préparation | M | NIST 2-1, 2-3, étape 1 |
+| **P7** | Surveillance : date de prochaine revue + phase « Maintain » réellement de suivi | S-M | T5 |
+| **P8** | Terminologie normative (options de traitement ISO, intitulés NIST officiels) ; mesures reliées aux contrôles ISO 27001 annexe A / SoA | S / M | T7 · 27005 §8 (mesures, annexe A, SoA) |
