@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
 import RisquesDirects from '@/components/RisquesDirects'
 
 const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
-  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance',
+  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
   niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
@@ -41,9 +41,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     // niveau brut affiché (badge « Brut 12 ») ; actuel/résiduel masqués car non réduits.
-    expect(screen.getByText('Brut')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
-    expect(screen.queryByText('Actuel')).toBeNull()
+    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
+    expect(niveaux.getByText('Brut')).toBeInTheDocument()
+    expect(niveaux.getByText('12')).toBeInTheDocument()
+    expect(niveaux.queryByText('Actuel')).toBeNull()
   })
 
   it('3 niveaux : affiche Brut, puis Actuel/Résiduel seulement s\'ils sont réduits', async () => {
@@ -54,9 +55,10 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
-    expect(screen.getByText('Brut')).toBeInTheDocument()
-    expect(screen.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
-    expect(screen.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
+    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
+    expect(niveaux.getByText('Brut')).toBeInTheDocument()
+    expect(niveaux.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
+    expect(niveaux.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
   })
 
   it('éditeur « Actuel » (avec mesures) : modifier G met à jour graviteActuelle (PATCH)', async () => {
@@ -65,12 +67,12 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    expect(screen.getByText('Actuel (avec mesures)')).toBeInTheDocument()
-    // La colonne « Actuel » a ses selects G/V (valeur initiale = brut) ; on abaisse G à 2.
-    const selects = screen.getAllByRole('combobox')
-    // Le dernier bloc de selects est l'éditeur actuel (rate mode : brut G,V + actuel G,V).
+    expect(screen.getByRole('columnheader', { name: 'Actuel (avec mesures)' })).toBeInTheDocument()
+    // L'éditeur « Actuel » part des valeurs brutes ; on abaisse sa gravité à 2 (liste ciblée par son nom accessible).
+    const gActuel = screen.getByRole('combobox', { name: 'Actuel (avec mesures) — Gravité' }) as HTMLSelectElement
+    expect(gActuel.value).toBe('4')
     fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6, strategie: 'REDUIRE' } }))
-    fireEvent.change(selects[selects.length - 2], { target: { value: '2' } })
+    fireEvent.change(gActuel, { target: { value: '2' } })
     await waitFor(() => {
       const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
       expect(patch && JSON.parse(patch[1].body)).toMatchObject({ graviteActuelle: 2 })
@@ -159,9 +161,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
-    expect(screen.getByText('Niveau')).toBeInTheDocument()
-    expect(screen.getAllByText('Gravité').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Traitement')).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut — Gravité' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut — Vraisemblance' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Traitement' })).toBeNull()
   })
 
   it('peut exposer uniquement les mesures pendant la phase d’analyse ISO 27005', async () => {
@@ -183,9 +186,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable mode="treat" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
-    expect(screen.getByText('Traitement')).toBeInTheDocument()
-    expect(screen.getByText('Niveau')).toBeInTheDocument()
-    expect(screen.queryByText('Gravité')).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Traitement' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Brut — Gravité' })).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Résiduel (cible) — Gravité' })).toBeInTheDocument()
   })
 
   it('#5 — masque les suggestions déjà présentes dans le registre', async () => {

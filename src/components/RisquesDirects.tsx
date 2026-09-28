@@ -64,8 +64,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const showAdd = mode === 'full' || mode === 'identify'
   const showAddScoring = mode === 'full' // pas de G/V dans l'ajout en identification
   const col = {
-    gravite: mode === 'full' || mode === 'rate',
-    vraisemblance: mode === 'full' || mode === 'rate',
+    // Cotation BRUTE (gravité × vraisemblance) : analyse + écran complet.
+    brut: mode === 'full' || mode === 'rate',
     niveau: mode !== 'identify',
     strategie: mode === 'full' || mode === 'treat',
     // Cotation RÉSIDUELLE (cible après traitement) : phase traitement + écran complet.
@@ -74,7 +74,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     actuel: mode === 'full' || mode === 'rate',
   }
   // Nombre de colonnes du tableau standard (pour le colSpan de la sous-ligne mesures).
-  const colCount = 1 + [col.gravite, col.vraisemblance, col.niveau, col.actuel, col.residuel, col.strategie].filter(Boolean).length + 1
+  const colCount = 1 + [col.brut, col.niveau, col.actuel, col.residuel, col.strategie].filter(Boolean).length + 1
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
   const [nom, setNom] = useState('')
@@ -161,7 +161,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const actuel = r.niveauActuel ?? brut
     const residuel = r.niveauResiduel ?? actuel
     return (
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div role="group" aria-label={m.colNiveau} className="flex flex-wrap items-center gap-1.5">
         {niveauTag(m.niveauBrut, brut)}
         {actuel < brut && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauActuel, actuel)}</>}
         {residuel < actuel && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauResiduel, residuel)}</>}
@@ -169,6 +169,39 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     )
   }
   const echelle = [1, 2, 3, 4]
+
+  // Cellule responsive : tableau sur écran large ; sous md, ligne libellé / valeur.
+  const cell = (label: string, content: React.ReactNode) => (
+    <td className="flex items-center justify-between gap-3 px-3 py-1.5 md:table-cell md:py-2">
+      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 md:hidden">{label}</span>
+      {content}
+    </td>
+  )
+  // Paire gravité × vraisemblance d'un niveau (brut / actuel / résiduel), avec
+  // abréviations traduites et libellés accessibles. Actuel ← brut, résiduel ← brut par défaut.
+  const LEVELS = {
+    brut:     { g: 'gravite', v: 'vraisemblance', label: m.niveauBrut },
+    actuel:   { g: 'graviteActuelle', v: 'vraisemblanceActuelle', label: m.colActuelAvecMesures },
+    residuel: { g: 'graviteResiduelle', v: 'vraisemblanceResiduelle', label: m.colResiduelCible },
+  } as const
+  const gvPair = (r: RisqueRow, level: keyof typeof LEVELS) => {
+    const L = LEVELS[level]
+    const gv = (r[L.g] as number | null | undefined) ?? r.gravite
+    const vv = (r[L.v] as number | null | undefined) ?? r.vraisemblance
+    const sel = 'px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
+    return (
+      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <span aria-hidden="true" title={m.colGravite}>{m.abbrGravite}</span>
+        <select aria-label={`${L.label} — ${m.colGravite}`} disabled={!editable} value={gv} onChange={e => maj(r.id, { [L.g]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
+          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <span aria-hidden="true" title={m.colVraisemblance}>{m.abbrVraisemblance}</span>
+        <select aria-label={`${L.label} — ${m.colVraisemblance}`} disabled={!editable} value={vv} onChange={e => maj(r.id, { [L.v]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
+          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </div>
+    )
+  }
 
   // #5 — masque les suggestions déjà présentes dans le registre (dédup par intitulé).
   const existingNames = new Set(rows.map(r => (r.nom ?? '').trim().toLowerCase()))
@@ -261,86 +294,56 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
       ) : loading ? <p className="text-xs text-gray-400">…</p>
         : rows.length === 0 ? <p className="text-xs text-gray-400 italic">{m.empty}</p>
         : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2">{m.colNom}</th>
-                {col.gravite && <th className="px-3 py-2">{m.colGravite}</th>}
-                {col.vraisemblance && <th className="px-3 py-2">{m.colVraisemblance}</th>}
+          <div className="md:overflow-x-auto">
+            {/* Tableau sur écran large ; sous md, chaque ligne devient une carte
+                (libellés affichés dans les cellules) — même markup, pas de duplication. */}
+            <table className="block w-full text-sm md:table">
+              <thead className="hidden md:table-header-group"><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <th className="px-3 py-2 min-w-[14rem]">{m.colNom}</th>
+                {col.brut && <th className="px-3 py-2 whitespace-nowrap">{m.niveauBrut} <span className="normal-case font-normal">({m.abbrGravite}×{m.abbrVraisemblance})</span></th>}
                 {col.niveau && <th className="px-3 py-2">{m.colNiveau}</th>}
                 {col.actuel && <th className="px-3 py-2">{m.colActuelAvecMesures}</th>}
                 {col.residuel && <th className="px-3 py-2">{m.colResiduelCible}</th>}
                 {col.strategie && <th className="px-3 py-2">{m.colStrategie}</th>}
                 <th className="px-3 py-2" />
               </tr></thead>
-              <tbody>
+              <tbody className="block space-y-3 md:table-row-group md:space-y-0">
                 {rows.map(r => [
-                  <tr key={r.id} className={`border-b border-gray-100 dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
-                    <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">
+                  <tr key={r.id} className={`block rounded-lg border border-gray-200 dark:border-gray-700 md:table-row md:rounded-none md:border-0 md:border-b md:border-gray-100 md:dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
+                    <td className="block px-3 py-2 font-medium text-gray-800 dark:text-gray-100 md:table-cell">
                       <div className="flex items-center gap-2">
                         {hasDetails && <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
                           aria-label={treatmentLabel} title={treatmentLabel}
                           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                           {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
                           {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
-                          <span className="hidden lg:inline text-[10px] text-gray-500">{showMesuresSection && showPlansSection
+                          <span className="hidden xl:inline text-[10px] text-gray-500">{showMesuresSection && showPlansSection
                             ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
                             : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
                               : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
                         </button>}
-                        <span>{r.nom}</span>
+                        <span className="min-w-0 flex-1 break-words">{r.nom}</span>
+                        {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1 md:hidden" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                       </div>
                       {r.id === justAddedId && (
                         <button onClick={() => undoAdd(r.id)} className="ml-2 text-xs font-normal text-ebios-600 hover:text-ebios-800 underline">{m.undo}</button>
                       )}
                     </td>
-                    {col.gravite && <td className="px-3 py-2">
-                      <select disabled={!editable} value={r.gravite} onChange={e => maj(r.id, { gravite: Number(e.target.value) })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
-                        {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </td>}
-                    {col.vraisemblance && <td className="px-3 py-2">
-                      <select disabled={!editable} value={r.vraisemblance} onChange={e => maj(r.id, { vraisemblance: Number(e.target.value) })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
-                        {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </td>}
-                    {col.niveau && <td className="px-3 py-2">{niveauxCell(r)}</td>}
-                    {col.actuel && <td className="px-3 py-2">
-                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                        <span>G</span>
-                        <select disabled={!editable} value={r.graviteActuelle ?? r.gravite} onChange={e => maj(r.id, { graviteActuelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
-                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                        <span>V</span>
-                        <select disabled={!editable} value={r.vraisemblanceActuelle ?? r.vraisemblance} onChange={e => maj(r.id, { vraisemblanceActuelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
-                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                      </div>
-                    </td>}
-                    {col.residuel && <td className="px-3 py-2">
-                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                        <span>G</span>
-                        <select disabled={!editable} value={r.graviteResiduelle ?? r.gravite} onChange={e => maj(r.id, { graviteResiduelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
-                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                        <span>V</span>
-                        <select disabled={!editable} value={r.vraisemblanceResiduelle ?? r.vraisemblance} onChange={e => maj(r.id, { vraisemblanceResiduelle: Number(e.target.value) })} className="px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60">
-                          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                      </div>
-                    </td>}
-                    {col.strategie && <td className="px-3 py-2">
-                      <select disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
+                    {col.brut && cell(m.niveauBrut, gvPair(r, 'brut'))}
+                    {col.niveau && cell(m.colNiveau, niveauxCell(r))}
+                    {col.actuel && cell(m.colActuelAvecMesures, gvPair(r, 'actuel'))}
+                    {col.residuel && cell(m.colResiduelCible, gvPair(r, 'residuel'))}
+                    {col.strategie && cell(m.colStrategie,
+                      <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
-                      </select>
-                    </td>}
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      </select>)}
+                    <td className="hidden px-3 py-2 text-right whitespace-nowrap md:table-cell">
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
                   </tr>,
                   hasDetails && detailsOpenId === r.id && (
-                    <tr key={`${r.id}-details`} className="bg-gray-50/50 dark:bg-gray-900/20">
-                      <td className="px-3 pb-3" colSpan={colCount}>
+                    <tr key={`${r.id}-details`} className="block bg-gray-50/50 dark:bg-gray-900/20 md:table-row">
+                      <td className="block px-3 pb-3 md:table-cell" colSpan={colCount}>
                         <div className="space-y-2">
                           {showVulnSection && <RiskVulnerabilites analyseId={analyseId} riskId={r.id} editable={editable} initial={r.vulnerabilites ?? []} />}
                           {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />}

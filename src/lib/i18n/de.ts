@@ -1459,6 +1459,7 @@ export const de: Translations = {
     colGravite: 'Schweregrad',
     colVraisemblance: 'Eintrittswahrscheinlichkeit',
     colNiveau: 'Stufe',
+    abbrGravite: 'S', abbrVraisemblance: 'W',
     niveauBrut: 'Brutto', niveauActuel: 'Aktuell', niveauResiduel: 'Restrisiko', colResiduelCible: 'Restrisiko (Ziel)', colActuelAvecMesures: 'Aktuell (mit Maßnahmen)', mesuresTitle: 'Bestehende Sicherheitsmaßnahmen', mesuresEmpty: 'Noch keine Maßnahme.', mesuresNomPlaceholder: 'Bezeichnung der Maßnahme', mesuresEfficacite: 'Wirksamkeit', mesuresStatut: 'Status', mesuresStatuts: { A_FAIRE: 'Zu erledigen', EN_COURS: 'In Bearbeitung', REALISE: 'Umgesetzt', REPORTE: 'Verschoben' }, mesuresEcheance: 'Fällig am', mesuresTitrePlan: 'Maßnahmen & Aktionsplan',
     colStrategie: 'Behandlung',
     add: 'Hinzufügen',

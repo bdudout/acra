@@ -1484,6 +1484,7 @@ export const fr = {
     colGravite: 'Gravité',
     colVraisemblance: 'Vraisemblance',
     colNiveau: 'Niveau',
+    abbrGravite: 'G', abbrVraisemblance: 'V',
     niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)', mesuresTitle: 'Mesures de sécurité existantes', mesuresEmpty: 'Aucune mesure pour l’instant.', mesuresNomPlaceholder: 'Intitulé de la mesure', mesuresEfficacite: 'Efficacité', mesuresStatut: 'Statut', mesuresStatuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', REALISE: 'Réalisé', REPORTE: 'Reporté' }, mesuresEcheance: 'Échéance', mesuresTitrePlan: 'Mesures & plan d’action',
     colStrategie: 'Traitement',
     add: 'Ajouter',

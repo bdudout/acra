@@ -123,7 +123,8 @@ export default async function AtelierPage({
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+        {/* Méthodes à saisie directe : largeur étendue (tableau brut / actuel / résiduel). */}
+        <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
