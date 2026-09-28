@@ -135,6 +135,7 @@ export default function DerogationsPanel({
   }
 
   // ── Transitions ──
+  const [okId, setOkId] = useState<string | null>(null)
   async function transition(id: string, body: Record<string, unknown>) {
     setBusy(true); setError(null)
     const res = await fetch(`/api/derogations/${id}`, {
@@ -143,7 +144,9 @@ export default function DerogationsPanel({
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(data.error ?? 'Erreur'); return }
-    setOpenId(null)
+    // Rechargement de la liste seule : la dérogation reste dépliée, avec une
+    // confirmation visible (plus de fermeture qui masquait le résultat).
+    setOkId(id)
     reload()
   }
 
@@ -267,7 +270,8 @@ export default function DerogationsPanel({
                 )}
                 {hasAction && (
                   <div className="mt-2">
-                    <button onClick={() => setOpenId(openId === x.id ? null : x.id)} className="text-xs text-ebios-600 dark:text-ebios-300 hover:underline">
+                    {okId === x.id && <p role="status" className="mb-1 text-xs font-medium text-green-700 dark:text-green-300">{d.detail.actionSaved}</p>}
+                    <button onClick={() => { setOkId(null); setOpenId(openId === x.id ? null : x.id) }} className="text-xs text-ebios-600 dark:text-ebios-300 hover:underline">
                       {openId === x.id ? d.cancel : '⚙︎ Actions'}
                     </button>
                     {openId === x.id && (

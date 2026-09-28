@@ -6,7 +6,7 @@
 // workflow inline (avis RSSI, double regard, validation, clôture, révocation),
 // mêmes gardes RBAC que DerogationsPanel (lib/derogation). Cf. page /derogations.
 
-import { IdCard, X, ChevronDown, Check, Ban } from 'lucide-react'
+import { IdCard, X, ChevronDown, Check, Ban, Pencil, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -91,11 +91,16 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
   const [actionError, setActionError] = useState<string | null>(null)
   // Modification de la demande par son demandeur (avant tout avis RSSI).
   const [editForm, setEditForm] = useState<{ intitule: string; motif: string; mesures: string } | null>(null)
+  // Mise à jour EN PLACE après une action (plus de rechargement complet qui refermait
+  // les lignes ouvertes) : copie locale des lignes + message de confirmation.
+  const [localRows, setLocalRows] = useState(rows)
+  useEffect(() => { setLocalRows(rows) }, [rows])
+  const [actionOk, setActionOk] = useState<string | null>(null)
 
   const sessionUser = useMemo(() => ({ id: userId, role: userRole }), [userId, userRole])
 
   async function toggleRow(id: string) {
-    setActionError(null); setActionComment(''); setEditForm(null)
+    setActionError(null); setActionComment(''); setEditForm(null); setActionOk(null)
     if (openId === id) { setOpenId(null); setDetail(null); return }
     setOpenId(id); setDetail(null); setDetailLoading(true)
     try {
@@ -113,8 +118,14 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     })
     setActionBusy(false)
     if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(j.error ?? 'Erreur'); return }
-    setOpenId(null); setDetail(null); setActionComment(''); setEditForm(null)
-    router.refresh()
+    const updated = await res.json().catch(() => null) as { statut?: string; intitule?: string; dateFin?: string | null } | null
+    const id = openId
+    if (updated) setLocalRows(prev => prev.map(r => r.id === id ? { ...r, statut: updated.statut ?? r.statut, intitule: updated.intitule ?? r.intitule, dateFin: updated.dateFin ?? null } : r))
+    setActionComment(''); setEditForm(null)
+    // La ligne reste ouverte : on recharge seulement son détail pour montrer le résultat.
+    const fresh = await fetch(`/api/derogations/${id}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
+    if (fresh) setDetail(fresh)
+    setActionOk(d.detail.actionSaved)
   }
   const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
   const [refs, setRefs] = useState<{ code: string; nom: string }[]>([])
@@ -155,13 +166,14 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     router.refresh()
   }
 
-  const enriched = useMemo(() => rows.map(r => ({
+  const enriched = useMemo(() => localRows.map(r => ({
     ...r,
     etat: etatDerogation({ statut: r.statut as DerogationStatut, dateFin: r.dateFin }, ALERTE_DEFAUT),
     jours: joursAvantExpiration(r.dateFin),
-  })), [rows])
+  })), [localRows])
 
-  const filtered = useMemo(() => enriched.filter(r => matchFiltre(filtre, r.statut, r.etat)), [enriched, filtre])
+  // La ligne ouverte reste affichée même si l'action la fait sortir du filtre courant.
+  const filtered = useMemo(() => enriched.filter(r => matchFiltre(filtre, r.statut, r.etat) || r.id === openId), [enriched, filtre, openId])
   const count = (f: Filtre) => enriched.filter(r => matchFiltre(f, r.statut, r.etat)).length
 
   const filtres: { key: Filtre; label: string }[] = [
@@ -337,6 +349,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                         {detail.retireeLe && <p className="text-xs text-gray-600 dark:text-gray-300">{d.detail.retireeLe} {formatDate(detail.retireeLe, locale)}{detail.retraitMotif && ` — ${detail.retraitMotif}`}</p>}
                         {detail.rejetMotif && <p className="text-xs text-red-700 dark:text-red-300">{d.detail.motifRejet} {detail.rejetMotif}</p>}
 
+                        {actionOk && <p role="status" className="text-xs font-medium text-green-700 dark:text-green-300">{actionOk}</p>}
                         {(() => {
                           const rbac = { statut: detail.statut as DerogationStatut, demandeurId: detail.demandeurId, avisRssiPar: detail.avisRssiPar }
                           const st = detail.statut
@@ -354,6 +367,13 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                           return (
                             <div className="space-y-2 pt-1 border-t border-gray-200 dark:border-gray-700">
                               {actionError && <p className="text-xs text-red-600">{actionError}</p>}
+                              {(modifier || retirer) && !editForm && (
+                                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ebios-200 bg-ebios-50/60 px-3 py-2 dark:border-ebios-900/50 dark:bg-ebios-900/10">
+                                  <span className="text-xs font-medium text-ebios-800 dark:text-ebios-200">{d.detail.votreDemande}</span>
+                                  {modifier && <button disabled={actionBusy} onClick={() => setEditForm({ intitule: detail.intitule, motif: detail.motif, mesures: detail.mesuresCompensatoires })} className="btn-secondary text-xs inline-flex items-center gap-1.5 disabled:opacity-50"><Pencil size={13} aria-hidden="true" />{d.detail.modifierBtn}</button>}
+                                  {retirer && <button disabled={actionBusy} onClick={() => { if (window.confirm(d.detail.retraitConfirm)) doAction('RETIRER', { commentaire: actionComment || undefined }) }} className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 dark:bg-gray-900 inline-flex items-center gap-1.5 disabled:opacity-50"><Undo2 size={13} aria-hidden="true" />{d.detail.retirerBtn}</button>}
+                                </div>
+                              )}
                               {needsComment && (
                                 <textarea value={actionComment} onChange={e => setActionComment(e.target.value)} rows={2}
                                   placeholder={d.detail.commentairePlaceholder}
@@ -375,8 +395,6 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                                 </>}
                                 {cloture && <button disabled={actionBusy} onClick={() => doAction('CLOTURER', { commentaire: actionComment || undefined })} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.cloturerBtn}</button>}
                                 {revoque && <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('REVOQUER', { commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50">{d.detail.revoquerBtn}</button>}
-                                {modifier && !editForm && <button disabled={actionBusy} onClick={() => setEditForm({ intitule: detail.intitule, motif: detail.motif, mesures: detail.mesuresCompensatoires })} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.modifierBtn}</button>}
-                                {retirer && <button disabled={actionBusy} onClick={() => { if (window.confirm(d.detail.retraitConfirm)) doAction('RETIRER', { commentaire: actionComment || undefined }) }} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.retirerBtn}</button>}
                               </div>
                               {modifier && editForm && (
                                 <div className="space-y-2 pt-2">
