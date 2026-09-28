@@ -1,6 +1,6 @@
 # Expression de besoin — Profils opérationnels US/UK
 
-**Statut :** lot 1 livré (profils de référence) · lots 2–3 à décider · **Date :** 2026-09-28
+**Statut :** lot 1 livré puis **refondu en module « Maturité »** (2026-09-29, § 10) · lots 2–3 à décider · **Date :** 2026-09-28
 
 ## 1. Objectif
 
@@ -129,3 +129,23 @@ promotion réservées à ADMIN, RSSI, RISK_MANAGER et CONFORMITE
 (`peutEvaluerProfilOperationnel`). Le « métier propriétaire » (§ 3) est en lecture
 au lot 1 : il est désigné comme responsable du point et porte l'action promue
 (`porteur`) qu'il traite dans le plan d'action. Aucune donnée n'est envoyée à un service tiers.
+
+## 10. Refonte « Maturité » (décision du 2026-09-29)
+
+Retour produit : les profils dupliquaient la conformité (NIST CSF 2.0 y existait
+déjà au niveau sous-catégorie), le niveau cible devait suivre une échelle **CMMI**
+configurable, et la lecture devait être explicite (« RAS / RAD »). Décisions :
+
+| Sujet | Décision livrée |
+|---|---|
+| Objet en base | **Même objet** : la maturité est une couche de `Conformite` (`maturites` par point, `maturiteCible` globale). Table `OperationalProfile` supprimée ; ses liens d'action migrés en liens `CONFORMITE`. |
+| Indépendance | Maturité et statut de conformité restent **indépendants** (affichés côte à côte) ; l'édition de conformité ne réécrit jamais la maturité. |
+| Échelle | **CMMI 0–5** (Incomplet, Initial, Géré, Défini, Géré quantitativement, En optimisation), libellés/définitions par défaut ×5 langues, **modifiables par l'ADMIN** (Configuration → Échelles), hérités dans l'arbre d'organisations. |
+| Cible | Niveau cible **global** (lecture RAS) + cible propre à chaque point si besoin ; écart = maturité actuelle évaluée < cible effective. |
+| Référentiels | Tout référentiel actif de la conformité (livré, GRC ou personnalisé). **NCSC CAF v4.0** ajouté aux référentiels livrés (14 principes, énoncés officiels non traduits). |
+| Tableau de bord | Lecture RAD : maturité moyenne actuelle / visée, points sous la cible, écarts par domaine, plus grands écarts, actions ouvertes / en retard, dernière revue. |
+| Actions | Un écart devient une action `CONFORMITE` (même lien que la conformité) : anti-doublon commun, visible dans le plan d'action unifié. |
+| Adresse | `/maturite` (l'ancienne `/profils-operationnels` redirige). Colonne de configuration `profilsOperationnelsActive` conservée (nom historique). |
+
+Reste au backlog (`docs/CHANTIERS-EN-COURS.md`) : vue RAS/RAD dédiée consolidant
+appétit au risque et maturité, attendus IGP des profils CAF Basic/Enhanced.
