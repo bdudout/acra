@@ -34,7 +34,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -148,7 +148,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
   //    RGPD + reporting DORA (art. 19), registre TIC (art. 28).
   const confReg: NavKey[] = [...gouvernance]
-  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic')
+  // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
+  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', ...(canPilotage ? ['testsResilience' as const] : []))
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }

@@ -126,6 +126,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
           traitements: true,
           traitementsConformite: true,
           plansAction: true,
+          testsResilience: true,
         },
       },
     },

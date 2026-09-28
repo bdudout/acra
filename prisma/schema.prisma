@@ -190,9 +190,40 @@ model Organization {
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
   analysisImportMappings AnalysisImportMapping[]
+  testsResilience        TestResilience[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
+// 2022/2554, art. 24 à 26) : un test par ligne, rattaché à une année de programme.
+// Compilé dans le rapport sur le réexamen du cadre de gestion du risque lié aux TIC
+// (art. 6 § 5). Cf. lib/tests-resilience.ts, docs/specs/tests-resilience-dora.md.
+model TestResilience {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  annee            Int
+  intitule         String
+  type             String // cf. TEST_RESILIENCE_TYPES (art. 25 § 1 + TLPT art. 26)
+  perimetre        String?      @db.Text
+  // Le test porte sur des systèmes soutenant des fonctions critiques ou importantes (art. 24 § 6).
+  fonctionCritique Boolean      @default(false)
+  processusId      String?
+  riskItemIds      Json         @default("[]")
+  testeur          String       @default("INTERNE") // INTERNE | EXTERNE
+  independant      Boolean      @default(true) // art. 24 § 4
+  statut           String       @default("PLANIFIE") // PLANIFIE | EN_COURS | REALISE | ANNULE
+  datePrevue       DateTime?
+  dateRealisation  DateTime?
+  resultat         String?      @db.Text
+  constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
+  createdById      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId, annee])
 }
 
 // Modèle de correspondance Excel réutilisable, strictement propre à une organisation.

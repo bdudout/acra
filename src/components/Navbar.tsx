@@ -179,6 +179,7 @@ export default function Navbar() {
     ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
+    testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
