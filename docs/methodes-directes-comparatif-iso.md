@@ -17,6 +17,19 @@ suggestions transverses + sectorielles, ajout direct avec annulation, risques
 proposés/imposés par la qualification, tableau responsive (`max-w-6xl`, cartes sur
 mobile), gardes d'accès / gel / isolation testés.
 
+## 1 bis. Livré le 2026-09-28 (après audit)
+
+- **P1** ✅ — échelle de l'organisation (4 ou 5 niveaux selon sa configuration,
+  paliers, matrice qualitative) appliquée aux méthodes directes, UI et bornes serveur
+  (`lib/risque-priorisation.ts`, `lib/risque-direct.ts`) → **T1 résolu**.
+- **P2** ✅ — évaluation sur le niveau **actuel**, critère = appétit de l'organisation
+  (catégorie, sinon global), repli sur la moitié haute des paliers ; décision et
+  critère affichés en phase « Évaluation » et dans l'écran complet ISO 31000 / NIST
+  → **T2 résolu** (la décision ISO 31000 de P5 est couverte).
+- Limites connues : les règles de risques de la qualification et l'import
+  historique cotent encore sur 1–4 (valide aussi en 5 niveaux, mais sans accès au
+  niveau 5).
+
 ## 2. Écarts transverses (les trois méthodes)
 
 | # | Attendu | ACRA aujourd'hui | Écart | Normes |

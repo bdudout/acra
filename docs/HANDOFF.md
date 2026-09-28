@@ -6,6 +6,28 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-28 (4) — Claude Code : P1 + P2 de l'audit des méthodes
+
+**Branche** : `feat/historical-excel-import`. **Non poussé.** Commit `3cec6f9` (+ docs).
+
+- **P1** : les méthodes directes utilisent l'échelle de l'organisation
+  (`getEffectiveScaleConfig` : 4 ou 5 niveaux selon sa config — décision utilisateur :
+  pas de 5 niveaux imposé pour NIST), paliers et matrice qualitative ; bornes serveur
+  = `nbNiveaux`.
+- **P2** : évaluation sur le niveau actuel ; critère = appétit (catégorie > global),
+  repli moitié haute des paliers ; module pur `lib/risque-priorisation.ts`
+  (l'ancienne API à paliers figés et son test ont été supprimés, plus d'utilisateur).
+- **Vérifié** : 2105 tests verts, `tsc` 0, `i18n:check` OK, `npm run build` OK.
+  Recette : appétit réel (seuil global 9) appliqué en phase Évaluation ; passage à
+  5 niveaux via /configuration → listes 1..5, G5×V5 = 25 persisté ; **configuration
+  d'échelle restaurée ensuite depuis une sauvegarde** (identique hors `updatedAt`),
+  risque de recette supprimé.
+- **Dev** : relancé après le build (`next dev -p 3005`, toutes interfaces, DB localhost).
+- **Suites** : P3 (propriétaire), P4 (rapport par méthode), P5–P8 ; règles de
+  qualification et import encore bornés à 1–4.
+
+---
+
 ## 2026-09-28 (3) — Claude Code : qualification pour toutes les orgs, tableau responsive, audit des méthodes
 
 **Branche** : `feat/historical-excel-import`. **Non poussé.**
