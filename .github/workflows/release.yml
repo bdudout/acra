@@ -40,6 +40,11 @@ jobs:
           PKG="$(node -p "require('./package.json').version")"
           if [ "$PKG" != "${VERSION#v}" ]; then echo "package.json ($PKG) ≠ $VERSION : aligner package.json avant la release." >&2; exit 1; fi
           if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then exit 1; fi
+          # Notes de version rédigées (docs/releases/<version>.md) : obligatoires pour
+          # une stable — le corps d'une release n'est jamais la fiche de recette vierge.
+          if [[ "$VERSION" != *-rc.* ]] && [ ! -s "docs/releases/$VERSION.md" ]; then
+            echo "Notes de version manquantes : docs/releases/$VERSION.md (cf. docs/releases/README.md)." >&2; exit 1
+          fi
           gh run list --workflow security.yml --commit "$GITHUB_SHA" --branch main --event push --json conclusion --jq '.[0].conclusion' | grep -qx success
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -94,9 +99,21 @@ jobs:
           SBOM_SHA256="$(sha256sum sbom.cdx.json | cut -d' ' -f1)"
           export SBOM_SHA256
           node --input-type=module -e 'import fs from "node:fs"; fs.writeFileSync("release.json", JSON.stringify({version:process.env.VERSION, revision:process.env.GITHUB_SHA, image:"ghcr.io/bdudout/acra@"+process.env.DIGEST, migrationsHash:process.env.MIGRATIONS_HASH, sbom:{file:"sbom.cdx.json", format:"CycloneDX", sha256:process.env.SBOM_SHA256, signed:process.env.SBOM_SIGNED==="true"}}, null, 2))'
-          cp docs/RELEASE-CHECKLIST.md release-notes.md
-          # Assets : manifeste + SBOM (+ signature si produite).
-          ASSETS=(release.json sbom.cdx.json)
+          # Corps de la release = notes rédigées + changements depuis la version
+          # précédente + artefacts. La fiche de recette est jointe en fichier.
+          NOTES="docs/releases/$VERSION.md"
+          if [ -s "$NOTES" ]; then cp "$NOTES" release-notes.md; else printf '## ACRA %s (préversion)\n' "$VERSION" > release-notes.md; fi
+          PREV="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$GITHUB_SHA^" 2>/dev/null || true)"
+          {
+            echo; echo "### Changements depuis ${PREV:-l’origine}"
+            git log --no-merges --format='- %s (%h)' ${PREV:+$PREV..}"$GITHUB_SHA" | head -100
+            echo; echo "### Artefacts"
+            echo "- Image : \`ghcr.io/bdudout/acra@$DIGEST\` (tag \`$VERSION\`)"
+            echo "- Manifeste \`release.json\`, SBOM CycloneDX \`sbom.cdx.json\`, fiche de recette \`fiche-recette.md\`"
+          } >> release-notes.md
+          cp docs/RELEASE-CHECKLIST.md fiche-recette.md
+          # Assets : manifeste + SBOM (+ signature si produite) + fiche de recette.
+          ASSETS=(release.json sbom.cdx.json fiche-recette.md)
           [ -f sbom.cdx.json.sig ] && ASSETS+=(sbom.cdx.json.sig)
           if [[ "$VERSION" == *-rc.* ]]; then
             gh release create "$VERSION" "${ASSETS[@]}" --target "$GITHUB_SHA" --prerelease --title "$VERSION" --notes-file release-notes.md

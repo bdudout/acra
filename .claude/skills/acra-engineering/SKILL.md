@@ -115,6 +115,23 @@ Ne jamais déclarer une vérification sans l'avoir exécutée ; rapporter la sor
 - La branche `stable` n'est jamais modifiée à la main : elle avance à la publication
   d'une release stable (workflow « Align stable branch »).
 
+### Publier une release (contenu cohérent à CHAQUE livraison)
+1. **Notes rédigées d'abord** : `docs/releases/vX.Y.Z.md` (modèle et règles :
+   `docs/releases/README.md`), commité avec la PR de release. Obligatoire pour une
+   stable : `release.yml` refuse de construire sans lui. Contenu : ce qui change pour
+   l'utilisateur, groupé par thème, avec les issues (#n) ; « Mettre à jour » (action
+   requise : migration, variable, première mise à jour — sinon « aucune action ») ;
+   « Vérifications » réellement exécutées (CI du commit exact, tests, recette faite
+   **ou non faite** — ne jamais laisser croire qu'une case vide est une preuve).
+2. Le workflow ajoute seul la liste des commits depuis la version précédente et les
+   artefacts ; la fiche de recette vierge (`docs/RELEASE-CHECKLIST.md`) est **jointe
+   en fichier**, jamais utilisée comme corps de release.
+3. Après publication, relire la release (`gh release view vX.Y.Z`) : titre sans
+   « — recette requise », corps = notes rédigées. Corriger avec
+   `gh release edit --notes-file docs/releases/vX.Y.Z.md` si besoin.
+4. Répondre aux issues corrigées avec le lien de la release et, si nécessaire, la
+   procédure de mise à jour ; puis passer `main` en `X.Y.(Z+1)-beta.1`.
+
 ## 6. Revue de sécurité avant commit
 
 Relire `git diff --cached` contre cette liste (constats réels des audits ACRA) :
