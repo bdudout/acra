@@ -6,6 +6,24 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-28 (5) — Claude Code : P3 livré, P4 presque terminé (limite d'usage atteinte)
+
+**Branche** : `feat/historical-excel-import`. **Non poussé.**
+- **P3 livré** (`06a7b75`) : `Risque.proprietaire` + migration `20260928270000`, saisie sous l'intitulé,
+  suggestions (noms des membres + entités), filtre, colonne en Évaluation.
+- **P4 — commité en cours** : `lib/rapport-methode-directe.ts` (modèle pur + libellés ×5),
+  gabarit PDF `rapport-methode-directe-pdf-template.tsx` (déclaré dans `scripts/compile-pdf-template.mjs`),
+  `rapport-methode-directe-xlsx.ts`, `rapport-methode-directe.server.ts`, branche de
+  `/api/export/[id]` (pdf/xlsx pour ISO 27005/31000/NIST) + **journalisation de tous les exports d'analyse**.
+  Testé : modèle, rendu PDF réel, Excel (anti-injection), route.
+- **Reste pour P4** : (1) boutons « Exporter PDF / Excel » dans l'en-tête du parcours direct
+  (`src/app/analyses/[id]/atelier/[num]/page.tsx`, vers `/api/export/<id>?format=pdf|xlsx&lang=<locale>`,
+  libellés i18n ×5 — `ExportButtons.tsx` a des libellés FR en dur, à corriger au passage) ;
+  (2) `npm run build` (gabarit PDF compilé) puis vérifier un vrai téléchargement sur :3005 ;
+  (3) mettre à jour l'audit (P3/P4 livrés).
+
+---
+
 ## 2026-09-28 (4) — Claude Code : P1 + P2 de l'audit des méthodes
 
 **Branche** : `feat/historical-excel-import`. **Non poussé.** Commit `3cec6f9` (+ docs).

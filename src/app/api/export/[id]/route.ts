@@ -8,6 +8,10 @@ import { rateLimit, rateLimitHeaders, LIMIT_EXPORT } from '@/lib/rate-limit'
 import { sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
 import ExcelJS from 'exceljs'
 import { loadPdfRuntime } from '@/lib/pdf-runtime'
+import { auditLog, getClientIp } from '@/lib/logger'
+import { usesDirectRiskEntry } from '@/lib/methodes'
+import { loadDirectReport } from '@/lib/rapport-methode-directe.server'
+import { buildDirectReportWorkbook } from '@/lib/rapport-methode-directe-xlsx'
 // Import side-effect uniquement : force Next à TRACER @react-pdf/renderer dans le
 // build standalone (le rendu réel passe par le CJS esbuild chargé au runtime).
 import '@react-pdf/renderer'
@@ -59,6 +63,42 @@ export async function GET(
     { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
   )) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
+
+  // Tout export d'analyse (données de risque sensibles) est tracé.
+  await auditLog('EXPORT', {
+    userId, userRole, organizationId: analyse.organizationId, targetId: analyse.id, targetType: 'analyse',
+    ip: getClientIp(req), details: { format, methode: analyse.methode },
+  })
+
+  // P4 — méthodes à saisie directe (ISO/IEC 27005, ISO 31000, NIST SP 800-30) :
+  // rapport propre à la méthode (registre 3 niveaux évalué, vulnérabilités,
+  // mesures, plans) au lieu du rapport structuré en ateliers EBIOS RM.
+  if (usesDirectRiskEntry(analyse.methode) && (format === 'pdf' || format === 'xlsx')) {
+    const langParam = searchParams.get('lang')
+    const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
+    const stamp = new Date().toISOString().slice(0, 10)
+    const safeName = analyse.nom.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 64)
+    const base = `acra-${analyse.methode.toLowerCase().replace(/_/g, '-')}-${safeName}`
+    try {
+      const report = await loadDirectReport(analyse)
+      if (format === 'xlsx') {
+        const wb = await buildDirectReportWorkbook(report, locale)
+        const buffer = await wb.xlsx.writeBuffer()
+        return new NextResponse(buffer as ArrayBuffer, { headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${base}.xlsx"`, 'Cache-Control': 'no-store',
+        } })
+      }
+      const { renderDirectReportPDF } = loadPdfRuntime('rapport-methode-directe-pdf-template')
+      const buffer = await renderDirectReportPDF(report, locale, stamp)
+      return new NextResponse(buffer as unknown as ArrayBuffer, { headers: {
+        'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${base}.pdf"`, 'Cache-Control': 'no-store',
+      } })
+    } catch (err) {
+      console.error('[export méthode directe] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du rapport' }, { status: 500 })
+    }
   }
 
   if (format === 'json') {
