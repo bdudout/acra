@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { APP_VERSION, GITHUB_REPO } from '@/lib/app-version'
-import { updateAvailable } from '@/lib/version-check'
+import { describeVersion } from '@/lib/version-check'
+import { readUpdateAgent } from '@/lib/update-request.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,14 +46,21 @@ export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((session.user as any).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
 
-  const { latest, reachable } = await fetchLatestRelease()
+  const [{ latest, reachable }, agent] = await Promise.all([fetchLatestRelease(), readUpdateAgent()])
+  // Canal (stable / bêta) et version validée de base (#185) : une bêta en avance sur
+  // la dernière stable n'est pas « en retard » ; une bêta rattrapée l'est.
+  const state = describeVersion(APP_VERSION, latest.version)
   return NextResponse.json({
     current: APP_VERSION,
+    channel: state.channel,
+    base: state.base,
+    agentAvailable: agent.agentAvailable,
+    updateStatus: agent.status,
     latest: latest.version,
     latestName: latest.name,
     releaseUrl: latest.url,
     publishedAt: latest.publishedAt,
-    updateAvailable: updateAvailable(APP_VERSION, latest.version),
+    updateAvailable: state.updateAvailable,
     reachable,
     repo: GITHUB_REPO,
     deployConfigured: Boolean(process.env.GITHUB_DEPLOY_TOKEN),

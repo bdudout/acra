@@ -1,15 +1,25 @@
 'use client'
 
-// Carte « Version & mises à jour » (SUPER_ADMIN, tableau de bord admin). Compare
-// la version installée à la dernière release GitHub et signale une mise à jour
-// disponible — sans l'installer (déploiement manuel/CI). Cf. /api/admin/version.
+// Carte « Version & mises à jour » (SUPER_ADMIN, tableau de bord admin) — #185.
+// Version installée + canal (stable / bêta basée sur la dernière version validée),
+// comparaison à la dernière release stable GitHub, et mise à jour :
+//  - instance de démonstration gérée : déclenchement du workflow GitHub (deploy) ;
+//  - instance auto-hébergée avec agent hôte : demande déposée pour l'agent, qui
+//    sauvegarde, met à jour (git), reconstruit et vérifie la santé ;
+//  - sinon : commandes exactes à lancer sur le serveur.
 
-import { useEffect, useState } from 'react'
-import { RefreshCw, CheckCircle2, ArrowUpCircle, AlertTriangle, Rocket } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { RefreshCw, CheckCircle2, ArrowUpCircle, AlertTriangle, Rocket, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
+type Channel = 'stable' | 'beta'
+interface UpdateStatus { state: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'; channel?: Channel; version?: string; message?: string; at?: string }
 interface VersionInfo {
   current: string
+  channel: Channel
+  base: string | null
+  agentAvailable: boolean
+  updateStatus: UpdateStatus | null
   latest: string | null
   latestName: string | null
   releaseUrl: string | null
@@ -25,28 +35,52 @@ export default function VersionCard() {
   const v = t.version
   const [info, setInfo] = useState<VersionInfo | null>(null)
   const [loading, setLoading] = useState(true)
-  const [deploying, setDeploying] = useState(false)
-  const [deployMessage, setDeployMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await fetch('/api/admin/version')
+      const r = await fetch('/api/admin/version', { cache: 'no-store' })
       setInfo(r.ok ? await r.json() : null)
     } catch { setInfo(null) } finally { setLoading(false) }
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  // Suivi : tant qu'une mise à jour est en attente ou en cours, on rafraîchit.
+  const inProgress = info?.updateStatus?.state === 'PENDING' || info?.updateStatus?.state === 'RUNNING'
+  useEffect(() => {
+    if (!inProgress) return
+    const id = window.setInterval(load, 10_000)
+    return () => window.clearInterval(id)
+  }, [inProgress, load])
 
   async function deploy() {
     if (!info?.latest || !window.confirm(v.deployConfirm.replace('{version}', info.latest))) return
-    setDeploying(true); setDeployMessage(null)
+    setBusy(true); setMessage(null)
     try {
       const r = await fetch('/api/admin/version/deploy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ version: info.latest }) })
       const data = await r.json().catch(() => ({}))
-      setDeployMessage(r.ok ? v.deployStarted : (data.error ?? v.deployError))
+      setMessage(r.ok ? v.deployStarted : (data.error ?? v.deployError))
       if (r.ok && data.workflowUrl) window.open(data.workflowUrl, '_blank', 'noopener,noreferrer')
-    } catch { setDeployMessage(v.deployError) } finally { setDeploying(false) }
+    } catch { setMessage(v.deployError) } finally { setBusy(false) }
   }
+
+  async function requestUpdate(channel: Channel) {
+    const label = channel === 'stable' ? v.channelStable : v.channelBetaShort
+    if (!window.confirm(v.updateConfirm.replace('{channel}', label))) return
+    setBusy(true); setMessage(null)
+    try {
+      const r = await fetch('/api/admin/version/update', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ channel }) })
+      const data = await r.json().catch(() => ({}))
+      setMessage(r.ok ? v.updateRequested : v.updateError.replace('{error}', String(data.error ?? r.status)))
+      if (r.ok) load()
+    } catch { setMessage(v.updateError.replace('{error}', '—')) } finally { setBusy(false) }
+  }
+
+  const other: Channel = info?.channel === 'beta' ? 'stable' : 'beta'
+  const st = info?.updateStatus
+  const states = v.states as Record<string, string>
 
   return (
     <div className="card p-5 mb-8">
@@ -55,6 +89,11 @@ export default function VersionCard() {
           <h2 className="text-base font-semibold text-gray-800 mb-0.5">{v.title}</h2>
           <p className="text-sm text-gray-500">
             {v.installed} <span className="font-mono font-medium text-gray-800">{info?.current ?? '—'}</span>
+            {info && (
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-medium ${info.channel === 'beta' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+                {info.channel === 'beta' ? (info.base ? v.channelBeta.replace('{base}', info.base) : v.channelBetaShort) : v.channelStable}
+              </span>
+            )}
           </p>
         </div>
         <button onClick={load} disabled={loading} className="btn-secondary text-sm inline-flex items-center gap-1.5 disabled:opacity-50">
@@ -63,7 +102,7 @@ export default function VersionCard() {
       </div>
 
       <div className="mt-3 text-sm">
-        {loading ? (
+        {loading && !info ? (
           <span className="text-gray-400">{v.checking}</span>
         ) : !info || !info.reachable ? (
           <span className="inline-flex items-center gap-1.5 text-amber-700">
@@ -79,7 +118,7 @@ export default function VersionCard() {
                 {v.seeNotes} →
               </a>
             )}
-            {info.deployConfigured && <button onClick={deploy} disabled={deploying} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50"><Rocket size={14} /> {deploying ? v.deploying : v.deploy}</button>}
+            {info.deployConfigured && <button onClick={deploy} disabled={busy} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50"><Rocket size={14} aria-hidden="true" /> {busy ? v.deploying : v.deploy}</button>}
           </div>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-green-700">
@@ -87,12 +126,45 @@ export default function VersionCard() {
           </span>
         )}
       </div>
-      <p className="text-[11px] text-gray-400 mt-2">{v.notInstalled}</p>
-      {deployMessage && <p className="mt-2 text-sm text-ebios-700">{deployMessage}</p>}
+
+      {/* Instance auto-hébergée avec agent : mise à jour depuis l'interface. */}
+      {info && !info.deployConfigured && info.agentAvailable && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button onClick={() => requestUpdate(info.channel)} disabled={busy || inProgress} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50">
+            <Download size={14} aria-hidden="true" /> {v.updateNow}
+          </button>
+          <button onClick={() => requestUpdate(other)} disabled={busy || inProgress} className="btn-secondary text-sm disabled:opacity-50">
+            {other === 'stable' ? v.switchToStable : v.switchToBeta}
+          </button>
+        </div>
+      )}
+      {st && (
+        <p role="status" className={`mt-2 text-sm ${st.state === 'FAILED' ? 'text-red-700' : st.state === 'SUCCESS' ? 'text-green-700' : 'text-ebios-700'}`}>
+          {v.lastUpdate.replace('{state}', states[st.state] ?? st.state).replace('{message}', [st.version, st.message].filter(Boolean).join(' — '))}
+        </p>
+      )}
+      {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
+
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
         <summary className="cursor-pointer font-medium text-gray-700">{v.helpTitle}</summary>
-        <p className="mt-2">{v.helpOneClick}</p>
-        <p className="mt-2">{v.helpManual}</p>
+        {info?.deployConfigured ? <p className="mt-2">{v.helpOneClick}</p> : (
+          <div className="mt-2 space-y-2">
+            <p>{v.commandsIntro}</p>
+            <p className="font-medium">{v.commandStable}</p>
+            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update.sh stable</pre>
+            <p className="font-medium">{v.commandBeta}</p>
+            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update.sh beta</pre>
+            <p>{v.commandsGit}</p>
+            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">{'git checkout stable && git pull && docker compose up -d --build'}</pre>
+            {info && !info.agentAvailable && (
+              <div>
+                <p className="font-medium">{v.agentTitle}</p>
+                <p>{v.agentIntro}</p>
+                <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update-agent.sh --install</pre>
+              </div>
+            )}
+          </div>
+        )}
       </details>
     </div>
   )

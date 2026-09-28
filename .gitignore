@@ -62,3 +62,7 @@ Thumbs.db
 
 # État et sauvegardes locales du déploiement par release
 /.release-state/
+
+# Mise à jour auto-hébergée (#185) : échanges avec l'agent hôte et sauvegardes pré-mise à jour
+.acra-update/
+backups/

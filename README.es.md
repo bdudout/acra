@@ -338,11 +338,22 @@ docker compose exec app npx prisma migrate deploy
 
 ### Actualización
 
+Dos canales:
+- **stable** — última versión validada (rama `stable`, alineada con la última release publicada);
+- **beta** — última versión validada + cambios posteriores (rama `main`, versión `x.y.z-beta.n`).
+
 ```bash
-git pull origin main
-docker compose up -d --build
-# Las migraciones se aplican automáticamente al arrancar
+scripts/update.sh stable   # o: scripts/update.sh beta
 ```
+
+El script se niega a ejecutarse con cambios locales, hace una copia de la base
+(`backups/`), actualiza el código solo por avance rápido, reconstruye, aplica las
+migraciones y comprueba el estado; si falla, muestra el comando de vuelta atrás.
+Equivalente manual: `git checkout stable && git pull && docker compose up -d --build`.
+
+**Botón «Actualizar»** (Administración → Versión): instale una vez el agente del host con
+`scripts/update-agent.sh --install` y añada la línea cron que muestra.
+La aplicación no ejecuta ningún comando: deposita una solicitud que ejecuta el agente.
 
 ---
 

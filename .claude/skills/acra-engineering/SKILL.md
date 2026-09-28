@@ -107,6 +107,14 @@ Ne jamais déclarer une vérification sans l'avoir exécutée ; rapporter la sor
 | UI / parcours | vérification réelle dans le navigateur (dev :3005), y compris lecture seule / analyse gelée |
 | PDF / export | test sur build de production (bundling) |
 
+### Versions et canaux (issue #185)
+- `package.json` est la source de la version affichée. `main` = canal **bêta** :
+  préversion de la prochaine version (`1.0.4-beta.1`), à incrémenter quand une
+  livraison notable est fusionnée. La PR de release aligne `package.json` sur le tag
+  (`npm version X.Y.Z --no-git-tag-version`) ; le workflow refuse sinon.
+- La branche `stable` n'est jamais modifiée à la main : elle avance à la publication
+  d'une release stable (workflow « Align stable branch »).
+
 ## 6. Revue de sécurité avant commit
 
 Relire `git diff --cached` contre cette liste (constats réels des audits ACRA) :
