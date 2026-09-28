@@ -1,36 +1,53 @@
+// ─── Promotion d'un écart de profil opérationnel en plan d'action unifié ──────
+// POST { framework, ref } : crée un PlanAction lié au point (lien
+// OPERATIONAL_PROFILE, targetId = profil, ref = point). Anti-doublon : si une
+// action OUVERTE est déjà liée à ce point, elle est renvoyée (200, existing) au
+// lieu d'en créer une seconde. Seul un écart ENREGISTRÉ et actionnable est promu.
+
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
-import { OPERATIONAL_PROFILE_CATALOGS, sanitizeOperationalProfileEntries, type OperationalProfileFramework } from '@/lib/operational-profiles'
+import { getServerT } from '@/lib/i18n'
+import { operationalProfileContext } from '@/lib/operational-profiles.server'
+import { createOperationalProfilePlanAction, findOpenOperationalProfileAction } from '@/lib/plan-action.server'
+import { OPERATIONAL_PROFILE_CATALOGS, isOperationalProfileFramework, isActionableGap, sanitizeOperationalProfileEntries } from '@/lib/operational-profiles'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
-const PREFIX = 'OP_PROFILE:'
-const isFramework = (value: unknown): value is OperationalProfileFramework => value === 'NIST_CSF_2_0' || value === 'NCSC_CAF_V4'
-const canManage = (role: UserRole | null) => !!role && (isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE')
-
-/** Transforme un écart de profil en action unifiée, traçable au point source. */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  if (!scope.activeOrgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-  if (!canManage(scope.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!(await getOrgConfig(scope.activeOrgId)).profilsOperationnelsActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
-  const body = await req.json().catch(() => ({})) as { framework?: unknown; ref?: unknown; titre?: unknown; description?: unknown; responsable?: unknown }
-  if (!isFramework(body.framework) || typeof body.ref !== 'string') return NextResponse.json({ error: 'Point de profil invalide' }, { status: 400 })
-  const item = OPERATIONAL_PROFILE_CATALOGS[body.framework].items.find(value => value.ref === body.ref)
+  const access = await operationalProfileContext()
+  if (!access.ok) return NextResponse.json({ error: access.status === 401 ? 'Non autorisé' : 'Introuvable' }, { status: access.status })
+  const { ctx } = access
+  if (!ctx.canManage) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  const rl = await rateLimit(`operational-profile-action:${ctx.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+
+  const body = await req.json().catch(() => ({})) as { framework?: unknown; ref?: unknown }
+  if (!isOperationalProfileFramework(body.framework) || typeof body.ref !== 'string') return NextResponse.json({ error: 'Point de profil invalide' }, { status: 400 })
+  const catalog = OPERATIONAL_PROFILE_CATALOGS[body.framework]
+  const item = catalog.items.find(i => i.ref === body.ref)
   if (!item) return NextResponse.json({ error: 'Point de profil invalide' }, { status: 400 })
-  const profile = await prisma.conformite.findUnique({ where: { organizationId_referentiel_entite: { organizationId: scope.activeOrgId, referentiel: `${PREFIX}${body.framework}`, entite: '' } }, select: { id: true, entries: true } })
-  const entry = sanitizeOperationalProfileEntries(body.framework, profile?.entries).find(value => value.ref === item.ref)
-  if (!entry || !['PARTIEL', 'NON_COUVERT'].includes(entry.statut)) return NextResponse.json({ error: 'Ce point ne présente pas un écart actionnable' }, { status: 400 })
-  const titre = typeof body.titre === 'string' && body.titre.trim() ? body.titre.trim().slice(0, 200) : `${body.framework === 'NIST_CSF_2_0' ? 'NIST CSF' : 'NCSC CAF'} ${item.ref} — combler l’écart`
-  const action = await prisma.planAction.create({ data: { organizationId: scope.activeOrgId, titre, description: typeof body.description === 'string' ? body.description.trim().slice(0, 4000) : entry.commentaire, porteur: typeof body.responsable === 'string' ? body.responsable.trim().slice(0, 120) : entry.responsable, createdById: userId, liens: { create: { type: 'OPERATIONAL_PROFILE', targetId: profile?.id ?? `${PREFIX}${body.framework}`, ref: item.ref, label: `${body.framework} ${item.ref}` } } } })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: scope.role ?? 'LECTEUR', ip: getClientIp(req), details: { scope: 'operational-profile', action: 'promote', framework: body.framework, ref: item.ref, planActionId: action.id } })
-  return NextResponse.json(action, { status: 201 })
+
+  const profile = await prisma.operationalProfile.findUnique({
+    where: { organizationId_framework: { organizationId: ctx.orgId, framework: body.framework } },
+    select: { id: true, entries: true },
+  })
+  const entry = profile && sanitizeOperationalProfileEntries(body.framework, profile.entries).find(e => e.ref === item.ref)
+  if (!profile || !entry || !isActionableGap(entry)) return NextResponse.json({ error: 'Ce point ne présente pas un écart actionnable', code: 'NOT_A_GAP' }, { status: 400 })
+
+  const existing = await findOpenOperationalProfileAction(prisma, ctx.orgId, profile.id, item.ref)
+  if (existing) return NextResponse.json({ ...existing, existing: true }, { status: 200 })
+
+  const t = await getServerT()
+  const titre = t.operationalProfiles.actionTitle.replace('{ref}', item.ref).replace('{label}', item.label).slice(0, 200)
+  const action = await createOperationalProfilePlanAction(prisma, {
+    organizationId: ctx.orgId, profileId: profile.id, ref: item.ref,
+    label: `${catalog.version} ${item.ref} — ${item.label}`.slice(0, 200),
+    titre, description: entry.commentaire ?? null, porteur: entry.responsable ?? null, createdById: ctx.userId,
+  })
+  await auditLog('OPERATIONAL_PROFILE_UPDATED', {
+    userId: ctx.userId, userRole: ctx.role, ip: getClientIp(req), organizationId: ctx.orgId,
+    targetId: profile.id, targetType: 'operational-profile',
+    details: { action: 'promote', framework: body.framework, ref: item.ref, planActionId: action.id },
+  })
+  return NextResponse.json({ ...action, existing: false }, { status: 201 })
 }

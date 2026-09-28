@@ -34,12 +34,8 @@ export default async function ConformiteGlobalPage() {
 
   // Entités de conformité des organisations visibles (ou toutes en mono-organisation).
   const confs = await prisma.conformite.findMany({
-    // Les profils opérationnels ont leur propre écran et ne doivent jamais
-    // déformer les jauges/exports de conformité réglementaire.
-    where: {
-      ...(visibleOrgIds.length > 0 ? { organizationId: { in: visibleOrgIds } } : {}),
-      NOT: { referentiel: { startsWith: 'OP_PROFILE:' } },
-    },
+    // (Les profils opérationnels US/UK ont leur propre table : OperationalProfile.)
+    where: visibleOrgIds.length > 0 ? { organizationId: { in: visibleOrgIds } } : {},
     select: {
       organizationId: true, referentiel: true, entries: true, updatedAt: true,
       organization: { select: { nom: true, path: true } },

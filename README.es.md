@@ -82,6 +82,7 @@ ACRA cambia esto: es un **asistente metodológico interactivo** que guía paso a
 ### 👥 Colaboración y gobernanza
 
 - **RBAC de 12 roles** que cubre las **3 líneas de defensa**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · DIRECCIÓN_DE_NEGOCIO · ANALISTA · LECTOR · **CONTROLADOR** (control permanente) · **CUMPLIMIENTO** · **DPD** (protección de datos) · **AUDITOR** (3ª línea) · **OPERATIVO** (1ª línea)
+- **Perfiles operativos EE. UU./Reino Unido** (módulo opcional, desactivado por defecto): autoevaluación del estado actual y objetivo en las 22 categorías de **NIST CSF 2.0** (Tiers 1–4) y los 14 principios de **NCSC CAF v4.0** (Basic / Enhanced Profile), historial por punto, promoción de brechas al plan de acción sin duplicados, exportación CSV
 - **Multiorganización**: árbol de organizaciones con perímetros jerárquicos (nodo / subárbol); un ADMIN administra **solo las cuentas de su organización**, un SUPER_ADMIN gestiona la instancia
 - Flujo de aprobación: envío → revisión → aprobación (CISO o Risk Manager), con **separación de funciones** — un aprobador no puede aprobar **su propio** análisis (principio de cuatro ojos) — y **autovalidación** para organizaciones de un solo usuario (despachos individuales, donde los cuatro ojos son imposibles)
 - **Aceptación de riesgos residuales** por la **Dirección de negocio** (rol dedicado de solo lectura), distinta de la validación del análisis

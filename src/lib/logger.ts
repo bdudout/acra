@@ -132,6 +132,7 @@ export type AuditAction =
   | 'ORG_MEMBER_REMOVED'
   | 'MCP_TOOL_INVOKED'
   | 'MCP_PROPOSAL_REVIEWED'
+  | 'OPERATIONAL_PROFILE_UPDATED'
 
 /** Contexte joint à un événement d'audit (utilisateur, IP, organisation, cible…). */
 export interface AuditContext {

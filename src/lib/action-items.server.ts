@@ -16,6 +16,7 @@ import {
   normalizeConformiteTraitement,
   normalizeEcosystemeMesure,
   normalizeOrphanPlanAction,
+  normalizeOperationalProfilePlanAction,
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
@@ -37,7 +38,7 @@ interface ModulesLike {
 export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
 
-  const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows, profileRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyse: { organizationId: orgId } },
@@ -125,6 +126,15 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
       where: { ...orgFilter, liens: { none: {} } },
       select: { id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true },
     }),
+    // Écarts de profils opérationnels US/UK promus en actions : toujours visibles
+    // (une action existante ne disparaît pas si le module est désactivé ensuite).
+    prisma.planAction.findMany({
+      where: { ...orgFilter, liens: { some: { type: 'OPERATIONAL_PROFILE' } } },
+      select: {
+        id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true,
+        liens: { where: { type: 'OPERATIONAL_PROFILE' }, select: { ref: true }, take: 1 },
+      },
+    }),
   ])
 
   const items: ActionItem[] = []
@@ -200,6 +210,10 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
   }
   for (const o of orphanRows) {
     items.push(normalizeOrphanPlanAction(o))
+  }
+  for (const p of profileRows) {
+    const ref = p.liens[0]?.ref
+    items.push(normalizeOperationalProfilePlanAction(p, { lien: `/profils-operationnels${ref ? `?ref=${encodeURIComponent(ref)}` : ''}` }))
   }
 
   return items

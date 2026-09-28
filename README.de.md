@@ -48,6 +48,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - **Branchenspezifische Anleitung & Konformität**: an Branche und Teilbranche angepasste Fachbeispiele, Framework-Empfehlungen, Erkennung des regulatorischen Status (NIS2, OIV…) — [Details](#-branchenspezifische-anleitung--konformität)
 - **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
 - **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
+- **Operative Profile USA/UK** (optionales Modul, standardmäßig deaktiviert): Selbstbewertung von Ist- und Zielzustand über die 22 Kategorien des **NIST CSF 2.0** (Tiers 1–4) und die 14 Prinzipien des **NCSC CAF v4.0** (Basic / Enhanced Profile), Verlauf je Punkt, Übernahme von Lücken in den Maßnahmenplan ohne Duplikate, CSV-Export
 - **100 % selbst gehostet**: Ihre Daten verlassen niemals Ihre Infrastruktur
 
 ---

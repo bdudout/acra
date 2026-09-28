@@ -190,9 +190,30 @@ model Organization {
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
   analysisImportMappings AnalysisImportMapping[]
+  operationalProfiles    OperationalProfile[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// Profil opérationnel US/UK (NIST CSF 2.0 / NCSC CAF v4.0) d'une organisation :
+// un profil par cadre. `cible` = niveau visé du profil (Tier CSF, profil CAF
+// Basic/Enhanced) ; `entries` = évaluation par catégorie/principe (état courant,
+// état cible, justification, responsable, horodatage par point). Séparé de la
+// conformité : le profil exprime une cible de gouvernance, pas l'état de contrôles.
+model OperationalProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework      String // NIST_CSF_2_0 | NCSC_CAF_V4
+  cible          String? // TIER_1..TIER_4 (CSF) | BASIC | ENHANCED (CAF)
+  entries        Json         @default("[]")
+  updatedById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, framework])
+  @@index([organizationId])
 }
 
 // Modèle de correspondance Excel réutilisable, strictement propre à une organisation.

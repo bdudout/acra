@@ -1,64 +1,79 @@
+// ─── Profils opérationnels US/UK (NIST CSF 2.0 / NCSC CAF v4.0) ───────────────
+// GET : profils de l'organisation active (état vierge si jamais évalué), stats et
+//       actions liées. Lecture : tout membre de l'org (AUDITEUR/LECTEUR inclus).
+// PUT : évaluation d'un profil (points modifiés + niveau cible). Réservé aux rôles
+//       d'évaluation (peutEvaluerProfilOperationnel). Horodatage par point côté
+//       serveur, diff journalisé (historique), rate limit d'écriture.
+// Module inactif (config EFFECTIVE, politique d'instance incluse) → 404.
+
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
-import { OPERATIONAL_PROFILE_CATALOGS, sanitizeOperationalProfileEntries, type OperationalProfileFramework } from '@/lib/operational-profiles'
+import { prisma } from '@/lib/prisma'
+import { operationalProfileContext, loadOperationalProfiles } from '@/lib/operational-profiles.server'
+import {
+  OPERATIONAL_PROFILE_CATALOGS, isOperationalProfileFramework, isOperationalProfileTarget,
+  sanitizeOperationalProfileEntries, applyOperationalProfileUpdate,
+} from '@/lib/operational-profiles'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
-const PREFIX = 'OP_PROFILE:'
-const isFramework = (value: unknown): value is OperationalProfileFramework => value === 'NIST_CSF_2_0' || value === 'NCSC_CAF_V4'
-const canManage = (role: UserRole | null) => !!role && (isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE')
+const NOT_FOUND = { 401: 'Non autorisé', 404: 'Introuvable' } as const
 
-async function context() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return null
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  if (!scope.activeOrgId) return { error: NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 }) }
-  const cfg = await getOrgConfig(scope.activeOrgId)
-  if (!cfg.profilsOperationnelsActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, role: scope.role, orgId: scope.activeOrgId }
-}
-
-/** Profils de l'organisation active ; l'absence d'évaluation est renvoyée explicitement. */
 export async function GET() {
-  const ctx = await context()
-  if (!ctx || 'error' in ctx) return ctx?.error ?? NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const rows = await prisma.conformite.findMany({
-    where: { organizationId: ctx.orgId, referentiel: { in: Object.keys(OPERATIONAL_PROFILE_CATALOGS).map(key => `${PREFIX}${key}`) }, entite: '' },
-    select: { referentiel: true, entries: true, updatedAt: true },
-  })
-  const saved = new Map(rows.map(row => [row.referentiel.slice(PREFIX.length) as OperationalProfileFramework, row]))
+  const access = await operationalProfileContext()
+  if (!access.ok) return NextResponse.json({ error: NOT_FOUND[access.status] }, { status: access.status })
+  const profiles = await loadOperationalProfiles(access.ctx.orgId)
   return NextResponse.json({
-    profiles: (Object.keys(OPERATIONAL_PROFILE_CATALOGS) as OperationalProfileFramework[]).map(framework => ({
-      framework,
-      catalog: OPERATIONAL_PROFILE_CATALOGS[framework],
-      entries: sanitizeOperationalProfileEntries(framework, saved.get(framework)?.entries),
-      updatedAt: saved.get(framework)?.updatedAt ?? null,
-    })),
-    canManage: canManage(ctx.role),
+    profiles: profiles.map(p => ({ ...p, catalog: OPERATIONAL_PROFILE_CATALOGS[p.framework] })),
+    canManage: access.ctx.canManage,
   })
 }
 
-/** Enregistre une évaluation entière de profil après nettoyage des références/états. */
 export async function PUT(req: NextRequest) {
-  const ctx = await context()
-  if (!ctx || 'error' in ctx) return ctx?.error ?? NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  if (!canManage(ctx.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  const body = await req.json().catch(() => ({})) as { framework?: unknown; entries?: unknown }
-  if (!isFramework(body.framework)) return NextResponse.json({ error: 'Référentiel de profil invalide' }, { status: 400 })
-  const entries = sanitizeOperationalProfileEntries(body.framework, body.entries)
-  const profile = await prisma.conformite.upsert({
-    where: { organizationId_referentiel_entite: { organizationId: ctx.orgId, referentiel: `${PREFIX}${body.framework}`, entite: '' } },
-    create: { organizationId: ctx.orgId, referentiel: `${PREFIX}${body.framework}`, entite: '', nom: OPERATIONAL_PROFILE_CATALOGS[body.framework].title, entries: entries as unknown as Prisma.InputJsonValue },
-    update: { entries: entries as unknown as Prisma.InputJsonValue, nom: OPERATIONAL_PROFILE_CATALOGS[body.framework].title },
-    select: { updatedAt: true },
+  const access = await operationalProfileContext()
+  if (!access.ok) return NextResponse.json({ error: NOT_FOUND[access.status] }, { status: access.status })
+  const { ctx } = access
+  if (!ctx.canManage) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  const rl = await rateLimit(`operational-profile:${ctx.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+
+  const body = await req.json().catch(() => ({})) as { framework?: unknown; entries?: unknown; cible?: unknown }
+  if (!isOperationalProfileFramework(body.framework)) return NextResponse.json({ error: 'Référentiel de profil invalide' }, { status: 400 })
+  const framework = body.framework
+  // cible : absente = inchangée ; null/'' = effacée ; sinon niveau valide du cadre.
+  let cible: string | null | undefined
+  if (body.cible === null || body.cible === '') cible = null
+  else if (body.cible !== undefined) {
+    if (!isOperationalProfileTarget(framework, body.cible)) return NextResponse.json({ error: 'Niveau cible invalide' }, { status: 400 })
+    cible = body.cible
+  }
+
+  const existing = await prisma.operationalProfile.findUnique({
+    where: { organizationId_framework: { organizationId: ctx.orgId, framework } },
+    select: { entries: true, cible: true },
   })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.role ?? 'LECTEUR', ip: getClientIp(req), details: { scope: 'operational-profile', framework: body.framework, count: entries.length } })
-  return NextResponse.json({ framework: body.framework, entries, updatedAt: profile.updatedAt })
+  const previous = sanitizeOperationalProfileEntries(framework, existing?.entries)
+  const incoming = sanitizeOperationalProfileEntries(framework, body.entries)
+  const { entries, changes } = applyOperationalProfileUpdate(previous, incoming, { userId: ctx.userId, now: new Date() })
+  const cibleChanged = cible !== undefined && cible !== (existing?.cible ?? null)
+  if (!changes.length && !cibleChanged && existing) {
+    return NextResponse.json({ framework, entries, cible: existing.cible, unchanged: true })
+  }
+
+  const saved = await prisma.operationalProfile.upsert({
+    where: { organizationId_framework: { organizationId: ctx.orgId, framework } },
+    create: { organizationId: ctx.orgId, framework, cible: cible ?? null, entries: entries as unknown as Prisma.InputJsonValue, updatedById: ctx.userId },
+    update: { entries: entries as unknown as Prisma.InputJsonValue, updatedById: ctx.userId, ...(cible !== undefined ? { cible } : {}) },
+    select: { id: true, cible: true, updatedAt: true },
+  })
+  await auditLog('OPERATIONAL_PROFILE_UPDATED', {
+    userId: ctx.userId, userRole: ctx.role, ip: getClientIp(req), organizationId: ctx.orgId,
+    targetId: saved.id, targetType: 'operational-profile',
+    details: {
+      framework,
+      ...(cibleChanged ? { cible: [existing?.cible ?? null, cible] } : {}),
+      changes: changes.slice(0, 50), changesCount: changes.length,
+    },
+  })
+  return NextResponse.json({ framework, entries, cible: saved.cible, updatedAt: saved.updatedAt })
 }

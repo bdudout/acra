@@ -1,6 +1,6 @@
 # Expression de besoin — Profils opérationnels US/UK
 
-**Statut :** accepté pour le lot 1 (profils de référence) · **Date :** 2026-09-28
+**Statut :** lot 1 livré (profils de référence) · lots 2–3 à décider · **Date :** 2026-09-28
 
 ## 1. Objectif
 
@@ -18,8 +18,8 @@ lisible pour la direction, la deuxième ligne et un auditeur.
 
 - profil **NIST CSF 2.0** : Current Profile, Target Profile, niveau de rigueur
   de gouvernance, appétence, propriétaire et justification ;
-- profil **NCSC CAF v4.0** : Basic ou Enhanced, objectifs A à D, principes et
-  indicateurs de bonne pratique (IGP) ;
+- profil **NCSC CAF v4.0** : Basic Profile ou Enhanced Profile, objectifs A à D
+  et leurs 14 principes (les IGP par résultat contributif relèvent d'un lot ultérieur) ;
 - couverture réutilisant les référentiels et évaluations de conformité ACRA ;
 - écarts : non applicable, couvert, partiellement couvert, non couvert ;
 - décision explicite sur chaque écart et promotion vers le plan d’action unifié ;
@@ -103,3 +103,29 @@ permet d’ajouter la résilience puis FAIR sans altérer le socle standard.
 FedRAMP/RMF complet, autorisation système, certification CAF, calcul FAIR,
 simulation Monte Carlo, connecteurs CMDB/ITSM et collecte automatique de preuves.
 Ils feront l’objet d’une décision avant les lots 2 et 3.
+
+## 9. Challenge de l'expression de besoin et réalisation du lot 1 (2026-09-28)
+
+Le premier jet (Codex) évaluait 6 fonctions CSF et 4 objectifs CAF, stockés dans
+la table de conformité. Challenge retenu et livré :
+
+| Point du besoin | Constat | Décision livrée |
+|---|---|---|
+| Granularité | 6 fonctions / 4 objectifs : trop grossier pour un Current/Target Profile exploitable | **22 catégories CSF 2.0** (6 fonctions) et **14 principes CAF v4.0** (objectifs A–D), intitulés et énoncés **officiels** (export NIST CSF 2.0 ; pages NCSC CAF v4.0), non traduits |
+| « Niveau de rigueur de gouvernance » (CSF) | Correspond aux **Tiers** CSF 2.0 | Niveau cible du profil : Tier 1 Partial → Tier 4 Adaptive |
+| Basic / Enhanced (CAF) | Libellés officiels : « Basic Profile », « Enhanced Profile » | Niveau cible du profil CAF ; pas de calcul automatique des attendus IGP (lot ultérieur) |
+| Séparation de la conformité (§ 7) | Le stockage en `Conformite` (préfixe `OP_PROFILE:`) contredisait la décision d'architecture et exigeait des filtres dispersés | Table dédiée **`OperationalProfile`** (unique par org × cadre) ; migration des données existantes ; filtre retiré de la conformité |
+| Historique et propriétaire (critère 3) | Aucune trace par point | Horodatage **serveur** par point (`updatedAt`, `updatedById`, non forgeables) ; **diff par champ** journalisé (`OPERATIONAL_PROFILE_UPDATED`, catégorie SIEM Gouvernance) |
+| « Sans doublon » (critère 4) | Chaque clic créait une action | Action **ouverte** existante renvoyée (200, `existing`) ; nouveau type de lien `OPERATIONAL_PROFILE` (`targetId` = profil, `ref` = point) ; visible dans le plan d'action unifié (facette conformité) |
+| Module inactif (§ 4) | 403 | **404** sur page et routes (valeur effective, politique d'instance incluse) |
+| Rate limit, export, journalisation (§ 5) | Absents | Rate limit des écritures ; **export CSV** du bilan (injection de formule neutralisée, journal `EXPORT`) |
+| Tableau de bord (critère 6) | Absent | Couverture (% couverts parmi évalués applicables), points évalués, écarts, écarts à la cible, actions ouvertes / en retard, dernière revue |
+| i18n (§ 5) | Libellés français codés en dur | Interface ×5 langues ; textes normatifs en anglais officiel, version citée |
+| « Couverture réutilisant les référentiels ACRA » | Rapprochement CSF/CAF ↔ contrôles non outillé | **Reporté** : le mapping officiel CSF 2.0 → ISO/IEC 27001:2022 figure dans l'export NIST (Informative References) et pourra alimenter un lot « preuves » |
+| « Décision explicite sur chaque écart » | Pas de statut de décision distinct | Exprimée par l'**état cible** du point (Non applicable = écart accepté/hors périmètre ; Couvert = à traiter) + promotion en action ; un circuit de validation formel relève du lot 2 |
+
+Droits : lecture pour tout membre de l'organisation active ; évaluation et
+promotion réservées à ADMIN, RSSI, RISK_MANAGER et CONFORMITE
+(`peutEvaluerProfilOperationnel`). Le « métier propriétaire » (§ 3) est en lecture
+au lot 1 : il est désigné comme responsable du point et porte l'action promue
+(`porteur`) qu'il traite dans le plan d'action. Aucune donnée n'est envoyée à un service tiers.

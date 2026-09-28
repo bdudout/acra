@@ -48,6 +48,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - **Guidage sectoriel & conformité** : exemples métier adaptés au secteur et au sous-secteur, recommandation de référentiels, détection du statut réglementaire (NIS2, OIV…) — [voir le détail](#-guidage-sectoriel--conformité)
 - **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
 - **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
+- **Profils opérationnels US/UK** (module optionnel, désactivé par défaut) : auto-évaluation état courant / état cible sur les 22 catégories **NIST CSF 2.0** (Tiers 1–4) et les 14 principes **NCSC CAF v4.0** (Basic / Enhanced Profile), historique par point, promotion des écarts en plan d'action sans doublon, export CSV
 - **Multi-organisation hiérarchique** : cabinets de conseil (clients isolés), grands groupes (vision entité + consolidée), multi-sites, filiales — dans une seule instance — [voir le détail](#-multi-organisation-hiérarchique)
 - **100% auto-hébergé** : vos données ne quittent jamais votre infrastructure
 
