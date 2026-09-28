@@ -1,6 +1,6 @@
 {
   "name": "ebios-rm",
-  "version": "1.0.3",
+  "version": "1.0.4-beta.1",
   "private": true,
   "scripts": {
     "setup": "bash scripts/setup.sh",
