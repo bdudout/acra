@@ -69,15 +69,16 @@ export interface DirectRisquePayload {
  * (défaut REDUIRE), tronque les textes. Défauts chaînés : actuel ← brut, résiduel ←
  * actuel (si non fournis). Ne fait jamais confiance aux niveaux fournis.
  */
-export function sanitizeDirectRisque(input: unknown): DirectRisquePayload {
+export function sanitizeDirectRisque(input: unknown, maxNiveau: number = 4): DirectRisquePayload {
   const o = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
-  const gravite = clampInt(o.gravite, 1, 4, 2) as number
-  const vraisemblance = clampInt(o.vraisemblance, 1, 4, 2) as number
+  const max = scaleMax(maxNiveau)
+  const gravite = clampInt(o.gravite, 1, max, 2) as number
+  const vraisemblance = clampInt(o.vraisemblance, 1, max, 2) as number
   // Actuel : par défaut = brut ; résiduel : par défaut = actuel.
-  const graviteActuelle = 'graviteActuelle' in o ? (clampInt(o.graviteActuelle, 1, 4, gravite) as number) : gravite
-  const vraisemblanceActuelle = 'vraisemblanceActuelle' in o ? (clampInt(o.vraisemblanceActuelle, 1, 4, vraisemblance) as number) : vraisemblance
-  const graviteResiduelle = 'graviteResiduelle' in o ? (clampInt(o.graviteResiduelle, 1, 4, graviteActuelle) as number) : graviteActuelle
-  const vraisemblanceResiduelle = 'vraisemblanceResiduelle' in o ? (clampInt(o.vraisemblanceResiduelle, 1, 4, vraisemblanceActuelle) as number) : vraisemblanceActuelle
+  const graviteActuelle = 'graviteActuelle' in o ? (clampInt(o.graviteActuelle, 1, max, gravite) as number) : gravite
+  const vraisemblanceActuelle = 'vraisemblanceActuelle' in o ? (clampInt(o.vraisemblanceActuelle, 1, max, vraisemblance) as number) : vraisemblance
+  const graviteResiduelle = 'graviteResiduelle' in o ? (clampInt(o.graviteResiduelle, 1, max, graviteActuelle) as number) : graviteActuelle
+  const vraisemblanceResiduelle = 'vraisemblanceResiduelle' in o ? (clampInt(o.vraisemblanceResiduelle, 1, max, vraisemblanceActuelle) as number) : vraisemblanceActuelle
   const strategie: Strategie = STRATEGIES.includes(String(o.strategie) as Strategie)
     ? (String(o.strategie) as Strategie)
     : 'REDUIRE'
@@ -98,6 +99,12 @@ export function sanitizeDirectRisque(input: unknown): DirectRisquePayload {
   }
 }
 
+/**
+ * Borne haute de la cotation : nombre de niveaux de l'échelle de l'organisation
+ * (4 ou 5, cf. `resolveScaleConfig`) ; toute autre valeur → 4 (défaut EBIOS RM).
+ */
+function scaleMax(n: number): number { return n === 5 ? 5 : 4 }
+
 /** Vrai si le risque est exploitable (un intitulé est requis). */
 export function isDirectRisqueValid(p: DirectRisquePayload): boolean {
   return p.nom.trim().length > 0
@@ -109,18 +116,19 @@ export function isDirectRisqueValid(p: DirectRisquePayload): boolean {
  * `directNiveau(gFinal, vFinal)` sur les valeurs fusionnées (existant ⊕ patch),
  * pour garantir un score cohérent quel que soit le champ modifié.
  */
-export function sanitizeDirectRisquePatch(input: unknown): Partial<Omit<DirectRisquePayload, 'niveauRisque' | 'niveauActuel' | 'niveauResiduel'>> {
+export function sanitizeDirectRisquePatch(input: unknown, maxNiveau: number = 4): Partial<Omit<DirectRisquePayload, 'niveauRisque' | 'niveauActuel' | 'niveauResiduel'>> {
   const o = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
+  const max = scaleMax(maxNiveau)
   const out: Partial<Omit<DirectRisquePayload, 'niveauRisque' | 'niveauActuel' | 'niveauResiduel'>> = {}
   if ('nom' in o) out.nom = String(o.nom ?? '').slice(0, 255)
   if ('description' in o) out.description = o.description != null ? String(o.description).slice(0, 2000) : undefined
   if ('strategie' in o) out.strategie = STRATEGIES.includes(String(o.strategie) as Strategie) ? (String(o.strategie) as Strategie) : 'REDUIRE'
-  if ('gravite' in o) out.gravite = clampInt(o.gravite, 1, 4, 2) as number
-  if ('vraisemblance' in o) out.vraisemblance = clampInt(o.vraisemblance, 1, 4, 2) as number
-  if ('graviteActuelle' in o) out.graviteActuelle = clampInt(o.graviteActuelle, 1, 4, 2) as number
-  if ('vraisemblanceActuelle' in o) out.vraisemblanceActuelle = clampInt(o.vraisemblanceActuelle, 1, 4, 2) as number
-  if ('graviteResiduelle' in o) out.graviteResiduelle = clampInt(o.graviteResiduelle, 1, 4, 2) as number
-  if ('vraisemblanceResiduelle' in o) out.vraisemblanceResiduelle = clampInt(o.vraisemblanceResiduelle, 1, 4, 2) as number
+  if ('gravite' in o) out.gravite = clampInt(o.gravite, 1, max, 2) as number
+  if ('vraisemblance' in o) out.vraisemblance = clampInt(o.vraisemblance, 1, max, 2) as number
+  if ('graviteActuelle' in o) out.graviteActuelle = clampInt(o.graviteActuelle, 1, max, 2) as number
+  if ('vraisemblanceActuelle' in o) out.vraisemblanceActuelle = clampInt(o.vraisemblanceActuelle, 1, max, 2) as number
+  if ('graviteResiduelle' in o) out.graviteResiduelle = clampInt(o.graviteResiduelle, 1, max, 2) as number
+  if ('vraisemblanceResiduelle' in o) out.vraisemblanceResiduelle = clampInt(o.vraisemblanceResiduelle, 1, max, 2) as number
   if ('vulnerabilites' in o) out.vulnerabilites = sanitizeVulnerabilites(o.vulnerabilites)
   return out
 }
@@ -136,7 +144,7 @@ export function directNiveau(gravite: number, vraisemblance: number): number {
  * peut exporter que ses handlers HTTP.
  */
 export const DIRECT_RISK_SELECT = {
-  id: true, nom: true, description: true, strategie: true,
+  id: true, nom: true, description: true, strategie: true, taxonomieCode: true,
   gravite: true, vraisemblance: true, niveauRisque: true,
   graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
   graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,

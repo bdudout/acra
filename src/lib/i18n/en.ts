@@ -1460,6 +1460,8 @@ export const en: Translations = {
     colGravite: 'Severity',
     colVraisemblance: 'Likelihood',
     colNiveau: 'Level',
+    colNiveauEvalue: 'Assessed level (current)', colCritere: 'Criterion', basisAppetit: 'Appetite: acceptable up to {seuil}', basisEchelle: 'Organisation scale: “{palier}” band',
+    evalHint: 'Each risk is assessed at its current level (with existing controls) and compared with the organisation’s risk appetite or, failing that, with the bands of its scale.',
     abbrGravite: 'S', abbrVraisemblance: 'L',
     niveauBrut: 'Inherent', niveauActuel: 'Current', niveauResiduel: 'Residual', colResiduelCible: 'Residual (target)', colActuelAvecMesures: 'Current (with controls)', mesuresTitle: 'Existing security controls', mesuresEmpty: 'No control yet.', mesuresNomPlaceholder: 'Control name', mesuresEfficacite: 'Effectiveness', mesuresStatut: 'Status', mesuresStatuts: { A_FAIRE: 'To do', EN_COURS: 'In progress', REALISE: 'Done', REPORTE: 'Deferred' }, mesuresEcheance: 'Due date', mesuresTitrePlan: 'Controls & action plan',
     colStrategie: 'Treatment',

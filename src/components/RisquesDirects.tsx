@@ -9,8 +9,9 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Lightbulb, ShieldCheck, Shield, ListChecks } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { getRiskTier } from '@/lib/risk-scale'
-import { prioritise, countDecisions } from '@/lib/risque-priorisation'
+import { resolveScaleConfig, type ScaleConfig } from '@/lib/risk-scale'
+import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
+import { prioritiseRisks, countRiskDecisions, evaluateRisk, scaleLevels, scaleSeuil, type Decision, type RiskEvaluation } from '@/lib/risque-priorisation'
 import RiskMesures from '@/components/RiskMesures'
 import RiskPlans from '@/components/RiskPlans'
 import RiskVulnerabilites from '@/components/RiskVulnerabilites'
@@ -23,6 +24,7 @@ interface RisqueRow {
   graviteActuelle?: number | null; vraisemblanceActuelle?: number | null; niveauActuel?: number | null
   graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null; niveauResiduel?: number | null
   vulnerabilites?: { description: string }[] | null
+  taxonomieCode?: string | null
   mesuresCount?: number
   plansCount?: number
 }
@@ -45,9 +47,18 @@ const TIER_CLASS: Record<string, string> = {
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 export type TreatmentSections = 'mesures' | 'plans' | 'both'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections }: { analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections }) {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit }: {
+  analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections
+  /** Échelle de l'organisation (4 ou 5 niveaux, paliers, matrice) — défaut EBIOS RM 4 niveaux. */
+  scale?: Partial<ScaleConfig> | null
+  /** Appétit au risque de l'organisation (critère d'acceptation de l'évaluation). */
+  appetit?: AppetitConfig | null
+}) {
   const { t } = useTranslation()
   const m = t.risquesDirects
+  // P1/P2 : critères de l'organisation (échelle + appétit) — cf. lib/risque-priorisation.
+  const scaleCfg = resolveScaleConfig(scale)
+  const evalCtx = { scale: scaleCfg, appetit: appetit ?? APPETIT_DEFAULT }
   // Sections du panneau « détails » (déplié) selon la phase :
   //  - vulnérabilités : identification (ISO 27005 uniquement) ;
   //  - mesures + plans d'action : traitement (et écran complet).
@@ -141,18 +152,29 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     await fetch(`/api/analyses/${analyseId}/risques/${id}`, { method: 'DELETE' }).catch(() => null)
   }
 
-  const niveauBadge = (n: number, g: number, v: number) => {
-    const tier = getRiskTier(g * v)
-    return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${TIER_CLASS[tier]}`}>{n} · {m[`tier_${tier}` as keyof typeof m] as string}</span>
+  // Pastille d'un palier de l'échelle de l'organisation (couleur configurée +
+  // libellé en infobulle et pour les lecteurs d'écran — pas d'information par la seule couleur).
+  const seuilDot = (couleur: string) => {
+    const hex = /^#?[0-9a-fA-F]{6}$/.test(couleur) ? (couleur.startsWith('#') ? couleur : `#${couleur}`) : '#9ca3af'
+    return <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: hex }} />
   }
-
-  // Badge d'un niveau préfixé par son libellé (Brut / Actuel / Résiduel).
-  const niveauTag = (label: string, n: number) => {
-    const tier = getRiskTier(n)
-    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TIER_CLASS[tier]}`}>
-      <span className="opacity-70">{label}</span> {n}
+  // Badge d'un niveau préfixé par son libellé (Brut / Actuel / Résiduel), coloré
+  // selon le palier de l'échelle de l'organisation (matrice qualitative incluse).
+  const niveauTag = (label: string, g: number, v: number, n: number) => {
+    const seuil = scaleSeuil(g, v, scaleCfg)
+    return <span title={seuil.label} className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+      {seuilDot(seuil.couleur)}<span className="opacity-70">{label}</span> {n}<span className="sr-only"> — {seuil.label}</span>
     </span>
   }
+  const decisionBadge = (d: Decision) => (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${d === 'treat' ? TIER_CLASS.critique : TIER_CLASS.faible}`}>
+      {d === 'treat' ? m.decisionTreat : m.decisionAccept}
+    </span>
+  )
+  // Critère ayant fondé la décision : appétit (seuil) ou échelle de l'organisation.
+  const basisText = (e: RiskEvaluation) => e.basis === 'APPETIT'
+    ? m.basisAppetit.replace('{seuil}', String(e.seuilAppetit))
+    : m.basisEchelle.replace('{palier}', e.seuil.label)
 
   // Cellule « niveaux » : BRUT toujours ; ACTUEL/RÉSIDUEL seulement s'ils sont
   // RÉDUITS (mesures existantes / plans d'action) — pas de bruit quand tout est égal.
@@ -160,15 +182,22 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const brut = r.niveauRisque
     const actuel = r.niveauActuel ?? brut
     const residuel = r.niveauResiduel ?? actuel
+    const gA = r.graviteActuelle ?? r.gravite, vA = r.vraisemblanceActuelle ?? r.vraisemblance
+    const gR = r.graviteResiduelle ?? gA, vR = r.vraisemblanceResiduelle ?? vA
+    // Écran complet (ISO 31000, NIST) : la décision d'évaluation est affichée ici
+    // (pas de phase « Évaluation » dédiée) — P2 de l'audit.
+    const evaluation = mode === 'full' ? evaluateRisk(r, evalCtx) : null
     return (
       <div role="group" aria-label={m.colNiveau} className="flex flex-wrap items-center gap-1.5">
-        {niveauTag(m.niveauBrut, brut)}
-        {actuel < brut && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauActuel, actuel)}</>}
-        {residuel < actuel && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauResiduel, residuel)}</>}
+        {niveauTag(m.niveauBrut, r.gravite, r.vraisemblance, brut)}
+        {actuel < brut && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauActuel, gA, vA, actuel)}</>}
+        {residuel < actuel && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauResiduel, gR, vR, residuel)}</>}
+        {evaluation && <span title={basisText(evaluation)}>{decisionBadge(evaluation.decision)}</span>}
       </div>
     )
   }
-  const echelle = [1, 2, 3, 4]
+  // Niveaux sélectionnables : échelle de l'organisation (1..4 ou 1..5).
+  const echelle = scaleLevels(scaleCfg)
 
   // Cellule responsive : tableau sur écran large ; sous md, ligne libellé / valeur.
   const cell = (label: string, content: React.ReactNode) => (
@@ -189,15 +218,17 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const gv = (r[L.g] as number | null | undefined) ?? r.gravite
     const vv = (r[L.v] as number | null | undefined) ?? r.vraisemblance
     const sel = 'px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
+    // Valeur saisie avant un passage de l'échelle de 5 à 4 niveaux : conservée affichable.
+    const opts = (cur: number) => (echelle.includes(cur) ? echelle : [...echelle, cur])
     return (
       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
         <span aria-hidden="true" title={m.colGravite}>{m.abbrGravite}</span>
         <select aria-label={`${L.label} — ${m.colGravite}`} disabled={!editable} value={gv} onChange={e => maj(r.id, { [L.g]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
-          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+          {opts(gv).map(n => <option key={n} value={n}>{n}</option>)}
         </select>
         <span aria-hidden="true" title={m.colVraisemblance}>{m.abbrVraisemblance}</span>
         <select aria-label={`${L.label} — ${m.colVraisemblance}`} disabled={!editable} value={vv} onChange={e => maj(r.id, { [L.v]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
-          {echelle.map(n => <option key={n} value={n}>{n}</option>)}
+          {opts(vv).map(n => <option key={n} value={n}>{n}</option>)}
         </select>
       </div>
     )
@@ -208,13 +239,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const shownSuggestions = (suggestions ?? []).filter(s => !existingNames.has(s.intitule.trim().toLowerCase()))
 
   // ── Mode review (Évaluation) : priorisation lecture seule + décision d'acceptation.
-  const prioritized = prioritise(rows)
-  const counts = countDecisions(rows)
-  const decisionBadge = (d: 'treat' | 'accept') => (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${d === 'treat' ? TIER_CLASS.critique : TIER_CLASS.faible}`}>
-      {d === 'treat' ? m.decisionTreat : m.decisionAccept}
-    </span>
-  )
+  const prioritized = prioritiseRisks(rows, evalCtx)
+  const counts = countRiskDecisions(rows, evalCtx)
 
   return (
     <section className="card p-6">
@@ -271,19 +297,27 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
             <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
               {m.prioSummary.replace('{treat}', String(counts.treat)).replace('{accept}', String(counts.accept))}
             </p>
+            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{m.evalHint}</p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   <th className="px-3 py-2">{m.colNom}</th>
-                  <th className="px-3 py-2">{m.colNiveau}</th>
+                  <th className="px-3 py-2">{m.colNiveauEvalue}</th>
                   <th className="px-3 py-2">{m.colDecision}</th>
+                  <th className="px-3 py-2">{m.colCritere}</th>
                 </tr></thead>
                 <tbody>
-                  {prioritized.map(({ row: r, decision }) => (
+                  {prioritized.map(({ row: r, evaluation: e }) => (
                     <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
-                      <td className="px-3 py-2">{niveauBadge(r.niveauRisque, r.gravite, r.vraisemblance)}</td>
-                      <td className="px-3 py-2">{decisionBadge(decision)}</td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+                          {seuilDot(e.seuil.couleur)}<span className="font-semibold tabular-nums">{e.niveau}</span> · {e.seuil.label}
+                          {r.niveauActuel != null && r.niveauActuel < r.niveauRisque && <span className="text-gray-400">({m.niveauBrut} {r.niveauRisque})</span>}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">{decisionBadge(e.decision)}</td>
+                      <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{basisText(e)}</td>
                     </tr>
                   ))}
                 </tbody>

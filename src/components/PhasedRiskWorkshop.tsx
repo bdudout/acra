@@ -16,6 +16,8 @@ import PhaseGuidance from '@/components/PhaseGuidance'
 import ContexteEditor from '@/components/ContexteEditor'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
+import type { ScaleConfig } from '@/lib/risk-scale'
+import type { AppetitConfig } from '@/lib/appetit'
 
 export interface WorkshopPhase {
   key: string
@@ -33,10 +35,14 @@ export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
   contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
-  withVulnerabilites,
+  withVulnerabilites, scale, appetit,
 }: {
   analyseId: string
   editable: boolean
+  /** Échelle de l'organisation (4 ou 5 niveaux, paliers, matrice) — P1 de l'audit. */
+  scale?: Partial<ScaleConfig> | null
+  /** Appétit au risque de l'organisation (critère d'acceptation) — P2 de l'audit. */
+  appetit?: AppetitConfig | null
   /** Active la saisie des vulnérabilités (ISO 27005) en phase d'identification. */
   withVulnerabilites?: boolean
   phases: WorkshopPhase[]
@@ -125,6 +131,7 @@ export default function PhasedRiskWorkshop({
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}
+            scale={scale} appetit={appetit}
             treatmentSections={withVulnerabilites && phase.key === 'analyse' ? 'mesures'
               : withVulnerabilites && phase.key === 'traitement' ? 'plans' : undefined}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />

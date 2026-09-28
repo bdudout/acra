@@ -101,3 +101,14 @@ describe('sanitizeVulnerabilites', () => {
     expect(patch.vulnerabilites).toEqual([{ description: 'Faille XSS' }])
   })
 })
+
+describe('échelle de l’organisation (P1) — borne max 4 ou 5', () => {
+  it('création : 5 accepté si l’échelle a 5 niveaux, ramené à 4 sinon (défaut)', () => {
+    expect(sanitizeDirectRisque({ nom: 'x', gravite: 5, vraisemblance: 5 }, 5)).toMatchObject({ gravite: 5, vraisemblance: 5, niveauRisque: 25 })
+    expect(sanitizeDirectRisque({ nom: 'x', gravite: 5, vraisemblance: 5 })).toMatchObject({ gravite: 4, vraisemblance: 4, niveauRisque: 16 })
+  })
+  it('mise à jour : borne appliquée à chaque niveau (brut, actuel, résiduel)', () => {
+    expect(sanitizeDirectRisquePatch({ gravite: 9, graviteActuelle: 5, vraisemblanceResiduelle: 5 }, 5)).toMatchObject({ gravite: 5, graviteActuelle: 5, vraisemblanceResiduelle: 5 })
+    expect(sanitizeDirectRisquePatch({ graviteActuelle: 5 })).toMatchObject({ graviteActuelle: 4 })
+  })
+})

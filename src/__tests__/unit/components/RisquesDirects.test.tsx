@@ -4,7 +4,7 @@ import RisquesDirects from '@/components/RisquesDirects'
 
 const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
-  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V',
+  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V', colNiveauEvalue: 'Niveau évalué (actuel)', colCritere: 'Critère', basisAppetit: 'Appétit : acceptable jusqu’à {seuil}', basisEchelle: 'Échelle : palier « {palier} »', evalHint: 'Évalué au niveau actuel.',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
   niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
@@ -233,5 +233,40 @@ describe('RisquesDirects', () => {
     // Lecture seule : pas d’ajout, pas de sélecteur de traitement.
     expect(screen.queryByText('Ajouter')).toBeNull()
     expect(screen.queryByText('Traitement')).toBeNull()
+  })
+
+  it('P1 — échelle de l’organisation à 5 niveaux : 5 choix de gravité', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="rate" scale={{ nbNiveaux: 5 }} />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    const g = screen.getByRole('combobox', { name: 'Brut — Gravité' }) as HTMLSelectElement
+    expect([...g.options].map(o => o.value)).toEqual(['1', '2', '3', '4', '5'])
+  })
+
+  it('P2 — évaluation sur le niveau ACTUEL : brut critique mais actuel faible → acceptable', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 1, vraisemblanceActuelle: 3, niveauActuel: 3, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" />)
+    expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
+    expect(screen.getByText(M.decisionAccept)).toBeInTheDocument()
+    expect(screen.getByText(/Échelle : palier « Faible »/)).toBeInTheDocument()
+  })
+
+  it('P2 — l’appétit de l’organisation prime sur l’échelle et est cité comme critère', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 1, vraisemblanceActuelle: 3, niveauActuel: 3, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" appetit={{ seuilGlobal: 2, parCategorie: {} }} />)
+    expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
+    expect(screen.getByText(M.decisionTreat)).toBeInTheDocument()
+    expect(screen.getByText('Appétit : acceptable jusqu’à 2')).toBeInTheDocument()
+  })
+
+  it('P2 — écran complet (ISO 31000 / NIST) : la décision est affichée dans la colonne Niveau', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Niveau' })).getByText(M.decisionTreat)).toBeInTheDocument()
   })
 })

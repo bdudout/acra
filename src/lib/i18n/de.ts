@@ -1459,6 +1459,8 @@ export const de: Translations = {
     colGravite: 'Schweregrad',
     colVraisemblance: 'Eintrittswahrscheinlichkeit',
     colNiveau: 'Stufe',
+    colNiveauEvalue: 'Bewertetes Niveau (aktuell)', colCritere: 'Kriterium', basisAppetit: 'Risikoappetit: akzeptabel bis {seuil}', basisEchelle: 'Skala der Organisation: Stufe „{palier}“',
+    evalHint: 'Jedes Risiko wird auf seinem aktuellen Niveau (mit bestehenden Maßnahmen) bewertet und mit dem Risikoappetit der Organisation verglichen, andernfalls mit den Stufen ihrer Skala.',
     abbrGravite: 'S', abbrVraisemblance: 'W',
     niveauBrut: 'Brutto', niveauActuel: 'Aktuell', niveauResiduel: 'Restrisiko', colResiduelCible: 'Restrisiko (Ziel)', colActuelAvecMesures: 'Aktuell (mit Maßnahmen)', mesuresTitle: 'Bestehende Sicherheitsmaßnahmen', mesuresEmpty: 'Noch keine Maßnahme.', mesuresNomPlaceholder: 'Bezeichnung der Maßnahme', mesuresEfficacite: 'Wirksamkeit', mesuresStatut: 'Status', mesuresStatuts: { A_FAIRE: 'Zu erledigen', EN_COURS: 'In Bearbeitung', REALISE: 'Umgesetzt', REPORTE: 'Verschoben' }, mesuresEcheance: 'Fällig am', mesuresTitrePlan: 'Maßnahmen & Aktionsplan',
     colStrategie: 'Behandlung',

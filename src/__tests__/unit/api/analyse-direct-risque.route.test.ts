@@ -40,6 +40,8 @@ vi.mock('@/lib/org-context.server', () => ({
 }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
+const nbNiveaux = { value: 4 }
+vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: nbNiveaux.value })) }))
 
 import { GET, POST } from '@/app/api/analyses/[id]/risques/route'
 import { PATCH, DELETE } from '@/app/api/analyses/[id]/risques/[riskId]/route'
@@ -51,7 +53,7 @@ const PI = { params: Promise.resolve({ id: 'an1', riskId: 'r1' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'
+  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; nbNiveaux.value = 4
   analyseFindFirst.mockResolvedValue({ ...ISO })
   risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2 })
   risqueFindMany.mockResolvedValue([])
@@ -131,5 +133,18 @@ describe('PATCH/DELETE /risques/[riskId]', () => {
     const ko = await DELETE(req({}), PI)
     expect(ko.status).toBe(404)
     expect(risqueDelete).not.toHaveBeenCalled()
+  })
+
+  it('P1 — échelle de l’organisation à 5 niveaux : la cotation 5 est acceptée (création et mise à jour)', async () => {
+    nbNiveaux.value = 5
+    await POST(req({ nom: 'Arrêt de production', gravite: 5, vraisemblance: 5 }), P)
+    expect(argOf(risqueCreate).data).toMatchObject({ gravite: 5, vraisemblance: 5, niveauRisque: 25 })
+    await PATCH(req({ graviteActuelle: 5 }), PI)
+    expect(argOf(risqueUpdate).data).toMatchObject({ graviteActuelle: 5 })
+  })
+
+  it('P1 — échelle à 4 niveaux (défaut) : une cotation 5 est ramenée à 4', async () => {
+    await POST(req({ nom: 'Arrêt de production', gravite: 5, vraisemblance: 1 }), P)
+    expect(argOf(risqueCreate).data).toMatchObject({ gravite: 4, niveauRisque: 4 })
   })
 })

@@ -120,6 +120,9 @@ export default async function AtelierPage({
     const risqueSuggestions = editable
       ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
       : []
+    // Critères de l'organisation (P1/P2) : même échelle que l'EBIOS RM + appétit au risque.
+    const directScale = await getEffectiveScaleConfig((analyse as { organizationId?: string | null }).organizationId ?? null)
+    const directAppetit = (await getOrgConfig((analyse as { organizationId?: string | null }).organizationId ?? null)).appetitRisque
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -144,6 +147,7 @@ export default async function AtelierPage({
             guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
             risqueSuggestions={risqueSuggestions}
             withVulnerabilites={methode === 'ISO_27005'}
+            scale={directScale} appetit={directAppetit}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
