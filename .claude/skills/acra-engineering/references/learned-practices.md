@@ -1,0 +1,22 @@
+# Apprentissages vérifiés ACRA
+
+Ce registre conserve les enseignements réutilisables issus du développement.
+Une entrée doit rester courte, factuelle et liée à une preuve : test, incident,
+contrat de code, documentation ou décision produit datée. Ne pas y inscrire des
+préférences, suppositions ou détails propres à une seule tâche.
+
+| Date | Apprentissage | Preuve et portée |
+|---|---|---|
+| 2026-09-17 | L'API publique v1 est un contrat d'organisation : authentification par clé scrypt, scopes et import partiel par lots. | `src/lib/api-key.ts`, `src/app/api/v1/*` et `docs/specs/api-publique-v1.md`. Mettre à jour OpenAPI et la spec ensemble lors d'une évolution. |
+| 2026-09-17 | Le module GRC s'appuie sur des gardes d'activation centralisées et une isolation hiérarchique des organisations. | `docs/ARCHITECTURE.md` §5 et §7 ; ne pas déroger au passage par `getOrgConfig` et `lib/permissions`. |
+| 2026-09-17 | Les guides d'exploitation doivent distinguer l'architecture cible de la configuration Docker fournie. | `docker-compose.yml` publie PostgreSQL sur `5432` pour le local ; `README.md` et l'audit documentaire imposent de le retirer ou de le lier à la boucle locale en production. |
+| 2026-09-19 | Une inscription publique ne doit jamais amorcer le premier administrateur, y compris en démo. | `signup-decision.test.ts` : instance vide refusée dans tous les modes ; `scripts/create-admin.mjs` assure l’amorçage local. Remplace l’exception démo du 17 septembre. |
+| 2026-09-19 | Un périmètre organisationnel vide signifie aucun accès, jamais accès global. | `org-resource-scope.route.test.ts` couvre six routes en absence d’appartenance, hors org et global ; exception explicite `isSuperAdmin`. |
+| 2026-09-19 | Tester les exports PDF sur le build de production : le bundling peut altérer le chargement des templates CommonJS. | Régression reproduite avec Webpack puis corrigée par `pdf-runtime.ts` ; E2E vérifie un vrai PDF (`%PDF`) après approbation et acceptation. |
+| 2026-09-25 | Une clé d'idempotence doit traiter la course entre le premier lookup et l'écriture transactionnelle. | `analysis-import-execute.test.ts` simule le conflit Prisma `P2002` : la transaction perdante relit le reçu gagnant sans créer une seconde analyse. À appliquer aux nouveaux endpoints idempotents. |
+| 2026-09-20 | Un `route.ts` Next ne peut exporter que ses handlers HTTP (+ `dynamic`, etc.) ; `tsc` ne le détecte pas, seul `next build` échoue (TS2344). | Build cassé sur #178 par `export const DIRECT_RISK_SELECT` dans une route ; corrigé en déplaçant la constante dans `lib/risque-direct.ts`. Constantes partagées → lib pure. |
+| 2026-09-23 | `gh pr merge --delete-branch` bascule l'arbre de travail sur le `main` local (divergé) et échoue en fast-forward. | Constaté sur #183 : fichiers revenus à l'état du `main` local. Utiliser `gh pr merge <n> --squash` sans `--delete-branch`. |
+| 2026-09-23 | Après `prisma generate`, un `next dev` déjà lancé garde l'ancien client : toute requête sélectionnant le nouveau champ renvoie 500. | `GET /api/analyses/[id]/risques` en 500 après ajout de `Risque.vulnerabilites` ; résolu par redémarrage du dev. |
+| 2026-09-28 | Le helper `cell()` des routes d'import (`value.text` sinon `String(value)`) transforme les cellules à **formule** et en **texte enrichi** en `"[object Object]"`. | Reproduit avec ExcelJS : formule `B2*C2` et richText → `"[object Object]"`, alors que `cell.text` donne `"12"` / `"Texte enrichi"`. Lire via `cell.text`. |
+| 2026-09-28 | `workbook.xlsx.load` d'ExcelJS décompresse tout le classeur avant les plafonds (20 feuilles/500 lignes) : un xlsx de 9 Mo bloque l'event loop ~15 s. | Mesure locale (150 000 lignes × 30 colonnes, sous la limite de 14 M caractères). Rate limit + taille décompressée max sur tout endpoint de parsing. |
+| 2026-09-28 | Un lien `RISQUE_ANALYSE` sans `ref = analyseId` est invisible dans les compteurs du registre de l'analyse et produit un lien profond cassé. | `risques/route.ts` filtre `ref: analyseId` ; `lienHref` utilise `ref`. L'import historique (`analysis-import.ts`) crée ces liens sans `ref`. Passer par les helpers de `plan-action.server.ts`. |
