@@ -6,9 +6,9 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
-## 2026-09-28 (6) — Codex : connecteurs d’entités REST/LDAP, persistants et explicites (non commité)
+## 2026-09-28 (6) — Codex : connecteurs d’entités REST/LDAP, persistants et explicites
 
-**Branche** : `feat/historical-excel-import`. Le lot est volontairement **non commité** : il complète des fichiers non commités du tour précédent (`package*.json`, migration, `entity-sync.ts`, route de config) ; ne pas les écraser.
+**Branche** : `feat/historical-excel-import`. Commit `dbf4ec4` (non poussé).
 
 - Ajout de `entitesSyncConfig` (JSON) dans `OrganizationConfig` et migration
   `20260928280000_entites_sync_config` **appliquée localement**. Les jetons REST et
@@ -45,7 +45,7 @@ vérifié l'est avec la commande et son résultat.
   generate réussis. Dev redémarré : PID 38667, `http://localhost:3005`, HTTP de
   `/configuration/entites` redirige correctement vers la connexion hors session.
 
-**À terminer avant commit/push** : suite `npm test` complète et `npm run build` après arrêt temporaire du dev (build écrase
+**À terminer avant push** : suite `npm test` complète et `npm run build` après arrêt temporaire du dev (build écrase
 `.next`). Vérifier dans le navigateur, connecté comme ADMIN, les deux parcours :
 REST avec une API de test publique contrôlée et LDAPS avec un annuaire de recette.
 Ne pas valider une connexion réelle sur une infrastructure de production.
