@@ -40,4 +40,16 @@ describe('QualificationQuestionnaireEditor', () => {
       expect(body.qualificationQuestionnaire.custom[0].label).toBe('Budget alloué ?')
     })
   })
+
+  it('non-régression : une config sans riskRules garde le catalogue par défaut et ne l’efface pas à l’enregistrement', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    global.fetch = fetchMock as unknown as typeof fetch
+    render(<QualificationQuestionnaireEditor initial={{ overrides: {}, custom: [] }} builtins={[{ id: 'donneesPersonnelles', label: 'Données' }]} />)
+    expect(screen.getAllByRole('button', { name: 'Supprimer la règle' }).length).toBe(6)
+    fireEvent.click(screen.getByText('Enregistrer'))
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(c => (c[1] as RequestInit | undefined)?.method === 'PUT')
+      expect(JSON.parse(String((put![1] as RequestInit).body)).qualificationQuestionnaire.riskRules).toHaveLength(6)
+    })
+  })
 })

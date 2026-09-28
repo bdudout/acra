@@ -210,7 +210,7 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
-        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [] })
+        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [], riskRules: data.qualificationQuestionnaire.riskRules })
         setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')

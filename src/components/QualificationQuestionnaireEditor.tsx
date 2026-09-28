@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { QUALIFICATION_QUESTIONS, type QualificationConfig, type CustomQualQuestion, type QualificationRiskRule } from '@/lib/qualification'
+import { DEFAULT_QUALIFICATION_RISK_RULES, QUALIFICATION_QUESTIONS, type QualificationConfig, type CustomQualQuestion, type QualificationRiskRule } from '@/lib/qualification'
 import QualificationRiskRulesEditor, { type RuleQuestion } from '@/components/QualificationRiskRulesEditor'
 
 interface Props {
@@ -22,7 +22,9 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
   const e = t.qualifEditor
   const [overrides, setOverrides] = useState<Record<string, { label?: string; enabled?: boolean }>>(initial.overrides ?? {})
   const [custom, setCustom] = useState<CustomQualQuestion[]>(initial.custom ?? [])
-  const [riskRules, setRiskRules] = useState<QualificationRiskRule[]>(initial.riskRules ?? [])
+  // Absent (≠ liste vide volontaire) → catalogue par défaut : ne jamais effacer les
+  // règles d'une organisation à l'enregistrement d'un autre réglage du questionnaire.
+  const [riskRules, setRiskRules] = useState<QualificationRiskRule[]>(initial.riskRules ?? DEFAULT_QUALIFICATION_RISK_RULES)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [nLabel, setNLabel] = useState('')
@@ -49,7 +51,7 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
       body: JSON.stringify({ qualificationQuestionnaire: { overrides, custom, riskRules } }),
     })
     setSaving(false)
-    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []); setRiskRules(d.qualificationQuestionnaire.riskRules ?? []) } setSaved(true) }
+    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []); setRiskRules(d.qualificationQuestionnaire.riskRules ?? DEFAULT_QUALIFICATION_RISK_RULES) } setSaved(true) }
   }
 
   const inp = 'px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900'
