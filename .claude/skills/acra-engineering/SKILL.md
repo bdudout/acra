@@ -128,6 +128,10 @@ Relire `git diff --cached` contre cette liste (constats réels des audits ACRA) 
   Si `db:5432` est injoignable : préfixer `DATABASE_URL=…@localhost:5432/acra_rm`.
 - `npm run build` écrase `.next` d'un dev en cours → arrêter le dev, builder, relancer.
 - Après `prisma generate`, le dev garde l'ancien client → redémarrer.
+- Avant de (re)lancer le dev : `lsof -nP -iTCP:3005 -sTCP:LISTEN`. Un serveur déjà
+  présent (lancé par l'autre agent/l'utilisateur) fait échouer le nouveau en silence
+  (EADDRINUSE dans le log) alors que le health check répond. Le redémarrer à
+  l'identique (même port, même écoute) s'il sert un client Prisma périmé.
 - `NEXTAUTH_URL=http://localhost:3000` : après login, revenir sur :3005 (cookie partagé).
 - Un squash-merge fait apparaître la branche comme « non fusionnée » : vérifier le
   contenu (`git diff origin/main -- <fichier>`), pas le graphe.
