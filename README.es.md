@@ -205,7 +205,7 @@ incluye todas las dependencias y el cliente Prisma, y aplica las migraciones
 automáticamente al arrancar (servicio `migrator`).
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 make setup        # genera .env + secretos aleatorios (interactivo)
 docker compose up -d
@@ -249,7 +249,7 @@ docker compose exec app npx prisma db seed
 ### Paso 1 — Clonar el repositorio
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 ```
 
@@ -352,9 +352,25 @@ El script se niega a ejecutarse con cambios locales, hace una copia de la base
 migraciones y comprueba el estado; si falla, muestra el comando de vuelta atrás.
 Equivalente manual: `git checkout stable && git pull && docker compose up -d --build`.
 
-**Botón «Actualizar»** (Administración → Versión): instale una vez el agente del host con
-`scripts/update-agent.sh --install` y añada la línea cron que muestra.
-La aplicación no ejecuta ningún comando: deposita una solicitud que ejecuta el agente.
+**Botón «Actualizar»** (Administración → Versión): un único comando en el servidor, con
+el usuario que gestiona Docker:
+
+```bash
+scripts/update-agent.sh --install     # añade la tarea cron; en producción: --install -f docker-compose.yml -f docker-compose.production.yml
+```
+
+La aplicación no ejecuta ningún comando: deposita una solicitud que ejecuta el agente
+(copia de seguridad, actualización, reconstrucción, comprobación de estado).
+Desinstalación: `scripts/update-agent.sh --uninstall`.
+
+**Instancia anterior a la v1.0.3** (sin estos scripts): una actualización manual, una sola
+vez; después toman el relevo el botón y `scripts/update.sh`:
+
+```bash
+git fetch origin && git checkout stable && git pull   # o quedarse en main para la beta
+scripts/update-agent.sh --install                      # opcional: activa el botón
+docker compose up -d --build
+```
 
 ---
 
@@ -386,7 +402,7 @@ Para contribuir o personalizar ACRA sin Docker:
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 
 # 2. Instalar las dependencias (también genera el cliente Prisma vía postinstall)

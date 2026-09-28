@@ -1000,7 +1000,7 @@ export const es: Translations = {
     commandBeta: 'Versión beta (última versión validada + cambios posteriores)',
     commandsGit: 'Equivalente manual con git:',
     agentTitle: 'Activar el botón «Actualizar»',
-    agentIntro: 'Instale una vez el agente de actualización en el servidor y añada la línea cron que muestra:',
+    agentIntro: 'Para activar este botón, ejecute una vez en el servidor (con el usuario que gestiona Docker); la tarea programada se añade automáticamente:',
   },
   qualifEditor: {
     sectionTitle: 'Cuestionario de calificación',

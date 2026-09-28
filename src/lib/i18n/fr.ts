@@ -1017,7 +1017,7 @@ export const fr = {
     commandBeta: 'Version bêta (dernière version validée + évolutions suivantes)',
     commandsGit: 'Équivalent manuel avec git :',
     agentTitle: 'Activer le bouton « Mettre à jour »',
-    agentIntro: 'Installez une fois l’agent de mise à jour sur le serveur, puis ajoutez la ligne cron qu’il affiche :',
+    agentIntro: 'Pour activer ce bouton, lancez une fois sur le serveur (utilisateur qui pilote Docker) ; la tâche planifiée est ajoutée automatiquement :',
   },
   qualifEditor: {
     sectionTitle: 'Questionnaire de qualification',

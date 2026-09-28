@@ -1000,7 +1000,7 @@ export const it: Translations = {
     commandBeta: 'Versione beta (ultima versione convalidata + modifiche successive)',
     commandsGit: 'Equivalente manuale con git:',
     agentTitle: 'Attivare il pulsante «Aggiorna»',
-    agentIntro: 'Installi una volta l’agente di aggiornamento sul server, poi aggiunga la riga cron che mostra:',
+    agentIntro: 'Per attivare questo pulsante, esegua una volta sul server (con l’utente che gestisce Docker); il job pianificato viene aggiunto automaticamente:',
   },
   qualifEditor: {
     sectionTitle: 'Questionario di qualificazione',

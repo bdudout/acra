@@ -1000,7 +1000,7 @@ export const de: Translations = {
     commandBeta: 'Beta-Version (letzte freigegebene Version + spätere Änderungen)',
     commandsGit: 'Manuelles Äquivalent mit git:',
     agentTitle: 'Schaltfläche „Aktualisieren“ aktivieren',
-    agentIntro: 'Installieren Sie den Aktualisierungsagenten einmalig auf dem Server und fügen Sie die angezeigte Cron-Zeile hinzu:',
+    agentIntro: 'Um diese Schaltfläche zu aktivieren, einmalig auf dem Server ausführen (als Benutzer, der Docker steuert); der geplante Auftrag wird automatisch eingerichtet:',
   },
   qualifEditor: {
     sectionTitle: 'Qualifizierungsfragebogen', riskRulesTitle: 'Vorgeschlagene Risiken je Antwort', riskRulesHint: 'Stimmt die Antwort überein, wird das Risiko in der Analyse vorgeschlagen (oder vorgeschrieben). Bei EBIOS RM erfolgt der Vorschlag in Workshop 5.', ruleQuestion: 'Frage', ruleAnswer: 'Antwort', ruleYes: 'Ja', ruleNo: 'Nein', ruleTitle: 'Vorgeschlagenes Risiko', ruleTitleCatalog: 'Standardtitel (automatisch übersetzt)', ruleMethod: 'Methode', allMethods: 'Alle Methoden', ruleCategory: 'Kategorie', ruleGravity: 'Schwere', ruleLikelihood: 'Wahrscheinlichkeit', ruleStrategy: 'Behandlung', ruleMandatory: 'Verpflichtend (nicht abwählbar)', ruleEnabled: 'Aktiv', addRule: 'Regel hinzufügen', removeRule: 'Regel entfernen',

@@ -1000,7 +1000,7 @@ export const en: Translations = {
     commandBeta: 'Beta version (latest validated version + later changes)',
     commandsGit: 'Manual equivalent with git:',
     agentTitle: 'Enable the “Update” button',
-    agentIntro: 'Install the update agent once on the server, then add the cron line it displays:',
+    agentIntro: 'To enable this button, run once on the server (as the user who manages Docker); the scheduled job is added automatically:',
   },
   qualifEditor: {
     sectionTitle: 'Qualification questionnaire',

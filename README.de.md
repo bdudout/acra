@@ -205,7 +205,7 @@ bündelt alle Abhängigkeiten und den Prisma-Client und wendet die Migrationen b
 automatisch an (Dienst `migrator`).
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 make setup        # erzeugt .env + zufällige Secrets (interaktiv)
 docker compose up -d
@@ -249,7 +249,7 @@ docker compose exec app npx prisma db seed
 ### Schritt 1 — Repository klonen
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 ```
 
@@ -352,9 +352,25 @@ Das Skript verweigert die Ausführung bei lokalen Änderungen, sichert die Daten
 und prüft den Zustand; bei einem Fehler zeigt es den Befehl zum Zurücksetzen an.
 Manuelles Äquivalent: `git checkout stable && git pull && docker compose up -d --build`.
 
-**Schaltfläche „Aktualisieren“** (Administration → Version): den Host-Agenten einmalig mit
-`scripts/update-agent.sh --install` installieren und die angezeigte Cron-Zeile hinzufügen.
-Die Anwendung führt selbst keinen Befehl aus: Sie hinterlegt eine Anfrage, die der Agent ausführt.
+**Schaltfläche „Aktualisieren“** (Administration → Version): ein einziger Befehl auf dem
+Server, als der Benutzer, der Docker steuert:
+
+```bash
+scripts/update-agent.sh --install     # richtet den Cron-Job ein; in Produktion: --install -f docker-compose.yml -f docker-compose.production.yml
+```
+
+Die Anwendung führt selbst keinen Befehl aus: Sie hinterlegt eine Anfrage, die der Agent
+ausführt (Sicherung, Aktualisierung, Neubau, Zustandsprüfung). Deinstallation:
+`scripts/update-agent.sh --uninstall`.
+
+**Instanz älter als v1.0.3** (ohne diese Skripte): einmalig manuell aktualisieren, danach
+übernehmen die Schaltfläche und `scripts/update.sh`:
+
+```bash
+git fetch origin && git checkout stable && git pull   # oder auf main bleiben (Beta)
+scripts/update-agent.sh --install                      # optional: aktiviert die Schaltfläche
+docker compose up -d --build
+```
 
 ---
 
@@ -386,7 +402,7 @@ Um ohne Docker zu ACRA beizutragen oder es anzupassen:
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 
 # 2. Abhängigkeiten installieren (erzeugt via postinstall auch den Prisma-Client)

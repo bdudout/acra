@@ -186,6 +186,9 @@ CRON_SECRET=${CRON_SECRET}
 EOF
 
 chmod 600 "$ENV_FILE" 2>/dev/null || true
+# Dossier d'échange du bouton « Mettre à jour » : créé ici (utilisateur courant)
+# pour que Docker ne le crée pas en root au premier démarrage.
+mkdir -p "$(dirname "$ENV_FILE")/.acra-update" 2>/dev/null || true
 success ".env écrit : $ENV_FILE (permissions 600)"
 
 # ── Étapes suivantes ─────────────────────────────────────────────────────────
@@ -195,6 +198,7 @@ echo -e "  ${CYAN}2.${RESET} Créer l'admin local :  ${BOLD}docker compose exec 
 echo -e "     → en production, utilisez aussi ${BOLD}-f docker-compose.production.yml${RESET} (pas de PostgreSQL publié)."
 echo -e "  ${CYAN}3.${RESET} Ouvrir :               ${BOLD}${NEXTAUTH_URL}${RESET}"
 echo -e "  ${CYAN}4.${RESET} Logs :                 ${BOLD}docker compose logs -f app${RESET}"
+echo -e "  ${CYAN}5.${RESET} Bouton « Mettre à jour » (facultatif) : ${BOLD}scripts/update-agent.sh --install${RESET}"
 echo ""
 warn ".env contient des secrets — il est ignoré par git (.gitignore). Ne le partagez pas."
 echo ""

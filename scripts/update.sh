@@ -39,6 +39,10 @@ esac
 
 cd "$(dirname "$0")/.."
 REMOTE="${ACRA_REMOTE:-origin}"
+# Exécuté en root (agent installé via sudo) dans un clone appartenant à un autre
+# utilisateur, git refuse le dépôt (« dubious ownership ») : on l'autorise pour
+# CE dossier uniquement, sans toucher à la configuration globale.
+git() { command git -c safe.directory="$PWD" "$@"; }
 # shellcheck disable=SC2206
 COMPOSE=(docker compose ${ACRA_COMPOSE_FILES:-})
 
@@ -97,6 +101,9 @@ if [ "$DOCKER" -eq 0 ]; then
 fi
 
 status RUNNING "Reconstruction et redémarrage" "$TO"
+# Dossier d'échange du bouton « Mettre à jour » : créé par l'utilisateur courant
+# avant que Docker ne le crée en root lors du montage.
+mkdir -p .acra-update
 "${COMPOSE[@]}" up -d --build || fail "docker compose up a échoué (voir docker compose logs app). Retour arrière : git checkout $FROM_SHA && docker compose up -d --build."
 
 status RUNNING "Contrôle de santé" "$TO"
