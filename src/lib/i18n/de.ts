@@ -69,6 +69,7 @@ export const de: Translations = {
     tiers:          'Dritte',
     actions:        'Aktionspläne',
     plansActions:   'Aktionspläne',
+    profilsOperationnels: 'Operative Profile',
     conformite:     'Konformität',
     referentiels:   'Referenzrahmen',
     documents:      'Dokumente',
@@ -3491,6 +3492,10 @@ export const de: Translations = {
     EN_COURS: 'In Bearbeitung', SOUMIS: 'Eingereicht', APPROUVE: 'Genehmigt',
     REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert',
   } as Record<string, string>,
+  operationalProfiles: {
+    title: 'Operative Profile', subtitle: 'NIST CSF 2.0 und NCSC CAF v4 — Bewertung von Governance- und Resilienzlücken.',
+    current: 'Ist-Zustand', target: 'Ziel', gap: 'Zu behandelnde Lücke', noAssessment: 'Noch nicht bewertet', save: 'Speichern', saved: 'Gespeichert', createAction: 'Maßnahme erstellen', actionCreated: 'Maßnahme erstellt', manageHint: 'Governance-Rollen können diese Bewertungen aktualisieren.',
+  },
   strategyLabels: {
     REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen',
     REFUSER: 'Ablehnen', SURVEILLER: 'Überwachen',
@@ -3538,6 +3543,8 @@ export const de: Translations = {
     qualificationDesc:  'Bietet einen kurzen Fragebogen (Auslagerung, Kritikalität, personenbezogene Daten…), um jede neue Analyse einzugrenzen und Orientierungen vorzuschlagen.',
     qualificationObligTitle: 'Qualifizierung vor Workshop 1 verpflichtend machen',
     qualificationObligDesc:  'Sperrt den Zugang zu Workshop 1, bis der Qualifizierungsfragebogen ausgefüllt ist.',
+    profilsOperationnelsTitle: 'Operative Profile USA / UK',
+    profilsOperationnelsDesc: 'Ergänzt NIST-CSF-2.0- und NCSC-CAF-v4-Profile zur Steuerung von Lücken und zugehörigen Maßnahmen. Standardmäßig deaktiviert.',
     qualificationObligRequires: 'Erfordert die Aktivierung der Qualifizierung oben.',
     conformiteTitle:    'Konformitätsanalyse gegenüber einem Rahmenwerk (Workshop 1)',
     conformiteDesc:     'Ermöglicht die Bewertung der Konformität mit dem Sicherheits-Grundniveau bereits in der Abgrenzungsphase und die Nutzung der Abweichungen (Nichtkonformitäten) in den folgenden Workshops.',

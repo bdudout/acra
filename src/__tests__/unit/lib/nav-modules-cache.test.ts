@@ -12,7 +12,7 @@ beforeEach(() => __resetNavModulesCacheForTest())
 describe('parseNavModules', () => {
   it('coerce les clés connues en booléens', () => {
     expect(parseNavModules({ registre: true, incidents: 1, audit: 'x' })).toEqual({
-      registre: true, incidents: true, controles: false, audit: true, kri: false, reglementaire: false,
+      registre: true, incidents: true, controles: false, audit: true, kri: false, reglementaire: false, profilsOperationnels: false,
     })
   })
   it('renvoie null si aucune clé booléenne connue', () => {
@@ -28,13 +28,13 @@ describe('cache en mémoire', () => {
     expect(peekNavModules()).toBeNull()
   })
   it('après setCachedNavModules, peek renvoie la valeur mémorisée', () => {
-    const m = { registre: true, incidents: false, controles: true, audit: false, kri: false, reglementaire: false }
+    const m = { registre: true, incidents: false, controles: true, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
     setCachedNavModules(m)
     expect(peekNavModules()).toEqual(m)
     expect(loadNavModules()).toEqual(m)
   })
   it('__resetNavModulesCacheForTest vide le cache mémoire', () => {
-    setCachedNavModules({ registre: true, incidents: false, controles: false, audit: false, kri: false, reglementaire: false })
+    setCachedNavModules({ registre: true, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false })
     __resetNavModulesCacheForTest()
     expect(peekNavModules()).toBeNull()
   })

@@ -69,6 +69,7 @@ export const it: Translations = {
     tiers:          'Terze parti',
     actions:        'Piani d\'azione',
     plansActions:   'Piani d\'azione',
+    profilsOperationnels: 'Profili operativi',
     conformite:     'Conformità',
     referentiels:   'Riferimenti',
     documents:      'Documenti',
@@ -3492,6 +3493,10 @@ export const it: Translations = {
     EN_COURS: 'In corso', SOUMIS: 'Inviata', APPROUVE: 'Approvata',
     REJETE: 'Rifiutata', TERMINE: 'Completata', ARCHIVE: 'Archiviata',
   } as Record<string, string>,
+  operationalProfiles: {
+    title: 'Profili operativi', subtitle: 'NIST CSF 2.0 e NCSC CAF v4 — valutazione delle lacune di governance e resilienza.',
+    current: 'Stato attuale', target: 'Obiettivo', gap: 'Lacuna da gestire', noAssessment: 'Non ancora valutato', save: 'Salva', saved: 'Salvato', createAction: 'Crea azione', actionCreated: 'Azione creata', manageHint: 'I ruoli di governance possono aggiornare queste valutazioni.',
+  },
   strategyLabels: {
     REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire',
     REFUSER: 'Rifiutare', SURVEILLER: 'Monitorare',
@@ -3539,6 +3544,8 @@ export const it: Translations = {
     qualificationDesc:  "Propone un breve questionario (esternalizzazione, criticità, dati personali…) per inquadrare ogni nuova analisi e suggerire orientamenti.",
     qualificationObligTitle: 'Rendere obbligatoria la qualificazione prima del Workshop 1',
     qualificationObligDesc:  'Blocca l\'accesso al Workshop 1 finché il questionario di qualificazione non è completato.',
+    profilsOperationnelsTitle: 'Profili operativi USA / Regno Unito',
+    profilsOperationnelsDesc: 'Aggiunge profili NIST CSF 2.0 e NCSC CAF v4 per gestire le lacune e le azioni correlate. Disattivato per impostazione predefinita.',
     qualificationObligRequires: 'Richiede l\'attivazione della qualificazione qui sopra.',
     conformiteTitle:    'Analisi di conformità a un riferimento (workshop 1)',
     conformiteDesc:     'Permette di valutare la conformità al livello base di sicurezza già nella fase di inquadramento e di sfruttare gli scostamenti (non conformità) nei workshop successivi.',

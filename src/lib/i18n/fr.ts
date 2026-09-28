@@ -70,6 +70,7 @@ export const fr = {
     tiers:          'Tiers',
     actions:        'Plans d\'action',
     plansActions:   'Plans d\'action',
+    profilsOperationnels: 'Profils opérationnels',
     conformite:     'Conformité',
     referentiels:   'Référentiels',
     documents:      'Documents',
@@ -3542,6 +3543,10 @@ export const fr = {
     EN_COURS: 'En cours', SOUMIS: 'Soumise', APPROUVE: 'Approuvée',
     REJETE: 'Rejetée', TERMINE: 'Terminée', ARCHIVE: 'Archivée',
   } as Record<string, string>,
+  operationalProfiles: {
+    title: 'Profils opérationnels', subtitle: 'NIST CSF 2.0 et NCSC CAF v4 — évaluation des écarts de gouvernance et de résilience.',
+    current: 'État courant', target: 'Cible', gap: 'Écart à traiter', noAssessment: 'Pas encore évalué', save: 'Enregistrer', saved: 'Enregistré', createAction: 'Créer une action', actionCreated: 'Action créée', manageHint: 'Les rôles de gouvernance peuvent mettre à jour ces évaluations.',
+  },
   strategyLabels: {
     REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer',
     REFUSER: 'Refuser', SURVEILLER: 'Surveiller',
@@ -3588,6 +3593,8 @@ export const fr = {
     qualificationDesc:  'Propose un court questionnaire (externalisation, criticité, données personnelles…) pour cadrer chaque nouvelle analyse et suggérer des orientations.',
     qualificationObligTitle: 'Rendre la qualification obligatoire avant l\'atelier 1',
     qualificationObligDesc:  'Bloque l\'entrée dans l\'atelier 1 tant que le questionnaire de qualification n\'est pas complété.',
+    profilsOperationnelsTitle: 'Profils opérationnels US / UK',
+    profilsOperationnelsDesc: 'Ajoute les profils NIST CSF 2.0 et NCSC CAF v4 pour piloter les écarts et leurs actions. Désactivé par défaut.',
     qualificationObligRequires: 'Nécessite l\'activation de la qualification ci-dessus.',
     conformiteTitle:    'Analyse de conformité à un référentiel (atelier 1)',
     conformiteDesc:     "Permet d'évaluer la conformité au socle de sécurité dès le cadrage et d'exploiter les écarts (non-conformités) dans les ateliers suivants.",

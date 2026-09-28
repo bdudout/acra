@@ -69,6 +69,7 @@ export const es: Translations = {
     tiers:          'Terceros',
     actions:        'Planes de acción',
     plansActions:   'Planes de acción',
+    profilsOperationnels: 'Perfiles operativos',
     conformite:     'Conformidad',
     referentiels:   'Marcos',
     documents:      'Documentos',
@@ -3492,6 +3493,10 @@ export const es: Translations = {
     EN_COURS: 'En curso', SOUMIS: 'Enviada', APPROUVE: 'Aprobada',
     REJETE: 'Rechazada', TERMINE: 'Completada', ARCHIVE: 'Archivada',
   } as Record<string, string>,
+  operationalProfiles: {
+    title: 'Perfiles operativos', subtitle: 'NIST CSF 2.0 y NCSC CAF v4: evaluación de brechas de gobierno y resiliencia.',
+    current: 'Estado actual', target: 'Objetivo', gap: 'Brecha por tratar', noAssessment: 'Aún no evaluado', save: 'Guardar', saved: 'Guardado', createAction: 'Crear acción', actionCreated: 'Acción creada', manageHint: 'Los roles de gobierno pueden actualizar estas evaluaciones.',
+  },
   strategyLabels: {
     REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir',
     REFUSER: 'Rechazar', SURVEILLER: 'Vigilar',
@@ -3539,6 +3544,8 @@ export const es: Translations = {
     qualificationDesc:  'Ofrece un breve cuestionario (externalización, criticidad, datos personales…) para enmarcar cada nuevo análisis y sugerir orientaciones.',
     qualificationObligTitle: 'Hacer obligatoria la cualificación antes del Taller 1',
     qualificationObligDesc:  'Bloquea la entrada al Taller 1 hasta que se complete el cuestionario de cualificación.',
+    profilsOperationnelsTitle: 'Perfiles operativos EE. UU. / Reino Unido',
+    profilsOperationnelsDesc: 'Añade perfiles NIST CSF 2.0 y NCSC CAF v4 para gestionar brechas y acciones asociadas. Desactivado por defecto.',
     qualificationObligRequires: 'Requiere activar la cualificación más arriba.',
     conformiteTitle:    'Análisis de conformidad con un marco de referencia (taller 1)',
     conformiteDesc:     'Permite evaluar la conformidad con la base de seguridad desde la fase de encuadre y explotar las brechas (no conformidades) en los talleres siguientes.',

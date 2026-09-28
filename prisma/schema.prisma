@@ -1715,6 +1715,9 @@ model OrganizationConfig {
   // 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut) ;
   // false = mode « ligne unique » (org non régulée) : quatre-yeux et rôles 2ᵉ ligne relâchés.
   secondeLigneActive         Boolean       @default(true)
+  // Profils NIST CSF 2.0 / NCSC CAF v4 et suivi des écarts opérationnels.
+  // Désactivé par défaut : le parcours EBIOS RM / ISO 27005 standard reste inchangé.
+  profilsOperationnelsActive Boolean       @default(false)
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

@@ -69,6 +69,7 @@ export const en: Translations = {
     tiers:          'Third parties',
     actions:        'Action plans',
     plansActions:   'Action plans',
+    profilsOperationnels: 'Operational profiles',
     conformite:     'Compliance',
     referentiels:   'Frameworks',
     documents:      'Documents',
@@ -3492,6 +3493,10 @@ export const en: Translations = {
     EN_COURS: 'In progress', SOUMIS: 'Submitted', APPROUVE: 'Approved',
     REJETE: 'Rejected', TERMINE: 'Completed', ARCHIVE: 'Archived',
   } as Record<string, string>,
+  operationalProfiles: {
+    title: 'Operational profiles', subtitle: 'NIST CSF 2.0 and NCSC CAF v4 — governance and resilience gap assessment.',
+    current: 'Current state', target: 'Target', gap: 'Gap to address', noAssessment: 'Not assessed yet', save: 'Save', saved: 'Saved', createAction: 'Create action', actionCreated: 'Action created', manageHint: 'Governance roles can update these assessments.',
+  },
   strategyLabels: {
     REDUIRE: 'Reduce', ACCEPTER: 'Accept', TRANSFERER: 'Transfer',
     REFUSER: 'Refuse', SURVEILLER: 'Monitor',
@@ -3539,6 +3544,8 @@ export const en: Translations = {
     qualificationDesc:  'Offers a short questionnaire (outsourcing, criticality, personal data…) to frame each new analysis and suggest orientations.',
     qualificationObligTitle: 'Make qualification mandatory before Workshop 1',
     qualificationObligDesc:  'Blocks entry to Workshop 1 until the qualification questionnaire is completed.',
+    profilsOperationnelsTitle: 'US / UK operational profiles',
+    profilsOperationnelsDesc: 'Adds NIST CSF 2.0 and NCSC CAF v4 profiles to manage gaps and related actions. Disabled by default.',
     qualificationObligRequires: 'Requires enabling qualification above.',
     conformiteTitle:    'Compliance analysis against a framework (workshop 1)',
     conformiteDesc:     "Lets you assess compliance with the security baseline from the scoping stage and exploit the gaps (non-conformities) in the following workshops.",

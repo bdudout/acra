@@ -11,8 +11,8 @@
 import { describe, it, expect } from 'vitest'
 import { buildNav, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 
-const ALL_ON: NavModules = { registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true }
-const ALL_OFF: NavModules = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false }
+const ALL_ON: NavModules = { registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true, profilsOperationnels: true }
+const ALL_OFF: NavModules = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
 
 /** Toutes les destinations atteignables (liens directs + items de groupes). */
 function allKeys(m: NavModel): NavKey[] {

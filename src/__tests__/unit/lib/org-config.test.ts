@@ -64,6 +64,14 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(resolveOrgConfig([row({ secondeLigneActive: false })]).secondeLigneActive).toBe(false)
   })
 
+  it('profils opérationnels : inactifs par défaut et hérités comme un toggle', () => {
+    expect(DEFAULT_ORG_CONFIG.profilsOperationnelsActive).toBe(false)
+    expect(resolveOrgConfig([]).profilsOperationnelsActive).toBe(false)
+    const enfant = row({ profilsOperationnelsActive: true })
+    const racine = row({ profilsOperationnelsActive: false })
+    expect(resolveOrgConfig([enfant, racine]).profilsOperationnelsActive).toBe(true)
+  })
+
   it('un champ JSON vide hérite de l\'ancêtre (le plus proche non vide gagne)', () => {
     // chaîne SELF-first : [enfant, racine]
     const enfant = row({ entitesMesures: [] })                       // vide → hérite
