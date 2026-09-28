@@ -3,11 +3,13 @@
 import { Compass } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import QualificationRiskProposal from '@/components/QualificationRiskProposal'
 import {
   FILIERE_OIV_OPTIONS,
   deriveOrientations,
   isQualificationComplete,
   effectiveQualificationQuestions,
+  suggestedQualificationRisks,
   EMPTY_QUALIFICATION_CONFIG,
   type QualificationAnswers,
   type QualificationConfig,
@@ -24,6 +26,8 @@ interface Props {
   secteur?: string | null
   /** Personnalisation du questionnaire (overrides natifs + questions custom) — config org. */
   config?: QualificationConfig | null
+  /** Méthode de l'analyse : filtre les règles de risques spécialisées. */
+  methode?: string | null
 }
 
 /**
@@ -31,12 +35,13 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null, methode = null }: Props) {
   const isFinance = /banqu|financ|bancaire|assur|fintech/i.test(secteur ?? '')
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [proposalsOpen, setProposalsOpen] = useState(false)
   // Replié par défaut (vue synthétique) ; déplié si `defaultOpen` (mise en avant
   // tant que la qualification est incomplète).
   const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
@@ -98,12 +103,18 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
       body: JSON.stringify({ qualification: answers }),
     })
     setSaving(false)
-    if (res.ok) { setSaved(true); setCollapsed(true) }
+    if (res.ok) { setSaved(true); setCollapsed(true); setProposalsOpen(suggestedQualificationRisks(answers, cfg.riskRules ?? [], methode).length > 0) }
+  }
+
+  const proposals = useMemo(() => suggestedQualificationRisks(answers, cfg.riskRules ?? [], methode), [answers, cfg, methode])
+  async function importProposals(ruleIds: string[]) {
+    const res = await fetch(`/api/analyses/${analyseId}/qualification-risks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruleIds }) })
+    if (res.ok) setProposalsOpen(false)
   }
 
   if (collapsed) {
     return (
-      <div className="card p-4">
+      <><div className="card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <span><Compass size={18} aria-hidden="true" /></span>
@@ -129,7 +140,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
         {complete && orientations.length > 0 && (
           <p className="text-xs text-gray-400 mt-2">{orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</p>
         )}
-      </div>
+      </div>{proposalsOpen && <QualificationRiskProposal risks={proposals} labels={{ title: t.qualification.orientationsTitle, explanation: t.qualification.orientationsIntro, confirm: t.qualification.save, cancel: t.qualification.skip, gravity: t.qualification.short.criticite, likelihood: t.qualification.short.criticite, strategy: t.qualification.orientationsTitle }} onCancel={() => setProposalsOpen(false)} onConfirm={importProposals} />}</>
     )
   }
 

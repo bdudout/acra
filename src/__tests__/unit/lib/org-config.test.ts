@@ -45,7 +45,7 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     const c = resolveOrgConfig([])
     expect(c.entitesMesures).toEqual(DEFAULT_ORG_CONFIG.entitesMesures)
     expect(c.conseilsAteliersActive).toBe(true)
-    expect(c.qualificationActive).toBe(false)
+    expect(c.qualificationActive).toBe(true)
     expect(c.echellesEcosysteme).toEqual({})
   })
 

@@ -74,6 +74,6 @@ describe('isQualificationComplete (avec config)', () => {
     expect(isQualificationComplete({ ...base, budget: true }, c)).toBe(true)
   })
   it('config vide = EMPTY (natives seules)', () => {
-    expect(EMPTY_QUALIFICATION_CONFIG).toEqual({ overrides: {}, custom: [] })
+    expect(EMPTY_QUALIFICATION_CONFIG).toMatchObject({ overrides: {}, custom: [], riskRules: expect.any(Array) })
   })
 })

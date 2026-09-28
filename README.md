@@ -830,7 +830,7 @@ ACRA adapte la démarche au **contexte réglementaire et sectoriel** de l'organi
 
 **Module Conformité (optionnel, activable par organisation)**
 
-- **Qualification** de l'analyse (criticité, données personnelles, exposition, RSSI interne…) produisant des orientations ;
+- **Qualification** activée par défaut pour toute méthode d’analyse : criticité, données personnelles, exposition, RSSI interne… produisent des orientations et une sélection explicite de risques pré-cotés à importer ; le catalogue de règles cyber est administrable par organisation et extensible aux risques projet, opérationnels et fraude ;
 - **Statut réglementaire** : détection proactive du régime **NIS2** (entité *essentielle* / *importante* selon le secteur), marqueurs **OSE / EEI / OIV** avec sélection de la **filière OIV** (12 filières SAIV), signalement du **cumul OIV (LPM) + EEI (NIS2)** et du fait que **DORA prime sur NIS2** pour la finance ;
 - **obligations contextualisées** (enregistrement, notification d'incident au CSIRT/ANSSI — ou au **CERT Santé/ANS** pour la santé, exercice de crise SIIV…) ;
 - **classification de l'information** (marqueur **IGI-1300** : NP / DR / Secret / Très Secret) ;

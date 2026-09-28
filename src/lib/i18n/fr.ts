@@ -1003,6 +1003,7 @@ export const fr = {
   },
   qualifEditor: {
     sectionTitle: 'Questionnaire de qualification',
+    riskRulesTitle: 'Risques proposés par réponse', riskRulesHint: 'Question, risque, catégorie, gravité puis vraisemblance.',
     sectionDesc: 'Renommez ou désactivez les questions natives (leur logique d’orientation reste inchangée) et ajoutez vos propres questions (informatives).',
     builtinTitle: 'Questions natives',
     builtinHint: 'Laissez vide pour garder le libellé par défaut. Décochez pour masquer la question.',
@@ -3774,6 +3775,7 @@ export const fr = {
     skip:          'Passer cette étape',
     saved:         'Qualification enregistrée',
     edit:          'Modifier la qualification',
+    riskProposal: { title: 'Risques proposés', explanation: 'Ces risques sont suggérés à partir de vos réponses. Sélectionnez ceux à créer ; vous pourrez les modifier ensuite.', confirm: 'Créer les risques sélectionnés', cancel: 'Continuer sans créer de risque', gravity: 'Gravité', likelihood: 'Vraisemblance', strategy: 'Stratégie' },
     orientationsTitle: 'Orientations suggérées',
     orientationsIntro: "D'après vos réponses, ACRA suggère de porter une attention particulière à :",
     noOrientation: 'Aucune orientation particulière — une analyse standard convient.',

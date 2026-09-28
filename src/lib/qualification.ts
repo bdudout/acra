@@ -32,6 +32,26 @@ export interface QualificationQuestion {
 /** Réponses saisies : { <questionId>: boolean | optionValue }. */
 export type QualificationAnswers = Record<string, boolean | string>
 
+/** Méthodes prises en charge par le catalogue de risques de qualification. */
+export type QualificationMethod = 'EBIOS_RM' | 'ISO_27005' | 'ISO_31000' | 'NIST_800_30'
+
+/** Règle configurable liant une réponse de qualification à un risque proposé. */
+export type QualificationRiskRule = {
+  id: string
+  enabled?: boolean
+  /** Absent = règle générique ; renseigné = proposition limitée à ces méthodes. */
+  methods?: readonly QualificationMethod[]
+  when: { questionId: string; equals: boolean | string }
+  risk: { category: 'CYBER' | 'PROJECT' | 'OPERATIONAL' | 'FRAUD'; title: string; description?: string; gravity: number; likelihood: number; strategy: 'REDUIRE' | 'ACCEPTER' | 'TRANSFERER' | 'REFUSER' | 'SURVEILLER' }
+}
+
+/** Risques proposés par les règles actives correspondant exactement aux réponses. */
+export function suggestedQualificationRisks(answers: QualificationAnswers | null | undefined, rules: QualificationRiskRule[], method?: QualificationMethod | string | null): Array<QualificationRiskRule['risk'] & { id: string }> {
+  if (!answers) return []
+  return rules.filter(rule => rule.enabled !== false && (!rule.methods?.length || (method != null && rule.methods.includes(method as QualificationMethod))) && answers[rule.when.questionId] === rule.when.equals)
+    .map(rule => ({ id: rule.id, ...rule.risk }))
+}
+
 /** Orientations dérivées des réponses (clés i18n t.qualification.orientations.*). */
 export type Orientation =
   | 'ECOSYSTEME'
@@ -105,8 +125,14 @@ export interface QualificationConfig {
   overrides: Record<string, { label?: string; enabled?: boolean }>
   /** Questions supplémentaires propres à l'organisation. */
   custom: CustomQualQuestion[]
+  /** Catalogue de risques proposés selon les réponses, administré par organisation. */
+  riskRules?: QualificationRiskRule[]
 }
-export const EMPTY_QUALIFICATION_CONFIG: QualificationConfig = { overrides: {}, custom: [] }
+export const DEFAULT_QUALIFICATION_RISK_RULES: QualificationRiskRule[] = [
+  { id: 'cyber-personal-data', when: { questionId: 'donneesPersonnelles', equals: true }, risk: { category: 'CYBER', title: 'Atteinte à la confidentialité des données personnelles', description: 'Divulgation, perte ou accès non autorisé à des données personnelles.', gravity: 4, likelihood: 2, strategy: 'REDUIRE' } },
+  { id: 'cyber-internet-exposure', when: { questionId: 'expositionInternet', equals: true }, risk: { category: 'CYBER', title: 'Compromission d’un service exposé sur Internet', description: 'Exploitation d’une vulnérabilité sur un service accessible depuis Internet.', gravity: 3, likelihood: 3, strategy: 'REDUIRE' } },
+]
+export const EMPTY_QUALIFICATION_CONFIG: QualificationConfig = { overrides: {}, custom: [], riskRules: DEFAULT_QUALIFICATION_RISK_RULES }
 
 const BUILTIN_QUAL_IDS = new Set(QUALIFICATION_QUESTIONS.map(q => q.id))
 
@@ -118,7 +144,7 @@ function slugId(s: string): string {
 
 /** Nettoie/valide une configuration de questionnaire (overrides natifs + custom). */
 export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
-  const out: QualificationConfig = { overrides: {}, custom: [] }
+  const out: QualificationConfig = { overrides: {}, custom: [], riskRules: DEFAULT_QUALIFICATION_RISK_RULES }
   if (!v || typeof v !== 'object' || Array.isArray(v)) return out
   const src = v as Record<string, unknown>
 
@@ -161,6 +187,21 @@ export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
       cq.options = clean
     }
     seen.add(id); out.custom.push(cq)
+  }
+  if (Array.isArray(src.riskRules)) {
+    const rules: QualificationRiskRule[] = []
+    const ids = new Set<string>()
+    for (const raw of src.riskRules) {
+      if (!raw || typeof raw !== 'object') continue
+      const rule = raw as Record<string, unknown>; const when = rule.when as Record<string, unknown>; const risk = rule.risk as Record<string, unknown>
+      const id = slugId(String(rule.id ?? '')); const questionId = typeof when?.questionId === 'string' ? when.questionId : ''
+      const title = typeof risk?.title === 'string' ? risk.title.trim().slice(0, 255) : ''
+      const category = String(risk?.category ?? 'CYBER'); const strategy = String(risk?.strategy ?? 'REDUIRE')
+      if (!id || ids.has(id) || !questionId || !title || !['CYBER', 'PROJECT', 'OPERATIONAL', 'FRAUD'].includes(category) || !['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'].includes(strategy) || (typeof when?.equals !== 'boolean' && typeof when?.equals !== 'string')) continue
+      const methods = Array.isArray(rule.methods) ? [...new Set(rule.methods.filter((method): method is QualificationMethod => typeof method === 'string' && ['EBIOS_RM', 'ISO_27005', 'ISO_31000', 'NIST_800_30'].includes(method)))] : []
+      ids.add(id); rules.push({ id, enabled: rule.enabled !== false, ...(methods.length ? { methods } : {}), when: { questionId, equals: when.equals as boolean | string }, risk: { category: category as QualificationRiskRule['risk']['category'], title, ...(typeof risk.description === 'string' ? { description: risk.description.slice(0, 2000) } : {}), gravity: Math.max(1, Math.min(4, Number(risk.gravity) || 2)), likelihood: Math.max(1, Math.min(4, Number(risk.likelihood) || 2)), strategy: strategy as QualificationRiskRule['risk']['strategy'] } })
+    }
+    out.riskRules = rules
   }
   return out
 }

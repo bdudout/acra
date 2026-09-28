@@ -119,7 +119,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   strategiesTraitement: DEFAULT_STRATEGIES,
   exemplesAteliers: {},
   echellesEcosysteme: {},
-  qualificationActive: false,
+  qualificationActive: true,
   qualificationObligatoire: false,
   // Module conformité activé par défaut (résolution des orgs sans valeur explicite).
   conformiteActive: true,

@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import type { QualificationConfig, CustomQualQuestion } from '@/lib/qualification'
+import type { QualificationConfig, CustomQualQuestion, QualificationRiskRule } from '@/lib/qualification'
 
 interface Props {
   initial: QualificationConfig
@@ -21,6 +21,7 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
   const e = t.qualifEditor
   const [overrides, setOverrides] = useState<Record<string, { label?: string; enabled?: boolean }>>(initial.overrides ?? {})
   const [custom, setCustom] = useState<CustomQualQuestion[]>(initial.custom ?? [])
+  const [riskRules, setRiskRules] = useState<QualificationRiskRule[]>(initial.riskRules ?? [])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [nLabel, setNLabel] = useState('')
@@ -44,10 +45,10 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
     setSaving(true)
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qualificationQuestionnaire: { overrides, custom } }),
+      body: JSON.stringify({ qualificationQuestionnaire: { overrides, custom, riskRules } }),
     })
     setSaving(false)
-    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []) } setSaved(true) }
+    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []); setRiskRules(d.qualificationQuestionnaire.riskRules ?? []) } setSaved(true) }
   }
 
   const inp = 'px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900'
@@ -71,6 +72,12 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
           })}
         </div>
         <p className="text-[11px] text-gray-400 mt-1">{e.builtinHint}</p>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-2">{e.riskRulesTitle}</p>
+        <div className="space-y-2">{riskRules.map((rule, index) => <div key={rule.id} className="grid gap-1 rounded border border-gray-200 p-2 sm:grid-cols-6"><input className={inp} value={rule.when.questionId} onChange={event => { setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, when: { ...item.when, questionId: event.target.value } } : item)); dirty() }} /><input className={inp} value={rule.risk.title} onChange={event => { setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, risk: { ...item.risk, title: event.target.value } } : item)); dirty() }} /><select aria-label="Méthode" className={inp} value={rule.methods?.[0] ?? ''} onChange={event => { const method = event.target.value; setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, ...(method ? { methods: [method as 'EBIOS_RM' | 'ISO_27005' | 'ISO_31000' | 'NIST_800_30'] } : { methods: [] }) } : item)); dirty() }}><option value="">Toutes méthodes</option><option value="EBIOS_RM">EBIOS RM</option><option value="ISO_27005">ISO/IEC 27005</option><option value="ISO_31000">ISO 31000</option><option value="NIST_800_30">NIST SP 800-30</option></select><select className={inp} value={rule.risk.category} onChange={event => { setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, risk: { ...item.risk, category: event.target.value as QualificationRiskRule['risk']['category'] } } : item)); dirty() }}><option value="CYBER">CYBER</option><option value="PROJECT">PROJECT</option><option value="OPERATIONAL">OPERATIONAL</option><option value="FRAUD">FRAUD</option></select><input className={inp} type="number" min="1" max="4" value={rule.risk.gravity} onChange={event => { setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, risk: { ...item.risk, gravity: Number(event.target.value) } } : item)); dirty() }} /><input className={inp} type="number" min="1" max="4" value={rule.risk.likelihood} onChange={event => { setRiskRules(rows => rows.map((item, i) => i === index ? { ...item, risk: { ...item.risk, likelihood: Number(event.target.value) } } : item)); dirty() }} /></div>)}</div>
+        <p className="mt-1 text-[11px] text-gray-400">{e.riskRulesHint}</p>
       </div>
 
       {/* Questions personnalisées */}

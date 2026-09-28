@@ -276,6 +276,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               initial={(analyse as any).qualification ?? null}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
+              methode={analyse.methode}
               config={orgConfig.qualificationQuestionnaire}
               defaultOpen
             />
@@ -325,6 +326,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               initial={(analyse as any).qualification ?? null}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
+              methode={analyse.methode}
               config={orgConfig.qualificationQuestionnaire}
             />
           </div>

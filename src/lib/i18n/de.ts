@@ -985,7 +985,7 @@ export const de: Translations = {
     deploy: 'Aktualisieren', deploying: 'Bereitstellung läuft…', deployConfirm: 'Bereitstellung von {version} starten?', deployStarted: 'Bereitstellung gestartet. GitHub Actions öffnet sich zur Nachverfolgung.', deployError: 'Bereitstellung konnte nicht gestartet werden.', helpTitle: 'Wie funktioniert das Update?', helpOneClick: 'Die Schaltfläche startet nur die letzte veröffentlichte Release und sichert Daten, Migrationen und Rollback ab.', helpManual: 'Ohne Schaltfläche starten Sie „Deploy stable demo release“ in GitHub Actions. Ein git pull aktualisiert das Docker-Image nicht.',
   },
   qualifEditor: {
-    sectionTitle: 'Qualifizierungsfragebogen',
+    sectionTitle: 'Qualifizierungsfragebogen', riskRulesTitle: 'Vorgeschlagene Risiken je Antwort', riskRulesHint: 'Frage, Risiko, Kategorie, Schweregrad und Wahrscheinlichkeit.',
     sectionDesc: 'Benennen Sie die integrierten Fragen um oder deaktivieren Sie sie (ihre Orientierungslogik bleibt unverändert) und fügen Sie eigene (informative) Fragen hinzu.',
     builtinTitle: 'Integrierte Fragen',
     builtinHint: 'Leer lassen, um die Standardbezeichnung zu behalten. Abwählen, um die Frage auszublenden.',
@@ -3725,6 +3725,7 @@ export const de: Translations = {
     skip:          'Diesen Schritt überspringen',
     saved:         'Qualifizierung gespeichert',
     edit:          'Qualifizierung bearbeiten',
+    riskProposal: { title: 'Vorgeschlagene Risiken', explanation: 'Diese Risiken werden anhand Ihrer Antworten vorgeschlagen. Wählen Sie die zu erstellenden Risiken aus; sie können später bearbeitet werden.', confirm: 'Ausgewählte Risiken erstellen', cancel: 'Ohne Risiken fortfahren', gravity: 'Schweregrad', likelihood: 'Wahrscheinlichkeit', strategy: 'Strategie' },
     orientationsTitle: 'Vorgeschlagene Orientierungen',
     orientationsIntro: 'Basierend auf Ihren Antworten empfiehlt ACRA, besonders auf Folgendes zu achten:',
     noOrientation: 'Keine besondere Orientierung — eine Standardanalyse ist angemessen.',

@@ -986,6 +986,7 @@ export const es: Translations = {
   },
   qualifEditor: {
     sectionTitle: 'Cuestionario de calificación',
+    riskRulesTitle: 'Riesgos propuestos por respuesta', riskRulesHint: 'Pregunta, riesgo, categoría, gravedad y probabilidad.',
     sectionDesc: 'Renombre o desactive las preguntas nativas (su lógica de orientación no cambia) y añada sus propias preguntas (informativas).',
     builtinTitle: 'Preguntas nativas',
     builtinHint: 'Deje vacío para mantener la etiqueta por defecto. Desmarque para ocultar la pregunta.',
@@ -3725,6 +3726,7 @@ export const es: Translations = {
     skip:          'Saltar este paso',
     saved:         'Cualificación guardada',
     edit:          'Editar la cualificación',
+    riskProposal: { title: 'Riesgos propuestos', explanation: 'Estos riesgos se sugieren a partir de sus respuestas. Seleccione los que desea crear; podrá editarlos después.', confirm: 'Crear los riesgos seleccionados', cancel: 'Continuar sin crear riesgos', gravity: 'Gravedad', likelihood: 'Probabilidad', strategy: 'Estrategia' },
     orientationsTitle: 'Orientaciones sugeridas',
     orientationsIntro: 'Según sus respuestas, ACRA sugiere prestar especial atención a:',
     noOrientation: 'Ninguna orientación particular — un análisis estándar es adecuado.',

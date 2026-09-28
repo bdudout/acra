@@ -1640,7 +1640,7 @@ model OrganizationConfig {
   // Une catégorie présente (tableau non vide) remplace les défauts ; sinon repli sur les défauts i18n.
   exemplesAteliers           Json          @default("{}")
   // Fonctionnalité optionnelle : questionnaire de qualification au début d'une analyse (cf. lib/qualification.ts)
-  qualificationActive        Boolean       @default(false)
+  qualificationActive        Boolean       @default(true)
   // Si la qualification est active, la rendre OBLIGATOIRE avant l'atelier 1 (bloque l'entrée tant qu'incomplete)
   qualificationObligatoire   Boolean       @default(false)
   // Grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle).

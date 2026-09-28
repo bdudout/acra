@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, Factory, Landmark, Lightbulb } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight, Factory, Landmark, Lightbulb } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -10,6 +10,9 @@ import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
 import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import QualificationQuestions from '@/components/QualificationQuestions'
+import QualificationRiskProposal from '@/components/QualificationRiskProposal'
+import { EMPTY_QUALIFICATION_CONFIG, suggestedQualificationRisks, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
 
 // Clé i18n du nom de chaque méthode (t.methodes.*).
 const METHODE_I18N: Record<string, string> = {
@@ -32,11 +35,28 @@ export default function NewAnalysePage() {
   const [methode, setMethode] = useState('EBIOS_RM')
   const [methodes, setMethodes] = useState<string[]>(['EBIOS_RM'])
   const [advOpen, setAdvOpen] = useState(false)
+  // Visible dès l'ouverture du formulaire : la qualification reste facultative,
+  // mais ne doit jamais passer inaperçue au moment du choix de méthode.
+  const [qualificationOpen, setQualificationOpen] = useState(true)
+  const [qualification, setQualification] = useState<QualificationAnswers>({})
+  const [qualificationConfig, setQualificationConfig] = useState<QualificationConfig>(EMPTY_QUALIFICATION_CONFIG)
+  const [createdAnalyseId, setCreatedAnalyseId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/methodes')
       .then(r => (r.ok ? r.json() : null))
       .then(d => { if (d?.available?.length) { setMethodes(d.available); setMethode(d.default ?? 'EBIOS_RM') } })
+      .catch(() => {})
+  }, [])
+
+  // Même questionnaire que dans l'analyse : la configuration effective de
+  // l'organisation active rend visibles les questions ajoutées par son admin.
+  useEffect(() => {
+    fetch('/api/admin/organization-config', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data?.qualificationQuestionnaire) setQualificationConfig(data.qualificationQuestionnaire)
+      })
       .catch(() => {})
   }, [])
 
@@ -70,13 +90,22 @@ export default function NewAnalysePage() {
     const res = await fetch('/api/analyses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, ...(socleId ? { socleId } : {}) }),
+      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, qualification, ...(socleId ? { socleId } : {}) }),
     })
 
     const data = await res.json()
     if (!res.ok) { setError(data.error || t.error); setLoading(false); return }
 
+    const proposals = suggestedQualificationRisks(qualification, qualificationConfig.riskRules ?? [], methode)
+    if (proposals.length > 0) { setCreatedAnalyseId(data.analyse.id); return }
     router.push(`/analyses/${data.analyse.id}/atelier/1`)
+  }
+
+  const finishCreation = () => { if (createdAnalyseId) router.push(`/analyses/${createdAnalyseId}/atelier/1`) }
+  const proposals = suggestedQualificationRisks(qualification, qualificationConfig.riskRules ?? [], methode)
+  async function importProposals(ruleIds: string[]) {
+    if (createdAnalyseId) await fetch(`/api/analyses/${createdAnalyseId}/qualification-risks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruleIds }) })
+    finishCreation()
   }
 
   return (
@@ -208,25 +237,23 @@ export default function NewAnalysePage() {
             </div>
           )}
 
-          {/* Méthode d'analyse (config avancée) — seulement si l'instance en active plusieurs */}
-          {methodes.length > 1 && (
-            <div className="border-t border-gray-100 pt-4">
-              <button type="button" onClick={() => setAdvOpen(o => !o)} className="text-sm text-gray-600 hover:text-gray-800 font-medium">
+          {/* Options peu fréquentes regroupées à la fin du formulaire. */}
+          <div className="border-t border-gray-100 pt-4">
+            {methodes.length > 1 ? <>
+              <button type="button" onClick={() => setAdvOpen(o => !o)} className="text-sm text-gray-600 hover:text-gray-800 font-medium dark:text-slate-200">
                 {advOpen ? '▾' : '▸'} {t.newAnalysis.advanced}
               </button>
-              {advOpen && (
-                <div className="mt-3">
-                  <label className="label">{t.newAnalysis.methodLabel}</label>
-                  <select value={methode} onChange={e => setMethode(e.target.value)} className="input">
-                    {methodes.map(mk => (
-                      <option key={mk} value={mk}>{(t.methodes as Record<string, string>)[METHODE_I18N[mk] ?? ''] ?? mk}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.methodHint}</p>
-                </div>
-              )}
-            </div>
-          )}
+              {advOpen && <div className="mt-3"><label className="label">{t.newAnalysis.methodLabel}</label><select value={methode} onChange={e => setMethode(e.target.value)} className="input">{methodes.map(mk => <option key={mk} value={mk}>{(t.methodes as Record<string, string>)[METHODE_I18N[mk] ?? ''] ?? mk}</option>)}</select><p className="text-xs text-gray-500 mt-1">{t.newAnalysis.methodHint}</p></div>}
+            </> : <><p className="label mb-1">{t.newAnalysis.methodLabel}</p><p className="text-sm text-gray-600">{(t.methodes as Record<string, string>)[METHODE_I18N[methode] ?? ''] ?? methode}</p><p className="text-xs text-gray-500 mt-1">{t.newAnalysis.methodHint}</p></>}
+          </div>
+
+          <div className="rounded-xl border border-ebios-200 bg-ebios-50/60 dark:border-ebios-800 dark:bg-slate-900">
+            <button type="button" onClick={() => setQualificationOpen(open => !open)} className="flex w-full items-center justify-between gap-3 p-4 text-left">
+              <span><span className="block text-sm font-semibold text-ebios-900 dark:text-ebios-100">{t.qualification.promptOptionalTitle} <span className="font-normal">({t.optional})</span></span><span className="mt-1 block text-xs text-ebios-800 dark:text-slate-300">{t.qualification.promptOptionalText}</span></span>
+              {qualificationOpen ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
+            </button>
+            {qualificationOpen && <div className="border-t border-ebios-200 p-4 dark:border-ebios-800"><QualificationQuestions answers={qualification} onChange={setQualification} config={qualificationConfig} labels={{ questions: t.qualification.questions as Record<string, string>, criticiteOptions: t.qualification.criticiteOptions as Record<string, string>, statutOptions: t.qualification.statutOptions as Record<string, string>, yes: t.qualification.yes, no: t.qualification.no }} /></div>}
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => router.back()} className="btn-secondary flex-1">
@@ -238,6 +265,7 @@ export default function NewAnalysePage() {
           </div>
         </form>
       </div>
+      {createdAnalyseId && <QualificationRiskProposal risks={proposals} labels={{ ...t.qualification.riskProposal }} onCancel={finishCreation} onConfirm={importProposals} />}
     </div>
   )
 }

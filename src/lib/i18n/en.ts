@@ -986,6 +986,7 @@ export const en: Translations = {
   },
   qualifEditor: {
     sectionTitle: 'Qualification questionnaire',
+    riskRulesTitle: 'Risks proposed by answer', riskRulesHint: 'Question, risk, category, severity then likelihood.',
     sectionDesc: 'Rename or disable the built-in questions (their orientation logic is unchanged) and add your own (informational) questions.',
     builtinTitle: 'Built-in questions',
     builtinHint: 'Leave empty to keep the default label. Uncheck to hide the question.',
@@ -3725,6 +3726,7 @@ export const en: Translations = {
     skip:          'Skip this step',
     saved:         'Qualification saved',
     edit:          'Edit qualification',
+    riskProposal: { title: 'Suggested risks', explanation: 'These risks are suggested from your answers. Select those to create; you can edit them afterwards.', confirm: 'Create selected risks', cancel: 'Continue without creating risks', gravity: 'Impact', likelihood: 'Likelihood', strategy: 'Strategy' },
     orientationsTitle: 'Suggested orientations',
     orientationsIntro: 'Based on your answers, ACRA suggests paying particular attention to:',
     noOrientation: 'No particular orientation — a standard analysis is appropriate.',
