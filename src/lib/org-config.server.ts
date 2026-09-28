@@ -48,6 +48,7 @@ const CONFIG_SELECT = {
   secondeLigneActive: true,
   profilsOperationnelsActive: true,
   echelleMaturite: true,
+  processusCartographie: true,
   appetitRisque: true,
 } as const
 

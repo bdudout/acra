@@ -65,6 +65,7 @@ export interface RawOrgConfig {
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
   echelleMaturite?: unknown
+  processusCartographie?: unknown
   appetitRisque?: unknown
   actionDelaisMois?: unknown
 }
@@ -112,6 +113,8 @@ export interface OrgConfigResolved {
   profilsOperationnelsActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
   echelleMaturite: unknown[]
+  /** Processus de cartographie personnalisé ({} ⇒ texte par défaut). Cf. lib/processus-carto. */
+  processusCartographie: Record<string, unknown>
   appetitRisque: AppetitConfig
   /** Délais (mois) de l'échéance par défaut d'une action selon sa priorité. */
   actionDelaisMois: ActionDelaisMois
@@ -155,6 +158,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
   echelleMaturite: [],
+  processusCartographie: {},
   appetitRisque: APPETIT_DEFAULT,
   actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
 }
@@ -167,7 +171,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
@@ -240,6 +244,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
+    processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }

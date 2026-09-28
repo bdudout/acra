@@ -1778,6 +1778,10 @@ model OrganizationConfig {
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
   // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
   echelleMaturite            Json          @default("[]")
+  // Processus de cartographie des risques (texte explicatif par étape, périodicité de
+  // revue) : { introduction?, periodicite, etapes: [{ key, titre, description, responsable?, frequence? }] }.
+  // Vide ⇒ hérité, sinon texte par défaut (i18n) — cf. lib/processus-carto.
+  processusCartographie      Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
