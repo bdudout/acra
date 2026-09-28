@@ -20,7 +20,7 @@ describe('Questionnaire360', () => {
       return ok({ channel: 'DIRECT', proposals: [{ id: 'p360-compromissionExpose', title: 'Compromission', mandatory: false, category: 'CYBER', gravity: 3, likelihood: 3, strategy: 'REDUIRE', alreadyCreated: false }] })
     })
     render(<Questionnaire360 analyseId="a1" editable initialAnswers={{ 'p360.cyber.donneesSensibles': false }} />)
-    for (const d of ['Cyber', 'IT (architecture, maintenance)', 'Projet', 'Métier', 'Fraude', 'Externalisation']) expect(screen.getByRole('heading', { name: new RegExp(d.replace(/[()]/g, '\\$&')) })).toBeTruthy()
+    for (const d of ['Cyber', 'IT (architecture, maintenance)', 'Projet', 'Métier', 'Fraude', 'Externalisation']) expect(screen.getByRole('heading', { name: new RegExp(d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toBeTruthy()
     const q = screen.getByRole('radiogroup', { name: 'Le projet expose-t-il un service sur Internet ?' })
     fireEvent.click(within(q).getByRole('radio', { name: 'Oui' }))
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les réponses' }))

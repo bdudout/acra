@@ -123,8 +123,11 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     if (updated) setLocalRows(prev => prev.map(r => r.id === id ? { ...r, statut: updated.statut ?? r.statut, intitule: updated.intitule ?? r.intitule, dateFin: updated.dateFin ?? null } : r))
     setActionComment(''); setEditForm(null)
     // La ligne reste ouverte : on recharge seulement son détail pour montrer le résultat.
-    const fresh = await fetch(`/api/derogations/${id}`).then(r => (r.ok ? r.json() : null)).catch(() => null)
-    if (fresh) setDetail(fresh)
+    try {
+      const r = await fetch(`/api/derogations/${id}`)
+      const fresh = r?.ok ? await r.json() : null
+      if (fresh) setDetail(fresh)
+    } catch { /* le statut local est déjà à jour */ }
     setActionOk(d.detail.actionSaved)
   }
   const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
