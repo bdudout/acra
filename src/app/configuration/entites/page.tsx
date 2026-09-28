@@ -7,6 +7,7 @@ import { getServerT } from '@/lib/i18n'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import EntitesRolesManager from '@/components/EntitesRolesManager'
+import EntitySyncManager from '@/components/EntitySyncManager'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -34,6 +35,7 @@ export default async function ConfigurationEntitesPage() {
         <Link href="/configuration" className="text-sm text-ebios-600 hover:underline">← {t.config.title}</Link>
         <div className="mt-3">
           <EntitesRolesManager orgId={orgId} />
+          <div className="mt-6"><EntitySyncManager orgId={orgId} /></div>
         </div>
       </main>
     </div>

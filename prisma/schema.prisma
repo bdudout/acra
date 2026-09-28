@@ -1629,6 +1629,9 @@ model OrganizationConfig {
   organization               Organization? @relation(fields: [id], references: [id], onDelete: Cascade)
   // Liste des entités responsables de mesures (ex: ["DSI", "Métier", "Risques"])
   entitesMesures             Json          @default("[]")
+  // Connecteurs d'import d'entités (REST/LDAP). Les secrets sont chiffrés dans
+  // ce JSON avant écriture et ne sont jamais exposés par l'API de lecture.
+  entitesSyncConfig          Json          @default("{}")
   // Types d'impacts configurables (événements redoutés) — [{id, label, icon}]
   typesImpacts               Json          @default("[]")
   // Référentiels de sécurité configurables — [{nom, description, actif}]

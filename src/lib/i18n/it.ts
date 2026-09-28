@@ -3676,6 +3676,7 @@ export const it: Translations = {
     tpeNoteLink: 'Vai alla base di conformità',
     error: 'Azione non riuscita. Riprova.',
     loading: 'Caricamento…',
+    syncTitle: 'Sincronizzazione esterna', syncDesc: 'Visualizza le entità di un’API REST o LDAP, quindi seleziona esplicitamente quelle da aggiungere ai responsabili delle misure.', syncConfigure: 'Configura connettore', syncType: 'Tipo', syncEndpoint: 'Indirizzo del connettore', syncToken: 'Token API (facoltativo)', syncBindDn: 'Bind DN', syncPassword: 'Password', syncBaseDn: 'Base DN', syncFilter: 'Filtro LDAP (facoltativo)', syncSave: 'Salva connettore', syncPreview: 'Prova e visualizza', syncImport: 'Importa selezione', syncSelectAll: 'Seleziona tutto', syncNone: 'Nessuna entità trovata.', syncSaved: 'Connettore salvato.', syncImported: '{n} entità aggiunta/e.', syncError: 'Impossibile raggiungere o salvare il connettore.',
   },
   conformiteGlobal: {
     editSocle: 'Aggiungi una base',

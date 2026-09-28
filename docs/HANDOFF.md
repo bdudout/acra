@@ -6,6 +6,52 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-28 (6) — Codex : connecteurs d’entités REST/LDAP, persistants et explicites (non commité)
+
+**Branche** : `feat/historical-excel-import`. Le lot est volontairement **non commité** : il complète des fichiers non commités du tour précédent (`package*.json`, migration, `entity-sync.ts`, route de config) ; ne pas les écraser.
+
+- Ajout de `entitesSyncConfig` (JSON) dans `OrganizationConfig` et migration
+  `20260928280000_entites_sync_config` **appliquée localement**. Les jetons REST et
+  mots de passe LDAP sont AES-256-GCM (`secret-crypto`) ; la projection GET les
+  masque. Une sauvegarde sans nouveau secret — y compris le marqueur `[CONFIGURED]`
+  de l’UI — conserve le secret chiffré au lieu de l’écraser.
+- Admin : `/configuration/entites` contient `EntitySyncManager` : choix REST ou
+  LDAPS, sauvegarde, test/aperçu, cases à cocher et import explicite. Aucun nom
+  n’est créé automatiquement : l’import sélectionné enrichit uniquement
+  `OrganizationConfig.entitesMesures` (les responsables de mesures), avec audit.
+- API : `sync-config` est limitée, RBAC ADMIN effectif, journalisée et distingue
+  401/403 ; `sync` lit REST ou LDAP, borne l’annuaire à 500 entrées, retourne un
+  aperçu puis applique une sélection explicitement envoyée. Les endpoints privés,
+  localhost, `.local`, HTTP/LDAP non chiffré sont refusés.
+- Revue adversariale complémentaire : refus des destinations IPv6 loopback,
+  link-local et ULA, et borne dure à 1 Mio sur les réponses REST (en-tête
+  `Content-Length` ou flux chunked). `fetchLdapEntities` revalide lui-même son
+  URL, y compris si appelé hors route.
+- Audit NIST SP 800-30 : `Maintain` était à tort une phase éditable et la cible
+  des liens de traitement. Elle est désormais une revue ; `Conduct` est la seule
+  phase d’appréciation éditable et la cible de lien profond, conformément au
+  déroulé Prepare / Conduct / Communicate / Maintain.
+- Tests : `src/__tests__/unit/lib/entity-sync.test.ts` couvre URL, normalisation,
+  REST sans redirection et conservation/non-exposition des secrets — **4 verts**.
+  `EntitySyncManager.test.tsx` vérifie qu’aucun import ne part avant sélection
+  explicite, puis que seuls les noms sélectionnés sont envoyés — **1 vert**.
+  Total ciblé actuel : **18 verts** (méthodes, connecteurs et UI). `npm audit
+  --omit=dev --json` : **0 vulnérabilité** production.
+  `methodes.test.ts` (NIST distinct d’ISO 31000) + entity-sync : **16 verts**.
+  `tsc --noEmit` : 0 sortie / succès ; `npm run i18n:check` vert. Une suite
+  complète a été relancée mais sa sortie finale n’a pas été récupérée avant la
+  passation : la rejouer avant commit.
+- Recette infra : PostgreSQL `ebios_db` healthy ; migration deploy + Prisma
+  generate réussis. Dev redémarré : PID 38667, `http://localhost:3005`, HTTP de
+  `/configuration/entites` redirige correctement vers la connexion hors session.
+
+**À terminer avant commit/push** : suite `npm test` complète et `npm run build` après arrêt temporaire du dev (build écrase
+`.next`). Vérifier dans le navigateur, connecté comme ADMIN, les deux parcours :
+REST avec une API de test publique contrôlée et LDAPS avec un annuaire de recette.
+Ne pas valider une connexion réelle sur une infrastructure de production.
+
+---
+
 ## 2026-09-28 (5) — Claude Code : P3 livré, P4 presque terminé (limite d'usage atteinte)
 
 **Branche** : `feat/historical-excel-import`. **Non poussé.**

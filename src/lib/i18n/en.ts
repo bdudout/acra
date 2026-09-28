@@ -3676,6 +3676,7 @@ export const en: Translations = {
     tpeNoteLink: 'Go to the compliance baseline',
     error: 'The action failed. Please retry.',
     loading: 'Loading…',
+    syncTitle: 'External synchronisation', syncDesc: 'Preview entities from a REST API or LDAP, then explicitly select those to add as measure owners.', syncConfigure: 'Configure connector', syncType: 'Type', syncEndpoint: 'Connector address', syncToken: 'API token (optional)', syncBindDn: 'Bind DN', syncPassword: 'Password', syncBaseDn: 'Base DN', syncFilter: 'LDAP filter (optional)', syncSave: 'Save connector', syncPreview: 'Test and preview', syncImport: 'Import selection', syncSelectAll: 'Select all', syncNone: 'No entities found.', syncSaved: 'Connector saved.', syncImported: '{n} entity(ies) added.', syncError: 'Unable to reach or save the connector.',
   },
   conformiteGlobal: {
     editSocle: 'Add a baseline',

@@ -33,6 +33,13 @@ describe('registre des méthodes', () => {
     // étapes ordonnées et numérotées
     expect(methodSteps('EBIOS_RM').map(s => s.num)).toEqual([1, 2, 3, 4, 5])
   })
+
+  it('NIST SP 800-30 conserve ses quatre phases dédiées et ne peut pas prendre le parcours ISO 31000', () => {
+    expect(methodSteps('NIST_800_30').map(step => step.key)).toEqual(['prepare', 'conduct', 'communicate', 'maintain'])
+    expect(methodSteps('NIST_800_30').map(step => step.type)).toEqual(['context', 'appreciation', 'review', 'review'])
+    expect(methodSteps('NIST_800_30')).not.toEqual(methodSteps('ISO_31000'))
+    expect(methodStepCount('NIST_800_30')).toBe(4)
+  })
 })
 
 describe('resolveMethodes — ensemble effectif', () => {
@@ -74,7 +81,7 @@ describe('directTreatmentPhaseKey / riskTreatmentHref', () => {
   it('phase de traitement des méthodes directes (dernière phase appreciation)', () => {
     expect(directTreatmentPhaseKey('ISO_27005')).toBe('traitement')
     expect(directTreatmentPhaseKey('ISO_31000')).toBe('appreciation')
-    expect(directTreatmentPhaseKey('NIST_800_30')).toBe('maintain')
+    expect(directTreatmentPhaseKey('NIST_800_30')).toBe('conduct')
     expect(directTreatmentPhaseKey('EBIOS_RM')).toBeNull()
   })
 
@@ -82,6 +89,7 @@ describe('directTreatmentPhaseKey / riskTreatmentHref', () => {
     expect(riskTreatmentHref('an1', 'EBIOS_RM')).toBe('/analyses/an1/atelier/5')
     expect(riskTreatmentHref('an1', 'ISO_27005')).toBe('/analyses/an1/atelier/1?phase=traitement')
     expect(riskTreatmentHref('an1', 'ISO_31000')).toBe('/analyses/an1/atelier/1?phase=appreciation')
+    expect(riskTreatmentHref('an1', 'NIST_800_30')).toBe('/analyses/an1/atelier/1?phase=conduct')
     // méthode inconnue → repli EBIOS (atelier 5)
     expect(riskTreatmentHref('an1', 'ZZZ')).toBe('/analyses/an1/atelier/5')
   })

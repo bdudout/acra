@@ -29,8 +29,17 @@ export async function GET(req: NextRequest) {
   const db = prisma as any
   let candidates: (string | null | undefined)[] = []
   if (field === 'organisation') {
-    const rows = await db.analyse.findMany({ where, select: { organisation: true }, take: 500 })
-    candidates = rows.map((r: { organisation: string | null }) => r.organisation)
+    // Une entité analysée peut être une organisation ACRA existante : proposer
+    // l'arbre accessible, en plus des libellés déjà saisis dans des analyses.
+    // Le périmètre est celui déjà résolu pour l'utilisateur (anti-énumération).
+    const [rows, organizations] = await Promise.all([
+      db.analyse.findMany({ where, select: { organisation: true }, take: 500 }),
+      prisma.organization.findMany({
+        where: scope.scope.isSuperAdmin ? {} : { id: { in: scope.scope.visibleOrgIds } },
+        select: { nom: true }, take: 500,
+      }),
+    ])
+    candidates = [...rows.map((r: { organisation: string | null }) => r.organisation), ...organizations.map(org => org.nom)]
   } else if (field === 'tag') {
     const rows = await db.analyse.findMany({ where, select: { tags: true }, take: 500 })
     candidates = tagsUniques(rows.map((r: { tags: unknown }) => ({ tags: Array.isArray(r.tags) ? (r.tags as string[]) : [] })))

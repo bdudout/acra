@@ -3725,6 +3725,7 @@ export const fr = {
     tpeNoteLink: 'Aller au socle de conformité',
     error: 'L’action a échoué. Réessayez.',
     loading: 'Chargement…',
+    syncTitle: 'Synchronisation externe', syncDesc: 'Prévisualisez les entités issues d’une API REST ou LDAP, puis sélectionnez explicitement celles à ajouter aux responsables de mesures.', syncConfigure: 'Configurer le connecteur', syncType: 'Type', syncEndpoint: 'Adresse du connecteur', syncToken: 'Jeton API (facultatif)', syncBindDn: 'Bind DN', syncPassword: 'Mot de passe', syncBaseDn: 'Base DN', syncFilter: 'Filtre LDAP (facultatif)', syncSave: 'Enregistrer le connecteur', syncPreview: 'Tester et prévisualiser', syncImport: 'Importer la sélection', syncSelectAll: 'Tout sélectionner', syncNone: 'Aucune entité trouvée.', syncSaved: 'Connecteur enregistré.', syncImported: '{n} entité(s) ajoutée(s).', syncError: 'Impossible de joindre ou d’enregistrer le connecteur.',
   },
   conformiteGlobal: {
     editSocle: 'Ajouter un socle',
