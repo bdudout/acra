@@ -6,6 +6,38 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (8) — Claude Code : v1.0.3 publiée, Maturité (CMMI), dérogations, READMEs, notes de release
+
+**Branche** : `feat/historical-excel-import` (à jour de `main` après #190). Commits
+`bbc553d` (1.0.4-beta.1), `7a9222d` (maturité), `2ef2748` (dérogations), `f8a2a09`
+(release), `3e93996` (READMEs), `cf29da0` (docs).
+
+- **v1.0.3 publiée** (release GitHub, branche `stable` créée sur `7c15dff`) ; issues
+  #185, #186, #188 : réponses publiées (ton amical, tutoiement) puis fermées.
+- **Maturité** (remplace les « profils opérationnels US/UK ») : couche de `Conformite`
+  (`maturites`, `maturiteCible`), échelle CMMI 0–5 modifiable par l'ADMIN
+  (`OrganizationConfig.echelleMaturite`, section Échelles de /configuration),
+  NCSC CAF v4.0 ajouté aux référentiels livrés, page `/maturite` (lecture RAS/RAD),
+  actions via lien `CONFORMITE` (anti-doublon commun). Migration
+  `20260929120000_maturite_conformite` (supprime `OperationalProfile`, convertit ses liens).
+- **Dérogations** : modification par le demandeur avant avis RSSI, retrait
+  (statut `RETIREE`), avis « favorable avec réserves » (`avisRssiReserves`).
+- **Release** : `release.yml` exige `docs/releases/vX.Y.Z.md` pour une stable, ajoute
+  commits + artefacts, joint la fiche de recette ; notes v1.0.0→v1.0.3 réécrites.
+  Skill : procédure « Publier une release ».
+- **READMEs ×5** : GRC multi-méthode, sections Méthodes et Maturité, 15 référentiels.
+- **Backlog** (`docs/CHANTIERS-EN-COURS.md`) : vue RAS/RAD, programme de tests de
+  résilience DORA → rapport de réexamen, page processus de cartographie éditable.
+- **Vérifié** : `tsc` 0 · `npm test` **2199/2199** · `i18n:check` vert · `npm run build`
+  OK · migration appliquée en local · essai à sec de l'étape « notes » de release.yml.
+- **Non vérifié** : parcours navigateur de /maturite et des dérogations (la session du
+  panneau navigateur a expiré ; pas de compte de test utilisable) — à recetter
+  connecté (ADMIN : échelle CMMI ; RSSI : avis avec réserves ; demandeur : modifier/retirer).
+- **Prochain pas** : PR vers `main` (bêta 1.0.4) puis recette ; pour la prochaine
+  stable, rédiger `docs/releases/v1.0.4.md` avant le workflow.
+
+---
+
 ## 2026-09-28 (7) — Claude Code : P4 terminé, #185 corrigé (v1.0.3), profils US/UK lot 1
 
 **Branche** : `feat/historical-excel-import`. Commits `fd4c9ab` (P4), `93b6148` (#185 +
