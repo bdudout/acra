@@ -1450,6 +1450,7 @@ export const it: Translations = {
     ebiosLocked: 'Sempre disponibile (metodo predefinito).',
     hint: 'Un metodo disattivato qui non è proposto in nessuna organizzazione.',
   },
+  exportButtons: { pdf: 'Esporta PDF', csv: 'Esporta CSV', xlsx: 'Esporta Excel' },
   risquesDirects: {
     pageTitle: 'Valutazione dei rischi',
     pageSubtitle: 'Valutazione semplice (ISO 31000): inserisci i rischi e il loro livello (gravità × verosimiglianza).',

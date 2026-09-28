@@ -18,6 +18,7 @@ import Atelier3 from '@/components/workshops/Atelier3'
 import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
+import ExportButtons from '@/components/ExportButtons'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
@@ -144,8 +145,14 @@ export default async function AtelierPage({
               <span aria-hidden="true">›</span>
               <span aria-current="page">{cfg.breadcrumb}</span>
             </nav>
-            <h1 className="text-2xl font-bold text-gray-900">{cfg.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">{cfg.subtitle}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{cfg.title}</h1>
+                <p className="text-sm text-gray-500 mt-1">{cfg.subtitle}</p>
+              </div>
+              {/* P4 — rapport propre à la méthode (PDF + Excel), langue de l'interface. */}
+              <ExportButtons analyseId={analyse.id} formats={['pdf', 'xlsx']} />
+            </div>
           </header>
           <PhasedRiskWorkshop
             analyseId={analyse.id} editable={editable} phases={phases}

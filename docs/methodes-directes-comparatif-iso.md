@@ -26,6 +26,12 @@ mobile), gardes d'accès / gel / isolation testés.
   (catégorie, sinon global), repli sur la moitié haute des paliers ; décision et
   critère affichés en phase « Évaluation » et dans l'écran complet ISO 31000 / NIST
   → **T2 résolu** (la décision ISO 31000 de P5 est couverte).
+- **P3** ✅ — propriétaire du risque (personne ou entité, ISO 27005 §7.2.2) : saisie
+  dès l'identification, suggestions (membres + entités), filtre, colonne en Évaluation
+  → **T3 résolu** (acceptation du résiduel toujours globale à l'analyse).
+- **P4** ✅ — rapport PDF + Excel propre à la méthode (contexte, synthèse, registre
+  3 niveaux évalué, vulnérabilités, mesures, plans), boutons dans le parcours, tous
+  les exports d'analyse journalisés → **T4 résolu**.
 - Limites connues : les règles de risques de la qualification et l'import
   historique cotent encore sur 1–4 (valide aussi en 5 niveaux, mais sans accès au
   niveau 5).

@@ -38,7 +38,7 @@ describe('GET /api/export/[id] — méthodes directes', () => {
     expect(res.headers.get('Content-Disposition')).toContain('acra-iso-27005-SI-Sant-.xlsx')
     const wb = new ExcelJS.Workbook(); await wb.xlsx.load(Buffer.from(await res.arrayBuffer()) as unknown as ExcelJS.Buffer)
     const row = wb.getWorksheet('Registre des risques')!.getRow(2).values as unknown[]
-    expect(row).toEqual(expect.arrayContaining(['R1', 'Rançongiciel', 'DSI', 'À traiter', 'Appétit ≤ 9']))
+    expect(row).toEqual(expect.arrayContaining(['R1', 'Rançongiciel', 'DSI', 'À traiter', 'Appétit : jusqu’à 9']))
     expect(wb.getWorksheet('Plans d’action')!.getRow(2).values).toEqual(expect.arrayContaining(['R1', 'MFA']))
     expect(auditLog).toHaveBeenCalledWith('EXPORT', expect.objectContaining({ targetId: 'an1', details: { format: 'xlsx', methode: 'ISO_27005' } }))
   })

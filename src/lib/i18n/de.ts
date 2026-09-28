@@ -1449,6 +1449,7 @@ export const de: Translations = {
     ebiosLocked: 'Immer verfügbar (Standardmethode).',
     hint: 'Eine hier deaktivierte Methode wird in keiner Organisation angeboten.',
   },
+  exportButtons: { pdf: 'PDF exportieren', csv: 'CSV exportieren', xlsx: 'Excel exportieren' },
   risquesDirects: {
     pageTitle: 'Risikobewertung',
     pageSubtitle: 'Einfache Bewertung (ISO 31000): Erfassen Sie Ihre Risiken und deren Stufe (Schweregrad × Eintrittswahrscheinlichkeit).',

@@ -5,6 +5,8 @@
 // PDF (`rapport-methode-directe-pdf-template.tsx`, compilé par esbuild) et en Excel
 // (route d'export). Aucune dépendance serveur : importable par le gabarit PDF.
 // Les décisions reprennent EXACTEMENT l'évaluation de l'écran (P1/P2).
+// Libellés PDF : pas de symboles hors WinAnsi (police Helvetica standard) — « ≤ »
+// s'affichait « d » ; on écrit « jusqu'à ».
 
 import { METHOD_META, isRiskMethod } from '@/lib/methodes'
 import { evaluateRisk, evaluatedLevel, type EvaluableRisk, type EvaluationContext, type Decision, type DecisionBasis } from '@/lib/risque-priorisation'
@@ -119,7 +121,7 @@ export const REPORT_STRINGS: Record<string, ReportStrings> = {
     summary: 'Synthèse', total: 'Risques', toTreat: 'À traiter', acceptable: 'Acceptables', noOwner: 'Sans propriétaire', measures: 'Mesures', plans: 'Plans d’action', byBand: 'Répartition par palier (niveau actuel)',
     register: 'Registre des risques', colRef: 'Réf.', colRisk: 'Risque', colOwner: 'Propriétaire', colInherent: 'Brut', colCurrent: 'Actuel', colResidual: 'Résiduel',
     colBand: 'Palier', colDecision: 'Décision', colCriterion: 'Critère', colTreatment: 'Traitement',
-    decisionTreat: 'À traiter', decisionAccept: 'Acceptable', criterionAppetite: 'Appétit ≤ {seuil}', criterionScale: 'Échelle',
+    decisionTreat: 'À traiter', decisionAccept: 'Acceptable', criterionAppetite: 'Appétit : jusqu’à {seuil}', criterionScale: 'Échelle',
     vulnerabilities: 'Vulnérabilités', colVulnerability: 'Vulnérabilité', colStatus: 'Statut', colEfficacy: 'Efficacité', colDue: 'Échéance', colResponsible: 'Responsable',
     colAction: 'Action', colPriority: 'Priorité', colRisks: 'Risques', none: 'Aucun élément.', approval: 'Approuvé par : ____________________   Date : __________',
     strategies: { REDUIRE: 'Réduire', ACCEPTER: 'Accepter', TRANSFERER: 'Transférer', REFUSER: 'Refuser', SURVEILLER: 'Surveiller' },
@@ -134,7 +136,7 @@ export const REPORT_STRINGS: Record<string, ReportStrings> = {
     summary: 'Summary', total: 'Risks', toTreat: 'To treat', acceptable: 'Acceptable', noOwner: 'No owner', measures: 'Controls', plans: 'Action plans', byBand: 'Distribution by band (current level)',
     register: 'Risk register', colRef: 'Ref.', colRisk: 'Risk', colOwner: 'Owner', colInherent: 'Inherent', colCurrent: 'Current', colResidual: 'Residual',
     colBand: 'Band', colDecision: 'Decision', colCriterion: 'Criterion', colTreatment: 'Treatment',
-    decisionTreat: 'To treat', decisionAccept: 'Acceptable', criterionAppetite: 'Appetite ≤ {seuil}', criterionScale: 'Scale',
+    decisionTreat: 'To treat', decisionAccept: 'Acceptable', criterionAppetite: 'Appetite: up to {seuil}', criterionScale: 'Scale',
     vulnerabilities: 'Vulnerabilities', colVulnerability: 'Vulnerability', colStatus: 'Status', colEfficacy: 'Effectiveness', colDue: 'Due date', colResponsible: 'Responsible',
     colAction: 'Action', colPriority: 'Priority', colRisks: 'Risks', none: 'No items.', approval: 'Approved by: ____________________   Date: __________',
     strategies: { REDUIRE: 'Reduce', ACCEPTER: 'Accept', TRANSFERER: 'Transfer', REFUSER: 'Avoid', SURVEILLER: 'Monitor' },
@@ -149,7 +151,7 @@ export const REPORT_STRINGS: Record<string, ReportStrings> = {
     summary: 'Zusammenfassung', total: 'Risiken', toTreat: 'Zu behandeln', acceptable: 'Akzeptabel', noOwner: 'Ohne Risikoeigentümer', measures: 'Maßnahmen', plans: 'Aktionspläne', byBand: 'Verteilung nach Stufe (aktuelles Niveau)',
     register: 'Risikoregister', colRef: 'Ref.', colRisk: 'Risiko', colOwner: 'Risikoeigentümer', colInherent: 'Brutto', colCurrent: 'Aktuell', colResidual: 'Restrisiko',
     colBand: 'Stufe', colDecision: 'Entscheidung', colCriterion: 'Kriterium', colTreatment: 'Behandlung',
-    decisionTreat: 'Zu behandeln', decisionAccept: 'Akzeptabel', criterionAppetite: 'Risikoappetit ≤ {seuil}', criterionScale: 'Skala',
+    decisionTreat: 'Zu behandeln', decisionAccept: 'Akzeptabel', criterionAppetite: 'Risikoappetit: bis {seuil}', criterionScale: 'Skala',
     vulnerabilities: 'Schwachstellen', colVulnerability: 'Schwachstelle', colStatus: 'Status', colEfficacy: 'Wirksamkeit', colDue: 'Fälligkeit', colResponsible: 'Verantwortlich',
     colAction: 'Maßnahme', colPriority: 'Priorität', colRisks: 'Risiken', none: 'Keine Einträge.', approval: 'Genehmigt von: ____________________   Datum: __________',
     strategies: { REDUIRE: 'Reduzieren', ACCEPTER: 'Akzeptieren', TRANSFERER: 'Übertragen', REFUSER: 'Vermeiden', SURVEILLER: 'Überwachen' },
@@ -164,7 +166,7 @@ export const REPORT_STRINGS: Record<string, ReportStrings> = {
     summary: 'Síntesis', total: 'Riesgos', toTreat: 'Por tratar', acceptable: 'Aceptables', noOwner: 'Sin propietario', measures: 'Medidas', plans: 'Planes de acción', byBand: 'Distribución por franja (nivel actual)',
     register: 'Registro de riesgos', colRef: 'Ref.', colRisk: 'Riesgo', colOwner: 'Propietario', colInherent: 'Bruto', colCurrent: 'Actual', colResidual: 'Residual',
     colBand: 'Franja', colDecision: 'Decisión', colCriterion: 'Criterio', colTreatment: 'Tratamiento',
-    decisionTreat: 'Por tratar', decisionAccept: 'Aceptable', criterionAppetite: 'Apetito ≤ {seuil}', criterionScale: 'Escala',
+    decisionTreat: 'Por tratar', decisionAccept: 'Aceptable', criterionAppetite: 'Apetito: hasta {seuil}', criterionScale: 'Escala',
     vulnerabilities: 'Vulnerabilidades', colVulnerability: 'Vulnerabilidad', colStatus: 'Estado', colEfficacy: 'Eficacia', colDue: 'Vencimiento', colResponsible: 'Responsable',
     colAction: 'Acción', colPriority: 'Prioridad', colRisks: 'Riesgos', none: 'Ningún elemento.', approval: 'Aprobado por: ____________________   Fecha: __________',
     strategies: { REDUIRE: 'Reducir', ACCEPTER: 'Aceptar', TRANSFERER: 'Transferir', REFUSER: 'Evitar', SURVEILLER: 'Vigilar' },
@@ -179,7 +181,7 @@ export const REPORT_STRINGS: Record<string, ReportStrings> = {
     summary: 'Sintesi', total: 'Rischi', toTreat: 'Da trattare', acceptable: 'Accettabili', noOwner: 'Senza titolare', measures: 'Misure', plans: 'Piani d’azione', byBand: 'Ripartizione per fascia (livello attuale)',
     register: 'Registro dei rischi', colRef: 'Rif.', colRisk: 'Rischio', colOwner: 'Titolare', colInherent: 'Lordo', colCurrent: 'Attuale', colResidual: 'Residuo',
     colBand: 'Fascia', colDecision: 'Decisione', colCriterion: 'Criterio', colTreatment: 'Trattamento',
-    decisionTreat: 'Da trattare', decisionAccept: 'Accettabile', criterionAppetite: 'Propensione ≤ {seuil}', criterionScale: 'Scala',
+    decisionTreat: 'Da trattare', decisionAccept: 'Accettabile', criterionAppetite: 'Propensione: fino a {seuil}', criterionScale: 'Scala',
     vulnerabilities: 'Vulnerabilità', colVulnerability: 'Vulnerabilità', colStatus: 'Stato', colEfficacy: 'Efficacia', colDue: 'Scadenza', colResponsible: 'Responsabile',
     colAction: 'Azione', colPriority: 'Priorità', colRisks: 'Rischi', none: 'Nessun elemento.', approval: 'Approvato da: ____________________   Data: __________',
     strategies: { REDUIRE: 'Ridurre', ACCEPTER: 'Accettare', TRANSFERER: 'Trasferire', REFUSER: 'Evitare', SURVEILLER: 'Monitorare' },

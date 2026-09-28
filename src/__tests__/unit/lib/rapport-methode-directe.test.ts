@@ -49,4 +49,11 @@ describe('REPORT_STRINGS', () => {
     for (const l of ['en', 'de', 'es', 'it']) expect(Object.keys(REPORT_STRINGS[l]).sort()).toEqual(keys)
     expect(reportStrings('xx')).toBe(REPORT_STRINGS.fr)
   })
+
+  it('libellés PDF sans caractère hors WinAnsi (police standard Helvetica)', () => {
+    for (const [l, S] of Object.entries(REPORT_STRINGS)) {
+      const all = JSON.stringify(S)
+      expect([...all].filter(ch => ch.codePointAt(0)! > 0xff && !'’“”«»–—…€'.includes(ch)), l).toEqual([])
+    }
+  })
 })

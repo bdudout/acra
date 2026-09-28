@@ -1450,6 +1450,7 @@ export const en: Translations = {
     ebiosLocked: 'Always available (default method).',
     hint: 'A method disabled here is offered in no organisation.',
   },
+  exportButtons: { pdf: 'Export PDF', csv: 'Export CSV', xlsx: 'Export Excel' },
   risquesDirects: {
     pageTitle: 'Risk assessment',
     pageSubtitle: 'Simple assessment (ISO 31000): enter your risks and their level (severity × likelihood).',

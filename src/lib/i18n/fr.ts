@@ -1474,6 +1474,7 @@ export const fr = {
     ebiosLocked: 'Toujours disponible (méthode par défaut).',
     hint: "Une méthode désactivée ici n'est proposée dans aucune organisation.",
   },
+  exportButtons: { pdf: 'Exporter PDF', csv: 'Exporter CSV', xlsx: 'Exporter Excel' },
   risquesDirects: {
     pageTitle: 'Appréciation des risques',
     pageSubtitle: 'Évaluation simple (ISO 31000) : saisissez vos risques et leur niveau (gravité × vraisemblance).',
