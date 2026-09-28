@@ -12,6 +12,7 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
   const { t } = useTranslation(); const e = t.entites
   const base = `/api/organizations/${orgId}/entites`
   const [config, setConfig] = useState<Connector>(empty)
+  const [destination, setDestination] = useState<'MEASURE_OWNERS' | 'ORGANIZATION_TREE'>('MEASURE_OWNERS')
   const [entities, setEntities] = useState<string[]>([])
   const [selected, setSelected] = useState<string[]>([])
   const [busy, setBusy] = useState(false); const [notice, setNotice] = useState('')
@@ -26,7 +27,7 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
   }
   async function preview() {
     setBusy(true); setNotice('')
-    const res = await fetch(`${base}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation: 'preview' }) })
+    const res = await fetch(`${base}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation: 'preview', destination }) })
     const data = await res.json().catch(() => null); setBusy(false)
     if (!res.ok) return setNotice(e.syncError)
     const next = Array.isArray(data?.newEntities) ? data.newEntities : []
@@ -34,7 +35,7 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
   }
   async function importSelection() {
     setBusy(true); setNotice('')
-    const res = await fetch(`${base}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation: 'import', entities: selected }) })
+    const res = await fetch(`${base}/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation: 'import', destination, entities: selected }) })
     const data = await res.json().catch(() => null); setBusy(false)
     if (!res.ok) return setNotice(e.syncError)
     setNotice(e.syncImported.replace('{n}', String(data?.imported?.length ?? 0))); setEntities([]); setSelected([])
@@ -45,6 +46,7 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
     <div><h2 className="text-sm font-semibold text-gray-800 flex gap-2 items-center"><CloudDownload size={16} />{e.syncTitle}</h2><p className="text-sm text-gray-500 mt-1">{e.syncDesc}</p></div>
     <div className="grid md:grid-cols-2 gap-3">
       <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncType}</span><select value={config.type} onChange={ev => change('type', ev.target.value)} className="w-full input"><option value="REST">REST</option><option value="LDAP">LDAP / LDAPS</option></select></label>
+      <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncDestination}</span><select value={destination} onChange={ev => { setDestination(ev.target.value as 'MEASURE_OWNERS' | 'ORGANIZATION_TREE'); setEntities([]); setSelected([]) }} className="w-full input"><option value="MEASURE_OWNERS">{e.syncMeasureOwners}</option><option value="ORGANIZATION_TREE">{e.syncOrganizationTree}</option></select></label>
       <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncEndpoint}</span><input value={config.endpoint} onChange={ev => change('endpoint', ev.target.value)} placeholder={config.type === 'REST' ? 'https://directory.example/api/entities' : 'ldaps://directory.example:636'} className="w-full input" /></label>
       {config.type === 'REST' ? <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncToken}</span><input value={config.token} onChange={ev => change('token', ev.target.value)} type="password" className="w-full input" /></label> : <>
         <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncBindDn}</span><input value={config.bindDN} onChange={ev => change('bindDN', ev.target.value)} className="w-full input" /></label>

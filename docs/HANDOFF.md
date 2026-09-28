@@ -16,9 +16,10 @@ vérifié l'est avec la commande et son résultat.
   masque. Une sauvegarde sans nouveau secret — y compris le marqueur `[CONFIGURED]`
   de l’UI — conserve le secret chiffré au lieu de l’écraser.
 - Admin : `/configuration/entites` contient `EntitySyncManager` : choix REST ou
-  LDAPS, sauvegarde, test/aperçu, cases à cocher et import explicite. Aucun nom
-  n’est créé automatiquement : l’import sélectionné enrichit uniquement
-  `OrganizationConfig.entitesMesures` (les responsables de mesures), avec audit.
+  LDAPS, sauvegarde, test/aperçu, cases à cocher et import explicite. L’admin
+  choisit explicitement la destination : responsables de mesures ou arborescence
+  d’entités. La création d’une entité est transactionnelle (jamais de chemin `/`
+  intermédiaire persistant), avec audit.
 - API : `sync-config` est limitée, RBAC ADMIN effectif, journalisée et distingue
   401/403 ; `sync` lit REST ou LDAP, borne l’annuaire à 500 entrées, retourne un
   aperçu puis applique une sélection explicitement envoyée. Les endpoints privés,
