@@ -93,6 +93,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Audit (M4)** | `audit`, `audit-programmes-catalogue`, `audit-redact`, `rapport-controle-interne*` |
 | **Conformité** | `conformite*`, `referentiel*`, `couverture-referentiel`, `derogation*`, `conformite-traitement`, `socle-etat` |
 | **Plan d'action unifié** | `plan-action`, `plan-action.server`, `action-items`, `action-items.server`, `promotable-actions.server`, `mesure-categorie` |
+| **Profils opérationnels US/UK** | `operational-profiles` (catalogues officiels NIST CSF 2.0 / NCSC CAF v4.0, fusion horodatée, stats, CSV), `operational-profiles.server` (contexte 404 si module inactif, chargement + actions liées) — table `OperationalProfile`, spec `docs/specs/profils-operationnels-us-uk.md` |
 | **Régulatoire** | `dora`, `dora-reporting`, `dora-its-export`, `nis2-mapping`, `ropa`, `ropa-catalogue`, `rgpd-sensitive`, `suivi-regulateur`, `registre-tic`, `tic-questionnaire`, `soa-*`, `politique-defaut` |
 | **Écosystème / tiers** | `tiers`, `tiers.server`, `ecosystem-*`, `tiers-tic-link`, `operateur-ae` |
 | **Sécurité / accès** | `auth`, `auth-cookies`, `permissions` (RBAC), `mfa*`, `sso*`, `saml*`, `scim*`, `login-lockout`, `password-policy`, `password-reset`, `rate-limit`, `secret-crypto`, `recovery`, `api-auth.server`, `api-key`, `cron-auth`, `csp` |
@@ -124,9 +125,14 @@ l'**extraire en fonction pure testée** (cf. CLAUDE.md).
 ## 6. Plan d'action unifié (à comprendre avant d'y toucher)
 
 - Store **`PlanAction`** + **liens polymorphes** `PlanActionLien` (types : `ANALYSE`,
-  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `RISQUE_ANALYSE`, `INCIDENT`).
+  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `RISQUE_ANALYSE`, `INCIDENT`,
+  `OPERATIONAL_PROFILE`).
   `RISQUE_ANALYSE` ancre un risque des méthodes à saisie directe (ISO/IEC 27005,
   ISO 31000, NIST SP 800-30) et conserve l'identifiant d'analyse dans `ref`.
+  `OPERATIONAL_PROFILE` ancre un écart de profil NIST CSF / NCSC CAF : `targetId` =
+  `OperationalProfile.id`, `ref` = point (`GV.OC`, `A1`…) ; helpers
+  `createOperationalProfilePlanAction` / `findOpenOperationalProfileAction`
+  (anti-doublon) dans `plan-action.server`. Facette « conformité » de la vue unifiée.
 - `lib/action-items` **agrège** 7 origines en une liste unifiée (vue `/actions` =
   `PlansActionsView`). Filtrage à facettes + tri/filtre colonne (`table-sort`/`table-filter`).
 - **Promotion** : une mesure d'analyse ou un incident (pas encore un `PlanAction`) peut

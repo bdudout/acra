@@ -25,6 +25,7 @@ export interface NavModules {
   audit: boolean
   kri: boolean
   reglementaire: boolean
+  profilsOperationnels: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -33,7 +34,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -80,13 +81,14 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Gouvernance (disponible dans les deux modes).
   const gouvernance: NavKey[] = []
   if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
+  if (modules.profilsOperationnels && canGovern) gouvernance.push('profilsOperationnels')
   if (canDerog) gouvernance.push('derogations')
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
   if (canManageRopa(role)) gouvernance.push('ropa')
 
   // Le mode GRC est déclenché par un module de 2ᵉ/3ᵉ ligne (le registre étant le
   // pivot GRC). Les incidents SEULS (1ʳᵉ ligne) ne basculent pas en mode GRC.
-  const grcMode = modules.registre || modules.controles || modules.audit || modules.kri || modules.reglementaire
+  const grcMode = modules.registre || modules.controles || modules.audit || modules.kri || modules.reglementaire || modules.profilsOperationnels
 
   // ─── MODE CYBER ────────────────────────────────────────────────────────────
   // La barre s'ADAPTE au nombre d'items : dashboard + le cœur EBIOS restent étalés ;

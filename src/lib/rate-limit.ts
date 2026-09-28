@@ -145,6 +145,11 @@ export const LIMIT_PASSWORD = { limit: 5,   windowMs: 60 * 60_000 } as const
 export const LIMIT_EXPORT   = { limit: 20,  windowMs: 60 * 60_000 } as const
 /** Rate limit pour les imports : 10 / heure par userId */
 export const LIMIT_IMPORT   = { limit: 10,  windowMs: 60 * 60_000 } as const
+/**
+ * Rate limit du parsing de classeurs Excel (prévisualisation, essais à blanc,
+ * import) : 30 / 10 min par userId — opération coûteuse en CPU/mémoire.
+ */
+export const LIMIT_EXCEL_PARSE = { limit: 30, windowMs: 10 * 60_000 } as const
 /** Rate limit pour la recherche : 60 / minute par userId */
 export const LIMIT_SEARCH   = { limit: 60,  windowMs: 60_000 }       as const
 /** Rate limit pour les écritures API (auto-save workshop) : 200 / minute par userId */

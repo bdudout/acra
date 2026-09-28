@@ -13,6 +13,8 @@ import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { analysisCapReached } from '@/lib/demo'
 import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { sanitizeQualification } from '@/lib/qualification'
 
 const createSchema = z.object({
   nom:          z.string().min(1).max(200),
@@ -26,6 +28,7 @@ const createSchema = z.object({
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
+  qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
@@ -90,6 +93,10 @@ export async function POST(req: NextRequest) {
     // méthode arbitraire persistée.
     const { available, default: defMethode } = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
     const methode = isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
+    // La qualification peut être saisie dès le choix de méthode. Elle est toujours
+    // filtrée avec la configuration effective de l'organisation active.
+    const orgConfig = await getOrgConfig(__org.activeOrgId)
+    const qualification = sanitizeQualification(data.qualification, orgConfig.qualificationQuestionnaire)
 
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
     let socleData: { cadrage?: any; sourcesRisque?: any[] } = {}
@@ -132,6 +139,7 @@ export async function POST(req: NextRequest) {
         socleId: data.socleId ?? null,
         mentionProtection: normalizeMentionProtection(data.mentionProtection),
         methode,
+        qualification,
         // Cadrage : copier du socle ou créer vide
         cadrage: {
           create: socleData.cadrage

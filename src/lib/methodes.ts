@@ -111,11 +111,13 @@ export const METHOD_STEPS: Record<RiskMethod, MethodStep[]> = {
     { num: 5, key: 'traitement',           labelKey: 'methodes.iso27005.s5', type: 'appreciation', apprMode: 'treat' },
   ],
   // NIST SP 800-30 Rev.1 — Prepare / Conduct / Communicate / Maintain.
+  // Conduct est l'appréciation éditable ; Maintain est la revue périodique des
+  // résultats, pas une seconde étape de saisie des risques.
   NIST_800_30: [
     { num: 1, key: 'prepare',              labelKey: 'methodes.nist80030.s1', type: 'context' },
     { num: 2, key: 'conduct',              labelKey: 'methodes.nist80030.s2', type: 'appreciation' },
     { num: 3, key: 'communicate',          labelKey: 'methodes.nist80030.s3', type: 'review' },
-    { num: 4, key: 'maintain',             labelKey: 'methodes.nist80030.s4', type: 'appreciation' },
+    { num: 4, key: 'maintain',             labelKey: 'methodes.nist80030.s4', type: 'review' },
   ],
 }
 
@@ -132,7 +134,7 @@ export function methodStepCount(m: string): number {
 /**
  * Phase de TRAITEMENT (là où l'on agit sur un risque) d'une méthode à saisie
  * directe : la dernière phase de type `appreciation` (ISO 27005 = « traitement »,
- * ISO 31000 = l'écran unique, NIST = « maintain »). `null` pour EBIOS RM.
+ * ISO 31000 = l'écran unique, NIST = « conduct »). `null` pour EBIOS RM.
  */
 export function directTreatmentPhaseKey(m: string): string | null {
   if (!isRiskMethod(m) || m === 'EBIOS_RM') return null

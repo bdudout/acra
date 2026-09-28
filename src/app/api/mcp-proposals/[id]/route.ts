@@ -13,6 +13,8 @@ import { prisma } from '@/lib/prisma'
 import { canEditAnalyse, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import { anchorExistsInOrg } from '@/lib/mcp/anchors.server'
 import {
   sanitizeRiskProposal, isRiskProposalValid, riskProposalToCreate,
@@ -37,7 +39,7 @@ function canManageOrgConformite(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
 }
 
-type ApplyResult = { ok: true; appliedId: string } | { ok: false; error: string }
+type ApplyResult = { ok: true; appliedId: string } | { ok: false; error: string; status?: number }
 type Gate =
   | { ok: true; validatorRole: UserRole; apply: (userId: string, note?: string) => Promise<ApplyResult> }
   | { ok: false; status: number; error: string }
@@ -82,7 +84,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   // accept : crée l'objet réel (selon le type) + marque la proposition, atomiquement.
   const applied = await gate.apply(userId, body.note)
-  if (!applied.ok) return NextResponse.json({ error: applied.error }, { status: 422 })
+  if (!applied.ok) return NextResponse.json({ error: applied.error }, { status: applied.status ?? 422 })
 
   await auditLog('MCP_PROPOSAL_REVIEWED', {
     userId, userRole: gate.validatorRole, organizationId: proposal.organizationId,
@@ -112,6 +114,12 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     )
     if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
       return { ok: false, status: 403, error: 'Édition non autorisée sur l\'analyse cible' }
+    }
+    // Gel après acceptation des risques résiduels : aucune écriture dans l'analyse
+    // (même garde que la saisie directe) ; le rejet reste possible.
+    const orgConfig = await getOrgConfig(analyse.organizationId)
+    if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)) {
+      return { ok: true, validatorRole: effRole, apply: async () => ({ ok: false, status: 403, error: 'ANALYSE_GELEE' }) }
     }
     return { ok: true, validatorRole: effRole, apply: (uid, note) => proposal.type === 'analysis_import' ? applyAnalysisImportProposal(proposal, analyse.id, uid, note) : applyAnalyseChild(proposal, analyse.id, uid, note) }
   }

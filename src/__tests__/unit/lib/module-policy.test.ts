@@ -10,6 +10,11 @@ describe('GOVERNABLE_MODULES', () => {
   it('sanitize accepte une politique sur secondeLigne', () => {
     expect(sanitizeModulesPolicy({ secondeLigne: 'FORCE_ON' })).toEqual({ secondeLigne: 'FORCE_ON' })
   })
+  it('inclut les profils opérationnels US/UK', () => {
+    expect(GOVERNABLE_MODULES).toContain('profilsOperationnels')
+    expect(sanitizeModulesPolicy({ profilsOperationnels: 'FORCE_OFF' }))
+      .toEqual({ profilsOperationnels: 'FORCE_OFF' })
+  })
 })
 
 describe('resolveModuleActivation', () => {

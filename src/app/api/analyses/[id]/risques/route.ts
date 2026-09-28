@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { sanitizeDirectRisque, isDirectRisqueValid, DIRECT_RISK_SELECT } from '@/lib/risque-direct'
 
 export const dynamic = 'force-dynamic'
@@ -73,7 +74,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const g = await guardDirectRisk(id, a.userId, a.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
 
-  const payload = sanitizeDirectRisque(await req.json().catch(() => ({})))
+  // Cotation bornée par l'échelle de l'organisation (4 ou 5 niveaux).
+  const { nbNiveaux } = await getEffectiveScaleConfig(g.analyse.organizationId)
+  const payload = sanitizeDirectRisque(await req.json().catch(() => ({})), nbNiveaux)
   if (!isDirectRisqueValid(payload)) {
     return NextResponse.json({ error: 'intitule_requis' }, { status: 400 })
   }
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       vraisemblanceResiduelle: payload.vraisemblanceResiduelle,
       niveauResiduel: payload.niveauResiduel,
       strategie: payload.strategie,
+      ...(payload.proprietaire !== undefined ? { proprietaire: payload.proprietaire } : {}),
     },
     select: DIRECT_RISK_SELECT,
   })

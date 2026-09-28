@@ -1,0 +1,40 @@
+// ─── Échanges fichiers avec l'agent de mise à jour hôte (#185) ──────────────
+// `.acra-update/` (monté dans le conteneur) : agent.json + status.json écrits par
+// l'agent hôte ; `inbox/` est le SEUL endroit où l'application écrit (une demande).
+// L'absence de `inbox/` signifie que l'agent n'est pas installé.
+
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { agentAlive, parseUpdateStatus, type UpdateRequest, type UpdateStatus } from '@/lib/update-request'
+
+/** Dossier d'échange (surchageable pour les tests / déploiements particuliers). */
+export function updateDir(): string {
+  return process.env.ACRA_UPDATE_DIR || path.join(process.cwd(), '.acra-update')
+}
+
+async function readJson(file: string): Promise<unknown> {
+  try {
+    const st = await fs.stat(file)
+    if (!st.isFile() || st.size > 64 * 1024) return null
+    return JSON.parse(await fs.readFile(file, 'utf8'))
+  } catch { return null }
+}
+
+/** Disponibilité de l'agent (pulsation récente + boîte de dépôt présente) et dernier statut. */
+export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null }> {
+  const dir = updateDir()
+  const [heartbeat, status, inbox] = await Promise.all([
+    readJson(path.join(dir, 'agent.json')),
+    readJson(path.join(dir, 'status.json')),
+    fs.stat(path.join(dir, 'inbox')).then(s => s.isDirectory()).catch(() => false),
+  ])
+  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status) }
+}
+
+/** Dépose la demande (écriture atomique : fichier temporaire puis renommage). */
+export async function writeUpdateRequest(req: UpdateRequest): Promise<void> {
+  const inbox = path.join(updateDir(), 'inbox')
+  const tmp = path.join(inbox, `.request-${req.id}.tmp`)
+  await fs.writeFile(tmp, JSON.stringify(req), { mode: 0o644, flag: 'wx' })
+  await fs.rename(tmp, path.join(inbox, 'request.json'))
+}

@@ -138,3 +138,35 @@ export async function riskActionsByRiskItem(
   }
   return map
 }
+
+// ─── Plans d'action issus d'un écart de profil opérationnel (OPERATIONAL_PROFILE) ─
+// targetId = OperationalProfile.id, ref = référence du point (GV.OC, A1…).
+const OPERATIONAL_PROFILE = 'OPERATIONAL_PROFILE'
+
+/** Action OUVERTE (statut ≠ FAIT) déjà rattachée à ce point de profil, ou null — anti-doublon. */
+export function findOpenOperationalProfileAction(db: Db, organizationId: string, profileId: string, ref: string) {
+  return db.planAction.findFirst({
+    where: { organizationId, statut: { not: 'FAIT' }, liens: { some: { type: OPERATIONAL_PROFILE, targetId: profileId, ref } } },
+    select: { id: true, titre: true, statut: true },
+  })
+}
+
+/** Crée un PlanAction rattaché à un point de profil opérationnel. Utilisable en transaction. */
+export function createOperationalProfilePlanAction(db: Db, a: {
+  organizationId: string; profileId: string; ref: string; label: string
+  titre: string; description?: string | null; porteur?: string | null; createdById?: string | null
+}) {
+  return db.planAction.create({
+    data: {
+      organizationId: a.organizationId,
+      titre: a.titre,
+      description: a.description ?? null,
+      porteur: a.porteur ?? null,
+      statut: 'A_FAIRE',
+      priorite: 'MAJEUR',
+      createdById: a.createdById ?? null,
+      liens: { create: [{ type: OPERATIONAL_PROFILE, targetId: a.profileId, ref: a.ref, label: a.label }] },
+    },
+    select: { id: true, titre: true, statut: true },
+  })
+}

@@ -419,3 +419,8 @@ export function peutGererDocuments(role: UserRole): boolean {
 export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
   return peutDefinir2eLigne(role, opts)
 }
+
+/** Peut évaluer les profils opérationnels US/UK (NIST CSF / NCSC CAF) et en promouvoir les écarts : admin, RSSI, RISK_MANAGER ou CONFORMITE. */
+export function peutEvaluerProfilOperationnel(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE'
+}

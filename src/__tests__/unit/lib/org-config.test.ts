@@ -45,7 +45,7 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     const c = resolveOrgConfig([])
     expect(c.entitesMesures).toEqual(DEFAULT_ORG_CONFIG.entitesMesures)
     expect(c.conseilsAteliersActive).toBe(true)
-    expect(c.qualificationActive).toBe(false)
+    expect(c.qualificationActive).toBe(true)
     expect(c.echellesEcosysteme).toEqual({})
   })
 
@@ -62,6 +62,14 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(resolveOrgConfig([]).secondeLigneActive).toBe(true)
     expect(DEFAULT_ORG_CONFIG.secondeLigneActive).toBe(true)
     expect(resolveOrgConfig([row({ secondeLigneActive: false })]).secondeLigneActive).toBe(false)
+  })
+
+  it('profils opérationnels : inactifs par défaut et hérités comme un toggle', () => {
+    expect(DEFAULT_ORG_CONFIG.profilsOperationnelsActive).toBe(false)
+    expect(resolveOrgConfig([]).profilsOperationnelsActive).toBe(false)
+    const enfant = row({ profilsOperationnelsActive: true })
+    const racine = row({ profilsOperationnelsActive: false })
+    expect(resolveOrgConfig([enfant, racine]).profilsOperationnelsActive).toBe(true)
   })
 
   it('un champ JSON vide hérite de l\'ancêtre (le plus proche non vide gagne)', () => {

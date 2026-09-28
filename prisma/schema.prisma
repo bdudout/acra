@@ -190,9 +190,30 @@ model Organization {
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
   analysisImportMappings AnalysisImportMapping[]
+  operationalProfiles    OperationalProfile[]
 
   @@index([parentId])
   @@index([path])
+}
+
+// Profil opérationnel US/UK (NIST CSF 2.0 / NCSC CAF v4.0) d'une organisation :
+// un profil par cadre. `cible` = niveau visé du profil (Tier CSF, profil CAF
+// Basic/Enhanced) ; `entries` = évaluation par catégorie/principe (état courant,
+// état cible, justification, responsable, horodatage par point). Séparé de la
+// conformité : le profil exprime une cible de gouvernance, pas l'état de contrôles.
+model OperationalProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework      String // NIST_CSF_2_0 | NCSC_CAF_V4
+  cible          String? // TIER_1..TIER_4 (CSF) | BASIC | ENHANCED (CAF)
+  entries        Json         @default("[]")
+  updatedById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, framework])
+  @@index([organizationId])
 }
 
 // Modèle de correspondance Excel réutilisable, strictement propre à une organisation.
@@ -1531,8 +1552,16 @@ model Risque {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Propriétaire du risque : personne ou entité responsable (ISO/IEC 27005 §7.2.2).
+  proprietaire String?
+
+  // Règle de qualification à l'origine du risque (risques proposés/imposés par le
+  // questionnaire). Unique par analyse : une règle ne crée jamais deux risques.
+  qualificationRuleId String?
+
   derogations Derogation[]
 
+  @@unique([analyseId, qualificationRuleId])
   @@index([analyseId])
   @@index([niveauRisque])
 }
@@ -1621,6 +1650,9 @@ model OrganizationConfig {
   organization               Organization? @relation(fields: [id], references: [id], onDelete: Cascade)
   // Liste des entités responsables de mesures (ex: ["DSI", "Métier", "Risques"])
   entitesMesures             Json          @default("[]")
+  // Connecteurs d'import d'entités (REST/LDAP). Les secrets sont chiffrés dans
+  // ce JSON avant écriture et ne sont jamais exposés par l'API de lecture.
+  entitesSyncConfig          Json          @default("{}")
   // Types d'impacts configurables (événements redoutés) — [{id, label, icon}]
   typesImpacts               Json          @default("[]")
   // Référentiels de sécurité configurables — [{nom, description, actif}]
@@ -1640,7 +1672,7 @@ model OrganizationConfig {
   // Une catégorie présente (tableau non vide) remplace les défauts ; sinon repli sur les défauts i18n.
   exemplesAteliers           Json          @default("{}")
   // Fonctionnalité optionnelle : questionnaire de qualification au début d'une analyse (cf. lib/qualification.ts)
-  qualificationActive        Boolean       @default(false)
+  qualificationActive        Boolean       @default(true)
   // Si la qualification est active, la rendre OBLIGATOIRE avant l'atelier 1 (bloque l'entrée tant qu'incomplete)
   qualificationObligatoire   Boolean       @default(false)
   // Grille de conformité à un référentiel en atelier 1 (cf. fiche Club EBIOS socle).
@@ -1704,6 +1736,9 @@ model OrganizationConfig {
   // 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut) ;
   // false = mode « ligne unique » (org non régulée) : quatre-yeux et rôles 2ᵉ ligne relâchés.
   secondeLigneActive         Boolean       @default(true)
+  // Profils NIST CSF 2.0 / NCSC CAF v4 et suivi des écarts opérationnels.
+  // Désactivé par défaut : le parcours EBIOS RM / ISO 27005 standard reste inchangé.
+  profilsOperationnelsActive Boolean       @default(false)
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

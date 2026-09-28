@@ -95,6 +95,7 @@ export async function GET(_req: NextRequest) {
     kriActive: cfg.kriActive,
     reglementaireActive: cfg.reglementaireActive,
     secondeLigneActive: cfg.secondeLigneActive,
+    profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
   })
 }
@@ -233,6 +234,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.kriActive === 'boolean') data.kriActive = body.kriActive
   if (typeof body.reglementaireActive === 'boolean') data.reglementaireActive = body.reglementaireActive
   if (typeof body.secondeLigneActive === 'boolean') data.secondeLigneActive = body.secondeLigneActive
+  if (typeof body.profilsOperationnelsActive === 'boolean') data.profilsOperationnelsActive = body.profilsOperationnelsActive
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 

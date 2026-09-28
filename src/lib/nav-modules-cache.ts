@@ -16,7 +16,7 @@ import type { NavModules } from './navigation'
 
 export const NAV_MODULES_STORAGE_KEY = 'acra:navModules'
 
-const MODULE_KEYS = ['registre', 'incidents', 'controles', 'audit', 'kri', 'reglementaire'] as const
+const MODULE_KEYS = ['registre', 'incidents', 'controles', 'audit', 'kri', 'reglementaire', 'profilsOperationnels'] as const
 
 /** Valide/normalise un objet en NavModules (ou null si non reconnaissable). */
 export function parseNavModules(raw: unknown): NavModules | null {
@@ -31,6 +31,7 @@ export function parseNavModules(raw: unknown): NavModules | null {
     audit: Boolean(o.audit),
     kri: Boolean(o.kri),
     reglementaire: Boolean(o.reglementaire),
+    profilsOperationnels: Boolean(o.profilsOperationnels),
   }
 }
 

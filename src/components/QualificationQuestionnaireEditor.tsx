@@ -8,7 +8,8 @@
 import { useState } from 'react'
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import type { QualificationConfig, CustomQualQuestion } from '@/lib/qualification'
+import { DEFAULT_QUALIFICATION_RISK_RULES, QUALIFICATION_QUESTIONS, type QualificationConfig, type CustomQualQuestion, type QualificationRiskRule } from '@/lib/qualification'
+import QualificationRiskRulesEditor, { type RuleQuestion } from '@/components/QualificationRiskRulesEditor'
 
 interface Props {
   initial: QualificationConfig
@@ -21,6 +22,9 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
   const e = t.qualifEditor
   const [overrides, setOverrides] = useState<Record<string, { label?: string; enabled?: boolean }>>(initial.overrides ?? {})
   const [custom, setCustom] = useState<CustomQualQuestion[]>(initial.custom ?? [])
+  // Absent (≠ liste vide volontaire) → catalogue par défaut : ne jamais effacer les
+  // règles d'une organisation à l'enregistrement d'un autre réglage du questionnaire.
+  const [riskRules, setRiskRules] = useState<QualificationRiskRule[]>(initial.riskRules ?? DEFAULT_QUALIFICATION_RISK_RULES)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [nLabel, setNLabel] = useState('')
@@ -44,13 +48,30 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
     setSaving(true)
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qualificationQuestionnaire: { overrides, custom } }),
+      body: JSON.stringify({ qualificationQuestionnaire: { overrides, custom, riskRules } }),
     })
     setSaving(false)
-    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []) } setSaved(true) }
+    if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []); setRiskRules(d.qualificationQuestionnaire.riskRules ?? DEFAULT_QUALIFICATION_RISK_RULES) } setSaved(true) }
   }
 
   const inp = 'px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900'
+
+  // Questions sélectionnables dans les règles de risques : natives actives (libellé
+  // surchargé ou i18n, options traduites) + questions personnalisées.
+  const optionLabels: Record<string, Record<string, string>> = {
+    criticite: t.qualification.criticiteOptions as Record<string, string>,
+    statutReglementaire: t.qualification.statutOptions as Record<string, string>,
+  }
+  const ruleQuestions: RuleQuestion[] = [
+    ...builtins.filter(b => overrides[b.id]?.enabled !== false).map(b => {
+      const def = QUALIFICATION_QUESTIONS.find(q => q.id === b.id)
+      return {
+        id: b.id, label: overrides[b.id]?.label || b.label, type: def?.type ?? 'bool',
+        options: def?.options?.map(o => ({ value: o.value, label: optionLabels[b.id]?.[o.value] ?? o.value })),
+      }
+    }),
+    ...custom.filter(c => c.id).map(c => ({ id: c.id, label: c.label, type: c.type, options: c.options })),
+  ]
 
   return (
     <div className="space-y-5">
@@ -72,6 +93,8 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
         </div>
         <p className="text-[11px] text-gray-400 mt-1">{e.builtinHint}</p>
       </div>
+
+      <QualificationRiskRulesEditor rules={riskRules} questions={ruleQuestions} onChange={next => { setRiskRules(next); dirty() }} />
 
       {/* Questions personnalisées */}
       <div>

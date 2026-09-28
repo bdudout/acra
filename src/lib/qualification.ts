@@ -32,6 +32,52 @@ export interface QualificationQuestion {
 /** Réponses saisies : { <questionId>: boolean | optionValue }. */
 export type QualificationAnswers = Record<string, boolean | string>
 
+/** Méthodes prises en charge par le catalogue de risques de qualification. */
+export type QualificationMethod = 'EBIOS_RM' | 'ISO_27005' | 'ISO_31000' | 'NIST_800_30'
+
+/** Catégories de risques proposables (socle cyber + extensions projet/opérationnel/fraude). */
+export const QUALIFICATION_RISK_CATEGORIES = ['CYBER', 'PROJECT', 'OPERATIONAL', 'FRAUD'] as const
+/** Stratégies de traitement (enum Prisma StrategieTraitement). */
+export const QUALIFICATION_RISK_STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
+/**
+ * Clés du catalogue de risques par défaut : leur intitulé/description sont
+ * TRADUITS (t.qualification.riskCatalog.<clé>) — jamais codés en dur ici.
+ */
+export const QUALIFICATION_RISK_CATALOG_KEYS = ['personalData', 'internetExposure', 'thirdParty', 'industrial', 'regulatory', 'criticalService'] as const
+export type QualificationRiskCatalogKey = (typeof QUALIFICATION_RISK_CATALOG_KEYS)[number]
+
+/** Règle configurable liant une réponse de qualification à un risque proposé. */
+export type QualificationRiskRule = {
+  id: string
+  enabled?: boolean
+  /** Risque IMPOSÉ : proposé sans pouvoir être décoché (créé à la validation). */
+  mandatory?: boolean
+  /** Absent = règle générique ; renseigné = proposition limitée à ces méthodes. */
+  methods?: readonly QualificationMethod[]
+  when: { questionId: string; equals: boolean | string }
+  risk: {
+    category: (typeof QUALIFICATION_RISK_CATEGORIES)[number]
+    /** Intitulé saisi par l'admin ; vide pour une règle du catalogue (cf. titleKey). */
+    title: string
+    /** Clé du catalogue traduit (règles par défaut). Prioritaire sur `title` à l'affichage. */
+    titleKey?: string
+    description?: string
+    gravity: number
+    likelihood: number
+    strategy: (typeof QUALIFICATION_RISK_STRATEGIES)[number]
+  }
+}
+
+/** Risque proposé (règle déclenchée) : contenu du risque + identité et caractère imposé de la règle. */
+export type QualificationRiskProposalItem = QualificationRiskRule['risk'] & { id: string; mandatory: boolean }
+
+/** Risques proposés par les règles actives correspondant exactement aux réponses. */
+export function suggestedQualificationRisks(answers: QualificationAnswers | null | undefined, rules: QualificationRiskRule[], method?: QualificationMethod | string | null): QualificationRiskProposalItem[] {
+  if (!answers) return []
+  return rules.filter(rule => rule.enabled !== false && (!rule.methods?.length || (method != null && rule.methods.includes(method as QualificationMethod))) && answers[rule.when.questionId] === rule.when.equals)
+    .map(rule => ({ id: rule.id, mandatory: rule.mandatory === true, ...rule.risk }))
+}
+
 /** Orientations dérivées des réponses (clés i18n t.qualification.orientations.*). */
 export type Orientation =
   | 'ECOSYSTEME'
@@ -105,8 +151,21 @@ export interface QualificationConfig {
   overrides: Record<string, { label?: string; enabled?: boolean }>
   /** Questions supplémentaires propres à l'organisation. */
   custom: CustomQualQuestion[]
+  /** Catalogue de risques proposés selon les réponses, administré par organisation. */
+  riskRules?: QualificationRiskRule[]
 }
-export const EMPTY_QUALIFICATION_CONFIG: QualificationConfig = { overrides: {}, custom: [] }
+/** Socle cyber proposé par défaut (aucun risque imposé : l'ADMIN en décide). */
+const catalogRule = (id: string, titleKey: QualificationRiskCatalogKey, questionId: string, equals: boolean | string, gravity: number, likelihood: number): QualificationRiskRule =>
+  ({ id, when: { questionId, equals }, risk: { category: 'CYBER', title: '', titleKey, gravity, likelihood, strategy: 'REDUIRE' } })
+export const DEFAULT_QUALIFICATION_RISK_RULES: QualificationRiskRule[] = [
+  catalogRule('cyber-personal-data', 'personalData', 'donneesPersonnelles', true, 4, 2),
+  catalogRule('cyber-internet-exposure', 'internetExposure', 'expositionInternet', true, 3, 3),
+  catalogRule('cyber-third-party', 'thirdParty', 'externalisation', true, 3, 2),
+  catalogRule('cyber-industrial', 'industrial', 'systemeIndustriel', true, 4, 2),
+  catalogRule('cyber-regulatory', 'regulatory', 'reglementation', true, 3, 2),
+  catalogRule('cyber-critical-service', 'criticalService', 'criticite', 'eleve', 4, 2),
+]
+export const EMPTY_QUALIFICATION_CONFIG: QualificationConfig = { overrides: {}, custom: [], riskRules: DEFAULT_QUALIFICATION_RISK_RULES }
 
 const BUILTIN_QUAL_IDS = new Set(QUALIFICATION_QUESTIONS.map(q => q.id))
 
@@ -118,7 +177,7 @@ function slugId(s: string): string {
 
 /** Nettoie/valide une configuration de questionnaire (overrides natifs + custom). */
 export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
-  const out: QualificationConfig = { overrides: {}, custom: [] }
+  const out: QualificationConfig = { overrides: {}, custom: [], riskRules: DEFAULT_QUALIFICATION_RISK_RULES }
   if (!v || typeof v !== 'object' || Array.isArray(v)) return out
   const src = v as Record<string, unknown>
 
@@ -161,6 +220,32 @@ export function sanitizeQualificationConfig(v: unknown): QualificationConfig {
       cq.options = clean
     }
     seen.add(id); out.custom.push(cq)
+  }
+  if (Array.isArray(src.riskRules)) {
+    const rules: QualificationRiskRule[] = []
+    const ids = new Set<string>()
+    for (const raw of src.riskRules.slice(0, 200)) {
+      if (!raw || typeof raw !== 'object') continue
+      const rule = raw as Record<string, unknown>; const when = rule.when as Record<string, unknown>; const risk = rule.risk as Record<string, unknown>
+      const id = slugId(String(rule.id ?? '')); const questionId = typeof when?.questionId === 'string' ? when.questionId : ''
+      const title = typeof risk?.title === 'string' ? risk.title.trim().slice(0, 255) : ''
+      const titleKey = typeof risk?.titleKey === 'string' && (QUALIFICATION_RISK_CATALOG_KEYS as readonly string[]).includes(risk.titleKey) ? risk.titleKey : undefined
+      const category = String(risk?.category ?? 'CYBER'); const strategy = String(risk?.strategy ?? 'REDUIRE')
+      if (!id || ids.has(id) || !questionId || (!title && !titleKey) || !(QUALIFICATION_RISK_CATEGORIES as readonly string[]).includes(category) || !(QUALIFICATION_RISK_STRATEGIES as readonly string[]).includes(strategy) || (typeof when?.equals !== 'boolean' && typeof when?.equals !== 'string')) continue
+      const methods = Array.isArray(rule.methods) ? [...new Set(rule.methods.filter((method): method is QualificationMethod => typeof method === 'string' && ['EBIOS_RM', 'ISO_27005', 'ISO_31000', 'NIST_800_30'].includes(method)))] : []
+      ids.add(id)
+      rules.push({
+        id, enabled: rule.enabled !== false, mandatory: rule.mandatory === true, ...(methods.length ? { methods } : {}),
+        when: { questionId, equals: typeof when.equals === 'string' ? when.equals.slice(0, 80) : when.equals as boolean },
+        risk: {
+          category: category as QualificationRiskRule['risk']['category'], title, ...(titleKey ? { titleKey } : {}),
+          ...(typeof risk.description === 'string' && risk.description.trim() ? { description: risk.description.slice(0, 2000) } : {}),
+          gravity: Math.max(1, Math.min(4, Number(risk.gravity) || 2)), likelihood: Math.max(1, Math.min(4, Number(risk.likelihood) || 2)),
+          strategy: strategy as QualificationRiskRule['risk']['strategy'],
+        },
+      })
+    }
+    out.riskRules = rules
   }
   return out
 }

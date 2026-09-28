@@ -1,6 +1,6 @@
 {
   "name": "ebios-rm",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "private": true,
   "scripts": {
     "setup": "bash scripts/setup.sh",
@@ -34,6 +34,7 @@
     "bcryptjs": "^2.4.3",
     "docx": "^9.7.1",
     "exceljs": "^4.4.0",
+    "ldapts": "^9.2.0",
     "lucide-react": "^1.17.0",
     "next": "^16.2.11",
     "next-auth": "^4.24.15",

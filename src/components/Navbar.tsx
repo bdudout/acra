@@ -65,7 +65,7 @@ export default function Navbar() {
   // renseigné lors des RE-montages (navigation SPA) → plus de « réorganisation »
   // des entrées à chaque clic. Cf. lib/nav-modules-cache.
   const [modules, setModules] = useState<NavModules>(
-    () => peekNavModules() ?? { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false },
+    () => peekNavModules() ?? { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false },
   )
   // Rechargement complet : réhydrater depuis localStorage AVANT le fetch, pour
   // afficher la bonne mise en page au plus tôt (sans attendre le réseau).
@@ -85,6 +85,7 @@ export default function Navbar() {
           audit:         Boolean(d.auditInterneActive),
           kri:           Boolean(d.kriActive),
           reglementaire: Boolean(d.reglementaireActive),
+          profilsOperationnels: Boolean(d.profilsOperationnelsActive),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -176,6 +177,7 @@ export default function Navbar() {
     registreTic:   { href: '/registre-tic',  Icon: ScrollText,      label: t.nav.registreTic },
     suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
     ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
+    profilsOperationnels: { href: '/profils-operationnels', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).

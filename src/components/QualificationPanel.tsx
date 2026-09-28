@@ -1,8 +1,10 @@
 'use client'
 
-import { Compass } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Compass, ListPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { QualificationRisksDialog, useQualificationProposals } from '@/components/QualificationRisksFlow'
 import {
   FILIERE_OIV_OPTIONS,
   deriveOrientations,
@@ -24,6 +26,8 @@ interface Props {
   secteur?: string | null
   /** Personnalisation du questionnaire (overrides natifs + questions custom) — config org. */
   config?: QualificationConfig | null
+  /** Méthode de l'analyse (conservée pour compatibilité ; le serveur filtre les règles). */
+  methode?: string | null
 }
 
 /**
@@ -37,6 +41,13 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Risques proposés/imposés par les réponses (propositions calculées et traduites côté serveur).
+  const router = useRouter()
+  const { channel, pending, reload } = useQualificationProposals(analyseId)
+  const [proposalsOpen, setProposalsOpen] = useState(false)
+  const [proposalSummary, setProposalSummary] = useState<string | null>(null)
+  const hasInitialAnswers = !!initial && Object.keys(initial).length > 0
+  useEffect(() => { if (hasInitialAnswers) void reload() }, [hasInitialAnswers, reload])
   // Replié par défaut (vue synthétique) ; déplié si `defaultOpen` (mise en avant
   // tant que la qualification est incomplète).
   const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
@@ -98,12 +109,21 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
       body: JSON.stringify({ qualification: answers }),
     })
     setSaving(false)
-    if (res.ok) { setSaved(true); setCollapsed(true) }
+    if (res.ok) {
+      setSaved(true); setCollapsed(true); setProposalSummary(null)
+      // Méthodes à saisie directe : proposition immédiate ; EBIOS RM : en atelier 5.
+      const next = await reload()
+      if (canEdit && next.channel === 'DIRECT' && next.pending.length > 0) setProposalsOpen(true)
+    }
+  }
+
+  function proposalsDone(summary: string) {
+    setProposalsOpen(false); setProposalSummary(summary); void reload(); router.refresh()
   }
 
   if (collapsed) {
     return (
-      <div className="card p-4">
+      <><div className="card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <span><Compass size={18} aria-hidden="true" /></span>
@@ -129,7 +149,16 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
         {complete && orientations.length > 0 && (
           <p className="text-xs text-gray-400 mt-2">{orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</p>
         )}
-      </div>
+        {proposalSummary && <p role="status" className="mt-2 text-xs text-green-700 dark:text-green-300">{proposalSummary}</p>}
+        {pending.length > 0 && channel === 'DIRECT' && canEdit && (
+          <button type="button" onClick={() => setProposalsOpen(true)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ebios-600 hover:text-ebios-800 hover:underline">
+            <ListPlus size={14} aria-hidden="true" />{t.qualification.riskProposal.pending.replace('{n}', String(pending.length))}
+          </button>
+        )}
+        {pending.length > 0 && channel === 'ATELIER5' && (
+          <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">{t.qualification.riskProposal.ebiosHint}</p>
+        )}
+      </div>{proposalsOpen && <QualificationRisksDialog analyseId={analyseId} risks={pending} onClose={() => setProposalsOpen(false)} onDone={proposalsDone} />}</>
     )
   }
 

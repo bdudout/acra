@@ -18,11 +18,13 @@ import Atelier3 from '@/components/workshops/Atelier3'
 import Atelier4 from '@/components/workshops/Atelier4'
 import Atelier5 from '@/components/workshops/Atelier5'
 import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
+import ExportButtons from '@/components/ExportButtons'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { ownerSuggestions } from '@/lib/risque-proprietaire'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, marquerDerogations, type ConformiteStatut } from '@/lib/conformite'
@@ -120,10 +122,21 @@ export default async function AtelierPage({
     const risqueSuggestions = editable
       ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
       : []
+    // Critères de l'organisation (P1/P2) : même échelle que l'EBIOS RM + appétit au risque.
+    const directScale = await getEffectiveScaleConfig((analyse as { organizationId?: string | null }).organizationId ?? null)
+    const directOrgId = (analyse as { organizationId?: string | null }).organizationId ?? null
+    const directOrgConfig = await getOrgConfig(directOrgId)
+    const directAppetit = directOrgConfig.appetitRisque
+    // Propriétaires suggérés (P3) : NOMS des membres de l'organisation (pas les e-mails) + entités.
+    const directMembers = directOrgId
+      ? await prisma.orgMembership.findMany({ where: { organizationId: directOrgId }, select: { user: { select: { name: true } } }, take: 500 })
+      : []
+    const directOwnerSuggestions = ownerSuggestions(directMembers.map(mb => mb.user.name), directOrgConfig.entitesMesures)
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+        {/* Méthodes à saisie directe : largeur étendue (tableau brut / actuel / résiduel). */}
+        <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
@@ -132,8 +145,14 @@ export default async function AtelierPage({
               <span aria-hidden="true">›</span>
               <span aria-current="page">{cfg.breadcrumb}</span>
             </nav>
-            <h1 className="text-2xl font-bold text-gray-900">{cfg.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">{cfg.subtitle}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{cfg.title}</h1>
+                <p className="text-sm text-gray-500 mt-1">{cfg.subtitle}</p>
+              </div>
+              {/* P4 — rapport propre à la méthode (PDF + Excel), langue de l'interface. */}
+              <ExportButtons analyseId={analyse.id} formats={['pdf', 'xlsx']} />
+            </div>
           </header>
           <PhasedRiskWorkshop
             analyseId={analyse.id} editable={editable} phases={phases}
@@ -143,6 +162,7 @@ export default async function AtelierPage({
             guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
             risqueSuggestions={risqueSuggestions}
             withVulnerabilites={methode === 'ISO_27005'}
+            scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}

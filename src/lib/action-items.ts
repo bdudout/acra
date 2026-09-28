@@ -244,6 +244,14 @@ export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt
   }
 }
 
+/**
+ * PlanAction issu d'un écart de profil opérationnel US/UK (lien OPERATIONAL_PROFILE)
+ * → facette « conformité » : l'écart porte sur une cible de gouvernance/résilience.
+ */
+export function normalizeOperationalProfilePlanAction(row: OrphanPlanActionRow, opt: LienOpt = {}): ActionItem {
+  return { ...normalizeOrphanPlanAction(row, opt), origine: 'conformite' }
+}
+
 /** Forme brute d'un traitement de conformité (plan d'action), en entrée de normalisation. */
 export interface ConformiteTraitementRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown

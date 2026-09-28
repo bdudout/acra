@@ -88,6 +88,12 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+    # Dossier d'échange avec l'agent de mise à jour hôte (bouton « Mettre à jour »,
+    # issue #185) : l'app y lit la pulsation/le statut et dépose une demande dans
+    # inbox/. Sans agent installé (scripts/update-agent.sh --install), le bouton
+    # affiche simplement les commandes de mise à jour.
+    volumes:
+      - ./.acra-update:/app/.acra-update
     command: ["node", "server.js"]
 
   # ---------------------------------------------------------------------------

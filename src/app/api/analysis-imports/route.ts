@@ -8,12 +8,14 @@ import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.serve
 import { applyHistoricRowOverrides, buildHistoricImportPackages, detectHistoricHeaderLayout, detectHistoricImportSheet, partitionHistoricImportSheets, profileHistoricColumn, resolveHistoricImportSheetType, type HistoricColumnMapping, type HistoricFieldTransforms, type HistoricRowOverrides, validateHistoricColumnMapping, validateHistoricImportFormats, validateHistoricImportSelection } from '@/lib/historic-import'
 import { executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysis-import'
 import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempotency'
+import { excelCellText as cell } from '@/lib/excel-cell'
+import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
+import { checkXlsxArchive } from '@/lib/xlsx-guard'
 
 const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
 const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
 const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.string().trim().max(10_000)))).default({})
 const schema = z.object({ filename: z.string().max(255).regex(/\.xlsx$/i), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
-const cell = (value: unknown) => value instanceof Date ? value.toISOString().slice(0, 10) : typeof value === 'object' && value !== null && 'text' in value ? String(value.text) : String(value ?? '').trim()
 
 /** Exécute un import Excel après la prévisualisation et le mapping humain obligatoire. */
 export async function POST(req: NextRequest) {
@@ -27,7 +29,14 @@ export async function POST(req: NextRequest) {
     const organizationId = body.organizationId ?? scope.activeOrgId
     const targetRole = organizationId ? await getEffectiveRoleForOrg(userId, role, organizationId) : null
     if (!organizationId || !targetRole || !canCreateAnalyse({ id: userId, role: targetRole })) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
-    const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(body.data, 'base64') as never)
+    // Débit + taille décompressée vérifiés AVANT tout chargement ExcelJS (qui
+    // décompresse tout en mémoire et bloque l'event loop sur un gros classeur).
+    const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)
+    if (!rl.allowed) return NextResponse.json({ error: 'excel_rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+    const buffer = Buffer.from(body.data, 'base64')
+    const archive = checkXlsxArchive(buffer)
+    if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
+    const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       const sampleRows = Array.from({ length: Math.min(20, sheet.rowCount) }, (_, offset) => Array.from({ length: 100 }, (_, index) => cell(sheet.getRow(offset + 1).getCell(index + 1).value)))
       const layout = detectHistoricHeaderLayout(sampleRows)
@@ -59,6 +68,11 @@ export async function POST(req: NextRequest) {
       : message === 'NO_IMPORTABLE_SHEET' ? 'excel_no_importable_sheet'
         : message.startsWith('duplicate_external_id:') ? 'excel_duplicate_reference'
           : 'excel_import_invalid'
-    return NextResponse.json({ error: errorCode, details: message }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : 422 })
+    // Détail utile à l'utilisateur pour les erreurs codées par l'application et la
+    // validation ; jamais le message brut d'une erreur interne (noms de tables…).
+    const details = errorCode !== 'excel_import_invalid' ? message
+      : error instanceof z.ZodError ? error.issues.slice(0, 5).map(issue => `${issue.path.join('.')}: ${issue.message}`).join(' ; ')
+        : undefined
+    return NextResponse.json({ error: errorCode, details }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : 422 })
   }
 }

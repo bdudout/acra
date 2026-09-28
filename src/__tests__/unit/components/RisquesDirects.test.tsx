@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
 import RisquesDirects from '@/components/RisquesDirects'
 
 const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
-  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance',
+  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V', colProprietaire: 'Propriétaire', proprietairePlaceholder: 'Propriétaire du risque', filterOwnerAll: 'Tous', filterOwnerNone: 'Sans propriétaire', ownerMissing: 'Propriétaire non désigné', colNiveauEvalue: 'Niveau évalué (actuel)', colCritere: 'Critère', basisAppetit: 'Appétit : acceptable jusqu’à {seuil}', basisEchelle: 'Échelle : palier « {palier} »', evalHint: 'Évalué au niveau actuel.',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
   niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
@@ -41,9 +41,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     // niveau brut affiché (badge « Brut 12 ») ; actuel/résiduel masqués car non réduits.
-    expect(screen.getByText('Brut')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
-    expect(screen.queryByText('Actuel')).toBeNull()
+    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
+    expect(niveaux.getByText('Brut')).toBeInTheDocument()
+    expect(niveaux.getByText('12')).toBeInTheDocument()
+    expect(niveaux.queryByText('Actuel')).toBeNull()
   })
 
   it('3 niveaux : affiche Brut, puis Actuel/Résiduel seulement s\'ils sont réduits', async () => {
@@ -54,9 +55,10 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
-    expect(screen.getByText('Brut')).toBeInTheDocument()
-    expect(screen.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
-    expect(screen.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
+    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
+    expect(niveaux.getByText('Brut')).toBeInTheDocument()
+    expect(niveaux.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
+    expect(niveaux.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
   })
 
   it('éditeur « Actuel » (avec mesures) : modifier G met à jour graviteActuelle (PATCH)', async () => {
@@ -65,12 +67,12 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    expect(screen.getByText('Actuel (avec mesures)')).toBeInTheDocument()
-    // La colonne « Actuel » a ses selects G/V (valeur initiale = brut) ; on abaisse G à 2.
-    const selects = screen.getAllByRole('combobox')
-    // Le dernier bloc de selects est l'éditeur actuel (rate mode : brut G,V + actuel G,V).
+    expect(screen.getByRole('columnheader', { name: 'Actuel (avec mesures)' })).toBeInTheDocument()
+    // L'éditeur « Actuel » part des valeurs brutes ; on abaisse sa gravité à 2 (liste ciblée par son nom accessible).
+    const gActuel = screen.getByRole('combobox', { name: 'Actuel (avec mesures) — Gravité' }) as HTMLSelectElement
+    expect(gActuel.value).toBe('4')
     fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6, strategie: 'REDUIRE' } }))
-    fireEvent.change(selects[selects.length - 2], { target: { value: '2' } })
+    fireEvent.change(gActuel, { target: { value: '2' } })
     await waitFor(() => {
       const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
       expect(patch && JSON.parse(patch[1].body)).toMatchObject({ graviteActuelle: 2 })
@@ -159,9 +161,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
-    expect(screen.getByText('Niveau')).toBeInTheDocument()
-    expect(screen.getAllByText('Gravité').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Traitement')).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut — Gravité' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut — Vraisemblance' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Traitement' })).toBeNull()
   })
 
   it('peut exposer uniquement les mesures pendant la phase d’analyse ISO 27005', async () => {
@@ -183,9 +186,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable mode="treat" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
-    expect(screen.getByText('Traitement')).toBeInTheDocument()
-    expect(screen.getByText('Niveau')).toBeInTheDocument()
-    expect(screen.queryByText('Gravité')).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Traitement' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Brut — Gravité' })).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Résiduel (cible) — Gravité' })).toBeInTheDocument()
   })
 
   it('#5 — masque les suggestions déjà présentes dans le registre', async () => {
@@ -229,5 +233,68 @@ describe('RisquesDirects', () => {
     // Lecture seule : pas d’ajout, pas de sélecteur de traitement.
     expect(screen.queryByText('Ajouter')).toBeNull()
     expect(screen.queryByText('Traitement')).toBeNull()
+  })
+
+  it('P1 — échelle de l’organisation à 5 niveaux : 5 choix de gravité', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable mode="rate" scale={{ nbNiveaux: 5 }} />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    const g = screen.getByRole('combobox', { name: 'Brut — Gravité' }) as HTMLSelectElement
+    expect([...g.options].map(o => o.value)).toEqual(['1', '2', '3', '4', '5'])
+  })
+
+  it('P2 — évaluation sur le niveau ACTUEL : brut critique mais actuel faible → acceptable', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 1, vraisemblanceActuelle: 3, niveauActuel: 3, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" />)
+    expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
+    expect(screen.getByText(M.decisionAccept)).toBeInTheDocument()
+    expect(screen.getByText(/Échelle : palier « Faible »/)).toBeInTheDocument()
+  })
+
+  it('P2 — l’appétit de l’organisation prime sur l’échelle et est cité comme critère', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 1, vraisemblanceActuelle: 3, niveauActuel: 3, strategie: 'REDUIRE' },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" appetit={{ seuilGlobal: 2, parCategorie: {} }} />)
+    expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
+    expect(screen.getByText(M.decisionTreat)).toBeInTheDocument()
+    expect(screen.getByText('Appétit : acceptable jusqu’à 2')).toBeInTheDocument()
+  })
+
+  it('P2 — écran complet (ISO 31000 / NIST) : la décision est affichée dans la colonne Niveau', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Niveau' })).getByText(M.decisionTreat)).toBeInTheDocument()
+  })
+
+  it('P3 — saisie du propriétaire (validée à la sortie du champ) → PATCH', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable ownerSuggestions={['DSI', 'Alice Martin']} />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    const input = screen.getByRole('combobox', { name: 'Propriétaire — Panne SI' }) as HTMLInputElement
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', proprietaire: 'DSI' } }))
+    fireEvent.change(input, { target: { value: 'DSI' } })
+    fireEvent.blur(input)
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
+      expect(patch && JSON.parse(patch[1].body)).toEqual({ proprietaire: 'DSI' })
+    })
+  })
+
+  it('P3 — filtre « Sans propriétaire » et colonne propriétaire en évaluation', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE', proprietaire: 'DSI' },
+      { id: 'r2', nom: 'Fuite', gravite: 2, vraisemblance: 2, niveauRisque: 4, strategie: 'REDUIRE', proprietaire: null },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Propriétaire' })).toBeInTheDocument()
+    expect(screen.getByText('Propriétaire non désigné')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Propriétaire'), { target: { value: '__none__' } })
+    expect(screen.queryByText('Panne SI')).toBeNull()
+    expect(screen.getByText('Fuite')).toBeInTheDocument()
   })
 })

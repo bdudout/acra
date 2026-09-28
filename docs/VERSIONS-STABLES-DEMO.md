@@ -109,12 +109,19 @@ faire de la publication publique le premier essai du système.
 
 ## Tes gestes pour une mise à jour
 
+0. **Aligner `package.json` sur la version à publier** (ex. `npm version 1.0.3
+   --no-git-tag-version`) dans la PR de release : le workflow refuse un tag qui ne lui
+   correspond pas (cause de l'issue #185 : v1.0.1/v1.0.2 publiées avec un
+   `package.json` resté en 1.0.0 → fausse « mise à jour disponible »). Après
+   publication, repasser `main` en préversion de la suivante (ex. `1.0.4-beta.1`).
 1. Fusionner la PR et attendre la CI verte sur le commit final de main.
 2. Actions → **Prepare versioned release** → saisir la version.
 3. Recetter l'image exacte du manifeste en privé ; remplir la fiche de release.
    Pour une stable, publier le brouillon seulement si les critères sont satisfaits.
 4. Actions → **Deploy stable demo release** → saisir `v1.0.1`, par exemple.
-5. Lire le résultat. La recette vérifie HTTPS, DB, version/SHA, connexion, lecture
+5. Publier la release : le workflow « Align stable branch » avance la branche
+   `stable` (canal des instances auto-hébergées, `scripts/update.sh stable`).
+6. Lire le résultat. La recette vérifie HTTPS, DB, version/SHA, connexion, lecture
    d'une analyse et génération d'un vrai PDF. Aucun seed n'est exécuté en public.
 
 Les releases immuables sont recommandées : [documentation GitHub](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).

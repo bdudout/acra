@@ -46,6 +46,7 @@ const CONFIG_SELECT = {
   kriActive: true,
   reglementaireActive: true,
   secondeLigneActive: true,
+  profilsOperationnelsActive: true,
   appetitRisque: true,
 } as const
 
@@ -92,6 +93,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       kriActive: resolveModuleActivation(policy.kri, cfg.kriActive),
       reglementaireActive: resolveModuleActivation(policy.reglementaire, cfg.reglementaireActive),
       secondeLigneActive: resolveModuleActivation(policy.secondeLigne, cfg.secondeLigneActive),
+      profilsOperationnelsActive: resolveModuleActivation(policy.profilsOperationnels, cfg.profilsOperationnelsActive),
     }
   } catch {
     return cfg

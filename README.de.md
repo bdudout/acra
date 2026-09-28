@@ -48,6 +48,7 @@ ACRA ändert das: Es ist ein **interaktiver methodischer Assistent**, der Schrit
 - **Branchenspezifische Anleitung & Konformität**: an Branche und Teilbranche angepasste Fachbeispiele, Framework-Empfehlungen, Erkennung des regulatorischen Status (NIS2, OIV…) — [Details](#-branchenspezifische-anleitung--konformität)
 - **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
 - **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
+- **Operative Profile USA/UK** (optionales Modul, standardmäßig deaktiviert): Selbstbewertung von Ist- und Zielzustand über die 22 Kategorien des **NIST CSF 2.0** (Tiers 1–4) und die 14 Prinzipien des **NCSC CAF v4.0** (Basic / Enhanced Profile), Verlauf je Punkt, Übernahme von Lücken in den Maßnahmenplan ohne Duplikate, CSV-Export
 - **100 % selbst gehostet**: Ihre Daten verlassen niemals Ihre Infrastruktur
 
 ---
@@ -204,7 +205,7 @@ bündelt alle Abhängigkeiten und den Prisma-Client und wendet die Migrationen b
 automatisch an (Dienst `migrator`).
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 make setup        # erzeugt .env + zufällige Secrets (interaktiv)
 docker compose up -d
@@ -248,7 +249,7 @@ docker compose exec app npx prisma db seed
 ### Schritt 1 — Repository klonen
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 ```
 
@@ -338,10 +339,37 @@ docker compose exec app npx prisma migrate deploy
 
 ### Aktualisierung
 
+Zwei Kanäle:
+- **stable** — letzte freigegebene Version (Branch `stable`, auf die zuletzt veröffentlichte Release ausgerichtet);
+- **beta** — letzte freigegebene Version + spätere Änderungen (Branch `main`, Version `x.y.z-beta.n`).
+
 ```bash
-git pull origin main
+scripts/update.sh stable   # oder: scripts/update.sh beta
+```
+
+Das Skript verweigert die Ausführung bei lokalen Änderungen, sichert die Datenbank
+(`backups/`), aktualisiert den Code nur per Fast-Forward, baut neu, wendet Migrationen an
+und prüft den Zustand; bei einem Fehler zeigt es den Befehl zum Zurücksetzen an.
+Manuelles Äquivalent: `git checkout stable && git pull && docker compose up -d --build`.
+
+**Schaltfläche „Aktualisieren“** (Administration → Version): ein einziger Befehl auf dem
+Server, als der Benutzer, der Docker steuert:
+
+```bash
+scripts/update-agent.sh --install     # richtet den Cron-Job ein; in Produktion: --install -f docker-compose.yml -f docker-compose.production.yml
+```
+
+Die Anwendung führt selbst keinen Befehl aus: Sie hinterlegt eine Anfrage, die der Agent
+ausführt (Sicherung, Aktualisierung, Neubau, Zustandsprüfung). Deinstallation:
+`scripts/update-agent.sh --uninstall`.
+
+**Instanz älter als v1.0.3** (ohne diese Skripte): einmalig manuell aktualisieren, danach
+übernehmen die Schaltfläche und `scripts/update.sh`:
+
+```bash
+git fetch origin && git checkout stable && git pull   # oder auf main bleiben (Beta)
+scripts/update-agent.sh --install                      # optional: aktiviert die Schaltfläche
 docker compose up -d --build
-# Migrationen werden beim Start automatisch angewendet
 ```
 
 ---
@@ -374,7 +402,7 @@ Um ohne Docker zu ACRA beizutragen oder es anzupassen:
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 
 # 2. Abhängigkeiten installieren (erzeugt via postinstall auch den Prisma-Client)

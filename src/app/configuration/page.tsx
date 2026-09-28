@@ -173,6 +173,7 @@ export default function ConfigurationPage() {
   const [kriActive, setKriActive] = useState(false)
   const [reglementaireActive, setReglementaireActive] = useState(false)
   const [secondeLigneActive, setSecondeLigneActive] = useState(true) // défaut true = mode réglementé
+  const [profilsOperationnelsActive, setProfilsOperationnelsActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
@@ -210,7 +211,7 @@ export default function ConfigurationPage() {
         if (Array.isArray(data.referentielsActifs)) setReferentiels(data.referentielsActifs)
         if (Array.isArray(data.strategiesTraitement)) setStrategies(data.strategiesTraitement)
         setQualificationActive(Boolean(data.qualificationActive))
-        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [] })
+        if (data.qualificationQuestionnaire && typeof data.qualificationQuestionnaire === 'object') setQualifQuestionnaire({ overrides: data.qualificationQuestionnaire.overrides ?? {}, custom: data.qualificationQuestionnaire.custom ?? [], riskRules: data.qualificationQuestionnaire.riskRules })
         setQualificationObligatoire(Boolean(data.qualificationObligatoire))
         setConformiteActive(Boolean(data.conformiteActive))
         setConformiteNiveau(data.conformiteNiveau === 'ORGANISATION' ? 'ORGANISATION' : 'ANALYSE')
@@ -235,6 +236,7 @@ export default function ConfigurationPage() {
         setKriActive(Boolean(data.kriActive))
         setReglementaireActive(Boolean(data.reglementaireActive))
         setSecondeLigneActive(data.secondeLigneActive !== false) // défaut true
+        setProfilsOperationnelsActive(Boolean(data.profilsOperationnelsActive))
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
@@ -284,8 +286,9 @@ export default function ConfigurationPage() {
     kriActive: setKriActive,
     reglementaireActive: setReglementaireActive,
     secondeLigneActive: setSecondeLigneActive,
+    profilsOperationnelsActive: setProfilsOperationnelsActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -705,6 +708,10 @@ export default function ConfigurationPage() {
     if (moduleKey === 'reglementaire') {
       if (etat === 'FORCE_ON') setReglementaireActive(true)
       else if (etat === 'FORCE_OFF') setReglementaireActive(false)
+    }
+    if (moduleKey === 'profilsOperationnels') {
+      if (etat === 'FORCE_ON') setProfilsOperationnelsActive(true)
+      else if (etat === 'FORCE_OFF') setProfilsOperationnelsActive(false)
     }
     const res = await fetch('/api/admin/modules-policy', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -1298,6 +1305,7 @@ export default function ConfigurationPage() {
                 { field: 'kriActive' as const, value: kriActive, title: t.features.kriTitle, desc: t.features.kriDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.kri === 'FORCE_ON' || modulesPolicy.kri === 'FORCE_OFF', indent: false, forced: modulesPolicy.kri },
                 { field: 'reglementaireActive' as const, value: reglementaireActive, title: t.features.reglementaireTitle, desc: t.features.reglementaireDesc, href: 'https://www.eiopa.europa.eu/digital-operational-resilience-act-dora_en', disabled: modulesPolicy.reglementaire === 'FORCE_ON' || modulesPolicy.reglementaire === 'FORCE_OFF', indent: false, forced: modulesPolicy.reglementaire },
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
+                { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/profils-operationnels', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'

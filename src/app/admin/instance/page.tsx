@@ -105,6 +105,7 @@ export default function AdminInstancePage() {
     { key: 'kri', label: t.features.kriTitle },
     { key: 'reglementaire', label: t.features.reglementaireTitle },
     { key: 'secondeLigne', label: t.features.secondeLigneTitle },
+    { key: 'profilsOperationnels', label: t.features.profilsOperationnelsTitle },
   ]
 
   if (status === 'loading' || !isAdmin) {

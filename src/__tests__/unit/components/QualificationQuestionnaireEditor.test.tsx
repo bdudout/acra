@@ -2,18 +2,25 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
 
-vi.mock('@/lib/i18n/context', () => ({
+vi.mock('@/lib/i18n/context', async () => {
+  // Traductions réelles pour les sous-composants (éditeur de règles de risques),
+  // libellés courts du test conservés pour l'éditeur de questions.
+  const { fr } = await import('@/lib/i18n/fr')
+  return {
   useTranslation: () => ({
     t: {
       save: 'Enregistrer', saving: '…', delete: 'Supprimer',
+      qualification: fr.qualification, risquesDirects: fr.risquesDirects,
       qualifEditor: {
+        ...fr.qualifEditor,
         sectionTitle: 'Q', sectionDesc: 'd', builtinTitle: 'Natives', builtinHint: 'h', enabledHint: 'a',
         customTitle: 'Custom', customEmpty: 'vide', typeBool: 'Oui/Non', typeChoice: 'Choix',
         newLabel: 'Nouvelle', newLabelPh: 'ph', newType: 'Type', newOptions: 'Options', newOptionsPh: 'ph', add: 'Ajouter', saved: 'Enregistré',
       },
     },
   }),
-}))
+  }
+})
 
 describe('QualificationQuestionnaireEditor', () => {
   it('ajoute une question personnalisée et l’enregistre (PUT)', async () => {
@@ -31,6 +38,18 @@ describe('QualificationQuestionnaireEditor', () => {
       expect(put).toBeTruthy()
       const body = JSON.parse((put![1] as RequestInit).body as string)
       expect(body.qualificationQuestionnaire.custom[0].label).toBe('Budget alloué ?')
+    })
+  })
+
+  it('non-régression : une config sans riskRules garde le catalogue par défaut et ne l’efface pas à l’enregistrement', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    global.fetch = fetchMock as unknown as typeof fetch
+    render(<QualificationQuestionnaireEditor initial={{ overrides: {}, custom: [] }} builtins={[{ id: 'donneesPersonnelles', label: 'Données' }]} />)
+    expect(screen.getAllByRole('button', { name: 'Supprimer la règle' }).length).toBe(6)
+    fireEvent.click(screen.getByText('Enregistrer'))
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(c => (c[1] as RequestInit | undefined)?.method === 'PUT')
+      expect(JSON.parse(String((put![1] as RequestInit).body)).qualificationQuestionnaire.riskRules).toHaveLength(6)
     })
   })
 })

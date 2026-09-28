@@ -52,6 +52,9 @@ import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { regulatoryObligations, reportUsageNotes } from '@/lib/regulatory-guidance'
 import { isClassified } from '@/lib/classification'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import QualificationRisksAtelier5 from '@/components/QualificationRisksAtelier5'
+import { qualificationRiskToAtelier5Risk } from '@/lib/qualification-risks'
+import type { ProposedRisk } from '@/components/QualificationRiskProposal'
 
 interface Props {
   analyseId: string
@@ -252,6 +255,12 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   // Ressource sectorielle : rapport ANSSI « cabinets d'avocats » (issue #57)
   const isJuridique = /juridique|avocat|barreau|legal/i.test(analyse?.secteur || '')
 
+  // Risques proposés/imposés par la qualification : ajoutés à l'état local (persistés
+  // par l'auto-save de l'atelier), rattachés à leur règle d'origine.
+  function addQualificationRisks(list: ProposedRisk[]) {
+    setRisques(prev => [...prev, ...list.map(p => qualificationRiskToAtelier5Risk(p, uid()))])
+  }
+
   function addRisque(fromScenario?: any) {
     const id = uid()
     const defaultSO = fromScenario ?? scenariosOp[0]
@@ -435,6 +444,13 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
               <span>{t.workshop.a5.erRisqueRequired}</span>
             </div>
+          )}
+          {editable && (
+            <QualificationRisksAtelier5
+              analyseId={analyseId}
+              existingRuleIds={risques.flatMap(r => (typeof r.qualificationRuleId === 'string' && r.qualificationRuleId ? [r.qualificationRuleId] : []))}
+              onAdd={addQualificationRisks}
+            />
           )}
           {/* Import depuis scénarios opérationnels (A4 réalisé, y compris en mode Flash) */}
           {scenariosOp.length > 0 && (

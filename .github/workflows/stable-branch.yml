@@ -1,0 +1,34 @@
+name: Align stable branch on published release
+# #185 — Canal « stable » pour les instances auto-hébergées : à la PUBLICATION
+# d'une release stable (non préversion), la branche `stable` avance sur son
+# commit. `git pull` (ou scripts/update.sh stable) sur `stable` = dernière version
+# validée. Avance rapide uniquement : jamais de réécriture d'historique.
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+concurrency:
+  group: stable-branch
+  cancel-in-progress: false
+jobs:
+  stable:
+    if: github.event.release.prerelease == false && github.event.release.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Avancer stable sur la release publiée
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          SHA="$(git rev-list -n1 "refs/tags/$TAG")"
+          PKG="$(git show "$SHA:package.json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).version))')"
+          [ "$PKG" = "${TAG#v}" ] || { echo "package.json ($PKG) ≠ $TAG" >&2; exit 1; }
+          if git rev-parse --verify -q refs/remotes/origin/stable >/dev/null; then
+            git merge-base --is-ancestor refs/remotes/origin/stable "$SHA" || { echo "stable n'est pas un ancêtre de $TAG : refus (pas de réécriture)." >&2; exit 1; }
+          fi
+          git push origin "$SHA:refs/heads/stable"
+          echo "stable → $TAG ($SHA)"

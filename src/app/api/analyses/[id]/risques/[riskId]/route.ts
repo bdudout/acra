@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { sanitizeDirectRisquePatch, recomputeDirectNiveaux, DIRECT_RISK_SELECT } from '@/lib/risque-direct'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +46,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const existing = await riskOfAnalyse(riskId, g.analyse.id)
   if (!existing) return NextResponse.json({ error: 'Risque introuvable' }, { status: 404 })
 
-  const patch = sanitizeDirectRisquePatch(await req.json().catch(() => ({})))
+  // Cotation bornée par l'échelle de l'organisation (4 ou 5 niveaux).
+  const { nbNiveaux } = await getEffectiveScaleConfig(g.analyse.organizationId)
+  const patch = sanitizeDirectRisquePatch(await req.json().catch(() => ({})), nbNiveaux)
   if (patch.nom !== undefined && patch.nom.trim() === '') {
     return NextResponse.json({ error: 'intitule_requis' }, { status: 400 })
   }

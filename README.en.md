@@ -82,6 +82,7 @@ ACRA changes that: it is an **interactive methodological assistant** that guides
 ### 👥 Collaboration & governance
 
 - **12-role RBAC** covering the **3 lines of defense**: SUPER_ADMIN · ADMIN · CISO · RISK_MANAGER · BUSINESS_MANAGEMENT · ANALYST · READER · **CONTROLLER** (permanent control) · **COMPLIANCE** · **DPO** (data protection) · **AUDITOR** (3rd line) · **OPERATIONAL** (1st line)
+- **US/UK operational profiles** (optional module, off by default): current/target self-assessment across the 22 **NIST CSF 2.0** categories (Tiers 1–4) and the 14 **NCSC CAF v4.0** principles (Basic / Enhanced Profile), per-item history, gap promotion to the action plan without duplicates, CSV export
 - **Multi-organisation**: organisation tree with hierarchical scopes (node / subtree); an ADMIN manages **only the accounts of their organisation**, a SUPER_ADMIN manages the instance
 - Approval workflow: submission → review → approval (CISO or Risk Manager), with **separation of duties** — an approver cannot approve **their own** analysis (four-eyes principle) — and **self-validation** for single-user organisations (solo practices, where four-eyes is impossible)
 - **Residual risk acceptance** by **Business management** (dedicated read-only role), distinct from analysis validation (deliverable acceptance)
@@ -204,7 +205,7 @@ dependencies and the Prisma client, and applies migrations automatically on star
 (the `migrator` service).
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 make setup        # generates .env + random secrets (interactive)
 docker compose up -d
@@ -248,7 +249,7 @@ docker compose exec app npx prisma db seed
 ### Step 1 — Clone the repository
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 ```
 
@@ -338,10 +339,36 @@ docker compose exec app npx prisma migrate deploy
 
 ### Updating
 
+Two channels:
+- **stable** — latest validated version (`stable` branch, aligned with the latest published release);
+- **beta** — latest validated version + later changes (`main` branch, version `x.y.z-beta.n`).
+
 ```bash
-git pull origin main
+scripts/update.sh stable   # or: scripts/update.sh beta
+```
+
+The script refuses to run with local changes, backs up the database (`backups/`),
+fast-forwards the code only, rebuilds, applies migrations and checks health; on failure
+it prints the rollback command.
+Manual equivalent: `git checkout stable && git pull && docker compose up -d --build`.
+
+**“Update” button** (Administration → Version): a single command on the server, run
+as the user who manages Docker:
+
+```bash
+scripts/update-agent.sh --install     # adds the cron job; in production: --install -f docker-compose.yml -f docker-compose.production.yml
+```
+
+The application runs no command itself: it drops a request that the agent executes
+(backup, update, rebuild, health check). Uninstall: `scripts/update-agent.sh --uninstall`.
+
+**Instance older than v1.0.3** (without these scripts): update manually once, then the
+button and `scripts/update.sh` take over:
+
+```bash
+git fetch origin && git checkout stable && git pull   # or stay on main for beta
+scripts/update-agent.sh --install                      # optional: enables the button
 docker compose up -d --build
-# Migrations are applied automatically on startup
 ```
 
 ---
@@ -374,7 +401,7 @@ To contribute to or customize ACRA without Docker:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 
 # 2. Install dependencies (also generates the Prisma client via postinstall)

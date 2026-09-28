@@ -48,6 +48,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 - **Guidage sectoriel & conformité** : exemples métier adaptés au secteur et au sous-secteur, recommandation de référentiels, détection du statut réglementaire (NIS2, OIV…) — [voir le détail](#-guidage-sectoriel--conformité)
 - **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
 - **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
+- **Profils opérationnels US/UK** (module optionnel, désactivé par défaut) : auto-évaluation état courant / état cible sur les 22 catégories **NIST CSF 2.0** (Tiers 1–4) et les 14 principes **NCSC CAF v4.0** (Basic / Enhanced Profile), historique par point, promotion des écarts en plan d'action sans doublon, export CSV
 - **Multi-organisation hiérarchique** : cabinets de conseil (clients isolés), grands groupes (vision entité + consolidée), multi-sites, filiales — dans une seule instance — [voir le détail](#-multi-organisation-hiérarchique)
 - **100% auto-hébergé** : vos données ne quittent jamais votre infrastructure
 
@@ -267,7 +268,7 @@ embarque toutes les dépendances et le client Prisma, et applique les migrations
 automatiquement au démarrage (service `migrator`).
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 make setup        # génère .env + secrets aléatoires (interactif)
 docker compose up -d
@@ -337,7 +338,7 @@ avant la mise en production pour démarrer sur une instance vierge.
 ### Étape 1 — Cloner le dépôt
 
 ```bash
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 ```
 
@@ -470,10 +471,37 @@ docker compose exec app npx prisma migrate deploy
 
 ### Mise à jour
 
+Deux canaux :
+- **stable** — dernière version validée (branche `stable`, alignée sur la dernière release publiée) ;
+- **bêta** — dernière version validée + évolutions suivantes (branche `main`, version `x.y.z-beta.n`).
+
 ```bash
-git pull origin main
+scripts/update.sh stable   # ou : scripts/update.sh beta
+```
+
+Le script refuse de s'exécuter s'il y a des modifications locales, sauvegarde la base
+(`backups/`), met à jour le code en avance rapide uniquement, reconstruit, applique les
+migrations et vérifie la santé ; en cas d'échec, il affiche la commande de retour arrière.
+Équivalent manuel : `git checkout stable && git pull && docker compose up -d --build`.
+
+**Bouton « Mettre à jour »** (Administration → Version) : une seule commande sur le
+serveur, avec l'utilisateur qui pilote Docker :
+
+```bash
+scripts/update-agent.sh --install     # ajoute la tâche cron ; en production : --install -f docker-compose.yml -f docker-compose.production.yml
+```
+
+L'application ne lance aucune commande : elle dépose une demande que l'agent exécute
+(sauvegarde, mise à jour, reconstruction, contrôle de santé). Désinstallation :
+`scripts/update-agent.sh --uninstall`.
+
+**Instance antérieure à la v1.0.3** (sans ces scripts) : une mise à jour manuelle, une
+seule fois, puis le bouton et `scripts/update.sh` prennent le relais :
+
+```bash
+git fetch origin && git checkout stable && git pull   # ou rester sur main pour la bêta
+scripts/update-agent.sh --install                      # facultatif : active le bouton
 docker compose up -d --build
-# Les migrations sont appliquées automatiquement au démarrage
 ```
 
 ---
@@ -506,7 +534,7 @@ Pour contribuer ou personnaliser ACRA sans Docker :
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/votre-org/acra.git
+git clone https://github.com/bdudout/acra.git
 cd acra
 
 # 2. Installer les dépendances (génère aussi le client Prisma via postinstall)
@@ -830,7 +858,7 @@ ACRA adapte la démarche au **contexte réglementaire et sectoriel** de l'organi
 
 **Module Conformité (optionnel, activable par organisation)**
 
-- **Qualification** de l'analyse (criticité, données personnelles, exposition, RSSI interne…) produisant des orientations ;
+- **Qualification** activée par défaut pour toute méthode d’analyse : criticité, données personnelles, exposition, RSSI interne… produisent des orientations et une sélection explicite de risques pré-cotés à importer ; le catalogue de règles cyber est administrable par organisation et extensible aux risques projet, opérationnels et fraude ;
 - **Statut réglementaire** : détection proactive du régime **NIS2** (entité *essentielle* / *importante* selon le secteur), marqueurs **OSE / EEI / OIV** avec sélection de la **filière OIV** (12 filières SAIV), signalement du **cumul OIV (LPM) + EEI (NIS2)** et du fait que **DORA prime sur NIS2** pour la finance ;
 - **obligations contextualisées** (enregistrement, notification d'incident au CSIRT/ANSSI — ou au **CERT Santé/ANS** pour la santé, exercice de crise SIIV…) ;
 - **classification de l'information** (marqueur **IGI-1300** : NP / DR / Secret / Très Secret) ;
