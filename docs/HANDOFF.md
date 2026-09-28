@@ -6,6 +6,36 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-28 (7) — Claude Code : P4 terminé, #185 corrigé (v1.0.3), profils US/UK lot 1
+
+**Branche** : `feat/historical-excel-import`. Commits `fd4c9ab` (P4), `93b6148` (#185 +
+version 1.0.3), `640f69c` (profils US/UK). Poussée pour la PR de la v1.0.3.
+
+- **P4** : boutons d'export par méthode (`ExportButtons` i18n, `formats`), libellé
+  d'appétit WinAnsi (« ≤ » s'affichait « d » dans le PDF).
+- **#185 mises à jour** : `compareVersions` SemVer complet (préversions), canal
+  stable/bêta (`describeVersion`), `scripts/update.sh [stable|beta]` (sauvegarde DB,
+  avance rapide seule, santé, retour arrière) et agent hôte `scripts/update-agent.sh`
+  (bouton « Mettre à jour » : l'app dépose une demande, n'exécute rien). Branche
+  `stable` avancée par `.github/workflows/stable-branch.yml` à la publication d'une
+  release ; `release.yml` refuse un tag ≠ version de `package.json`.
+- **Profils US/UK (reprise Codex)** : catalogues officiels (22 catégories CSF 2.0,
+  14 principes CAF v4.0), table `OperationalProfile` + migration
+  `20260929110000` (reprend puis supprime les lignes `OP_PROFILE:` de `Conformite`),
+  historique par point, promotion sans doublon (lien `OPERATIONAL_PROFILE`), 404 si
+  module inactif, export CSV. Spec : § 9 « Challenge ».
+- **Vérifié** : `tsc` 0 · `npm test` **2190/2190** · `npm run i18n:check` vert ·
+  `npm run build` OK · navigateur :3005 (org « Organisation principale », module
+  activé localement) : saisie GV.OC + Tier 3 enregistrée, action créée puis 2ᵉ clic
+  → « action ouverte existe déjà », action visible dans /plans-actions, export CSV OK.
+- **Non vérifié** : parcours REST/LDAP réels de Codex (tour 6) — pas d'annuaire de
+  recette ici ; lots 2–3 US/UK (résilience UK, quantification) non commencés.
+- **Prochain pas** : après merge, publier la release v1.0.3 (workflow « Prepare
+  versioned release » puis publication) → `stable` créée ; puis passer `main` en
+  `1.0.4-beta.1`.
+
+---
+
 ## 2026-09-28 (6) — Codex : connecteurs d’entités REST/LDAP, persistants et explicites
 
 **Branche** : `feat/historical-excel-import`. Commit `dbf4ec4` (non poussé).
