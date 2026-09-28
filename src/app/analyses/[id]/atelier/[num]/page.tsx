@@ -23,6 +23,7 @@ import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { ownerSuggestions } from '@/lib/risque-proprietaire'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { getFrameworkControles } from '@/lib/frameworks-data'
 import { sanitizeConformite, deriveNonConformites, marquerDerogations, type ConformiteStatut } from '@/lib/conformite'
@@ -122,7 +123,14 @@ export default async function AtelierPage({
       : []
     // Critères de l'organisation (P1/P2) : même échelle que l'EBIOS RM + appétit au risque.
     const directScale = await getEffectiveScaleConfig((analyse as { organizationId?: string | null }).organizationId ?? null)
-    const directAppetit = (await getOrgConfig((analyse as { organizationId?: string | null }).organizationId ?? null)).appetitRisque
+    const directOrgId = (analyse as { organizationId?: string | null }).organizationId ?? null
+    const directOrgConfig = await getOrgConfig(directOrgId)
+    const directAppetit = directOrgConfig.appetitRisque
+    // Propriétaires suggérés (P3) : NOMS des membres de l'organisation (pas les e-mails) + entités.
+    const directMembers = directOrgId
+      ? await prisma.orgMembership.findMany({ where: { organizationId: directOrgId }, select: { user: { select: { name: true } } }, take: 500 })
+      : []
+    const directOwnerSuggestions = ownerSuggestions(directMembers.map(mb => mb.user.name), directOrgConfig.entitesMesures)
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -147,7 +155,7 @@ export default async function AtelierPage({
             guidanceTitle={t.phaseGuidance.title} guidanceHide={t.phaseGuidance.hide} guidanceShow={t.phaseGuidance.show}
             risqueSuggestions={risqueSuggestions}
             withVulnerabilites={methode === 'ISO_27005'}
-            scale={directScale} appetit={directAppetit}
+            scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}

@@ -4,7 +4,7 @@ import RisquesDirects from '@/components/RisquesDirects'
 
 const M = {
   pageTitle: 'Appréciation', pageSubtitle: 'sous', title: 'Risques', subtitle: 'Ajoutez…',
-  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V', colNiveauEvalue: 'Niveau évalué (actuel)', colCritere: 'Critère', basisAppetit: 'Appétit : acceptable jusqu’à {seuil}', basisEchelle: 'Échelle : palier « {palier} »', evalHint: 'Évalué au niveau actuel.',
+  colNom: 'Risque', nomPlaceholder: 'Intitulé', colGravite: 'Gravité', colVraisemblance: 'Vraisemblance', abbrGravite: 'G', abbrVraisemblance: 'V', colProprietaire: 'Propriétaire', proprietairePlaceholder: 'Propriétaire du risque', filterOwnerAll: 'Tous', filterOwnerNone: 'Sans propriétaire', ownerMissing: 'Propriétaire non désigné', colNiveauEvalue: 'Niveau évalué (actuel)', colCritere: 'Critère', basisAppetit: 'Appétit : acceptable jusqu’à {seuil}', basisEchelle: 'Échelle : palier « {palier} »', evalHint: 'Évalué au niveau actuel.',
   colNiveau: 'Niveau', colStrategie: 'Traitement', add: 'Ajouter', empty: 'Aucun risque pour l\'instant.',
   niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)',
   delete: 'Supprimer', deleteConfirm: 'Supprimer ?', tier_faible: 'Faible', tier_modere: 'Modéré',
@@ -268,5 +268,33 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Niveau' })).getByText(M.decisionTreat)).toBeInTheDocument()
+  })
+
+  it('P3 — saisie du propriétaire (validée à la sortie du champ) → PATCH', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable ownerSuggestions={['DSI', 'Alice Martin']} />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    const input = screen.getByRole('combobox', { name: 'Propriétaire — Panne SI' }) as HTMLInputElement
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', proprietaire: 'DSI' } }))
+    fireEvent.change(input, { target: { value: 'DSI' } })
+    fireEvent.blur(input)
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
+      expect(patch && JSON.parse(patch[1].body)).toEqual({ proprietaire: 'DSI' })
+    })
+  })
+
+  it('P3 — filtre « Sans propriétaire » et colonne propriétaire en évaluation', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE', proprietaire: 'DSI' },
+      { id: 'r2', nom: 'Fuite', gravite: 2, vraisemblance: 2, niveauRisque: 4, strategie: 'REDUIRE', proprietaire: null },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable={false} mode="review" />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Propriétaire' })).toBeInTheDocument()
+    expect(screen.getByText('Propriétaire non désigné')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Propriétaire'), { target: { value: '__none__' } })
+    expect(screen.queryByText('Panne SI')).toBeNull()
+    expect(screen.getByText('Fuite')).toBeInTheDocument()
   })
 })

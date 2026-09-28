@@ -16,6 +16,7 @@ import RiskMesures from '@/components/RiskMesures'
 import RiskPlans from '@/components/RiskPlans'
 import RiskVulnerabilites from '@/components/RiskVulnerabilites'
 import type { RisqueExemple } from '@/lib/risque-exemples'
+import { filterByOwner, ownerFilterOptions, OWNER_NONE } from '@/lib/risque-proprietaire'
 
 interface RisqueRow {
   id: string; nom: string; description?: string | null
@@ -25,6 +26,7 @@ interface RisqueRow {
   graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null; niveauResiduel?: number | null
   vulnerabilites?: { description: string }[] | null
   taxonomieCode?: string | null
+  proprietaire?: string | null
   mesuresCount?: number
   plansCount?: number
 }
@@ -47,12 +49,14 @@ const TIER_CLASS: Record<string, string> = {
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 export type TreatmentSections = 'mesures' | 'plans' | 'both'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit }: {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit, ownerSuggestions = [] }: {
   analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections
   /** Échelle de l'organisation (4 ou 5 niveaux, paliers, matrice) — défaut EBIOS RM 4 niveaux. */
   scale?: Partial<ScaleConfig> | null
   /** Appétit au risque de l'organisation (critère d'acceptation de l'évaluation). */
   appetit?: AppetitConfig | null
+  /** Suggestions de propriétaires : noms des membres de l'org + entités (P3). */
+  ownerSuggestions?: string[]
 }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
@@ -94,6 +98,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [busy, setBusy] = useState(false)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [detailsOpenId, setDetailsOpenId] = useState<string | null>(null)
+  // Filtre par propriétaire (P3) : '' = tous, OWNER_NONE = sans propriétaire.
+  const [ownerFilter, setOwnerFilter] = useState('')
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -239,8 +245,19 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const shownSuggestions = (suggestions ?? []).filter(s => !existingNames.has(s.intitule.trim().toLowerCase()))
 
   // ── Mode review (Évaluation) : priorisation lecture seule + décision d'acceptation.
-  const prioritized = prioritiseRisks(rows, evalCtx)
-  const counts = countRiskDecisions(rows, evalCtx)
+  const shownRows = filterByOwner(rows, ownerFilter)
+  const ownerOptions = ownerFilterOptions(rows)
+  const prioritized = prioritiseRisks(shownRows, evalCtx)
+  const counts = countRiskDecisions(shownRows, evalCtx)
+  const datalistId = `owners-${analyseId}`
+  // Propriétaire éditable sous l'intitulé (ISO 27005 §7.2.2 : dès l'identification).
+  const ownerField = (r: RisqueRow) => editable
+    ? <input key={`${r.id}-${r.proprietaire ?? ''}`} list={datalistId} defaultValue={r.proprietaire ?? ''} placeholder={m.proprietairePlaceholder}
+        aria-label={`${m.colProprietaire} — ${r.nom}`}
+        onBlur={e => { const v = e.target.value.trim(); if (v !== (r.proprietaire ?? '')) maj(r.id, { proprietaire: v || null }) }}
+        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+        className="mt-1 w-full max-w-[16rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-xs font-normal text-gray-600 placeholder:italic placeholder:text-gray-400 hover:border-gray-300 focus:border-ebios-400 focus:bg-white dark:text-gray-300 dark:focus:bg-gray-900" />
+    : <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-gray-400">{r.proprietaire ?? <span className="italic">{m.ownerMissing}</span>}</span>
 
   return (
     <section className="card p-6">
@@ -289,6 +306,19 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
         </div>
       )}
 
+      {rows.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <label htmlFor={`${datalistId}-filter`}>{m.colProprietaire}</label>
+          <select id={`${datalistId}-filter`} value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
+            className="rounded border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
+            <option value="">{m.filterOwnerAll}</option>
+            <option value={OWNER_NONE}>{m.filterOwnerNone}</option>
+            {ownerOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          {ownerFilter && <span>{shownRows.length} / {rows.length}</span>}
+        </div>
+      )}
+      <datalist id={datalistId}>{ownerSuggestions.map(o => <option key={o} value={o} />)}</datalist>
       {mode === 'review' ? (
         loading ? <p className="text-xs text-gray-400">…</p>
         : rows.length === 0 ? <p className="text-xs text-gray-400 italic">{m.empty}</p>
@@ -302,6 +332,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   <th className="px-3 py-2">{m.colNom}</th>
+                  <th className="px-3 py-2">{m.colProprietaire}</th>
                   <th className="px-3 py-2">{m.colNiveauEvalue}</th>
                   <th className="px-3 py-2">{m.colDecision}</th>
                   <th className="px-3 py-2">{m.colCritere}</th>
@@ -310,6 +341,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                   {prioritized.map(({ row: r, evaluation: e }) => (
                     <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
+                      <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{r.proprietaire ?? <span className="italic text-amber-700 dark:text-amber-300">{m.ownerMissing}</span>}</td>
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
                           {seuilDot(e.seuil.couleur)}<span className="font-semibold tabular-nums">{e.niveau}</span> · {e.seuil.label}
@@ -342,7 +374,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 <th className="px-3 py-2" />
               </tr></thead>
               <tbody className="block space-y-3 md:table-row-group md:space-y-0">
-                {rows.map(r => [
+                {shownRows.map(r => [
                   <tr key={r.id} className={`block rounded-lg border border-gray-200 dark:border-gray-700 md:table-row md:rounded-none md:border-0 md:border-b md:border-gray-100 md:dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
                     <td className="block px-3 py-2 font-medium text-gray-800 dark:text-gray-100 md:table-cell">
                       <div className="flex items-center gap-2">
@@ -356,7 +388,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                             : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
                               : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
                         </button>}
-                        <span className="min-w-0 flex-1 break-words">{r.nom}</span>
+                        <span className="min-w-0 flex-1 break-words">{r.nom}{ownerField(r)}</span>
                         {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1 md:hidden" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                       </div>
                       {r.id === justAddedId && (

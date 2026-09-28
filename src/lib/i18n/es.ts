@@ -1462,6 +1462,7 @@ export const es: Translations = {
     colNiveau: 'Nivel',
     colNiveauEvalue: 'Nivel evaluado (actual)', colCritere: 'Criterio', basisAppetit: 'Apetito: aceptable hasta {seuil}', basisEchelle: 'Escala de la organización: franja «{palier}»',
     evalHint: 'Cada riesgo se evalúa en su nivel actual (con las medidas existentes) y se compara con el apetito de riesgo de la organización o, en su defecto, con las franjas de su escala.',
+    colProprietaire: 'Propietario', proprietairePlaceholder: 'Propietario del riesgo (persona o entidad)', filterOwnerAll: 'Todos', filterOwnerNone: 'Sin propietario', ownerMissing: 'Propietario no designado',
     abbrGravite: 'G', abbrVraisemblance: 'P',
     niveauBrut: 'Bruto', niveauActuel: 'Actual', niveauResiduel: 'Residual', colResiduelCible: 'Residual (objetivo)', colActuelAvecMesures: 'Actual (con medidas)', mesuresTitle: 'Medidas de seguridad existentes', mesuresEmpty: 'Ninguna medida todavía.', mesuresNomPlaceholder: 'Nombre de la medida', mesuresEfficacite: 'Eficacia', mesuresStatut: 'Estado', mesuresStatuts: { A_FAIRE: 'Por hacer', EN_COURS: 'En curso', REALISE: 'Realizado', REPORTE: 'Aplazado' }, mesuresEcheance: 'Fecha límite', mesuresTitrePlan: 'Medidas y plan de acción',
     colStrategie: 'Tratamiento',

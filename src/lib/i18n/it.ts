@@ -1462,6 +1462,7 @@ export const it: Translations = {
     colNiveau: 'Livello',
     colNiveauEvalue: 'Livello valutato (attuale)', colCritere: 'Criterio', basisAppetit: 'Propensione: accettabile fino a {seuil}', basisEchelle: 'Scala dell’organizzazione: fascia «{palier}»',
     evalHint: 'Ogni rischio è valutato al suo livello attuale (con le misure esistenti) e confrontato con la propensione al rischio dell’organizzazione o, in mancanza, con le fasce della sua scala.',
+    colProprietaire: 'Titolare', proprietairePlaceholder: 'Titolare del rischio (persona o entità)', filterOwnerAll: 'Tutti', filterOwnerNone: 'Senza titolare', ownerMissing: 'Titolare non designato',
     abbrGravite: 'G', abbrVraisemblance: 'V',
     niveauBrut: 'Lordo', niveauActuel: 'Attuale', niveauResiduel: 'Residuo', colResiduelCible: 'Residuo (obiettivo)', colActuelAvecMesures: 'Attuale (con misure)', mesuresTitle: 'Misure di sicurezza esistenti', mesuresEmpty: 'Nessuna misura per ora.', mesuresNomPlaceholder: 'Nome della misura', mesuresEfficacite: 'Efficacia', mesuresStatut: 'Stato', mesuresStatuts: { A_FAIRE: 'Da fare', EN_COURS: 'In corso', REALISE: 'Realizzato', REPORTE: 'Rinviato' }, mesuresEcheance: 'Scadenza', mesuresTitrePlan: 'Misure e piano d’azione',
     colStrategie: 'Trattamento',

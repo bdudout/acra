@@ -1531,6 +1531,9 @@ model Risque {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Propriétaire du risque : personne ou entité responsable (ISO/IEC 27005 §7.2.2).
+  proprietaire String?
+
   // Règle de qualification à l'origine du risque (risques proposés/imposés par le
   // questionnaire). Unique par analyse : une règle ne crée jamais deux risques.
   qualificationRuleId String?

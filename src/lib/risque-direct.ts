@@ -6,6 +6,7 @@
 
 import { clampInt } from '@/lib/import-sanitize'
 import { computeRiskScore } from '@/lib/risk-scale'
+import { sanitizeProprietaire } from '@/lib/risque-proprietaire'
 
 /** Stratégies de traitement valides (enum Prisma StrategieTraitement). */
 export const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
@@ -61,6 +62,8 @@ export interface DirectRisquePayload {
   description?: string
   /** Vulnérabilités identifiées (ISO 27005) — liste simple, optionnelle. */
   vulnerabilites?: RisqueVulnerabilite[]
+  /** Propriétaire du risque (personne ou entité) — ISO 27005 §7.2.2. null = non désigné. */
+  proprietaire?: string | null
 }
 
 /**
@@ -96,6 +99,7 @@ export function sanitizeDirectRisque(input: unknown, maxNiveau: number = 4): Dir
     strategie,
     ...(o.description != null ? { description: String(o.description).slice(0, 2000) } : {}),
     ...('vulnerabilites' in o ? { vulnerabilites: sanitizeVulnerabilites(o.vulnerabilites) } : {}),
+    ...('proprietaire' in o ? { proprietaire: sanitizeProprietaire(o.proprietaire) } : {}),
   }
 }
 
@@ -130,6 +134,7 @@ export function sanitizeDirectRisquePatch(input: unknown, maxNiveau: number = 4)
   if ('graviteResiduelle' in o) out.graviteResiduelle = clampInt(o.graviteResiduelle, 1, max, 2) as number
   if ('vraisemblanceResiduelle' in o) out.vraisemblanceResiduelle = clampInt(o.vraisemblanceResiduelle, 1, max, 2) as number
   if ('vulnerabilites' in o) out.vulnerabilites = sanitizeVulnerabilites(o.vulnerabilites)
+  if ('proprietaire' in o) out.proprietaire = sanitizeProprietaire(o.proprietaire)
   return out
 }
 
@@ -144,7 +149,7 @@ export function directNiveau(gravite: number, vraisemblance: number): number {
  * peut exporter que ses handlers HTTP.
  */
 export const DIRECT_RISK_SELECT = {
-  id: true, nom: true, description: true, strategie: true, taxonomieCode: true,
+  id: true, nom: true, description: true, strategie: true, taxonomieCode: true, proprietaire: true,
   gravite: true, vraisemblance: true, niveauRisque: true,
   graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
   graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,

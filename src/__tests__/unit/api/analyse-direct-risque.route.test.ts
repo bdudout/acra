@@ -147,4 +147,11 @@ describe('PATCH/DELETE /risques/[riskId]', () => {
     await POST(req({ nom: 'Arrêt de production', gravite: 5, vraisemblance: 1 }), P)
     expect(argOf(risqueCreate).data).toMatchObject({ gravite: 4, niveauRisque: 4 })
   })
+
+  it('P3 — propriétaire enregistré à la création et effaçable en mise à jour', async () => {
+    await POST(req({ nom: 'Fuite de données', gravite: 3, vraisemblance: 2, proprietaire: '  DSI  ' }), P)
+    expect(argOf(risqueCreate).data).toMatchObject({ proprietaire: 'DSI' })
+    await PATCH(req({ proprietaire: '' }), PI)
+    expect(argOf(risqueUpdate).data).toMatchObject({ proprietaire: null })
+  })
 })

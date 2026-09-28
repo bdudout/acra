@@ -1486,6 +1486,7 @@ export const fr = {
     colNiveau: 'Niveau',
     colNiveauEvalue: 'Niveau évalué (actuel)', colCritere: 'Critère', basisAppetit: 'Appétit : acceptable jusqu’à {seuil}', basisEchelle: 'Échelle de l’organisation : palier « {palier} »',
     evalHint: 'Chaque risque est évalué à son niveau actuel (avec les mesures existantes) et comparé à l’appétit au risque de l’organisation ; à défaut, aux paliers de son échelle.',
+    colProprietaire: 'Propriétaire', proprietairePlaceholder: 'Propriétaire du risque (personne ou entité)', filterOwnerAll: 'Tous', filterOwnerNone: 'Sans propriétaire', ownerMissing: 'Propriétaire non désigné',
     abbrGravite: 'G', abbrVraisemblance: 'V',
     niveauBrut: 'Brut', niveauActuel: 'Actuel', niveauResiduel: 'Résiduel', colResiduelCible: 'Résiduel (cible)', colActuelAvecMesures: 'Actuel (avec mesures)', mesuresTitle: 'Mesures de sécurité existantes', mesuresEmpty: 'Aucune mesure pour l’instant.', mesuresNomPlaceholder: 'Intitulé de la mesure', mesuresEfficacite: 'Efficacité', mesuresStatut: 'Statut', mesuresStatuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', REALISE: 'Réalisé', REPORTE: 'Reporté' }, mesuresEcheance: 'Échéance', mesuresTitrePlan: 'Mesures & plan d’action',
     colStrategie: 'Traitement',

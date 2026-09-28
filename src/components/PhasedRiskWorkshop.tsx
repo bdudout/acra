@@ -35,7 +35,7 @@ export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
   contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
-  withVulnerabilites, scale, appetit,
+  withVulnerabilites, scale, appetit, ownerSuggestions,
 }: {
   analyseId: string
   editable: boolean
@@ -43,6 +43,8 @@ export default function PhasedRiskWorkshop({
   scale?: Partial<ScaleConfig> | null
   /** Appétit au risque de l'organisation (critère d'acceptation) — P2 de l'audit. */
   appetit?: AppetitConfig | null
+  /** Suggestions de propriétaires (membres de l'org + entités) — P3 de l'audit. */
+  ownerSuggestions?: string[]
   /** Active la saisie des vulnérabilités (ISO 27005) en phase d'identification. */
   withVulnerabilites?: boolean
   phases: WorkshopPhase[]
@@ -131,7 +133,7 @@ export default function PhasedRiskWorkshop({
           <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}
-            scale={scale} appetit={appetit}
+            scale={scale} appetit={appetit} ownerSuggestions={ownerSuggestions}
             treatmentSections={withVulnerabilites && phase.key === 'analyse' ? 'mesures'
               : withVulnerabilites && phase.key === 'traitement' ? 'plans' : undefined}
             suggestions={phase.type !== 'review' ? risqueSuggestions : undefined} />
