@@ -76,6 +76,49 @@ type StoredImportResponse = { analyseId: string; nom: string; created: { risks: 
 function replayResult(receipt: { id: string; response: unknown }) { return { replayed: true, importId: receipt.id, ...(receipt.response as StoredImportResponse) } }
 function isIdempotencyConflict(error: unknown) { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' }
 
+/**
+ * Délai des transactions d'import : jusqu'à 4 × IMPORT_MAX_ITEMS écritures
+ * séquentielles (le défaut Prisma de 5 s annulerait un gros classeur).
+ */
+const IMPORT_TX_OPTIONS = { timeout: 60_000, maxWait: 10_000 } as const
+
+/**
+ * Écrit le contenu d'un paquet (risques + vulnérabilités, mesures, plans d'action
+ * et liens) dans une analyse, au sein d'une transaction. Source UNIQUE pour
+ * l'import (nouvelle analyse) et l'application MCP (analyse existante).
+ * Contrat des liens `RISQUE_ANALYSE` : targetId = Risque.id ET ref = analyseId
+ * (sans ref, le plan est invisible dans les compteurs du registre et son lien
+ * profond est cassé).
+ */
+async function writeImportContent(tx: Prisma.TransactionClient, input: AnalysisImportRequest, ctx: { analyseId: string; organizationId: string; userId: string }) {
+  const risks = new Map<string, string>()
+  for (const row of input.risks) {
+    const gravity = clampInt(row.gravity, 1, 4, 2) as number
+    const likelihood = clampInt(row.likelihood, 1, 4, 2) as number
+    const vulnerabilities = input.vulnerabilities.filter(vulnerability => vulnerability.riskExternalId === row.externalId).map(vulnerability => ({ description: vulnerability.title, detail: vulnerability.description }))
+    const risk = await tx.risque.create({ data: { analyseId: ctx.analyseId, nom: row.title, description: row.description, gravite: gravity, vraisemblance: likelihood, niveauRisque: gravity * likelihood, strategie: enumValue(row.strategy, ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'], 'REDUIRE') as 'REDUIRE', vulnerabilites: vulnerabilities }, select: { id: true } })
+    if (row.externalId) risks.set(row.externalId, risk.id)
+  }
+  for (const row of input.measures) await tx.mesure.create({ data: { analyseId: ctx.analyseId, risqueId: row.riskExternalId ? risks.get(row.riskExternalId) : null, nom: row.title, description: row.description, statut: enumValue(row.status, ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'], 'REALISE') as 'REALISE', responsable: row.responsible, echeance: optionalDate(row.dueDate) } })
+  const actions = new Map<string, string>()
+  const linked = new Set<string>()
+  const link = async (planActionId: string, riskId: string, label?: string) => {
+    if (linked.has(`${planActionId}:${riskId}`)) return
+    await tx.planActionLien.create({ data: { planActionId, type: 'RISQUE_ANALYSE', targetId: riskId, ref: ctx.analyseId, ...(label ? { label } : {}) } })
+    linked.add(`${planActionId}:${riskId}`)
+  }
+  for (const row of input.actions) {
+    const riskId = row.riskExternalId ? risks.get(row.riskExternalId) : undefined
+    const action = await tx.planAction.create({ data: { organizationId: ctx.organizationId, titre: row.title, description: row.description, porteur: row.responsible, echeance: optionalDate(row.dueDate), createdById: ctx.userId }, select: { id: true } })
+    if (riskId) await link(action.id, riskId, row.title)
+    if (row.externalId) actions.set(row.externalId, action.id)
+  }
+  for (const l of input.links) {
+    const riskId = risks.get(l.riskExternalId); const actionId = actions.get(l.actionExternalId)
+    if (riskId && actionId) await link(actionId, riskId)
+  }
+}
+
 /** Écrit une analyse historique et son reçu d'idempotence dans une seule transaction. */
 export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: { organizationId: string; userId: string; source: 'API_V2' | 'EXCEL_WEB' | 'MCP' }) {
   const payloadHash = analysisImportPayloadHash(input)
@@ -90,37 +133,11 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
   try {
     const response = await prisma.$transaction(async tx => {
     const analyse = await tx.analyse.create({ data: { userId: ctx.userId, organizationId: ctx.organizationId, nom: input.analysis.title, description: input.analysis.description, methode, statut: 'EN_COURS', atelierCourant: 5, cadrage: { create: {} } }, select: { id: true, nom: true } })
-    const risks = new Map<string, string>()
-    for (const row of input.risks) {
-      const gravity = clampInt(row.gravity, 1, 4, 2) as number
-      const likelihood = clampInt(row.likelihood, 1, 4, 2) as number
-      const vulnerabilities = input.vulnerabilities.filter(vulnerability => vulnerability.riskExternalId === row.externalId).map(vulnerability => ({ description: vulnerability.title, detail: vulnerability.description }))
-      const risk = await tx.risque.create({ data: { analyseId: analyse.id, nom: row.title, description: row.description, gravite: gravity, vraisemblance: likelihood, niveauRisque: gravity * likelihood, strategie: enumValue(row.strategy, ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'], 'REDUIRE') as 'REDUIRE', vulnerabilites: vulnerabilities }, select: { id: true } })
-      if (row.externalId) risks.set(row.externalId, risk.id)
-    }
-    for (const row of input.measures) await tx.mesure.create({ data: { analyseId: analyse.id, risqueId: row.riskExternalId ? risks.get(row.riskExternalId) : null, nom: row.title, description: row.description, statut: enumValue(row.status, ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'], 'REALISE') as 'REALISE', responsable: row.responsible, echeance: optionalDate(row.dueDate) } })
-    const actions = new Map<string, string>()
-    const linkedActionRisks = new Set<string>()
-    for (const row of input.actions) {
-      const riskId = row.riskExternalId ? risks.get(row.riskExternalId) : undefined
-      const action = await tx.planAction.create({ data: { organizationId: ctx.organizationId, titre: row.title, description: row.description, porteur: row.responsible, echeance: optionalDate(row.dueDate), createdById: ctx.userId }, select: { id: true } })
-      if (riskId) {
-        await tx.planActionLien.create({ data: { planActionId: action.id, type: 'RISQUE_ANALYSE', targetId: riskId, label: row.title } })
-        linkedActionRisks.add(`${action.id}:${riskId}`)
-      }
-      if (row.externalId) actions.set(row.externalId, action.id)
-    }
-    for (const link of input.links) {
-      const riskId = risks.get(link.riskExternalId); const actionId = actions.get(link.actionExternalId)
-      if (riskId && actionId && !linkedActionRisks.has(`${actionId}:${riskId}`)) {
-        await tx.planActionLien.create({ data: { planActionId: actionId, type: 'RISQUE_ANALYSE', targetId: riskId } })
-        linkedActionRisks.add(`${actionId}:${riskId}`)
-      }
-    }
+    await writeImportContent(tx, input, { analyseId: analyse.id, organizationId: ctx.organizationId, userId: ctx.userId })
     const data = { analyseId: analyse.id, nom: analyse.nom, created: summary.created, warnings: summary.warnings }
     const receipt = await tx.analysisImport.create({ data: { organizationId: ctx.organizationId, idempotencyKey: input.idempotencyKey, source: ctx.source, payloadHash, analyseId: analyse.id, response: data }, select: { id: true } })
     return { ...data, importId: receipt.id }
-    })
+    }, IMPORT_TX_OPTIONS)
     return { replayed: false, ...response }
   } catch (error) {
     // Deux requêtes peuvent passer le premier lookup simultanément. La contrainte
@@ -137,33 +154,8 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
 /** Applique uniquement le contenu d'un paquet sur une analyse existante (MCP validé). */
 export async function applyAnalysisImportContent(input: AnalysisImportRequest, ctx: { organizationId: string; userId: string; analyseId: string }) {
   return prisma.$transaction(async tx => {
-    const risks = new Map<string, string>()
-    for (const row of input.risks) {
-      const gravity = clampInt(row.gravity, 1, 4, 2) as number; const likelihood = clampInt(row.likelihood, 1, 4, 2) as number
-      const vulnerabilities = input.vulnerabilities.filter(vulnerability => vulnerability.riskExternalId === row.externalId).map(vulnerability => ({ description: vulnerability.title, detail: vulnerability.description }))
-      const risk = await tx.risque.create({ data: { analyseId: ctx.analyseId, nom: row.title, description: row.description, gravite: gravity, vraisemblance: likelihood, niveauRisque: gravity * likelihood, strategie: enumValue(row.strategy, ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'], 'REDUIRE') as 'REDUIRE', vulnerabilites: vulnerabilities }, select: { id: true } })
-      if (row.externalId) risks.set(row.externalId, risk.id)
-    }
-    for (const row of input.measures) await tx.mesure.create({ data: { analyseId: ctx.analyseId, risqueId: row.riskExternalId ? risks.get(row.riskExternalId) : null, nom: row.title, description: row.description, statut: enumValue(row.status, ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'], 'REALISE') as 'REALISE', responsable: row.responsible, echeance: optionalDate(row.dueDate) } })
-    const actions = new Map<string, string>()
-    const linkedActionRisks = new Set<string>()
-    for (const row of input.actions) {
-      const riskId = row.riskExternalId ? risks.get(row.riskExternalId) : undefined
-      const action = await tx.planAction.create({ data: { organizationId: ctx.organizationId, titre: row.title, description: row.description, porteur: row.responsible, echeance: optionalDate(row.dueDate), createdById: ctx.userId }, select: { id: true } })
-      if (riskId) {
-        await tx.planActionLien.create({ data: { planActionId: action.id, type: 'RISQUE_ANALYSE', targetId: riskId, label: row.title } })
-        linkedActionRisks.add(`${action.id}:${riskId}`)
-      }
-      if (row.externalId) actions.set(row.externalId, action.id)
-    }
-    for (const link of input.links) {
-      const riskId = risks.get(link.riskExternalId); const actionId = actions.get(link.actionExternalId)
-      if (riskId && actionId && !linkedActionRisks.has(`${actionId}:${riskId}`)) {
-        await tx.planActionLien.create({ data: { planActionId: actionId, type: 'RISQUE_ANALYSE', targetId: riskId } })
-        linkedActionRisks.add(`${actionId}:${riskId}`)
-      }
-    }
+    await writeImportContent(tx, input, ctx)
     const summary = summarizeAnalysisImport(input)
     return { analyseId: ctx.analyseId, created: summary.created, warnings: summary.warnings }
-  })
+  }, IMPORT_TX_OPTIONS)
 }

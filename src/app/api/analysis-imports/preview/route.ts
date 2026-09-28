@@ -5,6 +5,9 @@ import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { excelCellText } from '@/lib/excel-cell'
+import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
+import { checkXlsxArchive } from '@/lib/xlsx-guard'
 import { detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
 
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
@@ -22,13 +25,20 @@ export async function POST(req: NextRequest) {
   const targetRole = targetOrganizationId ? await getEffectiveRoleForOrg(userId, globalRole, targetOrganizationId) : null
   if (!targetRole || !canCreateAnalyse({ id: userId, role: targetRole })) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
   if (!/\.xlsx$/i.test(body.filename)) return NextResponse.json({ error: 'excel_file_type_invalid' }, { status: 400 })
+  // Débit + taille décompressée vérifiés AVANT tout chargement ExcelJS (qui
+  // décompresse tout en mémoire et bloque l'event loop sur un gros classeur).
+  const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)
+  if (!rl.allowed) return NextResponse.json({ error: 'excel_rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+  const buffer = Buffer.from(body.data, 'base64')
+  const archive = checkXlsxArchive(buffer)
+  if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
   try {
     const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.load(Buffer.from(body.data, 'base64') as never)
+    await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       const sampleRows = Array.from({ length: Math.min(20, sheet.rowCount) }, (_, offset) => Array.from({ length: 100 }, (_, index) => {
         const value = sheet.getRow(offset + 1).getCell(index + 1).value
-        return value instanceof Date ? value.toISOString().slice(0, 10) : typeof value === 'object' && value !== null && 'text' in value ? String(value.text) : String(value ?? '').trim()
+        return excelCellText(value)
       }))
       const layout = detectHistoricHeaderLayout(sampleRows)
       const columns = layout.columns
@@ -38,7 +48,7 @@ export async function POST(req: NextRequest) {
       const dataRows = Array.from({ length: Math.min(500, Math.max(0, sheet.rowCount - layout.headerRowIndex - 1)) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))
       const profiles = Object.fromEntries(columns.map(column => [column.key, profileHistoricColumn(dataRows.map(row => {
         const value = row.getCell(column.index + 1).value
-        return value instanceof Date ? value.toISOString().slice(0, 10) : typeof value === 'object' && value !== null && 'text' in value ? String(value.text) : String(value ?? '').trim()
+        return excelCellText(value)
       }))]))
       return { name: sheet.name, columns: header, profiles, rows: Math.max(0, sheet.rowCount - layout.headerRowIndex - 1), headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping) }
     })
