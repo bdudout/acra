@@ -70,7 +70,7 @@ ACRA une estas piezas: un **asistente metodológico** que guía paso a paso con 
 
 El **método de análisis** se configura a nivel de **instancia** (SUPER_ADMIN) y **por análisis** — **EBIOS RM sigue siendo el predeterminado**.
 
-- **4 métodos**: **EBIOS RM** (ANSSI, 5 talleres) · **ISO/IEC 27005:2022** (proceso por fases) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (apreciación simple).
+- **5 métodos**: **EBIOS RM** (ANSSI, 5 talleres) · **ISO/IEC 27005:2022** (proceso por fases) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (apreciación simple) · **Análisis de proyecto 360** (ISO 31000:2018: riesgo operacional completo de un proyecto).
 - **Recorrido de introducción directa** (ISO 31000 / 27005 / NIST): los riesgos se introducen directamente (impacto × probabilidad) en la escala de la organización, sin escenarios EBIOS; contexto editable, consejos de fase, sugerencias de riesgos sectoriales y transversales.
 - **Tres niveles de riesgo**: **bruto** (inherente) → **actual** (con las medidas existentes) → **residual** (tras el plan de acción); propietario del riesgo, medidas y acciones por riesgo, evaluación frente al apetito de riesgo.
 - **Informe por método** en PDF y Excel.
@@ -121,6 +121,16 @@ Módulo activable por organización (desactivado por defecto). La madurez es una
 - **Cuadro de mando** (lectura RAD): madurez media actual y objetivo, brechas por dominio, mayores brechas, acciones abiertas y con retraso, última revisión
 - Cualquier marco activo puede llevar un perfil: **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, marcos personalizados…
 - Una brecha se convierte en una **acción del plan de acción unificado**, compartida con el cumplimiento (sin duplicados); historial por punto, exportación CSV
+
+### 🧩 Análisis de proyecto 360
+
+Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestionario de cualificación sobre **seis dominios** (ciber, TI — arquitectura y mantenimiento —, proyecto, negocio, fraude, externalización) que propone los riesgos que estudiar; riesgos clasificados por dominio; **importación de los riesgos de un análisis ciber existente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cuadro de mando por dominio**; aprobación por el **RSSI y el Risk Manager** (dos dictámenes distintos).
+
+### 🧭 Gobernanza del riesgo
+
+- **Apetito de riesgo (RAS / RAD)**: declaración de apetito (umbrales por categoría, madurez objetivo) y cuadro de mando (riesgos por encima del apetito, brechas de madurez, KRI en alerta) con indicadores de estado
+- **Pruebas de resiliencia operativa digital (DORA, artículos 24 a 26)**: programa anual, tipos de pruebas oficiales, hallazgos, funciones esenciales o importantes, vencimiento de la TLPT e **informe sobre la revisión del marco de gestión del riesgo relacionado con las TIC** (artículo 6, apartado 5) en Word
+- **Proceso del mapa de riesgos**: el enfoque explicado paso a paso, modificable por la gobernanza, con el estado de revisión del mapa
 
 ### 📊 Exportación y reporting
 

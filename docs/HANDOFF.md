@@ -6,6 +6,35 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (9) — Claude Code : analyse projet 360, RAS/RAD, tests de résilience DORA, processus de cartographie
+
+**Branche** : `feat/historical-excel-import` (PR #191 ouverte, non fusionnée). Commits
+`40d35d9` (projet 360), `88fbb27` (RAS/RAD), `1dbcaca` (tests de résilience DORA),
+`dcbb33f` (processus de cartographie) + docs.
+
+- **Analyse projet 360** (méthode `PROJET_360`, ISO 31000) : questionnaire 360 (18
+  questions, 6 domaines) → risques proposés via le moteur de qualification ;
+  `Risque.domaine` ; import tracé de risques d'une analyse cyber (même org, méthodes
+  cyber, idempotent) ; double approbation RSSI **et** RM (`Analyse.approbations`) ;
+  tableau de bord par domaine. Migration `20260929130000_projet_360`. La méthode doit
+  être **activée par le SUPER_ADMIN** (/admin/instance) comme les autres.
+- **RAS / RAD** : `/appetence` (menu Pilotage) — voyants appétit / maturité / KRI.
+- **Tests de résilience DORA** : `/reglementaire/tests-resilience`, table
+  `TestResilience` (migration `20260929140000`), rapport Word de réexamen (art. 6 § 5).
+  Libellés réglementaires repris d'EUR-Lex ×5 (art. 6 § 5, 24, 25 § 1, 26).
+- **Processus de cartographie** : `/cartographie/processus`, `OrganizationConfig.
+  processusCartographie` (migration `20260929150000`).
+- **Vérifié** : `tsc` 0 · `npm test` **2258/2258** · `i18n:check` vert · `npm run build`
+  OK · migrations appliquées en local.
+- **Non vérifié** : parcours navigateur connecté (session du panneau expirée) —
+  recette à faire : créer une analyse projet 360 (après activation instance), répondre
+  au questionnaire, importer des risques cyber, approuver RSSI puis RM ; /appetence ;
+  saisir un test DORA et télécharger le rapport ; éditer le processus de cartographie.
+- **Reste au backlog** : attendus des profils CAF (tables officielles NCSC à sourcer),
+  export PDF RAS/RAD, constats DORA → plans d'action, rapport projet 360 par domaine.
+
+---
+
 ## 2026-09-29 (8) — Claude Code : v1.0.3 publiée, Maturité (CMMI), dérogations, READMEs, notes de release
 
 **Branche** : `feat/historical-excel-import` (à jour de `main` après #190). Commits

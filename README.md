@@ -70,7 +70,7 @@ ACRA réunit ces maillons : un **assistant méthodologique** qui guide pas à pa
 
 ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable au niveau **instance** (SUPER_ADMIN) et **par analyse** (à la création, config avancée) — **EBIOS RM reste le défaut**.
 
-- **4 méthodes livrées** : **EBIOS RM** (ANSSI, 5 ateliers) · **ISO/IEC 27005:2022** (processus par phases) · **NIST SP 800-30 Rev. 1** (Prepare/Conduct/Communicate/Maintain) · **ISO 31000:2018** (appréciation simple).
+- **5 méthodes livrées** : **EBIOS RM** (ANSSI, 5 ateliers) · **ISO/IEC 27005:2022** (processus par phases) · **NIST SP 800-30 Rev. 1** (Prepare/Conduct/Communicate/Maintain) · **ISO 31000:2018** (appréciation simple) · **Analyse projet 360** (ISO 31000:2018 : risque opérationnel complet d’un projet).
 - **Parcours à saisie directe** (ISO 31000 / 27005 / NIST) : les risques sont saisis directement (gravité × vraisemblance), sans passer par les scénarios EBIOS.
 - **Contexte éditable** (périmètre, objectifs, critères d'acceptation), **conseils de phase** repliables, **suggestions de risques** — sectorielles **et** transverses (rançongiciel AD, fuite via tiers, phishing, DDoS…), **clic = ajout direct** au registre avec annulation.
 - **Risque à 3 niveaux** : **brut** (inhérent) → **actuel** (avec mesures existantes) → **résiduel** (après plan d'action).
@@ -122,6 +122,16 @@ Module activable par organisation (désactivé par défaut). La maturité est un
 - **Tableau de bord** (lecture RAD) : maturité moyenne actuelle et visée, écarts par domaine, plus grands écarts, actions ouvertes et en retard, dernière revue
 - Tout référentiel actif peut porter un profil : **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, référentiels personnalisés…
 - Un écart devient une **action du plan d'action unifié**, partagée avec la conformité (pas de doublon) ; historique par point, export CSV
+
+### 🧩 Analyse projet 360
+
+Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questionnaire de qualification sur **six domaines** (cyber, IT — architecture et maintenance —, projet, métier, fraude, externalisation) qui propose les risques à étudier ; risques classés par domaine ; **import des risques d'une analyse cyber existante** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) ; **tableau de bord par domaine** ; validation par le **RSSI et le Risk Manager** (deux avis distincts).
+
+### 🧭 Gouvernance du risque
+
+- **Appétence (RAS / RAD)** : déclaration d'appétence (seuils par catégorie, maturité visée) et tableau de bord (risques hors appétit, écarts de maturité, KRI en alerte) avec voyants
+- **Tests de résilience opérationnelle numérique (DORA, art. 24 à 26)** : programme annuel, types de tests officiels, constats, fonctions critiques ou importantes, échéance TLPT, et **rapport sur le réexamen du cadre de gestion du risque lié aux TIC** (art. 6 § 5) en Word
+- **Processus de cartographie des risques** : démarche expliquée étape par étape, éditable par la gouvernance, avec statut de revue de la cartographie
 
 ### 📊 Export & reporting
 

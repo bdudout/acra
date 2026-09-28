@@ -69,7 +69,7 @@ ACRA links these pieces: a **methodological assistant** that guides you step by 
 
 The **analysis method** is configurable at **instance** level (SUPER_ADMIN) and **per analysis** — **EBIOS RM remains the default**.
 
-- **4 methods**: **EBIOS RM** (ANSSI, 5 workshops) · **ISO/IEC 27005:2022** (phase-based process) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (simple assessment).
+- **5 methods**: **EBIOS RM** (ANSSI, 5 workshops) · **ISO/IEC 27005:2022** (phase-based process) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (simple assessment) · **Project 360 analysis** (ISO 31000:2018: full operational risk of a project).
 - **Direct-entry path** (ISO 31000 / 27005 / NIST): risks are entered directly (impact × likelihood) on the organisation's scale, without EBIOS scenarios; editable context, phase guidance, sector and cross-sector risk suggestions.
 - **Three risk levels**: **gross** (inherent) → **current** (with existing measures) → **residual** (after the action plan); risk owner, measures and actions per risk, evaluation against the risk appetite.
 - **Per-method report** in PDF and Excel.
@@ -120,6 +120,16 @@ Module enabled per organisation (off by default). Maturity is a **layer of compl
 - **Dashboard** (RAD reading): average current and target maturity, gaps by domain, largest gaps, open and overdue actions, last review
 - Any active framework can carry a profile: **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, custom frameworks…
 - A gap becomes an **action of the unified action plan**, shared with compliance (no duplicate); per-item history, CSV export
+
+### 🧩 Project 360 analysis
+
+Full operational risk of a project, **ISO 31000:2018** approach: a qualification questionnaire over **six domains** (cyber, IT — architecture and maintenance —, project, business, fraud, outsourcing) that proposes the risks to study; risks classified by domain; **import of risks from an existing cyber analysis** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **dashboard by domain**; approval by the **RSSI and the Risk Manager** (two separate opinions).
+
+### 🧭 Risk governance
+
+- **Risk appetite (RAS / RAD)**: risk appetite statement (thresholds by category, target maturity) and dashboard (risks above appetite, maturity gaps, KRIs on alert) with status lights
+- **Digital operational resilience testing (DORA, Articles 24 to 26)**: yearly programme, official test types, findings, critical or important functions, TLPT due date, and the **report on the review of the ICT risk management framework** (Article 6(5)) in Word
+- **Risk mapping process**: the approach explained step by step, editable by governance, with the review status of the risk map
 
 ### 📊 Export & reporting
 

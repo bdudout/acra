@@ -70,7 +70,7 @@ ACRA collega questi anelli: un **assistente metodologico** che guida passo dopo 
 
 Il **metodo di analisi** è configurabile a livello di **istanza** (SUPER_ADMIN) e **per analisi** — **EBIOS RM resta il predefinito**.
 
-- **4 metodi**: **EBIOS RM** (ANSSI, 5 workshop) · **ISO/IEC 27005:2022** (processo per fasi) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (valutazione semplice).
+- **5 metodi**: **EBIOS RM** (ANSSI, 5 workshop) · **ISO/IEC 27005:2022** (processo per fasi) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (valutazione semplice) · **Analisi di progetto 360** (ISO 31000:2018: rischio operativo completo di un progetto).
 - **Percorso a inserimento diretto** (ISO 31000 / 27005 / NIST): i rischi sono inseriti direttamente (impatto × probabilità) sulla scala dell'organizzazione, senza scenari EBIOS; contesto modificabile, consigli di fase, suggerimenti di rischi settoriali e trasversali.
 - **Tre livelli di rischio**: **lordo** (inerente) → **attuale** (con le misure esistenti) → **residuo** (dopo il piano d'azione); proprietario del rischio, misure e azioni per rischio, valutazione rispetto alla propensione al rischio.
 - **Report per metodo** in PDF ed Excel.
@@ -121,6 +121,16 @@ Modulo attivabile per organizzazione (disattivato per impostazione predefinita).
 - **Cruscotto** (lettura RAD): maturità media attuale e obiettivo, lacune per dominio, lacune maggiori, azioni aperte e in ritardo, ultima revisione
 - Qualsiasi framework attivo può avere un profilo: **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, framework personalizzati…
 - Una lacuna diventa un'**azione del piano d'azione unificato**, condivisa con la conformità (senza duplicati); cronologia per punto, export CSV
+
+### 🧩 Analisi di progetto 360
+
+Rischio operativo completo di un progetto, approccio **ISO 31000:2018**: questionario di qualificazione su **sei domini** (cyber, IT — architettura e manutenzione —, progetto, business, frode, esternalizzazione) che propone i rischi da studiare; rischi classificati per dominio; **importazione dei rischi da un’analisi cyber esistente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cruscotto per dominio**; approvazione da parte di **RSSI e Risk Manager** (due pareri distinti).
+
+### 🧭 Governance del rischio
+
+- **Propensione al rischio (RAS / RAD)**: dichiarazione di propensione (soglie per categoria, maturità obiettivo) e cruscotto (rischi oltre la propensione, lacune di maturità, KRI in allerta) con indicatori di stato
+- **Test di resilienza operativa digitale (DORA, articoli da 24 a 26)**: programma annuale, tipi di test ufficiali, rilievi, funzioni essenziali o importanti, scadenza del TLPT e **relazione in merito al riesame del quadro per la gestione dei rischi informatici** (articolo 6, paragrafo 5) in Word
+- **Processo della mappa dei rischi**: l’approccio spiegato passo dopo passo, modificabile dalla governance, con lo stato di revisione della mappa
 
 ### 📊 Esportazione e reporting
 

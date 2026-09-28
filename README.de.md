@@ -70,7 +70,7 @@ ACRA verbindet diese Glieder: ein **methodischer Assistent**, der Schritt für S
 
 Die **Analysemethode** ist auf **Instanzebene** (SUPER_ADMIN) und **je Analyse** konfigurierbar — **EBIOS RM bleibt der Standard**.
 
-- **4 Methoden**: **EBIOS RM** (ANSSI, 5 Workshops) · **ISO/IEC 27005:2022** (phasenbasierter Prozess) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (einfache Beurteilung).
+- **5 Methoden**: **EBIOS RM** (ANSSI, 5 Workshops) · **ISO/IEC 27005:2022** (phasenbasierter Prozess) · **NIST SP 800-30 Rev. 1** (Prepare / Conduct / Communicate / Maintain) · **ISO 31000:2018** (einfache Beurteilung) · **Projektanalyse 360** (ISO 31000:2018: gesamtes operationelles Risiko eines Projekts).
 - **Direkte Erfassung** (ISO 31000 / 27005 / NIST): Risiken werden direkt erfasst (Auswirkung × Wahrscheinlichkeit) auf der Skala der Organisation, ohne EBIOS-Szenarien; bearbeitbarer Kontext, Phasenhinweise, branchenspezifische und übergreifende Risikovorschläge.
 - **Drei Risikoniveaus**: **brutto** (inhärent) → **aktuell** (mit bestehenden Maßnahmen) → **Restrisiko** (nach dem Maßnahmenplan); Risikoeigentümer, Maßnahmen und Aktionen je Risiko, Bewertung gegen den Risikoappetit.
 - **Bericht je Methode** als PDF und Excel.
@@ -121,6 +121,16 @@ Je Organisation aktivierbares Modul (standardmäßig deaktiviert). Der Reifegrad
 - **Dashboard** (Lesart RAD): durchschnittlicher aktueller und angestrebter Reifegrad, Lücken je Bereich, größte Lücken, offene und überfällige Maßnahmen, letzte Überprüfung
 - Jedes aktive Rahmenwerk kann ein Profil tragen: **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, eigene Rahmenwerke…
 - Eine Lücke wird zu einer **Maßnahme des einheitlichen Maßnahmenplans**, gemeinsam mit der Compliance (keine Dubletten); Verlauf je Punkt, CSV-Export
+
+### 🧩 Projektanalyse 360
+
+Gesamtes operationelles Risiko eines Projekts, Vorgehen nach **ISO 31000:2018**: Qualifizierungsfragebogen über **sechs Bereiche** (Cyber, IT — Architektur und Wartung —, Projekt, Fachbereich, Betrug, Auslagerung), der die zu untersuchenden Risiken vorschlägt; Risiken nach Bereich klassifiziert; **Import der Risiken aus einer bestehenden Cyber-Analyse** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **Dashboard je Bereich**; Freigabe durch **RSSI und Risk Manager** (zwei getrennte Stellungnahmen).
+
+### 🧭 Risiko-Governance
+
+- **Risikoappetit (RAS / RAD)**: Risikoappetit-Erklärung (Schwellen je Kategorie, angestrebter Reifegrad) und Dashboard (Risiken über dem Appetit, Reifegradlücken, KRI in Warnung) mit Ampeln
+- **Tests der digitalen operationalen Resilienz (DORA, Artikel 24 bis 26)**: Jahresprogramm, offizielle Testarten, Feststellungen, kritische oder wichtige Funktionen, TLPT-Fälligkeit und **Bericht über die Überprüfung des IKT-Risikomanagementrahmens** (Artikel 6 Absatz 5) in Word
+- **Prozess der Risikolandkarte**: das Vorgehen Schritt für Schritt erklärt, durch die Governance bearbeitbar, mit Überprüfungsstatus der Landkarte
 
 ### 📊 Export & Reporting
 
