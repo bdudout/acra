@@ -12,7 +12,7 @@ beforeEach(() => __resetNavModulesCacheForTest())
 describe('parseNavModules', () => {
   it('coerce les clés connues en booléens', () => {
     expect(parseNavModules({ registre: true, incidents: 1, audit: 'x' })).toEqual({
-      registre: true, incidents: true, controles: false, audit: true, kri: false, reglementaire: false, profilsOperationnels: false,
+      registre: true, incidents: true, controles: false, audit: true, kri: false, reglementaire: false, profilsOperationnels: false, projets: false,
     })
   })
   it('renvoie null si aucune clé booléenne connue', () => {

@@ -23,7 +23,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, Briefcase, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -65,7 +65,7 @@ export default function Navbar() {
   // renseigné lors des RE-montages (navigation SPA) → plus de « réorganisation »
   // des entrées à chaque clic. Cf. lib/nav-modules-cache.
   const [modules, setModules] = useState<NavModules>(
-    () => peekNavModules() ?? { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false },
+    () => peekNavModules() ?? { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false, projets: false },
   )
   // Rechargement complet : réhydrater depuis localStorage AVANT le fetch, pour
   // afficher la bonne mise en page au plus tôt (sans attendre le réseau).
@@ -86,6 +86,7 @@ export default function Navbar() {
           kri:           Boolean(d.kriActive),
           reglementaire: Boolean(d.reglementaireActive),
           profilsOperationnels: Boolean(d.profilsOperationnelsActive),
+          projets: Boolean(d.projets360Active),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -178,6 +179,7 @@ export default function Navbar() {
     suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
     ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
+    projets:       { href: '/projets',       Icon: Briefcase,       label: t.nav.projets },
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
   }

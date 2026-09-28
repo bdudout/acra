@@ -1775,6 +1775,9 @@ model OrganizationConfig {
   // dont NIST CSF 2.0 et NCSC CAF v4.0). Désactivé par défaut : le parcours EBIOS RM /
   // ISO 27005 standard reste inchangé. (Nom de colonne historique conservé.)
   profilsOperationnelsActive Boolean       @default(false)
+  // Module « Projets 360 » (analyses projet 360 du risque opérationnel, onglet Projets).
+  // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
+  projets360Active           Boolean       @default(true)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
   // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
   echelleMaturite            Json          @default("[]")

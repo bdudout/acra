@@ -1,3 +1,5 @@
+import { populateProjet360 } from '@/lib/projet360.server'
+import { getServerT } from '@/lib/i18n'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -92,10 +94,14 @@ export async function POST(req: NextRequest) {
     // seul câblé). Une méthode non proposable retombe sur le défaut — jamais de
     // méthode arbitraire persistée.
     const { available, default: defMethode } = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
-    const methode = isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     // La qualification peut être saisie dès le choix de méthode. Elle est toujours
     // filtrée avec la configuration effective de l'organisation active.
     const orgConfig = await getOrgConfig(__org.activeOrgId)
+    // Projet 360 : piloté par le module d'organisation (onglet Projets), pas par
+    // l'activation d'instance des méthodes.
+    const methode = data.methode === 'PROJET_360' && orgConfig.projets360Active && __org.activeOrgId
+      ? 'PROJET_360'
+      : isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     const qualification = sanitizeQualification(data.qualification, orgConfig.qualificationQuestionnaire)
 
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
@@ -142,7 +148,9 @@ export async function POST(req: NextRequest) {
         qualification,
         // Cadrage : copier du socle ou créer vide
         cadrage: {
-          create: socleData.cadrage
+          create: methode === 'PROJET_360' && !socleData.cadrage
+            ? { perimetre: data.description ?? null }
+            : socleData.cadrage
             ? {
                 perimetre:      socleData.cadrage.perimetre,
                 objectifsEtude: socleData.cadrage.objectifsEtude,
@@ -167,11 +175,18 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Projet 360 : questionnaire pré-rempli d'après les données existantes et risques
+    // proposés créés sans doublon (lib/projet360.server).
+    let population: { answers: number; risks: number } | null = null
+    if (methode === 'PROJET_360' && __org.activeOrgId) {
+      population = await populateProjet360(analyse.id, __org.activeOrgId, await getServerT())
+    }
+
     await auditLog('ANALYSE_CREATED', {
       userId, userRole,
       targetId: analyse.id, targetType: 'analyse',
       ip: getClientIp(req),
-      details: { nom: analyse.nom, socleId: data.socleId ?? null },
+      details: { nom: analyse.nom, socleId: data.socleId ?? null, ...(population ? { methode, population } : {}) },
     })
     return NextResponse.json({ analyse }, { status: 201 })
   } catch (err) {

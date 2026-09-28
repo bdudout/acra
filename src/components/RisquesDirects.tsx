@@ -151,7 +151,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     setBusy(true)
     const res = await fetch(`/api/analyses/${analyseId}/risques`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: ex.intitule, gravite: ex.gravite, vraisemblance: ex.vraisemblance }),
+      body: JSON.stringify({ nom: ex.intitule, gravite: ex.gravite, vraisemblance: ex.vraisemblance, ...(withDomaine && ex.domaine ? { domaine: ex.domaine } : {}) }),
     }).then(r => r.ok ? r.json() : null).catch(() => null)
     setBusy(false)
     const newId = res?.risque?.id as string | undefined
@@ -317,6 +317,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20 disabled:opacity-50">
                 <Plus size={12} aria-hidden="true" />
                 <span>{ex.intitule}</span>
+                {p360 && ex.source === 'REGISTRE' && <span className="rounded bg-white/70 px-1 text-[10px] text-ebios-600 dark:bg-gray-900/40">{p360.fromRegistre}</span>}
+                {p360 && ex.domaine && <span className="text-[10px] text-ebios-500">{domaineLabel(ex.domaine)}</span>}
                 <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
               </button>
             ))}

@@ -125,7 +125,7 @@ Module activable par organisation (désactivé par défaut). La maturité est un
 
 ### 🧩 Analyse projet 360
 
-Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questionnaire de qualification sur **six domaines** (cyber, IT — architecture et maintenance —, projet, métier, fraude, externalisation) qui propose les risques à étudier ; risques classés par domaine ; **import des risques d'une analyse cyber existante** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) ; **tableau de bord par domaine** ; validation par le **RSSI et le Risk Manager** (deux avis distincts).
+Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questionnaire de qualification sur **six domaines** (cyber, IT — architecture et maintenance —, projet, métier, fraude, externalisation) qui propose les risques à étudier ; risques classés par domaine ; **import des risques d'une analyse cyber existante** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) ; **tableau de bord par domaine** ; validation par le **RSSI et le Risk Manager** (deux avis distincts). Les projets se lancent depuis l'onglet **Projets** (module « Projets 360 », actif par défaut, réglable dans Configuration → Fonctionnalités) ; le questionnaire est **pré-rempli à partir des données existantes** (analyses cyber, registre TIC, processus, registre RGPD, DORA) et les risques du registre sont proposés, sans jamais créer de doublon.
 
 ### 🧭 Gouvernance du risque
 

@@ -45,4 +45,13 @@ describe('RisquesDirects — domaine (analyse projet 360)', () => {
     expect(patch[0]).toBe('/api/analyses/a1/risques/r2')
     expect(JSON.parse(patch[1].body)).toEqual({ domaine: 'BUSINESS' })
   })
+
+  it('suggestion issue du registre : badge et domaine transmis à l’ajout', async () => {
+    render(<RisquesDirects analyseId="a1" editable withDomaine suggestions={[{ intitule: 'Panne du SI de paiement', gravite: 3, vraisemblance: 2, pertinent: true, source: 'REGISTRE', domaine: 'IT' }]} />)
+    const chip = await screen.findByRole('button', { name: /Panne du SI de paiement/ })
+    expect(chip.textContent).toContain('Depuis le registre')
+    fireEvent.click(chip)
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(true))
+    expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'POST')![1].body)).toMatchObject({ nom: 'Panne du SI de paiement', domaine: 'IT' })
+  })
 })

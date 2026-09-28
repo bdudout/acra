@@ -38,6 +38,17 @@ describe('Questionnaire360', () => {
   })
 })
 
+describe('Questionnaire360 — pré-remplissage', () => {
+  it('affiche la source des réponses pré-remplies, puis la retire une fois confirmées', async () => {
+    fetchMock.mockImplementation((url: string) => ok(url.endsWith('/qualification-360') ? { answers: {} } : { proposals: [] }))
+    render(<Questionnaire360 analyseId="a1" editable initialAnswers={{ 'p360.ext.cloud': true }} sources={{ 'p360.ext.cloud': 'cloud' }} />)
+    expect(screen.getByText(/Réponses pré-remplies d’après les données de votre organisation/)).toBeTruthy()
+    expect(screen.getByText(/registre TIC : service cloud ou d’hébergement/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les réponses' }))
+    await waitFor(() => expect(screen.queryByText(/registre TIC : service cloud/)).toBeNull())
+  })
+})
+
 describe('ImportCyberRisks', () => {
   it('liste les analyses cyber, importe la sélection (sans les déjà importés)', async () => {
     fetchMock.mockImplementation((_url: string, init?: RequestInit) => init?.method === 'POST'

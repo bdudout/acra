@@ -71,7 +71,7 @@ export default function PhasedRiskWorkshop({
   /** Ouvre directement cette phase (deep-link `?phase=`), ex. depuis le registre. */
   initialPhaseKey?: string
   /** Analyse projet 360 : réponses du questionnaire et seuil d'appétit global (tableau de bord). */
-  projet360?: { answers: Record<string, boolean>; appetitSeuil: number | null }
+  projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
@@ -129,7 +129,7 @@ export default function PhasedRiskWorkshop({
         </section>
       ) : phase.type === 'qualification' && projet360 ? (
         <>
-          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} onRisksCreated={() => setRegistryKey(k => k + 1)} />
+          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} sources={projet360.sources} onRisksCreated={() => setRegistryKey(k => k + 1)} />
           {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} />}
         </>
       ) : phase.type === 'note' ? (

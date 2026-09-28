@@ -19,6 +19,9 @@ export interface RisqueExemple {
   vraisemblance: number
   /** Vrai si l'exemple est jugé pertinent pour le contexte (badge UI). */
   pertinent: boolean
+  /** Analyse projet 360 : domaine proposé et origine (risque déjà au registre de l'organisation). */
+  domaine?: string
+  source?: 'REGISTRE'
 }
 
 /** Valeur par défaut d'une vraisemblance absente (événements redoutés). */

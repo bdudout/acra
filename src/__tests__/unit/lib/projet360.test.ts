@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DOMAINES_360, QUESTIONS_360, RISK_RULES_360, isDomaine360, progression360, suggested360Risks, domainStats360,
-  applyApprobation, APPROBATION_ROLES_REQUIS, planCyberImport,
+  applyApprobation, APPROBATION_ROLES_REQUIS, planCyberImport, defaultAnswers360, domaineFromTaxonomie, planPopulation360, sanitizeSources360,
 } from '@/lib/projet360'
 import { METHOD_META, methodSteps, usesDirectRiskEntry, IMPLEMENTED_METHODS } from '@/lib/methodes'
 import { QUALIFICATION_RISK_CATEGORIES } from '@/lib/qualification'
@@ -115,5 +115,49 @@ describe('planCyberImport', () => {
   it('borne les cotations à l’échelle de l’organisation', () => {
     const rows = planCyberImport({ sourceAnalyseId: 'A0', source: [{ ...src[0], gravite: 5 }], selectedIds: ['s1'], alreadyImported: [], maxNiveau: 4 })
     expect(rows[0].gravite).toBe(4)
+  })
+})
+
+describe('pré-remplissage à partir des données existantes', () => {
+  it('ne répond « oui » que sur preuve, avec la source ; ne devine jamais « non »', () => {
+    const { answers, sources } = defaultAnswers360({
+      analysesCyber: 2, ticCritiques: 1, ticCloud: 0, processusCritiques: 3, traitementsRgpd: 5, doraActif: true,
+    })
+    expect(answers).toEqual({
+      'p360.cyber.analyseCyber': true,
+      'p360.ext.prestataireCritique': true,
+      'p360.metier.processusCritique': true,
+      'p360.cyber.donneesSensibles': true,
+      'p360.metier.exigenceReglementaire': true,
+      'p360.fraude.fluxFinanciers': true,
+    })
+    expect(sources['p360.ext.prestataireCritique']).toBe('tic')
+    expect(answers['p360.ext.cloud']).toBeUndefined()
+    expect(defaultAnswers360({ analysesCyber: 0, ticCritiques: 0, ticCloud: 0, processusCritiques: 0, traitementsRgpd: 0, doraActif: false }).answers).toEqual({})
+  })
+
+  it('domaine d’un risque du registre d’après la taxonomie de Bâle', () => {
+    expect(domaineFromTaxonomie('BALE_1')).toBe('FRAUD')
+    expect(domaineFromTaxonomie('BALE_2_3')).toBe('FRAUD')
+    expect(domaineFromTaxonomie('BALE_6')).toBe('IT')
+    expect(domaineFromTaxonomie('BALE_7_1')).toBe('BUSINESS')
+    expect(domaineFromTaxonomie(null)).toBeNull()
+    expect(domaineFromTaxonomie('PERSO_X')).toBeNull()
+  })
+
+  it('plan de population : risques proposés sans doublon (règle déjà créée ou intitulé existant)', () => {
+    const answers = { 'p360.cyber.exposeInternet': true, 'p360.cyber.analyseCyber': false, 'p360.ext.cloud': true }
+    const plan = planPopulation360({
+      answers, orgRules: [], catalog: { p360_compromissionExpose: { title: 'Compromission d’un service exposé' }, p360_cyberNonApprecie: { title: 'Risques cyber non appréciés' }, p360_maitriseDonneesCloud: { title: 'Perte de maîtrise des données hébergées' } },
+      existingRuleIds: ['p360-cyberNonApprecie'], existingTitles: ['perte de maîtrise des données hébergées'],
+    })
+    expect(plan.map(p => [p.id, p.category])).toEqual([['p360-compromissionExpose', 'CYBER']])
+  })
+})
+
+describe('sanitizeSources360', () => {
+  it('ne garde que les questions et sources connues', () => {
+    expect(sanitizeSources360({ 'p360._sources': { 'p360.ext.cloud': 'cloud', 'p360.x': 'cloud', 'p360.cyber.analyseCyber': 'pirate' } })).toEqual({ 'p360.ext.cloud': 'cloud' })
+    expect(sanitizeSources360(null)).toEqual({})
   })
 })

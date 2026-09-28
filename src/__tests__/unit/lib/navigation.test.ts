@@ -154,3 +154,18 @@ describe('buildNav — appétence (RAS / RAD)', () => {
     expect(pil('LECTEUR', { ...none, registre: true })).not.toContain('appetence')
   })
 })
+
+describe('buildNav — onglet Projets (module Projets 360)', () => {
+  const none = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
+  const keys = (m: ReturnType<typeof buildNav>) => m.entries.flatMap(e => (e.kind === 'group' ? e.items : [e.key]))
+  it('mode cyber : lien Projets juste après Analyses quand le module est actif', () => {
+    const k = keys(buildNav('ANALYSTE', { ...none, projets: true }))
+    expect(k.indexOf('projets')).toBe(k.indexOf('analyses') + 1)
+    expect(keys(buildNav('ANALYSTE', none))).not.toContain('projets')
+  })
+  it('mode GRC : dans le groupe « Gestion des risques »', () => {
+    const m = buildNav('RISK_MANAGER', { ...none, registre: true, projets: true })
+    const g = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
+    expect(g && g.kind === 'group' && g.items.slice(0, 2)).toEqual(['analyses', 'projets'])
+  })
+})

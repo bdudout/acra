@@ -21,6 +21,14 @@ export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_3100
  * directement), par opposition à EBIOS RM où les risques sont **dérivés** des
  * scénarios opérationnels. Détermine si l'API de saisie directe est autorisée.
  */
+/**
+ * Méthodes pilotées par un MODULE d'organisation plutôt que par l'activation
+ * d'instance : absentes du sélecteur « nouvelle analyse » et de /admin/instance.
+ * PROJET_360 = module « Projets 360 » (onglet Projets, OrganizationConfig.projets360Active).
+ */
+export const MODULE_METHODS: readonly RiskMethod[] = ['PROJET_360']
+const isPickerMethod = (m: RiskMethod) => !MODULE_METHODS.includes(m)
+
 export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000', 'ISO_27005', 'NIST_800_30', 'PROJET_360']
 
 /** Vrai si la méthode apprécie les risques par saisie directe (pas via scénarios). */
@@ -36,7 +44,7 @@ export function usesDirectRiskEntry(m: string): boolean {
 export function cleanActiveMethodes(v: unknown): RiskMethod[] {
   const arr = Array.isArray(v) ? v : []
   const set = new Set<RiskMethod>([DEFAULT_METHOD])
-  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x)) set.add(x)
+  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x) && isPickerMethod(x)) set.add(x)
   return RISK_METHODS.filter(m => set.has(m))
 }
 
@@ -191,7 +199,7 @@ export interface MethodResolution {
 export function resolveMethodes(opts: MethodResolution = {}): { available: RiskMethod[]; default: RiskMethod } {
   const inInstance = (m: RiskMethod) => !opts.instanceEnabled || opts.instanceEnabled.includes(m)
   const inOrg = (m: RiskMethod) => !opts.orgAllowed || opts.orgAllowed.includes(m)
-  const available = IMPLEMENTED_METHODS.filter(m => inInstance(m) && inOrg(m))
+  const available = IMPLEMENTED_METHODS.filter(m => isPickerMethod(m) && inInstance(m) && inOrg(m))
   // Garde-fou : EBIOS RM toujours présent (et en tête).
   const set = new Set<RiskMethod>([DEFAULT_METHOD, ...available])
   const ordered = RISK_METHODS.filter(m => set.has(m))

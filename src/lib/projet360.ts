@@ -221,3 +221,84 @@ export function planCyberImport(args: { sourceAnalyseId: string; source: SourceR
       }
     })
 }
+
+// ─── Pré-remplissage à partir des données existantes de l'organisation ───────
+
+/** Indices déjà présents dans ACRA (comptages) qui renseignent le questionnaire 360. */
+export interface Faits360 {
+  analysesCyber: number      // analyses cyber (EBIOS RM, ISO/IEC 27005, NIST) de l'organisation
+  ticCritiques: number       // registre TIC : services soutenant une fonction critique ou importante
+  ticCloud: number           // registre TIC : services cloud / hébergement
+  processusCritiques: number // processus cartographiés critiques
+  traitementsRgpd: number    // traitements au registre RGPD (art. 30)
+  doraActif: boolean         // module de reporting réglementaire DORA actif (entité financière)
+}
+export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora'
+
+/**
+ * Réponses pré-remplies : « oui » UNIQUEMENT quand une donnée existante le prouve
+ * (jamais de « non » deviné). Chaque réponse porte sa source, affichée à
+ * l'utilisateur qui confirme en enregistrant.
+ */
+export function defaultAnswers360(f: Faits360): { answers: QualificationAnswers; sources: Record<string, SourcePrefill> } {
+  const answers: QualificationAnswers = {}
+  const sources: Record<string, SourcePrefill> = {}
+  const set = (q: string, src: SourcePrefill) => { answers[q] = true; sources[q] = src }
+  if (f.analysesCyber > 0) set('p360.cyber.analyseCyber', 'analyseCyber')
+  if (f.ticCritiques > 0) set('p360.ext.prestataireCritique', 'tic')
+  if (f.ticCloud > 0) set('p360.ext.cloud', 'cloud')
+  if (f.processusCritiques > 0) set('p360.metier.processusCritique', 'processus')
+  if (f.traitementsRgpd > 0) set('p360.cyber.donneesSensibles', 'ropa')
+  if (f.doraActif) { set('p360.metier.exigenceReglementaire', 'dora'); set('p360.fraude.fluxFinanciers', 'dora') }
+  return { answers, sources }
+}
+
+/**
+ * Domaine 360 d'un risque du registre d'après la taxonomie de Bâle (catégories
+ * d'événements de risque opérationnel) : fraudes → FRAUD ; interruption d'activité
+ * et pannes de systèmes → IT ; autres catégories → BUSINESS. Hors Bâle → null.
+ */
+export function domaineFromTaxonomie(code: string | null | undefined): Domaine360 | null {
+  const m = /^BALE_(\d)/.exec(code ?? '')
+  if (!m) return null
+  if (m[1] === '1' || m[1] === '2') return 'FRAUD'
+  if (m[1] === '6') return 'IT'
+  return 'BUSINESS'
+}
+
+/**
+ * Risques à créer à la population d'un projet 360 : propositions des règles
+ * (360 + organisation) déclenchées par les réponses, SANS doublon — ni règle déjà
+ * créée (idempotence), ni intitulé déjà présent dans l'analyse (insensible à la casse).
+ */
+export function planPopulation360(args: {
+  answers: QualificationAnswers
+  orgRules: QualificationRiskRule[]
+  catalog: Record<string, { title: string; description?: string }>
+  existingRuleIds: readonly string[]
+  existingTitles: readonly string[]
+}) {
+  const rules = [...args.orgRules, ...RISK_RULES_360]
+  const done = new Set(args.existingRuleIds)
+  const titles = new Set(args.existingTitles.map(t => t.trim().toLowerCase()))
+  return suggestedQualificationRisks(args.answers, rules, 'PROJET_360')
+    .map(p => {
+      const text = p.titleKey ? args.catalog[p.titleKey] : undefined
+      return { ...p, title: p.title.trim() || text?.title || p.id, description: p.description?.trim() || text?.description }
+    })
+    .filter(p => {
+      const k = p.title.trim().toLowerCase()
+      if (done.has(p.id) || titles.has(k)) return false
+      titles.add(k)
+      return true
+    })
+}
+
+const SOURCES_PREFILL: readonly SourcePrefill[] = ['analyseCyber', 'tic', 'cloud', 'processus', 'ropa', 'dora']
+/** Sources du pré-remplissage stockées dans la qualification (`p360._sources`), assainies. */
+export function sanitizeSources360(qualification: unknown): Record<string, SourcePrefill> {
+  const raw = qualification && typeof qualification === 'object' ? (qualification as Record<string, unknown>)['p360._sources'] : null
+  if (!raw || typeof raw !== 'object') return {}
+  const ids = new Set(QUESTIONS_360.map(q => q.id))
+  return Object.fromEntries(Object.entries(raw as Record<string, unknown>).filter(([k, v]) => ids.has(k) && typeof v === 'string' && (SOURCES_PREFILL as readonly string[]).includes(v))) as Record<string, SourcePrefill>
+}

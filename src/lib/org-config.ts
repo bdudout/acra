@@ -64,6 +64,7 @@ export interface RawOrgConfig {
   secondeLigneActive?: boolean
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
+  projets360Active?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
   appetitRisque?: unknown
@@ -111,6 +112,8 @@ export interface OrgConfigResolved {
   secondeLigneActive: boolean
   /** Module « Maturité » (profils cibles CMMI, dont NIST CSF 2.0 / NCSC CAF v4.0), désactivé par défaut. */
   profilsOperationnelsActive: boolean
+  /** Module « Projets 360 » (onglet Projets, méthode PROJET_360), activé par défaut. */
+  projets360Active: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
   echelleMaturite: unknown[]
   /** Processus de cartographie personnalisé ({} ⇒ texte par défaut). Cf. lib/processus-carto. */
@@ -157,6 +160,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   reglementaireActive: false,
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
+  projets360Active: true,
   echelleMaturite: [],
   processusCartographie: {},
   appetitRisque: APPETIT_DEFAULT,
@@ -172,7 +176,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
@@ -243,6 +247,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     reglementaireActive: pickBool('reglementaireActive', defaults.reglementaireActive),
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
+    projets360Active: pickBool('projets360Active', defaults.projets360Active),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),

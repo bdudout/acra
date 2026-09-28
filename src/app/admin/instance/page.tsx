@@ -106,6 +106,7 @@ export default function AdminInstancePage() {
     { key: 'reglementaire', label: t.features.reglementaireTitle },
     { key: 'secondeLigne', label: t.features.secondeLigneTitle },
     { key: 'profilsOperationnels', label: t.features.profilsOperationnelsTitle },
+    { key: 'projets360', label: t.features.projets360Title },
   ]
 
   if (status === 'loading' || !isAdmin) {

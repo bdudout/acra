@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   RISK_METHODS, DEFAULT_METHOD, IMPLEMENTED_METHODS, isRiskMethod,
   methodSteps, methodStepCount, resolveMethodes, METHOD_STEPS, cleanActiveMethodes,
-  directTreatmentPhaseKey, riskTreatmentHref,
+  directTreatmentPhaseKey, riskTreatmentHref, MODULE_METHODS,
 } from '@/lib/methodes'
 
 describe('registre des méthodes', () => {
@@ -48,8 +48,9 @@ describe('resolveMethodes — ensemble effectif', () => {
   })
 
   it('sans restriction : les méthodes câblées (ordonnées), défaut EBIOS RM', () => {
-    // Ordre = RISK_METHODS : EBIOS_RM, ISO_27005, NIST_800_30, ISO_31000, PROJET_360.
-    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000', 'PROJET_360'], default: 'EBIOS_RM' })
+    // Ordre = RISK_METHODS. PROJET_360 n'est pas une méthode du sélecteur : il relève
+    // du module « Projets 360 » (onglet Projets), pas de l'activation d'instance.
+    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000'], default: 'EBIOS_RM' })
   })
 
   it('EBIOS RM reste disponible même si l\'instance ne l\'a pas explicitement activé (garde-fou)', () => {
@@ -92,5 +93,13 @@ describe('directTreatmentPhaseKey / riskTreatmentHref', () => {
     expect(riskTreatmentHref('an1', 'NIST_800_30')).toBe('/analyses/an1/atelier/1?phase=conduct')
     // méthode inconnue → repli EBIOS (atelier 5)
     expect(riskTreatmentHref('an1', 'ZZZ')).toBe('/analyses/an1/atelier/5')
+  })
+})
+
+describe('PROJET_360 — méthode pilotée par le module Projets 360', () => {
+  it('hors sélecteur et hors activation d’instance', () => {
+    expect(MODULE_METHODS).toEqual(['PROJET_360'])
+    expect(cleanActiveMethodes(['PROJET_360', 'ISO_31000'])).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(resolveMethodes({ instanceEnabled: ['PROJET_360'] }).available).not.toContain('PROJET_360')
   })
 })

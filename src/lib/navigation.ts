@@ -26,6 +26,8 @@ export interface NavModules {
   kri: boolean
   reglementaire: boolean
   profilsOperationnels: boolean
+  /** Module « Projets 360 » (onglet Projets). */
+  projets?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -34,7 +36,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -53,6 +55,8 @@ export interface NavModel {
 
 /** Parcours EBIOS de base (cyber). */
 const CORE: NavKey[] = ['analyses', 'risques', 'tiers', 'actions']
+/** Cœur « gestion des risques » : analyses, puis Projets 360 si le module est actif. */
+const core = (modules: NavModules): NavKey[] => (modules.projets ? ['analyses', 'projets', 'risques', 'tiers', 'actions'] : CORE)
 
 /** Nb max d'items secondaires (gouvernance/incidents) étalés inline avant regroupement. */
 export const SECONDARY_INLINE_MAX = 2
@@ -98,7 +102,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!grcMode) {
     const secondary: NavKey[] = [...gouvernance]
     if (modules.incidents) secondary.push('incidents')
-    const entries: NavEntry[] = [link('dashboard'), ...CORE.map(link)]
+    const entries: NavEntry[] = [link('dashboard'), ...core(modules).map(link)]
     if (secondary.length > 0) {
       if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
       else entries.push({ kind: 'group', id: 'grc', items: secondary })
@@ -122,7 +126,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
-  const analyses: NavKey[] = [...CORE]
+  const analyses: NavKey[] = [...core(modules)]
   if (modules.registre && !firstLineOnly) analyses.push('cartographie')
   entries.push(groupOrLink('analyses', analyses))
 

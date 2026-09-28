@@ -123,7 +123,7 @@ Module enabled per organisation (off by default). Maturity is a **layer of compl
 
 ### 🧩 Project 360 analysis
 
-Full operational risk of a project, **ISO 31000:2018** approach: a qualification questionnaire over **six domains** (cyber, IT — architecture and maintenance —, project, business, fraud, outsourcing) that proposes the risks to study; risks classified by domain; **import of risks from an existing cyber analysis** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **dashboard by domain**; approval by the **RSSI and the Risk Manager** (two separate opinions).
+Full operational risk of a project, **ISO 31000:2018** approach: a qualification questionnaire over **six domains** (cyber, IT — architecture and maintenance —, project, business, fraud, outsourcing) that proposes the risks to study; risks classified by domain; **import of risks from an existing cyber analysis** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **dashboard by domain**; approval by the **RSSI and the Risk Manager** (two separate opinions). Projects are launched from the **Projects** tab (“Projects 360” module, on by default, set in Configuration → Features); the questionnaire is **pre-filled from existing data** (cyber analyses, ICT register, processes, GDPR register, DORA) and register risks are suggested, never creating duplicates.
 
 ### 🧭 Risk governance
 

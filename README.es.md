@@ -124,7 +124,7 @@ Módulo activable por organización (desactivado por defecto). La madurez es una
 
 ### 🧩 Análisis de proyecto 360
 
-Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestionario de cualificación sobre **seis dominios** (ciber, TI — arquitectura y mantenimiento —, proyecto, negocio, fraude, externalización) que propone los riesgos que estudiar; riesgos clasificados por dominio; **importación de los riesgos de un análisis ciber existente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cuadro de mando por dominio**; aprobación por el **RSSI y el Risk Manager** (dos dictámenes distintos).
+Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestionario de cualificación sobre **seis dominios** (ciber, TI — arquitectura y mantenimiento —, proyecto, negocio, fraude, externalización) que propone los riesgos que estudiar; riesgos clasificados por dominio; **importación de los riesgos de un análisis ciber existente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cuadro de mando por dominio**; aprobación por el **RSSI y el Risk Manager** (dos dictámenes distintos). Los proyectos se lanzan desde la pestaña **Proyectos** (módulo «Proyectos 360», activo por defecto, ajustable en Configuración → Funcionalidades); el cuestionario se **rellena previamente con los datos existentes** (análisis ciber, registro TIC, procesos, registro RGPD, DORA) y se proponen los riesgos del registro, sin crear duplicados.
 
 ### 🧭 Gobernanza del riesgo
 

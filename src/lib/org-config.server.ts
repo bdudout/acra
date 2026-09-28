@@ -47,6 +47,7 @@ const CONFIG_SELECT = {
   reglementaireActive: true,
   secondeLigneActive: true,
   profilsOperationnelsActive: true,
+  projets360Active: true,
   echelleMaturite: true,
   processusCartographie: true,
   appetitRisque: true,
@@ -96,6 +97,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       reglementaireActive: resolveModuleActivation(policy.reglementaire, cfg.reglementaireActive),
       secondeLigneActive: resolveModuleActivation(policy.secondeLigne, cfg.secondeLigneActive),
       profilsOperationnelsActive: resolveModuleActivation(policy.profilsOperationnels, cfg.profilsOperationnelsActive),
+      projets360Active: resolveModuleActivation(policy.projets360, cfg.projets360Active),
     }
   } catch {
     return cfg

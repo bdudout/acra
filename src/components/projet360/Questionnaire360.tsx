@@ -11,8 +11,11 @@ import { useTranslation } from '@/lib/i18n/context'
 import { DOMAINES_360, QUESTIONS_360, progression360 } from '@/lib/projet360'
 import { QualificationRisksDialog, useQualificationProposals } from '@/components/QualificationRisksFlow'
 
-export default function Questionnaire360({ analyseId, editable, initialAnswers, onRisksCreated }: {
-  analyseId: string; editable: boolean; initialAnswers: Record<string, boolean>; onRisksCreated?: () => void
+export default function Questionnaire360({ analyseId, editable, initialAnswers, sources: initialSources = {}, onRisksCreated }: {
+  analyseId: string; editable: boolean; initialAnswers: Record<string, boolean>
+  /** Réponses pré-remplies d'après les données existantes : question → source (jusqu'à confirmation). */
+  sources?: Record<string, string>
+  onRisksCreated?: () => void
 }) {
   const { t } = useTranslation()
   const p = t.projet360
@@ -22,6 +25,8 @@ export default function Questionnaire360({ analyseId, editable, initialAnswers, 
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [sources, setSources] = useState(initialSources)
+  const sourceLabels = p.prefillSources as Record<string, string>
   const { pending, reload } = useQualificationProposals(analyseId)
   const progression = useMemo(() => progression360(answers), [answers])
 
@@ -35,6 +40,7 @@ export default function Questionnaire360({ analyseId, editable, initialAnswers, 
     setBusy(false)
     if (!res || !res.ok) { setMsg(p.saveError); return }
     setMsg(p.saved)
+    setSources({}) // réponses confirmées : plus de badge « pré-rempli »
     await reload()
   }
 
@@ -42,6 +48,7 @@ export default function Questionnaire360({ analyseId, editable, initialAnswers, 
     <section className="card p-6">
       <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">{p.qTitle}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">{p.qIntro}</p>
+      {Object.keys(sources).length > 0 && <p className="mb-4 rounded-md bg-ebios-50 px-3 py-2 text-xs text-ebios-800 dark:bg-ebios-900/20 dark:text-ebios-200">{p.prefillHint}</p>}
       <div className="grid gap-5 lg:grid-cols-2">
         {DOMAINES_360.map(d => (
           <div key={d} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -67,6 +74,7 @@ export default function Questionnaire360({ analyseId, editable, initialAnswers, 
                         ))}
                       </span>
                     </div>
+                    {sources[q.id] && <p className="mt-0.5 text-[11px] text-ebios-700 dark:text-ebios-300"><span className="font-medium">{p.prefillBadge}</span> — {sourceLabels[sources[q.id]] ?? sources[q.id]}</p>}
                   </li>
                 )
               })}
