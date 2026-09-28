@@ -33,10 +33,11 @@ export interface QualificationQuestion {
 export type QualificationAnswers = Record<string, boolean | string>
 
 /** Méthodes prises en charge par le catalogue de risques de qualification. */
-export type QualificationMethod = 'EBIOS_RM' | 'ISO_27005' | 'ISO_31000' | 'NIST_800_30'
+export type QualificationMethod = 'EBIOS_RM' | 'ISO_27005' | 'ISO_31000' | 'NIST_800_30' | 'PROJET_360'
 
 /** Catégories de risques proposables (socle cyber + extensions projet/opérationnel/fraude). */
-export const QUALIFICATION_RISK_CATEGORIES = ['CYBER', 'PROJECT', 'OPERATIONAL', 'FRAUD'] as const
+// IT, BUSINESS, OUTSOURCING : domaines de l'analyse projet 360 (cf. lib/projet360).
+export const QUALIFICATION_RISK_CATEGORIES = ['CYBER', 'PROJECT', 'OPERATIONAL', 'FRAUD', 'IT', 'BUSINESS', 'OUTSOURCING'] as const
 /** Stratégies de traitement (enum Prisma StrategieTraitement). */
 export const QUALIFICATION_RISK_STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 /**

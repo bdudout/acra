@@ -7,13 +7,17 @@
 // registre (`lib/methodes.ts`) ; les libellés (résolus i18n) sont fournis par la
 // page. Chaque phase se rend selon son `type` :
 //   context = périmètre/objectifs · appreciation = registre éditable ·
-//   review = registre lecture seule (priorisation) · note = conseils seuls.
+//   review = registre lecture seule (priorisation) · note = conseils seuls ·
+//   qualification = questionnaire 360 + import cyber (analyse projet 360).
 // L'appréciation réutilise RisquesDirects (saisie directe gravité × vraisemblance).
 
 import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
 import PhaseGuidance from '@/components/PhaseGuidance'
 import ContexteEditor from '@/components/ContexteEditor'
+import Questionnaire360 from '@/components/projet360/Questionnaire360'
+import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
+import Dashboard360 from '@/components/projet360/Dashboard360'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -35,7 +39,7 @@ export default function PhasedRiskWorkshop({
   analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
   contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
-  withVulnerabilites, scale, appetit, ownerSuggestions,
+  withVulnerabilites, scale, appetit, ownerSuggestions, projet360,
 }: {
   analyseId: string
   editable: boolean
@@ -66,11 +70,15 @@ export default function PhasedRiskWorkshop({
   objectifsPlaceholder?: string
   /** Ouvre directement cette phase (deep-link `?phase=`), ex. depuis le registre. */
   initialPhaseKey?: string
+  /** Analyse projet 360 : réponses du questionnaire et seuil d'appétit global (tableau de bord). */
+  projet360?: { answers: Record<string, boolean>; appetitSeuil: number | null }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
   const phase = phases[active] ?? phases[0]
   const multi = phases.length > 1
+  // Rechargement du registre après création de risques proposés ou import cyber.
+  const [registryKey, setRegistryKey] = useState(0)
 
   return (
     <div>
@@ -119,6 +127,11 @@ export default function PhasedRiskWorkshop({
             </dl>
           )}
         </section>
+      ) : phase.type === 'qualification' && projet360 ? (
+        <>
+          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} onRisksCreated={() => setRegistryKey(k => k + 1)} />
+          {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} />}
+        </>
       ) : phase.type === 'note' ? (
         <section className="card p-6">
           <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{phase.label}</h2>
@@ -127,10 +140,11 @@ export default function PhasedRiskWorkshop({
       ) : (
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
+          {projet360 && phase.type === 'review' && <Dashboard360 key={registryKey} analyseId={analyseId} appetitSeuil={projet360.appetitSeuil} answers={projet360.answers} />}
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
-          <RisquesDirects analyseId={analyseId} editable={editable && phase.type !== 'review'}
+          <RisquesDirects key={`${phase.key}-${registryKey}`} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}
             scale={scale} appetit={appetit} ownerSuggestions={ownerSuggestions}

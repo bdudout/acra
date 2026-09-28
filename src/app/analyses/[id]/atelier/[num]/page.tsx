@@ -1,3 +1,4 @@
+import { sanitizeAnswers360 } from '@/lib/projet360'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -107,6 +108,13 @@ export default async function AtelierPage({
         labels: t.nist80030.phases as Record<string, string>, descByKey: { prepare: t.nist80030.prepareDesc, communicate: t.nist80030.communicateNote, maintain: t.nist80030.maintainNote },
         guidanceByKey: t.nist80030.guidance as Record<string, Guidance>,
       }
+    } else if (methode === 'PROJET_360') {
+      cfg = {
+        breadcrumb: t.methodes.projet360, title: t.projet360.pageTitle, subtitle: t.projet360.pageSubtitle,
+        phasesLabel: t.projet360.phasesLabel, perimetreLabel: t.projet360.perimetreLabel, objectifsLabel: t.projet360.objectifsLabel, noContext: t.projet360.noContext,
+        labels: t.projet360.phases as Record<string, string>, descByKey: { contexte: t.projet360.contexteDesc, evaluation: t.projet360.evaluationNote },
+        guidanceByKey: t.projet360.guidance as Record<string, Guidance>,
+      }
     } else { // ISO_31000 — phase unique d'appréciation (écran simple, sans onglets)
       cfg = {
         breadcrumb: t.methodes.iso31000, title: t.risquesDirects.pageTitle, subtitle: t.risquesDirects.pageSubtitle,
@@ -166,6 +174,10 @@ export default async function AtelierPage({
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
+            projet360={methode === 'PROJET_360' ? {
+              answers: sanitizeAnswers360((analyse as { qualification?: unknown }).qualification) as Record<string, boolean>,
+              appetitSeuil: directAppetit.seuilGlobal ?? null,
+            } : undefined}
           />
         </main>
         <PageScrollNavigation {...t.scrollNavigation} />

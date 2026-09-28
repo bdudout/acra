@@ -39,6 +39,8 @@ interface Props {
   commentaireApprobation?: string | null
   approuveLe?: string | null
   approbateurId?: string | null
+  /** Analyse projet 360 : avis RSSI + Risk Manager requis (undefined = approbation simple). */
+  approbations?: { role: string; userId: string; le: string; commentaire?: string }[]
   onStatutChange?: (newStatut: string) => void
 }
 
@@ -46,13 +48,15 @@ export default function AccessPanel({
   analyseId, statut: statutInit, ownerId, ownerName, ownerEmail,
   currentUserId, currentUserRole,
   canManage, canSubmit, canApprove, canAutoValidate = false,
-  commentaireApprobation: commentaireInit, approuveLe, approbateurId,
+  commentaireApprobation: commentaireInit, approuveLe, approbateurId, approbations: approbationsInit,
   onStatutChange,
 }: Props) {
   const { t, locale } = useTranslation()
   const router = useRouter()
   const [statut, setStatut] = useState(statutInit)
   const [commentaireApprobation, setCommentaireApprobation] = useState(commentaireInit ?? null)
+  const [approbations, setApprobations] = useState(approbationsInit)
+  const dual = approbationsInit !== undefined
   const [accès, setAccès] = useState<AccessEntry[]>([])
   const [loadingAccès, setLoadingAccès] = useState(false)
 
@@ -142,7 +146,8 @@ export default function AccessPanel({
         body: JSON.stringify({ action, commentaire: commentaire || undefined }),
       })
       const data = await res.json()
-      if (!res.ok) { setApprovalError(data.error); return }
+      if (!res.ok) { setApprovalError((t.projet360.approvalErrors as Record<string, string>)[data.error] ?? data.error); return }
+      if (dual && Array.isArray(data.approbations)) setApprobations(data.approbations)
       // Mise à jour locale immédiate pour un feedback rapide
       setStatut(data.statut)
       if (data.commentaireApprobation !== undefined) setCommentaireApprobation(data.commentaireApprobation)
@@ -180,6 +185,28 @@ export default function AccessPanel({
           <div className={`p-3 rounded-lg text-sm mb-4 ${statut === 'REJETE' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
             <div className="font-medium mb-1">{t.access.commentRM}</div>
             {commentaireApprobation}
+          </div>
+        )}
+
+        {/* Analyse projet 360 : double approbation RSSI + Risk Manager. */}
+        {dual && (
+          <div className="mb-4 rounded-lg border border-gray-200 p-3 text-sm">
+            <p className="font-medium text-gray-800">{t.projet360.approvalsTitle}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t.projet360.approvalsIntro}</p>
+            <ul className="mt-2 space-y-1 text-xs">
+              {(['RSSI', 'RISK_MANAGER'] as const).map(role => {
+                const a = (approbations ?? []).find(x => x.role === role) ?? (statut === 'APPROUVE' ? (approbations ?? []).find(x => x.role === 'ADMIN') : undefined)
+                const roleLabel = (t.projet360.roles as Record<string, string>)[role]
+                return (
+                  <li key={role} className={a ? 'text-green-700' : 'text-amber-700'}>
+                    {a
+                      ? t.projet360.approvedBy.replace('{role}', (t.projet360.roles as Record<string, string>)[a.role] ?? a.role).replace('{date}', formatDate(a.le, locale))
+                      : t.projet360.awaiting.replace('{role}', roleLabel)}
+                    {a?.commentaire && <span className="text-gray-600"> — {a.commentaire}</span>}
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )}
 

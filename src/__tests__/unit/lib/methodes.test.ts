@@ -43,13 +43,13 @@ describe('registre des méthodes', () => {
 })
 
 describe('resolveMethodes — ensemble effectif', () => {
-  it('les 4 méthodes sont câblées', () => {
-    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM', 'ISO_31000', 'ISO_27005', 'NIST_800_30'])
+  it('les 5 méthodes sont câblées (dont l\'analyse projet 360)', () => {
+    expect(IMPLEMENTED_METHODS).toEqual(['EBIOS_RM', 'ISO_31000', 'ISO_27005', 'NIST_800_30', 'PROJET_360'])
   })
 
   it('sans restriction : les méthodes câblées (ordonnées), défaut EBIOS RM', () => {
-    // Ordre = RISK_METHODS : EBIOS_RM, ISO_27005, NIST_800_30, ISO_31000.
-    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000'], default: 'EBIOS_RM' })
+    // Ordre = RISK_METHODS : EBIOS_RM, ISO_27005, NIST_800_30, ISO_31000, PROJET_360.
+    expect(resolveMethodes()).toEqual({ available: ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000', 'PROJET_360'], default: 'EBIOS_RM' })
   })
 
   it('EBIOS RM reste disponible même si l\'instance ne l\'a pas explicitement activé (garde-fou)', () => {

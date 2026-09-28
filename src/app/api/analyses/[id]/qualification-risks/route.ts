@@ -18,6 +18,7 @@ import { analyseGelee } from '@/lib/gel-analyse'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getServerT } from '@/lib/i18n'
 import { sanitizeQualification, suggestedQualificationRisks } from '@/lib/qualification'
+import { RISK_RULES_360, sanitizeAnswers360, isDomaine360 } from '@/lib/projet360'
 import {
   localizeQualificationRisks, planQualificationRiskCreation, qualificationRiskChannel, type QualificationRiskCatalogTexts,
 } from '@/lib/qualification-risks'
@@ -39,12 +40,16 @@ async function load(id: string) {
   if (!analyse || analyse.deletedAt) return { ok: false as const, res: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
   const config = await getOrgConfig(analyse.organizationId)
   const t = await getServerT()
-  const catalog = ((t as { qualification?: { riskCatalog?: QualificationRiskCatalogTexts } }).qualification?.riskCatalog) ?? {}
+  // Analyse projet 360 : règles et catalogue 360 en plus de ceux de l'organisation.
+  const is360 = analyse.methode === 'PROJET_360'
+  const catalog: QualificationRiskCatalogTexts = {
+    ...(((t as { qualification?: { riskCatalog?: QualificationRiskCatalogTexts } }).qualification?.riskCatalog) ?? {}),
+    ...(is360 ? t.projet360.riskCatalog as QualificationRiskCatalogTexts : {}),
+  }
   const questionnaire = config.qualificationQuestionnaire
-  const proposals = localizeQualificationRisks(
-    suggestedQualificationRisks(sanitizeQualification(analyse.qualification, questionnaire), questionnaire.riskRules ?? [], analyse.methode),
-    catalog,
-  )
+  const answers = { ...sanitizeQualification(analyse.qualification, questionnaire), ...(is360 ? sanitizeAnswers360(analyse.qualification) : {}) }
+  const rules = [...(questionnaire.riskRules ?? []), ...(is360 ? RISK_RULES_360 : [])]
+  const proposals = localizeQualificationRisks(suggestedQualificationRisks(answers, rules, analyse.methode), catalog)
   const existingRuleIds = analyse.risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : []))
   return { ok: true as const, userId: user.id, role, analyse, config, proposals, existingRuleIds }
 }
@@ -90,6 +95,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         graviteActuelle: r.graviteActuelle, vraisemblanceActuelle: r.vraisemblanceActuelle, niveauActuel: r.niveauActuel,
         graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle, niveauResiduel: r.niveauResiduel,
         strategie: r.strategie,
+        // Domaine du risque (projet 360) = catégorie de la règle, si c'est un domaine 360.
+        ...(isDomaine360(p.category) ? { domaine: p.category } : {}),
       }
     }),
   }))

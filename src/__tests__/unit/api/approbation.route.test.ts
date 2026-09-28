@@ -51,3 +51,46 @@ describe('POST /api/analyses/[id]/approbation APPROUVER — RBAC rôle effectif 
     expect(prisma.analyse.update).toHaveBeenCalledOnce()
   })
 })
+
+describe('APPROUVER — analyse projet 360 : RSSI ET Risk Manager', () => {
+  const analyse360 = (approbations: unknown[] = []) => vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
+    id: 'a1', nom: 'P', statut: 'SOUMIS', userId: 'auteur', organizationId: 'orgX', methode: 'PROJET_360',
+    deletedAt: null, accesUtilisateurs: [], approbations,
+  } as never)
+
+  it('premier avis (RSSI) : enregistré, l’analyse reste soumise', async () => {
+    analyse360()
+    setSession('ANALYSTE'); vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('RSSI')
+    const res = await POST(req({ action: 'APPROUVER', commentaire: 'ok cyber' }), params)
+    expect(res.status).toBe(200)
+    const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
+    expect(data.statut).toBeUndefined()
+    expect(data.approbations).toEqual([expect.objectContaining({ role: 'RSSI', userId: 'approbateur', commentaire: 'ok cyber' })])
+  })
+
+  it('second avis (Risk Manager, autre personne) : analyse approuvée', async () => {
+    analyse360([{ role: 'RSSI', userId: 'rssi1', le: '2026-09-29T09:00:00.000Z' }])
+    setSession('ANALYSTE'); vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('RISK_MANAGER')
+    const res = await POST(req({ action: 'APPROUVER' }), params)
+    expect(res.status).toBe(200)
+    const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
+    expect(data.statut).toBe('APPROUVE')
+    expect((data.approbations as unknown[]).length).toBe(2)
+  })
+
+  it('deux RSSI ne suffisent pas : second avis du même rôle refusé (409)', async () => {
+    analyse360([{ role: 'RSSI', userId: 'rssi1', le: '2026-09-29T09:00:00.000Z' }])
+    setSession('ANALYSTE'); vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('RSSI')
+    const res = await POST(req({ action: 'APPROUVER' }), params)
+    expect(res.status).toBe(409)
+    expect(prisma.analyse.update).not.toHaveBeenCalled()
+  })
+
+  it('rejet : renvoie à l’auteur et efface les avis', async () => {
+    analyse360([{ role: 'RSSI', userId: 'rssi1', le: '2026-09-29T09:00:00.000Z' }])
+    setSession('ANALYSTE'); vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('RISK_MANAGER')
+    await POST(req({ action: 'REJETER', commentaire: 'budget non couvert' }), params)
+    const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
+    expect(data).toMatchObject({ statut: 'REJETE', approbations: [] })
+  })
+})

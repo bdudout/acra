@@ -17,7 +17,7 @@ import { qualificationRiskChannel } from '@/lib/qualification-risks'
 
 // Clé i18n du nom de chaque méthode (t.methodes.*).
 const METHODE_I18N: Record<string, string> = {
-  EBIOS_RM: 'ebiosRm', ISO_27005: 'iso27005', NIST_800_30: 'nist80030', ISO_31000: 'iso31000',
+  EBIOS_RM: 'ebiosRm', ISO_27005: 'iso27005', NIST_800_30: 'nist80030', ISO_31000: 'iso31000', PROJET_360: 'projet360',
 }
 
 export default function NewAnalysePage() {

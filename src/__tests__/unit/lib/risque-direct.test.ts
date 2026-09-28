@@ -112,3 +112,13 @@ describe('échelle de l’organisation (P1) — borne max 4 ou 5', () => {
     expect(sanitizeDirectRisquePatch({ graviteActuelle: 5 })).toMatchObject({ graviteActuelle: 4 })
   })
 })
+
+describe('domaine (analyse projet 360)', () => {
+  it('conserve un domaine connu, écarte une valeur inconnue (null)', () => {
+    expect(sanitizeDirectRisque({ nom: 'x', domaine: 'FRAUD' }).domaine).toBe('FRAUD')
+    expect(sanitizeDirectRisque({ nom: 'x', domaine: 'AUTRE' }).domaine).toBeNull()
+    expect(sanitizeDirectRisque({ nom: 'x' })).not.toHaveProperty('domaine')
+    expect(sanitizeDirectRisquePatch({ domaine: 'IT' }).domaine).toBe('IT')
+    expect(sanitizeDirectRisquePatch({ domaine: null }).domaine).toBeNull()
+  })
+})
