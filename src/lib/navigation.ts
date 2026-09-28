@@ -34,7 +34,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -117,6 +117,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const pilotage: NavKey[] = ['dashboard']
   // Le plan d'action unifié est un lien cœur (« actions ») → plus de doublon ici.
   if (canPilotage) pilotage.push('pilotage')
+  // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
+  if (canPilotage && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.

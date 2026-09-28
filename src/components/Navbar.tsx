@@ -23,7 +23,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, type LucideIcon,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -178,6 +178,7 @@ export default function Navbar() {
     suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
     ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
+    appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
