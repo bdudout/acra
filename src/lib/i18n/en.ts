@@ -1023,6 +1023,15 @@ export const en: Translations = {
   },
   derogations: {
     detail: {
+      avisFavorableReserves: 'Favourable RSSI opinion with reservations',
+      reserves: 'Reservations',
+      avisReservesBtn: 'Favourable with reservations',
+      modifierBtn: 'Edit request',
+      enregistrerBtn: 'Save',
+      retirerBtn: 'Withdraw request',
+      retireeLe: 'Request withdrawn on',
+      retraitConfirm: 'Withdraw this request? It stays recorded in the register but will no longer be reviewed.',
+      reservesHint: 'For “Favourable with reservations”, enter the reservations above.',
       loadError: 'Unable to load the details.',
       motif: 'Reason',
       mesures: 'Compensating measures',
@@ -1078,6 +1087,9 @@ export const en: Translations = {
     submit: 'Send request',
     cancel: 'Cancel',
     portees: { CONTROLE: 'Framework control', RISQUE: 'Risk' },
+    avisFavorableReserves: 'Favourable with reservations',
+    retirer: 'Withdraw request',
+    reserves: 'RSSI reservations',
     statuts: {
       DEMANDEE: 'Awaiting CISO opinion',
       DOUBLE_REGARD: 'Second review requested',
@@ -1088,6 +1100,7 @@ export const en: Translations = {
       REJETEE: 'Rejected',
       CLOTUREE: 'Closed',
       REVOQUEE: 'Revoked',
+      RETIREE: 'Withdrawn',
     },
     avisFavorable: 'Favorable opinion',
     avisDefavorable: 'Unfavorable opinion',

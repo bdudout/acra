@@ -1022,6 +1022,15 @@ export const de: Translations = {
   },
   derogations: {
     detail: {
+      avisFavorableReserves: 'Positive RSSI-Stellungnahme mit Vorbehalten',
+      reserves: 'Vorbehalte',
+      avisReservesBtn: 'Positiv mit Vorbehalten',
+      modifierBtn: 'Antrag bearbeiten',
+      enregistrerBtn: 'Speichern',
+      retirerBtn: 'Antrag zurückziehen',
+      retireeLe: 'Antrag zurückgezogen am',
+      retraitConfirm: 'Diesen Antrag zurückziehen? Er bleibt im Register dokumentiert, wird aber nicht mehr geprüft.',
+      reservesHint: 'Für „Positiv mit Vorbehalten“ die Vorbehalte oben eingeben.',
       loadError: 'Details konnten nicht geladen werden.',
       motif: 'Begründung',
       mesures: 'Kompensierende Maßnahmen',
@@ -1077,6 +1086,9 @@ export const de: Translations = {
     submit: 'Antrag senden',
     cancel: 'Abbrechen',
     portees: { CONTROLE: 'Kontrolle eines Rahmenwerks', RISQUE: 'Risiko' },
+    avisFavorableReserves: 'Positiv mit Vorbehalten',
+    retirer: 'Antrag zurückziehen',
+    reserves: 'Vorbehalte des RSSI',
     statuts: {
       DEMANDEE: 'Wartet auf CISO-Stellungnahme',
       DOUBLE_REGARD: 'Zweitprüfung angefordert',
@@ -1087,6 +1099,7 @@ export const de: Translations = {
       REJETEE: 'Abgelehnt',
       CLOTUREE: 'Abgeschlossen',
       REVOQUEE: 'Widerrufen',
+      RETIREE: 'Zurückgezogen',
     },
     avisFavorable: 'Befürwortende Stellungnahme',
     avisDefavorable: 'Ablehnende Stellungnahme',

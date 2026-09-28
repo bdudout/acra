@@ -16,7 +16,7 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   etatDerogation, joursAvantExpiration,
-  canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation, canCloturerDerogation, canRevoquerDerogation,
+  canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation, canCloturerDerogation, canRevoquerDerogation, canModifierDerogation, canRetirerDerogation,
   type DerogationEtat, type DerogationStatut,
 } from '@/lib/derogation'
 
@@ -24,7 +24,8 @@ interface DerogDetail {
   id: string; statut: string; portee: string; referentiel: string | null; ref: string | null; intitule: string
   motif: string; mesuresCompensatoires: string; dateDebut: string | null; dateFin: string | null
   demandeurId: string; avisRssiPar: string | null; avisRssiLe: string | null
-  avisRssiFavorable: boolean | null; avisRssiCommentaire: string | null
+  avisRssiFavorable: boolean | null; avisRssiCommentaire: string | null; avisRssiReserves?: string | null
+  retireeLe?: string | null; retraitMotif?: string | null
   valideePar: string | null; valideeLe: string | null; rejetMotif: string | null; clotureCommentaire: string | null
   createdAt: string
 }
@@ -51,6 +52,7 @@ const BADGE: Record<DerogationEtat, string> = {
   REJETEE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
   CLOTUREE: 'bg-slate-200 text-slate-700 dark:bg-slate-600/40 dark:text-slate-200',
   REVOQUEE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
+  RETIREE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
 }
 
 // Fenêtre d'alerte par défaut pour l'affichage du registre (le seuil précis par
@@ -60,7 +62,7 @@ const ALERTE_DEFAUT = 30
 type Filtre = 'EN_COURS_EXP' | 'EN_COURS' | 'EXPIREES' | 'EN_REVUE' | 'CLOTUREES'
 
 const REVIEW = ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER']
-const TERMINAL = ['CLOTUREE', 'REJETEE', 'REVOQUEE']
+const TERMINAL = ['CLOTUREE', 'REJETEE', 'REVOQUEE', 'RETIREE']
 // Prédicat d'appartenance d'une ligne (état effectif calculé) à un filtre.
 function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
   switch (f) {
@@ -87,11 +89,13 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
   const [actionBusy, setActionBusy] = useState(false)
   const [actionComment, setActionComment] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
+  // Modification de la demande par son demandeur (avant tout avis RSSI).
+  const [editForm, setEditForm] = useState<{ intitule: string; motif: string; mesures: string } | null>(null)
 
   const sessionUser = useMemo(() => ({ id: userId, role: userRole }), [userId, userRole])
 
   async function toggleRow(id: string) {
-    setActionError(null); setActionComment('')
+    setActionError(null); setActionComment(''); setEditForm(null)
     if (openId === id) { setOpenId(null); setDetail(null); return }
     setOpenId(id); setDetail(null); setDetailLoading(true)
     try {
@@ -109,7 +113,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     })
     setActionBusy(false)
     if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(j.error ?? 'Erreur'); return }
-    setOpenId(null); setDetail(null); setActionComment('')
+    setOpenId(null); setDetail(null); setActionComment(''); setEditForm(null)
     router.refresh()
   }
   const [form, setForm] = useState({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
@@ -324,11 +328,13 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                           {detail.dateFin && <span>{d.detail.fin} {formatDate(detail.dateFin, locale)}</span>}
                         </div>
                         {detail.avisRssiPar && (
-                          <div className={`text-xs rounded-lg border px-3 py-2 ${detail.avisRssiFavorable ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-300' : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300'}`}>
-                            <span className="font-semibold">{detail.avisRssiFavorable ? d.detail.avisFavorable : d.detail.avisDefavorable}</span>
+                          <div className={`text-xs rounded-lg border px-3 py-2 ${detail.avisRssiReserves ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200' : detail.avisRssiFavorable ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-300' : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300'}`}>
+                            <span className="font-semibold">{detail.avisRssiReserves ? d.detail.avisFavorableReserves : detail.avisRssiFavorable ? d.detail.avisFavorable : d.detail.avisDefavorable}</span>
                             {detail.avisRssiCommentaire && <span> — {detail.avisRssiCommentaire}</span>}
+                            {detail.avisRssiReserves && <p className="mt-1 whitespace-pre-wrap"><span className="font-semibold">{d.detail.reserves} :</span> {detail.avisRssiReserves}</p>}
                           </div>
                         )}
+                        {detail.retireeLe && <p className="text-xs text-gray-600 dark:text-gray-300">{d.detail.retireeLe} {formatDate(detail.retireeLe, locale)}{detail.retraitMotif && ` — ${detail.retraitMotif}`}</p>}
                         {detail.rejetMotif && <p className="text-xs text-red-700 dark:text-red-300">{d.detail.motifRejet} {detail.rejetMotif}</p>}
 
                         {(() => {
@@ -340,8 +346,10 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                           const valid = st === 'VALIDATION_METIER' && canValiderDerogation(sessionUser, rbac, { secondeLigneActive })
                           const cloture = st === 'ACTIVE' && canCloturerDerogation(sessionUser, rbac, peutEditer)
                           const revoque = st === 'ACTIVE' && canRevoquerDerogation(sessionUser, rbac)
-                          const needsComment = avis || dbl || valid || revoque
-                          const hasActions = avis || dbl || valid || cloture || revoque
+                          const modifier = canModifierDerogation(sessionUser, rbac)
+                          const retirer = canRetirerDerogation(sessionUser, rbac)
+                          const needsComment = avis || dbl || valid || revoque || retirer
+                          const hasActions = avis || dbl || valid || cloture || revoque || modifier || retirer
                           if (!hasActions) return <p className="text-xs text-gray-400 italic">{d.detail.aucuneAction}</p>
                           return (
                             <div className="space-y-2 pt-1 border-t border-gray-200 dark:border-gray-700">
@@ -354,6 +362,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                               <div className="flex flex-wrap gap-2">
                                 {avis && <>
                                   <button disabled={actionBusy} onClick={() => doAction('AVIS_RSSI', { favorable: true })} className="btn-primary text-xs inline-flex items-center gap-1.5 disabled:opacity-50"><Check size={13} aria-hidden="true" /> {d.detail.avisFavorableBtn}</button>
+                                  <button disabled={actionBusy || !actionComment.trim()} title={d.detail.reservesHint} onClick={() => doAction('AVIS_RSSI', { favorable: true, reserves: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-800 hover:bg-amber-50 disabled:opacity-50 inline-flex items-center gap-1.5"><Check size={13} aria-hidden="true" /> {d.detail.avisReservesBtn}</button>
                                   <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('AVIS_RSSI', { favorable: false, commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 inline-flex items-center gap-1.5"><Ban size={13} aria-hidden="true" /> {d.detail.avisDefavorableBtn}</button>
                                 </>}
                                 {dbl && <>
@@ -366,7 +375,20 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                                 </>}
                                 {cloture && <button disabled={actionBusy} onClick={() => doAction('CLOTURER', { commentaire: actionComment || undefined })} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.cloturerBtn}</button>}
                                 {revoque && <button disabled={actionBusy || !actionComment.trim()} onClick={() => doAction('REVOQUER', { commentaire: actionComment })} className="text-xs px-3 py-1.5 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50">{d.detail.revoquerBtn}</button>}
+                                {modifier && !editForm && <button disabled={actionBusy} onClick={() => setEditForm({ intitule: detail.intitule, motif: detail.motif, mesures: detail.mesuresCompensatoires })} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.modifierBtn}</button>}
+                                {retirer && <button disabled={actionBusy} onClick={() => { if (window.confirm(d.detail.retraitConfirm)) doAction('RETIRER', { commentaire: actionComment || undefined }) }} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50">{d.detail.retirerBtn}</button>}
                               </div>
+                              {modifier && editForm && (
+                                <div className="space-y-2 pt-2">
+                                  <input aria-label={d.intitule} value={editForm.intitule} onChange={e => setEditForm(f => f && ({ ...f, intitule: e.target.value }))} className="w-full text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900" />
+                                  <textarea aria-label={d.motif} value={editForm.motif} rows={2} onChange={e => setEditForm(f => f && ({ ...f, motif: e.target.value }))} className="w-full text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900" />
+                                  <textarea aria-label={d.mesuresCompensatoires} value={editForm.mesures} rows={2} onChange={e => setEditForm(f => f && ({ ...f, mesures: e.target.value }))} className="w-full text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900" />
+                                  <div className="flex gap-2">
+                                    <button disabled={actionBusy} onClick={() => doAction('MODIFIER', { intitule: editForm.intitule, motif: editForm.motif, mesuresCompensatoires: editForm.mesures })} className="btn-primary text-xs disabled:opacity-50">{d.detail.enregistrerBtn}</button>
+                                    <button disabled={actionBusy} onClick={() => setEditForm(null)} className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600">{d.cancel}</button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )
                         })()}

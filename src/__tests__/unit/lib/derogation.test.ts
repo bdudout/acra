@@ -4,7 +4,7 @@ import {
   validateDerogationInput, statutInitial, statutApresAvisRssi, statutApresDoubleRegard, estTerminale,
   prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
-  canRevoquerDerogation, canCloturerDerogation,
+  canRevoquerDerogation, canCloturerDerogation, canModifierDerogation, canRetirerDerogation, DEROGATION_STATUTS,
   type DerogationStatut,
 } from '@/lib/derogation'
 import type { SessionUser } from '@/lib/permissions'
@@ -209,5 +209,27 @@ describe('RBAC dérogations', () => {
     expect(canCloturerDerogation(u('ANALYSTE', 'p'), d, true)).toBe(true)   // porteur éditeur
     expect(canCloturerDerogation(u('ANALYSTE', 'p'), d, false)).toBe(false) // pas éditeur
     expect(canCloturerDerogation(u('RSSI'), d, false)).toBe(true)
+  })
+})
+
+describe('demande en revue : modification et retrait par le demandeur', () => {
+  const demandeur = { id: 'dem', role: 'ANALYSTE' as const }
+  const autre = { id: 'x', role: 'RSSI' as const }
+
+  it('modification : demandeur uniquement, en DEMANDEE et avant tout avis RSSI', () => {
+    expect(canModifierDerogation(demandeur, { statut: 'DEMANDEE', demandeurId: 'dem', avisRssiPar: null })).toBe(true)
+    expect(canModifierDerogation(autre, { statut: 'DEMANDEE', demandeurId: 'dem', avisRssiPar: null })).toBe(false)
+    expect(canModifierDerogation(demandeur, { statut: 'DEMANDEE', demandeurId: 'dem', avisRssiPar: 'rssi' })).toBe(false)
+    expect(canModifierDerogation(demandeur, { statut: 'VALIDATION_METIER', demandeurId: 'dem' })).toBe(false)
+  })
+
+  it('retrait : demandeur uniquement, à toute étape de revue ; RETIREE est terminal', () => {
+    for (const statut of ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'] as const) {
+      expect(canRetirerDerogation(demandeur, { statut, demandeurId: 'dem' })).toBe(true)
+      expect(canRetirerDerogation(autre, { statut, demandeurId: 'dem' })).toBe(false)
+    }
+    expect(canRetirerDerogation(demandeur, { statut: 'ACTIVE', demandeurId: 'dem' })).toBe(false)
+    expect(DEROGATION_STATUTS).toContain('RETIREE')
+    expect(estTerminale('RETIREE')).toBe(true)
   })
 })

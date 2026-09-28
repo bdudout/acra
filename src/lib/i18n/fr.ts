@@ -1040,6 +1040,15 @@ export const fr = {
   },
   derogations: {
     detail: {
+      avisFavorableReserves: 'Avis RSSI favorable avec réserves',
+      reserves: 'Réserves',
+      avisReservesBtn: 'Favorable avec réserves',
+      modifierBtn: 'Modifier la demande',
+      enregistrerBtn: 'Enregistrer',
+      retirerBtn: 'Retirer la demande',
+      retireeLe: 'Demande retirée le',
+      retraitConfirm: 'Retirer cette demande ? Elle reste tracée dans le registre mais ne sera plus examinée.',
+      reservesHint: 'Pour « Favorable avec réserves », saisissez les réserves ci-dessus.',
       loadError: 'Impossible de charger le détail.',
       motif: 'Motif',
       mesures: 'Mesures compensatoires',
@@ -1098,6 +1107,9 @@ export const fr = {
     // Portées
     portees: { CONTROLE: 'Contrôle d\'un référentiel', RISQUE: 'Risque' },
     // Statuts / états
+    avisFavorableReserves: 'Favorable avec réserves',
+    retirer: 'Retirer la demande',
+    reserves: 'Réserves du RSSI',
     statuts: {
       DEMANDEE: 'En attente d\'avis RSSI',
       DOUBLE_REGARD: 'Double regard demandé',
@@ -1108,6 +1120,7 @@ export const fr = {
       REJETEE: 'Rejetée',
       CLOTUREE: 'Clôturée',
       REVOQUEE: 'Révoquée',
+      RETIREE: 'Retirée',
     },
     // Actions
     avisFavorable: 'Avis favorable',

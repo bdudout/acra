@@ -7,7 +7,7 @@ import { canEditAnalyse, type UserRole } from '@/lib/permissions'
 import {
   calcDateFin, depasseDelaiMax, statutApresAvisRssi, statutApresDoubleRegard, prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
-  canRevoquerDerogation, canCloturerDerogation,
+  canRevoquerDerogation, canCloturerDerogation, canModifierDerogation, canRetirerDerogation, validateDerogationInput,
   type DerogationStatut, type DerogationWorkflow,
 } from '@/lib/derogation'
 import { auditLog, getClientIp, type AuditAction } from '@/lib/logger'
@@ -50,7 +50,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     dateDebut: derog.dateDebut, dateFin: derog.dateFin,
     demandeurId: derog.demandeurId,
     avisRssiPar: derog.avisRssiPar, avisRssiLe: derog.avisRssiLe,
-    avisRssiFavorable: derog.avisRssiFavorable, avisRssiCommentaire: derog.avisRssiCommentaire,
+    avisRssiFavorable: derog.avisRssiFavorable, avisRssiCommentaire: derog.avisRssiCommentaire, avisRssiReserves: derog.avisRssiReserves,
+    retireeLe: derog.retireeLe, retraitMotif: derog.retraitMotif,
     doubleRegardCommentaire: derog.doubleRegardCommentaire,
     valideePar: derog.valideePar, valideeLe: derog.valideeLe,
     rejeteeLe: derog.rejeteeLe, rejetMotif: derog.rejetMotif,
@@ -107,21 +108,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const activation = () => ({ dateDebut: derog.dateDebut ?? now, dateFin: calcDateFin(now, orgConfig.derogationDureeDefautJours), alerteeLe: null })
 
   switch (action) {
-    // ── Avis RSSI (favorable/défavorable, + demande de double regard) ──
+    // ── Avis RSSI (favorable, favorable avec réserves, défavorable ; + double regard) ──
     case 'AVIS_RSSI': {
       if (!canAvisRssiDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const favorable = body.favorable === true
       const doubleRegard = body.demandeDoubleRegard === true
       if (!favorable && !commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour un avis défavorable' }, { status: 400 })
+      // « Favorable avec réserves » : même circuit qu'un avis favorable, réserves obligatoires.
+      const avecReserves = body.reserves !== undefined && body.reserves !== null
+      const reserves = avecReserves ? String(body.reserves).trim().slice(0, 5000) : ''
+      if (avecReserves && (!favorable || !reserves)) return NextResponse.json({ error: 'Des réserves non vides accompagnent un avis favorable' }, { status: 400 })
       const statut = statutApresAvisRssi(favorable, doubleRegard, workflow, orgConfig.derogationDoubleRegard)
       const updated = await save({
         statut,
         avisRssiPar: userId, avisRssiLe: now, avisRssiFavorable: favorable, avisRssiCommentaire: commentaire,
+        avisRssiReserves: reserves || null,
         // Niveau RSSI : l'avis favorable active directement (le RSSI est le valideur).
         ...(statut === 'ACTIVE' ? { valideePar: userId, valideeLe: now, ...activation() } : {}),
         ...(statut === 'REJETEE' ? { rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire } : {}),
       })
-      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_RSSI_OPINION', { favorable, doubleRegard, statut })
+      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_RSSI_OPINION', { favorable, avecReserves: !!reserves, doubleRegard, statut })
       return NextResponse.json(updated)
     }
 
@@ -213,6 +219,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un motif de révocation est requis' }, { status: 400 })
       const updated = await save({ statut: 'REVOQUEE', revoqueePar: userId, revoqueeLe: now, revoqueMotif: commentaire })
       await audit('DEROGATION_REVOKED', {})
+      return NextResponse.json(updated)
+    }
+
+    // ── Modification de la demande par son demandeur (avant tout avis RSSI) ──
+    case 'MODIFIER': {
+      if (!canModifierDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      const texte = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max)
+      const data = { intitule: texte(body.intitule, 300), motif: texte(body.motif, 5000), mesuresCompensatoires: texte(body.mesuresCompensatoires, 5000) }
+      const invalid = validateDerogationInput({ ...data, portee: derog.portee, referentiel: derog.referentiel, ref: derog.ref, risqueId: derog.risqueId })
+      if (invalid) return NextResponse.json({ error: invalid }, { status: 400 })
+      const updated = await save(data)
+      await audit('DEROGATION_UPDATED', { champs: Object.keys(data).filter(k => data[k as keyof typeof data] !== (derog as Record<string, unknown>)[k]) })
+      return NextResponse.json(updated)
+    }
+
+    // ── Retrait de la demande par son demandeur (en revue) — conservée pour l'audit ──
+    case 'RETIRER': {
+      if (!canRetirerDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      const updated = await save({ statut: 'RETIREE', retireeLe: now, retraitMotif: commentaire?.trim() || null })
+      await audit('DEROGATION_WITHDRAWN', { statutPrecedent: derog.statut })
       return NextResponse.json(updated)
     }
 

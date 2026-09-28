@@ -1023,6 +1023,15 @@ export const es: Translations = {
   },
   derogations: {
     detail: {
+      avisFavorableReserves: 'Dictamen RSSI favorable con reservas',
+      reserves: 'Reservas',
+      avisReservesBtn: 'Favorable con reservas',
+      modifierBtn: 'Modificar la solicitud',
+      enregistrerBtn: 'Guardar',
+      retirerBtn: 'Retirar la solicitud',
+      retireeLe: 'Solicitud retirada el',
+      retraitConfirm: '¿Retirar esta solicitud? Queda registrada en el registro, pero ya no se examinará.',
+      reservesHint: 'Para «Favorable con reservas», introduzca las reservas arriba.',
       loadError: 'No se pueden cargar los detalles.',
       motif: 'Motivo',
       mesures: 'Medidas compensatorias',
@@ -1078,6 +1087,9 @@ export const es: Translations = {
     submit: 'Enviar solicitud',
     cancel: 'Cancelar',
     portees: { CONTROLE: 'Control de un marco', RISQUE: 'Riesgo' },
+    avisFavorableReserves: 'Favorable con reservas',
+    retirer: 'Retirar la solicitud',
+    reserves: 'Reservas del RSSI',
     statuts: {
       DEMANDEE: 'A la espera del dictamen del CISO',
       DOUBLE_REGARD: 'Segunda revisión solicitada',
@@ -1088,6 +1100,7 @@ export const es: Translations = {
       REJETEE: 'Rechazada',
       CLOTUREE: 'Cerrada',
       REVOQUEE: 'Revocada',
+      RETIREE: 'Retirada',
     },
     avisFavorable: 'Dictamen favorable',
     avisDefavorable: 'Dictamen desfavorable',

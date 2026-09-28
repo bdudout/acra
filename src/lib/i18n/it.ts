@@ -1023,6 +1023,15 @@ export const it: Translations = {
   },
   derogations: {
     detail: {
+      avisFavorableReserves: 'Parere RSSI favorevole con riserve',
+      reserves: 'Riserve',
+      avisReservesBtn: 'Favorevole con riserve',
+      modifierBtn: 'Modifica la richiesta',
+      enregistrerBtn: 'Salva',
+      retirerBtn: 'Ritira la richiesta',
+      retireeLe: 'Richiesta ritirata il',
+      retraitConfirm: 'Ritirare questa richiesta? Resta tracciata nel registro ma non sarà più esaminata.',
+      reservesHint: 'Per «Favorevole con riserve», inserire le riserve qui sopra.',
       loadError: 'Impossibile caricare i dettagli.',
       motif: 'Motivo',
       mesures: 'Misure compensative',
@@ -1078,6 +1087,9 @@ export const it: Translations = {
     submit: 'Invia richiesta',
     cancel: 'Annulla',
     portees: { CONTROLE: 'Controllo di un framework', RISQUE: 'Rischio' },
+    avisFavorableReserves: 'Favorevole con riserve',
+    retirer: 'Ritira la richiesta',
+    reserves: 'Riserve del RSSI',
     statuts: {
       DEMANDEE: 'In attesa del parere del CISO',
       DOUBLE_REGARD: 'Seconda revisione richiesta',
@@ -1088,6 +1100,7 @@ export const it: Translations = {
       REJETEE: 'Respinta',
       CLOTUREE: 'Chiusa',
       REVOQUEE: 'Revocata',
+      RETIREE: 'Ritirata',
     },
     avisFavorable: 'Parere favorevole',
     avisDefavorable: 'Parere sfavorevole',
