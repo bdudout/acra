@@ -21,7 +21,26 @@ doit être créé sans voir son intitulé, sa justification et sa cotation.
    l’analyse, puis un bilan donne les créations et les exclusions. Les risques
    demeurent accessibles et modifiables dans le registre comme tout autre risque.
 5. Une nouvelle validation ne recrée pas un risque déjà proposé/importé pour la
-   même règle : l’opération est idempotente au niveau analyse + règle.
+   même règle : l’opération est idempotente au niveau analyse + règle
+   (`Risque.qualificationRuleId`, contrainte unique analyse × règle).
+
+### Risques imposés (décision du 2026-09-28)
+
+Une règle peut être marquée **imposée** par l’ADMIN : le risque est proposé
+**coché et verrouillé** (non décochable) et il est créé à la confirmation même
+s’il n’a pas été sélectionné. Tant qu’un risque imposé n’est pas créé, il reste
+proposé (bouton « Risques proposés (n) » sur la page de l’analyse ; bloc non
+masquable en atelier 5). Un risque imposé peut être modifié ensuite comme tout
+risque.
+
+### EBIOS RM : proposition en atelier 5 (décision du 2026-09-28)
+
+En EBIOS RM, les risques naissent des scénarios : les propositions ne sont pas
+faites à la validation de la qualification mais **en atelier 5** (traitement du
+risque). Les risques retenus sont ajoutés à la liste de l’atelier (état local,
+persisté par son auto-save, rattachés à leur règle) puis reliés par l’analyste à
+un scénario opérationnel. La route de création directe refuse EBIOS RM
+(`ebios_via_atelier5`) pour ne pas être écrasée par l’auto-save de l’atelier.
 
 ## Configuration et gouvernance
 
@@ -60,3 +79,16 @@ doit être créé sans voir son intitulé, sa justification et sa cotation.
 - Les tests couvrent : moteur de règles pur, isolation d’organisation, API,
   écran de proposition et absence de doublon; la recette E2E couvre validation,
   sélection, création et consultation.
+
+## Implémentation (état au 2026-09-28)
+
+- Moteur pur : `lib/qualification.ts` (`suggestedQualificationRisks`, sanitizer,
+  catalogue `DEFAULT_QUALIFICATION_RISK_RULES` à intitulés **traduits** via
+  `t.qualification.riskCatalog`) et `lib/qualification-risks.ts` (localisation,
+  plan de création sélection ∪ imposés, canal, conversion atelier 5, dédoublonnage).
+- API : `GET|POST /api/analyses/[id]/qualification-risks` — accès (404), édition
+  (403), gel après acceptation (403), transaction `createMany skipDuplicates`,
+  journal d’audit, bilan créés / non retenus.
+- UI : `QualificationRiskProposal` (modal ou intégré), `QualificationRisksFlow`
+  (page d’analyse et création d’analyse), `QualificationRisksAtelier5`,
+  éditeur `QualificationRiskRulesEditor` dans `/configuration`.

@@ -1531,8 +1531,13 @@ model Risque {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Règle de qualification à l'origine du risque (risques proposés/imposés par le
+  // questionnaire). Unique par analyse : une règle ne crée jamais deux risques.
+  qualificationRuleId String?
+
   derogations Derogation[]
 
+  @@unique([analyseId, qualificationRuleId])
   @@index([analyseId])
   @@index([niveauRisque])
 }

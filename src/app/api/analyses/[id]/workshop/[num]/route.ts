@@ -1,5 +1,6 @@
 import { missingExclusionJustifications } from '@/lib/conformite'
 import { NextRequest, NextResponse } from 'next/server'
+import { dedupeQualificationRuleIds } from '@/lib/qualification-risks'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -195,7 +196,9 @@ export async function PUT(
           prisma.risque.deleteMany({ where: { analyseId } }),
           ...(body.risques?.length
             ? [prisma.risque.createMany({
-                data: body.risques.map((r: any) => {
+                // Règle de qualification unique par analyse : dédoublonnée pour ne
+                // jamais faire échouer la sauvegarde sur la contrainte unique.
+                data: dedupeQualificationRuleIds(body.risques as any[]).map((r: any) => {
                   const {
                     id: _id, analyseId: _aid, analyse: _rel,
                     createdAt: _ca, updatedAt: _ua, scenarioOpNom: _son,

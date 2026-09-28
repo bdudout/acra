@@ -1,15 +1,15 @@
 'use client'
 
-import { Compass } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Compass, ListPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
-import QualificationRiskProposal from '@/components/QualificationRiskProposal'
+import { QualificationRisksDialog, useQualificationProposals } from '@/components/QualificationRisksFlow'
 import {
   FILIERE_OIV_OPTIONS,
   deriveOrientations,
   isQualificationComplete,
   effectiveQualificationQuestions,
-  suggestedQualificationRisks,
   EMPTY_QUALIFICATION_CONFIG,
   type QualificationAnswers,
   type QualificationConfig,
@@ -26,7 +26,7 @@ interface Props {
   secteur?: string | null
   /** Personnalisation du questionnaire (overrides natifs + questions custom) — config org. */
   config?: QualificationConfig | null
-  /** Méthode de l'analyse : filtre les règles de risques spécialisées. */
+  /** Méthode de l'analyse (conservée pour compatibilité ; le serveur filtre les règles). */
   methode?: string | null
 }
 
@@ -35,13 +35,19 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null, methode = null }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null }: Props) {
   const isFinance = /banqu|financ|bancaire|assur|fintech/i.test(secteur ?? '')
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Risques proposés/imposés par les réponses (propositions calculées et traduites côté serveur).
+  const router = useRouter()
+  const { channel, pending, reload } = useQualificationProposals(analyseId)
   const [proposalsOpen, setProposalsOpen] = useState(false)
+  const [proposalSummary, setProposalSummary] = useState<string | null>(null)
+  const hasInitialAnswers = !!initial && Object.keys(initial).length > 0
+  useEffect(() => { if (hasInitialAnswers) void reload() }, [hasInitialAnswers, reload])
   // Replié par défaut (vue synthétique) ; déplié si `defaultOpen` (mise en avant
   // tant que la qualification est incomplète).
   const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
@@ -103,13 +109,16 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
       body: JSON.stringify({ qualification: answers }),
     })
     setSaving(false)
-    if (res.ok) { setSaved(true); setCollapsed(true); setProposalsOpen(suggestedQualificationRisks(answers, cfg.riskRules ?? [], methode).length > 0) }
+    if (res.ok) {
+      setSaved(true); setCollapsed(true); setProposalSummary(null)
+      // Méthodes à saisie directe : proposition immédiate ; EBIOS RM : en atelier 5.
+      const next = await reload()
+      if (canEdit && next.channel === 'DIRECT' && next.pending.length > 0) setProposalsOpen(true)
+    }
   }
 
-  const proposals = useMemo(() => suggestedQualificationRisks(answers, cfg.riskRules ?? [], methode), [answers, cfg, methode])
-  async function importProposals(ruleIds: string[]) {
-    const res = await fetch(`/api/analyses/${analyseId}/qualification-risks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruleIds }) })
-    if (res.ok) setProposalsOpen(false)
+  function proposalsDone(summary: string) {
+    setProposalsOpen(false); setProposalSummary(summary); void reload(); router.refresh()
   }
 
   if (collapsed) {
@@ -140,7 +149,16 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
         {complete && orientations.length > 0 && (
           <p className="text-xs text-gray-400 mt-2">{orientations.length} {t.qualification.orientationsTitle.toLowerCase()}</p>
         )}
-      </div>{proposalsOpen && <QualificationRiskProposal risks={proposals} labels={{ title: t.qualification.orientationsTitle, explanation: t.qualification.orientationsIntro, confirm: t.qualification.save, cancel: t.qualification.skip, gravity: t.qualification.short.criticite, likelihood: t.qualification.short.criticite, strategy: t.qualification.orientationsTitle }} onCancel={() => setProposalsOpen(false)} onConfirm={importProposals} />}</>
+        {proposalSummary && <p role="status" className="mt-2 text-xs text-green-700 dark:text-green-300">{proposalSummary}</p>}
+        {pending.length > 0 && channel === 'DIRECT' && canEdit && (
+          <button type="button" onClick={() => setProposalsOpen(true)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ebios-600 hover:text-ebios-800 hover:underline">
+            <ListPlus size={14} aria-hidden="true" />{t.qualification.riskProposal.pending.replace('{n}', String(pending.length))}
+          </button>
+        )}
+        {pending.length > 0 && channel === 'ATELIER5' && (
+          <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">{t.qualification.riskProposal.ebiosHint}</p>
+        )}
+      </div>{proposalsOpen && <QualificationRisksDialog analyseId={analyseId} risks={pending} onClose={() => setProposalsOpen(false)} onDone={proposalsDone} />}</>
     )
   }
 

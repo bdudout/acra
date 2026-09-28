@@ -11,8 +11,9 @@ import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import QualificationQuestions from '@/components/QualificationQuestions'
-import QualificationRiskProposal from '@/components/QualificationRiskProposal'
-import { EMPTY_QUALIFICATION_CONFIG, suggestedQualificationRisks, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
+import { QualificationRisksDialog, type QualificationProposal } from '@/components/QualificationRisksFlow'
+import { EMPTY_QUALIFICATION_CONFIG, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
+import { qualificationRiskChannel } from '@/lib/qualification-risks'
 
 // Clé i18n du nom de chaque méthode (t.methodes.*).
 const METHODE_I18N: Record<string, string> = {
@@ -41,6 +42,7 @@ export default function NewAnalysePage() {
   const [qualification, setQualification] = useState<QualificationAnswers>({})
   const [qualificationConfig, setQualificationConfig] = useState<QualificationConfig>(EMPTY_QUALIFICATION_CONFIG)
   const [createdAnalyseId, setCreatedAnalyseId] = useState<string | null>(null)
+  const [pendingProposals, setPendingProposals] = useState<QualificationProposal[]>([])
 
   useEffect(() => {
     fetch('/api/methodes')
@@ -96,17 +98,18 @@ export default function NewAnalysePage() {
     const data = await res.json()
     if (!res.ok) { setError(data.error || t.error); setLoading(false); return }
 
-    const proposals = suggestedQualificationRisks(qualification, qualificationConfig.riskRules ?? [], methode)
-    if (proposals.length > 0) { setCreatedAnalyseId(data.analyse.id); return }
+    // Risques proposés/imposés par la qualification : traduits et filtrés côté
+    // serveur. Méthodes à saisie directe → proposition immédiate ; EBIOS RM → atelier 5.
+    if (Object.keys(qualification).length > 0 && qualificationRiskChannel(methode) === 'DIRECT') {
+      const d = await fetch(`/api/analyses/${data.analyse.id}/qualification-risks`, { cache: 'no-store' })
+        .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      const pending = ((d?.proposals ?? []) as QualificationProposal[]).filter(p => !p.alreadyCreated)
+      if (pending.length > 0) { setPendingProposals(pending); setCreatedAnalyseId(data.analyse.id); return }
+    }
     router.push(`/analyses/${data.analyse.id}/atelier/1`)
   }
 
   const finishCreation = () => { if (createdAnalyseId) router.push(`/analyses/${createdAnalyseId}/atelier/1`) }
-  const proposals = suggestedQualificationRisks(qualification, qualificationConfig.riskRules ?? [], methode)
-  async function importProposals(ruleIds: string[]) {
-    if (createdAnalyseId) await fetch(`/api/analyses/${createdAnalyseId}/qualification-risks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruleIds }) })
-    finishCreation()
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -265,7 +268,7 @@ export default function NewAnalysePage() {
           </div>
         </form>
       </div>
-      {createdAnalyseId && <QualificationRiskProposal risks={proposals} labels={{ ...t.qualification.riskProposal }} onCancel={finishCreation} onConfirm={importProposals} />}
+      {createdAnalyseId && <QualificationRisksDialog analyseId={createdAnalyseId} risks={pendingProposals} onClose={finishCreation} onDone={finishCreation} />}
     </div>
   )
 }
