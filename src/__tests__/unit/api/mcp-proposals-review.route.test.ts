@@ -39,6 +39,8 @@ vi.mock('@/lib/org-context.server', () => ({
   getEffectiveRoleForOrg: vi.fn(async () => effRole.value),
 }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
+const gel = { value: false }
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: gel.value })) }))
 
 import { PATCH } from '@/app/api/mcp-proposals/[id]/route'
 
@@ -49,7 +51,7 @@ const params = { params: Promise.resolve({ id: 'p1' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'
+  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; gel.value = false
   proposalFindUnique.mockResolvedValue({ ...PENDING })
   analyseFindFirst.mockResolvedValue({ ...ANALYSE })
 })
@@ -93,6 +95,27 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     const res = await PATCH(req({ action: 'accept' }), params)
     expect(res.status).toBe(409)
     expect(risqueCreate).not.toHaveBeenCalled()
+  })
+
+  it('analyse gelée (risques résiduels acceptés) → acceptation 403, aucune écriture', async () => {
+    gel.value = true
+    analyseFindFirst.mockResolvedValue({ ...ANALYSE, risquesResiduelsStatut: 'ACCEPTES' })
+    for (const type of ['risk', 'measure', 'analysis_import']) {
+      proposalFindUnique.mockResolvedValue({ ...PENDING, type })
+      const res = await PATCH(req({ action: 'accept' }), params)
+      expect(res.status).toBe(403)
+    }
+    expect(risqueCreate).not.toHaveBeenCalled()
+    expect(mesureCreate).not.toHaveBeenCalled()
+    expect(proposalUpdate).not.toHaveBeenCalled()
+  })
+
+  it('analyse gelée : le rejet reste possible (aucune écriture dans l’analyse)', async () => {
+    gel.value = true
+    analyseFindFirst.mockResolvedValue({ ...ANALYSE, risquesResiduelsStatut: 'ACCEPTES' })
+    const res = await PATCH(req({ action: 'reject' }), params)
+    expect(res.status).toBe(200)
+    expect(argOf(proposalUpdate).data).toMatchObject({ statut: 'REJETEE' })
   })
 
   it('action invalide → 400', async () => {
