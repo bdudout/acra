@@ -47,6 +47,7 @@ const CONFIG_SELECT = {
   reglementaireActive: true,
   secondeLigneActive: true,
   profilsOperationnelsActive: true,
+  echelleMaturite: true,
   appetitRisque: true,
 } as const
 

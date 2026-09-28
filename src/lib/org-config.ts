@@ -62,8 +62,9 @@ export interface RawOrgConfig {
   kriActive?: boolean
   reglementaireActive?: boolean
   secondeLigneActive?: boolean
-  /** Profils NIST CSF 2.0 / NCSC CAF v4 et écarts opérationnels (optionnel). */
+  /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
+  echelleMaturite?: unknown
   appetitRisque?: unknown
   actionDelaisMois?: unknown
 }
@@ -107,8 +108,10 @@ export interface OrgConfigResolved {
   reglementaireActive: boolean
   /** 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut). */
   secondeLigneActive: boolean
-  /** Profils opérationnels US/UK (NIST CSF 2.0 et NCSC CAF v4), désactivés par défaut. */
+  /** Module « Maturité » (profils cibles CMMI, dont NIST CSF 2.0 / NCSC CAF v4.0), désactivé par défaut. */
   profilsOperationnelsActive: boolean
+  /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
+  echelleMaturite: unknown[]
   appetitRisque: AppetitConfig
   /** Délais (mois) de l'échéance par défaut d'une action selon sa priorité. */
   actionDelaisMois: ActionDelaisMois
@@ -151,6 +154,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   reglementaireActive: false,
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
+  echelleMaturite: [],
   appetitRisque: APPETIT_DEFAULT,
   actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
 }
@@ -163,7 +167,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
@@ -235,6 +239,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     reglementaireActive: pickBool('reglementaireActive', defaults.reglementaireActive),
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
+    echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }

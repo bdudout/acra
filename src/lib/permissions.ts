@@ -420,7 +420,7 @@ export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolea
   return peutDefinir2eLigne(role, opts)
 }
 
-/** Peut évaluer les profils opérationnels US/UK (NIST CSF / NCSC CAF) et en promouvoir les écarts : admin, RSSI, RISK_MANAGER ou CONFORMITE. */
-export function peutEvaluerProfilOperationnel(role: UserRole): boolean {
+/** Peut évaluer la maturité (profils cibles CMMI) et en promouvoir les écarts en actions : admin, RSSI, RISK_MANAGER ou CONFORMITE. */
+export function peutEvaluerMaturite(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE'
 }

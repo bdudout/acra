@@ -190,30 +190,9 @@ model Organization {
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
   analysisImportMappings AnalysisImportMapping[]
-  operationalProfiles    OperationalProfile[]
 
   @@index([parentId])
   @@index([path])
-}
-
-// Profil opérationnel US/UK (NIST CSF 2.0 / NCSC CAF v4.0) d'une organisation :
-// un profil par cadre. `cible` = niveau visé du profil (Tier CSF, profil CAF
-// Basic/Enhanced) ; `entries` = évaluation par catégorie/principe (état courant,
-// état cible, justification, responsable, horodatage par point). Séparé de la
-// conformité : le profil exprime une cible de gouvernance, pas l'état de contrôles.
-model OperationalProfile {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  framework      String // NIST_CSF_2_0 | NCSC_CAF_V4
-  cible          String? // TIER_1..TIER_4 (CSF) | BASIC | ENHANCED (CAF)
-  entries        Json         @default("[]")
-  updatedById    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@unique([organizationId, framework])
-  @@index([organizationId])
 }
 
 // Modèle de correspondance Excel réutilisable, strictement propre à une organisation.
@@ -981,6 +960,12 @@ model Conformite {
   // Libellé lisible du suivi (ex. "Socle groupe", "Entité DSI"). Null pour l'org-wide.
   nom            String?
   entries        Json                 @default("[]")
+  // Maturité (profil cible, échelle CMMI 0–5) — couche INDÉPENDANTE du statut de
+  // conformité : { <ref>: { actuel?, cible?, responsable?, commentaire?, updatedAt, updatedById } }.
+  // Écrite uniquement par /api/maturite (jamais réécrite par l'édition de conformité).
+  maturites      Json                 @default("{}")
+  // Niveau cible global du profil (0–5) ; la cible d'un point le surcharge.
+  maturiteCible  Int?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   snapshots      ConformiteSnapshot[]
@@ -1116,6 +1101,9 @@ model Derogation {
   avisRssiLe          DateTime?
   avisRssiFavorable   Boolean?
   avisRssiCommentaire String?   @db.Text
+  // Avis « favorable avec réserves » : réserves obligatoires, affichées au valideur
+  // métier et sur la dérogation active.
+  avisRssiReserves    String?   @db.Text
 
   // Double regard (RSSI groupe) — quatre-yeux, un RSSI différent du premier
   doubleRegardPar         String?
@@ -1150,6 +1138,10 @@ model Derogation {
   rejeteePar String?
   rejeteeLe  DateTime?
   rejetMotif String?   @db.Text
+
+  // Retrait par le demandeur pendant la revue (statut RETIREE, conservée pour l'audit)
+  retireeLe   DateTime?
+  retraitMotif String?  @db.Text
 
   // Anti-doublon de l'alerte individuelle d'expiration (comme Organization.warnedAt)
   alerteeLe DateTime?
@@ -1736,9 +1728,13 @@ model OrganizationConfig {
   // 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut) ;
   // false = mode « ligne unique » (org non régulée) : quatre-yeux et rôles 2ᵉ ligne relâchés.
   secondeLigneActive         Boolean       @default(true)
-  // Profils NIST CSF 2.0 / NCSC CAF v4 et suivi des écarts opérationnels.
-  // Désactivé par défaut : le parcours EBIOS RM / ISO 27005 standard reste inchangé.
+  // Module « Maturité » (profils cibles CMMI sur les référentiels de conformité,
+  // dont NIST CSF 2.0 et NCSC CAF v4.0). Désactivé par défaut : le parcours EBIOS RM /
+  // ISO 27005 standard reste inchangé. (Nom de colonne historique conservé.)
   profilsOperationnelsActive Boolean       @default(false)
+  // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
+  // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
+  echelleMaturite            Json          @default("[]")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

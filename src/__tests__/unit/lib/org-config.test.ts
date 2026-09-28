@@ -132,3 +132,11 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(resolveOrgConfig([enfantVide, racine]).exemplesAteliers).toEqual({ biensSupports: [{ nom: 'AD' }] })
   })
 })
+
+describe('resolveOrgConfig — échelle de maturité (CMMI)', () => {
+  it('vide par défaut (libellés CMMI de l’i18n), héritée du parent sinon', () => {
+    expect(resolveOrgConfig([]).echelleMaturite).toEqual([])
+    const parent = row({ echelleMaturite: [{ niveau: 3, libelle: 'Défini groupe', definition: '' }] })
+    expect(resolveOrgConfig([row({}), parent]).echelleMaturite).toEqual([{ niveau: 3, libelle: 'Défini groupe', definition: '' }])
+  })
+})

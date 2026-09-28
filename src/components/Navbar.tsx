@@ -177,7 +177,7 @@ export default function Navbar() {
     registreTic:   { href: '/registre-tic',  Icon: ScrollText,      label: t.nav.registreTic },
     suiviRegulateur: { href: '/reglementaire/suivi-regulateur', Icon: Landmark, label: t.nav.suiviRegulateur },
     ropa:          { href: '/rgpd',          Icon: ShieldCheck,     label: t.nav.ropa },
-    profilsOperationnels: { href: '/profils-operationnels', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
+    profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
   }
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).

@@ -17,6 +17,7 @@ import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib
 import { sanitizeConformiteNiveau, sanitizeSnapshotMode, sanitizeSnapshotPeriode } from '@/lib/conformite-config'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { sanitizeMaturityScale } from '@/lib/maturity'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 
@@ -97,6 +98,8 @@ export async function GET(_req: NextRequest) {
     secondeLigneActive: cfg.secondeLigneActive,
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
+    // Personnalisation (éventuellement héritée) de l'échelle de maturité CMMI.
+    echelleMaturite: sanitizeMaturityScale(cfg.echelleMaturite),
   })
 }
 
@@ -238,6 +241,9 @@ export async function PUT(req: NextRequest) {
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 
+  // Échelle de maturité CMMI : niveaux 0–5 fixes, libellés/définitions bornés ; [] ⇒ défaut.
+  if (Array.isArray(body.echelleMaturite)) data.echelleMaturite = sanitizeMaturityScale(body.echelleMaturite)
+
   if (body.echellesEcosysteme && typeof body.echellesEcosysteme === 'object' && !Array.isArray(body.echellesEcosysteme)) {
     // Validation/normalisation pure (renumérotation, bornage, ≥2 niveaux) ; {} ⇒ repli défauts.
     data.echellesEcosysteme = sanitizeEchelles(body.echellesEcosysteme)
@@ -273,5 +279,6 @@ export async function PUT(req: NextRequest) {
     conformiteSnapshotPeriode: sanitizeSnapshotPeriode((config as any).conformiteSnapshotPeriode),
     conseilsAteliersActive: (config as any).conseilsAteliersActive !== false,
     echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
+    echelleMaturite: sanitizeMaturityScale((config as any).echelleMaturite),
   })
 }

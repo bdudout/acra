@@ -22,6 +22,7 @@ import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-de
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import EchellesEcosystemeEditor from '@/components/config/EchellesEcosystemeEditor'
+import MaturityScaleEditor from '@/components/config/MaturityScaleEditor'
 import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
 import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
@@ -1305,7 +1306,7 @@ export default function ConfigurationPage() {
                 { field: 'kriActive' as const, value: kriActive, title: t.features.kriTitle, desc: t.features.kriDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.kri === 'FORCE_ON' || modulesPolicy.kri === 'FORCE_OFF', indent: false, forced: modulesPolicy.kri },
                 { field: 'reglementaireActive' as const, value: reglementaireActive, title: t.features.reglementaireTitle, desc: t.features.reglementaireDesc, href: 'https://www.eiopa.europa.eu/digital-operational-resilience-act-dora_en', disabled: modulesPolicy.reglementaire === 'FORCE_ON' || modulesPolicy.reglementaire === 'FORCE_OFF', indent: false, forced: modulesPolicy.reglementaire },
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
-                { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/profils-operationnels', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
+                { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
@@ -1828,6 +1829,9 @@ export default function ConfigurationPage() {
             </button>
           </div>
         )}{/* ═══ fin Section 3 — Exemples des ateliers ═══ */}
+
+        {/* Échelle de maturité CMMI (module Maturité) — modifiable par l'ADMIN. */}
+        {section === 'echelles' && <MaturityScaleEditor isAdmin={isAdmin} />}
 
         {/* ═══ Section 4 — Écosystème (échelles de dangerosité des PP) ═════════ */}
         <div className={section === 'ecosysteme' ? '' : 'hidden'}>

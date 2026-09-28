@@ -8,7 +8,6 @@ import {
   normalizeIncident,
   normalizeConformiteTraitement,
   normalizeOrphanPlanAction,
-  normalizeOperationalProfilePlanAction,
   mapMesurePriorite,
   mapCriticitePriorite,
   filterActionItems,
@@ -273,18 +272,5 @@ describe('typologie d\'origine', () => {
     expect(it.titre).toBe('Corriger A.5.1')
     expect(it.porteur).toBe('RSSI')
     expect(it.statut).toBe('EN_COURS')
-  })
-})
-
-describe('normalizeOperationalProfilePlanAction', () => {
-  it('projette une action de profil opérationnel dans la facette conformité', () => {
-    const it = normalizeOperationalProfilePlanAction(
-      { id: 'pa1', titre: 'NIST CSF GV.OC — combler l’écart', porteur: 'RSSI', statut: 'EN_COURS', priorite: 'CRITIQUE' },
-      { lien: '/profils-operationnels?ref=GV.OC' },
-    )
-    expect(it).toMatchObject({
-      id: 'PLAN_ACTION:pa1', source: 'PLAN_ACTION', origine: 'conformite', sourceId: 'pa1',
-      statut: 'EN_COURS', priorite: 'CRITIQUE', porteur: 'RSSI', lien: '/profils-operationnels?ref=GV.OC',
-    })
   })
 })
