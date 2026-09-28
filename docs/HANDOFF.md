@@ -6,6 +6,26 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (10) — Claude Code : onglet Projets, module Projets 360, pré-remplissage, dérogations en place
+
+**Branche** : `feat/historical-excel-import` (PR #191). Commits `590129b` (dérogations),
+`5c1b465` (projets).
+
+- Module `projets360Active` (OrganizationConfig, défaut **true**, migration
+  `20260929160000`, toggle Configuration → Fonctionnalités, politique d'instance) ;
+  onglet `/projets` ; `PROJET_360` retiré du sélecteur générique et de l'activation
+  d'instance (`MODULE_METHODS`), accepté à la création si le module est actif.
+- Nav : groupe « Gestion des risques » ×5, lien Projets.
+- Population (`lib/projet360.server`) : réponses « oui » seulement sur preuve, avec
+  source (`p360._sources`, effacée à la confirmation) ; risques proposés sans doublon ;
+  risques du registre proposés par domaine en appréciation.
+- Dérogations : actions mises à jour en place (ligne ouverte, confirmation), bandeau
+  « Votre demande » avec boutons visibles.
+- Vérifié : `tsc` 0 · `npm test` **2272/2272** · `i18n:check` · `npm run build` OK.
+- Non vérifié : navigateur connecté.
+
+---
+
 ## 2026-09-29 (9) — Claude Code : analyse projet 360, RAS/RAD, tests de résilience DORA, processus de cartographie
 
 **Branche** : `feat/historical-excel-import` (PR #191 ouverte, non fusionnée). Commits
