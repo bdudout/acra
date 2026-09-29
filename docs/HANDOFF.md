@@ -39,7 +39,7 @@ projet 360, cadrage CAF) + le commit de ce tour.
   `audit-check` propre. Recette navigateur réelle : `e2e/projets.spec.ts` (projet 360 → analyse
   cyber préremplie) **vert** contre le dev (`DATABASE_URL` en localhost, `E2E_BASE_URL=http://localhost:3000`).
   Champ « Nom » de la création d'analyse : `id`/`htmlFor` ajoutés. Cockpit GRC avec un seul module :
-  couvert en unitaire seulement.
+  `e2e/pilotage-grc.spec.ts` **vert** (registre off + contrôle permanent on → /pilotage reste, bloc projets visible). CI #191 : 8/8 verts après le correctif nodemailer.
 - **Piège** : un `sed -i` macOS avec `\n` a échoué en silence dans une commande chaînée en `&&` et
   a sauté la création de `/api/projets` (les tests mockaient `fetch`, seul le build l'a révélé).
   Vérifier l'existence des fichiers créés.
