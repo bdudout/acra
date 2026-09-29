@@ -228,11 +228,12 @@ model TestResilience {
   @@index([organizationId, annee])
 }
 
-// Modèle de correspondance Excel réutilisable, strictement propre à une organisation.
+// Modèle de correspondance Excel réutilisable, propre à une organisation. `organizationId` NUL = mapping par défaut d'INSTANCE
+// (livré en base par migration, ex. « mapping_mzt ») : visible de toutes les organisations, en lecture seule.
 model AnalysisImportMapping {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   mappings       Json
   createdById    String

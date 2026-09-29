@@ -177,3 +177,56 @@ describe('HistoricImportPreview — cotations en clair proposées', () => {
     expect(onConfirm.mock.calls[0][0].scoreMappings).toEqual({ Registre: { gravity: { Critique: '4', Limitée: '2' } } })
   })
 })
+
+describe('AnalyseImportMenu — clavier, lecteur d’écran, mobile', () => {
+  it('↓ ouvre et focalise le premier parcours ; les canaux non disponibles sont annoncés inactifs et sautés au clavier ; Échap rend le focus', () => {
+    render(<AnalyseImportMenu labels={labels} onAcraImport={vi.fn()} onExcelImport={vi.fn()} />)
+    const trigger = screen.getByRole('button', { name: labels.trigger })
+    trigger.focus(); fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+    const items = screen.getAllByRole('menuitem')
+    expect(document.activeElement).toBe(items[0])
+    fireEvent.keyDown(document, { key: 'ArrowDown' }); expect(document.activeElement).toBe(items[1])
+    fireEvent.keyDown(document, { key: 'ArrowDown' }); expect(document.activeElement).toBe(items[0]) // API et MCP (aria-disabled) sont sautés
+    expect(items.filter(i => i.getAttribute('aria-disabled') === 'true')).toHaveLength(2)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('menu')).toBeNull(); expect(document.activeElement).toBe(trigger)
+  })
+  it('annonce un menu nommé par son bouton et reste visible sur mobile', () => {
+    render(<AnalyseImportMenu labels={labels} onAcraImport={vi.fn()} onExcelImport={vi.fn()} />)
+    const trigger = screen.getByRole('button', { name: labels.trigger })
+    expect(trigger.className).not.toMatch(/\bhidden\b/)
+    fireEvent.click(trigger)
+    const menu = screen.getByRole('menu'); expect(trigger.getAttribute('aria-controls')).toBe(menu.id); expect(menu.getAttribute('aria-labelledby')).toBe(trigger.id)
+  })
+})
+
+describe('HistoricImportPreview — lignes à décider regroupées', () => {
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } , completion: { title: 'Données manquantes', explanation: 'Choisissez une action pour chaque ligne.', skip: 'Ne pas importer la ligne', complete: 'Compléter la ligne', value: 'Valeur à renseigner', sourceValue: 'Valeur Excel', expectedValue: 'Valeur attendue', emptyValue: 'vide', skipSummary: 'ligne(s) ne seront pas importées', completeSummary: 'ligne(s) seront complétées', groupSummary: '{sheet} — {n} ligne(s) à décider', skipAll: 'Ne pas importer les {n} lignes' } }
+  const gaps = (n: number, sheetName = 'Parties prenantes') => Array.from({ length: n }, (_, i) => ({ sheetName, row: 20 + i, field: 'title', sourceColumn: 'Partie prenante', sourceValue: '', expectedValue: 'texte non vide' }))
+  const sheets: HistoricPreviewSheet[] = [{ name: 'Parties prenantes', columns: ['Partie prenante'], rows: 30, detection: { type: 'RISKS' }, mapping: { title: 'Partie prenante' }, missing: [] }]
+  it('au-delà de 5 lignes d’une même feuille : un seul groupe replié, résumé chiffré, action globale « ne pas importer »', () => {
+    const onConfirm = vi.fn()
+    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(18)} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    const panel = screen.getByLabelText('Données manquantes')
+    const details = panel.querySelectorAll('details')
+    expect(details).toHaveLength(1)
+    expect(details[0]).not.toHaveAttribute('open')
+    expect(details[0].querySelector('summary')!.textContent).toContain('Parties prenantes')
+    expect(details[0].querySelector('summary')!.textContent).toContain('18')
+    fireEvent.click(screen.getByRole('button', { name: /Ne pas importer les 18 lignes/ }))
+    expect(panel.textContent).toContain('18')
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm).toHaveBeenCalled()
+  })
+  it('« Ne pas importer les N lignes » annule aussi les « Compléter » déjà choisis dans le groupe', () => {
+    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(6)} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Compléter la ligne'))
+    expect(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Compléter la ligne')).toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: /Ne pas importer les 6 lignes/ }))
+    expect(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Ne pas importer la ligne')).toBeChecked()
+  })
+  it('5 lignes ou moins : affichage ligne par ligne inchangé (pas de groupe)', () => {
+    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(5)} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+    expect(screen.getByLabelText('Données manquantes').querySelectorAll('details')).toHaveLength(0)
+  })
+})

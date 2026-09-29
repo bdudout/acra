@@ -37,15 +37,32 @@ export function usesDirectRiskEntry(m: string): boolean {
 }
 
 /**
- * Assainit la liste des méthodes ACTIVÉES au niveau instance (SUPER_ADMIN) : ne
- * garde que des méthodes connues **et câblées** (`IMPLEMENTED_METHODS`), et
- * **impose EBIOS RM** (garde-fou : l'instance a toujours au moins EBIOS RM).
+ * Assainit la liste des méthodes ACTIVÉES au niveau instance (SUPER_ADMIN). L'ORDRE est un CLASSEMENT : la première méthode
+ * est celle proposée par défaut (EBIOS RM n'est donc plus obligatoirement le défaut). Ne garde que des méthodes connues et
+ * câblées, dédoublonne, et garde EBIOS RM DISPONIBLE (ajouté en fin de classement s'il manque : import d'ateliers,
+ * analyses existantes).
  */
 export function cleanActiveMethodes(v: unknown): RiskMethod[] {
   const arr = Array.isArray(v) ? v : []
-  const set = new Set<RiskMethod>([DEFAULT_METHOD])
-  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x) && isPickerMethod(x)) set.add(x)
-  return RISK_METHODS.filter(m => set.has(m))
+  const out: RiskMethod[] = []
+  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x) && isPickerMethod(x) && !out.includes(x)) out.push(x)
+  if (!out.includes(DEFAULT_METHOD)) out.push(DEFAULT_METHOD)
+  return out
+}
+
+/** Active / désactive une méthode dans le classement (EBIOS RM n'est jamais retirée) ; une méthode activée passe en fin de classement. */
+export function setMethodeActive(active: readonly string[], method: string, on: boolean): RiskMethod[] {
+  if (!on && method === DEFAULT_METHOD) return cleanActiveMethodes(active)
+  return cleanActiveMethodes(on ? [...active.filter(m => m !== method), method] : active.filter(m => m !== method))
+}
+
+/** Monte (`up`) ou descend (`down`) une méthode active d'un rang ; sans effet aux bornes. */
+export function moveMethode(active: readonly string[], method: string, direction: 'up' | 'down'): RiskMethod[] {
+  const list = [...cleanActiveMethodes(active)]
+  const i = list.indexOf(method as RiskMethod); const j = direction === 'up' ? i - 1 : i + 1
+  if (i < 0 || j < 0 || j >= list.length) return list
+  ;[list[i], list[j]] = [list[j], list[i]]
+  return list
 }
 
 /** Vrai si `v` est une méthode connue. */
@@ -193,18 +210,16 @@ export interface MethodResolution {
  *  - on part des méthodes réellement **câblées** (`IMPLEMENTED_METHODS`) ;
  *  - on intersecte avec l'activation d'instance puis l'autorisation d'org (si
  *    fournies) ;
- *  - **EBIOS RM est toujours disponible** (garde-fou : jamais d'org sans méthode) ;
- *  - le défaut est `orgDefault` s'il est disponible, sinon EBIOS RM.
+ *  - **EBIOS RM est toujours disponible** (garde-fou : jamais d'org sans méthode), sans être obligatoirement le défaut ;
+ *  - l'ordre est le CLASSEMENT de l'instance ; le défaut est `orgDefault` s'il est disponible, sinon la 1re méthode du classement.
  */
 export function resolveMethodes(opts: MethodResolution = {}): { available: RiskMethod[]; default: RiskMethod } {
-  const inInstance = (m: RiskMethod) => !opts.instanceEnabled || opts.instanceEnabled.includes(m)
   const inOrg = (m: RiskMethod) => !opts.orgAllowed || opts.orgAllowed.includes(m)
-  const available = IMPLEMENTED_METHODS.filter(m => isPickerMethod(m) && inInstance(m) && inOrg(m))
-  // Garde-fou : EBIOS RM toujours présent (et en tête).
-  const set = new Set<RiskMethod>([DEFAULT_METHOD, ...available])
-  const ordered = RISK_METHODS.filter(m => set.has(m))
-  const def: RiskMethod = isRiskMethod(opts.orgDefault) && ordered.includes(opts.orgDefault)
-    ? opts.orgDefault
-    : DEFAULT_METHOD
+  // Ordre proposé = classement de l'instance (sinon ordre du registre) ; EBIOS RM reste disponible (fin de classement si absent).
+  const base: RiskMethod[] = opts.instanceEnabled ? cleanActiveMethodes(opts.instanceEnabled) : RISK_METHODS.filter(m => IMPLEMENTED_METHODS.includes(m) && isPickerMethod(m))
+  const ordered = base.filter(m => IMPLEMENTED_METHODS.includes(m) && isPickerMethod(m) && inOrg(m))
+  if (!ordered.includes(DEFAULT_METHOD) && (!opts.orgAllowed || opts.orgAllowed.includes(DEFAULT_METHOD) || ordered.length === 0)) ordered.push(DEFAULT_METHOD)
+  // Défaut : celui de l'organisation s'il est disponible, sinon la 1re méthode du classement.
+  const def: RiskMethod = isRiskMethod(opts.orgDefault) && ordered.includes(opts.orgDefault) ? opts.orgDefault : (ordered[0] ?? DEFAULT_METHOD)
   return { available: ordered, default: def }
 }

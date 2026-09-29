@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   RISK_METHODS, DEFAULT_METHOD, IMPLEMENTED_METHODS, isRiskMethod,
   methodSteps, methodStepCount, resolveMethodes, METHOD_STEPS, cleanActiveMethodes,
-  directTreatmentPhaseKey, riskTreatmentHref, MODULE_METHODS,
+  directTreatmentPhaseKey, riskTreatmentHref, MODULE_METHODS, moveMethode, setMethodeActive,
 } from '@/lib/methodes'
 
 describe('registre des méthodes', () => {
@@ -55,8 +55,8 @@ describe('resolveMethodes — ensemble effectif', () => {
 
   it('EBIOS RM reste disponible même si l\'instance ne l\'a pas explicitement activé (garde-fou)', () => {
     const r = resolveMethodes({ instanceEnabled: ['ISO_31000'] })
-    expect(r.available).toEqual(['EBIOS_RM', 'ISO_31000'])
-    expect(r.default).toBe('EBIOS_RM')
+    expect(r.available).toEqual(['ISO_31000', 'EBIOS_RM']) // EBIOS RM ajouté en fin de classement, jamais imposé en tête
+    expect(r.default).toBe('ISO_31000')
   })
 
   it('un défaut inconnu retombe sur EBIOS RM', () => {
@@ -71,7 +71,7 @@ describe('resolveMethodes — ensemble effectif', () => {
 
 describe('cleanActiveMethodes — activation instance', () => {
   it('impose EBIOS RM et ne garde que les méthodes câblées connues', () => {
-    expect(cleanActiveMethodes(['ISO_31000'])).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(cleanActiveMethodes(['ISO_31000'])).toEqual(['ISO_31000', 'EBIOS_RM'])
     expect(cleanActiveMethodes(null)).toEqual(['EBIOS_RM'])
     expect(cleanActiveMethodes(['garbage'])).toEqual(['EBIOS_RM']) // inconnue → écartée
     expect(cleanActiveMethodes(['garbage', 'EBIOS_RM'])).toEqual(['EBIOS_RM'])
@@ -99,7 +99,32 @@ describe('directTreatmentPhaseKey / riskTreatmentHref', () => {
 describe('PROJET_360 — méthode pilotée par le module Projets 360', () => {
   it('hors sélecteur et hors activation d’instance', () => {
     expect(MODULE_METHODS).toEqual(['PROJET_360'])
-    expect(cleanActiveMethodes(['PROJET_360', 'ISO_31000'])).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(cleanActiveMethodes(['PROJET_360', 'ISO_31000'])).toEqual(['ISO_31000', 'EBIOS_RM'])
     expect(resolveMethodes({ instanceEnabled: ['PROJET_360'] }).available).not.toContain('PROJET_360')
+  })
+})
+
+describe('classement des méthodes : la première est la méthode par défaut', () => {
+  it('cleanActiveMethodes conserve l’ordre saisi, dédoublonne et garde EBIOS RM disponible', () => {
+    expect(cleanActiveMethodes(['ISO_31000', 'EBIOS_RM', 'NIST_800_30'])).toEqual(['ISO_31000', 'EBIOS_RM', 'NIST_800_30'])
+    expect(cleanActiveMethodes(['NIST_800_30', 'NIST_800_30'])).toEqual(['NIST_800_30', 'EBIOS_RM'])
+  })
+  it('resolveMethodes : ordre de l’instance = ordre proposé ; défaut = 1re méthode ; défaut d’org honoré ; défaut inconnu → 1re', () => {
+    const inst = ['ISO_27005', 'EBIOS_RM', 'ISO_31000']
+    expect(resolveMethodes({ instanceEnabled: inst })).toEqual({ available: inst, default: 'ISO_27005' })
+    expect(resolveMethodes({ instanceEnabled: inst, orgDefault: 'ISO_31000' }).default).toBe('ISO_31000')
+    expect(resolveMethodes({ instanceEnabled: inst, orgDefault: 'NIST_800_30' }).default).toBe('ISO_27005') // non disponible
+    expect(resolveMethodes({ instanceEnabled: inst, orgAllowed: ['EBIOS_RM', 'ISO_31000'] }).available).toEqual(['EBIOS_RM', 'ISO_31000'])
+  })
+  it('EBIOS RM reste la méthode par défaut sans configuration (rétrocompatibilité)', () => {
+    expect(resolveMethodes({ instanceEnabled: ['EBIOS_RM', 'ISO_31000'] }).default).toBe('EBIOS_RM')
+  })
+  it('moveMethode : monte / descend une méthode active, sans sortir des bornes ; setMethodeActive : EBIOS RM non retirable', () => {
+    expect(moveMethode(['EBIOS_RM', 'ISO_31000', 'ISO_27005'], 'ISO_31000', 'up')).toEqual(['ISO_31000', 'EBIOS_RM', 'ISO_27005'])
+    expect(moveMethode(['EBIOS_RM', 'ISO_31000'], 'ISO_31000', 'down')).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(moveMethode(['EBIOS_RM', 'ISO_31000'], 'EBIOS_RM', 'up')).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(setMethodeActive(['ISO_31000', 'EBIOS_RM'], 'NIST_800_30', true)).toEqual(['ISO_31000', 'EBIOS_RM', 'NIST_800_30'])
+    expect(setMethodeActive(['ISO_31000', 'EBIOS_RM'], 'ISO_31000', false)).toEqual(['EBIOS_RM'])
+    expect(setMethodeActive(['ISO_31000', 'EBIOS_RM'], 'EBIOS_RM', false)).toEqual(['ISO_31000', 'EBIOS_RM'])
   })
 })

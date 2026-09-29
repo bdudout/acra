@@ -47,7 +47,7 @@ export type HistoricImportPreviewLabels = {
   sheetTypes: Partial<Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>>
   validation?: { acraField: string; sourceColumn: string; expected: string; examples: string; compatible: string; review: string; invalidValues: string; externalReference: string }
   listTransform?: { label: string; none: string; lines: string; semicolon: string; pipe: string; carryForward?: string }
-  completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string }
+  completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string; groupSummary?: string; skipAll?: string }
 }
 
 const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
@@ -59,6 +59,9 @@ const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
   ACTIONS: ['externalId', 'riskExternalId', 'title', 'description', 'responsible', 'dueDate'],
   RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
 }
+
+/** Au-delà de ce nombre de lignes à décider dans une même feuille, elles sont regroupées et repliées (action globale). */
+const INCOMPLETE_GROUP_THRESHOLD = 5
 
 export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
   sheets: HistoricPreviewSheet[]
@@ -146,6 +149,19 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const skippedRows = incompleteRowEntries.filter(([key]) => rowActions[key] !== 'COMPLETE')
   const completionIncomplete = completedRows.some(([, gaps]) => gaps.some(gap => !rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field]?.trim()))
   const completion = labels.completion
+  const incompleteBySheet = incompleteRowEntries.reduce<Record<string, [string, HistoricRequiredValueGap[]][]>>((groups, entry) => { (groups[entry[1][0].sheetName] ??= []).push(entry); return groups }, {})
+  const renderIncompleteRow = ([key, gaps]: [string, HistoricRequiredValueGap[]]) => {
+            if (!completion) return null
+            const first = gaps[0]
+            const action = rowActions[key] ?? 'SKIP'
+            const lineLabel = `${first.sheetName} — ligne ${first.row}`
+            return <fieldset key={key} className="rounded border border-amber-200 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100"><legend className="px-1 font-medium">{lineLabel} — {gaps.map(gap => labels.fieldLabels[gap.field] ?? gap.field).join(', ')}</legend>
+              <div className="mb-3 space-y-1 text-xs text-gray-700 dark:text-slate-300">{gaps.map(gap => <p key={gap.field}><span className="font-semibold">{completion.sourceValue} :</span> {gap.sourceColumn ?? labels.fieldLabels[gap.field] ?? gap.field} = <code className="rounded bg-amber-100 px-1 py-0.5 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100">{gap.sourceValue?.trim() || completion.emptyValue}</code>{gap.expectedValue && <><span className="mx-1">·</span><span className="font-semibold">{completion.expectedValue} :</span> {gap.expectedValue}</>}</p>)}</div>
+              <label className="mr-4 inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'SKIP'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'SKIP' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.skip}`} />{completion.skip}</label>
+              <label className="inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'COMPLETE'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'COMPLETE' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.complete}`} />{completion.complete}</label>
+              {action === 'COMPLETE' && <div className="mt-3 grid gap-2 sm:grid-cols-2">{gaps.map(gap => <label key={gap.field} className="text-xs font-medium">{labels.fieldLabels[gap.field] ?? gap.field}<input aria-label={`${lineLabel} — ${labels.fieldLabels[gap.field] ?? gap.field} — ${completion.value}`} className="input mt-1 block w-full text-sm" value={rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field] ?? ''} onChange={event => setRowOverrides(previous => ({ ...previous, [gap.sheetName]: { ...previous[gap.sheetName], [String(gap.row)]: { ...previous[gap.sheetName]?.[String(gap.row)], [gap.field]: event.target.value } } }))} /></label>)}</div>}
+            </fieldset>
+          }
 
   return (
     <section className="card mt-4 p-4" aria-label={labels.title}>
@@ -235,17 +251,15 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
         <h3 className="font-semibold">{completion.title}</h3>
         <p className="mt-1">{completion.explanation}</p>
         <div className="mt-3 space-y-3">
-          {incompleteRowEntries.map(([key, gaps]) => {
-            const first = gaps[0]
-            const action = rowActions[key] ?? 'SKIP'
-            const lineLabel = `${first.sheetName} — ligne ${first.row}`
-            return <fieldset key={key} className="rounded border border-amber-200 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100"><legend className="px-1 font-medium">{lineLabel} — {gaps.map(gap => labels.fieldLabels[gap.field] ?? gap.field).join(', ')}</legend>
-              <div className="mb-3 space-y-1 text-xs text-gray-700 dark:text-slate-300">{gaps.map(gap => <p key={gap.field}><span className="font-semibold">{completion.sourceValue} :</span> {gap.sourceColumn ?? labels.fieldLabels[gap.field] ?? gap.field} = <code className="rounded bg-amber-100 px-1 py-0.5 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100">{gap.sourceValue?.trim() || completion.emptyValue}</code>{gap.expectedValue && <><span className="mx-1">·</span><span className="font-semibold">{completion.expectedValue} :</span> {gap.expectedValue}</>}</p>)}</div>
-              <label className="mr-4 inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'SKIP'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'SKIP' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.skip}`} />{completion.skip}</label>
-              <label className="inline-flex items-center gap-2"><input type="radio" name={`row-action-${key}`} checked={action === 'COMPLETE'} onChange={() => setRowActions(previous => ({ ...previous, [key]: 'COMPLETE' }))} aria-label={`${lineLabel} — ${labels.fieldLabels[first.field] ?? first.field} — ${completion.complete}`} />{completion.complete}</label>
-              {action === 'COMPLETE' && <div className="mt-3 grid gap-2 sm:grid-cols-2">{gaps.map(gap => <label key={gap.field} className="text-xs font-medium">{labels.fieldLabels[gap.field] ?? gap.field}<input aria-label={`${lineLabel} — ${labels.fieldLabels[gap.field] ?? gap.field} — ${completion.value}`} className="input mt-1 block w-full text-sm" value={rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field] ?? ''} onChange={event => setRowOverrides(previous => ({ ...previous, [gap.sheetName]: { ...previous[gap.sheetName], [String(gap.row)]: { ...previous[gap.sheetName]?.[String(gap.row)], [gap.field]: event.target.value } } }))} /></label>)}</div>}
-            </fieldset>
-          })}
+          {Object.entries(incompleteBySheet).map(([sheetName, entries]) => entries.length <= INCOMPLETE_GROUP_THRESHOLD
+            ? entries.map(renderIncompleteRow)
+            : <details key={sheetName} className="rounded border border-amber-300 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100">
+              <summary className="cursor-pointer font-medium">{(completion.groupSummary ?? '{sheet} — {n}').replace('{sheet}', sheetName).replace('{n}', String(entries.length))}</summary>
+              <div className="mt-3 space-y-3">
+                <button type="button" className="btn-secondary text-xs" onClick={() => setRowActions(previous => ({ ...previous, ...Object.fromEntries(entries.map(([key]) => [key, 'SKIP' as const])) }))}>{(completion.skipAll ?? completion.skip).replace('{n}', String(entries.length))}</button>
+                {entries.map(renderIncompleteRow)}
+              </div>
+            </details>)}
         </div>
         <p className="mt-3 text-xs">{skippedRows.length} {completion.skipSummary} · {completedRows.length} {completion.completeSummary}</p>
       </section>}

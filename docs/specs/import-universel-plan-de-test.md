@@ -87,3 +87,11 @@ Encore à tester : autre organisation (IDOR), analyse gelée, CSV windows-1252, 
 - Constat : le bouton « Importer » est **masqué sous 640 px** (`sm:flex`, conception existante) → l'import n'est pas accessible sur téléphone ; à décider (menu mobile ou assumé « poste de travail »).
 - Constat mineur : « 1 feuilles à importer » (accord du pluriel) dans le résumé de l'assistant.
 - Non testé : clavier (Échap, flèches) du menu, lecteur d'écran, langues ≠ FR.
+
+### 7 quinquies — Menus, mapping par défaut, revue regroupée, méthodes (session du 2026-09-29, suite)
+- [x] Menu « Nouvelle analyse » identique sur la liste des analyses, le tableau de bord cyber et le tableau de bord GRC (module activé le temps du test) ; « Importer une analyse » ouvre le menu d'import sur place dans la liste.
+- [x] **Clavier** (Playwright + tests unitaires) : ↓/↑ ouvrent le menu sur le 1er/dernier élément, ↓ ↑ Début Fin circulent, Échap ferme et rend le focus au bouton, Tab ferme. **Lecteur d'écran** : `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`, menu nommé par son bouton, canaux indisponibles `aria-disabled`. Pas de test avec un vrai lecteur d'écran (VoiceOver/NVDA) : à faire par une personne.
+- [x] **Mobile** (390 px) : boutons « Importer » et « Nouvelle analyse » visibles, menu d'import lisible (ancré à gauche), pas de défilement horizontal.
+- [x] **mapping_mzt** : mapping par défaut d'instance en base (migration `20260930160000_mapping_import_defaut`, `organizationId` nul, lecture seule), chargé dans l'assistant → import du classeur BTP sans « Appliquer ce profil » : 0 champ écarté, mêmes volumes.
+- [x] **Revue regroupée** : au-delà de 5 lignes à décider dans une feuille, un groupe replié par feuille (« 2 - Parties prenantes — 18 ligne(s) à décider », « 2 - Biens supports — 8 ») avec action globale « Ne pas importer les N lignes ».
+- [x] **Méthodes** : classement (le 1er est le défaut, EBIOS RM reste disponible) — logique pure et route testées ; écran d'administration (↑ ↓, badge « Méthode par défaut ») **non vérifié dans le navigateur** (compte SUPER_ADMIN requis).

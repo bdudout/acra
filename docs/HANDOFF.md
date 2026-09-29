@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (28) — menus, mapping par défaut, méthodes classées, revue regroupée
+
+- Menu « Nouvelle analyse » (`NouvelleAnalyseMenu`, hook `useDropdownMenu` clavier + ARIA) sur analyses / dashboard cyber / GRC, visible sur mobile ; `AnalyseImportMenu` idem.
+- `mapping_mzt` : migration `20260930160000_mapping_import_defaut` (`AnalysisImportMapping.organizationId` nullable = défaut d'instance, index unique partiel sur le nom) ; GET des mappings renvoie org + défaut (`builtin`).
+- Méthodes : `Configuration.methodesActives` = classement ; `cleanActiveMethodes`/`resolveMethodes`/`moveMethode`/`setMethodeActive` ; écran /admin/instance (↑ ↓).
+- Revue « lignes à décider » regroupée par feuille (> 5 lignes). Chantiers à venir : `docs/specs/import-universel-chantiers-a-venir.md`.
+- Vérifié : tsc, `npm test` (2897), `i18n:check`, build, e2e locaux (menus, mobile, revue, mapping_mzt). Non vérifié : écran admin méthodes dans le navigateur.
+
 ## 2026-09-29 (27) — import universel — CSV / JSON réels, doublons, cotations en clair
 
 - Vérifié en réel (voir §7 bis du plan de test) : CSV (10 risques, rejets ligne à ligne), JSON libre (6 risques + 5 mesures), droits (403), idempotence ; tsc, `npm test` (2877), `i18n:check`, build, e2e import 4/4.

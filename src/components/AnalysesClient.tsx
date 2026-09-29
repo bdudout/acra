@@ -12,6 +12,7 @@ import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, 
 import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
+import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
 import HistoricImportPreview, { type HistoricPreviewSheet, type HistoricRequiredValueGap } from '@/components/HistoricImportPreview'
 import HistoricImportSummaryDialog from '@/components/HistoricImportSummaryDialog'
@@ -62,12 +63,14 @@ function urlParamToFilter(p: string | null): FilterValue {
  * Les données initiales sont chargées côté SERVEUR (issue #104) : premier rendu
  * instantané, sans FOUC réseau ; on rafraîchit ensuite localement après import/suppr.
  */
-export default function AnalysesClient({ initialAnalyses, demo = false }: { initialAnalyses: any[]; demo?: boolean }) {
+export default function AnalysesClient({ initialAnalyses, demo = false, projets360 = false, canCreate = true }: { initialAnalyses: any[]; demo?: boolean; projets360?: boolean; canCreate?: boolean }) {
   const { t, locale } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [analyses, setAnalyses] = useState<any[]>(initialAnalyses)
+  // « Importer une analyse » du menu « Nouvelle analyse » rouvre le menu d'import sur place (remontage avec ouverture).
+  const [importMenuKey, setImportMenuKey] = useState(0)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterValue>(() => urlParamToFilter(searchParams.get('filter')))
   const [tagFilter, setTagFilter] = useState('')
@@ -231,7 +234,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             <h1 className="text-2xl font-bold text-gray-900">{t.analyses.title}</h1>
             <p className="text-gray-500 text-sm mt-1">{analyses.length} {analyses.length === 1 ? t.analyses.totalLabelSg : t.analyses.totalLabel}</p>
           </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             {/* Import */}
             <input
               ref={importRef}
@@ -242,7 +245,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               aria-label="Importer une analyse"
             />
             <input ref={excelImportRef} type="file" accept=".xlsx,.csv,.json,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
-            <AnalyseImportMenu defaultOpen={searchParams.get('import') === '1'} disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
+            <AnalyseImportMenu key={importMenuKey} defaultOpen={importMenuKey > 0 || searchParams.get('import') === '1'} disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
             <ExpressAnalyseButton variant="button" />
             {demo && (
               <button
@@ -254,9 +257,12 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                 {loadingExample ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />…</> : <><Sparkles size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.demo.loadExample}</>}
               </button>
             )}
-            <Link href="/analyses/new" className="btn-primary flex flex-1 items-center justify-center gap-2 sm:flex-none">
-              {t.analyses.newBtn}
-            </Link>
+            {canCreate && (
+              <div className="basis-full sm:basis-auto">
+                <NouvelleAnalyseMenu projet360={projets360} onImport={() => setImportMenuKey(k => k + 1)}
+                  labels={{ trigger: t.dashboard.newAnalysis, analyse: t.dashboard.newAnalysis, projet360: t.dashboard.newProjet360, importer: t.dashboard.importAnalyse }} />
+              </div>
+            )}
           </div>
         </div>
         {excelPreview && <HistoricImportPreview sheets={excelPreview.sheets} requiredValueGaps={excelMissingReview?.gaps} onCancel={() => { setExcelPreview(null); setExcelMissingReview(null) }} onConfirm={confirmExcelImport} labels={{ title: t.analyses.importMenu.previewTitle, confirm: t.analyses.importMenu.previewConfirm, cancel: t.analyses.importMenu.previewCancel, missing: t.analyses.importMenu.previewMissing, noSheets: t.analyses.importMenu.previewNoSheets, rows: t.analyses.importMenu.previewRows, mappingName: t.analyses.importMenu.mappingName, saveMapping: t.analyses.importMenu.saveMapping, loadMapping: t.analyses.importMenu.loadMapping, sheetRole: t.analyses.importMenu.sheetRole, ignoreSheet: t.analyses.importMenu.ignoreSheet, summaryTitle: t.analyses.importMenu.summaryTitle, importableSheets: t.analyses.importMenu.importableSheets, ignoredSheets: t.analyses.importMenu.ignoredSheets, mappingHelpTitle: t.analyses.importMenu.mappingHelpTitle, mappingHelp: t.analyses.importMenu.mappingHelp, targetOrganization: t.historicImportTargetOrganization, warnings: t.analyses.importMenu.previewWarnings, profile: t.analyses.importMenu.previewProfile, aliasPrefix: t.analyses.importMenu.previewAliasPrefix, valueMap: { title: t.analyses.importMenu.previewValueMap.title, hint: t.analyses.importMenu.previewValueMap.hint, other: t.analyses.importMenu.previewValueMap.other, category: t.workshop.a2.cats && Object.fromEntries(Object.entries(t.workshop.a2.cats as Record<string, { label: string }>).map(([k, v]) => [k, v.label])), type: t.workshop.a3.ppTypes as Record<string, string> }, fieldLabels: { ...t.analyses.importMenu.previewFields, ...t.historicImportEmbeddedFields }, sheetTypes: t.analyses.importMenu.sheetTypes, validation: t.historicImportValidation, listTransform: t.historicImportListTransform, completion: t.historicImportMissingData }} />}
