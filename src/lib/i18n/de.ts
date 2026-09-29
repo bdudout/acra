@@ -1797,7 +1797,7 @@ export const de: Translations = {
       VALIDE: 'Freigegeben',
       DIFFUSE: 'Verteilt',
     },
-    actions: {
+    masquer: 'Identifizierende Daten maskieren', masquerHint: 'Externe Weitergabe: Vorfälle, Kontrollen, Verantwortliche … werden zu #1, #2 … (im ganzen Bericht konsistent).', gabaritsTitre: 'Berichtsvorlagen', gabaritTitre: 'Eigener Titel', gabaritIntro: 'Einleitung', gabaritSections: 'Auszublendende Abschnitte (Kennungen, durch Kommas getrennt)', gabaritsSave: 'Vorlagen speichern', gabaritsSaved: 'Vorlagen gespeichert.', actions: {
       relire: 'Als geprüft markieren',
       renvoyer: 'Zurück in den Entwurf',
       valider: 'Freigeben (einfrieren)',

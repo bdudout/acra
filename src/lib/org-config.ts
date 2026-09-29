@@ -71,6 +71,7 @@ export interface RawOrgConfig {
   vocabulaire?: unknown
   champsPersonnalises?: unknown
   auditConfig?: unknown
+  rapportsConfig?: unknown
   appetitRisque?: unknown
   actionDelaisMois?: unknown
 }
@@ -126,6 +127,7 @@ export interface OrgConfigResolved {
   vocabulaire: Record<string, unknown>
   champsPersonnalises: Record<string, unknown>
   auditConfig: Record<string, unknown>
+  rapportsConfig: Record<string, unknown>
   appetitRisque: AppetitConfig
   /** Délais (mois) de l'échéance par défaut d'une action selon sa priorité. */
   actionDelaisMois: ActionDelaisMois
@@ -175,6 +177,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   vocabulaire: {},
   champsPersonnalises: {},
   auditConfig: {},
+  rapportsConfig: {},
   appetitRisque: APPETIT_DEFAULT,
   actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
 }
@@ -187,7 +190,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
@@ -266,6 +269,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     vocabulaire: pickJson('vocabulaire', defaults.vocabulaire),
     champsPersonnalises: pickJson('champsPersonnalises', defaults.champsPersonnalises),
     auditConfig: pickJson('auditConfig', defaults.auditConfig),
+    rapportsConfig: pickJson('rapportsConfig', defaults.rapportsConfig),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { FileBarChart, Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ModuleGuide from '@/components/ModuleGuide'
+import RapportsGabaritsEditor from '@/components/RapportsGabaritsEditor'
 import { PERIODE_PRESETS, periodePreset } from '@/lib/rapport-model'
 
 interface EditionRow { id: string; code: string; statut: string; periodeDebut: string; periodeFin: string; createdAt: string }
@@ -121,6 +122,7 @@ export default function RapportsManager() {
           </table>
         )}
       </div>
+      <RapportsGabaritsEditor codes={disponibles.map(d => d.code)} />
     </div>
   )
 }

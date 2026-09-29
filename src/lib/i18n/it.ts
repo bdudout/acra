@@ -1798,7 +1798,7 @@ export const it: Translations = {
       VALIDE: 'Validato',
       DIFFUSE: 'Diffuso',
     },
-    actions: {
+    masquer: 'Maschera i dati identificativi', masquerHint: 'Diffusione esterna: incidenti, controlli, responsabili… diventano #1, #2… (coerente in tutto il rapporto).', gabaritsTitre: 'Modelli di rapporto', gabaritTitre: 'Titolo personalizzato', gabaritIntro: 'Introduzione', gabaritSections: 'Sezioni da nascondere (identificatori separati da virgole)', gabaritsSave: 'Salva i modelli', gabaritsSaved: 'Modelli salvati.', actions: {
       relire: 'Segna come rivisto',
       renvoyer: 'Rimanda in bozza',
       valider: 'Convalida (congela)',

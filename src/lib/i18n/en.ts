@@ -1798,7 +1798,7 @@ export const en: Translations = {
       VALIDE: 'Validated',
       DIFFUSE: 'Distributed',
     },
-    actions: {
+    masquer: 'Mask identifying data', masquerHint: 'External distribution: incidents, controls, owners… become #1, #2… (consistent across the report).', gabaritsTitre: 'Report templates', gabaritTitre: 'Custom title', gabaritIntro: 'Introduction', gabaritSections: 'Sections to hide (comma-separated identifiers)', gabaritsSave: 'Save templates', gabaritsSaved: 'Templates saved.', actions: {
       relire: 'Mark as reviewed',
       renvoyer: 'Send back to draft',
       valider: 'Validate (freeze)',

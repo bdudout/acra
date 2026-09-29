@@ -8,6 +8,8 @@ import type { UserRole } from '@/lib/permissions'
 import { peutLireRapports } from '@/lib/rapport-acces'
 import type { RapportContenu } from '@/lib/rapport-model'
 import { contenuVersFeuilles } from '@/lib/rapport-render'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { appliquerGabarit, masquerContenu, sanitizeRapportsConfig } from '@/lib/rapport-masquage'
 import { getT } from '@/lib/i18n'
 import { sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -31,7 +33,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : edition.langue
   const t = getT(locale)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string | undefined
-  const contenu = edition.contenu as unknown as RapportContenu
+  // Gabarit de l'organisation (sections masquées) ; `masque=1` : pseudonymisation pour diffusion externe.
+  const gabarit = sanitizeRapportsConfig((await getOrgConfig(scope.activeOrgId)).rapportsConfig).gabarits[edition.code]
+  const masque = new URL(req.url).searchParams.get('masque') === '1'
+  const brut = appliquerGabarit(edition.contenu as unknown as RapportContenu, gabarit)
+  const contenu: RapportContenu = masque ? masquerContenu(brut) : brut
 
   const wb = new ExcelJS.Workbook()
   wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
@@ -47,13 +53,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: scope.activeOrgId, ip: getClientIp(req),
-    details: { scope: 'rapport', action: 'export', id, code: edition.code },
+    details: { scope: 'rapport', action: 'export', id, code: edition.code, ...(masque ? { masque: true } : {}) },
   })
   const buf = await wb.xlsx.writeBuffer()
   return new NextResponse(buf as ArrayBuffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="acra-${edition.code}-${edition.periodeDebut.toISOString().slice(0, 10)}.xlsx"`,
+      'Content-Disposition': `attachment; filename="acra-${edition.code}-${edition.periodeDebut.toISOString().slice(0, 10)}${masque ? '-masque' : ''}.xlsx"`,
       'Cache-Control': 'no-store',
     },
   })

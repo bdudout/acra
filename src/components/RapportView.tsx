@@ -13,6 +13,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { STATUT_BADGE } from '@/components/RapportsManager'
 import { resoudreCellule, titreSection, libelleKpi, libelleColonne, formaterKpi } from '@/lib/rapport-render'
 import type { RapportContenu } from '@/lib/rapport-model'
+import { appliquerGabarit, masquerContenu, type GabaritRapport } from '@/lib/rapport-masquage'
 
 interface Edition {
   id: string; code: string; statut: string; periodeDebut: string; periodeFin: string; createdById: string; canWrite: boolean
@@ -27,11 +28,14 @@ export default function RapportView({ id }: { id: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dest, setDest] = useState('')
+  const [masque, setMasque] = useState(false)
+  const [gabarits, setGabarits] = useState<Record<string, GabaritRapport>>({})
   const tr = useCallback((key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string | undefined, [t])
   const catalogue = { ...r.catalogue, ...r.catalogueCtl, ...r.catalogueAud } as Record<string, { titre: string; desc: string }>
 
   const load = useCallback(() => { fetch(`/api/rapports/${id}`).then(x => (x.ok ? x.json() : null)).then(d => setE(d)).catch(() => setE(null)) }, [id])
   useEffect(() => { load() }, [load])
+  useEffect(() => { fetch('/api/rapports/config').then(x => (x.ok ? x.json() : null)).then(d => setGabarits(d?.config?.gabarits ?? {})).catch(() => {}) }, [])
 
   async function agir(action: string, extra: Record<string, unknown> = {}) {
     setBusy(true); setError(null)
@@ -48,7 +52,9 @@ export default function RapportView({ id }: { id: string }) {
   }
 
   if (!e) return <p className="text-sm text-gray-400">…</p>
-  const c = e.contenu
+  const gabarit = gabarits[e.code]
+  const base = appliquerGabarit(e.contenu, gabarit)
+  const c = masque ? masquerContenu(base) : base
   const day = (iso: string) => new Date(iso).toLocaleDateString(locale, { timeZone: 'UTC' })
   const figee = e.statut !== 'BROUILLON'
   const btn = 'btn-secondary text-xs disabled:opacity-50'
@@ -58,19 +64,22 @@ export default function RapportView({ id }: { id: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         <Link href="/rapports" className="text-xs text-ebios-700 hover:underline inline-flex items-center gap-1"><ArrowLeft size={13} aria-hidden="true" />{r.actions.retour}</Link>
         <div className="flex flex-wrap items-center gap-2">
-          <a href={`/api/rapports/${id}/export?lang=${locale}`} className={btn}>{r.actions.excel}</a>
+          <label className="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center gap-1" title={r.masquerHint}><input type="checkbox" checked={masque} onChange={ev => setMasque(ev.target.checked)} />{r.masquer}</label>
+          <a href={`/api/rapports/${id}/export?lang=${locale}${masque ? '&masque=1' : ''}`} className={btn}>{r.actions.excel}</a>
           <button type="button" onClick={() => window.print()} className={`${btn} inline-flex items-center gap-1`}><Printer size={13} aria-hidden="true" />{r.actions.imprimer}</button>
         </div>
       </div>
 
       <header>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{catalogue[e.code]?.titre ?? e.code}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{gabarit?.titre ?? catalogue[e.code]?.titre ?? e.code}</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {day(e.periodeDebut)} → {day(e.periodeFin)} · <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUT_BADGE[e.statut] ?? STATUT_BADGE.BROUILLON}`}>{(r.statuts as Record<string, string>)[e.statut] ?? e.statut}</span>
           {figee && <span className="ml-2 text-xs italic">{r.figee}</span>}
         </p>
         {e.diffuseLe && e.destinataires && e.destinataires.length > 0 && <p className="text-xs text-gray-500 mt-1">{e.destinataires.map(d => d.nom).join(', ')}</p>}
       </header>
+
+      {gabarit?.introduction && <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{gabarit.introduction}</p>}
 
       {e.canWrite && (
         <div className="print:hidden space-y-2">

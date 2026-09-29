@@ -1869,6 +1869,8 @@ model OrganizationConfig {
   champsPersonnalises        Json          @default("{}")
   // Lot L4 (suite) — audit interne : rappels automatiques, cycles de couverture par cotation.
   auditConfig                Json          @default("{}")
+  // Lot L2 (suite) — gabarits de rapports surchargeables, planification des brouillons.
+  rapportsConfig             Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

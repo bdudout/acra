@@ -1798,7 +1798,7 @@ export const es: Translations = {
       VALIDE: 'Validado',
       DIFFUSE: 'Difundido',
     },
-    actions: {
+    masquer: 'Ocultar datos identificativos', masquerHint: 'Difusión externa: incidentes, controles, responsables… pasan a ser #1, #2… (coherente en todo el informe).', gabaritsTitre: 'Plantillas de informes', gabaritTitre: 'Título personalizado', gabaritIntro: 'Introducción', gabaritSections: 'Secciones a ocultar (identificadores separados por comas)', gabaritsSave: 'Guardar plantillas', gabaritsSaved: 'Plantillas guardadas.', actions: {
       relire: 'Marcar como revisado',
       renvoyer: 'Devolver a borrador',
       valider: 'Validar (congelar)',
