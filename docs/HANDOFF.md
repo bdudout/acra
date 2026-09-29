@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (24) — import universel — CSV dans l'assistant
+
+- Fait : un `.csv` vaut une feuille (`lib/csv-workbook.ts`, UTF-8/BOM ou windows-1252, `;`/`,`) passé à l'assistant (aperçu + exécution) ; `checkTabularUpload` ; CSV ACRA (`=== … ===`) reste sur l'import ACRA ; messages `excel_format_unsupported` ×5 mentionnent .csv.
+- Vérifié : tsc, `npm test` (2820 verts), `i18n:check`, `npm run build`. Non vérifié : parcours navigateur, écriture DB réelle d'un CSV (CI).
+- Reste : liens supportAssets↔businessValues, avertissement champs calculés, JSON libre + profil (B-IMP-70), API v2/MCP (B-IMP-72/73).
+
 ## 2026-09-29 (23) — Claude Code : import universel — contexte, risques résiduels, alias de préfixe — ⚠ à vérifier
 
 - **Contexte** : `lib/excel-blocks` branché (rôle `CONTEXT` détecté sur les feuilles sans tableau : périmètre en texte libre, page de garde) → cadrage, titre et description de l'analyse.

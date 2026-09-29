@@ -46,10 +46,10 @@ describe('POST /api/analysis-imports/preview — format', () => {
       expect((await res.json()).error).toBe('excel_xls_unsupported')
     }
   })
-  it('.xlsm / .ods / .csv : excel_format_unsupported ; fichier vide ou texte renommé', async () => {
+  it('.xlsm / .ods : excel_format_unsupported ; texte renommé en .xlsx illisible', async () => {
     const zip = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0])
     expect((await (await POST(post('a.xlsm', zip))).json()).error).toBe('excel_format_unsupported')
-    expect((await (await POST(post('a.csv', Buffer.from('a;b')))).json()).error).toBe('excel_format_unsupported')
+    expect((await (await POST(post('a.ods', zip))).json()).error).toBe('excel_format_unsupported')
     expect((await (await POST(post('a.xlsx', Buffer.from('pas un classeur')))).json()).error).toBe('excel_workbook_unreadable')
   })
 })
@@ -153,4 +153,19 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(a.warnings.filter(w => w.startsWith('feared_event_business_value_not_found'))).toEqual([])
     }, 60_000)
   }
+})
+
+describe('POST /api/analysis-imports/preview — CSV (un CSV vaut une feuille)', () => {
+  it('registre plat en ;, cotations en clair : rôle Risques, en-têtes et lignes lues', async () => {
+    const csv = '﻿Réf;Risque;Description;Impact;Probabilité;Traitement\r\nR-01;Rançongiciel;Chiffrement des serveurs;Critique;Vraisemblable;Réduire\r\nR-02;Fuite;Export non autorisé;Importante;Peu vraisemblable;Réduire\r\n'
+    const res = await POST(post('registre-simple.csv', Buffer.from(csv, 'utf8')))
+    expect(res.status).toBe(200)
+    const { sheets } = await res.json()
+    expect(sheets).toHaveLength(1)
+    expect(sheets[0]).toMatchObject({ name: 'registre-simple', headerRow: 1, rows: 2, detection: { type: 'RISKS' } })
+    expect(sheets[0].mapping).toMatchObject({ externalId: 'Réf', gravity: 'Impact', likelihood: 'Probabilité' })
+  })
+  it('un .xls reste refusé, même via l’assistant CSV', async () => {
+    expect((await (await POST(post('a.xls', OLE2))).json()).error).toBe('excel_xls_unsupported')
+  })
 })

@@ -15,7 +15,7 @@ import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
 import HistoricImportPreview, { type HistoricPreviewSheet, type HistoricRequiredValueGap } from '@/components/HistoricImportPreview'
 import HistoricImportSummaryDialog from '@/components/HistoricImportSummaryDialog'
-import { checkAcraUpload, checkExcelUpload } from '@/lib/import-file-format'
+import { checkAcraUpload, checkTabularUpload, looksLikeAcraCsv } from '@/lib/import-file-format'
 import type { HistoricImportDecision, HistoricSheetType } from '@/lib/historic-import'
 
 type FilterValue = 'ALL' | 'EN_COURS' | 'TERMINE' | 'SOUMIS' | 'APPROUVE'
@@ -123,6 +123,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
     try {
       const text = await file.text()
       const isCSV = file.name.endsWith('.csv')
+      // Un CSV qui n'est pas un export ACRA (registre plat, export d'un autre outil) passe par l'assistant de mapping.
+      if (isCSV && !looksLikeAcraCsv(text)) { setImporting(false); if (importRef.current) importRef.current.value = ''; await runPreview(file); return }
       const res = await fetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -142,13 +144,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
     }
   }
 
-  async function handleExcelPreview(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setExcelImportError(null)
-    // .xls (même renommé) : « non pris en charge, .xlsx pris en charge » avant tout envoi au serveur.
-    const formatError = checkExcelUpload(file.name, await readHead(file))
-    if (formatError) { setExcelImportError({ code: formatError }); if (excelImportRef.current) excelImportRef.current.value = ''; return }
+  /** Aperçu de l'assistant (classeur .xlsx ou fichier .csv) : lecture du fichier, rôles détectés, mapping suggéré. */
+  async function runPreview(file: File) {
     setImporting(true)
     try {
       const buffer = await file.arrayBuffer()
@@ -164,6 +161,16 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
       setExcelPreview({ filename: file.name, data: btoa(binary), sheets: result.sheets }); setExcelMissingReview(null)
     } catch (err: any) { setExcelImportError({ code: err.message || 'excel_import_invalid' }) }
     finally { setImporting(false); if (excelImportRef.current) excelImportRef.current.value = '' }
+  }
+
+  async function handleExcelPreview(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setExcelImportError(null)
+    // .xls (même renommé) : « non pris en charge, .xlsx pris en charge » avant tout envoi au serveur.
+    const formatError = checkTabularUpload(file.name, await readHead(file))
+    if (formatError) { setExcelImportError({ code: formatError }); if (excelImportRef.current) excelImportRef.current.value = ''; return }
+    await runPreview(file)
   }
 
   async function confirmExcelImport(selection: { mappings: Record<string, Record<string, string | undefined>>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; valueMaps?: Record<string, Record<string, Record<string, string>>>; organizationId?: string }): Promise<void> {
@@ -233,7 +240,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               onChange={handleImport}
               aria-label="Importer une analyse"
             />
-            <input ref={excelImportRef} type="file" accept=".xlsx,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
+            <input ref={excelImportRef} type="file" accept=".xlsx,.csv,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
             <AnalyseImportMenu defaultOpen={searchParams.get('import') === '1'} disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
             <ExpressAnalyseButton variant="button" />
             {demo && (

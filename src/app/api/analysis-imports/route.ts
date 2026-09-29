@@ -14,7 +14,8 @@ import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
 import { readSheetSample, readDataRows } from '@/lib/excel-grid'
 import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
-import { checkExcelUpload } from '@/lib/import-file-format'
+import { checkTabularUpload } from '@/lib/import-file-format'
+import { csvToWorkbook } from '@/lib/csv-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
 
 const sheetType = z.enum(HISTORIC_SHEET_TYPES)
@@ -39,11 +40,12 @@ export async function POST(req: NextRequest) {
     const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)
     if (!rl.allowed) return NextResponse.json({ error: 'excel_rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
     const buffer = Buffer.from(body.data, 'base64')
-    const formatError = checkExcelUpload(body.filename, buffer.subarray(0, 16))
+    const formatError = checkTabularUpload(body.filename, buffer.subarray(0, 16))
     if (formatError) return NextResponse.json({ error: formatError }, { status: importErrorStatus(formatError) })
-    const archive = checkXlsxArchive(buffer)
+    const isCsv = /\.csv$/i.test(body.filename)
+    const archive = isCsv ? { ok: true as const } : checkXlsxArchive(buffer)
     if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
-    const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer as never)
+    const workbook = isCsv ? csvToWorkbook(buffer, body.filename) : new ExcelJS.Workbook(); if (!isCsv) await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100)) // même lecture que l'aperçu
       const headers = layout.columns.map(column => column.key)
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
     const partition = body.partialImport ? partitionHistoricImportSheets(correctedSheets) : { sheets: correctedSheets, decisions: [] }
     if (body.dryRun) return NextResponse.json({ decisions: partition.decisions, requiredValueGaps: partition.decisions.filter(decision => decision.status === 'REJECTED' && decision.reason === 'MISSING_REQUIRED_VALUE') })
     if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && (sheet.rows.length > 0 || (sheet.blocks && (sheet.blocks.text.length > 0 || sheet.blocks.kv.length > 0))))) throw new Error('NO_IMPORTABLE_SHEET')
-    const fallback = body.filename.replace(/\.xlsx$/i, '')
+    const fallback = body.filename.replace(/\.(xlsx|csv)$/i, '')
     const packageData = buildHistoricImportPackages(partition.sheets, fallback)
     const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides, ...(Object.keys(body.refAliases).length ? { refAliases: body.refAliases } : {}), ...(Object.keys(body.valueMaps).length ? { valueMaps: body.valueMaps } : {}) })
     const results = await Promise.all(packageData.map((item, index) => executeAnalysisImport(parseAnalysisImportRequest({ ...item, idempotencyKey: `${key}:${index}` }), { organizationId, userId, source: 'EXCEL_WEB' })))

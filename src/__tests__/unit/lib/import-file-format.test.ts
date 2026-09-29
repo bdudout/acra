@@ -58,3 +58,19 @@ describe('checkAcraUpload — import JSON / CSV ACRA', () => {
     expect(checkAcraUpload('a.json', new Uint8Array())).toBe('import_file_empty')
   })
 })
+
+import { checkTabularUpload, looksLikeAcraCsv } from '@/lib/import-file-format'
+
+describe('checkTabularUpload — assistant d’import (xlsx ou csv)', () => {
+  it('xlsx et csv acceptés ; .xls et autres formats refusés avec le bon message', () => {
+    expect(checkTabularUpload('a.xlsx', ZIP)).toBeNull()
+    expect(checkTabularUpload('registre.csv', txt('Réf;Risque\nR1;x'))).toBeNull()
+    expect(checkTabularUpload('a.xls', OLE2)).toBe('excel_xls_unsupported')
+    expect(checkTabularUpload('a.ods', ZIP)).toBe('excel_format_unsupported')
+    expect(checkTabularUpload('a.csv', new Uint8Array())).toBe('import_file_empty')
+  })
+  it('looksLikeAcraCsv : sections « === TITRE === » d’un export ACRA', () => {
+    expect(looksLikeAcraCsv('Nom,X\n=== RISQUES ET TRAITEMENT ===\nA,1')).toBe(true)
+    expect(looksLikeAcraCsv('Réf;Risque\nR1;x')).toBe(false)
+  })
+})

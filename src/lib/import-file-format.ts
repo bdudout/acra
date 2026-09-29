@@ -53,3 +53,16 @@ export function checkAcraUpload(filename: string, head: Uint8Array): ImportFileE
   if (kind === 'XLS') return 'excel_xls_unsupported'
   return 'import_format_unsupported'
 }
+
+/** Assistant d'import tabulaire : classeur `.xlsx` ou fichier `.csv` (un CSV vaut une feuille). */
+export function checkTabularUpload(filename: string, head: Uint8Array): ImportFileErrorCode | null {
+  if (head.length === 0) return 'import_file_empty'
+  if (isOle2(head)) return 'excel_xls_unsupported'
+  if (detectImportFileKind(filename, head) === 'CSV') return null
+  return checkExcelUpload(filename, head)
+}
+
+/** Un CSV d'export ACRA contient des sections « === TITRE === » ; un registre plat n'en a pas (il passe par l'assistant). */
+export function looksLikeAcraCsv(text: string): boolean {
+  return /^=== .+ ===\s*$/m.test(text)
+}
