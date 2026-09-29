@@ -37,5 +37,5 @@ Fixtures locales (NON versionnées) : `.local-fixtures/import-universel/`.
 - [ ] Profil : enregistrer le mapping, ré-importer un second JSON de même forme.
 
 ## 6. Points à ajuster si constatés
-- Libellés `excel_format_unsupported` à compléter avec `.json` (assistant) ; UX de sélection d'un risque parent pour les feuilles enfants JSON.
+- UX de sélection d'un risque parent pour les feuilles enfants JSON.
 - Reste à développer : liens actifs supports ↔ valeurs métier, avertissement champs calculés (divergence vs vraisemblance × impact), profil JSON persistant par chemins (B-IMP-70 complet), API v2 / MCP (B-IMP-72/73).
