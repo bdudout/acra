@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const parsed = parseAnalysisImportRequest(await req.json())
     // Format v3 : volumes et références orphelines des ateliers 1 à 4 (aucune écriture).
-    return NextResponse.json({ valid: true, ...summarizeAnalysisImport(parsed), ...(hasAtelierContent(parsed) ? { ateliers: summarizeAtelierContent(parsed) } : {}) })
+    return NextResponse.json({ valid: true, ...summarizeAnalysisImport(parsed), ...(hasAtelierContent(parsed) ? { ateliers: summarizeAtelierContent(parsed, parsed.risks.flatMap(r => (r.externalId ? [r.externalId] : []))) } : {}) })
   }
   catch (error) { return NextResponse.json({ valid: false, error: 'Import invalide', details: error instanceof Error ? error.message : undefined }, { status: 400 }) }
 }

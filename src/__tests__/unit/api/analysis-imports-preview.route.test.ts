@@ -118,6 +118,7 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(roles['2 - Biens supports']).toBe('SUPPORT_ASSETS')
       expect(roles['2 - Parties prenantes']).toBe('STAKEHOLDERS')
       expect(roles['2 - Socle de sécurité']).toBe('SECURITY_BASELINE')
+      expect(roles['5 - Risques résiduels']).toBe('RESIDUAL_RISKS')
       expect(roles['1 - Périmètre']).toBe('CONTEXT')
       expect(roles['Page de garde']).toBe('CONTEXT')
       expect(roles['3 - S.Stratégiques']).toBe('STRATEGIC_SCENARIOS')
@@ -125,7 +126,7 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       const { sheets: kept } = partitionHistoricImportSheets(sheets)
       const pkg = buildHistoricImportPackage(kept, f)
       const parsed = parseAnalysisImportRequest({ ...pkg, idempotencyKey: 'essai-import-0001' })
-      const a = summarizeAtelierContent(parsed)
+      const a = summarizeAtelierContent(parsed, parsed.risks.flatMap(r => (r.externalId ? [r.externalId] : [])))
       expect(a.counts).toMatchObject({ businessValues: 6, fearedEvents: 8, riskSources: 10, stakeholders: 14, strategicScenarios: 8, operationalScenarios: 13 })
       expect(parsed.supportAssets.length).toBeGreaterThanOrEqual(5)
       expect(parsed.supportAssets.length).toBeLessThan(20) // catalogue de 73 biens : seuls les retenus
@@ -134,6 +135,8 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(parsed.context?.contexteJuridique).toBeTruthy()
       expect(parsed.analysis.title).toMatch(/Application de suivi|Espace client/)
       expect(parsed.analysis.description).toContain('Rédacteur')
+      expect(parsed.residualRisks.length).toBe(13)
+      expect(a.warnings.filter(w => w.startsWith('residual_risk'))).toEqual([])
       expect(parsed.risks.length).toBe(13)
       expect(summarizeAnalysisImport(parsed).created.risks).toBe(13)
       // références VM02 / VM_02, ER03 / ER_03 : toutes résolues, seules les références absentes du fichier sont signalées

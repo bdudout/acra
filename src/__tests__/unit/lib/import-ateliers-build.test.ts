@@ -19,6 +19,17 @@ describe('détection des rôles d’atelier (B-IMP-12)', () => {
   it('liste des rôles', () => expect(ATELIER_ROLES).toContain('BUSINESS_VALUES'))
 })
 
+describe('risques résiduels (feuille Réf.RR)', () => {
+  it('détection par Réf.RR, mapping des trois cotations, construction rattachée aux risques initiaux', () => {
+    const cols = ['Réf.RR', 'Réf.RI', 'Intitulé du risque résiduel', 'Option de traitement', 'Gravité initiale', 'Vraisemblance initiale', 'Niveau de risque initial', 'Gravité actuelle', 'Vraisemblance actuelle', 'Niveau de risque actuel', 'Gravité résiduelle', 'Vraisemblance résiduelle', 'Niveau de risque résiduel']
+    expect(detectAtelierRole('5 - Risques résiduels', cols)).toMatchObject({ type: 'RESIDUAL_RISKS' })
+    const mapping = suggestAtelierMapping('RESIDUAL_RISKS', cols)
+    expect(mapping).toMatchObject({ externalId: 'Réf.RR', riskRef: 'Réf.RI', currentGravity: 'Gravité actuelle', currentLikelihood: 'Vraisemblance actuelle', residualGravity: 'Gravité résiduelle', residualLikelihood: 'Vraisemblance résiduelle' })
+    const { content } = buildAtelierContent([{ name: 'RR', type: 'RESIDUAL_RISKS', mapping, rows: [{ 'Réf.RR': 'RR_01', 'Réf.RI': 'RI_01', 'Gravité actuelle': '3 - Importante', 'Vraisemblance actuelle': '2 - Vraisemblable', 'Gravité résiduelle': '3 - Importante', 'Vraisemblance résiduelle': '1 - Peu vraisemblable' }, { 'Réf.RR': 'RR_02', 'Réf.RI': '' }] }])
+    expect(content.residualRisks).toEqual([{ externalId: 'RR_01', riskExternalId: 'RI1', currentGravity: 3, currentLikelihood: 2, residualGravity: 3, residualLikelihood: 1 }])
+  })
+})
+
 describe('mapping suggéré par rôle', () => {
   it('valeurs métier : D / I / C composés', () => {
     expect(suggestAtelierMapping('BUSINESS_VALUES', ['Réf.VM', 'Dénomination', 'Nature (Information / Processus)', 'Description', 'Besoins de sécurité › Disponibilité', 'Besoins de sécurité › Intégrité', 'Besoins de sécurité › Confidentialité', 'Besoins de sécurité › Justification DIC', 'Responsable']))

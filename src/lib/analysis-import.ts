@@ -75,7 +75,7 @@ export function summarizeAnalysisImport(input: AnalysisImportRequest) {
 }
 
 /** Empreinte canonique utilisée pour comparer deux demandes sous la même clé d'idempotence. */
-const ATELIER_KEYS = ['context', 'businessValues', 'supportAssets', 'fearedEvents', 'riskSources', 'stakeholders', 'strategicScenarios', 'operationalScenarios', 'securityBaseline'] as const
+const ATELIER_KEYS = ['context', 'businessValues', 'supportAssets', 'fearedEvents', 'riskSources', 'stakeholders', 'strategicScenarios', 'operationalScenarios', 'securityBaseline', 'residualRisks'] as const
 /**
  * Un paquet SANS contenu d'atelier garde l'empreinte d'avant le format v3 : les reçus d'idempotence déjà enregistrés
  * restent rejouables (même clé + même contenu = rejeu, jamais un faux 409).
@@ -113,6 +113,16 @@ async function writeImportContent(tx: Prisma.TransactionClient, input: AnalysisI
     const vulnerabilities = input.vulnerabilities.filter(vulnerability => vulnerability.riskExternalId === row.externalId).map(vulnerability => ({ description: vulnerability.title, detail: vulnerability.description }))
     const risk = await tx.risque.create({ data: { analyseId: ctx.analyseId, nom: row.title, description: row.description, gravite: gravity, vraisemblance: likelihood, niveauRisque: gravity * likelihood, strategie: enumValue(row.strategy, ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'], 'REDUIRE') as 'REDUIRE', vulnerabilites: vulnerabilities }, select: { id: true } })
     if (row.externalId) risks.set(row.externalId, risk.id)
+  }
+  // Cotations « actuelle » et « résiduelle » (feuille de risques résiduels), rattachées aux risques par référence canonique.
+  const canonicalRisks = new Map([...risks].map(([ref, id]) => [canonicalRef(ref), id]))
+  for (const r of input.residualRisks) {
+    const id = canonicalRisks.get(canonicalRef(r.riskExternalId)); if (!id) continue
+    await tx.risque.update({ where: { id }, data: {
+      ...(r.currentGravity && r.currentLikelihood ? { graviteActuelle: r.currentGravity, vraisemblanceActuelle: r.currentLikelihood, niveauActuel: r.currentGravity * r.currentLikelihood } : {}),
+      ...(r.residualGravity && r.residualLikelihood ? { graviteResiduelle: r.residualGravity, vraisemblanceResiduelle: r.residualLikelihood, niveauResiduel: r.residualGravity * r.residualLikelihood } : {}),
+      ...(r.justification ? { justificationResiduelle: r.justification } : {}),
+    } })
   }
   for (const row of input.measures) await tx.mesure.create({ data: { analyseId: ctx.analyseId, risqueId: row.riskExternalId ? risks.get(row.riskExternalId) : null, nom: row.title, description: row.description, statut: enumValue(row.status, ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'], 'REALISE') as 'REALISE', responsable: row.responsible, echeance: optionalDate(row.dueDate) } })
   const actions = new Map<string, string>()

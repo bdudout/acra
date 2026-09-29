@@ -34,12 +34,12 @@ const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,
 export const BUILTIN_PROFILES: ImportProfile[] = [
   {
     version: 1, id: 'builtin-dossier-securite-ebios', name: 'Dossier de sécurité EBIOS RM', builtin: true, partial: true,
-    description: 'Classeur EBIOS RM en 15 feuilles : reprend les ateliers 1 à 4 (valeurs métier, biens supports, événements redoutés, sources, parties prenantes, scénarios, socle), les risques initiaux et le plan de mesures ; périmètre (texte libre), page de garde, métriques et risques résiduels ne sont pas encore repris.',
+    description: 'Classeur EBIOS RM en 15 feuilles : reprend les ateliers 1 à 4 (valeurs métier, biens supports, événements redoutés, sources, parties prenantes, scénarios, socle), les risques initiaux et le plan de mesures ; le périmètre (texte libre) et la page de garde alimentent le cadrage ; les métriques (échelles) ne sont pas importées.',
     sheets: [
-      { match: { name: 'Page de garde' }, role: 'UNKNOWN', fields: {} },
+      { match: { name: 'Page de garde' }, role: 'CONTEXT', fields: {} },
       { match: { name: 'Sommaire' }, role: 'UNKNOWN', fields: {} },
       { match: { name: 'Métriques' }, role: 'UNKNOWN', fields: {} },
-      { match: { name: '1 - Périmètre' }, role: 'UNKNOWN', fields: {} },
+      { match: { name: '1 - Périmètre' }, role: 'CONTEXT', fields: {} },
       { match: { name: '1 - SROV' }, role: 'RISK_SOURCES', fields: { externalId: 'Réf.SR/OV', title: 'Sources de risques', objective: 'Objectifs visés', motivation: 'Motivation', resources: 'Ressources', relevance: 'Pertinence', retained: 'Retenu ?', justification: 'Justification' } },
       { match: { name: '1 - Valeurs Métiers' }, role: 'BUSINESS_VALUES', fields: { externalId: 'Réf.VM', title: 'Dénomination', type: 'Nature (Information / Processus)', description: 'Description', responsible: 'Responsable', availability: 'Besoins de sécurité › Disponibilité', integrity: 'Besoins de sécurité › Intégrité', confidentiality: 'Besoins de sécurité › Confidentialité', justification: 'Besoins de sécurité › Justification DIC' } },
       { match: { name: '1 - Événements redoutés' }, role: 'FEARED_EVENTS', fields: { externalId: 'Réf.ER', title: 'Intitulés des événements redoutés', description: 'Description des événements redoutés', impacts: 'Impacts', gravity: 'Gravité', businessValueRefs: 'Valeur(s) Métier(s) liée(s)', retained: 'Retenu ?' } },
@@ -49,6 +49,7 @@ export const BUILTIN_PROFILES: ImportProfile[] = [
       { match: { name: '3 - S.Stratégiques' }, role: 'STRATEGIC_SCENARIOS', fields: { externalId: 'Réf.SS', title: 'Scénario stratégique', riskSource: 'Sources de risques', objective: 'Objectifs visés', attackPath: 'Intitulé des chemins d\'attaque stratégiques', stakeholderRefs: 'Partie prenante impliquée', fearedEventRefs: 'Evenements redoutés', gravity: 'Gravité' } },
       { match: { name: '4 - S.Opérationnels' }, role: 'OPERATIONAL_SCENARIOS', fields: { externalId: 'Réf.SO', strategicRef: 'Réf.SS', title: 'Description du scénario opérationnel', likelihood: 'Vraisemblance initiale' } },
       { match: { name: '5 - Risques initiaux' }, role: 'RISKS', fields: { externalId: 'Réf.RI', title: 'Description du risque', gravity: 'Gravité initiale', likelihood: 'Vraisemblance initiale', strategy: 'Traitement du risque initial' } },
+      { match: { name: '5 - Risques résiduels' }, role: 'RESIDUAL_RISKS', fields: { externalId: 'Réf.RR', riskRef: 'Réf.RI', currentGravity: 'Gravité actuelle', currentLikelihood: 'Vraisemblance actuelle', residualGravity: 'Gravité résiduelle', residualLikelihood: 'Vraisemblance résiduelle' } },
       { match: { name: '5 - PACS' }, role: 'MEASURES', fields: { externalId: 'Réf. de la mesure de sécurité', title: 'Description courte de la mesure', description: 'Description longue', status: 'Statut', responsible: 'Responsable', dueDate: 'Date de mise en œuvre' } },
     ],
     statusMappings: { '5 - PACS': { Terminé: 'REALISE', 'A réaliser': 'A_FAIRE', 'En cours': 'EN_COURS', 'Abandonné / Suspendu': 'REPORTE' } },

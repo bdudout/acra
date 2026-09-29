@@ -27,6 +27,7 @@ export const atelierContentSchema = z.object({
   stakeholders: z.array(z.object({ ...base, type: text(50).optional(), description: text(2000).optional(), dependency: level.optional(), penetration: level.optional(), maturity: level.optional(), trust: level.optional() })).max(IMPORT_MAX_ITEMS).default([]),
   strategicScenarios: z.array(z.object({ ...base, description: text(2000).optional(), riskSourceExternalId: ref.optional(), riskSourceLabel: text(500).optional(), objective: text(500).optional(), fearedEventExternalIds: refs, stakeholderExternalIds: refs, gravity: level.optional(), likelihood: level.optional(), retained: z.boolean().optional(), attackPath: z.array(text(500)).max(50).default([]) })).max(IMPORT_MAX_ITEMS).default([]),
   operationalScenarios: z.array(z.object({ ...base, description: text(2000).optional(), strategicScenarioExternalId: ref.optional(), likelihood: level.optional(), gravity: level.optional() })).max(IMPORT_MAX_ITEMS).default([]),
+  residualRisks: z.array(z.object({ externalId: ref.optional(), riskExternalId: ref, currentGravity: level.optional(), currentLikelihood: level.optional(), residualGravity: level.optional(), residualLikelihood: level.optional(), justification: text(1000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
   securityBaseline: z.array(z.object({ externalId: ref.optional(), title: z.string().trim().min(1).max(1000), category: text(100).optional(), subCategory: text(100).optional(), coverage: z.coerce.number().int().min(0).max(3).optional(), comment: text(2000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
 })
 export type AtelierContent = z.infer<typeof atelierContentSchema>
@@ -39,18 +40,19 @@ const oneOf = (v: string | undefined, allowed: string[], fallback: string) => { 
 
 /** Rôles présents (au moins un objet) : sert au compte-rendu et à l'aperçu. */
 export function hasAtelierContent(c: AtelierContent): boolean {
-  return !!(c.context && Object.values(c.context).some(Boolean)) || [c.businessValues, c.supportAssets, c.fearedEvents, c.riskSources, c.stakeholders, c.strategicScenarios, c.operationalScenarios, c.securityBaseline].some(a => a.length > 0)
+  return !!(c.context && Object.values(c.context).some(Boolean)) || [c.businessValues, c.supportAssets, c.fearedEvents, c.riskSources, c.stakeholders, c.strategicScenarios, c.operationalScenarios, c.securityBaseline, c.residualRisks].some(a => a.length > 0)
 }
 
 const countsOf = (c: AtelierContent) => Object.fromEntries(Object.entries({
   businessValues: c.businessValues.length, supportAssets: c.supportAssets.length, fearedEvents: c.fearedEvents.length, riskSources: c.riskSources.length,
-  stakeholders: c.stakeholders.length, strategicScenarios: c.strategicScenarios.length, operationalScenarios: c.operationalScenarios.length, securityBaseline: c.securityBaseline.length,
+  stakeholders: c.stakeholders.length, strategicScenarios: c.strategicScenarios.length, operationalScenarios: c.operationalScenarios.length, securityBaseline: c.securityBaseline.length, residualRisks: c.residualRisks.length,
 }).filter(([, n]) => n > 0)) as Record<string, number>
 
 /** Aperçu pur : volumes et références orphelines (jamais rattachées). */
-export function summarizeAtelierContent(c: AtelierContent): { counts: Record<string, number>; warnings: string[] } {
+export function summarizeAtelierContent(c: AtelierContent, riskRefs: string[] = []): { counts: Record<string, number>; warnings: string[] } {
   const set = (items: { externalId?: string }[]) => new Set(items.flatMap(i => (i.externalId ? [canonicalRef(i.externalId)] : [])))
   const vm = set(c.businessValues); const er = set(c.fearedEvents); const sr = set(c.riskSources); const pp = set(c.stakeholders); const ss = set(c.strategicScenarios)
+  const risks = new Set(riskRefs.map(canonicalRef))
   const warnings: string[] = []
   const miss = (code: string, values: string[], known: Set<string>) => { for (const v of values) if (!known.has(canonicalRef(v))) warnings.push(`${code}:${v}`) }
   for (const a of c.supportAssets) miss('support_asset_business_value_not_found', a.businessValueExternalIds, vm)
@@ -60,6 +62,7 @@ export function summarizeAtelierContent(c: AtelierContent): { counts: Record<str
     miss('strategic_scenario_feared_event_not_found', s.fearedEventExternalIds, er)
     miss('strategic_scenario_stakeholder_not_found', s.stakeholderExternalIds, pp)
   }
+  for (const r of c.residualRisks) if (!risks.has(canonicalRef(r.riskExternalId))) warnings.push(`residual_risk_reference_not_found:${r.riskExternalId}`)
   for (const o of c.operationalScenarios) if (o.strategicScenarioExternalId) miss('operational_scenario_strategic_not_found', [o.strategicScenarioExternalId], ss)
   return { counts: countsOf(c), warnings }
 }

@@ -11,7 +11,7 @@ import {
   type RetainedMode,
 } from './import-transforms'
 
-export const ATELIER_ROLES = ['BUSINESS_VALUES', 'SUPPORT_ASSETS', 'FEARED_EVENTS', 'RISK_SOURCES', 'STAKEHOLDERS', 'STRATEGIC_SCENARIOS', 'OPERATIONAL_SCENARIOS', 'SECURITY_BASELINE'] as const
+export const ATELIER_ROLES = ['BUSINESS_VALUES', 'SUPPORT_ASSETS', 'FEARED_EVENTS', 'RISK_SOURCES', 'STAKEHOLDERS', 'STRATEGIC_SCENARIOS', 'OPERATIONAL_SCENARIOS', 'SECURITY_BASELINE', 'RESIDUAL_RISKS'] as const
 export type AtelierRole = (typeof ATELIER_ROLES)[number]
 
 /** Champs ACRA proposés par rôle (ordre d'affichage). */
@@ -24,6 +24,7 @@ export const ATELIER_ROLE_FIELDS: Record<AtelierRole, string[]> = {
   STRATEGIC_SCENARIOS: ['externalId', 'title', 'riskSource', 'objective', 'attackPath', 'stakeholderRefs', 'fearedEventRefs', 'gravity', 'description'],
   OPERATIONAL_SCENARIOS: ['externalId', 'strategicRef', 'title', 'likelihood'],
   SECURITY_BASELINE: ['title', 'category', 'subCategory', 'coverage', 'comment'],
+  RESIDUAL_RISKS: ['externalId', 'riskRef', 'title', 'currentGravity', 'currentLikelihood', 'residualGravity', 'residualLikelihood'],
 }
 
 /** Rôles dont un champ est une liste de références vers une autre feuille. */
@@ -42,7 +43,8 @@ export function detectAtelierRole(_name: string, columns: string[]): { type: Ate
   const h = columns.map(norm)
   const has = (x: string) => h.includes(x)
   // Feuilles de risques (Réf.RI / Réf.RR) : rôle « Risques » décidé ailleurs ; elles citent Réf.SS / Réf.SO sans en être.
-  if (has('ref ri') || has('ref rr')) return null
+  if (has('ref rr')) return { type: 'RESIDUAL_RISKS', confidence: 'HIGH', missing: [] }
+  if (has('ref ri')) return null
   const role: AtelierRole | null = has('ref vm') ? 'BUSINESS_VALUES' : has('ref er') ? 'FEARED_EVENTS' : has('ref bs') ? 'SUPPORT_ASSETS' : has('ref pp') ? 'STAKEHOLDERS'
     : has('ref sr ov') ? 'RISK_SOURCES' : has('ref so') ? 'OPERATIONAL_SCENARIOS' : has('ref ss') ? 'STRATEGIC_SCENARIOS'
       : has('exigence') && h.some(x => x.startsWith('couverture')) ? 'SECURITY_BASELINE' : null
@@ -57,6 +59,7 @@ const ALIASES: Record<AtelierRole, Record<string, string[]>> = {
   STAKEHOLDERS: { externalId: ['ref pp'], type: ['categorie'], title: ['partie prenante'], description: ['activites'], dependency: ['dependance'], penetration: ['penetration'], maturity: ['maturite'], trust: ['confiance'] },
   STRATEGIC_SCENARIOS: { externalId: ['ref ss'], title: ['scenario strategique'], riskSource: ['sources de risques', 'source de risque'], objective: ['objectifs vises', 'objectif vise'], attackPath: ['chemins d attaque', 'chemin d attaque'], stakeholderRefs: ['partie prenante'], fearedEventRefs: ['evenements redoutes'], gravity: ['gravite'], description: ['commentaire'] },
   OPERATIONAL_SCENARIOS: { externalId: ['ref so'], strategicRef: ['ref ss'], title: ['description du scenario'], likelihood: ['vraisemblance initiale', 'vraisemblance'] },
+  RESIDUAL_RISKS: { externalId: ['ref rr'], riskRef: ['ref ri'], title: ['intitule du risque residuel', 'intitule'], currentGravity: ['gravite actuelle'], currentLikelihood: ['vraisemblance actuelle'], residualGravity: ['gravite residuelle'], residualLikelihood: ['vraisemblance residuelle'] },
   SECURITY_BASELINE: { title: ['description', 'exigence'], category: ['categorie'], subCategory: ['sous categorie'], coverage: ['couverture projet', 'couverture'], comment: ['commentaire'] },
 }
 
@@ -101,7 +104,7 @@ const numbered = (s: string) => s.split(/(?:^|\s)\d+\s*[-.)]\s+/).map(x => x.tri
 
 export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierContent; report: AtelierBuildReport } {
   const report: AtelierBuildReport = { defaulted: [], conflicts: [], notRetained: {} }
-  const raw: Record<string, unknown> = { businessValues: [], supportAssets: [], fearedEvents: [], riskSources: [], stakeholders: [], strategicScenarios: [], operationalScenarios: [], securityBaseline: [] }
+  const raw: Record<string, unknown> = { businessValues: [], supportAssets: [], fearedEvents: [], riskSources: [], stakeholders: [], strategicScenarios: [], operationalScenarios: [], securityBaseline: [], residualRisks: [] }
   const byRole = (role: AtelierRole) => sheets.filter(s => s.type === role)
   const idsOf = (role: AtelierRole) => byRole(role).flatMap(s => s.rows.map(r => cellOf(r, s.mapping.externalId)).filter(Boolean))
 
@@ -197,6 +200,18 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
       }]
     }
   }
+  for (const s of byRole('RESIDUAL_RISKS')) {
+    const all = s.rows.map(r => cellOf(r, s.mapping.riskRef))
+    for (const r of s.rows) {
+      const refs = extractReferences(cellOf(r, s.mapping.riskRef), { prefixes: inferPrefixes(all) })
+      if (!refs[0]) continue
+      raw.residualRisks = [...((raw.residualRisks as unknown[]) ?? []), {
+        ...(cellOf(r, s.mapping.externalId) ? { externalId: cellOf(r, s.mapping.externalId) } : {}), riskExternalId: refs[0].ref,
+        currentGravity: level(cellOf(r, s.mapping.currentGravity)), currentLikelihood: level(cellOf(r, s.mapping.currentLikelihood)),
+        residualGravity: level(cellOf(r, s.mapping.residualGravity)), residualLikelihood: level(cellOf(r, s.mapping.residualLikelihood)),
+      }]
+    }
+  }
   for (const s of byRole('SECURITY_BASELINE')) for (const r of kept(s)) {
     const cov = cellOf(r, s.mapping.coverage)
     raw.securityBaseline = [...(raw.securityBaseline as unknown[]), {
@@ -207,6 +222,6 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
   void listSplit
   // Les objets sans intitulé ne sont jamais créés ; les valeurs `undefined` sont retirées par le schéma.
   const clean = JSON.parse(JSON.stringify(raw, (_k, v) => (v === undefined ? undefined : v)))
-  for (const k of Object.keys(clean)) if (Array.isArray(clean[k])) clean[k] = (clean[k] as { title?: string }[]).filter(o => o.title)
+  for (const k of Object.keys(clean)) if (Array.isArray(clean[k]) && k !== 'residualRisks') clean[k] = (clean[k] as { title?: string }[]).filter(o => o.title)
   return { content: atelierContentSchema.parse(clean), report }
 }
