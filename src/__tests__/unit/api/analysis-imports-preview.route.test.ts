@@ -74,7 +74,7 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
     it(`${f} : aucune feuille d’échelles ou de scénarios classée « Risques » ; en-têtes trouvés`, async () => {
       const res = await POST(post(f, readFileSync(join(LOCAL, f))))
       expect(res.status).toBe(200)
-      const by = Object.fromEntries((await res.json()).sheets.map((s: { name: string; detection: { type: string }; headerRow: number; rows: number }) => [s.name, s]))
+      const by = Object.fromEntries((await res.json()).sheets.map((s: { name: string; detection: { type: string }; headerRow: number; rows: number; columns: string[] }) => [s.name, s]))
       expect(by['Métriques'].detection.type).not.toBe('RISKS')
       expect(by['3 - S.Stratégiques'].detection.type).not.toBe('RISKS')
       expect(by['4 - S.Opérationnels'].detection.type).not.toBe('RISKS')
@@ -83,6 +83,9 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(by['5 - Risques initiaux'].detection.type).toBe('RISKS')
       expect(by['5 - Risques résiduels'].headerRow).toBe(6)
       expect(by['5 - PACS'].detection.type).toBe('MEASURES')
+      expect(by['1 - Valeurs Métiers'].headerRow).toBe(6)
+      expect(by['1 - Valeurs Métiers'].columns).toContain('Besoins de sécurité › Disponibilité')
+      expect(by['1 - Valeurs Métiers'].rows).toBe(10) // 6 renseignées + 4 lignes modèles (ignorées à l'import)
       expect(by['2 - Parties prenantes'].warnings.formulasWithoutValue.count).toBeGreaterThan(0)
     }, 60_000)
   }

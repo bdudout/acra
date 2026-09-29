@@ -6,6 +6,18 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (21) — Claude Code : import universel I2 + I3 (socle pur) — ⚠ à vérifier
+
+- **CI** : l'e2e `analysis-import` cassait depuis `a3f8ac3` (l'attribut `accept` du champ Excel a été étendu pour faire remonter le message « .xls non pris en charge » ;
+  le sélecteur e2e `input[accept=".xlsx"]` ne le trouvait plus → corrigé `ebf01ca` en `accept^=`). L'échec de `projets.spec` était collatéral (session perdue : page de connexion).
+- **I2** : en-têtes sur deux niveaux composés (« Besoins de sécurité › Disponibilité »), alias multilingues, `lib/excel-blocks` (îlots, clé/valeur, texte) — pas encore dans l'assistant.
+- **I3** : `lib/import-transforms` (références, plages, niveaux, symboles, valeurs, regroupement, retenu, lignes modèles) ; import historique : `N - libellé` accepté, lignes modèles ignorées et comptées
+  (`IGNORED` / `EMPTY_TEMPLATE_ROW`, phrase au bilan ×5).
+- **Vérifié** : `tsc` 0 · `npm test` (voir fin de tour) · `i18n:check`. ⚠ Non vérifié : e2e, recette navigateur.
+- **Suite** : I4 (profils de mapping), I5 (modèle canonique v3, écriture par atelier), I6 (profil « Dossier de sécurité »), I7 (JSON libre / API v2 / MCP).
+
+---
+
 ## 2026-09-29 (20) — Claude Code : lot I1 de l'import universel + menu « Nouvelle analyse » + messages d'import — ⚠ à vérifier
 
 - **Spec** : `docs/specs/import-universel-analyses.md` (besoin, décisions du 2026-09-29, jeu d'essai). Jeu d'essai **local** (exclu de git,

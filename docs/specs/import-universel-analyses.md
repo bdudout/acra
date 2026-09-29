@@ -365,6 +365,14 @@ B-IMP-04 (aide contextuelle des formats), B-IMP-06 (lecture en flux), B-IMP-07 (
 fusionnées ne sont lues qu'une fois **pour la détection d'en-tête** ; l'import des lignes de données garde son comportement actuel). Décision 5
 (champs calculés) : avertir seulement ; ZIP de CSV : non géré.
 
+**État (suite)** — **I2 livré (socle pur)** : en-têtes sur deux niveaux composés « bandeau › sous-en-tête » (B-IMP-10), alias multilingues fr/en/de/es/it
+(B-IMP-16, sans les listes de validation), îlots de tableaux, blocs clé/valeur et blocs de texte (`lib/excel-blocks`, B-IMP-14/15 : lecture pure, vérifiée sur
+le jeu d'essai local ; **pas encore proposés dans l'assistant** — ils alimentent I5). **I3 livré (socle pur + branchement)** : `lib/import-transforms`
+(B-IMP-26 à 32, 35, 40, 44, 45 : références canoniques et plages, références + libellés, niveaux `N - libellé`, symboles, correspondance de valeurs et dictionnaires,
+regroupement, retenu Oui/Non/Peut-être, lignes modèles, alias de préfixe) ; branchés dans l'import historique : niveaux `N - libellé` lus comme 1–4
+(un niveau hors 1–4 reste à mapper explicitement) et **lignes modèles vides ignorées et comptées au bilan**. **Reste I3** : interface de correspondance de valeurs et
+d'alias de préfixe, `NUMBERED_STEPS`, `DATE` ambiguë, `PERCENT_RANGE`, résolution des références entre feuilles (I5).
+
 **Recommandation initiale** : livrer **I1 immédiatement** (il corrige des défauts visibles aujourd'hui :
 message `.xls` absent, faux positifs de détection) et ne lancer I2–I6 qu'après validation des
 décisions du §11. I1 se fait en TDD sur des fonctions pures (`historic-import`, `xlsx-guard`) et

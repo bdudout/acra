@@ -3,7 +3,7 @@
  * aucune feuille d'échelles ou de scénarios n'est proposée « Risques » à confiance haute.
  */
 import { describe, expect, it } from 'vitest'
-import { detectHistoricImportSheet, detectHistoricHeaderLayout } from '@/lib/historic-import'
+import { detectHistoricImportSheet, detectHistoricHeaderLayout, suggestHistoricColumnMapping } from '@/lib/historic-import'
 
 describe('détection de rôle : pas de faux positif « Risques » (B-IMP-13)', () => {
   it('feuille d’échelles (métriques) : ni risques ni confiance haute', () => {
@@ -55,5 +55,49 @@ describe('en-tête : titres, bandeaux et paragraphes ne sont jamais l’en-tête
     const rows = [['Contexte du projet et description fonctionnelle :'], [long], [], ['Contexte juridique et réglementaire :'], [long]]
     const layout = detectHistoricHeaderLayout(rows)
     expect(layout.columns.map(c => c.label)).not.toContain(long)
+  })
+})
+
+describe('lot I2 — en-têtes sur deux niveaux (B-IMP-10)', () => {
+  const rows = [
+    ['Analyse de risques 1 - Valeurs métier'],
+    [],
+    ['Réf.VM', 'Dénomination', 'Nature (Information / Processus)', 'Description', 'Besoins de sécurité', '', '', '', 'Responsable', 'Parties prenantes associées'],
+    ['', '', '', '', 'Disponibilité', 'Intégrité', 'Confidentialité', 'Justification DIC', '', ''],
+    ['VM_01', 'Administration', 'Processus/Information', 'Déploiement national', '2', '3', '2', 'D2 : pas d’urgence', 'Chefs de projet', 'MOA'],
+  ]
+  it('compose « bandeau › sous-en-tête » et place les données après les deux lignes', () => {
+    const l = detectHistoricHeaderLayout(rows)
+    expect(l.headerRowIndex).toBe(3)
+    expect(l.columns.map(c => [c.key, c.index])).toEqual([
+      ['Réf.VM', 0], ['Dénomination', 1], ['Nature (Information / Processus)', 2], ['Description', 3],
+      ['Besoins de sécurité › Disponibilité', 4], ['Besoins de sécurité › Intégrité', 5], ['Besoins de sécurité › Confidentialité', 6], ['Besoins de sécurité › Justification DIC', 7],
+      ['Responsable', 8], ['Parties prenantes associées', 9],
+    ])
+  })
+  it('une première ligne de données n’est jamais prise pour un sous-en-tête', () => {
+    const l = detectHistoricHeaderLayout([['Réf.ER', 'Intitulé', 'Gravité'], ['ER_01', 'Divulgation', '3 - Importante']])
+    expect(l.headerRowIndex).toBe(0)
+    expect(l.columns.map(c => c.key)).toEqual(['Réf.ER', 'Intitulé', 'Gravité'])
+  })
+  it('deux lignes d’en-tête sans bandeau fusionné : pas de composition', () => {
+    const l = detectHistoricHeaderLayout([['Réf', 'Libellé du risque', 'Gravité'], ['', '', ''], ['R1', 'Risque', '2']])
+    expect(l.headerRowIndex).toBe(0)
+  })
+})
+
+describe('lot I2 — alias multilingues (B-IMP-16)', () => {
+  it.each([
+    ['Risks', ['Risiko', 'Bezeichnung des Risikos', 'Auswirkung', 'Wahrscheinlichkeit']],
+    ['Riesgos', ['Riesgo', 'Descripción del riesgo', 'Impacto', 'Probabilidad']],
+    ['Rischi', ['Rischio', 'Descrizione del rischio', 'Impatto', 'Probabilità']],
+  ])('reconnaît un registre de risques : %s', (name, cols) => {
+    expect(detectHistoricImportSheet(name, cols)).toMatchObject({ type: 'RISKS' })
+  })
+  it('propose le mapping de colonnes usuelles dans les 5 langues', () => {
+    expect(suggestHistoricColumnMapping(['Risiko', 'Auswirkung', 'Wahrscheinlichkeit', 'Verantwortlich', 'Frist'])).toMatchObject({ gravity: 'Auswirkung', likelihood: 'Wahrscheinlichkeit', responsible: 'Verantwortlich', dueDate: 'Frist' })
+    expect(suggestHistoricColumnMapping(['Gravedad', 'Probabilidad', 'Responsable', 'Fecha límite'])).toMatchObject({ gravity: 'Gravedad', likelihood: 'Probabilidad', responsible: 'Responsable', dueDate: 'Fecha límite' })
+    expect(suggestHistoricColumnMapping(['Gravità', 'Probabilità', 'Responsabile', 'Scadenza'])).toMatchObject({ gravity: 'Gravità', likelihood: 'Probabilità', responsible: 'Responsabile', dueDate: 'Scadenza' })
+    expect(suggestHistoricColumnMapping(['Severity', 'Likelihood', 'Owner', 'Due date', 'Status'])).toMatchObject({ gravity: 'Severity', likelihood: 'Likelihood', responsible: 'Owner', dueDate: 'Due date', status: 'Status' })
   })
 })

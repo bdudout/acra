@@ -16,8 +16,9 @@ const matches = (values: string[], terms: string[]) => terms.some(term => values
 
 // Un « titre de risque » : la colonne identifie le risque lui-même (et non une source de risque, un niveau de risque
 // ou un scénario). Évite de classer en « Risques » des feuilles d'échelles ou de scénarios EBIOS RM (lot I1, B-IMP-13).
-const RISK_TITLE = /^(ref |id |reference |numero )?(du |de |des )?(risques?|risks?)( id| label| title| name| ref)?$|^(libelle|intitule|description|nom|titre|designation) (du |de |des |d )?(risques?|risks?)$|^risks? (id|label|title|name|description)$|^(ref|reference|id|numero) (du |de |des )?risques?$/
-const RISK_SHEET_NAME = /^(\d+ ?[-.] ?)?(registre |liste |tableau )?(des |de )?(risques?|risks?)( .*)?$/
+const RISK_WORD = '(risques?|risks?|risiko|risiken|riesgos?|rischio|rischi)'
+const RISK_TITLE = new RegExp(`^(ref |id |reference |numero )?(du |de |des )?${RISK_WORD}( id| label| title| name| ref)?$|^(libelle|intitule|description|nom|titre|designation|bezeichnung|beschreibung|descripcion|descrizione|title) (du |de |des |d |des |del |della |dei )?${RISK_WORD}$|^${RISK_WORD} (id|label|title|name|description)$|^(ref|reference|id|numero) (du |de |des )?${RISK_WORD}$`)
+const RISK_SHEET_NAME = new RegExp(`^(\\d+ ?[-.] ?)?(registre |liste |tableau |register |risikoregister |registro )?(des |de |del |dei )?${RISK_WORD}( .*)?$`)
 const SCALE_HEADER = /^(echelle|description des niveaux|definition des|definition du|calcul d)/
 
 /** Feuille d'échelles / tables de calcul (niveau, définition…) : jamais un registre de risques. */
@@ -32,7 +33,7 @@ export function detectHistoricImportSheet(name: string, columns: string[]): Hist
   if (looksLikeScaleSheet(nameN, cols)) return { type: 'UNKNOWN', confidence: 'NONE', missing: [] }
   if (matches(haystack, ['vulnerabilite', 'vulnerability']) && matches(haystack, ['risque', 'risk'])) return { type: 'VULNERABILITIES', confidence: 'HIGH', missing: [] }
   const riskIdentified = cols.some(c => RISK_TITLE.test(c)) || (RISK_SHEET_NAME.test(nameN) && !cols.some(c => c.includes('scenario')))
-  if (riskIdentified && matches(haystack, ['gravite', 'impact', 'vraisemblance', 'probabilite', 'likelihood'])) return { type: 'RISKS', confidence: 'HIGH', missing: [] }
+  if (riskIdentified && matches(haystack, ['gravite', 'impact', 'vraisemblance', 'probabilite', 'likelihood', 'auswirkung', 'wahrscheinlichkeit', 'gravedad', 'impacto', 'probabilidad', 'gravita', 'impatto'])) return { type: 'RISKS', confidence: 'HIGH', missing: [] }
   if (matches(haystack, ['plan action', 'action id', 'intitule action']) && matches(haystack, ['echeance', 'responsable'])) return { type: 'ACTIONS', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['mesure']) && matches(haystack, ['responsable', 'statut'])) return { type: 'MEASURES', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['analyse']) && matches(haystack, ['methode', 'perimetre'])) return { type: 'ANALYSES', confidence: 'MEDIUM', missing: [] }
@@ -65,11 +66,17 @@ export function validateHistoricColumnMapping(type: HistoricSheetType, mapping: 
 }
 
 const COLUMN_ALIASES: Record<string, string[]> = {
-  externalId: ['reference', 'ref', 'id externe', 'external id', 'risk id', 'action id'], title: ['libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle'],
-  gravity: ['gravite', 'severity', 'impact'], likelihood: ['vraisemblance', 'probabilite', 'likelihood'],
-  description: ['description', 'detail', 'commentaire'], strategy: ['strategie', 'traitement'],
-  status: ['statut', 'etat'], responsible: ['responsable', 'porteur', 'owner'], dueDate: ['echeance', 'date cible', 'due date'],
-  riskExternalId: ['reference risque', 'risque id', 'risk id', 'risk reference'], actionExternalId: ['reference action', 'action id', 'action reference'],
+  externalId: ['reference', 'ref', 'id externe', 'external id', 'risk id', 'action id', 'referenz', 'referencia', 'riferimento'],
+  title: ['libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome'],
+  gravity: ['gravite', 'severity', 'impact', 'schweregrad', 'auswirkung', 'gravedad', 'impacto', 'gravita', 'impatto'],
+  likelihood: ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'],
+  description: ['description', 'detail', 'commentaire', 'beschreibung', 'descripcion', 'descrizione', 'comment'],
+  strategy: ['strategie', 'traitement', 'treatment', 'strategy', 'behandlung', 'tratamiento', 'trattamento'],
+  status: ['statut', 'etat', 'status', 'state', 'estado', 'stato', 'zustand'],
+  responsible: ['responsable', 'porteur', 'owner', 'responsible', 'verantwortlich', 'responsabile'],
+  dueDate: ['echeance', 'date cible', 'due date', 'deadline', 'frist', 'falligkeit', 'vencimiento', 'fecha limite', 'scadenza'],
+  riskExternalId: ['reference risque', 'risque id', 'risk id', 'risk reference', 'risiko id', 'riesgo id'],
+  actionExternalId: ['reference action', 'action id', 'action reference'],
   analysisExternalId: ['reference analyse', 'analyse id', 'analyse external id', 'analysis id', 'analysis external id', 'analysis reference'],
 }
 
@@ -104,14 +111,52 @@ export function detectHistoricHeaderLayout(rows: string[][]): HistoricHeaderLayo
     return { headerRowIndex, values, score: nonEmpty.length >= 2 ? aliasMatches * 10 + Math.min(nonEmpty.length, 8) : -1 }
   })
   const selected = candidates.reduce((best, candidate) => candidate.score > best.score ? candidate : best, candidates[0] ?? { headerRowIndex: 0, values: [], score: -1 })
+  // En-tête sur deux niveaux : un bandeau (« Besoins de sécurité ») au-dessus de sous-en-têtes fusionnés horizontalement.
+  const sub = subHeaderRow(rows, selected.headerRowIndex, selected.values)
+  const values = sub ? composeHeaderLabels(selected.values, sub) : selected.values
+  const headerRowIndex = sub ? selected.headerRowIndex + 1 : selected.headerRowIndex
   const seen = new Map<string, number>()
-  const columns = selected.values.flatMap((label, index) => {
+  const columns = values.flatMap((label, index) => {
     if (!label) return []
     const occurrence = seen.get(label) ?? 0
     seen.set(label, occurrence + 1)
     return [{ key: occurrence === 0 ? label : `${label} [${spreadsheetColumn(index)}]`, label, index }]
   })
-  return { headerRowIndex: selected.headerRowIndex, columns }
+  return { headerRowIndex, columns }
+}
+
+const HEADER_SEPARATOR = ' › '
+// Une cellule de donnée ressemble à une référence (VM_01, R-1, ER03) ou à un nombre / niveau : jamais à un sous-en-tête.
+const DATA_LIKE = /^([A-Za-z]{1,6}[/._ -]?\d+[A-Za-z]?|\d+([.,]\d+)?( ?[-–] .+)?|[+\s]+)$/
+
+/**
+ * Ligne de sous-en-têtes sous la ligne d'en-tête retenue : au moins deux cellules courtes, aucune ne ressemblant à une
+ * donnée, et au moins une placée sous une cellule vide du bandeau (cellule fusionnée horizontalement).
+ */
+function subHeaderRow(rows: string[][], headerIndex: number, header: string[]): string[] | null {
+  const next = rows[headerIndex + 1]?.map(value => value.trim())
+  if (!next) return null
+  const filled = next.map((value, index) => ({ value, index })).filter(cell => cell.value)
+  if (filled.length < 2) return null
+  if (filled.some(cell => cell.value.length > HEADER_CELL_MAX || DATA_LIKE.test(cell.value))) return null
+  const underBand = filled.some(cell => !header[cell.index]?.trim())
+  const bandBefore = filled.some(cell => cell.index > 0 && header.slice(0, cell.index).some(value => value.trim()))
+  return underBand && bandBefore ? next : null
+}
+
+function composeHeaderLabels(header: string[], sub: string[]): string[] {
+  const out: string[] = []
+  let band = ''
+  const length = Math.max(header.length, sub.length)
+  for (let index = 0; index < length; index++) {
+    const top = header[index]?.trim() ?? ''
+    const low = sub[index]?.trim() ?? ''
+    if (top) band = low ? top : ''
+    if (top && low) { band = top; out.push(`${top}${HEADER_SEPARATOR}${low}`); continue }
+    if (top && !low) { band = top; out.push(top); continue }
+    out.push(low && band ? `${band}${HEADER_SEPARATOR}${low}` : low)
+  }
+  return out
 }
 
 export type HistoricColumnCompatibility = 'COMPATIBLE' | 'REVIEW' | 'MISSING'
