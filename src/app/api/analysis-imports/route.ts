@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import ExcelJS from 'exceljs'
 import { z } from 'zod'
+import { HISTORIC_SHEET_TYPES, splitHistoricMappedColumns } from '@/lib/historic-import'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
@@ -11,11 +12,11 @@ import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempote
 import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
-import { readSheetSample, sheetUsedBounds } from '@/lib/excel-grid'
+import { readSheetSample, readDataRows } from '@/lib/excel-grid'
 import { checkExcelUpload } from '@/lib/import-file-format'
 import { importErrorStatus } from '@/lib/import-errors'
 
-const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
+const sheetType = z.enum(HISTORIC_SHEET_TYPES)
 const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
 const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.string().trim().max(10_000)))).default({})
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
@@ -44,18 +45,17 @@ export async function POST(req: NextRequest) {
     const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100)) // même lecture que l'aperçu
-      const usedRows = sheetUsedBounds(sheet).lastRow
       const headers = layout.columns.map(column => column.key)
       const detection = detectHistoricImportSheet(sheet.name, headers)
       const type = resolveHistoricImportSheetType(detection.type, body.sheetTypes[sheet.name])
       const mapping = (body.mappings[sheet.name] ?? {}) as HistoricColumnMapping
       if (type !== 'UNKNOWN' && validateHistoricColumnMapping(type, mapping).length) throw new Error(`MAPPING_INCOMPLET:${sheet.name}`)
-      const rows = Array.from({ length: Math.min(500, Math.max(0, usedRows - layout.headerRowIndex - 1)) }, (_, offset) => {
-        const row = sheet.getRow(layout.headerRowIndex + offset + 2)
-        return Object.fromEntries(layout.columns.map(column => [column.key, cell(row.getCell(column.index + 1).value)]))
-      })
+      // Colonne de référence du rôle : une ligne dont la référence est une cellule fusionnée esclave prolonge la précédente.
+      const refColumn = splitHistoricMappedColumns(mapping.externalId)[0]
+      const refIndex = layout.columns.find(column => column.key === refColumn)?.index
+      const { rows, rowNumbers } = readDataRows(sheet, layout, { refColumnIndex: refIndex })
       const profiles = Object.fromEntries(headers.map(header => [header, profileHistoricColumn(rows.map(row => row[header] ?? ''))]))
-      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers: rows.map((_, index) => layout.headerRowIndex + index + 2), profiles }
+      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles }
     })
     const correctedSheets = applyHistoricRowOverrides(sheets, body.rowOverrides as HistoricRowOverrides)
     if (validateHistoricImportSelection(sheets).length || (!body.partialImport && validateHistoricImportFormats(sheets).length)) throw new Error('MAPPING_INCOMPLET:cross_sheet_reference_or_format')

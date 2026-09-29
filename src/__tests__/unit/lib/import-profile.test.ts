@@ -2,27 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { BUILTIN_PROFILES, matchProfile, rankProfiles, sanitizeProfile, profileToSelection, type ImportProfile } from '@/lib/import-profile'
 
 const sheets = (defs: [string, string[]][]) => defs.map(([name, columns]) => ({ name, columns }))
-const dossier = sheets([
-  ['Page de garde', ['Nom projet']], ['Sommaire', ['Généralités']], ['Métriques', ['Besoins de sécurité']],
-  ['5 - Risques initiaux', ['Réf.RI', 'Réf.SS', 'Gravité initiale', 'Réf.SO', 'Vraisemblance initiale', 'Niveau de risque initial', 'Description du risque', 'Traitement du risque initial']],
-  ['5 - PACS', ['Réf. de la mesure de sécurité', 'Description courte de la mesure', 'Statut', 'Responsable', 'Priorité']],
-])
+const builtin = () => BUILTIN_PROFILES.find(x => x.id === 'builtin-dossier-securite-ebios')!
+// Classeur de ce format : une feuille par feuille du profil, avec ses colonnes (+ colonnes propres au classeur).
+const dossier = builtin().sheets.map(s => ({ name: s.match.name, columns: [...Object.values(s.fields).filter((c): c is string => !!c), 'Colonne du classeur'] }))
 
 describe('reconnaissance d’un profil (B-IMP-23)', () => {
   it('le profil livré « Dossier de sécurité EBIOS RM » est reconnu sur un classeur de ce type, tolérant aux feuilles en plus', () => {
-    const p = BUILTIN_PROFILES.find(x => x.id === 'builtin-dossier-securite-ebios')!
+    const p = builtin()
     const m = matchProfile(p, [...dossier, ...sheets([['Feuille supplémentaire', ['x']]])])
     expect(m.score).toBeGreaterThanOrEqual(0.9)
     expect(m.missingSheets).toEqual([])
   })
   it('classeur d’un autre format : score faible, feuilles manquantes listées', () => {
-    const p = BUILTIN_PROFILES.find(x => x.id === 'builtin-dossier-securite-ebios')!
+    const p = builtin()
     const m = matchProfile(p, sheets([['Registre', ['Risque', 'Impact']]]))
     expect(m.score).toBeLessThan(0.3)
     expect(m.missingSheets.length).toBeGreaterThan(0)
   })
   it('colonne renommée : tolérée mais signalée', () => {
-    const p = BUILTIN_PROFILES.find(x => x.id === 'builtin-dossier-securite-ebios')!
+    const p = builtin()
     const renamed = dossier.map(s => (s.name === '5 - PACS' ? { ...s, columns: s.columns.filter(c => c !== 'Statut') } : s))
     const m = matchProfile(p, renamed)
     expect(m.missingColumns).toContainEqual({ sheet: '5 - PACS', column: 'Statut' })
@@ -37,11 +35,13 @@ describe('reconnaissance d’un profil (B-IMP-23)', () => {
 
 describe('profil → sélection de l’assistant', () => {
   it('rôles de feuilles, colonnes et correspondances de valeurs prêts à charger', () => {
-    const p = BUILTIN_PROFILES.find(x => x.id === 'builtin-dossier-securite-ebios')!
+    const p = builtin()
     const sel = profileToSelection(p, dossier)
     expect(sel.sheetTypes['5 - Risques initiaux']).toBe('RISKS')
     expect(sel.sheetTypes['5 - PACS']).toBe('MEASURES')
     expect(sel.sheetTypes['Sommaire']).toBe('UNKNOWN')
+    expect(sel.sheetTypes['1 - Valeurs Métiers']).toBe('BUSINESS_VALUES')
+    expect(sel.sheetTypes['4 - S.Opérationnels']).toBe('OPERATIONAL_SCENARIOS')
     expect(sel.mappings['5 - Risques initiaux']).toMatchObject({ externalId: 'Réf.RI', title: 'Description du risque', gravity: 'Gravité initiale', likelihood: 'Vraisemblance initiale' })
     expect(sel.statusMappings['5 - PACS']).toMatchObject({ Terminé: 'REALISE', 'A réaliser': 'A_FAIRE' })
   })

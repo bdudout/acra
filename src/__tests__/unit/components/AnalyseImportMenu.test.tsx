@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
 import HistoricImportPreview from '@/components/HistoricImportPreview'
+import { BUILTIN_PROFILES } from '@/lib/import-profile'
 
 const labels = {
   trigger: 'Importer', acraTitle: 'Export ACRA', acraDesc: 'JSON ou CSV ACRA.',
@@ -116,15 +117,16 @@ describe('HistoricImportPreview — formules sans valeur', () => {
 })
 
 describe('HistoricImportPreview — profil reconnu (lot I4)', () => {
-  const columns = { '5 - Risques initiaux': ['Réf.RI', 'Réf.SS', 'Gravité initiale', 'Réf.SO', 'Vraisemblance initiale', 'Niveau de risque initial', 'Description du risque', 'Traitement du risque initial'], '5 - PACS': ['Réf. de la mesure de sécurité', 'Description courte de la mesure', 'Description longue', 'Statut', 'Responsable', 'Date de mise en œuvre'], Sommaire: ['Généralités'], 'Page de garde': ['Nom projet'], Métriques: ['Besoins de sécurité'] }
+  const columns = Object.fromEntries(BUILTIN_PROFILES[0].sheets.map(sh => [sh.match.name, [...Object.values(sh.fields).filter((c): c is string => !!c)]]))
   const sheets = Object.entries(columns).map(([name, cols]) => ({ name, columns: cols, rows: 5, detection: { type: 'UNKNOWN' as const }, mapping: {}, missing: [] }))
-  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens' }, profile: { recognized: 'Profil reconnu : {name} ({pct} %)', apply: 'Appliquer ce profil', builtin: 'livré', partial: 'partiel' } }
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', BUSINESS_VALUES: 'Valeurs métier', SUPPORT_ASSETS: 'Biens supports', FEARED_EVENTS: 'Événements redoutés', RISK_SOURCES: 'Sources de risque', STAKEHOLDERS: 'Parties prenantes', STRATEGIC_SCENARIOS: 'Scénarios stratégiques', OPERATIONAL_SCENARIOS: 'Scénarios opérationnels', SECURITY_BASELINE: 'Socle' }, profile: { recognized: 'Profil reconnu : {name} ({pct} %)', apply: 'Appliquer ce profil', builtin: 'livré', partial: 'partiel' } }
   it('propose le profil livré et l’applique : rôles et colonnes chargés', () => {
     render(<HistoricImportPreview sheets={sheets} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     expect(screen.getByRole('status').textContent).toContain('Profil reconnu : Dossier de sécurité EBIOS RM (100 %)')
     fireEvent.click(screen.getByRole('button', { name: 'Appliquer ce profil' }))
     expect((screen.getByLabelText('5 - Risques initiaux — Rôle') as HTMLSelectElement).value).toBe('RISKS')
     expect((screen.getByLabelText('5 - PACS — Rôle') as HTMLSelectElement).value).toBe('MEASURES')
+    expect((screen.getByLabelText('1 - Valeurs Métiers — Rôle') as HTMLSelectElement).value).toBe('BUSINESS_VALUES')
   })
   it('aucun profil sur un classeur inconnu', () => {
     render(<HistoricImportPreview sheets={[{ name: 'Divers', columns: ['a'], rows: 1, detection: { type: 'UNKNOWN' }, mapping: {}, missing: [] }]} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)

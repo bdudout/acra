@@ -6,7 +6,6 @@
  * Une référence introuvable ne crée aucun lien et est signalée : rien n'est inventé.
  */
 
-import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { canonicalRef } from './import-transforms'
@@ -26,7 +25,7 @@ export const atelierContentSchema = z.object({
   fearedEvents: z.array(z.object({ ...base, description: text(2000).optional(), impacts: text(2000).optional(), gravity: level.optional(), businessValueExternalIds: refs })).max(IMPORT_MAX_ITEMS).default([]),
   riskSources: z.array(z.object({ ...base, category: text(50).optional(), description: text(2000).optional(), motivation: level.optional(), resources: level.optional(), relevance: level.optional(), retained: z.boolean().optional(), justification: text(1000).optional(), objectives: z.array(text(500)).max(50).default([]) })).max(IMPORT_MAX_ITEMS).default([]),
   stakeholders: z.array(z.object({ ...base, type: text(50).optional(), description: text(2000).optional(), dependency: level.optional(), penetration: level.optional(), maturity: level.optional(), trust: level.optional() })).max(IMPORT_MAX_ITEMS).default([]),
-  strategicScenarios: z.array(z.object({ ...base, description: text(2000).optional(), riskSourceExternalId: ref.optional(), objective: text(500).optional(), fearedEventExternalIds: refs, stakeholderExternalIds: refs, gravity: level.optional(), likelihood: level.optional(), retained: z.boolean().optional(), attackPath: z.array(text(500)).max(50).default([]) })).max(IMPORT_MAX_ITEMS).default([]),
+  strategicScenarios: z.array(z.object({ ...base, description: text(2000).optional(), riskSourceExternalId: ref.optional(), riskSourceLabel: text(500).optional(), objective: text(500).optional(), fearedEventExternalIds: refs, stakeholderExternalIds: refs, gravity: level.optional(), likelihood: level.optional(), retained: z.boolean().optional(), attackPath: z.array(text(500)).max(50).default([]) })).max(IMPORT_MAX_ITEMS).default([]),
   operationalScenarios: z.array(z.object({ ...base, description: text(2000).optional(), strategicScenarioExternalId: ref.optional(), likelihood: level.optional(), gravity: level.optional() })).max(IMPORT_MAX_ITEMS).default([]),
   securityBaseline: z.array(z.object({ externalId: ref.optional(), title: z.string().trim().min(1).max(1000), category: text(100).optional(), subCategory: text(100).optional(), coverage: z.coerce.number().int().min(0).max(3).optional(), comment: text(2000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
 })
@@ -71,7 +70,7 @@ type Tx = Prisma.TransactionClient
 export async function writeAtelierContent(tx: Tx, c: AtelierContent, ctx: { analyseId: string }): Promise<{ counts: Record<string, number>; warnings: string[] }> {
   const summary = summarizeAtelierContent(c)
   if (!hasAtelierContent(c)) return { counts: {}, warnings: [] }
-  const uid = () => randomUUID()
+  const uid = () => globalThis.crypto.randomUUID()
   const canon = (r: string) => canonicalRef(r)
   const idOf = (map: Map<string, string>, r: string | undefined) => (r ? map.get(canon(r)) : undefined)
   const idsOf = (map: Map<string, string>, rs: string[]) => [...new Set(rs.flatMap(r => { const id = idOf(map, r); return id ? [id] : [] }))]
@@ -132,9 +131,10 @@ export async function writeAtelierContent(tx: Tx, c: AtelierContent, ctx: { anal
     const gravite = s.gravity ?? 2; const vraisemblance = s.likelihood ?? 2
     // Le modèle ne porte pas de lien direct scénario ↔ parties prenantes : leurs noms sont conservés dans la description.
     const impliquees = [...new Set(s.stakeholderExternalIds.flatMap(r => { const n = ppNames.get(canon(r)); return n ? [n] : [] }))]
-    const description = [s.description, impliquees.length ? `Parties prenantes impliquées : ${impliquees.join(', ')}` : ''].filter(Boolean).join('\n') || undefined
+    const sourceId = idOf(srIds, s.riskSourceExternalId)
+    const description = [s.description, !sourceId && s.riskSourceLabel ? `Source de risque : ${s.riskSourceLabel}` : '', impliquees.length ? `Parties prenantes impliquées : ${impliquees.join(', ')}` : ''].filter(Boolean).join('\n') || undefined
     const row = await tx.scenarioStrategique.create({ data: {
-      analyseId: ctx.analyseId, nom: s.title, description, objectifVise: s.objective, sourceRisqueId: idOf(srIds, s.riskSourceExternalId),
+      analyseId: ctx.analyseId, nom: s.title, description, objectifVise: s.objective, sourceRisqueId: sourceId,
       evenementsRedoutesIds: idsOf(erIds, s.fearedEventExternalIds) as unknown as Prisma.InputJsonValue,
       cheminAttaque: s.attackPath.map((action, i) => ({ etape: i + 1, partiePrenante: '', action, evenementIntermediaire: '' })) as unknown as Prisma.InputJsonValue,
       gravite, vraisemblance, niveauRisque: gravite * vraisemblance, retenu: s.retained ?? true,

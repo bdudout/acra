@@ -1,7 +1,7 @@
 // @vitest-environment node
 import ExcelJS from 'exceljs'
 import { describe, expect, it } from 'vitest'
-import { readSheetSample, sheetUsedBounds, sheetFormulaIssues } from '@/lib/excel-grid'
+import { readSheetSample, sheetUsedBounds, sheetFormulaIssues, readDataRows } from '@/lib/excel-grid'
 import { detectHistoricHeaderLayout } from '@/lib/historic-import'
 
 /** Classeur en mémoire reproduisant les pièges d'un dossier EBIOS RM (titre fusionné, bandeau, formules, cellules formatées vides). */
@@ -59,5 +59,33 @@ describe('sheetFormulaIssues — formules sans valeur et en erreur (B-IMP-08)', 
     expect(i.withoutValue.count).toBe(40)
     expect(i.withoutValue.samples).toHaveLength(5)
     expect(sheetFormulaIssues(new ExcelJS.Workbook().addWorksheet('y'))).toEqual({ withoutValue: { count: 0, samples: [] }, errors: { count: 0, samples: [] } })
+  })
+})
+
+describe('readDataRows — lignes de continuation (cellules fusionnées verticalement)', () => {
+  function scenarios() {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('3 - S.Stratégiques')
+    ;['Réf.SS', 'Scénario', 'Source', 'Gravité'].forEach((h, i) => { ws.getCell(1, i + 1).value = h })
+    ws.getCell('A2').value = 'SS_01'; ws.getCell('B2').value = 'Scénario un'; ws.getCell('C2').value = 'Etat'; ws.getCell('D2').value = '2 - Limitée'
+    ws.getCell('A3').value = 'SS_06'; ws.getCell('B3').value = 'Usurpation'; ws.getCell('C3').value = 'Crime organisé'; ws.getCell('D3').value = '3 - Importante'
+    ws.mergeCells('A3:A4'); ws.mergeCells('B3:B4'); ws.mergeCells('D3:D4')
+    ws.getCell('C4').value = 'Malveillant interne' // 2ᵉ source du même scénario, sur la ligne fusionnée
+    ws.getCell('A5').value = 'SS_07'; ws.getCell('B5').value = 'Vol'; ws.getCell('C5').value = 'Externe'; ws.getCell('D5').value = '3 - Importante'
+    return ws
+  }
+  const layout = { headerRowIndex: 0, columns: ['Réf.SS', 'Scénario', 'Source', 'Gravité'].map((k, index) => ({ key: k, label: k, index })) }
+
+  it('la ligne dont la référence est une cellule fusionnée esclave prolonge la ligne précédente : pas de doublon de référence', () => {
+    const { rows, rowNumbers } = readDataRows(scenarios(), layout, { refColumnIndex: 0 })
+    expect(rows.map(r => r['Réf.SS'])).toEqual(['SS_01', 'SS_06', 'SS_07'])
+    expect(rows[1].Source).toBe('Crime organisé\nMalveillant interne')
+    expect(rows[1].Scénario).toBe('Usurpation')
+    expect(rowNumbers).toEqual([2, 3, 5])
+  })
+  it('sans colonne de référence : lecture inchangée (valeur maîtresse répétée)', () => {
+    const { rows } = readDataRows(scenarios(), layout, {})
+    expect(rows).toHaveLength(4)
+    expect(rows[2]['Réf.SS']).toBe('SS_06')
   })
 })

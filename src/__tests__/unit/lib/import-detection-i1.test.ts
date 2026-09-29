@@ -11,17 +11,17 @@ describe('détection de rôle : pas de faux positif « Risques » (B-IMP-13)', (
     expect(r.type).toBe('UNKNOWN')
     expect(r.confidence).toBe('NONE')
   })
-  it('scénarios stratégiques (sources de risques + gravité) : pas des risques', () => {
+  it('scénarios stratégiques (sources de risques + gravité) : rôle d’atelier, pas des risques', () => {
     const r = detectHistoricImportSheet('3 - S.Stratégiques', ['Réf.SS', 'Scénario stratégique', 'Sources de risques', 'Objectifs visés', 'Intitulé des chemins d\'attaque stratégiques', 'Partie prenante impliquée', 'Evenements redoutés', 'Gravité', 'Mesures', 'Commentaires'])
-    expect(r.type).toBe('UNKNOWN')
+    expect(r.type).toBe('STRATEGIC_SCENARIOS') // reconnu par sa colonne Réf.SS, jamais comme registre de risques
   })
   it('scénarios opérationnels (probabilité d’exploitation) : pas des risques', () => {
     const r = detectHistoricImportSheet('4 - S.Opérationnels', ['Réf.SO', 'Réf.SS', 'Source de risque', 'Objectif visé', 'Description du scénario opérationnel', 'Connaitre', 'Rentrer', 'Trouver', 'Exploiter', 'Facilité d\'exploitation', 'Probabilité d\'exploitation', 'Vraisemblance initiale', 'Commentaires'])
-    expect(r.type).toBe('UNKNOWN')
+    expect(r.type).toBe('OPERATIONAL_SCENARIOS')
   })
   it('sources de risque / objectifs visés, événements redoutés : pas des risques', () => {
-    expect(detectHistoricImportSheet('1 - SROV', ['Réf.SR/OV', 'Sources de risques', 'Objectifs visés', 'Motivation', 'Ressources', 'Pertinence', 'Retenu ?', 'Justification']).type).toBe('UNKNOWN')
-    expect(detectHistoricImportSheet('1 - Événements redoutés', ['Réf.ER', 'Intitulés des événements redoutés', 'Description des événements redoutés', 'Impacts', 'Gravité', 'Valeur(s) Métier(s) liée(s)', 'Retenu ?']).type).toBe('UNKNOWN')
+    expect(detectHistoricImportSheet('1 - SROV', ['Réf.SR/OV', 'Sources de risques', 'Objectifs visés', 'Motivation', 'Ressources', 'Pertinence', 'Retenu ?', 'Justification']).type).toBe('RISK_SOURCES')
+    expect(detectHistoricImportSheet('1 - Événements redoutés', ['Réf.ER', 'Intitulés des événements redoutés', 'Description des événements redoutés', 'Impacts', 'Gravité', 'Valeur(s) Métier(s) liée(s)', 'Retenu ?']).type).toBe('FEARED_EVENTS')
   })
   it('vrais registres de risques toujours reconnus (feuille « Risques initiaux », registres plats)', () => {
     expect(detectHistoricImportSheet('5 - Risques initiaux', ['Réf.RI', 'Réf.SS', 'Gravité initiale', 'Réf.SO', 'Vraisemblance initiale', 'Niveau de risque initial', 'Description du risque', 'Traitement du risque initial'])).toMatchObject({ type: 'RISKS', confidence: 'HIGH' })

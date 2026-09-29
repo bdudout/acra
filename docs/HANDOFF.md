@@ -6,6 +6,19 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (22) — Claude Code : import universel I4 + I5 — ⚠ à vérifier
+
+- **Import d'un dossier EBIOS RM complet** : le classeur (variantes locales BTP / avocats) donne, via aperçu → rôles détectés → paquet v3 → validation, 6 valeurs métier, 8 événements redoutés,
+  10 sources (couples SR/OV regroupés), 14 parties prenantes, 8 scénarios stratégiques, 13 opérationnels, 13 risques, socle de sécurité et biens supports retenus. Test d'ensemble local
+  (`analysis-imports-preview.route.test.ts`, ignoré en CI faute de fichiers) ; les briques pures sont testées en CI.
+- **Écriture** (`executeAnalysisImport`) : cadrage (JSON), sources, parties prenantes, scénarios ; **non exercée sur une vraie base** (Docker indisponible) : seuls des faux `tx` la testent → à valider en recette
+  et via l'e2e (aucun e2e ne couvre encore un classeur d'ateliers).
+- **Idempotence** : l'empreinte d'un paquet sans atelier est identique à l'ancienne (test), aucun faux 409 sur les reçus existants.
+- **Fixtures locales** régénérées (colonne des valeurs métier corrigée) ; dossier toujours exclu de git.
+- ⚠ Non vérifié : recette navigateur (sélection des rôles d'atelier, profil appliqué), e2e, CI de ce push.
+
+---
+
 ## 2026-09-29 (21) — Claude Code : import universel I2 + I3 (socle pur) — ⚠ à vérifier
 
 - **CI** : l'e2e `analysis-import` cassait depuis `a3f8ac3` (l'attribut `accept` du champ Excel a été étendu pour faire remonter le message « .xls non pris en charge » ;
@@ -14,7 +27,7 @@ vérifié l'est avec la commande et son résultat.
 - **I3** : `lib/import-transforms` (références, plages, niveaux, symboles, valeurs, regroupement, retenu, lignes modèles) ; import historique : `N - libellé` accepté, lignes modèles ignorées et comptées
   (`IGNORED` / `EMPTY_TEMPLATE_ROW`, phrase au bilan ×5).
 - **Vérifié** : `tsc` 0 · `npm test` (voir fin de tour) · `i18n:check`. ⚠ Non vérifié : e2e, recette navigateur.
-- **Suite** : I4 (profils de mapping), I5 (modèle canonique v3, écriture par atelier), I6 (profil « Dossier de sécurité »), I7 (JSON libre / API v2 / MCP).
+- **I4 + I5 livrés (entrée 22)** : voir la spec (état suite 2). Reste : rôle « contexte », risques résiduels, UI de correspondance de valeurs, I7.
 
 ---
 

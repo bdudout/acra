@@ -1,6 +1,10 @@
 import { parseLevelLabel, isTemplateRow } from './import-transforms'
+import { ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet } from './import-ateliers-build'
+import type { AtelierContent } from './analysis-import-ateliers'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
-export type HistoricSheetType = 'ANALYSES' | 'RISKS' | 'VULNERABILITIES' | 'MEASURES' | 'ACTIONS' | 'RISK_ACTION_LINKS' | 'UNKNOWN'
+export const HISTORIC_SHEET_TYPES = ['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', ...ATELIER_ROLES, 'UNKNOWN'] as const
+export type HistoricSheetType = (typeof HISTORIC_SHEET_TYPES)[number]
+export const isAtelierRole = (type: HistoricSheetType): type is AtelierRole => (ATELIER_ROLES as readonly string[]).includes(type)
 export type HistoricSheetDetection = { type: HistoricSheetType; confidence: 'HIGH' | 'MEDIUM' | 'NONE'; missing: string[] }
 
 /** La détection est une suggestion : le rôle choisi dans l'assistant prévaut. */
@@ -27,6 +31,9 @@ function looksLikeScaleSheet(name: string, columns: string[]): boolean {
 }
 
 export function detectHistoricImportSheet(name: string, columns: string[]): HistoricSheetDetection {
+  // Feuilles des ateliers 1 à 4 (Réf.VM, Réf.ER, Réf.PP, Réf.SS…) : reconnues par leur colonne de référence à préfixe.
+  const atelier = detectAtelierRole(name, columns)
+  if (atelier) return atelier
   const cols = columns.map(normalise)
   const nameN = normalise(name)
   const haystack = [nameN, ...cols]
@@ -61,13 +68,14 @@ export function validateHistoricColumnMapping(type: HistoricSheetType, mapping: 
     MEASURES: ['title'],
     ACTIONS: ['title'],
     RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
+    ...Object.fromEntries(ATELIER_ROLES.map(role => [role, ['title']])),
   }
   return (required[type] ?? []).filter(key => !mapping[key]?.trim())
 }
 
 const COLUMN_ALIASES: Record<string, string[]> = {
   externalId: ['reference', 'ref', 'id externe', 'external id', 'risk id', 'action id', 'referenz', 'referencia', 'riferimento'],
-  title: ['libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome'],
+  title: ['libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
   gravity: ['gravite', 'severity', 'impact', 'schweregrad', 'auswirkung', 'gravedad', 'impacto', 'gravita', 'impatto'],
   likelihood: ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'],
   description: ['description', 'detail', 'commentaire', 'beschreibung', 'descripcion', 'descrizione', 'comment'],
@@ -258,22 +266,27 @@ export function validateHistoricImportSelection(sheets: HistoricImportSelection[
 /** Suggestions transparentes : le mapping est affiché et reste modifiable avant validation. */
 export function suggestHistoricColumnMapping(columns: string[]): HistoricColumnMapping {
   const normalized = columns.map(column => ({ raw: column, value: normalise(column) }))
+  const used = new Set<string>()
+  // Une colonne n'est proposée que pour UN champ (l'ordre des alias fait la priorité : référence, intitulé, puis le reste).
   return Object.fromEntries(Object.entries(COLUMN_ALIASES).flatMap(([field, aliases]) => {
-    const match = normalized.find(column => aliases.some(alias => column.value.includes(alias)))
-    return match ? [[field, match.raw]] : []
+    const isReference = /ExternalId$/.test(field) // une même colonne de référence peut servir plusieurs rôles (risque, action, analyse)
+    const match = normalized.find(column => (isReference || !used.has(column.raw)) && aliases.some(alias => column.value.includes(alias)))
+    if (!match) return []
+    if (!isReference) used.add(match.raw)
+    return [[field, match.raw]]
   }))
 }
 
 export type HistoricImportRow = Record<string, string>
 export type HistoricImportSheet = { name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
-  analysis: { title: string; description?: string }
+  analysis: { title: string; description?: string; methode?: 'EBIOS_RM' }
   risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
   vulnerabilities: Array<{ riskExternalId: string; title: string; description?: string }>
   measures: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; status?: string; responsible?: string; dueDate?: string }>
   actions: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; responsible?: string; dueDate?: string }>
   links: Array<{ riskExternalId: string; actionExternalId: string }>
-}
+} & Partial<Omit<AtelierContent, 'context'>> & { context?: AtelierContent['context'] }
 
 const text = (row: HistoricImportRow, column: string | undefined): string | undefined => {
   const value = splitHistoricMappedColumns(column).map(name => row[name]?.trim()).filter(Boolean).join('\n\n')
@@ -321,6 +334,7 @@ export type HistoricImportPartition = { sheets: HistoricImportSheet[]; decisions
 export type HistoricRowOverrides = Record<string, Record<string, Record<string, string>>>
 const requiredRowFields: Partial<Record<HistoricSheetType, string[]>> = {
   ANALYSES: ['title'], RISKS: ['title'], VULNERABILITIES: ['riskExternalId', 'title'], MEASURES: ['title'], ACTIONS: ['title'], RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
+  ...(Object.fromEntries(ATELIER_ROLES.map(role => [role, ['title']])) as Partial<Record<HistoricSheetType, string[]>>),
 }
 const expectedRequiredValue = (field: string) => field.endsWith('ExternalId') ? 'référence non vide' : 'texte non vide'
 const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>) => {
@@ -434,6 +448,13 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
       else if (actionReferences.length === 1) for (const riskExternalId of riskReferences) result.links.push({ riskExternalId, actionExternalId: actionReferences[0] })
       else if (riskReferences.length === actionReferences.length) riskReferences.forEach((riskExternalId, index) => result.links.push({ riskExternalId, actionExternalId: actionReferences[index] }))
     }
+  }
+  // Ateliers 1 à 4 : feuilles dont le rôle est un rôle d'atelier → paquet canonique v3 (méthode EBIOS RM).
+  const atelierSheets = sheets.filter(sheet => isAtelierRole(sheet.type)).map((sheet): AtelierSheet => ({ name: sheet.name ?? sheet.type, type: sheet.type as AtelierRole, mapping: sheet.mapping, rows: sheet.rows }))
+  if (atelierSheets.length) {
+    const { content } = buildAtelierContent(atelierSheets)
+    for (const [key, value] of Object.entries(content)) if (Array.isArray(value) ? value.length > 0 : !!value) (result as Record<string, unknown>)[key] = value
+    result.analysis.methode = 'EBIOS_RM'
   }
   return result
 }

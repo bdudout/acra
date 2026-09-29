@@ -90,3 +90,46 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
     }, 60_000)
   }
 })
+
+// Chaîne complète sur le jeu d'essai LOCAL : aperçu (rôles, mapping suggéré) → paquet canonique v3 → validation du paquet.
+import { buildHistoricImportPackage, partitionHistoricImportSheets, detectHistoricHeaderLayout, type HistoricImportSheet } from '@/lib/historic-import'
+import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analysis-import'
+import { summarizeAtelierContent } from '@/lib/analysis-import-ateliers'
+import { readSheetSample, readDataRows } from '@/lib/excel-grid'
+describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’essai local — du classeur au paquet canonique', () => {
+  for (const f of ['dossier-securite-btp.xlsx', 'dossier-securite-avocats.xlsx']) {
+    it(`${f} : ateliers 1 à 5 repris avec leurs liens`, async () => {
+      const res = await POST(post(f, readFileSync(join(LOCAL, f))))
+      const preview = (await res.json()).sheets as { name: string; columns: string[]; mapping: Record<string, string>; detection: { type: string } }[]
+      const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(join(LOCAL, f))
+      const sheets: HistoricImportSheet[] = preview.filter(p => p.detection.type !== 'UNKNOWN').map(p => {
+        const ws = wb.getWorksheet(p.name)!
+        const layout = detectHistoricHeaderLayout(readSheetSample(ws, 20, 100))
+        const refCol = layout.columns.find(c => c.key === p.mapping.externalId)?.index
+        const { rows } = readDataRows(ws, layout, { refColumnIndex: refCol })
+        return { name: p.name, type: p.detection.type as never, mapping: p.mapping, rows }
+      })
+      const roles = Object.fromEntries(sheets.map(s => [s.name, s.type]))
+      expect(roles['1 - Valeurs Métiers']).toBe('BUSINESS_VALUES')
+      expect(roles['1 - Événements redoutés']).toBe('FEARED_EVENTS')
+      expect(roles['1 - SROV']).toBe('RISK_SOURCES')
+      expect(roles['2 - Biens supports']).toBe('SUPPORT_ASSETS')
+      expect(roles['2 - Parties prenantes']).toBe('STAKEHOLDERS')
+      expect(roles['2 - Socle de sécurité']).toBe('SECURITY_BASELINE')
+      expect(roles['3 - S.Stratégiques']).toBe('STRATEGIC_SCENARIOS')
+      expect(roles['4 - S.Opérationnels']).toBe('OPERATIONAL_SCENARIOS')
+      const { sheets: kept } = partitionHistoricImportSheets(sheets)
+      const pkg = buildHistoricImportPackage(kept, f)
+      const parsed = parseAnalysisImportRequest({ ...pkg, idempotencyKey: 'essai-import-0001' })
+      const a = summarizeAtelierContent(parsed)
+      expect(a.counts).toMatchObject({ businessValues: 6, fearedEvents: 8, riskSources: 10, stakeholders: 14, strategicScenarios: 8, operationalScenarios: 13 })
+      expect(parsed.supportAssets.length).toBeGreaterThanOrEqual(5)
+      expect(parsed.supportAssets.length).toBeLessThan(20) // catalogue de 73 biens : seuls les retenus
+      expect(parsed.securityBaseline.length).toBeGreaterThan(20)
+      expect(parsed.risks.length).toBe(13)
+      expect(summarizeAnalysisImport(parsed).created.risks).toBe(13)
+      // références VM02 / VM_02, ER03 / ER_03 : toutes résolues, seules les références absentes du fichier sont signalées
+      expect(a.warnings.filter(w => w.startsWith('feared_event_business_value_not_found'))).toEqual([])
+    }, 60_000)
+  }
+})

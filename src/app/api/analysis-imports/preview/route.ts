@@ -8,10 +8,11 @@ import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.serve
 import { excelCellText } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
+import { suggestAtelierMapping } from '@/lib/import-ateliers-build'
 import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/excel-grid'
 import { checkExcelUpload } from '@/lib/import-file-format'
 import { importErrorStatus } from '@/lib/import-errors'
-import { detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
+import { isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
 
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
 
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       const columns = layout.columns
       const header = columns.map(column => column.key)
       const detection = detectHistoricImportSheet(sheet.name, header)
-      const mapping = suggestHistoricColumnMapping(header)
+      const mapping = isAtelierRole(detection.type) ? suggestAtelierMapping(detection.type, header) : suggestHistoricColumnMapping(header)
       const { lastRow } = sheetUsedBounds(sheet)
       const dataRowCount = Math.max(0, lastRow - layout.headerRowIndex - 1)
       const dataRows = Array.from({ length: Math.min(500, dataRowCount) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))

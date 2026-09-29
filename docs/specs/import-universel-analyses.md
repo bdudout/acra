@@ -373,6 +373,16 @@ regroupement, retenu Oui/Non/Peut-être, lignes modèles, alias de préfixe) ; b
 (un niveau hors 1–4 reste à mapper explicitement) et **lignes modèles vides ignorées et comptées au bilan**. **Reste I3** : interface de correspondance de valeurs et
 d'alias de préfixe, `NUMBERED_STEPS`, `DATE` ambiguë, `PERCENT_RANGE`, résolution des références entre feuilles (I5).
 
+**État (suite 2)** — **I4 livré** : profils déclaratifs (`lib/import-profile`), reconnaissance automatique au chargement d'un fichier (livrés et mappings de l'organisation),
+profil livré « Dossier de sécurité EBIOS RM », import d'un profil JSON borné (validation, aucun code). **I5 livré (ateliers 1 à 4 + risques + mesures)** : paquet canonique v3
+(`lib/analysis-import-ateliers`, rétro-compatible : l'empreinte d'idempotence des paquets sans atelier est inchangée), huit rôles de feuille d'atelier
+(`lib/import-ateliers-build` : détection par colonne de référence, mapping suggéré, regroupement des couples SR/OV par source, niveaux et symboles, références canoniques,
+retenu Oui/Non, catégories via dictionnaire avec `AUTRE` signalé), lignes de continuation des cellules fusionnées (une 2ᵉ source sur la ligne fusionnée d'un scénario n'est plus un doublon),
+écriture dans le cadrage / sources / parties prenantes / scénarios (méthode EBIOS RM uniquement), aperçu API v2 avec volumes et références orphelines. Vérifié de bout en bout sur les
+deux classeurs locaux (6 valeurs métier, 8 événements redoutés, 10 sources, 14 parties prenantes, 8 + 13 scénarios, 13 risques, socle, biens supports retenus). **Restent** : rôle
+« contexte » (périmètre en blocs de texte, page de garde en clé/valeur — `lib/excel-blocks` prêt, non branché à l'assistant), liens biens supports ↔ valeurs métier absents des feuilles,
+interface de correspondance de valeurs et d'alias de préfixe (`R_` ⇒ `RI_`), risques résiduels (3 cotations), champs calculés (avertissement de divergence), I7 (JSON libre, MCP).
+
 **Recommandation initiale** : livrer **I1 immédiatement** (il corrige des défauts visibles aujourd'hui :
 message `.xls` absent, faux positifs de détection) et ne lancer I2–I6 qu'après validation des
 décisions du §11. I1 se fait en TDD sur des fonctions pures (`historic-import`, `xlsx-guard`) et

@@ -127,6 +127,11 @@ describe('groupRows — N lignes → 1 parent + enfants (B-IMP-30)', () => {
     expect(g[0].conflicts).toEqual([{ column: 'motivation', values: ['++', '+++'] }])
     expect(g[1].conflicts).toEqual([])
   })
+  it('clé insensible à la casse et aux accents', () => {
+    const g = groupRows([{ s: 'Crime organisé', o: 'a' }, { s: 'Crime Organisé', o: 'b' }], 's', [])
+    expect(g).toHaveLength(1)
+    expect(g[0].key).toBe('Crime organisé')
+  })
   it('clé vide : la ligne reste seule (jamais rattachée au groupe précédent)', () => {
     const g = groupRows([{ source: '', objectif: 'x' }, { source: 'A', objectif: 'y' }], 'source', [])
     expect(g).toHaveLength(2)

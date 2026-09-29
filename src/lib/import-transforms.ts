@@ -161,11 +161,13 @@ export function groupRows<T extends Record<string, string>>(rows: T[], keyColumn
   const byKey = new Map<string, RowGroup<T>>()
   for (const row of rows) {
     const key = (row[keyColumn] ?? '').trim()
-    let g = key ? byKey.get(key) : undefined
+    // Clé de regroupement insensible à la casse, aux accents et à la ponctuation (« Crime organisé » = « Crime Organisé »).
+    const norm = strip(key)
+    let g = norm ? byKey.get(norm) : undefined
     if (!g) {
       g = { key, parent: { [keyColumn]: key }, rows: [], conflicts: [] }
       groups.push(g)
-      if (key) byKey.set(key, g)
+      if (norm) byKey.set(norm, g)
     }
     g.rows.push(row)
   }

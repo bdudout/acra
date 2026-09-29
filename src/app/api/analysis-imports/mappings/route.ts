@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
+import { HISTORIC_SHEET_TYPES } from '@/lib/historic-import'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { prisma } from '@/lib/prisma'
 
-const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
+const sheetType = z.enum(HISTORIC_SHEET_TYPES)
 const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
 const mappingRecord = z.record(z.string(), z.record(z.string(), z.string().optional()))
 const scoreMappings = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4']))))

@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-ateliers-build'
+import { isAtelierRole } from '@/lib/historic-import'
 import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
 import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
@@ -39,13 +41,14 @@ export type HistoricImportPreviewLabels = {
   profile?: { recognized: string; apply: string; builtin: string; partial: string }
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
-  sheetTypes: Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>
+  sheetTypes: Partial<Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>>
   validation?: { acraField: string; sourceColumn: string; expected: string; examples: string; compatible: string; review: string; invalidValues: string; externalReference: string }
   listTransform?: { label: string; none: string; lines: string; semicolon: string; pipe: string; carryForward?: string }
   completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string }
 }
 
 const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
+  ...ATELIER_ROLE_FIELDS,
   ANALYSES: ['externalId', 'title', 'description'],
   RISKS: ['analysisExternalId', 'externalId', 'title', 'description', 'gravity', 'likelihood', 'strategy', 'embeddedVulnerabilities', 'embeddedActions'],
   VULNERABILITIES: ['riskExternalId', 'title', 'description'],
@@ -146,7 +149,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
             {labels.warnings && sheet.warnings?.formulasWithoutValue && sheet.warnings.formulasWithoutValue.count > 0 && <p role="note" className="mt-1 text-xs text-amber-700">{labels.warnings.noValue.replace('{n}', String(sheet.warnings.formulasWithoutValue.count)).replace('{cells}', sheet.warnings.formulasWithoutValue.samples.join(', '))}</p>}
             {labels.warnings && sheet.warnings?.formulaErrors && sheet.warnings.formulaErrors.count > 0 && <p role="note" className="mt-1 text-xs text-red-700">{labels.warnings.errors.replace('{n}', String(sheet.warnings.formulaErrors.count)).replace('{cells}', sheet.warnings.formulaErrors.samples.join(', '))}</p>}
             <label className="mt-3 block text-xs font-medium text-gray-700">{sheet.name} — {labels.sheetRole}
-              <select aria-label={`${sheet.name} — ${labels.sheetRole}`} value={type} onChange={event => setSheetTypes(previous => ({ ...previous, [sheet.name]: event.target.value as HistoricSheetType }))} className="input mt-1 block w-full text-sm">
+              <select aria-label={`${sheet.name} — ${labels.sheetRole}`} value={type} onChange={event => { const role = event.target.value as HistoricSheetType; setSheetTypes(previous => ({ ...previous, [sheet.name]: role })); if (isAtelierRole(role) && !(ATELIER_ROLE_FIELDS[role] ?? []).some(field => mappings[sheet.name]?.[field])) setMappings(previous => ({ ...previous, [sheet.name]: suggestAtelierMapping(role, sheet.columns) })) }} className="input mt-1 block w-full text-sm">
                 <option value="UNKNOWN">{labels.ignoreSheet}</option>
                 {Object.entries(labels.sheetTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
