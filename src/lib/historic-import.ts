@@ -367,7 +367,10 @@ export type HistoricImportPackage = {
   measures: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; status?: string; responsible?: string; dueDate?: string }>
   actions: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; responsible?: string; dueDate?: string }>
   links: Array<{ riskExternalId: string; actionExternalId: string }>
-} & Partial<Omit<AtelierContent, 'context'>> & { context?: AtelierContent['context'] }
+} & Partial<Omit<AtelierContent, 'context'>> & { context?: AtelierContent['context'] } & {
+  /** Textes raccourcis à la construction (ateliers) : signalés au bilan, jamais bloquants. */
+  truncated?: { path: string; max: number; length: number }[]
+}
 
 const text = (row: HistoricImportRow, column: string | undefined): string | undefined => {
   const value = splitHistoricMappedColumns(column).map(name => row[name]?.trim()).filter(Boolean).join('\n\n')
@@ -587,7 +590,8 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
   }
   result.measures = mergedMeasures
   if (atelierSheets.length) {
-    const { content } = buildAtelierContent(atelierSheets)
+    const { content, truncated } = buildAtelierContent(atelierSheets)
+    if (truncated.length) result.truncated = truncated
     for (const [key, value] of Object.entries(content)) if (Array.isArray(value) ? value.length > 0 : !!value) (result as Record<string, unknown>)[key] = value
     result.analysis.methode = 'EBIOS_RM'
   }

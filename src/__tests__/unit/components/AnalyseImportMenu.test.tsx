@@ -201,32 +201,55 @@ describe('AnalyseImportMenu — clavier, lecteur d’écran, mobile', () => {
 })
 
 describe('HistoricImportPreview — lignes à décider regroupées', () => {
-  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } , completion: { title: 'Données manquantes', explanation: 'Choisissez une action pour chaque ligne.', skip: 'Ne pas importer la ligne', complete: 'Compléter la ligne', value: 'Valeur à renseigner', sourceValue: 'Valeur Excel', expectedValue: 'Valeur attendue', emptyValue: 'vide', skipSummary: 'ligne(s) ne seront pas importées', completeSummary: 'ligne(s) seront complétées', groupSummary: '{sheet} — {n} ligne(s) à décider', skipAll: 'Ne pas importer les {n} lignes' } }
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } , completion: { title: 'Données manquantes', explanation: 'Choisissez une action pour chaque ligne.', skip: 'Ne pas importer la ligne', complete: 'Compléter la ligne', value: 'Valeur à renseigner', sourceValue: 'Valeur Excel', expectedValue: 'Valeur attendue', emptyValue: 'vide', skipSummary: 'ligne(s) ne seront pas importées', completeSummary: 'ligne(s) seront complétées', groupSummary: '{sheet} — {n} ligne(s) à décider', skipAll: 'Ne pas importer les {n} lignes', perRow: 'Décider ligne par ligne', importableTitle: 'Ce qui sera importé', importableReady: '{n} prête(s)', importableToDecide: '{n} à décider', importableTemplate: '{n} modèle(s) ignoré(s)' } }
   const gaps = (n: number, sheetName = 'Parties prenantes') => Array.from({ length: n }, (_, i) => ({ sheetName, row: 20 + i, field: 'title', sourceColumn: 'Partie prenante', sourceValue: '', expectedValue: 'texte non vide' }))
   const sheets: HistoricPreviewSheet[] = [{ name: 'Parties prenantes', columns: ['Partie prenante'], rows: 30, detection: { type: 'RISKS' }, mapping: { title: 'Partie prenante' }, missing: [] }]
-  it('au-delà de 5 lignes d’une même feuille : un seul groupe replié, résumé chiffré, action globale « ne pas importer »', () => {
-    const onConfirm = vi.fn()
-    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(18)} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
+  it('au-delà de 5 lignes d’une même feuille : titre du groupe et bouton global TOUJOURS visibles ; lignes dans un détail replié', () => {
+    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(18)} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     const panel = screen.getByLabelText('Données manquantes')
+    expect(panel.textContent).toContain('Parties prenantes — 18 ligne(s) à décider')
+    const button = screen.getByRole('button', { name: /Ne pas importer les 18 lignes/ })
+    expect(button.closest('details')).toBeNull() // visible sans ouvrir le détail
     const details = panel.querySelectorAll('details')
-    expect(details).toHaveLength(1)
-    expect(details[0]).not.toHaveAttribute('open')
-    expect(details[0].querySelector('summary')!.textContent).toContain('Parties prenantes')
-    expect(details[0].querySelector('summary')!.textContent).toContain('18')
-    fireEvent.click(screen.getByRole('button', { name: /Ne pas importer les 18 lignes/ }))
-    expect(panel.textContent).toContain('18')
-    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
-    expect(onConfirm).toHaveBeenCalled()
+    expect(details).toHaveLength(1); expect(details[0]).not.toHaveAttribute('open')
+    expect(details[0].querySelector('summary')!.textContent).toBe('Décider ligne par ligne')
   })
-  it('« Ne pas importer les N lignes » annule aussi les « Compléter » déjà choisis dans le groupe', () => {
+  it('le clic sur « Ne pas importer les N lignes » donne un retour visible (état annoncé) et annule les « Compléter » du groupe', () => {
     render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(6)} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     fireEvent.click(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Compléter la ligne'))
-    expect(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Compléter la ligne')).toBeChecked()
+    const status = () => screen.getByTestId('group-status-Parties prenantes')
+    expect(status().textContent).toContain('5 ligne(s) ne seront pas importées'); expect(status().textContent).toContain('1 ligne(s) seront complétées')
     fireEvent.click(screen.getByRole('button', { name: /Ne pas importer les 6 lignes/ }))
     expect(screen.getByLabelText('Parties prenantes — ligne 20 — Intitulé — Ne pas importer la ligne')).toBeChecked()
+    expect(status().textContent).toContain('6 ligne(s) ne seront pas importées'); expect(status().textContent).toContain('0 ligne(s) seront complétées')
+    expect(status()).toHaveAttribute('role', 'status')
   })
   it('5 lignes ou moins : affichage ligne par ligne inchangé (pas de groupe)', () => {
     render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(5)} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     expect(screen.getByLabelText('Données manquantes').querySelectorAll('details')).toHaveLength(0)
+  })
+  it('avant les lignes à décider : « Ce qui sera importé » par objet (lignes prêtes, à décider, modèles ignorés)', () => {
+    const decisions = [
+      ...Array.from({ length: 64 }, (_, i) => ({ sheetName: 'Parties prenantes', row: 6 + i, status: 'READY' as const })),
+      { sheetName: 'Parties prenantes', row: 90, status: 'IGNORED' as const, reason: 'EMPTY_TEMPLATE_ROW' as const },
+    ]
+    render(<HistoricImportPreview sheets={sheets} requiredValueGaps={gaps(8)} reviewDecisions={decisions} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+    const ready = screen.getByLabelText('Ce qui sera importé')
+    expect(ready.textContent).toContain('64 prête(s)'); expect(ready.textContent).toContain('8 à décider'); expect(ready.textContent).toContain('1 modèle(s) ignoré(s)')
+    const panel = screen.getByLabelText('Données manquantes')
+    expect(ready.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy() // placé AVANT la revue
+  })
+})
+
+describe('HistoricImportPreview — retour visible après « Appliquer ce profil » et chargement d’un mapping', () => {
+  it('annonce le profil appliqué (nombre de feuilles configurées) dans une zone status', () => {
+    const sheet = (name: string, columns: string[]) => ({ name, columns, rows: 3, detection: { type: 'UNKNOWN' }, mapping: {}, missing: [] }) as HistoricPreviewSheet
+    const p = BUILTIN_PROFILES[0]
+    const sheets = p.sheets.filter(x => x.role !== 'UNKNOWN').map(x => sheet(x.match.name, Object.values(x.fields).filter(Boolean) as string[]))
+    const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Importables', ignoredSheets: 'Ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: {}, sheetTypes: {}, profile: { recognized: 'Profil reconnu : {name} ({pct} %)', apply: 'Appliquer ce profil', applied: 'Profil « {name} » appliqué : {n} feuille(s) configurée(s).', builtin: 'livré', partial: 'partiel' } } as never
+    render(<HistoricImportPreview sheets={sheets} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Appliquer ce profil' }))
+    const status = screen.getAllByRole('status').map(x => x.textContent).join(' ')
+    expect(status).toMatch(/Profil « Dossier de sécurité EBIOS RM » appliqué : \d+ feuille\(s\) configurée\(s\)\./)
   })
 })

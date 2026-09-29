@@ -95,3 +95,12 @@ Encore à tester : autre organisation (IDOR), analyse gelée, CSV windows-1252, 
 - [x] **mapping_mzt** : mapping par défaut d'instance en base (migration `20260930160000_mapping_import_defaut`, `organizationId` nul, lecture seule), chargé dans l'assistant → import du classeur BTP sans « Appliquer ce profil » : 0 champ écarté, mêmes volumes.
 - [x] **Revue regroupée** : au-delà de 5 lignes à décider dans une feuille, un groupe replié par feuille (« 2 - Parties prenantes — 18 ligne(s) à décider », « 2 - Biens supports — 8 ») avec action globale « Ne pas importer les N lignes ».
 - [x] **Méthodes** : classement (le 1er est le défaut, EBIOS RM reste disponible) — logique pure et route testées ; écran d'administration (↑ ↓, badge « Méthode par défaut ») **non vérifié dans le navigateur** (compte SUPER_ADMIN requis).
+
+### 7 sexies — Retours d'usage sur le vrai fichier (2026-09-30)
+Reproduits avec le classeur d'exemple réel (local uniquement) :
+- **Erreur d'import « toujours à refaire en minimal »** : des intitulés du socle de sécurité dépassent 1 000 caractères → le schéma rejetait TOUT l'import avec un message technique. Corrigé : texte **raccourci au plafond et signalé** au bilan (« 3 texte(s) trop long(s) raccourci(s) à 1000 caractères (exigence(s) du socle › title) ») ; les autres erreurs de validation sont décrites en clair (« securityBaseline n°10 › title : texte trop long (max 1000) »).
+- **Aucune réaction sur « Appliquer ce profil » / chargement d'un mapping** : le classeur étant déjà bien détecté, rien ne changeait à l'écran. Ajout d'un retour visible et annoncé (« ✓ Mapping « mapping_mzt » chargé : 13 feuille(s) configurée(s). »).
+- **« Ne pas importer les N lignes » sans effet visible** (c'était déjà le choix par défaut) : le bouton global est maintenant visible sans ouvrir le détail, avec un état annoncé (« 8 ligne(s) ne seront pas importées · 0 seront complétées »).
+- **« Ce qui sera importé »** par objet, avant les lignes à décider (ex. Biens supports : 65 prêtes · 8 à décider ; Risques : 16 prêtes ; Mesures : 21 prêtes…).
+- **Marge basse** sous le cadre de l'assistant (`mb-10`).
+- `mapping_mzt` porte désormais l'alias de préfixe `R_`⇒`RI_` (migration `20260930170000_mapping_mzt_alias`) : import du vrai fichier avec `mapping_mzt` seul → 16 risques, 21 mesures liées, plus aucun avertissement « risque introuvable » ; les alias sont enregistrés avec un mapping.

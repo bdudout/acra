@@ -111,3 +111,12 @@ describe('correspondances de valeurs validées par l’utilisateur (B-IMP-32)', 
     expect(buildAtelierContent([pp]).content.stakeholders[0].type).toBe('PRESTATAIRE')
   })
 })
+
+describe('buildAtelierContent — texte trop long', () => {
+  it('raccourcit au plafond du schéma au lieu de lever une erreur, et rapporte la troncature', () => {
+    const sheet = { name: '2 - Socle de sécurité', type: 'SECURITY_BASELINE' as const, mapping: { title: 'Description' }, rows: [{ Description: 'x'.repeat(1500) }, { Description: 'court' }] }
+    const built = buildAtelierContent([sheet])
+    expect(built.content.securityBaseline[0].title).toHaveLength(1000)
+    expect(built.truncated).toEqual([{ path: 'securityBaseline.0.title', max: 1000, length: 1500 }])
+  })
+})

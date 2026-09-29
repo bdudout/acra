@@ -47,3 +47,14 @@ describe('POST /api/analysis-imports/mappings', () => {
     expect(m.upsert.mock.calls[0][0].create.organizationId).toBe('org1')
   })
 })
+
+describe('alias de préfixe enregistrés avec le mapping', () => {
+  it('POST conserve refAliases, GET les renvoie (mapping livré : « R » ⇒ « RI » validé d’avance)', async () => {
+    m.upsert.mockResolvedValue({ id: 'c', name: 'x', organizationId: 'org1', mappings: { ...stored, refAliases: { 'PACS': { R: 'RI' } } }, updatedAt: new Date() })
+    await POST(new NextRequest('http://x/api/analysis-imports/mappings', { method: 'POST', body: JSON.stringify({ name: 'x', mappings: stored.mappings, refAliases: { PACS: { R: 'RI' } } }) }))
+    expect(m.upsert.mock.calls[0][0].create.mappings.refAliases).toEqual({ PACS: { R: 'RI' } })
+    m.findMany.mockResolvedValue([{ id: 'a', name: 'mapping_mzt', organizationId: null, mappings: { ...stored, refAliases: { PACS: { R: 'RI' } } }, updatedAt: new Date() }])
+    const { mappings } = await (await GET(new NextRequest('http://x/api/analysis-imports/mappings'))).json()
+    expect(mappings[0].refAliases).toEqual({ PACS: { R: 'RI' } })
+  })
+})

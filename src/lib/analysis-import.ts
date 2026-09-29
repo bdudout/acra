@@ -6,6 +6,7 @@ import { clampInt, IMPORT_MAX_ITEMS } from '@/lib/import-sanitize'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { resolveMethodes } from '@/lib/methodes'
 import { canonicalRef } from '@/lib/import-transforms'
+import { truncateStringsBySchema } from '@/lib/import-truncate'
 import { atelierContentSchema, hasAtelierContent, summarizeAtelierContent, writeAtelierContent } from '@/lib/analysis-import-ateliers'
 
 const string = z.string().trim().min(1).max(255)
@@ -32,6 +33,9 @@ function assertUniqueExternalIds(items: Array<{ externalId?: string }>, collecti
     seen.add(item.externalId)
   }
 }
+
+/** Raccourcit les textes dépassant les plafonds du schéma (avant validation) ; renvoie aussi la liste des troncatures. */
+export function truncateImportRequest(input: unknown) { return truncateStringsBySchema(schema, input) }
 
 export function parseAnalysisImportRequest(input: unknown): AnalysisImportRequest {
   const parsed = schema.parse(input)

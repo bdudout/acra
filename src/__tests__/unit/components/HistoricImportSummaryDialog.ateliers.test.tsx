@@ -39,3 +39,16 @@ describe('bilan d’import — champs nommés lisiblement', () => {
     expect(screen.getByText(/PACS — ligne 6 — Statut/)).toBeTruthy()
   })
 })
+
+describe('bilan d’import — textes raccourcis', () => {
+  it('signale le nombre de textes raccourcis, le plafond et l’objet concerné', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ mappings: [] }) })))
+    render(<HistoricImportSummaryDialog
+      result={{ imported: 1, results: [], decisions: [], ateliers: { securityBaseline: 32 }, warnings: ['text_truncated:securityBaseline.title:3:1000'] }}
+      selection={{ mappings: {}, sheetTypes: {}, transforms: {}, statusMappings: {}, scoreMappings: {} } as never}
+      labels={fr.historicImportSummary as never} onClose={vi.fn()} />)
+    const text = screen.getByLabelText('Points à vérifier').textContent ?? ''
+    expect(text).toContain('3 texte(s) trop long(s) raccourci(s) à 1000 caractères')
+    expect(text).toContain('exigence(s) du socle › title')
+  })
+})

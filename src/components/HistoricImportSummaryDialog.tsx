@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { HistoricImportDecision, HistoricColumnMapping, HistoricFieldTransforms, HistoricSheetType } from '@/lib/historic-import'
 
 type Mapping = { id: string; name: string }
-type Selection = { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; organizationId?: string }
+type Selection = { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; organizationId?: string }
 type ImportResult = { warnings?: string[]; ateliers?: Record<string, number>; imported: number; results: Array<{ nom?: string; created?: { risks?: number; vulnerabilities?: number; measures?: number; actions?: number } }>; decisions: HistoricImportDecision[] }
 
 export type HistoricImportSummaryLabels = {
@@ -41,7 +41,7 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
 
   async function saveMapping() {
     if (!mappingName.trim()) return
-    const response = await fetch('/api/analysis-imports/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: mappingName.trim(), organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings }) })
+    const response = await fetch('/api/analysis-imports/mappings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: mappingName.trim(), organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings, refAliases: selection.refAliases }) })
     if (response.ok) setSaved(true)
   }
   function decisionLabel(decision: HistoricImportDecision) {
@@ -63,7 +63,7 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
       {ignored.length > 0 && labels.ignoredTemplateRows && <p role="note" className="mt-3 text-sm text-gray-600 dark:text-slate-300">{labels.ignoredTemplateRows.replace('{n}', String(ignored.length))}</p>}
       {result.warnings && result.warnings.length > 0 && labels.warnings && <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50" aria-label={labels.warnings.title}>
         <h3 className="font-semibold">{labels.warnings.title} ({result.warnings.length})</h3>
-        <ul className="mt-1 list-inside list-disc space-y-0.5">{result.warnings.slice(0, 30).map((w, i) => { const [code, ...args] = w.split(':'); return <li key={i}>{(labels.warnings!.codes[code] ?? code).replace('{ref}', args.join(':')).replace('{n}', args[0] ?? '').replace('{a}', args[1] ?? '').replace('{b}', args[2] ?? '')}</li> })}</ul>
+        <ul className="mt-1 list-inside list-disc space-y-0.5">{result.warnings.slice(0, 30).map((w, i) => { const [code, ...args] = w.split(':'); if (code === 'text_truncated') { const parts = (args[0] ?? '').split('.'); args[0] = `${labels.ateliers?.counts[parts[0]] ?? parts[0]} › ${parts[parts.length - 1]}`; args[1] = args[1] ?? ''; args[2] = args[2] ?? ''; [args[1], args[2]] = [args[1], args[2]] } return <li key={i}>{(labels.warnings!.codes[code] ?? code).replace('{ref}', args.join(':')).replace('{n}', args[0] ?? '').replace('{a}', args[1] ?? '').replace('{b}', args[2] ?? '')}</li> })}</ul>
       </section>}
       {(omitted.length > 0 || rejected.length > 0) && <section className="mt-4 space-y-3" aria-label={labels.rejectedRows}>
         {rejected.length > 0 && <DecisionList decisions={rejected} title={labels.rejectedRows} labels={labels} decisionLabel={decisionLabel} tone="red" />}

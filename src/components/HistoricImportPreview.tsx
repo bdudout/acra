@@ -5,7 +5,7 @@ import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-atelier
 import { isAtelierRole } from '@/lib/historic-import'
 import { suggestPrefixAlias, suggestValueMap } from '@/lib/import-transforms'
 import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
-import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, suggestScoreMapping, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
+import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, suggestScoreMapping, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricImportDecision, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
 export type HistoricPreviewSheet = {
   name: string
@@ -41,13 +41,15 @@ export type HistoricImportPreviewLabels = {
   targetOrganization?: string
   aliasPrefix?: string
   valueMap?: { title: string; hint: string; other: string; category: Record<string, string>; type: Record<string, string> }
-  profile?: { recognized: string; apply: string; builtin: string; partial: string }
+  profile?: { recognized: string; apply: string; applied?: string; builtin: string; partial: string }
+  /** « Mapping « {name} » chargé : {n} feuille(s) configurée(s). » */
+  mappingLoaded?: string
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
   sheetTypes: Partial<Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>>
   validation?: { acraField: string; sourceColumn: string; expected: string; examples: string; compatible: string; review: string; invalidValues: string; externalReference: string }
   listTransform?: { label: string; none: string; lines: string; semicolon: string; pipe: string; carryForward?: string }
-  completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string; groupSummary?: string; skipAll?: string }
+  completion?: { title: string; explanation: string; skip: string; complete: string; value: string; sourceValue: string; expectedValue: string; emptyValue: string; skipSummary: string; completeSummary: string; groupSummary?: string; skipAll?: string; perRow?: string; importableTitle?: string; importableReady?: string; importableToDecide?: string; importableTemplate?: string }
 }
 
 const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
@@ -63,10 +65,12 @@ const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
 /** Au-delà de ce nombre de lignes à décider dans une même feuille, elles sont regroupées et repliées (action globale). */
 const INCOMPLETE_GROUP_THRESHOLD = 5
 
-export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
+export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], reviewDecisions, organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
   sheets: HistoricPreviewSheet[]
   labels: HistoricImportPreviewLabels
   requiredValueGaps?: HistoricRequiredValueGap[]
+  /** Décisions de l'aperçu à blanc (prêtes / ignorées / à décider) : alimentent « Ce qui sera importé ». */
+  reviewDecisions?: HistoricImportDecision[]
   organizationOptions?: HistoricImportOrganizationOption[]
   defaultOrganizationId?: string
   onCancel: () => void
@@ -79,13 +83,15 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const [statusMappings, setStatusMappings] = useState<Record<string, Record<string, string>>>({})
   const [scoreMappings, setScoreMappings] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [transforms, setTransforms] = useState<Record<string, HistoricFieldTransforms>>({})
+  // Retour visible et annoncé (lecteur d'écran) après « Appliquer ce profil » / chargement d'un mapping : sans lui, un classeur déjà bien détecté ne montre aucun changement.
+  const [feedback, setFeedback] = useState<string | null>(null)
   const [rowActions, setRowActions] = useState<Record<string, 'SKIP' | 'COMPLETE'>>({})
   const [valueMaps, setValueMaps] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [refAliases, setRefAliases] = useState<Record<string, Record<string, string>>>({})
   const [rowOverrides, setRowOverrides] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [loadedOrganizations, setLoadedOrganizations] = useState<HistoricImportOrganizationOption[]>([])
   const [targetOrganizationId, setTargetOrganizationId] = useState(defaultOrganizationId ?? '')
-  const [savedMappings, setSavedMappings] = useState<Array<{ id: string; name: string; mappings: Record<string, HistoricColumnMapping>; sheetTypes?: Record<string, HistoricSheetType>; transforms?: Record<string, HistoricFieldTransforms>; statusMappings?: Record<string, Record<string, string>>; scoreMappings?: Record<string, Record<string, Record<string, string>>> }>>([])
+  const [savedMappings, setSavedMappings] = useState<Array<{ id: string; name: string; refAliases?: Record<string, Record<string, string>>; mappings: Record<string, HistoricColumnMapping>; sheetTypes?: Record<string, HistoricSheetType>; transforms?: Record<string, HistoricFieldTransforms>; statusMappings?: Record<string, Record<string, string>>; scoreMappings?: Record<string, Record<string, Record<string, string>>> }>>([])
   useEffect(() => { if (!organizationOptions) fetch('/api/org/active').then(response => response.ok ? response.json() : null).then(data => { if (data) { setLoadedOrganizations(data.options ?? []); setTargetOrganizationId(current => current || data.activeOrgId || '') } }).catch(() => {}) }, [organizationOptions])
   const availableOrganizations = organizationOptions ?? loadedOrganizations
   // Reconnaissance d'un profil (livré ou enregistré par l'organisation) sur les feuilles du fichier (lot I4).
@@ -104,6 +110,8 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
     setSheetTypes(previous => ({ ...previous, ...selection.sheetTypes }))
     setStatusMappings(previous => ({ ...previous, ...selection.statusMappings }))
     setScoreMappings(previous => ({ ...previous, ...selection.scoreMappings }))
+    const configured = Object.values(selection.sheetTypes).filter(type => type !== 'UNKNOWN').length
+    setFeedback((labels.profile?.applied ?? '{name} : {n}').replace('{name}', recognized.profile.name).replace('{n}', String(configured)))
   }
   useEffect(() => { fetch(`/api/analysis-imports/mappings${targetOrganizationId ? `?organizationId=${encodeURIComponent(targetOrganizationId)}` : ''}`).then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [targetOrganizationId])
   // Cotations en clair (« Critique », « Vraisemblable ») : niveaux PROPOSÉS, visibles et modifiables, seulement si toute l'échelle est reconnue.
@@ -150,6 +158,14 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const completionIncomplete = completedRows.some(([, gaps]) => gaps.some(gap => !rowOverrides[gap.sheetName]?.[String(gap.row)]?.[gap.field]?.trim()))
   const completion = labels.completion
   const incompleteBySheet = incompleteRowEntries.reduce<Record<string, [string, HistoricRequiredValueGap[]][]>>((groups, entry) => { (groups[entry[1][0].sheetName] ??= []).push(entry); return groups }, {})
+  // « Ce qui sera importé » par objet (rôle de feuille) : lignes prêtes, à décider, modèles vides ignorés.
+  const importableByObject = (() => {
+    const byRole = new Map<string, { role: string; ready: number; toDecide: number; template: number }>()
+    const entry = (sheetName: string) => { const role = sheetTypes[sheetName]; if (!role || role === 'UNKNOWN') return null; if (!byRole.has(role)) byRole.set(role, { role, ready: 0, toDecide: 0, template: 0 }); return byRole.get(role)! }
+    for (const decision of reviewDecisions ?? []) { const e = entry(decision.sheetName); if (!e) continue; if (decision.status === 'READY') e.ready += 1; else if (decision.status === 'IGNORED') e.template += 1 }
+    for (const [sheetName, entries] of Object.entries(incompleteBySheet)) { const e = entry(sheetName); if (e) e.toDecide += entries.length }
+    return [...byRole.values()].filter(item => item.ready + item.toDecide + item.template > 0)
+  })()
   const renderIncompleteRow = ([key, gaps]: [string, HistoricRequiredValueGap[]]) => {
             if (!completion) return null
             const first = gaps[0]
@@ -164,19 +180,20 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
           }
 
   return (
-    <section className="card mt-4 p-4" aria-label={labels.title}>
+    <section className="card mt-4 mb-10 p-4" aria-label={labels.title}>
       <div className="flex items-start justify-between gap-3">
         <div><h2 className="font-semibold text-gray-900">{labels.title}</h2><p className="text-sm text-gray-500">{selectedSheets.reduce((sum, s) => sum + s.rows, 0)} {labels.rows}</p></div>
         <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-900">{labels.cancel}</button>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         {availableOrganizations.length > 1 && labels.targetOrganization && <label className="text-xs font-medium text-gray-700">{labels.targetOrganization}<select aria-label={labels.targetOrganization} className="input mt-1 block text-sm" value={targetOrganizationId} onChange={event => setTargetOrganizationId(event.target.value)}>{availableOrganizations.map(organization => <option key={organization.id} value={organization.id}>{organization.nom}</option>)}</select></label>}
-        <label className="text-xs font-medium text-gray-700">{labels.loadMapping}<select className="input mt-1 block text-sm" value="" onChange={event => { const selected = savedMappings.find(item => item.id === event.target.value); if (selected) { setMappings(selected.mappings); if (selected.sheetTypes) setSheetTypes(previous => ({ ...previous, ...selected.sheetTypes })); if (selected.transforms) setTransforms(selected.transforms); if (selected.statusMappings) setStatusMappings(selected.statusMappings); if (selected.scoreMappings) setScoreMappings(selected.scoreMappings) } }}><option value="">—</option>{savedMappings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label className="text-xs font-medium text-gray-700">{labels.loadMapping}<select className="input mt-1 block text-sm" value="" onChange={event => { const selected = savedMappings.find(item => item.id === event.target.value); if (selected) { if (selected.refAliases) setRefAliases(selected.refAliases); setFeedback((labels.mappingLoaded ?? '{name} : {n}').replace('{name}', selected.name).replace('{n}', String(Object.values(selected.sheetTypes ?? {}).filter(type => type !== 'UNKNOWN').length || Object.keys(selected.mappings).length))); setMappings(selected.mappings); if (selected.sheetTypes) setSheetTypes(previous => ({ ...previous, ...selected.sheetTypes })); if (selected.transforms) setTransforms(selected.transforms); if (selected.statusMappings) setStatusMappings(selected.statusMappings); if (selected.scoreMappings) setScoreMappings(selected.scoreMappings) } }}><option value="">—</option>{savedMappings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       </div>
       {recognized && labels.profile && <div role="status" className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-950 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100">
         <span>{labels.profile.recognized.replace('{name}', recognized.profile.name).replace('{pct}', String(Math.round(recognized.score * 100)))}{recognized.profile.builtin ? ` — ${labels.profile.builtin}` : ''}{recognized.profile.partial ? ` — ${labels.profile.partial}` : ''}</span>
         <button type="button" onClick={applyProfile} className="btn-secondary text-xs">{labels.profile.apply}</button>
       </div>}
+      {feedback && <p role="status" aria-live="polite" className="mt-3 rounded-lg border border-green-300 bg-green-50 p-3 text-sm font-medium text-green-950 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100">✓ {feedback}</p>}
       <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
         <p className="font-semibold">{labels.mappingHelpTitle}</p><p className="mt-1">{labels.mappingHelp}</p>
         <p className="mt-2"><span className="font-medium">{labels.summaryTitle} :</span> {selectedSheets.length} {labels.importableSheets.toLowerCase()} · {ignoredSheets.length} {labels.ignoredSheets.toLowerCase()}</p>
@@ -247,19 +264,26 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
           </div>
         })}
       </div>}
+      {incompleteRowEntries.length > 0 && completion?.importableTitle && importableByObject.length > 0 && <section className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-950 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100" aria-label={completion.importableTitle}>
+        <h3 className="font-semibold">{completion.importableTitle}</h3>
+        <ul className="mt-2 space-y-1">{importableByObject.map(item => <li key={item.role}><span className="font-medium">{(labels.sheetTypes as Record<string, string | undefined>)[item.role] ?? item.role}</span> : {(completion.importableReady ?? '{n}').replace('{n}', String(item.ready))}{item.toDecide > 0 && <> · {(completion.importableToDecide ?? '{n}').replace('{n}', String(item.toDecide))}</>}{item.template > 0 && <> · {(completion.importableTemplate ?? '{n}').replace('{n}', String(item.template))}</>}</li>)}</ul>
+      </section>}
       {incompleteRowEntries.length > 0 && completion && <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/50 dark:text-amber-50" aria-label={completion.title}>
         <h3 className="font-semibold">{completion.title}</h3>
         <p className="mt-1">{completion.explanation}</p>
         <div className="mt-3 space-y-3">
           {Object.entries(incompleteBySheet).map(([sheetName, entries]) => entries.length <= INCOMPLETE_GROUP_THRESHOLD
             ? entries.map(renderIncompleteRow)
-            : <details key={sheetName} className="rounded border border-amber-300 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100">
-              <summary className="cursor-pointer font-medium">{(completion.groupSummary ?? '{sheet} — {n}').replace('{sheet}', sheetName).replace('{n}', String(entries.length))}</summary>
-              <div className="mt-3 space-y-3">
+            : <div key={sheetName} className="rounded border border-amber-300 bg-white p-3 text-gray-900 dark:border-amber-300/40 dark:bg-slate-900 dark:text-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">{(completion.groupSummary ?? '{sheet} — {n}').replace('{sheet}', sheetName).replace('{n}', String(entries.length))}</p>
                 <button type="button" className="btn-secondary text-xs" onClick={() => setRowActions(previous => ({ ...previous, ...Object.fromEntries(entries.map(([key]) => [key, 'SKIP' as const])) }))}>{(completion.skipAll ?? completion.skip).replace('{n}', String(entries.length))}</button>
-                {entries.map(renderIncompleteRow)}
               </div>
-            </details>)}
+              <p role="status" data-testid={`group-status-${sheetName}`} className="mt-2 text-xs">{entries.filter(([key]) => rowActions[key] !== 'COMPLETE').length} {completion.skipSummary} · {entries.filter(([key]) => rowActions[key] === 'COMPLETE').length} {completion.completeSummary}</p>
+              <details className="mt-2"><summary className="cursor-pointer text-xs font-medium underline">{completion.perRow ?? completion.complete}</summary>
+                <div className="mt-3 space-y-3">{entries.map(renderIncompleteRow)}</div>
+              </details>
+            </div>)}
         </div>
         <p className="mt-3 text-xs">{skippedRows.length} {completion.skipSummary} · {completedRows.length} {completion.completeSummary}</p>
       </section>}

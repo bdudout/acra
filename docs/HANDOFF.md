@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (29) — import : retours d'usage sur le vrai fichier
+
+- Bug d'import du vrai classeur : textes > plafond du schéma (socle de sécurité 1 000 car.) → raccourcis + avertissement (`lib/import-truncate.ts`, `buildAtelierContent.truncated`, route) ; erreurs de validation lisibles (`describeZodIssues`).
+- Assistant : retour visible/annoncé après profil/mapping, récapitulatif « Ce qui sera importé » par objet, groupe « Ne pas importer les N lignes » toujours visible, marge basse. `refAliases` enregistrés avec un mapping ; migration `20260930170000_mapping_mzt_alias`.
+- Vérifié : tsc, `npm test` (2906), `i18n:check`, build, e2e local sur le vrai fichier (16 risques, 21 mesures, 0 avertissement de référence).
+
 ## 2026-09-29 (28) — menus, mapping par défaut, méthodes classées, revue regroupée
 
 - Menu « Nouvelle analyse » (`NouvelleAnalyseMenu`, hook `useDropdownMenu` clavier + ARIA) sur analyses / dashboard cyber / GRC, visible sur mobile ; `AnalyseImportMenu` idem.

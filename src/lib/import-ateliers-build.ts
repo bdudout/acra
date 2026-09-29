@@ -5,6 +5,7 @@
  * Rien n'est deviné : références introuvables, valeurs par défaut (AUTRE) et divergences sont rapportées.
  */
 
+import { truncateStringsBySchema, type Truncation } from './import-truncate'
 import { atelierContentSchema, type AtelierContent } from './analysis-import-ateliers'
 import {
   applyValueMap, extractReferences, extractReferencesWithLabels, filterRetained, groupRows, normalizeRetained, parseLevelLabel, parseSymbolLevel, suggestValueMap,
@@ -107,7 +108,7 @@ const PP_TYPES: Record<string, string> = { fournisseur: 'FOURNISSEUR', client: '
 const listSplit = (s: string) => s.split(/\r?\n|;/).map(x => x.trim()).filter(Boolean)
 const numbered = (s: string) => s.split(/(?:^|\s)\d+\s*[-.)]\s+/).map(x => x.trim()).filter(Boolean)
 
-export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierContent; report: AtelierBuildReport } {
+export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierContent; report: AtelierBuildReport; truncated: Truncation[] } {
   const report: AtelierBuildReport = { defaulted: [], conflicts: [], notRetained: {} }
   const raw: Record<string, unknown> = { businessValues: [], supportAssets: [], fearedEvents: [], riskSources: [], stakeholders: [], strategicScenarios: [], operationalScenarios: [], securityBaseline: [], residualRisks: [] }
   const byRole = (role: AtelierRole) => sheets.filter(s => s.type === role)
@@ -230,5 +231,7 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
   // Les objets sans intitulé ne sont jamais créés ; les valeurs `undefined` sont retirées par le schéma.
   const clean = JSON.parse(JSON.stringify(raw, (_k, v) => (v === undefined ? undefined : v)))
   for (const k of Object.keys(clean)) if (Array.isArray(clean[k]) && k !== 'residualRisks') clean[k] = (clean[k] as { title?: string }[]).filter(o => o.title)
-  return { content: atelierContentSchema.parse(clean), report }
+  // Un texte plus long que le plafond du schéma est raccourci (jamais une erreur qui bloquerait tout l'import) et rapporté.
+  const { data, truncated } = truncateStringsBySchema(atelierContentSchema, clean)
+  return { content: atelierContentSchema.parse(data), report, truncated }
 }
