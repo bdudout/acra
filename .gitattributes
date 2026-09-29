@@ -1,0 +1,6 @@
+# Les scripts shell doivent rester en fins de ligne LF, même sur Windows (Git for Windows convertit en CRLF sinon
+# et bash/WSL échoue avec « $\r: command not found »).
+*.sh text eol=lf
+Dockerfile* text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf

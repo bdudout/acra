@@ -2,57 +2,42 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { type UserRole } from '@/lib/permissions'
+import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
 import {
   validateIncidentInput, cleanIncidentInput, transitionAutorisee,
   qualificationComplete, type IncidentStatut,
 } from '@/lib/incident'
+import { Prisma } from '@prisma/client'
+import { separerJson } from '@/lib/incident-json'
+import { resolveIncidentsConfig } from '@/lib/incidents-config'
+import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
 type Params = { params: Promise<{ id: string }> }
 
-// La QUALIFICATION relève de la 2ᵉ ligne (risk manager / RSSI / admin). En mode
-// « ligne unique » (2ᵉ ligne désactivée), elle est ouverte à la 1ʳᵉ ligne (tout
-// rôle sauf lecteur) : taxonomie, coût réel, rattachement au registre.
-function peutQualifier(role: UserRole, secondeLigneActive: boolean): boolean {
-  if (!secondeLigneActive) return role !== 'LECTEUR'
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
-}
-
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
-  const incident = await prisma.incident.findFirst({
-    where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
-    select: { id: true, organizationId: true, statut: true, declarantId: true, taxonomieCode: true },
-  })
-  if (!incident) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
-  const orgConfig = await getOrgConfig(incident.organizationId)
-  if (!orgConfig.incidentsActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, incident, secondeLigneActive: orgConfig.secondeLigneActive }
-}
-
 // PATCH /api/incidents/[id] — qualifier, clôturer, rejeter ou corriger.
 export async function PATCH(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
+  const c = await loadIncidentInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
   const { userId, userRole, incident } = c
 
   const body = await req.json().catch(() => ({}))
-  const erreur = validateIncidentInput(body)
+  const cfgL1 = resolveIncidentsConfig(c.incidentsConfig)
+  // Pertes multi-composantes : si le corps touche aux lignes ou au quasi-incident, on
+  // recalcule les agrégats sur l'ENSEMBLE (lignes fournies + lignes déjà enregistrées).
+  const toucheLignes = ['pertes', 'recuperationsLignes', 'quasiIncident'].some(k => k in body)
+  const effectif = toucheLignes
+    ? { ...body, pertes: body.pertes ?? incident.pertes, recuperationsLignes: body.recuperationsLignes ?? incident.recuperationsLignes, quasiIncident: body.quasiIncident ?? incident.quasiIncident }
+    : body
+  const erreur = validateIncidentInput(effectif, cfgL1)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
-  const data = cleanIncidentInput(body)
+  const data = cleanIncidentInput(effectif, cfgL1)
 
   const depuis = incident.statut as IncidentStatut
   const vers = data.statut
@@ -86,17 +71,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // PATCH = mise à jour PARTIELLE : on n'écrit que les champs réellement présents
   // dans le corps. Sans ce filtre, un PATCH de qualification écraserait à null les
   // dates et la maille posées à la déclaration.
+  const champsLignes = ['montantBrut', 'recuperations', 'pertes', 'recuperationsLignes', 'quasiIncident']
   const partiel = Object.fromEntries(
     (Object.keys(data) as (keyof typeof data)[])
-      .filter(k => k in body)
+      .filter(k => k in body || (toucheLignes && champsLignes.includes(k)))
       .map(k => [k, data[k]]),
   ) as Partial<typeof data>
-
+  const { json: champsJson, reste: partielScalaires } = separerJson(partiel)
+  // Champs personnalisés (L5) : fusion sans écraser les champs réservés à d'autres rôles.
+  const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).incident ?? []
+  const json = {
+    ...('champs' in body ? { champs: fusionnerChamps(defsChamps, incident.champs, body.champs, userRole) as unknown as Prisma.InputJsonValue } : {}),
+    ...champsJson,
+  }
   const now = new Date()
   const updated = await prisma.incident.update({
     where: { id },
     data: {
-      ...partiel,
+      ...partielScalaires,
+      ...json,
       // Horodatages posés à la transition, jamais réécrits ensuite.
       ...(vers === 'QUALIFIE' && depuis !== 'QUALIFIE' ? { qualifiePar: userId, qualifieLe: now } : {}),
       ...(vers === 'CLOTURE' && depuis !== 'CLOTURE' ? { clotureLe: now } : {}),
@@ -107,7 +100,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: changeEtat ? `transition:${depuis}->${vers}` : 'update', id },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json(avecChampsVisibles(updated, defsChamps, userRole))
 }
 
 // DELETE /api/incidents/[id] — réservé à la 2ᵉ ligne (un incident se rejette
@@ -116,7 +109,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
+  const c = await loadIncidentInScope(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
   const { userId, userRole, incident } = c
   if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })

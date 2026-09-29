@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest'
+import { buildHistoricImportPackage, detectHistoricImportSheet, partitionHistoricImportSheets, validateHistoricColumnMapping, validateHistoricImportSelection, type HistoricImportSheet } from '@/lib/historic-import'
+import { parseAnalysisImportRequest } from '@/lib/analysis-import'
+
+const vm: HistoricImportSheet = { name: '1 - Valeurs Métiers', type: 'BUSINESS_VALUES', mapping: { externalId: 'Réf.VM', title: 'Dénomination', availability: 'D', integrity: 'I', confidentiality: 'C' }, rows: [
+  { 'Réf.VM': 'VM_01', Dénomination: 'Planification', D: '3', I: '3', C: '2' },
+  { 'Réf.VM': 'VM_07', Dénomination: '', D: '', I: '', C: '' },
+] }
+const er: HistoricImportSheet = { name: '1 - Événements redoutés', type: 'FEARED_EVENTS', mapping: { externalId: 'Réf.ER', title: 'Intitulé', gravity: 'Gravité', businessValueRefs: 'VM' }, rows: [{ 'Réf.ER': 'ER_01', Intitulé: 'Divulgation', Gravité: '3 - Importante', VM: 'VM01' }] }
+const ri: HistoricImportSheet = { name: '5 - Risques initiaux', type: 'RISKS', mapping: { externalId: 'Réf.RI', title: 'Description', gravity: 'Gravité initiale' }, rows: [{ 'Réf.RI': 'RI_01', Description: 'Usurpation', 'Gravité initiale': '3 - Importante' }] }
+
+describe('import historique — ateliers 1 à 4', () => {
+  it('le paquet porte les objets des ateliers, la méthode EBIOS RM, et reste valide pour l’import', () => {
+    const pkg = buildHistoricImportPackage([vm, er, ri], 'Dossier BTP')
+    expect(pkg.analysis.methode).toBe('EBIOS_RM')
+    expect(pkg.businessValues?.map(v => v.title)).toEqual(['Planification'])
+    expect(pkg.fearedEvents?.[0]).toMatchObject({ gravity: 3, businessValueExternalIds: ['VM1'] })
+    expect(pkg.risks[0]).toMatchObject({ externalId: 'RI_01', gravity: 3 })
+    const parsed = parseAnalysisImportRequest({ ...pkg, idempotencyKey: 'cle-idempotence-1' })
+    expect(parsed.businessValues).toHaveLength(1)
+  })
+  it('sans feuille d’atelier : paquet inchangé (pas de clés v3, pas de méthode imposée)', () => {
+    const pkg = buildHistoricImportPackage([ri], 'Registre')
+    expect(Object.keys(pkg)).toEqual(['analysis', 'risks', 'vulnerabilities', 'measures', 'actions', 'links'])
+    expect(pkg.analysis.methode).toBeUndefined()
+  })
+  it('la ligne modèle (référence seule) est ignorée avant construction', () => {
+    const { sheets, decisions } = partitionHistoricImportSheets([vm])
+    expect(sheets[0].rows).toHaveLength(1)
+    expect(decisions.find(d => d.status === 'IGNORED')).toMatchObject({ reason: 'EMPTY_TEMPLATE_ROW' })
+  })
+  it('détection par colonne de référence à préfixe, intitulé requis, aucun blocage croisé', () => {
+    expect(detectHistoricImportSheet('1 - Valeurs Métiers', ['Réf.VM', 'Dénomination'])).toMatchObject({ type: 'BUSINESS_VALUES', confidence: 'HIGH' })
+    expect(validateHistoricColumnMapping('BUSINESS_VALUES', {})).toEqual(['title'])
+    expect(validateHistoricImportSelection([{ name: 'VM', type: 'BUSINESS_VALUES', mapping: { title: 'Dénomination' } }])).toEqual([])
+  })
+  it('rôle « contexte » : périmètre et page de garde alimentent le cadrage, le titre et la description de l’analyse', () => {
+    const ctx: HistoricImportSheet = { name: '1 - Périmètre', type: 'CONTEXT', mapping: {}, rows: [], blocks: {
+      text: [{ title: 'Contexte du projet et description fonctionnelle', text: 'Application de suivi de chantiers.', row: 1 }, { title: 'Contexte juridique et réglementaire', text: 'RGPD.', row: 4 }],
+      kv: [{ key: 'Nom projet', values: ['Suivi de chantiers'], row: 3, column: 2 }, { key: 'Rédacteur', values: ['A. Martin'], row: 2, column: 2 }],
+    } }
+    const pkg = buildHistoricImportPackage([ctx, vm], 'Fichier')
+    expect(pkg.context).toMatchObject({ perimetre: 'Application de suivi de chantiers.', contexteJuridique: 'RGPD.' })
+    expect(pkg.analysis).toMatchObject({ title: 'Suivi de chantiers', description: 'Rédacteur : A. Martin' })
+  })
+})
+
+describe('mesures citant plusieurs risques (B-IMP-26, B-IMP-40)', () => {
+  const risks: HistoricImportSheet = { name: 'Risques', type: 'RISKS', mapping: { externalId: 'Réf.RI', title: 'Description' }, rows: ['RI_01', 'RI_02', 'RI_03', 'RI_04'].map(id => ({ 'Réf.RI': id, Description: `Risque ${id}` })) }
+  const measures = (aliases?: Record<string, string>): HistoricImportSheet => ({ name: 'PACS', type: 'MEASURES', mapping: { title: 'Mesure', riskExternalId: 'Risques' }, refAliases: aliases, rows: [
+    { Mesure: 'Journaux', Risques: 'R_01 à R_03' }, { Mesure: 'Antivirus', Risques: 'R_02 R_04' }, { Mesure: 'Exact', Risques: 'RI_04' }, { Mesure: 'Sans lien', Risques: '' },
+  ] })
+  it('sans alias validé : le préfixe R_ n’est jamais rapproché de RI_ (mesure non rattachée)', () => {
+    const pkg = buildHistoricImportPackage([risks, measures()], 'X')
+    expect(pkg.measures.map(m => m.riskExternalId)).toEqual(['R_01 à R_03', 'R_02 R_04', 'RI_04', undefined])
+  })
+  it('avec l’alias validé R ⇒ RI : plages et listes développées, premier risque rattaché, les autres notés', () => {
+    const pkg = buildHistoricImportPackage([risks, measures({ R: 'RI' })], 'X')
+    expect(pkg.measures.map(m => m.riskExternalId)).toEqual(['RI_01', 'RI_02', 'RI_04', undefined])
+    expect(pkg.measures[0].description).toContain('Risques concernés : RI_01, RI_02, RI_03')
+    expect(pkg.measures[2].description).toBeUndefined()
+  })
+})

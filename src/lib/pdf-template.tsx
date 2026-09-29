@@ -1307,7 +1307,7 @@ export function AnalysePDF({ analyse, config, locale }: AnalysePDFProps) {
   return (
     <Document
       title={`EBIOS RM — ${analyse.nom}`}
-      author="ACRA — Augmented Cyber Risk Analysis"
+      author="ACRA — Augmented Cyber (& Business) Risk Analysis"
       subject={tp.docSubject}
       creator="ACRA"
       producer="@react-pdf/renderer"

@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
-import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isDemoInstance } from '@/lib/demo-server'
 import AnalysesClient from '@/components/AnalysesClient'
@@ -26,6 +27,8 @@ export default async function AnalysesPage() {
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
   const scope = await getAnalyseScope(userId, userRole)
   const demo = await isDemoInstance()
+  const projets360 = scope.activeOrgId ? (await getOrgConfig(scope.activeOrgId)).projets360Active : false
+  const canCreate = canCreateAnalyse({ id: userId, role: scope.role ?? userRole })
 
   const analyses = await (prisma.analyse as any).findMany({
     where: analyseWhereClause(userId, scope.role, scope.scope),
@@ -46,7 +49,7 @@ export default async function AnalysesPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">…</div>}>
-        <AnalysesClient initialAnalyses={analyses} demo={demo} />
+        <AnalysesClient initialAnalyses={analyses} demo={demo} projets360={projets360} canCreate={canCreate} />
       </Suspense>
     </div>
   )

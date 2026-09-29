@@ -2,7 +2,7 @@
 
 <img src="public/logo-mark.png" alt="ACRA Logo" width="120" />
 
-# ACRA — Augmented Cyber Risk Analysis
+# ACRA — Augmented Cyber (& Business) Risk Analysis
 
 **The open-source platform for cyber and business risk management and GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, 360 projects**
 
@@ -23,7 +23,7 @@
 
 ## 🎯 Overview
 
-**ACRA (Augmented Cyber Risk Analysis)** is a self-hosted web platform for **cyber and business risk management (operational risk, projects, fraud, outsourcing) and GRC** — EBIOS RM analysis is just one of its methods. It lets a security team — even without deep expertise — run risk analyses with the method of its choice, then manage compliance, controls, incidents and action plans in one tool:
+**ACRA — Augmented Cyber (& Business) Risk Analysis —** is a self-hosted web platform for **cyber and business risk management (operational risk, projects, fraud, outsourcing) and GRC** — EBIOS RM analysis is just one of its methods. It lets a security team — even without deep expertise — run risk analyses with the method of its choice, then manage compliance, controls, incidents and action plans in one tool:
 
 - **Multi-method risk analysis**: **EBIOS Risk Manager** (ANSSI, default), **ISO/IEC 27005:2022**, **ISO 31000:2018** and **NIST SP 800-30 Rev. 1**;
 - **Full GRC, organised along the three lines of defense**: risk register, multi-framework compliance, **maturity** (CMMI target profiles), waivers, permanent control, internal audit, incidents (DORA), KRIs, GDPR register, unified action plan, steering and committee packs.
@@ -253,6 +253,7 @@ docker compose up -d
 
 > No `make`? Use directly: `./scripts/setup.sh` (or `npm run setup`).
 > Automated / CI install (no questions asked): `./scripts/setup.sh --auto`.
+> **Windows (Docker Desktop + WSL)**: clone the repository *from inside WSL* (or run `git config --global core.autocrlf input` before cloning). If you see `$'\r': command not found`, the script was converted to Windows line endings: run `sed -i 's/\r$//' scripts/setup.sh` and start it again.
 
 `setup.sh` generates strong secrets for you (`NEXTAUTH_SECRET`, PostgreSQL password,
 `SECRETS_ENCRYPTION_KEY`) and **only regenerates missing values** if re-run (details in

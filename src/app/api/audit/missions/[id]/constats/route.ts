@@ -6,6 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateConstatInput, cleanConstatInput } from '@/lib/audit'
+import { sanitizeChampsConfig as sanitizeChampsCfg, fusionnerChamps, champsRequisManquants, avecChampsVisibles } from '@/lib/champs-perso'
+import type { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -47,12 +49,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
 
+  const defsChamps = sanitizeChampsCfg(cfg.champsPersonnalises).constat ?? []
+  const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
+  const manquants = champsRequisManquants(defsChamps, champs, userRole)
+  if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
+
   const constat = await prisma.auditConstat.create({
-    data: { ...data, missionId: id, organizationId: mission.organizationId },
+    data: { ...data, champs: champs as unknown as Prisma.InputJsonValue, missionId: id, organizationId: mission.organizationId },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: mission.organizationId, ip: getClientIp(req),
     details: { scope: 'audit-constat', action: 'create', missionId: id, id: constat.id },
   })
-  return NextResponse.json(constat, { status: 201 })
+  return NextResponse.json(avecChampsVisibles(constat, defsChamps, userRole), { status: 201 })
 }

@@ -16,6 +16,7 @@ import {
   getRiskTier, getRiskLevel, buildRiskMatrixModel,
   type RiskTier, type ScaleConfig, type EchelleNiveau, type Seuil, type MatrixModel,
 } from './risk-scale'
+import { matrixModelFromConfig } from './risk-matrix-grid'
 import { synthetiserAppetit, seuilApplicable, evaluerAppetit, APPETIT_DEFAULT, type AppetitConfig } from './appetit'
 import { SOUS_SECTEURS } from './ebios-data'
 
@@ -234,16 +235,6 @@ export function topScenarioNarratives(analyse: Any, n: number): ScenarioNarrativ
     }))
 }
 
-/** Ne conserve que des entrées d'échelle valides (repli sur les défauts sinon). */
-function cleanEchelle(v: unknown): EchelleNiveau[] | undefined {
-  const arr = asArr(v).filter(e => e && typeof e === 'object' && typeof (e as Any).niveau === 'number')
-  return arr.length ? (arr as unknown as EchelleNiveau[]) : undefined
-}
-function cleanSeuils(v: unknown): Seuil[] | undefined {
-  const arr = asArr(v).filter(e => e && typeof e === 'object' && typeof (e as Any).scoreMin === 'number')
-  return arr.length ? (arr as unknown as Seuil[]) : undefined
-}
-
 /** Diapositive : bandeau de titre + numérotation (kicker « Annexe » optionnel). */
 function slideHeader(pptx: PptxGenJS, title: string, kicker: string): PptxGenJS.Slide {
   const slide = pptx.addSlide()
@@ -301,7 +292,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
   const fmtDate = (d: unknown): string => { const t = new Date(d as string); return isNaN(t.getTime()) ? '' : t.toLocaleDateString(dateLocale) }
   const pptx = new PptxGenJS()
   pptx.layout = 'LAYOUT_WIDE' // 13.33 × 7.5
-  pptx.author = 'ACRA — Augmented Cyber Risk Analysis'
+  pptx.author = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
 
   const cadrage = (analyse.cadrage as Any) ?? {}
   const risques = asArr(analyse.risques)
@@ -310,15 +301,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
   const now = new Date()
 
   // Échelles / matrice configurées (repli sur les défauts) — pour la cartographie fidèle
-  const scaleInput: Partial<ScaleConfig> = {
-    nbNiveaux: (config as Any)?.nbNiveaux === 5 ? 5 : undefined,
-    echelleGravite: cleanEchelle((config as Any)?.echelleGravite),
-    echelleVraisemblance: cleanEchelle((config as Any)?.echelleVraisemblance),
-    seuilsMatrice: cleanSeuils((config as Any)?.seuilsMatrice),
-    matriceMode: (config as Any)?.matriceMode === 'QUALITATIVE' ? 'QUALITATIVE' : undefined,
-    matriceQualitative: asArr((config as Any)?.matriceQualitative).length ? ((config as Any).matriceQualitative as ScaleConfig['matriceQualitative']) : undefined,
-  }
-  const model = buildRiskMatrixModel(scaleInput)
+  const model = matrixModelFromConfig(config)
 
   // Appétit au risque
   const appetit: AppetitConfig = opts?.appetit ?? APPETIT_DEFAULT

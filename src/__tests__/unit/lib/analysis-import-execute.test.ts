@@ -41,7 +41,7 @@ describe('executeAnalysisImport', () => {
     const liens: Record<string, unknown>[] = []
     const tx = {
       analyse: { create: vi.fn(async () => ({ id: 'an-1', nom: 'PRA' })) },
-      risque: { create: vi.fn(async () => ({ id: `risk-${++n}` })) },
+      risque: { create: vi.fn(async () => ({ id: `risk-${++n}` })), update: vi.fn(async () => ({})) },
       mesure: { create: vi.fn(async () => ({})), createMany: vi.fn(async () => ({ count: 0 })) },
       planAction: { create: vi.fn(async () => ({ id: `pa-${++n}` })) },
       planActionLien: { create: vi.fn(async (a: { data: Record<string, unknown> }) => { liens.push(a.data); return {} }) },
@@ -64,6 +64,22 @@ describe('executeAnalysisImport', () => {
     await executeAnalysisImport(withLinks(), { organizationId: 'org-a', userId: 'user-a', source: 'EXCEL_WEB' })
     expect(liens).toHaveLength(2)
     for (const l of liens) expect(l).toMatchObject({ type: 'RISQUE_ANALYSE', ref: 'an-1' })
+  })
+
+  it('risques résiduels : cotations actuelle et résiduelle rattachées aux risques par référence (VM02 = VM_02 : écriture canonique)', async () => {
+    const { tx } = fakeTx()
+    transaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx))
+    const input = parseAnalysisImportRequest({
+      idempotencyKey: 'import-residuel-2026-01', analysis: { title: 'PRA' },
+      risks: [{ externalId: 'RI_01', title: 'Usurpation' }, { externalId: 'RI_02', title: 'Fuite' }],
+      residualRisks: [
+        { riskExternalId: 'RI01', currentGravity: 3, currentLikelihood: 2, residualGravity: 3, residualLikelihood: 1 },
+        { riskExternalId: 'RI_99', residualGravity: 2, residualLikelihood: 2 },
+      ],
+    })
+    await applyAnalysisImportContent(input, { organizationId: 'org-a', userId: 'user-a', analyseId: 'an-1' })
+    expect(tx.risque.update).toHaveBeenCalledTimes(1)
+    expect(tx.risque.update).toHaveBeenCalledWith({ where: { id: 'risk-1' }, data: { graviteActuelle: 3, vraisemblanceActuelle: 2, niveauActuel: 6, graviteResiduelle: 3, vraisemblanceResiduelle: 1, niveauResiduel: 3 } })
   })
 
   it('application MCP sur une analyse existante : même contrat de lien', async () => {

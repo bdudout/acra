@@ -33,7 +33,7 @@ const CRIT_BADGE: Record<number, string> = {
   2: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   1: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
 }
-const TERMINES = new Set(['RESOLU', 'ACCEPTE'])
+const TERMINES = new Set(['RESOLU', 'VERIFIE', 'ACCEPTE'])
 
 export default function SuiviRegulateurManager() {
   const { t } = useTranslation()

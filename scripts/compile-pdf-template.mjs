@@ -18,6 +18,7 @@ const TEMPLATES = [
   { entry: 'src/lib/soa-pdf-template.tsx', out: '.pdf-runtime/soa-pdf-template.cjs' },
   { entry: 'src/lib/comite-pack-pdf-template.tsx', out: '.pdf-runtime/comite-pack-pdf-template.cjs' },
   { entry: 'src/lib/rapport-controle-interne-pdf-template.tsx', out: '.pdf-runtime/rapport-controle-interne-pdf-template.cjs' },
+  { entry: 'src/lib/rapport-edition-pdf-template.tsx', out: '.pdf-runtime/rapport-edition-pdf-template.cjs' },
   { entry: 'src/lib/rapport-methode-directe-pdf-template.tsx', out: '.pdf-runtime/rapport-methode-directe-pdf-template.cjs' },
 ]
 

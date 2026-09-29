@@ -183,3 +183,63 @@ export function controleEcheanceEmail(locale: string | null | undefined, p: Cont
   })
   return { subject, text, html }
 }
+
+// ─── Rappels d'audit interne (lot L4, suite) ────────────────────────────────
+
+export interface AuditRappelParams { intitule: string; mission: string; type: 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'A_VERIFIER'; echeance: string | null }
+
+const auditLabels: Record<EmailLocale, { subject: Record<AuditRappelParams['type'], (i: string) => string>; heading: Record<AuditRappelParams['type'], string>; body: Record<AuditRappelParams['type'], (d: string | null) => string>; mission: string; cta: string }> = {
+  fr: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recommandation à échéance proche : ${i}`, EN_RETARD: i => `[ACRA] Recommandation en retard : ${i}`, A_VERIFIER: i => `[ACRA] Recommandation à vérifier : ${i}` },
+    heading: { ECHEANCE_PROCHE: 'Échéance proche', EN_RETARD: 'Recommandation en retard', A_VERIFIER: 'Vérification attendue' },
+    body: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard depuis le ${d}`, A_VERIFIER: () => 'déclarée réalisée, en attente de vérification par l’audit' },
+    mission: 'Mission', cta: 'Consultez le suivi dans ACRA.' },
+  en: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recommendation due soon: ${i}`, EN_RETARD: i => `[ACRA] Recommendation overdue: ${i}`, A_VERIFIER: i => `[ACRA] Recommendation to verify: ${i}` },
+    heading: { ECHEANCE_PROCHE: 'Due soon', EN_RETARD: 'Recommendation overdue', A_VERIFIER: 'Verification expected' },
+    body: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue since ${d}`, A_VERIFIER: () => 'declared as implemented, awaiting verification by audit' },
+    mission: 'Engagement', cta: 'Check the follow-up in ACRA.' },
+  de: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Empfehlung bald fällig: ${i}`, EN_RETARD: i => `[ACRA] Empfehlung überfällig: ${i}`, A_VERIFIER: i => `[ACRA] Empfehlung zu prüfen: ${i}` },
+    heading: { ECHEANCE_PROCHE: 'Bald fällig', EN_RETARD: 'Empfehlung überfällig', A_VERIFIER: 'Prüfung erwartet' },
+    body: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig seit ${d}`, A_VERIFIER: () => 'als umgesetzt gemeldet, Prüfung durch die Revision ausstehend' },
+    mission: 'Prüfung', cta: 'Sehen Sie die Nachverfolgung in ACRA.' },
+  es: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recomendación con vencimiento próximo: ${i}`, EN_RETARD: i => `[ACRA] Recomendación vencida: ${i}`, A_VERIFIER: i => `[ACRA] Recomendación por verificar: ${i}` },
+    heading: { ECHEANCE_PROCHE: 'Vencimiento próximo', EN_RETARD: 'Recomendación vencida', A_VERIFIER: 'Verificación pendiente' },
+    body: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `vencida desde el ${d}`, A_VERIFIER: () => 'declarada como realizada, pendiente de verificación por auditoría' },
+    mission: 'Misión', cta: 'Consulte el seguimiento en ACRA.' },
+  it: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Raccomandazione in scadenza: ${i}`, EN_RETARD: i => `[ACRA] Raccomandazione in ritardo: ${i}`, A_VERIFIER: i => `[ACRA] Raccomandazione da verificare: ${i}` },
+    heading: { ECHEANCE_PROCHE: 'Scadenza vicina', EN_RETARD: 'Raccomandazione in ritardo', A_VERIFIER: 'Verifica attesa' },
+    body: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo dal ${d}`, A_VERIFIER: () => 'dichiarata realizzata, in attesa di verifica da parte dell’audit' },
+    mission: 'Incarico', cta: 'Consulta il monitoraggio in ACRA.' },
+}
+
+/** E-mail de rappel d'une recommandation d'audit (texte + HTML). */
+export function auditRappelEmail(locale: string | null | undefined, p: AuditRappelParams): BuiltEmail {
+  const L = auditLabels[emailLocale(locale)]
+  const quand = L.body[p.type](p.echeance)
+  const tone = p.type === 'EN_RETARD' ? 'danger' : 'warning'
+  const text = `${p.intitule} — ${quand}.\n${L.mission} : ${p.mission}\n${L.cta}`
+  const html = emailLayout({ heading: L.heading[p.type], tone, items: [{ label: p.intitule, detail: quand, tone }], paragraphs: [`${L.mission} : ${p.mission}`, L.cta], footer: 'ACRA' })
+  return { subject: L.subject[p.type](p.intitule), text, html }
+}
+
+// ─── Diffusion d'un rapport validé (lot L2, suite) ──────────────────────────
+
+export interface RapportDiffusionParams { titre: string; periode: string; lien: string }
+
+const rapportLabels: Record<EmailLocale, { subject: (t: string) => string; heading: string; body: (t: string, p: string) => string; cta: string }> = {
+  fr: { subject: t => `[ACRA] Rapport diffusé : ${t}`, heading: 'Rapport diffusé', body: (t, p) => `${t} — période ${p}`, cta: 'Consultez le rapport dans ACRA :' },
+  en: { subject: t => `[ACRA] Report distributed: ${t}`, heading: 'Report distributed', body: (t, p) => `${t} — period ${p}`, cta: 'Open the report in ACRA:' },
+  de: { subject: t => `[ACRA] Bericht verteilt: ${t}`, heading: 'Bericht verteilt', body: (t, p) => `${t} — Zeitraum ${p}`, cta: 'Öffnen Sie den Bericht in ACRA:' },
+  es: { subject: t => `[ACRA] Informe difundido: ${t}`, heading: 'Informe difundido', body: (t, p) => `${t} — periodo ${p}`, cta: 'Abra el informe en ACRA:' },
+  it: { subject: t => `[ACRA] Rapporto diffuso: ${t}`, heading: 'Rapporto diffuso', body: (t, p) => `${t} — periodo ${p}`, cta: 'Apri il rapporto in ACRA:' },
+}
+
+/** E-mail de diffusion d'un rapport : titre, période et lien (le contenu ne circule pas par e-mail). */
+export function rapportDiffusionEmail(locale: string | null | undefined, p: RapportDiffusionParams): BuiltEmail {
+  const L = rapportLabels[emailLocale(locale)]
+  const quoi = L.body(p.titre, p.periode)
+  return {
+    subject: L.subject(p.titre),
+    text: `${quoi}\n${L.cta} ${p.lien}\n`,
+    html: emailLayout({ heading: L.heading, tone: 'warning', items: [{ label: p.titre, detail: quoi, tone: 'warning' }], paragraphs: [`${L.cta} ${p.lien}`], footer: 'ACRA' }),
+  }
+}

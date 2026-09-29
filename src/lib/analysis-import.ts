@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { clampInt, IMPORT_MAX_ITEMS } from '@/lib/import-sanitize'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { resolveMethodes } from '@/lib/methodes'
+import { canonicalRef } from '@/lib/import-transforms'
+import { truncateStringsBySchema } from '@/lib/import-truncate'
+import { atelierContentSchema, hasAtelierContent, summarizeAtelierContent, writeAtelierContent } from '@/lib/analysis-import-ateliers'
 
 const string = z.string().trim().min(1).max(255)
 const externalId = z.string().trim().min(1).max(255)
@@ -17,7 +20,7 @@ const schema = z.object({
   measures: z.array(item).max(IMPORT_MAX_ITEMS).default([]),
   actions: z.array(item).max(IMPORT_MAX_ITEMS).default([]),
   links: z.array(z.object({ riskExternalId: z.string().trim().min(1).max(255), actionExternalId: z.string().trim().min(1).max(255) })).max(IMPORT_MAX_ITEMS).default([]),
-})
+}).extend(atelierContentSchema.shape)
 
 export type AnalysisImportRequest = z.infer<typeof schema>
 
@@ -31,12 +34,19 @@ function assertUniqueExternalIds(items: Array<{ externalId?: string }>, collecti
   }
 }
 
+/** Raccourcit les textes dépassant les plafonds du schéma (avant validation) ; renvoie aussi la liste des troncatures. */
+export function truncateImportRequest(input: unknown) { return truncateStringsBySchema(schema, input) }
+
 export function parseAnalysisImportRequest(input: unknown): AnalysisImportRequest {
   const parsed = schema.parse(input)
   assertUniqueExternalIds(parsed.risks, 'risks')
   assertUniqueExternalIds(parsed.vulnerabilities, 'vulnerabilities')
   assertUniqueExternalIds(parsed.measures, 'measures')
   assertUniqueExternalIds(parsed.actions, 'actions')
+  for (const key of ['businessValues', 'supportAssets', 'fearedEvents', 'riskSources', 'stakeholders', 'strategicScenarios', 'operationalScenarios'] as const) {
+    // Deux références qui ne diffèrent que par l'écriture (VM02 / VM_02) désignent le même objet : doublon.
+    assertUniqueExternalIds(parsed[key].map(i => ({ externalId: i.externalId ? canonicalRef(i.externalId) : undefined })), key)
+  }
   return parsed
 }
 
@@ -69,10 +79,19 @@ export function summarizeAnalysisImport(input: AnalysisImportRequest) {
 }
 
 /** Empreinte canonique utilisée pour comparer deux demandes sous la même clé d'idempotence. */
-export function analysisImportPayloadHash(input: AnalysisImportRequest) { return createHash('sha256').update(JSON.stringify(input)).digest('hex') }
+const ATELIER_KEYS = ['context', 'businessValues', 'supportAssets', 'fearedEvents', 'riskSources', 'stakeholders', 'strategicScenarios', 'operationalScenarios', 'securityBaseline', 'residualRisks'] as const
+/**
+ * Un paquet SANS contenu d'atelier garde l'empreinte d'avant le format v3 : les reçus d'idempotence déjà enregistrés
+ * restent rejouables (même clé + même contenu = rejeu, jamais un faux 409).
+ */
+export function analysisImportPayloadHash(input: AnalysisImportRequest) {
+  const canonical: Record<string, unknown> = { ...input }
+  if (!hasAtelierContent(input)) for (const key of ATELIER_KEYS) delete canonical[key]
+  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex')
+}
 function enumValue(value: string | undefined, allowed: readonly string[], fallback: string) { return value && allowed.includes(value) ? value : fallback }
 function optionalDate(value: string | undefined) { const date = value ? new Date(value) : null; return date && !Number.isNaN(date.valueOf()) ? date : null }
-type StoredImportResponse = { analyseId: string; nom: string; created: { risks: number; vulnerabilities: number; measures: number; actions: number; links?: number }; warnings?: string[] }
+type StoredImportResponse = { analyseId: string; nom: string; created: { risks: number; vulnerabilities: number; measures: number; actions: number; links?: number }; warnings?: string[]; ateliers?: Record<string, number> }
 function replayResult(receipt: { id: string; response: unknown }) { return { replayed: true, importId: receipt.id, ...(receipt.response as StoredImportResponse) } }
 function isIdempotencyConflict(error: unknown) { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' }
 
@@ -98,6 +117,16 @@ async function writeImportContent(tx: Prisma.TransactionClient, input: AnalysisI
     const vulnerabilities = input.vulnerabilities.filter(vulnerability => vulnerability.riskExternalId === row.externalId).map(vulnerability => ({ description: vulnerability.title, detail: vulnerability.description }))
     const risk = await tx.risque.create({ data: { analyseId: ctx.analyseId, nom: row.title, description: row.description, gravite: gravity, vraisemblance: likelihood, niveauRisque: gravity * likelihood, strategie: enumValue(row.strategy, ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'], 'REDUIRE') as 'REDUIRE', vulnerabilites: vulnerabilities }, select: { id: true } })
     if (row.externalId) risks.set(row.externalId, risk.id)
+  }
+  // Cotations « actuelle » et « résiduelle » (feuille de risques résiduels), rattachées aux risques par référence canonique.
+  const canonicalRisks = new Map([...risks].map(([ref, id]) => [canonicalRef(ref), id]))
+  for (const r of input.residualRisks) {
+    const id = canonicalRisks.get(canonicalRef(r.riskExternalId)); if (!id) continue
+    await tx.risque.update({ where: { id }, data: {
+      ...(r.currentGravity && r.currentLikelihood ? { graviteActuelle: r.currentGravity, vraisemblanceActuelle: r.currentLikelihood, niveauActuel: r.currentGravity * r.currentLikelihood } : {}),
+      ...(r.residualGravity && r.residualLikelihood ? { graviteResiduelle: r.residualGravity, vraisemblanceResiduelle: r.residualLikelihood, niveauResiduel: r.residualGravity * r.residualLikelihood } : {}),
+      ...(r.justification ? { justificationResiduelle: r.justification } : {}),
+    } })
   }
   for (const row of input.measures) await tx.mesure.create({ data: { analyseId: ctx.analyseId, risqueId: row.riskExternalId ? risks.get(row.riskExternalId) : null, nom: row.title, description: row.description, statut: enumValue(row.status, ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE'], 'REALISE') as 'REALISE', responsable: row.responsible, echeance: optionalDate(row.dueDate) } })
   const actions = new Map<string, string>()
@@ -133,8 +162,10 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
   try {
     const response = await prisma.$transaction(async tx => {
     const analyse = await tx.analyse.create({ data: { userId: ctx.userId, organizationId: ctx.organizationId, nom: input.analysis.title, description: input.analysis.description, methode, statut: 'EN_COURS', atelierCourant: 5, cadrage: { create: {} } }, select: { id: true, nom: true } })
+    // Les ateliers 1 à 4 ne concernent que la méthode EBIOS RM : une autre méthode ne reçoit pas ces objets (signalé).
+    const ateliers = methode === 'EBIOS_RM' ? await writeAtelierContent(tx, input, { analyseId: analyse.id, riskRefs: input.risks.flatMap(risk => (risk.externalId ? [risk.externalId] : [])) }) : { counts: {}, warnings: hasAtelierContent(input) ? ['atelier_content_ignored_method'] : [] }
     await writeImportContent(tx, input, { analyseId: analyse.id, organizationId: ctx.organizationId, userId: ctx.userId })
-    const data = { analyseId: analyse.id, nom: analyse.nom, created: summary.created, warnings: summary.warnings }
+    const data = { analyseId: analyse.id, nom: analyse.nom, created: summary.created, warnings: [...summary.warnings, ...ateliers.warnings], ...(Object.keys(ateliers.counts).length ? { ateliers: ateliers.counts } : {}) }
     const receipt = await tx.analysisImport.create({ data: { organizationId: ctx.organizationId, idempotencyKey: input.idempotencyKey, source: ctx.source, payloadHash, analyseId: analyse.id, response: data }, select: { id: true } })
     return { ...data, importId: receipt.id }
     }, IMPORT_TX_OPTIONS)

@@ -11,6 +11,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import ExampleChips from '@/components/ExampleChips'
+import ModuleGuide from '@/components/ModuleGuide'
 
 export interface ProjetRow { id: string; nom: string; statut: string; risques: number; updatedAt: string; analyses?: { id: string; nom: string }[] }
 
@@ -41,11 +43,14 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
 
   return (
     <div className="space-y-5">
+      <ModuleGuide guide={p.guide} />
       {canCreate && !open && (
         <button type="button" onClick={() => setOpen(true)} className="btn-primary text-sm inline-flex items-center gap-1.5"><Plus size={15} aria-hidden="true" />{p.launch}</button>
       )}
       {open && (
         <section className="card p-5 space-y-3" aria-label={p.launch}>
+          <ExampleChips items={p.examples.map((e, i) => ({ id: String(i), label: e.nom }))}
+            onPick={id => { const e = p.examples[Number(id)]; if (e) { setNom(e.nom); setDescription(e.description) } }} />
           <label className="block text-xs text-gray-600 dark:text-gray-300">{p.nom}
             <input aria-label={p.nom} value={nom} maxLength={200} placeholder={p.nomPlaceholder} onChange={e => setNom(e.target.value)} className={field} />
           </label>

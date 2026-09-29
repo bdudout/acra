@@ -11,6 +11,10 @@ export type HistoricExcelImportIdempotencyInput = {
   scoreMappings: Record<string, Record<string, Record<string, string>>>
   partialImport: boolean
   rowOverrides?: HistoricRowOverrides
+  /** Alias de préfixe validés (R_ ⇒ RI_) : présents dans la clé seulement s'ils existent (clés d'avant conservées). */
+  refAliases?: Record<string, Record<string, string>>
+  /** Correspondances de valeurs validées (catégories de sources, types de parties prenantes) : présentes seulement si utilisées. */
+  valueMaps?: Record<string, unknown>
 }
 
 const stableJson = (value: unknown): string => {

@@ -168,4 +168,14 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     const g = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
     expect(g && g.kind === 'group' && g.items.slice(0, 2)).toEqual(['analyses', 'projets'])
   })
+
+  it('reporting réglementaire : rattaché au groupe Conformité & réglementaire, pas au Pilotage', () => {
+    const groupe = (role: Parameters<typeof buildNav>[0], id: string) => {
+      const g = buildNav(role, { ...none, registre: true }).entries.find(e => e.kind === 'group' && e.id === id)
+      return g && g.kind === 'group' ? g.items : []
+    }
+    expect(groupe('RSSI', 'conformiteReglementaire')).toContain('rapports')
+    expect(groupe('RSSI', 'pilotage')).not.toContain('rapports')
+    expect(groupe('LECTEUR', 'conformiteReglementaire')).not.toContain('rapports')
+  })
 })

@@ -5,6 +5,7 @@
 // seul l'auditeur écrit ; les autres consultent. Logique PURE et testée.
 
 import { cleanChecklist, cleanChecklistResultats, cleanExigenceRefs, type ChecklistResultat } from './controle'
+import { cleanNotation, cleanJalons, type Jalons } from './audit-l4'
 
 export const MISSION_STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
 /** Statut d'une mission d'audit : planifiée → en cours → clôturée. */
@@ -33,7 +34,7 @@ export const SOURCES_EXTERNES: ConstatSource[] = ['REGULATEUR', 'AUDITEUR_EXTERN
 
 // Suivi d'un constat/recommandation : ouvert → en cours → résolu (ou accepté
 // par la direction si le risque est assumé sans remédiation).
-export const CONSTAT_STATUTS = ['OUVERT', 'EN_COURS', 'RESOLU', 'ACCEPTE'] as const
+export const CONSTAT_STATUTS = ['OUVERT', 'EN_COURS', 'RESOLU', 'VERIFIE', 'ACCEPTE'] as const
 /** Statut d'un constat : ouvert → en cours → résolu (ou accepté par la direction). */
 export type ConstatStatut = (typeof CONSTAT_STATUTS)[number]
 
@@ -52,6 +53,10 @@ const ANNEES_PAR_RECURRENCE: Record<Exclude<MissionRecurrence, 'NONE'>, number> 
 // ─── Mission ─────────────────────────────────────────────────────────────────
 
 export interface MissionInput {
+  // Lot L4
+  notation?: unknown
+  jalons?: unknown
+  universIds?: unknown
   intitule?: unknown
   objectif?: unknown
   perimetre?: unknown
@@ -84,6 +89,10 @@ export interface CleanMission {
   /** Plan pluriannuel : nature et récurrence de la mission. */
   type: MissionType
   recurrence: MissionRecurrence
+  /** Lot L4 : note de mission (1-4), jalons du cycle, entrées d'univers couvertes. */
+  notation: number | null
+  jalons: Jalons
+  universIds: string[]
 }
 
 function parseDate(v: unknown): Date | null {
@@ -126,6 +135,9 @@ export function cleanMissionInput(body: MissionInput): CleanMission {
     controleIds: cleanExigenceRefs(body.controleIds),
     type: MISSION_TYPES.includes(body.type as MissionType) ? (body.type as MissionType) : 'THEMATIQUE',
     recurrence: MISSION_RECURRENCES.includes(body.recurrence as MissionRecurrence) ? (body.recurrence as MissionRecurrence) : 'NONE',
+    notation: cleanNotation(body.notation),
+    jalons: cleanJalons(body.jalons),
+    universIds: cleanExigenceRefs(body.universIds),
   }
 }
 
@@ -167,6 +179,10 @@ export function transitionMissionAutorisee(depuis: MissionStatut, vers: MissionS
 // ─── Constat / recommandation ────────────────────────────────────────────────
 
 export interface ConstatInput {
+  // Lot L4 : constat structuré
+  critere?: unknown
+  cause?: unknown
+  consequence?: unknown
   intitule?: unknown
   description?: unknown
   recommandation?: unknown
@@ -193,6 +209,10 @@ export interface CleanConstat {
   statut: ConstatStatut
   referentielCode: string | null
   exigenceRef: string | null
+  /** Lot L4 : critère (référentiel attendu), cause et conséquence du constat. */
+  critere: string | null
+  cause: string | null
+  consequence: string | null
 }
 
 /** Valide l'entrée d'un constat (intitulé, criticité 1-4, source/statut/échéance) → code d'erreur ou null. */
@@ -228,6 +248,9 @@ export function cleanConstatInput(body: ConstatInput): CleanConstat {
     statut: CONSTAT_STATUTS.includes(st) ? st : 'OUVERT',
     referentielCode: txt(body.referentielCode),
     exigenceRef: txt(body.exigenceRef),
+    critere: txt(body.critere),
+    cause: txt(body.cause),
+    consequence: txt(body.consequence),
   }
 }
 
@@ -261,9 +284,9 @@ export function filtrerConstats<T extends { intitule: string; description: strin
   })
 }
 
-/** Un constat est terminal quand il est RÉSOLU ou ACCEPTÉ (plus de suivi actif). */
+/** Un constat est terminal quand il est RÉSOLU (réalisé), VÉRIFIÉ par l'audit ou ACCEPTÉ (plus de suivi actif). */
 export function constatTermine(statut: ConstatStatut): boolean {
-  return statut === 'RESOLU' || statut === 'ACCEPTE'
+  return statut === 'RESOLU' || statut === 'VERIFIE' || statut === 'ACCEPTE'
 }
 
 /** Recommandation en retard : échéance dépassée et constat non terminé. */

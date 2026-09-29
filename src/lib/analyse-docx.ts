@@ -6,8 +6,10 @@
 
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell,
-  WidthType, AlignmentType, type ISectionOptions,
+  WidthType, AlignmentType, ShadingType, VerticalAlign, HeightRule, type ISectionOptions,
 } from 'docx'
+
+import { buildMatrixGrid, matrixModelFromConfig, type MatrixGrid } from './risk-matrix-grid'
 
 type Any = Record<string, unknown> // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -32,9 +34,11 @@ interface L {
   conf: string; thRef: string; confStatut: Record<string, string>
   revisions: string; thRevVersion: string; thRevDate: string; thRevNote: string
   strategies: Record<string, string>; statuses: Record<string, string>; empty: string; none: string
+  matrixTitle: string; matrixInitial: string; matrixResidual: string; axisG: string; axisV: string; matrixLegend: string
 }
 
 const FR: L = {
+  matrixTitle: 'Matrice des risques', matrixInitial: 'Risque brut', matrixResidual: 'Après traitement', axisG: 'Gravité →', axisV: 'Vraisemblance ↑', matrixLegend: 'Niveaux',
   coverKicker: 'Analyse de risques cyber — EBIOS Risk Manager', org: 'Organisation', secteur: 'Secteur', version: 'Version', statut: 'Statut', generatedOn: 'Généré le',
   statutAnalyse: { EN_COURS: 'En cours', SOUMIS: 'Soumis', APPROUVE: 'Approuvé', REJETE: 'Rejeté', TERMINE: 'Terminé', ARCHIVE: 'Archivé' },
   mentionLabels: { NON_PROTEGEE: 'Non protégée', SENSIBLE: 'Sensible', RESTREINTE: 'Diffusion restreinte', CONFIDENTIELLE: 'Confidentielle' },
@@ -51,6 +55,7 @@ const FR: L = {
 }
 
 const EN: L = {
+  matrixTitle: 'Risk matrix', matrixInitial: 'Initial risk', matrixResidual: 'After treatment', axisG: 'Severity →', axisV: 'Likelihood ↑', matrixLegend: 'Levels',
   coverKicker: 'Cyber risk analysis — EBIOS Risk Manager', org: 'Organisation', secteur: 'Sector', version: 'Version', statut: 'Status', generatedOn: 'Generated on',
   statutAnalyse: { EN_COURS: 'In progress', SOUMIS: 'Submitted', APPROUVE: 'Approved', REJETE: 'Rejected', TERMINE: 'Completed', ARCHIVE: 'Archived' },
   mentionLabels: { NON_PROTEGEE: 'Unrestricted', SENSIBLE: 'Sensitive', RESTREINTE: 'Restricted', CONFIDENTIELLE: 'Confidential' },
@@ -67,6 +72,7 @@ const EN: L = {
 }
 
 const DE: L = {
+  matrixTitle: 'Risikomatrix', matrixInitial: 'Bruttorisiko', matrixResidual: 'Nach Behandlung', axisG: 'Schwere →', axisV: 'Wahrscheinlichkeit ↑', matrixLegend: 'Stufen',
   coverKicker: 'Cyber-Risikoanalyse — EBIOS Risk Manager', org: 'Organisation', secteur: 'Branche', version: 'Version', statut: 'Status', generatedOn: 'Erstellt am',
   statutAnalyse: { EN_COURS: 'In Bearbeitung', SOUMIS: 'Eingereicht', APPROUVE: 'Genehmigt', REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert' },
   mentionLabels: { NON_PROTEGEE: 'Nicht eingestuft', SENSIBLE: 'Sensibel', RESTREINTE: 'Eingeschränkt', CONFIDENTIELLE: 'Vertraulich' },
@@ -83,6 +89,7 @@ const DE: L = {
 }
 
 const ES: L = {
+  matrixTitle: 'Matriz de riesgos', matrixInitial: 'Riesgo bruto', matrixResidual: 'Tras el tratamiento', axisG: 'Gravedad →', axisV: 'Probabilidad ↑', matrixLegend: 'Niveles',
   coverKicker: 'Análisis de riesgos cibernéticos — EBIOS Risk Manager', org: 'Organización', secteur: 'Sector', version: 'Versión', statut: 'Estado', generatedOn: 'Generado el',
   statutAnalyse: { EN_COURS: 'En curso', SOUMIS: 'Enviado', APPROUVE: 'Aprobado', REJETE: 'Rechazado', TERMINE: 'Finalizado', ARCHIVE: 'Archivado' },
   mentionLabels: { NON_PROTEGEE: 'Sin clasificar', SENSIBLE: 'Sensible', RESTREINTE: 'Restringido', CONFIDENTIELLE: 'Confidencial' },
@@ -99,6 +106,7 @@ const ES: L = {
 }
 
 const IT: L = {
+  matrixTitle: 'Matrice dei rischi', matrixInitial: 'Rischio lordo', matrixResidual: 'Dopo il trattamento', axisG: 'Gravità →', axisV: 'Probabilità ↑', matrixLegend: 'Livelli',
   coverKicker: 'Analisi dei rischi cyber — EBIOS Risk Manager', org: 'Organizzazione', secteur: 'Settore', version: 'Versione', statut: 'Stato', generatedOn: 'Generato il',
   statutAnalyse: { EN_COURS: 'In corso', SOUMIS: 'Inviato', APPROUVE: 'Approvato', REJETE: 'Respinto', TERMINE: 'Completato', ARCHIVE: 'Archiviato' },
   mentionLabels: { NON_PROTEGEE: 'Non classificato', SENSIBLE: 'Sensibile', RESTREINTE: 'Riservato', CONFIDENTIELLE: 'Confidenziale' },
@@ -150,13 +158,28 @@ function dataTable(cols: Col[], rows: { text: string; color?: string }[][]): Tab
   })
 }
 
+/** Tableau de la matrice des risques (couleurs et paliers de la configuration) : cases colorées, risques `Rn` placés par G × V. */
+function matrixTable(grid: MatrixGrid): Table {
+  const cell = (text: string, opts: { fill?: string; bold?: boolean; color?: string; align?: (typeof AlignmentType)[keyof typeof AlignmentType] } = {}) => new TableCell({
+    margins: CELL_MARGINS, verticalAlign: VerticalAlign.CENTER,
+    ...(opts.fill ? { shading: { fill: opts.fill } } : {}),
+    children: [new Paragraph({ alignment: opts.align ?? AlignmentType.CENTER, children: [new TextRun({ text, bold: opts.bold, size: 17, color: opts.color ?? INK })] })],
+  })
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({ tableHeader: true, children: [cell('', { fill: PRIMARY }), ...grid.header.map(h => cell(h.text, { fill: PRIMARY, bold: true, color: WHITE }))] }),
+      ...grid.rows.map(row => new TableRow({ height: { value: 620, rule: HeightRule.ATLEAST }, children: [cell(row.label, { bold: true, fill: 'F3F4F6', align: AlignmentType.LEFT }), ...row.cells.map(c => cell(c.text, { fill: c.fill, bold: true }))] })),
+    ],
+  })
+}
+
 function heading(text: string): Paragraph {
   return new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 260, after: 120 }, children: [new TextRun({ text, color: PRIMARY, bold: true })] })
 }
 
 /** Génère le document Word (.docx) complet d'une analyse de risques, localisé, et le renvoie en Buffer. */
 export async function renderAnalyseDocx(analyse: Any, config: Any | null, locale: string): Promise<Buffer> {
-  void config
   const L = strings(locale)
   const dateLocale = locale === 'en' ? 'en-GB' : locale === 'de' ? 'de-DE' : locale === 'es' ? 'es-ES' : locale === 'it' ? 'it-IT' : 'fr-FR'
   const fmtDate = (d: unknown): string => { const t = new Date(d as string); return isNaN(t.getTime()) ? '' : t.toLocaleDateString(dateLocale) }
@@ -259,6 +282,23 @@ export async function renderAnalyseDocx(analyse: Any, config: Any | null, locale
     ))
   }
 
+  // ── Matrice des risques (brute, puis après traitement si des cotations résiduelles existent) ──
+  if (risques.length) {
+    const model = matrixModelFromConfig(config)
+    const section = (title: string, place: (r: Any) => { g: number; v: number }) => {
+      const grid = buildMatrixGrid(model, risques, place)
+      children.push(new Paragraph({ spacing: { before: 200, after: 80 }, keepNext: true, children: [new TextRun({ text: title, bold: true, size: 20, color: INK })] }))
+      children.push(matrixTable(grid))
+      children.push(new Paragraph({ spacing: { before: 60, after: 60 }, children: [
+        new TextRun({ text: `${L.axisV}  ·  ${L.axisG}      ${L.matrixLegend} : `, size: 16, color: MUTED }),
+        ...grid.legend.flatMap(l => [new TextRun({ text: ` ${l.label} `, size: 16, color: INK, shading: { type: ShadingType.CLEAR, fill: l.fill, color: 'auto' } }), new TextRun({ text: '  ', size: 16 })]),
+      ] }))
+    }
+    children.push(heading(L.matrixTitle))
+    section(L.matrixInitial, r => ({ g: num(r.gravite), v: num(r.vraisemblance) }))
+    if (risques.some(r => r.niveauResiduel != null)) section(L.matrixResidual, r => ({ g: num(r.graviteResiduelle ?? r.gravite), v: num(r.vraisemblanceResiduelle ?? r.vraisemblance) }))
+  }
+
   // ── Plan de traitement ──
   const mesures = asArr(analyse.mesures)
   if (mesures.length) {
@@ -305,7 +345,7 @@ export async function renderAnalyseDocx(analyse: Any, config: Any | null, locale
 
   const section: ISectionOptions = { properties: {}, children }
   const doc = new Document({
-    creator: 'ACRA — Augmented Cyber Risk Analysis',
+    creator: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
     title: s(analyse.nom) || 'Analyse',
     sections: [section],
   })

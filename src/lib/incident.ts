@@ -4,6 +4,15 @@
 // Les pertes suivent la logique de la LDC bancaire (Bâle) : brut, récupérations,
 // net = brut − récupérations. Logique PURE et testée.
 
+import { sanitizeAttributs, type IncidentAttributs } from './notification-regimes'
+import { sanitizePertes, sanitizeRecuperations, totauxPertes, type LignePerte, type LigneRecuperation, type DevisesConfig } from './pertes'
+import { resolveIncidentsConfig, type CatalogueItem } from './incidents-config'
+import { sanitizeChronologie, cleanCauseRacine, sanitizeImpacts, sanitizeAllocations, type EvenementChronologie, type CauseRacine, type ImpactNonFinancier, type Allocation } from './incident-l1b'
+
+/** Configuration nécessaire à la validation/normalisation (devises, catalogue de types d'événement). */
+export type IncidentCleanConfig = DevisesConfig & { typesEvenement: CatalogueItem[] }
+const DEFAULT_CLEAN_CONFIG: IncidentCleanConfig = resolveIncidentsConfig(undefined)
+
 export const INCIDENT_STATUTS = ['DECLARE', 'QUALIFIE', 'CLOTURE', 'REJETE'] as const
 /** Statut d'un incident : déclaré → qualifié → clôturé (ou rejeté = faux positif). */
 export type IncidentStatut = (typeof INCIDENT_STATUTS)[number]
@@ -27,6 +36,19 @@ export interface IncidentInput {
   recuperations?: unknown
   riskItemId?: unknown
   statut?: unknown
+  // Lot L1 : type d'événement, quasi-incident, régimes, pertes multi-composantes.
+  typeEvenement?: unknown
+  quasiIncident?: unknown
+  attributs?: unknown
+  pertes?: unknown
+  recuperationsLignes?: unknown
+  dateReglement?: unknown
+  chronologie?: unknown
+  causeRacine?: unknown
+  causeDetail?: unknown
+  leconsApprises?: unknown
+  impactsNonFinanciers?: unknown
+  allocations?: unknown
   // Workflow de déclaration DORA (art. 19) — horodatages de phase.
   doraClasseMajeurLe?: unknown
   doraInitialeSoumiseLe?: unknown
@@ -48,6 +70,18 @@ export interface CleanIncident {
   recuperations: number | null
   riskItemId: string | null
   statut: IncidentStatut
+  typeEvenement: string | null
+  quasiIncident: boolean
+  attributs: IncidentAttributs
+  pertes: LignePerte[]
+  recuperationsLignes: LigneRecuperation[]
+  dateReglement: Date | null
+  chronologie: EvenementChronologie[]
+  causeRacine: CauseRacine | null
+  causeDetail: string | null
+  leconsApprises: string | null
+  impactsNonFinanciers: ImpactNonFinancier[]
+  allocations: Allocation[]
   doraClasseMajeurLe: Date | null
   doraInitialeSoumiseLe: Date | null
   doraIntermediaireSoumiseLe: Date | null
@@ -77,7 +111,7 @@ const txt = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() ? v.trim() : null
 
 /** Renvoie un code d'erreur i18n, ou null si l'entrée est valide. */
-export function validateIncidentInput(body: IncidentInput): string | null {
+export function validateIncidentInput(body: IncidentInput, cfg: IncidentCleanConfig = DEFAULT_CLEAN_CONFIG): string | null {
   if (typeof body.intitule !== 'string' || body.intitule.trim() === '') return 'intitule_requis'
   if (body.dateSurvenance != null && body.dateSurvenance !== '' && parseDate(body.dateSurvenance) == null) return 'date_invalide'
   if (body.dateDetection != null && body.dateDetection !== '' && parseDate(body.dateDetection) == null) return 'date_invalide'
@@ -109,13 +143,41 @@ export function validateIncidentInput(body: IncidentInput): string | null {
   const recup = parseMontant(body.recuperations)
   if (brut != null && recup != null && recup > brut) return 'recuperations_superieures'
 
+  if (body.dateReglement != null && body.dateReglement !== '') {
+    const reg = parseDate(body.dateReglement)
+    if (reg == null) return 'date_invalide'
+    if (surv && reg.getTime() < surv.getTime()) return 'reglement_avant_survenance'
+  }
+
+  if ('allocations' in body) { const a = sanitizeAllocations(body.allocations); if (!a.ok) return a.error }
+
+  // Type d'événement : doit figurer, actif, au catalogue de l'organisation.
+  if (typeof body.typeEvenement === 'string' && body.typeEvenement.trim() !== '') {
+    const t = body.typeEvenement.trim()
+    if (!cfg.typesEvenement.some(x => x.code === t && x.actif)) return 'type_evenement_invalide'
+  }
+
+  // Lignes de perte : les récupérations ne peuvent dépasser le brut (même règle que les agrégats).
+  if (Array.isArray(body.pertes) || Array.isArray(body.recuperationsLignes)) {
+    const t = totauxPertes(sanitizePertes(body.pertes, cfg.deviseReference), sanitizeRecuperations(body.recuperationsLignes, cfg.deviseReference), cfg)
+    if (t.brut != null && t.recuperations != null && t.recuperations > t.brut) return 'recuperations_superieures'
+  }
+
   if (body.statut != null && !INCIDENT_STATUTS.includes(body.statut as IncidentStatut)) return 'statut_invalide'
   return null
 }
 
 /** Normalise l'entrée d'un incident (intitulé/description trim, statut typé, montants et dates). */
-export function cleanIncidentInput(body: IncidentInput): CleanIncident {
+export function cleanIncidentInput(body: IncidentInput, cfg: IncidentCleanConfig = DEFAULT_CLEAN_CONFIG): CleanIncident {
   const s = body.statut as IncidentStatut
+  // Quasi-incident : aucune perte réalisée. Lignes de perte : elles font foi, les
+  // agrégats (montantBrut / recuperations) en sont la somme convertie.
+  const quasi = body.quasiIncident === true
+  const avecLignes = Array.isArray(body.pertes) || Array.isArray(body.recuperationsLignes)
+  const pertes = quasi ? [] : sanitizePertes(body.pertes, cfg.deviseReference)
+  const recuperationsLignes = quasi ? [] : sanitizeRecuperations(body.recuperationsLignes, cfg.deviseReference)
+  const tot = totauxPertes(pertes, recuperationsLignes, cfg)
+  const type = typeof body.typeEvenement === 'string' ? body.typeEvenement.trim() : ''
   return {
     intitule: String(body.intitule).trim(),
     description: txt(body.description),
@@ -126,10 +188,22 @@ export function cleanIncidentInput(body: IncidentInput): CleanIncident {
     entite: txt(body.entite),
     impactEstime: body.impactEstime == null || body.impactEstime === '' ? null
       : Math.min(IMPACT_MAX, Math.max(IMPACT_MIN, Math.round(Number(body.impactEstime)))),
-    montantBrut: parseMontant(body.montantBrut),
-    recuperations: parseMontant(body.recuperations),
+    montantBrut: quasi ? null : avecLignes ? tot.brut : parseMontant(body.montantBrut),
+    recuperations: quasi ? null : avecLignes ? tot.recuperations : parseMontant(body.recuperations),
     riskItemId: txt(body.riskItemId),
     statut: INCIDENT_STATUTS.includes(s) ? s : 'DECLARE',
+    typeEvenement: type || null,
+    quasiIncident: quasi,
+    attributs: sanitizeAttributs(body.attributs),
+    pertes,
+    recuperationsLignes,
+    dateReglement: parseDate(body.dateReglement),
+    chronologie: sanitizeChronologie(body.chronologie),
+    causeRacine: cleanCauseRacine(body.causeRacine),
+    causeDetail: txt(body.causeDetail),
+    leconsApprises: txt(body.leconsApprises),
+    impactsNonFinanciers: sanitizeImpacts(body.impactsNonFinanciers),
+    allocations: (() => { const a = sanitizeAllocations(body.allocations); return a.ok ? a.allocations : [] })(),
     doraClasseMajeurLe: parseDate(body.doraClasseMajeurLe),
     doraInitialeSoumiseLe: parseDate(body.doraInitialeSoumiseLe),
     doraIntermediaireSoumiseLe: parseDate(body.doraIntermediaireSoumiseLe),

@@ -49,4 +49,14 @@ describe('TestsResilienceManager', () => {
     const body = JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'POST')![1].body)
     expect(body).toMatchObject({ annee: 2026, intitule: 'Test PCA', type: 'SCENARIO', fonctionCritique: true, riskItemIds: ['r1'], constats: [{ description: 'Bascule trop lente', severite: 2, corrige: false }] })
   })
+
+  it('un exemple de test préremplit le formulaire (type officiel, périmètre, fonction critique)', async () => {
+    render(<TestsResilienceManager />)
+    expect(await screen.findByText('À quoi ça sert')).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajouter un test' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Analyse de vulnérabilités du SI de paiement' }))
+    expect((screen.getByLabelText('Intitulé') as HTMLInputElement).value).toBe('Analyse de vulnérabilités du SI de paiement')
+    expect((screen.getByLabelText('Type de test') as HTMLSelectElement).value).toBe('VULNERABILITY')
+    expect((screen.getByLabelText('Soutient une fonction critique ou importante') as HTMLInputElement).checked).toBe(true)
+  })
 })

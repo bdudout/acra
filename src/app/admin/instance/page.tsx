@@ -1,5 +1,6 @@
 'use client'
 
+import { moveMethode, setMethodeActive } from '@/lib/methodes'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -56,7 +57,11 @@ export default function AdminInstancePage() {
 
   // Active/désactive une méthode d'analyse au niveau instance (EBIOS RM verrouillé).
   async function toggleMethode(methode: string, on: boolean) {
-    const next = on ? [...new Set([...methodesActives, methode])] : methodesActives.filter(x => x !== methode)
+    await saveMethodes(setMethodeActive(methodesActives, methode, on))
+  }
+
+  // Classement : la 1re méthode active est la méthode par défaut (mise à jour optimiste, rollback sur échec).
+  async function saveMethodes(next: string[]) {
     const prev = methodesActives
     setMethodesActives(next)
     const res = await fetch('/api/admin/methodes-config', {
@@ -196,16 +201,26 @@ export default function AdminInstancePage() {
             <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.methodesConfig.sectionTitle}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.methodesConfig.sectionDesc}</p>
             <div className="space-y-3">
-              {methodesImplemented.map(mk => {
+              {[...methodesActives, ...methodesImplemented.filter(m => !methodesActives.includes(m))].map(mk => {
                 const locked = mk === 'EBIOS_RM'
                 const on = locked || methodesActives.includes(mk)
+                const rank = methodesActives.indexOf(mk)
                 const name = (t.methodes as Record<string, string>)[METHODE_I18N[mk] ?? ''] ?? mk
                 return (
                   <div key={mk} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{name}</div>
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">{name}
+                        {rank === 0 && <span className="rounded-full bg-ebios-100 px-2 py-0.5 text-xs font-semibold text-ebios-800 dark:bg-ebios-900/40 dark:text-ebios-200">{t.methodesConfig.defaultBadge}</span>}
+                        {rank >= 0 && <span className="text-xs font-normal text-gray-500">{t.methodesConfig.rank.replace('{n}', String(rank + 1))}</span>}
+                      </div>
                       {locked && <div className="text-xs text-gray-400 mt-0.5">{t.methodesConfig.ebiosLocked}</div>}
                     </div>
+                    {rank >= 0 && (
+                      <div className="flex shrink-0 gap-1">
+                        <button type="button" className="btn-secondary px-2 py-1 text-xs" disabled={rank === 0} aria-label={t.methodesConfig.moveUp.replace('{name}', name)} onClick={() => saveMethodes(moveMethode(methodesActives, mk, 'up'))}>↑</button>
+                        <button type="button" className="btn-secondary px-2 py-1 text-xs" disabled={rank === methodesActives.length - 1} aria-label={t.methodesConfig.moveDown.replace('{name}', name)} onClick={() => saveMethodes(moveMethode(methodesActives, mk, 'down'))}>↓</button>
+                      </div>
+                    )}
                     <label className={`inline-flex items-center gap-2 shrink-0 ${locked ? 'opacity-60' : 'cursor-pointer'}`}>
                       <input type="checkbox" checked={on} disabled={locked} onChange={e => toggleMethode(mk, e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />

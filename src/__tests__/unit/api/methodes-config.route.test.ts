@@ -36,11 +36,16 @@ describe('methodes-config', () => {
     expect(configUpdate).not.toHaveBeenCalled()
   })
 
-  it('PUT assainit : EBIOS RM imposé, valeur inconnue écartée', async () => {
+  it('PUT assainit : classement conservé, EBIOS RM disponible (en fin si absent), valeur inconnue écartée', async () => {
     // 'garbage' n'est pas une méthode connue → écartée ; EBIOS RM imposé.
     const res = await PUT(req({ methodes: ['ISO_31000', 'garbage'] }))
     expect(res.status).toBe(200)
-    expect(argOf(configUpdate).data.methodesActives).toEqual(['EBIOS_RM', 'ISO_31000'])
+    expect(argOf(configUpdate).data.methodesActives).toEqual(['ISO_31000', 'EBIOS_RM'])
+  })
+
+  it('PUT conserve un classement avec EBIOS RM non premier (la 1re méthode devient le défaut)', async () => {
+    await PUT(req({ methodes: ['ISO_27005', 'EBIOS_RM', 'ISO_31000'] }))
+    expect(argOf(configUpdate).data.methodesActives).toEqual(['ISO_27005', 'EBIOS_RM', 'ISO_31000'])
   })
 
   it('PUT sans tableau → 400', async () => {

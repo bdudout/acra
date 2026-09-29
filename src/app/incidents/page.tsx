@@ -30,7 +30,7 @@ export default async function IncidentsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <IncidentsManager canQualify={canQualify} />
+        <IncidentsManager canQualify={canQualify} canConfigure={isAdminRole(scope.role)} />
       </main>
     </div>
   )

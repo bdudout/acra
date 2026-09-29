@@ -67,6 +67,11 @@ export interface RawOrgConfig {
   projets360Active?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
+  incidentsConfig?: unknown
+  vocabulaire?: unknown
+  champsPersonnalises?: unknown
+  auditConfig?: unknown
+  rapportsConfig?: unknown
   appetitRisque?: unknown
   actionDelaisMois?: unknown
 }
@@ -118,6 +123,11 @@ export interface OrgConfigResolved {
   echelleMaturite: unknown[]
   /** Processus de cartographie personnalisé ({} ⇒ texte par défaut). Cf. lib/processus-carto. */
   processusCartographie: Record<string, unknown>
+  incidentsConfig: Record<string, unknown>
+  vocabulaire: Record<string, unknown>
+  champsPersonnalises: Record<string, unknown>
+  auditConfig: Record<string, unknown>
+  rapportsConfig: Record<string, unknown>
   appetitRisque: AppetitConfig
   /** Délais (mois) de l'échéance par défaut d'une action selon sa priorité. */
   actionDelaisMois: ActionDelaisMois
@@ -163,6 +173,11 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   projets360Active: true,
   echelleMaturite: [],
   processusCartographie: {},
+  incidentsConfig: {},
+  vocabulaire: {},
+  champsPersonnalises: {},
+  auditConfig: {},
+  rapportsConfig: {},
   appetitRisque: APPETIT_DEFAULT,
   actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
 }
@@ -175,7 +190,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig'
 type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
@@ -250,6 +265,11 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
+    incidentsConfig: pickJson('incidentsConfig', defaults.incidentsConfig),
+    vocabulaire: pickJson('vocabulaire', defaults.vocabulaire),
+    champsPersonnalises: pickJson('champsPersonnalises', defaults.champsPersonnalises),
+    auditConfig: pickJson('auditConfig', defaults.auditConfig),
+    rapportsConfig: pickJson('rapportsConfig', defaults.rapportsConfig),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }

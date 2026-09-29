@@ -12,6 +12,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Download, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import ModuleGuide from '@/components/ModuleGuide'
 import {
   MATURITY_LEVELS, effectiveTarget, isMaturityGap, maturityStats,
   type Maturites, type MaturityEntry, type MaturityScaleLevel, type MaturityStats, type RefActionSummary,
@@ -132,6 +133,7 @@ export default function MaturityDashboard({ canManage, scale, referentiels, prof
 
   return (
     <div className="space-y-6">
+      <ModuleGuide guide={m.guide} />
       {/* ── Cadre : référentiel et cible globale (le « RAS ») ── */}
       <section className="card p-5">
         <div className="flex items-end justify-between gap-4 flex-wrap">

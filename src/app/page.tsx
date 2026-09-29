@@ -28,7 +28,7 @@ const WS_TITLES: Record<string, Record<string, string>> = {
 const JSON_LD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'ACRA — Augmented Cyber Risk Analysis',
+  name: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
   applicationCategory: 'SecurityApplication',
   operatingSystem: 'Web',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
@@ -72,7 +72,7 @@ export default function HomePage() {
           <div className="min-w-0">
             <div className="font-bold text-base leading-tight text-white sm:text-lg">ACRA</div>
             <div className="hidden text-[10px] leading-tight tracking-wide text-indigo-100 sm:block">
-              Augmented Cyber Risk Analysis
+              Augmented Cyber (& Business) Risk Analysis
             </div>
           </div>
         </div>
@@ -261,7 +261,7 @@ export default function HomePage() {
 
       <footer className="text-center py-8 text-slate-500 text-sm border-t border-slate-200 mt-20">
         <p>
-          ACRA — Augmented Cyber Risk Analysis. {t.landing.footerMethod}{' '}
+          ACRA — Augmented Cyber (& Business) Risk Analysis. {t.landing.footerMethod}{' '}
           <a href="https://cyber.gouv.fr/securisation/analyse-des-risques/methode-ebios-rm/" target="_blank" rel="noopener" className="underline">{t.landing.footerGuideLink}</a>
         </p>
         <p className="mt-1">{t.landing.footerDisclaim}</p>

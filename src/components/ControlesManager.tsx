@@ -14,6 +14,13 @@ import { useSearchParams } from 'next/navigation'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
 import { CATALOGUES_CONTROLES } from '@/lib/controles-catalogue'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
+import Link from 'next/link'
+import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
+import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
+import type { ChampsValeurs } from '@/lib/champs-perso'
+import ControleL3Fields from '@/components/ControleL3Fields'
+import ControleL3Badges, { type L3Vue } from '@/components/ControleL3Badges'
+import ConceptionPanel from '@/components/ConceptionPanel'
 
 interface Efficacite {
   evaluees: number; conformes: number; anomalies: number
@@ -31,23 +38,32 @@ interface Controle {
   tailleEchantillon: number | null; actif: boolean
   riskItemId: string | null; riskItemIntitule: string | null
   processusId: string | null; processusNom: string | null
+  arrangementTicId?: string | null; projetId?: string | null; tiersNom?: string | null; projetNom?: string | null
+  n1?: { tauxCourant: number; tauxPrecedent: number; deltaPts: number; tendance: 'AMELIORATION' | 'STABLE' | 'DEGRADATION' } | null
+  rejeu?: { tailleTestee: string }
   referentielCode: string | null; exigenceRefs: string[]
   checklist: string[]; superviseIds: string[]
   derniereExecution: string | null; prochaineEcheance: string
   etatEcheance: 'A_VENIR' | 'DU' | 'EN_RETARD' | null
   efficacite: Efficacite; executions: Execution[]; nbExecutions: number
+  // Lot L3
+  typeControle?: string | null; modeControle?: string; cle?: boolean; methodeEchantillon?: string | null; champs?: ChampsValeurs
+  l3?: L3Vue & { conception: { statut: string; commentaire?: string; evalueLe?: string } | null }
 }
 type Proc = { id: string; nom: string }
+type Lien = { id: string; nom: string }
 type Risk = { id: string; intitule: string }
 type RefLite = { code: string; nom: string }
 type ExigenceLite = { ref: string; nom: string }
 
 type Form = {
   intitule: string; description: string; niveau: string; periodicite: string
-  responsable: string; riskItemId: string; processusId: string; tailleEchantillon: string
+  responsable: string; riskItemId: string; processusId: string; arrangementTicId: string; projetId: string; tailleEchantillon: string
   referentielCode: string; exigenceRefs: string[]; checklist: string[]; superviseIds: string[]
+  typeControle: string; modeControle: string; cle: boolean; methodeEchantillon: string
+  champs: ChampsValeurs
 }
-const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [], superviseIds: [] }
+const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', arrangementTicId: '', projetId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [], superviseIds: [], typeControle: '', modeControle: 'MANUEL', cle: false, methodeEchantillon: '', champs: {} }
 
 type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string; checklist: ChecklistResultat[]; independant: boolean }
 const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '', checklist: [], independant: false }
@@ -82,6 +98,8 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const emptyExec = (): ExecForm => ({ ...EMPTY_EXEC, dateRealisation: todayInputDate() })
   const [controles, setControles] = useState<Controle[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
+  const [tiersOpts, setTiersOpts] = useState<{ id: string; prestataireNom: string }[]>([])
+  const [projetsOpts, setProjetsOpts] = useState<Lien[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
   const [refs, setRefs] = useState<RefLite[]>([])
   const [exigencesRef, setExigencesRef] = useState<ExigenceLite[]>([])
@@ -93,6 +111,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const [exec, setExec] = useState<ExecForm>(emptyExec)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const defsChamps = usePersonnalisationChamps('controle')
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [preuves, setPreuves] = useState<Preuve[]>([])
@@ -120,7 +139,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
       fetch('/api/referentiels').then(x => x.ok ? x.json() : { referentiels: [] }),
     ])
-    setControles(cc.controles ?? []); setProcs(pp.processus ?? [])
+    setControles(cc.controles ?? []); setProcs(pp.processus ?? []); setTiersOpts(cc.tiers ?? []); setProjetsOpts(cc.projets ?? [])
     setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
     setRefs((ff.referentiels ?? []).map((r: RefLite) => ({ code: r.code, nom: r.nom })))
     setLoading(false)
@@ -138,7 +157,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     return () => { annule = true }
   }, [form.referentielCode])
 
-  function err(code: string) { return lbl(c.errors, code) }
+  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -147,11 +166,12 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       intitule: form.intitule, description: form.description || null,
       niveau: form.niveau, periodicite: form.periodicite,
       responsable: form.responsable || null,
-      riskItemId: form.riskItemId || null, processusId: form.processusId || null,
+      riskItemId: form.riskItemId || null, processusId: form.processusId || null, arrangementTicId: form.arrangementTicId || null, projetId: form.projetId || null,
       tailleEchantillon: form.tailleEchantillon || null,
       referentielCode: form.referentielCode || null, exigenceRefs: form.exigenceRefs,
       checklist: form.checklist,
       superviseIds: form.niveau === 'N2' ? form.superviseIds : [],
+      typeControle: form.typeControle || null, modeControle: form.modeControle, cle: form.cle, methodeEchantillon: form.methodeEchantillon || null, champs: form.champs,
     }
     const res = await fetch(editId ? `/api/controles/${editId}` : '/api/controles', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -166,10 +186,11 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     setEditId(x.id); setShowForm(true); setError(null)
     setForm({
       intitule: x.intitule, description: x.description ?? '', niveau: x.niveau, periodicite: x.periodicite,
-      responsable: x.responsable ?? '', riskItemId: x.riskItemId ?? '', processusId: x.processusId ?? '',
+      responsable: x.responsable ?? '', riskItemId: x.riskItemId ?? '', processusId: x.processusId ?? '', arrangementTicId: x.arrangementTicId ?? '', projetId: x.projetId ?? '',
       tailleEchantillon: x.tailleEchantillon?.toString() ?? '',
       referentielCode: x.referentielCode ?? '', exigenceRefs: x.exigenceRefs ?? [],
       checklist: x.checklist ?? [], superviseIds: x.superviseIds ?? [],
+      typeControle: x.typeControle ?? '', modeControle: x.modeControle ?? 'MANUEL', cle: !!x.cle, methodeEchantillon: x.methodeEchantillon ?? '', champs: x.champs ?? {},
     })
   }
 
@@ -192,6 +213,16 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     if (data.actionCreee) setFlash(c.actionGeneree)
     setExec(emptyExec()); setPreuves([]); setExecId(null); reload()
+  }
+
+  // Évaluation de la conception (2ᵉ ligne) : distincte de l'efficacité opérationnelle observée.
+  async function enregistrerConception(id: string, v: { statut: string; commentaire?: string } | null) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/controles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intitule: controles.find(x => x.id === id)?.intitule, conception: v }) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
   }
 
   async function basculerActif(x: Controle) {
@@ -238,6 +269,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><FlaskConical size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
+        {!showForm && <Link href="/controles/plan" className="btn-secondary text-sm">{c.ctl_planBtn}</Link>}
         {canDefine && !showForm && (
           <div className="flex items-center gap-1.5">
             <select value="" disabled={busy} onChange={e => { if (e.target.value) importerSocle(e.target.value); e.target.value = '' }}
@@ -287,6 +319,9 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               <input type="number" min="1" value={form.tailleEchantillon} onChange={e => setForm(f => ({ ...f, tailleEchantillon: e.target.value }))} className={`${inp} w-full mt-1`} />
             </label>
           </div>
+          <ChampsPersonnalisesFields defs={defsChamps} values={form.champs} onChange={v => setForm(f => ({ ...f, champs: v }))} />
+          <ControleL3Fields value={{ typeControle: form.typeControle, modeControle: form.modeControle, cle: form.cle, methodeEchantillon: form.methodeEchantillon }}
+            onChange={v => setForm(f => ({ ...f, ...v }))} onApplySuggestion={n => setForm(f => ({ ...f, tailleEchantillon: String(n) }))} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select value={form.riskItemId} onChange={e => setForm(f => ({ ...f, riskItemId: e.target.value }))} className={inp}>
               <option value="">{c.riskNone}</option>
@@ -296,6 +331,18 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               <option value="">{c.processNone}</option>
               {procs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
+            {tiersOpts.length > 0 && (
+              <select aria-label={c.ctl_tiers} value={form.arrangementTicId} onChange={e => setForm(f => ({ ...f, arrangementTicId: e.target.value }))} className={inp}>
+                <option value="">{c.ctl_tiers} — {c.ctl_aucun}</option>
+                {tiersOpts.map(x => <option key={x.id} value={x.id}>{x.prestataireNom}</option>)}
+              </select>
+            )}
+            {projetsOpts.length > 0 && (
+              <select aria-label={c.ctl_projet} value={form.projetId} onChange={e => setForm(f => ({ ...f, projetId: e.target.value }))} className={inp}>
+                <option value="">{c.ctl_projet} — {c.ctl_aucun}</option>
+                {projetsOpts.map(x => <option key={x.id} value={x.id}>{x.nom}</option>)}
+              </select>
+            )}
           </div>
           {/* Rattachement à un référentiel + exigences couvertes (conformité dérivée) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,15 +471,19 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                   <tr className={`border-b border-gray-100 dark:border-gray-800 align-top ${x.actif ? '' : 'opacity-50'}`}>
                     <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                       {x.intitule}
+                      {x.l3 && <ControleL3Badges cle={!!x.cle} mode={x.modeControle ?? 'MANUEL'} typeControle={x.typeControle ?? null} l3={x.l3} />}
                       <span className="block text-xs text-gray-400">
                         {lbl(c.niveaux, x.niveau)}{x.responsable && ` · ${x.responsable}`}
                         {x.tailleEchantillon != null && ` · n=${x.tailleEchantillon}`}
                         {!x.actif && ` · ${c.inactif}`}
                       </span>
+                      {x.n1 && <span className="block text-xs text-gray-500 dark:text-gray-400" data-testid="n1">{c.ctl_n1.replace('{taux}', String(x.n1.tauxCourant)).replace('{prec}', String(x.n1.tauxPrecedent))} — {lbl(c.ctl_tendances, x.n1.tendance)}</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                       {x.riskItemIntitule ?? '—'}
                       {x.processusNom && <span className="block">{x.processusNom}</span>}
+                      {x.tiersNom && <span className="block">{c.ctl_tiers} : {x.tiersNom}</span>}
+                      {x.projetNom && <span className="block">{c.ctl_projet} : {x.projetNom}</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{lbl(c.periodicites, x.periodicite)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -451,11 +502,16 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                           </span>
                           <span className="text-gray-400 text-xs">{expandedId === x.id ? '▾' : '▸'}</span>
                         </button>
-                      ) : <span className="text-xs text-gray-400">{c.jamaisExecute}</span>}
+                      ) : (
+                        // Sans exécution, le détail reste ouvrable : la conception s'évalue avant toute exécution.
+                        <button onClick={() => setExpandedId(id => id === x.id ? null : x.id)} className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          {c.jamaisExecute}<span className="text-xs">{expandedId === x.id ? '▾' : '▸'}</span>
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {canExecute && x.actif && (
-                        <button onClick={() => { setExecId(x.id); setExec({ ...emptyExec(), checklist: (x.checklist ?? []).map(label => ({ label, statut: 'OK' as ChecklistStatut, commentaire: '' })) }); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
+                        <button onClick={() => { setExecId(x.id); setExec({ ...emptyExec(), tailleTestee: x.rejeu?.tailleTestee ?? '', checklist: (x.checklist ?? []).map(label => ({ label, statut: 'OK' as ChecklistStatut, commentaire: '' })) }); setPreuves([]); setError(null) }} className="text-xs text-ebios-600 hover:underline mr-2">{c.execute}</button>
                       )}
                       {canDefine && <>
                         <button onClick={() => startEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{c.edit}</button>
@@ -480,6 +536,12 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                             </span>
                           )}
                         </p>
+                        {x.l3 && (
+                          <div className="mb-3">
+                            <ConceptionPanel key={`${x.id}-${x.l3.conception?.evalueLe ?? ''}`} conception={x.l3.conception} canEdit={canDefine} busy={busy}
+                              onSave={v => enregistrerConception(x.id, v)} />
+                          </div>
+                        )}
                         {/* Contrôle du contrôle : contrôles N1 supervisés + leur efficacité */}
                         {x.superviseIds?.length > 0 && (
                           <div className="mb-2 text-xs">

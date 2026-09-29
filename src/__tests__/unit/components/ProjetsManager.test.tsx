@@ -38,6 +38,14 @@ describe('ProjetsManager', () => {
     expect(screen.getByRole('link', { name: 'Cyber — portail' }).getAttribute('href')).toBe('/analyses/c1')
   })
 
+  it('un exemple de projet préremplit le nom et la description', () => {
+    render(<ProjetsManager projets={[]} canCreate />)
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer un projet 360' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Migration vers le cloud' }))
+    expect((screen.getByLabelText('Nom du projet') as HTMLInputElement).value).toBe('Migration vers le cloud')
+    expect((screen.getByLabelText('Description / périmètre') as HTMLTextAreaElement).value.length).toBeGreaterThan(20)
+  })
+
   it('sans droit de création : pas de bouton', () => {
     render(<ProjetsManager projets={[]} canCreate={false} />)
     expect(screen.queryByRole('button', { name: 'Lancer un projet 360' })).toBeNull()

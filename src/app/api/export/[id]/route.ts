@@ -283,7 +283,7 @@ export async function GET(
     // Alias court pour neutraliser l'injection de formules sur les champs texte libres
     const S = sanitizeForSpreadsheet
     const wb = new ExcelJS.Workbook()
-    wb.creator  = 'ACRA — Augmented Cyber Risk Analysis'
+    wb.creator  = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
     wb.created  = new Date()
     wb.modified = new Date()
 

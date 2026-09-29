@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isGrcActive } from '@/lib/projet360'
@@ -25,7 +25,7 @@ export default async function PilotagePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <PilotageGrc />
+        <PilotageGrc canCreateAnalyse={canCreateAnalyse({ id: userId, role: scope.role ?? userRole })} projets360={orgConfig.projets360Active} />
       </main>
     </div>
   )

@@ -12,23 +12,40 @@ import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, 
 import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
+import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
 import HistoricImportPreview, { type HistoricPreviewSheet, type HistoricRequiredValueGap } from '@/components/HistoricImportPreview'
 import HistoricImportSummaryDialog from '@/components/HistoricImportSummaryDialog'
+import { checkAcraUpload, checkTabularUpload, looksLikeAcraCsv, looksLikeAcraJson } from '@/lib/import-file-format'
 import type { HistoricImportDecision, HistoricSheetType } from '@/lib/historic-import'
 
 type FilterValue = 'ALL' | 'EN_COURS' | 'TERMINE' | 'SOUMIS' | 'APPROUVE'
 
 type ExcelImportErrorLabels = Record<string, { title: string; likelyCauses: string; solution: string }>
+type ImportErrorDetails = string | { line?: number; column?: number; snippet?: string; hint?: string }
 
-function ExcelImportError({ code, details, labels }: { code: string; details?: string; labels: ExcelImportErrorLabels }) {
-  const message = labels[code] ?? labels.excel_import_invalid
+/** Carte d'erreur d'import (Excel, JSON, CSV) : titre, cause probable, solution, et localisation quand elle existe. */
+function ExcelImportError({ code, details, labels, detailLabel, hints }: { code: string; details?: ImportErrorDetails; labels: ExcelImportErrorLabels; detailLabel?: string; hints?: Record<string, string> }) {
+  const message = labels[code] ?? labels.import_failed ?? labels.excel_import_invalid
+  const where = typeof details === 'object' && details?.line != null && detailLabel
+    ? detailLabel.replace('{line}', String(details.line)).replace('{column}', String(details.column ?? '?')).replace('{snippet}', details.snippet ?? '')
+    : null
+  const hint = typeof details === 'object' && details?.hint ? hints?.[details.hint] : null
   return <section role="alert" className="card mt-4 border border-red-200 bg-red-50 p-4 text-sm text-red-950 dark:border-red-500/50 dark:bg-red-950/60 dark:text-red-100">
     <h2 className="font-semibold">{message.title}</h2>
     <p className="mt-2"><span className="font-medium">{message.likelyCauses}</span></p>
+    {where && <p className="mt-2 font-mono text-xs" data-testid="import-error-where">{where}</p>}
+    {hint && <p className="mt-2">{hint}</p>}
     <p className="mt-2"><span className="font-medium">{message.solution}</span></p>
-    {details && <p className="mt-2 font-mono text-xs">{details}</p>}
+    {typeof details === 'string' && details && <p className="mt-2 font-mono text-xs">{details}</p>}
   </section>
+}
+
+/** 16 premiers octets d'un fichier : suffisent à reconnaître le format (signature ZIP / OLE2). */
+function readHead(file: File): Promise<Uint8Array> {
+  const blob = file.slice(0, 16)
+  if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer().then(b => new Uint8Array(b))
+  return new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve(new Uint8Array(r.result as ArrayBuffer)); r.onerror = () => resolve(new Uint8Array()); r.readAsArrayBuffer(blob) })
 }
 
 function urlParamToFilter(p: string | null): FilterValue {
@@ -46,12 +63,14 @@ function urlParamToFilter(p: string | null): FilterValue {
  * Les données initiales sont chargées côté SERVEUR (issue #104) : premier rendu
  * instantané, sans FOUC réseau ; on rafraîchit ensuite localement après import/suppr.
  */
-export default function AnalysesClient({ initialAnalyses, demo = false }: { initialAnalyses: any[]; demo?: boolean }) {
+export default function AnalysesClient({ initialAnalyses, demo = false, projets360 = false, canCreate = true }: { initialAnalyses: any[]; demo?: boolean; projets360?: boolean; canCreate?: boolean }) {
   const { t, locale } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [analyses, setAnalyses] = useState<any[]>(initialAnalyses)
+  // « Importer une analyse » du menu « Nouvelle analyse » rouvre le menu d'import sur place (remontage avec ouverture).
+  const [importMenuKey, setImportMenuKey] = useState(0)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterValue>(() => urlParamToFilter(searchParams.get('filter')))
   const [tagFilter, setTagFilter] = useState('')
@@ -62,9 +81,9 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
   const [importing, setImporting] = useState(false)
   const [loadingExample, setLoadingExample] = useState(false)
   const [excelPreview, setExcelPreview] = useState<{ filename: string; data: string; sheets: HistoricPreviewSheet[] } | null>(null)
-  const [excelMissingReview, setExcelMissingReview] = useState<{ signature: string; gaps: HistoricRequiredValueGap[] } | null>(null)
-  const [excelImportError, setExcelImportError] = useState<{ code: string; details?: string } | null>(null)
-  const [excelImportSummary, setExcelImportSummary] = useState<{ selection: { mappings: Record<string, Record<string, string | undefined>>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; organizationId?: string }; result: { imported: number; results: Array<{ nom?: string; created?: { risks?: number; vulnerabilities?: number; measures?: number; actions?: number } }>; decisions: HistoricImportDecision[] } } | null>(null)
+  const [excelMissingReview, setExcelMissingReview] = useState<{ signature: string; gaps: HistoricRequiredValueGap[]; decisions: HistoricImportDecision[] } | null>(null)
+  const [excelImportError, setExcelImportError] = useState<{ code: string; details?: ImportErrorDetails } | null>(null)
+  const [excelImportSummary, setExcelImportSummary] = useState<{ selection: { mappings: Record<string, Record<string, string | undefined>>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; organizationId?: string }; result: { warnings?: string[]; ateliers?: Record<string, number>; imported: number; results: Array<{ nom?: string; created?: { risks?: number; vulnerabilities?: number; measures?: number; actions?: number } }>; decisions: HistoricImportDecision[] } } | null>(null)
 
   // Site de démo : charge un exemple complet dans l'organisation du testeur.
   async function loadExample() {
@@ -99,33 +118,39 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setExcelImportError(null)
+    // Contrôle du format AVANT lecture : un .xls, un classeur .xlsx ou un PDF reçoivent un message précis.
+    const formatError = checkAcraUpload(file.name, await readHead(file))
+    if (formatError) { setExcelImportError({ code: formatError }); if (importRef.current) importRef.current.value = ''; return }
     setImporting(true)
     try {
       const text = await file.text()
       const isCSV = file.name.endsWith('.csv')
+      // Un CSV qui n'est pas un export ACRA (registre plat, export d'un autre outil) passe par l'assistant de mapping.
+      // Idem pour un JSON de forme libre (registre d'un autre outil) : une feuille par tableau d'objets.
+      if ((isCSV && !looksLikeAcraCsv(text)) || (!isCSV && !looksLikeAcraJson(text))) { setImporting(false); if (importRef.current) importRef.current.value = ''; await runPreview(file); return }
       const res = await fetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: text, format: isCSV ? 'csv' : 'json' }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Erreur import')
+      if (!res.ok) { setExcelImportError({ code: result.error || 'import_failed', details: result.details }); return }
       // Reload analyses list
       const d = await fetch('/api/analyses').then(r => r.json())
       setAnalyses(d.analyses || [])
       alert(`✅ Analyse importée : "${result.nom}"`)
-    } catch (err: any) {
-      alert(`Erreur : ${err.message}`)
+    } catch {
+      setExcelImportError({ code: 'import_failed' })
+    } finally {
+      setImporting(false)
+      if (importRef.current) importRef.current.value = ''
     }
-    setImporting(false)
-    if (importRef.current) importRef.current.value = ''
   }
 
-  async function handleExcelPreview(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  /** Aperçu de l'assistant (classeur .xlsx ou fichier .csv) : lecture du fichier, rôles détectés, mapping suggéré. */
+  async function runPreview(file: File) {
     setImporting(true)
-    setExcelImportError(null)
     try {
       const buffer = await file.arrayBuffer()
       const bytes = new Uint8Array(buffer)
@@ -136,24 +161,34 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
         body: JSON.stringify({ filename: file.name, data: btoa(binary) }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Erreur de prévisualisation')
+      if (!res.ok) { setExcelImportError({ code: result.error || 'excel_import_invalid', details: result.details }); return }
       setExcelPreview({ filename: file.name, data: btoa(binary), sheets: result.sheets }); setExcelMissingReview(null)
     } catch (err: any) { setExcelImportError({ code: err.message || 'excel_import_invalid' }) }
     finally { setImporting(false); if (excelImportRef.current) excelImportRef.current.value = '' }
   }
 
-  async function confirmExcelImport(selection: { mappings: Record<string, Record<string, string | undefined>>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; organizationId?: string }): Promise<void> {
-    if (!excelPreview) return
+  async function handleExcelPreview(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setExcelImportError(null)
+    // .xls (même renommé) : « non pris en charge, .xlsx pris en charge » avant tout envoi au serveur.
+    const formatError = checkTabularUpload(file.name, await readHead(file))
+    if (formatError) { setExcelImportError({ code: formatError }); if (excelImportRef.current) excelImportRef.current.value = ''; return }
+    await runPreview(file)
+  }
+
+  async function confirmExcelImport(selection: { mappings: Record<string, Record<string, string | undefined>>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, Record<string, { mode?: 'LINES' | 'SEMICOLON' | 'PIPE'; carryForward?: boolean } | undefined>>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; valueMaps?: Record<string, Record<string, Record<string, string>>>; organizationId?: string }): Promise<void> {
+    if (!excelPreview || importing) return
     setImporting(true)
     try {
-      const payload = { filename: excelPreview.filename, data: excelPreview.data, organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings, partialImport: true, rowOverrides: selection.rowOverrides }
-      const signature = JSON.stringify({ organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings })
+      const payload = { filename: excelPreview.filename, data: excelPreview.data, organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings, partialImport: true, rowOverrides: selection.rowOverrides, ...(selection.refAliases && Object.keys(selection.refAliases).length ? { refAliases: selection.refAliases } : {}), ...(selection.valueMaps && Object.keys(selection.valueMaps).length ? { valueMaps: selection.valueMaps } : {}) }
+      const signature = JSON.stringify({ organizationId: selection.organizationId, mappings: selection.mappings, sheetTypes: selection.sheetTypes, transforms: selection.transforms, statusMappings: selection.statusMappings, scoreMappings: selection.scoreMappings, refAliases: selection.refAliases, valueMaps: selection.valueMaps })
       if (excelMissingReview?.signature !== signature) {
         const review = await fetch('/api/analysis-imports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, dryRun: true }) })
         const reviewResult = await review.json()
         if (!review.ok) { setExcelImportError({ code: reviewResult.error || 'excel_import_invalid', details: reviewResult.details }); return }
         const gaps = Array.isArray(reviewResult.requiredValueGaps) ? reviewResult.requiredValueGaps : []
-        if (gaps.length) { setExcelMissingReview({ signature, gaps }); return }
+        if (gaps.length) { setExcelMissingReview({ signature, gaps, decisions: Array.isArray(reviewResult.decisions) ? reviewResult.decisions : [] }); return }
       }
       const res = await fetch('/api/analysis-imports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const result = await res.json()
@@ -161,7 +196,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
       const d = await fetch('/api/analyses').then(r => r.json())
       setAnalyses(d.analyses || []); setExcelMissingReview(null)
       setExcelPreview(null)
-      setExcelImportSummary({ selection, result: { imported: result.imported ?? 0, results: Array.isArray(result.results) ? result.results : [], decisions: Array.isArray(result.decisions) ? result.decisions : [] } })
+      setExcelImportSummary({ selection, result: { imported: result.imported ?? 0, results: Array.isArray(result.results) ? result.results : [], decisions: Array.isArray(result.decisions) ? result.decisions : [], warnings: Array.isArray(result.warnings) ? result.warnings : undefined, ateliers: result.ateliers } })
     } catch { setExcelImportError({ code: 'excel_import_invalid' }) } finally { setImporting(false) }
   }
 
@@ -199,7 +234,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
             <h1 className="text-2xl font-bold text-gray-900">{t.analyses.title}</h1>
             <p className="text-gray-500 text-sm mt-1">{analyses.length} {analyses.length === 1 ? t.analyses.totalLabelSg : t.analyses.totalLabel}</p>
           </div>
-          <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             {/* Import */}
             <input
               ref={importRef}
@@ -209,8 +244,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               onChange={handleImport}
               aria-label="Importer une analyse"
             />
-            <input ref={excelImportRef} type="file" accept=".xlsx" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
-            <AnalyseImportMenu disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
+            <input ref={excelImportRef} type="file" accept=".xlsx,.csv,.json,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
+            <AnalyseImportMenu key={importMenuKey} defaultOpen={importMenuKey > 0 || searchParams.get('import') === '1'} disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
             <ExpressAnalyseButton variant="button" />
             {demo && (
               <button
@@ -222,14 +257,17 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
                 {loadingExample ? <><Clock size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />…</> : <><Sparkles size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.demo.loadExample}</>}
               </button>
             )}
-            <Link href="/analyses/new" className="btn-primary flex flex-1 items-center justify-center gap-2 sm:flex-none">
-              {t.analyses.newBtn}
-            </Link>
+            {canCreate && (
+              <div className="basis-full sm:basis-auto">
+                <NouvelleAnalyseMenu projet360={projets360} onImport={() => setImportMenuKey(k => k + 1)}
+                  labels={{ trigger: t.dashboard.newAnalysis, analyse: t.dashboard.newAnalysis, projet360: t.dashboard.newProjet360, importer: t.dashboard.importAnalyse }} />
+              </div>
+            )}
           </div>
         </div>
-        {excelPreview && <HistoricImportPreview sheets={excelPreview.sheets} requiredValueGaps={excelMissingReview?.gaps} onCancel={() => { setExcelPreview(null); setExcelMissingReview(null) }} onConfirm={confirmExcelImport} labels={{ title: t.analyses.importMenu.previewTitle, confirm: t.analyses.importMenu.previewConfirm, cancel: t.analyses.importMenu.previewCancel, missing: t.analyses.importMenu.previewMissing, noSheets: t.analyses.importMenu.previewNoSheets, rows: t.analyses.importMenu.previewRows, mappingName: t.analyses.importMenu.mappingName, saveMapping: t.analyses.importMenu.saveMapping, loadMapping: t.analyses.importMenu.loadMapping, sheetRole: t.analyses.importMenu.sheetRole, ignoreSheet: t.analyses.importMenu.ignoreSheet, summaryTitle: t.analyses.importMenu.summaryTitle, importableSheets: t.analyses.importMenu.importableSheets, ignoredSheets: t.analyses.importMenu.ignoredSheets, mappingHelpTitle: t.analyses.importMenu.mappingHelpTitle, mappingHelp: t.analyses.importMenu.mappingHelp, targetOrganization: t.historicImportTargetOrganization, fieldLabels: { ...t.analyses.importMenu.previewFields, ...t.historicImportEmbeddedFields }, sheetTypes: t.analyses.importMenu.sheetTypes, validation: t.historicImportValidation, listTransform: t.historicImportListTransform, completion: t.historicImportMissingData }} />}
-        {excelImportSummary && <HistoricImportSummaryDialog result={excelImportSummary.result} selection={excelImportSummary.selection} labels={t.historicImportSummary} onClose={() => { setExcelImportSummary(null); setExcelPreview(null); setExcelMissingReview(null) }} />}
-        {excelImportError && <ExcelImportError code={excelImportError.code} details={excelImportError.details} labels={t.analyses.importMenu.importErrors} />}
+        {excelPreview && <HistoricImportPreview sheets={excelPreview.sheets} importing={importing} requiredValueGaps={excelMissingReview?.gaps} reviewDecisions={excelMissingReview?.decisions} onCancel={() => { setExcelPreview(null); setExcelMissingReview(null) }} onConfirm={confirmExcelImport} labels={{ title: t.analyses.importMenu.previewTitle, confirm: t.analyses.importMenu.previewConfirm, cancel: t.analyses.importMenu.previewCancel, missing: t.analyses.importMenu.previewMissing, noSheets: t.analyses.importMenu.previewNoSheets, rows: t.analyses.importMenu.previewRows, mappingName: t.analyses.importMenu.mappingName, saveMapping: t.analyses.importMenu.saveMapping, loadMapping: t.analyses.importMenu.loadMapping, importing: t.analyses.importMenu.previewImporting, mappingLoaded: t.analyses.importMenu.previewMappingLoaded, sheetRole: t.analyses.importMenu.sheetRole, ignoreSheet: t.analyses.importMenu.ignoreSheet, summaryTitle: t.analyses.importMenu.summaryTitle, importableSheets: t.analyses.importMenu.importableSheets, ignoredSheets: t.analyses.importMenu.ignoredSheets, mappingHelpTitle: t.analyses.importMenu.mappingHelpTitle, mappingHelp: t.analyses.importMenu.mappingHelp, targetOrganization: t.historicImportTargetOrganization, warnings: t.analyses.importMenu.previewWarnings, profile: t.analyses.importMenu.previewProfile, aliasPrefix: t.analyses.importMenu.previewAliasPrefix, valueMap: { title: t.analyses.importMenu.previewValueMap.title, hint: t.analyses.importMenu.previewValueMap.hint, other: t.analyses.importMenu.previewValueMap.other, category: t.workshop.a2.cats && Object.fromEntries(Object.entries(t.workshop.a2.cats as Record<string, { label: string }>).map(([k, v]) => [k, v.label])), type: t.workshop.a3.ppTypes as Record<string, string> }, fieldLabels: { ...t.analyses.importMenu.previewFields, ...t.historicImportEmbeddedFields }, sheetTypes: t.analyses.importMenu.sheetTypes, validation: t.historicImportValidation, listTransform: t.historicImportListTransform, completion: t.historicImportMissingData }} />}
+        {excelImportSummary && <HistoricImportSummaryDialog result={excelImportSummary.result} selection={excelImportSummary.selection} labels={{ ...t.historicImportSummary, fieldLabels: { ...t.analyses.importMenu.previewFields } }} onClose={() => { setExcelImportSummary(null); setExcelPreview(null); setExcelMissingReview(null) }} />}
+        {excelImportError && <ExcelImportError code={excelImportError.code} details={excelImportError.details} labels={t.analyses.importMenu.importErrors} detailLabel={t.analyses.importMenu.importDetail} hints={t.analyses.importMenu.importHints} />}
 
         {/* Filters */}
         <div className="flex gap-3 mb-6 flex-wrap">

@@ -2,7 +2,7 @@
 
 <img src="public/logo-mark.png" alt="ACRA Logo" width="120" />
 
-# ACRA — Augmented Cyber Risk Analysis
+# ACRA — Augmented Cyber (& Business) Risk Analysis
 
 **La plateforme open-source de gestion des risques cyber et métier, et de GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, projets 360**
 
@@ -23,7 +23,7 @@
 
 ## 🎯 Présentation
 
-**ACRA (Augmented Cyber Risk Analysis)** est une plateforme web auto-hébergée de **gestion des risques cyber et métier (risque opérationnel, projets, fraude, externalisation) et de GRC** — l'analyse EBIOS RM n'en est qu'une des méthodes. Elle permet à une équipe sécurité — même sans expertise pointue — de conduire des analyses de risques selon la méthode de son choix, puis de piloter la conformité, les contrôles, les incidents et les plans d'action dans un même outil :
+**ACRA — Augmented Cyber (& Business) Risk Analysis —** est une plateforme web auto-hébergée de **gestion des risques cyber et métier (risque opérationnel, projets, fraude, externalisation) et de GRC** — l'analyse EBIOS RM n'en est qu'une des méthodes. Elle permet à une équipe sécurité — même sans expertise pointue — de conduire des analyses de risques selon la méthode de son choix, puis de piloter la conformité, les contrôles, les incidents et les plans d'action dans un même outil :
 
 - **Analyse de risques multi-méthode** : **EBIOS Risk Manager** (ANSSI, défaut), **ISO/IEC 27005:2022**, **ISO 31000:2018** et **NIST SP 800-30 Rev. 1** ;
 - **GRC complète, organisée en trois lignes de défense** : registre des risques, conformité multi-référentiels, **maturité** (profils cibles CMMI), dérogations, contrôle permanent, audit interne, incidents (DORA), KRI, registre RGPD, plan d'action unifié, pilotage et dossiers de comité.
@@ -306,6 +306,7 @@ docker compose up -d
 
 > Pas de `make` ? Utilisez directement : `./scripts/setup.sh` (ou `npm run setup`).
 > Installation automatisée / CI (aucune question posée) : `./scripts/setup.sh --auto`.
+> **Windows (Docker Desktop + WSL)** : clonez le dépôt *depuis WSL* (ou faites `git config --global core.autocrlf input` avant de cloner). Si vous voyez `$'\r': command not found`, le script a été converti en fins de ligne Windows : `sed -i 's/\r$//' scripts/setup.sh` puis relancez-le.
 
 `setup.sh` génère pour vous des secrets forts (`NEXTAUTH_SECRET`, mot de passe
 PostgreSQL, `SECRETS_ENCRYPTION_KEY`) et **ne régénère que les valeurs manquantes**
@@ -430,6 +431,8 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 |-------|----------|---------|
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
 | Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
+| Brouillons de rapports planifiés (1er–3 du mois) | `rapports-planifies` | quotidien 05:00 |
+| Rappels des recommandations d'audit (échéance, retard, à vérifier) | `audit-rappels` | quotidien 06:00 (06:30 côté GitHub Actions) |
 | Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
 | Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
 

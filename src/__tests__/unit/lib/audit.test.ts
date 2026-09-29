@@ -181,7 +181,7 @@ describe('synthetiserConstats', () => {
 describe('énumérations', () => {
   it('statuts et sources', () => {
     expect([...MISSION_STATUTS]).toEqual(['PLANIFIEE', 'EN_COURS', 'CLOTUREE'])
-    expect([...CONSTAT_STATUTS]).toEqual(['OUVERT', 'EN_COURS', 'RESOLU', 'ACCEPTE'])
+    expect([...CONSTAT_STATUTS]).toEqual(['OUVERT', 'EN_COURS', 'RESOLU', 'VERIFIE', 'ACCEPTE'])
     expect([...CONSTAT_SOURCES]).toEqual(['AUDIT_INTERNE', 'REGULATEUR', 'AUDITEUR_EXTERNE'])
   })
 
@@ -200,3 +200,18 @@ describe('énumérations', () => {
   })
 
 })
+
+describe('L4 — constat structuré, notation, jalons, univers sur la mission', () => {
+  it('constat : critère, cause et conséquence nettoyés (vides → null)', () => {
+    const c = cleanConstatInput({ intitule: 'Revue des accès absente', description: 'Aucune revue en 2025', critere: ' Politique d’accès §4 ', cause: 'Turn-over', consequence: '' })
+    expect([c.critere, c.cause, c.consequence]).toEqual(['Politique d’accès §4', 'Turn-over', null])
+  })
+  it('mission : notation 1-4, jalons datés et univers couverts', () => {
+    const m = cleanMissionInput({ intitule: 'Audit paiements', notation: '3', jalons: { lettreMission: '2026-01-05', rapportFinal: 'nope' }, universIds: ['u1', 'u1', ' u2 ', ''] })
+    expect(m.notation).toBe(3)
+    expect(m.jalons).toEqual({ lettreMission: '2026-01-05T00:00:00.000Z' })
+    expect(m.universIds).toEqual(['u1', 'u2'])
+    expect(cleanMissionInput({ intitule: 'x', notation: 9 }).notation).toBeNull()
+  })
+})
+

@@ -6,6 +6,285 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (30) — export Word : matrice des risques ; Windows/WSL
+
+- `lib/risk-matrix-grid.ts` (modèle de matrice depuis la config + grille imprimable, partagé Word/PowerPoint) ; `analyse-docx.ts` : section « Matrice des risques » (brute, puis après traitement si résiduel), libellés ×5. Rendu vérifié en PDF (LibreOffice).
+- `.gitattributes` (LF forcé pour `*.sh`, Dockerfile, yml, sql) + note Windows/WSL dans les 5 README (issue GitHub `$'\r': command not found`).
+
+## 2026-09-30 (29) — import : retours d'usage sur le vrai fichier
+
+- Bug d'import du vrai classeur : textes > plafond du schéma (socle de sécurité 1 000 car.) → raccourcis + avertissement (`lib/import-truncate.ts`, `buildAtelierContent.truncated`, route) ; erreurs de validation lisibles (`describeZodIssues`).
+- Assistant : retour visible/annoncé après profil/mapping, récapitulatif « Ce qui sera importé » par objet, groupe « Ne pas importer les N lignes » toujours visible, marge basse. `refAliases` enregistrés avec un mapping ; migration `20260930170000_mapping_mzt_alias`.
+- Vérifié : tsc, `npm test` (2906), `i18n:check`, build, e2e local sur le vrai fichier (16 risques, 21 mesures, 0 avertissement de référence).
+
+## 2026-09-29 (28) — menus, mapping par défaut, méthodes classées, revue regroupée
+
+- Menu « Nouvelle analyse » (`NouvelleAnalyseMenu`, hook `useDropdownMenu` clavier + ARIA) sur analyses / dashboard cyber / GRC, visible sur mobile ; `AnalyseImportMenu` idem.
+- `mapping_mzt` : migration `20260930160000_mapping_import_defaut` (`AnalysisImportMapping.organizationId` nullable = défaut d'instance, index unique partiel sur le nom) ; GET des mappings renvoie org + défaut (`builtin`).
+- Méthodes : `Configuration.methodesActives` = classement ; `cleanActiveMethodes`/`resolveMethodes`/`moveMethode`/`setMethodeActive` ; écran /admin/instance (↑ ↓).
+- Revue « lignes à décider » regroupée par feuille (> 5 lignes). Chantiers à venir : `docs/specs/import-universel-chantiers-a-venir.md`.
+- Vérifié : tsc, `npm test` (2897), `i18n:check`, build, e2e locaux (menus, mobile, revue, mapping_mzt). Non vérifié : écran admin méthodes dans le navigateur.
+
+## 2026-09-29 (27) — import universel — CSV / JSON réels, doublons, cotations en clair
+
+- Vérifié en réel (voir §7 bis du plan de test) : CSV (10 risques, rejets ligne à ligne), JSON libre (6 risques + 5 mesures), droits (403), idempotence ; tsc, `npm test` (2877), `i18n:check`, build, e2e import 4/4.
+- Code : `partitionHistoricImportSheets` (DUPLICATE_REFERENCE, UNKNOWN sans décision, score mappé pris en compte), `linkChildSheetsToRisks`, `suggestScoreMapping`, `normalizeStrategy/MeasureStatus`, `refineReferenceMapping`, alias exacts `=mot`.
+- Reste : IDOR autre organisation, gel, volumétrie, windows-1252 ; revue « lignes à décider » à regrouper ; liens actifs↔VM, champs calculés, API v2/MCP.
+
+## 2026-09-29 (26) — import universel — session de test réelle (Docker/DB)
+
+- Tests réels exécutés (voir §7 de `docs/specs/import-universel-plan-de-test.md`) : classeurs BTP/avocats de bout en bout en base, 7 défauts corrigés avec tests. Base Postgres relancée après suppression d'un `postmaster.pid` corrompu (octets nuls) dans le volume `ebios-rm_postgres_data`.
+- Vérifié : tsc, `npm test` (2867), `i18n:check`. Spec local `e2e/local-import-fixtures.spec.ts` (exclu via `.git/info/exclude`, ne pas commiter).
+- Reste : revue « lignes à décider » à regrouper ; IDOR/gel/idempotence/volumétrie à tester ; liens actifs↔VM, champs calculés, API v2/MCP.
+
+## 2026-09-29 (25) — import universel — JSON libre (B-IMP-70, première version)
+
+- Fait : `lib/json-workbook.ts` (tableaux d'objets → feuilles, imbriqués → feuille enfant + colonne parent, scalaires racine → `Propriétés`, bornes), `lib/tabular-workbook.ts` (chargement unique xlsx/csv/json pour aperçu + exécution), `looksLikeAcraJson` (JSON non ACRA → assistant), diagnostic JSON précis dans l'aperçu.
+- Vérifié : tsc, `npm test` (2830 verts). Plan de test post-redémarrage : `docs/specs/import-universel-plan-de-test.md`.
+- Reste : voir §6 du plan de test.
+
+## 2026-09-29 (24) — import universel — CSV dans l'assistant
+
+- Fait : un `.csv` vaut une feuille (`lib/csv-workbook.ts`, UTF-8/BOM ou windows-1252, `;`/`,`) passé à l'assistant (aperçu + exécution) ; `checkTabularUpload` ; CSV ACRA (`=== … ===`) reste sur l'import ACRA ; messages `excel_format_unsupported` ×5 mentionnent .csv.
+- Vérifié : tsc, `npm test` (2820 verts), `i18n:check`, `npm run build`. Non vérifié : parcours navigateur, écriture DB réelle d'un CSV (CI).
+- Reste : liens supportAssets↔businessValues, avertissement champs calculés, JSON libre + profil (B-IMP-70), API v2/MCP (B-IMP-72/73).
+
+## 2026-09-29 (23) — Claude Code : import universel — contexte, risques résiduels, alias de préfixe — ⚠ à vérifier
+
+- **Contexte** : `lib/excel-blocks` branché (rôle `CONTEXT` détecté sur les feuilles sans tableau : périmètre en texte libre, page de garde) → cadrage, titre et description de l'analyse.
+- **Risques résiduels** : rôle `RESIDUAL_RISKS` (Réf.RR → Réf.RI), champ canonique `residualRisks`, écrit dans `Risque.*Actuelle/*Residuelle` (test avec faux `tx`, pas de vraie base).
+- **Mesures ↔ risques** : références en liste / plage résolues sur les risques réels ; **alias de préfixe validé par l'utilisateur** (`refAliases`, route + UI + clé d'idempotence — présente seulement si utilisée).
+- Profil livré étendu (RR, contexte, colonne des risques concernés des mesures). Fixtures locales inchangées (exclues de git).
+- ⚠ Non vérifié : recette navigateur (case d'alias, rôle contexte), e2e sur un classeur d'ateliers, écriture sur vraie base.
+
+---
+
+## 2026-09-29 (22) — Claude Code : import universel I4 + I5 — ⚠ à vérifier
+
+- **Import d'un dossier EBIOS RM complet** : le classeur (variantes locales BTP / avocats) donne, via aperçu → rôles détectés → paquet v3 → validation, 6 valeurs métier, 8 événements redoutés,
+  10 sources (couples SR/OV regroupés), 14 parties prenantes, 8 scénarios stratégiques, 13 opérationnels, 13 risques, socle de sécurité et biens supports retenus. Test d'ensemble local
+  (`analysis-imports-preview.route.test.ts`, ignoré en CI faute de fichiers) ; les briques pures sont testées en CI.
+- **Écriture** (`executeAnalysisImport`) : cadrage (JSON), sources, parties prenantes, scénarios ; **non exercée sur une vraie base** (Docker indisponible) : seuls des faux `tx` la testent → à valider en recette
+  et via l'e2e (aucun e2e ne couvre encore un classeur d'ateliers).
+- **Idempotence** : l'empreinte d'un paquet sans atelier est identique à l'ancienne (test), aucun faux 409 sur les reçus existants.
+- **Fixtures locales** régénérées (colonne des valeurs métier corrigée) ; dossier toujours exclu de git.
+- ⚠ Non vérifié : recette navigateur (sélection des rôles d'atelier, profil appliqué), e2e, CI de ce push.
+
+---
+
+## 2026-09-29 (21) — Claude Code : import universel I2 + I3 (socle pur) — ⚠ à vérifier
+
+- **CI** : l'e2e `analysis-import` cassait depuis `a3f8ac3` (l'attribut `accept` du champ Excel a été étendu pour faire remonter le message « .xls non pris en charge » ;
+  le sélecteur e2e `input[accept=".xlsx"]` ne le trouvait plus → corrigé `ebf01ca` en `accept^=`). L'échec de `projets.spec` était collatéral (session perdue : page de connexion).
+- **I2** : en-têtes sur deux niveaux composés (« Besoins de sécurité › Disponibilité »), alias multilingues, `lib/excel-blocks` (îlots, clé/valeur, texte) — pas encore dans l'assistant.
+- **I3** : `lib/import-transforms` (références, plages, niveaux, symboles, valeurs, regroupement, retenu, lignes modèles) ; import historique : `N - libellé` accepté, lignes modèles ignorées et comptées
+  (`IGNORED` / `EMPTY_TEMPLATE_ROW`, phrase au bilan ×5).
+- **Vérifié** : `tsc` 0 · `npm test` (voir fin de tour) · `i18n:check`. ⚠ Non vérifié : e2e, recette navigateur.
+- **I4 + I5 livrés (entrée 22)** : voir la spec (état suite 2). Reste : rôle « contexte », risques résiduels, UI de correspondance de valeurs, I7.
+
+---
+
+## 2026-09-29 (20) — Claude Code : lot I1 de l'import universel + menu « Nouvelle analyse » + messages d'import — ⚠ à vérifier
+
+- **Spec** : `docs/specs/import-universel-analyses.md` (besoin, décisions du 2026-09-29, jeu d'essai). Jeu d'essai **local** (exclu de git,
+  ne jamais committer ni publier) : `.local-fixtures/import-universel/` (variantes BTP et avocats du classeur EBIOS RM, faux `.xls`, CSV, JSON, générateur).
+- **Messages d'import** : codes stables (`lib/import-errors`), traduits ×5 avec cause probable et solution ; JSON illisible → ligne, colonne, extrait et cause
+  reconnue (virgule finale, apostrophes, commentaires, fichier tronqué : `lib/import-json-diagnostic`) ; page web / binaire / tableau / sans « nom » / CSV non ACRA
+  distingués. **`.xls` (même renommé)** : « .xls non pris en charge, .xlsx pris en charge » **avant tout envoi** (`lib/import-file-format`, aussi côté serveur).
+- **Détection Excel (I1)** : `lib/excel-grid` (échantillon d'en-tête sans doublons de fusion, zone utile, formules sans valeur / en erreur signalées à l'aperçu) ;
+  `historic-import` : plus de feuille d'échelles ou de scénarios classée « Risques » ; alias lus en mots entiers ; paragraphes jamais en-tête. Vérifié sur les variantes locales.
+- **Tableau de bord** : le bouton « Nouvelle analyse » devient un menu (nouvelle analyse, nouveau projet 360 si le module est actif, importer une analyse → `/analyses?import=1`
+  ouvre le menu d'import) ; `/analyses/new?methode=PROJET_360` présélectionne la méthode. « Analyse Flash » → **« EBIOS RM flash »** (libellés ×5 ; « Démarche Flash » des textes d'aide inchangé) — à valider produit.
+- **Vérifié** : `tsc` 0 · `npm test` 2707/2707 · `i18n:check` · `npm run build` OK. ⚠ Non vérifié : recette navigateur (menu, alertes, aperçu Excel), e2e.
+- **Suite (I2…I7)** : en-têtes multi-niveaux, profils de mapping, transformations de cellules (références, plages, niveaux `N - libellé`, symboles), modèle canonique v3.
+
+---
+
+## 2026-09-29 (19) — Claude Code : « lance tous ces chantiers », tranche 1 = suite du lot L1 — ⚠ à vérifier
+
+- **Livré (non poussé au moment de l'écriture)** : import CSV d'incidents (`lib/incident-import`, `POST /api/incidents/import`,
+  ≤ 500 lignes, erreurs par ligne), `POST /api/v1/incidents` (+ OpenAPI), chronologie / cause racine / leçons apprises,
+  impacts non financiers, allocation de la perte entre entités (B-PER-3, prise en compte dans R-PER-2 « par entité »),
+  `IncidentAnalysePanel`, colonnes Incident (migration `20260930100000_incidents_l1_suite`).
+- **Vérifié** : `tsc` 0 · `npm test` **2575/2575** · `i18n:check` · `npm run build` OK.
+- ⚠ **Non vérifié** : migration `20260930100000` **non appliquée localement** (Docker indisponible) ; e2e non exécutés (CI).
+- **B-PER-6 livré** : `lib/rapprochement-compta` (pur, testé) + `POST /api/incidents/rapprochement` (lecture seule, 2ᵉ ligne, journalisé) + bouton « Rapprocher (compta) » ; CSV `reference;montant[;devise]` comparé aux pertes « comptabilisé ».
+- **L4 rappels + `auditConfig` livrés** : `lib/audit-config` (rappels, cycles par cotation) + `lib/audit-rappels` (purs, testés) ; cron `POST /api/cron/audit-rappels` (anti-doublon `AuditConstat.rappelLe`, planifié 06:00 scheduler.sh / 06:30 GitHub Actions) ; `GET/PUT /api/audit/config` (ADMIN) ; `AuditConfigEditor` sur `/audit/plan` ; cycles pris en compte par le plan et R-AUD-1 ; migration `20260930110000_audit_l4_rappels` (non appliquée localement, validée par `prisma generate` seulement).
+- **L3 suite livrée** : `lib/controle-l3b` (comparaison N vs N-1, rejeu pré-rempli, rattachements) ; `Controle.arrangementTicId/projetId` (liens logiques vérifiés par `controle-rattachements.server`, migration `20260930120000_controle_rattachements`, non appliquée localement) ; ligne « N vs N-1 » et sélecteurs tiers / projet 360 dans `ControlesManager` ; l'exécution reprend la taille testée précédente.
+- **L2 suite (1/3)** : masquage des données identifiantes (`lib/rapport-masquage`, bascule à l'écran + `export?masque=1`, pseudonymes cohérents #1, #2…) et gabarits surchargeables (titre, introduction, sections masquées ; `GET/PUT /api/rapports/config`, ADMIN ; `OrganizationConfig.rapportsConfig`, migration `20260930130000_rapports_config` non appliquée localement ; `RapportsGabaritsEditor`). L'édition figée n'est jamais modifiée.
+- **L2 suite (2/3)** : diffusion e-mail à la diffusion d'une édition (`lib/rapport-diffusion` + `.server` : adresse d'un membre → e-mail avec lien, jamais le contenu ; adresse externe → consignée « hors organisation » ; résultat par destinataire) ; brouillons planifiés (`rapportsConfig.planifies`, cron `POST /api/cron/rapports-planifies` 05:00, les 1er–3 du mois, période précédente, créé par un ADMIN, idempotent).
+- **L2 suite (3/3)** : R-INC-2 (registre des incidents) ; PDF serveur des éditions (`export?format=pdf`, modèle plat `contenuVersDocument` + `rapport-edition-pdf-template`, compilé par `compile-pdf-template.mjs` ; vérifié sur le bundle de production : `%PDF` produit) ; masque et gabarit appliqués au PDF. R-INC-3 (fiche de déclaration par régime) non fait : c'est un document par incident, pas par période — à traiter avec `NotificationsPanel`.
+- **L4 papiers de travail livrés** : `lib/papiers-travail` (pur : programme / test / entretien / analyse ; brouillon → soumis → revu ; revue jamais par le préparateur, renvoi avec commentaire) ; `GET/POST /api/audit/missions/[id]/papiers` (audit + ADMIN seulement, lecture comprise ; écriture optimiste sur `updatedAt`, 409 en cas de conflit) ; `PapiersTravailPanel` dans le détail d'une mission ; colonne `AuditMission.papiers`, migration `20260930140000_audit_papiers_travail` (non appliquée localement). Pas de pièce jointe binaire : référence de la pièce en GED.
+- **L5 limites levées** : champs personnalisés dans l'export LDC (colonnes visibles du rôle) et dans R-INC-2 (champs sans restriction de rôle seulement : l'édition figée est lue par tous) ; module de champs « constat » (colonne `AuditConstat.champs`, migration `20260930150000_constat_champs`, requis / restreints / préservés, invisibles en lecture pour les autres rôles) ; vocabulaire de l'organisation côté serveur (`getTOrg`) pour exports de rapports, génération de rapports et e-mail de diffusion — seuls les termes présents dans ces chaînes changent (aucune page n'est rendue côté serveur : toutes utilisent le contexte client).
+- **Reste** : R-INC-3 (fiche de déclaration par régime, un document par incident) ; champs personnalisés absents des rapports R-CTL/R-AUD, de l'export des risques et de l'export des constats ; recette navigateur de tout ce qui précède (voir ⚠ ci-dessus).
+- ⚠ Migrations non appliquées localement (Docker indisponible), dans l'ordre : `20260930100000_incidents_l1_suite`, `20260930110000_audit_l4_rappels`, `20260930120000_controle_rattachements`, `20260930130000_rapports_config`, `20260930140000_audit_papiers_travail`, `20260930150000_constat_champs` → `prisma migrate deploy` + `generate` + redémarrage du dev. Nouveaux crons à brancher (scheduler.sh / workflow déjà à jour) : `audit-rappels`, `rapports-planifies`.
+
+---
+
+## 2026-09-29 (18) — Claude Code : lot L5 « Personnalisation » + correctif « Vérifiée » — ⚠ à vérifier
+
+- **CI PR #192** : 8/8 verts sur `6925f15` (L4), dont `e2e/audit-l4.spec.ts` (donc la migration L4 s'applique bien en CI).
+- **L5** : `lib/vocabulaire`, `lib/champs-perso`, `lib/gabarits` (purs, testés) ; migration `20260929220000_personnalisation_l5`
+  (`OrganizationConfig.vocabulaire/champsPersonnalises`, colonne `champs` sur Incident/Controle/AuditMission) ; routes
+  `GET/PUT /api/personnalisation` (ADMIN pour PUT ; GET filtre les champs par rôle) et `POST /api/personnalisation/gabarit`
+  (aperçu `dryRun`, ADMIN, journalisé) ; `I18nProvider` applique le vocabulaire (côté client) ; UI `/configuration/personnalisation`,
+  champs dans les formulaires incident / contrôle / mission ; i18n ×5.
+- **Sécurité des champs** : les champs restreints à un rôle sont retirés en lecture (liste, détail, réponses d'écriture) et
+  ne peuvent ni être écrits ni écrasés par un autre rôle (`fusionnerChamps` conserve les valeurs existantes invisibles).
+- **Régression corrigée (introduite en L4)** : le nouveau statut `VERIFIE` était traité comme « ouvert » dans la liste des
+  missions, le plan d'action unifié, le suivi régulateur et la couverture des référentiels (jeux `RESOLU/ACCEPTE` codés en dur)
+  → tous alignés sur `constatTermine`, avec tests de non-régression.
+- **Vérifié** : `tsc` 0 · `npm test` **2554/2554** · `i18n:check` · `npm run build` OK · SQL de la migration comparé à
+  `prisma migrate diff`.
+- ⚠ **Non vérifié** : Docker Desktop toujours indisponible → migration L5 **non appliquée localement** (`prisma migrate deploy` +
+  `generate` + redémarrage du dev à faire) et `e2e/personnalisation-l5.spec.ts` **non exécuté** (il tournera en CI). Recette
+  navigateur à faire : page `/configuration/personnalisation` (ADMIN), renommage visible dans le menu, champs requis / réservés,
+  aperçu puis application d'un gabarit (vérifier les modules effectivement activés, y compris sous politique d'instance FORCE_ON/OFF).
+- **Limites connues L5** : vocabulaire non appliqué aux pages rendues côté serveur, aux exports et aux PDF ; champs personnalisés
+  absents des exports / rapports et des constats d'audit ; un gabarit ne gère pas la politique d'instance.
+
+---
+
+## 2026-09-29 (17) — Claude Code : lot L4 « Audit interne » + brand + navbar — ⚠ TESTS À REFAIRE
+
+### ⚠ Tests L3 (contrôle permanent) à refaire — demande explicite de l'utilisateur
+Contexte : la CI du push L3 (`36129a1`) n'était **pas encore relue** ; la recette navigateur a été faite en E2E
+automatisé uniquement (1 parcours). À refaire / compléter à la main sur l'instance de dev :
+1. **CI PR #192** : relire les 8 contrôles sur `36129a1` et suivants ; en particulier « Production build & cyber E2E »
+   (`e2e/controles-l3.spec.ts` s'exécute **avant** `incidents-l1` et `rapports`, en un seul run, sur la même org).
+2. **Contrôles** : créer un contrôle avec type / mode / **contrôle clé** / méthode d'échantillonnage ; vérifier la taille
+   d'échantillon suggérée (population 8 / 40 / 200 / 900 / 5000, clé ×1,5) et qu'elle reste modifiable.
+3. **Conception** : évaluer la conception d'un contrôle **jamais exécuté** (détail ouvrable), puis d'un contrôle exécuté ;
+   effacer l'évaluation (« Non évaluée ») ; contrôler RBAC (lecture seule pour un non-2ᵉ ligne, `LECTEUR`, `METIER`).
+4. **Appréciation conjuguée** : combiner conception × efficacité (efficace / à surveiller / défaillant) avec de vraies exécutions.
+5. **Plan annuel** `/controles/plan` : périodicités hebdo / mensuelle / trimestrielle / semestrielle / annuelle, changement
+   d'année, contrôle créé en cours d'année, contrôle inactif exclu, pics de charge, affichage mobile et thème sombre.
+6. **API v1** `POST /api/v1/controls/{id}/results` avec une **vraie clé** (scope write, puis scope read → 403), contrôle manuel
+   (400), autre organisation (404), anomalie → action liée au risque, `fluxInterrompu` dans `GET /api/v1/controls`.
+7. **Récurrence / escalade** : 2 anomalies consécutives (N2), contrôle clé (comité) ; badges dans la liste.
+8. **Rapports R-CTL-1/2/3** : génération sur une vraie période, cycle relu → validé, export Excel, impression PDF ; ×5 langues.
+9. **Migration** `20260929200000_controle_l3` sur une copie de base de production (colonnes par défaut, contrôles existants).
+
+### Fait dans ce tour
+- **Marque** : « Augmented Cyber **(& Business)** Risk Analysis » partout (README ×5, application : titres, footer, exports,
+  PDF/Word/PowerPoint, i18n `appSubtitle`/`acraSubtitle`, page vie privée, `scripts/setup.sh`).
+- **Navbar** : « Rapports » sort de Pilotage → groupe **Conformité & réglementaire** (mêmes rôles à lecture globale),
+  libellé **« Rapports GRC »** ×5 (« Reporting réglementaire » existait déjà pour la page DORA — d'où le choix).
+- **L4 audit** : `lib/audit-l4` (pur) ; migration `20260929210000_audit_l4` ; `VERIFIE` ajouté aux statuts de constat
+  (terminal) ; routes `audit/constats/[id]/suivi`, `audit/missions/[id]/independance`, `audit/univers[/id]`, `audit/plan` ;
+  rapports R-AUD-1/2/3 ; UI (suivi de recommandation, notation/jalons/indépendance, `/audit/plan`) ; i18n ×5.
+- **Vérifié** : `tsc` 0 · `npm test` **2519/2519** · `i18n:check` · `npm run build` OK · SQL de la migration comparé
+  hors ligne à `prisma migrate diff` (mêmes 14 colonnes + table `AuditUnivers`, mise en forme différente seulement).
+- ⚠ **NON vérifié** : Docker Desktop ne démarrait plus (moteur indisponible après saturation du disque) → **migration
+  `20260929210000_audit_l4` non appliquée localement** (`npx prisma migrate deploy` + `prisma generate` + redémarrage du
+  dev à faire) et **`e2e/audit-l4.spec.ts` non exécuté** (à lancer : `E2E_BASE_URL=http://localhost:3000 npx playwright test
+  e2e/audit-l4.spec.ts` avec `DATABASE_URL` en localhost). La vérification par l'AUDITEUR n'est couverte que par les tests
+  de route (pas d'utilisateur AUDITEUR dans le seed E2E).
+- **Reste L4** : relances automatiques par échéance, feuilles de travail, `auditConfig` (cycles / libellés de notation).
+- **Environnement** : disque quasi plein (196/228 Go) — cache npm et `.next/cache` purgés ; à surveiller.
+
+---
+
+## 2026-09-29 (16) — Claude Code : lot L3 « Contrôle permanent » + correctif CI E2E
+
+- **CI PR #192** : L1 8/8 verts ; sur le push L2, **E2E en échec** = contamination entre specs (l'incident créé par
+  `incidents-l1` restait dans l'org et faussait les totaux de `rapports`) → `deleteMany` par organisation dans les
+  deux specs. Piège : les specs E2E partagent une seule org et tournent dans l'ordre alphabétique **en un seul
+  run** en CI — toujours nettoyer ce qu'on crée. Reproduit localement (3 specs enchaînés).
+- **L3** : `lib/controle-l3` (pur) ; migration `20260929200000_controle_l3` (typeControle, modeControle, cle,
+  methodeEchantillon, conception, `ControleExecution.source`) ; `GET /api/controles` enrichi (`l3`),
+  `GET /api/controles/plan`, `POST /api/v1/controls/[id]/results` (contrôles AUTOMATIQUE, scope write, exécutant
+  `api:<keyId>`, rate limit, OpenAPI à jour) ; rapports R-CTL-1/2/3 dans le cadre L2 ; UI (champs, pastilles,
+  conception, plan annuel `/controles/plan`). Le détail d'un contrôle jamais exécuté est désormais ouvrable
+  (la conception s'évalue avant toute exécution).
+- **Vérifié** : `tsc` 0 · `npm test` **2474/2474** · `i18n:check` · `npm run build` OK · migration appliquée
+  (pas de dérive) · e2e navigateur `controles-l3` + `incidents-l1` + `rapports` enchaînés **verts**.
+- **Environnement** : disque du poste plein (ENOSPC) → cache npm (`npm cache clean --force`) et `.next/cache`
+  purgés (régénérables). À surveiller : 196 Go / 228 Go utilisés.
+- **Reste L3** : rejeu du test à la période suivante / comparaison N-1 (B-CTL-5), rattachement tiers / projet 360
+  (B-CTL-8). Puis L4 (audit).
+
+---
+
+## 2026-09-29 (15) — Claude Code : lot L2 « Reporting » (éditions figées, 3 rapports)
+
+**Branche** : `feat/historical-excel-import`, PR #192 (brouillon) — **CI de L1 : 8/8 verts**.
+
+- **Modèle** `RapportEdition` (migration `20260929190000`) : contenu structuré figé, statuts BROUILLON → RELU →
+  VALIDE → DIFFUSE ; quatre-yeux (`transitionRapport`) sauf mode ligne unique (validation directe et
+  auto-validation, journalisée `autoValidation`). Seul un brouillon est régénérable / supprimable.
+- **Rapports** (builders purs) : R-INC-1, R-PER-2, R-GRC-3 (réutilise `verdictDispositif` du cockpit). Libellés
+  statiques = clés i18n `{k}` résolues à l'affichage ; libellés de données résolus à la génération.
+- **API** : `GET/POST /api/rapports` (rate limit, disponibilité selon modules), `GET/PATCH/DELETE
+  /api/rapports/[id]` (404 hors org active), `GET /api/rapports/[id]/export` (Excel). Droits : lecture =
+  rôles à lecture globale ; écriture = admin / risk manager / RSSI (`lib/rapport-acces`).
+- **UI** : `/rapports`, `/rapports/[id]` (impression PDF navigateur), lien « Rapports » dans Pilotage (et dans
+  la barre cyber si le module incidents est actif).
+- **Vérifié** : `tsc` 0 · `npm test` **2428/2428** · `i18n:check` · `npm run build` OK · migration appliquée (pas de
+  dérive) · e2e navigateur `e2e/rapports.spec.ts` **vert** (génération → quatre-yeux → validation → figé).
+- **Reste L2** : diffusion par e-mail, gabarits surchargeables, masquage pour rapports externes, rapports
+  planifiés en brouillon, PDF serveur, R-INC-2/3 (registre, fiches de déclaration par régime).
+
+---
+
+## 2026-09-29 (14) — Claude Code : lot L1 « Incidents & pertes » (régimes de notification, pertes multi-composantes)
+
+**Branche** : `feat/historical-excel-import`. Décisions §9 de la spec retenues sur les recommandations.
+
+- **Régimes de notification** (`lib/notification-regimes`, pur) : catalogue NIS2 (24 h / 72 h / rapport
+  final un mois après la notification — **délais et intitulés vérifiés sur EUR-Lex** FR/EN/DE/ES ; IT via
+  considérant 102), RGPD art. 33 (72 h, intitulé officiel ×5) et « interne » (exemple modifiable) ; tous
+  **inactifs par défaut** (rétrocompatible). Régimes personnalisés (≤ 12, ≤ 6 phases), déclencheurs
+  (toujours / significatif / données personnelles / contractuel / manuel), horloges, notifications
+  soumises. DORA garde `dora-reporting` (règle « le plus tôt des deux »).
+- **Pertes** (`lib/pertes`) : lignes typées + récupérations, devises et taux (une devise sans taux est
+  **exclue et signalée**, jamais convertie à un taux inventé), seuils de collecte / grande perte.
+  `montantBrut` / `recuperations` restent les agrégats (somme des lignes en devise de référence).
+- **Config org** : `OrganizationConfig.incidentsConfig` (JSON, `lib/incidents-config`) ; `GET/PUT
+  /api/incidents/config` (PUT = ADMIN). Migration `20260929180000_incidents_l1`.
+- **Incident** : `typeEvenement`, `quasiIncident`, `attributs`, `notifications`, `pertes`,
+  `recuperationsLignes`, `dateReglement`. `POST/DELETE /api/incidents/[id]/notifications` (2ᵉ ligne).
+  PATCH partiel : les agrégats sont recalculés sur l'ensemble lignes fournies + lignes existantes.
+  Garde commune extraite dans `lib/incident-access.server.ts`.
+- **UI** : `NotificationsPanel`, `PertesEditor`, `IncidentsConfigEditor`, colonne « Notifications »,
+  pastilles type / quasi-incident / grande perte, export LDC enrichi.
+- **Vérifié** : `tsc` 0 · `npm test` **2381/2381** · `i18n:check` · `npm run build` OK · migration
+  appliquée (pas de dérive) · e2e navigateur `e2e/incidents-l1.spec.ts` **vert** (déclaration → horloge
+  NIS2 → marquage « soumis » → pertes par composantes → « Grande perte »).
+- **Piège** : `sed -i` sans extension échoue sur macOS et fait sauter le reste d'une chaîne `&&` (fichier
+  non créé) ; utiliser python ou `sed -i ''`, et vérifier l'existence des fichiers créés.
+- **Reste dans L1** : B-PER-3 (allocation entités/lignes de métier), B-PER-5 (impact non financier),
+  B-PER-6 (rapprochement comptable), B-INC-3 (chronologie, cause racine), B-INC-5 (import CSV, API v1 en
+  écriture). Puis L2 (reporting), L3 (contrôle), L4 (audit), L5, exemples L6 pour Incidents.
+
+---
+
+## 2026-09-29 (13) — Claude Code : cadrage reporting GRC (1.0.4) + exemples des modules récents
+
+**Branche** : `feat/historical-excel-import` (PR #191 fusionnée ; on continue sur cette branche,
+puis nouvelle PR). **Décision produit** : pas de publication de la v1.0.4 pour l'instant (la
+1.0.3 vient de sortir) ; on ajoute d'abord des fonctionnalités. Notes de release brouillon :
+`docs/releases/v1.0.4.md` (à compléter au fil des lots).
+
+- **Cadrage détaillé** : `docs/specs/reporting-grc-besoins.md` — modules Incidents, Pertes,
+  Contrôle permanent, Audit et **reporting** ; 9 contextes cibles, 4 couches d'adaptation
+  (vocabulaire, catalogues, règles/seuils, workflows/droits), besoins B-INC/B-PER/B-CTL/B-AUD,
+  catalogue de 14 rapports, gabarits sectoriels, lots L1–L6, 8 décisions à trancher
+  (recommandations en gras). Contenu réglementaire = « à sourcer » (EUR-Lex/officiel) à l'implémentation.
+- **Exemples et explications (L6, lot 1)** : composants `ExampleChips` (pastilles cliquables) et
+  `ModuleGuide` (« À quoi ça sert / Comment s'en servir / Ce que vous en tirez ») ; branchés sur
+  Projets (4 projets types), Dérogations (4 motifs + mesures), Tests de résilience DORA (4 tests
+  aux types officiels), et guides sur RAS/RAD et Maturité. i18n ×5 (`exemples`, `projets.guide/examples`,
+  `derogations.examples`, `testsResilience.guide/examples`, `appetence.guide`, `maturite.guide`) ;
+  test de parité `exemples-modules-i18n`.
+- **Vérifié** : `tsc` 0 · `npm test` **2309/2309** · `i18n:check` · e2e `projets.spec.ts` vert.
+  `npm run build` non relancé (composants et i18n seulement).
+- **Prochain pas** : trancher les décisions du §9 de la spec (surtout l'ordre des lots), puis L1
+  (régimes de notification + pertes multi-composantes) en TDD ; poursuivre L6 (exemples
+  Incidents/Contrôle/Audit) avec L1–L4.
+
+---
+
 ## 2026-09-29 (12) — Claude Code : reprise de Codex, cockpit GRC corrigé, projets ⇄ analyse cyber, READMEs
 
 **Branche** : `feat/historical-excel-import` (PR #191). Commits `88312d0` (correctifs CI),

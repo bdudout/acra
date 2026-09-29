@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
   if (format === 'xlsx') {
     const S = sanitizeForSpreadsheet
     const wb = new ExcelJS.Workbook()
-    wb.creator = 'ACRA — Augmented Cyber Risk Analysis'
+    wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
     wb.created = now
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4338CA' } }
     const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }

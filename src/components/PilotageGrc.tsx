@@ -10,6 +10,7 @@
 import { AlertTriangle, BarChart3, FileText } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
 import { useTranslation } from '@/lib/i18n/context'
 import { type TaxonomieNode } from '@/lib/taxonomie'
 import { distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
@@ -64,7 +65,7 @@ function progressColor(s: ActionsSummary): string {
   return 'text-amber-600 dark:text-amber-400'
 }
 
-export default function PilotageGrc() {
+export default function PilotageGrc({ canCreateAnalyse = false, projets360 = false }: { canCreateAnalyse?: boolean; projets360?: boolean }) {
   const { t, locale } = useTranslation()
   const p = t.pilotage
   const [data, setData] = useState<Rollup | null>(null)
@@ -150,6 +151,10 @@ export default function PilotageGrc() {
             </a>
           )}
           <span className="text-xs text-gray-400">{p.scope.replace('{n}', String(data.orgCount))}</span>
+          {canCreateAnalyse && (
+            <NouvelleAnalyseMenu projet360={projets360}
+              labels={{ trigger: t.dashboard.newAnalysis, analyse: t.dashboard.newAnalysis, projet360: t.dashboard.newProjet360, importer: t.dashboard.importAnalyse }} />
+          )}
         </div>
       </div>
 

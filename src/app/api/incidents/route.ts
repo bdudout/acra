@@ -9,6 +9,11 @@ import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection }
 import { findDuplicatesForAll, type IncidentDedupItem } from '@/lib/incident-dedup'
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
 import { type DoraCriteres } from '@/lib/dora'
+import { Prisma } from '@prisma/client'
+import { separerJson } from '@/lib/incident-json'
+import { resolveIncidentsConfig } from '@/lib/incidents-config'
+import { vueIncidentL1 } from '@/lib/incident-vue'
+import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { emitWebhookEvent } from '@/lib/webhook.server'
 
@@ -31,11 +36,14 @@ const num = (v: unknown): number | null =>
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ incidents: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.incidentsActive) return NextResponse.json({ incidents: [], active: false })
 
+  const cfgL1 = resolveIncidentsConfig(orgConfig.incidentsConfig)
+  const defsChamps = sanitizeChampsConfig(orgConfig.champsPersonnalises).incident ?? []
+  const now = new Date()
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
@@ -51,6 +59,9 @@ export async function GET() {
       processusNom: processus?.nom ?? null,
       riskItemIntitule: riskItem?.intitule ?? null,
       perteNette: perteNette(brut, recup),
+      // Lot L1 : horloges de notification, totaux convertis, seuils, ventilation par type.
+      l1: vueIncidentL1(r, cfgL1, now),
+      champs: valeursVisibles(defsChamps, r.champs, roleLecture),
       delaiDetection: delaiDetection(r.dateSurvenance, r.dateDetection),
       // Échéancier de déclaration DORA (art. 19) : classe + phases + synthèse.
       doraReporting: evaluerReportingIncident({
@@ -78,7 +89,7 @@ export async function GET() {
     ...i,
     doublons: (doublonsParId.get(i.id) ?? []).slice(0, 3),
   }))
-  return NextResponse.json({ incidents: withDoublons, active: true })
+  return NextResponse.json({ incidents: withDoublons, active: true, config: cfgL1 })
 }
 
 // POST /api/incidents — DÉCLARER un incident.
@@ -94,9 +105,10 @@ export async function POST(req: NextRequest) {
   if (!orgConfig.incidentsActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
-  const erreur = validateIncidentInput(body)
+  const cfgL1 = resolveIncidentsConfig(orgConfig.incidentsConfig)
+  const erreur = validateIncidentInput(body, cfgL1)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
-  const data = cleanIncidentInput(body)
+  const data = cleanIncidentInput(body, cfgL1)
 
   // Le processus et le risque éventuels doivent appartenir à la même organisation.
   if (data.processusId) {
@@ -109,9 +121,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Une déclaration entre toujours en DECLARE : le statut n'est pas pilotable ici.
-  const { statut: _ignore, ...decl } = data
+  // Champs personnalisés (L5) : validés contre les définitions accessibles au rôle ; requis exigés.
+  const defsChamps = sanitizeChampsConfig(orgConfig.champsPersonnalises).incident ?? []
+  const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
+  const manquants = champsRequisManquants(defsChamps, champs, userRole)
+  if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
+  const { statut: _ignore, ...dataSansStatut } = data
+  const { json: champsJson, reste: decl } = separerJson(dataSansStatut)
   const incident = await prisma.incident.create({
-    data: { ...decl, organizationId: orgId, declarantId: userId, statut: 'DECLARE' },
+    data: {
+      ...decl, organizationId: orgId, declarantId: userId, statut: 'DECLARE',
+      ...champsJson,
+      champs: champs as unknown as Prisma.InputJsonValue,
+    },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),

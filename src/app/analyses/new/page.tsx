@@ -70,7 +70,13 @@ export default function NewAnalysePage() {
   useEffect(() => {
     fetch('/api/methodes')
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (d?.available?.length) { setMethodes(d.available); setMethode(d.default ?? 'EBIOS_RM') } })
+      .then(d => {
+        if (!d?.available?.length) return
+        setMethodes(d.available)
+        // ?methode=PROJET_360 (menu « Nouvelle analyse » du tableau de bord) : présélectionne si la méthode est disponible.
+        const wanted = new URLSearchParams(window.location.search).get('methode')
+        setMethode(wanted && d.available.includes(wanted) ? wanted : (d.default ?? 'EBIOS_RM'))
+      })
       .catch(() => {})
   }, [])
 

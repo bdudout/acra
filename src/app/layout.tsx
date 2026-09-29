@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'ACRA — Augmented Cyber Risk Analysis',
+    default: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
     template: '%s | ACRA',
   },
   description:
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'fr_FR',
     url: BASE_URL,
-    siteName: 'ACRA — Augmented Cyber Risk Analysis',
+    siteName: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
     title: 'ACRA — Analyse de risques EBIOS RM guidée',
     description:
       "Réalisez vos analyses de risques cybersécurité selon EBIOS RM (ANSSI). 5 ateliers structurés, RBAC, export PDF, ISO 27005.",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ACRA — Augmented Cyber Risk Analysis',
+        alt: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
       },
     ],
   },

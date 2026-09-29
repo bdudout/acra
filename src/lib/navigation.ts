@@ -36,7 +36,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -102,6 +102,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!grcMode) {
     const secondary: NavKey[] = [...gouvernance]
     if (modules.incidents) secondary.push('incidents')
+    // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
+    if (modules.incidents && canPilotage) secondary.push('rapports')
     const entries: NavEntry[] = [link('dashboard'), ...core(modules).map(link)]
     if (secondary.length > 0) {
       if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
@@ -152,6 +154,9 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
   //    RGPD + reporting DORA (art. 19), registre TIC (art. 28).
   const confReg: NavKey[] = [...gouvernance]
+  // Reporting réglementaire et rapports de gestion (éditions figées, lot L2) : rattaché à la
+  // conformité / au réglementaire, mêmes rôles que le cockpit.
+  if (canPilotage) confReg.push('rapports')
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
   if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', ...(canPilotage ? ['testsResilience' as const] : []))
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))

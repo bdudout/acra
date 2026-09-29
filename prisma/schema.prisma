@@ -194,6 +194,8 @@ model Organization {
 
   @@index([parentId])
   @@index([path])
+  rapportEditions RapportEdition[]
+  auditUnivers AuditUnivers[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -226,11 +228,12 @@ model TestResilience {
   @@index([organizationId, annee])
 }
 
-// Modèle de correspondance Excel réutilisable, strictement propre à une organisation.
+// Modèle de correspondance Excel réutilisable, propre à une organisation. `organizationId` NUL = mapping par défaut d'INSTANCE
+// (livré en base par migration, ex. « mapping_mzt ») : visible de toutes les organisations, en lecture seule.
 model AnalysisImportMapping {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   mappings       Json
   createdById    String
@@ -577,6 +580,22 @@ model Controle {
   // null dès qu'une exécution est enregistrée → une alerte par période.
   alerteeLe DateTime?
 
+  // Lot L3 — typologie, évaluation de la conception, méthode d'échantillonnage.
+  typeControle       String?  // PREVENTIF | DETECTIF | CORRECTIF
+  modeControle       String   @default("MANUEL") // MANUEL | AUTOMATIQUE (résultats poussés par l'API)
+  cle                Boolean  @default(false)    // contrôle clé (pilote le reporting)
+  methodeEchantillon String?  // FIXE | STATISTIQUE | ALEATOIRE | EXHAUSTIF
+  // { statut: ADEQUATE | A_AMELIORER | INADEQUATE, commentaire?, evaluateurId?, evalueLe? }
+  conception         Json     @default("{}")
+
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
+
+  // Lot L3 (suite) — rattachement à un tiers (ArrangementTic) et à un projet 360 (Analyse PROJET_360).
+  // Liens logiques (pas de FK), vérifiés à l'écriture ; ignorés à la lecture s'ils ont disparu.
+  arrangementTicId String?
+  projetId         String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -584,6 +603,8 @@ model Controle {
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
+  @@index([arrangementTicId])
+  @@index([projetId])
 }
 
 // Une exécution de contrôle : résultat, constat et échantillon réellement testé.
@@ -607,6 +628,9 @@ model ControleExecution {
   // fonctions, contrôle N2). null = non renseigné.
   independant        Boolean?
   executantId        String
+
+  // SAISIE (utilisateur) | API (résultat poussé par un contrôle automatique).
+  source String @default("SAISIE")
 
   createdAt DateTime @default(now())
 
@@ -669,6 +693,28 @@ model Incident {
   doraInitialeSoumiseLe      DateTime?
   doraIntermediaireSoumiseLe DateTime?
   doraFinaleSoumiseLe        DateTime?
+
+  // Lot L1 — type d'événement (catalogue de l'org), quasi-incident (aucune perte
+  // réalisée), attributs pilotant les régimes de notification, notifications soumises,
+  // pertes multi-composantes (les agrégats montantBrut/recuperations en sont la somme).
+  typeEvenement       String?
+  quasiIncident       Boolean   @default(false)
+  attributs           Json      @default("{}")
+  notifications       Json      @default("[]")
+  pertes              Json      @default("[]")
+  recuperationsLignes Json      @default("[]")
+  dateReglement       DateTime?
+
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
+
+  // Lot L1 (suite) — chronologie, cause racine, impacts non financiers, allocation des pertes.
+  chronologie          Json    @default("[]")
+  causeRacine          String? // PROCESSUS | PERSONNES | SYSTEMES | EXTERNE | TIERS
+  causeDetail          String? @db.Text
+  leconsApprises       String? @db.Text
+  impactsNonFinanciers Json    @default("[]")
+  allocations          Json    @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -868,7 +914,18 @@ model AuditMission {
   processusIds       Json @default("[]")
   controleIds        Json @default("[]")
 
+  // Lot L4 — notation (1-4), jalons du cycle, indépendance, périmètre en univers.
+  notation      Int?
+  jalons        Json @default("{}")   // { lettreMission, reunionOuverture, rapportProvisoire, reponseAudite, reunionCloture, rapportFinal } (ISO)
+  independance  Json @default("{}")   // { conflit, commentaire?, declarePar, declareLe }
+  universIds    Json @default("[]")   // entrées de l'univers d'audit couvertes
+  // Papiers de travail (lot L4 suite) : cf. lib/papiers-travail.ts.
+  papiers       Json @default("[]")
+
   constats AuditConstat[]
+
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -896,6 +953,23 @@ model AuditConstat {
   echeance          DateTime?
   // OUVERT | EN_COURS | RESOLU | ACCEPTE
   statut            String    @default("OUVERT")
+
+  // Lot L4 — constat structuré (critère / constat = description / cause / conséquence /
+  // recommandation) et suivi de la recommandation (réalisée par l'audité, vérifiée par l'audit).
+  critere     String? @db.Text
+  cause       String? @db.Text
+  consequence String? @db.Text
+  echeanceInitiale DateTime?
+  reports     Json @default("[]") // [{ ancienne, nouvelle, motif, demandePar, demandeLe, statut, decidePar?, decideLe? }]
+  realiseePar String?
+  realiseeLe  DateTime?
+  verifiePar  String?
+  verifieLe   DateTime?
+  verificationCommentaire String? @db.Text
+  // Dernier rappel automatique envoyé (anti-doublon du cron audit-rappels).
+  rappelLe DateTime?
+  // Lot L5 — champs personnalisés du module « constat » (lib/champs-perso).
+  champs Json @default("{}")
 
   // Rattachement optionnel au registre (traçabilité audit → risque).
   riskItemId String?
@@ -1792,6 +1866,16 @@ model OrganizationConfig {
   // revue) : { introduction?, periodicite, etapes: [{ key, titre, description, responsable?, frequence? }] }.
   // Vide ⇒ hérité, sinon texte par défaut (i18n) — cf. lib/processus-carto.
   processusCartographie      Json          @default("{}")
+  // Configuration « Incidents & pertes » (régimes de notification, devise/taux, seuils,
+  // catalogues) — cf. lib/incidents-config.ts. Vide = défauts.
+  incidentsConfig            Json          @default("{}")
+  // Lot L5 — personnalisation : vocabulaire (affichage), champs personnalisés par module.
+  vocabulaire                Json          @default("{}")
+  champsPersonnalises        Json          @default("{}")
+  // Lot L4 (suite) — audit interne : rappels automatiques, cycles de couverture par cotation.
+  auditConfig                Json          @default("{}")
+  // Lot L2 (suite) — gabarits de rapports surchargeables, planification des brouillons.
+  rapportsConfig             Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
@@ -2044,4 +2128,57 @@ model Configuration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── Rapports GRC (lot L2) : éditions figées ─────────────────────────────────
+// Instantané d'un rapport pour une période (contenu structuré, cf. lib/rapport-model) :
+// jamais recalculé après validation. Cycle : BROUILLON → RELU → VALIDE → DIFFUSE.
+model RapportEdition {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  code         String   // R-INC-1 | R-PER-2 | R-GRC-3 (cf. lib/rapport-model)
+  periodeDebut DateTime @db.Date
+  periodeFin   DateTime @db.Date
+  langue       String   @default("fr") // langue des libellés issus des données
+  statut       String   @default("BROUILLON")
+  contenu      Json
+
+  createdById String
+  releuPar    String?
+  releuLe     DateTime?
+  validePar   String?
+  valideLe    DateTime?
+  diffuseLe   DateTime?
+  // Destinataires de la diffusion (traçabilité) : [{ nom }] — l'outil n'envoie rien.
+  destinataires Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, code])
+  @@index([statut])
+}
+
+// ─── Univers d'audit (lot L4) ────────────────────────────────────────────────
+// Entités auditables (processus, entités, référentiels…) cotées par risque : le plan pluriannuel en
+// déduit la couverture (dernière mission, cycle, prochaine échéance). Cf. lib/audit-l4.ts.
+model AuditUnivers {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  type        String  @default("AUTRE") // PROCESSUS | ENTITE | REFERENTIEL | AUTRE
+  risque      Int     @default(2)       // 1-4
+  cycleAns    Int?                      // null = cycle par défaut selon le risque
+  processusId String?
+  commentaire String? @db.Text
+  actif       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }

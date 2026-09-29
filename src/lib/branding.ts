@@ -9,7 +9,7 @@
 export interface Branding {
   /** Nom affiché (ex. « ACRA » par défaut). */
   nom: string
-  /** Sous-titre / baseline (ex. « Augmented Cyber Risk Analysis »). */
+  /** Sous-titre / baseline (ex. « Augmented Cyber (& Business) Risk Analysis »). */
   baseline: string
 }
 

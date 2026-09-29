@@ -181,6 +181,7 @@ export default function Navbar() {
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
     projets:       { href: '/projets',       Icon: Briefcase,       label: t.nav.projets },
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
+    rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
   }
 
