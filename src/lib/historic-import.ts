@@ -1,3 +1,4 @@
+import { parseLevelLabel, isTemplateRow } from './import-transforms'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
 export type HistoricSheetType = 'ANALYSES' | 'RISKS' | 'VULNERABILITIES' | 'MEASURES' | 'ACTIONS' | 'RISK_ACTION_LINKS' | 'UNKNOWN'
 export type HistoricSheetDetection = { type: HistoricSheetType; confidence: 'HIGH' | 'MEDIUM' | 'NONE'; missing: string[] }
@@ -125,6 +126,9 @@ export type HistoricColumnProfile = {
   strategyCount: number
 }
 
+/** Niveau 1–4, nu (« 3 ») ou avec son libellé (« 3 - Elevé ») : lot I3, B-IMP-28. */
+const isLevel1to4 = (value: string) => { const l = parseLevelLabel(value); return !!l && l.level >= 1 && l.level <= 4 }
+
 const MEASURE_STATUSES = ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']
 const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER']
 const isIsoDate = (value: string) => (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00Z`).valueOf())) || /^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)
@@ -137,7 +141,7 @@ export function profileHistoricColumn(values: string[]): HistoricColumnProfile {
     examples: [...new Set(populated)].slice(0, 3),
     values: [...new Set(populated)].slice(0, 100),
     total: populated.length,
-    numeric1to4Count: populated.filter(value => /^[1-4]$/.test(value)).length,
+    numeric1to4Count: populated.filter(isLevel1to4).length,
     isoDateCount: populated.filter(isIsoDate).length,
     measureStatusCount: normalized.filter(value => MEASURE_STATUSES.includes(value)).length,
     strategyCount: normalized.filter(value => STRATEGIES.includes(value)).length,
@@ -149,7 +153,7 @@ export type HistoricColumnProfileValidation = { expected: string; total: number;
 /** Vérifie les formats métier contrôlables avant l'import et explique l'attendu. */
 export function validateHistoricColumnProfile(field: string, profile: HistoricColumnProfile, valueMapping?: Record<string, string>): HistoricColumnProfileValidation {
   if (field === 'gravity' || field === 'likelihood') {
-    if (valueMapping) { const invalid = profile.values.some(value => !/^[1-4]$/.test(value) && !/^[1-4]$/.test(valueMapping[value] ?? '')); return { expected: '1–4', total: profile.total, invalidCount: invalid ? 1 : 0 } }
+    if (valueMapping) { const invalid = profile.values.some(value => !isLevel1to4(value) && !/^[1-4]$/.test(valueMapping[value] ?? '')); return { expected: '1–4', total: profile.total, invalidCount: invalid ? 1 : 0 } }
     return { expected: '1–4', total: profile.total, invalidCount: profile.total - profile.numeric1to4Count }
   }
   if (field === 'dueDate') return { expected: 'YYYY-MM-DD ou JJ/MM/AAAA', total: profile.total, invalidCount: profile.total - profile.isoDateCount }
@@ -259,11 +263,14 @@ const dateText = (row: HistoricImportRow, column: string | undefined): string | 
 }
 const score = (row: HistoricImportRow, column: string | undefined, valueMapping?: Record<string, string>): number | undefined => {
   const raw = text(row, column)
-  const value = Number(raw && (valueMapping?.[raw] ?? raw))
-  return Number.isFinite(value) && value >= 1 && value <= 4 ? Math.round(value) : undefined
+  if (!raw) return undefined
+  // Correspondance explicite d'abord ; puis « 3 - Elevé » lu comme 3 ; puis nombre nu.
+  const mapped = valueMapping?.[raw]
+  const level = mapped !== undefined ? Number(mapped) : (parseLevelLabel(raw)?.level ?? Number(raw))
+  return Number.isFinite(level) && level >= 1 && level <= 4 ? Math.round(level) : undefined
 }
 
-export type HistoricImportDecision = { sheetName: string; row: number; status: 'READY' | 'FIELD_OMITTED' | 'REJECTED'; field?: string; reason?: 'MISSING_REQUIRED_VALUE' | 'INVALID_FORMAT' | 'CARDINALITY_MISMATCH'; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
+export type HistoricImportDecision = { sheetName: string; row: number; status: 'READY' | 'FIELD_OMITTED' | 'REJECTED' | 'IGNORED'; field?: string; reason?: 'MISSING_REQUIRED_VALUE' | 'INVALID_FORMAT' | 'CARDINALITY_MISMATCH' | 'EMPTY_TEMPLATE_ROW'; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
 export type HistoricImportPartition = { sheets: HistoricImportSheet[]; decisions: HistoricImportDecision[] }
 /** Valeurs ajoutées explicitement par l'utilisateur pour une cellule requise vide. */
 export type HistoricRowOverrides = Record<string, Record<string, Record<string, string>>>
@@ -272,7 +279,7 @@ const requiredRowFields: Partial<Record<HistoricSheetType, string[]>> = {
 }
 const expectedRequiredValue = (field: string) => field.endsWith('ExternalId') ? 'référence non vide' : 'texte non vide'
 const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>) => {
-  if (field === 'gravity' || field === 'likelihood') return !/^[1-4]$/.test(value)
+  if (field === 'gravity' || field === 'likelihood') return !isLevel1to4(value)
   if (field === 'dueDate') return !isIsoDate(value)
   if (field === 'strategy') return !STRATEGIES.includes(normalise(value).replace(/ /g, '_').toUpperCase())
   if (field === 'status') return !MEASURE_STATUSES.includes(normalise(value).replace(/ /g, '_').toUpperCase()) && !statusMapping?.[value]
@@ -323,6 +330,9 @@ export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): Hi
     preparedRows.forEach((original, index) => {
       const row = { ...original }
       const sourceRow = sheet.rowNumbers?.[index] ?? index + 2
+      // Ligne modèle : seule la référence est renseignée (VM_07…) — ignorée sans erreur, mais comptée au bilan.
+      const refColumn = splitHistoricMappedColumns(sheet.mapping.externalId)[0]
+      if (refColumn && isTemplateRow(row, refColumn)) { decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'IGNORED', reason: 'EMPTY_TEMPLATE_ROW' }); return }
       const missing = (requiredRowFields[sheet.type] ?? []).filter(field => values(row, sheet, field).length === 0)
       if (missing.length) { for (const field of missing) {
         const sourceColumn = sheet.mapping[field]

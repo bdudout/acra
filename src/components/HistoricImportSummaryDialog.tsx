@@ -11,7 +11,8 @@ export type HistoricImportSummaryLabels = {
   title: string; explanation: string; imported: string; importedRows: string; omittedFields: string; rejectedRows: string
   created: { risks: string; vulnerabilities: string; measures: string; actions: string }
   sourceValue: string; expectedValue: string; emptyValue: string
-  reasons: Record<'MISSING_REQUIRED_VALUE' | 'INVALID_FORMAT' | 'CARDINALITY_MISMATCH', string>
+  reasons: Record<string, string>
+  ignoredTemplateRows?: string
   close: string
   mapping: { title: string; explanation: string; newMapping: string; updateMapping: string; save: string; saved: string }
 }
@@ -24,6 +25,7 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
   const ready = result.decisions.filter(decision => decision.status === 'READY')
   const omitted = result.decisions.filter(decision => decision.status === 'FIELD_OMITTED')
   const rejected = result.decisions.filter(decision => decision.status === 'REJECTED')
+  const ignored = result.decisions.filter(decision => decision.status === 'IGNORED')
   const created = useMemo(() => result.results.reduce((total, item) => ({ risks: total.risks + (item.created?.risks ?? 0), vulnerabilities: total.vulnerabilities + (item.created?.vulnerabilities ?? 0), measures: total.measures + (item.created?.measures ?? 0), actions: total.actions + (item.created?.actions ?? 0) }), { risks: 0, vulnerabilities: 0, measures: 0, actions: 0 }), [result.results])
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
         <section className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50"><h3 className="font-semibold">{labels.omittedFields}: {omitted.length}</h3><p className="mt-1 text-xs">{labels.rejectedRows}: {rejected.length}</p></section>
       </div>
       {(omitted.length > 0 || rejected.length > 0) && <section className="mt-4 space-y-3" aria-label={labels.rejectedRows}>
+        {ignored.length > 0 && labels.ignoredTemplateRows && <p role="note" className="text-sm text-gray-600">{labels.ignoredTemplateRows.replace('{n}', String(ignored.length))}</p>}
         {rejected.length > 0 && <DecisionList decisions={rejected} title={labels.rejectedRows} labels={labels} decisionLabel={decisionLabel} tone="red" />}
         {omitted.length > 0 && <DecisionList decisions={omitted} title={labels.omittedFields} labels={labels} decisionLabel={decisionLabel} tone="amber" />}
       </section>}
