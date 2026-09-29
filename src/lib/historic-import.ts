@@ -13,10 +13,25 @@ function normalise(value: string): string {
 
 const matches = (values: string[], terms: string[]) => terms.some(term => values.some(value => value.includes(term)))
 
+// Un « titre de risque » : la colonne identifie le risque lui-même (et non une source de risque, un niveau de risque
+// ou un scénario). Évite de classer en « Risques » des feuilles d'échelles ou de scénarios EBIOS RM (lot I1, B-IMP-13).
+const RISK_TITLE = /^(ref |id |reference |numero )?(du |de |des )?(risques?|risks?)( id| label| title| name| ref)?$|^(libelle|intitule|description|nom|titre|designation) (du |de |des |d )?(risques?|risks?)$|^risks? (id|label|title|name|description)$|^(ref|reference|id|numero) (du |de |des )?risques?$/
+const RISK_SHEET_NAME = /^(\d+ ?[-.] ?)?(registre |liste |tableau )?(des |de )?(risques?|risks?)( .*)?$/
+const SCALE_HEADER = /^(echelle|description des niveaux|definition des|definition du|calcul d)/
+
+/** Feuille d'échelles / tables de calcul (niveau, définition…) : jamais un registre de risques. */
+function looksLikeScaleSheet(name: string, columns: string[]): boolean {
+  return name.includes('metrique') || /^echelles?( |$)/.test(name) || columns.filter(c => SCALE_HEADER.test(c)).length >= 2
+}
+
 export function detectHistoricImportSheet(name: string, columns: string[]): HistoricSheetDetection {
-  const haystack = [normalise(name), ...columns.map(normalise)]
+  const cols = columns.map(normalise)
+  const nameN = normalise(name)
+  const haystack = [nameN, ...cols]
+  if (looksLikeScaleSheet(nameN, cols)) return { type: 'UNKNOWN', confidence: 'NONE', missing: [] }
   if (matches(haystack, ['vulnerabilite', 'vulnerability']) && matches(haystack, ['risque', 'risk'])) return { type: 'VULNERABILITIES', confidence: 'HIGH', missing: [] }
-  if (matches(haystack, ['risque', 'risk']) && matches(haystack, ['gravite', 'impact', 'vraisemblance', 'probabilite', 'likelihood'])) return { type: 'RISKS', confidence: 'HIGH', missing: [] }
+  const riskIdentified = cols.some(c => RISK_TITLE.test(c)) || (RISK_SHEET_NAME.test(nameN) && !cols.some(c => c.includes('scenario')))
+  if (riskIdentified && matches(haystack, ['gravite', 'impact', 'vraisemblance', 'probabilite', 'likelihood'])) return { type: 'RISKS', confidence: 'HIGH', missing: [] }
   if (matches(haystack, ['plan action', 'action id', 'intitule action']) && matches(haystack, ['echeance', 'responsable'])) return { type: 'ACTIONS', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['mesure']) && matches(haystack, ['responsable', 'statut'])) return { type: 'MEASURES', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['analyse']) && matches(haystack, ['methode', 'perimetre'])) return { type: 'ANALYSES', confidence: 'MEDIUM', missing: [] }
@@ -57,6 +72,9 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   analysisExternalId: ['reference analyse', 'analyse id', 'analyse external id', 'analysis id', 'analysis external id', 'analysis reference'],
 }
 
+const HEADER_CELL_MAX = 60
+const ALIAS_PATTERNS = Object.values(COLUMN_ALIASES).flat().map(alias => new RegExp(`(^| )${alias}s?( |$)`))
+
 export type HistoricSheetColumn = { key: string; label: string; index: number }
 export type HistoricHeaderLayout = { headerRowIndex: number; columns: HistoricSheetColumn[] }
 const spreadsheetColumn = (index: number) => {
@@ -75,10 +93,12 @@ export function detectHistoricHeaderLayout(rows: string[][]): HistoricHeaderLayo
   const candidates = rows.slice(0, 20).map((row, headerRowIndex) => {
     const values = row.map(value => value.trim())
     const nonEmpty = values.filter(Boolean)
-    const aliases = Object.values(COLUMN_ALIASES).flat()
+    // Une cellule d'en-tête est COURTE (un paragraphe de texte libre n'en est pas une) et un alias s'y lit comme
+    // mot entier — « nom » ne doit pas se reconnaître dans « économiques » (lot I1, B-IMP-11).
     const aliasMatches = nonEmpty.filter(value => {
+      if (value.length > HEADER_CELL_MAX) return false
       const normalized = normalise(value)
-      return aliases.some(alias => normalized.includes(alias))
+      return ALIAS_PATTERNS.some(pattern => pattern.test(normalized))
     }).length
     return { headerRowIndex, values, score: nonEmpty.length >= 2 ? aliasMatches * 10 + Math.min(nonEmpty.length, 8) : -1 }
   })

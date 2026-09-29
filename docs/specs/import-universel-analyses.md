@@ -357,7 +357,15 @@ Pour ce classeur, le profil livré déclare (à affiner en recette) :
 | **I6 — Profil « Dossier de sécurité »** | §7 et §8 ; critères 2 à 8 sur le classeur exemple | Cas d'usage déclencheur | I5 |
 | **I7 — JSON libre, API v2, MCP** | B-IMP-70 à 73 | Industrialisation | I5 |
 
-**Recommandation** : livrer **I1 immédiatement** (il corrige des défauts visibles aujourd'hui :
+**État (2026-09-29)** — **I1 livré** : B-IMP-01 à 03 (alerte `.xls` / formats, tous les codes d'erreur d'import traduits et testés en
+5 langues, aussi pour JSON / CSV : localisation ligne-colonne, cause probable), B-IMP-08 (formules sans valeur ou en erreur signalées à
+l'aperçu), B-IMP-11 et 13 (titres fusionnés, bandeaux et paragraphes jamais pris pour l'en-tête ; alias lus comme mots entiers ; plus de
+feuille d'échelles ou de scénarios classée « Risques »), B-IMP-06 pour le décompte des lignes (zone réellement renseignée). **Restent** dans I1 :
+B-IMP-04 (aide contextuelle des formats), B-IMP-06 (lecture en flux), B-IMP-07 (règle `CARRY_FORWARD` proposée par l'assistant : les cellules
+fusionnées ne sont lues qu'une fois **pour la détection d'en-tête** ; l'import des lignes de données garde son comportement actuel). Décision 5
+(champs calculés) : avertir seulement ; ZIP de CSV : non géré.
+
+**Recommandation initiale** : livrer **I1 immédiatement** (il corrige des défauts visibles aujourd'hui :
 message `.xls` absent, faux positifs de détection) et ne lancer I2–I6 qu'après validation des
 décisions du §11. I1 se fait en TDD sur des fonctions pures (`historic-import`, `xlsx-guard`) et
 n'impose aucune migration.

@@ -11,6 +11,8 @@ export type HistoricPreviewSheet = {
   detection: { type: HistoricSheetType }
   mapping: HistoricColumnMapping
   missing: string[]
+  /** Formules sans valeur enregistrée / en erreur (classeur jamais recalculé, #REF!…). */
+  warnings?: { formulasWithoutValue?: { count: number; samples: string[] }; formulaErrors?: { count: number; samples: string[] } }
 }
 export type HistoricRequiredValueGap = { sheetName: string; row: number; field: string; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
 export type HistoricImportOrganizationOption = { id: string; nom: string }
@@ -33,6 +35,7 @@ export type HistoricImportPreviewLabels = {
   mappingHelpTitle: string
   mappingHelp: string
   targetOrganization?: string
+  warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
   sheetTypes: Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>
   validation?: { acraField: string; sourceColumn: string; expected: string; examples: string; compatible: string; review: string; invalidValues: string; externalReference: string }
@@ -117,6 +120,8 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
           const fields = mappingFields[type] ?? []
           return <div key={sheet.name} className="rounded-lg border border-gray-200 p-3">
             <p className="font-medium text-sm text-gray-800">{sheet.name} <span className="font-normal text-gray-500">· {sheet.rows} {labels.rows} · {type === 'UNKNOWN' ? labels.ignoreSheet : labels.sheetTypes[type]}</span></p>
+            {labels.warnings && sheet.warnings?.formulasWithoutValue && sheet.warnings.formulasWithoutValue.count > 0 && <p role="note" className="mt-1 text-xs text-amber-700">{labels.warnings.noValue.replace('{n}', String(sheet.warnings.formulasWithoutValue.count)).replace('{cells}', sheet.warnings.formulasWithoutValue.samples.join(', '))}</p>}
+            {labels.warnings && sheet.warnings?.formulaErrors && sheet.warnings.formulaErrors.count > 0 && <p role="note" className="mt-1 text-xs text-red-700">{labels.warnings.errors.replace('{n}', String(sheet.warnings.formulaErrors.count)).replace('{cells}', sheet.warnings.formulaErrors.samples.join(', '))}</p>}
             <label className="mt-3 block text-xs font-medium text-gray-700">{sheet.name} — {labels.sheetRole}
               <select aria-label={`${sheet.name} — ${labels.sheetRole}`} value={type} onChange={event => setSheetTypes(previous => ({ ...previous, [sheet.name]: event.target.value as HistoricSheetType }))} className="input mt-1 block w-full text-sm">
                 <option value="UNKNOWN">{labels.ignoreSheet}</option>

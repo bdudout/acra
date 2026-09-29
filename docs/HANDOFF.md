@@ -6,6 +6,22 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (20) — Claude Code : lot I1 de l'import universel + menu « Nouvelle analyse » + messages d'import — ⚠ à vérifier
+
+- **Spec** : `docs/specs/import-universel-analyses.md` (besoin, décisions du 2026-09-29, jeu d'essai). Jeu d'essai **local** (exclu de git,
+  ne jamais committer ni publier) : `.local-fixtures/import-universel/` (variantes BTP et avocats du classeur EBIOS RM, faux `.xls`, CSV, JSON, générateur).
+- **Messages d'import** : codes stables (`lib/import-errors`), traduits ×5 avec cause probable et solution ; JSON illisible → ligne, colonne, extrait et cause
+  reconnue (virgule finale, apostrophes, commentaires, fichier tronqué : `lib/import-json-diagnostic`) ; page web / binaire / tableau / sans « nom » / CSV non ACRA
+  distingués. **`.xls` (même renommé)** : « .xls non pris en charge, .xlsx pris en charge » **avant tout envoi** (`lib/import-file-format`, aussi côté serveur).
+- **Détection Excel (I1)** : `lib/excel-grid` (échantillon d'en-tête sans doublons de fusion, zone utile, formules sans valeur / en erreur signalées à l'aperçu) ;
+  `historic-import` : plus de feuille d'échelles ou de scénarios classée « Risques » ; alias lus en mots entiers ; paragraphes jamais en-tête. Vérifié sur les variantes locales.
+- **Tableau de bord** : le bouton « Nouvelle analyse » devient un menu (nouvelle analyse, nouveau projet 360 si le module est actif, importer une analyse → `/analyses?import=1`
+  ouvre le menu d'import) ; `/analyses/new?methode=PROJET_360` présélectionne la méthode. « Analyse Flash » → **« EBIOS RM flash »** (libellés ×5 ; « Démarche Flash » des textes d'aide inchangé) — à valider produit.
+- **Vérifié** : `tsc` 0 · `npm test` 2707/2707 · `i18n:check` · `npm run build` OK. ⚠ Non vérifié : recette navigateur (menu, alertes, aperçu Excel), e2e.
+- **Suite (I2…I7)** : en-têtes multi-niveaux, profils de mapping, transformations de cellules (références, plages, niveaux `N - libellé`, symboles), modèle canonique v3.
+
+---
+
 ## 2026-09-29 (19) — Claude Code : « lance tous ces chantiers », tranche 1 = suite du lot L1 — ⚠ à vérifier
 
 - **Livré (non poussé au moment de l'écriture)** : import CSV d'incidents (`lib/incident-import`, `POST /api/incidents/import`,

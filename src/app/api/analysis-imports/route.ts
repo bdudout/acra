@@ -11,6 +11,7 @@ import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempote
 import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
+import { readSheetSample, sheetUsedBounds } from '@/lib/excel-grid'
 import { checkExcelUpload } from '@/lib/import-file-format'
 import { importErrorStatus } from '@/lib/import-errors'
 
@@ -42,14 +43,14 @@ export async function POST(req: NextRequest) {
     if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
     const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
-      const sampleRows = Array.from({ length: Math.min(20, sheet.rowCount) }, (_, offset) => Array.from({ length: 100 }, (_, index) => cell(sheet.getRow(offset + 1).getCell(index + 1).value)))
-      const layout = detectHistoricHeaderLayout(sampleRows)
+      const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100)) // même lecture que l'aperçu
+      const usedRows = sheetUsedBounds(sheet).lastRow
       const headers = layout.columns.map(column => column.key)
       const detection = detectHistoricImportSheet(sheet.name, headers)
       const type = resolveHistoricImportSheetType(detection.type, body.sheetTypes[sheet.name])
       const mapping = (body.mappings[sheet.name] ?? {}) as HistoricColumnMapping
       if (type !== 'UNKNOWN' && validateHistoricColumnMapping(type, mapping).length) throw new Error(`MAPPING_INCOMPLET:${sheet.name}`)
-      const rows = Array.from({ length: Math.min(500, Math.max(0, sheet.rowCount - layout.headerRowIndex - 1)) }, (_, offset) => {
+      const rows = Array.from({ length: Math.min(500, Math.max(0, usedRows - layout.headerRowIndex - 1)) }, (_, offset) => {
         const row = sheet.getRow(layout.headerRowIndex + offset + 2)
         return Object.fromEntries(layout.columns.map(column => [column.key, cell(row.getCell(column.index + 1).value)]))
       })

@@ -8,6 +8,7 @@ import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.serve
 import { excelCellText } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
+import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/excel-grid'
 import { checkExcelUpload } from '@/lib/import-file-format'
 import { importErrorStatus } from '@/lib/import-errors'
 import { detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
@@ -40,21 +41,21 @@ export async function POST(req: NextRequest) {
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(buffer as never)
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
-      const sampleRows = Array.from({ length: Math.min(20, sheet.rowCount) }, (_, offset) => Array.from({ length: 100 }, (_, index) => {
-        const value = sheet.getRow(offset + 1).getCell(index + 1).value
-        return excelCellText(value)
-      }))
-      const layout = detectHistoricHeaderLayout(sampleRows)
+      // Échantillon d'en-tête : fusions lues une fois (titre / bandeau ≠ en-tête) ; zone utile et formules sans valeur signalées (lot I1).
+      const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100))
       const columns = layout.columns
       const header = columns.map(column => column.key)
       const detection = detectHistoricImportSheet(sheet.name, header)
       const mapping = suggestHistoricColumnMapping(header)
-      const dataRows = Array.from({ length: Math.min(500, Math.max(0, sheet.rowCount - layout.headerRowIndex - 1)) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))
+      const { lastRow } = sheetUsedBounds(sheet)
+      const dataRowCount = Math.max(0, lastRow - layout.headerRowIndex - 1)
+      const dataRows = Array.from({ length: Math.min(500, dataRowCount) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))
       const profiles = Object.fromEntries(columns.map(column => [column.key, profileHistoricColumn(dataRows.map(row => {
         const value = row.getCell(column.index + 1).value
         return excelCellText(value)
       }))]))
-      return { name: sheet.name, columns: header, profiles, rows: Math.max(0, sheet.rowCount - layout.headerRowIndex - 1), headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping) }
+      const issues = sheetFormulaIssues(sheet)
+      return { name: sheet.name, columns: header, profiles, rows: dataRowCount, headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping), warnings: { formulasWithoutValue: issues.withoutValue, formulaErrors: issues.errors } }
     })
     return NextResponse.json({ filename: body.filename, sheets })
   } catch { return NextResponse.json({ error: 'excel_workbook_unreadable' }, { status: 422 }) }

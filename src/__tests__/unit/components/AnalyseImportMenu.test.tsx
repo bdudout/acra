@@ -103,3 +103,14 @@ describe('HistoricImportPreview', () => {
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ rowOverrides: { Risques: { '8': { title: 'Risque renseigné' } } } }))
   })
 })
+
+describe('HistoricImportPreview — formules sans valeur', () => {
+  it('avertit d’une feuille dont des cellules calculées n’ont pas de valeur enregistrée', () => {
+    render(<HistoricImportPreview
+      sheets={[{ name: '2 - Parties prenantes', columns: ['Partie prenante'], rows: 3, detection: { type: 'UNKNOWN' }, mapping: {}, missing: [], warnings: { formulasWithoutValue: { count: 71, samples: ['G9', 'J9'] } } }]}
+      labels={{ title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'Champ requis', noSheets: 'Aucune feuille', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Utiliser cette feuille comme', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: {}, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens risque-action' }, warnings: { noValue: '{n} cellule(s) sans valeur (ex. {cells})', errors: '{n} en erreur' } }}
+      onCancel={vi.fn()} onConfirm={vi.fn()}
+    />)
+    expect(screen.getByRole('note').textContent).toBe('71 cellule(s) sans valeur (ex. G9, J9)')
+  })
+})
