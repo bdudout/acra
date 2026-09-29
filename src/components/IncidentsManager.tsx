@@ -247,6 +247,21 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     setQualId(null); reload()
   }
 
+  // Rapprochement LDC ↔ comptabilité (B-PER-6) : lecture seule, écarts listés.
+  async function rapprocherCompta(file: File) {
+    setBusy(true); setError(null); setImportMsg(null)
+    const csv = await file.text()
+    const res = await fetch('/api/incidents/rapprochement', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv }) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    const s = data.synthese as { ok: number; ecarts: number; absentsLdc: number; absentsCompta: number; ecartTotal: number }
+    const ecarts = (data.lignes as { reference: string; ldc: number; compta: number; statut: string }[]).filter(l => l.statut !== 'OK').slice(0, 5)
+      .map(l => n.l1b.rapproEcart.replace('{r}', l.reference).replace('{ldc}', String(l.ldc)).replace('{compta}', String(l.compta))).join(' · ')
+    const erreurs = (data.erreurs as { ligne: number; error: string }[]).slice(0, 3).map(x => n.l1b.rapproLigne.replace('{l}', String(x.ligne)).replace('{e}', err(x.error))).join(' · ')
+    setImportMsg([n.l1b.rapproResultat.replace('{ok}', String(s.ok)).replace('{e}', String(s.ecarts)).replace('{l}', String(s.absentsLdc)).replace('{c}', String(s.absentsCompta)).replace('{t}', String(s.ecartTotal)), ecarts, erreurs].filter(Boolean).join(' '))
+  }
+
   // Import CSV (historique, export SIEM/ITSM) : 2ᵉ ligne ; résultat par ligne.
   async function importerCsv(file: File) {
     setBusy(true); setError(null); setImportMsg(null)
@@ -385,6 +400,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
           <button onClick={exportIts} className="btn-secondary text-xs" title={n.doraItsHint}>{n.doraExportIts}</button>
           {canQualify && <label className="btn-secondary text-xs cursor-pointer" title={n.l1b.importHint}>{n.l1b.importBtn}<input type="file" accept=".csv,text/csv" className="sr-only" aria-label={n.l1b.importBtn} onChange={e => { const f = e.target.files?.[0]; if (f) importerCsv(f); e.target.value = '' }} /></label>}
+          {canQualify && <label className="btn-secondary text-xs cursor-pointer" title={n.l1b.rapproHint}>{n.l1b.rapproBtn}<input type="file" accept=".csv,text/csv" className="sr-only" aria-label={n.l1b.rapproBtn} onChange={e => { const f = e.target.files?.[0]; if (f) rapprocherCompta(f); e.target.value = '' }} /></label>}
           {canConfigure && <button onClick={() => { setShowConfig(v => !v); setConfigMsg(null) }} className="btn-secondary text-xs">{n.configBtn}</button>}
           {!showDecl && <button onClick={() => { setDecl({ ...emptyDecl(), entite: defaultEntite }); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>

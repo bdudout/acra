@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), create: vi.fn(), audit: vi.fn(), rl: vi.fn(), auth: vi.fn() }))
+const m = vi.hoisted(() => ({ findIncidents: vi.fn(), session: vi.fn(), scope: vi.fn(), config: vi.fn(), create: vi.fn(), audit: vi.fn(), rl: vi.fn(), auth: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
@@ -10,9 +10,11 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/incident-import.server', () => ({ creerIncidentsEnMasse: m.create }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, LIMIT_API_WRITE: { limit: 30, windowMs: 60000 } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { incident: { findMany: m.findIncidents } } }))
 vi.mock('@/lib/api-auth.server', () => ({ authenticateApiRequest: m.auth }))
 
 import { POST as POST_CSV } from '@/app/api/incidents/import/route'
+import { POST as POST_RAPPRO } from '@/app/api/incidents/rapprochement/route'
 import { POST as POST_V1 } from '@/app/api/v1/incidents/route'
 
 const json = (url: string, body: unknown) => new NextRequest(`http://x${url}`, { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } })
@@ -65,5 +67,26 @@ describe('POST /api/v1/incidents (API, scope write)', () => {
     m.auth.mockResolvedValue({ ok: true, organizationId: 'o1', scopes: ['write'], keyId: 'k1', actorUserId: 'u9' })
     expect((await POST_V1(json('/api/v1/incidents', {}))).status).toBe(400)
     expect((await POST_V1(json('/api/v1/incidents', { incidents: Array.from({ length: 501 }, () => ({ intitule: 'x' })) }))).status).toBe(400)
+  })
+})
+
+describe('POST /api/incidents/rapprochement (LDC ↔ compta)', () => {
+  it('compare le CSV comptable aux pertes comptabilisées, sans rien écrire', async () => {
+    m.findIncidents.mockResolvedValue([{ id: 'i1', intitule: 'Panne', pertes: [{ type: 'PERTE_DIRECTE', montant: 200, devise: 'EUR', statut: 'COMPTABILISE' }] }])
+    const res = await POST_RAPPRO(json('/api/incidents/rapprochement', { csv: 'reference;montant\ni1;250' }))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ synthese: { ecarts: 1, ecartTotal: 50 } })
+    expect(m.create).not.toHaveBeenCalled()
+    expect(m.audit).toHaveBeenCalled()
+  })
+  it('403 hors 2ᵉ ligne, 400 fichier absent ou sans colonnes, 429 débit', async () => {
+    m.findIncidents.mockResolvedValue([])
+    expect((await POST_RAPPRO(json('/api/incidents/rapprochement', {}))).status).toBe(400)
+    expect((await POST_RAPPRO(json('/api/incidents/rapprochement', { csv: 'a;b\n1;2' }))).status).toBe(400)
+    m.rl.mockResolvedValue({ allowed: false, remaining: 0, resetAt: 0 })
+    expect((await POST_RAPPRO(json('/api/incidents/rapprochement', { csv: 'reference;montant\ni1;1' }))).status).toBe(429)
+    m.rl.mockResolvedValue({ allowed: true, remaining: 5, resetAt: 0 })
+    m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'LECTEUR' })
+    expect((await POST_RAPPRO(json('/api/incidents/rapprochement', { csv: 'reference;montant\ni1;1' }))).status).toBe(403)
   })
 })
