@@ -169,3 +169,22 @@ describe('POST /api/analysis-imports/preview — CSV (un CSV vaut une feuille)',
     expect((await (await POST(post('a.xls', OLE2))).json()).error).toBe('excel_xls_unsupported')
   })
 })
+
+describe('POST /api/analysis-imports/preview — JSON de forme libre', () => {
+  it('registre imbriqué : feuille du registre + feuille enfant des contrôles + propriétés', async () => {
+    const doc = { cabinet: 'Cabinet fictif', registre: [{ id: 'AV-01', libelle: 'Fuite', impact: 'Critique', probabilite: 'Possible', controles: [{ ref: 'C-01', titre: 'Cloisonner' }] }] }
+    const res = await POST(post('registre-libre.json', Buffer.from(JSON.stringify(doc))))
+    expect(res.status).toBe(200)
+    const { sheets } = await res.json()
+    expect(sheets.map((s: { name: string }) => s.name)).toEqual(['Propriétés', 'registre', 'registre.controles'])
+    expect(sheets[1]).toMatchObject({ rows: 1, columns: ['id', 'libelle', 'impact', 'probabilite'] })
+    expect(sheets[2].columns).toEqual(['registre', 'ref', 'titre'])
+  })
+  it('JSON invalide : code précis avec position, pas d’erreur générique', async () => {
+    const res = await POST(post('mauvais.json', Buffer.from('{"a": [1, 2,]}')))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('json_invalid')
+    expect(body.details).toMatchObject({ line: 1 })
+  })
+})

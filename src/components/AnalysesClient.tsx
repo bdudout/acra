@@ -15,7 +15,7 @@ import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
 import HistoricImportPreview, { type HistoricPreviewSheet, type HistoricRequiredValueGap } from '@/components/HistoricImportPreview'
 import HistoricImportSummaryDialog from '@/components/HistoricImportSummaryDialog'
-import { checkAcraUpload, checkTabularUpload, looksLikeAcraCsv } from '@/lib/import-file-format'
+import { checkAcraUpload, checkTabularUpload, looksLikeAcraCsv, looksLikeAcraJson } from '@/lib/import-file-format'
 import type { HistoricImportDecision, HistoricSheetType } from '@/lib/historic-import'
 
 type FilterValue = 'ALL' | 'EN_COURS' | 'TERMINE' | 'SOUMIS' | 'APPROUVE'
@@ -124,7 +124,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
       const text = await file.text()
       const isCSV = file.name.endsWith('.csv')
       // Un CSV qui n'est pas un export ACRA (registre plat, export d'un autre outil) passe par l'assistant de mapping.
-      if (isCSV && !looksLikeAcraCsv(text)) { setImporting(false); if (importRef.current) importRef.current.value = ''; await runPreview(file); return }
+      // Idem pour un JSON de forme libre (registre d'un autre outil) : une feuille par tableau d'objets.
+      if ((isCSV && !looksLikeAcraCsv(text)) || (!isCSV && !looksLikeAcraJson(text))) { setImporting(false); if (importRef.current) importRef.current.value = ''; await runPreview(file); return }
       const res = await fetch('/api/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,7 +158,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
         body: JSON.stringify({ filename: file.name, data: btoa(binary) }),
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Erreur de prévisualisation')
+      if (!res.ok) { setExcelImportError({ code: result.error || 'excel_import_invalid', details: result.details }); return }
       setExcelPreview({ filename: file.name, data: btoa(binary), sheets: result.sheets }); setExcelMissingReview(null)
     } catch (err: any) { setExcelImportError({ code: err.message || 'excel_import_invalid' }) }
     finally { setImporting(false); if (excelImportRef.current) excelImportRef.current.value = '' }
@@ -240,7 +241,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false }: { init
               onChange={handleImport}
               aria-label="Importer une analyse"
             />
-            <input ref={excelImportRef} type="file" accept=".xlsx,.csv,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
+            <input ref={excelImportRef} type="file" accept=".xlsx,.csv,.json,.xls,.xlsm,.xlsb,.ods" className="hidden" onChange={handleExcelPreview} aria-label={t.analyses.importMenu.excelTitle} />
             <AnalyseImportMenu defaultOpen={searchParams.get('import') === '1'} disabled={importing} onAcraImport={() => importRef.current?.click()} onExcelImport={() => excelImportRef.current?.click()} labels={t.analyses.importMenu} />
             <ExpressAnalyseButton variant="button" />
             {demo && (

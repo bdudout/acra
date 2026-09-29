@@ -54,11 +54,12 @@ export function checkAcraUpload(filename: string, head: Uint8Array): ImportFileE
   return 'import_format_unsupported'
 }
 
-/** Assistant d'import tabulaire : classeur `.xlsx` ou fichier `.csv` (un CSV vaut une feuille). */
+/** Assistant d'import tabulaire : classeur `.xlsx`, fichier `.csv` (une feuille) ou JSON de forme libre (une feuille par tableau). */
 export function checkTabularUpload(filename: string, head: Uint8Array): ImportFileErrorCode | null {
   if (head.length === 0) return 'import_file_empty'
   if (isOle2(head)) return 'excel_xls_unsupported'
-  if (detectImportFileKind(filename, head) === 'CSV') return null
+  const kind = detectImportFileKind(filename, head)
+  if (kind === 'CSV' || kind === 'JSON') return null
   return checkExcelUpload(filename, head)
 }
 
@@ -66,3 +67,13 @@ export function checkTabularUpload(filename: string, head: Uint8Array): ImportFi
 export function looksLikeAcraCsv(text: string): boolean {
   return /^=== .+ ===\s*$/m.test(text)
 }
+
+/** Un export ACRA porte `analyse.nom` (ou `nom`) ; tout autre objet/tableau JSON passe par l'assistant. Un texte non JSON reste à la route ACRA (diagnostic précis). */
+export function looksLikeAcraJson(text: string): boolean {
+  let v: unknown
+  try { v = JSON.parse(text.replace(/^﻿/, '')) } catch { return true }
+  if (!(!!v && typeof v === 'object' && !Array.isArray(v))) return false
+  const src = (v as Record<string, unknown>).analyse && typeof (v as Record<string, unknown>).analyse === 'object' ? (v as Record<string, Record<string, unknown>>).analyse : (v as Record<string, unknown>)
+  return typeof src.nom === 'string' && src.nom !== ''
+}
+

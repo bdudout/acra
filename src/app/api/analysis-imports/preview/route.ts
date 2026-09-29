@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import ExcelJS from 'exceljs'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { excelCellText } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
-import { checkXlsxArchive } from '@/lib/xlsx-guard'
 import { detectContextSheet } from '@/lib/excel-blocks'
 import { suggestAtelierMapping } from '@/lib/import-ateliers-build'
 import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/excel-grid'
 import { checkTabularUpload } from '@/lib/import-file-format'
-import { csvToWorkbook } from '@/lib/csv-workbook'
+import { loadTabularWorkbook } from '@/lib/tabular-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
 import { isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
 
@@ -38,12 +36,10 @@ export async function POST(req: NextRequest) {
   // décompresse tout en mémoire et bloque l'event loop sur un gros classeur).
   const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)
   if (!rl.allowed) return NextResponse.json({ error: 'excel_rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
-  const isCsv = /\.csv$/i.test(body.filename)
-  const archive = isCsv ? { ok: true as const } : checkXlsxArchive(buffer)
-  if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
   try {
-    const workbook = isCsv ? csvToWorkbook(buffer, body.filename) : new ExcelJS.Workbook()
-    if (!isCsv) await workbook.xlsx.load(buffer as never)
+    const loaded = await loadTabularWorkbook(buffer, body.filename)
+    if (!loaded.ok) return NextResponse.json({ error: loaded.error, details: loaded.details }, { status: loaded.status })
+    const { workbook } = loaded
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       // Échantillon d'en-tête : fusions lues une fois (titre / bandeau ≠ en-tête) ; zone utile et formules sans valeur signalées (lot I1).
       const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100))

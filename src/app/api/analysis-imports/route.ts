@@ -11,11 +11,10 @@ import { executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysi
 import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempotency'
 import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
-import { checkXlsxArchive } from '@/lib/xlsx-guard'
 import { readSheetSample, readDataRows } from '@/lib/excel-grid'
 import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
 import { checkTabularUpload } from '@/lib/import-file-format'
-import { csvToWorkbook } from '@/lib/csv-workbook'
+import { loadTabularWorkbook } from '@/lib/tabular-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
 
 const sheetType = z.enum(HISTORIC_SHEET_TYPES)
@@ -42,10 +41,9 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(body.data, 'base64')
     const formatError = checkTabularUpload(body.filename, buffer.subarray(0, 16))
     if (formatError) return NextResponse.json({ error: formatError }, { status: importErrorStatus(formatError) })
-    const isCsv = /\.csv$/i.test(body.filename)
-    const archive = isCsv ? { ok: true as const } : checkXlsxArchive(buffer)
-    if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
-    const workbook = isCsv ? csvToWorkbook(buffer, body.filename) : new ExcelJS.Workbook(); if (!isCsv) await workbook.xlsx.load(buffer as never)
+    const loaded = await loadTabularWorkbook(buffer, body.filename)
+    if (!loaded.ok) return NextResponse.json({ error: loaded.error, details: loaded.details }, { status: loaded.status })
+    const workbook = loaded.workbook
     const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
       const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100)) // même lecture que l'aperçu
       const headers = layout.columns.map(column => column.key)

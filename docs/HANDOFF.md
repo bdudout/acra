@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (25) — import universel — JSON libre (B-IMP-70, première version)
+
+- Fait : `lib/json-workbook.ts` (tableaux d'objets → feuilles, imbriqués → feuille enfant + colonne parent, scalaires racine → `Propriétés`, bornes), `lib/tabular-workbook.ts` (chargement unique xlsx/csv/json pour aperçu + exécution), `looksLikeAcraJson` (JSON non ACRA → assistant), diagnostic JSON précis dans l'aperçu.
+- Vérifié : tsc, `npm test` (2830 verts). Plan de test post-redémarrage : `docs/specs/import-universel-plan-de-test.md`.
+- Reste : voir §6 du plan de test.
+
 ## 2026-09-29 (24) — import universel — CSV dans l'assistant
 
 - Fait : un `.csv` vaut une feuille (`lib/csv-workbook.ts`, UTF-8/BOM ou windows-1252, `;`/`,`) passé à l'assistant (aperçu + exécution) ; `checkTabularUpload` ; CSV ACRA (`=== … ===`) reste sur l'import ACRA ; messages `excel_format_unsupported` ×5 mentionnent .csv.
