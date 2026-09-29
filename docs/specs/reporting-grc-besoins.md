@@ -13,6 +13,14 @@
 
 ---
 
+> **État d'avancement (2026-09-29)** — **L1 livré** (décisions §9 retenues sur les recommandations) :
+> régimes de notification configurables (B-INC-1 : NIS2, RGPD art. 33, interne, personnalisés ;
+> DORA garde son moteur dédié), pertes multi-composantes (B-PER-1/2/4 : lignes typées, devises,
+> seuils de collecte et de grande perte, date de règlement), types d'événement (B-INC-2) et
+> quasi-incidents (B-INC-4). Restent à faire dans L1 : allocation multi-entités (B-PER-3),
+> impact non financier (B-PER-5), rapprochement comptable (B-PER-6), journal de chronologie et
+> cause racine (B-INC-3), import CSV/API v1 en écriture (B-INC-5).
+
 ## 1. Objectif et principe directeur
 
 Permettre à **un maximum d'organisations et de contextes** d'utiliser les modules

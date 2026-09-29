@@ -9,6 +9,8 @@ import { perteNette, delaiDetection } from '@/lib/incident'
 import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
 import { getT } from '@/lib/i18n'
 import { toCsvCell, sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
+import { resolveIncidentsConfig } from '@/lib/incidents-config'
+import { colonnesLdcL1, enTetesLdcL1 } from '@/lib/incident-vue'
 import { auditLog, getClientIp } from '@/lib/logger'
 import ExcelJS from 'exceljs'
 
@@ -16,12 +18,13 @@ export const dynamic = 'force-dynamic'
 
 // Colonnes de la LDC (Loss Data Collection, Bâle) : un incident par ligne, avec
 // la maille, la chronologie et le triptyque brut / récupérations / net.
-const HEADERS = [
+const HEADERS_BASE = [
   'reference', 'intitule', 'categorie', 'processus', 'entite',
   'dateSurvenance', 'dateDetection', 'delaiDetectionJours',
   'impactEstime', 'montantBrut', 'recuperations', 'perteNette',
   'statut', 'risqueLie', 'declareLe', 'qualifieLe', 'clotureLe',
 ]
+
 
 // GET /api/incidents/export?format=csv|xlsx&lang=fr — export LDC de l'org active.
 export async function GET(req: NextRequest) {
@@ -57,6 +60,8 @@ export async function GET(req: NextRequest) {
     return node ? taxonomieLabel(node, tr) : code
   }
 
+  const cfgL1 = resolveIncidentsConfig(orgConfig.incidentsConfig)
+  const HEADERS = [...HEADERS_BASE, ...enTetesLdcL1(cfgL1)]
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId, ...(bornee ? { dateSurvenance: { gte: bornee } } : {}) },
     orderBy: [{ dateSurvenance: 'desc' }, { createdAt: 'desc' }],
@@ -87,6 +92,7 @@ export async function GET(req: NextRequest) {
       declareLe: jour(r.createdAt),
       qualifieLe: jour(r.qualifieLe),
       clotureLe: jour(r.clotureLe),
+      ...colonnesLdcL1(r, cfgL1),
     }
   })
 

@@ -20,6 +20,11 @@ import { findIncidentDuplicates } from '@/lib/incident-dedup'
 import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
+import NotificationsPanel, { type HorlogeRegimeJson } from '@/components/NotificationsPanel'
+import PertesEditor from '@/components/PertesEditor'
+import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
+import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config'
+import type { LignePerte, LigneRecuperation } from '@/lib/pertes'
 
 interface Incident {
   id: string; intitule: string; description: string | null
@@ -32,6 +37,11 @@ interface Incident {
   statut: string; createdAt: string
   doraReporting?: DoraReporting
   doublons?: { id: string; intitule: string; statut: string; score: number }[]
+  // Lot L1
+  typeEvenement?: string | null; quasiIncident?: boolean
+  attributs?: { significatif?: boolean; donneesPersonnelles?: boolean; contractuel?: boolean; regimes?: string[] }
+  pertes?: LignePerte[]; recuperationsLignes?: LigneRecuperation[]; dateReglement?: string | null
+  l1?: { horloges: HorlogeRegimeJson[]; nbEnRetard: number; totaux: { net: number | null }; seuils: { collectee: boolean; grandePerte: boolean } }
 }
 interface DoraReporting {
   classe: 'MAJEUR' | 'SIGNIFICATIF' | 'MINEUR'
@@ -45,8 +55,9 @@ type Risk = { id: string; intitule: string }
 type DeclForm = {
   intitule: string; description: string; dateSurvenance: string; dateDetection: string
   processusId: string; entite: string; impactEstime: string
+  typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean
 }
-const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '' }
+const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false }
 // Formulaire de déclaration vierge : dates de survenance et détection = aujourd'hui
 // par défaut (l'incident vient en général d'être constaté). Modifiables.
 function emptyDecl(): DeclForm {
@@ -54,7 +65,11 @@ function emptyDecl(): DeclForm {
 }
 
 // Formulaire de QUALIFICATION (2ᵉ ligne) : taxonomie, pertes, rattachement.
-type QualForm = { taxonomieCode: string; montantBrut: string; recuperations: string; riskItemId: string; statut: string; clotureCommentaire: string }
+type QualForm = {
+  taxonomieCode: string; riskItemId: string; statut: string; clotureCommentaire: string
+  typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean; dateReglement: string
+}
+const EMPTY_QUAL: QualForm = { taxonomieCode: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, dateReglement: '' }
 
 const STATUT_BADGE: Record<string, string> = {
   DECLARE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -63,7 +78,7 @@ const STATUT_BADGE: Record<string, string> = {
   REJETE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
 }
 
-export default function IncidentsManager({ canQualify }: { canQualify: boolean }) {
+export default function IncidentsManager({ canQualify, canConfigure = false }: { canQualify: boolean; canConfigure?: boolean }) {
   const { t, locale } = useTranslation()
   const n = t.incidents
   // Filtre par statut piloté par l'URL (deep-link pilotage : ?statut=DECLARE).
@@ -82,7 +97,12 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
   const [decl, setDecl] = useState<DeclForm>(emptyDecl)
   const [showDecl, setShowDecl] = useState(false)
   const [qualId, setQualId] = useState<string | null>(null)
-  const [qual, setQual] = useState<QualForm>({ taxonomieCode: '', montantBrut: '', recuperations: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '' })
+  const [qual, setQual] = useState<QualForm>(EMPTY_QUAL)
+  const [qualPertes, setQualPertes] = useState<{ pertes: LignePerte[]; recups: LigneRecuperation[] }>({ pertes: [], recups: [] })
+  const [cfg, setCfg] = useState<IncidentsConfig | null>(null)
+  const [showConfig, setShowConfig] = useState(false)
+  const [configMsg, setConfigMsg] = useState<string | null>(null)
+  const [notifId, setNotifId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [doraDetailId, setDoraDetailId] = useState<string | null>(null)
@@ -93,8 +113,9 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     const node = taxo.find(x => x.code === code)
     return node ? taxonomieLabel(node, tr) : code
   }
+  const devise = cfg?.deviseReference ?? 'EUR'
   const euros = (v: number | null) =>
-    v == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v)
+    v == null ? '—' : new Intl.NumberFormat(locale, { style: 'currency', currency: devise, maximumFractionDigits: 0 }).format(v)
 
   // Cellule « Déclaration DORA » (art. 19) : signal compact + accès au détail des
   // trois phases par incident majeur.
@@ -144,6 +165,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
       fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
     ])
+    if (ii.config) setCfg(ii.config)
     setIncidents(ii.incidents ?? []); setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? [])
     setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
     setLoading(false)
@@ -162,6 +184,8 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
         dateSurvenance: decl.dateSurvenance || null, dateDetection: decl.dateDetection || null,
         processusId: decl.processusId || null, entite: decl.entite || null,
         impactEstime: decl.impactEstime || null,
+        typeEvenement: decl.typeEvenement || null, quasiIncident: decl.quasiIncident,
+        attributs: { significatif: decl.significatif, donneesPersonnelles: decl.donneesPersonnelles, contractuel: decl.contractuel },
       }),
     })
     const data = await res.json().catch(() => ({}))
@@ -172,11 +196,19 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
 
   function startQual(i: Incident) {
     setQualId(i.id); setError(null)
+    const a = i.attributs ?? {}
     setQual({
-      taxonomieCode: i.taxonomieCode ?? '', montantBrut: i.montantBrut?.toString() ?? '',
-      recuperations: i.recuperations?.toString() ?? '', riskItemId: i.riskItemId ?? '',
+      taxonomieCode: i.taxonomieCode ?? '', riskItemId: i.riskItemId ?? '',
       statut: i.statut === 'DECLARE' ? 'QUALIFIE' : i.statut, clotureCommentaire: '',
+      typeEvenement: i.typeEvenement ?? '', quasiIncident: !!i.quasiIncident,
+      significatif: !!a.significatif, donneesPersonnelles: !!a.donneesPersonnelles, contractuel: !!a.contractuel,
+      dateReglement: i.dateReglement ? i.dateReglement.slice(0, 10) : '',
     })
+    // Lignes existantes ; à défaut, on amorce avec les agrégats historiques (montant brut / récupérations).
+    const ref = cfg?.deviseReference ?? 'EUR'
+    const pertes = i.pertes && i.pertes.length ? i.pertes : (i.montantBrut ? [{ type: 'PERTE_DIRECTE', montant: i.montantBrut, devise: ref, statut: 'ESTIME' as const }] : [])
+    const recups = i.recuperationsLignes && i.recuperationsLignes.length ? i.recuperationsLignes : (i.recuperations ? [{ type: 'AUTRE', montant: i.recuperations, devise: ref }] : [])
+    setQualPertes({ pertes, recups })
   }
 
   async function enregistrerQual(i: Incident) {
@@ -188,7 +220,9 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
         dateSurvenance: i.dateSurvenance, dateDetection: i.dateDetection,
         processusId: i.processusId, entite: i.entite, impactEstime: i.impactEstime,
         taxonomieCode: qual.taxonomieCode || null,
-        montantBrut: qual.montantBrut || null, recuperations: qual.recuperations || null,
+        pertes: qualPertes.pertes, recuperationsLignes: qualPertes.recups,
+        typeEvenement: qual.typeEvenement || null, quasiIncident: qual.quasiIncident, dateReglement: qual.dateReglement || null,
+        attributs: { significatif: qual.significatif, donneesPersonnelles: qual.donneesPersonnelles, contractuel: qual.contractuel },
         riskItemId: qual.riskItemId || null, statut: qual.statut,
         clotureCommentaire: qual.clotureCommentaire || null,
       }),
@@ -221,6 +255,37 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     reload()
+  }
+
+  // Notifications réglementaires / contractuelles : marquer / annuler la soumission d'une phase.
+  async function marquerNotification(id: string, regime: string, phase: string, reference: string) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/incidents/${id}/notifications`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ regime, phase, ...(reference.trim() ? { reference: reference.trim() } : {}) }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
+  }
+  async function annulerNotification(id: string, regime: string, phase: string) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/incidents/${id}/notifications`, {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regime, phase }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
+  }
+  async function enregistrerConfig(raw: IncidentsConfigRaw) {
+    setBusy(true); setConfigMsg(null)
+    const res = await fetch('/api/incidents/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(raw) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setConfigMsg(n.configError.replace('{error}', String(data.error ?? res.status))); return }
+    setConfigMsg(n.configSaved); reload()
   }
 
   // Promotion d'un incident orphelin en risque du registre (2ᵉ ligne).
@@ -292,6 +357,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>
           <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
           <button onClick={exportIts} className="btn-secondary text-xs" title={n.doraItsHint}>{n.doraExportIts}</button>
+          {canConfigure && <button onClick={() => { setShowConfig(v => !v); setConfigMsg(null) }} className="btn-secondary text-xs">{n.configBtn}</button>}
           {!showDecl && <button onClick={() => { setDecl({ ...emptyDecl(), entite: defaultEntite }); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>
       </div>
@@ -302,6 +368,13 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
         <Info size={14} className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-300" aria-hidden="true" />
         <span>{n.declareRolesNote}</span>
       </div>
+
+      {canConfigure && showConfig && cfg && (
+        <div className="mb-5">
+          <IncidentsConfigEditor key={JSON.stringify(cfg)} config={cfg} onSave={enregistrerConfig} busy={busy} />
+          {configMsg && <p role="status" className="mt-2 text-xs text-gray-600 dark:text-gray-300">{configMsg}</p>}
+        </div>
+      )}
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
@@ -353,6 +426,7 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
             </select>
             <AutocompleteInput field="entite" lang={locale} value={decl.entite} onChange={v => setDecl(f => ({ ...f, entite: v }))} placeholder={n.entityPlaceholder} className={inp} />
           </div>
+          <L1FieldsBlock v={decl} set={patch => setDecl(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
           <div className="flex gap-2">
             <button onClick={declarer} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.declare}</button>
             <button onClick={() => { setShowDecl(false); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{n.cancel}</button>
@@ -381,12 +455,13 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
               <ColumnMenu label={n.colStatut} sortKey="statut" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
                 values={distinctInc('statut')} allowed={colFilters.statut} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
               <th className="px-4 py-3">{n.colDora}</th>
+              <th className="px-4 py-3">{n.colNotifs}</th>
               {canQualify && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={8} className="px-4 py-6 text-gray-400">…</td></tr>
-              : visibleIncidents.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
+            {loading ? <tr><td colSpan={9} className="px-4 py-6 text-gray-400">…</td></tr>
+              : visibleIncidents.length === 0 ? <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
               : visibleIncidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
@@ -397,6 +472,9 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                         <Copy size={9} aria-hidden="true" /> {n.dedup.badge} ({i.doublons.length})
                       </span>
                     )}
+                    {i.typeEvenement && <span className="ml-1.5 inline-block rounded-full bg-gray-100 dark:bg-gray-700 px-1.5 py-px text-[10px] font-medium text-gray-600 dark:text-gray-300 align-middle">{cfg?.typesEvenement.find(x => x.code === i.typeEvenement)?.label ?? (n.typesEvenement as Record<string, string>)[i.typeEvenement] ?? i.typeEvenement}</span>}
+                    {i.quasiIncident && <span className="ml-1.5 inline-block rounded-full bg-sky-100 dark:bg-sky-500/15 px-1.5 py-px text-[10px] font-medium text-sky-800 dark:text-sky-300 align-middle">{n.quasiIncident.split(' (')[0]}</span>}
+                    {i.l1?.seuils.grandePerte && <span className="ml-1.5 inline-block rounded-full bg-red-100 dark:bg-red-500/20 px-1.5 py-px text-[10px] font-medium text-red-700 dark:text-red-300 align-middle">{n.grandePerte}</span>}
                     <span className="block text-xs text-gray-400">
                       {i.dateSurvenance ? new Date(i.dateSurvenance).toLocaleDateString(locale) : '—'}
                       {i.delaiDetection != null && ` · ${n.detectedIn.replace('{n}', String(i.delaiDetection))}`}
@@ -413,6 +491,15 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                     </span>
                   </td>
                   <td className="px-4 py-3">{doraCell(i)}</td>
+                  <td className="px-4 py-3">
+                    {i.l1 && i.l1.horloges.length > 0 ? (
+                      <button onClick={() => setNotifId(i.id)} className="hover:underline focus:underline" title={n.notifTitle}>
+                        {i.l1.nbEnRetard > 0
+                          ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 whitespace-nowrap">⚠ {n.notifEnRetard.replace('{n}', String(i.l1.nbEnRetard))}</span>
+                          : <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">{i.l1.horloges.length} · {n.notifTitle}</span>}
+                      </button>
+                    ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
+                  </td>
                   {canQualify && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       {qualId === i.id ? (
@@ -472,13 +559,15 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
                   {risks.map(r => <option key={r.id} value={r.id}>{r.intitule}</option>)}
                 </select>
               </label>
-              <label className="text-xs text-gray-500 dark:text-gray-400">{n.montantBrut}
-                <input type="number" min="0" step="0.01" value={qual.montantBrut} onChange={e => setQual(f => ({ ...f, montantBrut: e.target.value }))} className={`${inp} w-full mt-1`} />
-              </label>
-              <label className="text-xs text-gray-500 dark:text-gray-400">{n.recuperations}
-                <input type="number" min="0" step="0.01" value={qual.recuperations} onChange={e => setQual(f => ({ ...f, recuperations: e.target.value }))} className={`${inp} w-full mt-1`} />
-              </label>
             </div>
+            <L1FieldsBlock v={qual} set={patch => setQual(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
+            {!qual.quasiIncident && cfg && (
+              <PertesEditor pertes={qualPertes.pertes} recups={qualPertes.recups} onChange={setQualPertes}
+                config={{ deviseReference: cfg.deviseReference, taux: cfg.taux, typesPerte: cfg.typesPerte }} />
+            )}
+            <label className="text-xs text-gray-500 dark:text-gray-400 block">{n.dateReglement}
+              <input type="date" value={qual.dateReglement} onChange={e => setQual(f => ({ ...f, dateReglement: e.target.value }))} className={`${inp} block mt-1`} />
+            </label>
             {(qual.statut === 'REJETE' || qual.statut === 'CLOTURE') && (
               <input value={qual.clotureCommentaire} onChange={e => setQual(f => ({ ...f, clotureCommentaire: e.target.value }))}
                 placeholder={qual.statut === 'REJETE' ? n.dedup.rejetPlaceholder : n.cloturePlaceholder} className={`${inp} w-full`} />
@@ -491,6 +580,25 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
               </select>
               <button onClick={() => enregistrerQual(i)} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.save}</button>
               <button onClick={() => { setQualId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{n.cancel}</button>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Notifications à suivre (NIS2, RGPD, interne, personnalisés…) */}
+      {notifId && (() => {
+        const i = incidents.find(x => x.id === notifId)
+        if (!i?.l1) return null
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setNotifId(null)}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 space-y-3" onClick={e => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{n.notifTitle}</p><p className="text-xs text-gray-500 dark:text-gray-400">{i.intitule}</p></div>
+                <button onClick={() => setNotifId(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none" aria-label={n.cancel}>×</button>
+              </div>
+              {error && <p className="text-xs text-red-600">{error}</p>}
+              <NotificationsPanel horloges={i.l1.horloges} canQualify={canQualify} busy={busy}
+                onMark={(r, ph, ref) => marquerNotification(i.id, r, ph, ref)} onUnmark={(r, ph) => annulerNotification(i.id, r, ph)} />
             </div>
           </div>
         )
@@ -552,6 +660,38 @@ export default function IncidentsManager({ canQualify }: { canQualify: boolean }
           </div>
         )
       })()}
+    </div>
+  )
+}
+
+// Champs du lot L1 partagés entre déclaration et qualification : type d'événement,
+// quasi-incident et obligations de notification (attributs pilotant les régimes).
+type L1Fields = { typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean }
+function L1FieldsBlock<T extends L1Fields>({ v, set, cfg, n, inp }: { v: T; set: (patch: Partial<L1Fields>) => void; cfg: IncidentsConfig | null; n: Record<string, unknown>; inp: string }) {
+  const nn = n as Record<string, string> & { typesEvenement: Record<string, string> }
+  const types = (cfg?.typesEvenement ?? []).filter(x => x.actif || x.code === v.typeEvenement)
+  const label = (x: { code: string; label?: string }) => x.label ?? nn.typesEvenement[x.code] ?? x.code
+  return (
+    <div className="space-y-2">
+      {types.length > 0 && (
+        <label className="text-xs text-gray-500 dark:text-gray-400 block">{nn.typeEvenement}
+          <select value={v.typeEvenement} onChange={e => set({ typeEvenement: e.target.value })} className={`${inp} w-full mt-1`}>
+            <option value="">—</option>
+            {types.map(x => <option key={x.code} value={x.code}>{label(x)}</option>)}
+          </select>
+        </label>
+      )}
+      <fieldset className="text-xs text-gray-600 dark:text-gray-300">
+        <legend className="font-medium mb-1">{nn.attributsTitle}</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={v.significatif} onChange={e => set({ significatif: e.target.checked })} />{nn.attrSignificatif}</label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={v.donneesPersonnelles} onChange={e => set({ donneesPersonnelles: e.target.checked })} />{nn.attrDonnees}</label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={v.contractuel} onChange={e => set({ contractuel: e.target.checked })} />{nn.attrContractuel}</label>
+        </div>
+      </fieldset>
+      <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300" title={nn.quasiHint}>
+        <input type="checkbox" checked={v.quasiIncident} onChange={e => set({ quasiIncident: e.target.checked })} />{nn.quasiIncident}
+      </label>
     </div>
   )
 }

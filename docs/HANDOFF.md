@@ -6,6 +6,38 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (14) — Claude Code : lot L1 « Incidents & pertes » (régimes de notification, pertes multi-composantes)
+
+**Branche** : `feat/historical-excel-import`. Décisions §9 de la spec retenues sur les recommandations.
+
+- **Régimes de notification** (`lib/notification-regimes`, pur) : catalogue NIS2 (24 h / 72 h / rapport
+  final un mois après la notification — **délais et intitulés vérifiés sur EUR-Lex** FR/EN/DE/ES ; IT via
+  considérant 102), RGPD art. 33 (72 h, intitulé officiel ×5) et « interne » (exemple modifiable) ; tous
+  **inactifs par défaut** (rétrocompatible). Régimes personnalisés (≤ 12, ≤ 6 phases), déclencheurs
+  (toujours / significatif / données personnelles / contractuel / manuel), horloges, notifications
+  soumises. DORA garde `dora-reporting` (règle « le plus tôt des deux »).
+- **Pertes** (`lib/pertes`) : lignes typées + récupérations, devises et taux (une devise sans taux est
+  **exclue et signalée**, jamais convertie à un taux inventé), seuils de collecte / grande perte.
+  `montantBrut` / `recuperations` restent les agrégats (somme des lignes en devise de référence).
+- **Config org** : `OrganizationConfig.incidentsConfig` (JSON, `lib/incidents-config`) ; `GET/PUT
+  /api/incidents/config` (PUT = ADMIN). Migration `20260929180000_incidents_l1`.
+- **Incident** : `typeEvenement`, `quasiIncident`, `attributs`, `notifications`, `pertes`,
+  `recuperationsLignes`, `dateReglement`. `POST/DELETE /api/incidents/[id]/notifications` (2ᵉ ligne).
+  PATCH partiel : les agrégats sont recalculés sur l'ensemble lignes fournies + lignes existantes.
+  Garde commune extraite dans `lib/incident-access.server.ts`.
+- **UI** : `NotificationsPanel`, `PertesEditor`, `IncidentsConfigEditor`, colonne « Notifications »,
+  pastilles type / quasi-incident / grande perte, export LDC enrichi.
+- **Vérifié** : `tsc` 0 · `npm test` **2381/2381** · `i18n:check` · `npm run build` OK · migration
+  appliquée (pas de dérive) · e2e navigateur `e2e/incidents-l1.spec.ts` **vert** (déclaration → horloge
+  NIS2 → marquage « soumis » → pertes par composantes → « Grande perte »).
+- **Piège** : `sed -i` sans extension échoue sur macOS et fait sauter le reste d'une chaîne `&&` (fichier
+  non créé) ; utiliser python ou `sed -i ''`, et vérifier l'existence des fichiers créés.
+- **Reste dans L1** : B-PER-3 (allocation entités/lignes de métier), B-PER-5 (impact non financier),
+  B-PER-6 (rapprochement comptable), B-INC-3 (chronologie, cause racine), B-INC-5 (import CSV, API v1 en
+  écriture). Puis L2 (reporting), L3 (contrôle), L4 (audit), L5, exemples L6 pour Incidents.
+
+---
+
 ## 2026-09-29 (13) — Claude Code : cadrage reporting GRC (1.0.4) + exemples des modules récents
 
 **Branche** : `feat/historical-excel-import` (PR #191 fusionnée ; on continue sur cette branche,

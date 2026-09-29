@@ -50,6 +50,7 @@ const CONFIG_SELECT = {
   projets360Active: true,
   echelleMaturite: true,
   processusCartographie: true,
+  incidentsConfig: true,
   appetitRisque: true,
 } as const
 

@@ -670,6 +670,17 @@ model Incident {
   doraIntermediaireSoumiseLe DateTime?
   doraFinaleSoumiseLe        DateTime?
 
+  // Lot L1 — type d'événement (catalogue de l'org), quasi-incident (aucune perte
+  // réalisée), attributs pilotant les régimes de notification, notifications soumises,
+  // pertes multi-composantes (les agrégats montantBrut/recuperations en sont la somme).
+  typeEvenement       String?
+  quasiIncident       Boolean   @default(false)
+  attributs           Json      @default("{}")
+  notifications       Json      @default("[]")
+  pertes              Json      @default("[]")
+  recuperationsLignes Json      @default("[]")
+  dateReglement       DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1792,6 +1803,9 @@ model OrganizationConfig {
   // revue) : { introduction?, periodicite, etapes: [{ key, titre, description, responsable?, frequence? }] }.
   // Vide ⇒ hérité, sinon texte par défaut (i18n) — cf. lib/processus-carto.
   processusCartographie      Json          @default("{}")
+  // Configuration « Incidents & pertes » (régimes de notification, devise/taux, seuils,
+  // catalogues) — cf. lib/incidents-config.ts. Vide = défauts.
+  incidentsConfig            Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
