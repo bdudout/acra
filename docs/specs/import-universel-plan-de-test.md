@@ -81,3 +81,9 @@ Encore à tester : autre organisation (IDOR), analyse gelée, CSV windows-1252, 
 - [x] **Volumétrie** : 5 000 lignes → aperçu en 47 ms ; l'exécution tronquait **silencieusement à 500 lignes** → corrigé : erreur claire `excel_too_many_rows` (413, ×5 langues, feuille nommée). Limite : 500 lignes par feuille importée (`IMPORT_MAX_ITEMS`).
 - Non testable en import : analyse gelée (l'import crée toujours une nouvelle analyse).
 - Reste : thème sombre / mobile / clavier de l'assistant ; import via MCP / API v2 (non développés).
+
+### 7 quater — Aspect et console
+- [x] Thème sombre : menu « Importer », carte d'erreur (limite de débit) et assistant lisibles, pas de défilement horizontal ; aucune erreur/avertissement console sur la liste et l'assistant (classeur 15 feuilles, profil appliqué).
+- Constat : le bouton « Importer » est **masqué sous 640 px** (`sm:flex`, conception existante) → l'import n'est pas accessible sur téléphone ; à décider (menu mobile ou assumé « poste de travail »).
+- Constat mineur : « 1 feuilles à importer » (accord du pluriel) dans le résumé de l'assistant.
+- Non testé : clavier (Échap, flèches) du menu, lecteur d'écran, langues ≠ FR.
