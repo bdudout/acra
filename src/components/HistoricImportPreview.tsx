@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
 import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
 export type HistoricPreviewSheet = {
@@ -35,6 +36,7 @@ export type HistoricImportPreviewLabels = {
   mappingHelpTitle: string
   mappingHelp: string
   targetOrganization?: string
+  profile?: { recognized: string; apply: string; builtin: string; partial: string }
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
   sheetTypes: Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>
@@ -75,6 +77,23 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const [savedMappings, setSavedMappings] = useState<Array<{ id: string; name: string; mappings: Record<string, HistoricColumnMapping>; sheetTypes?: Record<string, HistoricSheetType>; transforms?: Record<string, HistoricFieldTransforms>; statusMappings?: Record<string, Record<string, string>>; scoreMappings?: Record<string, Record<string, Record<string, string>>> }>>([])
   useEffect(() => { if (!organizationOptions) fetch('/api/org/active').then(response => response.ok ? response.json() : null).then(data => { if (data) { setLoadedOrganizations(data.options ?? []); setTargetOrganizationId(current => current || data.activeOrgId || '') } }).catch(() => {}) }, [organizationOptions])
   const availableOrganizations = organizationOptions ?? loadedOrganizations
+  // Reconnaissance d'un profil (livré ou enregistré par l'organisation) sur les feuilles du fichier (lot I4).
+  const recognized = useMemo(() => {
+    const asProfiles: ImportProfile[] = savedMappings.map(item => ({
+      version: 1, id: item.id, name: item.name,
+      sheets: Object.keys(item.mappings).map(sheetName => ({ match: { name: sheetName }, role: item.sheetTypes?.[sheetName] ?? 'UNKNOWN', fields: item.mappings[sheetName] })),
+      statusMappings: item.statusMappings ?? {}, scoreMappings: item.scoreMappings ?? {},
+    }))
+    return rankProfiles([...BUILTIN_PROFILES, ...asProfiles], sheets.map(sheet => ({ name: sheet.name, columns: sheet.columns })))[0]
+  }, [savedMappings, sheets])
+  function applyProfile() {
+    if (!recognized) return
+    const selection = profileToSelection(recognized.profile, sheets.map(sheet => ({ name: sheet.name, columns: sheet.columns })))
+    setMappings(previous => ({ ...previous, ...selection.mappings }))
+    setSheetTypes(previous => ({ ...previous, ...selection.sheetTypes }))
+    setStatusMappings(previous => ({ ...previous, ...selection.statusMappings }))
+    setScoreMappings(previous => ({ ...previous, ...selection.scoreMappings }))
+  }
   useEffect(() => { fetch(`/api/analysis-imports/mappings${targetOrganizationId ? `?organizationId=${encodeURIComponent(targetOrganizationId)}` : ''}`).then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [targetOrganizationId])
   const selectedSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] !== 'UNKNOWN')
   const ignoredSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] === 'UNKNOWN')
@@ -107,6 +126,10 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
         {availableOrganizations.length > 1 && labels.targetOrganization && <label className="text-xs font-medium text-gray-700">{labels.targetOrganization}<select aria-label={labels.targetOrganization} className="input mt-1 block text-sm" value={targetOrganizationId} onChange={event => setTargetOrganizationId(event.target.value)}>{availableOrganizations.map(organization => <option key={organization.id} value={organization.id}>{organization.nom}</option>)}</select></label>}
         <label className="text-xs font-medium text-gray-700">{labels.loadMapping}<select className="input mt-1 block text-sm" value="" onChange={event => { const selected = savedMappings.find(item => item.id === event.target.value); if (selected) { setMappings(selected.mappings); if (selected.sheetTypes) setSheetTypes(previous => ({ ...previous, ...selected.sheetTypes })); if (selected.transforms) setTransforms(selected.transforms); if (selected.statusMappings) setStatusMappings(selected.statusMappings); if (selected.scoreMappings) setScoreMappings(selected.scoreMappings) } }}><option value="">—</option>{savedMappings.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       </div>
+      {recognized && labels.profile && <div role="status" className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-950 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100">
+        <span>{labels.profile.recognized.replace('{name}', recognized.profile.name).replace('{pct}', String(Math.round(recognized.score * 100)))}{recognized.profile.builtin ? ` — ${labels.profile.builtin}` : ''}{recognized.profile.partial ? ` — ${labels.profile.partial}` : ''}</span>
+        <button type="button" onClick={applyProfile} className="btn-secondary text-xs">{labels.profile.apply}</button>
+      </div>}
       <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
         <p className="font-semibold">{labels.mappingHelpTitle}</p><p className="mt-1">{labels.mappingHelp}</p>
         <p className="mt-2"><span className="font-medium">{labels.summaryTitle} :</span> {selectedSheets.length} {labels.importableSheets.toLowerCase()} · {ignoredSheets.length} {labels.ignoredSheets.toLowerCase()}</p>
