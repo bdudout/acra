@@ -38,6 +38,7 @@ export default function RasRadView({ data }: { data: RasRadData }) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <p className="text-sm text-gray-600 dark:text-gray-300"><span className="font-medium">{a.globalLabel} :</span> {pastille(data.global)}</p>
+        <a href="/api/appetence/export" className="text-xs text-ebios-700 hover:underline">{a.exportRasRad}</a>
       </div>
 
       {/* ── RAS ── */}

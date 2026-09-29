@@ -6,6 +6,68 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (11) — Codex : DORA → actions et export PDF RAS/RAD
+
+**Branche** : `feat/historical-excel-import` (PR #191, non fusionnée à ce stade).
+
+- **Constats de tests de résilience DORA → plans d'action** : route
+  `POST /api/tests-resilience/[id]/actions` ; seul un constat ouvert est promu,
+  priorité dérivée de sa sévérité (4=CRITIQUE, 3=MAJEUR, 1–2=MODERE), lien
+  polymorphe `TEST_RESILIENCE` avec ref `constat:<index>` ; une action ouverte
+  identique est renvoyée, jamais dupliquée. Bouton et retour contextualisé dans
+  `TestsResilienceManager`, i18n ×5.
+- **Export PDF RAS/RAD** : route `/api/appetence/export`, même agrégat serveur
+  que la vue `/appetence`, audit `EXPORT`, template
+  `ras-rad-pdf-template.tsx` compilé par `compile-pdf-template.mjs`. Le PDF
+  contient le voyant global, le RAS (seuil et dépassements) et le RAD (appétit,
+  maturité, KRI) ; bouton de téléchargement dans la vue.
+- **Projet 360** : les exports directs PDF et Excel comportent maintenant un bilan
+  par chacun des six domaines (cyber, SI, projet, métier, fraude,
+  externalisation), y compris les risques non classés. C'est le même objet
+  `Analyse` et le même registre de risques, sans copie de données.
+- **Tiers Projet 360** : la phase Qualification comprend `ProjectTiers` ; les
+  noms déjà contractualisés sont proposés depuis `/api/tiers/names`, puis les
+  tiers sont persistés par la route dédiée
+  `PUT /api/analyses/:id/tiers`, sans modifier les scénarios de l'atelier 3.
+- **CAF** : recherche effectuée sur les publications NCSC officielles v4.0.
+  Point de cadrage important : le CAF fournit 41 outcomes et tables IGP ; il ne
+  mandate pas de profil Basic/Enhanced sectoriellement universel. Les cibles
+  Basic/Enhanced doivent donc être proposées comme modèle ACRA documenté et
+  révisable, jamais comme prescription NCSC/régulateur. Sources : collection et
+  PDF v4.0 NCSC (pages 3–6, IGP tables). L'écran Maturité CAF offre le lien
+  direct vers les tables IGP officielles et explique que le profil cible dépend
+  de l'autorité de supervision/cadre sectoriel.
+- **Vérifié** : `npx vitest run src/__tests__/unit/api/tests-resilience.route.test.ts`
+  (7 verts) ; `npx tsc --noEmit` vert ; compilation de tous les templates PDF ;
+  rendu direct du template RAS/RAD : en-tête `%PDF` valide (3 604 octets) ;
+  suite complète `npm test -- --run --reporter=dot` : **276 fichiers, 2 276
+  tests verts** ; `tsc` et `i18n:check` verts.
+- **Build** : `npm run build` **vert** après purge du seul cache régénérable
+  `.next/cache` (1,7 Go) ; le build avait d'abord atteint `ENOSPC`, puis le
+  sandbox réseau empêchait Next de charger Inter. Le build a ensuite terminé,
+  y compris ses routes standalone et le nettoyage du `.env` de production.
+- **Recette HTTP locale** : serveur déjà actif sur `localhost:3005` ;
+  `GET /api/health` = 200. Sans session, `/api/appetence/export`,
+  `POST /api/tests-resilience/test/actions` et
+  `PUT /api/analyses/test/tiers` sont interceptées par le middleware (307 vers
+  l'authentification), sans écriture de données.
+- **Recette Playwright** : lancée contre `localhost:3005` avec une URL PostgreSQL
+  locale temporaire (Docker expose 5432 ; `.env` réserve `db` au réseau Docker).
+  Les cinq premiers scénarios ont passé : quatre parcours/format d'import,
+  authentification valide et refus de mot de passe. Le cycle cyber était encore
+  en cours quand la session d'exécution a été interrompue ; relancer avec
+  `DATABASE_URL` pointant sur `localhost:5432` et `E2E_BASE_URL=http://localhost:3005`.
+- **Cycle cyber E2E** : repris contre `127.0.0.1:3005` avec le serveur démarré
+  sur l'URL PostgreSQL locale temporaire ; **vert** (41,3 s). Le scénario valide
+  les cinq ateliers, soumission, approbation RSSI, acceptation métier, gel et
+  export PDF, puis le teardown retire les données `e2e_*`.
+- **À poursuivre** : recette navigateur connectée de tous les parcours. Le
+  composant Atelier 3 propose déjà les tiers connus par défaut via
+  `/api/tiers/names`; si le parcours Projet 360 doit éditer ses tiers depuis ses
+  phases, créer un écran dédié plutôt que détourner l'atelier EBIOS 3.
+
+---
+
 ## 2026-09-29 (10) — Claude Code : onglet Projets, module Projets 360, pré-remplissage, dérogations en place
 
 **Branche** : `feat/historical-excel-import` (PR #191). Commits `590129b` (dérogations),

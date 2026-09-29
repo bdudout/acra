@@ -12,6 +12,7 @@ const db = vi.hoisted(() => ({
   processus: { findFirst: vi.fn() },
   organization: { findUnique: vi.fn() },
   incident: { findMany: vi.fn() },
+  planAction: { findFirst: vi.fn(), create: vi.fn() },
 }))
 const auditLog = vi.hoisted(() => vi.fn())
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'u1', role: 'ANALYSTE' } })) }))
@@ -25,6 +26,7 @@ vi.mock('@/lib/logger', () => ({ auditLog: (...a: unknown[]) => auditLog(...a), 
 import { GET, POST } from '@/app/api/tests-resilience/route'
 import { PATCH, DELETE } from '@/app/api/tests-resilience/[id]/route'
 import { GET as RAPPORT } from '@/app/api/tests-resilience/rapport/route'
+import { POST as PROMOTE_CONSTAT } from '@/app/api/tests-resilience/[id]/actions/route'
 
 const getReq = (q = '') => ({ nextUrl: new URL(`http://x/api/tests-resilience${q}`), headers: new Headers() }) as never
 const req = (body: unknown) => ({ json: async () => body, headers: new Headers() }) as never
@@ -38,6 +40,8 @@ beforeEach(() => {
   db.riskItem.findMany.mockResolvedValue([{ id: 'r1' }])
   db.processus.findFirst.mockResolvedValue(null)
   db.testResilience.create.mockImplementation(async (a: { data: Record<string, unknown> }) => ({ id: 't1', ...a.data }))
+  db.planAction.findFirst.mockResolvedValue(null)
+  db.planAction.create.mockImplementation(async (a: { data: Record<string, unknown> }) => ({ id: 'pa1', ...a.data }))
 })
 
 describe('/api/tests-resilience', () => {
@@ -75,6 +79,15 @@ describe('/api/tests-resilience', () => {
     expect((await DELETE(req({}), params)).status).toBe(404)
     expect(db.testResilience.findFirst.mock.calls[0][0].where).toEqual({ id: 't9', organizationId: 'org1' })
     expect(db.testResilience.update).not.toHaveBeenCalled()
+  })
+
+  it('constat ouvert → plan d’action unifié, sans doublon', async () => {
+    db.testResilience.findFirst.mockResolvedValue({ id: 't9', intitule: 'Pentest', constats: [{ description: 'MFA absent', severite: 4, corrige: false }] })
+    const res = await PROMOTE_CONSTAT(req({ constatIndex: 0 }), params)
+    expect(res.status).toBe(201)
+    expect(db.planAction.create.mock.calls[0][0].data).toMatchObject({ organizationId: 'org1', priorite: 'CRITIQUE', liens: { create: { type: 'TEST_RESILIENCE', targetId: 't9', ref: 'constat:0' } } })
+    db.planAction.findFirst.mockResolvedValue({ id: 'pa1' })
+    expect((await PROMOTE_CONSTAT(req({ constatIndex: 0 }), params)).status).toBe(200)
   })
 
   it('rapport de réexamen : document Word, export journalisé', async () => {

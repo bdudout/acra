@@ -196,6 +196,7 @@ export default async function AtelierPage({
               answers: sanitizeAnswers360((analyse as { qualification?: unknown }).qualification) as Record<string, boolean>,
               sources: sanitizeSources360((analyse as { qualification?: unknown }).qualification),
               appetitSeuil: directAppetit.seuilGlobal ?? null,
+              tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
             } : undefined}
           />
         </main>

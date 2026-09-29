@@ -94,6 +94,13 @@ describe('MaturityDashboard', () => {
     expect(push).toHaveBeenCalledWith('/maturite?referentiel=NIST_CSF')
   })
 
+  it('pour le CAF, renvoie vers les tableaux IGP officiels du NCSC sans présenter une cible ACRA comme normative', () => {
+    render(<MaturityDashboard {...props()} />)
+    const source = screen.getByRole('link', { name: 'Consulter les tableaux IGP officiels du NCSC' })
+    expect(source.getAttribute('href')).toBe('https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf')
+    expect(screen.getByText(/profil cible est à définir par l’autorité de supervision/i)).toBeTruthy()
+  })
+
   it('lecture seule : contrôles désactivés, pas d’enregistrement ni d’action', () => {
     render(<MaturityDashboard {...props({}, false)} />)
     expect((screen.getByLabelText('A1 Maturité actuelle') as HTMLSelectElement).disabled).toBe(true)

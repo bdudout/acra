@@ -18,6 +18,7 @@ import ContexteEditor from '@/components/ContexteEditor'
 import Questionnaire360 from '@/components/projet360/Questionnaire360'
 import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
 import Dashboard360 from '@/components/projet360/Dashboard360'
+import ProjectTiers from '@/components/projet360/ProjectTiers'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -71,7 +72,7 @@ export default function PhasedRiskWorkshop({
   /** Ouvre directement cette phase (deep-link `?phase=`), ex. depuis le registre. */
   initialPhaseKey?: string
   /** Analyse projet 360 : réponses du questionnaire et seuil d'appétit global (tableau de bord). */
-  projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null }
+  projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null; tiers: { id: string; nom: string; type: string }[] }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
@@ -131,6 +132,7 @@ export default function PhasedRiskWorkshop({
         <>
           <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} sources={projet360.sources} onRisksCreated={() => setRegistryKey(k => k + 1)} />
           {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} />}
+          <ProjectTiers analyseId={analyseId} initial={projet360.tiers} editable={editable} />
         </>
       ) : phase.type === 'note' ? (
         <section className="card p-6">

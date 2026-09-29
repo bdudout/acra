@@ -34,4 +34,17 @@ describe('buildDirectReportWorkbook', () => {
     const back = new ExcelJS.Workbook(); await back.xlsx.load(buf as unknown as ExcelJS.Buffer)
     expect(back.worksheets).toHaveLength(5)
   })
+
+  it('ajoute le bilan par domaine au rapport Projet 360', async () => {
+    const projet = buildDirectReport({
+      analyse: { nom: 'Portail', methode: 'PROJET_360', cadrage: null },
+      risques: [{ id: 'p', nom: 'Exposition', gravite: 3, vraisemblance: 3, niveauRisque: 9, strategie: 'REDUIRE', domaine: 'CYBER' }],
+      mesures: [], plans: [],
+    }, { scale: resolveScaleConfig(null), appetit: APPETIT_DEFAULT })
+    const wb = await buildDirectReportWorkbook(projet, 'fr')
+    const bilan = wb.getWorksheet('Bilan par domaine')!
+    expect(bilan.getRow(1).values).toContain('Domaine')
+    expect(bilan.getRow(2).values).toContain('Cybersécurité')
+    expect(bilan.getRow(2).values).toContain(9)
+  })
 })

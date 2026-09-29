@@ -160,6 +160,14 @@ export default function MaturityDashboard({ canManage, scale, referentiels, prof
           </div>
         </div>
         <p className="mt-3 text-xs text-gray-600 dark:text-gray-300 bg-ebios-50/60 dark:bg-gray-800/60 rounded-md px-3 py-2">{m.rasRad}</p>
+        {profile.referentiel === 'NCSC_CAF' && (
+          <p className="mt-2 text-xs text-gray-600 dark:text-gray-300 rounded-md border border-indigo-100 bg-indigo-50/50 dark:border-indigo-900 dark:bg-indigo-950/30 px-3 py-2">
+            {m.cafTargetNote}{' '}
+            <a className="font-medium text-ebios-700 dark:text-ebios-300 hover:underline" href="https://www.ncsc.gov.uk/files/NCSC-Cyber-Assessment-Framework-4.0.pdf" target="_blank" rel="noreferrer">
+              {m.cafOfficialIgp}<ExternalLink size={11} className="ml-1 inline" aria-hidden="true" />
+            </a>
+          </p>
+        )}
       </section>
 
       {/* ── Tableau de bord (le « RAD ») ── */}

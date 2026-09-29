@@ -42,6 +42,8 @@ export default function TestsResilienceManager() {
   const [form, setForm] = useState<Form | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [actionMsg, setActionMsg] = useState<Record<string, string>>({})
+  const [actionBusy, setActionBusy] = useState<string | null>(null)
 
   async function load(a: number | null) {
     const d = await fetch(`/api/tests-resilience${a ? `?annee=${a}` : ''}`, { cache: 'no-store' }).then(x => (x.ok ? x.json() : null)).catch(() => null)
@@ -79,6 +81,17 @@ export default function TestsResilienceManager() {
     if (!window.confirm(r.deleteConfirm)) return
     await fetch(`/api/tests-resilience/${id}`, { method: 'DELETE' }).catch(() => null)
     await load(annee)
+  }
+
+  async function promoteFinding(testId: string, constatIndex: number) {
+    const key = `${testId}:${constatIndex}`
+    setActionBusy(key); setActionMsg(prev => ({ ...prev, [key]: '' }))
+    try {
+      const res = await fetch(`/api/tests-resilience/${testId}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ constatIndex }) })
+      const data = await res.json().catch(() => ({}))
+      setActionMsg(prev => ({ ...prev, [key]: res.ok ? (data.existing ? r.actionExists : r.actionCreated) : r.actionError.replace('{error}', String(data.error ?? res.status)) }))
+    } catch { setActionMsg(prev => ({ ...prev, [key]: r.actionError.replace('{error}', '—') })) }
+    finally { setActionBusy(null) }
   }
 
   if (!data) return <p className="text-sm text-gray-400">…</p>
@@ -201,7 +214,10 @@ export default function TestsResilienceManager() {
                     <td className="px-3 py-2 text-xs">{types[row.type] ?? row.type}</td>
                     <td className="px-3 py-2 text-xs">{statuts[row.statut] ?? row.statut}</td>
                     <td className="px-3 py-2 text-xs tabular-nums">{row.dateRealisation ? fmt(row.dateRealisation) : '—'}</td>
-                    <td className="px-3 py-2 text-xs tabular-nums">{cs.filter(c => !c.corrige).length}/{cs.length}</td>
+                    <td className="px-3 py-2 text-xs">{cs.length === 0 ? '—' : <ul className="space-y-1">{cs.map((c, index) => {
+                      const key = `${row.id}:${index}`
+                      return <li key={key}><span className={c.corrige ? 'text-green-700' : 'text-amber-700'}>{c.corrige ? '✓' : `S${c.severite}`} · {c.description}</span>{data.canWrite && !c.corrige && <><button type="button" disabled={actionBusy === key} onClick={() => promoteFinding(row.id, index)} className="ml-2 text-ebios-700 hover:underline disabled:opacity-50">{r.createAction}</button>{actionMsg[key] && <span role="status" className="ml-2 text-gray-500">{actionMsg[key]}</span>}</>}</li>
+                    })}</ul>}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       {data.canWrite && <>
                         <button type="button" onClick={() => edit(row)} className="text-xs text-ebios-700 hover:underline mr-3">{r.edit}</button>

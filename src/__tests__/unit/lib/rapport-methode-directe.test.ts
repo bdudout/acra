@@ -41,6 +41,28 @@ describe('buildDirectReport', () => {
     expect(r.synthese).toMatchObject({ total: 2, aTraiter: 1, acceptables: 1, sansProprietaire: 1, mesures: 2, plans: 1 })
     expect(r.synthese.parPalier.map(p => [p.label, p.count])).toEqual([['Faible', 0], ['Modéré', 1], ['Élevé', 0], ['Critique', 1]])
   })
+
+  it('produit un bilan par domaine pour une analyse Projet 360', () => {
+    const projet = buildDirectReport({
+      ...input,
+      analyse: { ...input.analyse, methode: 'PROJET_360' },
+      risques: [
+        { ...input.risques[0], domaine: 'CYBER' },
+        { ...input.risques[1], domaine: 'PROJECT' },
+        { id: 'c', nom: 'Risque non classé', gravite: 1, vraisemblance: 1, niveauRisque: 1, strategie: 'ACCEPTER', domaine: null },
+      ],
+    }, ctx)
+
+    expect(projet.synthese.parDomaine).toEqual([
+      { domaine: 'CYBER', total: 1, aTraiter: 0, acceptables: 1, niveauMax: 4 },
+      { domaine: 'IT', total: 0, aTraiter: 0, acceptables: 0, niveauMax: 0 },
+      { domaine: 'PROJECT', total: 1, aTraiter: 1, acceptables: 0, niveauMax: 12 },
+      { domaine: 'BUSINESS', total: 0, aTraiter: 0, acceptables: 0, niveauMax: 0 },
+      { domaine: 'FRAUD', total: 0, aTraiter: 0, acceptables: 0, niveauMax: 0 },
+      { domaine: 'OUTSOURCING', total: 0, aTraiter: 0, acceptables: 0, niveauMax: 0 },
+    ])
+    expect(projet.synthese.nonClasses).toBe(1)
+  })
 })
 
 describe('REPORT_STRINGS', () => {
