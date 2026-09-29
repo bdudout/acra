@@ -41,4 +41,10 @@ describe('rapport-render', () => {
     expect(libelleColonne('rapports.cols.periodesEnRetard', tr)).toBe('Périodes en retard')
     expect(resoudreCellule({ k: 'rapports.conception.ADEQUATE' }, tr)).toBe('Adéquate')
   })
+  it('libellés de l’audit interne : repli sur les sous-blocs dédiés', () => {
+    expect(titreSection('universAttention', tr)).toBe('Univers à planifier ou en retard')
+    expect(libelleKpi('tauxVerification', tr)).toBe('Taux de vérification')
+    expect(libelleColonne('rapports.cols.prochaine', tr)).toBe('Prochaine échéance')
+    expect(resoudreCellule({ k: 'rapports.notations.3' }, tr)).toBe('Insuffisant')
+  })
 })

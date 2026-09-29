@@ -305,7 +305,7 @@ export async function renderAnalyseDocx(analyse: Any, config: Any | null, locale
 
   const section: ISectionOptions = { properties: {}, children }
   const doc = new Document({
-    creator: 'ACRA — Augmented Cyber Risk Analysis',
+    creator: 'ACRA — Augmented Cyber (& Business) Risk Analysis',
     title: s(analyse.nom) || 'Analyse',
     sections: [section],
   })

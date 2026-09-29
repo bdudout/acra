@@ -11,7 +11,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3 text-xs text-gray-500">
-        <span>© {new Date().getFullYear()} ACRA — Augmented Cyber Risk Analysis</span>
+        <span>© {new Date().getFullYear()} ACRA — Augmented Cyber (& Business) Risk Analysis</span>
         <div className="flex gap-4">
           <Link href="/legal/privacy" className="hover:text-gray-600 transition-colors">
             {t.legal.mentions.footerPrivacy}

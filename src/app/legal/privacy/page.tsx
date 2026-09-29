@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">{p.s1}</h2>
             <p>
-              ACRA (Augmented Cyber Risk Analysis) est un outil interne de gestion des risques cyber.
+              ACRA — Augmented Cyber (& Business) Risk Analysis — est un outil interne de gestion des risques cyber.
               Le responsable du traitement est l'organisation qui déploie et opère cette instance de l'application.
               Pour toute question relative à la protection des données, contactez votre Délégué à la Protection des Données (DPO)
               ou l'administrateur de l'application.

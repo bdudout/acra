@@ -195,6 +195,7 @@ model Organization {
   @@index([parentId])
   @@index([path])
   rapportEditions RapportEdition[]
+  auditUnivers AuditUnivers[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -891,6 +892,12 @@ model AuditMission {
   processusIds       Json @default("[]")
   controleIds        Json @default("[]")
 
+  // Lot L4 — notation (1-4), jalons du cycle, indépendance, périmètre en univers.
+  notation      Int?
+  jalons        Json @default("{}")   // { lettreMission, reunionOuverture, rapportProvisoire, reponseAudite, reunionCloture, rapportFinal } (ISO)
+  independance  Json @default("{}")   // { conflit, commentaire?, declarePar, declareLe }
+  universIds    Json @default("[]")   // entrées de l'univers d'audit couvertes
+
   constats AuditConstat[]
 
   createdAt DateTime @default(now())
@@ -919,6 +926,19 @@ model AuditConstat {
   echeance          DateTime?
   // OUVERT | EN_COURS | RESOLU | ACCEPTE
   statut            String    @default("OUVERT")
+
+  // Lot L4 — constat structuré (critère / constat = description / cause / conséquence /
+  // recommandation) et suivi de la recommandation (réalisée par l'audité, vérifiée par l'audit).
+  critere     String? @db.Text
+  cause       String? @db.Text
+  consequence String? @db.Text
+  echeanceInitiale DateTime?
+  reports     Json @default("[]") // [{ ancienne, nouvelle, motif, demandePar, demandeLe, statut, decidePar?, decideLe? }]
+  realiseePar String?
+  realiseeLe  DateTime?
+  verifiePar  String?
+  verifieLe   DateTime?
+  verificationCommentaire String? @db.Text
 
   // Rattachement optionnel au registre (traçabilité audit → risque).
   riskItemId String?
@@ -2101,4 +2121,26 @@ model RapportEdition {
 
   @@index([organizationId, code])
   @@index([statut])
+}
+
+// ─── Univers d'audit (lot L4) ────────────────────────────────────────────────
+// Entités auditables (processus, entités, référentiels…) cotées par risque : le plan pluriannuel en
+// déduit la couverture (dernière mission, cycle, prochaine échéance). Cf. lib/audit-l4.ts.
+model AuditUnivers {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  intitule    String
+  type        String  @default("AUTRE") // PROCESSUS | ENTITE | REFERENTIEL | AUTRE
+  risque      Int     @default(2)       // 1-4
+  cycleAns    Int?                      // null = cycle par défaut selon le risque
+  processusId String?
+  commentaire String? @db.Text
+  actif       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { resolveBranding } from '@/lib/branding'
 
-const DEF = { nom: 'ACRA', baseline: 'Augmented Cyber Risk Analysis' }
+const DEF = { nom: 'ACRA', baseline: 'Augmented Cyber (& Business) Risk Analysis' }
 
 describe('resolveBranding', () => {
   it('sans configuration → défauts', () => {

@@ -8,7 +8,7 @@
  * à la génération. Cycle : brouillon → relu → validé → diffusé, avec quatre-yeux.
  */
 
-export const RAPPORT_CODES = ['R-INC-1', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3'] as const
+export const RAPPORT_CODES = ['R-INC-1', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'] as const
 export type RapportCode = (typeof RAPPORT_CODES)[number]
 
 export const RAPPORT_STATUTS = ['BROUILLON', 'RELU', 'VALIDE', 'DIFFUSE'] as const
@@ -33,7 +33,7 @@ export interface RapportContenu {
 // ─── Catalogue ───────────────────────────────────────────────────────────────
 
 export interface ModulesRapport { incidentsActive?: boolean; registreRisquesActive?: boolean; controlePermanentActive?: boolean; auditInterneActive?: boolean; kriActive?: boolean; reglementaireActive?: boolean; profilsOperationnelsActive?: boolean }
-export interface RapportDef { code: RapportCode; module: 'incidents' | 'grc' | 'controle'; destinataires: string }
+export interface RapportDef { code: RapportCode; module: 'incidents' | 'grc' | 'controle' | 'audit'; destinataires: string }
 
 export const RAPPORT_CATALOGUE: RapportDef[] = [
   { code: 'R-INC-1', module: 'incidents', destinataires: 'Direction, RSSI' },
@@ -42,12 +42,15 @@ export const RAPPORT_CATALOGUE: RapportDef[] = [
   { code: 'R-CTL-1', module: 'controle', destinataires: 'Contrôle permanent, N2' },
   { code: 'R-CTL-2', module: 'controle', destinataires: 'Comité de contrôle interne' },
   { code: 'R-CTL-3', module: 'controle', destinataires: 'N2, direction' },
+  { code: 'R-AUD-1', module: 'audit', destinataires: "Comité d'audit" },
+  { code: 'R-AUD-2', module: 'audit', destinataires: 'Audité, direction' },
+  { code: 'R-AUD-3', module: 'audit', destinataires: "Comité d'audit" },
 ]
 
 /** Rapports proposés selon les modules actifs (incidents pour R-INC/R-PER, un module GRC pour R-GRC). */
 export function rapportsDisponibles(m: ModulesRapport): RapportDef[] {
   const grc = !!(m.registreRisquesActive || m.controlePermanentActive || m.auditInterneActive || m.kriActive || m.reglementaireActive || m.profilsOperationnelsActive)
-  return RAPPORT_CATALOGUE.filter(r => (r.module === 'incidents' ? !!m.incidentsActive : r.module === 'controle' ? !!m.controlePermanentActive : grc))
+  return RAPPORT_CATALOGUE.filter(r => (r.module === 'incidents' ? !!m.incidentsActive : r.module === 'controle' ? !!m.controlePermanentActive : r.module === 'audit' ? !!m.auditInterneActive : grc))
 }
 
 // ─── Périodes ────────────────────────────────────────────────────────────────

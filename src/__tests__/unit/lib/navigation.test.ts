@@ -75,7 +75,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(m.mode).toBe('grc')
     // 1re entrée = menu « Pilotage » (tableau de bord + cockpit GRC + appétence RAS/RAD).
     // Le plan d'action unifié est le lien cœur « actions » (plus de doublon « plansActions »).
-    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence', 'rapports'] })
+    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence'] })
     // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
     expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
@@ -169,12 +169,13 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     expect(g && g.kind === 'group' && g.items.slice(0, 2)).toEqual(['analyses', 'projets'])
   })
 
-  it('rapports GRC : lien du groupe Pilotage pour les rôles à lecture globale, absent pour le lecteur', () => {
-    const items = (role: Parameters<typeof buildNav>[0], mods: typeof none) => {
-      const e = buildNav(role, mods).entries[0]
-      return e.kind === 'group' ? e.items : [e.key]
+  it('reporting réglementaire : rattaché au groupe Conformité & réglementaire, pas au Pilotage', () => {
+    const groupe = (role: Parameters<typeof buildNav>[0], id: string) => {
+      const g = buildNav(role, { ...none, registre: true }).entries.find(e => e.kind === 'group' && e.id === id)
+      return g && g.kind === 'group' ? g.items : []
     }
-    expect(items('RSSI', { ...none, registre: true })).toContain('rapports')
-    expect(items('LECTEUR', { ...none, registre: true })).not.toContain('rapports')
+    expect(groupe('RSSI', 'conformiteReglementaire')).toContain('rapports')
+    expect(groupe('RSSI', 'pilotage')).not.toContain('rapports')
+    expect(groupe('LECTEUR', 'conformiteReglementaire')).not.toContain('rapports')
   })
 })

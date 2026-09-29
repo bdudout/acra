@@ -14,10 +14,21 @@ export function resoudreCellule(c: Cellule, tr: Traducteur): string | number {
   return c
 }
 
-// Les libellés du contrôle permanent (L3) vivent dans des sous-blocs dédiés (`…Ctl`) : repli après les communs.
-export const titreSection = (id: string, tr: Traducteur): string => tr(`rapports.sections.${id}`) ?? tr(`rapports.sectionsCtl.${id}`) ?? id
-export const libelleKpi = (cle: string, tr: Traducteur): string => tr(`rapports.kpis.${cle}`) ?? tr(`rapports.kpisCtl.${cle}`) ?? cle
-export const libelleColonne = (cle: string, tr: Traducteur): string => tr(cle) ?? tr(cle.replace('rapports.cols.', 'rapports.colsCtl.')) ?? cle
+// Les libellés du contrôle permanent (L3) et de l'audit (L4) vivent dans des sous-blocs dédiés
+// (`…Ctl`, `…Aud`) : repli après les libellés communs.
+const SUFFIXES = ['', 'Ctl', 'Aud'] as const
+const premier = (tr: Traducteur, base: string, cle: string): string | undefined => {
+  for (const suf of SUFFIXES) { const v = tr(`rapports.${base}${suf}.${cle}`); if (v !== undefined) return v }
+  return undefined
+}
+export const titreSection = (id: string, tr: Traducteur): string => premier(tr, 'sections', id) ?? id
+export const libelleKpi = (cle: string, tr: Traducteur): string => premier(tr, 'kpis', cle) ?? cle
+export const libelleColonne = (cle: string, tr: Traducteur): string => {
+  const direct = tr(cle)
+  if (direct !== undefined) return direct
+  const court = cle.replace('rapports.cols.', '')
+  return premier(tr, 'cols', court) ?? cle
+}
 
 export function formaterKpi(k: Kpi, devise: string, locale: string, tr?: Traducteur): string | number {
   if (typeof k.valeur === 'string') return tr?.(`rapports.niveaux.${k.valeur}`) ?? k.valeur

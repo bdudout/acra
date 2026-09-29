@@ -6,6 +6,46 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (17) — Claude Code : lot L4 « Audit interne » + brand + navbar — ⚠ TESTS À REFAIRE
+
+### ⚠ Tests L3 (contrôle permanent) à refaire — demande explicite de l'utilisateur
+Contexte : la CI du push L3 (`36129a1`) n'était **pas encore relue** ; la recette navigateur a été faite en E2E
+automatisé uniquement (1 parcours). À refaire / compléter à la main sur l'instance de dev :
+1. **CI PR #192** : relire les 8 contrôles sur `36129a1` et suivants ; en particulier « Production build & cyber E2E »
+   (`e2e/controles-l3.spec.ts` s'exécute **avant** `incidents-l1` et `rapports`, en un seul run, sur la même org).
+2. **Contrôles** : créer un contrôle avec type / mode / **contrôle clé** / méthode d'échantillonnage ; vérifier la taille
+   d'échantillon suggérée (population 8 / 40 / 200 / 900 / 5000, clé ×1,5) et qu'elle reste modifiable.
+3. **Conception** : évaluer la conception d'un contrôle **jamais exécuté** (détail ouvrable), puis d'un contrôle exécuté ;
+   effacer l'évaluation (« Non évaluée ») ; contrôler RBAC (lecture seule pour un non-2ᵉ ligne, `LECTEUR`, `METIER`).
+4. **Appréciation conjuguée** : combiner conception × efficacité (efficace / à surveiller / défaillant) avec de vraies exécutions.
+5. **Plan annuel** `/controles/plan` : périodicités hebdo / mensuelle / trimestrielle / semestrielle / annuelle, changement
+   d'année, contrôle créé en cours d'année, contrôle inactif exclu, pics de charge, affichage mobile et thème sombre.
+6. **API v1** `POST /api/v1/controls/{id}/results` avec une **vraie clé** (scope write, puis scope read → 403), contrôle manuel
+   (400), autre organisation (404), anomalie → action liée au risque, `fluxInterrompu` dans `GET /api/v1/controls`.
+7. **Récurrence / escalade** : 2 anomalies consécutives (N2), contrôle clé (comité) ; badges dans la liste.
+8. **Rapports R-CTL-1/2/3** : génération sur une vraie période, cycle relu → validé, export Excel, impression PDF ; ×5 langues.
+9. **Migration** `20260929200000_controle_l3` sur une copie de base de production (colonnes par défaut, contrôles existants).
+
+### Fait dans ce tour
+- **Marque** : « Augmented Cyber **(& Business)** Risk Analysis » partout (README ×5, application : titres, footer, exports,
+  PDF/Word/PowerPoint, i18n `appSubtitle`/`acraSubtitle`, page vie privée, `scripts/setup.sh`).
+- **Navbar** : « Rapports » sort de Pilotage → groupe **Conformité & réglementaire** (mêmes rôles à lecture globale),
+  libellé **« Rapports GRC »** ×5 (« Reporting réglementaire » existait déjà pour la page DORA — d'où le choix).
+- **L4 audit** : `lib/audit-l4` (pur) ; migration `20260929210000_audit_l4` ; `VERIFIE` ajouté aux statuts de constat
+  (terminal) ; routes `audit/constats/[id]/suivi`, `audit/missions/[id]/independance`, `audit/univers[/id]`, `audit/plan` ;
+  rapports R-AUD-1/2/3 ; UI (suivi de recommandation, notation/jalons/indépendance, `/audit/plan`) ; i18n ×5.
+- **Vérifié** : `tsc` 0 · `npm test` **2519/2519** · `i18n:check` · `npm run build` OK · SQL de la migration comparé
+  hors ligne à `prisma migrate diff` (mêmes 14 colonnes + table `AuditUnivers`, mise en forme différente seulement).
+- ⚠ **NON vérifié** : Docker Desktop ne démarrait plus (moteur indisponible après saturation du disque) → **migration
+  `20260929210000_audit_l4` non appliquée localement** (`npx prisma migrate deploy` + `prisma generate` + redémarrage du
+  dev à faire) et **`e2e/audit-l4.spec.ts` non exécuté** (à lancer : `E2E_BASE_URL=http://localhost:3000 npx playwright test
+  e2e/audit-l4.spec.ts` avec `DATABASE_URL` en localhost). La vérification par l'AUDITEUR n'est couverte que par les tests
+  de route (pas d'utilisateur AUDITEUR dans le seed E2E).
+- **Reste L4** : relances automatiques par échéance, feuilles de travail, `auditConfig` (cycles / libellés de notation).
+- **Environnement** : disque quasi plein (196/228 Go) — cache npm et `.next/cache` purgés ; à surveiller.
+
+---
+
 ## 2026-09-29 (16) — Claude Code : lot L3 « Contrôle permanent » + correctif CI E2E
 
 - **CI PR #192** : L1 8/8 verts ; sur le push L2, **E2E en échec** = contamination entre specs (l'incident créé par

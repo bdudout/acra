@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const contenu = edition.contenu as unknown as RapportContenu
 
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'ACRA — Augmented Cyber Risk Analysis'
+  wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
   wb.created = new Date()
   const noms = new Set<string>()
   for (const f of contenuVersFeuilles(contenu, tr, locale)) {

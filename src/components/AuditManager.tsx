@@ -9,6 +9,9 @@
 
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import RecommandationSuivi, { type SuiviAction } from '@/components/RecommandationSuivi'
+import MissionSuiviPanel from '@/components/MissionSuiviPanel'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
@@ -26,6 +29,8 @@ interface Mission {
   processusIds: string[]; controleIds: string[]
   type: string; recurrence: string
   archiveLe?: string | null; archivable?: boolean; nbRapports?: number
+  // Lot L4
+  notation?: number | null; jalons?: Record<string, string>; independance?: Record<string, unknown>
   rapports?: { id: string; nom: string; taille: number }[]
 }
 type ProcLite = { id: string; nom: string }
@@ -35,13 +40,16 @@ interface Constat {
   criticite: number | null; source: string; responsableAction: string | null
   echeance: string | null; statut: string; riskItemId: string | null; riskIntitule: string | null
   enRetard: boolean
+  // Lot L4
+  critere?: string | null; cause?: string | null; consequence?: string | null
+  echeanceInitiale?: string | null; reports?: unknown; realiseeLe?: string | null; verifieLe?: string | null; verificationCommentaire?: string | null
 }
 type Risk = { id: string; intitule: string }
 
 type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[]; type: string; recurrence: string }
 const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [], type: 'THEMATIQUE', recurrence: 'NONE' }
-type CForm = { intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string }
-const EMPTY_C: CForm = { intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '' }
+type CForm = { critere: string; cause: string; consequence: string; intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string }
+const EMPTY_C: CForm = { critere: '', cause: '', consequence: '', intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '' }
 
 const MISSION_BADGE: Record<string, string> = {
   PLANIFIEE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -57,6 +65,7 @@ const CONSTAT_BADGE: Record<string, string> = {
   OUVERT: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
   EN_COURS: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   RESOLU: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  VERIFIE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
   ACCEPTE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
 }
 function critColor(n: number | null): string {
@@ -66,7 +75,7 @@ function critColor(n: number | null): string {
   return 'text-gray-500'
 }
 
-export default function AuditManager({ canWrite }: { canWrite: boolean }) {
+export default function AuditManager({ canWrite, canFollow = false }: { canWrite: boolean; canFollow?: boolean }) {
   const { t, locale } = useTranslation()
   const a = t.auditInterne
   const [missions, setMissions] = useState<Mission[]>([])
@@ -89,6 +98,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
   const [cote, setCote] = useState<ProgrammeResultat[]>([])
   const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
   const [showArchived, setShowArchived] = useState(false)
+  const [suiviId, setSuiviId] = useState<string | null>(null)
   // Deep-link pilotage : ?constat=critique → pré-filtre les constats de criticité maximale (4).
   const _sp = useSearchParams()
   const _critInit = _sp.get('constat') === 'critique' ? String(CRITICITE_MAX) : ''
@@ -195,14 +205,14 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
     setShowCForm(true); setError(null)
     if (c) {
       setCEditId(c.id)
-      setCForm({ intitule: c.intitule, description: c.description ?? '', recommandation: c.recommandation ?? '', criticite: c.criticite?.toString() ?? '', source: c.source, responsableAction: c.responsableAction ?? '', echeance: c.echeance ? c.echeance.slice(0, 10) : '', statut: c.statut, riskItemId: c.riskItemId ?? '' })
+      setCForm({ critere: c.critere ?? '', cause: c.cause ?? '', consequence: c.consequence ?? '', intitule: c.intitule, description: c.description ?? '', recommandation: c.recommandation ?? '', criticite: c.criticite?.toString() ?? '', source: c.source, responsableAction: c.responsableAction ?? '', echeance: c.echeance ? c.echeance.slice(0, 10) : '', statut: c.statut, riskItemId: c.riskItemId ?? '' })
     } else { setCEditId(null); setCForm(EMPTY_C) }
   }
 
   async function enregistrerConstat(missionId: string) {
     if (!cForm.intitule.trim()) { setError(err('intitule_requis')); return }
     setBusy(true); setError(null)
-    const payload = { ...cForm, description: cForm.description || null, recommandation: cForm.recommandation || null, criticite: cForm.criticite || null, responsableAction: cForm.responsableAction || null, echeance: cForm.echeance || null, riskItemId: cForm.riskItemId || null }
+    const payload = { ...cForm, critere: cForm.critere || null, cause: cForm.cause || null, consequence: cForm.consequence || null, description: cForm.description || null, recommandation: cForm.recommandation || null, criticite: cForm.criticite || null, responsableAction: cForm.responsableAction || null, echeance: cForm.echeance || null, riskItemId: cForm.riskItemId || null }
     const res = await fetch(cEditId ? `/api/audit/constats/${cEditId}` : `/api/audit/missions/${missionId}/constats`, {
       method: cEditId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     })
@@ -210,6 +220,35 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     setShowCForm(false); setCEditId(null); reload()
+  }
+
+  // Suivi d'une recommandation : l'audité déclare / demande un report, l'audit vérifie / décide (règles côté API).
+  async function agirSuivi(id: string, cmd: SuiviAction) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/audit/constats/${id}/suivi`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError((a.l4.errors as Record<string, string>)[data.error] ?? err(data.error ?? 'erreur')); return }
+    if (openId) await chargerConstats(openId)
+    reload()
+  }
+
+  // Notation, jalons du cycle et indépendance d'une mission (audit).
+  async function enregistrerSuiviMission(m: Mission, v: { notation: number | null; jalons: Record<string, string> }) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/audit/missions/${m.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intitule: m.intitule, notation: v.notation, jalons: v.jalons }) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    reload()
+  }
+  async function declarerIndependance(m: Mission, v: { conflit: boolean; commentaire?: string }) {
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/audit/missions/${m.id}/independance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError((a.l4.errors as Record<string, string>)[data.error] ?? err(data.error ?? 'erreur')); return }
+    reload()
   }
 
   async function supprimerConstat(id: string) {
@@ -229,6 +268,7 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
     <div>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><Search size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {a.title}</h1>
+        <Link href="/audit/plan" className="btn-secondary text-sm">{a.l4.planBtn}</Link>
         {canWrite && !showMForm && <button onClick={() => { setMForm(EMPTY_M); setShowMForm(true) }} className="btn-primary text-sm">{a.newMissionBtn}</button>}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{a.subtitle}</p>
@@ -384,6 +424,12 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
 
                 {openId === m.id && (
                   <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                    {/* Notation, jalons du cycle et indépendance (lot L4) */}
+                    <div className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40">
+                      <MissionSuiviPanel key={`${m.id}-${m.notation ?? ''}-${JSON.stringify(m.jalons ?? {})}-${JSON.stringify(m.independance ?? {})}`}
+                        mission={{ id: m.id, notation: m.notation ?? null, jalons: m.jalons ?? {}, independance: m.independance ?? {} }}
+                        canWrite={canWrite && !m.archiveLe} busy={busy} onSave={v => enregistrerSuiviMission(m, v)} onIndependance={v => declarerIndependance(m, v)} />
+                    </div>
                     {/* Rapports / preuves de la mission (PDF, docx…) */}
                     <div className="mb-3">
                       <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{a.archivage.rapportsTitle}</div>
@@ -477,6 +523,10 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                       <div className="rounded-lg bg-gray-50 dark:bg-gray-800/40 p-3 mb-3 space-y-2">
                         <input value={cForm.intitule} onChange={e => setCForm(f => ({ ...f, intitule: e.target.value }))} placeholder={a.constatIntitulePlaceholder} className={`${inp} w-full`} />
                         <textarea value={cForm.description} onChange={e => setCForm(f => ({ ...f, description: e.target.value }))} placeholder={a.descriptionPlaceholder} rows={2} className={`${inp} w-full`} />
+                        <p className="text-[11px] text-gray-400">{a.l4.structureHint}</p>
+                        <textarea value={cForm.critere} onChange={e => setCForm(f => ({ ...f, critere: e.target.value }))} placeholder={a.l4.critere} rows={2} className={`${inp} w-full`} aria-label={a.l4.critere} />
+                        <textarea value={cForm.cause} onChange={e => setCForm(f => ({ ...f, cause: e.target.value }))} placeholder={a.l4.cause} rows={2} className={`${inp} w-full`} aria-label={a.l4.cause} />
+                        <textarea value={cForm.consequence} onChange={e => setCForm(f => ({ ...f, consequence: e.target.value }))} placeholder={a.l4.consequence} rows={2} className={`${inp} w-full`} aria-label={a.l4.consequence} />
                         <textarea value={cForm.recommandation} onChange={e => setCForm(f => ({ ...f, recommandation: e.target.value }))} placeholder={a.recommandationPlaceholder} rows={2} className={`${inp} w-full`} />
                         <div className="flex flex-wrap gap-2 items-end text-xs text-gray-500 dark:text-gray-400">
                           <label>{a.criticite}
@@ -543,12 +593,19 @@ export default function AuditManager({ canWrite }: { canWrite: boolean }) {
                               </div>
                               <div className="flex items-center gap-2 whitespace-nowrap">
                                 <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${CONSTAT_BADGE[cc.statut]}`}>{lbl(a.constatStatuts, cc.statut)}</span>
+                                <button onClick={() => setSuiviId(id => id === cc.id ? null : cc.id)} className="text-xs text-ebios-600 hover:underline">{a.l4.suiviBtn}</button>
                                 {canWrite && <>
                                   <button onClick={() => startConstat(cc)} className="text-xs text-ebios-600 hover:underline">{a.edit}</button>
                                   <button onClick={() => supprimerConstat(cc.id)} className="text-xs text-red-500 hover:underline">{a.delete}</button>
                                 </>}
                               </div>
                             </div>
+                            {suiviId === cc.id && (
+                              <div className="mt-2 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40">
+                                <RecommandationSuivi constat={{ id: cc.id, statut: cc.statut, echeance: cc.echeance, echeanceInitiale: cc.echeanceInitiale ?? null, reports: cc.reports ?? [], critere: cc.critere ?? null, cause: cc.cause ?? null, consequence: cc.consequence ?? null, realiseeLe: cc.realiseeLe, verifieLe: cc.verifieLe, verificationCommentaire: cc.verificationCommentaire }}
+                                  canAudit={canWrite} canFollow={canFollow || canWrite} busy={busy} onAction={cmd => agirSuivi(cc.id, cmd)} />
+                              </div>
+                            )}
                           </li>
                         ))}
                       </ul>

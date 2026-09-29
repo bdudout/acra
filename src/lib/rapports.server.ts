@@ -12,6 +12,7 @@ import { buildRapportIncidents, buildRapportPertes, type IncidentRapportRow, typ
 import { buildRapportDirection } from '@/lib/rapport-direction'
 import { buildRapportPlanControle, buildRapportEfficacite, buildRapportAnomalies, type ControleRapportRow } from '@/lib/rapport-controles'
 import { sanitizeConception } from '@/lib/controle-l3'
+import { buildRapportPlanAudit, buildRapportMissions, buildRapportRecommandations, type AuditRapportData } from '@/lib/rapport-audit'
 import { dansPeriode, type Periode, type RapportCode, type RapportContenu } from '@/lib/rapport-model'
 import { gatherGrcConsolide } from '@/lib/grc-consolide.server'
 import type { OrgConfigResolved } from '@/lib/org-config'
@@ -41,6 +42,17 @@ async function chargerControles(orgId: string): Promise<ControleRapportRow[]> {
   return raw.map(({ createdAt, conception, ...c }) => ({ ...c, creeLe: createdAt, conception: sanitizeConception(conception) }))
 }
 
+const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+
+async function chargerAudit(orgId: string): Promise<AuditRapportData> {
+  const [univers, missions, constats] = await Promise.all([
+    prisma.auditUnivers.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, type: true, risque: true, cycleAns: true, actif: true, processusId: true }, take: 500 }),
+    prisma.auditMission.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, statut: true, dateDebut: true, dateFin: true, notation: true, independance: true, processusIds: true, universIds: true }, take: 2000 }),
+    prisma.auditConstat.findMany({ where: { organizationId: orgId }, select: { id: true, missionId: true, intitule: true, criticite: true, statut: true, echeance: true, echeanceInitiale: true, createdAt: true, reports: true, source: true }, take: 5000 }),
+  ])
+  return { univers, constats, missions: missions.map(m => ({ ...m, processusIds: strs(m.processusIds), universIds: strs(m.universIds) })) }
+}
+
 export async function genererContenuRapport(code: RapportCode, orgId: string, cfg: OrgConfigResolved, periode: Periode, locale: string, now: Date): Promise<RapportContenu> {
   const t = getT(locale)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? key
@@ -48,6 +60,11 @@ export async function genererContenuRapport(code: RapportCode, orgId: string, cf
   if (code === 'R-CTL-1' || code === 'R-CTL-2' || code === 'R-CTL-3') {
     const controles = await chargerControles(orgId)
     return code === 'R-CTL-1' ? buildRapportPlanControle(controles, periode, now) : code === 'R-CTL-2' ? buildRapportEfficacite(controles, periode, now) : buildRapportAnomalies(controles, periode, now)
+  }
+  // Rapports de l'audit interne (L4).
+  if (code === 'R-AUD-1' || code === 'R-AUD-2' || code === 'R-AUD-3') {
+    const data = await chargerAudit(orgId)
+    return code === 'R-AUD-1' ? buildRapportPlanAudit(data, periode, now) : code === 'R-AUD-2' ? buildRapportMissions(data, periode, now) : buildRapportRecommandations(data, periode, now)
   }
   const { rows, incidentsCfg } = await chargerIncidents(orgId, cfg, now)
   const taxonomie = resolveTaxonomie(cfg.taxonomieRisques)

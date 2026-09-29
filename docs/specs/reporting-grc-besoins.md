@@ -37,6 +37,16 @@
 > récurrentes et escalade** (N2, comité pour un contrôle clé) ; rapports **R-CTL-1/2/3**. Reste : rejeu du
 > test à la période suivante et comparaison N/N-1 (B-CTL-5), rattachement à un tiers / un projet 360 (B-CTL-8).
 
+> **L4 livré (audit interne)** : constats **structurés** (critère / constat / cause / conséquence /
+> recommandation) ; **suivi des recommandations** — l'audité déclare la réalisation et demande un report,
+> l'audit **vérifie** (jamais la personne qui l'a déclarée réalisée), rouvre avec motif et décide des reports
+> (échéance initiale conservée) ; **notation** de mission (1-4), **jalons** du cycle (lettre, ouverture,
+> rapport provisoire, réponse de l'audité, clôture, rapport final), **indépendance** déclarée et tracée ;
+> **univers d'audit** coté par risque et **plan pluriannuel** (cycle par défaut selon le risque : 4→1 an,
+> 3→2, 2→3, 1→5 ; couverture, retards, plan par année) ; rapports **R-AUD-1/2/3**. Reste : relances
+> automatiques par échéance, feuilles de travail, cycle configurable par organisation (`auditConfig`),
+> libellés de notation personnalisables.
+
 ## 1. Objectif et principe directeur
 
 Permettre à **un maximum d'organisations et de contextes** d'utiliser les modules

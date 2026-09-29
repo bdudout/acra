@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
   if (format === 'xlsx') {
     const S = sanitizeForSpreadsheet
     const wb = new ExcelJS.Workbook()
-    wb.creator = 'ACRA — Augmented Cyber Risk Analysis'
+    wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
     wb.created = now
     const ws = wb.addWorksheet('LDC')
     ws.columns = HEADERS.map(h => ({ header: h, key: h, width: h === 'intitule' ? 40 : 16 }))

@@ -40,7 +40,7 @@ export default function RapportsManager() {
   const [langue, setLangue] = useState<string>(locale)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const catalogue = { ...r.catalogue, ...r.catalogueCtl } as Record<string, { titre: string; desc: string }>
+  const catalogue = { ...r.catalogue, ...r.catalogueCtl, ...r.catalogueAud } as Record<string, { titre: string; desc: string }>
   const presets = r.presets as Record<string, string>
 
   useEffect(() => {

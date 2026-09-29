@@ -301,7 +301,7 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
   const fmtDate = (d: unknown): string => { const t = new Date(d as string); return isNaN(t.getTime()) ? '' : t.toLocaleDateString(dateLocale) }
   const pptx = new PptxGenJS()
   pptx.layout = 'LAYOUT_WIDE' // 13.33 × 7.5
-  pptx.author = 'ACRA — Augmented Cyber Risk Analysis'
+  pptx.author = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
 
   const cadrage = (analyse.cadrage as Any) ?? {}
   const risques = asArr(analyse.risques)

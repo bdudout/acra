@@ -2,7 +2,7 @@
 
 <img src="public/logo-mark.png" alt="ACRA Logo" width="120" />
 
-# ACRA — Augmented Cyber Risk Analysis
+# ACRA — Augmented Cyber (& Business) Risk Analysis
 
 **La plateforme open-source de gestion des risques cyber et métier, et de GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, projets 360**
 
@@ -23,7 +23,7 @@
 
 ## 🎯 Présentation
 
-**ACRA (Augmented Cyber Risk Analysis)** est une plateforme web auto-hébergée de **gestion des risques cyber et métier (risque opérationnel, projets, fraude, externalisation) et de GRC** — l'analyse EBIOS RM n'en est qu'une des méthodes. Elle permet à une équipe sécurité — même sans expertise pointue — de conduire des analyses de risques selon la méthode de son choix, puis de piloter la conformité, les contrôles, les incidents et les plans d'action dans un même outil :
+**ACRA — Augmented Cyber (& Business) Risk Analysis —** est une plateforme web auto-hébergée de **gestion des risques cyber et métier (risque opérationnel, projets, fraude, externalisation) et de GRC** — l'analyse EBIOS RM n'en est qu'une des méthodes. Elle permet à une équipe sécurité — même sans expertise pointue — de conduire des analyses de risques selon la méthode de son choix, puis de piloter la conformité, les contrôles, les incidents et les plans d'action dans un même outil :
 
 - **Analyse de risques multi-méthode** : **EBIOS Risk Manager** (ANSSI, défaut), **ISO/IEC 27005:2022**, **ISO 31000:2018** et **NIST SP 800-30 Rev. 1** ;
 - **GRC complète, organisée en trois lignes de défense** : registre des risques, conformité multi-référentiels, **maturité** (profils cibles CMMI), dérogations, contrôle permanent, audit interne, incidents (DORA), KRI, registre RGPD, plan d'action unifié, pilotage et dossiers de comité.

@@ -125,8 +125,6 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canPilotage) pilotage.push('pilotage')
   // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
   if (canPilotage && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
-  // Rapports GRC (éditions figées, lot L2) : mêmes rôles que le cockpit.
-  if (canPilotage) pilotage.push('rapports')
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
@@ -156,6 +154,9 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
   //    RGPD + reporting DORA (art. 19), registre TIC (art. 28).
   const confReg: NavKey[] = [...gouvernance]
+  // Reporting réglementaire et rapports de gestion (éditions figées, lot L2) : rattaché à la
+  // conformité / au réglementaire, mêmes rôles que le cockpit.
+  if (canPilotage) confReg.push('rapports')
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
   if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', ...(canPilotage ? ['testsResilience' as const] : []))
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))

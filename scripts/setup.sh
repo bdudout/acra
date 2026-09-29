@@ -81,7 +81,7 @@ is_unset() {
 # ── Bannière ─────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${BLUE}ACRA — Configuration initiale (.env)${RESET}"
-echo -e "${CYAN}Augmented Cyber Risk Analysis · setup sécurisé${RESET}"
+echo -e "${CYAN}Augmented Cyber (& Business) Risk Analysis · setup sécurisé${RESET}"
 [ "$AUTO" -eq 1 ] && info "Mode non-interactif (--auto)"
 
 # ── Gestion d'un .env existant ───────────────────────────────────────────────
