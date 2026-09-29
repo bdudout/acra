@@ -25,7 +25,7 @@ async function chargerIncidents(orgId: string, cfg: OrgConfigResolved, now: Date
     where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: MAX_INCIDENTS,
     select: {
       id: true, intitule: true, statut: true, typeEvenement: true, taxonomieCode: true, entite: true, dateSurvenance: true, dateDetection: true,
-      createdAt: true, clotureLe: true, quasiIncident: true, attributs: true, notifications: true, pertes: true, recuperationsLignes: true,
+      createdAt: true, clotureLe: true, quasiIncident: true, attributs: true, allocations: true, notifications: true, pertes: true, recuperationsLignes: true,
     },
   })
   return { incidentsCfg, rows: raw.map(r => ({ ...r, l1: vueIncidentL1(r, incidentsCfg, now) })) }

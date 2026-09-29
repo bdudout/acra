@@ -23,6 +23,7 @@ import { mostFrequentString } from '@/lib/most-frequent'
 import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
 import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
 import type { ChampsValeurs } from '@/lib/champs-perso'
+import IncidentAnalysePanel, { type AnalyseValue } from '@/components/IncidentAnalysePanel'
 import NotificationsPanel, { type HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import PertesEditor from '@/components/PertesEditor'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
@@ -42,6 +43,8 @@ interface Incident {
   doublons?: { id: string; intitule: string; statut: string; score: number }[]
   // Lot L1
   typeEvenement?: string | null; quasiIncident?: boolean; champs?: ChampsValeurs
+  causeRacine?: string | null; causeDetail?: string | null; leconsApprises?: string | null
+  chronologie?: AnalyseValue['chronologie']; impactsNonFinanciers?: AnalyseValue['impactsNonFinanciers']; allocations?: AnalyseValue['allocations']
   attributs?: { significatif?: boolean; donneesPersonnelles?: boolean; contractuel?: boolean; regimes?: string[] }
   pertes?: LignePerte[]; recuperationsLignes?: LigneRecuperation[]; dateReglement?: string | null
   l1?: { horloges: HorlogeRegimeJson[]; nbEnRetard: number; totaux: { net: number | null }; seuils: { collectee: boolean; grandePerte: boolean } }
@@ -109,6 +112,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const [configMsg, setConfigMsg] = useState<string | null>(null)
   const [notifId, setNotifId] = useState<string | null>(null)
   const defsChamps = usePersonnalisationChamps('incident')
+  const [analyse, setAnalyse] = useState<AnalyseValue>({ causeRacine: '', causeDetail: '', leconsApprises: '', chronologie: [], impactsNonFinanciers: [], allocations: [] })
+  const [importMsg, setImportMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [doraDetailId, setDoraDetailId] = useState<string | null>(null)
@@ -178,7 +183,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   }
   useEffect(() => { reload() }, [])
 
-  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (n.l1b.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
 
   async function declarer() {
     if (!decl.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -215,6 +220,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     const pertes = i.pertes && i.pertes.length ? i.pertes : (i.montantBrut ? [{ type: 'PERTE_DIRECTE', montant: i.montantBrut, devise: ref, statut: 'ESTIME' as const }] : [])
     const recups = i.recuperationsLignes && i.recuperationsLignes.length ? i.recuperationsLignes : (i.recuperations ? [{ type: 'AUTRE', montant: i.recuperations, devise: ref }] : [])
     setQualPertes({ pertes, recups })
+    setAnalyse({ causeRacine: i.causeRacine ?? '', causeDetail: i.causeDetail ?? '', leconsApprises: i.leconsApprises ?? '', chronologie: i.chronologie ?? [], impactsNonFinanciers: i.impactsNonFinanciers ?? [], allocations: i.allocations ?? [] })
   }
 
   async function enregistrerQual(i: Incident) {
@@ -228,6 +234,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         taxonomieCode: qual.taxonomieCode || null,
         pertes: qualPertes.pertes, recuperationsLignes: qualPertes.recups,
         typeEvenement: qual.typeEvenement || null, quasiIncident: qual.quasiIncident, dateReglement: qual.dateReglement || null, champs: qual.champs,
+        causeRacine: analyse.causeRacine || null, causeDetail: analyse.causeDetail || null, leconsApprises: analyse.leconsApprises || null,
+        chronologie: analyse.chronologie.map(e => ({ ...e, date: e.date.length === 16 ? `${e.date}:00Z` : e.date })), impactsNonFinanciers: analyse.impactsNonFinanciers, allocations: analyse.allocations.filter(a => a.entite.trim()),
         attributs: { significatif: qual.significatif, donneesPersonnelles: qual.donneesPersonnelles, contractuel: qual.contractuel },
         riskItemId: qual.riskItemId || null, statut: qual.statut,
         clotureCommentaire: qual.clotureCommentaire || null,
@@ -237,6 +245,19 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     setQualId(null); reload()
+  }
+
+  // Import CSV (historique, export SIEM/ITSM) : 2ᵉ ligne ; résultat par ligne.
+  async function importerCsv(file: File) {
+    setBusy(true); setError(null); setImportMsg(null)
+    const csv = await file.text()
+    const res = await fetch('/api/incidents/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv }) })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    const detail = (data.erreurs as { ligne: number; error: string }[]).slice(0, 5).map(x => n.l1b.importLigne.replace('{l}', String(x.ligne)).replace('{e}', err(x.error))).join(' · ')
+    setImportMsg(`${n.l1b.importResultat.replace('{n}', String(data.crees)).replace('{e}', String(data.erreurs.length))}${data.tronque ? ` ${n.l1b.importTronque}` : ''}${detail ? ` ${detail}` : ''}`)
+    reload()
   }
 
   // Export LDC (le périmètre = tous les incidents de l'organisation active).
@@ -363,6 +384,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           <button onClick={() => exportLdc('csv')} className="btn-secondary text-xs">{t.filtres.csv}</button>
           <button onClick={() => exportLdc('xlsx')} className="btn-secondary text-xs">{t.filtres.xlsx}</button>
           <button onClick={exportIts} className="btn-secondary text-xs" title={n.doraItsHint}>{n.doraExportIts}</button>
+          {canQualify && <label className="btn-secondary text-xs cursor-pointer" title={n.l1b.importHint}>{n.l1b.importBtn}<input type="file" accept=".csv,text/csv" className="sr-only" aria-label={n.l1b.importBtn} onChange={e => { const f = e.target.files?.[0]; if (f) importerCsv(f); e.target.value = '' }} /></label>}
           {canConfigure && <button onClick={() => { setShowConfig(v => !v); setConfigMsg(null) }} className="btn-secondary text-xs">{n.configBtn}</button>}
           {!showDecl && <button onClick={() => { setDecl({ ...emptyDecl(), entite: defaultEntite }); setShowDecl(true) }} className="btn-primary text-sm ml-1.5">{n.declareBtn}</button>}
         </div>
@@ -375,6 +397,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         <span>{n.declareRolesNote}</span>
       </div>
 
+      {importMsg && <p role="status" className="mb-3 text-xs text-gray-600 dark:text-gray-300">{importMsg}</p>}
       {canConfigure && showConfig && cfg && (
         <div className="mb-5">
           <IncidentsConfigEditor key={JSON.stringify(cfg)} config={cfg} onSave={enregistrerConfig} busy={busy} />
@@ -569,6 +592,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
             </div>
             <L1FieldsBlock v={qual} set={patch => setQual(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
             <ChampsPersonnalisesFields defs={defsChamps} values={qual.champs} onChange={v => setQual(f => ({ ...f, champs: v }))} />
+            <IncidentAnalysePanel value={analyse} onChange={setAnalyse} />
             {!qual.quasiIncident && cfg && (
               <PertesEditor pertes={qualPertes.pertes} recups={qualPertes.recups} onChange={setQualPertes}
                 config={{ deviseReference: cfg.deviseReference, taux: cfg.taux, typesPerte: cfg.typesPerte }} />

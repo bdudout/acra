@@ -9,6 +9,7 @@ import {
   qualificationComplete, type IncidentStatut,
 } from '@/lib/incident'
 import { Prisma } from '@prisma/client'
+import { separerJson } from '@/lib/incident-json'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -76,16 +77,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       .filter(k => k in body || (toucheLignes && champsLignes.includes(k)))
       .map(k => [k, data[k]]),
   ) as Partial<typeof data>
-  const { attributs, pertes, recuperationsLignes, ...partielScalaires } = partiel
+  const { json: champsJson, reste: partielScalaires } = separerJson(partiel)
   // Champs personnalisés (L5) : fusion sans écraser les champs réservés à d'autres rôles.
   const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).incident ?? []
   const json = {
     ...('champs' in body ? { champs: fusionnerChamps(defsChamps, incident.champs, body.champs, userRole) as unknown as Prisma.InputJsonValue } : {}),
-    ...(attributs !== undefined ? { attributs: attributs as unknown as Prisma.InputJsonValue } : {}),
-    ...(pertes !== undefined ? { pertes: pertes as unknown as Prisma.InputJsonValue } : {}),
-    ...(recuperationsLignes !== undefined ? { recuperationsLignes: recuperationsLignes as unknown as Prisma.InputJsonValue } : {}),
+    ...champsJson,
   }
-
   const now = new Date()
   const updated = await prisma.incident.update({
     where: { id },

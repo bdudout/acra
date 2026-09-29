@@ -66,7 +66,7 @@ export async function GET() {
           responses: { '201': { description: 'Résultat enregistré' }, '400': { description: 'Contrôle non automatique, inactif ou résultat invalide' }, '404': { description: 'Contrôle introuvable' } },
         },
       },
-      '/incidents': { get: { summary: 'Incidents & pertes (LDC)', operationId: 'listIncidents', responses: listResponse('#/components/schemas/Incident') } },
+      '/incidents': { post: { summary: 'Déclarer des incidents en masse', operationId: 'createIncidents', description: 'Nécessite le scope write. Corps { incidents: [...] } (500 max), chaque item validé comme une déclaration (intitule requis, dates, montants, typeEvenement…). Les invalides sont remontés par index. Le déclarant est le créateur de la clé.', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['incidents'], properties: { incidents: { type: 'array', items: { type: 'object' } } } } } } }, responses: { '200': { description: 'Résultat { crees, erreurs }' }, '400': { description: 'Corps invalide ou clé sans créateur' } } }, get: { summary: 'Incidents & pertes (LDC)', operationId: 'listIncidents', responses: listResponse('#/components/schemas/Incident') } },
       '/import': {
         post: {
           summary: 'Import en masse (risques, contrôles)',

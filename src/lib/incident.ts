@@ -7,6 +7,7 @@
 import { sanitizeAttributs, type IncidentAttributs } from './notification-regimes'
 import { sanitizePertes, sanitizeRecuperations, totauxPertes, type LignePerte, type LigneRecuperation, type DevisesConfig } from './pertes'
 import { resolveIncidentsConfig, type CatalogueItem } from './incidents-config'
+import { sanitizeChronologie, cleanCauseRacine, sanitizeImpacts, sanitizeAllocations, type EvenementChronologie, type CauseRacine, type ImpactNonFinancier, type Allocation } from './incident-l1b'
 
 /** Configuration nécessaire à la validation/normalisation (devises, catalogue de types d'événement). */
 export type IncidentCleanConfig = DevisesConfig & { typesEvenement: CatalogueItem[] }
@@ -42,6 +43,12 @@ export interface IncidentInput {
   pertes?: unknown
   recuperationsLignes?: unknown
   dateReglement?: unknown
+  chronologie?: unknown
+  causeRacine?: unknown
+  causeDetail?: unknown
+  leconsApprises?: unknown
+  impactsNonFinanciers?: unknown
+  allocations?: unknown
   // Workflow de déclaration DORA (art. 19) — horodatages de phase.
   doraClasseMajeurLe?: unknown
   doraInitialeSoumiseLe?: unknown
@@ -69,6 +76,12 @@ export interface CleanIncident {
   pertes: LignePerte[]
   recuperationsLignes: LigneRecuperation[]
   dateReglement: Date | null
+  chronologie: EvenementChronologie[]
+  causeRacine: CauseRacine | null
+  causeDetail: string | null
+  leconsApprises: string | null
+  impactsNonFinanciers: ImpactNonFinancier[]
+  allocations: Allocation[]
   doraClasseMajeurLe: Date | null
   doraInitialeSoumiseLe: Date | null
   doraIntermediaireSoumiseLe: Date | null
@@ -136,6 +149,8 @@ export function validateIncidentInput(body: IncidentInput, cfg: IncidentCleanCon
     if (surv && reg.getTime() < surv.getTime()) return 'reglement_avant_survenance'
   }
 
+  if ('allocations' in body) { const a = sanitizeAllocations(body.allocations); if (!a.ok) return a.error }
+
   // Type d'événement : doit figurer, actif, au catalogue de l'organisation.
   if (typeof body.typeEvenement === 'string' && body.typeEvenement.trim() !== '') {
     const t = body.typeEvenement.trim()
@@ -183,6 +198,12 @@ export function cleanIncidentInput(body: IncidentInput, cfg: IncidentCleanConfig
     pertes,
     recuperationsLignes,
     dateReglement: parseDate(body.dateReglement),
+    chronologie: sanitizeChronologie(body.chronologie),
+    causeRacine: cleanCauseRacine(body.causeRacine),
+    causeDetail: txt(body.causeDetail),
+    leconsApprises: txt(body.leconsApprises),
+    impactsNonFinanciers: sanitizeImpacts(body.impactsNonFinanciers),
+    allocations: (() => { const a = sanitizeAllocations(body.allocations); return a.ok ? a.allocations : [] })(),
     doraClasseMajeurLe: parseDate(body.doraClasseMajeurLe),
     doraInitialeSoumiseLe: parseDate(body.doraInitialeSoumiseLe),
     doraIntermediaireSoumiseLe: parseDate(body.doraIntermediaireSoumiseLe),

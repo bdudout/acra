@@ -8,11 +8,14 @@
 import { dansPeriode, type Bloc, type Cellule, type Periode, type RapportContenu, type RapportSection } from './rapport-model'
 import type { IncidentVue } from './incident-vue'
 import type { IncidentsConfig } from './incidents-config'
+import { allouer, sanitizeAllocations } from './incident-l1b'
 
 export interface IncidentRapportRow {
   id: string; intitule: string; statut: string; typeEvenement: string | null; taxonomieCode: string | null; entite: string | null
   dateSurvenance: Date | null; dateDetection: Date | null; createdAt: Date; clotureLe: Date | null; quasiIncident: boolean
   l1: IncidentVue
+  /** Allocation de la perte entre entités (lot L1 suite) ; absente = tout sur `entite`. */
+  allocations?: unknown
 }
 export interface LabelsRapport {
   statut: (code: string) => string
@@ -88,6 +91,19 @@ export function buildRapportPertes(rows: IncidentRapportRow[], cfg: IncidentsCon
     for (const r of avecPerte) { const k = cle(r); const c = g.get(k) ?? { n: 0, net: 0 }; c.n++; c.net = r2(c.net + (r.l1.totaux.net ?? 0)); g.set(k, c) }
     return [...g.entries()].sort((a, b) => b[1].net - a[1].net)
   }
+  // Par entité : une perte allouée est répartie (le reliquat revient à l'entité de l'incident) ; le nombre
+  // compte les incidents concernés.
+  const parEntiteAlloue = (): [string, { n: number; net: number }][] => {
+    const g = new Map<string, { ids: Set<string>; net: number }>()
+    for (const r of avecPerte) {
+      const a = sanitizeAllocations(r.allocations)
+      for (const p of allouer(r.l1.totaux.net ?? 0, a.ok ? a.allocations : [], r.entite ?? '')) {
+        const c = g.get(p.entite) ?? { ids: new Set<string>(), net: 0 }
+        c.ids.add(r.id); c.net = r2(c.net + p.montant); g.set(p.entite, c)
+      }
+    }
+    return [...g.entries()].map(([e, v]): [string, { n: number; net: number }] => [e, { n: v.ids.size, net: v.net }]).sort((a, b) => b[1].net - a[1].net)
+  }
   const netMois = new Map<string, number>()
   for (const r of avecPerte) { const m = mois(refDate(r)); netMois.set(m, r2((netMois.get(m) ?? 0) + (r.l1.totaux.net ?? 0))) }
 
@@ -98,7 +114,7 @@ export function buildRapportPertes(rows: IncidentRapportRow[], cfg: IncidentsCon
     ] }] },
     { id: 'parTypePerte', blocs: [tab(cols('typePerte', 'montant'), [...parType.entries()].sort((a, b) => b[1] - a[1]).map(([t, m]) => [labels.typePerte(t), m]))] },
     { id: 'parCategorie', blocs: [tab(cols('categorie', 'nombre', 'net'), groupe(r => r.taxonomieCode ?? '').map(([c, v]) => [labels.taxo(c || null), v.n, v.net]))] },
-    { id: 'parEntite', blocs: [tab(cols('entite', 'nombre', 'net'), groupe(r => r.entite ?? '').map(([e, v]) => [e || { k: 'rapports.nonRenseigne' }, v.n, v.net]))] },
+    { id: 'parEntite', blocs: [tab(cols('entite', 'nombre', 'net'), parEntiteAlloue().map(([e, v]) => [e || { k: 'rapports.nonRenseigne' }, v.n, v.net]))] },
     { id: 'grandesPertes', blocs: [tab(cols('incident', 'date', 'net'), grandes.sort((a, b) => (b.l1.totaux.net ?? 0) - (a.l1.totaux.net ?? 0)).slice(0, 10).map(r => [r.intitule, refDate(r).toISOString().slice(0, 10), r.l1.totaux.net]))] },
     { id: 'parMois', blocs: [tab(cols('mois', 'net'), [...netMois.entries()].sort((a, b) => a[0].localeCompare(b[0])))] },
   ]

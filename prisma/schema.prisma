@@ -700,6 +700,14 @@ model Incident {
   // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
   champs Json @default("{}")
 
+  // Lot L1 (suite) — chronologie, cause racine, impacts non financiers, allocation des pertes.
+  chronologie          Json    @default("[]")
+  causeRacine          String? // PROCESSUS | PERSONNES | SYSTEMES | EXTERNE | TIERS
+  causeDetail          String? @db.Text
+  leconsApprises       String? @db.Text
+  impactsNonFinanciers Json    @default("[]")
+  allocations          Json    @default("[]")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

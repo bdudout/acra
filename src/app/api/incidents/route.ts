@@ -10,6 +10,7 @@ import { findDuplicatesForAll, type IncidentDedupItem } from '@/lib/incident-ded
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
 import { type DoraCriteres } from '@/lib/dora'
 import { Prisma } from '@prisma/client'
+import { separerJson } from '@/lib/incident-json'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { vueIncidentL1 } from '@/lib/incident-vue'
 import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
@@ -125,14 +126,13 @@ export async function POST(req: NextRequest) {
   const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
   const manquants = champsRequisManquants(defsChamps, champs, userRole)
   if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
-  const { statut: _ignore, attributs, pertes, recuperationsLignes, ...decl } = data
+  const { statut: _ignore, ...dataSansStatut } = data
+  const { json: champsJson, reste: decl } = separerJson(dataSansStatut)
   const incident = await prisma.incident.create({
     data: {
       ...decl, organizationId: orgId, declarantId: userId, statut: 'DECLARE',
-      attributs: attributs as unknown as Prisma.InputJsonValue,
+      ...champsJson,
       champs: champs as unknown as Prisma.InputJsonValue,
-      pertes: pertes as unknown as Prisma.InputJsonValue,
-      recuperationsLignes: recuperationsLignes as unknown as Prisma.InputJsonValue,
     },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (19) — Claude Code : « lance tous ces chantiers », tranche 1 = suite du lot L1 — ⚠ à vérifier
+
+- **Livré (non poussé au moment de l'écriture)** : import CSV d'incidents (`lib/incident-import`, `POST /api/incidents/import`,
+  ≤ 500 lignes, erreurs par ligne), `POST /api/v1/incidents` (+ OpenAPI), chronologie / cause racine / leçons apprises,
+  impacts non financiers, allocation de la perte entre entités (B-PER-3, prise en compte dans R-PER-2 « par entité »),
+  `IncidentAnalysePanel`, colonnes Incident (migration `20260930100000_incidents_l1_suite`).
+- **Vérifié** : `tsc` 0 · `npm test` **2575/2575** · `i18n:check` · `npm run build` OK.
+- ⚠ **Non vérifié** : migration `20260930100000` **non appliquée localement** (Docker indisponible) ; e2e non exécutés (CI).
+- **Reste de la demande** : B-PER-6 rapprochement comptable ; L4 rappels automatiques / `auditConfig` / papiers de travail ;
+  L3 rejeu N-1, rattachement tiers/projet ; L2 diffusion e-mail, gabarits surchargeables, masquage, brouillons planifiés, PDF serveur, R-INC-2/3 ;
+  limites L5.
+
+---
+
 ## 2026-09-29 (18) — Claude Code : lot L5 « Personnalisation » + correctif « Vérifiée » — ⚠ à vérifier
 
 - **CI PR #192** : 8/8 verts sur `6925f15` (L4), dont `e2e/audit-l4.spec.ts` (donc la migration L4 s'applique bien en CI).

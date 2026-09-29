@@ -79,4 +79,8 @@ describe('R-PER-2 — pertes', () => {
     const avert = sansTaux.sections.find(s => s.id === 'avertissements')
     expect(avert).toBeTruthy()
   })
+  it('répartit la perte entre entités selon l’allocation (reliquat sur l’entité de l’incident)', () => {
+    const r = buildRapportPertes([row({ id: 'z', entite: 'Siège' }, { pertes: [{ type: 'AUTRE', montant: 1000, devise: 'EUR', statut: 'CONSTATE' }], allocations: [{ entite: 'Filiale Nord', pct: 60 }] })], cfg, periode, now, labels)
+    expect(tableau(r, 'parEntite').lignes).toEqual([['Filiale Nord', 1, 600], ['Siège', 1, 400]])
+  })
 })
