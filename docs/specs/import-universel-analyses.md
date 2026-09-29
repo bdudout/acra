@@ -383,6 +383,13 @@ deux classeurs locaux (6 valeurs métier, 8 événements redoutés, 10 sources, 
 « contexte » (périmètre en blocs de texte, page de garde en clé/valeur — `lib/excel-blocks` prêt, non branché à l'assistant), liens biens supports ↔ valeurs métier absents des feuilles,
 interface de correspondance de valeurs et d'alias de préfixe (`R_` ⇒ `RI_`), risques résiduels (3 cotations), champs calculés (avertissement de divergence), I7 (JSON libre, MCP).
 
+**État (suite 3)** — **Livré** : rôle « contexte » (périmètre en blocs de texte et page de garde en clé/valeur → cadrage, titre de l'analyse et propriétés du document en
+description ; ces propriétés ne créent aucune approbation), **risques résiduels** (feuille Réf.RR → cotations actuelle et résiduelle du risque initial, par référence), références de
+risques citées par une **mesure** (`R_01 à R_09`, `R_05 R_07`) résolues sur les identifiants réels des risques, avec **alias de préfixe R_ ⇒ RI_ proposé puis validé par l'utilisateur**
+(case à cocher dans l'aperçu, jamais appliqué seul ; le premier risque est rattaché, les autres notés dans la description de la mesure). **Restent** : liens biens supports ↔
+valeurs métier (absents des feuilles), interface complète de correspondance de valeurs (catégories de sources : `AUTRE` appliqué et signalé mais non éditable), mention « NON RETENU »
+des colonnes libres, champs calculés (avertissement de divergence), I7 (JSON libre, MCP, API v2 avec profil).
+
 **Recommandation initiale** : livrer **I1 immédiatement** (il corrige des défauts visibles aujourd'hui :
 message `.xls` absent, faux positifs de détection) et ne lancer I2–I6 qu'après validation des
 décisions du §11. I1 se fait en TDD sur des fonctions pures (`historic-import`, `xlsx-guard`) et

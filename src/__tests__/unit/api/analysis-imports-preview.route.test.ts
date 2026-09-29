@@ -96,6 +96,7 @@ import { buildHistoricImportPackage, partitionHistoricImportSheets, detectHistor
 import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analysis-import'
 import { summarizeAtelierContent } from '@/lib/analysis-import-ateliers'
 import { readSheetSample, readDataRows } from '@/lib/excel-grid'
+import { BUILTIN_PROFILES, profileToSelection } from '@/lib/import-profile'
 import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
 describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’essai local — du classeur au paquet canonique', () => {
   for (const f of ['dossier-securite-btp.xlsx', 'dossier-securite-avocats.xlsx']) {
@@ -103,7 +104,9 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       const res = await POST(post(f, readFileSync(join(LOCAL, f))))
       const preview = (await res.json()).sheets as { name: string; columns: string[]; mapping: Record<string, string>; detection: { type: string } }[]
       const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(join(LOCAL, f))
-      const sheets: HistoricImportSheet[] = preview.filter(p => p.detection.type !== 'UNKNOWN').map(p => {
+      // Le profil livré fixe rôles et colonnes (comme après « Appliquer ce profil » dans l'assistant).
+      const sel = profileToSelection(BUILTIN_PROFILES[0], preview.map(p => ({ name: p.name, columns: p.columns })))
+      const sheets: HistoricImportSheet[] = preview.map(p => ({ ...p, detection: { type: sel.sheetTypes[p.name] ?? p.detection.type }, mapping: sel.mappings[p.name] ?? p.mapping })).filter(p => p.detection.type !== 'UNKNOWN').map(p => {
         const ws = wb.getWorksheet(p.name)!
         if (p.detection.type === 'CONTEXT') { const r = readSheetSample(ws, 80, 20); return { name: p.name, type: 'CONTEXT' as never, mapping: {}, rows: [], blocks: { text: extractTextBlocks(r), kv: extractKeyValueBlocks(r) } } }
         const layout = detectHistoricHeaderLayout(readSheetSample(ws, 20, 100))
@@ -135,6 +138,13 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(parsed.context?.contexteJuridique).toBeTruthy()
       expect(parsed.analysis.title).toMatch(/Application de suivi|Espace client/)
       expect(parsed.analysis.description).toContain('Rédacteur')
+      // Plan de mesures : références « R_01 à R_09 » rapprochées des risques RI_ seulement avec l'alias validé
+      const pacs = kept.find(x => x.name === '5 - PACS')!
+      const withProfile = pacs
+      const sansAlias = buildHistoricImportPackage([...kept.filter(x => x.name !== '5 - PACS'), withProfile], f)
+      const avecAlias = buildHistoricImportPackage([...kept.filter(x => x.name !== '5 - PACS'), { ...withProfile, refAliases: { R: 'RI' } }], f)
+      expect(sansAlias.measures.filter(m => m.riskExternalId && sansAlias.risks.some(r => r.externalId === m.riskExternalId))).toHaveLength(0)
+      expect(avecAlias.measures.filter(m => m.riskExternalId && avecAlias.risks.some(r => r.externalId === m.riskExternalId)).length).toBeGreaterThanOrEqual(8)
       expect(parsed.residualRisks.length).toBe(13)
       expect(a.warnings.filter(w => w.startsWith('residual_risk'))).toEqual([])
       expect(parsed.risks.length).toBe(13)

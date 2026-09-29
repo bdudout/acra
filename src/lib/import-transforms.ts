@@ -180,3 +180,26 @@ export function groupRows<T extends Record<string, string>>(rows: T[], keyColumn
   }
   return groups
 }
+
+/** Préfixes alphabétiques d'une liste de références (`RI_01` → `RI`, `SR/OV_02` → `SR/OV`). */
+export function prefixesOfRefs(refs: string[]): string[] {
+  return [...new Set(refs.flatMap(r => { const m = /^([A-Za-z][A-Za-z/]*)[ _.\-]?\d/.exec(r.trim()); return m ? [m[1].toUpperCase()] : [] }))]
+}
+
+/**
+ * Alias de préfixe PROPOSÉ (à valider par l'utilisateur) : les références citées utilisent un préfixe qui n'existe pas côté
+ * cible (`R_` dans les mesures, `RI_` dans les risques). Une proposition n'existe que s'il y a un unique préfixe cible voisin
+ * (commençant par le préfixe cité) ; sinon rien n'est proposé.
+ */
+export function suggestPrefixAlias(citedCells: string[], targetRefs: string[]): { from: string; to: string }[] {
+  const targets = prefixesOfRefs(targetRefs)
+  const cited = new Set<string>()
+  for (const cell of citedCells) for (const m of cell.matchAll(/(?<![A-Za-z0-9])([A-Za-z][A-Za-z/]{0,5})[ _.\-]?\d{1,4}(?![0-9A-Za-z])/g)) cited.add(m[1].toUpperCase())
+  const out: { from: string; to: string }[] = []
+  for (const from of cited) {
+    if (targets.includes(from)) continue
+    const candidates = targets.filter(t => t.startsWith(from))
+    if (candidates.length === 1) out.push({ from, to: candidates[0] })
+  }
+  return out
+}

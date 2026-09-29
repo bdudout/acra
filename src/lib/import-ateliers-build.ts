@@ -27,6 +27,9 @@ export const ATELIER_ROLE_FIELDS: Record<AtelierRole, string[]> = {
   RESIDUAL_RISKS: ['externalId', 'riskRef', 'title', 'currentGravity', 'currentLikelihood', 'residualGravity', 'residualLikelihood'],
 }
 
+/** Champs obligatoires par rôle : l'intitulé, sauf pour les risques résiduels (rattachés par la référence du risque initial). */
+export const ATELIER_REQUIRED: Record<AtelierRole, string[]> = Object.fromEntries(ATELIER_ROLES.map(role => [role, role === 'RESIDUAL_RISKS' ? ['riskRef'] : ['title']])) as Record<AtelierRole, string[]>
+
 /** Rôles dont un champ est une liste de références vers une autre feuille. */
 export const ATELIER_REF_FIELDS = ['businessValueRefs', 'stakeholderRefs', 'fearedEventRefs', 'strategicRef']
 

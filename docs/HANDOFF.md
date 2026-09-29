@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (23) — Claude Code : import universel — contexte, risques résiduels, alias de préfixe — ⚠ à vérifier
+
+- **Contexte** : `lib/excel-blocks` branché (rôle `CONTEXT` détecté sur les feuilles sans tableau : périmètre en texte libre, page de garde) → cadrage, titre et description de l'analyse.
+- **Risques résiduels** : rôle `RESIDUAL_RISKS` (Réf.RR → Réf.RI), champ canonique `residualRisks`, écrit dans `Risque.*Actuelle/*Residuelle` (test avec faux `tx`, pas de vraie base).
+- **Mesures ↔ risques** : références en liste / plage résolues sur les risques réels ; **alias de préfixe validé par l'utilisateur** (`refAliases`, route + UI + clé d'idempotence — présente seulement si utilisée).
+- Profil livré étendu (RR, contexte, colonne des risques concernés des mesures). Fixtures locales inchangées (exclues de git).
+- ⚠ Non vérifié : recette navigateur (case d'alias, rôle contexte), e2e sur un classeur d'ateliers, écriture sur vraie base.
+
+---
+
 ## 2026-09-29 (22) — Claude Code : import universel I4 + I5 — ⚠ à vérifier
 
 - **Import d'un dossier EBIOS RM complet** : le classeur (variantes locales BTP / avocats) donne, via aperçu → rôles détectés → paquet v3 → validation, 6 valeurs métier, 8 événements redoutés,

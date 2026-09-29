@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-ateliers-build'
 import { isAtelierRole } from '@/lib/historic-import'
+import { suggestPrefixAlias } from '@/lib/import-transforms'
 import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
 import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
@@ -38,6 +39,7 @@ export type HistoricImportPreviewLabels = {
   mappingHelpTitle: string
   mappingHelp: string
   targetOrganization?: string
+  aliasPrefix?: string
   profile?: { recognized: string; apply: string; builtin: string; partial: string }
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
@@ -64,7 +66,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   organizationOptions?: HistoricImportOrganizationOption[]
   defaultOrganizationId?: string
   onCancel: () => void
-  onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; organizationId?: string }) => void | Promise<void>
+  onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; organizationId?: string }) => void | Promise<void>
 }) {
   const visibleSheets = sheets.filter(sheet => sheet.rows > 0)
   const validationLabels = labels.validation ?? { acraField: 'ACRA field', sourceColumn: 'Excel column', expected: 'Expected type', examples: 'Examples', compatible: 'Compatible', review: 'Review', invalidValues: 'invalid values', externalReference: 'Matching identifier' }
@@ -74,6 +76,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const [scoreMappings, setScoreMappings] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [transforms, setTransforms] = useState<Record<string, HistoricFieldTransforms>>({})
   const [rowActions, setRowActions] = useState<Record<string, 'SKIP' | 'COMPLETE'>>({})
+  const [refAliases, setRefAliases] = useState<Record<string, Record<string, string>>>({})
   const [rowOverrides, setRowOverrides] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [loadedOrganizations, setLoadedOrganizations] = useState<HistoricImportOrganizationOption[]>([])
   const [targetOrganizationId, setTargetOrganizationId] = useState(defaultOrganizationId ?? '')
@@ -99,6 +102,16 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   }
   useEffect(() => { fetch(`/api/analysis-imports/mappings${targetOrganizationId ? `?organizationId=${encodeURIComponent(targetOrganizationId)}` : ''}`).then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [targetOrganizationId])
   const selectedSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] !== 'UNKNOWN')
+  // Préfixe des références de risques cité par une mesure ≠ préfixe des risques (R_ / RI_) : alias PROPOSÉ, jamais appliqué sans validation.
+  const prefixHints = useMemo(() => {
+    const riskIds = visibleSheets.filter(sheet => sheetTypes[sheet.name] === 'RISKS').flatMap(sheet => { const col = splitHistoricMappedColumns(mappings[sheet.name]?.externalId)[0]; return col ? sheet.profiles?.[col]?.values ?? [] : [] })
+    if (riskIds.length === 0) return {} as Record<string, { from: string; to: string }[]>
+    return Object.fromEntries(visibleSheets.filter(sheet => sheetTypes[sheet.name] === 'MEASURES' || sheetTypes[sheet.name] === 'ACTIONS').flatMap(sheet => {
+      const col = splitHistoricMappedColumns(mappings[sheet.name]?.riskExternalId)[0]
+      const hints = col ? suggestPrefixAlias(sheet.profiles?.[col]?.values ?? [], riskIds) : []
+      return hints.length ? [[sheet.name, hints]] : []
+    }))
+  }, [mappings, sheetTypes, visibleSheets])
   const ignoredSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] === 'UNKNOWN')
   const blockers = useMemo(() => {
     const selection = selectedSheets.map(sheet => ({ name: sheet.name, type: sheetTypes[sheet.name], mapping: mappings[sheet.name] ?? {}, profiles: sheet.profiles, statusMapping: statusMappings[sheet.name] }))
@@ -148,6 +161,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
             <p className="font-medium text-sm text-gray-800">{sheet.name} <span className="font-normal text-gray-500">· {sheet.rows} {labels.rows} · {type === 'UNKNOWN' ? labels.ignoreSheet : labels.sheetTypes[type]}</span></p>
             {labels.warnings && sheet.warnings?.formulasWithoutValue && sheet.warnings.formulasWithoutValue.count > 0 && <p role="note" className="mt-1 text-xs text-amber-700">{labels.warnings.noValue.replace('{n}', String(sheet.warnings.formulasWithoutValue.count)).replace('{cells}', sheet.warnings.formulasWithoutValue.samples.join(', '))}</p>}
             {labels.warnings && sheet.warnings?.formulaErrors && sheet.warnings.formulaErrors.count > 0 && <p role="note" className="mt-1 text-xs text-red-700">{labels.warnings.errors.replace('{n}', String(sheet.warnings.formulaErrors.count)).replace('{cells}', sheet.warnings.formulaErrors.samples.join(', '))}</p>}
+            {labels.aliasPrefix && (prefixHints[sheet.name] ?? []).map(hint => <label key={hint.from} className="mt-2 flex items-start gap-2 text-xs text-amber-800"><input type="checkbox" checked={refAliases[sheet.name]?.[hint.from] === hint.to} onChange={event => setRefAliases(previous => { const current = { ...(previous[sheet.name] ?? {}) }; if (event.target.checked) current[hint.from] = hint.to; else delete current[hint.from]; return { ...previous, [sheet.name]: current } })} /><span>{labels.aliasPrefix!.replace(/\{from\}/g, hint.from).replace(/\{to\}/g, hint.to)}</span></label>)}
             <label className="mt-3 block text-xs font-medium text-gray-700">{sheet.name} — {labels.sheetRole}
               <select aria-label={`${sheet.name} — ${labels.sheetRole}`} value={type} onChange={event => { const role = event.target.value as HistoricSheetType; setSheetTypes(previous => ({ ...previous, [sheet.name]: role })); if (isAtelierRole(role) && !(ATELIER_ROLE_FIELDS[role] ?? []).some(field => mappings[sheet.name]?.[field])) setMappings(previous => ({ ...previous, [sheet.name]: suggestAtelierMapping(role, sheet.columns) })) }} className="input mt-1 block w-full text-sm">
                 <option value="UNKNOWN">{labels.ignoreSheet}</option>
@@ -156,7 +170,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
             </label>
             {type !== 'UNKNOWN' && <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {fields.map(field => {
-                const required = field === 'title' || type === 'RISK_ACTION_LINKS' || (type === 'VULNERABILITIES' && field === 'riskExternalId') || (type === 'RISKS' && field === 'externalId' && Boolean(mappings[sheet.name]?.embeddedVulnerabilities || mappings[sheet.name]?.embeddedActions))
+                const required = field === 'title' && type !== 'RESIDUAL_RISKS' || field === 'riskRef' && type === 'RESIDUAL_RISKS' || type === 'RISK_ACTION_LINKS' || (type === 'VULNERABILITIES' && field === 'riskExternalId') || (type === 'RISKS' && field === 'externalId' && Boolean(mappings[sheet.name]?.embeddedVulnerabilities || mappings[sheet.name]?.embeddedActions))
                 const value = mappings[sheet.name]?.[field] ?? ''
                 const compatibility = field === 'description' && value ? 'COMPATIBLE' : getHistoricColumnCompatibility(field, value, required)
                 const selectedColumns = splitHistoricMappedColumns(value)
@@ -205,7 +219,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
       </section>}
       <div data-testid="historic-import-footer" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
         {blockers.length > 0 ? <ul role="alert" className="list-inside list-disc text-xs text-red-800">{blockers.map(blocker => <li key={`${blocker.sheetName}:${blocker.field}`}>✕ {blocker.sheetName} — ACRA : {blocker.field === '__RISK_SHEET__' ? labels.sheetTypes.RISKS : blocker.field === '__ACTION_SHEET__' ? labels.sheetTypes.ACTIONS : labels.fieldLabels[blocker.field] ?? blocker.field} ({labels.missing})</li>)}</ul> : <span />}
-        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
+        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, refAliases: Object.fromEntries(Object.entries(refAliases).filter(([, v]) => Object.keys(v).length)), organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
       </div>
     </section>
   )

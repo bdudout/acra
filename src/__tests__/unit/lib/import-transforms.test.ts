@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  canonicalRef, extractReferences, extractReferencesWithLabels, parseLevelLabel, parseSymbolLevel,
+  suggestPrefixAlias, prefixesOfRefs, canonicalRef, extractReferences, extractReferencesWithLabels, parseLevelLabel, parseSymbolLevel,
   suggestValueMap, applyValueMap, groupRows, isTemplateRow, filterRetained, normalizeRetained, aliasPrefix,
 } from '@/lib/import-transforms'
 
@@ -145,4 +145,14 @@ describe('aliasPrefix — préfixe différent entre feuilles (B-IMP-40)', () => 
     expect(aliasPrefix('R_05', {})).toBe('R_05')
     expect(aliasPrefix('RR_05', { R: 'RI' })).toBe('RR_05')
   })
+})
+
+describe('suggestPrefixAlias — préfixe différent entre feuilles (B-IMP-40)', () => {
+  it('propose R ⇒ RI quand les mesures citent R_05 et que les risques s’appellent RI_05 ; jamais sans candidat unique', () => {
+    expect(suggestPrefixAlias(['R_01 à R_09', 'R_05 R_07', 'R_04'], ['RI_01', 'RI_02', 'RI_03'])).toEqual([{ from: 'R', to: 'RI' }])
+    expect(suggestPrefixAlias(['RI_01', 'RI_02'], ['RI_01'])).toEqual([]) // déjà le bon préfixe
+    expect(suggestPrefixAlias(['X_01'], ['RI_01', 'RR_01'])).toEqual([]) // aucun préfixe voisin
+    expect(suggestPrefixAlias(['R_01'], ['RI_01', 'RR_01'])).toEqual([]) // ambigu : deux candidats
+  })
+  it('prefixesOfRefs', () => expect(prefixesOfRefs(['RI_01', 'SR/OV_02', 'x'])).toEqual(['RI', 'SR/OV']))
 })

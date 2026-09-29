@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AnalyseImportMenu from '@/components/AnalyseImportMenu'
-import HistoricImportPreview from '@/components/HistoricImportPreview'
+import HistoricImportPreview, { type HistoricPreviewSheet } from '@/components/HistoricImportPreview'
 import { BUILTIN_PROFILES } from '@/lib/import-profile'
 
 const labels = {
@@ -131,5 +131,23 @@ describe('HistoricImportPreview — profil reconnu (lot I4)', () => {
   it('aucun profil sur un classeur inconnu', () => {
     render(<HistoricImportPreview sheets={[{ name: 'Divers', columns: ['a'], rows: 1, detection: { type: 'UNKNOWN' }, mapping: {}, missing: [] }]} labels={labels} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     expect(screen.queryByRole('status')).toBeNull()
+  })
+})
+
+describe('HistoricImportPreview — alias de préfixe (R_ ⇒ RI_)', () => {
+  const profile = (values: string[]) => ({ examples: values.slice(0, 3), values, total: values.length, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 })
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens' }, aliasPrefix: 'Préfixe « {from} » ≠ « {to} » : rapprocher ?' }
+  const sheets: HistoricPreviewSheet[] = [
+    { name: 'Risques', columns: ['Réf.RI', 'Libellé'], rows: 3, detection: { type: 'RISKS' as const }, mapping: { externalId: 'Réf.RI', title: 'Libellé' }, missing: [], profiles: { 'Réf.RI': profile(['RI_01', 'RI_02']) } },
+    { name: 'PACS', columns: ['Mesure', 'Risques'], rows: 3, detection: { type: 'MEASURES' as const }, mapping: { title: 'Mesure', riskExternalId: 'Risques' }, missing: [], profiles: { Risques: profile(['R_01 à R_09', 'R_05 R_07']) } },
+  ]
+  it('propose l’alias, jamais appliqué sans validation ; transmis à l’import quand il est coché', () => {
+    const onConfirm = vi.fn()
+    render(<HistoricImportPreview sheets={sheets} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm.mock.calls[0][0].refAliases).toEqual({})
+    fireEvent.click(screen.getByLabelText('Préfixe « R » ≠ « RI » : rapprocher ?'))
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm.mock.calls[1][0].refAliases).toEqual({ PACS: { R: 'RI' } })
   })
 })

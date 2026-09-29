@@ -20,7 +20,7 @@ import { importErrorStatus } from '@/lib/import-errors'
 const sheetType = z.enum(HISTORIC_SHEET_TYPES)
 const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
 const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.string().trim().max(10_000)))).default({})
-const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
+const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), refAliases: z.record(z.string(), z.record(z.string().regex(/^[A-Za-z/]{1,10}$/), z.string().regex(/^[A-Za-z/]{1,10}$/))).default({}), dryRun: z.boolean().default(false), rowOverrides })
 
 /** Exécute un import Excel après la prévisualisation et le mapping humain obligatoire. */
 export async function POST(req: NextRequest) {
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       const contextRows = type === 'CONTEXT' ? readSheetSample(sheet, 80, 20) : null
       const blocks = contextRows ? { text: extractTextBlocks(contextRows), kv: extractKeyValueBlocks(contextRows) } : undefined
       const profiles = Object.fromEntries(headers.map(header => [header, profileHistoricColumn(rows.map(row => row[header] ?? ''))]))
-      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles, blocks }
+      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles, blocks, refAliases: body.refAliases[sheet.name] }
     })
     const correctedSheets = applyHistoricRowOverrides(sheets, body.rowOverrides as HistoricRowOverrides)
     if (validateHistoricImportSelection(sheets).length || (!body.partialImport && validateHistoricImportFormats(sheets).length)) throw new Error('MAPPING_INCOMPLET:cross_sheet_reference_or_format')
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && (sheet.rows.length > 0 || (sheet.blocks && (sheet.blocks.text.length > 0 || sheet.blocks.kv.length > 0))))) throw new Error('NO_IMPORTABLE_SHEET')
     const fallback = body.filename.replace(/\.xlsx$/i, '')
     const packageData = buildHistoricImportPackages(partition.sheets, fallback)
-    const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides })
+    const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides, ...(Object.keys(body.refAliases).length ? { refAliases: body.refAliases } : {}) })
     const results = await Promise.all(packageData.map((item, index) => executeAnalysisImport(parseAnalysisImportRequest({ ...item, idempotencyKey: `${key}:${index}` }), { organizationId, userId, source: 'EXCEL_WEB' })))
     return NextResponse.json({ results, decisions: partition.decisions, imported: results.length, ...results[0] }, { status: results.every(result => result.replayed) ? 200 : 201 })
   } catch (error) {

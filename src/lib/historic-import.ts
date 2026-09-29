@@ -1,5 +1,5 @@
-import { parseLevelLabel, isTemplateRow } from './import-transforms'
-import { ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet } from './import-ateliers-build'
+import { parseLevelLabel, isTemplateRow, extractReferences, aliasPrefix, canonicalRef, prefixesOfRefs } from './import-transforms'
+import { ATELIER_REQUIRED, ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet } from './import-ateliers-build'
 import type { AtelierContent } from './analysis-import-ateliers'
 import { buildContextFromBlocks, type KeyValue, type TextBlock } from './excel-blocks'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
@@ -69,7 +69,7 @@ export function validateHistoricColumnMapping(type: HistoricSheetType, mapping: 
     MEASURES: ['title'],
     ACTIONS: ['title'],
     RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
-    ...Object.fromEntries(ATELIER_ROLES.map(role => [role, ['title']])),
+    ...ATELIER_REQUIRED,
   }
   return (required[type] ?? []).filter(key => !mapping[key]?.trim())
 }
@@ -281,7 +281,7 @@ export function suggestHistoricColumnMapping(columns: string[]): HistoricColumnM
 export type HistoricImportRow = Record<string, string>
 /** Blocs non tabulaires lus pour le rôle « contexte » (périmètre en texte libre, page de garde). */
 export type HistoricContextBlocks = { text: TextBlock[]; kv: KeyValue[] }
-export type HistoricImportSheet = { blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
+export type HistoricImportSheet = { refAliases?: Record<string, string>; blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
   analysis: { title: string; description?: string; methode?: 'EBIOS_RM' }
   risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
@@ -337,7 +337,7 @@ export type HistoricImportPartition = { sheets: HistoricImportSheet[]; decisions
 export type HistoricRowOverrides = Record<string, Record<string, Record<string, string>>>
 const requiredRowFields: Partial<Record<HistoricSheetType, string[]>> = {
   ANALYSES: ['title'], RISKS: ['title'], VULNERABILITIES: ['riskExternalId', 'title'], MEASURES: ['title'], ACTIONS: ['title'], RISK_ACTION_LINKS: ['riskExternalId', 'actionExternalId'],
-  ...(Object.fromEntries(ATELIER_ROLES.map(role => [role, ['title']])) as Partial<Record<HistoricSheetType, string[]>>),
+  ...ATELIER_REQUIRED,
 }
 const expectedRequiredValue = (field: string) => field.endsWith('ExternalId') ? 'référence non vide' : 'texte non vide'
 const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>) => {
@@ -425,6 +425,24 @@ export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): Hi
 /** Transforme des lignes Excel déjà mappées en contrat d'import explicite, sans I/O ni écriture. */
 export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallbackTitle: string): HistoricImportPackage {
   const result: HistoricImportPackage = { analysis: { title: fallbackTitle.slice(0, 200) || 'Analyse importée' }, risks: [], vulnerabilities: [], measures: [], actions: [], links: [] }
+  // Références de risques citées par une mesure : « R_01 à R_09 », « R_05 R_07 » — résolues sur les identifiants réels des risques,
+  // avec un éventuel alias de préfixe VALIDÉ par l'utilisateur (R_ ⇒ RI_). Un identifiant exact reste prioritaire (comportement historique).
+  const riskIds = sheets.filter(sheet => sheet.type === 'RISKS').flatMap(sheet => sheet.rows.map(row => text(row, sheet.mapping.externalId)).filter((id): id is string => !!id))
+  const riskByCanon = new Map(riskIds.map(id => [canonicalRef(id), id]))
+  const patternOk = riskIds.length > 0 && riskIds.every(id => /^[A-Za-z][A-Za-z/]*[ _.-]?\d+[A-Za-z]?$/.test(id))
+  const riskRefs = (row: HistoricImportRow, sheet: HistoricImportSheet): string[] => {
+    const cell = text(row, sheet.mapping.riskExternalId)
+    if (!cell) return []
+    if (riskIds.includes(cell.trim())) return [cell.trim()]
+    if (patternOk) {
+      const aliases = sheet.refAliases ?? {}
+      const prefixes = [...new Set([...prefixesOfRefs(riskIds), ...Object.keys(aliases).map(k => k.toUpperCase())])]
+      const resolved = extractReferences(cell, { prefixes }).flatMap(r => { const id = riskByCanon.get(canonicalRef(aliasPrefix(r.raw, aliases))); return id ? [id] : [] })
+      const unique = [...new Set(resolved)]
+      if (unique.length) return unique
+    }
+    return [first(row, sheet, 'riskExternalId') ?? cell]
+  }
   for (const sheet of sheets) for (const row of sheet.rows) {
     const title = first(row, sheet, 'title')
     if (sheet.type === 'ANALYSES' && title && result.analysis.title === fallbackTitle) {
@@ -442,7 +460,7 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
       const riskExternalId = first(row, sheet, 'riskExternalId')
       if (riskExternalId) for (const vulnerabilityTitle of values(row, sheet, 'title')) result.vulnerabilities.push({ riskExternalId, title: vulnerabilityTitle.slice(0, 500), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000) })
     }
-    if (sheet.type === 'MEASURES') { const rawStatus = first(row, sheet, 'status'); const titles = values(row, sheet, 'title'); for (const measureTitle of titles) result.measures.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: first(row, sheet, 'riskExternalId'), title: measureTitle.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), status: rawStatus ? sheet.statusMapping?.[rawStatus] ?? rawStatus : undefined, responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
+    if (sheet.type === 'MEASURES') { const refs = riskRefs(row, sheet); const rawStatus = first(row, sheet, 'status'); const titles = values(row, sheet, 'title'); for (const measureTitle of titles) result.measures.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: refs[0], title: measureTitle.slice(0, 255), description: [descriptionText(row, sheet.mapping.description), refs.length > 1 ? `Risques concernés : ${refs.join(', ')}` : ''].filter(Boolean).join('\n\n').slice(0, 2000) || undefined, status: rawStatus ? sheet.statusMapping?.[rawStatus] ?? rawStatus : undefined, responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
     if (sheet.type === 'ACTIONS') { const titles = values(row, sheet, 'title'); for (const actionTitle of titles) result.actions.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: first(row, sheet, 'riskExternalId'), title: actionTitle.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
     if (sheet.type === 'RISK_ACTION_LINKS') {
       const riskReferences = values(row, sheet, 'riskExternalId')

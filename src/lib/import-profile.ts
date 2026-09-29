@@ -50,7 +50,7 @@ export const BUILTIN_PROFILES: ImportProfile[] = [
       { match: { name: '4 - S.Opérationnels' }, role: 'OPERATIONAL_SCENARIOS', fields: { externalId: 'Réf.SO', strategicRef: 'Réf.SS', title: 'Description du scénario opérationnel', likelihood: 'Vraisemblance initiale' } },
       { match: { name: '5 - Risques initiaux' }, role: 'RISKS', fields: { externalId: 'Réf.RI', title: 'Description du risque', gravity: 'Gravité initiale', likelihood: 'Vraisemblance initiale', strategy: 'Traitement du risque initial' } },
       { match: { name: '5 - Risques résiduels' }, role: 'RESIDUAL_RISKS', fields: { externalId: 'Réf.RR', riskRef: 'Réf.RI', currentGravity: 'Gravité actuelle', currentLikelihood: 'Vraisemblance actuelle', residualGravity: 'Gravité résiduelle', residualLikelihood: 'Vraisemblance résiduelle' } },
-      { match: { name: '5 - PACS' }, role: 'MEASURES', fields: { externalId: 'Réf. de la mesure de sécurité', title: 'Description courte de la mesure', description: 'Description longue', status: 'Statut', responsible: 'Responsable', dueDate: 'Date de mise en œuvre' } },
+      { match: { name: '5 - PACS' }, role: 'MEASURES', fields: { externalId: 'Réf. de la mesure de sécurité', title: 'Description courte de la mesure', description: 'Description longue', riskExternalId: 'Réf. des risques initiaux concernés', status: 'Statut', responsible: 'Responsable', dueDate: 'Date de mise en œuvre' } },
     ],
     statusMappings: { '5 - PACS': { Terminé: 'REALISE', 'A réaliser': 'A_FAIRE', 'En cours': 'EN_COURS', 'Abandonné / Suspendu': 'REPORTE' } },
     scoreMappings: {},

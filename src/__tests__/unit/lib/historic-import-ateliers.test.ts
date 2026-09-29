@@ -44,3 +44,20 @@ describe('import historique — ateliers 1 à 4', () => {
     expect(pkg.analysis).toMatchObject({ title: 'Suivi de chantiers', description: 'Rédacteur : A. Martin' })
   })
 })
+
+describe('mesures citant plusieurs risques (B-IMP-26, B-IMP-40)', () => {
+  const risks: HistoricImportSheet = { name: 'Risques', type: 'RISKS', mapping: { externalId: 'Réf.RI', title: 'Description' }, rows: ['RI_01', 'RI_02', 'RI_03', 'RI_04'].map(id => ({ 'Réf.RI': id, Description: `Risque ${id}` })) }
+  const measures = (aliases?: Record<string, string>): HistoricImportSheet => ({ name: 'PACS', type: 'MEASURES', mapping: { title: 'Mesure', riskExternalId: 'Risques' }, refAliases: aliases, rows: [
+    { Mesure: 'Journaux', Risques: 'R_01 à R_03' }, { Mesure: 'Antivirus', Risques: 'R_02 R_04' }, { Mesure: 'Exact', Risques: 'RI_04' }, { Mesure: 'Sans lien', Risques: '' },
+  ] })
+  it('sans alias validé : le préfixe R_ n’est jamais rapproché de RI_ (mesure non rattachée)', () => {
+    const pkg = buildHistoricImportPackage([risks, measures()], 'X')
+    expect(pkg.measures.map(m => m.riskExternalId)).toEqual(['R_01 à R_03', 'R_02 R_04', 'RI_04', undefined])
+  })
+  it('avec l’alias validé R ⇒ RI : plages et listes développées, premier risque rattaché, les autres notés', () => {
+    const pkg = buildHistoricImportPackage([risks, measures({ R: 'RI' })], 'X')
+    expect(pkg.measures.map(m => m.riskExternalId)).toEqual(['RI_01', 'RI_02', 'RI_04', undefined])
+    expect(pkg.measures[0].description).toContain('Risques concernés : RI_01, RI_02, RI_03')
+    expect(pkg.measures[2].description).toBeUndefined()
+  })
+})
