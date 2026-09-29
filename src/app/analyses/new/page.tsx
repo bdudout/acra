@@ -157,8 +157,8 @@ export default function NewAnalysePage() {
         <form onSubmit={handleSubmit} className="card p-6 space-y-5">
           <ProjetSourcePicker projets={projets} value={projetId} onChange={choisirProjet} />
           <div>
-            <label className="label">{t.newAnalysis.name} <span className="text-red-500">*</span></label>
-            <input type="text" required value={form.nom}
+            <label className="label" htmlFor="analyse-nom">{t.newAnalysis.name} <span className="text-red-500">*</span></label>
+            <input id="analyse-nom" type="text" required value={form.nom}
               onChange={e => setForm({ ...form, nom: e.target.value })}
               className="input" placeholder={t.newAnalysis.namePh} />
             <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.nameHint}</p>

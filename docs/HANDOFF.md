@@ -34,6 +34,12 @@ projet 360, cadrage CAF) + le commit de ce tour.
   (EBIOS RM n'est qu'une méthode) ; mise à jour intégrée à l'application mise en avant.
 - **Vérifié** : `tsc` 0 · `npm test` **2295/2295** · `i18n:check` · `npm run build` OK ·
   migration appliquée en local (pas de dérive).
+- **Suite (tour 12)** : CI #191 — seul `npm audit` échouait (nodemailer GHSA-6vj9-mwq6-2f5v,
+  advisory nouvelle) → `nodemailer@^10.0.12`, exceptions `image-size` retirées (devenues inutiles),
+  `audit-check` propre. Recette navigateur réelle : `e2e/projets.spec.ts` (projet 360 → analyse
+  cyber préremplie) **vert** contre le dev (`DATABASE_URL` en localhost, `E2E_BASE_URL=http://localhost:3000`).
+  Champ « Nom » de la création d'analyse : `id`/`htmlFor` ajoutés. Cockpit GRC avec un seul module :
+  couvert en unitaire seulement.
 - **Piège** : un `sed -i` macOS avec `\n` a échoué en silence dans une commande chaînée en `&&` et
   a sauté la création de `/api/projets` (les tests mockaient `fetch`, seul le build l'a révélé).
   Vérifier l'existence des fichiers créés.
