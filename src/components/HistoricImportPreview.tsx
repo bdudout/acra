@@ -5,7 +5,7 @@ import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-atelier
 import { isAtelierRole } from '@/lib/historic-import'
 import { suggestPrefixAlias, suggestValueMap } from '@/lib/import-transforms'
 import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
-import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
+import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, suggestScoreMapping, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
 export type HistoricPreviewSheet = {
   name: string
@@ -103,6 +103,19 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
     setScoreMappings(previous => ({ ...previous, ...selection.scoreMappings }))
   }
   useEffect(() => { fetch(`/api/analysis-imports/mappings${targetOrganizationId ? `?organizationId=${encodeURIComponent(targetOrganizationId)}` : ''}`).then(response => response.ok ? response.json() : { mappings: [] }).then(data => setSavedMappings(data.mappings ?? [])).catch(() => {}) }, [targetOrganizationId])
+  // Cotations en clair (« Critique », « Vraisemblable ») : niveaux PROPOSÉS, visibles et modifiables, seulement si toute l'échelle est reconnue.
+  useEffect(() => {
+    setScoreMappings(previous => {
+      let next = previous
+      for (const sheet of visibleSheets) for (const field of ['gravity', 'likelihood'] as const) {
+        const column = splitHistoricMappedColumns(mappings[sheet.name]?.[field])[0]
+        if (!column || previous[sheet.name]?.[field]) continue
+        const suggestion = suggestScoreMapping(field, sheet.profiles?.[column]?.values ?? [])
+        if (suggestion) next = { ...next, [sheet.name]: { ...(next[sheet.name] ?? {}), [field]: suggestion } }
+      }
+      return next
+    })
+  }, [mappings, visibleSheets])
   const selectedSheets = visibleSheets.filter(sheet => sheetTypes[sheet.name] !== 'UNKNOWN')
   // Préfixe des références de risques cité par une mesure ≠ préfixe des risques (R_ / RI_) : alias PROPOSÉ, jamais appliqué sans validation.
   const prefixHints = useMemo(() => {

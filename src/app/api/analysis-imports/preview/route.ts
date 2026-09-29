@@ -12,7 +12,7 @@ import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/exce
 import { checkTabularUpload } from '@/lib/import-file-format'
 import { loadTabularWorkbook } from '@/lib/tabular-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
-import { refineReferenceMapping, isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
+import { linkChildSheetsToRisks, refineReferenceMapping, isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
 
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
 
@@ -62,6 +62,6 @@ export async function POST(req: NextRequest) {
       const issues = sheetFormulaIssues(sheet)
       return { name: sheet.name, columns: header, profiles, rows: dataRowCount, headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping), warnings: { formulasWithoutValue: issues.withoutValue, formulaErrors: issues.errors } }
     })
-    return NextResponse.json({ filename: body.filename, sheets })
+    return NextResponse.json({ filename: body.filename, sheets: linkChildSheetsToRisks(sheets) })
   } catch { return NextResponse.json({ error: 'excel_workbook_unreadable' }, { status: 422 }) }
 }

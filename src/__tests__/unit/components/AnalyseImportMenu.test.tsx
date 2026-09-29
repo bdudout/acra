@@ -73,7 +73,7 @@ describe('HistoricImportPreview', () => {
 
   it('laisse confirmer un import partiel quand une cotation source reste invalide', () => {
     render(<HistoricImportPreview
-      sheets={[{ name: 'Risques', columns: ['Titre', 'Impact historique'], rows: 1, detection: { type: 'RISKS' }, mapping: { title: 'Titre', gravity: 'Impact historique' }, missing: [], profiles: { 'Impact historique': { examples: ['Critique'], values: ['Critique'], total: 1, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 } } }]}
+      sheets={[{ name: 'Risques', columns: ['Titre', 'Impact historique'], rows: 1, detection: { type: 'RISKS' }, mapping: { title: 'Titre', gravity: 'Impact historique' }, missing: [], profiles: { 'Impact historique': { examples: ['Bof'], values: ['Bof'], total: 1, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 } } }]}
       labels={{ title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'Champ requis', noSheets: 'Aucune feuille', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Utiliser cette feuille comme', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Comment compléter le mapping ?', mappingHelp: 'Choisissez le rôle de chaque feuille puis associez les colonnes.', fieldLabels: { title: 'Intitulé', externalId: 'Référence', gravity: 'Gravité', riskExternalId: 'Référence risque', actionExternalId: 'Référence action' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens risque-action' } }}
       onCancel={vi.fn()} onConfirm={vi.fn()}
     />)
@@ -164,5 +164,16 @@ describe('HistoricImportPreview — correspondance des valeurs (sources de risqu
     fireEvent.change(screen.getByLabelText('1 - SROV — Officine Spécialisée'), { target: { value: 'CYBERCRIMINEL' } })
     fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
     expect(onConfirm.mock.calls[0][0].valueMaps).toEqual({ '1 - SROV': { category: { 'Officine Spécialisée': 'CYBERCRIMINEL' } } })
+  })
+})
+
+describe('HistoricImportPreview — cotations en clair proposées', () => {
+  const profile = (values: string[]) => ({ examples: values.slice(0, 3), values, total: values.length, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 })
+  it('propose Critique → 4 (modifiable) et le transmet ; une échelle inconnue n’est jamais proposée', () => {
+    const onConfirm = vi.fn()
+    const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } }
+    render(<HistoricImportPreview sheets={[{ name: 'Registre', columns: ['Risque', 'Impact', 'Probabilité'], rows: 2, detection: { type: 'RISKS' }, mapping: { title: 'Risque', gravity: 'Impact', likelihood: 'Probabilité' }, missing: [], profiles: { Risque: profile(['A', 'B']), Impact: profile(['Critique', 'Limitée']), Probabilité: profile(['Bof', 'Peut-être']) } }]} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm.mock.calls[0][0].scoreMappings).toEqual({ Registre: { gravity: { Critique: '4', Limitée: '2' } } })
   })
 })

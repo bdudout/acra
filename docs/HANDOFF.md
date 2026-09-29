@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (27) — import universel — CSV / JSON réels, doublons, cotations en clair
+
+- Vérifié en réel (voir §7 bis du plan de test) : CSV (10 risques, rejets ligne à ligne), JSON libre (6 risques + 5 mesures), droits (403), idempotence ; tsc, `npm test` (2877), `i18n:check`, build, e2e import 4/4.
+- Code : `partitionHistoricImportSheets` (DUPLICATE_REFERENCE, UNKNOWN sans décision, score mappé pris en compte), `linkChildSheetsToRisks`, `suggestScoreMapping`, `normalizeStrategy/MeasureStatus`, `refineReferenceMapping`, alias exacts `=mot`.
+- Reste : IDOR autre organisation, gel, volumétrie, windows-1252 ; revue « lignes à décider » à regrouper ; liens actifs↔VM, champs calculés, API v2/MCP.
+
 ## 2026-09-29 (26) — import universel — session de test réelle (Docker/DB)
 
 - Tests réels exécutés (voir §7 de `docs/specs/import-universel-plan-de-test.md`) : classeurs BTP/avocats de bout en bout en base, 7 défauts corrigés avec tests. Base Postgres relancée après suppression d'un `postmaster.pid` corrompu (octets nuls) dans le volume `ebios-rm_postgres_data`.

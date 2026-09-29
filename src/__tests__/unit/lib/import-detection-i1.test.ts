@@ -3,7 +3,7 @@
  * aucune feuille d'échelles ou de scénarios n'est proposée « Risques » à confiance haute.
  */
 import { describe, expect, it } from 'vitest'
-import { detectHistoricImportSheet, detectHistoricHeaderLayout, suggestHistoricColumnMapping, refineReferenceMapping, profileHistoricColumn, partitionHistoricImportSheets, normalizeMeasureStatus, normalizeStrategy, validateHistoricColumnProfile } from '@/lib/historic-import'
+import { detectHistoricImportSheet, detectHistoricHeaderLayout, suggestHistoricColumnMapping, refineReferenceMapping, profileHistoricColumn, partitionHistoricImportSheets, buildHistoricImportPackage, linkChildSheetsToRisks, normalizeMeasureStatus, normalizeStrategy, suggestScoreMapping, validateHistoricColumnProfile } from '@/lib/historic-import'
 
 describe('détection de rôle : pas de faux positif « Risques » (B-IMP-13)', () => {
   it('feuille d’échelles (métriques) : ni risques ni confiance haute', () => {
@@ -169,5 +169,81 @@ describe('normalizeStrategy : options de traitement usuelles', () => {
     const sheet = { name: 'R', type: 'RISKS' as const, mapping: { title: 'T', strategy: 'S' }, rows: [{ T: 'x', S: 'Peut-être' }] }
     const d = partitionHistoricImportSheets([sheet]).decisions.find(x => x.status === 'FIELD_OMITTED')
     expect(d).toMatchObject({ field: 'strategy', sourceColumn: 'S', sourceValue: 'Peut-être' })
+  })
+})
+
+describe('registre plat : colonne « Risque » = intitulé ; cotations en clair proposées', () => {
+  it('« Risque » seul est l’intitulé, sans que « risque » soit trop large ailleurs', () => {
+    const m = suggestHistoricColumnMapping(['Réf', 'Risque', 'Description', 'Impact', 'Probabilité'])
+    expect(m.title).toBe('Risque')
+    expect(m.description).toBe('Description')
+    expect(suggestHistoricColumnMapping(['Réf', 'Niveau de risque', 'Titre']).title).toBe('Titre')
+  })
+  it('suggestScoreMapping : valeurs reconnues → niveaux 1–4 ; inconnues laissées sans niveau ; rien si tout est inconnu ou numérique', () => {
+    expect(suggestScoreMapping('gravity', ['Négligeable', 'Limitée', 'Importante', 'Critique'])).toEqual({ Négligeable: '1', Limitée: '2', Importante: '3', Critique: '4' })
+    expect(suggestScoreMapping('likelihood', ['Peu vraisemblable', 'Vraisemblable', 'Très vraisemblable'])).toEqual({ 'Peu vraisemblable': '1', Vraisemblable: '2', 'Très vraisemblable': '3' })
+    expect(suggestScoreMapping('gravity', ['Critique', 'Bof'])).toEqual({ Critique: '4' })
+    expect(suggestScoreMapping('gravity', ['Bof'])).toBeNull()
+    expect(suggestScoreMapping('gravity', ['1', '2'])).toBeNull()
+  })
+})
+
+describe('détection : registres génériques (JSON/CSV d’un autre outil)', () => {
+  it('libellé + impact + probabilité → Risques ; feuille « controles » avec titre → Mesures', () => {
+    expect(detectHistoricImportSheet('registre', ['id', 'libelle', 'impact', 'probabilite', 'proprietaire.nom']).type).toBe('RISKS')
+    expect(detectHistoricImportSheet('registre.controles', ['registre', 'ref', 'titre', 'statut', 'echeance']).type).toBe('MEASURES')
+    expect(detectHistoricImportSheet('Propriétés', ['Clé', 'Valeur']).type).toBe('UNKNOWN')
+    expect(detectHistoricImportSheet('Métriques', ['Niveau', 'Impact', 'Probabilité']).type).toBe('UNKNOWN') // pas de colonne titre
+  })
+})
+
+describe('import partiel : cotations mappées, doublons, contrôle partagé', () => {
+  const risks = (rows: Record<string, string>[], extra: object = {}) => ({ name: 'Registre', type: 'RISKS' as const, mapping: { externalId: 'Réf', title: 'Risque', gravity: 'Impact' }, rows, ...extra })
+  it('une cotation en clair mappée (Critique → 4) n’est ni écartée ni perdue', () => {
+    const sheet = risks([{ Réf: 'R-01', Risque: 'A', Impact: 'Critique' }], { scoreMappings: { gravity: { Critique: '4' } } })
+    const part = partitionHistoricImportSheets([sheet])
+    expect(part.decisions.some(d => d.status === 'FIELD_OMITTED')).toBe(false)
+    expect(buildHistoricImportPackage(part.sheets, 'x').risks[0].gravity).toBe(4)
+  })
+  it('sans correspondance, la cotation en clair reste écartée (comportement inchangé)', () => {
+    const part = partitionHistoricImportSheets([risks([{ Réf: 'R-01', Risque: 'A', Impact: 'Critique' }])])
+    expect(part.decisions.find(d => d.status === 'FIELD_OMITTED')).toMatchObject({ field: 'gravity' })
+  })
+  it('référence en double : la ligne suivante est rejetée (DUPLICATE_REFERENCE), la première est conservée', () => {
+    const part = partitionHistoricImportSheets([risks([{ Réf: 'R-04', Risque: 'A', Impact: '3' }, { Réf: 'r_04', Risque: 'B', Impact: '3' }, { Réf: 'R-05', Risque: 'C', Impact: '3' }])])
+    expect(part.decisions.find(d => d.status === 'REJECTED')).toMatchObject({ row: 3, reason: 'DUPLICATE_REFERENCE' })
+    expect(part.sheets[0].rows.map(r => r.Réf)).toEqual(['R-04', 'R-05'])
+  })
+  it('contrôle partagé entre deux risques : une seule mesure, risques concernés listés', () => {
+    const rs = risks([{ Réf: 'R-01', Risque: 'A', Impact: '3' }, { Réf: 'R-02', Risque: 'B', Impact: '3' }])
+    const ms = { name: 'Mesures', type: 'MEASURES' as const, mapping: { externalId: 'Réf', title: 'Titre', riskExternalId: 'Risque' }, rows: [{ Réf: 'C-01', Titre: 'Cloisonner', Risque: 'R-01' }, { Réf: 'C-01', Titre: 'Cloisonner', Risque: 'R-02' }, { Réf: 'C-02', Titre: 'Chiffrer', Risque: 'R-02' }] }
+    const part = partitionHistoricImportSheets([rs, ms])
+    expect(part.decisions.filter(d => d.status === 'REJECTED')).toEqual([])
+    const pkg = buildHistoricImportPackage(part.sheets, 'x')
+    expect(pkg.measures).toHaveLength(2)
+    expect(pkg.measures[0]).toMatchObject({ externalId: 'C-01', riskExternalId: 'R-01' })
+    expect(pkg.measures[0].description).toContain('R-02')
+  })
+})
+
+describe('linkChildSheetsToRisks : feuille enfant d’un JSON (colonne = nom de la feuille des risques)', () => {
+  it('propose la colonne parent comme référence du risque, sans écraser un mapping existant', () => {
+    const sheets = [
+      { name: 'registre', detection: { type: 'RISKS' as const }, columns: ['id', 'libelle'], mapping: { externalId: 'id' } as Record<string, string | undefined> },
+      { name: 'registre.controles', detection: { type: 'MEASURES' as const }, columns: ['registre', 'ref', 'titre'], mapping: { externalId: 'ref', title: 'titre' } as Record<string, string | undefined> },
+      { name: 'autre.mesures', detection: { type: 'MEASURES' as const }, columns: ['registre', 'titre'], mapping: { riskExternalId: 'titre' } as Record<string, string | undefined> },
+    ]
+    const out = linkChildSheetsToRisks(sheets)
+    expect(out[1].mapping.riskExternalId).toBe('registre')
+    expect(out[2].mapping.riskExternalId).toBe('titre')
+    expect(out[0].mapping).toEqual({ externalId: 'id' })
+  })
+})
+
+describe('suggestion : colonne « id » seule = référence', () => {
+  it('id / ref / code exacts (registre JSON), sans capter « valid » ou « identité »', () => {
+    expect(suggestHistoricColumnMapping(['id', 'libelle', 'impact', 'probabilite']).externalId).toBe('id')
+    expect(suggestHistoricColumnMapping(['Code', 'Titre']).externalId).toBe('Code')
+    expect(suggestHistoricColumnMapping(['identite', 'Titre']).externalId).toBeUndefined()
   })
 })

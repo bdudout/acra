@@ -42,6 +42,10 @@ export function detectHistoricImportSheet(name: string, columns: string[]): Hist
   if (matches(haystack, ['vulnerabilite', 'vulnerability']) && matches(haystack, ['risque', 'risk'])) return { type: 'VULNERABILITIES', confidence: 'HIGH', missing: [] }
   const riskIdentified = cols.some(c => RISK_TITLE.test(c)) || (RISK_SHEET_NAME.test(nameN) && !cols.some(c => c.includes('scenario')))
   if (riskIdentified && matches(haystack, ['gravite', 'impact', 'vraisemblance', 'probabilite', 'likelihood', 'auswirkung', 'wahrscheinlichkeit', 'gravedad', 'impacto', 'probabilidad', 'gravita', 'impatto'])) return { type: 'RISKS', confidence: 'HIGH', missing: [] }
+  // Registre générique d'un autre outil : un intitulé + une gravité/impact + une vraisemblance/probabilité suffisent (confiance moyenne).
+  const hasGenericTitle = cols.some(c => /^(libelle|intitule|titre|nom|title|name|label|description)$/.test(c))
+  if (hasGenericTitle && matches(cols, ['gravite', 'impact', 'severity', 'auswirkung', 'gravedad', 'gravita']) && matches(cols, ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'])) return { type: 'RISKS', confidence: 'MEDIUM', missing: [] }
+  if (/(controle|control|mesure|measure)s?( |$)/.test(nameN.split('.').pop() ?? nameN) && cols.some(c => /^(libelle|intitule|titre|nom|title|name|label)$/.test(c))) return { type: 'MEASURES', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['plan action', 'action id', 'intitule action']) && matches(haystack, ['echeance', 'responsable'])) return { type: 'ACTIONS', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['mesure']) && matches(haystack, ['responsable', 'statut'])) return { type: 'MEASURES', confidence: 'MEDIUM', missing: [] }
   if (matches(haystack, ['analyse']) && matches(haystack, ['methode', 'perimetre'])) return { type: 'ANALYSES', confidence: 'MEDIUM', missing: [] }
@@ -74,9 +78,12 @@ export function validateHistoricColumnMapping(type: HistoricSheetType, mapping: 
   return (required[type] ?? []).filter(key => !mapping[key]?.trim())
 }
 
+/** Alias « =mot » : le nom de colonne doit être EXACTEMENT ce mot ; sinon il suffit qu'il le contienne. */
+const aliasMatches = (normalizedColumn: string, alias: string) => (alias.startsWith('=') ? normalizedColumn === alias.slice(1) : normalizedColumn.includes(alias))
+
 const COLUMN_ALIASES: Record<string, string[]> = {
-  externalId: ['reference', 'ref', 'id externe', 'external id', 'risk id', 'action id', 'referenz', 'referencia', 'riferimento'],
-  title: ['description courte', 'short description', 'kurzbeschreibung', 'descripcion corta', 'descrizione breve', 'libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
+  externalId: ['=id', '=ref', '=code', '=numero', '=key', 'reference', 'ref', 'id externe', 'external id', 'risk id', 'action id', 'referenz', 'referencia', 'riferimento'],
+  title: ['=risque', '=risk', '=risiko', '=riesgo', '=rischio', 'description courte', 'short description', 'kurzbeschreibung', 'descripcion corta', 'descrizione breve', 'libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
   gravity: ['gravite', 'severity', 'impact', 'schweregrad', 'auswirkung', 'gravedad', 'impacto', 'gravita', 'impatto'],
   likelihood: ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'],
   description: ['description', 'detail', 'commentaire', 'beschreibung', 'descripcion', 'descrizione', 'comment'],
@@ -192,6 +199,26 @@ const STATUS_SYNONYMS: Record<string, string> = {
   EN_COURS: 'EN_COURS', IN_PROGRESS: 'EN_COURS', ONGOING: 'EN_COURS', DEMARRE: 'EN_COURS', DEMARREE: 'EN_COURS',
   REPORTE: 'REPORTE', REPORTEE: 'REPORTE', ABANDONNE: 'REPORTE', ABANDONNE_SUSPENDU: 'REPORTE', SUSPENDU: 'REPORTE', SUSPENDUE: 'REPORTE', POSTPONED: 'REPORTE', ON_HOLD: 'REPORTE', CANCELLED: 'REPORTE',
 }
+const GRAVITY_WORDS: Record<string, number> = {
+  negligeable: 1, mineure: 1, mineur: 1, faible: 1, minime: 1, limitee: 2, limite: 2, moyenne: 2, moyen: 2, moderee: 2, significative: 2, importante: 3, important: 3, grave: 3, forte: 3, fort: 3, elevee: 3, majeure: 3, critique: 4, maximale: 4, catastrophique: 4,
+}
+const LIKELIHOOD_WORDS: Record<string, number> = {
+  improbable: 1, rare: 1, 'peu vraisemblable': 1, minime: 1, unlikely: 1, possible: 2, vraisemblable: 2, moderee: 2, significative: 2, probable: 3, 'tres vraisemblable': 3, forte: 3, likely: 3, 'quasi certaine': 4, 'quasi certain': 4, certaine: 4, certain: 4, maximale: 4,
+}
+/**
+ * Proposition (modifiable) de niveaux 1–4 pour une cotation en clair (« Critique », « Vraisemblable »…).
+ * Seules les valeurs RECONNUES sont proposées : une valeur inconnue (hors échelle) reste sans niveau et signalée, jamais devinée.
+ * `null` si la colonne est numérique ou si aucune valeur n'est reconnue.
+ */
+export function suggestScoreMapping(field: 'gravity' | 'likelihood', values: string[]): Record<string, string> | null {
+  const table = field === 'gravity' ? GRAVITY_WORDS : LIKELIHOOD_WORDS
+  const distinct = [...new Set(values.map(v => v.trim()).filter(Boolean))]
+  if (distinct.length === 0 || distinct.some(v => isLevel1to4(v))) return null
+  const out: Record<string, string> = {}
+  for (const v of distinct) { const level = table[normalise(v)]; if (level) out[v] = String(level) }
+  return Object.keys(out).length ? out : null
+}
+
 /** Statut de mesure ACRA d'après un libellé courant (FR/EN) ; `null` si le libellé n'est pas reconnu (jamais inventé). */
 export function normalizeMeasureStatus(raw: string): string | null {
   const key = normalise(raw).replace(/ /g, '_').toUpperCase()
@@ -245,7 +272,7 @@ export function validateHistoricColumnProfile(field: string, profile: HistoricCo
 export function getHistoricColumnCompatibility(field: string, column: string | undefined, required = false): HistoricColumnCompatibility {
   if (!column?.trim()) return required ? 'MISSING' : 'REVIEW'
   const normalized = normalise(column)
-  return (COLUMN_ALIASES[field] ?? []).some(alias => normalized.includes(alias)) ? 'COMPATIBLE' : 'REVIEW'
+  return (COLUMN_ALIASES[field] ?? []).some(alias => aliasMatches(normalized, alias)) ? 'COMPATIBLE' : 'REVIEW'
 }
 
 export type HistoricImportSelection = { name: string; type: HistoricSheetType; mapping: HistoricColumnMapping; profiles?: Record<string, HistoricColumnProfile>; statusMapping?: Record<string, string> }
@@ -298,8 +325,21 @@ export function refineReferenceMapping(mapping: HistoricColumnMapping, header: s
   const unique = (column: string) => { const p = profiles[column]; return !!p && p.total > 0 && (p.distinct ?? p.values.length) === p.total }
   if (!current || unique(current) || !profiles[current]) return mapping
   const aliases = COLUMN_ALIASES.externalId
-  const candidate = header.find(column => column !== current && unique(column) && aliases.some(alias => normalise(column).includes(alias)))
+  const candidate = header.find(column => column !== current && unique(column) && aliases.some(alias => aliasMatches(normalise(column), alias)))
   return candidate ? { ...mapping, externalId: candidate } : mapping
+}
+
+/**
+ * Feuille enfant issue d'un JSON imbriqué (`registre.controles`) : sa colonne portant le NOM de la feuille des risques est la
+ * référence du risque parent. Proposition seulement, jamais d'écrasement d'un mapping déjà présent.
+ */
+export function linkChildSheetsToRisks<T extends { name: string; detection: { type: HistoricSheetType }; columns: string[]; mapping: HistoricColumnMapping }>(sheets: T[]): T[] {
+  const riskSheets = new Set(sheets.filter(sheet => sheet.detection.type === 'RISKS').map(sheet => sheet.name))
+  return sheets.map(sheet => {
+    if (!['MEASURES', 'ACTIONS', 'VULNERABILITIES'].includes(sheet.detection.type) || sheet.mapping.riskExternalId) return sheet
+    const parent = sheet.columns.find(column => riskSheets.has(column))
+    return parent ? { ...sheet, mapping: { ...sheet.mapping, riskExternalId: parent } } : sheet
+  })
 }
 
 /** Suggestions transparentes : le mapping est affiché et reste modifiable avant validation. */
@@ -309,7 +349,7 @@ export function suggestHistoricColumnMapping(columns: string[]): HistoricColumnM
   // Une colonne n'est proposée que pour UN champ (l'ordre des alias fait la priorité : référence, intitulé, puis le reste).
   return Object.fromEntries(Object.entries(COLUMN_ALIASES).flatMap(([field, aliases]) => {
     const isReference = /ExternalId$/.test(field) // une même colonne de référence peut servir plusieurs rôles (risque, action, analyse)
-    const match = normalized.find(column => (isReference || !used.has(column.raw)) && aliases.some(alias => column.value.includes(alias)))
+    const match = normalized.find(column => (isReference || !used.has(column.raw)) && aliases.some(alias => aliasMatches(column.value, alias)))
     if (!match) return []
     if (!isReference) used.add(match.raw)
     return [[field, match.raw]]
@@ -369,7 +409,7 @@ const score = (row: HistoricImportRow, column: string | undefined, valueMapping?
   return Number.isFinite(level) && level >= 1 && level <= 4 ? Math.round(level) : undefined
 }
 
-export type HistoricImportDecision = { sheetName: string; row: number; status: 'READY' | 'FIELD_OMITTED' | 'REJECTED' | 'IGNORED'; field?: string; reason?: 'MISSING_REQUIRED_VALUE' | 'INVALID_FORMAT' | 'CARDINALITY_MISMATCH' | 'EMPTY_TEMPLATE_ROW'; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
+export type HistoricImportDecision = { sheetName: string; row: number; status: 'READY' | 'FIELD_OMITTED' | 'REJECTED' | 'IGNORED'; field?: string; reason?: 'MISSING_REQUIRED_VALUE' | 'INVALID_FORMAT' | 'CARDINALITY_MISMATCH' | 'EMPTY_TEMPLATE_ROW' | 'DUPLICATE_REFERENCE'; sourceColumn?: string; sourceValue?: string; expectedValue?: string }
 export type HistoricImportPartition = { sheets: HistoricImportSheet[]; decisions: HistoricImportDecision[] }
 /** Valeurs ajoutées explicitement par l'utilisateur pour une cellule requise vide. */
 export type HistoricRowOverrides = Record<string, Record<string, Record<string, string>>>
@@ -378,8 +418,8 @@ const requiredRowFields: Partial<Record<HistoricSheetType, string[]>> = {
   ...ATELIER_REQUIRED,
 }
 const expectedRequiredValue = (field: string) => field.endsWith('ExternalId') ? 'référence non vide' : 'texte non vide'
-const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>) => {
-  if (field === 'gravity' || field === 'likelihood') return !isLevel1to4(value)
+const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>, scoreMapping?: Record<string, string>) => {
+  if (field === 'gravity' || field === 'likelihood') return !isLevel1to4(value) && !/^[1-4]$/.test(scoreMapping?.[value] ?? '')
   if (field === 'dueDate') return !isIsoDate(value)
   if (field === 'strategy') return !normalizeStrategy(value)
   if (field === 'status') return !normalizeMeasureStatus(value) && !statusMapping?.[value]
@@ -411,6 +451,8 @@ export function applyHistoricRowOverrides(sheets: HistoricImportSheet[], overrid
  * rejette uniquement sa ligne ; un format invalide dans un champ facultatif est
  * retiré de l'objet et reste consigné dans le rapport de décision.
  */
+const DUPLICATE_CHECKED: HistoricSheetType[] = ['RISKS', 'MEASURES', 'ACTIONS', 'VULNERABILITIES']
+
 export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): HistoricImportPartition {
   const decisions: HistoricImportDecision[] = []
   const partitioned = sheets.map(sheet => {
@@ -419,6 +461,7 @@ export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): Hi
     const rowNumbers: number[] = []
     const carriedColumns = Object.entries(sheet.transforms ?? {}).flatMap(([field, transform]) => transform?.carryForward ? splitHistoricMappedColumns(sheet.mapping[field]) : [])
     const lastValues = new Map<string, string>()
+    const seenRefs = new Map<string, string>()
     const preparedRows = sheet.rows.map(original => {
       const row = { ...original }
       for (const column of carriedColumns) {
@@ -447,9 +490,20 @@ export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): Hi
           decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'REJECTED', reason: 'CARDINALITY_MISMATCH' }); return
         }
       }
+      // Référence déjà utilisée par une ligne précédente de la même feuille (et de la même analyse) : la ligne est rejetée, jamais fusionnée
+      // en silence. Exception : une mesure répétée avec le même intitulé (contrôle partagé entre plusieurs risques) est fusionnée à la construction.
+      const dupRefColumn = splitHistoricMappedColumns(sheet.mapping.externalId)[0]
+      const dupRef = DUPLICATE_CHECKED.includes(sheet.type) && dupRefColumn ? text(row, dupRefColumn) : undefined
+      if (dupRef) {
+        const key = `${text(row, sheet.mapping.analysisExternalId) ?? ''}|${canonicalRef(dupRef)}`
+        const title = normalise(text(row, sheet.mapping.title) ?? '')
+        const previous = seenRefs.get(key)
+        if (previous !== undefined && !(sheet.type === 'MEASURES' && previous === title)) { decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'REJECTED', field: 'externalId', reason: 'DUPLICATE_REFERENCE', sourceColumn: dupRefColumn, sourceValue: dupRef }); return }
+        if (previous === undefined) seenRefs.set(key, title)
+      }
       for (const [field, column] of Object.entries(sheet.mapping)) {
         const value = text(row, column)
-        if (!value || !invalidFormat(field, value, sheet.statusMapping)) continue
+        if (!value || !invalidFormat(field, value, sheet.statusMapping, field === 'gravity' || field === 'likelihood' ? sheet.scoreMappings?.[field] : undefined)) continue
         for (const sourceColumn of splitHistoricMappedColumns(column)) row[sourceColumn] = ''
         decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'FIELD_OMITTED', field, reason: 'INVALID_FORMAT', sourceColumn: column, sourceValue: value })
       }
@@ -518,6 +572,20 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
   }
   // Ateliers 1 à 4 : feuilles dont le rôle est un rôle d'atelier → paquet canonique v3 (méthode EBIOS RM).
   const atelierSheets = sheets.filter(sheet => isAtelierRole(sheet.type)).map((sheet): AtelierSheet => ({ name: sheet.name ?? sheet.type, type: sheet.type as AtelierRole, mapping: sheet.mapping, rows: sheet.rows, valueMaps: sheet.valueMaps }))
+  // Contrôle partagé : même référence ET même intitulé sur plusieurs lignes → UNE mesure (risque principal = le premier ; les autres sont listés).
+  const sharedRisks = new Map<string, string[]>()
+  const mergedMeasures: typeof result.measures = []
+  for (const measure of result.measures) {
+    const key = measure.externalId ? `${canonicalRef(measure.externalId)}|${normalise(measure.title)}` : ''
+    const first = key ? mergedMeasures.find(m => m.externalId && `${canonicalRef(m.externalId)}|${normalise(m.title)}` === key) : undefined
+    if (!first) { mergedMeasures.push(measure); if (key && measure.riskExternalId) sharedRisks.set(key, [measure.riskExternalId]); continue }
+    if (measure.riskExternalId) sharedRisks.set(key, [...new Set([...(sharedRisks.get(key) ?? []), measure.riskExternalId])])
+  }
+  for (const measure of mergedMeasures) {
+    const list = measure.externalId ? sharedRisks.get(`${canonicalRef(measure.externalId)}|${normalise(measure.title)}`) : undefined
+    if (list && list.length > 1 && !(measure.description ?? '').includes('Risques concernés')) measure.description = [measure.description, `Risques concernés : ${list.join(', ')}`].filter(Boolean).join('\n\n').slice(0, 2000)
+  }
+  result.measures = mergedMeasures
   if (atelierSheets.length) {
     const { content } = buildAtelierContent(atelierSheets)
     for (const [key, value] of Object.entries(content)) if (Array.isArray(value) ? value.length > 0 : !!value) (result as Record<string, unknown>)[key] = value

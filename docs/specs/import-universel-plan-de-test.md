@@ -62,3 +62,16 @@ Défauts trouvés et corrigés (tests unitaires ajoutés) :
 - Le bandeau « Appliquer ce profil » n'est pas automatique (par conception) : les suggestions couvrent maintenant l'essentiel, le profil ajoute les correspondances de valeurs.
 - Le limiteur de connexion bloque les campagnes e2e répétées (redémarrer le dev pour le réinitialiser).
 - Reste non testé : rôle LECTEUR / autre organisation / analyse gelée (IDOR), volumétrie 500+ lignes, ré-import (idempotence), CSV windows-1252, jeu de langues ≠ FR.
+
+### 7 bis — Suite de la session (CSV, JSON libre, droits, idempotence)
+
+Vérifiés en réel (spec local, DB) :
+- [x] **CSV** `registre-simple-btp.csv` : rôle Risques détecté, cotations en clair proposées (Critique→4…), **10 risques importés**, ligne sans intitulé et doublon `R-04` **rejetés ligne à ligne** (plus d'échec global).
+- [x] **JSON libre** `registre-libre-avocats.json` : feuilles `registre` (Risques) et `registre.controles` (Mesures) détectées, colonne parent liée au risque, **6 risques + 5 mesures** (contrôle partagé fusionné, risques concernés listés) ; seule la valeur hors échelle « Extrême » est signalée.
+- [x] **Droits** : profil `DIRECTION_METIER` → 403 (aperçu et exécution) ; anonyme → redirection vers la connexion.
+- [x] **Idempotence** : le même classeur importé deux fois ne crée qu'une analyse.
+- [x] tsc, `npm test` (2877), `i18n:check`, `npm run build`, e2e import (4/4).
+
+Défauts supplémentaires corrigés (tests unitaires) : cotation mappée à la main perdue avant construction (import partiel) ; doublon de référence bloquait tout l'import → ligne rejetée `DUPLICATE_REFERENCE` (×5 langues) ; contrôle partagé fusionné ; colonne « Risque » / « id » / « code » reconnues ; « libellé + impact + probabilité » détecté comme registre de risques ; feuille `*.controles` → mesures ; cotations en clair proposées (valeurs reconnues seulement, inconnues laissées).
+
+Encore à tester : autre organisation (IDOR), analyse gelée, CSV windows-1252, volumétrie (500+ lignes) et limite de débit, parcours dans une autre langue, thème sombre / mobile de l'assistant, accessibilité clavier du menu « Importer ».
