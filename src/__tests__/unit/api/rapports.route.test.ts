@@ -38,7 +38,7 @@ describe('GET /api/rapports', () => {
   it('renvoie les éditions, les rapports disponibles selon les modules et le droit d’écriture', async () => {
     const j = await (await GET()).json()
     expect(j.editions).toHaveLength(1)
-    expect(j.disponibles.map((r: { code: string }) => r.code)).toEqual(['R-INC-1', 'R-PER-2'])
+    expect(j.disponibles.map((r: { code: string }) => r.code)).toEqual(['R-INC-1', 'R-INC-2', 'R-PER-2'])
     expect(j.canWrite).toBe(true)
     expect(m.find.mock.calls[0][0].where).toEqual({ organizationId: 'o1' })
   })

@@ -8,7 +8,7 @@
  * à la génération. Cycle : brouillon → relu → validé → diffusé, avec quatre-yeux.
  */
 
-export const RAPPORT_CODES = ['R-INC-1', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'] as const
+export const RAPPORT_CODES = ['R-INC-1', 'R-INC-2', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'] as const
 export type RapportCode = (typeof RAPPORT_CODES)[number]
 
 export const RAPPORT_STATUTS = ['BROUILLON', 'RELU', 'VALIDE', 'DIFFUSE'] as const
@@ -37,6 +37,7 @@ export interface RapportDef { code: RapportCode; module: 'incidents' | 'grc' | '
 
 export const RAPPORT_CATALOGUE: RapportDef[] = [
   { code: 'R-INC-1', module: 'incidents', destinataires: 'Direction, RSSI' },
+  { code: 'R-INC-2', module: 'incidents', destinataires: 'Auditeur, DPO' },
   { code: 'R-PER-2', module: 'incidents', destinataires: 'Comité des risques' },
   { code: 'R-GRC-3', module: 'grc', destinataires: 'Direction générale, conseil' },
   { code: 'R-CTL-1', module: 'controle', destinataires: 'Contrôle permanent, N2' },

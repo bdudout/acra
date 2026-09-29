@@ -1798,7 +1798,7 @@ export const en: Translations = {
       VALIDE: 'Validated',
       DIFFUSE: 'Distributed',
     },
-    masquer: 'Mask identifying data', masquerHint: 'External distribution: incidents, controls, owners… become #1, #2… (consistent across the report).', gabaritsTitre: 'Report templates', gabaritTitre: 'Custom title', gabaritIntro: 'Introduction', gabaritSections: 'Sections to hide (comma-separated identifiers)', gabaritsSave: 'Save templates', gabaritsSaved: 'Templates saved.', diffuseEmailHint: 'An e-mail address of an organisation member receives a link to the report; an outside address is not contacted (use the masked export).', destEnvoye: 'e-mail sent', destNonEnvoye: 'e-mail not sent', destExterne: 'outside the organisation, not sent', planifTitre: 'Automatic draft generation (previous period)', planifAucune: 'None', planifFreq: { MENSUEL: 'Every month', TRIMESTRIEL: 'Every quarter' }, actions: {
+    masquer: 'Mask identifying data', masquerHint: 'External distribution: incidents, controls, owners… become #1, #2… (consistent across the report).', gabaritsTitre: 'Report templates', gabaritTitre: 'Custom title', gabaritIntro: 'Introduction', gabaritSections: 'Sections to hide (comma-separated identifiers)', gabaritsSave: 'Save templates', gabaritsSaved: 'Templates saved.', diffuseEmailHint: 'An e-mail address of an organisation member receives a link to the report; an outside address is not contacted (use the masked export).', destEnvoye: 'e-mail sent', destNonEnvoye: 'e-mail not sent', destExterne: 'outside the organisation, not sent', planifTitre: 'Automatic draft generation (previous period)', planifAucune: 'None', planifFreq: { MENSUEL: 'Every month', TRIMESTRIEL: 'Every quarter' }, quasiIncident: 'Near miss', actions: {
       relire: 'Mark as reviewed',
       renvoyer: 'Send back to draft',
       valider: 'Validate (freeze)',
@@ -1834,6 +1834,7 @@ export const en: Translations = {
         titre: 'Incident dashboard',
         desc: 'Volumes, detection and closure times, trends, overdue notifications.',
       },
+      'R-INC-2': { titre: 'Incident register', desc: 'Complete log of the period\'s incidents (near misses included), for audit and the DPO.' },
       'R-PER-2': {
         titre: 'Losses by category and entity',
         desc: 'Gross loss, recoveries and net loss, large losses, breakdowns.',
@@ -1843,7 +1844,7 @@ export const en: Translations = {
         desc: 'Indicator, key figures and decisions to take.',
       },
     },
-    sections: {
+    sections: { registre: 'Incident register',
       synthese: 'Summary',
       parStatut: 'By status',
       parType: 'By event type',
@@ -1881,7 +1882,7 @@ export const en: Translations = {
       perteNette: 'Net loss (period)',
       conformite: 'Control conformity',
     },
-    cols: {
+    cols: { cloture: 'Closure',
       statut: 'Status',
       nombre: 'Count',
       type: 'Type',

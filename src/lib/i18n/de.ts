@@ -1797,7 +1797,7 @@ export const de: Translations = {
       VALIDE: 'Freigegeben',
       DIFFUSE: 'Verteilt',
     },
-    masquer: 'Identifizierende Daten maskieren', masquerHint: 'Externe Weitergabe: Vorfälle, Kontrollen, Verantwortliche … werden zu #1, #2 … (im ganzen Bericht konsistent).', gabaritsTitre: 'Berichtsvorlagen', gabaritTitre: 'Eigener Titel', gabaritIntro: 'Einleitung', gabaritSections: 'Auszublendende Abschnitte (Kennungen, durch Kommas getrennt)', gabaritsSave: 'Vorlagen speichern', gabaritsSaved: 'Vorlagen gespeichert.', diffuseEmailHint: 'Eine E-Mail-Adresse eines Organisationsmitglieds erhält einen Link zum Bericht; externe Adressen werden nicht kontaktiert (maskierten Export verwenden).', destEnvoye: 'E-Mail gesendet', destNonEnvoye: 'E-Mail nicht gesendet', destExterne: 'außerhalb der Organisation, nicht gesendet', planifTitre: 'Automatische Entwurfserstellung (Vorperiode)', planifAucune: 'Keine', planifFreq: { MENSUEL: 'Jeden Monat', TRIMESTRIEL: 'Jedes Quartal' }, actions: {
+    masquer: 'Identifizierende Daten maskieren', masquerHint: 'Externe Weitergabe: Vorfälle, Kontrollen, Verantwortliche … werden zu #1, #2 … (im ganzen Bericht konsistent).', gabaritsTitre: 'Berichtsvorlagen', gabaritTitre: 'Eigener Titel', gabaritIntro: 'Einleitung', gabaritSections: 'Auszublendende Abschnitte (Kennungen, durch Kommas getrennt)', gabaritsSave: 'Vorlagen speichern', gabaritsSaved: 'Vorlagen gespeichert.', diffuseEmailHint: 'Eine E-Mail-Adresse eines Organisationsmitglieds erhält einen Link zum Bericht; externe Adressen werden nicht kontaktiert (maskierten Export verwenden).', destEnvoye: 'E-Mail gesendet', destNonEnvoye: 'E-Mail nicht gesendet', destExterne: 'außerhalb der Organisation, nicht gesendet', planifTitre: 'Automatische Entwurfserstellung (Vorperiode)', planifAucune: 'Keine', planifFreq: { MENSUEL: 'Jeden Monat', TRIMESTRIEL: 'Jedes Quartal' }, quasiIncident: 'Beinahe-Vorfall', actions: {
       relire: 'Als geprüft markieren',
       renvoyer: 'Zurück in den Entwurf',
       valider: 'Freigeben (einfrieren)',
@@ -1833,6 +1833,7 @@ export const de: Translations = {
         titre: 'Vorfalls-Dashboard',
         desc: 'Mengen, Erkennungs- und Abschlusszeiten, Trends, überfällige Meldungen.',
       },
+      'R-INC-2': { titre: 'Vorfallregister', desc: 'Vollständiges Protokoll der Vorfälle des Zeitraums (Beinahe-Vorfälle eingeschlossen), für Revision und Datenschutzbeauftragte.' },
       'R-PER-2': {
         titre: 'Verluste nach Kategorie und Einheit',
         desc: 'Brutto-, Erstattungs- und Nettoverlust, große Verluste, Aufschlüsselungen.',
@@ -1842,7 +1843,7 @@ export const de: Translations = {
         desc: 'Ampel, Kennzahlen und zu treffende Entscheidungen.',
       },
     },
-    sections: {
+    sections: { registre: 'Vorfallregister',
       synthese: 'Zusammenfassung',
       parStatut: 'Nach Status',
       parType: 'Nach Ereignistyp',
@@ -1880,7 +1881,7 @@ export const de: Translations = {
       perteNette: 'Nettoverlust (Zeitraum)',
       conformite: 'Konformität der Kontrollen',
     },
-    cols: {
+    cols: { cloture: 'Abschluss',
       statut: 'Status',
       nombre: 'Anzahl',
       type: 'Typ',

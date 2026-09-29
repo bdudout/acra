@@ -1798,7 +1798,7 @@ export const es: Translations = {
       VALIDE: 'Validado',
       DIFFUSE: 'Difundido',
     },
-    masquer: 'Ocultar datos identificativos', masquerHint: 'Difusión externa: incidentes, controles, responsables… pasan a ser #1, #2… (coherente en todo el informe).', gabaritsTitre: 'Plantillas de informes', gabaritTitre: 'Título personalizado', gabaritIntro: 'Introducción', gabaritSections: 'Secciones a ocultar (identificadores separados por comas)', gabaritsSave: 'Guardar plantillas', gabaritsSaved: 'Plantillas guardadas.', diffuseEmailHint: 'Una dirección de correo de un miembro de la organización recibe un enlace al informe; una dirección externa no se contacta (use la exportación enmascarada).', destEnvoye: 'correo enviado', destNonEnvoye: 'correo no enviado', destExterne: 'fuera de la organización, no enviado', planifTitre: 'Generación automática del borrador (periodo anterior)', planifAucune: 'Ninguna', planifFreq: { MENSUEL: 'Cada mes', TRIMESTRIEL: 'Cada trimestre' }, actions: {
+    masquer: 'Ocultar datos identificativos', masquerHint: 'Difusión externa: incidentes, controles, responsables… pasan a ser #1, #2… (coherente en todo el informe).', gabaritsTitre: 'Plantillas de informes', gabaritTitre: 'Título personalizado', gabaritIntro: 'Introducción', gabaritSections: 'Secciones a ocultar (identificadores separados por comas)', gabaritsSave: 'Guardar plantillas', gabaritsSaved: 'Plantillas guardadas.', diffuseEmailHint: 'Una dirección de correo de un miembro de la organización recibe un enlace al informe; una dirección externa no se contacta (use la exportación enmascarada).', destEnvoye: 'correo enviado', destNonEnvoye: 'correo no enviado', destExterne: 'fuera de la organización, no enviado', planifTitre: 'Generación automática del borrador (periodo anterior)', planifAucune: 'Ninguna', planifFreq: { MENSUEL: 'Cada mes', TRIMESTRIEL: 'Cada trimestre' }, quasiIncident: 'Casi-incidente', actions: {
       relire: 'Marcar como revisado',
       renvoyer: 'Devolver a borrador',
       valider: 'Validar (congelar)',
@@ -1834,6 +1834,7 @@ export const es: Translations = {
         titre: 'Panel de incidentes',
         desc: 'Volúmenes, plazos de detección y cierre, tendencias, notificaciones con retraso.',
       },
+      'R-INC-2': { titre: 'Registro de incidentes', desc: 'Registro completo de los incidentes del periodo (casi-incidentes incluidos), para auditoría y el DPD.' },
       'R-PER-2': {
         titre: 'Pérdidas por categoría y entidad',
         desc: 'Pérdida bruta, recuperaciones y neta, grandes pérdidas, desgloses.',
@@ -1843,7 +1844,7 @@ export const es: Translations = {
         desc: 'Indicador, cifras clave y decisiones por tomar.',
       },
     },
-    sections: {
+    sections: { registre: 'Registro de incidentes',
       synthese: 'Síntesis',
       parStatut: 'Por estado',
       parType: 'Por tipo de evento',
@@ -1881,7 +1882,7 @@ export const es: Translations = {
       perteNette: 'Pérdida neta (período)',
       conformite: 'Conformidad de los controles',
     },
-    cols: {
+    cols: { cloture: 'Cierre',
       statut: 'Estado',
       nombre: 'Número',
       type: 'Tipo',

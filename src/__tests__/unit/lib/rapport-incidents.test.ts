@@ -1,6 +1,6 @@
 /** Rapports R-INC-1 (tableau de bord incidents) et R-PER-2 (pertes) : construction pure. */
 import { describe, expect, it } from 'vitest'
-import { buildRapportIncidents, buildRapportPertes, type IncidentRapportRow } from '@/lib/rapport-incidents'
+import { buildRapportIncidents, buildRapportPertes, buildRapportRegistreIncidents, type IncidentRapportRow } from '@/lib/rapport-incidents'
 import { vueIncidentL1 } from '@/lib/incident-vue'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import type { Bloc } from '@/lib/rapport-model'
@@ -82,5 +82,21 @@ describe('R-PER-2 — pertes', () => {
   it('répartit la perte entre entités selon l’allocation (reliquat sur l’entité de l’incident)', () => {
     const r = buildRapportPertes([row({ id: 'z', entite: 'Siège' }, { pertes: [{ type: 'AUTRE', montant: 1000, devise: 'EUR', statut: 'CONSTATE' }], allocations: [{ entite: 'Filiale Nord', pct: 60 }] })], cfg, periode, now, labels)
     expect(tableau(r, 'parEntite').lignes).toEqual([['Filiale Nord', 1, 600], ['Siège', 1, 400]])
+  })
+})
+
+describe('R-INC-2 — registre des incidents', () => {
+  const r = buildRapportRegistreIncidents(rows, cfg, periode, now, labels)
+  it('journal complet de la période, du plus ancien au plus récent, quasi-incidents inclus et signalés', () => {
+    const t = tableau(r, 'registre')
+    expect(t.colonnes).toEqual(['rapports.cols.date', 'rapports.cols.incident', 'rapports.cols.statut', 'rapports.cols.type', 'rapports.cols.categorie', 'rapports.cols.entite', 'rapports.cols.net', 'rapports.cols.cloture', 'rapports.cols.enRetard'])
+    expect(t.lignes.map(l => l[1])).toEqual(['Incident a', 'Incident c', 'Incident b'])
+    expect(t.lignes[0].slice(0, 3)).toEqual(['2026-09-10', 'Incident a', 'S:QUALIFIE'])
+    expect(t.lignes[2][7]).toBe('2026-09-25')
+  })
+  it('synthèse : total, quasi-incidents, clôturés ; code et période portés', () => {
+    const k = Object.fromEntries(kpis(r.sections.find(s => s.id === 'synthese')!).map(x => [x.cle, x.valeur]))
+    expect(k).toMatchObject({ total: 3, quasi: 1, clotures: 1 })
+    expect([r.code, r.periode]).toEqual(['R-INC-2', periode])
   })
 })

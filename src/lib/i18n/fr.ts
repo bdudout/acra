@@ -1822,7 +1822,7 @@ export const fr = {
       VALIDE: 'Validé',
       DIFFUSE: 'Diffusé',
     },
-    masquer: 'Masquer les données identifiantes', masquerHint: 'Diffusion externe : incidents, contrôles, responsables… deviennent #1, #2… (cohérent dans tout le rapport).', gabaritsTitre: 'Gabarits de rapports', gabaritTitre: 'Titre personnalisé', gabaritIntro: 'Introduction', gabaritSections: 'Sections à masquer (identifiants séparés par des virgules)', gabaritsSave: 'Enregistrer les gabarits', gabaritsSaved: 'Gabarits enregistrés.', diffuseEmailHint: 'Une adresse e-mail de membre de l’organisation reçoit un lien vers le rapport ; une adresse extérieure n’est pas contactée (utilisez l’export masqué).', destEnvoye: 'e-mail envoyé', destNonEnvoye: 'e-mail non envoyé', destExterne: 'hors organisation, non envoyé', planifTitre: 'Génération automatique du brouillon (période précédente)', planifAucune: 'Aucune', planifFreq: { MENSUEL: 'Chaque mois', TRIMESTRIEL: 'Chaque trimestre' }, actions: {
+    masquer: 'Masquer les données identifiantes', masquerHint: 'Diffusion externe : incidents, contrôles, responsables… deviennent #1, #2… (cohérent dans tout le rapport).', gabaritsTitre: 'Gabarits de rapports', gabaritTitre: 'Titre personnalisé', gabaritIntro: 'Introduction', gabaritSections: 'Sections à masquer (identifiants séparés par des virgules)', gabaritsSave: 'Enregistrer les gabarits', gabaritsSaved: 'Gabarits enregistrés.', diffuseEmailHint: 'Une adresse e-mail de membre de l’organisation reçoit un lien vers le rapport ; une adresse extérieure n’est pas contactée (utilisez l’export masqué).', destEnvoye: 'e-mail envoyé', destNonEnvoye: 'e-mail non envoyé', destExterne: 'hors organisation, non envoyé', planifTitre: 'Génération automatique du brouillon (période précédente)', planifAucune: 'Aucune', planifFreq: { MENSUEL: 'Chaque mois', TRIMESTRIEL: 'Chaque trimestre' }, quasiIncident: 'Quasi-incident', actions: {
       relire: 'Marquer comme relu',
       renvoyer: 'Renvoyer en brouillon',
       valider: 'Valider (figer)',
@@ -1858,6 +1858,7 @@ export const fr = {
         titre: 'Tableau de bord des incidents',
         desc: 'Volumes, délais de détection et de clôture, tendances, notifications en retard.',
       },
+      'R-INC-2': { titre: 'Registre des incidents', desc: 'Journal complet des incidents de la période (quasi-incidents compris), pour l’audit et le DPO.' },
       'R-PER-2': {
         titre: 'Pertes par catégorie et par entité',
         desc: 'Perte brute, récupérations et nette, grandes pertes, ventilations.',
@@ -1867,7 +1868,7 @@ export const fr = {
         desc: 'Voyant, chiffres clés et décisions à prendre.',
       },
     },
-    sections: {
+    sections: { registre: 'Registre des incidents',
       synthese: 'Synthèse',
       parStatut: 'Par statut',
       parType: 'Par type d’événement',
@@ -1905,7 +1906,7 @@ export const fr = {
       perteNette: 'Perte nette (période)',
       conformite: 'Conformité des contrôles',
     },
-    cols: {
+    cols: { cloture: 'Clôture',
       statut: 'Statut',
       nombre: 'Nombre',
       type: 'Type',

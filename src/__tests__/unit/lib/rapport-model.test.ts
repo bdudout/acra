@@ -6,10 +6,10 @@ const now = new Date('2026-09-29T10:00:00Z')
 
 describe('catalogue', () => {
   it('trois rapports livrés dans ce lot, chacun rattaché à un module', () => {
-    expect(RAPPORT_CATALOGUE.map(r => r.code)).toEqual(['R-INC-1', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'])
+    expect(RAPPORT_CATALOGUE.map(r => r.code)).toEqual(['R-INC-1', 'R-INC-2', 'R-PER-2', 'R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'])
   })
   it('disponibilité selon les modules actifs de l’organisation', () => {
-    expect(rapportsDisponibles({ incidentsActive: true }).map(r => r.code)).toEqual(['R-INC-1', 'R-PER-2'])
+    expect(rapportsDisponibles({ incidentsActive: true }).map(r => r.code)).toEqual(['R-INC-1', 'R-INC-2', 'R-PER-2'])
     expect(rapportsDisponibles({ registreRisquesActive: true }).map(r => r.code)).toEqual(['R-GRC-3'])
     expect(rapportsDisponibles({ controlePermanentActive: true }).map(r => r.code)).toEqual(['R-GRC-3', 'R-CTL-1', 'R-CTL-2', 'R-CTL-3'])
     expect(rapportsDisponibles({ auditInterneActive: true }).map(r => r.code)).toEqual(['R-GRC-3', 'R-AUD-1', 'R-AUD-2', 'R-AUD-3'])

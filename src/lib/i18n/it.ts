@@ -1798,7 +1798,7 @@ export const it: Translations = {
       VALIDE: 'Validato',
       DIFFUSE: 'Diffuso',
     },
-    masquer: 'Maschera i dati identificativi', masquerHint: 'Diffusione esterna: incidenti, controlli, responsabili… diventano #1, #2… (coerente in tutto il rapporto).', gabaritsTitre: 'Modelli di rapporto', gabaritTitre: 'Titolo personalizzato', gabaritIntro: 'Introduzione', gabaritSections: 'Sezioni da nascondere (identificatori separati da virgole)', gabaritsSave: 'Salva i modelli', gabaritsSaved: 'Modelli salvati.', diffuseEmailHint: 'Un indirizzo e-mail di un membro dell’organizzazione riceve un link al rapporto; un indirizzo esterno non viene contattato (usa l’esportazione mascherata).', destEnvoye: 'e-mail inviata', destNonEnvoye: 'e-mail non inviata', destExterne: 'esterno all’organizzazione, non inviata', planifTitre: 'Generazione automatica della bozza (periodo precedente)', planifAucune: 'Nessuna', planifFreq: { MENSUEL: 'Ogni mese', TRIMESTRIEL: 'Ogni trimestre' }, actions: {
+    masquer: 'Maschera i dati identificativi', masquerHint: 'Diffusione esterna: incidenti, controlli, responsabili… diventano #1, #2… (coerente in tutto il rapporto).', gabaritsTitre: 'Modelli di rapporto', gabaritTitre: 'Titolo personalizzato', gabaritIntro: 'Introduzione', gabaritSections: 'Sezioni da nascondere (identificatori separati da virgole)', gabaritsSave: 'Salva i modelli', gabaritsSaved: 'Modelli salvati.', diffuseEmailHint: 'Un indirizzo e-mail di un membro dell’organizzazione riceve un link al rapporto; un indirizzo esterno non viene contattato (usa l’esportazione mascherata).', destEnvoye: 'e-mail inviata', destNonEnvoye: 'e-mail non inviata', destExterne: 'esterno all’organizzazione, non inviata', planifTitre: 'Generazione automatica della bozza (periodo precedente)', planifAucune: 'Nessuna', planifFreq: { MENSUEL: 'Ogni mese', TRIMESTRIEL: 'Ogni trimestre' }, quasiIncident: 'Quasi-incidente', actions: {
       relire: 'Segna come rivisto',
       renvoyer: 'Rimanda in bozza',
       valider: 'Convalida (congela)',
@@ -1834,6 +1834,7 @@ export const it: Translations = {
         titre: 'Cruscotto degli incidenti',
         desc: 'Volumi, tempi di rilevamento e chiusura, andamenti, notifiche in ritardo.',
       },
+      'R-INC-2': { titre: 'Registro degli incidenti', desc: 'Registro completo degli incidenti del periodo (quasi-incidenti inclusi), per l’audit e il DPO.' },
       'R-PER-2': {
         titre: 'Perdite per categoria e per entità',
         desc: 'Perdita lorda, recuperi e netta, grandi perdite, ripartizioni.',
@@ -1843,7 +1844,7 @@ export const it: Translations = {
         desc: 'Indicatore, cifre chiave e decisioni da prendere.',
       },
     },
-    sections: {
+    sections: { registre: 'Registro degli incidenti',
       synthese: 'Sintesi',
       parStatut: 'Per stato',
       parType: 'Per tipo di evento',
@@ -1881,7 +1882,7 @@ export const it: Translations = {
       perteNette: 'Perdita netta (periodo)',
       conformite: 'Conformità dei controlli',
     },
-    cols: {
+    cols: { cloture: 'Chiusura',
       statut: 'Stato',
       nombre: 'Numero',
       type: 'Tipo',

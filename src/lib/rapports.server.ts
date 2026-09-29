@@ -8,7 +8,7 @@ import { getT } from '@/lib/i18n'
 import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { vueIncidentL1 } from '@/lib/incident-vue'
-import { buildRapportIncidents, buildRapportPertes, type IncidentRapportRow, type LabelsRapport } from '@/lib/rapport-incidents'
+import { buildRapportIncidents, buildRapportPertes, buildRapportRegistreIncidents, type IncidentRapportRow, type LabelsRapport } from '@/lib/rapport-incidents'
 import { buildRapportDirection } from '@/lib/rapport-direction'
 import { buildRapportPlanControle, buildRapportEfficacite, buildRapportAnomalies, type ControleRapportRow } from '@/lib/rapport-controles'
 import { resolveAuditConfig } from '@/lib/audit-config'
@@ -76,6 +76,7 @@ export async function genererContenuRapport(code: RapportCode, orgId: string, cf
     taxo: c => { if (!c) return '—'; const n = taxonomie.find(x => x.code === c); return n ? taxonomieLabel(n, tr) : c },
   }
   if (code === 'R-INC-1') return buildRapportIncidents(rows, incidentsCfg, periode, now, labels)
+  if (code === 'R-INC-2') return buildRapportRegistreIncidents(rows, incidentsCfg, periode, now, labels)
   if (code === 'R-PER-2') return buildRapportPertes(rows, incidentsCfg, periode, now, labels)
 
   // R-GRC-3 : consolidé GRC + incidents de la période.

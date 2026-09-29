@@ -74,6 +74,25 @@ export function buildRapportIncidents(rows: IncidentRapportRow[], cfg: Incidents
   return { code: 'R-INC-1', periode, genereLe: now.toISOString(), deviseReference: cfg.deviseReference, sections }
 }
 
+/** R-INC-2 : registre (journal complet) des incidents de la période, quasi-incidents compris. */
+export function buildRapportRegistreIncidents(rows: IncidentRapportRow[], cfg: IncidentsConfig, periode: Periode, now: Date, labels: LabelsRapport): RapportContenu {
+  const inc = rows.filter(r => dansPeriode(refDate(r), periode)).sort((a, b) => refDate(a).getTime() - refDate(b).getTime())
+  const lignes: Cellule[][] = inc.map(r => [
+    refDate(r).toISOString().slice(0, 10), r.intitule, labels.statut(r.statut), r.typeEvenement ? labels.typeEvenement(r.typeEvenement) : { k: 'rapports.nonType' },
+    labels.taxo(r.taxonomieCode), r.entite || { k: 'rapports.nonRenseigne' }, r.quasiIncident ? { k: 'rapports.quasiIncident' } : r.l1.totaux.net,
+    r.clotureLe ? r.clotureLe.toISOString().slice(0, 10) : null, r.l1.nbEnRetard,
+  ])
+  return {
+    code: 'R-INC-2', periode, genereLe: now.toISOString(), deviseReference: cfg.deviseReference,
+    sections: [
+      { id: 'synthese', blocs: [{ type: 'kpis', items: [
+        { cle: 'total', valeur: inc.length }, { cle: 'quasi', valeur: inc.filter(r => r.quasiIncident).length }, { cle: 'clotures', valeur: inc.filter(r => r.statut === 'CLOTURE').length },
+      ] }] },
+      { id: 'registre', blocs: [tab(cols('date', 'incident', 'statut', 'type', 'categorie', 'entite', 'net', 'cloture', 'enRetard'), lignes)] },
+    ],
+  }
+}
+
 /** R-PER-2 : pertes de la période (quasi-incidents exclus), ventilations et grandes pertes. */
 export function buildRapportPertes(rows: IncidentRapportRow[], cfg: IncidentsConfig, periode: Periode, now: Date, labels: LabelsRapport): RapportContenu {
   const inc = rows.filter(r => !r.quasiIncident && dansPeriode(refDate(r), periode))
