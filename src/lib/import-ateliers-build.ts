@@ -108,6 +108,16 @@ const PP_TYPES: Record<string, string> = { fournisseur: 'FOURNISSEUR', client: '
 const listSplit = (s: string) => s.split(/\r?\n|;/).map(x => x.trim()).filter(Boolean)
 const numbered = (s: string) => s.split(/(?:^|\s)\d+\s*[-.)]\s+/).map(x => x.trim()).filter(Boolean)
 
+const TITLE_MAX = 250
+/** Texte long (exigence rédigée en phrases) : titre court à la limite de mot + description COMPLÈTE ; texte court : titre seul. */
+function shortTitle(value: string): { title: string; description?: string } {
+  const full = value.trim()
+  if (full.length <= TITLE_MAX) return { title: full }
+  const cut = full.slice(0, TITLE_MAX - 1)
+  const sentence = cut.search(/[.;:!?](?=\s)[^.;:!?]*$/) > 60 ? cut.slice(0, cut.search(/[.;:!?](?=\s)[^.;:!?]*$/) + 1) : cut.replace(/\s+\S*$/, '')
+  return { title: `${sentence.trim()}…`, description: full }
+}
+
 export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierContent; report: AtelierBuildReport; truncated: Truncation[] } {
   const report: AtelierBuildReport = { defaulted: [], conflicts: [], notRetained: {} }
   const raw: Record<string, unknown> = { businessValues: [], supportAssets: [], fearedEvents: [], riskSources: [], stakeholders: [], strategicScenarios: [], operationalScenarios: [], securityBaseline: [], residualRisks: [] }
@@ -223,7 +233,7 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
   for (const s of byRole('SECURITY_BASELINE')) for (const r of kept(s)) {
     const cov = cellOf(r, s.mapping.coverage)
     raw.securityBaseline = [...(raw.securityBaseline as unknown[]), {
-      title: cellOf(r, s.mapping.title), ...(cellOf(r, s.mapping.category) ? { category: cellOf(r, s.mapping.category) } : {}), ...(cellOf(r, s.mapping.subCategory) ? { subCategory: cellOf(r, s.mapping.subCategory) } : {}),
+      ...shortTitle(cellOf(r, s.mapping.title)), ...(cellOf(r, s.mapping.category) ? { category: cellOf(r, s.mapping.category) } : {}), ...(cellOf(r, s.mapping.subCategory) ? { subCategory: cellOf(r, s.mapping.subCategory) } : {}),
       ...(/^[0-3]$/.test(cov) ? { coverage: Number(cov) } : {}), ...(cellOf(r, s.mapping.comment) ? { comment: cellOf(r, s.mapping.comment) } : {}),
     }]
   }

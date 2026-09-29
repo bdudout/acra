@@ -112,11 +112,21 @@ describe('correspondances de valeurs validées par l’utilisateur (B-IMP-32)', 
   })
 })
 
-describe('buildAtelierContent — texte trop long', () => {
-  it('raccourcit au plafond du schéma au lieu de lever une erreur, et rapporte la troncature', () => {
-    const sheet = { name: '2 - Socle de sécurité', type: 'SECURITY_BASELINE' as const, mapping: { title: 'Description' }, rows: [{ Description: 'x'.repeat(1500) }, { Description: 'court' }] }
-    const built = buildAtelierContent([sheet])
-    expect(built.content.securityBaseline[0].title).toHaveLength(1000)
-    expect(built.truncated).toEqual([{ path: 'securityBaseline.0.title', max: 1000, length: 1500 }])
+describe('buildAtelierContent — texte long du socle : titre court + description complète', () => {
+  const sheet = (rows: Record<string, string>[]) => ({ name: '2 - Socle de sécurité', type: 'SECURITY_BASELINE' as const, mapping: { title: 'Description' }, rows })
+  it('un texte de 1 500 caractères devient un titre court (≤ 250, « … ») et une description COMPLÈTE : rien n’est perdu, rien n’est tronqué', () => {
+    const long = 'La règle de sécurité impose ceci. ' + 'Détail de mise en œuvre. '.repeat(60)
+    const built = buildAtelierContent([sheet([{ Description: long }, { Description: 'Court' }])])
+    const [a, b] = built.content.securityBaseline
+    expect(a.title.length).toBeLessThanOrEqual(250); expect(a.title.endsWith('…')).toBe(true)
+    expect(a.title.startsWith('La règle de sécurité impose ceci.')).toBe(true)
+    expect(a.description).toBe(long.trim())
+    expect(b.title).toBe('Court'); expect(b.description).toBeUndefined()
+    expect(built.truncated).toEqual([])
+  })
+  it('au-delà de 5 000 caractères, la description est raccourcie ET signalée', () => {
+    const built = buildAtelierContent([sheet([{ Description: 'x'.repeat(6000) }])])
+    expect(built.content.securityBaseline[0].description).toHaveLength(5000)
+    expect(built.truncated).toEqual([{ path: 'securityBaseline.0.description', max: 5000, length: 6000 }])
   })
 })

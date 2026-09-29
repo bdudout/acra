@@ -28,7 +28,7 @@ export const atelierContentSchema = z.object({
   strategicScenarios: z.array(z.object({ ...base, description: text(2000).optional(), riskSourceExternalId: ref.optional(), riskSourceLabel: text(500).optional(), objective: text(500).optional(), fearedEventExternalIds: refs, stakeholderExternalIds: refs, gravity: level.optional(), likelihood: level.optional(), retained: z.boolean().optional(), attackPath: z.array(text(500)).max(50).default([]) })).max(IMPORT_MAX_ITEMS).default([]),
   operationalScenarios: z.array(z.object({ ...base, description: text(2000).optional(), strategicScenarioExternalId: ref.optional(), likelihood: level.optional(), gravity: level.optional() })).max(IMPORT_MAX_ITEMS).default([]),
   residualRisks: z.array(z.object({ externalId: ref.optional(), riskExternalId: ref, currentGravity: level.optional(), currentLikelihood: level.optional(), residualGravity: level.optional(), residualLikelihood: level.optional(), justification: text(1000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
-  securityBaseline: z.array(z.object({ externalId: ref.optional(), title: z.string().trim().min(1).max(1000), category: text(100).optional(), subCategory: text(100).optional(), coverage: z.coerce.number().int().min(0).max(3).optional(), comment: text(2000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
+  securityBaseline: z.array(z.object({ externalId: ref.optional(), title: z.string().trim().min(1).max(1000), description: text(5000).optional(), category: text(100).optional(), subCategory: text(100).optional(), coverage: z.coerce.number().int().min(0).max(3).optional(), comment: text(2000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
 })
 export type AtelierContent = z.infer<typeof atelierContentSchema>
 
@@ -97,7 +97,7 @@ export async function writeAtelierContent(tx: Tx, c: AtelierContent, ctx: { anal
     const id = uid(); if (e.externalId) erIds.set(canon(e.externalId), id)
     return { id, description: e.description ? `${e.title} — ${e.description}` : e.title, impacts: e.impacts ?? '', categoriesImpacts: [], valeurMetierId: idsOf(vmIds, e.businessValueExternalIds)[0] ?? '', gravite: e.gravity ?? 3 }
   })
-  const customControles = c.securityBaseline.map((s, i) => ({ ref: `IMP-${String(i + 1).padStart(3, '0')}`, nom: s.title, description: s.comment ?? '', type: 'ORGANISATIONNELLE', categorie: [s.category, s.subCategory].filter(Boolean).join(' / ') || s.category || '' }))
+  const customControles = c.securityBaseline.map((s, i) => ({ ref: `IMP-${String(i + 1).padStart(3, '0')}`, nom: s.title, description: s.description ?? s.comment ?? '', type: 'ORGANISATIONNELLE', categorie: [s.category, s.subCategory].filter(Boolean).join(' / ') || s.category || '' }))
   const statutDe = (cov: number | undefined) => (cov === 3 ? 'conforme' : cov === 0 ? 'non_conforme' : cov === undefined ? 'na' : 'partiel')
   const socleSecurite = c.securityBaseline.map((s, i) => ({ ref: customControles[i].ref, statut: statutDe(s.coverage), ...(s.comment ? { commentaire: s.comment } : {}) }))
   const ctx1 = c.context

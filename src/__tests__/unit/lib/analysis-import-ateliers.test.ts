@@ -55,6 +55,13 @@ describe('écriture des ateliers 1 à 4', () => {
     const a = await writeAtelierContent(fakeTx().tx as never, withResidual, { analyseId: 'a1', riskRefs: ['RI_01'] })
     expect(a.warnings.filter(w => w.startsWith('residual_risk_reference_not_found'))).toEqual(['residual_risk_reference_not_found:RI9'])
   })
+  it('socle : la description complète est écrite dans le contrôle (JSON, sans limite de colonne)', async () => {
+    const { tx, created } = fakeTx()
+    const c = { ...content(), securityBaseline: [{ title: 'Titre court…', description: 'D'.repeat(1500), category: 'Protection', coverage: 2 }] } as AtelierContent
+    await writeAtelierContent(tx as never, c, { analyseId: 'a1' })
+    const d = (created.cadrage![0] as { data: Record<string, any> }).data
+    expect(d.customControles[0].description).toHaveLength(1500)
+  })
   it('sources de risque avec objectifs, parties prenantes recalculées, scénarios liés par référence (variantes VM02/VM_02, ER03/ER_03)', async () => {
     const { tx, created } = fakeTx()
     const r = await writeAtelierContent(tx as never, content(), { analyseId: 'a1' })
