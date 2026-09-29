@@ -15,6 +15,8 @@ import { rankEcosystemTiers } from '@/lib/ecosystem-rank'
 const ECOSYSTEM_DASHBOARD_MAX = 40
 import EbiosGuide from '@/components/EbiosGuide'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
+import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseWhereClause, canCreateAnalyse, canEditAnalyse, isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getServerT, getServerLocale } from '@/lib/i18n'
@@ -37,6 +39,8 @@ export default async function DashboardPage() {
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
   const __org = await getAnalyseScope(userId, userRole)
+  // Entrée « Nouveau projet 360 » du menu de création : seulement si le module est actif pour l'organisation.
+  const projets360Active = __org.activeOrgId ? (await getOrgConfig(__org.activeOrgId)).projets360Active : false
 
   const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, __org.role, __org.scope),
@@ -191,14 +195,10 @@ export default async function DashboardPage() {
           </div>
           <div className="flex gap-2">
             {canCreateAnalyse({ id: userId, role: userRole }) && (
-              <>
-                <div className="hidden sm:block">
-                  <ExpressAnalyseButton variant="button" />
-                </div>
-                <Link href="/analyses/new" className="btn-primary hidden sm:inline-flex items-center gap-2">
-                  + {t.dashboard.newAnalysis}
-                </Link>
-              </>
+              <NouvelleAnalyseMenu
+                projet360={projets360Active}
+                labels={{ trigger: t.dashboard.newAnalysis, analyse: t.dashboard.newAnalysis, projet360: t.dashboard.newProjet360, importer: t.dashboard.importAnalyse }}
+              />
             )}
             {isAdminRole(userRole) && (
               <Link href="/admin/users" className="btn-secondary hidden sm:inline-flex items-center gap-2">

@@ -10,8 +10,8 @@ export type AnalyseImportLabels = {
 
 /** Menu compact : seul l'export ACRA est importable aujourd'hui ; les autres canaux
  * restent visibles afin de présenter sans ambiguïté la feuille de route d'import. */
-export default function AnalyseImportMenu({ labels, onAcraImport, onExcelImport, disabled = false }: { labels: AnalyseImportLabels; onAcraImport: () => void; onExcelImport: () => void; disabled?: boolean }) {
-  const [open, setOpen] = useState(false)
+export default function AnalyseImportMenu({ labels, onAcraImport, onExcelImport, disabled = false, defaultOpen = false }: { labels: AnalyseImportLabels; onAcraImport: () => void; onExcelImport: () => void; disabled?: boolean; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="relative">
       <button onClick={() => setOpen(value => !value)} disabled={disabled} className="btn-secondary hidden items-center gap-2 text-sm sm:flex" aria-expanded={open} aria-haspopup="menu">

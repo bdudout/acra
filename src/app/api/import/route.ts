@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { diagnoseJsonText } from '@/lib/import-json-diagnostic'
+import { ImportError, importErrorStatus, type ImportErrorCode } from '@/lib/import-errors'
 import {
   capArr,
   cleanCadrage, cleanSourceRisque, cleanPartiePrenante, cleanScenarioStrat,
@@ -13,16 +15,14 @@ import {
 // ─── JSON import ──────────────────────────────────────────────────────────────
 
 async function importJSON(raw: string, userId: string) {
-  let payload: any
-  try {
-    payload = JSON.parse(raw)
-  } catch {
-    throw new Error('Fichier JSON invalide.')
-  }
+  const diag = diagnoseJsonText(raw)
+  if (!diag.ok) throw new ImportError(diag.code, { line: diag.line, column: diag.column, snippet: diag.snippet, hint: diag.hint })
+  const payload = diag.value as any
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new ImportError('json_not_object')
 
   // Support both `{ analyse: {...} }` (export format) and a bare analyse object
   const src = payload.analyse ?? payload
-  if (!src.nom) throw new Error('Champ "nom" manquant dans le fichier.')
+  if (!src || typeof src !== 'object' || !src.nom) throw new ImportError('json_missing_name')
 
   // Deduplicate name
   const baseName = `${src.nom} (importé)`
@@ -85,6 +85,7 @@ async function importCSV(raw: string, userId: string) {
   const risques: any[] = []
   const mesures: any[] = []
 
+  let sectionsVues = 0
   const unquote = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"').trim()
 
   function splitCSVLine(line: string): string[] {
@@ -114,6 +115,7 @@ async function importCSV(raw: string, userId: string) {
     const sectionMatch = line.match(/^=== (.+) ===$/)
     if (sectionMatch) {
       section = sectionMatch[1]
+      sectionsVues++
       continue
     }
 
@@ -176,6 +178,9 @@ async function importCSV(raw: string, userId: string) {
     }
   }
 
+  // Un CSV sans aucune section « === TITRE === » n'est pas un export ACRA : on ne crée pas une analyse vide.
+  if (sectionsVues === 0) throw new ImportError('csv_not_acra')
+
   // Deduplicate name
   const baseName = `${nom} (importé)`
   const existing = await prisma.analyse.count({ where: { userId, nom: { startsWith: baseName } } })
@@ -209,29 +214,21 @@ export async function POST(req: NextRequest) {
   const { rateLimit: rl_fn, rateLimitHeaders: rlHeaders, LIMIT_IMPORT } = await import('@/lib/rate-limit')
   const rl = await rl_fn(`import:${userId}`, LIMIT_IMPORT.limit, LIMIT_IMPORT.windowMs)
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Limite d\'import atteinte. Réessayez dans une heure.' },
-      { status: 429, headers: rlHeaders(rl.remaining, rl.resetAt) }
-    )
+    return NextResponse.json({ error: 'import_rate_limited' satisfies ImportErrorCode }, { status: 429, headers: rlHeaders(rl.remaining, rl.resetAt) })
   }
 
   let body: { data: string; format: 'json' | 'csv' }
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
+    return NextResponse.json({ error: 'import_request_invalid' satisfies ImportErrorCode }, { status: 400 })
   }
 
-  if (!body.data || !body.format) {
-    return NextResponse.json({ error: 'Champs "data" et "format" requis' }, { status: 400 })
-  }
-  if (!['json', 'csv'].includes(body.format)) {
-    return NextResponse.json({ error: 'Format non supporté (json ou csv uniquement)' }, { status: 400 })
-  }
+  if (typeof body.data !== 'string' || !body.format) return NextResponse.json({ error: 'import_request_invalid' satisfies ImportErrorCode }, { status: 400 })
+  if (!body.data.trim()) return NextResponse.json({ error: 'import_file_empty' satisfies ImportErrorCode }, { status: 400 })
+  if (!['json', 'csv'].includes(body.format)) return NextResponse.json({ error: 'import_format_unsupported' satisfies ImportErrorCode }, { status: 400 })
   // Limiter la taille du payload importé (2 MB max)
-  if (body.data.length > 2 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Fichier trop volumineux (max 2 Mo)' }, { status: 413 })
-  }
+  if (body.data.length > 2 * 1024 * 1024) return NextResponse.json({ error: 'import_file_too_large' satisfies ImportErrorCode }, { status: 413 })
 
   try {
     const result = body.format === 'json'
@@ -240,6 +237,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erreur lors de l\'import' }, { status: 422 })
+    // Codes stables + détails structurés (traduits par l'interface) ; jamais le message brut d'une erreur interne.
+    if (err instanceof ImportError) return NextResponse.json({ error: err.code, details: err.details }, { status: importErrorStatus(err.code) })
+    return NextResponse.json({ error: 'import_failed' satisfies ImportErrorCode }, { status: 422 })
   }
 }

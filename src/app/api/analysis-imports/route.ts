@@ -11,11 +11,13 @@ import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempote
 import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
+import { checkExcelUpload } from '@/lib/import-file-format'
+import { importErrorStatus } from '@/lib/import-errors'
 
 const sheetType = z.enum(['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', 'UNKNOWN'])
 const valueTransform = z.object({ mode: z.enum(['LINES', 'SEMICOLON', 'PIPE']).optional(), carryForward: z.boolean().optional() }).refine(value => Boolean(value.mode || value.carryForward))
 const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string(), z.string().trim().max(10_000)))).default({})
-const schema = z.object({ filename: z.string().max(255).regex(/\.xlsx$/i), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
+const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), dryRun: z.boolean().default(false), rowOverrides })
 
 /** Exécute un import Excel après la prévisualisation et le mapping humain obligatoire. */
 export async function POST(req: NextRequest) {
@@ -34,6 +36,8 @@ export async function POST(req: NextRequest) {
     const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)
     if (!rl.allowed) return NextResponse.json({ error: 'excel_rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
     const buffer = Buffer.from(body.data, 'base64')
+    const formatError = checkExcelUpload(body.filename, buffer.subarray(0, 16))
+    if (formatError) return NextResponse.json({ error: formatError }, { status: importErrorStatus(formatError) })
     const archive = checkXlsxArchive(buffer)
     if (!archive.ok) return NextResponse.json({ error: archive.reason === 'NOT_ZIP' ? 'excel_workbook_unreadable' : 'excel_file_too_large' }, { status: archive.reason === 'NOT_ZIP' ? 422 : 413 })
     const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer as never)
