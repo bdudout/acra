@@ -918,6 +918,8 @@ model AuditMission {
   jalons        Json @default("{}")   // { lettreMission, reunionOuverture, rapportProvisoire, reponseAudite, reunionCloture, rapportFinal } (ISO)
   independance  Json @default("{}")   // { conflit, commentaire?, declarePar, declareLe }
   universIds    Json @default("[]")   // entrées de l'univers d'audit couvertes
+  // Papiers de travail (lot L4 suite) : cf. lib/papiers-travail.ts.
+  papiers       Json @default("[]")
 
   constats AuditConstat[]
 

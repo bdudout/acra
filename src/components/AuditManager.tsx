@@ -15,6 +15,7 @@ import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamp
 import type { ChampsValeurs } from '@/lib/champs-perso'
 import RecommandationSuivi, { type SuiviAction } from '@/components/RecommandationSuivi'
 import MissionSuiviPanel from '@/components/MissionSuiviPanel'
+import PapiersTravailPanel from '@/components/PapiersTravailPanel'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
@@ -436,6 +437,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                         mission={{ id: m.id, notation: m.notation ?? null, jalons: m.jalons ?? {}, independance: m.independance ?? {} }}
                         canWrite={canWrite && !m.archiveLe} busy={busy} onSave={v => enregistrerSuiviMission(m, v)} onIndependance={v => declarerIndependance(m, v)} />
                     </div>
+                    {canWrite && <div className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40"><PapiersTravailPanel missionId={m.id} readOnly={!!m.archiveLe} /></div>}
                     {/* Rapports / preuves de la mission (PDF, docx…) */}
                     <div className="mb-3">
                       <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{a.archivage.rapportsTitle}</div>
