@@ -89,3 +89,15 @@ describe('readDataRows — lignes de continuation (cellules fusionnées vertical
     expect(rows[2]['Réf.SS']).toBe('SS_06')
   })
 })
+
+describe('readDataRows — plafond explicite (jamais de troncature silencieuse)', () => {
+  it('signale `truncated` quand la feuille dépasse le plafond, et lit tout sinon', () => {
+    const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('R')
+    ws.addRow(['Réf', 'Risque']); for (let i = 1; i <= 12; i++) ws.addRow([`R-${i}`, `Risque ${i}`])
+    const layout = detectHistoricHeaderLayout(readSheetSample(ws, 20, 100))
+    const small = readDataRows(ws, layout, { max: 5 })
+    expect(small.rows).toHaveLength(5); expect(small.truncated).toBe(true)
+    const full = readDataRows(ws, layout, { max: 50 })
+    expect(full.rows).toHaveLength(12); expect(full.truncated).toBe(false)
+  })
+})

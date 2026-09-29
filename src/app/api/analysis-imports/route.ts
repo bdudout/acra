@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
       // Colonne de référence du rôle : une ligne dont la référence est une cellule fusionnée esclave prolonge la précédente.
       const refColumn = splitHistoricMappedColumns(mapping.externalId)[0]
       const refIndex = layout.columns.find(column => column.key === refColumn)?.index
-      const { rows: dataRows, rowNumbers: dataRowNumbers } = type === 'CONTEXT' ? { rows: [], rowNumbers: [] } : readDataRows(sheet, layout, { refColumnIndex: refIndex })
+      const { rows: dataRows, rowNumbers: dataRowNumbers, truncated } = type === 'CONTEXT' ? { rows: [], rowNumbers: [], truncated: false } : readDataRows(sheet, layout, { refColumnIndex: refIndex })
+      // Plafond de lignes : jamais de troncature silencieuse (une feuille ignorée n'est pas concernée).
+      if (truncated && type !== 'UNKNOWN') throw new Error(`TOO_MANY_ROWS:${sheet.name}`)
       const rows = dataRows; const rowNumbers = dataRowNumbers
       const contextRows = type === 'CONTEXT' ? readSheetSample(sheet, 80, 20) : null
       const blocks = contextRows ? { text: extractTextBlocks(contextRows), kv: extractKeyValueBlocks(contextRows) } : undefined
@@ -75,13 +77,14 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : 'Import Excel invalide'
     const errorCode = message.startsWith('MAPPING_INCOMPLET') ? 'excel_mapping_incomplete'
       : message === 'NO_IMPORTABLE_SHEET' ? 'excel_no_importable_sheet'
+        : message.startsWith('TOO_MANY_ROWS:') ? 'excel_too_many_rows'
         : message.startsWith('duplicate_external_id:') ? 'excel_duplicate_reference'
           : 'excel_import_invalid'
     // Détail utile à l'utilisateur pour les erreurs codées par l'application et la
     // validation ; jamais le message brut d'une erreur interne (noms de tables…).
-    const details = errorCode !== 'excel_import_invalid' ? message
+    const details = errorCode === 'excel_too_many_rows' ? message.slice('TOO_MANY_ROWS:'.length) : errorCode !== 'excel_import_invalid' ? message
       : error instanceof z.ZodError ? error.issues.slice(0, 5).map(issue => `${issue.path.join('.')}: ${issue.message}`).join(' ; ')
         : undefined
-    return NextResponse.json({ error: errorCode, details }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : 422 })
+    return NextResponse.json({ error: errorCode, details }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : errorCode === 'excel_too_many_rows' ? 413 : 422 })
   }
 }

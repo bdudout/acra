@@ -75,3 +75,9 @@ Vérifiés en réel (spec local, DB) :
 Défauts supplémentaires corrigés (tests unitaires) : cotation mappée à la main perdue avant construction (import partiel) ; doublon de référence bloquait tout l'import → ligne rejetée `DUPLICATE_REFERENCE` (×5 langues) ; contrôle partagé fusionné ; colonne « Risque » / « id » / « code » reconnues ; « libellé + impact + probabilité » détecté comme registre de risques ; feuille `*.controles` → mesures ; cotations en clair proposées (valeurs reconnues seulement, inconnues laissées).
 
 Encore à tester : autre organisation (IDOR), analyse gelée, CSV windows-1252, volumétrie (500+ lignes) et limite de débit, parcours dans une autre langue, thème sombre / mobile de l'assistant, accessibilité clavier du menu « Importer ».
+
+### 7 ter — Isolation, encodage, volumétrie, débit (vérifiés en réel)
+- [x] Organisation cible étrangère → 403 ; CSV windows-1252 (accents) lu correctement ; limite de débit : 429 à la 31e requête d'aperçu (30 / 10 min / utilisateur).
+- [x] **Volumétrie** : 5 000 lignes → aperçu en 47 ms ; l'exécution tronquait **silencieusement à 500 lignes** → corrigé : erreur claire `excel_too_many_rows` (413, ×5 langues, feuille nommée). Limite : 500 lignes par feuille importée (`IMPORT_MAX_ITEMS`).
+- Non testable en import : analyse gelée (l'import crée toujours une nouvelle analyse).
+- Reste : thème sombre / mobile / clavier de l'assistant ; import via MCP / API v2 (non développés).

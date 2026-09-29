@@ -72,11 +72,13 @@ export interface DataRowsOptions { refColumnIndex?: number; max?: number }
  * est une cellule fusionnée esclave, la ligne PROLONGE la précédente (deuxième source d'un même scénario…) : ses valeurs propres
  * (cellules non fusionnées) sont ajoutées, à la ligne, à celles de la ligne précédente, et aucune référence n'est dupliquée.
  */
-export function readDataRows(sheet: Worksheet, layout: { headerRowIndex: number; columns: { key: string; index: number }[] }, opts: DataRowsOptions = {}): { rows: Record<string, string>[]; rowNumbers: number[] } {
+export function readDataRows(sheet: Worksheet, layout: { headerRowIndex: number; columns: { key: string; index: number }[] }, opts: DataRowsOptions = {}): { rows: Record<string, string>[]; rowNumbers: number[]; truncated: boolean } {
   const rows: Record<string, string>[] = []
   const rowNumbers: number[] = []
   const last = sheetUsedBounds(sheet).lastRow
-  const total = Math.min(opts.max ?? 500, Math.max(0, last - layout.headerRowIndex - 1))
+  const available = Math.max(0, last - layout.headerRowIndex - 1)
+  const total = Math.min(opts.max ?? 500, available)
+  const truncated = available > total
   for (let offset = 0; offset < total; offset++) {
     const rowNumber = layout.headerRowIndex + offset + 2
     const row = sheet.getRow(rowNumber)
@@ -92,5 +94,5 @@ export function readDataRows(sheet: Worksheet, layout: { headerRowIndex: number;
       if (own && own !== previous[c.key]) previous[c.key] = previous[c.key] ? `${previous[c.key]}\n${own}` : own
     }
   }
-  return { rows, rowNumbers }
+  return { rows, rowNumbers, truncated }
 }
