@@ -42,3 +42,27 @@ describe('renderAnalyseDocx', () => {
     expect(buf.length).toBeGreaterThan(2000)
   })
 })
+
+describe('renderAnalyseDocx — matrice des risques', () => {
+  async function documentXml(loc: string, data: Record<string, unknown> = analyse as Record<string, unknown>) {
+    const JSZip = (await import('jszip')).default
+    const buf = await renderAnalyseDocx(data, null, loc)
+    return (await (await JSZip.loadAsync(buf)).file('word/document.xml')!.async('string'))
+  }
+  it('contient la matrice (brute, puis après traitement quand des cotations résiduelles existent) avec les risques Rn placés', async () => {
+    const xml = await documentXml('fr')
+    expect(xml).toContain('Matrice des risques')
+    expect(xml).toContain('Risque brut'); expect(xml).toContain('Après traitement')
+    expect(xml).toContain('Gravité →'); expect(xml).toContain('Vraisemblance ↑')
+    expect(xml).toContain('R1'); expect(xml).toContain('R2')
+    expect(xml).toMatch(/w:fill="[0-9A-F]{6}"/) // cases colorées selon les paliers
+  })
+  it('sans risque : pas de matrice ; sans cotation résiduelle : une seule matrice', async () => {
+    expect(await documentXml('fr', { nom: 'Vide' })).not.toContain('Matrice des risques')
+    const xml = await documentXml('fr', { nom: 'X', risques: [{ nom: 'Seul', gravite: 2, vraisemblance: 2, niveauRisque: 4 }] })
+    expect(xml).toContain('Matrice des risques'); expect(xml).not.toContain('Après traitement')
+  })
+  it.each([['en', 'Risk matrix'], ['de', 'Risikomatrix'], ['es', 'Matriz de riesgos'], ['it', 'Matrice dei rischi']])('libellés traduits (%s)', async (loc, title) => {
+    expect(await documentXml(loc)).toContain(title)
+  })
+})

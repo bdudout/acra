@@ -254,6 +254,7 @@ docker compose up -d
 
 > ¿Sin `make`? Usa directamente: `./scripts/setup.sh` (o `npm run setup`).
 > Instalación automatizada / CI (sin preguntas): `./scripts/setup.sh --auto`.
+> **Windows (Docker Desktop + WSL)**: clone el repositorio *desde WSL* (o ejecute `git config --global core.autocrlf input` antes de clonar). Si aparece `$'\r': command not found`, el script se convirtió a finales de línea de Windows: ejecute `sed -i 's/\r$//' scripts/setup.sh` y vuelva a lanzarlo.
 
 `setup.sh` genera por ti secretos fuertes (`NEXTAUTH_SECRET`, contraseña de
 PostgreSQL, `SECRETS_ENCRYPTION_KEY`) y **solo regenera los valores que faltan**

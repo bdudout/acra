@@ -6,6 +6,11 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (30) — export Word : matrice des risques ; Windows/WSL
+
+- `lib/risk-matrix-grid.ts` (modèle de matrice depuis la config + grille imprimable, partagé Word/PowerPoint) ; `analyse-docx.ts` : section « Matrice des risques » (brute, puis après traitement si résiduel), libellés ×5. Rendu vérifié en PDF (LibreOffice).
+- `.gitattributes` (LF forcé pour `*.sh`, Dockerfile, yml, sql) + note Windows/WSL dans les 5 README (issue GitHub `$'\r': command not found`).
+
 ## 2026-09-30 (29) — import : retours d'usage sur le vrai fichier
 
 - Bug d'import du vrai classeur : textes > plafond du schéma (socle de sécurité 1 000 car.) → raccourcis + avertissement (`lib/import-truncate.ts`, `buildAtelierContent.truncated`, route) ; erreurs de validation lisibles (`describeZodIssues`).
