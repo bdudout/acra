@@ -590,6 +590,11 @@ model Controle {
   // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
   champs Json @default("{}")
 
+  // Lot L3 (suite) — rattachement à un tiers (ArrangementTic) et à un projet 360 (Analyse PROJET_360).
+  // Liens logiques (pas de FK), vérifiés à l'écriture ; ignorés à la lecture s'ils ont disparu.
+  arrangementTicId String?
+  projetId         String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -597,6 +602,8 @@ model Controle {
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
+  @@index([arrangementTicId])
+  @@index([projetId])
 }
 
 // Une exécution de contrôle : résultat, constat et échantillon réellement testé.

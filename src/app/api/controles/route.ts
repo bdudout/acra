@@ -9,9 +9,11 @@ import {
   validateControleInput, cleanControleInput, prochaineEcheance,
   etatEcheance, evaluerEfficacite, type Periodicite,
 } from '@/lib/controle'
+import { comparerExecutions, prefillRejeu } from '@/lib/controle-l3b'
 import { champsL3Creation, vueControleL3 } from '@/lib/controle-l3'
 import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { Prisma } from '@prisma/client'
+import { verifierRattachements } from '@/lib/controle-rattachements.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -43,10 +45,16 @@ export async function GET() {
     include: {
       processus: { select: { nom: true } },
       riskItem: { select: { intitule: true } },
-      executions: { orderBy: { dateRealisation: 'desc' }, select: { id: true, resultat: true, dateRealisation: true, constat: true, preuves: true, checklistResultats: true, independant: true } },
+      executions: { orderBy: { dateRealisation: 'desc' }, select: { id: true, resultat: true, dateRealisation: true, constat: true, preuves: true, checklistResultats: true, independant: true, tailleTestee: true, anomaliesTrouvees: true } },
     },
   })
 
+  const [tiers, projets] = await Promise.all([
+    prisma.arrangementTic.findMany({ where: { organizationId: orgId }, select: { id: true, prestataireNom: true }, take: 2000 }),
+    prisma.analyse.findMany({ where: { organizationId: orgId, methode: 'PROJET_360', deletedAt: null }, select: { id: true, nom: true }, take: 500 }),
+  ])
+  const tiersNom = new Map(tiers.map(t => [t.id, t.prestataireNom]))
+  const projetNom = new Map(projets.map(x => [x.id, x.nom]))
   const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).controle ?? []
   const now = new Date()
   const controles = rows.map(({ processus, riskItem, executions, ...c }) => {
@@ -56,6 +64,10 @@ export async function GET() {
       ...c,
       champs: valeursVisibles(defsChamps, c.champs, roleLecture),
       processusNom: processus?.nom ?? null,
+      tiersNom: c.arrangementTicId ? tiersNom.get(c.arrangementTicId) ?? null : null,
+      projetNom: c.projetId ? projetNom.get(c.projetId) ?? null : null,
+      n1: comparerExecutions(executions),
+      rejeu: prefillRejeu(executions),
       riskItemIntitule: riskItem?.intitule ?? null,
       derniereExecution: derniere,
       prochaineEcheance: echeance,
@@ -67,7 +79,7 @@ export async function GET() {
       nbExecutions: executions.length,
     }
   })
-  return NextResponse.json({ controles, active: true })
+  return NextResponse.json({ controles, active: true, tiers, projets })
 }
 
 // POST /api/controles — créer un contrôle dans la bibliothèque (2ᵉ ligne).
@@ -94,12 +106,15 @@ export async function POST(req: NextRequest) {
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
 
+  const ratt = await verifierRattachements(body, orgId)
+  if (!ratt.ok) return NextResponse.json({ error: ratt.error }, { status: 400 })
+
   const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).controle ?? []
   const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
   const manquants = champsRequisManquants(defsChamps, champs, userRole)
   if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
   const l3 = champsL3Creation(body)
-  const controle = await prisma.controle.create({ data: { ...data, ...l3, conception: l3.conception as Prisma.InputJsonValue, champs: champs as unknown as Prisma.InputJsonValue, organizationId: orgId } })
+  const controle = await prisma.controle.create({ data: { ...data, ...ratt.data, ...l3, conception: l3.conception as Prisma.InputJsonValue, champs: champs as unknown as Prisma.InputJsonValue, organizationId: orgId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'create', id: controle.id },

@@ -9,6 +9,7 @@ import { validateControleInput, cleanControleInput } from '@/lib/controle'
 import { champsL3Modification } from '@/lib/controle-l3'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { Prisma } from '@prisma/client'
+import { verifierRattachements } from '@/lib/controle-rattachements.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
 
+  const ratt = await verifierRattachements(body, c.orgId)
+  if (!ratt.ok) return NextResponse.json({ error: ratt.error }, { status: 400 })
+
   // N'écrire que les champs présents (un PATCH ne doit rien effacer par omission).
   const partiel = Object.fromEntries(
     (Object.keys(data) as (keyof typeof data)[]).filter(k => k in body).map(k => [k, data[k]]),
@@ -67,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const l3 = champsL3Modification(body, { evaluateurId: c.userId, now: new Date() })
   const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).controle ?? []
   const champsMaj = 'champs' in body ? { champs: fusionnerChamps(defsChamps, c.champsExistants, body.champs, c.userRole) as unknown as Prisma.InputJsonValue } : {}
-  const updated = await prisma.controle.update({ where: { id }, data: { ...partiel, ...(l3 as Prisma.ControleUncheckedUpdateInput), ...champsMaj } })
+  const updated = await prisma.controle.update({ where: { id }, data: { ...partiel, ...ratt.data, ...(l3 as Prisma.ControleUncheckedUpdateInput), ...champsMaj } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'update', id },
