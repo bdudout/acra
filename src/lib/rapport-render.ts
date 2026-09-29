@@ -56,3 +56,28 @@ export function contenuVersFeuilles(c: RapportContenu, tr: Traducteur, locale: s
     return { nom: titreSection(s.id, tr).slice(0, 31), lignes }
   })
 }
+
+// ─── Modèle plat pour le PDF serveur ─────────────────────────────────────────
+
+export interface DocumentRapport {
+  titre: string; sousTitre: string; intro?: string
+  sections: { titre: string; kpis: { label: string; valeur: string; alerte: boolean }[]; tables: { colonnes: string[]; lignes: string[][] }[]; textes: string[] }[]
+}
+
+/** Édition → document plat (textes résolus, prêt à rendre) : le gabarit PDF ne connaît ni i18n ni blocs. */
+export function contenuVersDocument(c: RapportContenu, tr: Traducteur, locale: string, meta: { titre: string; gabaritIntro?: string }): DocumentRapport {
+  return {
+    titre: meta.titre,
+    sousTitre: `${c.periode.debut} → ${c.periode.fin}`,
+    ...(meta.gabaritIntro ? { intro: meta.gabaritIntro } : {}),
+    sections: c.sections.map(s => {
+      const out: DocumentRapport['sections'][number] = { titre: titreSection(s.id, tr), kpis: [], tables: [], textes: [] }
+      for (const b of s.blocs as Bloc[]) {
+        if (b.type === 'kpis') for (const k of b.items) out.kpis.push({ label: libelleKpi(k.cle, tr), valeur: String(formaterKpi(k, c.deviseReference, locale, tr)), alerte: !!k.alerte })
+        else if (b.type === 'tableau') out.tables.push({ colonnes: b.colonnes.map(x => libelleColonne(x, tr)), lignes: b.lignes.map(l => l.map(x => String(resoudreCellule(x, tr)))) })
+        else out.textes.push(tr(b.cle) ?? b.cle)
+      }
+      return out
+    }),
+  }
+}

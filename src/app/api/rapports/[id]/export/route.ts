@@ -7,7 +7,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import type { UserRole } from '@/lib/permissions'
 import { peutLireRapports } from '@/lib/rapport-acces'
 import type { RapportContenu } from '@/lib/rapport-model'
-import { contenuVersFeuilles } from '@/lib/rapport-render'
+import { contenuVersFeuilles, contenuVersDocument } from '@/lib/rapport-render'
+import { loadPdfRuntime } from '@/lib/pdf-runtime'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { appliquerGabarit, masquerContenu, sanitizeRapportsConfig } from '@/lib/rapport-masquage'
 import { getT } from '@/lib/i18n'
@@ -16,7 +17,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-// GET /api/rapports/[id]/export?lang=fr — export Excel d'une édition (une feuille par section).
+// GET /api/rapports/[id]/export?lang=fr[&masque=1][&format=pdf] — export Excel (une feuille par section) ou PDF serveur.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -38,6 +39,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const masque = new URL(req.url).searchParams.get('masque') === '1'
   const brut = appliquerGabarit(edition.contenu as unknown as RapportContenu, gabarit)
   const contenu: RapportContenu = masque ? masquerContenu(brut) : brut
+
+  if (new URL(req.url).searchParams.get('format') === 'pdf') {
+    const cat = { ...t.rapports.catalogue, ...t.rapports.catalogueCtl, ...t.rapports.catalogueAud } as Record<string, { titre: string }>
+    const doc = contenuVersDocument(contenu, tr, locale, { titre: gabarit?.titre ?? cat[edition.code]?.titre ?? edition.code, gabaritIntro: gabarit?.introduction })
+    try {
+      const { renderRapportEditionPDF } = loadPdfRuntime('rapport-edition-pdf-template')
+      const pdf = await renderRapportEditionPDF(doc, locale, new Date().toISOString().slice(0, 10))
+      await auditLog('ORGANIZATION_CONFIG_UPDATED', {
+        userId, userRole: role, organizationId: scope.activeOrgId, ip: getClientIp(req),
+        details: { scope: 'rapport', action: 'export-pdf', id, code: edition.code, ...(masque ? { masque: true } : {}) },
+      })
+      return new NextResponse(pdf as unknown as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="acra-${edition.code}-${edition.periodeDebut.toISOString().slice(0, 10)}${masque ? '-masque' : ''}.pdf"`,
+          'Cache-Control': 'no-store',
+        },
+      })
+    } catch (err) {
+      console.error('[export rapport pdf] génération échouée', err)
+      return NextResponse.json({ error: 'Échec de la génération du PDF' }, { status: 500 })
+    }
+  }
 
   const wb = new ExcelJS.Workbook()
   wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'

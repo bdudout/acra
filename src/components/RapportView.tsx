@@ -66,6 +66,7 @@ export default function RapportView({ id }: { id: string }) {
         <div className="flex flex-wrap items-center gap-2">
           <label className="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center gap-1" title={r.masquerHint}><input type="checkbox" checked={masque} onChange={ev => setMasque(ev.target.checked)} />{r.masquer}</label>
           <a href={`/api/rapports/${id}/export?lang=${locale}${masque ? '&masque=1' : ''}`} className={btn}>{r.actions.excel}</a>
+          <a href={`/api/rapports/${id}/export?format=pdf&lang=${locale}${masque ? '&masque=1' : ''}`} className={btn}>{r.actions.pdf}</a>
           <button type="button" onClick={() => window.print()} className={`${btn} inline-flex items-center gap-1`}><Printer size={13} aria-hidden="true" />{r.actions.imprimer}</button>
         </div>
       </div>

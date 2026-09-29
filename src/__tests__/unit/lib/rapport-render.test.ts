@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resoudreCellule, contenuVersFeuilles, titreSection, libelleKpi, libelleColonne, formaterKpi } from '@/lib/rapport-render'
+import { resoudreCellule, contenuVersFeuilles, titreSection, libelleKpi, libelleColonne, formaterKpi, contenuVersDocument } from '@/lib/rapport-render'
 import type { RapportContenu } from '@/lib/rapport-model'
 import { fr } from '@/lib/i18n/fr'
 
@@ -46,5 +46,19 @@ describe('rapport-render', () => {
     expect(libelleKpi('tauxVerification', tr)).toBe('Taux de vérification')
     expect(libelleColonne('rapports.cols.prochaine', tr)).toBe('Prochaine échéance')
     expect(resoudreCellule({ k: 'rapports.notations.3' }, tr)).toBe('Insuffisant')
+  })
+})
+
+describe('contenuVersDocument (PDF)', () => {
+  const doc = contenuVersDocument(contenu, tr, 'fr', { titre: 'Tableau de bord des incidents', gabaritIntro: 'Revue trimestrielle' })
+  it('modèle plat prêt à rendre : titre, période, introduction, sections traduites', () => {
+    expect(doc).toMatchObject({ titre: 'Tableau de bord des incidents', intro: 'Revue trimestrielle' })
+    expect(doc.sousTitre).toContain('2026-09-01')
+    expect(doc.sections.map(s => s.titre)).toEqual(['Synthèse', 'Notifications en retard'])
+  })
+  it('KPI formatés, tableaux en texte (clés résolues, null → vide)', () => {
+    expect(doc.sections[0].kpis).toEqual([{ label: 'Incidents', valeur: '3', alerte: false }, expect.objectContaining({ label: expect.any(String) }), expect.objectContaining({})])
+    expect(doc.sections[1].tables[0].lignes[0]).toEqual(['Incident a', 'NIS2 — Directive (UE) 2022/2555, art. 23', '2026-09-13T08:00:00.000Z'])
+    expect(doc.sections[1].tables[0].lignes[1][2]).toBe('')
   })
 })
