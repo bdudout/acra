@@ -578,6 +578,14 @@ model Controle {
   // null dès qu'une exécution est enregistrée → une alerte par période.
   alerteeLe DateTime?
 
+  // Lot L3 — typologie, évaluation de la conception, méthode d'échantillonnage.
+  typeControle       String?  // PREVENTIF | DETECTIF | CORRECTIF
+  modeControle       String   @default("MANUEL") // MANUEL | AUTOMATIQUE (résultats poussés par l'API)
+  cle                Boolean  @default(false)    // contrôle clé (pilote le reporting)
+  methodeEchantillon String?  // FIXE | STATISTIQUE | ALEATOIRE | EXHAUSTIF
+  // { statut: ADEQUATE | A_AMELIORER | INADEQUATE, commentaire?, evaluateurId?, evalueLe? }
+  conception         Json     @default("{}")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -608,6 +616,9 @@ model ControleExecution {
   // fonctions, contrôle N2). null = non renseigné.
   independant        Boolean?
   executantId        String
+
+  // SAISIE (utilisateur) | API (résultat poussé par un contrôle automatique).
+  source String @default("SAISIE")
 
   createdAt DateTime @default(now())
 

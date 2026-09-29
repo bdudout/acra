@@ -9,6 +9,8 @@ import {
   validateControleInput, cleanControleInput, prochaineEcheance,
   etatEcheance, evaluerEfficacite, type Periodicite,
 } from '@/lib/controle'
+import { champsL3Creation, vueControleL3 } from '@/lib/controle-l3'
+import { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -57,6 +59,7 @@ export async function GET() {
       // Un contrôle inactif n'a pas d'échéance à honorer.
       etatEcheance: c.actif ? etatEcheance(echeance, now) : null,
       efficacite: evaluerEfficacite(executions),
+      l3: vueControleL3({ cle: c.cle, modeControle: c.modeControle, periodicite: c.periodicite, actif: c.actif, creeLe: c.createdAt, conception: c.conception, efficacite: evaluerEfficacite(executions).efficacite, executions }, now),
       executions: executions.slice(0, 5),
       nbExecutions: executions.length,
     }
@@ -88,7 +91,8 @@ export async function POST(req: NextRequest) {
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
 
-  const controle = await prisma.controle.create({ data: { ...data, organizationId: orgId } })
+  const l3 = champsL3Creation(body)
+  const controle = await prisma.controle.create({ data: { ...data, ...l3, conception: l3.conception as Prisma.InputJsonValue, organizationId: orgId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'create', id: controle.id },

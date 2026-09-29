@@ -10,6 +10,8 @@ import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { vueIncidentL1 } from '@/lib/incident-vue'
 import { buildRapportIncidents, buildRapportPertes, type IncidentRapportRow, type LabelsRapport } from '@/lib/rapport-incidents'
 import { buildRapportDirection } from '@/lib/rapport-direction'
+import { buildRapportPlanControle, buildRapportEfficacite, buildRapportAnomalies, type ControleRapportRow } from '@/lib/rapport-controles'
+import { sanitizeConception } from '@/lib/controle-l3'
 import { dansPeriode, type Periode, type RapportCode, type RapportContenu } from '@/lib/rapport-model'
 import { gatherGrcConsolide } from '@/lib/grc-consolide.server'
 import type { OrgConfigResolved } from '@/lib/org-config'
@@ -28,9 +30,25 @@ async function chargerIncidents(orgId: string, cfg: OrgConfigResolved, now: Date
   return { incidentsCfg, rows: raw.map(r => ({ ...r, l1: vueIncidentL1(r, incidentsCfg, now) })) }
 }
 
+async function chargerControles(orgId: string): Promise<ControleRapportRow[]> {
+  const raw = await prisma.controle.findMany({
+    where: { organizationId: orgId }, orderBy: { createdAt: 'asc' }, take: 2000,
+    select: {
+      id: true, intitule: true, niveau: true, responsable: true, actif: true, cle: true, modeControle: true, typeControle: true, periodicite: true, createdAt: true, conception: true,
+      executions: { select: { resultat: true, dateRealisation: true }, orderBy: { dateRealisation: 'desc' }, take: 400 },
+    },
+  })
+  return raw.map(({ createdAt, conception, ...c }) => ({ ...c, creeLe: createdAt, conception: sanitizeConception(conception) }))
+}
+
 export async function genererContenuRapport(code: RapportCode, orgId: string, cfg: OrgConfigResolved, periode: Periode, locale: string, now: Date): Promise<RapportContenu> {
   const t = getT(locale)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? key
+  // Rapports du contrôle permanent (L3) : pas besoin des incidents.
+  if (code === 'R-CTL-1' || code === 'R-CTL-2' || code === 'R-CTL-3') {
+    const controles = await chargerControles(orgId)
+    return code === 'R-CTL-1' ? buildRapportPlanControle(controles, periode, now) : code === 'R-CTL-2' ? buildRapportEfficacite(controles, periode, now) : buildRapportAnomalies(controles, periode, now)
+  }
   const { rows, incidentsCfg } = await chargerIncidents(orgId, cfg, now)
   const taxonomie = resolveTaxonomie(cfg.taxonomieRisques)
   const labels: LabelsRapport = {

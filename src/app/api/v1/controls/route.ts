@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateApiRequest } from '@/lib/api-auth.server'
 import { prochaineEcheance, etatEcheance, evaluerEfficacite, type Periodicite } from '@/lib/controle'
+import { vueControleL3 } from '@/lib/controle-l3'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,12 +21,14 @@ export async function GET(req: NextRequest) {
     const derniere = executions[0]?.dateRealisation ?? null
     const echeance = prochaineEcheance(c.periodicite as Periodicite, derniere, c.createdAt)
     const eff = evaluerEfficacite(executions)
+    const l3 = vueControleL3({ cle: c.cle, modeControle: c.modeControle, periodicite: c.periodicite, actif: c.actif, creeLe: c.createdAt, conception: c.conception, efficacite: eff.efficacite, executions }, now)
     return {
       id: c.id, intitule: c.intitule, niveau: c.niveau, periodicite: c.periodicite,
       responsable: c.responsable, actif: c.actif, referentielCode: c.referentielCode,
       derniereExecution: derniere, prochaineEcheance: echeance,
       etatEcheance: c.actif ? etatEcheance(echeance, now) : null,
       tauxConformite: eff.tauxConformite, efficacite: eff.efficacite, nbExecutions: executions.length,
+      typeControle: c.typeControle, modeControle: c.modeControle, cle: c.cle, appreciation: l3.appreciation, fluxInterrompu: l3.fluxInterrompu,
     }
   })
   return NextResponse.json({ data, count: data.length })

@@ -38,6 +38,8 @@ test.describe('Incidents — régimes de notification et pertes', () => {
       await page.getByRole('button', { name: 'Enregistrer' }).click()
       await expect(page.getByText('Grande perte').first()).toBeVisible()
     } finally {
+      // Nettoyage : les autres specs (rapports…) comptent les incidents de l'organisation.
+      await prisma.incident.deleteMany({ where: { organizationId: E2E.orgId } })
       await prisma.organizationConfig.update({ where, data: { incidentsActive: false, incidentsConfig: {} } })
       await prisma.$disconnect()
     }

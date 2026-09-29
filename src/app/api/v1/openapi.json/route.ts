@@ -40,6 +40,8 @@ export async function GET() {
           periodicite: { type: 'string' }, responsable: { type: 'string', nullable: true }, actif: { type: 'boolean' },
           prochaineEcheance: { type: 'string', format: 'date-time' }, etatEcheance: { type: 'string', nullable: true },
           tauxConformite: { type: 'integer', nullable: true }, efficacite: { type: 'string', nullable: true },
+          typeControle: { type: 'string', nullable: true, enum: ['PREVENTIF', 'DETECTIF', 'CORRECTIF'] }, modeControle: { type: 'string', enum: ['MANUEL', 'AUTOMATIQUE'] }, cle: { type: 'boolean' },
+          appreciation: { type: 'string', enum: ['EFFICACE', 'A_SURVEILLER', 'DEFAILLANT', 'NON_EVALUE'] }, fluxInterrompu: { type: 'boolean' },
         } },
         Incident: { type: 'object', properties: {
           id: { type: 'string' }, intitule: { type: 'string' }, statut: { type: 'string' },
@@ -51,6 +53,19 @@ export async function GET() {
     paths: {
       '/risks': { get: { summary: 'Registre de risques', operationId: 'listRisks', responses: listResponse('#/components/schemas/Risk') } },
       '/controls': { get: { summary: 'Bibliothèque de contrôles', operationId: 'listControls', responses: listResponse('#/components/schemas/Control') } },
+      '/controls/{id}/results': {
+        post: {
+          summary: 'Résultat d’un contrôle automatique',
+          operationId: 'pushControlResult',
+          description: 'Nécessite le scope write. Le contrôle doit être actif, de mode AUTOMATIQUE et appartenir à l’organisation de la clé. Corps { resultat: CONFORME | ANOMALIE | NON_APPLICABLE, dateRealisation?, constat?, tailleTestee?, anomaliesTrouvees? }. Une anomalie crée l’action liée au risque du contrôle. Un flux interrompu (aucun résultat depuis plus d’une période) est signalé dans /controls (fluxInterrompu).',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['resultat'], properties: {
+            resultat: { type: 'string', enum: ['CONFORME', 'ANOMALIE', 'NON_APPLICABLE'] }, dateRealisation: { type: 'string', format: 'date-time' },
+            constat: { type: 'string' }, tailleTestee: { type: 'integer' }, anomaliesTrouvees: { type: 'integer' },
+          } } } } },
+          responses: { '201': { description: 'Résultat enregistré' }, '400': { description: 'Contrôle non automatique, inactif ou résultat invalide' }, '404': { description: 'Contrôle introuvable' } },
+        },
+      },
       '/incidents': { get: { summary: 'Incidents & pertes (LDC)', operationId: 'listIncidents', responses: listResponse('#/components/schemas/Incident') } },
       '/import': {
         post: {

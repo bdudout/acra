@@ -29,6 +29,14 @@
 > L3/L4), gabarits surchargeables (sections, seuils, logo), diffusion par e-mail (après validation
 > humaine), masquage pour rapports externes, rapports planifiés en brouillon, PDF serveur.
 
+> **L3 livré (contrôle permanent)** : typologie (préventif / détectif / correctif, manuel / automatique,
+> contrôle clé, méthode d'échantillonnage) ; **évaluation de la conception** distincte de l'efficacité
+> opérationnelle avec appréciation conjuguée (efficace / à surveiller / défaillant) ; taille d'échantillon
+> suggérée ; **plan annuel** (une occurrence par période, retards, charge par responsable, pics) ;
+> **contrôle continu** (`POST /api/v1/controls/{id}/results`, détection d'un flux interrompu) ; **anomalies
+> récurrentes et escalade** (N2, comité pour un contrôle clé) ; rapports **R-CTL-1/2/3**. Reste : rejeu du
+> test à la période suivante et comparaison N/N-1 (B-CTL-5), rattachement à un tiers / un projet 360 (B-CTL-8).
+
 ## 1. Objectif et principe directeur
 
 Permettre à **un maximum d'organisations et de contextes** d'utiliser les modules

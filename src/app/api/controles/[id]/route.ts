@@ -6,6 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { validateControleInput, cleanControleInput } from '@/lib/controle'
+import { champsL3Modification } from '@/lib/controle-l3'
+import { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -61,7 +63,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     (Object.keys(data) as (keyof typeof data)[]).filter(k => k in body).map(k => [k, data[k]]),
   ) as Partial<typeof data>
 
-  const updated = await prisma.controle.update({ where: { id }, data: partiel })
+  const l3 = champsL3Modification(body, { evaluateurId: c.userId, now: new Date() })
+  const updated = await prisma.controle.update({ where: { id }, data: { ...partiel, ...(l3 as Prisma.ControleUncheckedUpdateInput) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'update', id },

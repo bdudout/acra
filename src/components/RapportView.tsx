@@ -28,7 +28,7 @@ export default function RapportView({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null)
   const [dest, setDest] = useState('')
   const tr = useCallback((key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string | undefined, [t])
-  const catalogue = r.catalogue as Record<string, { titre: string; desc: string }>
+  const catalogue = { ...r.catalogue, ...r.catalogueCtl } as Record<string, { titre: string; desc: string }>
 
   const load = useCallback(() => { fetch(`/api/rapports/${id}`).then(x => (x.ok ? x.json() : null)).then(d => setE(d)).catch(() => setE(null)) }, [id])
   useEffect(() => { load() }, [load])

@@ -10,6 +10,8 @@ test.describe('Rapports GRC', () => {
     const where = { id: E2E.orgId }
     try {
       await prisma.organizationConfig.update({ where, data: { incidentsActive: true, secondeLigneActive: true, incidentsConfig: { deviseReference: 'EUR', seuilGrandePerte: 5000 } } })
+      // Isolation : un autre spec ne doit pas laisser d'incident dans l'organisation.
+      await prisma.incident.deleteMany({ where: { organizationId: E2E.orgId } })
       await prisma.incident.create({ data: {
         id: 'e2e_inc_rapport', organizationId: E2E.orgId, intitule: 'e2e_Incident pour rapport', declarantId: E2E.users.rssi.id, statut: 'QUALIFIE',
         dateSurvenance: new Date(), dateDetection: new Date(), montantBrut: 6000,
@@ -41,7 +43,7 @@ test.describe('Rapports GRC', () => {
       await expect(page.getByRole('link', { name: 'Exporter (Excel)' })).toBeVisible()
     } finally {
       await prisma.rapportEdition.deleteMany({ where: { organizationId: E2E.orgId } })
-      await prisma.incident.deleteMany({ where: { id: 'e2e_inc_rapport' } })
+      await prisma.incident.deleteMany({ where: { organizationId: E2E.orgId } })
       await prisma.organizationConfig.update({ where, data: { incidentsActive: false, secondeLigneActive: true, incidentsConfig: {} } })
       await prisma.$disconnect()
     }

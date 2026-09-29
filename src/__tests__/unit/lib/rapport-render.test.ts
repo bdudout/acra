@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resoudreCellule, contenuVersFeuilles, titreSection, libelleKpi, formaterKpi } from '@/lib/rapport-render'
+import { resoudreCellule, contenuVersFeuilles, titreSection, libelleKpi, libelleColonne, formaterKpi } from '@/lib/rapport-render'
 import type { RapportContenu } from '@/lib/rapport-model'
 import { fr } from '@/lib/i18n/fr'
 
@@ -34,5 +34,11 @@ describe('rapport-render', () => {
     expect(f[0].lignes[0]).toEqual(['Incidents', 3])
     expect(f[1].lignes[0]).toEqual(['Incident', 'Régime', 'Échéance'])
     expect(f[1].lignes[1][1]).toBe('NIS2 — Directive (UE) 2022/2555, art. 23')
+  })
+  it('libellés du contrôle permanent : repli sur les sous-blocs dédiés', () => {
+    expect(titreSection('controlesCles', tr)).toBe('Contrôles clés')
+    expect(libelleKpi('tauxRealisation', tr)).toBe('Taux de réalisation')
+    expect(libelleColonne('rapports.cols.periodesEnRetard', tr)).toBe('Périodes en retard')
+    expect(resoudreCellule({ k: 'rapports.conception.ADEQUATE' }, tr)).toBe('Adéquate')
   })
 })

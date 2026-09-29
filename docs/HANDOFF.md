@@ -6,6 +6,27 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (16) — Claude Code : lot L3 « Contrôle permanent » + correctif CI E2E
+
+- **CI PR #192** : L1 8/8 verts ; sur le push L2, **E2E en échec** = contamination entre specs (l'incident créé par
+  `incidents-l1` restait dans l'org et faussait les totaux de `rapports`) → `deleteMany` par organisation dans les
+  deux specs. Piège : les specs E2E partagent une seule org et tournent dans l'ordre alphabétique **en un seul
+  run** en CI — toujours nettoyer ce qu'on crée. Reproduit localement (3 specs enchaînés).
+- **L3** : `lib/controle-l3` (pur) ; migration `20260929200000_controle_l3` (typeControle, modeControle, cle,
+  methodeEchantillon, conception, `ControleExecution.source`) ; `GET /api/controles` enrichi (`l3`),
+  `GET /api/controles/plan`, `POST /api/v1/controls/[id]/results` (contrôles AUTOMATIQUE, scope write, exécutant
+  `api:<keyId>`, rate limit, OpenAPI à jour) ; rapports R-CTL-1/2/3 dans le cadre L2 ; UI (champs, pastilles,
+  conception, plan annuel `/controles/plan`). Le détail d'un contrôle jamais exécuté est désormais ouvrable
+  (la conception s'évalue avant toute exécution).
+- **Vérifié** : `tsc` 0 · `npm test` **2474/2474** · `i18n:check` · `npm run build` OK · migration appliquée
+  (pas de dérive) · e2e navigateur `controles-l3` + `incidents-l1` + `rapports` enchaînés **verts**.
+- **Environnement** : disque du poste plein (ENOSPC) → cache npm (`npm cache clean --force`) et `.next/cache`
+  purgés (régénérables). À surveiller : 196 Go / 228 Go utilisés.
+- **Reste L3** : rejeu du test à la période suivante / comparaison N-1 (B-CTL-5), rattachement tiers / projet 360
+  (B-CTL-8). Puis L4 (audit).
+
+---
+
 ## 2026-09-29 (15) — Claude Code : lot L2 « Reporting » (éditions figées, 3 rapports)
 
 **Branche** : `feat/historical-excel-import`, PR #192 (brouillon) — **CI de L1 : 8/8 verts**.
