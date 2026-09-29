@@ -6,6 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateConstatInput, cleanConstatInput } from '@/lib/audit'
+import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
+import type { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -25,12 +27,12 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const constat = await prisma.auditConstat.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
-    select: { id: true, organizationId: true },
+    select: { id: true, organizationId: true, champs: true },
   })
   if (!constat) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(constat.organizationId)
   if (!cfg.auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, constat }
+  return { userId, userRole, constat, champsPersonnalises: cfg.champsPersonnalises }
 }
 
 // PATCH /api/audit/constats/[id] — modifier un constat / faire évoluer son suivi.
@@ -57,12 +59,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     (Object.keys(data) as (keyof typeof data)[]).filter(k => k in body).map(k => [k, data[k]]),
   ) as Partial<typeof data>
 
-  const updated = await prisma.auditConstat.update({ where: { id }, data: partiel })
+  const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).constat ?? []
+  const champsMaj = 'champs' in body ? { champs: fusionnerChamps(defsChamps, c.constat.champs, body.champs, c.userRole) as unknown as Prisma.InputJsonValue } : {}
+  const updated = await prisma.auditConstat.update({ where: { id }, data: { ...partiel, ...champsMaj } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.constat.organizationId, ip: getClientIp(req),
     details: { scope: 'audit-constat', action: 'update', id },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json(avecChampsVisibles(updated, defsChamps, c.userRole))
 }
 
 // DELETE /api/audit/constats/[id] — supprimer un constat (auditeur / admin).

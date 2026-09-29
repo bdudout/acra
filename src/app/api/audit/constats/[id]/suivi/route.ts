@@ -7,6 +7,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { appliquerSuivi, type SuiviCommande } from '@/lib/audit-l4'
+import { sanitizeChampsConfig, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -46,5 +47,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     userId, userRole: role, organizationId: constat.organizationId, ip: getClientIp(req),
     details: { scope: 'audit', action: `recommandation:${body.action}`, id },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json(avecChampsVisibles(updated, sanitizeChampsConfig(cfg.champsPersonnalises).constat ?? [], role))
 }

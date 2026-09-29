@@ -15,7 +15,7 @@ const defs = sanitizeChampsConfig({
 
 describe('sanitizeChampsConfig', () => {
   it('modules connus seulement ; codes valides et uniques ; types connus ; liste avec options', () => {
-    expect(CHAMPS_MODULES).toEqual(['incident', 'controle', 'mission'])
+    expect(CHAMPS_MODULES).toEqual(['incident', 'controle', 'mission', 'constat'])
     const c = sanitizeChampsConfig({
       incident: [{ code: 'a b', label: 'x', type: 'TEXTE' }, { code: 'ok', label: '  Ok  ', type: 'TEXTE' }, { code: 'ok', label: 'dup', type: 'TEXTE' }, { code: 'l', label: 'Liste', type: 'LISTE', options: [] }, { code: 't', label: 'Type', type: 'BIZARRE' }],
       autre: [{ code: 'x', label: 'x', type: 'TEXTE' }],

@@ -967,6 +967,8 @@ model AuditConstat {
   verificationCommentaire String? @db.Text
   // Dernier rappel automatique envoyé (anti-doublon du cron audit-rappels).
   rappelLe DateTime?
+  // Lot L5 — champs personnalisés du module « constat » (lib/champs-perso).
+  champs Json @default("{}")
 
   // Rattachement optionnel au registre (traçabilité audit → risque).
   riskItemId String?

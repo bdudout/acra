@@ -62,6 +62,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     mission: { ...entete, champs: valeursVisibles(sanitizeChampsConfig(c.champsPersonnalises).mission ?? [], entete.champs, c.userRole) },
     constats: constats.map(({ riskItem, ...c2 }) => ({
       ...c2,
+      champs: valeursVisibles(sanitizeChampsConfig(c.champsPersonnalises).constat ?? [], c2.champs, c.userRole),
       riskIntitule: riskItem?.intitule ?? null,
       enRetard: constatEnRetard(c2, now),
     })),

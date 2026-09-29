@@ -7,7 +7,7 @@
  * colonne JSON `champs` de l'objet et validées contre les définitions à chaque écriture.
  */
 
-export const CHAMPS_MODULES = ['incident', 'controle', 'mission'] as const
+export const CHAMPS_MODULES = ['incident', 'controle', 'mission', 'constat'] as const
 export type ChampsModule = (typeof CHAMPS_MODULES)[number]
 export const CHAMP_TYPES = ['TEXTE', 'NOMBRE', 'LISTE', 'DATE', 'OUINON'] as const
 export type ChampType = (typeof CHAMP_TYPES)[number]

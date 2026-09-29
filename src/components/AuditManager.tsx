@@ -42,7 +42,7 @@ type CtrlLite = { id: string; intitule: string; niveau: string }
 interface Constat {
   id: string; intitule: string; description: string | null; recommandation: string | null
   criticite: number | null; source: string; responsableAction: string | null
-  echeance: string | null; statut: string; riskItemId: string | null; riskIntitule: string | null
+  echeance: string | null; statut: string; riskItemId: string | null; riskIntitule: string | null; champs?: ChampsValeurs
   enRetard: boolean
   // Lot L4
   critere?: string | null; cause?: string | null; consequence?: string | null
@@ -52,8 +52,8 @@ type Risk = { id: string; intitule: string }
 
 type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[]; type: string; recurrence: string; champs: ChampsValeurs }
 const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [], type: 'THEMATIQUE', recurrence: 'NONE', champs: {} }
-type CForm = { critere: string; cause: string; consequence: string; intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string }
-const EMPTY_C: CForm = { critere: '', cause: '', consequence: '', intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '' }
+type CForm = { critere: string; cause: string; consequence: string; intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string; champs: ChampsValeurs }
+const EMPTY_C: CForm = { critere: '', cause: '', consequence: '', intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '', champs: {} }
 
 const MISSION_BADGE: Record<string, string> = {
   PLANIFIEE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
@@ -104,6 +104,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   const [showArchived, setShowArchived] = useState(false)
   const [suiviId, setSuiviId] = useState<string | null>(null)
   const defsChamps = usePersonnalisationChamps('mission')
+  const defsConstat = usePersonnalisationChamps('constat')
   // Deep-link pilotage : ?constat=critique → pré-filtre les constats de criticité maximale (4).
   const _sp = useSearchParams()
   const _critInit = _sp.get('constat') === 'critique' ? String(CRITICITE_MAX) : ''
@@ -210,7 +211,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
     setShowCForm(true); setError(null)
     if (c) {
       setCEditId(c.id)
-      setCForm({ critere: c.critere ?? '', cause: c.cause ?? '', consequence: c.consequence ?? '', intitule: c.intitule, description: c.description ?? '', recommandation: c.recommandation ?? '', criticite: c.criticite?.toString() ?? '', source: c.source, responsableAction: c.responsableAction ?? '', echeance: c.echeance ? c.echeance.slice(0, 10) : '', statut: c.statut, riskItemId: c.riskItemId ?? '' })
+      setCForm({ critere: c.critere ?? '', cause: c.cause ?? '', consequence: c.consequence ?? '', intitule: c.intitule, description: c.description ?? '', recommandation: c.recommandation ?? '', criticite: c.criticite?.toString() ?? '', source: c.source, responsableAction: c.responsableAction ?? '', echeance: c.echeance ? c.echeance.slice(0, 10) : '', statut: c.statut, riskItemId: c.riskItemId ?? '', champs: c.champs ?? {} })
     } else { setCEditId(null); setCForm(EMPTY_C) }
   }
 
@@ -559,6 +560,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                             {risks.map(r => <option key={r.id} value={r.id}>{r.intitule}</option>)}
                           </select>
                         </div>
+                        <ChampsPersonnalisesFields defs={defsConstat} values={cForm.champs} onChange={v => setCForm(f => ({ ...f, champs: v }))} />
                         <div className="flex gap-2">
                           <button onClick={() => enregistrerConstat(m.id)} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{a.save}</button>
                           <button onClick={() => { setShowCForm(false); setCEditId(null); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{a.cancel}</button>
