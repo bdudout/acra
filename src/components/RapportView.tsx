@@ -17,7 +17,7 @@ import { appliquerGabarit, masquerContenu, type GabaritRapport } from '@/lib/rap
 
 interface Edition {
   id: string; code: string; statut: string; periodeDebut: string; periodeFin: string; createdById: string; canWrite: boolean
-  destinataires?: { nom: string }[]; contenu: RapportContenu; diffuseLe?: string | null
+  destinataires?: { nom: string; statut?: string; envoye?: boolean }[]; contenu: RapportContenu; diffuseLe?: string | null
 }
 
 export default function RapportView({ id }: { id: string }) {
@@ -76,7 +76,7 @@ export default function RapportView({ id }: { id: string }) {
           {day(e.periodeDebut)} → {day(e.periodeFin)} · <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUT_BADGE[e.statut] ?? STATUT_BADGE.BROUILLON}`}>{(r.statuts as Record<string, string>)[e.statut] ?? e.statut}</span>
           {figee && <span className="ml-2 text-xs italic">{r.figee}</span>}
         </p>
-        {e.diffuseLe && e.destinataires && e.destinataires.length > 0 && <p className="text-xs text-gray-500 mt-1">{e.destinataires.map(d => d.nom).join(', ')}</p>}
+        {e.diffuseLe && e.destinataires && e.destinataires.length > 0 && <p className="text-xs text-gray-500 mt-1">{e.destinataires.map(d => `${d.nom}${d.statut === 'HORS_ORGANISATION' ? ` (${r.destExterne})` : d.statut === 'A_ENVOYER' ? ` (${d.envoye ? r.destEnvoye : r.destNonEnvoye})` : ''}`).join(', ')}</p>}
       </header>
 
       {gabarit?.introduction && <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{gabarit.introduction}</p>}
@@ -103,7 +103,7 @@ export default function RapportView({ id }: { id: string }) {
               </div>
             )}
           </div>
-          {e.statut === 'VALIDE' && <p className="text-[11px] text-gray-400">{r.diffuseHint}</p>}
+          {e.statut === 'VALIDE' && <p className="text-[11px] text-gray-400">{r.diffuseHint} {r.diffuseEmailHint}</p>}
         </div>
       )}
 

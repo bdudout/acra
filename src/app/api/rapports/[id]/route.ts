@@ -9,6 +9,7 @@ import type { UserRole } from '@/lib/permissions'
 import { peutLireRapports, peutEcrireRapports } from '@/lib/rapport-acces'
 import { transitionRapport, peutRegenerer, RAPPORT_STATUTS, type RapportCode, type RapportStatut } from '@/lib/rapport-model'
 import { genererContenuRapport } from '@/lib/rapports.server'
+import { diffuserRapport } from '@/lib/rapport-diffusion.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -49,6 +50,7 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
   const statut = c.edition.statut as RapportStatut
 
   let data: Prisma.RapportEditionUpdateInput
+  let envoyes = 0
   if (action === 'REGENERER') {
     if (!peutRegenerer(statut)) return NextResponse.json({ error: 'non_regenerable' }, { status: 400 })
     const periode = { debut: c.edition.periodeDebut.toISOString().slice(0, 10), fin: c.edition.periodeFin.toISOString().slice(0, 10) }
@@ -63,17 +65,19 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
     if (vers === 'VALIDE') { data.validePar = c.userId; data.valideLe = now; if (!c.edition.releuPar) { data.releuPar = c.userId; data.releuLe = now } }
     if (vers === 'DIFFUSE') {
       data.diffuseLe = now
-      const noms = Array.isArray(body.destinataires) ? body.destinataires.filter((x: unknown): x is string => typeof x === 'string').map((x: string) => x.trim().slice(0, 120)).filter(Boolean).slice(0, 20) : []
-      data.destinataires = noms.map((nom: string) => ({ nom })) as unknown as Prisma.InputJsonValue
+      const entrees = Array.isArray(body.destinataires) ? body.destinataires.filter((x: unknown): x is string => typeof x === 'string') : []
+      const d = await diffuserRapport(c.orgId, entrees, { id, code: c.edition.code, langue: c.edition.langue, periode: `${c.edition.periodeDebut.toISOString().slice(0, 10)} → ${c.edition.periodeFin.toISOString().slice(0, 10)}` })
+      data.destinataires = d.destinataires as unknown as Prisma.InputJsonValue
+      envoyes = d.envoyes
     }
   } else return NextResponse.json({ error: 'action_invalide' }, { status: 400 })
 
   const updated = await prisma.rapportEdition.update({ where: { id }, data })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.role, organizationId: c.orgId, ip: getClientIp(req),
-    details: { scope: 'rapport', action: `edition:${action}`, id, code: c.edition.code, ...(cfg.secondeLigneActive === false && action === 'VALIDE' && c.userId === c.edition.createdById ? { autoValidation: true } : {}) },
+    details: { scope: 'rapport', action: `edition:${action}`, id, code: c.edition.code, ...(action === 'DIFFUSE' ? { emailsEnvoyes: envoyes } : {}), ...(cfg.secondeLigneActive === false && action === 'VALIDE' && c.userId === c.edition.createdById ? { autoValidation: true } : {}) },
   })
-  return NextResponse.json({ id: updated.id, statut: updated.statut })
+  return NextResponse.json({ id: updated.id, statut: updated.statut, ...(action === 'DIFFUSE' ? { envoyes } : {}) })
 }
 
 // DELETE /api/rapports/[id] — supprime un brouillon uniquement.

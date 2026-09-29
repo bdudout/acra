@@ -2,13 +2,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), find: vi.fn(), update: vi.fn(), del: vi.fn(), gen: vi.fn(), audit: vi.fn() }))
+const m = vi.hoisted(() => ({ diffuse: vi.fn(), session: vi.fn(), scope: vi.fn(), config: vi.fn(), find: vi.fn(), update: vi.fn(), del: vi.fn(), gen: vi.fn(), audit: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: { rapportEdition: { findFirst: m.find, update: m.update, delete: m.del } } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/rapports.server', () => ({ genererContenuRapport: m.gen }))
+vi.mock('@/lib/rapport-diffusion.server', () => ({ diffuserRapport: m.diffuse }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 
 import { GET, PATCH, DELETE } from '@/app/api/rapports/[id]/route'
@@ -24,6 +25,7 @@ beforeEach(() => {
   m.config.mockResolvedValue({ incidentsActive: true, secondeLigneActive: true })
   m.find.mockResolvedValue(edition())
   m.update.mockImplementation(async (a: { data: object }) => ({ ...edition(), ...a.data }))
+  m.diffuse.mockImplementation(async (_o: string, e: string[]) => ({ destinataires: e.map(nom => ({ nom: nom.trim(), statut: 'NOM' })), envoyes: 0 }))
   m.gen.mockResolvedValue({ sections: [{ id: 'nouveau', blocs: [] }] })
 })
 
@@ -58,6 +60,7 @@ describe('PATCH — cycle de validation', () => {
     m.find.mockResolvedValue(edition({ statut: 'VALIDE' }))
     await PATCH(patch({ action: 'DIFFUSE', destinataires: ['Comité des risques', ' Direction générale ', 42] }), params)
     expect(m.update.mock.calls[1][0].data).toMatchObject({ statut: 'DIFFUSE', destinataires: [{ nom: 'Comité des risques' }, { nom: 'Direction générale' }] })
+    expect(m.diffuse).toHaveBeenCalledWith('o1', ['Comité des risques', ' Direction générale '], expect.objectContaining({ id: 'e1', code: 'R-INC-1' }))
   })
   it('mode ligne unique : validation directe permise', async () => {
     m.config.mockResolvedValue({ incidentsActive: true, secondeLigneActive: false })

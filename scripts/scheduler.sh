@@ -9,6 +9,7 @@
 #   • conformite-snapshots : quotidien à 02:00 (snapshots auto de conformité)
 #   • controles-echeances   : quotidien à 06:00 (rappel des contrôles à exécuter)
 #   • audit-rappels         : quotidien à 06:00 (rappels des recommandations d'audit)
+#   • rapports-planifies    : quotidien à 05:00 (brouillons de rapports planifiés, les 1er–3 du mois)
 #   • derogations-expiry    : quotidien à 07:00 (alerte individuelle d'échéance)
 #   • derogations-digest    : mensuel, le 1er à 08:00 (synthèse par organisation)
 #
@@ -43,7 +44,7 @@ hit() {
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
 echo "[scheduler] planning : webhooks-dispatch chaque tick · snapshots 02:00 · controles-echeances 06:00 · derogations-expiry 07:00 · derogations-digest 1er 08:00"
 
-last_snap=""; last_ctl=""; last_aud=""; last_exp=""; last_dig=""
+last_snap=""; last_ctl=""; last_aud=""; last_rap=""; last_exp=""; last_dig=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
 
@@ -51,6 +52,7 @@ while true; do
   hit webhooks-dispatch
 
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
+  [ "$hour" = "05" ] && [ "$last_rap"  != "$day" ]   && { hit rapports-planifies;   last_rap="$day"; }
   [ "$hour" = "06" ] && [ "$last_ctl"  != "$day" ]   && { hit controles-echeances;  last_ctl="$day"; }
   [ "$hour" = "06" ] && [ "$last_aud"  != "$day" ]   && { hit audit-rappels;        last_aud="$day"; }
   [ "$hour" = "07" ] && [ "$last_exp"  != "$day" ]   && { hit derogations-expiry;   last_exp="$day"; }

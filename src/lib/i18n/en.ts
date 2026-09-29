@@ -1798,7 +1798,7 @@ export const en: Translations = {
       VALIDE: 'Validated',
       DIFFUSE: 'Distributed',
     },
-    masquer: 'Mask identifying data', masquerHint: 'External distribution: incidents, controls, owners… become #1, #2… (consistent across the report).', gabaritsTitre: 'Report templates', gabaritTitre: 'Custom title', gabaritIntro: 'Introduction', gabaritSections: 'Sections to hide (comma-separated identifiers)', gabaritsSave: 'Save templates', gabaritsSaved: 'Templates saved.', actions: {
+    masquer: 'Mask identifying data', masquerHint: 'External distribution: incidents, controls, owners… become #1, #2… (consistent across the report).', gabaritsTitre: 'Report templates', gabaritTitre: 'Custom title', gabaritIntro: 'Introduction', gabaritSections: 'Sections to hide (comma-separated identifiers)', gabaritsSave: 'Save templates', gabaritsSaved: 'Templates saved.', diffuseEmailHint: 'An e-mail address of an organisation member receives a link to the report; an outside address is not contacted (use the masked export).', destEnvoye: 'e-mail sent', destNonEnvoye: 'e-mail not sent', destExterne: 'outside the organisation, not sent', planifTitre: 'Automatic draft generation (previous period)', planifAucune: 'None', planifFreq: { MENSUEL: 'Every month', TRIMESTRIEL: 'Every quarter' }, actions: {
       relire: 'Mark as reviewed',
       renvoyer: 'Send back to draft',
       valider: 'Validate (freeze)',

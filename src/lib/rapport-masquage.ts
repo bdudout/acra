@@ -6,7 +6,7 @@
  *   (`OrganizationConfig.rapportsConfig`). L'édition figée n'est jamais modifiée.
  */
 
-import { RAPPORT_CODES, type Bloc, type RapportContenu } from './rapport-model'
+import { RAPPORT_CODES, periodePreset, type Bloc, type Periode, type RapportCode, type RapportContenu } from './rapport-model'
 
 /** Colonnes (suffixe de `rapports.cols.*`) contenant des noms de personnes ou d'objets internes. */
 export const COLONNES_IDENTIFIANTES = ['incident', 'controle', 'responsable', 'mission', 'constat', 'univers', 'entite'] as const
@@ -63,9 +63,41 @@ export function appliquerGabarit(c: RapportContenu, g: GabaritRapport | undefine
 
 // ─── Configuration des rapports de l'organisation ────────────────────────────
 
-export interface RapportsConfig { gabarits: GabaritsRapports }
+export const FREQUENCES_PLANIFICATION = ['MENSUEL', 'TRIMESTRIEL'] as const
+export interface Planification { code: RapportCode; frequence: (typeof FREQUENCES_PLANIFICATION)[number] }
+export interface RapportsConfig { gabarits: GabaritsRapports; planifies: Planification[] }
 
 export function sanitizeRapportsConfig(input: unknown): RapportsConfig {
   const o = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
-  return { gabarits: sanitizeGabarits(o.gabarits) }
+  const planifies: Planification[] = []
+  if (Array.isArray(o.planifies)) {
+    for (const p of o.planifies) {
+      if (!p || typeof p !== 'object') continue
+      const { code, frequence } = p as Record<string, unknown>
+      if (!(RAPPORT_CODES as readonly string[]).includes(code as string) || !(FREQUENCES_PLANIFICATION as readonly unknown[]).includes(frequence)) continue
+      if (planifies.some(x => x.code === code)) continue
+      planifies.push({ code: code as RapportCode, frequence: frequence as Planification['frequence'] })
+    }
+  }
+  return { gabarits: sanitizeGabarits(o.gabarits), planifies }
+}
+
+/**
+ * Brouillons à générer aujourd'hui : les 1er–3 du mois (marge si le planificateur a du retard),
+ * la période PRÉCÉDENTE (mois, ou trimestre au premier mois d'un trimestre), si aucune édition
+ * n'existe déjà pour ce rapport et cette période.
+ */
+export function editionsAPlanifier(
+  planifies: Planification[], existantes: { code: string; debut: string; fin: string }[], now: Date,
+): { code: RapportCode; periode: Periode }[] {
+  if (now.getUTCDate() > 3) return []
+  const premierMoisTrimestre = now.getUTCMonth() % 3 === 0
+  const out: { code: RapportCode; periode: Periode }[] = []
+  for (const p of planifies) {
+    if (p.frequence === 'TRIMESTRIEL' && !premierMoisTrimestre) continue
+    const periode = periodePreset(p.frequence === 'MENSUEL' ? 'MOIS_PRECEDENT' : 'TRIMESTRE_PRECEDENT', now)
+    if (existantes.some(e => e.code === p.code && e.debut === periode.debut && e.fin === periode.fin)) continue
+    out.push({ code: p.code, periode })
+  }
+  return out
 }

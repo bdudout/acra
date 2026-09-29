@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { masquerContenu, appliquerGabarit, sanitizeGabarits, sanitizeRapportsConfig } from '@/lib/rapport-masquage'
+import { masquerContenu, appliquerGabarit, sanitizeGabarits, sanitizeRapportsConfig, editionsAPlanifier } from '@/lib/rapport-masquage'
 import type { RapportContenu } from '@/lib/rapport-model'
 
 const contenu: RapportContenu = {
@@ -39,7 +39,26 @@ describe('gabarits surchargeables', () => {
 
 describe('configuration des rapports', () => {
   it('valeurs sûres par défaut', () => {
-    expect(sanitizeRapportsConfig(undefined)).toEqual({ gabarits: {} })
-    expect(sanitizeRapportsConfig({ gabarits: { 'R-INC-1': { titre: 'T' } } })).toEqual({ gabarits: { 'R-INC-1': { titre: 'T' } } })
+    expect(sanitizeRapportsConfig(undefined)).toEqual({ gabarits: {}, planifies: [] })
+    expect(sanitizeRapportsConfig({ gabarits: { 'R-INC-1': { titre: 'T' } } })).toEqual({ gabarits: { 'R-INC-1': { titre: 'T' } }, planifies: [] })
+  })
+  it('planifications : codes connus, fréquence valide, une par rapport', () => {
+    expect(sanitizeRapportsConfig({ planifies: [{ code: 'R-INC-1', frequence: 'MENSUEL' }, { code: 'R-INC-1', frequence: 'TRIMESTRIEL' }, { code: 'R-ZZZ', frequence: 'MENSUEL' }, { code: 'R-PER-2', frequence: 'HEBDO' }, 'x'] }).planifies)
+      .toEqual([{ code: 'R-INC-1', frequence: 'MENSUEL' }])
+  })
+})
+
+describe('editionsAPlanifier', () => {
+  const pl = [{ code: 'R-INC-1' as const, frequence: 'MENSUEL' as const }, { code: 'R-PER-2' as const, frequence: 'TRIMESTRIEL' as const }]
+  it('1er–3 du mois : brouillon de la période précédente ; trimestriel seulement au 1er mois du trimestre', () => {
+    expect(editionsAPlanifier(pl, [], new Date('2026-10-02T05:00:00Z'))).toEqual([
+      { code: 'R-INC-1', periode: { debut: '2026-09-01', fin: '2026-09-30' } },
+      { code: 'R-PER-2', periode: { debut: '2026-07-01', fin: '2026-09-30' } },
+    ])
+    expect(editionsAPlanifier(pl, [], new Date('2026-11-02T05:00:00Z')).map(x => x.code)).toEqual(['R-INC-1'])
+  })
+  it('hors fenêtre (après le 3) ou édition déjà présente : rien', () => {
+    expect(editionsAPlanifier(pl, [], new Date('2026-10-15T05:00:00Z'))).toEqual([])
+    expect(editionsAPlanifier(pl, [{ code: 'R-INC-1', debut: '2026-09-01', fin: '2026-09-30' }], new Date('2026-10-02T05:00:00Z')).map(x => x.code)).toEqual(['R-PER-2'])
   })
 })

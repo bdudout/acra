@@ -220,3 +220,26 @@ export function auditRappelEmail(locale: string | null | undefined, p: AuditRapp
   const html = emailLayout({ heading: L.heading[p.type], tone, items: [{ label: p.intitule, detail: quand, tone }], paragraphs: [`${L.mission} : ${p.mission}`, L.cta], footer: 'ACRA' })
   return { subject: L.subject[p.type](p.intitule), text, html }
 }
+
+// ─── Diffusion d'un rapport validé (lot L2, suite) ──────────────────────────
+
+export interface RapportDiffusionParams { titre: string; periode: string; lien: string }
+
+const rapportLabels: Record<EmailLocale, { subject: (t: string) => string; heading: string; body: (t: string, p: string) => string; cta: string }> = {
+  fr: { subject: t => `[ACRA] Rapport diffusé : ${t}`, heading: 'Rapport diffusé', body: (t, p) => `${t} — période ${p}`, cta: 'Consultez le rapport dans ACRA :' },
+  en: { subject: t => `[ACRA] Report distributed: ${t}`, heading: 'Report distributed', body: (t, p) => `${t} — period ${p}`, cta: 'Open the report in ACRA:' },
+  de: { subject: t => `[ACRA] Bericht verteilt: ${t}`, heading: 'Bericht verteilt', body: (t, p) => `${t} — Zeitraum ${p}`, cta: 'Öffnen Sie den Bericht in ACRA:' },
+  es: { subject: t => `[ACRA] Informe difundido: ${t}`, heading: 'Informe difundido', body: (t, p) => `${t} — periodo ${p}`, cta: 'Abra el informe en ACRA:' },
+  it: { subject: t => `[ACRA] Rapporto diffuso: ${t}`, heading: 'Rapporto diffuso', body: (t, p) => `${t} — periodo ${p}`, cta: 'Apri il rapporto in ACRA:' },
+}
+
+/** E-mail de diffusion d'un rapport : titre, période et lien (le contenu ne circule pas par e-mail). */
+export function rapportDiffusionEmail(locale: string | null | undefined, p: RapportDiffusionParams): BuiltEmail {
+  const L = rapportLabels[emailLocale(locale)]
+  const quoi = L.body(p.titre, p.periode)
+  return {
+    subject: L.subject(p.titre),
+    text: `${quoi}\n${L.cta} ${p.lien}\n`,
+    html: emailLayout({ heading: L.heading, tone: 'warning', items: [{ label: p.titre, detail: quoi, tone: 'warning' }], paragraphs: [`${L.cta} ${p.lien}`], footer: 'ACRA' }),
+  }
+}

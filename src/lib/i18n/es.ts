@@ -1798,7 +1798,7 @@ export const es: Translations = {
       VALIDE: 'Validado',
       DIFFUSE: 'Difundido',
     },
-    masquer: 'Ocultar datos identificativos', masquerHint: 'Difusión externa: incidentes, controles, responsables… pasan a ser #1, #2… (coherente en todo el informe).', gabaritsTitre: 'Plantillas de informes', gabaritTitre: 'Título personalizado', gabaritIntro: 'Introducción', gabaritSections: 'Secciones a ocultar (identificadores separados por comas)', gabaritsSave: 'Guardar plantillas', gabaritsSaved: 'Plantillas guardadas.', actions: {
+    masquer: 'Ocultar datos identificativos', masquerHint: 'Difusión externa: incidentes, controles, responsables… pasan a ser #1, #2… (coherente en todo el informe).', gabaritsTitre: 'Plantillas de informes', gabaritTitre: 'Título personalizado', gabaritIntro: 'Introducción', gabaritSections: 'Secciones a ocultar (identificadores separados por comas)', gabaritsSave: 'Guardar plantillas', gabaritsSaved: 'Plantillas guardadas.', diffuseEmailHint: 'Una dirección de correo de un miembro de la organización recibe un enlace al informe; una dirección externa no se contacta (use la exportación enmascarada).', destEnvoye: 'correo enviado', destNonEnvoye: 'correo no enviado', destExterne: 'fuera de la organización, no enviado', planifTitre: 'Generación automática del borrador (periodo anterior)', planifAucune: 'Ninguna', planifFreq: { MENSUEL: 'Cada mes', TRIMESTRIEL: 'Cada trimestre' }, actions: {
       relire: 'Marcar como revisado',
       renvoyer: 'Devolver a borrador',
       valider: 'Validar (congelar)',
