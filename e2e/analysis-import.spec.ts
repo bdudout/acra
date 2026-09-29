@@ -30,7 +30,7 @@ test.describe('Import d’analyses historiques', () => {
     await login(page, E2E.users.porteur.email)
     await page.goto('/analyses')
     await page.getByRole('button', { name: 'Importer' }).click()
-    const input = page.locator('input[accept=".xlsx"]')
+    const input = page.locator('input[accept^=".xlsx"]')
     await input.setInputFiles({ name: 'historique.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: await historicWorkbook() })
     await expect(page.getByRole('region', { name: 'Préparer l’import Excel' })).toBeVisible()
     await expect(page.getByLabel('Risques — Intitulé')).toHaveValue('Libellé de risque')
@@ -52,7 +52,7 @@ test.describe('Import d’analyses historiques', () => {
       const workbook = new ExcelJS.Workbook()
       scenario.sheets.forEach(([name, rows]) => { const sheet = workbook.addWorksheet(name); rows.forEach(row => sheet.addRow(row)) })
       await page.goto('/analyses'); await page.getByRole('button', { name: 'Importer' }).click()
-      await page.locator('input[accept=".xlsx"]').setInputFiles({ name: scenario.name, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(await workbook.xlsx.writeBuffer()) })
+      await page.locator('input[accept^=".xlsx"]').setInputFiles({ name: scenario.name, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(await workbook.xlsx.writeBuffer()) })
       if (scenario.role === 'MEASURES') { await page.getByLabel('Dispositifs — Utiliser cette feuille comme').selectOption('MEASURES'); await page.getByLabel('Dispositifs — Intitulé', { exact: true }).selectOption('Mesure') }
       const submit = page.getByRole('button', { name: 'Importer les données validées' }); await expect(submit).toBeEnabled(); await submit.click()
       const report = page.getByRole('dialog', { name: 'Bilan de l’import' })
