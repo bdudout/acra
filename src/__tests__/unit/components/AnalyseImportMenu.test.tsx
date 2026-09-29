@@ -141,11 +141,12 @@ describe('HistoricImportPreview — alias de préfixe (R_ ⇒ RI_)', () => {
     { name: 'Risques', columns: ['Réf.RI', 'Libellé'], rows: 3, detection: { type: 'RISKS' as const }, mapping: { externalId: 'Réf.RI', title: 'Libellé' }, missing: [], profiles: { 'Réf.RI': profile(['RI_01', 'RI_02']) } },
     { name: 'PACS', columns: ['Mesure', 'Risques'], rows: 3, detection: { type: 'MEASURES' as const }, mapping: { title: 'Mesure', riskExternalId: 'Risques' }, missing: [], profiles: { Risques: profile(['R_01 à R_09', 'R_05 R_07']) } },
   ]
-  it('propose l’alias, jamais appliqué sans validation ; transmis à l’import quand il est coché', () => {
+  it('propose l’alias, jamais appliqué sans validation ; transmis à l’import quand il est coché', async () => {
     const onConfirm = vi.fn()
     render(<HistoricImportPreview sheets={sheets} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
     fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
     expect(onConfirm.mock.calls[0][0].refAliases).toEqual({})
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Importer' })).toBeEnabled()) // le verrou anti double clic se lève à la fin de l'appel
     fireEvent.click(screen.getByLabelText('Préfixe « R » ≠ « RI » : rapprocher ?'))
     fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
     expect(onConfirm.mock.calls[1][0].refAliases).toEqual({ PACS: { R: 'RI' } })
@@ -251,5 +252,25 @@ describe('HistoricImportPreview — retour visible après « Appliquer ce profil
     fireEvent.click(screen.getByRole('button', { name: 'Appliquer ce profil' }))
     const status = screen.getAllByRole('status').map(x => x.textContent).join(' ')
     expect(status).toMatch(/Profil « Dossier de sécurité EBIOS RM » appliqué : \d+ feuille\(s\) configurée\(s\)\./)
+  })
+})
+
+describe('HistoricImportPreview — import en cours', () => {
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } }
+  const sheets: HistoricPreviewSheet[] = [{ name: 'Risques', columns: ['Titre'], rows: 1, detection: { type: 'RISKS' }, mapping: { title: 'Titre' }, missing: [] }]
+  it('pendant l’import : bouton désactivé avec indicateur qui tourne et libellé « Import en cours… » annoncé', () => {
+    render(<HistoricImportPreview sheets={sheets} importing labels={{ ...labels, importing: 'Import en cours…' } as never} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+    const button = screen.getByRole('button', { name: /Import en cours/ })
+    expect(button).toBeDisabled(); expect(button).toHaveAttribute('aria-busy', 'true')
+    expect(button.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Annuler' })).toBeDisabled()
+  })
+  it('hors import : bouton actif ; un seul appel malgré un double clic rapide', () => {
+    const onConfirm = vi.fn()
+    render(<HistoricImportPreview sheets={sheets} labels={{ ...labels, importing: 'Import en cours…' } as never} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    const button = screen.getByRole('button', { name: 'Importer' })
+    expect(button).toBeEnabled()
+    fireEvent.click(button); fireEvent.click(button)
+    expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 })

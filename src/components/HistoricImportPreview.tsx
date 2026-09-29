@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-ateliers-build'
 import { isAtelierRole } from '@/lib/historic-import'
 import { suggestPrefixAlias, suggestValueMap } from '@/lib/import-transforms'
@@ -44,6 +44,7 @@ export type HistoricImportPreviewLabels = {
   profile?: { recognized: string; apply: string; applied?: string; builtin: string; partial: string }
   /** « Mapping « {name} » chargé : {n} feuille(s) configurée(s). » */
   mappingLoaded?: string
+  importing?: string
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
   sheetTypes: Partial<Record<Exclude<HistoricSheetType, 'UNKNOWN'>, string>>
@@ -65,7 +66,7 @@ const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
 /** Au-delà de ce nombre de lignes à décider dans une même feuille, elles sont regroupées et repliées (action globale). */
 const INCOMPLETE_GROUP_THRESHOLD = 5
 
-export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], reviewDecisions, organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
+export default function HistoricImportPreview({ sheets, labels, requiredValueGaps = [], reviewDecisions, importing = false, organizationOptions, defaultOrganizationId, onCancel, onConfirm }: {
   sheets: HistoricPreviewSheet[]
   labels: HistoricImportPreviewLabels
   requiredValueGaps?: HistoricRequiredValueGap[]
@@ -74,6 +75,8 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   organizationOptions?: HistoricImportOrganizationOption[]
   defaultOrganizationId?: string
   onCancel: () => void
+  /** Import en cours (aperçu à blanc ou écriture) : bouton verrouillé avec indicateur. */
+  importing?: boolean
   onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; valueMaps?: Record<string, Record<string, Record<string, string>>>; organizationId?: string }) => void | Promise<void>
 }) {
   const visibleSheets = sheets.filter(sheet => sheet.rows > 0)
@@ -84,6 +87,10 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const [scoreMappings, setScoreMappings] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [transforms, setTransforms] = useState<Record<string, HistoricFieldTransforms>>({})
   // Retour visible et annoncé (lecteur d'écran) après « Appliquer ce profil » / chargement d'un mapping : sans lui, un classeur déjà bien détecté ne montre aucun changement.
+  // Verrou synchrone contre le double clic : posé au clic, levé quand la promesse du parent se termine.
+  const submitting = useRef(false)
+  const [submitted, setSubmitted] = useState(false)
+  const busy = importing || submitted
   const [feedback, setFeedback] = useState<string | null>(null)
   const [rowActions, setRowActions] = useState<Record<string, 'SKIP' | 'COMPLETE'>>({})
   const [valueMaps, setValueMaps] = useState<Record<string, Record<string, Record<string, string>>>>({})
@@ -183,7 +190,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
     <section className="card mt-4 mb-10 p-4" aria-label={labels.title}>
       <div className="flex items-start justify-between gap-3">
         <div><h2 className="font-semibold text-gray-900">{labels.title}</h2><p className="text-sm text-gray-500">{selectedSheets.reduce((sum, s) => sum + s.rows, 0)} {labels.rows}</p></div>
-        <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-900">{labels.cancel}</button>
+        <button type="button" onClick={onCancel} disabled={busy} className="text-sm text-gray-500 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50">{labels.cancel}</button>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
         {availableOrganizations.length > 1 && labels.targetOrganization && <label className="text-xs font-medium text-gray-700">{labels.targetOrganization}<select aria-label={labels.targetOrganization} className="input mt-1 block text-sm" value={targetOrganizationId} onChange={event => setTargetOrganizationId(event.target.value)}>{availableOrganizations.map(organization => <option key={organization.id} value={organization.id}>{organization.nom}</option>)}</select></label>}
@@ -289,7 +296,11 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
       </section>}
       <div data-testid="historic-import-footer" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
         {blockers.length > 0 ? <ul role="alert" className="list-inside list-disc text-xs text-red-800">{blockers.map(blocker => <li key={`${blocker.sheetName}:${blocker.field}`}>✕ {blocker.sheetName} — ACRA : {blocker.field === '__RISK_SHEET__' ? labels.sheetTypes.RISKS : blocker.field === '__ACTION_SHEET__' ? labels.sheetTypes.ACTIONS : labels.fieldLabels[blocker.field] ?? blocker.field} ({labels.missing})</li>)}</ul> : <span />}
-        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, refAliases: Object.fromEntries(Object.entries(refAliases).filter(([, v]) => Object.keys(v).length)), valueMaps: Object.fromEntries(Object.entries(valueMaps).map(([sheetName, fields]) => [sheetName, Object.fromEntries(Object.entries(fields).filter(([, m]) => Object.keys(m).length))]).filter(([, f]) => Object.keys(f as object).length)), organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
+        <button type="button" className="btn-primary inline-flex items-center gap-2" aria-busy={busy} disabled={selectedSheets.length === 0 || invalid || completionIncomplete || busy} onClick={() => {
+          if (submitting.current) return
+          submitting.current = true; setSubmitted(true)
+          Promise.resolve(onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, refAliases: Object.fromEntries(Object.entries(refAliases).filter(([, v]) => Object.keys(v).length)), valueMaps: Object.fromEntries(Object.entries(valueMaps).map(([sheetName, fields]) => [sheetName, Object.fromEntries(Object.entries(fields).filter(([, m]) => Object.keys(m).length))]).filter(([, f]) => Object.keys(f as object).length)), organizationId: targetOrganizationId || undefined })).catch(() => {}).finally(() => { submitting.current = false; setSubmitted(false) })
+        }}>{busy && <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="opacity-90" /></svg>}{busy ? (labels.importing ?? labels.confirm) : labels.confirm}</button>
       </div>
     </section>
   )
