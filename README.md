@@ -430,6 +430,7 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 |-------|----------|---------|
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
 | Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
+| Rappels des recommandations d'audit (échéance, retard, à vérifier) | `audit-rappels` | quotidien 06:00 (06:30 côté GitHub Actions) |
 | Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
 | Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
 

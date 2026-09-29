@@ -17,7 +17,7 @@ export interface ConstatRapport {
   id: string; missionId: string; intitule: string; criticite: number | null; statut: string
   echeance: Date | null; echeanceInitiale: Date | null; createdAt: Date; reports: unknown; source: string
 }
-export interface AuditRapportData { univers: UniversLite[]; missions: MissionRapport[]; constats: ConstatRapport[] }
+export interface AuditRapportData { univers: UniversLite[]; missions: MissionRapport[]; constats: ConstatRapport[]; /** Cycles de couverture surchargés (auditConfig). */ cycles?: Record<number, number> }
 
 const cols = (...ks: string[]) => ks.map(k => `rapports.cols.${k}`)
 const tab = (colonnes: string[], lignes: Cellule[][]): Bloc => ({ type: 'tableau', colonnes, lignes })
@@ -29,7 +29,7 @@ const notationCell = (n: number | null): Cellule => (n ? { k: `rapports.notation
 
 /** R-AUD-1 : couverture de l'univers d'audit, plan par année, missions de la période. */
 export function buildRapportPlanAudit(data: AuditRapportData, periode: Periode, now: Date): RapportContenu {
-  const plan = planPluriannuel(data.univers, data.missions, now, { horizonAns: 3 })
+  const plan = planPluriannuel(data.univers, data.missions, now, { horizonAns: 3, cycles: data.cycles })
   const parUnivers = new Map(data.univers.map(u => [u.id, u]))
   const attention = plan.entrees.filter(e => e.statut === 'EN_RETARD' || e.statut === 'JAMAIS_AUDITE' || e.statut === 'A_PLANIFIER')
   const mp = data.missions.filter(m => dansPeriode(dateMission(m), periode))

@@ -11,6 +11,7 @@ import { vueIncidentL1 } from '@/lib/incident-vue'
 import { buildRapportIncidents, buildRapportPertes, type IncidentRapportRow, type LabelsRapport } from '@/lib/rapport-incidents'
 import { buildRapportDirection } from '@/lib/rapport-direction'
 import { buildRapportPlanControle, buildRapportEfficacite, buildRapportAnomalies, type ControleRapportRow } from '@/lib/rapport-controles'
+import { resolveAuditConfig } from '@/lib/audit-config'
 import { sanitizeConception } from '@/lib/controle-l3'
 import { buildRapportPlanAudit, buildRapportMissions, buildRapportRecommandations, type AuditRapportData } from '@/lib/rapport-audit'
 import { dansPeriode, type Periode, type RapportCode, type RapportContenu } from '@/lib/rapport-model'
@@ -44,13 +45,13 @@ async function chargerControles(orgId: string): Promise<ControleRapportRow[]> {
 
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
 
-async function chargerAudit(orgId: string): Promise<AuditRapportData> {
+async function chargerAudit(orgId: string, cfg: OrgConfigResolved): Promise<AuditRapportData> {
   const [univers, missions, constats] = await Promise.all([
     prisma.auditUnivers.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, type: true, risque: true, cycleAns: true, actif: true, processusId: true }, take: 500 }),
     prisma.auditMission.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, statut: true, dateDebut: true, dateFin: true, notation: true, independance: true, processusIds: true, universIds: true }, take: 2000 }),
     prisma.auditConstat.findMany({ where: { organizationId: orgId }, select: { id: true, missionId: true, intitule: true, criticite: true, statut: true, echeance: true, echeanceInitiale: true, createdAt: true, reports: true, source: true }, take: 5000 }),
   ])
-  return { univers, constats, missions: missions.map(m => ({ ...m, processusIds: strs(m.processusIds), universIds: strs(m.universIds) })) }
+  return { univers, constats, cycles: resolveAuditConfig(cfg.auditConfig).cycles, missions: missions.map(m => ({ ...m, processusIds: strs(m.processusIds), universIds: strs(m.universIds) })) }
 }
 
 export async function genererContenuRapport(code: RapportCode, orgId: string, cfg: OrgConfigResolved, periode: Periode, locale: string, now: Date): Promise<RapportContenu> {
@@ -63,7 +64,7 @@ export async function genererContenuRapport(code: RapportCode, orgId: string, cf
   }
   // Rapports de l'audit interne (L4).
   if (code === 'R-AUD-1' || code === 'R-AUD-2' || code === 'R-AUD-3') {
-    const data = await chargerAudit(orgId)
+    const data = await chargerAudit(orgId, cfg)
     return code === 'R-AUD-1' ? buildRapportPlanAudit(data, periode, now) : code === 'R-AUD-2' ? buildRapportMissions(data, periode, now) : buildRapportRecommandations(data, periode, now)
   }
   const { rows, incidentsCfg } = await chargerIncidents(orgId, cfg, now)

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Layers } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import AuditConfigEditor from '@/components/AuditConfigEditor'
 import { UNIVERS_TYPES, type PlanPluriannuel } from '@/lib/audit-l4'
 
 interface UniversRow { id: string; intitule: string; type: string; risque: number; cycleAns: number | null; commentaire: string | null; actif: boolean }
@@ -133,6 +134,7 @@ export default function AuditPlanView() {
           ))}
         </ul>
       </section>
+      <AuditConfigEditor onSaved={load} />
     </div>
   )
 }

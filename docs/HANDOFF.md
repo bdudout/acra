@@ -15,7 +15,8 @@ vérifié l'est avec la commande et son résultat.
 - **Vérifié** : `tsc` 0 · `npm test` **2575/2575** · `i18n:check` · `npm run build` OK.
 - ⚠ **Non vérifié** : migration `20260930100000` **non appliquée localement** (Docker indisponible) ; e2e non exécutés (CI).
 - **B-PER-6 livré** : `lib/rapprochement-compta` (pur, testé) + `POST /api/incidents/rapprochement` (lecture seule, 2ᵉ ligne, journalisé) + bouton « Rapprocher (compta) » ; CSV `reference;montant[;devise]` comparé aux pertes « comptabilisé ».
-- **Reste de la demande** : L4 rappels automatiques / `auditConfig` / papiers de travail ;
+- **L4 rappels + `auditConfig` livrés** : `lib/audit-config` (rappels, cycles par cotation) + `lib/audit-rappels` (purs, testés) ; cron `POST /api/cron/audit-rappels` (anti-doublon `AuditConstat.rappelLe`, planifié 06:00 scheduler.sh / 06:30 GitHub Actions) ; `GET/PUT /api/audit/config` (ADMIN) ; `AuditConfigEditor` sur `/audit/plan` ; cycles pris en compte par le plan et R-AUD-1 ; migration `20260930110000_audit_l4_rappels` (non appliquée localement, validée par `prisma generate` seulement).
+- **Reste de la demande** : L4 papiers de travail ;
   L3 rejeu N-1, rattachement tiers/projet ; L2 diffusion e-mail, gabarits surchargeables, masquage, brouillons planifiés, PDF serveur, R-INC-2/3 ;
   limites L5.
 

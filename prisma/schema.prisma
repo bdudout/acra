@@ -956,6 +956,8 @@ model AuditConstat {
   verifiePar  String?
   verifieLe   DateTime?
   verificationCommentaire String? @db.Text
+  // Dernier rappel automatique envoyé (anti-doublon du cron audit-rappels).
+  rappelLe DateTime?
 
   // Rattachement optionnel au registre (traçabilité audit → risque).
   riskItemId String?
@@ -1858,6 +1860,8 @@ model OrganizationConfig {
   // Lot L5 — personnalisation : vocabulaire (affichage), champs personnalisés par module.
   vocabulaire                Json          @default("{}")
   champsPersonnalises        Json          @default("{}")
+  // Lot L4 (suite) — audit interne : rappels automatiques, cycles de couverture par cotation.
+  auditConfig                Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
