@@ -207,15 +207,20 @@ const LIKELIHOOD_WORDS: Record<string, number> = {
 }
 /**
  * Proposition (modifiable) de niveaux 1–4 pour une cotation en clair (« Critique », « Vraisemblable »…).
- * Seules les valeurs RECONNUES sont proposées : une valeur inconnue (hors échelle) reste sans niveau et signalée, jamais devinée.
- * `null` si la colonne est numérique ou si aucune valeur n'est reconnue.
+ * Le chiffre 1–4 présent dans la valeur (« 3 - Importante ») fait foi ; sinon le vocabulaire courant (« Critique »). Une valeur inconnue
+ * ou hors 1–4 reste sans niveau et signalée, jamais devinée. `null` si la colonne est purement numérique ou si rien n'est reconnu.
  */
 export function suggestScoreMapping(field: 'gravity' | 'likelihood', values: string[]): Record<string, string> | null {
   const table = field === 'gravity' ? GRAVITY_WORDS : LIKELIHOOD_WORDS
   const distinct = [...new Set(values.map(v => v.trim()).filter(Boolean))]
-  if (distinct.length === 0 || distinct.some(v => isLevel1to4(v))) return null
+  if (distinct.length === 0 || distinct.every(v => /^[1-4]$/.test(v))) return null // colonne purement numérique : rien à configurer
   const out: Record<string, string> = {}
-  for (const v of distinct) { const level = table[normalise(v)]; if (level) out[v] = String(level) }
+  for (const v of distinct) {
+    // Le chiffre 1–4 présent dans la valeur (« 3 - Importante ») fait foi ; sinon le vocabulaire courant ; sinon laissé au choix.
+    const level = parseLevelLabel(v)?.level
+    const chosen = level && level >= 1 && level <= 4 ? level : table[normalise(v)]
+    if (chosen) out[v] = String(chosen)
+  }
   return Object.keys(out).length ? out : null
 }
 

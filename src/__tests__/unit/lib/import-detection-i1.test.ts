@@ -184,7 +184,15 @@ describe('registre plat : colonne « Risque » = intitulé ; cotations en clair 
     expect(suggestScoreMapping('likelihood', ['Peu vraisemblable', 'Vraisemblable', 'Très vraisemblable'])).toEqual({ 'Peu vraisemblable': '1', Vraisemblable: '2', 'Très vraisemblable': '3' })
     expect(suggestScoreMapping('gravity', ['Critique', 'Bof'])).toEqual({ Critique: '4' })
     expect(suggestScoreMapping('gravity', ['Bof'])).toBeNull()
-    expect(suggestScoreMapping('gravity', ['1', '2'])).toBeNull()
+    expect(suggestScoreMapping('gravity', ['1', '2'])).toBeNull() // colonne purement numérique : rien à configurer
+  })
+  it('suggestScoreMapping : le chiffre 1–4 présent dans la valeur (« 3 - Importante ») est pré-sélectionné', () => {
+    expect(suggestScoreMapping('gravity', ['3 - Importante', '2 - Limitée', '1 - Négligeable'])).toEqual({ '3 - Importante': '3', '2 - Limitée': '2', '1 - Négligeable': '1' })
+    expect(suggestScoreMapping('likelihood', ['2 - Vraisemblable', '1 - Peu vraisemblable'])).toEqual({ '2 - Vraisemblable': '2', '1 - Peu vraisemblable': '1' })
+    // échelle à 5 niveaux : le « 5 - … » hors 1–4 reste à choisir (jamais deviné) ; les autres sont proposés
+    expect(suggestScoreMapping('likelihood', ['4 - Très probable', '5 - Quasi certain'])).toEqual({ '4 - Très probable': '4' })
+    // chiffre + mot : le chiffre fait foi
+    expect(suggestScoreMapping('gravity', ['3 - Critique'])).toEqual({ '3 - Critique': '3' })
   })
 })
 
