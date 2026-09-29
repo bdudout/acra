@@ -94,6 +94,14 @@ describe('R-INC-2 — registre des incidents', () => {
     expect(t.lignes[0].slice(0, 3)).toEqual(['2026-09-10', 'Incident a', 'S:QUALIFIE'])
     expect(t.lignes[2][7]).toBe('2026-09-25')
   })
+  it('champs personnalisés publics : colonnes en fin de registre (libellé de l’organisation)', () => {
+    const defs = [{ code: 'site', label: 'Site', type: 'TEXTE' as const }, { code: 'crit', label: 'Critique', type: 'OUINON' as const }]
+    const avec = buildRapportRegistreIncidents(rows.map(x => (x.id === 'a' ? { ...x, champs: { site: 'Lyon', crit: true } } : x)), cfg, periode, now, labels, defs)
+    const t = tableau(avec, 'registre')
+    expect(t.colonnes.slice(-2)).toEqual(['Site', 'Critique'])
+    expect(t.lignes[0].slice(-2)).toEqual(['Lyon', 'oui'])
+    expect(t.lignes[1].slice(-2)).toEqual(['', ''])
+  })
   it('synthèse : total, quasi-incidents, clôturés ; code et période portés', () => {
     const k = Object.fromEntries(kpis(r.sections.find(s => s.id === 'synthese')!).map(x => [x.cle, x.valeur]))
     expect(k).toMatchObject({ total: 3, quasi: 1, clotures: 1 })

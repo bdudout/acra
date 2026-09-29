@@ -7,7 +7,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { perteNette, delaiDetection } from '@/lib/incident'
 import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
-import { getT } from '@/lib/i18n'
+import { getTOrg } from '@/lib/i18n-org'
+import { sanitizeChampsConfig, defsAccessibles, colonnesChampsExport } from '@/lib/champs-perso'
 import { toCsvCell, sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { colonnesLdcL1, enTetesLdcL1 } from '@/lib/incident-vue'
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
 
   const langParam = searchParams.get('lang')
   const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
-  const t = getT(locale)
+  const t = getTOrg(locale, orgConfig.vocabulaire)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? ''
   const taxonomie = resolveTaxonomie(orgConfig.taxonomieRisques)
   const catLabel = (code: string | null): string => {
@@ -61,7 +62,11 @@ export async function GET(req: NextRequest) {
   }
 
   const cfgL1 = resolveIncidentsConfig(orgConfig.incidentsConfig)
-  const HEADERS = [...HEADERS_BASE, ...enTetesLdcL1(cfgL1)]
+  // Champs personnalisés (lot L5) : uniquement ceux que le rôle peut voir, en fin de tableau.
+  const defsChamps = defsAccessibles(sanitizeChampsConfig(orgConfig.champsPersonnalises).incident ?? [], scope.role as string)
+  const clesChamps = defsChamps.map(d => `champ_${d.code}`)
+  const libellesChamps = Object.fromEntries(defsChamps.map(d => [`champ_${d.code}`, d.label]))
+  const HEADERS = [...HEADERS_BASE, ...enTetesLdcL1(cfgL1), ...clesChamps]
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId, ...(bornee ? { dateSurvenance: { gte: bornee } } : {}) },
     orderBy: [{ dateSurvenance: 'desc' }, { createdAt: 'desc' }],
@@ -93,6 +98,7 @@ export async function GET(req: NextRequest) {
       qualifieLe: jour(r.qualifieLe),
       clotureLe: jour(r.clotureLe),
       ...colonnesLdcL1(r, cfgL1),
+      ...Object.fromEntries((() => { const v = colonnesChampsExport(defsChamps, (r as { champs?: unknown }).champs, scope.role as string, { oui: t.personnalisation.oui, non: t.personnalisation.non }).valeurs; return clesChamps.map((k, i) => [k, v[i]]) })()),
     }
   })
 
@@ -109,12 +115,13 @@ export async function GET(req: NextRequest) {
     wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
     wb.created = now
     const ws = wb.addWorksheet('LDC')
-    ws.columns = HEADERS.map(h => ({ header: h, key: h, width: h === 'intitule' ? 40 : 16 }))
+    ws.columns = HEADERS.map(h => ({ header: libellesChamps[h] ?? h, key: h, width: h === 'intitule' ? 40 : 16 }))
     for (const l of lignes) {
       ws.addRow({
         ...l,
         intitule: S(l.intitule), categorie: S(l.categorie), processus: S(l.processus),
         entite: S(l.entite), risqueLie: S(l.risqueLie), reference: S(l.reference),
+        ...Object.fromEntries(clesChamps.map(k => { const v = (l as Record<string, unknown>)[k]; return [k, typeof v === 'string' ? S(v) : v] })),
       })
     }
     ws.getRow(1).eachCell((c: ExcelJS.Cell) => {
@@ -140,7 +147,7 @@ export async function GET(req: NextRequest) {
   }
 
   const csv = '﻿' + [
-    HEADERS.join(','),
+    HEADERS.map(h => toCsvCell(libellesChamps[h] ?? h)).join(','),
     ...lignes.map(l => HEADERS.map(h => toCsvCell((l as Record<string, unknown>)[h])).join(',')),
   ].join('\r\n')
   return new NextResponse(csv, {

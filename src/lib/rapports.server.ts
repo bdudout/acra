@@ -4,13 +4,14 @@
 // (catégories, types) sont résolus dans la langue demandée à la génération.
 
 import { prisma } from '@/lib/prisma'
-import { getT } from '@/lib/i18n'
+import { getTOrg } from '@/lib/i18n-org'
 import { resolveTaxonomie, taxonomieLabel } from '@/lib/taxonomie'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { vueIncidentL1 } from '@/lib/incident-vue'
 import { buildRapportIncidents, buildRapportPertes, buildRapportRegistreIncidents, type IncidentRapportRow, type LabelsRapport } from '@/lib/rapport-incidents'
 import { buildRapportDirection } from '@/lib/rapport-direction'
 import { buildRapportPlanControle, buildRapportEfficacite, buildRapportAnomalies, type ControleRapportRow } from '@/lib/rapport-controles'
+import { champsPublics, sanitizeChampsConfig } from '@/lib/champs-perso'
 import { resolveAuditConfig } from '@/lib/audit-config'
 import { sanitizeConception } from '@/lib/controle-l3'
 import { buildRapportPlanAudit, buildRapportMissions, buildRapportRecommandations, type AuditRapportData } from '@/lib/rapport-audit'
@@ -26,7 +27,7 @@ async function chargerIncidents(orgId: string, cfg: OrgConfigResolved, now: Date
     where: { organizationId: orgId }, orderBy: { createdAt: 'desc' }, take: MAX_INCIDENTS,
     select: {
       id: true, intitule: true, statut: true, typeEvenement: true, taxonomieCode: true, entite: true, dateSurvenance: true, dateDetection: true,
-      createdAt: true, clotureLe: true, quasiIncident: true, attributs: true, allocations: true, notifications: true, pertes: true, recuperationsLignes: true,
+      createdAt: true, clotureLe: true, quasiIncident: true, attributs: true, allocations: true, champs: true, notifications: true, pertes: true, recuperationsLignes: true,
     },
   })
   return { incidentsCfg, rows: raw.map(r => ({ ...r, l1: vueIncidentL1(r, incidentsCfg, now) })) }
@@ -55,7 +56,7 @@ async function chargerAudit(orgId: string, cfg: OrgConfigResolved): Promise<Audi
 }
 
 export async function genererContenuRapport(code: RapportCode, orgId: string, cfg: OrgConfigResolved, periode: Periode, locale: string, now: Date): Promise<RapportContenu> {
-  const t = getT(locale)
+  const t = getTOrg(locale, cfg.vocabulaire)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? key
   // Rapports du contrôle permanent (L3) : pas besoin des incidents.
   if (code === 'R-CTL-1' || code === 'R-CTL-2' || code === 'R-CTL-3') {
@@ -76,7 +77,7 @@ export async function genererContenuRapport(code: RapportCode, orgId: string, cf
     taxo: c => { if (!c) return '—'; const n = taxonomie.find(x => x.code === c); return n ? taxonomieLabel(n, tr) : c },
   }
   if (code === 'R-INC-1') return buildRapportIncidents(rows, incidentsCfg, periode, now, labels)
-  if (code === 'R-INC-2') return buildRapportRegistreIncidents(rows, incidentsCfg, periode, now, labels)
+  if (code === 'R-INC-2') return buildRapportRegistreIncidents(rows, incidentsCfg, periode, now, labels, champsPublics(sanitizeChampsConfig(cfg.champsPersonnalises).incident ?? []))
   if (code === 'R-PER-2') return buildRapportPertes(rows, incidentsCfg, periode, now, labels)
 
   // R-GRC-3 : consolidé GRC + incidents de la période.

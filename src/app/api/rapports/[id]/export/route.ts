@@ -11,7 +11,7 @@ import { contenuVersFeuilles, contenuVersDocument } from '@/lib/rapport-render'
 import { loadPdfRuntime } from '@/lib/pdf-runtime'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { appliquerGabarit, masquerContenu, sanitizeRapportsConfig } from '@/lib/rapport-masquage'
-import { getT } from '@/lib/i18n'
+import { getTOrg } from '@/lib/i18n-org'
 import { sanitizeForSpreadsheet } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -32,10 +32,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const langParam = new URL(req.url).searchParams.get('lang')
   const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : edition.langue
-  const t = getT(locale)
+  const orgCfg = await getOrgConfig(scope.activeOrgId)
+  const t = getTOrg(locale, orgCfg.vocabulaire)
   const tr = (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string | undefined
   // Gabarit de l'organisation (sections masquées) ; `masque=1` : pseudonymisation pour diffusion externe.
-  const gabarit = sanitizeRapportsConfig((await getOrgConfig(scope.activeOrgId)).rapportsConfig).gabarits[edition.code]
+  const gabarit = sanitizeRapportsConfig(orgCfg.rapportsConfig).gabarits[edition.code]
   const masque = new URL(req.url).searchParams.get('masque') === '1'
   const brut = appliquerGabarit(edition.contenu as unknown as RapportContenu, gabarit)
   const contenu: RapportContenu = masque ? masquerContenu(brut) : brut
@@ -66,6 +67,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const wb = new ExcelJS.Workbook()
   wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'
   wb.created = new Date()
+  wb.title = t.rapports.title
   const noms = new Set<string>()
   for (const f of contenuVersFeuilles(contenu, tr, locale)) {
     let nom = f.nom.replace(/[\\/?*[\]:]/g, ' ') || 'Feuille'

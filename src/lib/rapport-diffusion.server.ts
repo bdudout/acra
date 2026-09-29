@@ -5,7 +5,8 @@
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import { rapportDiffusionEmail } from '@/lib/email-i18n'
-import { getT } from '@/lib/i18n'
+import { getTOrg } from '@/lib/i18n-org'
+import { getOrgConfig } from '@/lib/org-config.server'
 import { classerDestinataires, type StatutDestinataire } from '@/lib/rapport-diffusion'
 
 export interface DestinataireDiffuse { nom: string; statut: StatutDestinataire; envoye?: boolean }
@@ -19,7 +20,8 @@ export async function diffuserRapport(
   const membres = rows.filter(r => r.user.isActive && r.user.email).map(r => ({ email: r.user.email as string, locale: r.user.locale }))
   const classes = classerDestinataires(entrees, membres)
   const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
-  const cat = { ...getT(ed.langue).rapports.catalogue, ...getT(ed.langue).rapports.catalogueCtl, ...getT(ed.langue).rapports.catalogueAud } as Record<string, { titre: string }>
+  const t = getTOrg(ed.langue, (await getOrgConfig(orgId)).vocabulaire)
+  const cat = { ...t.rapports.catalogue, ...t.rapports.catalogueCtl, ...t.rapports.catalogueAud } as Record<string, { titre: string }>
   const titre = cat[ed.code]?.titre ?? ed.code
   let envoyes = 0
   const destinataires: DestinataireDiffuse[] = []

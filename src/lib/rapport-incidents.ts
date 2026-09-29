@@ -9,6 +9,7 @@ import { dansPeriode, type Bloc, type Cellule, type Periode, type RapportContenu
 import type { IncidentVue } from './incident-vue'
 import type { IncidentsConfig } from './incidents-config'
 import { allouer, sanitizeAllocations } from './incident-l1b'
+import { sanitizeValeurs, type ChampDef } from './champs-perso'
 
 export interface IncidentRapportRow {
   id: string; intitule: string; statut: string; typeEvenement: string | null; taxonomieCode: string | null; entite: string | null
@@ -16,6 +17,8 @@ export interface IncidentRapportRow {
   l1: IncidentVue
   /** Allocation de la perte entre entités (lot L1 suite) ; absente = tout sur `entite`. */
   allocations?: unknown
+  /** Valeurs des champs personnalisés (lot L5). */
+  champs?: unknown
 }
 export interface LabelsRapport {
   statut: (code: string) => string
@@ -75,12 +78,14 @@ export function buildRapportIncidents(rows: IncidentRapportRow[], cfg: Incidents
 }
 
 /** R-INC-2 : registre (journal complet) des incidents de la période, quasi-incidents compris. */
-export function buildRapportRegistreIncidents(rows: IncidentRapportRow[], cfg: IncidentsConfig, periode: Periode, now: Date, labels: LabelsRapport): RapportContenu {
+/** `champsPublics` : champs personnalisés sans restriction de rôle (l'édition figée est lue par tous). */
+export function buildRapportRegistreIncidents(rows: IncidentRapportRow[], cfg: IncidentsConfig, periode: Periode, now: Date, labels: LabelsRapport, champsPublics: ChampDef[] = []): RapportContenu {
   const inc = rows.filter(r => dansPeriode(refDate(r), periode)).sort((a, b) => refDate(a).getTime() - refDate(b).getTime())
   const lignes: Cellule[][] = inc.map(r => [
     refDate(r).toISOString().slice(0, 10), r.intitule, labels.statut(r.statut), r.typeEvenement ? labels.typeEvenement(r.typeEvenement) : { k: 'rapports.nonType' },
     labels.taxo(r.taxonomieCode), r.entite || { k: 'rapports.nonRenseigne' }, r.quasiIncident ? { k: 'rapports.quasiIncident' } : r.l1.totaux.net,
     r.clotureLe ? r.clotureLe.toISOString().slice(0, 10) : null, r.l1.nbEnRetard,
+    ...champsPublics.map((d): Cellule => { const v = sanitizeValeurs(champsPublics, r.champs)[d.code]; return v === undefined ? '' : typeof v === 'boolean' ? (v ? 'oui' : 'non') : v }),
   ])
   return {
     code: 'R-INC-2', periode, genereLe: now.toISOString(), deviseReference: cfg.deviseReference,
@@ -88,7 +93,7 @@ export function buildRapportRegistreIncidents(rows: IncidentRapportRow[], cfg: I
       { id: 'synthese', blocs: [{ type: 'kpis', items: [
         { cle: 'total', valeur: inc.length }, { cle: 'quasi', valeur: inc.filter(r => r.quasiIncident).length }, { cle: 'clotures', valeur: inc.filter(r => r.statut === 'CLOTURE').length },
       ] }] },
-      { id: 'registre', blocs: [tab(cols('date', 'incident', 'statut', 'type', 'categorie', 'entite', 'net', 'cloture', 'enRetard'), lignes)] },
+      { id: 'registre', blocs: [tab([...cols('date', 'incident', 'statut', 'type', 'categorie', 'entite', 'net', 'cloture', 'enRetard'), ...champsPublics.map(d => d.label)], lignes)] },
     ],
   }
 }

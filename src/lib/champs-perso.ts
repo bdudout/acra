@@ -108,3 +108,20 @@ export function fusionnerChamps(defs: ChampDef[], existant: unknown, entrant: un
 export function avecChampsVisibles<T extends { champs?: unknown }>(obj: T, defs: ChampDef[], role: string): T {
   return { ...obj, champs: valeursVisibles(defs, obj.champs, role) }
 }
+
+// ─── Exports et rapports ─────────────────────────────────────────────────────
+
+/** Champs sans restriction de rôle : les seuls admis dans un rapport figé (lu par tous les destinataires). */
+export function champsPublics(defs: ChampDef[]): ChampDef[] {
+  return defs.filter(d => !d.roles)
+}
+
+/** En-têtes et valeurs des champs personnalisés pour un export, limités à ce que le rôle peut voir. */
+export function colonnesChampsExport(defs: ChampDef[], valeurs: unknown, role: string, oui_non: { oui: string; non: string }): { entetes: string[]; valeurs: (string | number)[] } {
+  const acc = defsAccessibles(defs, role)
+  const v = valeursVisibles(defs, valeurs, role)
+  return {
+    entetes: acc.map(d => d.label),
+    valeurs: acc.map(d => { const x = v[d.code]; return x === undefined ? '' : typeof x === 'boolean' ? (x ? oui_non.oui : oui_non.non) : x }),
+  }
+}
