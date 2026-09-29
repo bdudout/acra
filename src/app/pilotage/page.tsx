@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { isGrcActive } from '@/lib/projet360'
 import PilotageGrc from '@/components/PilotageGrc'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ export default async function PilotagePage() {
 
   const scope = await getAnalyseScope(userId, userRole)
   const orgConfig = await getOrgConfig(scope.activeOrgId)
-  if (!orgConfig.registreRisquesActive) redirect('/dashboard')
+  if (!isGrcActive(orgConfig)) redirect('/dashboard')
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

@@ -1251,6 +1251,12 @@ model Analyse {
   socle     Analyse?  @relation("SocleHeritage", fields: [socleId], references: [id], onDelete: SetNull)
   heritiers Analyse[] @relation("SocleHeritage")
 
+  // Analyse issue d'un projet 360 (bouton « Lancer une analyse cyber » du projet, ou
+  // sélection à la création). Lien informatif : la suppression du projet le détache.
+  projetSourceId    String?
+  projetSource      Analyse?  @relation("ProjetAnalyses", fields: [projetSourceId], references: [id], onDelete: SetNull)
+  analysesDuProjet  Analyse[] @relation("ProjetAnalyses")
+
   // Workflow d'approbation (validation du LIVRABLE : l'analyse est-elle recevable ?)
   approbateurId          String? // userId du Risk Manager qui a traité
   approuveLe             DateTime?
@@ -1295,6 +1301,7 @@ model Analyse {
   @@index([userId])
   @@index([statut])
   @@index([socleId])
+  @@index([projetSourceId])
   @@index([deletedAt])
   @@index([organizationId])
 }

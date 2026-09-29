@@ -846,6 +846,8 @@ export const fr = {
     },
   },
   newAnalysis: {
+    fromProjet: 'Partir d’un projet 360 (facultatif)', fromProjetNone: 'Aucun projet',
+    fromProjetHint: 'Reprend le nom et la description du projet et rattache l’analyse au projet.',
     socleDiscoverTitle: 'Groupe multi-établissements ?',
     socleDiscoverText: 'Vous pouvez créer une analyse « socle » partagée (valeurs métier, biens supports et sources communs), puis la marquer comme socle depuis sa page, et y rattacher les analyses des entités. Idéal pour un GHT, un groupe industriel ou multi-sites.',
     title:       'Nouvelle analyse ACRA',
@@ -1741,6 +1743,7 @@ export const fr = {
     },
   },
   projets: {
+    startCyber: 'Lancer une analyse cyber', colAnalyses: 'Analyses cyber', startCyberTitle: 'Crée une analyse cyber rattachée à ce projet',
     title: 'Projets',
     subtitle: 'Analyses projet 360 : tout le risque opérationnel d’un projet, préparé à partir des données existantes de l’organisation.',
     launch: 'Lancer un projet 360',
@@ -1838,6 +1841,11 @@ export const fr = {
     err_generic: 'Échec de la création.',
   },
   pilotage: {
+    projets: {
+      title: 'Suivi des projets 360', subtitle: 'Avancement, échéances, validation RSSI + Risk Manager et risques élevés des projets.', total: 'Projets', enCours: 'En cours', termines: 'Terminés', enRetard: 'En retard', valides: 'Validés',
+      colProjet: 'Projet', colStatut: 'Statut', colRisques: 'Risques', colEleves: 'Élevés', colValidation: 'Validation RSSI + RM', colEcheance: 'Échéance',
+      validations: { COMPLETE: 'Complète', PARTIELLE: 'Partielle', AUCUNE: 'En attente' }, empty: 'Aucun projet 360 pour le moment.', voirTous: 'Ouvrir l’onglet Projets',
+    },
     heatmapTitle: 'Cartographie des risques (résiduel)', heatmapAxis: 'Vraisemblance × Gravité (1-5)',
     verdictTitle: 'Niveau de risque global', verdictNiveaux: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: "point(s) d'alerte",
     verdictSignaux: {

@@ -832,6 +832,8 @@ export const it: Translations = {
     },
   },
   newAnalysis: {
+    fromProjet: 'Partire da un progetto 360 (facoltativo)', fromProjetNone: 'Nessun progetto',
+    fromProjetHint: 'Riprende nome e descrizione del progetto e collega l’analisi al progetto.',
     socleDiscoverTitle: 'Gruppo multi-entità?',
     socleDiscoverText: 'Puoi creare un’analisi «base» condivisa (valori aziendali, beni di supporto e fonti di rischio comuni), contrassegnarla come base dalla sua pagina e collegarvi le analisi delle entità. Ideale per un gruppo ospedaliero, un gruppo industriale o multi-sito.',
     title:       'Nuova analisi ACRA',
@@ -1717,6 +1719,7 @@ export const it: Translations = {
     },
   },
   projets: {
+    startCyber: 'Avvia un’analisi cyber', colAnalyses: 'Analisi cyber', startCyberTitle: 'Crea un’analisi cyber collegata a questo progetto',
     title: 'Progetti',
     subtitle: 'Analisi di progetto 360: tutto il rischio operativo di un progetto, preparato a partire dai dati esistenti dell’organizzazione.',
     launch: 'Avvia un progetto 360',
@@ -1814,6 +1817,11 @@ export const it: Translations = {
     err_generic: 'Creazione non riuscita.',
   },
   pilotage: {
+    projets: {
+      title: 'Monitoraggio dei progetti 360', subtitle: 'Avanzamento, scadenze, validazione CISO + Risk Manager e rischi elevati dei progetti.', total: 'Progetti', enCours: 'In corso', termines: 'Conclusi', enRetard: 'In ritardo', valides: 'Validati',
+      colProjet: 'Progetto', colStatut: 'Stato', colRisques: 'Rischi', colEleves: 'Elevati', colValidation: 'Validazione CISO + RM', colEcheance: 'Scadenza',
+      validations: { COMPLETE: 'Completa', PARTIELLE: 'Parziale', AUCUNE: 'In attesa' }, empty: 'Ancora nessun progetto 360.', voirTous: 'Apri la scheda Progetti',
+    },
     heatmapTitle: 'Mappatura dei rischi (residuo)', heatmapAxis: 'Probabilità × Gravità (1-5)',
     verdictTitle: 'Livello di rischio complessivo', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO' }, verdictAlertes: 'allerta/e',
     verdictSignaux: {

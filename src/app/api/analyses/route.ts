@@ -1,4 +1,5 @@
 import { populateProjet360 } from '@/lib/projet360.server'
+import { resolveProjetSource } from '@/lib/projet360'
 import { getServerT } from '@/lib/i18n'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -28,6 +29,7 @@ const createSchema = z.object({
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
+  projetSourceId: z.string().cuid().optional(), // projet 360 dont est issue l'analyse
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
   qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
@@ -104,6 +106,21 @@ export async function POST(req: NextRequest) {
       : isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     const qualification = sanitizeQualification(data.qualification, orgConfig.qualificationQuestionnaire)
 
+    // Analyse issue d'un projet 360 : lien ignoré si le module est inactif, 404 si le
+    // projet n'est pas accessible (même garde d'accès que la lecture d'une analyse).
+    let projetSourceId: string | null = null
+    if (data.projetSourceId && methode !== 'PROJET_360') {
+      const projet = orgConfig.projets360Active
+        ? await prisma.analyse.findFirst({
+            where: { AND: [analyseWhereClause(userId, __org.role, __org.scope)], id: data.projetSourceId },
+            select: { id: true, methode: true, organizationId: true },
+          })
+        : null
+      const r = resolveProjetSource({ projet, orgId: __org.activeOrgId, projets360Active: orgConfig.projets360Active })
+      if (r.status === 'INTROUVABLE') return NextResponse.json({ error: 'Projet introuvable ou accès refusé' }, { status: 404 })
+      if (r.status === 'OK') projetSourceId = r.projetId
+    }
+
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
     let socleData: { cadrage?: any; sourcesRisque?: any[] } = {}
     if (data.socleId) {
@@ -143,6 +160,7 @@ export async function POST(req: NextRequest) {
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,
+        projetSourceId,
         mentionProtection: normalizeMentionProtection(data.mentionProtection),
         methode,
         qualification,
@@ -186,7 +204,7 @@ export async function POST(req: NextRequest) {
       userId, userRole,
       targetId: analyse.id, targetType: 'analyse',
       ip: getClientIp(req),
-      details: { nom: analyse.nom, socleId: data.socleId ?? null, ...(population ? { methode, population } : {}) },
+      details: { nom: analyse.nom, socleId: data.socleId ?? null, ...(projetSourceId ? { projetSourceId } : {}), ...(population ? { methode, population } : {}) },
     })
     return NextResponse.json({ analyse }, { status: 201 })
   } catch (err) {

@@ -832,6 +832,8 @@ export const es: Translations = {
     },
   },
   newAnalysis: {
+    fromProjet: 'Partir de un proyecto 360 (opcional)', fromProjetNone: 'Ningún proyecto',
+    fromProjetHint: 'Reutiliza el nombre y la descripción del proyecto y vincula el análisis al proyecto.',
     socleDiscoverTitle: '¿Grupo con varias entidades?',
     socleDiscoverText: 'Puede crear un análisis «base» compartido (valores de negocio, activos de soporte y fuentes de riesgo comunes), marcarlo como base desde su página y vincular a él los análisis de las entidades. Ideal para un grupo hospitalario, un grupo industrial o multi-sitio.',
     title:       'Nuevo análisis ACRA',
@@ -1717,6 +1719,7 @@ export const es: Translations = {
     },
   },
   projets: {
+    startCyber: 'Iniciar un análisis cibernético', colAnalyses: 'Análisis cibernéticos', startCyberTitle: 'Crea un análisis cibernético vinculado a este proyecto',
     title: 'Proyectos',
     subtitle: 'Análisis de proyecto 360: todo el riesgo operacional de un proyecto, preparado a partir de los datos existentes de la organización.',
     launch: 'Lanzar un proyecto 360',
@@ -1814,6 +1817,11 @@ export const es: Translations = {
     err_generic: 'Error al crear.',
   },
   pilotage: {
+    projets: {
+      title: 'Seguimiento de los proyectos 360', subtitle: 'Avance, plazos, validación CISO + Risk Manager y riesgos altos de los proyectos.', total: 'Proyectos', enCours: 'En curso', termines: 'Terminados', enRetard: 'Con retraso', valides: 'Validados',
+      colProjet: 'Proyecto', colStatut: 'Estado', colRisques: 'Riesgos', colEleves: 'Altos', colValidation: 'Validación CISO + RM', colEcheance: 'Plazo',
+      validations: { COMPLETE: 'Completa', PARTIELLE: 'Parcial', AUCUNE: 'Pendiente' }, empty: 'Aún no hay proyectos 360.', voirTous: 'Abrir la pestaña Proyectos',
+    },
     heatmapTitle: 'Mapa de riesgos (residual)', heatmapAxis: 'Probabilidad × Gravedad (1-5)',
     verdictTitle: 'Nivel de riesgo global', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
     verdictSignaux: {

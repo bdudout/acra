@@ -12,7 +12,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }
 const fetchMock = vi.fn()
 beforeEach(() => { fetchMock.mockReset(); push.mockReset(); vi.stubGlobal('fetch', fetchMock) })
 
-const projets = [{ id: 'p1', nom: 'Refonte portail', statut: 'EN_COURS', risques: 7, updatedAt: '2026-09-20T00:00:00.000Z' }]
+const projets = [{ id: 'p1', nom: 'Refonte portail', statut: 'EN_COURS', risques: 7, updatedAt: '2026-09-20T00:00:00.000Z', analyses: [{ id: 'c1', nom: 'Cyber — portail' }] }]
 
 describe('ProjetsManager', () => {
   it('liste les projets 360 avec statut et nombre de risques', () => {
@@ -32,9 +32,16 @@ describe('ProjetsManager', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', methode: 'PROJET_360' })
   })
 
+  it('propose de lancer une analyse cyber depuis le projet et liste les analyses déjà rattachées', () => {
+    render(<ProjetsManager projets={projets} canCreate />)
+    expect(screen.getByRole('link', { name: 'Lancer une analyse cyber' }).getAttribute('href')).toBe('/analyses/new?projet=p1')
+    expect(screen.getByRole('link', { name: 'Cyber — portail' }).getAttribute('href')).toBe('/analyses/c1')
+  })
+
   it('sans droit de création : pas de bouton', () => {
     render(<ProjetsManager projets={[]} canCreate={false} />)
     expect(screen.queryByRole('button', { name: 'Lancer un projet 360' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Lancer une analyse cyber' })).toBeNull()
     expect(screen.getByText('Aucun projet pour le moment.')).toBeTruthy()
   })
 })

@@ -4,7 +4,7 @@
 
 # ACRA — Augmented Cyber Risk Analysis
 
-**La piattaforma open-source di analisi dei rischi e GRC cyber — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30**
+**La piattaforma open-source di gestione dei rischi cyber e di business, e di GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, progetti 360**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -24,7 +24,7 @@
 
 ## 🎯 Panoramica
 
-**ACRA (Augmented Cyber Risk Analysis)** è una piattaforma web self-hosted di **gestione dei rischi e GRC cyber**. Consente a un team di sicurezza — anche senza grande esperienza — di condurre analisi dei rischi con il metodo scelto e poi di gestire conformità, controlli, incidenti e piani d'azione in un unico strumento:
+**ACRA (Augmented Cyber Risk Analysis)** è una piattaforma web self-hosted di **gestione dei rischi cyber e di business (rischio operativo, progetti, frode, esternalizzazione) e GRC** — l'analisi EBIOS RM è solo uno dei suoi metodi. Consente a un team di sicurezza — anche senza grande esperienza — di condurre analisi dei rischi con il metodo scelto e poi di gestire conformità, controlli, incidenti e piani d'azione in un unico strumento:
 
 - **Analisi dei rischi multi-metodo**: **EBIOS Risk Manager** (ANSSI, predefinito), **ISO/IEC 27005:2022**, **ISO 31000:2018** e **NIST SP 800-30 Rev. 1**;
 - **GRC completa, organizzata nelle tre linee di difesa**: registro dei rischi, conformità multi-framework, **maturità** (profili obiettivo CMMI), deroghe, controllo permanente, audit interno, incidenti (DORA), KRI, registro GDPR, piano d'azione unificato, pilotaggio e dossier per i comitati.
@@ -59,7 +59,7 @@ ACRA collega questi anelli: un **assistente metodologico** che guida passo dopo 
 - **Metodo Flash (Club EBIOS)**: un percorso guidato dei 5 workshop in un'unica passata, basandosi sulla capitalizzazione (esempi, base di sicurezza) — ideale per una prima analisi o un contesto vincolato
 - **Guide del Club EBIOS integrate**: il metodo Flash e la scheda metodo 5 (pericolosità delle parti interessate) sono implementati direttamente nel percorso
 - **Maturità (profili obiettivo CMMI)**: livello attuale e obiettivo su qualsiasi framework di conformità (tra cui NIST CSF 2.0 e NCSC CAF v4.0), lacune per dominio, azioni — [vedi dettaglio](#-maturità--profili-obiettivo-cmmi)
-- **Aggiornamenti semplici**: canali stable / beta, `git pull` o pulsante «Aggiorna» nell'amministrazione — [vedi dettaglio](#aggiornamento)
+- **Aggiornamenti integrati nell'applicazione**: versione installata e disponibile in Amministrazione → Versione, pulsante «Aggiorna» (canali stable / beta, backup e controllo di salute automatici) o `scripts/update.sh` da riga di comando — [vedi dettaglio](#aggiornamento)
 - **100% self-hosted**: i tuoi dati non lasciano mai la tua infrastruttura
 
 ---

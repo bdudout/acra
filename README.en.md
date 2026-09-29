@@ -4,7 +4,7 @@
 
 # ACRA — Augmented Cyber Risk Analysis
 
-**The open-source platform for cyber risk analysis and GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30**
+**The open-source platform for cyber and business risk management and GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, 360 projects**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -23,7 +23,7 @@
 
 ## 🎯 Overview
 
-**ACRA (Augmented Cyber Risk Analysis)** is a self-hosted web platform for **cyber risk management and GRC**. It lets a security team — even without deep expertise — run risk analyses with the method of its choice, then manage compliance, controls, incidents and action plans in one tool:
+**ACRA (Augmented Cyber Risk Analysis)** is a self-hosted web platform for **cyber and business risk management (operational risk, projects, fraud, outsourcing) and GRC** — EBIOS RM analysis is just one of its methods. It lets a security team — even without deep expertise — run risk analyses with the method of its choice, then manage compliance, controls, incidents and action plans in one tool:
 
 - **Multi-method risk analysis**: **EBIOS Risk Manager** (ANSSI, default), **ISO/IEC 27005:2022**, **ISO 31000:2018** and **NIST SP 800-30 Rev. 1**;
 - **Full GRC, organised along the three lines of defense**: risk register, multi-framework compliance, **maturity** (CMMI target profiles), waivers, permanent control, internal audit, incidents (DORA), KRIs, GDPR register, unified action plan, steering and committee packs.
@@ -58,7 +58,7 @@ ACRA links these pieces: a **methodological assistant** that guides you step by 
 - **Flash method (Club EBIOS)**: a guided single pass through the 5 workshops, leveraging capitalization (examples, security baseline) — ideal for a first analysis or a constrained context
 - **Club EBIOS guides integrated**: the Flash method and method sheet 5 (stakeholder threat level) are implemented directly in the workflow
 - **Maturity (CMMI target profiles)**: current and target level on any compliance framework (including NIST CSF 2.0 and NCSC CAF v4.0), gaps by domain, actions — [see details](#-maturity--cmmi-target-profiles)
-- **Simple updates**: stable / beta channels, `git pull` or an “Update” button in the administration — [see details](#updating)
+- **Updates built into the application**: installed and available versions shown in Administration → Version, an “Update” button (stable / beta channels, automatic backup and health check), or `scripts/update.sh` on the command line — [see details](#updating)
 - **100% self-hosted**: your data never leaves your infrastructure
 
 ---

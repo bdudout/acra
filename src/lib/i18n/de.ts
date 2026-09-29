@@ -832,6 +832,8 @@ export const de: Translations = {
     },
   },
   newAnalysis: {
+    fromProjet: 'Von einem 360-Projekt ausgehen (optional)', fromProjetNone: 'Kein Projekt',
+    fromProjetHint: 'Übernimmt Name und Beschreibung des Projekts und verknüpft die Analyse mit dem Projekt.',
     socleDiscoverTitle: 'Gruppe mit mehreren Einheiten?',
     socleDiscoverText: 'Sie können eine gemeinsame „Sockel“-Analyse erstellen (gemeinsame Geschäftswerte, unterstützende Werte und Risikoquellen), sie auf ihrer Seite als Sockel markieren und die Analysen der Einheiten daran anhängen. Ideal für eine Krankenhausgruppe, eine Industriegruppe oder Multi-Standort-Organisation.',
     title:       'Neue ACRA-Analyse',
@@ -1716,6 +1718,7 @@ export const de: Translations = {
     },
   },
   projets: {
+    startCyber: 'Cyber-Analyse starten', colAnalyses: 'Cyber-Analysen', startCyberTitle: 'Erstellt eine mit diesem Projekt verknüpfte Cyber-Analyse',
     title: 'Projekte',
     subtitle: 'Projektanalysen 360: das gesamte operationelle Risiko eines Projekts, vorbereitet aus den vorhandenen Daten der Organisation.',
     launch: 'Projekt 360 starten',
@@ -1813,6 +1816,11 @@ export const de: Translations = {
     err_generic: 'Erstellung fehlgeschlagen.',
   },
   pilotage: {
+    projets: {
+      title: 'Verfolgung der 360-Projekte', subtitle: 'Fortschritt, Fristen, Freigabe durch CISO + Risikomanager und hohe Risiken der Projekte.', total: 'Projekte', enCours: 'In Bearbeitung', termines: 'Abgeschlossen', enRetard: 'Überfällig', valides: 'Freigegeben',
+      colProjet: 'Projekt', colStatut: 'Status', colRisques: 'Risiken', colEleves: 'Hoch', colValidation: 'Freigabe CISO + RM', colEcheance: 'Frist',
+      validations: { COMPLETE: 'Vollständig', PARTIELLE: 'Teilweise', AUCUNE: 'Ausstehend' }, empty: 'Noch kein 360-Projekt.', voirTous: 'Registerkarte Projekte öffnen',
+    },
     heatmapTitle: 'Risikokarte (Restrisiko)', heatmapAxis: 'Wahrscheinlichkeit × Schwere (1-5)',
     verdictTitle: 'Gesamtrisikoniveau', verdictNiveaux: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
     verdictSignaux: {

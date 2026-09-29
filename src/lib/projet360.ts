@@ -15,6 +15,7 @@
 
 import { suggestedQualificationRisks, type QualificationAnswers, type QualificationRiskRule } from './qualification'
 import { sanitizeDirectRisque } from './risque-direct'
+import { niveauBucket } from './cartographie'
 
 export const DOMAINES_360 = ['CYBER', 'IT', 'PROJECT', 'BUSINESS', 'FRAUD', 'OUTSOURCING'] as const
 export type Domaine360 = (typeof DOMAINES_360)[number]
@@ -301,4 +302,85 @@ export function sanitizeSources360(qualification: unknown): Record<string, Sourc
   if (!raw || typeof raw !== 'object') return {}
   const ids = new Set(QUESTIONS_360.map(q => q.id))
   return Object.fromEntries(Object.entries(raw as Record<string, unknown>).filter(([k, v]) => ids.has(k) && typeof v === 'string' && (SOURCES_PREFILL as readonly string[]).includes(v))) as Record<string, SourcePrefill>
+}
+
+// ─── Suivi des projets dans le cockpit GRC ───────────────────────────────────
+
+export type ValidationProjet = 'COMPLETE' | 'PARTIELLE' | 'AUCUNE'
+export interface ProjetSuiviInput {
+  id: string; nom: string; statut: string; dateEcheance: Date | null; approbations: unknown
+  risques: { niveauRisque: number; niveauResiduel: number | null }[]
+}
+export interface ProjetSuivi {
+  id: string; nom: string; statut: string; risques: number; eleves: number
+  validation: ValidationProjet; enRetard: boolean; dateEcheance: string | null
+}
+export interface ProjetsSynthese { total: number; enCours: number; termines: number; enRetard: number; valides: number; projets: ProjetSuivi[] }
+
+const STATUTS_CLOS = ['TERMINE', 'ARCHIVE']
+
+/**
+ * Synthèse de suivi des projets 360 : avancement, retard d'échéance, validation
+ * RSSI + Risk Manager, risques élevés (résiduel s'il est coté, sinon brut). Les
+ * projets à surveiller (retard, risques élevés, validation incomplète) sont en tête.
+ */
+export function synthetiserProjets360(rows: ProjetSuiviInput[], now: Date): ProjetsSynthese {
+  const projets = rows.map((r): ProjetSuivi => {
+    const roles = new Set(sanitizeApprobations(r.approbations).map(a => a.role))
+    const validation: ValidationProjet = roles.has('ADMIN') || APPROBATION_ROLES_REQUIS.every(x => roles.has(x)) ? 'COMPLETE' : roles.size > 0 ? 'PARTIELLE' : 'AUCUNE'
+    const clos = STATUTS_CLOS.includes(r.statut)
+    return {
+      id: r.id, nom: r.nom, statut: r.statut, risques: r.risques.length,
+      eleves: r.risques.filter(x => niveauBucket(x.niveauResiduel ?? x.niveauRisque) === 'eleve').length,
+      validation, enRetard: !clos && r.dateEcheance != null && r.dateEcheance.getTime() < now.getTime(),
+      dateEcheance: r.dateEcheance ? r.dateEcheance.toISOString() : null,
+    }
+  })
+  const clos = (p: ProjetSuivi) => STATUTS_CLOS.includes(p.statut)
+  const score = (p: ProjetSuivi) => (clos(p) ? 0 : (p.enRetard ? 4 : 0) + (p.eleves > 0 ? 2 : 0) + (p.validation !== 'COMPLETE' ? 1 : 0))
+  projets.sort((a, b) => score(b) - score(a) || b.eleves - a.eleves || a.nom.localeCompare(b.nom))
+  return {
+    total: projets.length,
+    termines: projets.filter(clos).length,
+    enCours: projets.filter(p => !clos(p)).length,
+    enRetard: projets.filter(p => p.enRetard).length,
+    valides: projets.filter(p => p.validation === 'COMPLETE').length,
+    projets,
+  }
+}
+
+// ─── Analyse cyber issue d'un projet 360 ─────────────────────────────────────
+
+export type ProjetSourceResult = { status: 'OK'; projetId: string } | { status: 'IGNORE' } | { status: 'INTROUVABLE' }
+
+/**
+ * Valide le rattachement d'une nouvelle analyse à un projet 360 : ignoré si le module
+ * Projets 360 est inactif ; refusé si le projet n'existe pas, n'est pas un projet 360
+ * ou appartient à une autre organisation (pas de divulgation inter-organisation).
+ */
+export function resolveProjetSource(o: {
+  projet: { id: string; methode: string; organizationId: string | null } | null
+  orgId: string; projets360Active: boolean
+}): ProjetSourceResult {
+  if (!o.projets360Active) return { status: 'IGNORE' }
+  const p = o.projet
+  if (!p || p.methode !== 'PROJET_360' || p.organizationId !== o.orgId) return { status: 'INTROUVABLE' }
+  return { status: 'OK', projetId: p.id }
+}
+
+/** Préremplit nom/description d'une analyse cyber depuis le projet, sans écraser la saisie. */
+export function prefillFromProjet(projet: { nom: string; description?: string | null }, current: { nom: string; description: string }): { nom: string; description: string } {
+  return {
+    nom: current.nom || `Analyse cyber — ${projet.nom}`,
+    description: current.description || (projet.description ?? ''),
+  }
+}
+
+/** Le cockpit GRC (/pilotage) est disponible dès qu'un module GRC de 2ᵉ/3ᵉ ligne est actif. */
+export function isGrcActive(c: {
+  registreRisquesActive?: boolean; controlePermanentActive?: boolean; auditInterneActive?: boolean
+  kriActive?: boolean; reglementaireActive?: boolean; profilsOperationnelsActive?: boolean
+  incidentsActive?: boolean; projets360Active?: boolean
+}): boolean {
+  return Boolean(c.registreRisquesActive || c.controlePermanentActive || c.auditInterneActive || c.kriActive || c.reglementaireActive || c.profilsOperationnelsActive)
 }

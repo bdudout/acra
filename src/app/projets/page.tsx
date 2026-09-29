@@ -25,11 +25,11 @@ export default async function ProjetsPage() {
   const t = await getServerT()
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: scope.activeOrgId, methode: 'PROJET_360' },
-    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } } },
+    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })
-  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString() }))
+  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString(), analyses: r.analysesDuProjet }))
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

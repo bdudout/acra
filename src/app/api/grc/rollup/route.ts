@@ -10,6 +10,8 @@ import { summarizeActions } from '@/lib/risk-action'
 import { rollupRisks, rollupByOrg, type RiskLite, type ScopedAction } from '@/lib/grc-rollup'
 import { buildHeatGrid } from '@/lib/carto-export'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { isGrcActive, synthetiserProjets360 } from '@/lib/projet360'
+import { analyseWhereClause } from '@/lib/permissions'
 import type { CartoRisk } from '@/lib/cartographie'
 import {
   rollupIncidents, incidentsByOrg,
@@ -37,7 +39,8 @@ export async function GET(req: NextRequest) {
   const scope = await getAnalyseScope(userId, userRole)
   if (!scope.activeOrgId) return NextResponse.json({ active: false, orgs: [] })
   const orgConfig = await getOrgConfig(scope.activeOrgId)
-  if (!orgConfig.registreRisquesActive) return NextResponse.json({ active: false, orgs: [] })
+  // Cockpit disponible dès qu'un module GRC est actif (et non seulement le registre).
+  if (!isGrcActive(orgConfig)) return NextResponse.json({ active: false, orgs: [] })
 
   // Modules actifs pour l'organisation focalisée : on ne consolide que ce qui est
   // activé (les toggles se résolvent par organisation au point unique getOrgConfig).
@@ -201,10 +204,20 @@ export async function GET(req: NextRequest) {
   // Matrice configurée pour une heat map fidèle (roll-up : échelle de l'org visible / racine).
   const scaleConfig = await getEffectiveScaleConfig(orgIds[0] ?? null)
 
+  // Suivi des projets 360 (module Projets 360) : mêmes analyses que l'onglet Projets,
+  // bornées au périmètre de lecture de l'utilisateur.
+  const projets = orgConfig.projets360Active
+    ? synthetiserProjets360((await prisma.analyse.findMany({
+        where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], ...orgFilter, methode: 'PROJET_360', deletedAt: null },
+        select: { id: true, nom: true, statut: true, dateEcheance: true, approbations: true, risques: { select: { niveauRisque: true, niveauResiduel: true } } },
+        take: 500,
+      })), now)
+    : null
+
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
-    modules: { incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri, reglementaire: withReglementaire },
+    modules: { projets: projets !== null, incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri, reglementaire: withReglementaire },
     consolide: {
       risques: { ...rollupRisks(risks), grid: buildHeatGrid(kept.map((r): CartoRisk => ({
         id: r.id, intitule: '', taxonomieCode: null, processusId: null, processusNom: null, entite: null,
@@ -212,6 +225,7 @@ export async function GET(req: NextRequest) {
         graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
       })), 'residual', scaleConfig) },
       actions: summarizeActions(actions, now),
+      ...(projets ? { projets } : {}),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),

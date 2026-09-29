@@ -10,6 +10,8 @@ import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
 import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import ProjetSourcePicker, { type ProjetOption } from '@/components/ProjetSourcePicker'
+import { prefillFromProjet } from '@/lib/projet360'
 import QualificationQuestions from '@/components/QualificationQuestions'
 import { QualificationRisksDialog, type QualificationProposal } from '@/components/QualificationRisksFlow'
 import { EMPTY_QUALIFICATION_CONFIG, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
@@ -28,6 +30,13 @@ export default function NewAnalysePage() {
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const sousSecteurOptions = SOUS_SECTEURS.filter(s => sousSecteurIdsFor(form.secteur).includes(s.id))
   const [socleId, setSocleId] = useState('')
+  // Projet 360 dont part l'analyse (module Projets 360 actif) : ?projet=<id> ou sélection.
+  const [projets, setProjets] = useState<ProjetOption[]>([])
+  const [projetId, setProjetId] = useState('')
+  function choisirProjet(p: ProjetOption | null) {
+    setProjetId(p?.id ?? '')
+    if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, { nom: f.nom, description: f.description }) }))
+  }
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -43,6 +52,20 @@ export default function NewAnalysePage() {
   const [qualificationConfig, setQualificationConfig] = useState<QualificationConfig>(EMPTY_QUALIFICATION_CONFIG)
   const [createdAnalyseId, setCreatedAnalyseId] = useState<string | null>(null)
   const [pendingProposals, setPendingProposals] = useState<QualificationProposal[]>([])
+
+  useEffect(() => {
+    fetch('/api/projets')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const list: ProjetOption[] = Array.isArray(d?.projets) ? d.projets : []
+        setProjets(list)
+        const wanted = new URLSearchParams(window.location.search).get('projet')
+        const p = list.find(x => x.id === wanted)
+        if (p) choisirProjet(p)
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     fetch('/api/methodes')
@@ -92,7 +115,7 @@ export default function NewAnalysePage() {
     const res = await fetch('/api/analyses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, qualification, ...(socleId ? { socleId } : {}) }),
+      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, qualification, ...(socleId ? { socleId } : {}), ...(projetId ? { projetSourceId: projetId } : {}) }),
     })
 
     const data = await res.json()
@@ -132,6 +155,7 @@ export default function NewAnalysePage() {
         )}
 
         <form onSubmit={handleSubmit} className="card p-6 space-y-5">
+          <ProjetSourcePicker projets={projets} value={projetId} onChange={choisirProjet} />
           <div>
             <label className="label">{t.newAnalysis.name} <span className="text-red-500">*</span></label>
             <input type="text" required value={form.nom}

@@ -6,6 +6,41 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (12) — Claude Code : reprise de Codex, cockpit GRC corrigé, projets ⇄ analyse cyber, READMEs
+
+**Branche** : `feat/historical-excel-import` (PR #191). Commits `88312d0` (correctifs CI),
+`d45b7f7` (travail de Codex repris : DORA → actions, PDF RAS/RAD, bilan par domaine, tiers du
+projet 360, cadrage CAF) + le commit de ce tour.
+
+- **Reste à faire évalué** : backlog Codex soldé (DORA→actions, PDF RAS/RAD, rapport par domaine,
+  CAF cadré : les cibles Basic/Enhanced sont un modèle ACRA, pas une prescription NCSC).
+  Restent : recette navigateur connectée de tous les parcours, tables IGP CAF chiffrées (à ne
+  pas inventer), publication d'une release bêta.
+- **Bug cockpit GRC** : `/pilotage` et `/api/grc/rollup` exigeaient le module *registre* alors
+  que la barre affiche « Pilotage » dès qu'un module GRC est actif → retour silencieux vers
+  `/dashboard`. Garde unique `isGrcActive` (lib/projet360) : registre, contrôle, audit, KRI,
+  réglementaire ou profils opérationnels (incidents et projets seuls ne comptent pas).
+- **Suivi des projets dans le cockpit GRC** : bloc `consolide.projets` du rollup
+  (`synthetiserProjets360` : en cours / terminés / en retard / validés RSSI + RM, risques
+  élevés, projets à surveiller en tête) rendu par `ProjetsSuivi`, seulement si le module Projets 360
+  est actif ; mêmes analyses et même garde d'accès que l'onglet Projets.
+- **Analyse cyber depuis un projet 360** : `Analyse.projetSourceId` (migration
+  `20260929170000`, détaché à la suppression du projet) ; bouton « Lancer une analyse cyber »
+  dans l'onglet Projets (→ `/analyses/new?projet=<id>`), sélecteur « Partir d'un projet 360 »
+  sur la page de création (préremplit nom/description sans écraser la saisie) ; `GET /api/projets`
+  (liste vide si module inactif) ; `POST /api/analyses` ignore le lien si le module est inactif,
+  404 si le projet est inaccessible / d'une autre organisation (`resolveProjetSource`).
+- **READMEs ×5** : accroche et présentation = gestion des risques cyber **et métier** + GRC
+  (EBIOS RM n'est qu'une méthode) ; mise à jour intégrée à l'application mise en avant.
+- **Vérifié** : `tsc` 0 · `npm test` **2295/2295** · `i18n:check` · `npm run build` OK ·
+  migration appliquée en local (pas de dérive).
+- **Piège** : un `sed -i` macOS avec `\n` a échoué en silence dans une commande chaînée en `&&` et
+  a sauté la création de `/api/projets` (les tests mockaient `fetch`, seul le build l'a révélé).
+  Vérifier l'existence des fichiers créés.
+- Non vérifié : navigateur connecté (cockpit avec un seul module GRC, parcours projet → analyse).
+
+---
+
 ## 2026-09-29 (11) — Codex : DORA → actions et export PDF RAS/RAD
 
 **Branche** : `feat/historical-excel-import` (PR #191, non fusionnée à ce stade).

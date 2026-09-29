@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
-export interface ProjetRow { id: string; nom: string; statut: string; risques: number; updatedAt: string }
+export interface ProjetRow { id: string; nom: string; statut: string; risques: number; updatedAt: string; analyses?: { id: string; nom: string }[] }
 
 const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
 const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
@@ -65,7 +65,7 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
           <table className="w-full text-sm">
             <thead><tr className="text-left text-xs uppercase text-gray-500 border-b border-gray-200 dark:border-gray-700">
               <th className="px-4 py-2">{p.colNom}</th><th className="px-4 py-2">{p.colStatut}</th>
-              <th className="px-4 py-2">{p.colRisques}</th><th className="px-4 py-2">{p.colMaj}</th>
+              <th className="px-4 py-2">{p.colRisques}</th><th className="px-4 py-2">{p.colAnalyses}</th><th className="px-4 py-2">{p.colMaj}</th>
             </tr></thead>
             <tbody>
               {projets.map(pr => (
@@ -73,6 +73,12 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
                   <td className="px-4 py-2 font-medium"><Link href={qualifHref(pr.id)} className="text-ebios-700 hover:underline">{pr.nom}</Link></td>
                   <td className="px-4 py-2 text-xs">{(t.statusLabels as Record<string, string>)[pr.statut] ?? pr.statut}</td>
                   <td className="px-4 py-2 tabular-nums">{pr.risques}</td>
+                  <td className="px-4 py-2 text-xs">
+                    <ul className="space-y-0.5">
+                      {(pr.analyses ?? []).map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="text-ebios-700 hover:underline">{a.nom}</Link></li>)}
+                    </ul>
+                    {canCreate && <Link href={`/analyses/new?projet=${pr.id}`} title={p.startCyberTitle} className="mt-1 inline-flex items-center gap-1 rounded border border-ebios-300 px-2 py-0.5 font-medium text-ebios-700 hover:bg-ebios-50 dark:border-ebios-700 dark:hover:bg-gray-800">{p.startCyber}</Link>}
+                  </td>
                   <td className="px-4 py-2 text-xs text-gray-500">{new Date(pr.updatedAt).toLocaleDateString(locale)}</td>
                 </tr>
               ))}

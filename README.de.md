@@ -4,7 +4,7 @@
 
 # ACRA — Augmented Cyber Risk Analysis
 
-**Die Open-Source-Plattform für Cyber-Risikoanalyse und GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30**
+**Die Open-Source-Plattform für Cyber- und Geschäftsrisikomanagement und GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, 360-Projekte**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -24,7 +24,7 @@
 
 ## 🎯 Überblick
 
-**ACRA (Augmented Cyber Risk Analysis)** ist eine selbst gehostete Webplattform für **Cyber-Risikomanagement und GRC**. Ein Sicherheitsteam — auch ohne tiefes Fachwissen — führt damit Risikoanalysen nach der Methode seiner Wahl durch und steuert anschließend Compliance, Kontrollen, Vorfälle und Maßnahmenpläne in einem einzigen Werkzeug:
+**ACRA (Augmented Cyber Risk Analysis)** ist eine selbst gehostete Webplattform für **Cyber- und Geschäftsrisikomanagement (operationelles Risiko, Projekte, Betrug, Auslagerung) und GRC** — die EBIOS-RM-Analyse ist nur eine ihrer Methoden. Ein Sicherheitsteam — auch ohne tiefes Fachwissen — führt damit Risikoanalysen nach der Methode seiner Wahl durch und steuert anschließend Compliance, Kontrollen, Vorfälle und Maßnahmenpläne in einem einzigen Werkzeug:
 
 - **Risikoanalyse mit mehreren Methoden**: **EBIOS Risk Manager** (ANSSI, Standard), **ISO/IEC 27005:2022**, **ISO 31000:2018** und **NIST SP 800-30 Rev. 1**;
 - **Vollständiges GRC entlang der drei Verteidigungslinien**: Risikoregister, Compliance über mehrere Rahmenwerke, **Reifegrad** (CMMI-Zielprofile), Ausnahmegenehmigungen, permanente Kontrolle, interne Revision, Vorfälle (DORA), KRI, DSGVO-Verzeichnis, einheitlicher Maßnahmenplan, Steuerung und Gremienunterlagen.
@@ -59,7 +59,7 @@ ACRA verbindet diese Glieder: ein **methodischer Assistent**, der Schritt für S
 - **Flash-Methode (Club EBIOS)**: ein geführter Durchlauf der 5 Workshops in einem Zug, gestützt auf die Kapitalisierung (Beispiele, Sicherheitssockel) — ideal für eine erste Analyse oder einen eingeschränkten Kontext
 - **Club-EBIOS-Leitfäden integriert**: die Flash-Methode und das Methodenblatt 5 (Gefährlichkeit der Stakeholder) sind direkt im Ablauf umgesetzt
 - **Reifegrad (CMMI-Zielprofile)**: aktuelles und angestrebtes Niveau für jedes Compliance-Rahmenwerk (darunter NIST CSF 2.0 und NCSC CAF v4.0), Lücken je Bereich, Maßnahmen — [Details](#-reifegrad--cmmi-zielprofile)
-- **Einfache Aktualisierung**: Kanäle stable / beta, `git pull` oder Schaltfläche „Aktualisieren“ in der Administration — [Details](#aktualisierung)
+- **In die Anwendung integrierte Aktualisierung**: installierte und verfügbare Version unter Administration → Version, Schaltfläche „Aktualisieren“ (Kanäle stable / beta, automatische Sicherung und Gesundheitsprüfung) oder `scripts/update.sh` auf der Kommandozeile — [Details](#aktualisierung)
 - **100 % selbst gehostet**: Ihre Daten verlassen niemals Ihre Infrastruktur
 
 ---

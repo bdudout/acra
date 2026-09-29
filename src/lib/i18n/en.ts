@@ -832,6 +832,8 @@ export const en: Translations = {
     },
   },
   newAnalysis: {
+    fromProjet: 'Start from a 360 project (optional)', fromProjetNone: 'No project',
+    fromProjetHint: 'Reuses the project name and description and links the analysis to the project.',
     socleDiscoverTitle: 'Multi-entity group?',
     socleDiscoverText: 'You can create a shared “baseline” analysis (common business values, supporting assets and risk sources), mark it as a baseline from its page, and attach the entities’ analyses to it. Ideal for a hospital group, an industrial group or multi-site organisation.',
     title:       'New ACRA analysis',
@@ -1717,6 +1719,7 @@ export const en: Translations = {
     },
   },
   projets: {
+    startCyber: 'Start a cyber analysis', colAnalyses: 'Cyber analyses', startCyberTitle: 'Creates a cyber analysis linked to this project',
     title: 'Projects',
     subtitle: 'Project 360 analyses: the full operational risk of a project, prepared from the organisation’s existing data.',
     launch: 'Launch a project 360',
@@ -1814,6 +1817,11 @@ export const en: Translations = {
     err_generic: 'Creation failed.',
   },
   pilotage: {
+    projets: {
+      title: '360 project tracking', subtitle: 'Progress, deadlines, CISO + Risk Manager sign-off and high risks of the projects.', total: 'Projects', enCours: 'In progress', termines: 'Completed', enRetard: 'Overdue', valides: 'Signed off',
+      colProjet: 'Project', colStatut: 'Status', colRisques: 'Risks', colEleves: 'High', colValidation: 'CISO + RM sign-off', colEcheance: 'Due date',
+      validations: { COMPLETE: 'Complete', PARTIELLE: 'Partial', AUCUNE: 'Pending' }, empty: 'No 360 project yet.', voirTous: 'Open the Projects tab',
+    },
     heatmapTitle: 'Risk map (residual)', heatmapAxis: 'Likelihood × Severity (1-5)',
     verdictTitle: 'Overall risk level', verdictNiveaux: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
     verdictSignaux: {
