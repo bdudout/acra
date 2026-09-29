@@ -12,7 +12,7 @@ import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/exce
 import { checkTabularUpload } from '@/lib/import-file-format'
 import { loadTabularWorkbook } from '@/lib/tabular-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
-import { isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
+import { refineReferenceMapping, isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
 
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
 
@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
       // Feuille sans tableau : périmètre en texte libre ou page de garde (rôle « contexte »).
       const contextKind = detection.type === 'UNKNOWN' ? detectContextSheet(sheet.name, readSheetSample(sheet, 80, 20)) : null
       if (contextKind) detection = { type: 'CONTEXT', confidence: 'MEDIUM', missing: [] }
-      const mapping = isAtelierRole(detection.type) ? suggestAtelierMapping(detection.type, header) : suggestHistoricColumnMapping(header)
       const { lastRow } = sheetUsedBounds(sheet)
       const dataRowCount = contextKind ? Math.max(1, lastRow) : Math.max(0, lastRow - layout.headerRowIndex - 1)
       const dataRows = Array.from({ length: Math.min(500, dataRowCount) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))
@@ -57,6 +56,9 @@ export async function POST(req: NextRequest) {
         const value = row.getCell(column.index + 1).value
         return excelCellText(value)
       }))]))
+      // Une « référence » aux valeurs répétées est un regroupement : on lui préfère la colonne à valeurs uniques.
+      const suggested = isAtelierRole(detection.type) ? suggestAtelierMapping(detection.type, header) : suggestHistoricColumnMapping(header)
+      const mapping = isAtelierRole(detection.type) ? suggested : refineReferenceMapping(suggested, header, profiles)
       const issues = sheetFormulaIssues(sheet)
       return { name: sheet.name, columns: header, profiles, rows: dataRowCount, headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping), warnings: { formulasWithoutValue: issues.withoutValue, formulaErrors: issues.errors } }
     })

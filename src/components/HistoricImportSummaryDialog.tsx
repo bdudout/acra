@@ -13,6 +13,8 @@ export type HistoricImportSummaryLabels = {
   sourceValue: string; expectedValue: string; emptyValue: string
   reasons: Record<string, string>
   ignoredTemplateRows?: string
+  /** Libellés ACRA des champs (clé technique → texte) ; à défaut la clé est affichée. */
+  fieldLabels?: Record<string, string>
   ateliers?: { title: string; counts: Record<string, string> }
   warnings?: { title: string; codes: Record<string, string> }
   close: string
@@ -61,7 +63,7 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
       {ignored.length > 0 && labels.ignoredTemplateRows && <p role="note" className="mt-3 text-sm text-gray-600 dark:text-slate-300">{labels.ignoredTemplateRows.replace('{n}', String(ignored.length))}</p>}
       {result.warnings && result.warnings.length > 0 && labels.warnings && <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50" aria-label={labels.warnings.title}>
         <h3 className="font-semibold">{labels.warnings.title} ({result.warnings.length})</h3>
-        <ul className="mt-1 list-inside list-disc space-y-0.5">{result.warnings.slice(0, 30).map((w, i) => { const [code, ...args] = w.split(':'); return <li key={i}>{(labels.warnings!.codes[code] ?? code).replace('{ref}', args.join(':')).replace('{a}', args[1] ?? '').replace('{b}', args[2] ?? '')}</li> })}</ul>
+        <ul className="mt-1 list-inside list-disc space-y-0.5">{result.warnings.slice(0, 30).map((w, i) => { const [code, ...args] = w.split(':'); return <li key={i}>{(labels.warnings!.codes[code] ?? code).replace('{ref}', args.join(':')).replace('{n}', args[0] ?? '').replace('{a}', args[1] ?? '').replace('{b}', args[2] ?? '')}</li> })}</ul>
       </section>}
       {(omitted.length > 0 || rejected.length > 0) && <section className="mt-4 space-y-3" aria-label={labels.rejectedRows}>
         {rejected.length > 0 && <DecisionList decisions={rejected} title={labels.rejectedRows} labels={labels} decisionLabel={decisionLabel} tone="red" />}
@@ -75,5 +77,5 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
 
 function DecisionList({ decisions, title, labels, decisionLabel, tone }: { decisions: HistoricImportDecision[]; title: string; labels: HistoricImportSummaryLabels; decisionLabel: (decision: HistoricImportDecision) => string; tone: 'red' | 'amber' }) {
   const classes = tone === 'red' ? 'border-red-200 bg-red-50 text-red-950 dark:border-red-500/50 dark:bg-red-950/40 dark:text-red-50' : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50'
-  return <div className={`rounded-lg border p-3 ${classes}`}><h3 className="font-semibold">{title}</h3><ul className="mt-2 space-y-2 text-sm">{decisions.map((decision, index) => <li key={`${decision.sheetName}:${decision.row}:${decision.field}:${index}`}><p className="font-medium">{decisionLabel(decision)}{decision.field ? ` — ${decision.field}` : ''}</p><p className="text-xs">{labels.sourceValue}: {decision.sourceColumn ?? decision.field ?? '—'} = <code className="rounded bg-white/70 px-1 py-0.5 text-current dark:bg-slate-950/60">{decision.sourceValue?.trim() || labels.emptyValue}</code>{decision.expectedValue && <> · {labels.expectedValue}: {decision.expectedValue}</>}</p>{decision.reason && <p className="text-xs">{labels.reasons[decision.reason]}</p>}</li>)}</ul></div>
+  return <div className={`rounded-lg border p-3 ${classes}`}><h3 className="font-semibold">{title}</h3><ul className="mt-2 space-y-2 text-sm">{decisions.map((decision, index) => <li key={`${decision.sheetName}:${decision.row}:${decision.field}:${index}`}><p className="font-medium">{decisionLabel(decision)}{decision.field ? ` — ${labels.fieldLabels?.[decision.field] ?? decision.field}` : ''}</p><p className="text-xs">{labels.sourceValue}: {decision.sourceColumn ?? decision.field ?? '—'} = <code className="rounded bg-white/70 px-1 py-0.5 text-current dark:bg-slate-950/60">{decision.sourceValue?.trim() || labels.emptyValue}</code>{decision.expectedValue && <> · {labels.expectedValue}: {decision.expectedValue}</>}</p>{decision.reason && <p className="text-xs">{labels.reasons[decision.reason]}</p>}</li>)}</ul></div>
 }

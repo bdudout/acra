@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (26) — import universel — session de test réelle (Docker/DB)
+
+- Tests réels exécutés (voir §7 de `docs/specs/import-universel-plan-de-test.md`) : classeurs BTP/avocats de bout en bout en base, 7 défauts corrigés avec tests. Base Postgres relancée après suppression d'un `postmaster.pid` corrompu (octets nuls) dans le volume `ebios-rm_postgres_data`.
+- Vérifié : tsc, `npm test` (2867), `i18n:check`. Spec local `e2e/local-import-fixtures.spec.ts` (exclu via `.git/info/exclude`, ne pas commiter).
+- Reste : revue « lignes à décider » à regrouper ; IDOR/gel/idempotence/volumétrie à tester ; liens actifs↔VM, champs calculés, API v2/MCP.
+
 ## 2026-09-29 (25) — import universel — JSON libre (B-IMP-70, première version)
 
 - Fait : `lib/json-workbook.ts` (tableaux d'objets → feuilles, imbriqués → feuille enfant + colonne parent, scalaires racine → `Propriétés`, bornes), `lib/tabular-workbook.ts` (chargement unique xlsx/csv/json pour aperçu + exécution), `looksLikeAcraJson` (JSON non ACRA → assistant), diagnostic JSON précis dans l'aperçu.

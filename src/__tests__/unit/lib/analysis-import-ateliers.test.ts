@@ -50,6 +50,11 @@ describe('écriture des ateliers 1 à 4', () => {
     expect(d.customControles[0]).toMatchObject({ nom: 'Les comptes sont nominatifs', categorie: 'Protection / Identités' })
     expect(d.socleSecurite[0]).toMatchObject({ ref: d.customControles[0].ref, statut: expect.any(String) })
   })
+  it('risques résiduels : rattachés aux risques importés (canonique RI1 = RI_01), sinon avertissement', async () => {
+    const withResidual = { ...content(), residualRisks: [{ riskExternalId: 'RI1', residualGravity: 2, residualLikelihood: 1 }, { riskExternalId: 'RI9' }] } as AtelierContent
+    const a = await writeAtelierContent(fakeTx().tx as never, withResidual, { analyseId: 'a1', riskRefs: ['RI_01'] })
+    expect(a.warnings.filter(w => w.startsWith('residual_risk_reference_not_found'))).toEqual(['residual_risk_reference_not_found:RI9'])
+  })
   it('sources de risque avec objectifs, parties prenantes recalculées, scénarios liés par référence (variantes VM02/VM_02, ER03/ER_03)', async () => {
     const { tx, created } = fakeTx()
     const r = await writeAtelierContent(tx as never, content(), { analyseId: 'a1' })

@@ -39,3 +39,26 @@ Fixtures locales (NON versionnées) : `.local-fixtures/import-universel/`.
 ## 6. Points à ajuster si constatés
 - UX de sélection d'un risque parent pour les feuilles enfants JSON.
 - Reste à développer : liens actifs supports ↔ valeurs métier, avertissement champs calculés (divergence vs vraisemblance × impact), profil JSON persistant par chemins (B-IMP-70 complet), API v2 / MCP (B-IMP-72/73).
+
+## 7. Résultats de la session de test (2026-09-29, Docker + DB locaux, dev :3000)
+
+Exécutés (spec local `e2e/local-import-fixtures.spec.ts`, exclu de git) :
+- [x] e2e `analysis-import` + `analysis-import-ateliers` : 4/4 verts.
+- [x] Classeurs BTP et avocats (15 feuilles) : profil appliqué + alias `R_`⇒`RI_` coché → **6 VM, 8 ER, 10 SR, 14 PP, 8 SS, 13 SO, 13 risques (stratégies, cotations résiduelles), 15-16 mesures (statuts, échéances, 13-15 liées à leur risque)**, 1 avertissement légitime (écart de gravité SS_04 / SS_06).
+- [x] `.xls` : message dédié (Cause / Solution) ; CSV et JSON libre : feuilles proposées dans l'assistant.
+- [x] Nettoyage des analyses créées.
+
+Défauts trouvés et corrigés (tests unitaires ajoutés) :
+1. Feuille PACS : deux colonnes « Réf. » (regroupement + vraie référence) → doublon « Exploitation » ; `refineReferenceMapping` préfère la colonne aux valeurs uniques.
+2. « Description courte » n'était pas reconnue comme intitulé.
+3. Feuilles non importées (Sommaire, Métriques) produisaient des « champs écartés » au bilan.
+4. Tous les risques résiduels signalés « introuvables » à l'écriture (liste des risques non transmise) alors que les cotations étaient bien appliquées.
+5. Message d'écart de gravité illisible (`SS_04:3:2`) ; clés techniques (`title`, `strategy`) dans le bilan → libellés ACRA.
+6. Statuts (Terminé, A réaliser…) et stratégies (Réduction, Partage, Évitement…) usuels non reconnus sans profil.
+7. Suggestions manquantes : « risques initiaux concernés » → risque lié, « date de mise en œuvre » → échéance.
+
+À traiter / à décider (non corrigé) :
+- Étape « Lignes à décider » très longue (≈ 26 groupes) pour des lignes de gabarit (référence + catégorie, sans intitulé) : regrouper par feuille avec une action globale.
+- Le bandeau « Appliquer ce profil » n'est pas automatique (par conception) : les suggestions couvrent maintenant l'essentiel, le profil ajoute les correspondances de valeurs.
+- Le limiteur de connexion bloque les campagnes e2e répétées (redémarrer le dev pour le réinitialiser).
+- Reste non testé : rôle LECTEUR / autre organisation / analyse gelée (IDOR), volumétrie 500+ lignes, ré-import (idempotence), CSV windows-1252, jeu de langues ≠ FR.

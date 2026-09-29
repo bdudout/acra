@@ -76,8 +76,8 @@ export function summarizeAtelierContent(c: AtelierContent, riskRefs: string[] = 
 type Tx = Prisma.TransactionClient
 
 /** Écrit les ateliers 1 à 4 dans une analyse NOUVELLE (dont le cadrage vient d'être créé), au sein de la transaction de l'import. */
-export async function writeAtelierContent(tx: Tx, c: AtelierContent, ctx: { analyseId: string }): Promise<{ counts: Record<string, number>; warnings: string[] }> {
-  const summary = summarizeAtelierContent(c)
+export async function writeAtelierContent(tx: Tx, c: AtelierContent, ctx: { analyseId: string; riskRefs?: string[] }): Promise<{ counts: Record<string, number>; warnings: string[] }> {
+  const summary = summarizeAtelierContent(c, ctx.riskRefs)
   if (!hasAtelierContent(c)) return { counts: {}, warnings: [] }
   const uid = () => globalThis.crypto.randomUUID()
   const canon = (r: string) => canonicalRef(r)

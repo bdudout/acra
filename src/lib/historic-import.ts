@@ -76,15 +76,15 @@ export function validateHistoricColumnMapping(type: HistoricSheetType, mapping: 
 
 const COLUMN_ALIASES: Record<string, string[]> = {
   externalId: ['reference', 'ref', 'id externe', 'external id', 'risk id', 'action id', 'referenz', 'referencia', 'riferimento'],
-  title: ['libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
+  title: ['description courte', 'short description', 'kurzbeschreibung', 'descripcion corta', 'descrizione breve', 'libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
   gravity: ['gravite', 'severity', 'impact', 'schweregrad', 'auswirkung', 'gravedad', 'impacto', 'gravita', 'impatto'],
   likelihood: ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'],
   description: ['description', 'detail', 'commentaire', 'beschreibung', 'descripcion', 'descrizione', 'comment'],
   strategy: ['strategie', 'traitement', 'treatment', 'strategy', 'behandlung', 'tratamiento', 'trattamento'],
   status: ['statut', 'etat', 'status', 'state', 'estado', 'stato', 'zustand'],
   responsible: ['responsable', 'porteur', 'owner', 'responsible', 'verantwortlich', 'responsabile'],
-  dueDate: ['echeance', 'date cible', 'due date', 'deadline', 'frist', 'falligkeit', 'vencimiento', 'fecha limite', 'scadenza'],
-  riskExternalId: ['reference risque', 'risque id', 'risk id', 'risk reference', 'risiko id', 'riesgo id'],
+  dueDate: ['echeance', 'date de mise en oeuvre', 'date de mise en uvre', 'mise en oeuvre le', 'implementation date', 'date cible', 'due date', 'deadline', 'frist', 'falligkeit', 'vencimiento', 'fecha limite', 'scadenza'],
+  riskExternalId: ['risques initiaux concernes', 'risques concernes', 'risque concerne', 'affected risk', 'reference risque', 'risque id', 'risk id', 'risk reference', 'risiko id', 'riesgo id'],
   actionExternalId: ['reference action', 'action id', 'action reference'],
   analysisExternalId: ['reference analyse', 'analyse id', 'analyse external id', 'analysis id', 'analysis external id', 'analysis reference'],
 }
@@ -174,6 +174,8 @@ export type HistoricColumnProfile = {
   examples: string[]
   values: string[]
   total: number
+  /** Nombre de valeurs distinctes (pour repérer une vraie colonne de référence : valeurs uniques). */
+  distinct?: number
   numeric1to4Count: number
   isoDateCount: number
   measureStatusCount: number
@@ -184,7 +186,29 @@ export type HistoricColumnProfile = {
 const isLevel1to4 = (value: string) => { const l = parseLevelLabel(value); return !!l && l.level >= 1 && l.level <= 4 }
 
 const MEASURE_STATUSES = ['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']
+const STATUS_SYNONYMS: Record<string, string> = {
+  REALISE: 'REALISE', REALISEE: 'REALISE', TERMINE: 'REALISE', TERMINEE: 'REALISE', FAIT: 'REALISE', FAITE: 'REALISE', CLOTURE: 'REALISE', CLOTUREE: 'REALISE', DONE: 'REALISE', CLOSED: 'REALISE', COMPLETED: 'REALISE', COMPLETE: 'REALISE',
+  A_FAIRE: 'A_FAIRE', A_REALISER: 'A_FAIRE', PLANIFIE: 'A_FAIRE', PLANIFIEE: 'A_FAIRE', NON_DEMARRE: 'A_FAIRE', NON_DEMARREE: 'A_FAIRE', TO_DO: 'A_FAIRE', TODO: 'A_FAIRE', OPEN: 'A_FAIRE', PLANNED: 'A_FAIRE', NOT_STARTED: 'A_FAIRE',
+  EN_COURS: 'EN_COURS', IN_PROGRESS: 'EN_COURS', ONGOING: 'EN_COURS', DEMARRE: 'EN_COURS', DEMARREE: 'EN_COURS',
+  REPORTE: 'REPORTE', REPORTEE: 'REPORTE', ABANDONNE: 'REPORTE', ABANDONNE_SUSPENDU: 'REPORTE', SUSPENDU: 'REPORTE', SUSPENDUE: 'REPORTE', POSTPONED: 'REPORTE', ON_HOLD: 'REPORTE', CANCELLED: 'REPORTE',
+}
+/** Statut de mesure ACRA d'après un libellé courant (FR/EN) ; `null` si le libellé n'est pas reconnu (jamais inventé). */
+export function normalizeMeasureStatus(raw: string): string | null {
+  const key = normalise(raw).replace(/ /g, '_').toUpperCase()
+  return STATUS_SYNONYMS[key] ?? null
+}
 const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER']
+const STRATEGY_SYNONYMS: Record<string, string> = {
+  REDUIRE: 'REDUIRE', REDUCTION: 'REDUIRE', REDUCE: 'REDUIRE', MITIGATE: 'REDUIRE', MITIGATION: 'REDUIRE',
+  ACCEPTER: 'ACCEPTER', ACCEPTATION: 'ACCEPTER', ACCEPTE: 'ACCEPTER', ACCEPTEE: 'ACCEPTER', ACCEPT: 'ACCEPTER', ACCEPTED: 'ACCEPTER',
+  TRANSFERER: 'TRANSFERER', TRANSFERT: 'TRANSFERER', PARTAGE: 'TRANSFERER', PARTAGER: 'TRANSFERER', SHARE: 'TRANSFERER', SHARING: 'TRANSFERER', TRANSFERE: 'TRANSFERER', TRANSFER: 'TRANSFERER',
+  REFUSER: 'REFUSER', REFUS: 'REFUSER', EVITER: 'REFUSER', EVITEMENT: 'REFUSER', AVOID: 'REFUSER', AVOIDANCE: 'REFUSER',
+  SURVEILLER: 'SURVEILLER', SURVEILLANCE: 'SURVEILLER', MONITOR: 'SURVEILLER', MONITORING: 'SURVEILLER',
+}
+/** Stratégie de traitement ACRA d'après un libellé courant (FR/EN) ; `null` si non reconnu (jamais inventé). */
+export function normalizeStrategy(raw: string): string | null {
+  return STRATEGY_SYNONYMS[normalise(raw).replace(/ /g, '_').toUpperCase()] ?? null
+}
 const isIsoDate = (value: string) => (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00Z`).valueOf())) || /^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(value)
 
 /** Profil compact d'une colonne : exemples et compteurs, sans renvoyer le classeur complet au navigateur. */
@@ -195,10 +219,11 @@ export function profileHistoricColumn(values: string[]): HistoricColumnProfile {
     examples: [...new Set(populated)].slice(0, 3),
     values: [...new Set(populated)].slice(0, 100),
     total: populated.length,
+    distinct: new Set(populated).size,
     numeric1to4Count: populated.filter(isLevel1to4).length,
     isoDateCount: populated.filter(isIsoDate).length,
-    measureStatusCount: normalized.filter(value => MEASURE_STATUSES.includes(value)).length,
-    strategyCount: normalized.filter(value => STRATEGIES.includes(value)).length,
+    measureStatusCount: populated.filter(value => normalizeMeasureStatus(value)).length,
+    strategyCount: populated.filter(value => normalizeStrategy(value)).length,
   }
 }
 
@@ -211,7 +236,7 @@ export function validateHistoricColumnProfile(field: string, profile: HistoricCo
     return { expected: '1–4', total: profile.total, invalidCount: profile.total - profile.numeric1to4Count }
   }
   if (field === 'dueDate') return { expected: 'YYYY-MM-DD ou JJ/MM/AAAA', total: profile.total, invalidCount: profile.total - profile.isoDateCount }
-  if (field === 'status') { const mapped = profile.values.filter(value => valueMapping?.[value] || MEASURE_STATUSES.includes(normalise(value).replace(/ /g, '_').toUpperCase())).length; return { expected: MEASURE_STATUSES.join(' | '), total: profile.total, invalidCount: profile.total - mapped } }
+  if (field === 'status') { const mapped = profile.values.filter(value => valueMapping?.[value] || normalizeMeasureStatus(value)).length; return { expected: MEASURE_STATUSES.join(' | '), total: profile.total, invalidCount: profile.total - mapped } }
   if (field === 'strategy') return { expected: STRATEGIES.join(' | '), total: profile.total, invalidCount: profile.total - profile.strategyCount }
   return { expected: 'texte', total: profile.total, invalidCount: 0 }
 }
@@ -262,6 +287,19 @@ export function validateHistoricImportSelection(sheets: HistoricImportSelection[
   if (needsActionSheet && actions.length === 0) blockers.push({ sheetName: active[0]?.name ?? '', field: '__ACTION_SHEET__' })
   else if (needsActionSheet) requireAny(actions, 'externalId', 'ACTIONS')
   return blockers
+}
+
+/**
+ * Une colonne « Réf. » dont les valeurs se répètent est un regroupement (catégorie), pas une référence : on lui préfère une
+ * autre colonne d'intitulé voisin dont les valeurs sont toutes uniques. Sans candidate unique, la suggestion est conservée.
+ */
+export function refineReferenceMapping(mapping: HistoricColumnMapping, header: string[], profiles: Record<string, HistoricColumnProfile | undefined>): HistoricColumnMapping {
+  const current = mapping.externalId
+  const unique = (column: string) => { const p = profiles[column]; return !!p && p.total > 0 && (p.distinct ?? p.values.length) === p.total }
+  if (!current || unique(current) || !profiles[current]) return mapping
+  const aliases = COLUMN_ALIASES.externalId
+  const candidate = header.find(column => column !== current && unique(column) && aliases.some(alias => normalise(column).includes(alias)))
+  return candidate ? { ...mapping, externalId: candidate } : mapping
 }
 
 /** Suggestions transparentes : le mapping est affiché et reste modifiable avant validation. */
@@ -343,8 +381,8 @@ const expectedRequiredValue = (field: string) => field.endsWith('ExternalId') ? 
 const invalidFormat = (field: string, value: string, statusMapping?: Record<string, string>) => {
   if (field === 'gravity' || field === 'likelihood') return !isLevel1to4(value)
   if (field === 'dueDate') return !isIsoDate(value)
-  if (field === 'strategy') return !STRATEGIES.includes(normalise(value).replace(/ /g, '_').toUpperCase())
-  if (field === 'status') return !MEASURE_STATUSES.includes(normalise(value).replace(/ /g, '_').toUpperCase()) && !statusMapping?.[value]
+  if (field === 'strategy') return !normalizeStrategy(value)
+  if (field === 'status') return !normalizeMeasureStatus(value) && !statusMapping?.[value]
   return false
 }
 
@@ -376,6 +414,7 @@ export function applyHistoricRowOverrides(sheets: HistoricImportSheet[], overrid
 export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): HistoricImportPartition {
   const decisions: HistoricImportDecision[] = []
   const partitioned = sheets.map(sheet => {
+    if (sheet.type === 'UNKNOWN') return sheet // feuille non importée : aucune décision (pas de rejet ni de champ écarté)
     const rows: HistoricImportRow[] = []
     const rowNumbers: number[] = []
     const carriedColumns = Object.entries(sheet.transforms ?? {}).flatMap(([field, transform]) => transform?.carryForward ? splitHistoricMappedColumns(sheet.mapping[field]) : [])
@@ -412,7 +451,7 @@ export function partitionHistoricImportSheets(sheets: HistoricImportSheet[]): Hi
         const value = text(row, column)
         if (!value || !invalidFormat(field, value, sheet.statusMapping)) continue
         for (const sourceColumn of splitHistoricMappedColumns(column)) row[sourceColumn] = ''
-        decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'FIELD_OMITTED', field, reason: 'INVALID_FORMAT' })
+        decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'FIELD_OMITTED', field, reason: 'INVALID_FORMAT', sourceColumn: column, sourceValue: value })
       }
       rows.push(row); rowNumbers.push(sourceRow)
       decisions.push({ sheetName: sheet.name ?? '', row: sourceRow, status: 'READY' })
@@ -450,7 +489,7 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
     }
     if (sheet.type === 'RISKS' && title) {
       const externalId = text(row, sheet.mapping.externalId)
-      result.risks.push({ externalId, title: title.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), gravity: score(row, sheet.mapping.gravity, sheet.scoreMappings?.gravity), likelihood: score(row, sheet.mapping.likelihood, sheet.scoreMappings?.likelihood), strategy: text(row, sheet.mapping.strategy) })
+      result.risks.push({ externalId, title: title.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), gravity: score(row, sheet.mapping.gravity, sheet.scoreMappings?.gravity), likelihood: score(row, sheet.mapping.likelihood, sheet.scoreMappings?.likelihood), strategy: (v => (v ? normalizeStrategy(v) ?? v : undefined))(text(row, sheet.mapping.strategy)) })
       if (externalId) {
         for (const vulnerabilityTitle of values(row, sheet, 'embeddedVulnerabilities')) result.vulnerabilities.push({ riskExternalId: externalId, title: vulnerabilityTitle.slice(0, 500) })
         for (const actionTitle of values(row, sheet, 'embeddedActions')) result.actions.push({ riskExternalId: externalId, title: actionTitle.slice(0, 255) })
@@ -460,7 +499,7 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
       const riskExternalId = first(row, sheet, 'riskExternalId')
       if (riskExternalId) for (const vulnerabilityTitle of values(row, sheet, 'title')) result.vulnerabilities.push({ riskExternalId, title: vulnerabilityTitle.slice(0, 500), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000) })
     }
-    if (sheet.type === 'MEASURES') { const refs = riskRefs(row, sheet); const rawStatus = first(row, sheet, 'status'); const titles = values(row, sheet, 'title'); for (const measureTitle of titles) result.measures.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: refs[0], title: measureTitle.slice(0, 255), description: [descriptionText(row, sheet.mapping.description), refs.length > 1 ? `Risques concernés : ${refs.join(', ')}` : ''].filter(Boolean).join('\n\n').slice(0, 2000) || undefined, status: rawStatus ? sheet.statusMapping?.[rawStatus] ?? rawStatus : undefined, responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
+    if (sheet.type === 'MEASURES') { const refs = riskRefs(row, sheet); const rawStatus = first(row, sheet, 'status'); const titles = values(row, sheet, 'title'); for (const measureTitle of titles) result.measures.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: refs[0], title: measureTitle.slice(0, 255), description: [descriptionText(row, sheet.mapping.description), refs.length > 1 ? `Risques concernés : ${refs.join(', ')}` : ''].filter(Boolean).join('\n\n').slice(0, 2000) || undefined, status: rawStatus ? sheet.statusMapping?.[rawStatus] ?? normalizeMeasureStatus(rawStatus) ?? rawStatus : undefined, responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
     if (sheet.type === 'ACTIONS') { const titles = values(row, sheet, 'title'); for (const actionTitle of titles) result.actions.push({ externalId: titles.length === 1 ? first(row, sheet, 'externalId') : undefined, riskExternalId: first(row, sheet, 'riskExternalId'), title: actionTitle.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), responsible: first(row, sheet, 'responsible'), dueDate: dateText(row, sheet.mapping.dueDate) }) }
     if (sheet.type === 'RISK_ACTION_LINKS') {
       const riskReferences = values(row, sheet, 'riskExternalId')

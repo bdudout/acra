@@ -159,7 +159,7 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
     const response = await prisma.$transaction(async tx => {
     const analyse = await tx.analyse.create({ data: { userId: ctx.userId, organizationId: ctx.organizationId, nom: input.analysis.title, description: input.analysis.description, methode, statut: 'EN_COURS', atelierCourant: 5, cadrage: { create: {} } }, select: { id: true, nom: true } })
     // Les ateliers 1 à 4 ne concernent que la méthode EBIOS RM : une autre méthode ne reçoit pas ces objets (signalé).
-    const ateliers = methode === 'EBIOS_RM' ? await writeAtelierContent(tx, input, { analyseId: analyse.id }) : { counts: {}, warnings: hasAtelierContent(input) ? ['atelier_content_ignored_method'] : [] }
+    const ateliers = methode === 'EBIOS_RM' ? await writeAtelierContent(tx, input, { analyseId: analyse.id, riskRefs: input.risks.flatMap(risk => (risk.externalId ? [risk.externalId] : [])) }) : { counts: {}, warnings: hasAtelierContent(input) ? ['atelier_content_ignored_method'] : [] }
     await writeImportContent(tx, input, { analyseId: analyse.id, organizationId: ctx.organizationId, userId: ctx.userId })
     const data = { analyseId: analyse.id, nom: analyse.nom, created: summary.created, warnings: [...summary.warnings, ...ateliers.warnings], ...(Object.keys(ateliers.counts).length ? { ateliers: ateliers.counts } : {}) }
     const receipt = await tx.analysisImport.create({ data: { organizationId: ctx.organizationId, idempotencyKey: input.idempotencyKey, source: ctx.source, payloadHash, analyseId: analyse.id, response: data }, select: { id: true } })
