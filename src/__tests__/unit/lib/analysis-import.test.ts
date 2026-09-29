@@ -64,3 +64,20 @@ describe('summarizeAnalysisImport', () => {
     expect(summary.created.links).toBe(1)
   })
 })
+
+describe('format v3 : ateliers', () => {
+  const base = { idempotencyKey: 'cle-idempotence-1', analysis: { title: 'Dossier' }, risks: [{ externalId: 'R1', title: 'Risque' }] }
+  it('un paquet sans contenu d’atelier garde l’empreinte d’avant le format v3 (reçus déjà enregistrés rejouables)', async () => {
+    const { analysisImportPayloadHash, parseAnalysisImportRequest } = await import('@/lib/analysis-import')
+    const { createHash } = await import('crypto')
+    const parsed = parseAnalysisImportRequest(base)
+    const legacy = { idempotencyKey: parsed.idempotencyKey, analysis: parsed.analysis, risks: parsed.risks, vulnerabilities: [], measures: [], actions: [], links: [] }
+    expect(analysisImportPayloadHash(parsed)).toBe(createHash('sha256').update(JSON.stringify(legacy)).digest('hex'))
+  })
+  it('un contenu d’atelier change l’empreinte ; deux références qui ne diffèrent que par l’écriture sont un doublon', async () => {
+    const { analysisImportPayloadHash, parseAnalysisImportRequest } = await import('@/lib/analysis-import')
+    const withVm = parseAnalysisImportRequest({ ...base, businessValues: [{ externalId: 'VM_01', title: 'Planification' }] })
+    expect(analysisImportPayloadHash(withVm)).not.toBe(analysisImportPayloadHash(parseAnalysisImportRequest(base)))
+    expect(() => parseAnalysisImportRequest({ ...base, businessValues: [{ externalId: 'VM_01', title: 'A' }, { externalId: 'VM01', title: 'B' }] })).toThrow(/duplicate_external_id:businessValues/)
+  })
+})
