@@ -1088,6 +1088,12 @@ export const en: Translations = {
     controle: 'Control',
     risque: 'Risk',
     motif: 'Reason for temporary acceptance',
+    examples: [
+      { label: 'Replacement project under way', motif: 'The non-compliant component will be replaced as part of a planned project; immediate compliance would require a service interruption.', mesures: 'Enhanced log monitoring, access restricted to the strict minimum, monthly project progress review.' },
+      { label: 'Legacy application that cannot be adapted', motif: 'The application, whose vendor no longer maintains it, technically cannot apply the measure.', mesures: 'Network isolation of the application, allow-list access, verified backups, dated replacement plan.' },
+      { label: 'Resources unavailable in the short term', motif: 'The required team is committed to a priority project; the measure is postponed until that project ends.', mesures: 'Documented manual workaround, weekly review of gaps, compliance deadline set by management.' },
+      { label: 'Third-party contractual constraint', motif: 'The contract with the provider does not include this requirement; renegotiation will only occur at contract renewal.', mesures: 'Security clauses added by amendment as soon as possible, provider audit at renewal, monitoring of service indicators.' },
+    ],
     motifPlaceholder: 'Why temporarily accept this non-conformity? Give an organizational or technical justification.',
     mesuresCompensatoires: 'Compensating measures',
     mesuresPlaceholder: 'Measures in place pending remediation…',
@@ -1587,6 +1593,7 @@ export const en: Translations = {
     },
   },
   appetence: {
+    guide: { what: 'Two complementary views: what governance accepts (RAS, appetite thresholds) and where the organisation stands against these limits (RAD).', how: 'Set thresholds per risk category and the target maturity per framework; the dashboard then compares the actual situation with these limits.', result: 'Clear indicators (within limits, to watch, outside appetite) and material to present to the risk committee.' },
     title: 'Risk appetite',
     subtitle: 'Risk appetite statement (RAS) and risk appetite dashboard (RAD): the limits set by governance and the organisation’s actual position.',
     rasTitle: 'Risk appetite statement (RAS)',
@@ -1619,6 +1626,13 @@ export const en: Translations = {
     voyants: { VERT: 'Within limits', ORANGE: 'Watch', ROUGE: 'Limit breached', GRIS: 'Not available' },
   },
   testsResilience: {
+    guide: { what: 'The annual programme gathers the resilience tests of your information systems and their results, to feed the review report of the ICT risk management framework.', how: 'Add each planned test (pick a type from the official list), follow its status, record findings and create an action for each open finding.', result: 'A completion rate, the critical or important functions covered, the findings to address and the review report ready for proofreading.' },
+    examples: [
+      { intitule: 'Vulnerability assessment of the payment system', type: 'VULNERABILITY', perimetre: 'Servers and applications of the payment information system', fonctionCritique: true, testeur: 'INTERNE' },
+      { intitule: 'Penetration test of the customer portal', type: 'PENETRATION', perimetre: 'Exposed web portal and programming interfaces', fonctionCritique: true, testeur: 'EXTERNE' },
+      { intitule: 'Network security review', type: 'NETWORK_SECURITY', perimetre: 'Firewalls, segmentation and remote access', fonctionCritique: false, testeur: 'INTERNE' },
+      { intitule: 'End-to-end recovery test', type: 'END_TO_END', perimetre: 'Full payment processing chain, from customer to accounting', fonctionCritique: true, testeur: 'INTERNE' },
+    ],
     title: 'Digital operational resilience testing programme',
     subtitle: 'DORA — Regulation (EU) 2022/2554, Articles 24 to 26: plan the tests, record results and findings, then compile the report on the review of the ICT risk management framework (Article 6(5)).',
     annee: 'Programme year',
@@ -1718,7 +1732,18 @@ export const en: Translations = {
       communication: { titre: 'Communication', description: 'Present the risk map and its changes to governance bodies (risk committee, executive management) and share it with risk owners.' },
     },
   },
+  exemples: {
+    guideTitle: 'Understanding this module',
+    title: 'Examples (click to prefill)', guideWhat: 'What it is for', guideHow: 'How to use it', guideResult: 'What you get out of it',
+  },
   projets: {
+    guide: { what: 'A 360 project assesses all the operational risk of a project: cyber, IT, project, business, fraud and outsourcing.', how: 'Launch a project, confirm the questionnaire (already prefilled from your data), then review the proposed risks.', result: 'A dashboard per domain, CISO + Risk Manager sign-off, and risks ready to feed a cyber analysis.' },
+    examples: [
+      { nom: 'Cloud migration', description: 'Migration of the management application (payroll and HR) to cloud hosting: data transfer, cut-over, operations entrusted to a provider.' },
+      { nom: 'Customer portal redesign', description: 'New customer web portal: authentication, personal area, online payment and mobile app.' },
+      { nom: 'New payment service', description: 'Launch of an online payment service with a payment provider: financial flows, fraud prevention, 24/7 availability.' },
+      { nom: 'Payroll outsourcing', description: 'Transfer of payroll processing to a provider: employee personal data, service continuity, reversibility.' },
+    ],
     startCyber: 'Start a cyber analysis', colAnalyses: 'Cyber analyses', startCyberTitle: 'Creates a cyber analysis linked to this project',
     title: 'Projects',
     subtitle: 'Project 360 analyses: the full operational risk of a project, prepared from the organisation’s existing data.',
@@ -3793,6 +3818,7 @@ export const en: Translations = {
     REJETE: 'Rejected', TERMINE: 'Completed', ARCHIVE: 'Archived',
   } as Record<string, string>,
   maturite: {
+    guide: { what: 'Maturity measures how far a framework is implemented on the CMMI scale, and the gap with the target level.', how: 'Enter the current and target level per domain; the gap is computed automatically and can lead to actions.', result: 'A progression path per domain and reasoned investment priorities.' },
     title: 'Maturity',
     subtitle: 'Current profile and target profile on the CMMI scale, for each compliance framework.',
     rasRad: '“Appetite” reading: the target level set by governance acts as a risk appetite statement (RAS); the current/target gap by domain acts as a risk appetite dashboard (RAD). Same object as compliance: an item assessed here is the same control as in compliance, with its actions.',

@@ -42,4 +42,14 @@ describe('DerogationsRegistre — actions en place', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
     expect(refresh).not.toHaveBeenCalled()
   })
+
+  it('un exemple de motif préremplit le motif et les mesures compensatoires', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ referentiels: [] }) }))
+    render(<DerogationsRegistre rows={[]} locale="fr" canCreate userId="dem" userRole="ANALYSTE" secondeLigneActive />)
+    fireEvent.click(screen.getByRole('button', { name: /Demander une dérogation/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Projet de remplacement en cours' }))
+    const zones = screen.getAllByRole('textbox') as HTMLTextAreaElement[]
+    expect(zones.some(z => z.value.length > 20)).toBe(true)
+    expect(zones.filter(z => z.value.length > 20).length).toBe(2)
+  })
 })

@@ -1088,6 +1088,12 @@ export const it: Translations = {
     controle: 'Controllo',
     risque: 'Rischio',
     motif: 'Motivo dell\'accettazione temporanea',
+    examples: [
+      { label: 'Progetto di sostituzione in corso', motif: 'Il componente non conforme sarà sostituito nell’ambito di un progetto pianificato; l’adeguamento immediato richiederebbe un’interruzione del servizio.', mesures: 'Monitoraggio rafforzato dei log, accesso limitato allo stretto necessario, verifica mensile dell’avanzamento del progetto.' },
+      { label: 'Applicazione datata non adattabile', motif: 'L’applicazione, che il fornitore non mantiene più, non consente tecnicamente di applicare la misura.', mesures: 'Isolamento di rete dell’applicazione, accesso tramite lista consentita, backup verificati, piano di sostituzione datato.' },
+      { label: 'Risorse non disponibili a breve termine', motif: 'Il team necessario è impegnato in un progetto prioritario; la misura è rinviata al termine di tale progetto.', mesures: 'Misura sostitutiva manuale documentata, verifica settimanale degli scostamenti, scadenza di adeguamento fissata dalla direzione.' },
+      { label: 'Vincolo contrattuale di un terzo', motif: 'Il contratto con il fornitore non prevede questo requisito; la rinegoziazione avverrà solo alla scadenza del contratto.', mesures: 'Clausole di sicurezza aggiunte tramite addendum appena possibile, audit del fornitore alla scadenza, monitoraggio degli indicatori di servizio.' },
+    ],
     motifPlaceholder: 'Perché accettare temporaneamente questa non conformità? Fornisci una giustificazione organizzativa o tecnica.',
     mesuresCompensatoires: 'Misure compensative',
     mesuresPlaceholder: 'Misure adottate in attesa della messa in conformità…',
@@ -1587,6 +1593,7 @@ export const it: Translations = {
     },
   },
   appetence: {
+    guide: { what: 'Due viste complementari: ciò che la governance accetta (RAS, soglie di appetito) e dove si colloca l’organizzazione rispetto a tali limiti (RAD).', how: 'Fissate le soglie per categoria di rischio e la maturità obiettivo per quadro di riferimento; la dashboard confronta poi la situazione reale con questi limiti.', result: 'Indicatori chiari (entro i limiti, da monitorare, oltre l’appetito) e un supporto da presentare al comitato rischi.' },
     title: 'Propensione al rischio',
     subtitle: 'Dichiarazione di propensione al rischio (RAS) e cruscotto di propensione (RAD): i limiti fissati dalla governance e la posizione reale dell’organizzazione.',
     rasTitle: 'Dichiarazione di propensione al rischio (RAS)',
@@ -1619,6 +1626,13 @@ export const it: Translations = {
     voyants: { VERT: 'Entro i limiti', ORANGE: 'Attenzione', ROUGE: 'Limite superato', GRIS: 'Non disponibile' },
   },
   testsResilience: {
+    guide: { what: 'Il programma annuale riunisce i test di resilienza dei vostri sistemi informativi e i relativi risultati, per alimentare la relazione di riesame del quadro di gestione del rischio ICT.', how: 'Aggiungete ogni test previsto (scegliete un tipo dall’elenco ufficiale), seguitene lo stato, registrate le risultanze e create un’azione per ogni risultanza aperta.', result: 'Un tasso di realizzazione, le funzioni critiche o importanti coperte, le risultanze da trattare e la relazione di riesame pronta per la lettura.' },
+    examples: [
+      { intitule: 'Analisi delle vulnerabilità del sistema di pagamento', type: 'VULNERABILITY', perimetre: 'Server e applicazioni del sistema informativo di pagamento', fonctionCritique: true, testeur: 'INTERNE' },
+      { intitule: 'Test di intrusione del portale clienti', type: 'PENETRATION', perimetre: 'Portale web e interfacce di programmazione esposti', fonctionCritique: true, testeur: 'EXTERNE' },
+      { intitule: 'Verifica della sicurezza della rete', type: 'NETWORK_SECURITY', perimetre: 'Firewall, segmentazione e accessi remoti', fonctionCritique: false, testeur: 'INTERNE' },
+      { intitule: 'Test end-to-end del ripristino', type: 'END_TO_END', perimetre: 'Intera catena di elaborazione dei pagamenti, dal cliente alla contabilità', fonctionCritique: true, testeur: 'INTERNE' },
+    ],
     title: 'Programma di test di resilienza operativa digitale',
     subtitle: 'DORA — Regolamento (UE) 2022/2554, articoli da 24 a 26: pianificate i test, registrate risultati e rilievi, quindi redigete la relazione in merito al riesame del quadro per la gestione dei rischi informatici (articolo 6, paragrafo 5).',
     annee: 'Anno del programma',
@@ -1718,7 +1732,18 @@ export const it: Translations = {
       communication: { titre: 'Comunicazione', description: 'Presentare la mappa dei rischi e la sua evoluzione agli organi di governance (comitato rischi, direzione) e diffonderla ai proprietari dei rischi.' },
     },
   },
+  exemples: {
+    guideTitle: 'Capire questo modulo',
+    title: 'Esempi (clicca per precompilare)', guideWhat: 'A cosa serve', guideHow: 'Come usarlo', guideResult: 'Cosa se ne ricava',
+  },
   projets: {
+    guide: { what: 'Un progetto 360 valuta tutto il rischio operativo di un progetto: cyber, IT, progetto, business, frode ed esternalizzazione.', how: 'Avvia un progetto, conferma il questionario (già precompilato con i tuoi dati) ed esamina i rischi proposti.', result: 'Una dashboard per ambito, la validazione di CISO + Risk Manager e rischi pronti ad alimentare un’analisi cyber.' },
+    examples: [
+      { nom: 'Migrazione al cloud', description: 'Migrazione dell’applicazione gestionale (paghe e risorse umane) verso un hosting cloud: trasferimento dei dati, passaggio in produzione, gestione affidata a un fornitore.' },
+      { nom: 'Rifacimento del portale clienti', description: 'Nuovo portale web per i clienti: autenticazione, area personale, pagamento online e app mobile.' },
+      { nom: 'Nuovo servizio di pagamento', description: 'Lancio di un servizio di pagamento online con un fornitore di pagamenti: flussi finanziari, contrasto alle frodi, disponibilità 24 ore su 24.' },
+      { nom: 'Esternalizzazione delle paghe', description: 'Trasferimento dell’elaborazione delle paghe a un fornitore: dati personali dei dipendenti, continuità del servizio, reversibilità.' },
+    ],
     startCyber: 'Avvia un’analisi cyber', colAnalyses: 'Analisi cyber', startCyberTitle: 'Crea un’analisi cyber collegata a questo progetto',
     title: 'Progetti',
     subtitle: 'Analisi di progetto 360: tutto il rischio operativo di un progetto, preparato a partire dai dati esistenti dell’organizzazione.',
@@ -3793,6 +3818,7 @@ export const it: Translations = {
     REJETE: 'Rifiutata', TERMINE: 'Completata', ARCHIVE: 'Archiviata',
   } as Record<string, string>,
   maturite: {
+    guide: { what: 'La maturità misura quanto un quadro di riferimento è attuato sulla scala CMMI e lo scarto rispetto al livello obiettivo.', how: 'Indicate il livello attuale e quello obiettivo per ambito; lo scarto si calcola da solo e può dare luogo ad azioni.', result: 'Un percorso di progresso per ambito e priorità di investimento motivate.' },
     title: 'Maturità',
     subtitle: 'Profilo attuale e profilo obiettivo sulla scala CMMI, per ogni framework di conformità.',
     rasRad: 'Lettura di «propensione»: il livello obiettivo fissato dalla governance funge da dichiarazione di propensione al rischio (RAS); la lacuna attuale/obiettivo per dominio, da cruscotto di propensione (RAD). Stesso oggetto della conformità: un punto valutato qui è lo stesso controllo della conformità, con le sue azioni.',

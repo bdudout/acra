@@ -6,6 +6,32 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (13) — Claude Code : cadrage reporting GRC (1.0.4) + exemples des modules récents
+
+**Branche** : `feat/historical-excel-import` (PR #191 fusionnée ; on continue sur cette branche,
+puis nouvelle PR). **Décision produit** : pas de publication de la v1.0.4 pour l'instant (la
+1.0.3 vient de sortir) ; on ajoute d'abord des fonctionnalités. Notes de release brouillon :
+`docs/releases/v1.0.4.md` (à compléter au fil des lots).
+
+- **Cadrage détaillé** : `docs/specs/reporting-grc-besoins.md` — modules Incidents, Pertes,
+  Contrôle permanent, Audit et **reporting** ; 9 contextes cibles, 4 couches d'adaptation
+  (vocabulaire, catalogues, règles/seuils, workflows/droits), besoins B-INC/B-PER/B-CTL/B-AUD,
+  catalogue de 14 rapports, gabarits sectoriels, lots L1–L6, 8 décisions à trancher
+  (recommandations en gras). Contenu réglementaire = « à sourcer » (EUR-Lex/officiel) à l'implémentation.
+- **Exemples et explications (L6, lot 1)** : composants `ExampleChips` (pastilles cliquables) et
+  `ModuleGuide` (« À quoi ça sert / Comment s'en servir / Ce que vous en tirez ») ; branchés sur
+  Projets (4 projets types), Dérogations (4 motifs + mesures), Tests de résilience DORA (4 tests
+  aux types officiels), et guides sur RAS/RAD et Maturité. i18n ×5 (`exemples`, `projets.guide/examples`,
+  `derogations.examples`, `testsResilience.guide/examples`, `appetence.guide`, `maturite.guide`) ;
+  test de parité `exemples-modules-i18n`.
+- **Vérifié** : `tsc` 0 · `npm test` **2309/2309** · `i18n:check` · e2e `projets.spec.ts` vert.
+  `npm run build` non relancé (composants et i18n seulement).
+- **Prochain pas** : trancher les décisions du §9 de la spec (surtout l'ordre des lots), puis L1
+  (régimes de notification + pertes multi-composantes) en TDD ; poursuivre L6 (exemples
+  Incidents/Contrôle/Audit) avec L1–L4.
+
+---
+
 ## 2026-09-29 (12) — Claude Code : reprise de Codex, cockpit GRC corrigé, projets ⇄ analyse cyber, READMEs
 
 **Branche** : `feat/historical-excel-import` (PR #191). Commits `88312d0` (correctifs CI),

@@ -108,4 +108,9 @@ describe('MaturityDashboard', () => {
     expect(screen.queryByRole('button', { name: 'Créer une action' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Exporter (CSV)' }).getAttribute('href')).toBe('/api/maturite/export?referentiel=NCSC_CAF')
   })
+
+  it('présente le bandeau explicatif du module', async () => {
+    render(<MaturityDashboard {...props()} />)
+    expect(await screen.findByText('À quoi ça sert')).toBeTruthy()
+  })
 })

@@ -1087,6 +1087,12 @@ export const de: Translations = {
     controle: 'Kontrolle',
     risque: 'Risiko',
     motif: 'Grund für die vorübergehende Akzeptanz',
+    examples: [
+      { label: 'Ersatzprojekt läuft', motif: 'Die nicht konforme Komponente wird im Rahmen eines geplanten Projekts ersetzt; eine sofortige Anpassung würde eine Betriebsunterbrechung erfordern.', mesures: 'Verstärkte Überwachung der Protokolle, Zugriff auf das Notwendige beschränkt, monatliche Fortschrittsprüfung des Projekts.' },
+      { label: 'Alte Anwendung nicht anpassbar', motif: 'Die Anwendung, die der Hersteller nicht mehr weiterentwickelt, kann die Maßnahme technisch nicht umsetzen.', mesures: 'Netzwerkisolierung der Anwendung, Zugriff per Positivliste, geprüfte Sicherungen, terminierter Ersatzplan.' },
+      { label: 'Kurzfristig keine Ressourcen', motif: 'Das erforderliche Team ist in einem vorrangigen Vorhaben gebunden; die Maßnahme wird bis zu dessen Abschluss verschoben.', mesures: 'Dokumentierte manuelle Ersatzmaßnahme, wöchentliche Prüfung der Abweichungen, von der Leitung festgelegte Frist zur Herstellung der Konformität.' },
+      { label: 'Vertragliche Einschränkung eines Dritten', motif: 'Der Vertrag mit dem Dienstleister enthält diese Anforderung nicht; eine Neuverhandlung erfolgt erst zum Vertragsende.', mesures: 'Sicherheitsklauseln per Nachtrag so bald wie möglich, Audit des Dienstleisters zum Vertragsende, Überwachung der Leistungskennzahlen.' },
+    ],
     motifPlaceholder: 'Warum diese Nichtkonformität vorübergehend akzeptieren? Geben Sie eine organisatorische oder technische Begründung an.',
     mesuresCompensatoires: 'Kompensierende Maßnahmen',
     mesuresPlaceholder: 'Bis zur Behebung getroffene Maßnahmen…',
@@ -1586,6 +1592,7 @@ export const de: Translations = {
     },
   },
   appetence: {
+    guide: { what: 'Zwei ergänzende Sichten: was die Leitung akzeptiert (RAS, Risikoappetit-Schwellen) und wo die Organisation gegenüber diesen Grenzen steht (RAD).', how: 'Legen Sie Schwellen je Risikokategorie und die angestrebte Reife je Regelwerk fest; das Dashboard vergleicht dann die tatsächliche Lage mit diesen Grenzen.', result: 'Klare Ampeln (innerhalb der Grenzen, beobachten, außerhalb des Appetits) und Material für den Risikoausschuss.' },
     title: 'Risikoappetit',
     subtitle: 'Risikoappetit-Erklärung (RAS) und Risikoappetit-Dashboard (RAD): die von der Governance gesetzten Grenzen und die tatsächliche Lage der Organisation.',
     rasTitle: 'Risikoappetit-Erklärung (RAS)',
@@ -1618,6 +1625,13 @@ export const de: Translations = {
     voyants: { VERT: 'Innerhalb der Grenzen', ORANGE: 'Beobachten', ROUGE: 'Grenze überschritten', GRIS: 'Keine Angabe' },
   },
   testsResilience: {
+    guide: { what: 'Das Jahresprogramm bündelt die Resilienztests Ihrer Informationssysteme und deren Ergebnisse als Grundlage für den Überprüfungsbericht zum IKT-Risikomanagementrahmen.', how: 'Erfassen Sie jeden geplanten Test (Typ aus der offiziellen Liste), verfolgen Sie den Status, halten Sie Feststellungen fest und legen Sie zu jeder offenen Feststellung eine Maßnahme an.', result: 'Eine Durchführungsquote, die abgedeckten kritischen oder wichtigen Funktionen, die zu bearbeitenden Feststellungen und der zur Prüfung bereite Überprüfungsbericht.' },
+    examples: [
+      { intitule: 'Schwachstellenanalyse des Zahlungssystems', type: 'VULNERABILITY', perimetre: 'Server und Anwendungen des Zahlungs-Informationssystems', fonctionCritique: true, testeur: 'INTERNE' },
+      { intitule: 'Penetrationstest des Kundenportals', type: 'PENETRATION', perimetre: 'Exponiertes Webportal und Programmierschnittstellen', fonctionCritique: true, testeur: 'EXTERNE' },
+      { intitule: 'Überprüfung der Netzwerksicherheit', type: 'NETWORK_SECURITY', perimetre: 'Firewalls, Segmentierung und Fernzugriffe', fonctionCritique: false, testeur: 'INTERNE' },
+      { intitule: 'End-to-End-Test der Wiederherstellung', type: 'END_TO_END', perimetre: 'Gesamte Zahlungsverarbeitungskette vom Kunden bis zur Buchhaltung', fonctionCritique: true, testeur: 'INTERNE' },
+    ],
     title: 'Programm für die Tests der digitalen operationalen Resilienz',
     subtitle: 'DORA — Verordnung (EU) 2022/2554, Artikel 24 bis 26: Tests planen, Ergebnisse und Feststellungen erfassen und den Bericht über die Überprüfung des IKT-Risikomanagementrahmens erstellen (Artikel 6 Absatz 5).',
     annee: 'Programmjahr',
@@ -1717,7 +1731,18 @@ export const de: Translations = {
       communication: { titre: 'Kommunikation', description: 'Die Risikolandkarte und ihre Entwicklung den Governance-Gremien (Risikoausschuss, Geschäftsleitung) vorstellen und den Risikoeigentümern bereitstellen.' },
     },
   },
+  exemples: {
+    guideTitle: 'Dieses Modul verstehen',
+    title: 'Beispiele (zum Vorausfüllen anklicken)', guideWhat: 'Wozu es dient', guideHow: 'So verwenden Sie es', guideResult: 'Was Sie davon haben',
+  },
   projets: {
+    guide: { what: 'Ein 360-Projekt bewertet das gesamte operationelle Risiko eines Projekts: Cyber, IT, Projekt, Fachbereich, Betrug und Auslagerung.', how: 'Starten Sie ein Projekt, bestätigen Sie den Fragebogen (bereits aus Ihren Daten vorausgefüllt) und prüfen Sie die vorgeschlagenen Risiken.', result: 'Ein Dashboard je Bereich, die Freigabe durch CISO + Risikomanager und Risiken, die eine Cyber-Analyse speisen können.' },
+    examples: [
+      { nom: 'Migration in die Cloud', description: 'Migration der Verwaltungsanwendung (Lohn und Personal) in ein Cloud-Hosting: Datenübernahme, Umschaltung, Betrieb durch einen Dienstleister.' },
+      { nom: 'Neugestaltung des Kundenportals', description: 'Neues Webportal für Kunden: Authentifizierung, persönlicher Bereich, Online-Zahlung und mobile App.' },
+      { nom: 'Neuer Zahlungsdienst', description: 'Einführung eines Online-Zahlungsdienstes mit einem Zahlungsdienstleister: Geldflüsse, Betrugsbekämpfung, Verfügbarkeit rund um die Uhr.' },
+      { nom: 'Auslagerung der Lohnabrechnung', description: 'Übertragung der Lohnabrechnung an einen Dienstleister: personenbezogene Daten der Beschäftigten, Betriebskontinuität, Rückführbarkeit.' },
+    ],
     startCyber: 'Cyber-Analyse starten', colAnalyses: 'Cyber-Analysen', startCyberTitle: 'Erstellt eine mit diesem Projekt verknüpfte Cyber-Analyse',
     title: 'Projekte',
     subtitle: 'Projektanalysen 360: das gesamte operationelle Risiko eines Projekts, vorbereitet aus den vorhandenen Daten der Organisation.',
@@ -3792,6 +3817,7 @@ export const de: Translations = {
     REJETE: 'Abgelehnt', TERMINE: 'Abgeschlossen', ARCHIVE: 'Archiviert',
   } as Record<string, string>,
   maturite: {
+    guide: { what: 'Die Reife misst, wie weit ein Regelwerk auf der CMMI-Skala umgesetzt ist, und die Lücke zum Zielniveau.', how: 'Erfassen Sie Ist- und Zielniveau je Bereich; die Lücke wird automatisch berechnet und kann zu Maßnahmen führen.', result: 'Ein Entwicklungspfad je Bereich und begründete Investitionsprioritäten.' },
     title: 'Reifegrad',
     subtitle: 'Ist-Profil und Zielprofil auf der CMMI-Skala, für jedes Compliance-Rahmenwerk.',
     rasRad: 'Lesart „Risikoappetit“: Das von der Governance festgelegte Zielniveau entspricht einer Risikoappetit-Erklärung (RAS); die Lücke zwischen Ist und Ziel je Bereich einem Risikoappetit-Dashboard (RAD). Gleiches Objekt wie die Compliance: Ein hier bewerteter Punkt ist dieselbe Kontrolle wie in der Compliance, mit ihren Maßnahmen.',

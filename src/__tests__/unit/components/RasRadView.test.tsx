@@ -34,4 +34,9 @@ describe('RasRadView', () => {
     expect(within(rad).getByText('Module non activé')).toBeTruthy()
     expect(screen.getByText(/Statut global/).parentElement?.textContent).toContain('Limite franchie')
   })
+
+  it('présente le bandeau explicatif du module', async () => {
+    render(<RasRadView data={data} />)
+    expect(await screen.findByText('À quoi ça sert')).toBeTruthy()
+  })
 })

@@ -1088,6 +1088,12 @@ export const es: Translations = {
     controle: 'Control',
     risque: 'Riesgo',
     motif: 'Motivo de la aceptación temporal',
+    examples: [
+      { label: 'Proyecto de sustitución en curso', motif: 'El componente no conforme se sustituirá en un proyecto planificado; la adecuación inmediata exigiría interrumpir el servicio.', mesures: 'Vigilancia reforzada de los registros, acceso restringido al mínimo, revisión mensual del avance del proyecto.' },
+      { label: 'Aplicación antigua no adaptable', motif: 'La aplicación, cuyo editor ya no la mantiene, no permite técnicamente aplicar la medida.', mesures: 'Aislamiento de red de la aplicación, acceso por lista blanca, copias de seguridad verificadas, plan de sustitución con fecha.' },
+      { label: 'Recursos no disponibles a corto plazo', motif: 'El equipo necesario está dedicado a un proyecto prioritario; la medida se aplaza hasta su finalización.', mesures: 'Medida sustitutiva manual documentada, revisión semanal de las desviaciones, plazo de adecuación fijado por la dirección.' },
+      { label: 'Restricción contractual de un tercero', motif: 'El contrato con el proveedor no prevé este requisito; su renegociación solo se hará al vencimiento del contrato.', mesures: 'Cláusulas de seguridad añadidas por adenda lo antes posible, auditoría del proveedor al vencimiento, seguimiento de los indicadores de servicio.' },
+    ],
     motifPlaceholder: '¿Por qué aceptar temporalmente esta no conformidad? Indique una justificación organizativa o técnica.',
     mesuresCompensatoires: 'Medidas compensatorias',
     mesuresPlaceholder: 'Medidas establecidas a la espera de la subsanación…',
@@ -1587,6 +1593,7 @@ export const es: Translations = {
     },
   },
   appetence: {
+    guide: { what: 'Dos vistas complementarias: lo que acepta la dirección (RAS, umbrales de apetito) y dónde se sitúa la organización frente a esos límites (RAD).', how: 'Fije los umbrales por categoría de riesgo y la madurez objetivo por marco; el panel compara después la situación real con esos límites.', result: 'Indicadores claros (dentro del límite, a vigilar, fuera del apetito) y un soporte para presentar al comité de riesgos.' },
     title: 'Apetito de riesgo',
     subtitle: 'Declaración de apetito de riesgo (RAS) y cuadro de mando de apetito (RAD): los límites fijados por la gobernanza y la posición real de la organización.',
     rasTitle: 'Declaración de apetito de riesgo (RAS)',
@@ -1619,6 +1626,13 @@ export const es: Translations = {
     voyants: { VERT: 'Dentro de los límites', ORANGE: 'Vigilancia', ROUGE: 'Límite superado', GRIS: 'Sin datos' },
   },
   testsResilience: {
+    guide: { what: 'El programa anual reúne las pruebas de resiliencia de sus sistemas de información y sus resultados, para alimentar el informe de revisión del marco de gestión del riesgo de TIC.', how: 'Añada cada prueba prevista (elija un tipo de la lista oficial), siga su estado, registre los hallazgos y cree una acción por cada hallazgo abierto.', result: 'Una tasa de realización, las funciones críticas o importantes cubiertas, los hallazgos por tratar y el informe de revisión listo para su lectura.' },
+    examples: [
+      { intitule: 'Análisis de vulnerabilidades del sistema de pagos', type: 'VULNERABILITY', perimetre: 'Servidores y aplicaciones del sistema de información de pagos', fonctionCritique: true, testeur: 'INTERNE' },
+      { intitule: 'Prueba de intrusión del portal de clientes', type: 'PENETRATION', perimetre: 'Portal web e interfaces de programación expuestos', fonctionCritique: true, testeur: 'EXTERNE' },
+      { intitule: 'Revisión de la seguridad de la red', type: 'NETWORK_SECURITY', perimetre: 'Cortafuegos, segmentación y accesos remotos', fonctionCritique: false, testeur: 'INTERNE' },
+      { intitule: 'Prueba de extremo a extremo de la recuperación', type: 'END_TO_END', perimetre: 'Cadena completa de tratamiento de pagos, del cliente a la contabilidad', fonctionCritique: true, testeur: 'INTERNE' },
+    ],
     title: 'Programa de pruebas de resiliencia operativa digital',
     subtitle: 'DORA — Reglamento (UE) 2022/2554, artículos 24 a 26: planifique las pruebas, registre resultados y hallazgos y elabore el informe sobre la revisión del marco de gestión del riesgo relacionado con las TIC (artículo 6, apartado 5).',
     annee: 'Año del programa',
@@ -1718,7 +1732,18 @@ export const es: Translations = {
       communication: { titre: 'Comunicación', description: 'Presentar el mapa de riesgos y su evolución a los órganos de gobierno (comité de riesgos, dirección) y difundirlo a los propietarios de los riesgos.' },
     },
   },
+  exemples: {
+    guideTitle: 'Entender este módulo',
+    title: 'Ejemplos (haga clic para rellenar)', guideWhat: 'Para qué sirve', guideHow: 'Cómo usarlo', guideResult: 'Lo que obtiene',
+  },
   projets: {
+    guide: { what: 'Un proyecto 360 evalúa todo el riesgo operacional de un proyecto: ciberseguridad, TI, proyecto, negocio, fraude y externalización.', how: 'Inicie un proyecto, confirme el cuestionario (ya rellenado con sus datos) y revise los riesgos propuestos.', result: 'Un panel por ámbito, la validación del CISO + Risk Manager y riesgos listos para alimentar un análisis cibernético.' },
+    examples: [
+      { nom: 'Migración a la nube', description: 'Migración de la aplicación de gestión (nóminas y RR. HH.) a un alojamiento en la nube: traspaso de datos, puesta en producción, explotación confiada a un proveedor.' },
+      { nom: 'Rediseño del portal de clientes', description: 'Nuevo portal web para clientes: autenticación, área personal, pago en línea y aplicación móvil.' },
+      { nom: 'Nuevo servicio de pago', description: 'Lanzamiento de un servicio de pago en línea con un proveedor de pagos: flujos financieros, lucha contra el fraude, disponibilidad 24 h.' },
+      { nom: 'Externalización de las nóminas', description: 'Traspaso del tratamiento de las nóminas a un proveedor: datos personales de los empleados, continuidad del servicio, reversibilidad.' },
+    ],
     startCyber: 'Iniciar un análisis cibernético', colAnalyses: 'Análisis cibernéticos', startCyberTitle: 'Crea un análisis cibernético vinculado a este proyecto',
     title: 'Proyectos',
     subtitle: 'Análisis de proyecto 360: todo el riesgo operacional de un proyecto, preparado a partir de los datos existentes de la organización.',
@@ -3793,6 +3818,7 @@ export const es: Translations = {
     REJETE: 'Rechazada', TERMINE: 'Completada', ARCHIVE: 'Archivada',
   } as Record<string, string>,
   maturite: {
+    guide: { what: 'La madurez mide hasta qué punto se aplica un marco en la escala CMMI y la brecha con el nivel objetivo.', how: 'Indique el nivel actual y el objetivo por ámbito; la brecha se calcula sola y puede dar lugar a acciones.', result: 'Una trayectoria de progreso por ámbito y prioridades de inversión argumentadas.' },
     title: 'Madurez',
     subtitle: 'Perfil actual y perfil objetivo en la escala CMMI, para cada marco de cumplimiento.',
     rasRad: 'Lectura de «apetito»: el nivel objetivo fijado por la gobernanza actúa como una declaración de apetito al riesgo (RAS); la brecha actual/objetivo por dominio, como un cuadro de mando de apetito (RAD). Mismo objeto que el cumplimiento: un punto evaluado aquí es el mismo control que en cumplimiento, con sus acciones.',

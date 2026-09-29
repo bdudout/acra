@@ -1106,6 +1106,12 @@ export const fr = {
     controle: 'Contrôle',
     risque: 'Risque',
     motif: 'Motif de l\'acceptation temporaire',
+    examples: [
+      { label: 'Projet de remplacement en cours', motif: 'Le composant non conforme sera remplacé dans le cadre d’un projet planifié ; une mise en conformité immédiate impose une interruption de service.', mesures: 'Surveillance renforcée des journaux, accès restreint au strict nécessaire, point d’avancement mensuel du projet.' },
+      { label: 'Application ancienne non adaptable', motif: 'L’application, dont l’éditeur n’assure plus l’évolution, ne permet pas techniquement d’appliquer la mesure.', mesures: 'Isolement réseau de l’application, accès limité par liste blanche, sauvegardes vérifiées, plan de remplacement daté.' },
+      { label: 'Ressources indisponibles à court terme', motif: 'L’équipe nécessaire est mobilisée sur un chantier prioritaire ; la mesure est reportée à la fin de ce chantier.', mesures: 'Mesure de substitution manuelle documentée, revue hebdomadaire des écarts, échéance de mise en conformité fixée par la direction.' },
+      { label: 'Contrainte contractuelle d’un tiers', motif: 'Le contrat avec le prestataire ne prévoit pas cette exigence ; sa renégociation n’interviendra qu’à l’échéance du contrat.', mesures: 'Clauses de sécurité ajoutées par avenant dès que possible, audit du prestataire à l’échéance, suivi des indicateurs de service.' },
+    ],
     motifPlaceholder: 'Pourquoi accepter cette non-conformité ? Préciser une justification organisationnelle ou technique.',
     mesuresCompensatoires: 'Mesures compensatoires',
     mesuresPlaceholder: 'Mesures mises en place en attendant la mise en conformité…',
@@ -1611,6 +1617,7 @@ export const fr = {
     },
   },
   appetence: {
+    guide: { what: 'Deux vues complémentaires : ce que la gouvernance accepte (RAS, seuils d’appétit) et où en est l’organisation face à ces limites (RAD).', how: 'Fixez les seuils par catégorie de risque et la maturité visée par référentiel ; le tableau de bord compare ensuite la situation réelle à ces limites.', result: 'Des voyants clairs (dans la limite, à surveiller, hors appétit) et un support à présenter au comité des risques.' },
     title: 'Appétence au risque',
     subtitle: 'Déclaration d’appétence (RAS) et tableau de bord d’appétence (RAD) : les limites fixées par la gouvernance et la position réelle de l’organisation.',
     rasTitle: 'Déclaration d’appétence (RAS)',
@@ -1643,6 +1650,13 @@ export const fr = {
     voyants: { VERT: 'Dans les limites', ORANGE: 'Vigilance', ROUGE: 'Limite franchie', GRIS: 'Non renseigné' },
   },
   testsResilience: {
+    guide: { what: 'Le programme annuel réunit les tests de résilience de vos systèmes d’information et leurs résultats, pour alimenter le rapport de réexamen du cadre de gestion du risque lié aux TIC.', how: 'Ajoutez chaque test prévu (choisissez un type dans la liste officielle), suivez son statut, consignez les constats et créez une action pour chaque constat ouvert.', result: 'Un taux de réalisation, les fonctions critiques ou importantes couvertes, les constats à traiter et le rapport de réexamen prêt à être relu.' },
+    examples: [
+      { intitule: 'Analyse de vulnérabilités du SI de paiement', type: 'VULNERABILITY', perimetre: 'Serveurs et applications du système d’information de paiement', fonctionCritique: true, testeur: 'INTERNE' },
+      { intitule: 'Test d’intrusion du portail client', type: 'PENETRATION', perimetre: 'Portail web et interfaces de programmation exposés', fonctionCritique: true, testeur: 'EXTERNE' },
+      { intitule: 'Revue de la sécurité du réseau', type: 'NETWORK_SECURITY', perimetre: 'Pare-feu, segmentation et accès distants', fonctionCritique: false, testeur: 'INTERNE' },
+      { intitule: 'Test de bout en bout de la reprise d’activité', type: 'END_TO_END', perimetre: 'Chaîne complète de traitement des paiements, du client à la comptabilité', fonctionCritique: true, testeur: 'INTERNE' },
+    ],
     title: 'Programme de tests de résilience opérationnelle numérique',
     subtitle: 'DORA — Règlement (UE) 2022/2554, articles 24 à 26 : planifiez les tests, consignez résultats et constats, puis compilez le rapport sur le réexamen du cadre de gestion du risque lié aux TIC (article 6, paragraphe 5).',
     annee: 'Année du programme',
@@ -1742,7 +1756,18 @@ export const fr = {
       communication: { titre: 'Communication', description: 'Présenter la cartographie et ses évolutions aux instances de gouvernance (comité des risques, direction) et la diffuser aux propriétaires des risques.' },
     },
   },
+  exemples: {
+    guideTitle: 'Comprendre ce module',
+    title: 'Exemples (cliquez pour préremplir)', guideWhat: 'À quoi ça sert', guideHow: 'Comment s’en servir', guideResult: 'Ce que vous en tirez',
+  },
   projets: {
+    guide: { what: 'Un projet 360 évalue tout le risque opérationnel d’un projet : cyber, informatique, projet, métier, fraude et externalisation.', how: 'Lancez un projet, confirmez le questionnaire (déjà pré-rempli à partir de vos données), puis étudiez les risques proposés.', result: 'Un tableau de bord par domaine, une validation RSSI + Risk Manager, et des risques prêts à alimenter une analyse cyber.' },
+    examples: [
+      { nom: 'Migration vers le cloud', description: 'Migration de l’application de gestion (paie et RH) vers un hébergement cloud : reprise des données, bascule, exploitation confiée à un prestataire.' },
+      { nom: 'Refonte du portail client', description: 'Nouveau portail web pour les clients : authentification, espace personnel, paiement en ligne et application mobile.' },
+      { nom: 'Nouveau service de paiement', description: 'Lancement d’un service de paiement en ligne avec un prestataire de paiement : flux financiers, lutte contre la fraude, disponibilité 24 h/24.' },
+      { nom: 'Externalisation de la paie', description: 'Transfert du traitement de la paie à un prestataire : données personnelles des salariés, continuité de service, réversibilité.' },
+    ],
     startCyber: 'Lancer une analyse cyber', colAnalyses: 'Analyses cyber', startCyberTitle: 'Crée une analyse cyber rattachée à ce projet',
     title: 'Projets',
     subtitle: 'Analyses projet 360 : tout le risque opérationnel d’un projet, préparé à partir des données existantes de l’organisation.',
@@ -3843,6 +3868,7 @@ export const fr = {
     REJETE: 'Rejetée', TERMINE: 'Terminée', ARCHIVE: 'Archivée',
   } as Record<string, string>,
   maturite: {
+    guide: { what: 'La maturité mesure le niveau de mise en œuvre d’un référentiel sur l’échelle CMMI, et l’écart avec le niveau visé.', how: 'Renseignez le niveau actuel et le niveau cible par domaine ; l’écart se calcule seul et peut donner lieu à des actions.', result: 'Une trajectoire de progression par domaine et des priorités d’investissement argumentées.' },
     title: 'Maturité',
     subtitle: 'Profil actuel et profil cible sur l’échelle CMMI, pour chaque référentiel de conformité.',
     rasRad: 'Lecture « appétence » : le niveau cible fixé par la gouvernance joue le rôle d’une déclaration d’appétence (RAS) ; l’écart actuel / cible par domaine, celui d’un tableau de bord d’appétence (RAD). Même objet que la conformité : un point évalué ici est le même contrôle que dans la conformité, avec ses actions.',

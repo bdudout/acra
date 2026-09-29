@@ -7,6 +7,8 @@
 // constats, risques du registre liés). Export du rapport de réexamen (art. 6 § 5).
 
 import { useEffect, useState } from 'react'
+import ExampleChips from '@/components/ExampleChips'
+import ModuleGuide from '@/components/ModuleGuide'
 import { useTranslation } from '@/lib/i18n/context'
 import { TEST_RESILIENCE_TYPES, TEST_RESILIENCE_STATUTS, TESTEURS, type Constat } from '@/lib/tests-resilience'
 
@@ -110,6 +112,7 @@ export default function TestsResilienceManager() {
 
   return (
     <div className="space-y-6">
+      <ModuleGuide guide={r.guide} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="text-xs text-gray-600 dark:text-gray-300">{r.annee}
           <select aria-label={r.annee} value={data.annee} onChange={e => load(Number(e.target.value))} className={input}>
@@ -135,6 +138,8 @@ export default function TestsResilienceManager() {
       {form && (
         <section className="card p-5 space-y-3" aria-label={form.id ? r.edit : r.add}>
           <div className="grid gap-3 md:grid-cols-2">
+            {!form.id && <div className="md:col-span-2"><ExampleChips items={r.examples.map((e, i) => ({ id: String(i), label: e.intitule }))}
+              onPick={id => { const e = r.examples[Number(id)]; if (e) setForm(f => f && ({ ...f, intitule: e.intitule, type: e.type, perimetre: e.perimetre, fonctionCritique: e.fonctionCritique, testeur: e.testeur })) }} /></div>}
             <label className="text-xs text-gray-600 dark:text-gray-300">{r.intitule}<input aria-label={r.intitule} value={form.intitule} maxLength={300} onChange={e => setForm({ ...form, intitule: e.target.value })} className={input} /></label>
             <label className="text-xs text-gray-600 dark:text-gray-300">{r.type}
               <select aria-label={r.type} value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className={input}>

@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import AutocompleteInput from '@/components/AutocompleteInput'
+import ExampleChips from '@/components/ExampleChips'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
   etatDerogation, joursAvantExpiration,
@@ -242,6 +243,8 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
               <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
                 placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             </label>
+            <ExampleChips items={d.examples.map((e, i) => ({ id: String(i), label: e.label }))}
+              onPick={id => { const e = d.examples[Number(id)]; if (e) setForm(f => ({ ...f, motif: e.motif, mesures: e.mesures })) }} />
             <label className="block text-xs text-gray-600 dark:text-gray-300">
               <span className="block mb-1 font-medium">{d.motif}</span>
               <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />

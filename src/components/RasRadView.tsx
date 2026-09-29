@@ -8,6 +8,7 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
+import ModuleGuide from '@/components/ModuleGuide'
 import type { Voyant } from '@/lib/ras-rad'
 import type { RasExportData } from '@/lib/ras-export'
 
@@ -36,6 +37,7 @@ export default function RasRadView({ data }: { data: RasRadData }) {
 
   return (
     <div className="space-y-6">
+      <ModuleGuide guide={a.guide} />
       <div className="flex items-center gap-3">
         <p className="text-sm text-gray-600 dark:text-gray-300"><span className="font-medium">{a.globalLabel} :</span> {pastille(data.global)}</p>
         <a href="/api/appetence/export" className="text-xs text-ebios-700 hover:underline">{a.exportRasRad}</a>
