@@ -10,6 +10,9 @@
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
+import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
+import type { ChampsValeurs } from '@/lib/champs-perso'
 import RecommandationSuivi, { type SuiviAction } from '@/components/RecommandationSuivi'
 import MissionSuiviPanel from '@/components/MissionSuiviPanel'
 import { useSearchParams } from 'next/navigation'
@@ -30,7 +33,7 @@ interface Mission {
   type: string; recurrence: string
   archiveLe?: string | null; archivable?: boolean; nbRapports?: number
   // Lot L4
-  notation?: number | null; jalons?: Record<string, string>; independance?: Record<string, unknown>
+  notation?: number | null; jalons?: Record<string, string>; independance?: Record<string, unknown>; champs?: ChampsValeurs
   rapports?: { id: string; nom: string; taille: number }[]
 }
 type ProcLite = { id: string; nom: string }
@@ -46,8 +49,8 @@ interface Constat {
 }
 type Risk = { id: string; intitule: string }
 
-type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[]; type: string; recurrence: string }
-const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [], type: 'THEMATIQUE', recurrence: 'NONE' }
+type MForm = { intitule: string; objectif: string; perimetre: string; responsable: string; dateDebut: string; dateFin: string; programme: string[]; processusIds: string[]; controleIds: string[]; type: string; recurrence: string; champs: ChampsValeurs }
+const EMPTY_M: MForm = { intitule: '', objectif: '', perimetre: '', responsable: '', dateDebut: '', dateFin: '', programme: [], processusIds: [], controleIds: [], type: 'THEMATIQUE', recurrence: 'NONE', champs: {} }
 type CForm = { critere: string; cause: string; consequence: string; intitule: string; description: string; recommandation: string; criticite: string; source: string; responsableAction: string; echeance: string; statut: string; riskItemId: string }
 const EMPTY_C: CForm = { critere: '', cause: '', consequence: '', intitule: '', description: '', recommandation: '', criticite: '', source: 'AUDIT_INTERNE', responsableAction: '', echeance: '', statut: 'OUVERT', riskItemId: '' }
 
@@ -99,6 +102,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
   const [showArchived, setShowArchived] = useState(false)
   const [suiviId, setSuiviId] = useState<string | null>(null)
+  const defsChamps = usePersonnalisationChamps('mission')
   // Deep-link pilotage : ?constat=critique → pré-filtre les constats de criticité maximale (4).
   const _sp = useSearchParams()
   const _critInit = _sp.get('constat') === 'critique' ? String(CRITICITE_MAX) : ''
@@ -106,7 +110,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
-  function err(code: string) { return lbl(a.errors, code) }
+  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
 
   async function reload() {
     const [mm, rr, pp, cc] = await Promise.all([
@@ -291,6 +295,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
             <textarea value={mForm.objectif} onChange={e => setMForm(f => ({ ...f, objectif: e.target.value }))} placeholder={a.objectifPlaceholder} rows={2} className={inp} />
             <textarea value={mForm.perimetre} onChange={e => setMForm(f => ({ ...f, perimetre: e.target.value }))} placeholder={a.perimetrePlaceholder} rows={2} className={inp} />
           </div>
+          <ChampsPersonnalisesFields defs={defsChamps} values={mForm.champs} onChange={v => setMForm(f => ({ ...f, champs: v }))} />
           {/* Programme d'audit : points de revue (coté à la clôture) */}
           <div>
             <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
@@ -424,6 +429,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
 
                 {openId === m.id && (
                   <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-3">
+                    {defsChamps.length > 0 && <div className="mb-3"><ChampsPersonnalisesFields defs={defsChamps} values={m.champs ?? {}} onChange={() => {}} readOnly /></div>}
                     {/* Notation, jalons du cycle et indépendance (lot L4) */}
                     <div className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40">
                       <MissionSuiviPanel key={`${m.id}-${m.notation ?? ''}-${JSON.stringify(m.jalons ?? {})}-${JSON.stringify(m.independance ?? {})}`}

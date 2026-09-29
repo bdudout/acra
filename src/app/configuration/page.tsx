@@ -1297,6 +1297,7 @@ export default function ConfigurationPage() {
           <section className="mt-8 card p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.sectionTitle}</h2>
             <p className="text-sm text-gray-500 mb-4">{t.features.sectionDesc}</p>
+            {isAdmin && <p className="mb-4"><a href="/configuration/personnalisation" className="text-sm text-ebios-700 hover:underline">{t.personnalisation.configLink} →</a></p>}
             <div className="space-y-3">
               {([
                 { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },

@@ -5,6 +5,8 @@ import {
   appliquerSuivi, synthetiserRecommandations, cleanUniversInput, cycleAnsDefaut, planPluriannuel,
 } from '@/lib/audit-l4'
 import { constatTermine } from '@/lib/audit'
+import { normalizeAuditConstat } from '@/lib/action-items'
+import { synthetiserSuiviRegulateur } from '@/lib/suivi-regulateur'
 
 const now = new Date('2026-09-29T10:00:00Z')
 
@@ -142,5 +144,20 @@ describe('univers d’audit et plan pluriannuel', () => {
     expect(p.parAnnee[0].universIds.sort()).toEqual(['u1', 'u4'])
     expect(p.parAnnee[1].universIds).toEqual(['u3'])
     expect(p.parAnnee[2].universIds).toEqual(['u2'])
+  })
+})
+
+describe('régression : « Vérifiée » est terminal partout où RESOLU / ACCEPTE l’étaient', () => {
+  it('plan d’action unifié : une recommandation vérifiée est FAIT', () => {
+    expect(normalizeAuditConstat({ id: 'c', intitule: 'x', statut: 'VERIFIE' }).statut).toBe('FAIT')
+    expect(normalizeAuditConstat({ id: 'c', intitule: 'x', statut: 'RESOLU' }).statut).toBe('FAIT')
+    expect(normalizeAuditConstat({ id: 'c', intitule: 'x', statut: 'EN_COURS' }).statut).toBe('EN_COURS')
+  })
+  it('suivi régulateur : un constat vérifié n’est ni ouvert ni en retard', () => {
+    const c = (statut: string) => ({ id: statut, intitule: statut, description: null, recommandation: null, criticite: 4, source: 'REGULATEUR', statut, echeance: new Date('2026-01-01T00:00:00Z'), responsableAction: null, missionIntitule: null })
+    const s = synthetiserSuiviRegulateur([c('VERIFIE'), c('OUVERT')], now)
+    expect(s.total).toBe(2)
+    expect(s.ouverts).toBe(1)
+    expect(s.echues).toBe(1)
   })
 })

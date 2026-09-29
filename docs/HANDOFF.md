@@ -6,6 +6,30 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (18) — Claude Code : lot L5 « Personnalisation » + correctif « Vérifiée » — ⚠ à vérifier
+
+- **CI PR #192** : 8/8 verts sur `6925f15` (L4), dont `e2e/audit-l4.spec.ts` (donc la migration L4 s'applique bien en CI).
+- **L5** : `lib/vocabulaire`, `lib/champs-perso`, `lib/gabarits` (purs, testés) ; migration `20260929220000_personnalisation_l5`
+  (`OrganizationConfig.vocabulaire/champsPersonnalises`, colonne `champs` sur Incident/Controle/AuditMission) ; routes
+  `GET/PUT /api/personnalisation` (ADMIN pour PUT ; GET filtre les champs par rôle) et `POST /api/personnalisation/gabarit`
+  (aperçu `dryRun`, ADMIN, journalisé) ; `I18nProvider` applique le vocabulaire (côté client) ; UI `/configuration/personnalisation`,
+  champs dans les formulaires incident / contrôle / mission ; i18n ×5.
+- **Sécurité des champs** : les champs restreints à un rôle sont retirés en lecture (liste, détail, réponses d'écriture) et
+  ne peuvent ni être écrits ni écrasés par un autre rôle (`fusionnerChamps` conserve les valeurs existantes invisibles).
+- **Régression corrigée (introduite en L4)** : le nouveau statut `VERIFIE` était traité comme « ouvert » dans la liste des
+  missions, le plan d'action unifié, le suivi régulateur et la couverture des référentiels (jeux `RESOLU/ACCEPTE` codés en dur)
+  → tous alignés sur `constatTermine`, avec tests de non-régression.
+- **Vérifié** : `tsc` 0 · `npm test` **2554/2554** · `i18n:check` · `npm run build` OK · SQL de la migration comparé à
+  `prisma migrate diff`.
+- ⚠ **Non vérifié** : Docker Desktop toujours indisponible → migration L5 **non appliquée localement** (`prisma migrate deploy` +
+  `generate` + redémarrage du dev à faire) et `e2e/personnalisation-l5.spec.ts` **non exécuté** (il tournera en CI). Recette
+  navigateur à faire : page `/configuration/personnalisation` (ADMIN), renommage visible dans le menu, champs requis / réservés,
+  aperçu puis application d'un gabarit (vérifier les modules effectivement activés, y compris sous politique d'instance FORCE_ON/OFF).
+- **Limites connues L5** : vocabulaire non appliqué aux pages rendues côté serveur, aux exports et aux PDF ; champs personnalisés
+  absents des exports / rapports et des constats d'audit ; un gabarit ne gère pas la politique d'instance.
+
+---
+
 ## 2026-09-29 (17) — Claude Code : lot L4 « Audit interne » + brand + navbar — ⚠ TESTS À REFAIRE
 
 ### ⚠ Tests L3 (contrôle permanent) à refaire — demande explicite de l'utilisateur

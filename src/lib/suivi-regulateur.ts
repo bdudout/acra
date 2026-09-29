@@ -7,7 +7,7 @@
 import { toCsvCell } from './spreadsheet-safe'
 
 const DAY = 86_400_000
-const TERMINES = new Set(['RESOLU', 'ACCEPTE'])
+const TERMINES = new Set(['RESOLU', 'VERIFIE', 'ACCEPTE'])
 
 /** Constat/recommandation d'un régulateur ou superviseur suivi (criticité, échéance, statut de résolution). */
 export interface ConstatRegulateur {

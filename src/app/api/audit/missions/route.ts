@@ -5,8 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
-import { validateMissionInput, cleanMissionInput, synthetiserConstats } from '@/lib/audit'
+import { validateMissionInput, cleanMissionInput, synthetiserConstats, constatTermine, type ConstatStatut } from '@/lib/audit'
 import { estArchivable, cleanArchivageDuree } from '@/lib/archivage'
+import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,7 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ missions: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.auditInterneActive) return NextResponse.json({ missions: [], active: false })
@@ -42,11 +43,13 @@ export async function GET() {
   })
   const now = new Date()
   const dureeAnnees = cleanArchivageDuree(cfg.archivageMissionsAnnees)
-  const constatOuvert = (s: string) => s !== 'RESOLU' && s !== 'ACCEPTE'
+  const constatOuvert = (s: string) => !constatTermine(s as ConstatStatut)
+  const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).mission ?? []
   const missions = rows.map(({ constats, ...m }) => {
     const constatsOuverts = constats.filter(x => constatOuvert(x.statut)).length
     return {
       ...m,
+      champs: valeursVisibles(defsChamps, m.champs, roleLecture),
       synthese: synthetiserConstats(constats, now),
       constatsOuverts,
       archivable: estArchivable({ statut: m.statut, dateFin: m.dateFin, archiveLe: m.archiveLe, constatsOuverts }, now, dureeAnnees),
@@ -71,7 +74,11 @@ export async function POST(req: NextRequest) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanMissionInput(body)
 
-  const mission = await prisma.auditMission.create({ data: { ...data, programmeResultats: data.programmeResultats as unknown as object, organizationId: orgId, statut: 'PLANIFIEE' } })
+  const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).mission ?? []
+  const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
+  const manquants = champsRequisManquants(defsChamps, champs, userRole)
+  if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
+  const mission = await prisma.auditMission.create({ data: { ...data, champs: champs as unknown as object, programmeResultats: data.programmeResultats as unknown as object, organizationId: orgId, statut: 'PLANIFIEE' } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'audit-mission', action: 'create', id: mission.id },

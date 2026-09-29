@@ -12,6 +12,7 @@ import { type DoraCriteres } from '@/lib/dora'
 import { Prisma } from '@prisma/client'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { vueIncidentL1 } from '@/lib/incident-vue'
+import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { emitWebhookEvent } from '@/lib/webhook.server'
 
@@ -34,12 +35,13 @@ const num = (v: unknown): number | null =>
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ incidents: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.incidentsActive) return NextResponse.json({ incidents: [], active: false })
 
   const cfgL1 = resolveIncidentsConfig(orgConfig.incidentsConfig)
+  const defsChamps = sanitizeChampsConfig(orgConfig.champsPersonnalises).incident ?? []
   const now = new Date()
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId },
@@ -58,6 +60,7 @@ export async function GET() {
       perteNette: perteNette(brut, recup),
       // Lot L1 : horloges de notification, totaux convertis, seuils, ventilation par type.
       l1: vueIncidentL1(r, cfgL1, now),
+      champs: valeursVisibles(defsChamps, r.champs, roleLecture),
       delaiDetection: delaiDetection(r.dateSurvenance, r.dateDetection),
       // Échéancier de déclaration DORA (art. 19) : classe + phases + synthèse.
       doraReporting: evaluerReportingIncident({
@@ -117,11 +120,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Une déclaration entre toujours en DECLARE : le statut n'est pas pilotable ici.
+  // Champs personnalisés (L5) : validés contre les définitions accessibles au rôle ; requis exigés.
+  const defsChamps = sanitizeChampsConfig(orgConfig.champsPersonnalises).incident ?? []
+  const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
+  const manquants = champsRequisManquants(defsChamps, champs, userRole)
+  if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
   const { statut: _ignore, attributs, pertes, recuperationsLignes, ...decl } = data
   const incident = await prisma.incident.create({
     data: {
       ...decl, organizationId: orgId, declarantId: userId, statut: 'DECLARE',
       attributs: attributs as unknown as Prisma.InputJsonValue,
+      champs: champs as unknown as Prisma.InputJsonValue,
       pertes: pertes as unknown as Prisma.InputJsonValue,
       recuperationsLignes: recuperationsLignes as unknown as Prisma.InputJsonValue,
     },

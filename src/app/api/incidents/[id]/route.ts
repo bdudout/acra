@@ -10,6 +10,7 @@ import {
 } from '@/lib/incident'
 import { Prisma } from '@prisma/client'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
+import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -76,7 +77,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       .map(k => [k, data[k]]),
   ) as Partial<typeof data>
   const { attributs, pertes, recuperationsLignes, ...partielScalaires } = partiel
+  // Champs personnalisés (L5) : fusion sans écraser les champs réservés à d'autres rôles.
+  const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).incident ?? []
   const json = {
+    ...('champs' in body ? { champs: fusionnerChamps(defsChamps, incident.champs, body.champs, userRole) as unknown as Prisma.InputJsonValue } : {}),
     ...(attributs !== undefined ? { attributs: attributs as unknown as Prisma.InputJsonValue } : {}),
     ...(pertes !== undefined ? { pertes: pertes as unknown as Prisma.InputJsonValue } : {}),
     ...(recuperationsLignes !== undefined ? { recuperationsLignes: recuperationsLignes as unknown as Prisma.InputJsonValue } : {}),
@@ -98,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: changeEtat ? `transition:${depuis}->${vers}` : 'update', id },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json(avecChampsVisibles(updated, defsChamps, userRole))
 }
 
 // DELETE /api/incidents/[id] — réservé à la 2ᵉ ligne (un incident se rejette

@@ -150,7 +150,7 @@ export interface AuditConstatRow {
 /** Constat d'audit/régulateur → ActionItem unifié (origine « audit » ou « regulateur »). */
 export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): ActionItem {
   const statut: RiskActionStatut =
-    row.statut === 'RESOLU' || row.statut === 'ACCEPTE' ? 'FAIT'
+    row.statut === 'RESOLU' || row.statut === 'VERIFIE' || row.statut === 'ACCEPTE' ? 'FAIT'
       : row.statut === 'EN_COURS' ? 'EN_COURS' : 'A_FAIRE'
   return {
     id: `AUDIT:${row.id}`, source: 'AUDIT', origine: row.source === 'REGULATEUR' ? 'regulateur' : 'audit', sourceId: row.id,

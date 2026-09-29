@@ -20,6 +20,9 @@ import { findIncidentDuplicates } from '@/lib/incident-dedup'
 import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
+import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
+import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
+import type { ChampsValeurs } from '@/lib/champs-perso'
 import NotificationsPanel, { type HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import PertesEditor from '@/components/PertesEditor'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
@@ -38,7 +41,7 @@ interface Incident {
   doraReporting?: DoraReporting
   doublons?: { id: string; intitule: string; statut: string; score: number }[]
   // Lot L1
-  typeEvenement?: string | null; quasiIncident?: boolean
+  typeEvenement?: string | null; quasiIncident?: boolean; champs?: ChampsValeurs
   attributs?: { significatif?: boolean; donneesPersonnelles?: boolean; contractuel?: boolean; regimes?: string[] }
   pertes?: LignePerte[]; recuperationsLignes?: LigneRecuperation[]; dateReglement?: string | null
   l1?: { horloges: HorlogeRegimeJson[]; nbEnRetard: number; totaux: { net: number | null }; seuils: { collectee: boolean; grandePerte: boolean } }
@@ -56,8 +59,9 @@ type DeclForm = {
   intitule: string; description: string; dateSurvenance: string; dateDetection: string
   processusId: string; entite: string; impactEstime: string
   typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean
+  champs: ChampsValeurs
 }
-const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false }
+const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, champs: {} }
 // Formulaire de déclaration vierge : dates de survenance et détection = aujourd'hui
 // par défaut (l'incident vient en général d'être constaté). Modifiables.
 function emptyDecl(): DeclForm {
@@ -68,8 +72,9 @@ function emptyDecl(): DeclForm {
 type QualForm = {
   taxonomieCode: string; riskItemId: string; statut: string; clotureCommentaire: string
   typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean; dateReglement: string
+  champs: ChampsValeurs
 }
-const EMPTY_QUAL: QualForm = { taxonomieCode: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, dateReglement: '' }
+const EMPTY_QUAL: QualForm = { taxonomieCode: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, dateReglement: '', champs: {} }
 
 const STATUT_BADGE: Record<string, string> = {
   DECLARE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -103,6 +108,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const [showConfig, setShowConfig] = useState(false)
   const [configMsg, setConfigMsg] = useState<string | null>(null)
   const [notifId, setNotifId] = useState<string | null>(null)
+  const defsChamps = usePersonnalisationChamps('incident')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [doraDetailId, setDoraDetailId] = useState<string | null>(null)
@@ -172,7 +178,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   }
   useEffect(() => { reload() }, [])
 
-  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
 
   async function declarer() {
     if (!decl.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -184,7 +190,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         dateSurvenance: decl.dateSurvenance || null, dateDetection: decl.dateDetection || null,
         processusId: decl.processusId || null, entite: decl.entite || null,
         impactEstime: decl.impactEstime || null,
-        typeEvenement: decl.typeEvenement || null, quasiIncident: decl.quasiIncident,
+        typeEvenement: decl.typeEvenement || null, quasiIncident: decl.quasiIncident, champs: decl.champs,
         attributs: { significatif: decl.significatif, donneesPersonnelles: decl.donneesPersonnelles, contractuel: decl.contractuel },
       }),
     })
@@ -202,7 +208,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
       statut: i.statut === 'DECLARE' ? 'QUALIFIE' : i.statut, clotureCommentaire: '',
       typeEvenement: i.typeEvenement ?? '', quasiIncident: !!i.quasiIncident,
       significatif: !!a.significatif, donneesPersonnelles: !!a.donneesPersonnelles, contractuel: !!a.contractuel,
-      dateReglement: i.dateReglement ? i.dateReglement.slice(0, 10) : '',
+      dateReglement: i.dateReglement ? i.dateReglement.slice(0, 10) : '', champs: i.champs ?? {},
     })
     // Lignes existantes ; à défaut, on amorce avec les agrégats historiques (montant brut / récupérations).
     const ref = cfg?.deviseReference ?? 'EUR'
@@ -221,7 +227,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         processusId: i.processusId, entite: i.entite, impactEstime: i.impactEstime,
         taxonomieCode: qual.taxonomieCode || null,
         pertes: qualPertes.pertes, recuperationsLignes: qualPertes.recups,
-        typeEvenement: qual.typeEvenement || null, quasiIncident: qual.quasiIncident, dateReglement: qual.dateReglement || null,
+        typeEvenement: qual.typeEvenement || null, quasiIncident: qual.quasiIncident, dateReglement: qual.dateReglement || null, champs: qual.champs,
         attributs: { significatif: qual.significatif, donneesPersonnelles: qual.donneesPersonnelles, contractuel: qual.contractuel },
         riskItemId: qual.riskItemId || null, statut: qual.statut,
         clotureCommentaire: qual.clotureCommentaire || null,
@@ -427,6 +433,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
             <AutocompleteInput field="entite" lang={locale} value={decl.entite} onChange={v => setDecl(f => ({ ...f, entite: v }))} placeholder={n.entityPlaceholder} className={inp} />
           </div>
           <L1FieldsBlock v={decl} set={patch => setDecl(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
+          <ChampsPersonnalisesFields defs={defsChamps} values={decl.champs} onChange={v => setDecl(f => ({ ...f, champs: v }))} />
           <div className="flex gap-2">
             <button onClick={declarer} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.declare}</button>
             <button onClick={() => { setShowDecl(false); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{n.cancel}</button>
@@ -561,6 +568,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
               </label>
             </div>
             <L1FieldsBlock v={qual} set={patch => setQual(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
+            <ChampsPersonnalisesFields defs={defsChamps} values={qual.champs} onChange={v => setQual(f => ({ ...f, champs: v }))} />
             {!qual.quasiIncident && cfg && (
               <PertesEditor pertes={qualPertes.pertes} recups={qualPertes.recups} onChange={setQualPertes}
                 config={{ deviseReference: cfg.deviseReference, taux: cfg.taux, typesPerte: cfg.typesPerte }} />

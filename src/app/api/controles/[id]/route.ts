@@ -7,6 +7,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { validateControleInput, cleanControleInput } from '@/lib/controle'
 import { champsL3Modification } from '@/lib/controle-l3'
+import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -27,12 +28,12 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const controle = await prisma.controle.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
-    select: { id: true, organizationId: true },
+    select: { id: true, organizationId: true, champs: true },
   })
   if (!controle) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(controle.organizationId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive }
+  return { userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive, champsPersonnalises: cfg.champsPersonnalises, champsExistants: controle.champs }
 }
 
 // PATCH /api/controles/[id] — modifier un contrôle (2ᵉ ligne). Mise à jour PARTIELLE.
@@ -64,12 +65,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   ) as Partial<typeof data>
 
   const l3 = champsL3Modification(body, { evaluateurId: c.userId, now: new Date() })
-  const updated = await prisma.controle.update({ where: { id }, data: { ...partiel, ...(l3 as Prisma.ControleUncheckedUpdateInput) } })
+  const defsChamps = sanitizeChampsConfig(c.champsPersonnalises).controle ?? []
+  const champsMaj = 'champs' in body ? { champs: fusionnerChamps(defsChamps, c.champsExistants, body.champs, c.userRole) as unknown as Prisma.InputJsonValue } : {}
+  const updated = await prisma.controle.update({ where: { id }, data: { ...partiel, ...(l3 as Prisma.ControleUncheckedUpdateInput), ...champsMaj } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole, organizationId: c.orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'update', id },
   })
-  return NextResponse.json(updated)
+  return NextResponse.json(avecChampsVisibles(updated, defsChamps, c.userRole))
 }
 
 // DELETE /api/controles/[id] — supprimer un contrôle et son historique (2ᵉ ligne).

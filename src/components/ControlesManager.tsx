@@ -15,6 +15,9 @@ import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, fi
 import { CATALOGUES_CONTROLES } from '@/lib/controles-catalogue'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 import Link from 'next/link'
+import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
+import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
+import type { ChampsValeurs } from '@/lib/champs-perso'
 import ControleL3Fields from '@/components/ControleL3Fields'
 import ControleL3Badges, { type L3Vue } from '@/components/ControleL3Badges'
 import ConceptionPanel from '@/components/ConceptionPanel'
@@ -41,7 +44,7 @@ interface Controle {
   etatEcheance: 'A_VENIR' | 'DU' | 'EN_RETARD' | null
   efficacite: Efficacite; executions: Execution[]; nbExecutions: number
   // Lot L3
-  typeControle?: string | null; modeControle?: string; cle?: boolean; methodeEchantillon?: string | null
+  typeControle?: string | null; modeControle?: string; cle?: boolean; methodeEchantillon?: string | null; champs?: ChampsValeurs
   l3?: L3Vue & { conception: { statut: string; commentaire?: string; evalueLe?: string } | null }
 }
 type Proc = { id: string; nom: string }
@@ -54,8 +57,9 @@ type Form = {
   responsable: string; riskItemId: string; processusId: string; tailleEchantillon: string
   referentielCode: string; exigenceRefs: string[]; checklist: string[]; superviseIds: string[]
   typeControle: string; modeControle: string; cle: boolean; methodeEchantillon: string
+  champs: ChampsValeurs
 }
-const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [], superviseIds: [], typeControle: '', modeControle: 'MANUEL', cle: false, methodeEchantillon: '' }
+const EMPTY: Form = { intitule: '', description: '', niveau: 'N1', periodicite: 'TRIMESTRIEL', responsable: '', riskItemId: '', processusId: '', tailleEchantillon: '', referentielCode: '', exigenceRefs: [], checklist: [], superviseIds: [], typeControle: '', modeControle: 'MANUEL', cle: false, methodeEchantillon: '', champs: {} }
 
 type ExecForm = { resultat: string; dateRealisation: string; constat: string; tailleTestee: string; anomaliesTrouvees: string; checklist: ChecklistResultat[]; independant: boolean }
 const EMPTY_EXEC: ExecForm = { resultat: 'CONFORME', dateRealisation: '', constat: '', tailleTestee: '', anomaliesTrouvees: '', checklist: [], independant: false }
@@ -101,6 +105,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const [exec, setExec] = useState<ExecForm>(emptyExec)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const defsChamps = usePersonnalisationChamps('controle')
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [preuves, setPreuves] = useState<Preuve[]>([])
@@ -146,7 +151,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     return () => { annule = true }
   }, [form.referentielCode])
 
-  function err(code: string) { return lbl(c.errors, code) }
+  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -160,7 +165,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       referentielCode: form.referentielCode || null, exigenceRefs: form.exigenceRefs,
       checklist: form.checklist,
       superviseIds: form.niveau === 'N2' ? form.superviseIds : [],
-      typeControle: form.typeControle || null, modeControle: form.modeControle, cle: form.cle, methodeEchantillon: form.methodeEchantillon || null,
+      typeControle: form.typeControle || null, modeControle: form.modeControle, cle: form.cle, methodeEchantillon: form.methodeEchantillon || null, champs: form.champs,
     }
     const res = await fetch(editId ? `/api/controles/${editId}` : '/api/controles', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -179,7 +184,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       tailleEchantillon: x.tailleEchantillon?.toString() ?? '',
       referentielCode: x.referentielCode ?? '', exigenceRefs: x.exigenceRefs ?? [],
       checklist: x.checklist ?? [], superviseIds: x.superviseIds ?? [],
-      typeControle: x.typeControle ?? '', modeControle: x.modeControle ?? 'MANUEL', cle: !!x.cle, methodeEchantillon: x.methodeEchantillon ?? '',
+      typeControle: x.typeControle ?? '', modeControle: x.modeControle ?? 'MANUEL', cle: !!x.cle, methodeEchantillon: x.methodeEchantillon ?? '', champs: x.champs ?? {},
     })
   }
 
@@ -308,6 +313,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               <input type="number" min="1" value={form.tailleEchantillon} onChange={e => setForm(f => ({ ...f, tailleEchantillon: e.target.value }))} className={`${inp} w-full mt-1`} />
             </label>
           </div>
+          <ChampsPersonnalisesFields defs={defsChamps} values={form.champs} onChange={v => setForm(f => ({ ...f, champs: v }))} />
           <ControleL3Fields value={{ typeControle: form.typeControle, modeControle: form.modeControle, cle: form.cle, methodeEchantillon: form.methodeEchantillon }}
             onChange={v => setForm(f => ({ ...f, ...v }))} onApplySuggestion={n => setForm(f => ({ ...f, tailleEchantillon: String(n) }))} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -51,6 +51,8 @@ const CONFIG_SELECT = {
   echelleMaturite: true,
   processusCartographie: true,
   incidentsConfig: true,
+  vocabulaire: true,
+  champsPersonnalises: true,
   appetitRisque: true,
 } as const
 

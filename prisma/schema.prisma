@@ -587,6 +587,9 @@ model Controle {
   // { statut: ADEQUATE | A_AMELIORER | INADEQUATE, commentaire?, evaluateurId?, evalueLe? }
   conception         Json     @default("{}")
 
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -693,6 +696,9 @@ model Incident {
   pertes              Json      @default("[]")
   recuperationsLignes Json      @default("[]")
   dateReglement       DateTime?
+
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -899,6 +905,9 @@ model AuditMission {
   universIds    Json @default("[]")   // entrées de l'univers d'audit couvertes
 
   constats AuditConstat[]
+
+  // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
+  champs Json @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1838,6 +1847,9 @@ model OrganizationConfig {
   // Configuration « Incidents & pertes » (régimes de notification, devise/taux, seuils,
   // catalogues) — cf. lib/incidents-config.ts. Vide = défauts.
   incidentsConfig            Json          @default("{}")
+  // Lot L5 — personnalisation : vocabulaire (affichage), champs personnalisés par module.
+  vocabulaire                Json          @default("{}")
+  champsPersonnalises        Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")

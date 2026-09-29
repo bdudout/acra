@@ -1,24 +1,35 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { fr, getT, LOCALES, type Locale, type Translations } from './index'
+import { applyVocabulaire, sanitizeVocabulaire, type Vocabulaire } from '@/lib/vocabulaire'
 
 interface I18nCtx {
   locale:    Locale
   setLocale: (l: Locale) => void
   t:         Translations
+  /** Recharge le vocabulaire de l'organisation (après une modification). */
+  reloadVocabulaire: () => void
 }
 
 const I18nContext = createContext<I18nCtx>({
   locale:    'fr',
   setLocale: () => {},
   t:         fr,
+  reloadVocabulaire: () => {},
 })
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('fr')
   const router = useRouter()
+  // Vocabulaire personnalisé de l'organisation (lot L5) : renomme des termes à l'AFFICHAGE seulement.
+  const [vocab, setVocab] = useState<Vocabulaire>({})
+  const reloadVocabulaire = useCallback(() => {
+    fetch('/api/personnalisation').then(r => (r.ok ? r.json() : null)).then(d => setVocab(sanitizeVocabulaire(d?.vocabulaire))).catch(() => {})
+  }, [])
+  useEffect(() => { reloadVocabulaire() }, [reloadVocabulaire])
+  const t = useMemo(() => applyVocabulaire(getT(locale), vocab, locale), [locale, vocab])
 
   useEffect(() => {
     // 1) Cookie `acra-locale` — source de vérité partagée avec les Server Components
@@ -63,7 +74,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t: getT(locale) }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, reloadVocabulaire }}>
       {children}
     </I18nContext.Provider>
   )

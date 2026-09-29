@@ -47,6 +47,14 @@
 > automatiques par échéance, feuilles de travail, cycle configurable par organisation (`auditConfig`),
 > libellés de notation personnalisables.
 
+> **L5 livré (personnalisation)** : **vocabulaire** par organisation (affichage seulement : menu et titres,
+> libellé général ou par langue), **champs personnalisés** (incident, contrôle, mission d'audit ; ≤ 20 par module ;
+> texte, nombre, liste, date, oui/non ; requis ; restreints par rôle, à la lecture comme à l'écriture) et
+> **gabarits sectoriels** (8 : banque, assurance, NIS2, santé, secteur public, PME, SaaS, cabinet) avec aperçu des
+> changements et sans verrouillage. Page `/configuration/personnalisation` (ADMIN). Limites connues : le
+> vocabulaire s'applique aux écrans client (pas aux pages rendues côté serveur, exports et PDF) ; les champs
+> personnalisés ne figurent pas encore dans les exports/rapports ; pas de champs sur constats / tiers.
+
 ## 1. Objectif et principe directeur
 
 Permettre à **un maximum d'organisations et de contextes** d'utiliser les modules

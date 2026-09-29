@@ -27,11 +27,11 @@ export async function loadIncidentInScope(session: { user: { id: string; role?: 
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: {
       id: true, organizationId: true, statut: true, declarantId: true, taxonomieCode: true,
-      quasiIncident: true, pertes: true, recuperationsLignes: true, notifications: true,
+      quasiIncident: true, pertes: true, recuperationsLignes: true, notifications: true, champs: true,
     },
   })
   if (!incident) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const orgConfig = await getOrgConfig(incident.organizationId)
   if (!orgConfig.incidentsActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, incident, secondeLigneActive: orgConfig.secondeLigneActive, incidentsConfig: orgConfig.incidentsConfig }
+  return { userId, userRole, incident, secondeLigneActive: orgConfig.secondeLigneActive, incidentsConfig: orgConfig.incidentsConfig, champsPersonnalises: orgConfig.champsPersonnalises }
 }

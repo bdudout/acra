@@ -10,6 +10,7 @@ import {
   etatEcheance, evaluerEfficacite, type Periodicite,
 } from '@/lib/controle'
 import { champsL3Creation, vueControleL3 } from '@/lib/controle-l3'
+import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { Prisma } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -31,7 +32,7 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ controles: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ controles: [], active: false })
@@ -46,12 +47,14 @@ export async function GET() {
     },
   })
 
+  const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).controle ?? []
   const now = new Date()
   const controles = rows.map(({ processus, riskItem, executions, ...c }) => {
     const derniere = executions[0]?.dateRealisation ?? null
     const echeance = prochaineEcheance(c.periodicite as Periodicite, derniere, c.createdAt)
     return {
       ...c,
+      champs: valeursVisibles(defsChamps, c.champs, roleLecture),
       processusNom: processus?.nom ?? null,
       riskItemIntitule: riskItem?.intitule ?? null,
       derniereExecution: derniere,
@@ -91,8 +94,12 @@ export async function POST(req: NextRequest) {
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
 
+  const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).controle ?? []
+  const champs = fusionnerChamps(defsChamps, {}, body.champs, userRole)
+  const manquants = champsRequisManquants(defsChamps, champs, userRole)
+  if (manquants.length) return NextResponse.json({ error: 'champs_requis', champs: manquants }, { status: 400 })
   const l3 = champsL3Creation(body)
-  const controle = await prisma.controle.create({ data: { ...data, ...l3, conception: l3.conception as Prisma.InputJsonValue, organizationId: orgId } })
+  const controle = await prisma.controle.create({ data: { ...data, ...l3, conception: l3.conception as Prisma.InputJsonValue, champs: champs as unknown as Prisma.InputJsonValue, organizationId: orgId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'create', id: controle.id },
