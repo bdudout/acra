@@ -6,6 +6,27 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (15) — Claude Code : lot L2 « Reporting » (éditions figées, 3 rapports)
+
+**Branche** : `feat/historical-excel-import`, PR #192 (brouillon) — **CI de L1 : 8/8 verts**.
+
+- **Modèle** `RapportEdition` (migration `20260929190000`) : contenu structuré figé, statuts BROUILLON → RELU →
+  VALIDE → DIFFUSE ; quatre-yeux (`transitionRapport`) sauf mode ligne unique (validation directe et
+  auto-validation, journalisée `autoValidation`). Seul un brouillon est régénérable / supprimable.
+- **Rapports** (builders purs) : R-INC-1, R-PER-2, R-GRC-3 (réutilise `verdictDispositif` du cockpit). Libellés
+  statiques = clés i18n `{k}` résolues à l'affichage ; libellés de données résolus à la génération.
+- **API** : `GET/POST /api/rapports` (rate limit, disponibilité selon modules), `GET/PATCH/DELETE
+  /api/rapports/[id]` (404 hors org active), `GET /api/rapports/[id]/export` (Excel). Droits : lecture =
+  rôles à lecture globale ; écriture = admin / risk manager / RSSI (`lib/rapport-acces`).
+- **UI** : `/rapports`, `/rapports/[id]` (impression PDF navigateur), lien « Rapports » dans Pilotage (et dans
+  la barre cyber si le module incidents est actif).
+- **Vérifié** : `tsc` 0 · `npm test` **2428/2428** · `i18n:check` · `npm run build` OK · migration appliquée (pas de
+  dérive) · e2e navigateur `e2e/rapports.spec.ts` **vert** (génération → quatre-yeux → validation → figé).
+- **Reste L2** : diffusion par e-mail, gabarits surchargeables, masquage pour rapports externes, rapports
+  planifiés en brouillon, PDF serveur, R-INC-2/3 (registre, fiches de déclaration par régime).
+
+---
+
 ## 2026-09-29 (14) — Claude Code : lot L1 « Incidents & pertes » (régimes de notification, pertes multi-composantes)
 
 **Branche** : `feat/historical-excel-import`. Décisions §9 de la spec retenues sur les recommandations.

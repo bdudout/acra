@@ -194,6 +194,7 @@ model Organization {
 
   @@index([parentId])
   @@index([path])
+  rapportEditions RapportEdition[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -2058,4 +2059,35 @@ model Configuration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── Rapports GRC (lot L2) : éditions figées ─────────────────────────────────
+// Instantané d'un rapport pour une période (contenu structuré, cf. lib/rapport-model) :
+// jamais recalculé après validation. Cycle : BROUILLON → RELU → VALIDE → DIFFUSE.
+model RapportEdition {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  code         String   // R-INC-1 | R-PER-2 | R-GRC-3 (cf. lib/rapport-model)
+  periodeDebut DateTime @db.Date
+  periodeFin   DateTime @db.Date
+  langue       String   @default("fr") // langue des libellés issus des données
+  statut       String   @default("BROUILLON")
+  contenu      Json
+
+  createdById String
+  releuPar    String?
+  releuLe     DateTime?
+  validePar   String?
+  valideLe    DateTime?
+  diffuseLe   DateTime?
+  // Destinataires de la diffusion (traçabilité) : [{ nom }] — l'outil n'envoie rien.
+  destinataires Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, code])
+  @@index([statut])
 }

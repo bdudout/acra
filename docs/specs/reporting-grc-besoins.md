@@ -21,6 +21,14 @@
 > impact non financier (B-PER-5), rapprochement comptable (B-PER-6), journal de chronologie et
 > cause racine (B-INC-3), import CSV/API v1 en écriture (B-INC-5).
 
+> **L2 livré (socle du reporting)** : éditions figées (`RapportEdition`), cycle brouillon → relu →
+> validé → diffusé avec quatre-yeux (auto-validation tracée en mode ligne unique), périodes
+> prédéfinies ou libres, export Excel, impression PDF, 3 rapports : **R-INC-1** (tableau de bord
+> incidents), **R-PER-2** (pertes par type / catégorie / entité, grandes pertes), **R-GRC-3**
+> (synthèse direction une page, verdict du cockpit). À venir : R-INC-2/3, R-CTL-*, R-AUD-* (avec
+> L3/L4), gabarits surchargeables (sections, seuils, logo), diffusion par e-mail (après validation
+> humaine), masquage pour rapports externes, rapports planifiés en brouillon, PDF serveur.
+
 ## 1. Objectif et principe directeur
 
 Permettre à **un maximum d'organisations et de contextes** d'utiliser les modules

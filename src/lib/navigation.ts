@@ -36,7 +36,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -102,6 +102,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!grcMode) {
     const secondary: NavKey[] = [...gouvernance]
     if (modules.incidents) secondary.push('incidents')
+    // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
+    if (modules.incidents && canPilotage) secondary.push('rapports')
     const entries: NavEntry[] = [link('dashboard'), ...core(modules).map(link)]
     if (secondary.length > 0) {
       if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
@@ -123,6 +125,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canPilotage) pilotage.push('pilotage')
   // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
   if (canPilotage && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
+  // Rapports GRC (éditions figées, lot L2) : mêmes rôles que le cockpit.
+  if (canPilotage) pilotage.push('rapports')
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
