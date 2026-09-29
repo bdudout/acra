@@ -4,7 +4,7 @@
 
 # ACRA — Augmented Cyber Risk Analysis
 
-**La plateforme open-source qui rend l'analyse de risques EBIOS RM accessible à tous**
+**La plateforme open-source de gestion des risques cyber et métier, et de GRC — EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30, projets 360**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -12,8 +12,8 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![EBIOS RM](https://img.shields.io/badge/Méthode-EBIOS%20RM-red)](https://cyber.gouv.fr/securisation/analyse-des-risques/methode-ebios-rm/)
-[![ANSSI](https://img.shields.io/badge/Compatible-ISO%2027005-green)](https://www.iso.org/standard/75281.html)
+[![Méthodes](https://img.shields.io/badge/Méthodes-EBIOS%20RM%20·%20ISO%2027005%20·%20ISO%2031000%20·%20NIST%20800--30-red)](#-méthodes-danalyse-configurables-multi-méthode)
+[![GRC](https://img.shields.io/badge/GRC-3%20lignes%20de%20défense-green)](#️-module-grc--gouvernance-risques--conformité)
 
 **🌐 Langue / Language :** 🇫🇷 Français · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇪🇸 Español](README.es.md) · [🇮🇹 Italiano](README.it.md)
 
@@ -23,13 +23,18 @@
 
 ## 🎯 Présentation
 
-**ACRA (Augmented Cyber Risk Analysis)** est une application web guidée qui permet à n'importe quelle équipe sécurité — même sans expertise pointue — de conduire une analyse de risques complète selon la méthode **EBIOS Risk Manager** de l'ANSSI, compatible **ISO 27005**.
+**ACRA (Augmented Cyber Risk Analysis)** est une plateforme web auto-hébergée de **gestion des risques cyber et métier (risque opérationnel, projets, fraude, externalisation) et de GRC** — l'analyse EBIOS RM n'en est qu'une des méthodes. Elle permet à une équipe sécurité — même sans expertise pointue — de conduire des analyses de risques selon la méthode de son choix, puis de piloter la conformité, les contrôles, les incidents et les plans d'action dans un même outil :
+
+- **Analyse de risques multi-méthode** : **EBIOS Risk Manager** (ANSSI, défaut), **ISO/IEC 27005:2022**, **ISO 31000:2018** et **NIST SP 800-30 Rev. 1** ;
+- **GRC complète, organisée en trois lignes de défense** : registre des risques, conformité multi-référentiels, **maturité** (profils cibles CMMI), dérogations, contrôle permanent, audit interne, incidents (DORA), KRI, registre RGPD, plan d'action unifié, pilotage et dossiers de comité.
+
+Chaque module est activable par organisation : un cabinet peut s'en tenir à l'analyse de risques, une banque activer toute la chaîne de gouvernance.
 
 ### Le problème qu'ACRA résout
 
-Les analyses de risques EBIOS RM sont exigeantes : la méthode comporte 5 ateliers interconnectés, des dizaines de concepts à maîtriser, et la moindre erreur de cohérence peut invalider toute la démarche. En pratique, les équipes s'appuient sur des tableurs Excel complexes, des consultants coûteux, ou renoncent à la rigueur méthodologique.
+Une analyse de risques rigoureuse est exigeante (EBIOS RM compte 5 ateliers interconnectés ; ISO/IEC 27005 et NIST SP 800-30 imposent leur propre processus), et elle ne vaut que si ses conclusions sont suivies : conformité, contrôles, dérogations, actions. En pratique, ces informations vivent dans des tableurs séparés, maintenus à la main.
 
-ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pas à pas, propose des exemples cliquables à chaque étape, maintient la cohérence entre les ateliers, et produit automatiquement un rapport PDF structuré.
+ACRA réunit ces maillons : un **assistant méthodologique** qui guide pas à pas avec des exemples cliquables et maintient la cohérence de l'analyse, relié aux **référentiels, contrôles et plans d'action** de l'organisation, avec des exports (PDF, Word, PowerPoint, Excel) prêts pour le comité ou l'auditeur.
 
 ### Pour qui ?
 
@@ -38,17 +43,22 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 | 🔒 RSSI & Risk Managers | Piloter les analyses, approuver, superviser le portefeuille de risques |
 | 🔍 Analystes sécurité | Conduire les ateliers, documenter les scénarios, planifier les mesures |
 | 🏢 DSI & Directions | Lire les synthèses, suivre le traitement, valider les budgets mesures |
-| 🎓 Étudiants & formateurs | Apprendre la méthode EBIOS RM sur un outil concret |
+| ✅ Conformité, contrôle permanent, audit | Évaluer les référentiels, piloter la maturité, tester les contrôles, suivre les constats |
+| 🗄️ DPO | Tenir le registre des traitements (RGPD art. 30), repérer les AIPD |
+| 🎓 Étudiants & formateurs | Apprendre EBIOS RM, ISO/IEC 27005 ou NIST SP 800-30 sur un outil concret |
 
 ### Ce qui différencie ACRA
 
 - **Guidage méthodologique intégré** : chaque champ dispose d'un tooltip, d'un lien vers le guide ANSSI, et d'exemples contextuels
 - **Cohérence automatique** : les éléments d'un atelier alimentent automatiquement les ateliers suivants
-- **14 référentiels de mesures** : ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA — depuis une seule interface
+- **Plusieurs méthodes, un seul outil** : EBIOS RM, ISO/IEC 27005, ISO 31000 et NIST SP 800-30, choisies par instance ou par analyse
+- **GRC complète** : de l'analyse de risques au plan d'action, en passant par la conformité, la maturité, les dérogations, les contrôles, l'audit et les incidents — modules activables par organisation
+- **15 référentiels de mesures** : ISO 27001:2022, NIST CSF 2.0, NIST 800-53, CIS Controls v8, ANSSI Hygiène, HDS, PCI-DSS, DORA, IEC 62443, SOC 2, NIST SSDF, RGS, ReCyF, TISAX/VDA-ISA, NCSC CAF v4.0 — depuis une seule interface
 - **Guidage sectoriel & conformité** : exemples métier adaptés au secteur et au sous-secteur, recommandation de référentiels, détection du statut réglementaire (NIS2, OIV…) — [voir le détail](#-guidage-sectoriel--conformité)
 - **Méthode Flash (Club EBIOS)** : déroulé guidé des 5 ateliers en une passe rapide, en s'appuyant sur la capitalisation (exemples, socle de sécurité) — idéal pour une première analyse ou un contexte contraint
 - **Guides Club EBIOS intégrés** : la méthode Flash et la fiche méthode 5 (dangerosité des parties prenantes) sont implémentées directement dans le parcours
-- **Profils opérationnels US/UK** (module optionnel, désactivé par défaut) : auto-évaluation état courant / état cible sur les 22 catégories **NIST CSF 2.0** (Tiers 1–4) et les 14 principes **NCSC CAF v4.0** (Basic / Enhanced Profile), historique par point, promotion des écarts en plan d'action sans doublon, export CSV
+- **Maturité (profils cibles CMMI)** : niveau actuel et niveau visé sur n'importe quel référentiel de conformité (dont NIST CSF 2.0 et NCSC CAF v4.0), écarts par domaine, actions — [voir le détail](#-maturité--profils-cibles-cmmi)
+- **Mises à jour intégrées à l'application** : version installée et nouvelle version disponibles dans Administration → Version, bouton « Mettre à jour » (canaux stable / bêta, sauvegarde et contrôle de santé automatiques), ou `scripts/update.sh` en ligne de commande — [voir le détail](#mise-à-jour)
 - **Multi-organisation hiérarchique** : cabinets de conseil (clients isolés), grands groupes (vision entité + consolidée), multi-sites, filiales — dans une seule instance — [voir le détail](#-multi-organisation-hiérarchique)
 - **100% auto-hébergé** : vos données ne quittent jamais votre infrastructure
 
@@ -60,7 +70,7 @@ ACRA change ça : c'est un **assistant méthodologique interactif** qui guide pa
 
 ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable au niveau **instance** (SUPER_ADMIN) et **par analyse** (à la création, config avancée) — **EBIOS RM reste le défaut**.
 
-- **4 méthodes livrées** : **EBIOS RM** (ANSSI, 5 ateliers) · **ISO/IEC 27005:2022** (processus par phases) · **NIST SP 800-30 Rev. 1** (Prepare/Conduct/Communicate/Maintain) · **ISO 31000:2018** (appréciation simple).
+- **5 méthodes livrées** : **EBIOS RM** (ANSSI, 5 ateliers) · **ISO/IEC 27005:2022** (processus par phases) · **NIST SP 800-30 Rev. 1** (Prepare/Conduct/Communicate/Maintain) · **ISO 31000:2018** (appréciation simple) · **Analyse projet 360** (ISO 31000:2018 : risque opérationnel complet d’un projet).
 - **Parcours à saisie directe** (ISO 31000 / 27005 / NIST) : les risques sont saisis directement (gravité × vraisemblance), sans passer par les scénarios EBIOS.
 - **Contexte éditable** (périmètre, objectifs, critères d'acceptation), **conseils de phase** repliables, **suggestions de risques** — sectorielles **et** transverses (rançongiciel AD, fuite via tiers, phishing, DDoS…), **clic = ajout direct** au registre avec annulation.
 - **Risque à 3 niveaux** : **brut** (inhérent) → **actuel** (avec mesures existantes) → **résiduel** (après plan d'action).
@@ -86,7 +96,7 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 
 ### 🔐 Sécurité & référentiels
 
-- Mesures de sécurité issues de **14 référentiels** : ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiène · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA + contrôles personnalisés — contrôles **localisés dans les 5 langues**
+- Mesures de sécurité issues de **15 référentiels** : ISO 27001:2022 · NIST CSF 2.0 · NIST 800-53 · CIS Controls v8 · ANSSI Hygiène · HDS · PCI-DSS · DORA · IEC 62443 · SOC 2 · NIST SSDF · RGS · ReCyF · TISAX/VDA-ISA · NCSC CAF v4.0 + contrôles personnalisés — contrôles **localisés dans les 5 langues** (intitulés officiels conservés quand aucune traduction officielle n'existe, ex. NCSC CAF)
 - Politique de mot de passe configurable (longueur, complexité, expiration, historique, verrouillage)
 - **MFA** configurable (OTP à usage unique par **e-mail** ou **SMS**) avec fenêtre de confirmation de 60 min pour éviter tout verrouillage accidentel
 - **SSO d'entreprise OIDC** (Azure AD, Okta, Google Workspace…) branché sur NextAuth — provisioning automatique des comptes (JIT) et **RBAC piloté par l'IdP** : mapping des **groupes** (AD / SailPoint) vers les rôles ACRA, resynchronisé à chaque connexion. **SAML 2.0** développé en mode maintenance. **SCIM 2.0** (provisioning/déprovisionnement par l'IdP)
@@ -98,10 +108,30 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 - **Multi-organisation** : arbre d'organisations avec périmètres hiérarchiques (nœud / sous-arbre) ; un ADMIN administre **uniquement les comptes de son organisation**, un SUPER_ADMIN gère l'instance
 - Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager), avec **séparation des tâches** — un approbateur ne peut pas approuver **sa propre** analyse (principe des quatre-yeux) — et **auto-validation** pour les organisations mono-utilisateur (cabinet libéral, où le quatre-yeux est impossible)
 - **Acceptation des risques résiduels** par la **Direction métier** (rôle dédié, lecture seule sur les analyses), distincte de la validation de l'analyse (acceptation du livrable)
-- **Dérogations** — acceptation *temporaire* d'une non-conformité au socle de sécurité : rattachée à un contrôle d'un référentiel ou à un risque, **justifiée, compensée, bornée dans le temps et surveillée**. Workflow configurable par organisation (**autonomie** / validation **RSSI** / RSSI + **Direction métier**, double regard « RSSI groupe » optionnel), **alertes avant expiration**, clôture avec **preuves**, et **registre des dérogations** transverse — un livrable de conformité (ISO 27001, registre d'exceptions DORA, dossier d'homologation ANSSI)
+- **Dérogations** — acceptation *temporaire* d'une non-conformité au socle de sécurité : rattachée à un contrôle d'un référentiel ou à un risque, **justifiée, compensée, bornée dans le temps et surveillée**. Workflow configurable par organisation (**autonomie** / validation **RSSI** / RSSI + **Direction métier**, double regard « RSSI groupe » optionnel), avis RSSI **favorable, favorable avec réserves** ou défavorable, demande **modifiable** par le demandeur avant avis et **retirable** pendant la revue (conservée pour l'audit), **alertes avant expiration**, clôture avec **preuves**, et **registre des dérogations** transverse — un livrable de conformité (ISO 27001, registre d'exceptions DORA, dossier d'homologation ANSSI)
 - Partage d'accès par analyse avec permissions individuelles
 - Dashboard admin : gestion des utilisateurs (périmètre de l'organisation), création de comptes, suspension, logs d'audit
 - **Récupération (corbeille)** : une analyse supprimée par un utilisateur reste restaurable par un administrateur pendant **30 jours** avant purge définitive
+
+### 📈 Maturité — profils cibles CMMI
+
+Module activable par organisation (désactivé par défaut). La maturité est une **couche de la conformité** : même référentiel, mêmes points de contrôle, mêmes actions — la conformité dit si un contrôle est respecté, la maturité à quel niveau l'organisation se situe et vise.
+
+- **Échelle CMMI 0 à 5** (Incomplet → En optimisation), libellés et définitions **modifiables par l'ADMIN** dans la configuration
+- **Niveau cible global** (la « déclaration d'appétence », RAS) et cible propre à chaque point si besoin
+- **Tableau de bord** (lecture RAD) : maturité moyenne actuelle et visée, écarts par domaine, plus grands écarts, actions ouvertes et en retard, dernière revue
+- Tout référentiel actif peut porter un profil : **NIST CSF 2.0**, **NCSC CAF v4.0**, ISO 27001, DORA, référentiels personnalisés…
+- Un écart devient une **action du plan d'action unifié**, partagée avec la conformité (pas de doublon) ; historique par point, export CSV
+
+### 🧩 Analyse projet 360
+
+Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questionnaire de qualification sur **six domaines** (cyber, IT — architecture et maintenance —, projet, métier, fraude, externalisation) qui propose les risques à étudier ; risques classés par domaine ; **import des risques d'une analyse cyber existante** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) ; **tableau de bord par domaine** ; validation par le **RSSI et le Risk Manager** (deux avis distincts). Les projets se lancent depuis l'onglet **Projets** (module « Projets 360 », actif par défaut, réglable dans Configuration → Fonctionnalités) ; le questionnaire est **pré-rempli à partir des données existantes** (analyses cyber, registre TIC, processus, registre RGPD, DORA) et les risques du registre sont proposés, sans jamais créer de doublon. Un projet peut aussi **servir de point de départ à une analyse cyber** (bouton dans l'onglet Projets ou sélecteur à la création), et le **cockpit GRC** suit l'avancement, les échéances, la validation RSSI + Risk Manager et les risques élevés de l'ensemble des projets.
+
+### 🧭 Gouvernance du risque
+
+- **Appétence (RAS / RAD)** : déclaration d'appétence (seuils par catégorie, maturité visée) et tableau de bord (risques hors appétit, écarts de maturité, KRI en alerte) avec voyants
+- **Tests de résilience opérationnelle numérique (DORA, art. 24 à 26)** : programme annuel, types de tests officiels, constats, fonctions critiques ou importantes, échéance TLPT, et **rapport sur le réexamen du cadre de gestion du risque lié aux TIC** (art. 6 § 5) en Word
+- **Processus de cartographie des risques** : démarche expliquée étape par étape, éditable par la gouvernance, avec statut de revue de la cartographie
 
 ### 📊 Export & reporting
 
@@ -179,7 +209,7 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 
 ## 🏛️ Module GRC — Gouvernance, Risques & Conformité
 
-Au-delà de l'analyse EBIOS RM, ACRA embarque un **socle GRC complet** structuré selon le
+Au-delà de l'analyse de risques (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30), ACRA embarque un **socle GRC complet** structuré selon le
 modèle des **trois lignes de défense**, pensé pour les entités régulées (banque, assurance,
 santé) et aligné sur **DORA**, **NIS2** et **ISO/IEC 27001/27002**. Chaque module est
 activable par organisation ; la navigation bascule automatiquement en « mode GRC » dès

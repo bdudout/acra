@@ -1,3 +1,4 @@
+import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -107,6 +108,13 @@ export default async function AtelierPage({
         labels: t.nist80030.phases as Record<string, string>, descByKey: { prepare: t.nist80030.prepareDesc, communicate: t.nist80030.communicateNote, maintain: t.nist80030.maintainNote },
         guidanceByKey: t.nist80030.guidance as Record<string, Guidance>,
       }
+    } else if (methode === 'PROJET_360') {
+      cfg = {
+        breadcrumb: t.methodes.projet360, title: t.projet360.pageTitle, subtitle: t.projet360.pageSubtitle,
+        phasesLabel: t.projet360.phasesLabel, perimetreLabel: t.projet360.perimetreLabel, objectifsLabel: t.projet360.objectifsLabel, noContext: t.projet360.noContext,
+        labels: t.projet360.phases as Record<string, string>, descByKey: { contexte: t.projet360.contexteDesc, evaluation: t.projet360.evaluationNote },
+        guidanceByKey: t.projet360.guidance as Record<string, Guidance>,
+      }
     } else { // ISO_31000 — phase unique d'appréciation (écran simple, sans onglets)
       cfg = {
         breadcrumb: t.methodes.iso31000, title: t.risquesDirects.pageTitle, subtitle: t.risquesDirects.pageSubtitle,
@@ -122,6 +130,24 @@ export default async function AtelierPage({
     const risqueSuggestions = editable
       ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
       : []
+    // Projet 360 : les risques DÉJÀ au registre de l'organisation sont proposés en tête
+    // (domaine déduit de la taxonomie de Bâle) — réutiliser plutôt que ressaisir ; un
+    // intitulé déjà présent dans l'analyse n'est plus proposé (dédoublonnage UI).
+    if (methode === 'PROJET_360' && editable) {
+      const orgId360 = (analyse as { organizationId?: string | null }).organizationId ?? null
+      const cfg360 = orgId360 ? await getOrgConfig(orgId360) : null
+      if (orgId360 && cfg360?.registreRisquesActive) {
+        const registre = await prisma.riskItem.findMany({
+          where: { organizationId: orgId360 },
+          select: { intitule: true, taxonomieCode: true, graviteInherente: true, vraisemblanceInherente: true },
+          take: 200,
+        })
+        risqueSuggestions.unshift(...registre.map(ri => ({
+          intitule: ri.intitule, gravite: ri.graviteInherente ?? 2, vraisemblance: ri.vraisemblanceInherente ?? 2, pertinent: true,
+          source: 'REGISTRE' as const, ...(domaineFromTaxonomie(ri.taxonomieCode) ? { domaine: domaineFromTaxonomie(ri.taxonomieCode)! } : {}),
+        })))
+      }
+    }
     // Critères de l'organisation (P1/P2) : même échelle que l'EBIOS RM + appétit au risque.
     const directScale = await getEffectiveScaleConfig((analyse as { organizationId?: string | null }).organizationId ?? null)
     const directOrgId = (analyse as { organizationId?: string | null }).organizationId ?? null
@@ -166,6 +192,12 @@ export default async function AtelierPage({
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
+            projet360={methode === 'PROJET_360' ? {
+              answers: sanitizeAnswers360((analyse as { qualification?: unknown }).qualification) as Record<string, boolean>,
+              sources: sanitizeSources360((analyse as { qualification?: unknown }).qualification),
+              appetitSeuil: directAppetit.seuilGlobal ?? null,
+              tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
+            } : undefined}
           />
         </main>
         <PageScrollNavigation {...t.scrollNavigation} />

@@ -1,3 +1,6 @@
+import { populateProjet360 } from '@/lib/projet360.server'
+import { resolveProjetSource } from '@/lib/projet360'
+import { getServerT } from '@/lib/i18n'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -26,6 +29,7 @@ const createSchema = z.object({
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
   isSocle:      z.boolean().optional(),       // marquer cette analyse comme socle
+  projetSourceId: z.string().cuid().optional(), // projet 360 dont est issue l'analyse
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
   qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
@@ -92,11 +96,30 @@ export async function POST(req: NextRequest) {
     // seul câblé). Une méthode non proposable retombe sur le défaut — jamais de
     // méthode arbitraire persistée.
     const { available, default: defMethode } = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
-    const methode = isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     // La qualification peut être saisie dès le choix de méthode. Elle est toujours
     // filtrée avec la configuration effective de l'organisation active.
     const orgConfig = await getOrgConfig(__org.activeOrgId)
+    // Projet 360 : piloté par le module d'organisation (onglet Projets), pas par
+    // l'activation d'instance des méthodes.
+    const methode = data.methode === 'PROJET_360' && orgConfig.projets360Active && __org.activeOrgId
+      ? 'PROJET_360'
+      : isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     const qualification = sanitizeQualification(data.qualification, orgConfig.qualificationQuestionnaire)
+
+    // Analyse issue d'un projet 360 : lien ignoré si le module est inactif, 404 si le
+    // projet n'est pas accessible (même garde d'accès que la lecture d'une analyse).
+    let projetSourceId: string | null = null
+    if (data.projetSourceId && methode !== 'PROJET_360') {
+      const projet = orgConfig.projets360Active
+        ? await prisma.analyse.findFirst({
+            where: { AND: [analyseWhereClause(userId, __org.role, __org.scope)], id: data.projetSourceId },
+            select: { id: true, methode: true, organizationId: true },
+          })
+        : null
+      const r = resolveProjetSource({ projet, orgId: __org.activeOrgId, projets360Active: orgConfig.projets360Active })
+      if (r.status === 'INTROUVABLE') return NextResponse.json({ error: 'Projet introuvable ou accès refusé' }, { status: 404 })
+      if (r.status === 'OK') projetSourceId = r.projetId
+    }
 
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
     let socleData: { cadrage?: any; sourcesRisque?: any[] } = {}
@@ -137,12 +160,15 @@ export async function POST(req: NextRequest) {
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
         socleId: data.socleId ?? null,
+        projetSourceId,
         mentionProtection: normalizeMentionProtection(data.mentionProtection),
         methode,
         qualification,
         // Cadrage : copier du socle ou créer vide
         cadrage: {
-          create: socleData.cadrage
+          create: methode === 'PROJET_360' && !socleData.cadrage
+            ? { perimetre: data.description ?? null }
+            : socleData.cadrage
             ? {
                 perimetre:      socleData.cadrage.perimetre,
                 objectifsEtude: socleData.cadrage.objectifsEtude,
@@ -167,11 +193,18 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Projet 360 : questionnaire pré-rempli d'après les données existantes et risques
+    // proposés créés sans doublon (lib/projet360.server).
+    let population: { answers: number; risks: number } | null = null
+    if (methode === 'PROJET_360' && __org.activeOrgId) {
+      population = await populateProjet360(analyse.id, __org.activeOrgId, await getServerT())
+    }
+
     await auditLog('ANALYSE_CREATED', {
       userId, userRole,
       targetId: analyse.id, targetType: 'analyse',
       ip: getClientIp(req),
-      details: { nom: analyse.nom, socleId: data.socleId ?? null },
+      details: { nom: analyse.nom, socleId: data.socleId ?? null, ...(projetSourceId ? { projetSourceId } : {}), ...(population ? { methode, population } : {}) },
     })
     return NextResponse.json({ analyse }, { status: 201 })
   } catch (err) {

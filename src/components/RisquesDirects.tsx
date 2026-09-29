@@ -17,6 +17,7 @@ import RiskPlans from '@/components/RiskPlans'
 import RiskVulnerabilites from '@/components/RiskVulnerabilites'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import { filterByOwner, ownerFilterOptions, OWNER_NONE } from '@/lib/risque-proprietaire'
+import { DOMAINES_360 } from '@/lib/projet360'
 
 interface RisqueRow {
   id: string; nom: string; description?: string | null
@@ -27,6 +28,9 @@ interface RisqueRow {
   vulnerabilites?: { description: string }[] | null
   taxonomieCode?: string | null
   proprietaire?: string | null
+  /** Domaine (analyse projet 360) et analyse cyber d'origine en cas d'import. */
+  domaine?: string | null
+  sourceAnalyseId?: string | null
   mesuresCount?: number
   plansCount?: number
 }
@@ -49,7 +53,7 @@ const TIER_CLASS: Record<string, string> = {
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 export type TreatmentSections = 'mesures' | 'plans' | 'both'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit, ownerSuggestions = [] }: {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit, ownerSuggestions = [], withDomaine = false }: {
   analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections
   /** Échelle de l'organisation (4 ou 5 niveaux, paliers, matrice) — défaut EBIOS RM 4 niveaux. */
   scale?: Partial<ScaleConfig> | null
@@ -57,9 +61,14 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   appetit?: AppetitConfig | null
   /** Suggestions de propriétaires : noms des membres de l'org + entités (P3). */
   ownerSuggestions?: string[]
+  /** Analyse projet 360 : domaine par risque (ajout, ligne, filtre, colonne d'évaluation). */
+  withDomaine?: boolean
 }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
+  // Libellés des domaines lus seulement en mode 360 (t.projet360).
+  const p360 = withDomaine ? t.projet360 : null
+  const domaineLabel = (d: string | null | undefined) => (d && p360 ? (p360.domaines as Record<string, string>)[d] ?? d : p360?.domaineNone ?? '')
   // P1/P2 : critères de l'organisation (échelle + appétit) — cf. lib/risque-priorisation.
   const scaleCfg = resolveScaleConfig(scale)
   const evalCtx = { scale: scaleCfg, appetit: appetit ?? APPETIT_DEFAULT }
@@ -100,6 +109,9 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [detailsOpenId, setDetailsOpenId] = useState<string | null>(null)
   // Filtre par propriétaire (P3) : '' = tous, OWNER_NONE = sans propriétaire.
   const [ownerFilter, setOwnerFilter] = useState('')
+  // Domaine (mode 360) : filtre ('' = tous) et domaine du risque à ajouter.
+  const [domaineFilter, setDomaineFilter] = useState('')
+  const [newDomaine, setNewDomaine] = useState('')
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -112,7 +124,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     setBusy(true)
     const res = await fetch(`/api/analyses/${analyseId}/risques`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, gravite, vraisemblance }),
+      body: JSON.stringify({ nom, gravite, vraisemblance, ...(withDomaine ? { domaine: newDomaine || null } : {}) }),
     }).catch(() => null)
     setBusy(false)
     if (res && res.ok) { setNom(''); setGravite(2); setVraisemblance(2); reload() }
@@ -139,7 +151,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     setBusy(true)
     const res = await fetch(`/api/analyses/${analyseId}/risques`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: ex.intitule, gravite: ex.gravite, vraisemblance: ex.vraisemblance }),
+      body: JSON.stringify({ nom: ex.intitule, gravite: ex.gravite, vraisemblance: ex.vraisemblance, ...(withDomaine && ex.domaine ? { domaine: ex.domaine } : {}) }),
     }).then(r => r.ok ? r.json() : null).catch(() => null)
     setBusy(false)
     const newId = res?.risque?.id as string | undefined
@@ -245,7 +257,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const shownSuggestions = (suggestions ?? []).filter(s => !existingNames.has(s.intitule.trim().toLowerCase()))
 
   // ── Mode review (Évaluation) : priorisation lecture seule + décision d'acceptation.
-  const shownRows = filterByOwner(rows, ownerFilter)
+  const shownRows = filterByOwner(rows, ownerFilter).filter(r => !withDomaine || !domaineFilter || (r.domaine ?? '') === domaineFilter)
   const ownerOptions = ownerFilterOptions(rows)
   const prioritized = prioritiseRisks(shownRows, evalCtx)
   const counts = countRiskDecisions(shownRows, evalCtx)
@@ -280,6 +292,12 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
               {echelle.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>}
+          {p360 && <label className="text-xs text-gray-500 dark:text-gray-400">{p360.colDomaine}
+            <select aria-label={p360.newRiskDomain} value={newDomaine} onChange={e => setNewDomaine(e.target.value)} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <option value="">{p360.domaineNone}</option>
+              {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
+            </select>
+          </label>}
           <button onClick={ajouter} disabled={busy || !nom.trim()} className="btn-primary text-sm inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={15} aria-hidden="true" /> {m.add}
           </button>
@@ -299,6 +317,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20 disabled:opacity-50">
                 <Plus size={12} aria-hidden="true" />
                 <span>{ex.intitule}</span>
+                {p360 && ex.source === 'REGISTRE' && <span className="rounded bg-white/70 px-1 text-[10px] text-ebios-600 dark:bg-gray-900/40">{p360.fromRegistre}</span>}
+                {p360 && ex.domaine && <span className="text-[10px] text-ebios-500">{domaineLabel(ex.domaine)}</span>}
                 <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
               </button>
             ))}
@@ -315,7 +335,12 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
             <option value={OWNER_NONE}>{m.filterOwnerNone}</option>
             {ownerOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          {ownerFilter && <span>{shownRows.length} / {rows.length}</span>}
+          {p360 && <select aria-label={p360.filterDomain} value={domaineFilter} onChange={e => setDomaineFilter(e.target.value)}
+            className="rounded border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
+            <option value="">{p360.filterDomainAll}</option>
+            {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
+          </select>}
+          {(ownerFilter || domaineFilter) && <span>{shownRows.length} / {rows.length}</span>}
         </div>
       )}
       <datalist id={datalistId}>{ownerSuggestions.map(o => <option key={o} value={o} />)}</datalist>
@@ -333,6 +358,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   <th className="px-3 py-2">{m.colNom}</th>
                   <th className="px-3 py-2">{m.colProprietaire}</th>
+                  {p360 && <th className="px-3 py-2">{p360.colDomaine}</th>}
                   <th className="px-3 py-2">{m.colNiveauEvalue}</th>
                   <th className="px-3 py-2">{m.colDecision}</th>
                   <th className="px-3 py-2">{m.colCritere}</th>
@@ -342,6 +368,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                     <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{r.nom}</td>
                       <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{r.proprietaire ?? <span className="italic text-amber-700 dark:text-amber-300">{m.ownerMissing}</span>}</td>
+                      {p360 && <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{domaineLabel(r.domaine)}</td>}
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
                           {seuilDot(e.seuil.couleur)}<span className="font-semibold tabular-nums">{e.niveau}</span> · {e.seuil.label}
@@ -388,7 +415,17 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                             : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
                               : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
                         </button>}
-                        <span className="min-w-0 flex-1 break-words">{r.nom}{ownerField(r)}</span>
+                        <span className="min-w-0 flex-1 break-words">{r.nom}
+                          {p360 && r.sourceAnalyseId && <span className="ml-2 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{p360.importedBadge}</span>}
+                          {ownerField(r)}
+                          {p360 && (editable
+                            ? <select aria-label={`${p360.colDomaine} — ${r.nom}`} value={r.domaine ?? ''} onChange={e => maj(r.id, { domaine: e.target.value || null })}
+                                className="mt-1 block rounded border border-gray-200 px-1 py-0.5 text-xs font-normal text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                <option value="">{p360.domaineNone}</option>
+                                {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
+                              </select>
+                            : <span className="mt-0.5 block text-xs font-normal text-gray-500">{domaineLabel(r.domaine)}</span>)}
+                        </span>
                         {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1 md:hidden" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                       </div>
                       {r.id === justAddedId && (

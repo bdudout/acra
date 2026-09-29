@@ -7,6 +7,7 @@
 import { clampInt } from '@/lib/import-sanitize'
 import { computeRiskScore } from '@/lib/risk-scale'
 import { sanitizeProprietaire } from '@/lib/risque-proprietaire'
+import { isDomaine360 } from '@/lib/projet360'
 
 /** Stratégies de traitement valides (enum Prisma StrategieTraitement). */
 export const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
@@ -64,7 +65,12 @@ export interface DirectRisquePayload {
   vulnerabilites?: RisqueVulnerabilite[]
   /** Propriétaire du risque (personne ou entité) — ISO 27005 §7.2.2. null = non désigné. */
   proprietaire?: string | null
+  /** Domaine (analyse projet 360) : CYBER, IT, PROJECT, BUSINESS, FRAUD, OUTSOURCING ; null = non classé. */
+  domaine?: string | null
 }
+
+/** Domaine assaini : code connu, sinon null. */
+const cleanDomaine = (v: unknown): string | null => (isDomaine360(v) ? v : null)
 
 /**
  * Assainit un risque saisi directement : borne gravité/vraisemblance à [1,4] pour
@@ -100,6 +106,7 @@ export function sanitizeDirectRisque(input: unknown, maxNiveau: number = 4): Dir
     ...(o.description != null ? { description: String(o.description).slice(0, 2000) } : {}),
     ...('vulnerabilites' in o ? { vulnerabilites: sanitizeVulnerabilites(o.vulnerabilites) } : {}),
     ...('proprietaire' in o ? { proprietaire: sanitizeProprietaire(o.proprietaire) } : {}),
+    ...('domaine' in o ? { domaine: cleanDomaine(o.domaine) } : {}),
   }
 }
 
@@ -135,6 +142,7 @@ export function sanitizeDirectRisquePatch(input: unknown, maxNiveau: number = 4)
   if ('vraisemblanceResiduelle' in o) out.vraisemblanceResiduelle = clampInt(o.vraisemblanceResiduelle, 1, max, 2) as number
   if ('vulnerabilites' in o) out.vulnerabilites = sanitizeVulnerabilites(o.vulnerabilites)
   if ('proprietaire' in o) out.proprietaire = sanitizeProprietaire(o.proprietaire)
+  if ('domaine' in o) out.domaine = cleanDomaine(o.domaine)
   return out
 }
 
@@ -153,7 +161,7 @@ export const DIRECT_RISK_SELECT = {
   gravite: true, vraisemblance: true, niveauRisque: true,
   graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
   graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,
-  vulnerabilites: true,
+  vulnerabilites: true, domaine: true, sourceAnalyseId: true,
 } as const
 
 /**

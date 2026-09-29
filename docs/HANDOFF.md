@@ -6,6 +6,190 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-29 (12) — Claude Code : reprise de Codex, cockpit GRC corrigé, projets ⇄ analyse cyber, READMEs
+
+**Branche** : `feat/historical-excel-import` (PR #191). Commits `88312d0` (correctifs CI),
+`d45b7f7` (travail de Codex repris : DORA → actions, PDF RAS/RAD, bilan par domaine, tiers du
+projet 360, cadrage CAF) + le commit de ce tour.
+
+- **Reste à faire évalué** : backlog Codex soldé (DORA→actions, PDF RAS/RAD, rapport par domaine,
+  CAF cadré : les cibles Basic/Enhanced sont un modèle ACRA, pas une prescription NCSC).
+  Restent : recette navigateur connectée de tous les parcours, tables IGP CAF chiffrées (à ne
+  pas inventer), publication d'une release bêta.
+- **Bug cockpit GRC** : `/pilotage` et `/api/grc/rollup` exigeaient le module *registre* alors
+  que la barre affiche « Pilotage » dès qu'un module GRC est actif → retour silencieux vers
+  `/dashboard`. Garde unique `isGrcActive` (lib/projet360) : registre, contrôle, audit, KRI,
+  réglementaire ou profils opérationnels (incidents et projets seuls ne comptent pas).
+- **Suivi des projets dans le cockpit GRC** : bloc `consolide.projets` du rollup
+  (`synthetiserProjets360` : en cours / terminés / en retard / validés RSSI + RM, risques
+  élevés, projets à surveiller en tête) rendu par `ProjetsSuivi`, seulement si le module Projets 360
+  est actif ; mêmes analyses et même garde d'accès que l'onglet Projets.
+- **Analyse cyber depuis un projet 360** : `Analyse.projetSourceId` (migration
+  `20260929170000`, détaché à la suppression du projet) ; bouton « Lancer une analyse cyber »
+  dans l'onglet Projets (→ `/analyses/new?projet=<id>`), sélecteur « Partir d'un projet 360 »
+  sur la page de création (préremplit nom/description sans écraser la saisie) ; `GET /api/projets`
+  (liste vide si module inactif) ; `POST /api/analyses` ignore le lien si le module est inactif,
+  404 si le projet est inaccessible / d'une autre organisation (`resolveProjetSource`).
+- **READMEs ×5** : accroche et présentation = gestion des risques cyber **et métier** + GRC
+  (EBIOS RM n'est qu'une méthode) ; mise à jour intégrée à l'application mise en avant.
+- **Vérifié** : `tsc` 0 · `npm test` **2295/2295** · `i18n:check` · `npm run build` OK ·
+  migration appliquée en local (pas de dérive).
+- **Suite (tour 12)** : CI #191 — seul `npm audit` échouait (nodemailer GHSA-6vj9-mwq6-2f5v,
+  advisory nouvelle) → `nodemailer@^10.0.12`, exceptions `image-size` retirées (devenues inutiles),
+  `audit-check` propre. Recette navigateur réelle : `e2e/projets.spec.ts` (projet 360 → analyse
+  cyber préremplie) **vert** contre le dev (`DATABASE_URL` en localhost, `E2E_BASE_URL=http://localhost:3000`).
+  Champ « Nom » de la création d'analyse : `id`/`htmlFor` ajoutés. Cockpit GRC avec un seul module :
+  `e2e/pilotage-grc.spec.ts` **vert** (registre off + contrôle permanent on → /pilotage reste, bloc projets visible). CI #191 : 8/8 verts après le correctif nodemailer.
+- **Piège** : un `sed -i` macOS avec `\n` a échoué en silence dans une commande chaînée en `&&` et
+  a sauté la création de `/api/projets` (les tests mockaient `fetch`, seul le build l'a révélé).
+  Vérifier l'existence des fichiers créés.
+- Non vérifié : navigateur connecté (cockpit avec un seul module GRC, parcours projet → analyse).
+
+---
+
+## 2026-09-29 (11) — Codex : DORA → actions et export PDF RAS/RAD
+
+**Branche** : `feat/historical-excel-import` (PR #191, non fusionnée à ce stade).
+
+- **Constats de tests de résilience DORA → plans d'action** : route
+  `POST /api/tests-resilience/[id]/actions` ; seul un constat ouvert est promu,
+  priorité dérivée de sa sévérité (4=CRITIQUE, 3=MAJEUR, 1–2=MODERE), lien
+  polymorphe `TEST_RESILIENCE` avec ref `constat:<index>` ; une action ouverte
+  identique est renvoyée, jamais dupliquée. Bouton et retour contextualisé dans
+  `TestsResilienceManager`, i18n ×5.
+- **Export PDF RAS/RAD** : route `/api/appetence/export`, même agrégat serveur
+  que la vue `/appetence`, audit `EXPORT`, template
+  `ras-rad-pdf-template.tsx` compilé par `compile-pdf-template.mjs`. Le PDF
+  contient le voyant global, le RAS (seuil et dépassements) et le RAD (appétit,
+  maturité, KRI) ; bouton de téléchargement dans la vue.
+- **Projet 360** : les exports directs PDF et Excel comportent maintenant un bilan
+  par chacun des six domaines (cyber, SI, projet, métier, fraude,
+  externalisation), y compris les risques non classés. C'est le même objet
+  `Analyse` et le même registre de risques, sans copie de données.
+- **Tiers Projet 360** : la phase Qualification comprend `ProjectTiers` ; les
+  noms déjà contractualisés sont proposés depuis `/api/tiers/names`, puis les
+  tiers sont persistés par la route dédiée
+  `PUT /api/analyses/:id/tiers`, sans modifier les scénarios de l'atelier 3.
+- **CAF** : recherche effectuée sur les publications NCSC officielles v4.0.
+  Point de cadrage important : le CAF fournit 41 outcomes et tables IGP ; il ne
+  mandate pas de profil Basic/Enhanced sectoriellement universel. Les cibles
+  Basic/Enhanced doivent donc être proposées comme modèle ACRA documenté et
+  révisable, jamais comme prescription NCSC/régulateur. Sources : collection et
+  PDF v4.0 NCSC (pages 3–6, IGP tables). L'écran Maturité CAF offre le lien
+  direct vers les tables IGP officielles et explique que le profil cible dépend
+  de l'autorité de supervision/cadre sectoriel.
+- **Vérifié** : `npx vitest run src/__tests__/unit/api/tests-resilience.route.test.ts`
+  (7 verts) ; `npx tsc --noEmit` vert ; compilation de tous les templates PDF ;
+  rendu direct du template RAS/RAD : en-tête `%PDF` valide (3 604 octets) ;
+  suite complète `npm test -- --run --reporter=dot` : **276 fichiers, 2 276
+  tests verts** ; `tsc` et `i18n:check` verts.
+- **Build** : `npm run build` **vert** après purge du seul cache régénérable
+  `.next/cache` (1,7 Go) ; le build avait d'abord atteint `ENOSPC`, puis le
+  sandbox réseau empêchait Next de charger Inter. Le build a ensuite terminé,
+  y compris ses routes standalone et le nettoyage du `.env` de production.
+- **Recette HTTP locale** : serveur déjà actif sur `localhost:3005` ;
+  `GET /api/health` = 200. Sans session, `/api/appetence/export`,
+  `POST /api/tests-resilience/test/actions` et
+  `PUT /api/analyses/test/tiers` sont interceptées par le middleware (307 vers
+  l'authentification), sans écriture de données.
+- **Recette Playwright** : lancée contre `localhost:3005` avec une URL PostgreSQL
+  locale temporaire (Docker expose 5432 ; `.env` réserve `db` au réseau Docker).
+  Les cinq premiers scénarios ont passé : quatre parcours/format d'import,
+  authentification valide et refus de mot de passe. Le cycle cyber était encore
+  en cours quand la session d'exécution a été interrompue ; relancer avec
+  `DATABASE_URL` pointant sur `localhost:5432` et `E2E_BASE_URL=http://localhost:3005`.
+- **Cycle cyber E2E** : repris contre `127.0.0.1:3005` avec le serveur démarré
+  sur l'URL PostgreSQL locale temporaire ; **vert** (41,3 s). Le scénario valide
+  les cinq ateliers, soumission, approbation RSSI, acceptation métier, gel et
+  export PDF, puis le teardown retire les données `e2e_*`.
+- **À poursuivre** : recette navigateur connectée de tous les parcours. Le
+  composant Atelier 3 propose déjà les tiers connus par défaut via
+  `/api/tiers/names`; si le parcours Projet 360 doit éditer ses tiers depuis ses
+  phases, créer un écran dédié plutôt que détourner l'atelier EBIOS 3.
+
+---
+
+## 2026-09-29 (10) — Claude Code : onglet Projets, module Projets 360, pré-remplissage, dérogations en place
+
+**Branche** : `feat/historical-excel-import` (PR #191). Commits `590129b` (dérogations),
+`5c1b465` (projets).
+
+- Module `projets360Active` (OrganizationConfig, défaut **true**, migration
+  `20260929160000`, toggle Configuration → Fonctionnalités, politique d'instance) ;
+  onglet `/projets` ; `PROJET_360` retiré du sélecteur générique et de l'activation
+  d'instance (`MODULE_METHODS`), accepté à la création si le module est actif.
+- Nav : groupe « Gestion des risques » ×5, lien Projets.
+- Population (`lib/projet360.server`) : réponses « oui » seulement sur preuve, avec
+  source (`p360._sources`, effacée à la confirmation) ; risques proposés sans doublon ;
+  risques du registre proposés par domaine en appréciation.
+- Dérogations : actions mises à jour en place (ligne ouverte, confirmation), bandeau
+  « Votre demande » avec boutons visibles.
+- Vérifié : `tsc` 0 · `npm test` **2272/2272** · `i18n:check` · `npm run build` OK.
+- Non vérifié : navigateur connecté.
+
+---
+
+## 2026-09-29 (9) — Claude Code : analyse projet 360, RAS/RAD, tests de résilience DORA, processus de cartographie
+
+**Branche** : `feat/historical-excel-import` (PR #191 ouverte, non fusionnée). Commits
+`40d35d9` (projet 360), `88fbb27` (RAS/RAD), `1dbcaca` (tests de résilience DORA),
+`dcbb33f` (processus de cartographie) + docs.
+
+- **Analyse projet 360** (méthode `PROJET_360`, ISO 31000) : questionnaire 360 (18
+  questions, 6 domaines) → risques proposés via le moteur de qualification ;
+  `Risque.domaine` ; import tracé de risques d'une analyse cyber (même org, méthodes
+  cyber, idempotent) ; double approbation RSSI **et** RM (`Analyse.approbations`) ;
+  tableau de bord par domaine. Migration `20260929130000_projet_360`. La méthode doit
+  être **activée par le SUPER_ADMIN** (/admin/instance) comme les autres.
+- **RAS / RAD** : `/appetence` (menu Pilotage) — voyants appétit / maturité / KRI.
+- **Tests de résilience DORA** : `/reglementaire/tests-resilience`, table
+  `TestResilience` (migration `20260929140000`), rapport Word de réexamen (art. 6 § 5).
+  Libellés réglementaires repris d'EUR-Lex ×5 (art. 6 § 5, 24, 25 § 1, 26).
+- **Processus de cartographie** : `/cartographie/processus`, `OrganizationConfig.
+  processusCartographie` (migration `20260929150000`).
+- **Vérifié** : `tsc` 0 · `npm test` **2258/2258** · `i18n:check` vert · `npm run build`
+  OK · migrations appliquées en local.
+- **Non vérifié** : parcours navigateur connecté (session du panneau expirée) —
+  recette à faire : créer une analyse projet 360 (après activation instance), répondre
+  au questionnaire, importer des risques cyber, approuver RSSI puis RM ; /appetence ;
+  saisir un test DORA et télécharger le rapport ; éditer le processus de cartographie.
+- **Reste au backlog** : attendus des profils CAF (tables officielles NCSC à sourcer),
+  export PDF RAS/RAD, constats DORA → plans d'action, rapport projet 360 par domaine.
+
+---
+
+## 2026-09-29 (8) — Claude Code : v1.0.3 publiée, Maturité (CMMI), dérogations, READMEs, notes de release
+
+**Branche** : `feat/historical-excel-import` (à jour de `main` après #190). Commits
+`bbc553d` (1.0.4-beta.1), `7a9222d` (maturité), `2ef2748` (dérogations), `f8a2a09`
+(release), `3e93996` (READMEs), `cf29da0` (docs).
+
+- **v1.0.3 publiée** (release GitHub, branche `stable` créée sur `7c15dff`) ; issues
+  #185, #186, #188 : réponses publiées (ton amical, tutoiement) puis fermées.
+- **Maturité** (remplace les « profils opérationnels US/UK ») : couche de `Conformite`
+  (`maturites`, `maturiteCible`), échelle CMMI 0–5 modifiable par l'ADMIN
+  (`OrganizationConfig.echelleMaturite`, section Échelles de /configuration),
+  NCSC CAF v4.0 ajouté aux référentiels livrés, page `/maturite` (lecture RAS/RAD),
+  actions via lien `CONFORMITE` (anti-doublon commun). Migration
+  `20260929120000_maturite_conformite` (supprime `OperationalProfile`, convertit ses liens).
+- **Dérogations** : modification par le demandeur avant avis RSSI, retrait
+  (statut `RETIREE`), avis « favorable avec réserves » (`avisRssiReserves`).
+- **Release** : `release.yml` exige `docs/releases/vX.Y.Z.md` pour une stable, ajoute
+  commits + artefacts, joint la fiche de recette ; notes v1.0.0→v1.0.3 réécrites.
+  Skill : procédure « Publier une release ».
+- **READMEs ×5** : GRC multi-méthode, sections Méthodes et Maturité, 15 référentiels.
+- **Backlog** (`docs/CHANTIERS-EN-COURS.md`) : vue RAS/RAD, programme de tests de
+  résilience DORA → rapport de réexamen, page processus de cartographie éditable.
+- **Vérifié** : `tsc` 0 · `npm test` **2199/2199** · `i18n:check` vert · `npm run build`
+  OK · migration appliquée en local · essai à sec de l'étape « notes » de release.yml.
+- **Non vérifié** : parcours navigateur de /maturite et des dérogations (la session du
+  panneau navigateur a expiré ; pas de compte de test utilisable) — à recetter
+  connecté (ADMIN : échelle CMMI ; RSSI : avis avec réserves ; demandeur : modifier/retirer).
+- **Prochain pas** : PR vers `main` (bêta 1.0.4) puis recette ; pour la prochaine
+  stable, rédiger `docs/releases/v1.0.4.md` avant le workflow.
+
+---
+
 ## 2026-09-28 (7) — Claude Code : P4 terminé, #185 corrigé (v1.0.3), profils US/UK lot 1
 
 **Branche** : `feat/historical-excel-import`. Commits `fd4c9ab` (P4), `93b6148` (#185 +

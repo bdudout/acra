@@ -7,21 +7,29 @@
 // versions citées) — les `labelKey` ci-dessous pointent vers l'i18n.
 
 /** Méthodes d'analyse de risque connues. EBIOS RM = défaut. */
-export const RISK_METHODS = ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000'] as const
+export const RISK_METHODS = ['EBIOS_RM', 'ISO_27005', 'NIST_800_30', 'ISO_31000', 'PROJET_360'] as const
 export type RiskMethod = (typeof RISK_METHODS)[number]
 
 /** Méthode par défaut (rétrocompatibilité : toute analyse sans méthode = EBIOS RM). */
 export const DEFAULT_METHOD: RiskMethod = 'EBIOS_RM'
 
 /** Méthodes dont le parcours (UI) est réellement câblé : EBIOS RM + ISO 31000 + ISO 27005. */
-export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_31000', 'ISO_27005', 'NIST_800_30']
+export const IMPLEMENTED_METHODS: readonly RiskMethod[] = ['EBIOS_RM', 'ISO_31000', 'ISO_27005', 'NIST_800_30', 'PROJET_360']
 
 /**
  * Méthodes à **saisie directe** des risques (gravité × vraisemblance saisis
  * directement), par opposition à EBIOS RM où les risques sont **dérivés** des
  * scénarios opérationnels. Détermine si l'API de saisie directe est autorisée.
  */
-export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000', 'ISO_27005', 'NIST_800_30']
+/**
+ * Méthodes pilotées par un MODULE d'organisation plutôt que par l'activation
+ * d'instance : absentes du sélecteur « nouvelle analyse » et de /admin/instance.
+ * PROJET_360 = module « Projets 360 » (onglet Projets, OrganizationConfig.projets360Active).
+ */
+export const MODULE_METHODS: readonly RiskMethod[] = ['PROJET_360']
+const isPickerMethod = (m: RiskMethod) => !MODULE_METHODS.includes(m)
+
+export const DIRECT_RISK_METHODS: readonly RiskMethod[] = ['ISO_31000', 'ISO_27005', 'NIST_800_30', 'PROJET_360']
 
 /** Vrai si la méthode apprécie les risques par saisie directe (pas via scénarios). */
 export function usesDirectRiskEntry(m: string): boolean {
@@ -36,7 +44,7 @@ export function usesDirectRiskEntry(m: string): boolean {
 export function cleanActiveMethodes(v: unknown): RiskMethod[] {
   const arr = Array.isArray(v) ? v : []
   const set = new Set<RiskMethod>([DEFAULT_METHOD])
-  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x)) set.add(x)
+  for (const x of arr) if (isRiskMethod(x) && IMPLEMENTED_METHODS.includes(x) && isPickerMethod(x)) set.add(x)
   return RISK_METHODS.filter(m => set.has(m))
 }
 
@@ -60,13 +68,16 @@ export const METHOD_META: Record<RiskMethod, MethodMeta> = {
   ISO_27005:   { standard: 'ISO/IEC 27005:2022',                      labelKey: 'methodes.iso27005.nom',  cyber: true },
   NIST_800_30: { standard: 'NIST SP 800-30 Rev. 1',                   labelKey: 'methodes.nist80030.nom', cyber: true },
   ISO_31000:   { standard: 'ISO 31000:2018',                          labelKey: 'methodes.iso31000.nom',  cyber: false },
+  // Analyse « projet 360 » : risque opérationnel complet d'un projet (cyber, IT,
+  // projet, métier, fraude, externalisation), démarche ISO 31000 — docs/specs/analyse-projet-360.md.
+  PROJET_360:  { standard: 'ISO 31000:2018',                          labelKey: 'methodes.projet360.nom', cyber: false },
 }
 
 /** Étape d'une méthode (ordre + clé stable + clé i18n de libellé). */
 /** Nature d'une phase pour le parcours phasé générique (`PhasedRiskWorkshop`) :
  *  context = périmètre/objectifs ; appreciation = registre éditable ; review =
  *  registre en lecture seule (priorisation) ; note = conseils seuls. */
-export type PhaseType = 'context' | 'appreciation' | 'review' | 'note'
+export type PhaseType = 'context' | 'appreciation' | 'review' | 'note' | 'qualification'
 
 /** Sous-mode d'une phase d'appréciation (différenciation ISO 27005) :
  *  identify = construire la liste ; rate = coter G×V ; treat = traiter.
@@ -118,6 +129,16 @@ export const METHOD_STEPS: Record<RiskMethod, MethodStep[]> = {
     { num: 2, key: 'conduct',              labelKey: 'methodes.nist80030.s2', type: 'appreciation' },
     { num: 3, key: 'communicate',          labelKey: 'methodes.nist80030.s3', type: 'review' },
     { num: 4, key: 'maintain',             labelKey: 'methodes.nist80030.s4', type: 'review' },
+  ],
+  // Projet 360 (ISO 31000:2018) : contexte → qualification 360 (questionnaire par
+  // domaine, risques proposés, import cyber) → appréciation → évaluation (tableau de
+  // bord par domaine) → traitement.
+  PROJET_360: [
+    { num: 1, key: 'contexte',             labelKey: 'methodes.projet360.s1', type: 'context' },
+    { num: 2, key: 'qualification',        labelKey: 'methodes.projet360.s2', type: 'qualification' },
+    { num: 3, key: 'appreciation',         labelKey: 'methodes.projet360.s3', type: 'appreciation' },
+    { num: 4, key: 'evaluation',           labelKey: 'methodes.projet360.s4', type: 'review' },
+    { num: 5, key: 'traitement',           labelKey: 'methodes.projet360.s5', type: 'appreciation', apprMode: 'treat' },
   ],
 }
 
@@ -178,7 +199,7 @@ export interface MethodResolution {
 export function resolveMethodes(opts: MethodResolution = {}): { available: RiskMethod[]; default: RiskMethod } {
   const inInstance = (m: RiskMethod) => !opts.instanceEnabled || opts.instanceEnabled.includes(m)
   const inOrg = (m: RiskMethod) => !opts.orgAllowed || opts.orgAllowed.includes(m)
-  const available = IMPLEMENTED_METHODS.filter(m => inInstance(m) && inOrg(m))
+  const available = IMPLEMENTED_METHODS.filter(m => isPickerMethod(m) && inInstance(m) && inOrg(m))
   // Garde-fou : EBIOS RM toujours présent (et en tête).
   const set = new Set<RiskMethod>([DEFAULT_METHOD, ...available])
   const ordered = RISK_METHODS.filter(m => set.has(m))

@@ -96,6 +96,8 @@ export type AuditAction =
   | 'DEROGATION_EXTENDED'
   | 'DEROGATION_CLOSED'
   | 'DEROGATION_REVOKED'
+  | 'DEROGATION_UPDATED'
+  | 'DEROGATION_WITHDRAWN'
   | 'DEROGATION_EXPIRING'
   | 'DEROGATION_EXPIRED'
   | 'DEMO_ORG_PURGED'
@@ -132,7 +134,7 @@ export type AuditAction =
   | 'ORG_MEMBER_REMOVED'
   | 'MCP_TOOL_INVOKED'
   | 'MCP_PROPOSAL_REVIEWED'
-  | 'OPERATIONAL_PROFILE_UPDATED'
+  | 'MATURITY_UPDATED'
 
 /** Contexte joint à un événement d'audit (utilisateur, IP, organisation, cible…). */
 export interface AuditContext {

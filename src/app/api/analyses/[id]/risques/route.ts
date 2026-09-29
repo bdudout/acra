@@ -97,6 +97,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       niveauResiduel: payload.niveauResiduel,
       strategie: payload.strategie,
       ...(payload.proprietaire !== undefined ? { proprietaire: payload.proprietaire } : {}),
+      ...(payload.domaine !== undefined ? { domaine: payload.domaine } : {}),
     },
     select: DIRECT_RISK_SELECT,
   })

@@ -17,6 +17,8 @@ import { verdictDispositif, verdictSignauxActifs, type VerdictSignalKey } from '
 import HeatmapGridHtml from '@/components/HeatmapGridHtml'
 import type { HeatGrid } from '@/lib/carto-export'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
+import ProjetsSuivi from '@/components/ProjetsSuivi'
+import type { ProjetsSynthese } from '@/lib/projet360'
 
 interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
@@ -35,7 +37,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
   parOrg: OrgPosture[]
 }
 
@@ -267,6 +269,9 @@ export default function PilotageGrc() {
           </>}
         </div>
       )}
+
+      {/* Suivi des projets 360 (module Projets 360) */}
+      {data.consolide.projets && <div className="mb-6"><ProjetsSuivi synthese={data.consolide.projets} /></div>}
 
       {/* Ventilation par entité */}
       <div className="card overflow-x-auto">

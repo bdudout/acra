@@ -94,17 +94,30 @@ function DirectReportPDF({ report, locale, dateStr }: { report: DirectReport; lo
         </View>
         <Text style={[s.note, { marginTop: 6 }]}>{S.evalNote}</Text>
 
+        {Boolean(sy.parDomaine.length > 0) && (
+          <View>
+            <Text style={s.h2}>{S.byDomain}</Text>
+            <Table
+              cols={[{ label: S.colDomain, width: 200 }, { label: S.total, width: 80 }, { label: S.toTreat, width: 90 }, { label: S.acceptable, width: 90 }, { label: S.colCurrent, width: 90 }]}
+              rows={[
+                ...sy.parDomaine.map(d => [S.domainLabels[d.domaine] ?? d.domaine, String(d.total), String(d.aTraiter), String(d.acceptables), String(d.niveauMax)]),
+                ...(sy.nonClasses ? [[S.unclassified, String(sy.nonClasses), '', '', '']] : []),
+              ]}
+            />
+          </View>
+        )}
+
         {/* Registre */}
         <Text style={s.h2} break={report.registre.length > 6}>{S.register}</Text>
         {Boolean(report.registre.length > 0) && (
           <Table
             cols={[
-              { label: S.colRef, width: 28 }, { label: S.colRisk, width: 170 }, { label: S.colOwner, width: 90 },
+              { label: S.colRef, width: 28 }, { label: S.colRisk, width: sy.parDomaine.length ? 130 : 170 }, ...(sy.parDomaine.length ? [{ label: S.colDomain, width: 80 }] : []), { label: S.colOwner, width: 90 },
               { label: S.colInherent, width: 50 }, { label: S.colCurrent, width: 50 }, { label: S.colResidual, width: 50 },
               { label: S.colBand, width: 62 }, { label: S.colDecision, width: 56 }, { label: S.colCriterion, width: 96 }, { label: S.colTreatment, width: 66 },
             ]}
             rows={report.registre.map(r => [
-              r.ref, r.nom, r.proprietaire ?? S.noOwner, lvl(r.brut), lvl(r.actuel), lvl(r.residuel),
+              r.ref, r.nom, ...(sy.parDomaine.length ? [r.domaine ? (S.domainLabels[r.domaine] ?? r.domaine) : S.unclassified] : []), r.proprietaire ?? S.noOwner, lvl(r.brut), lvl(r.actuel), lvl(r.residuel),
               r.palier.label, r.decision === 'treat' ? S.decisionTreat : S.decisionAccept, criterionText(r, S), S.strategies[r.strategie] ?? r.strategie,
             ])}
           />

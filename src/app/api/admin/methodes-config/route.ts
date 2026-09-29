@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { cleanActiveMethodes, IMPLEMENTED_METHODS } from '@/lib/methodes'
+import { cleanActiveMethodes, IMPLEMENTED_METHODS, MODULE_METHODS } from '@/lib/methodes'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +27,7 @@ export async function GET() {
   if (error) return error
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cfg = await (prisma.configuration as any).findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
-  return NextResponse.json({ active: cleanActiveMethodes(cfg?.methodesActives), implemented: IMPLEMENTED_METHODS })
+  return NextResponse.json({ active: cleanActiveMethodes(cfg?.methodesActives), implemented: IMPLEMENTED_METHODS.filter(m => !MODULE_METHODS.includes(m)) })
 }
 
 // PUT /api/admin/methodes-config — { methodes: string[] }

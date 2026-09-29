@@ -15,7 +15,7 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import {
   etatDerogation, joursAvantExpiration,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
-  canRevoquerDerogation, canCloturerDerogation,
+  canRevoquerDerogation, canCloturerDerogation, canRetirerDerogation,
   type DerogationEtat, type DerogationStatut,
 } from '@/lib/derogation'
 import type { UserRole } from '@/lib/permissions'
@@ -33,6 +33,7 @@ interface Derog {
   demandeurId: string
   avisRssiPar: string | null
   avisRssiCommentaire: string | null
+  avisRssiReserves?: string | null
   dateFin: string | null
 }
 
@@ -46,6 +47,7 @@ const BADGE: Record<DerogationEtat, string> = {
   REJETEE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
   CLOTUREE: 'bg-slate-200 text-slate-700 dark:bg-slate-600/40 dark:text-slate-200',
   REVOQUEE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
+  RETIREE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
 }
 
 export default function DerogationsPanel({
@@ -133,6 +135,7 @@ export default function DerogationsPanel({
   }
 
   // ── Transitions ──
+  const [okId, setOkId] = useState<string | null>(null)
   async function transition(id: string, body: Record<string, unknown>) {
     setBusy(true); setError(null)
     const res = await fetch(`/api/derogations/${id}`, {
@@ -141,7 +144,9 @@ export default function DerogationsPanel({
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(data.error ?? 'Erreur'); return }
-    setOpenId(null)
+    // Rechargement de la liste seule : la dérogation reste dépliée, avec une
+    // confirmation visible (plus de fermeture qui masquait le résultat).
+    setOkId(id)
     reload()
   }
 
@@ -236,7 +241,8 @@ export default function DerogationsPanel({
             const canRev = canRevoquerDerogation(user, rbac)
             const canClo = canCloturerDerogation(user, rbac, canEdit)
             const canProlong = x.statut === 'ACTIVE' && (canEdit || currentUserRole === 'RSSI')
-            const hasAction = canAvis || canDouble || canVal || canRev || canClo || canProlong
+            const canRetirer = canRetirerDerogation(user, rbac)
+            const hasAction = canAvis || canDouble || canVal || canRev || canClo || canProlong || canRetirer
             return (
               <li key={x.id} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-start justify-between gap-2">
@@ -257,14 +263,22 @@ export default function DerogationsPanel({
                     {' · '}{d.validUntil} {formatDate(x.dateFin, locale)}
                   </p>
                 )}
+                {x.avisRssiReserves && (
+                  <p className="mt-1 text-[11px] rounded bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-2 py-1 whitespace-pre-wrap">
+                    <span className="font-semibold">{d.reserves} :</span> {x.avisRssiReserves}
+                  </p>
+                )}
                 {hasAction && (
                   <div className="mt-2">
-                    <button onClick={() => setOpenId(openId === x.id ? null : x.id)} className="text-xs text-ebios-600 dark:text-ebios-300 hover:underline">
+                    {okId === x.id && <p role="status" className="mb-1 text-xs font-medium text-green-700 dark:text-green-300">{d.detail.actionSaved}</p>}
+                    <button onClick={() => { setOkId(null); setOpenId(openId === x.id ? null : x.id) }} className="text-xs text-ebios-600 dark:text-ebios-300 hover:underline">
                       {openId === x.id ? d.cancel : '⚙︎ Actions'}
                     </button>
                     {openId === x.id && (
                       <ActionRow d={d} busy={busy}
                         onAvis={(fav, dbl, c) => transition(x.id, { action: 'AVIS_RSSI', favorable: fav, demandeDoubleRegard: dbl, commentaire: c })}
+                        onAvisReserves={(dbl, c) => transition(x.id, { action: 'AVIS_RSSI', favorable: true, demandeDoubleRegard: dbl, reserves: c })}
+                        onRetirer={c => { if (window.confirm(d.detail.retraitConfirm)) transition(x.id, { action: 'RETIRER', commentaire: c || undefined }) }}
                         onDouble={(fav, c) => transition(x.id, { action: 'DOUBLE_REGARD', favorable: fav, commentaire: c })}
                         onValider={() => transition(x.id, { action: 'VALIDER' })}
                         onRejeter={c => transition(x.id, { action: 'REJETER', commentaire: c })}
@@ -272,7 +286,7 @@ export default function DerogationsPanel({
                         onRevoquer={c => transition(x.id, { action: 'REVOQUER', commentaire: c })}
                         onCloturer={(preuves, c) => transition(x.id, { action: 'CLOTURER', preuves, commentaire: c })}
                         doubleRegardActif={doubleRegardActif}
-                        show={{ canAvis, canDouble, canVal, canRev, canProlong, canClo }} />
+                        show={{ canAvis, canDouble, canVal, canRev, canProlong, canClo, canRetirer }} />
                     )}
                   </div>
                 )}
@@ -297,12 +311,14 @@ function readPreuves(files: FileList | null): Promise<{ nom: string; mime: strin
 }
 
 // Barre d'actions contextuelle (avec un champ commentaire commun).
-function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onDouble, onValider, onRejeter, onProlonger, onRevoquer, onCloturer }: {
+function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onAvisReserves, onDouble, onValider, onRejeter, onProlonger, onRevoquer, onCloturer, onRetirer }: {
   d: Record<string, unknown>
   busy: boolean
   doubleRegardActif: boolean
-  show: { canAvis: boolean; canDouble: boolean; canVal: boolean; canRev: boolean; canProlong: boolean; canClo: boolean }
+  show: { canAvis: boolean; canDouble: boolean; canVal: boolean; canRev: boolean; canProlong: boolean; canClo: boolean; canRetirer: boolean }
   onAvis: (fav: boolean, dbl: boolean, c: string) => void
+  onAvisReserves: (dbl: boolean, reserves: string) => void
+  onRetirer: (c: string) => void
   onDouble: (fav: boolean, c: string) => void
   onValider: () => void
   onRejeter: (c: string) => void
@@ -323,6 +339,7 @@ function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onDouble, onValid
         {show.canAvis && <>
           {doubleRegardActif && <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={dbl} onChange={e => setDbl(e.target.checked)} />{s.demanderDoubleRegard}</label>}
           <button disabled={busy} onClick={() => onAvis(true, dbl, c)} className={`${btn} bg-green-600 text-white`}>{s.avisFavorable}</button>
+          <button disabled={busy || !c.trim()} onClick={() => onAvisReserves(dbl, c)} className={`${btn} bg-amber-500 text-white`}>{s.avisFavorableReserves}</button>
           <button disabled={busy} onClick={() => onAvis(false, false, c)} className={`${btn} bg-red-600 text-white`}>{s.avisDefavorable}</button>
         </>}
         {show.canDouble && <>
@@ -338,6 +355,7 @@ function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onDouble, onValid
           <button disabled={busy} onClick={() => onProlonger(dt, c)} className={`${btn} bg-blue-600 text-white`}>{s.prolonger}</button>
         </>}
         {show.canRev && <button disabled={busy} onClick={() => onRevoquer(c)} className={`${btn} bg-gray-600 text-white`}>{s.revoquer}</button>}
+        {show.canRetirer && <button disabled={busy} onClick={() => onRetirer(c)} className={`${btn} bg-gray-500 text-white`}>{s.retirer}</button>}
       </div>
       {show.canClo && (
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">

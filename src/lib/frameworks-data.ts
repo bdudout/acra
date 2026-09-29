@@ -15,6 +15,7 @@
  *  • IEC 62443 (+ ANSSI-PA-107)    (7 exigences fond. + zones/conduits — OT/ICS)
  *  • ReCyF (ANSSI 2026)            (20 objectifs — transposition NIS2 art. 21)
  *  • TISAX / VDA-ISA v6            (25 objectifs — filière automobile / OEM)
+ *  • NCSC CAF v4.0                 (14 principes, objectifs A–D — Royaume-Uni)
  *  • CUSTOM                        (contrôles définis par l'analyste)
  */
 import type { Locale } from '@/lib/i18n'
@@ -69,7 +70,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'NCSC_CAF', 'CUSTOM'] as const
 /** Identifiant d'un référentiel-cadre livré (ISO27001, NIST_CSF, DORA, PCI_DSS, CUSTOM…). */
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
@@ -91,6 +92,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   RGS:        { nom: 'RGS',                  version: 'v2.0',     icon: '🏛️', cible: 'Téléservices publics / homologation SSI (France)' },
   RECYF:      { nom: 'ReCyF',                version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
   TISAX:      { nom: 'TISAX / VDA-ISA',      version: 'VDA-ISA v6', icon: '🚗', cible: 'Filière automobile — fournisseurs/équipementiers (exigence OEM)' },
+  NCSC_CAF:   { nom: 'NCSC Cyber Assessment Framework', version: 'v4.0', icon: '🇬🇧', cible: 'Services essentiels et opérateurs critiques (Royaume-Uni)' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -177,6 +179,37 @@ export const ANSSI_HYG_CONTROLES: FrameworkControl[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
+// NCSC Cyber Assessment Framework v4.0 — 4 objectifs, 14 principes
+// Source : NCSC, https://www.ncsc.gov.uk/collection/cyber-assessment-framework
+// Intitulés et énoncés OFFICIELS (anglais) : aucune traduction officielle
+// n'existe ; ils ne sont pas traduits (règle ACRA — sources officielles).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const NCSC_CAF_CATEGORIES: Record<string, FrameworkCategory> = {
+  A: { label: 'A — Managing security risk', icon: '🧭', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  B: { label: 'B — Protecting against cyber attacks', icon: '🛡️', color: 'text-green-700', bg: 'bg-green-50' },
+  C: { label: 'C — Detecting cyber security events', icon: '👁️', color: 'text-amber-700', bg: 'bg-amber-50' },
+  D: { label: 'D — Minimising the impact of cyber security incidents', icon: '🔄', color: 'text-teal-700', bg: 'bg-teal-50' },
+}
+
+export const NCSC_CAF_CONTROLES: FrameworkControl[] = [
+  { ref:'A1', type:'ORGANISATIONNELLE', categorie:'A', nom:'Governance', description:'The organisation has appropriate management policies, processes and procedures in place to govern its approach to the security of network and information systems.' },
+  { ref:'A2', type:'ORGANISATIONNELLE', categorie:'A', nom:'Risk Management', description:'The organisation takes appropriate steps to identify, assess and understand security risks to network and information systems supporting the operation of essential functions.' },
+  { ref:'A3', type:'ORGANISATIONNELLE', categorie:'A', nom:'Asset Management', description:'Everything required to deliver, maintain or support networks and information systems necessary for the operation of essential functions is determined and understood.' },
+  { ref:'A4', type:'ORGANISATIONNELLE', categorie:'A', nom:'Supply Chain', description:'The organisation understands and manages security risks to networks and information systems supporting the operation of essential functions that arise as a result of dependencies on suppliers.' },
+  { ref:'B1', type:'ORGANISATIONNELLE', categorie:'B', nom:'Service protection policies, processes and procedures', description:'The organisation defines, implements, communicates and enforces appropriate policies, processes and procedures that direct its overall approach to securing systems and data that support the operation of essential functions.' },
+  { ref:'B2', type:'TECHNOLOGIQUE', categorie:'B', nom:'Identity and Access Control', description:'The organisation understands, documents and manages access to networks and information systems and supporting the operation of essential functions.' },
+  { ref:'B3', type:'TECHNOLOGIQUE', categorie:'B', nom:'Data security', description:'Data stored or transmitted electronically is protected from actions such as unauthorised access, modification, or deletion that may cause an adverse impact on essential functions.' },
+  { ref:'B4', type:'TECHNOLOGIQUE', categorie:'B', nom:'System security', description:'Network and information systems and technology critical for the operation of essential functions are protected from cyber attack.' },
+  { ref:'B5', type:'TECHNOLOGIQUE', categorie:'B', nom:'Resilient networks and systems', description:'The organisation builds resilience against cyber attack and system failure into the design, implementation, operation and management of systems that support the operation of your essential function(s).' },
+  { ref:'B6', type:'HUMAINE', categorie:'B', nom:'Staff awareness and training', description:'Staff have appropriate awareness, knowledge and skills to carry out their organisational roles effectively in relation to the security of network and information systems supporting the operation of your essential function(s).' },
+  { ref:'C1', type:'TECHNOLOGIQUE', categorie:'C', nom:'Security monitoring', description:'The organisation monitors the security status of network and information systems supporting the operation of essential function(s) in order to detect security events indicative of a security incident.' },
+  { ref:'C2', type:'TECHNOLOGIQUE', categorie:'C', nom:'Threat Hunting', description:'The organisation proactively seeks to detect, within networks and information systems, adverse activity affecting, or with the potential to affect, the operation of essential functions even when the activity evades standard security prevent/detect solutions (or when standard solutions are not deployable).' },
+  { ref:'D1', type:'ORGANISATIONNELLE', categorie:'D', nom:'Response and recovery planning', description:'There are well-defined and tested incident management processes in place, that aim to ensure continuity of essential function(s) in the event of system or service failure.' },
+  { ref:'D2', type:'ORGANISATIONNELLE', categorie:'D', nom:'Lessons Learned', description:'When an incident occurs, steps are taken to understand its causes and to ensure remediating action is taken to protect against future incidents.' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HDS — Hébergement de Données de Santé (France)
 // Source : ANS — Référentiel de certification HDS v2 (2023)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,6 +273,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'RGS':         return RGS_CONTROLES
     case 'RECYF':       return RECYF_CONTROLES
     case 'TISAX':       return TISAX_CONTROLES
+    case 'NCSC_CAF':    return NCSC_CAF_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -283,6 +317,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
     case 'RGS':         return RGS_CATEGORIES
     case 'RECYF':       return RECYF_CATEGORIES
     case 'TISAX':       return TISAX_CATEGORIES
+    case 'NCSC_CAF':    return NCSC_CAF_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }

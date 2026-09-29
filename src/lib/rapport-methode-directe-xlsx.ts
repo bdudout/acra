@@ -42,15 +42,23 @@ export async function buildDirectReportWorkbook(report: DirectReport, locale: st
   syn.getColumn(1).font = { bold: true }
 
   addTable(wb, S.register,
-    [S.colRef, S.colRisk, S.colOwner, `${S.colInherent} G`, `${S.colInherent} V`, S.colInherent, `${S.colCurrent} G`, `${S.colCurrent} V`, S.colCurrent,
+    [S.colRef, S.colRisk, ...(report.synthese.parDomaine.length ? [S.colDomain] : []), S.colOwner, `${S.colInherent} G`, `${S.colInherent} V`, S.colInherent, `${S.colCurrent} G`, `${S.colCurrent} V`, S.colCurrent,
       `${S.colResidual} G`, `${S.colResidual} V`, S.colResidual, S.colBand, S.colDecision, S.colCriterion, S.colTreatment, S.measures, S.plans],
     report.registre.map(r => [
-      r.ref, r.nom, r.proprietaire ?? '', r.brut.gravite, r.brut.vraisemblance, r.brut.niveau,
+      r.ref, r.nom, ...(report.synthese.parDomaine.length ? [r.domaine ? (S.domainLabels[r.domaine] ?? r.domaine) : S.unclassified] : []), r.proprietaire ?? '', r.brut.gravite, r.brut.vraisemblance, r.brut.niveau,
       r.actuel.gravite, r.actuel.vraisemblance, r.actuel.niveau, r.residuel.gravite, r.residuel.vraisemblance, r.residuel.niveau,
       r.palier.label, r.decision === 'treat' ? S.decisionTreat : S.decisionAccept, criterionText(r, S), S.strategies[r.strategie] ?? r.strategie,
       r.nbMesures, r.nbPlans,
     ]),
-    [6, 44, 20, 7, 7, 8, 7, 7, 8, 7, 7, 8, 12, 12, 20, 12, 9, 9])
+    [6, 44, ...(report.synthese.parDomaine.length ? [20] : []), 20, 7, 7, 8, 7, 7, 8, 7, 7, 8, 12, 12, 20, 12, 9, 9])
+
+  if (report.synthese.parDomaine.length) {
+    addTable(wb, S.byDomain,
+      [S.colDomain, S.total, S.toTreat, S.acceptable, S.colCurrent],
+      [...report.synthese.parDomaine.map(d => [S.domainLabels[d.domaine] ?? d.domaine, d.total, d.aTraiter, d.acceptables, d.niveauMax]),
+        ...(report.synthese.nonClasses ? [[S.unclassified, report.synthese.nonClasses, '', '', '']] : [])],
+      [30, 12, 14, 14, 18])
+  }
 
   addTable(wb, S.vulnerabilities, [S.colRef, S.colRisk, S.colVulnerability],
     report.vulnerabilites.map(v => [v.ref, v.risque, v.description]), [6, 44, 60])

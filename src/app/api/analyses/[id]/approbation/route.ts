@@ -6,6 +6,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { applyApprobation, sanitizeApprobations } from '@/lib/projet360'
+import type { Prisma } from '@prisma/client'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const updated = await prisma.analyse.update({
       where: { id },
-      data: { statut: 'SOUMIS', commentaireApprobation: null, approbateurId: null, approuveLe: null },
+      data: { statut: 'SOUMIS', commentaireApprobation: null, approbateurId: null, approuveLe: null, approbations: [] },
     })
     await auditLog('ANALYSE_SUBMITTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom } })
     return NextResponse.json(updated)
@@ -86,6 +88,22 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
     if (analyse.statut !== 'SOUMIS') {
       return NextResponse.json({ error: 'L\'analyse doit être soumise pour être approuvée' }, { status: 400 })
+    }
+
+    // Analyse projet 360 : double approbation RSSI ET Risk Manager (personnes
+    // distinctes). Le premier avis est enregistré, l'analyse reste soumise.
+    if (analyse.methode === 'PROJET_360') {
+      const r = applyApprobation(sanitizeApprobations((analyse as { approbations?: unknown }).approbations), { userId, role: effRole, commentaire }, new Date())
+      if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 })
+      const approbations = r.approbations as unknown as Prisma.InputJsonValue
+      const updated = await prisma.analyse.update({
+        where: { id },
+        data: r.complete
+          ? { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null, approbations }
+          : { approbations },
+      })
+      await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role) } })
+      return NextResponse.json(updated)
     }
 
     const updated = await prisma.analyse.update({
@@ -122,6 +140,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         approbateurId: userId,
         approuveLe: new Date(),
         commentaireApprobation: commentaire,
+        approbations: [],
       },
     })
     await auditLog('ANALYSE_REJECTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire } })

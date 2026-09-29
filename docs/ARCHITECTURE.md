@@ -93,8 +93,10 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Audit (M4)** | `audit`, `audit-programmes-catalogue`, `audit-redact`, `rapport-controle-interne*` |
 | **Conformité** | `conformite*`, `referentiel*`, `couverture-referentiel`, `derogation*`, `conformite-traitement`, `socle-etat` |
 | **Plan d'action unifié** | `plan-action`, `plan-action.server`, `action-items`, `action-items.server`, `promotable-actions.server`, `mesure-categorie` |
-| **Profils opérationnels US/UK** | `operational-profiles` (catalogues officiels NIST CSF 2.0 / NCSC CAF v4.0, fusion horodatée, stats, CSV), `operational-profiles.server` (contexte 404 si module inactif, chargement + actions liées) — table `OperationalProfile`, spec `docs/specs/profils-operationnels-us-uk.md` |
-| **Régulatoire** | `dora`, `dora-reporting`, `dora-its-export`, `nis2-mapping`, `ropa`, `ropa-catalogue`, `rgpd-sensitive`, `suivi-regulateur`, `registre-tic`, `tic-questionnaire`, `soa-*`, `politique-defaut` |
+| **Maturité (profils cibles CMMI)** | `maturity` (échelle CMMI 0–5, fusion horodatée, écarts, synthèse par domaine, CSV — pur), `maturity.server` (contexte 404 si module inactif, chargement d'un profil) — **couche de `Conformite`** (colonnes `maturites`, `maturiteCible`), jamais réécrite par l'édition de conformité ; échelle personnalisable `OrganizationConfig.echelleMaturite` |
+| **Projet 360** | `projet360` (domaines, questionnaire 360, règles de risques proposés, synthèse par domaine, double approbation RSSI + RM, import cyber — pur) ; méthode `PROJET_360` dans `methodes` ; suivi cockpit (`synthetiserProjets360`), lien analyse cyber ⇄ projet (`resolveProjetSource`, `Analyse.projetSourceId`), garde du cockpit GRC (`isGrcActive`) ; routes `analyses/[id]/qualification-360`, `analyses/[id]/import-cyber`, `projets` (liste), bloc `projets` de `grc/rollup` ; UI `ProjetsManager`, `ProjetSourcePicker`, `ProjetsSuivi` |
+| **Gouvernance du risque** | `ras-rad` / `ras-rad.server` (vue `/appetence`), `processus-carto` (page `/cartographie/processus`, `OrganizationConfig.processusCartographie`) |
+| **Régulatoire** | `tests-resilience` / `tests-resilience.server` (DORA art. 24-26, rapport de réexamen art. 6 § 5), `dora`, `dora-reporting`, `dora-its-export`, `nis2-mapping`, `ropa`, `ropa-catalogue`, `rgpd-sensitive`, `suivi-regulateur`, `registre-tic`, `tic-questionnaire`, `soa-*`, `politique-defaut` |
 | **Écosystème / tiers** | `tiers`, `tiers.server`, `ecosystem-*`, `tiers-tic-link`, `operateur-ae` |
 | **Sécurité / accès** | `auth`, `auth-cookies`, `permissions` (RBAC), `mfa*`, `sso*`, `saml*`, `scim*`, `login-lockout`, `password-policy`, `password-reset`, `rate-limit`, `secret-crypto`, `recovery`, `api-auth.server`, `api-key`, `cron-auth`, `csp` |
 | **Multi-org / config** | `org-*`, `module-policy`, `configuration-*`, `nav-modules-cache`, `navigation`, `branding*` |
@@ -125,14 +127,13 @@ l'**extraire en fonction pure testée** (cf. CLAUDE.md).
 ## 6. Plan d'action unifié (à comprendre avant d'y toucher)
 
 - Store **`PlanAction`** + **liens polymorphes** `PlanActionLien` (types : `ANALYSE`,
-  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `RISQUE_ANALYSE`, `INCIDENT`,
-  `OPERATIONAL_PROFILE`).
+  `CONFORMITE`, `CONTROLE`, `AUDIT`, `RISQUE`, `RISQUE_ANALYSE`, `INCIDENT`).
   `RISQUE_ANALYSE` ancre un risque des méthodes à saisie directe (ISO/IEC 27005,
   ISO 31000, NIST SP 800-30) et conserve l'identifiant d'analyse dans `ref`.
-  `OPERATIONAL_PROFILE` ancre un écart de profil NIST CSF / NCSC CAF : `targetId` =
-  `OperationalProfile.id`, `ref` = point (`GV.OC`, `A1`…) ; helpers
-  `createOperationalProfilePlanAction` / `findOpenOperationalProfileAction`
-  (anti-doublon) dans `plan-action.server`. Facette « conformité » de la vue unifiée.
+  `CONFORMITE` : `targetId` = code du référentiel, `ref` = point de contrôle ; c'est
+  aussi le lien des actions issues d'un **écart de maturité** (même objet que la
+  conformité) — helpers `createConformitePlanAction` / `findOpenConformiteAction`
+  (anti-doublon commun) dans `plan-action.server`.
 - `lib/action-items` **agrège** 7 origines en une liste unifiée (vue `/actions` =
   `PlansActionsView`). Filtrage à facettes + tri/filtre colonne (`table-sort`/`table-filter`).
 - **Promotion** : une mesure d'analyse ou un incident (pas encore un `PlanAction`) peut

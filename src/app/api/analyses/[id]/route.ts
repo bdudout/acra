@@ -1,3 +1,4 @@
+import { sanitizeAnswers360 } from '@/lib/projet360'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -121,6 +122,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       data.approbateurId = null
       data.approuveLe = null
       data.commentaireApprobation = null
+      data.approbations = []
     }
   }
   // Questionnaire de qualification (optionnel) — filtré aux questions effectives
@@ -129,7 +131,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const qCfg = (existing as { organizationId?: string | null }).organizationId
       ? await getOrgConfig((existing as { organizationId: string }).organizationId)
       : null
-    data.qualification = sanitizeQualification(body.qualification, qCfg?.qualificationQuestionnaire)
+    // Les réponses du questionnaire 360 (`p360.*`, route dédiée) sont conservées.
+    data.qualification = { ...sanitizeAnswers360(existing.qualification), ...sanitizeQualification(body.qualification, qCfg?.qualificationQuestionnaire) }
   }
 
   const updated = await prisma.analyse.update({ where: { id }, data })

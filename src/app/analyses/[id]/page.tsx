@@ -1,3 +1,4 @@
+import { sanitizeApprobations } from '@/lib/projet360'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -498,6 +499,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
               commentaireApprobation={analyse.commentaireApprobation ?? null}
               approuveLe={analyse.approuveLe ? analyse.approuveLe.toISOString() : null}
               approbateurId={analyse.approbateurId ?? null}
+              approbations={(analyse as { methode?: string }).methode === 'PROJET_360' ? sanitizeApprobations((analyse as { approbations?: unknown }).approbations) : undefined}
             />
             {/* Acceptation des risques résiduels (Direction métier) — si activée pour l'org. */}
             {orgConfig.acceptationRisquesActive && (

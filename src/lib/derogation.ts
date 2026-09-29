@@ -23,8 +23,9 @@ export type DerogationStatut =
   | 'REJETEE'           // refusée pendant la revue
   | 'CLOTUREE'          // clôturée (non-conformité résolue, preuves fournies)
   | 'REVOQUEE'          // révoquée alors qu'elle était active
+  | 'RETIREE'           // retirée par le demandeur pendant la revue (conservée pour l'audit)
 export const DEROGATION_STATUTS: DerogationStatut[] =
-  ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER', 'ACTIVE', 'REJETEE', 'CLOTUREE', 'REVOQUEE']
+  ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER', 'ACTIVE', 'REJETEE', 'CLOTUREE', 'REVOQUEE', 'RETIREE']
 
 /** État effectif pour l'affichage : les statuts + les états d'expiration dérivés d'ACTIVE. */
 export type DerogationEtat = DerogationStatut | 'EXPIRE_BIENTOT' | 'EXPIREE'
@@ -204,7 +205,7 @@ export function statutApresDoubleRegard(favorable: boolean, workflow: Derogation
 
 /** Statuts terminaux (plus aucune transition possible). */
 export function estTerminale(statut: DerogationStatut): boolean {
-  return statut === 'REJETEE' || statut === 'CLOTUREE' || statut === 'REVOQUEE'
+  return statut === 'REJETEE' || statut === 'CLOTUREE' || statut === 'REVOQUEE' || statut === 'RETIREE'
 }
 
 /** Entrée d'historique de prolongation (pure). */
@@ -250,6 +251,23 @@ export function canValiderDerogation(user: SessionUser, d: DerogationRbacSource,
   // est relâché ; sinon il reste imposé (CWE-863, #122).
   if (opts?.secondeLigneActive === false) return true
   return user.id !== d.demandeurId
+}
+
+/** Statuts « en revue » (avant décision finale). */
+export const DEROGATION_STATUTS_REVUE: DerogationStatut[] = ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER']
+
+/**
+ * Modification de la demande par son DEMANDEUR, tant que le RSSI n'a rendu aucun
+ * avis (statut DEMANDEE, avisRssiPar vide) : le RSSI juge ainsi toujours la
+ * version qu'il a lue.
+ */
+export function canModifierDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
+  return d.statut === 'DEMANDEE' && !d.avisRssiPar && user.id === d.demandeurId
+}
+
+/** Retrait de la demande par son DEMANDEUR, à toute étape de revue (statut RETIREE, pas de suppression). */
+export function canRetirerDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
+  return DEROGATION_STATUTS_REVUE.includes(d.statut) && user.id === d.demandeurId
 }
 
 /** Révocation d'une dérogation ACTIVE : RSSI, métier ou admin. */
