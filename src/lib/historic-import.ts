@@ -1,8 +1,9 @@
 import { parseLevelLabel, isTemplateRow } from './import-transforms'
 import { ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet } from './import-ateliers-build'
 import type { AtelierContent } from './analysis-import-ateliers'
+import { buildContextFromBlocks, type KeyValue, type TextBlock } from './excel-blocks'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
-export const HISTORIC_SHEET_TYPES = ['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', ...ATELIER_ROLES, 'UNKNOWN'] as const
+export const HISTORIC_SHEET_TYPES = ['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', ...ATELIER_ROLES, 'CONTEXT', 'UNKNOWN'] as const
 export type HistoricSheetType = (typeof HISTORIC_SHEET_TYPES)[number]
 export const isAtelierRole = (type: HistoricSheetType): type is AtelierRole => (ATELIER_ROLES as readonly string[]).includes(type)
 export type HistoricSheetDetection = { type: HistoricSheetType; confidence: 'HIGH' | 'MEDIUM' | 'NONE'; missing: string[] }
@@ -278,7 +279,9 @@ export function suggestHistoricColumnMapping(columns: string[]): HistoricColumnM
 }
 
 export type HistoricImportRow = Record<string, string>
-export type HistoricImportSheet = { name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
+/** Blocs non tabulaires lus pour le rôle « contexte » (périmètre en texte libre, page de garde). */
+export type HistoricContextBlocks = { text: TextBlock[]; kv: KeyValue[] }
+export type HistoricImportSheet = { blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
   analysis: { title: string; description?: string; methode?: 'EBIOS_RM' }
   risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
@@ -448,6 +451,13 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
       else if (actionReferences.length === 1) for (const riskExternalId of riskReferences) result.links.push({ riskExternalId, actionExternalId: actionReferences[0] })
       else if (riskReferences.length === actionReferences.length) riskReferences.forEach((riskExternalId, index) => result.links.push({ riskExternalId, actionExternalId: actionReferences[index] }))
     }
+  }
+  // Contexte : périmètre (blocs de texte) et page de garde (titre du projet, propriétés du document).
+  for (const sheet of sheets) if (sheet.type === 'CONTEXT' && sheet.blocks) {
+    const c = buildContextFromBlocks(sheet.blocks)
+    if (Object.keys(c.context).length) result.context = { ...(result.context ?? {}), ...c.context }
+    if (c.title && result.analysis.title === fallbackTitle) result.analysis.title = c.title.slice(0, 200)
+    if (c.description && !result.analysis.description) result.analysis.description = c.description
   }
   // Ateliers 1 à 4 : feuilles dont le rôle est un rôle d'atelier → paquet canonique v3 (méthode EBIOS RM).
   const atelierSheets = sheets.filter(sheet => isAtelierRole(sheet.type)).map((sheet): AtelierSheet => ({ name: sheet.name ?? sheet.type, type: sheet.type as AtelierRole, mapping: sheet.mapping, rows: sheet.rows }))

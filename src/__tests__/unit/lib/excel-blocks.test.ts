@@ -69,3 +69,24 @@ describe.skipIf(!existsSync(LOCAL))('jeu d’essai local — blocs du dossier de
     expect(islands.map(i => i.title)).toContain('Échelle de gravité')
   }, 60_000)
 })
+
+import { detectContextSheet, buildContextFromBlocks } from '@/lib/excel-blocks'
+
+describe('détection d’une feuille « contexte » (I5)', () => {
+  const texte = [['Contexte du projet et description fonctionnelle :'], ['Application mobile de suivi de chantiers : planning, pointage, photos et échanges avec les sous-traitants.'], [], ['Contexte juridique et réglementaire :'], ['RGPD et code du travail, obligations de vigilance sur la sous-traitance.']]
+  const cover = [['Analyse de risques'], ['', 'Rédacteur', 'A. Martin', '2026-01-12'], ['', 'Contrôleur', 'D. Petit', '2026-01-14'], ['', 'Nom projet', 'Suivi de chantiers'], ['', 'PRT', 'T00X'], ['', 'MOA - Nom', 'Direction des travaux']]
+  it('blocs de texte (≥ 2 titres suivis d’un paragraphe) ; clé/valeur pour une page de garde nommée comme telle', () => {
+    expect(detectContextSheet('1 - Périmètre', texte)).toBe('TEXT')
+    expect(detectContextSheet('Page de garde', cover)).toBe('KEYVALUE')
+    expect(detectContextSheet('Autre', cover)).toBeNull()
+    expect(detectContextSheet('Registre', [['Réf', 'Risque'], ['R1', 'x']])).toBeNull()
+  })
+  it('périmètre, contexte juridique et architecture classés par leurs titres ; nom du projet et propriétés du document', () => {
+    const c = buildContextFromBlocks({ text: extractTextBlocks([...texte, [], ['Architectures fonctionnelle et technique :'], ['Mobile + web, hébergement cloud qualifié, liaisons sécurisées vers la paie et la compta.']]), kv: extractKeyValueBlocks(cover) })
+    expect(c.context).toMatchObject({ perimetre: expect.stringContaining('suivi de chantiers'), contexteJuridique: expect.stringContaining('RGPD'), architecture: expect.stringContaining('cloud') })
+    expect(c.title).toBe('Suivi de chantiers')
+    expect(c.description).toContain('Rédacteur : A. Martin')
+    expect(c.description).not.toContain('Nom projet')
+  })
+  it('sans bloc : contexte vide', () => expect(buildContextFromBlocks({ text: [], kv: [] })).toEqual({ context: {} }))
+})

@@ -13,6 +13,7 @@ import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkXlsxArchive } from '@/lib/xlsx-guard'
 import { readSheetSample, readDataRows } from '@/lib/excel-grid'
+import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
 import { checkExcelUpload } from '@/lib/import-file-format'
 import { importErrorStatus } from '@/lib/import-errors'
 
@@ -53,15 +54,18 @@ export async function POST(req: NextRequest) {
       // Colonne de référence du rôle : une ligne dont la référence est une cellule fusionnée esclave prolonge la précédente.
       const refColumn = splitHistoricMappedColumns(mapping.externalId)[0]
       const refIndex = layout.columns.find(column => column.key === refColumn)?.index
-      const { rows, rowNumbers } = readDataRows(sheet, layout, { refColumnIndex: refIndex })
+      const { rows: dataRows, rowNumbers: dataRowNumbers } = type === 'CONTEXT' ? { rows: [], rowNumbers: [] } : readDataRows(sheet, layout, { refColumnIndex: refIndex })
+      const rows = dataRows; const rowNumbers = dataRowNumbers
+      const contextRows = type === 'CONTEXT' ? readSheetSample(sheet, 80, 20) : null
+      const blocks = contextRows ? { text: extractTextBlocks(contextRows), kv: extractKeyValueBlocks(contextRows) } : undefined
       const profiles = Object.fromEntries(headers.map(header => [header, profileHistoricColumn(rows.map(row => row[header] ?? ''))]))
-      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles }
+      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles, blocks }
     })
     const correctedSheets = applyHistoricRowOverrides(sheets, body.rowOverrides as HistoricRowOverrides)
     if (validateHistoricImportSelection(sheets).length || (!body.partialImport && validateHistoricImportFormats(sheets).length)) throw new Error('MAPPING_INCOMPLET:cross_sheet_reference_or_format')
     const partition = body.partialImport ? partitionHistoricImportSheets(correctedSheets) : { sheets: correctedSheets, decisions: [] }
     if (body.dryRun) return NextResponse.json({ decisions: partition.decisions, requiredValueGaps: partition.decisions.filter(decision => decision.status === 'REJECTED' && decision.reason === 'MISSING_REQUIRED_VALUE') })
-    if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && sheet.rows.length > 0)) throw new Error('NO_IMPORTABLE_SHEET')
+    if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && (sheet.rows.length > 0 || (sheet.blocks && (sheet.blocks.text.length > 0 || sheet.blocks.kv.length > 0))))) throw new Error('NO_IMPORTABLE_SHEET')
     const fallback = body.filename.replace(/\.xlsx$/i, '')
     const packageData = buildHistoricImportPackages(partition.sheets, fallback)
     const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides })

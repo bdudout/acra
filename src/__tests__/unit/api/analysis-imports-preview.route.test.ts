@@ -96,6 +96,7 @@ import { buildHistoricImportPackage, partitionHistoricImportSheets, detectHistor
 import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analysis-import'
 import { summarizeAtelierContent } from '@/lib/analysis-import-ateliers'
 import { readSheetSample, readDataRows } from '@/lib/excel-grid'
+import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
 describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’essai local — du classeur au paquet canonique', () => {
   for (const f of ['dossier-securite-btp.xlsx', 'dossier-securite-avocats.xlsx']) {
     it(`${f} : ateliers 1 à 5 repris avec leurs liens`, async () => {
@@ -104,6 +105,7 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(join(LOCAL, f))
       const sheets: HistoricImportSheet[] = preview.filter(p => p.detection.type !== 'UNKNOWN').map(p => {
         const ws = wb.getWorksheet(p.name)!
+        if (p.detection.type === 'CONTEXT') { const r = readSheetSample(ws, 80, 20); return { name: p.name, type: 'CONTEXT' as never, mapping: {}, rows: [], blocks: { text: extractTextBlocks(r), kv: extractKeyValueBlocks(r) } } }
         const layout = detectHistoricHeaderLayout(readSheetSample(ws, 20, 100))
         const refCol = layout.columns.find(c => c.key === p.mapping.externalId)?.index
         const { rows } = readDataRows(ws, layout, { refColumnIndex: refCol })
@@ -116,6 +118,8 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(roles['2 - Biens supports']).toBe('SUPPORT_ASSETS')
       expect(roles['2 - Parties prenantes']).toBe('STAKEHOLDERS')
       expect(roles['2 - Socle de sécurité']).toBe('SECURITY_BASELINE')
+      expect(roles['1 - Périmètre']).toBe('CONTEXT')
+      expect(roles['Page de garde']).toBe('CONTEXT')
       expect(roles['3 - S.Stratégiques']).toBe('STRATEGIC_SCENARIOS')
       expect(roles['4 - S.Opérationnels']).toBe('OPERATIONAL_SCENARIOS')
       const { sheets: kept } = partitionHistoricImportSheets(sheets)
@@ -126,6 +130,10 @@ describe.skipIf(!existsSync(join(LOCAL, 'dossier-securite-btp.xlsx')))('jeu d’
       expect(parsed.supportAssets.length).toBeGreaterThanOrEqual(5)
       expect(parsed.supportAssets.length).toBeLessThan(20) // catalogue de 73 biens : seuls les retenus
       expect(parsed.securityBaseline.length).toBeGreaterThan(20)
+      expect(parsed.context?.perimetre?.length).toBeGreaterThan(50)
+      expect(parsed.context?.contexteJuridique).toBeTruthy()
+      expect(parsed.analysis.title).toMatch(/Application de suivi|Espace client/)
+      expect(parsed.analysis.description).toContain('Rédacteur')
       expect(parsed.risks.length).toBe(13)
       expect(summarizeAnalysisImport(parsed).created.risks).toBe(13)
       // références VM02 / VM_02, ER03 / ER_03 : toutes résolues, seules les références absentes du fichier sont signalées

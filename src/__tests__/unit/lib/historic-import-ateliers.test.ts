@@ -34,4 +34,13 @@ describe('import historique — ateliers 1 à 4', () => {
     expect(validateHistoricColumnMapping('BUSINESS_VALUES', {})).toEqual(['title'])
     expect(validateHistoricImportSelection([{ name: 'VM', type: 'BUSINESS_VALUES', mapping: { title: 'Dénomination' } }])).toEqual([])
   })
+  it('rôle « contexte » : périmètre et page de garde alimentent le cadrage, le titre et la description de l’analyse', () => {
+    const ctx: HistoricImportSheet = { name: '1 - Périmètre', type: 'CONTEXT', mapping: {}, rows: [], blocks: {
+      text: [{ title: 'Contexte du projet et description fonctionnelle', text: 'Application de suivi de chantiers.', row: 1 }, { title: 'Contexte juridique et réglementaire', text: 'RGPD.', row: 4 }],
+      kv: [{ key: 'Nom projet', values: ['Suivi de chantiers'], row: 3, column: 2 }, { key: 'Rédacteur', values: ['A. Martin'], row: 2, column: 2 }],
+    } }
+    const pkg = buildHistoricImportPackage([ctx, vm], 'Fichier')
+    expect(pkg.context).toMatchObject({ perimetre: 'Application de suivi de chantiers.', contexteJuridique: 'RGPD.' })
+    expect(pkg.analysis).toMatchObject({ title: 'Suivi de chantiers', description: 'Rédacteur : A. Martin' })
+  })
 })

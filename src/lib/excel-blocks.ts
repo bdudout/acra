@@ -73,3 +73,43 @@ export function extractTextBlocks(rows: string[][]): TextBlock[] {
   }
   return out
 }
+
+// ─── Feuille « contexte » (périmètre en texte libre, page de garde) ──────────
+
+export type ContextKind = 'TEXT' | 'KEYVALUE'
+const COVER_NAME = /garde|cover|title page|page de titre|informations? (du )?projet/i
+
+/** Une feuille sans tableau : titres + paragraphes (TEXT) ou page de garde libellé/valeur nommée comme telle (KEYVALUE). */
+export function detectContextSheet(sheetName: string, rows: string[][]): ContextKind | null {
+  if (extractTextBlocks(rows).length >= 2) return 'TEXT'
+  if (COVER_NAME.test(sheetName) && extractKeyValueBlocks(rows).filter(x => x.values.length > 0).length >= 4) return 'KEYVALUE'
+  return null
+}
+
+export interface ContextFromBlocks {
+  context: { perimetre?: string; contexteJuridique?: string; architecture?: string; objectifs?: string }
+  title?: string
+  description?: string
+}
+
+const KEY_PROJECT = /^(nom (du )?projet|project name|projet)$/i
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+
+/** Blocs de texte → cadrage (par mots des titres) ; clé/valeur → titre de l'analyse et propriétés du document (notes d'import, sans effet sur l'approbation). */
+export function buildContextFromBlocks(blocks: { text: TextBlock[]; kv: KeyValue[] }): ContextFromBlocks {
+  const ctx: ContextFromBlocks['context'] = {}
+  const add = (key: 'perimetre' | 'contexteJuridique' | 'architecture' | 'objectifs', value: string) => { ctx[key] = ctx[key] ? `${ctx[key]}\n\n${value}` : value }
+  for (const b of blocks.text) {
+    const t = norm(b.title)
+    if (/juridi|regl|legal|regulat|complian/.test(t)) add('contexteJuridique', b.text)
+    else if (/architect/.test(t)) add('architecture', b.text)
+    else if (/objectif|goal|objective/.test(t)) add('objectifs', b.text)
+    else add('perimetre', b.text)
+  }
+  const out: ContextFromBlocks = { context: ctx }
+  const title = blocks.kv.find(k => KEY_PROJECT.test(k.key.trim()) && k.values[0])?.values[0]
+  if (title) out.title = title
+  const lines = blocks.kv.filter(k => k.values.length > 0 && !KEY_PROJECT.test(k.key.trim())).map(k => `${k.key} : ${k.values.join(' — ')}`)
+  if (lines.length) out.description = lines.join('\n').slice(0, 2000)
+  return out
+}
