@@ -238,7 +238,7 @@ Extension du « contrat de transformation » de la définition précédente (mod
 
 | Id | P | Pb | Exigence |
 |---|---|---|---|
-| B-IMP-52 | M | P2 | **Aperçu par atelier** : compteurs et échantillons par rôle (valeurs métier, biens supports, événements redoutés, sources de risque, parties prenantes, scénarios stratégiques, scénarios opérationnels, risques, mesures, liens) ; la navigation suit les ateliers ; un **graphe de complétude** indique pour chaque lien le nombre de références résolues / orphelines. |
+| B-IMP-52 | M | P2 | **Aperçu par atelier** (rôles présents seulement — un classeur qui ne contient que les ateliers 1 et 5 est importé tel quel, sans erreur pour les ateliers absents) : compteurs et échantillons par rôle (valeurs métier, biens supports, événements redoutés, sources de risque, parties prenantes, scénarios stratégiques, scénarios opérationnels, risques, mesures, liens) ; la navigation suit les ateliers ; un **graphe de complétude** indique pour chaque lien le nombre de références résolues / orphelines. |
 | B-IMP-53 | M | — | Quatre états par ligne, repris de l'existant : **prêt / importable sans ce champ / à confirmer / non importable**, avec feuille, ligne Excel, colonne, valeur brute, règle appliquée et motif. Les décisions humaines sur les valeurs manquantes (compléter ou ne pas importer) sont conservées. |
 | B-IMP-54 | M | — | **Rapport téléchargeable** (CSV) exhaustif : lignes ignorées (modèles vides, non retenues), références non résolues, divergences de calcul, formules sans valeur, valeurs mappées par défaut, échelles converties. Le rapport est produit dans la langue de l'utilisateur. |
 | B-IMP-55 | S | — | **Comparaison à l'existant** en cas de réimport dans une analyse déjà importée : *créé / inchangé / modifié / absent du fichier*, sans jamais supprimer sans action explicite (règle « aucun remplacement silencieux » conservée). |
@@ -353,7 +353,7 @@ Pour ce classeur, le profil livré déclare (à affiner en recette) :
 | **I2 — En-têtes et détection** | B-IMP-10, 12, 14, 15, 16 | Feuilles à bandeaux, multi-tableaux, clé/valeur | I1 |
 | **I3 — Références, transformations** | B-IMP-26 à 35, 40 à 45, 47 à 50 | Cœur de la versatilité (références, plages, symboles, niveaux, regroupements, correspondances) | I1 |
 | **I4 — Profils** | B-IMP-20 à 25 | Réutilisation ; profil livré (a) et (c) | I2, I3 |
-| **I5 — Modèle canonique v3 et écriture par atelier** | B-IMP-52 à 60 | Import d'un dossier EBIOS RM complet | I3, I4 |
+| **I5 — Modèle canonique v3 et écriture par atelier** | B-IMP-52 à 60 | Import d'un dossier EBIOS RM, **atelier par atelier selon les données présentes** (décision 1) | I3, I4 |
 | **I6 — Profil « Dossier de sécurité »** | §7 et §8 ; critères 2 à 8 sur le classeur exemple | Cas d'usage déclencheur | I5 |
 | **I7 — JSON libre, API v2, MCP** | B-IMP-70 à 73 | Industrialisation | I5 |
 
@@ -362,26 +362,21 @@ message `.xls` absent, faux positifs de détection) et ne lancer I2–I6 qu'apr�
 décisions du §11. I1 se fait en TDD sur des fonctions pures (`historic-import`, `xlsx-guard`) et
 n'impose aucune migration.
 
-## 11. Décisions attendues et risques
+## 11. Décisions prises et risques
 
-**Décisions produit à prendre**
+**Décisions produit (2026-09-29)**
 
-1. **Portée du premier import EBIOS complet** : reprendre les ateliers 1 à 5 d'emblée (I5–I6), ou
-   d'abord ateliers 3 à 5 (scénarios, risques, mesures) — le reste restant en texte libre dans
-   `Cadrage` ? Le coût est très différent (valeurs métier, biens supports et socle sont des JSON du
-   `Cadrage`, pas des tables).
-2. **Sources de risque** : ACRA porte une source avec une liste d'objectifs (`objectifsVises`), le
-   classeur porte des **couples** SR/OV. Le regroupement par source (B-IMP-30) est-il acceptable, ou
-   faut-il garder un couple par source de risque ?
-3. **Énumérations ACRA** (`CategorieSource`, `TypePartiePrenante`) : accepte-t-on la valeur neutre
-   `AUTRE` quand la source n'a pas de correspondance, ou faut-il bloquer ?
-4. **Échelles** : l'organisation veut-elle que l'import propose d'aligner ses échelles sur la feuille
-   *Métriques* (B-IMP-48), ou se limite-t-on à la lecture ? (Action réservée à l'ADMIN dans tous les cas.)
-5. **Champs calculés** : divergence entre la valeur du fichier et le calcul ACRA → **avertir seulement**
-   (proposé) ou proposer de conserver la valeur du fichier ?
-6. **Données du fichier exemple** : il est marqué « Confidentiel » ; peut-on en tirer une **version
-   réduite et anonymisée** comme jeu d'essai versionné (et les critères d'acceptation en dépendent) ?
-7. **Fichiers ZIP de CSV** (B-IMP-05) : nécessaires, ou un CSV par import suffit-il ?
+| # | Question | Décision | Effet sur les exigences |
+|---|---|---|---|
+| 1 | Portée du premier import EBIOS complet | **Adaptative : selon les données réellement présentes dans le fichier, des ateliers 1 à 5.** Chaque rôle de feuille trouvé est importé ; une feuille absente (pas d'atelier 3, pas de socle…) ne bloque rien et n'est pas signalée comme une erreur, seulement comme « non présente ». | B-IMP-52 (aperçu par atelier, uniquement pour les rôles présents) ; B-IMP-57 (écriture par atelier, chaque atelier indépendant) ; I5 livrable atelier par atelier |
+| 2 | Sources de risque : couples SR/OV | **Regroupement par source, avec la liste des objectifs visés** (`SourceRisque.objectifsVises`) | B-IMP-30 confirmé ; conflits de colonnes propres à la source rapportés |
+| 3 | Énumérations sans correspondance | **Valeur neutre `AUTRE` acceptée**, toujours listée dans le rapport (« valeur source → AUTRE ») pour relecture | B-IMP-32 : `AUTRE` proposé par défaut, jamais silencieux |
+| 4 | Alignement des échelles sur la feuille *Métriques* | **Oui, comme proposition facultative et non nécessaire par défaut**, **réservée à un compte ADMIN** : l'import ne modifie jamais les échelles ; l'action séparée présente un aperçu des changements avant application | B-IMP-48 confirmé : lecture seule à l'import, action distincte ADMIN |
+| 5 | Données de test | **Variantes entièrement anonymisées du classeur pour d'autres secteurs (BTP, cabinet d'avocats), gardées en local, non publiées** | Voir §13 ; les tests qui les utilisent s'ignorent proprement en leur absence |
+
+*Non tranchés (défaut retenu, à confirmer avant I3)* : divergence entre une valeur calculée du fichier et le
+calcul ACRA → **avertir seulement** (B-IMP-09) ; archive ZIP de CSV (B-IMP-05) → **différée**, un CSV par import
+suffit au premier lot.
 
 **Risques**
 
@@ -404,3 +399,26 @@ formules et valeurs en cache, images. Simulation de la prévisualisation actuell
 `detectHistoricHeaderLayout`, `detectHistoricImportSheet` et `suggestHistoricColumnMapping` sur chaque
 feuille (mêmes paramètres que la route : 20 premières lignes, 100 premières colonnes). Les résultats
 du §3 en sont issus ; aucun fichier n'a été modifié, aucune donnée n'a été écrite.
+
+## 13. Jeu d'essai (local, non publié)
+
+Décision 5 : des variantes **fictives** du classeur servent de base de test. Elles sont générées dans
+`.local-fixtures/import-universel/` (dossier **exclu de git** via `.git/info/exclude` : ni commit, ni publication).
+Elles reprennent uniquement la *structure* du classeur d'origine (feuilles, colonnes, fusions, formules, pièges du §2) ;
+tout le contenu (projet, personnes, scénarios, mesures, dates, références) est inventé, et les propriétés du fichier,
+notes, images et protections d'origine sont retirées. Contrôle réalisé : aucune chaîne de plus de 40 caractères du
+classeur d'origine n'y subsiste hors en-têtes génériques, catalogues de la méthode et codes de modes opératoires.
+
+| Fichier | Contenu | Teste |
+|---|---|---|
+| `dossier-securite-btp.xlsx` | Application de suivi de chantiers d'une entreprise de BTP : 6 valeurs métier, 8 événements redoutés, 73 biens supports (5 retenus), 32 parties prenantes (14 renseignées), 9 scénarios stratégiques, 13 scénarios opérationnels, 13 risques initiaux et résiduels, 16 mesures | Critères 2 à 8 (§9), profil « Dossier de sécurité » |
+| `dossier-securite-avocats.xlsx` | Espace client et GED d'un cabinet d'avocats : mêmes feuilles, contenu propre au secteur (secret professionnel, fonds clients, délais de procédure), 17 mesures | Idem, et **absence de code spécifique au secteur** (versatilité) |
+| `ancien-format.xls`, `ancien-format-renomme.xlsx` | Signature binaire OLE2 d'un vrai `.xls` | B-IMP-01, B-IMP-02, critère 1 |
+| `registre-simple-btp.csv` | Registre plat, séparateur `;`, cotations en clair, une ligne sans intitulé, un doublon de référence | B-IMP-05, B-IMP-71, profil « Registre simple », critère 7 |
+| `registre-libre-avocats.json` | JSON de forme libre (échelles en libellés, contrôles imbriqués, contrôle partagé entre deux risques, valeur hors échelle) | B-IMP-70, critère 7 |
+
+Règles d'usage : les tests qui lisent ces fichiers utilisent `describe.skipIf(!existsSync(chemin))` (la CI ne les a
+pas) ; les fonctions pures du moteur restent testées par de **petits classeurs construits en mémoire** (ExcelJS)
+committables, qui reproduisent chaque piège isolément — les fichiers locaux servent aux essais d'ensemble et à la
+non-régression manuelle. La simulation de la détection actuelle sur les variantes reproduit le profil de défauts du §3
+(Métriques, S.Stratégiques et S.Opérationnels classées « Risques »), ce qui en fait une base de comparaison avant / après.
