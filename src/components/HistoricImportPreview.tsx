@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ATELIER_ROLE_FIELDS, suggestAtelierMapping } from '@/lib/import-ateliers-build'
 import { isAtelierRole } from '@/lib/historic-import'
-import { suggestPrefixAlias } from '@/lib/import-transforms'
+import { suggestPrefixAlias, suggestValueMap } from '@/lib/import-transforms'
 import { BUILTIN_PROFILES, rankProfiles, profileToSelection, type ImportProfile } from '@/lib/import-profile'
 import { getHistoricColumnCompatibility, HISTORIC_MULTI_COLUMN_SEPARATOR, splitHistoricMappedColumns, validateHistoricColumnProfile, validateHistoricImportSelection, type HistoricColumnMapping, type HistoricColumnProfile, type HistoricFieldTransforms, type HistoricSheetType, type HistoricValueTransform } from '@/lib/historic-import'
 
@@ -40,6 +40,7 @@ export type HistoricImportPreviewLabels = {
   mappingHelp: string
   targetOrganization?: string
   aliasPrefix?: string
+  valueMap?: { title: string; hint: string; other: string; category: Record<string, string>; type: Record<string, string> }
   profile?: { recognized: string; apply: string; builtin: string; partial: string }
   warnings?: { noValue: string; errors: string }
   fieldLabels: Record<string, string>
@@ -66,7 +67,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   organizationOptions?: HistoricImportOrganizationOption[]
   defaultOrganizationId?: string
   onCancel: () => void
-  onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; organizationId?: string }) => void | Promise<void>
+  onConfirm: (selection: { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; rowOverrides: Record<string, Record<string, Record<string, string>>>; refAliases?: Record<string, Record<string, string>>; valueMaps?: Record<string, Record<string, Record<string, string>>>; organizationId?: string }) => void | Promise<void>
 }) {
   const visibleSheets = sheets.filter(sheet => sheet.rows > 0)
   const validationLabels = labels.validation ?? { acraField: 'ACRA field', sourceColumn: 'Excel column', expected: 'Expected type', examples: 'Examples', compatible: 'Compatible', review: 'Review', invalidValues: 'invalid values', externalReference: 'Matching identifier' }
@@ -76,6 +77,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
   const [scoreMappings, setScoreMappings] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [transforms, setTransforms] = useState<Record<string, HistoricFieldTransforms>>({})
   const [rowActions, setRowActions] = useState<Record<string, 'SKIP' | 'COMPLETE'>>({})
+  const [valueMaps, setValueMaps] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [refAliases, setRefAliases] = useState<Record<string, Record<string, string>>>({})
   const [rowOverrides, setRowOverrides] = useState<Record<string, Record<string, Record<string, string>>>>({})
   const [loadedOrganizations, setLoadedOrganizations] = useState<HistoricImportOrganizationOption[]>([])
@@ -168,6 +170,23 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
                 {Object.entries(labels.sheetTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
+            {labels.valueMap && (type === 'RISK_SOURCES' || type === 'STAKEHOLDERS') && (() => {
+              const field = type === 'RISK_SOURCES' ? 'category' : 'type'
+              const column = splitHistoricMappedColumns(mappings[sheet.name]?.[type === 'RISK_SOURCES' ? 'title' : 'type'])[0]
+              const distinct = column ? sheet.profiles?.[column]?.values ?? [] : []
+              if (distinct.length === 0) return null
+              const targets = labels.valueMap![field] ?? {}
+              const dictionary = suggestValueMap(distinct, type === 'RISK_SOURCES' ? 'sourceCategory' : 'stakeholderType')
+              return <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs dark:border-amber-300/40 dark:bg-amber-950/40" data-testid={`value-map-${sheet.name}`}>
+                <p className="font-semibold">{labels.valueMap!.title}</p><p className="text-gray-600">{labels.valueMap!.hint}</p>
+                <div className="mt-2 space-y-1">{distinct.map(source => {
+                  const chosen = valueMaps[sheet.name]?.[field]?.[source] ?? dictionary[source] ?? 'AUTRE'
+                  return <label key={source} className="flex items-center justify-between gap-2">{source}
+                    <select aria-label={`${sheet.name} — ${source}`} value={chosen} onChange={event => setValueMaps(previous => ({ ...previous, [sheet.name]: { ...previous[sheet.name], [field]: { ...(previous[sheet.name]?.[field] ?? {}), [source]: event.target.value } } }))} className="input text-xs">
+                      {Object.entries(targets).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+                    </select></label>
+                })}</div></div>
+            })()}
             {type !== 'UNKNOWN' && <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {fields.map(field => {
                 const required = field === 'title' && type !== 'RESIDUAL_RISKS' || field === 'riskRef' && type === 'RESIDUAL_RISKS' || type === 'RISK_ACTION_LINKS' || (type === 'VULNERABILITIES' && field === 'riskExternalId') || (type === 'RISKS' && field === 'externalId' && Boolean(mappings[sheet.name]?.embeddedVulnerabilities || mappings[sheet.name]?.embeddedActions))
@@ -219,7 +238,7 @@ export default function HistoricImportPreview({ sheets, labels, requiredValueGap
       </section>}
       <div data-testid="historic-import-footer" className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
         {blockers.length > 0 ? <ul role="alert" className="list-inside list-disc text-xs text-red-800">{blockers.map(blocker => <li key={`${blocker.sheetName}:${blocker.field}`}>✕ {blocker.sheetName} — ACRA : {blocker.field === '__RISK_SHEET__' ? labels.sheetTypes.RISKS : blocker.field === '__ACTION_SHEET__' ? labels.sheetTypes.ACTIONS : labels.fieldLabels[blocker.field] ?? blocker.field} ({labels.missing})</li>)}</ul> : <span />}
-        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, refAliases: Object.fromEntries(Object.entries(refAliases).filter(([, v]) => Object.keys(v).length)), organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
+        <button type="button" className="btn-primary" disabled={selectedSheets.length === 0 || invalid || completionIncomplete} onClick={() => onConfirm({ mappings, sheetTypes, transforms, statusMappings, scoreMappings, rowOverrides, refAliases: Object.fromEntries(Object.entries(refAliases).filter(([, v]) => Object.keys(v).length)), valueMaps: Object.fromEntries(Object.entries(valueMaps).map(([sheetName, fields]) => [sheetName, Object.fromEntries(Object.entries(fields).filter(([, m]) => Object.keys(m).length))]).filter(([, f]) => Object.keys(f as object).length)), organizationId: targetOrganizationId || undefined })}>{labels.confirm}</button>
       </div>
     </section>
   )

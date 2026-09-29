@@ -91,7 +91,7 @@ export function parseSymbolLevel(value: string, max: number): number | null {
 
 // ─── Correspondance de valeurs ───────────────────────────────────────────────
 
-export type ValueDictionary = 'sourceCategory' | 'measureStatus' | 'treatment' | 'retained'
+export type ValueDictionary = 'sourceCategory' | 'measureStatus' | 'treatment' | 'retained' | 'stakeholderType'
 const DICTIONARIES: Record<ValueDictionary, Record<string, string>> = {
   sourceCategory: {
     'etat': 'ETAT_NATION', 'etat nation': 'ETAT_NATION', 'crime organise': 'CYBERCRIMINEL', 'cybercriminel': 'CYBERCRIMINEL', 'terroriste': 'TERRORISTE',
@@ -105,6 +105,7 @@ const DICTIONARIES: Record<ValueDictionary, Record<string, string>> = {
     'reduction': 'REDUIRE', 'reduire': 'REDUIRE', 'partage': 'TRANSFERER', 'transfert': 'TRANSFERER', 'transferer': 'TRANSFERER', 'acceptation': 'ACCEPTER', 'accepter': 'ACCEPTER',
     'evitement': 'REFUSER', 'eviter': 'REFUSER', 'refus': 'REFUSER', 'refuser': 'REFUSER', 'surveiller': 'SURVEILLER',
   },
+  stakeholderType: { 'fournisseur': 'FOURNISSEUR', 'client': 'CLIENT', 'partenaire': 'PARTENAIRE', 'prestataire': 'PRESTATAIRE', 'regulateur': 'ORGANISME_REGULATION', 'organisme': 'ORGANISME_REGULATION' },
   retained: { 'oui': 'YES', 'yes': 'YES', 'non': 'NO', 'no': 'NO', 'peut etre': 'MAYBE', 'maybe': 'MAYBE' },
 }
 

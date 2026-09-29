@@ -151,3 +151,18 @@ describe('HistoricImportPreview — alias de préfixe (R_ ⇒ RI_)', () => {
     expect(onConfirm.mock.calls[1][0].refAliases).toEqual({ PACS: { R: 'RI' } })
   })
 })
+
+describe('HistoricImportPreview — correspondance des valeurs (sources de risque)', () => {
+  const profile = (values: string[]) => ({ examples: values.slice(0, 3), values, total: values.length, numeric1to4Count: 0, isoDateCount: 0, measureStatusCount: 0, strategyCount: 0 })
+  const labels = { title: 'Préparer', confirm: 'Importer', cancel: 'Annuler', missing: 'requis', noSheets: 'Aucune', rows: 'lignes', mappingName: 'Nom', saveMapping: 'Enregistrer', loadMapping: 'Charger', sheetRole: 'Rôle', ignoreSheet: 'Ne pas importer', summaryTitle: 'Résumé', importableSheets: 'Feuilles à importer', ignoredSheets: 'Feuilles ignorées', mappingHelpTitle: 'Aide', mappingHelp: 'Aide', fieldLabels: { title: 'Intitulé' }, sheetTypes: { ANALYSES: 'Analyse', RISKS: 'Risques', VULNERABILITIES: 'Vulnérabilités', MEASURES: 'Mesures', ACTIONS: 'Plans d’action', RISK_ACTION_LINKS: 'Liens', RISK_SOURCES: 'Sources de risque' }, valueMap: { title: 'Correspondance des valeurs', hint: 'Aide', other: 'Autre', category: { CYBERCRIMINEL: 'Cybercriminel', ETAT_NATION: 'État / Nation', AUTRE: 'Autre' }, type: {} } }
+  const sheets: HistoricPreviewSheet[] = [{ name: '1 - SROV', columns: ['Réf.SR/OV', 'Sources de risques'], rows: 3, detection: { type: 'RISK_SOURCES' }, mapping: { externalId: 'Réf.SR/OV', title: 'Sources de risques' }, missing: [], profiles: { 'Sources de risques': profile(['Etat', 'Officine Spécialisée']) } }]
+  it('pré-remplit depuis le dictionnaire (Etat → État / Nation), signale l’inconnu (Autre) et transmet le choix', () => {
+    const onConfirm = vi.fn()
+    render(<HistoricImportPreview sheets={sheets} labels={labels} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    expect((screen.getByLabelText('1 - SROV — Etat') as HTMLSelectElement).value).toBe('ETAT_NATION')
+    expect((screen.getByLabelText('1 - SROV — Officine Spécialisée') as HTMLSelectElement).value).toBe('AUTRE')
+    fireEvent.change(screen.getByLabelText('1 - SROV — Officine Spécialisée'), { target: { value: 'CYBERCRIMINEL' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm.mock.calls[0][0].valueMaps).toEqual({ '1 - SROV': { category: { 'Officine Spécialisée': 'CYBERCRIMINEL' } } })
+  })
+})

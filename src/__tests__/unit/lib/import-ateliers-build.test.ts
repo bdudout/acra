@@ -100,3 +100,14 @@ describe('buildAtelierContent — feuilles → paquet canonique v3', () => {
     expect(buildAtelierContent([]).content.businessValues).toEqual([])
   })
 })
+
+describe('correspondances de valeurs validées par l’utilisateur (B-IMP-32)', () => {
+  it('la table choisie prime sur le dictionnaire ; sans table, AUTRE reste signalé', () => {
+    const sr = sheet('RISK_SOURCES', { title: 'Source', objective: 'Objectif' }, [{ Source: 'Officine Spécialisée', Objectif: 'Lucratif' }, { Source: 'Etat', Objectif: 'Espionnage' }], { valueMaps: { category: { 'Officine Spécialisée': 'CYBERCRIMINEL' } } })
+    const { content, report } = buildAtelierContent([sr])
+    expect(content.riskSources.map(x => x.category)).toEqual(['CYBERCRIMINEL', 'ETAT_NATION'])
+    expect(report.defaulted).toEqual([])
+    const pp = sheet('STAKEHOLDERS', { title: 'PP', type: 'Cat' }, [{ PP: 'Hébergeur', Cat: 'Externe' }], { valueMaps: { type: { Externe: 'PRESTATAIRE' } } })
+    expect(buildAtelierContent([pp]).content.stakeholders[0].type).toBe('PRESTATAIRE')
+  })
+})

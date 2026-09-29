@@ -62,6 +62,12 @@ export function summarizeAtelierContent(c: AtelierContent, riskRefs: string[] = 
     miss('strategic_scenario_feared_event_not_found', s.fearedEventExternalIds, er)
     miss('strategic_scenario_stakeholder_not_found', s.stakeholderExternalIds, pp)
   }
+  // Cohérence EBIOS RM : la gravité d'un scénario stratégique est le maximum des gravités des événements redoutés qu'il cite (avertissement, jamais de correction).
+  const gravityByEr = new Map(c.fearedEvents.flatMap(e => (e.externalId && e.gravity ? [[canonicalRef(e.externalId), e.gravity] as const] : [])))
+  for (const s of c.strategicScenarios) {
+    const gs = s.fearedEventExternalIds.flatMap(r => { const g = gravityByEr.get(canonicalRef(r)); return g ? [g] : [] })
+    if (s.gravity && gs.length && s.gravity !== Math.max(...gs)) warnings.push(`strategic_scenario_gravity_differs:${s.externalId ?? s.title}:${s.gravity}:${Math.max(...gs)}`)
+  }
   for (const r of c.residualRisks) if (!risks.has(canonicalRef(r.riskExternalId))) warnings.push(`residual_risk_reference_not_found:${r.riskExternalId}`)
   for (const o of c.operationalScenarios) if (o.strategicScenarioExternalId) miss('operational_scenario_strategic_not_found', [o.strategicScenarioExternalId], ss)
   return { counts: countsOf(c), warnings }

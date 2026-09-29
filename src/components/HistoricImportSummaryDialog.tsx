@@ -5,7 +5,7 @@ import type { HistoricImportDecision, HistoricColumnMapping, HistoricFieldTransf
 
 type Mapping = { id: string; name: string }
 type Selection = { mappings: Record<string, HistoricColumnMapping>; sheetTypes: Record<string, HistoricSheetType>; transforms: Record<string, HistoricFieldTransforms>; statusMappings: Record<string, Record<string, string>>; scoreMappings: Record<string, Record<string, Record<string, string>>>; organizationId?: string }
-type ImportResult = { imported: number; results: Array<{ nom?: string; created?: { risks?: number; vulnerabilities?: number; measures?: number; actions?: number } }>; decisions: HistoricImportDecision[] }
+type ImportResult = { warnings?: string[]; ateliers?: Record<string, number>; imported: number; results: Array<{ nom?: string; created?: { risks?: number; vulnerabilities?: number; measures?: number; actions?: number } }>; decisions: HistoricImportDecision[] }
 
 export type HistoricImportSummaryLabels = {
   title: string; explanation: string; imported: string; importedRows: string; omittedFields: string; rejectedRows: string
@@ -13,6 +13,8 @@ export type HistoricImportSummaryLabels = {
   sourceValue: string; expectedValue: string; emptyValue: string
   reasons: Record<string, string>
   ignoredTemplateRows?: string
+  ateliers?: { title: string; counts: Record<string, string> }
+  warnings?: { title: string; codes: Record<string, string> }
   close: string
   mapping: { title: string; explanation: string; newMapping: string; updateMapping: string; save: string; saved: string }
 }
@@ -52,8 +54,16 @@ export default function HistoricImportSummaryDialog({ result, selection, labels,
         <section className="rounded-lg border border-green-200 bg-green-50 p-3 text-green-950 dark:border-green-500/50 dark:bg-green-950/40 dark:text-green-50"><h3 className="font-semibold">{labels.imported}: {result.imported}</h3>{result.results.some(item => item.nom) && <ul className="mt-1 list-inside list-disc text-sm">{result.results.filter(item => item.nom).map((item, index) => <li key={`${item.nom}:${index}`}>{item.nom}</li>)}</ul>}<p className="mt-1 text-sm">{created.risks} {labels.created.risks} · {created.vulnerabilities} {labels.created.vulnerabilities} · {created.measures} {labels.created.measures} · {created.actions} {labels.created.actions}</p><p className="mt-1 text-xs">{ready.length} {labels.importedRows.toLowerCase()}</p></section>
         <section className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50"><h3 className="font-semibold">{labels.omittedFields}: {omitted.length}</h3><p className="mt-1 text-xs">{labels.rejectedRows}: {rejected.length}</p></section>
       </div>
+      {result.ateliers && labels.ateliers && Object.keys(result.ateliers).length > 0 && <section className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-950 dark:border-green-500/50 dark:bg-green-950/40 dark:text-green-50" aria-label={labels.ateliers.title}>
+        <h3 className="font-semibold">{labels.ateliers.title}</h3>
+        <p className="mt-1">{Object.entries(result.ateliers).map(([key, n]) => `${n} ${labels.ateliers!.counts[key] ?? key}`).join(' · ')}</p>
+      </section>}
+      {ignored.length > 0 && labels.ignoredTemplateRows && <p role="note" className="mt-3 text-sm text-gray-600 dark:text-slate-300">{labels.ignoredTemplateRows.replace('{n}', String(ignored.length))}</p>}
+      {result.warnings && result.warnings.length > 0 && labels.warnings && <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-50" aria-label={labels.warnings.title}>
+        <h3 className="font-semibold">{labels.warnings.title} ({result.warnings.length})</h3>
+        <ul className="mt-1 list-inside list-disc space-y-0.5">{result.warnings.slice(0, 30).map((w, i) => { const [code, ...args] = w.split(':'); return <li key={i}>{(labels.warnings!.codes[code] ?? code).replace('{ref}', args.join(':')).replace('{a}', args[1] ?? '').replace('{b}', args[2] ?? '')}</li> })}</ul>
+      </section>}
       {(omitted.length > 0 || rejected.length > 0) && <section className="mt-4 space-y-3" aria-label={labels.rejectedRows}>
-        {ignored.length > 0 && labels.ignoredTemplateRows && <p role="note" className="text-sm text-gray-600">{labels.ignoredTemplateRows.replace('{n}', String(ignored.length))}</p>}
         {rejected.length > 0 && <DecisionList decisions={rejected} title={labels.rejectedRows} labels={labels} decisionLabel={decisionLabel} tone="red" />}
         {omitted.length > 0 && <DecisionList decisions={omitted} title={labels.omittedFields} labels={labels} decisionLabel={decisionLabel} tone="amber" />}
       </section>}

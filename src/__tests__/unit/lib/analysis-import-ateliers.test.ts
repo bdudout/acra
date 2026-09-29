@@ -72,6 +72,15 @@ describe('écriture des ateliers 1 à 4', () => {
   })
 })
 
+describe('cohérence de la gravité des scénarios stratégiques', () => {
+  it('avertit quand la gravité du scénario diffère du maximum des événements redoutés cités ; rien sinon', () => {
+    const c = content()
+    expect(summarizeAtelierContent(c).warnings.filter(w => w.startsWith('strategic_scenario_gravity'))).toEqual([]) // SS_03 : 3 = max(ER_03=3, ER_01=3)
+    c.strategicScenarios[0].gravity = 2
+    expect(summarizeAtelierContent(c).warnings).toContain('strategic_scenario_gravity_differs:SS_03:2:3')
+  })
+})
+
 describe('aperçu : volumes et références orphelines', () => {
   it('signale les liens vers une référence absente, sans rien inventer', () => {
     const s = summarizeAtelierContent(content())

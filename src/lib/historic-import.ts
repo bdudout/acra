@@ -1,5 +1,5 @@
 import { parseLevelLabel, isTemplateRow, extractReferences, aliasPrefix, canonicalRef, prefixesOfRefs } from './import-transforms'
-import { ATELIER_REQUIRED, ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet } from './import-ateliers-build'
+import { ATELIER_REQUIRED, ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet, type AtelierValueMaps } from './import-ateliers-build'
 import type { AtelierContent } from './analysis-import-ateliers'
 import { buildContextFromBlocks, type KeyValue, type TextBlock } from './excel-blocks'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
@@ -281,7 +281,7 @@ export function suggestHistoricColumnMapping(columns: string[]): HistoricColumnM
 export type HistoricImportRow = Record<string, string>
 /** Blocs non tabulaires lus pour le rôle « contexte » (périmètre en texte libre, page de garde). */
 export type HistoricContextBlocks = { text: TextBlock[]; kv: KeyValue[] }
-export type HistoricImportSheet = { refAliases?: Record<string, string>; blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
+export type HistoricImportSheet = { valueMaps?: AtelierValueMaps; refAliases?: Record<string, string>; blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
   analysis: { title: string; description?: string; methode?: 'EBIOS_RM' }
   risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
@@ -478,7 +478,7 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
     if (c.description && !result.analysis.description) result.analysis.description = c.description
   }
   // Ateliers 1 à 4 : feuilles dont le rôle est un rôle d'atelier → paquet canonique v3 (méthode EBIOS RM).
-  const atelierSheets = sheets.filter(sheet => isAtelierRole(sheet.type)).map((sheet): AtelierSheet => ({ name: sheet.name ?? sheet.type, type: sheet.type as AtelierRole, mapping: sheet.mapping, rows: sheet.rows }))
+  const atelierSheets = sheets.filter(sheet => isAtelierRole(sheet.type)).map((sheet): AtelierSheet => ({ name: sheet.name ?? sheet.type, type: sheet.type as AtelierRole, mapping: sheet.mapping, rows: sheet.rows, valueMaps: sheet.valueMaps }))
   if (atelierSheets.length) {
     const { content } = buildAtelierContent(atelierSheets)
     for (const [key, value] of Object.entries(content)) if (Array.isArray(value) ? value.length > 0 : !!value) (result as Record<string, unknown>)[key] = value

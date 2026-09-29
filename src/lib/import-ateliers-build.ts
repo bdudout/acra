@@ -7,7 +7,7 @@
 
 import { atelierContentSchema, type AtelierContent } from './analysis-import-ateliers'
 import {
-  extractReferences, extractReferencesWithLabels, filterRetained, groupRows, normalizeRetained, parseLevelLabel, parseSymbolLevel, suggestValueMap,
+  applyValueMap, extractReferences, extractReferencesWithLabels, filterRetained, groupRows, normalizeRetained, parseLevelLabel, parseSymbolLevel, suggestValueMap,
   type RetainedMode,
 } from './import-transforms'
 
@@ -82,7 +82,9 @@ export function suggestAtelierMapping(role: AtelierRole, columns: string[]): Rec
 
 // ─── Construction du contenu ─────────────────────────────────────────────────
 
-export interface AtelierSheet { name: string; type: AtelierRole; mapping: Record<string, string | undefined>; rows: Record<string, string>[]; retainedMode?: RetainedMode }
+/** Correspondances de valeurs validées par l'utilisateur (valeur source → valeur ACRA), par champ : `category` (sources), `type` (parties prenantes). */
+export type AtelierValueMaps = Partial<Record<'category' | 'type', Record<string, string>>>
+export interface AtelierSheet { valueMaps?: AtelierValueMaps; name: string; type: AtelierRole; mapping: Record<string, string | undefined>; rows: Record<string, string>[]; retainedMode?: RetainedMode }
 export interface AtelierBuildReport {
   /** Valeurs remplacées par la valeur neutre (AUTRE) faute de correspondance : à relire. */
   defaulted: { sheet: string; field: string; source: string; value: string }[]
@@ -160,7 +162,8 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
       if (!g.key) continue
       for (const c of g.conflicts) report.conflicts.push({ sheet: s.name, key: g.key, column: c.column, values: c.values })
       const retained = g.rows.some(r => normalizeRetained(r.__ret) === 'YES')
-      const cat = suggestValueMap([g.key], 'sourceCategory')[g.key]
+      const chosen = applyValueMap(g.key, s.valueMaps?.category ?? {})
+      const cat = chosen.value ?? suggestValueMap([g.key], 'sourceCategory')[g.key]
       if (!cat) report.defaulted.push({ sheet: s.type, field: 'category', source: g.key, value: 'AUTRE' })
       raw.riskSources = [...(raw.riskSources as unknown[]), {
         ...(g.rows[0].__ref ? { externalId: g.rows[0].__ref } : {}), title: g.key, category: cat ?? 'AUTRE',
@@ -172,8 +175,9 @@ export function buildAtelierContent(sheets: AtelierSheet[]): { content: AtelierC
   }
   for (const s of byRole('STAKEHOLDERS')) for (const r of kept(s)) {
     const typeRaw = cellOf(r, s.mapping.type)
+    const chosenType = applyValueMap(typeRaw, s.valueMaps?.type ?? {}).value
     raw.stakeholders = [...(raw.stakeholders as unknown[]), {
-      ...(cellOf(r, s.mapping.externalId) ? { externalId: cellOf(r, s.mapping.externalId) } : {}), title: cellOf(r, s.mapping.title), type: PP_TYPES[norm(typeRaw)] ?? 'AUTRE',
+      ...(cellOf(r, s.mapping.externalId) ? { externalId: cellOf(r, s.mapping.externalId) } : {}), title: cellOf(r, s.mapping.title), type: chosenType ?? PP_TYPES[norm(typeRaw)] ?? 'AUTRE',
       ...(cellOf(r, s.mapping.description) ? { description: cellOf(r, s.mapping.description) } : {}),
       dependency: level(cellOf(r, s.mapping.dependency)), penetration: level(cellOf(r, s.mapping.penetration)), maturity: level(cellOf(r, s.mapping.maturity)), trust: level(cellOf(r, s.mapping.trust)),
     }]
