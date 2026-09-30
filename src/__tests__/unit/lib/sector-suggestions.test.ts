@@ -6,9 +6,9 @@ describe('catalogue de suggestions sectorielles', () => {
     expect(SECTOR_CODES).toEqual(['FINANCE', 'ASSURANCE', 'SANTE', 'PUBLIC', 'SAAS', 'INDUSTRIE', 'COMMERCE', 'SERVICES'])
     for (const sector of SECTOR_CODES) {
       const items = listSectorSuggestions(sector, 'fr')
-      expect(items.filter(item => item.sector === 'TRANSVERSAL' && item.kind === 'PROCESS')).toHaveLength(6)
+      expect(items.filter(item => item.sector === 'TRANSVERSAL' && item.kind === 'PROCESS' && !item.parentKey)).toHaveLength(6) // macro-processus
       expect(items.filter(item => item.sector === sector && item.kind === 'PROCESS').length).toBeGreaterThanOrEqual(4)
-      expect(items.filter(item => item.sector === sector && item.kind === 'RISK').length).toBeGreaterThanOrEqual(5)
+      expect(items.filter(item => item.sector === sector && item.kind === 'RISK').length).toBeGreaterThanOrEqual(7)
       expect(new Set(items.map(item => item.key)).size).toBe(items.length)
     }
   })
@@ -50,5 +50,25 @@ describe('catalogue de suggestions sectorielles', () => {
     expect(sanitizeSectorSelection([])).toEqual([])
     expect(sanitizeSectorSelection(['INCONNU'])).toBeNull()
     expect(sanitizeSectorSelection(['SANTE', 'SAAS', 'PUBLIC', 'FINANCE'])).toBeNull()
+  })
+
+  it('socle transversal enrichi : 18 sous-processus rattachés aux 6 macro-processus et 12 événements-types', () => {
+    const items = listSectorSuggestions(null, 'fr')
+    const subs = items.filter(item => item.kind === 'PROCESS' && item.parentKey?.startsWith('core.process.') && item.key.split('.').length === 4)
+    expect(subs).toHaveLength(18)
+    for (const sub of subs) expect(sub.key.startsWith(`${sub.parentKey}.`), sub.key).toBe(true)
+    expect(items.filter(item => item.kind === 'RISK')).toHaveLength(12)
+    // un événement peut cibler un sous-processus
+    expect(items.find(item => item.key === 'core.risk.privileged-access')?.processKey).toBe('core.process.digital.iam')
+  })
+  it('profondeur de hiérarchie bornée (macro → sous-processus) et libellés distincts dans chaque langue', () => {
+    for (const locale of ['fr', 'en', 'de', 'es', 'it'] as const) {
+      const items = listSectorSuggestions('FINANCE', locale)
+      const byKey = new Map(items.map(item => [item.key, item]))
+      const depth = (key: string): number => { const parent = byKey.get(key)?.parentKey; return parent ? 1 + depth(parent) : 0 }
+      for (const item of items.filter(i => i.kind === 'PROCESS')) expect(depth(item.key), item.key).toBeLessThanOrEqual(2)
+      const titles = items.map(item => item.title.toLowerCase())
+      expect(new Set(titles).size, locale).toBe(titles.length)
+    }
   })
 })

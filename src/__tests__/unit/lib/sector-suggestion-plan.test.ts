@@ -36,4 +36,10 @@ describe('planSuggestionSelection', () => {
     const plan = planSuggestionSelection({ sector: null, locale: 'fr', selectedKeys: Array(100).fill('core.process.govern'), existingKeys: [] })
     expect(plan.toCreate.map(item => item.key)).toEqual(['core.process.govern'])
   })
+
+  it('crée toujours le parent avant l’enfant, même à deux niveaux (macro → sous-processus → risque)', () => {
+    const plan = planSuggestionSelection({ sector: null, locale: 'fr', selectedKeys: ['core.risk.privileged-access', 'core.process.digital.iam', 'core.process.digital'], existingKeys: [] })
+    expect(plan.toCreate.map(item => item.key)).toEqual(['core.process.digital', 'core.process.digital.iam', 'core.risk.privileged-access'])
+    expect(plan.unlinked).toEqual([])
+  })
 })

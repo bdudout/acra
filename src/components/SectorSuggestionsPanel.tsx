@@ -76,6 +76,15 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
   const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const words = norm(query).trim().split(/\s+/).filter(Boolean)
   const visible = preview?.items.filter(item => words.every(word => norm(item.title).includes(word))) ?? []
+  // Hiérarchie lisible : processus racines puis leurs enfants (indentés), ensuite les risques (avec le processus concerné).
+  const titleOf = new Map((preview?.items ?? []).map(item => [item.key, item.title]))
+  const depthOf = (key: string): number => { const parent = preview?.items.find(i => i.key === key)?.parentKey; return parent ? 1 + depthOf(parent) : 0 }
+  const processes = visible.filter(item => item.kind === 'PROCESS')
+  const shown = new Set(processes.map(item => item.key))
+  const ordered: Item[] = []
+  const walk = (parent: string | undefined) => processes.filter(item => (item.parentKey && shown.has(item.parentKey) ? item.parentKey : undefined) === parent).forEach(item => { ordered.push(item); walk(item.key) })
+  walk(undefined)
+  const listed = [...ordered, ...visible.filter(item => item.kind === 'RISK')]
   const toggle = (key: string) => setSelected(keys => keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key])
 
   return <div className="mb-5">
@@ -102,11 +111,11 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
       {report && <p role="status" className="text-sm text-green-800 dark:text-green-300">{s.report.replace('{n}', String(report.created))} · {s.already.replace('{n}', String(report.already))}</p>}
       {!busy && visible.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">{s.noResults}</p>}
       <div className="max-h-80 overflow-y-auto space-y-1">
-        {visible.map(item => {
+        {listed.map(item => {
           const disabled = item.status === 'ALREADY_IMPORTED' || (item.kind === 'PROCESS' && !canCreateProcesses)
-          return <label key={item.key} className="flex gap-2 rounded px-2 py-1.5 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">
+          return <label key={item.key} data-testid="suggestion-row" data-key={item.key} data-depth={depthOf(item.key)} style={{ paddingLeft: `${8 + depthOf(item.key) * 20}px` }} className="flex gap-2 rounded py-1.5 pr-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">
             <input type="checkbox" className="mt-1" checked={selected.includes(item.key)} disabled={disabled} onChange={() => toggle(item.key)} aria-label={item.title} />
-            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : s.risk}</span>{item.title}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
+            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : s.risk}</span>{item.title}{item.kind === 'RISK' && item.processKey && titleOf.get(item.processKey) && <span className="block text-xs text-gray-500 dark:text-gray-400">↳ {titleOf.get(item.processKey)}</span>}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
           </label>
         })}
       </div>

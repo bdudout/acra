@@ -67,4 +67,21 @@ describe('SectorSuggestionsPanel', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(call => call[1]?.method === 'PUT')).toBe(true))
     expect(onImported).not.toHaveBeenCalled()
   })
+
+  it('affiche la hiérarchie : sous-processus indentés sous leur parent, puis les risques avec le processus concerné', async () => {
+    const tree = [
+      { key: 'core.risk.leavers', title: 'Un collaborateur parti conserve des accès actifs', kind: 'RISK', sector: 'TRANSVERSAL', processKey: 'core.process.digital.iam', status: 'NEW', packVersion: '1.1' },
+      { key: 'core.process.digital.iam', title: 'Gérer les accès et les identités', kind: 'PROCESS', sector: 'TRANSVERSAL', parentKey: 'core.process.digital', status: 'NEW', packVersion: '1.1' },
+      { key: 'core.process.buy', title: 'Acheter et piloter les fournisseurs', kind: 'PROCESS', sector: 'TRANSVERSAL', status: 'NEW', packVersion: '1.1' },
+      { key: 'core.process.digital', title: 'Exploiter les systèmes et les données', kind: 'PROCESS', sector: 'TRANSVERSAL', status: 'NEW', packVersion: '1.1' },
+    ]
+    fetchMock.mockImplementation(() => ok({ sector: null, configuredSectors: [], sectors: ['SANTE'], locale: 'fr', version: '1.1', items: tree }))
+    render(<SectorSuggestionsPanel canCreateProcesses onImported={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions par secteur/ }))
+    await screen.findByText('Gérer les accès et les identités')
+    const rows = screen.getAllByTestId('suggestion-row')
+    expect(rows.map(r => r.getAttribute('data-key'))).toEqual(['core.process.buy', 'core.process.digital', 'core.process.digital.iam', 'core.risk.leavers'])
+    expect(rows.map(r => r.getAttribute('data-depth'))).toEqual(['0', '0', '1', '0'])
+    expect(rows[3]).toHaveTextContent('Gérer les accès et les identités') // processus concerné par le risque
+  })
 })
