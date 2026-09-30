@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (33) — tiers canonique, contrats groupe et usages : première tranche TDD
+
+- Cadrage enrichi dans `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : prestataire unique, plusieurs offres (y compris du même type), couverture contrat↔offre, plusieurs usages locaux/processus ; décision utilisateur « ADMIN groupe propose, ADMIN filiale confirme ». Aucun accès automatique aux descendants.
+- Schéma Prisma et migration additive `20260930180000_tiers_services_contracts` : nouveaux Tier, TierOrganization, TierService, TierContractService, TierContractBeneficiary, TierServiceUsage ; `tierId` nullable sur ArrangementTic/PartiePrenante. Pas de backfill par nom.
+- Règles pures `tier-contract-coverage.ts` et routes API de proposition/confirmation/refus + création d'usage (avec statut de couverture explicite). Journal d'audit/SIEM complété.
+- TDD : tests rouges observés avant code ; ciblés verts, `npx tsc --noEmit` vert, `npx prisma validate` vert, `npm run i18n:check` vert ; suite complète finale : **367 fichiers / 2 967 tests verts** ; `npm run build` vert (routes incluses), `git diff --check` vert. Garde-fou supplémentaire : contrat et Tier doivent appartenir au même groupe.
+- Reste : créer/rattacher Tier et offres dans l'UI/API, lister les propositions et usages, contrôle concurrent d'une révocation, précision des dates/périmètres/criticités d'usage, migration et recette DB/browser. Docker absent : aucune écriture DB réelle. Autres fichiers sales préexistants laissés intacts.
+
+
 ## 2026-09-30 (32) — cadrage des socles sectoriels et des tiers uniques
 
 - Nouvelle expression de besoins `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : propositions de risques/processus par socle transversal puis packs sectoriels, imports guidés, même principe étendu aux autres modules ; inventaire ciblé des fonctionnalités manquantes/en développement avec distinction code absent vs recette absente ; cible Tier canonique liant parties prenantes d'analyses et arrangements TIC sans recopier les objets.

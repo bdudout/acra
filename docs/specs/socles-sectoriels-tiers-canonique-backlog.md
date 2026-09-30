@@ -10,14 +10,16 @@ des obligations satisfaites. Le meilleur point de départ est un **catalogue de
 suggestions sélectionnables et éditables**, composé d'un socle transversal et de
 packs sectoriels. Une organisation peut aussi importer ses propres référentiels.
 
-La page Tiers doit devenir la vue d'une **identité de tiers unique par organisation**.
-L'écosystème cyber et le registre TIC sont deux vues et deux jeux de relations sur
-ce tiers, non deux répertoires indépendants de prestataires.
+La page Tiers doit devenir la vue d'une **identité de tiers unique au sein d'un
+groupe d'organisations**, partagée uniquement avec les filiales explicitement
+autorisées. L'écosystème cyber et le registre TIC sont deux vues et deux jeux de
+relations sur ce tiers, non deux répertoires indépendants de prestataires.
 
 Décisions confirmées par l'utilisateur : **suggestions à valider avant création**
 (aucun préremplissage automatique à la création de l'organisation) ; **socle
 transversal d'abord, puis packs sectoriels**. L'identité des tiers au niveau de
-chaque organisation est une proposition d'architecture, encore à confirmer.
+groupe avec accès explicite est retenue pour prendre en charge les contrats groupe.
+Une filiale ne devient pas bénéficiaire d'un contrat par simple héritage de l'arbre.
 
 ## 2. État observé dans le code
 
@@ -119,27 +121,49 @@ contextes n'est ni fusionnée ni comptée deux fois sans décision explicite.
 - Test de concurrence sur l'idempotence, tests de changement de version, droits,
   isolation multi-org, import partiel, langues et clavier ; recette sur vraie DB.
 
-## 4. Axe B — Identité de tiers unique, vues cyber et TIC
+## 4. Axe B — Tiers, services, contrats groupe et usages
 
-### B.1 Décision de modélisation proposée
+### B.1 Décision de modélisation
 
-Créer un `Tier` **canonique par organisation**, avec `id` stable, nom affiché,
-statut, pays et identifiants qualifiés (LEI lorsqu'il existe, autres identifiants
-avec leur type), plus des alias documentés. Les occurrences restent séparées :
+Créer un `Tier` **canonique dans le périmètre du groupe**, avec `id` stable, nom
+affiché, pays, LEI facultatif et alias documentés. Son statut et les autres
+identifiants qualifiés (avec leur type) sont une extension à instruire. Il représente une
+**personne morale ou contrepartie identifiée**, pas un service, une marque ou un
+contrat. Un fournisseur peut proposer plusieurs offres distinctes de même type.
+Un contrat peut couvrir plusieurs offres, et une offre peut être achetée sous
+plusieurs contrats. Les occurrences et usages restent séparés :
 
 ```text
-Organization ──< Tier (identité du prestataire / personne morale)
-                  ├──< PartiePrenante (rôle et score dans chaque Analyse)
-                  └──< ArrangementTic (contrat, service, criticité TIC)
+Groupe ──< Tier (identité de la personne morale, accès org explicite)
+            ├──< PartiePrenante (rôle et score dans chaque Analyse)
+            └──< TierService (produit/offre du prestataire, type TIC)
+                     >──< TierContractService >── ArrangementTic (contrat signé)
+                               │                    └──< TierContractBeneficiary (filiale)
+                               └──< TierServiceUsage (filiale × processus × cas d'usage)
 ```
 
-Ajouter des `tierId` optionnels aux deux objets existants pendant la migration ;
-garder leurs noms historiques comme **instantanés**, sans les réécrire lors d'un
-renommage de Tier. Un Tier peut avoir zéro, une ou plusieurs parties prenantes et
-zéro, un ou plusieurs arrangements. Une entreprise peut fournir plusieurs
-services/contrats ; des filiales juridiquement distinctes ne sont pas fusionnées
-parce qu'elles partagent une marque. Un groupe/parent de tiers est une évolution
-ultérieure, distincte de l'identité légale.
+`TierService` est l'offre identifiable du prestataire (« SignNow Signature »),
+`typeService` sa **catégorie** (« signature électronique »). `TierServiceUsage` est
+le contexte concret (« signature des contrats fournisseurs » pour Achats ou
+« signature des contrats de travail » pour RH). Une même offre, ou deux offres
+de même catégorie, peuvent ainsi avoir plusieurs usages, processus, entités,
+criticités et analyses de risque **sans être dédoublonnées**. Un service peut
+aussi être consommé hors contrat recensé : il reste visible « couverture
+contractuelle à confirmer », sans inventer un accord.
+
+`ArrangementTic` reste l'accord contractuel et conserve son organisation
+porteuse ; `TierContractBeneficiary` indique explicitement chaque filiale couverte
+et son état `PROPOSED`, `CONFIRMED` ou `REJECTED`. Le périmètre précis et les dates
+de début/fin de couverture restent à ajouter si les cas réels le nécessitent.
+Un contrat groupe n'est
+donc **pas copié** dans chaque registre filiale : les vues filiales affichent la
+même référence de contrat avec leur propre usage. Ajouter des `tierId`
+optionnels aux deux objets existants pendant la migration ; garder leurs noms
+historiques comme **instantanés**, sans les réécrire lors d'un renommage de Tier.
+La criticité contractuelle de l'accord et la criticité métier d'un usage doivent
+rester distinctes (champ de criticité d'usage non encore implémenté). Des
+filiales juridiquement distinctes ne sont pas fusionnées parce
+qu'elles partagent une marque.
 
 Le lien est **explicite et validé** : suggestion de rapprochement par identifiant
 stable valide d'abord, puis alias/nom normalisé pour revue humaine. Un nom seul
@@ -152,11 +176,13 @@ exports ou indicateurs agrégés.
 
 - Depuis `/registre-tic`, la saisie/import d'un arrangement demande de choisir
   un Tier existant, d'en créer un ou de laisser « à rapprocher » si les données
-  sont insuffisantes. Le contrat conserve son propriétaire, son service et ses
-  champs réglementaires propres. Un lien mène vers la fiche Tier.
+  sont insuffisantes. On choisit les offres couvertes et les filiales
+  bénéficiaires ; une filiale peut ensuite documenter plusieurs cas d'usage de
+  la même offre, chacun lié à son processus. Le contrat conserve son propriétaire,
+  sa référence et ses champs réglementaires propres. Un lien mène vers la fiche Tier.
 - `/tiers` montre **tous** les Tiers du périmètre autorisé : « cyber seulement »,
   « TIC seulement », « cyber + TIC », « à rapprocher ». Chaque fiche liste les
-  analyses accessibles et les arrangements accessibles avec leurs IDs/liens,
+  analyses, services, contrats et usages accessibles avec leurs IDs/liens,
   sans recopier les contrats ni agréger des scores incompatibles.
 - Depuis l'atelier d'analyse, une partie prenante peut se rattacher à un Tier
   existant ou créer un candidat ; elle conserve exposition/fiabilité/menace
@@ -166,12 +192,24 @@ exports ou indicateurs agrégés.
   relations**, audit et confirmation. Pas de suppression automatique. La vue
   lecture seule est disponible aux rôles autorisés sans ouvrir les données
   d'analyses auxquelles ils n'ont pas accès.
-- Le périmètre multi-org est explicite : un Tier d'une filiale n'est pas le même
-  enregistrement que celui d'une autre. Une vue groupe peut rapprocher ces IDs
-  sous autorisation, sans faire pointer un contrat d'une org vers un Tier d'une
-  autre org. Toute mutation vérifie que la cible appartient à l'org source.
+- Le périmètre multi-org est explicite : un Tier commun garde le même ID dans
+  le groupe, mais une filiale ne voit que les fiches/contrats/services pour
+  lesquels elle a un droit explicite. Un contrat groupe n'accorde aucun accès
+  automatique à toutes les filiales. Un usage ne peut référencer qu'un processus
+  de son organisation et un contrat qui la couvre ; une mutation vérifie ces
+  relations côté serveur et en transaction. Aucune donnée d'une filiale n'est
+  révélée à une autre par les agrégats ou l'autocomplétion.
 
 ### B.3 Migration progressive et critères d'acceptation
+
+État de la première tranche technique (30/09/2026) : schéma additif et migration
+préparés, règles pures testées, routes de proposition/confirmation/refus des
+bénéficiaires et de création d'usage par cas métier. La confirmation accorde
+l'accès explicite au Tier. **Pas encore d'écran de saisie**, de liste des
+propositions reçues, de création/rapprochement de Tier et de ses offres, ni de
+recette sur PostgreSQL : la migration n'a pas été appliquée localement (Docker
+indisponible). Les critères ci-dessous restent donc des critères **cibles**, pas
+des fonctionnalités toutes livrées.
 
 1. Inventorier, **sans modifier**, les groupes de noms et identifiants, y
    compris contrats TIC sans partie prenante et parties prenantes sans TIC.
@@ -187,8 +225,13 @@ exports ou indicateurs agrégés.
 Acceptation : un fournisseur présent uniquement dans le registre TIC apparaît
 sur `/tiers` ; deux contrats pointent vers **un** Tier ; une partie prenante du
 même fournisseur rejoint ce Tier après validation ; ses scores d'analyse ne
-modifient ni la criticité ni le questionnaire des contrats. Deux filiales ou
-deux personnes morales homonymes restent distinctes. Un lecteur ne voit aucune
+modifient ni la criticité ni le questionnaire des contrats. Un contrat groupe
+est visible par deux filiales explicitement bénéficiaires sans duplication ; une
+troisième ne le voit pas. La même offre de signature électronique peut être
+utilisée par Achats et RH dans deux processus et cas d'usage distincts ; deux
+offres d'hébergement de même type restent deux offres distinctes. Un usage
+hors couverture contractuelle est signalé, non rattaché artificiellement. Deux
+personnes morales homonymes restent distinctes. Un lecteur ne voit aucune
 analyse hors de son périmètre via le résumé TIC. Les liens erronés sont
 dissociables sans perte d'historique.
 
@@ -200,7 +243,7 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
 
 | Priorité | Fonction / état présent | Manque précis et prochaine preuve |
 |---|---|---|
-| P0 | Tiers/TIC : jonction en lecture par nom (`tiers-tic-link.ts`). | Identité et lien persistants, TIC-only sur `/tiers`, lien vers chaque arrangement, rapprochement sûr ; vérifier aussi que `consolidatedTiersForOrg` (toutes les analyses de l'org) respecte les droits d'analyse du lecteur de l'API TIC. |
+| P0 | Tiers/TIC : jonction en lecture par nom (`tiers-tic-link.ts`). | Identité et lien persistants, offres de services, contrats groupe avec bénéficiaires explicites, usages par filiale/processus/cas, TIC-only sur `/tiers`, rapprochement sûr ; vérifier aussi que `consolidatedTiersForOrg` (toutes les analyses de l'org) respecte les droits d'analyse du lecteur de l'API TIC. |
 | P0 | Registre : socle FR instancié en un bloc (`registre-catalogue.ts`, `seed-defaut`). | Sélection et aperçu, version/provenance, i18n ×5, packs sectoriels, idempotence par clé stable ; recette d'import concurrent sur vraie DB et diagnostic des doublons historiques de publication avant contrainte UNIQUE. |
 | P0 | Processus : CRUD et hiérarchie (`ProcessusManager`, `/api/processus`). | Bibliothèque transversale/sectorielle, import CSV/XLSX avec mapping et contrôle des parents/cycles ; secteur d'organisation configurable. |
 | P1 | Catalogues contrôles/audit, socle RoPA et gabarits disponibles. | Parcours de suggestions cohérent, provenance/version et traduction du contenu ; revue métier/juridique des champs présumés et des terminologies normatives avant diffusion. |
@@ -218,8 +261,9 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
 1. **Lot 1 — socle utilisable** : aperçus/sélection des risques existants +
    processus transversaux et import guidé ; provenance stable ; aucune donnée
    évaluée fictive. Ce lot ne dépend pas de la refonte des tiers.
-2. **Lot 2 — tiers sans doublons** : modèle Tier nullable, inventaire et file de
-   rapprochement, pages unifiées, liens confirmés, migrations et tests d'accès.
+2. **Lot 2 — tiers sans doublons** : modèle Tier partagé au niveau groupe mais
+   droits explicites, offres, couverture contractuelle des filiales et usages
+   par processus, inventaire/file de rapprochement, migrations et tests d'accès.
 3. **Lot 3 — extension sectorielle** : packs de processus/risques et raccordement
    des catalogues contrôles/audit/KRI, versionnement, mises à jour en diff.
 4. **Lot 4 — backlog adjacent** : traiter séparément les écarts P1/P2 de la table,
@@ -233,6 +277,6 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
    cohérente avec les gabarits existants, mais le contenu métier doit être revu.
 2. Qui peut créer/rapprocher l'identité canonique d'un Tier : seulement ADMIN,
    ou aussi un gestionnaire tiers/TIC de 2e ligne ?
-3. Pour les grandes organisations, la fiche Tier doit-elle vivre à la filiale
-   (recommandé pour l'isolation), avec une vue groupe, ou être unique à toute la
-   hiérarchie d'organisations ?
+3. **Décision actée** : l'ADMIN du groupe propose la qualité de bénéficiaire
+   d'un contrat groupe ; un ADMIN directement membre de la filiale confirme ou
+   refuse. Avant confirmation, le contrat ne donne aucun accès à la filiale.
