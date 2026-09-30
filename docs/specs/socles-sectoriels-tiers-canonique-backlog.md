@@ -1,6 +1,6 @@
 # Expression de besoin — socles sectoriels, tiers uniques et écarts des modules
 
-Statut : cadrage validé, **lot 1 livré en grande partie** (voir § 8) et lot 2 amorcé (schéma + règles + routes, sans écran) · mis à jour le 30 septembre 2026
+Statut : cadrage validé, **lot 1 livré** et **lot 2 livré en grande partie** (voir § 8) · mis à jour le 30 septembre 2026
 
 ## 1. Décisions de produit recherchées
 
@@ -321,3 +321,17 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
 | Fusion de tiers avec aperçu de toutes les relations | **Non fait**. | — |
 
 **Décisions prises** (à confirmer — cf. question 2 de § 7) : la création et le rapprochement d'identités sont ouverts à l'ADMIN **et** aux rôles de 2ᵉ ligne du registre TIC (RSSI, risk manager, conformité, DPO), comme la tenue du registre ; un simple analyste lit seulement. Les alias ne sont pas encore saisissables dans l'interface (champ géré côté API).
+
+### 8.4 Lot 2 — tranche 2 : offres, couverture, usages, propositions de bénéficiaires (recettée)
+
+| Exigence (§ B) | État | Preuve |
+|---|---|---|
+| Offres d'un prestataire, plusieurs de même catégorie (B.1) | **Livré** : ajout (ADMIN / 2ᵉ ligne), renommage, désactivation (jamais de suppression : usages et contrats y restent rattachés) ; la catégorie TIC n'est qu'un attribut. | Recette : « SignNow Signature » et « SignNow Archivage », même catégorie, deux offres distinctes. |
+| Couverture contrat ↔ offres (B.1) | **Livré** : un contrat *de l'organisation* couvre un sous-ensemble d'offres **du tiers du contrat** ; retrait refusé (409) tant que des usages s'y appuient. | Tests routes + recette. |
+| Usages par filiale / processus / cas (B.1, acceptation B.3) | **Livré** : liste par offre pour **l'organisation active seulement**, ajout (ADMIN, route de Codex), suppression ; couverture **confirmée** (contrat de l'organisation ou contrat groupe dont elle est bénéficiaire *confirmée*) ou **« à confirmer »** (hors contrat recensé, jamais rattaché artificiellement). | Recette : Achats (groupe) et RH (filiale) sur la même offre ; usage hors contrat signalé. |
+| Contrat groupe : proposition → confirmation (B.2, décision actée § 7.3) | **Livré** : les propositions reçues apparaissent sur `/tiers` ; **aucun accès avant confirmation** (le tiers reste invisible, 404) ; confirmation par l'ADMIN de la filiale accorde l'accès explicite au tiers ; refus possible. | Recette groupe + 2 filiales : avant confirmation 404 et aucun `TierOrganization` ; après : accès. |
+| Isolation (acceptation B.3) | **Vérifié** : la filiale ne voit que ses usages, pas ceux du groupe ; une 3ᵉ organisation non bénéficiaire n'accède ni au tiers ni à un usage sous contrat (403 `service_not_accessible`). | Recette navigateur + base. |
+
+**Décisions** : les usages restent créés/supprimés par l'**ADMIN** de l'organisation concernée (règle de Codex), les offres et couvertures par l'ADMIN **ou** la 2ᵉ ligne ; un contrat groupe n'est modifiable que par son organisation porteuse, les bénéficiaires le consultent en lecture seule.
+
+**Reste (lot 2)** : proposer les bénéficiaires depuis l'interface (aujourd'hui la route existe, sans écran côté groupe) ; rattacher les **parties prenantes** d'analyse à un tiers (atelier 3, analyse non gelée) ; **sélecteur de tiers** à la saisie/import d'un arrangement TIC ; **fusion** de tiers avec aperçu des relations ; criticité d'usage et dates/périmètre de couverture (à instruire selon les cas réels).

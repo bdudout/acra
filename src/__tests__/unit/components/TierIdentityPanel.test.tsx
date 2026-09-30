@@ -7,9 +7,11 @@ vi.mock('@/lib/i18n/context', async () => {
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
 
+vi.mock('@/components/TierDetailPanel', () => ({ default: ({ tierId }: { tierId: string }) => <div data-testid={`detail-${tierId}`} /> }))
+
 const fetchMock = vi.fn()
 const data = {
-  active: true, canManage: true,
+  active: true, canManage: true, isAdmin: true, orgId: 'fil1', proposals: [{ arrangementId: 'aG', reference: 'CG-7', prestataireNom: 'Hébergeur Groupe', ownerNom: 'Holding' }],
   tiers: [
     { id: 't1', nom: 'Acme', lei: '549300ABCDEFGHIJ1234', pays: 'FR', aliases: [], analysesCount: 2, arrangements: [{ id: 'a1', reference: 'C-1' }], coverage: 'CYBER_AND_TIC' },
     { id: 't2', nom: 'Hébergeur TIC', lei: null, pays: null, aliases: [], analysesCount: 0, arrangements: [{ id: 'a2', reference: 'C-2' }], coverage: 'TIC_ONLY' },
@@ -71,5 +73,36 @@ describe('TierIdentityPanel — identités de tiers', () => {
     const { container } = render(<TierIdentityPanel />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('fiche d’un tiers : « Offres et usages » déplie la fiche (offres, couverture, usages) du tiers choisi', async () => {
+    render(<TierIdentityPanel />)
+    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[0] as HTMLElement
+    expect(screen.queryByTestId('detail-t1')).toBeNull()
+    const toggle = within(row).getByRole('button', { name: /Offres et usages/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(toggle)
+    expect(screen.getByTestId('detail-t1')).toBeInTheDocument(); expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(toggle); expect(screen.queryByTestId('detail-t1')).toBeNull()
+  })
+  it('contrat groupe proposé à l’organisation : confirmer ou refuser (ADMIN), rien n’est accordé avant la décision', async () => {
+    render(<TierIdentityPanel />)
+    const box = (await screen.findByText(/CG-7/)).closest('li')!
+    expect(box).toHaveTextContent('Holding'); expect(box).toHaveTextContent('Hébergeur Groupe')
+    expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PATCH')).toBe(false)
+    fireEvent.click(within(box).getByRole('button', { name: 'Confirmer' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tiers/contracts/aG/beneficiaries/fil1', expect.objectContaining({ method: 'PATCH' })))
+    expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')![1].body)).toEqual({ decision: 'CONFIRM' })
+  })
+  it('refuser envoie REJECT ; un non-admin voit la proposition sans boutons', async () => {
+    render(<TierIdentityPanel />)
+    fireEvent.click(within((await screen.findByText(/CG-7/)).closest('li')!).getByRole('button', { name: 'Refuser' }))
+    await waitFor(() => expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')![1].body)).toEqual({ decision: 'REJECT' }))
+  })
+  it('non-admin : proposition visible, aucune décision possible', async () => {
+    fetchMock.mockImplementation(() => ok({ ...data, isAdmin: false }))
+    render(<TierIdentityPanel />)
+    const box = (await screen.findByText(/CG-7/)).closest('li')!
+    expect(within(box).queryByRole('button', { name: 'Confirmer' })).toBeNull()
   })
 })

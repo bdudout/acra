@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server'
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), cfg: vi.fn(), rl: vi.fn(), audit: vi.fn(),
   tierOrgFindMany: vi.fn(), tierOrgFindUnique: vi.fn(), tierFindFirst: vi.fn(), tierCreate: vi.fn(), tierOrgCreate: vi.fn(),
-  arrFindMany: vi.fn(), arrFindFirst: vi.fn(), arrUpdateMany: vi.fn(), arrUpdate: vi.fn(), ppFindMany: vi.fn(), orgFindUnique: vi.fn(), tx: vi.fn(),
+  benFindMany: vi.fn(), arrFindMany: vi.fn(), arrFindFirst: vi.fn(), arrUpdateMany: vi.fn(), arrUpdate: vi.fn(), ppFindMany: vi.fn(), orgFindUnique: vi.fn(), tx: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -17,7 +17,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   tierOrganization: { findMany: m.tierOrgFindMany, findUnique: m.tierOrgFindUnique, create: m.tierOrgCreate },
   tier: { findFirst: m.tierFindFirst, create: m.tierCreate },
   arrangementTic: { findMany: m.arrFindMany, findFirst: m.arrFindFirst, updateMany: m.arrUpdateMany, update: m.arrUpdate },
-  partiePrenante: { findMany: m.ppFindMany }, organization: { findUnique: m.orgFindUnique }, $transaction: m.tx,
+  partiePrenante: { findMany: m.ppFindMany }, tierContractBeneficiary: { findMany: m.benFindMany }, organization: { findUnique: m.orgFindUnique }, $transaction: m.tx,
 } }))
 import { GET, POST } from '@/app/api/tier-registry/route'
 import { POST as LINK } from '@/app/api/tier-registry/link/route'
@@ -34,6 +34,7 @@ beforeEach(() => {
   m.tierOrgFindMany.mockResolvedValue([])
   m.arrFindMany.mockResolvedValue([])
   m.ppFindMany.mockResolvedValue([])
+  m.benFindMany.mockResolvedValue([])
   m.tierFindFirst.mockResolvedValue(null)
   m.orgFindUnique.mockResolvedValue({ path: '/grp/fil1/' })
   m.tierCreate.mockImplementation(async ({ data }: { data: object }) => ({ id: 'tNew', ...data }))
@@ -70,6 +71,17 @@ describe('GET /api/tier-registry', () => {
     m.scope.mockResolvedValue({ role: 'ADMIN', activeOrgId: null, scope: { visibleOrgIds: [], isSuperAdmin: false } })
     expect((await (await GET(req('/api/tier-registry'))).json()).active).toBe(false)
     m.session.mockResolvedValue(null); expect((await GET(req('/api/tier-registry'))).status).toBe(401)
+  })
+})
+
+describe('GET /api/tier-registry — propositions de contrats groupe', () => {
+  it('liste les contrats groupe PROPOSÉS pour l’organisation active (référence, prestataire, organisation porteuse), sans rien accorder', async () => {
+    m.benFindMany.mockResolvedValue([{ arrangementId: 'aG', arrangement: { reference: 'CG-7', prestataireNom: 'Hébergeur Groupe', organization: { nom: 'Holding' } } }])
+    const body = await (await GET(req('/api/tier-registry'))).json()
+    expect(body.proposals).toEqual([{ arrangementId: 'aG', reference: 'CG-7', prestataireNom: 'Hébergeur Groupe', ownerNom: 'Holding' }])
+    expect(m.benFindMany.mock.calls[0][0].where).toEqual({ organizationId: 'fil1', status: 'PROPOSED' })
+    expect(body.isAdmin).toBe(true)
+    expect(m.tierOrgCreate).not.toHaveBeenCalled()
   })
 })
 

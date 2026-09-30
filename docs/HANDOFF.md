@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (37) — Claude : lot 2 tranche 2 — offres, couverture, usages, propositions de bénéficiaires
+
+- Décision utilisateur : création/rapprochement d'identités de tiers = ADMIN **et** 2ᵉ ligne (`peutGererRegistreTic`).
+- Livré : `lib/tier-offers.ts` (validation d'offre, plan de couverture, couverture d'usage), `lib/tier-registry.server.ts` (contexte + garde), routes `GET /api/tier-registry/[id]`, `POST …/[id]/services`, `PATCH …/services/[serviceId]`, `PUT …/contracts/[arrangementId]/services`, `DELETE …/usages/[usageId]` ; `GET /api/tier-registry` renvoie aussi les propositions de contrats groupe ; composants `TierDetailPanel` et propositions dans `TierIdentityPanel` (Confirmer / Refuser).
+- Recette réelle (`e2e/local-tiers-groupe.spec.ts`, hors git) : groupe + 2 filiales — contrat groupe, offres, couverture, usage du groupe, proposition → 404 avant confirmation → accès après, usages propres à la filiale, hors contrat « à confirmer », 3ᵉ organisation refusée. `local-tiers` 3/3, `local-socles` 5/5.
+- Vérifié : `tsc` 0, `npm test` 3083, `i18n:check`, recette PostgreSQL + navigateur. Spec § 8.4.
+- Reste : proposer les bénéficiaires depuis l'UI du groupe ; parties prenantes → tiers (atelier) ; sélecteur de tiers dans le registre TIC ; fusion avec aperçu ; criticité d'usage.
+
 ## 2026-09-30 (36) — Claude : catalogue v1.1, rôle effectif sur /configuration, tiers canoniques (tranche 1)
 
 - **Catalogue v1.1** : +18 sous-processus et +6 événements transversaux, +2 événements par secteur (×5 langues) ; liste hiérarchique dans le panneau de suggestions ; ordre de création robuste à plusieurs niveaux.

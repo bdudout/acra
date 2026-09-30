@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { analyseWhereClause, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { analyseWhereClause, isAdminRole, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { classifyTierCoverage, cleanTierInput, findTierCandidates, normalizeLei, rootOrganizationIdOf, type TierLite } from '@/lib/tier-identity'
@@ -54,7 +54,10 @@ export async function GET(_req: NextRequest) {
     id: a.id, reference: a.reference, prestataireNom: a.prestataireNom, lei: normalizeLei(a.identifiant),
     candidates: findTierCandidates({ nom: a.prestataireNom, lei: a.identifiant }, tiers).map(c => ({ ...c, nom: nomOf.get(c.tierId) ?? '' })),
   }))
-  return NextResponse.json({ active: true, canManage: peutGererRegistreTic(ctx.scope.role), tiers: rows, unlinkedArrangements })
+  // Contrats groupe proposés à CETTE organisation : visibles pour décision (confirmer / refuser), sans aucun accès accordé d'avance.
+  const pending = await prisma.tierContractBeneficiary.findMany({ where: { organizationId: orgId, status: 'PROPOSED' }, select: { arrangementId: true, arrangement: { select: { reference: true, prestataireNom: true, organization: { select: { nom: true } } } } } })
+  const proposals = pending.map(p => ({ arrangementId: p.arrangementId, reference: p.arrangement.reference, prestataireNom: p.arrangement.prestataireNom, ownerNom: p.arrangement.organization.nom }))
+  return NextResponse.json({ active: true, canManage: peutGererRegistreTic(ctx.scope.role), isAdmin: isAdminRole(ctx.scope.role), orgId, tiers: rows, unlinkedArrangements, proposals })
 }
 
 /** Crée une identité de tiers (ADMIN ou 2ᵉ ligne) : jamais de doublon silencieux, jamais de fuite d'un tiers d'une autre organisation. */

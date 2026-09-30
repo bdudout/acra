@@ -1,0 +1,31 @@
+// ─── Contexte et garde d'accès communs aux routes /api/tier-registry ────────────────────────────────────────────────────────
+import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { isAdminRole, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+
+export interface TierCtx { userId: string; orgId: string; role: UserRole; canManage: boolean; isAdmin: boolean }
+
+/** Session + organisation active + rôle effectif ; `write` ajoute le contrôle de droits (2ᵉ ligne ou ADMIN) et le débit. */
+export async function tierContext(opts: { write?: 'manage' | 'admin' } = {}): Promise<{ ctx: TierCtx } | { error: NextResponse }> {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return { error: NextResponse.json({ error: 'unauthorized' }, { status: 401 }) }
+  const userId = (session.user as { id: string }).id
+  const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
+  if (!scope.activeOrgId) return { error: NextResponse.json({ error: 'organization_required' }, { status: 400 }) }
+  const ctx: TierCtx = { userId, orgId: scope.activeOrgId, role: scope.role, canManage: peutGererRegistreTic(scope.role), isAdmin: isAdminRole(scope.role) }
+  if (opts.write) {
+    if (opts.write === 'admin' ? !ctx.isAdmin : !ctx.canManage) return { error: NextResponse.json({ error: 'forbidden' }, { status: 403 }) }
+    const rl = await rateLimit(`tier-registry:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
+    if (!rl.allowed) return { error: NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }) }
+  }
+  return { ctx }
+}
+
+/** Le tiers est-il autorisé pour l'organisation ? (jamais d'accès par simple appartenance au groupe) */
+export async function tierGranted(tierId: string, orgId: string): Promise<boolean> {
+  return !!(await prisma.tierOrganization.findUnique({ where: { tierId_organizationId: { tierId, organizationId: orgId } }, select: { tierId: true } }))
+}
