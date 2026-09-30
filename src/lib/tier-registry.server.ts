@@ -41,3 +41,16 @@ export async function resolveTierIdInput(body: Record<string, unknown>, orgId: s
   if (typeof raw !== 'string' || !(await tierGranted(raw, orgId))) return { ok: false }
   return { ok: true, provided: true, tierId: raw }
 }
+
+/**
+ * Liens partie prenante → identité de tiers d'une sauvegarde d'atelier : ne garde que les tiers AUTORISÉS pour l'organisation de
+ * l'analyse, détache les autres (comptés) — une sauvegarde automatique ne doit jamais échouer pour un accès retiré entre-temps.
+ */
+export async function sanitizeTierLinks<T extends { tierId?: string | null }>(rows: T[], orgId: string | null): Promise<{ rows: T[]; dropped: number }> {
+  const wanted = [...new Set(rows.flatMap(r => (r.tierId ? [r.tierId] : [])))]
+  if (!wanted.length) return { rows, dropped: 0 }
+  const granted = new Set(orgId ? (await prisma.tierOrganization.findMany({ where: { organizationId: orgId, tierId: { in: wanted } }, select: { tierId: true } })).map(g => g.tierId) : [])
+  let dropped = 0
+  const out = rows.map(r => { if (r.tierId && !granted.has(r.tierId)) { dropped += 1; return { ...r, tierId: null } } return r })
+  return { rows: out, dropped }
+}

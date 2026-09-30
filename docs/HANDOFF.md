@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (39) — Claude : lot 2 tranche 4 — parties prenantes → identités de tiers (atelier 3)
+
+- **Bug corrigé au passage** : l'autosave de l'atelier 3 détachait les liens `PartiePrenante.tierId` (delete-all + createMany sans `tierId`) ; `cleanPartiePrenante` le conserve, `sanitizeTierLinks` (`lib/tier-registry.server.ts`) ne garde que les tiers autorisés pour l'organisation de l'analyse (`tierLinksDropped` sinon).
+- `PartyTierLink` (sélecteur + suggestion de rapprochement par nom/alias, lecture seule si analyse gelée) branché dans `Atelier3` ; `GET /api/tier-registry` alimente la liste.
+- Recette réelle `e2e/local-atelier3-tier.spec.ts` (hors git) 2/2 ; piège : l'atelier 3 n'est accessible que si `atelierCourant ≥ 3`.
+- Vérifié : `tsc` 0, `npm test` 3102, `i18n:check`, build à refaire avant push (fait ci-dessous). Spec § 8.6.
+- Reste (lot 2) : fusion de tiers avec aperçu ; criticité d'usage ; import de contrats avec identité ; rapprochement en masse des arrangements existants.
+
 ## 2026-09-30 (38) — Claude : lot 2 tranche 3 — bénéficiaires depuis l'UI du groupe, sélecteur de tiers dans le registre TIC
 
 - `GET /api/tier-registry/[id]` : pour l'ADMIN de l'organisation RACINE, état des filiales bénéficiaires et filiales proposables par contrat (rien pour une filiale / un non-admin) ; `TierDetailPanel` : « Filiales bénéficiaires de … » (Proposer).

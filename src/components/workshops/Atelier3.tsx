@@ -20,6 +20,7 @@
  *  - analyse     : parent Analyse (used for referentiel and source names)
  */
 
+import PartyTierLink from '@/components/PartyTierLink'
 import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileText, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck, Star } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -134,11 +135,16 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
   // Échelles de cotation des 4 sous-critères (configurables) — défauts si non personnalisées.
   const [echelles, setEchelles] = useState<EchellesEcosysteme>(() => resolveEchelles(null))
   // Noms de tiers déjà connus (autres analyses) → auto-complétion à la saisie (issue #46)
+  // Identités de tiers autorisées pour l'organisation (rattachement facultatif d'une partie prenante ; scores inchangés).
+  const [tierIdentities, setTierIdentities] = useState<{ id: string; nom: string; lei: string | null; aliases: string[] }[]>([])
   const [knownTierNames, setKnownTierNames] = useState<string[]>([])
   useEffect(() => {
     fetch('/api/admin/organization-config').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
       setEchelles(resolveEchelles(d?.echellesEcosysteme))
+    }).catch(() => {})
+    fetch('/api/tier-registry').then(r => r.ok ? r.json() : null).then(d => {
+      if (Array.isArray(d?.tiers)) setTierIdentities(d.tiers.map((x: { id: string; nom: string; lei: string | null; aliases?: string[] }) => ({ id: x.id, nom: x.nom, lei: x.lei ?? null, aliases: x.aliases ?? [] })))
     }).catch(() => {})
     fetch('/api/tiers/names').then(r => r.ok ? r.json() : null).then(d => {
       if (Array.isArray(d?.noms)) setKnownTierNames(d.noms)
@@ -667,6 +673,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                         <input value={p.nomCourt ?? ''} onChange={e => updatePP(p.id, 'nomCourt', e.target.value.slice(0, 12))}
                           maxLength={12} className="input text-sm sm:col-span-2"
                           placeholder={t.workshop.a3.ppNomCourtPlaceholder} />
+                        <PartyTierLink name={p.nom} tierId={p.tierId} tiers={tierIdentities} disabled={editable === false} onChange={v => updatePP(p.id, 'tierId', v)} />
                       </div>
                       {/* Exposition = dépendance × pénétration · Fiabilité = maturité × confiance */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
