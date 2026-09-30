@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { SectorCode } from '@/lib/sector-suggestions'
 
-type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string }
+type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string }
 type Preview = { sector: SectorCode | null; configuredSectors: SectorCode[]; sectors: SectorCode[]; items: Item[]; version: string }
 
 /** Sélection volontaire, jamais de création automatique à l'ouverture d'un module. */
@@ -84,7 +84,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
   const ordered: Item[] = []
   const walk = (parent: string | undefined) => processes.filter(item => (item.parentKey && shown.has(item.parentKey) ? item.parentKey : undefined) === parent).forEach(item => { ordered.push(item); walk(item.key) })
   walk(undefined)
-  const listed = [...ordered, ...visible.filter(item => item.kind === 'RISK')]
+  const listed = [...ordered, ...visible.filter(item => item.kind !== 'PROCESS')]
   const toggle = (key: string) => setSelected(keys => keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key])
 
   return <div className="mb-5">
@@ -115,7 +115,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
           const disabled = item.status === 'ALREADY_IMPORTED' || (item.kind === 'PROCESS' && !canCreateProcesses)
           return <label key={item.key} data-testid="suggestion-row" data-key={item.key} data-depth={depthOf(item.key)} style={{ paddingLeft: `${8 + depthOf(item.key) * 20}px` }} className="flex gap-2 rounded py-1.5 pr-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">
             <input type="checkbox" className="mt-1" checked={selected.includes(item.key)} disabled={disabled} onChange={() => toggle(item.key)} aria-label={item.title} />
-            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : s.risk}</span>{item.title}{item.kind === 'RISK' && item.processKey && titleOf.get(item.processKey) && <span className="block text-xs text-gray-500 dark:text-gray-400">↳ {titleOf.get(item.processKey)}</span>}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
+            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : item.kind === 'CONTROL' ? s.control : s.risk}</span>{item.title}{item.kind !== 'PROCESS' && item.processKey && titleOf.get(item.processKey) && <span className="block text-xs text-gray-500 dark:text-gray-400">↳ {titleOf.get(item.processKey)}</span>}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
           </label>
         })}
       </div>

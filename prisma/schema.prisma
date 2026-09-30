@@ -605,6 +605,10 @@ model Controle {
   // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
   champs Json @default("{}")
 
+  // Provenance d'une suggestion du catalogue sectoriel (cf. lib/sector-suggestions.ts) ; null = saisi par l'organisation.
+  catalogueKey     String?
+  catalogueVersion String?
+
   // Lot L3 (suite) — rattachement à un tiers (ArrangementTic) et à un projet 360 (Analyse PROJET_360).
   // Liens logiques (pas de FK), vérifiés à l'écriture ; ignorés à la lecture s'ils ont disparu.
   arrangementTicId String?
@@ -619,6 +623,7 @@ model Controle {
   @@index([actif])
   @@index([arrangementTicId])
   @@index([projetId])
+  @@unique([organizationId, catalogueKey])
 }
 
 // Une exécution de contrôle : résultat, constat et échantillon réellement testé.

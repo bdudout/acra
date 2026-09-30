@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole, peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
@@ -41,12 +41,14 @@ export async function GET(req: NextRequest) {
   if (sector === undefined) return NextResponse.json({ error: 'invalid_sector' }, { status: 400 })
   const locale = parseLocale(url.searchParams.get('locale'))
   const query = (url.searchParams.get('q') ?? '').slice(0, 120)
-  const [processes, risks] = await Promise.all([
+  const [processes, risks, controls] = await Promise.all([
     prisma.processus.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
     prisma.riskItem.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
+    cfg.controlePermanentActive ? prisma.controle.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
   ])
-  const existing = new Set([...processes, ...risks].map(row => row.catalogueKey))
-  const items = searchSectorSuggestions(sector, locale, query).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
+  const existing = new Set([...processes, ...risks, ...controls].map(row => row.catalogueKey))
+  // Les contrôles-types ne sont proposés que si le module « contrôle permanent » est activé pour l'organisation.
+  const items = searchSectorSuggestions(sector, locale, query).filter(item => item.kind !== 'CONTROL' || cfg.controlePermanentActive).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
   return NextResponse.json({ sector, configuredSectors: configured, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items })
 }
 
@@ -71,16 +73,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
+  if (selectedPlan.toCreate.some(item => item.kind === 'CONTROL')) {
+    if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
+    if (!peutDefinir2eLigne(ctx.role, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
+
   const result = await prisma.$transaction(async tx => {
     // Le verrou protège la lecture de provenance et les créations concurrentes de cette route.
     await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${ctx.orgId}), hashtext('catalogue-suggestions'))::text`)
-    const [processes, risks] = await Promise.all([
+    const [processes, risks, controls] = await Promise.all([
       tx.processus.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
       tx.riskItem.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
+      tx.controle.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
     ])
     const plan = planSuggestionSelection({
       sector, locale, selectedKeys,
-      existingKeys: [...processes, ...risks].flatMap(row => row.catalogueKey ? [row.catalogueKey] : []),
+      existingKeys: [...processes, ...risks, ...controls].flatMap(row => row.catalogueKey ? [row.catalogueKey] : []),
     })
     if (plan.invalidKeys.length) return { status: 400 as const, error: 'invalid_keys', ...plan }
     if (plan.unlinked.length && body.acceptUnlinked !== true) return { status: 409 as const, error: 'unlinked_dependencies', ...plan }
@@ -96,6 +104,14 @@ export async function POST(req: NextRequest) {
         } })
         processIds.set(item.key, process.id)
         created.push({ key: item.key, id: process.id, kind: item.kind })
+      } else if (item.kind === 'CONTROL') {
+        // Définition seule : aucune exécution, aucun responsable, aucune efficacité ; périodicité et type sont des suggestions.
+        const controle = await tx.controle.create({ data: {
+          organizationId: ctx.orgId!, intitule: item.title, periodicite: item.periodicite ?? 'TRIMESTRIEL', typeControle: item.controlType ?? null,
+          processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
+          catalogueKey: item.key, catalogueVersion: item.packVersion,
+        } })
+        created.push({ key: item.key, id: controle.id, kind: item.kind })
       } else {
         const risk = await tx.riskItem.create({ data: {
           organizationId: ctx.orgId!, intitule: item.title,

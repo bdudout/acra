@@ -10,10 +10,13 @@ type Localized = Record<CatalogueLocale, string>
 type CatalogueItem = {
   key: string
   sector: SectorCode | 'TRANSVERSAL'
-  kind: 'PROCESS' | 'RISK'
+  kind: 'PROCESS' | 'RISK' | 'CONTROL'
   title: Localized
   parentKey?: string
   processKey?: string
+  // Contrôles seulement : périodicité et typologie SUGGÉRÉES (modifiables) ; aucune exécution ni efficacité n'est jamais créée.
+  periodicite?: 'HEBDOMADAIRE' | 'MENSUEL' | 'TRIMESTRIEL' | 'SEMESTRIEL' | 'ANNUEL'
+  controlType?: 'PREVENTIF' | 'DETECTIF' | 'CORRECTIF'
 }
 export type SectorSuggestion = Omit<CatalogueItem, 'title'> & { title: string; packVersion: string }
 
@@ -59,6 +62,22 @@ const TRANSVERSAL: CatalogueItem[] = [
   r('core.risk.unpatched', 'TRANSVERSAL', l('Une vulnérabilité connue n’est pas corrigée à temps', 'A known vulnerability is not fixed in time', 'Eine bekannte Schwachstelle wird nicht rechtzeitig behoben', 'Una vulnerabilidad conocida no se corrige a tiempo', 'Una vulnerabilità nota non viene corretta in tempo'), 'core.process.digital.patch'),
   r('core.risk.supplier-contract', 'TRANSVERSAL', l('Un contrat fournisseur ne couvre pas les exigences de sécurité', 'A supplier contract omits security requirements', 'Ein Lieferantenvertrag enthält keine Sicherheitsanforderungen', 'Un contrato con un proveedor no recoge los requisitos de seguridad', 'Un contratto con un fornitore non prevede i requisiti di sicurezza'), 'core.process.buy.sourcing'),
   r('core.risk.detection-gap', 'TRANSVERSAL', l('Une intrusion reste non détectée pendant des semaines', 'An intrusion goes undetected for weeks', 'Ein Eindringen bleibt wochenlang unentdeckt', 'Una intrusión pasa semanas sin detectarse', 'Un’intrusione resta non rilevata per settimane'), 'core.process.digital.monitor'),
+]
+
+const c = (key: string, title: Localized, processKey: string, periodicite: NonNullable<CatalogueItem['periodicite']>, controlType: NonNullable<CatalogueItem['controlType']>): CatalogueItem =>
+  ({ key, sector: 'TRANSVERSAL', kind: 'CONTROL', title, processKey, periodicite, controlType })
+
+// Contrôles-types : des pratiques courantes à qualifier par l'organisation (responsable, périmètre, échantillon), jamais des contrôles « réalisés ».
+const TRANSVERSAL_CONTROLS: CatalogueItem[] = [
+  c('core.control.access-review', l('Revue périodique des droits d’accès', 'Periodic review of access rights', 'Regelmäßige Überprüfung der Zugriffsrechte', 'Revisión periódica de los derechos de acceso', 'Revisione periodica dei diritti di accesso'), 'core.process.digital.iam', 'TRIMESTRIEL', 'DETECTIF'),
+  c('core.control.privileged-review', l('Revue des comptes à privilèges', 'Review of privileged accounts', 'Überprüfung privilegierter Konten', 'Revisión de las cuentas con privilegios', 'Revisione degli account con privilegi'), 'core.process.digital.iam', 'TRIMESTRIEL', 'DETECTIF'),
+  c('core.control.leavers', l('Retrait des accès des collaborateurs partis', 'Removal of access for departed staff', 'Entzug der Zugänge ausgeschiedener Mitarbeiter', 'Retirada de accesos del personal saliente', 'Rimozione degli accessi del personale uscito'), 'core.process.digital.iam', 'MENSUEL', 'DETECTIF'),
+  c('core.control.backup-restore', l('Test de restauration des sauvegardes', 'Backup restoration test', 'Test der Wiederherstellung von Sicherungen', 'Prueba de restauración de copias de seguridad', 'Test di ripristino dei backup'), 'core.process.digital.backup', 'SEMESTRIEL', 'DETECTIF'),
+  c('core.control.patch-follow-up', l('Suivi des correctifs de sécurité en retard', 'Follow-up of overdue security patches', 'Nachverfolgung überfälliger Sicherheitspatches', 'Seguimiento de parches de seguridad pendientes', 'Monitoraggio delle patch di sicurezza in ritardo'), 'core.process.digital.patch', 'MENSUEL', 'DETECTIF'),
+  c('core.control.security-alerts', l('Revue des alertes et journaux de sécurité', 'Review of security alerts and logs', 'Überprüfung von Sicherheitswarnungen und Protokollen', 'Revisión de alertas y registros de seguridad', 'Revisione di avvisi e log di sicurezza'), 'core.process.digital.monitor', 'MENSUEL', 'DETECTIF'),
+  c('core.control.payment-validation', l('Contrôle par échantillon de la double validation des paiements', 'Sample check of dual approval of payments', 'Stichprobenprüfung der doppelten Zahlungsfreigabe', 'Control por muestreo de la doble validación de los pagos', 'Controllo a campione della doppia autorizzazione dei pagamenti'), 'core.process.finance.payments', 'MENSUEL', 'PREVENTIF'),
+  c('core.control.supplier-clauses', l('Vérification des clauses de sécurité des contrats fournisseurs', 'Check of security clauses in supplier contracts', 'Prüfung der Sicherheitsklauseln in Lieferantenverträgen', 'Verificación de las cláusulas de seguridad de los contratos con proveedores', 'Verifica delle clausole di sicurezza nei contratti con i fornitori'), 'core.process.buy.sourcing', 'ANNUEL', 'PREVENTIF'),
+  c('core.control.supplier-review', l('Revue de performance des fournisseurs essentiels', 'Performance review of essential suppliers', 'Leistungsbewertung wesentlicher Lieferanten', 'Revisión del desempeño de los proveedores esenciales', 'Revisione delle prestazioni dei fornitori essenziali'), 'core.process.buy.review', 'ANNUEL', 'DETECTIF'),
 ]
 
 const SECTOR_ITEMS: CatalogueItem[] = [
@@ -160,7 +179,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('services.risk.client-access', 'SERVICES', l('Un collaborateur accède à des dossiers clients sans nécessité', 'A staff member accesses client files without need', 'Ein Mitarbeiter greift ohne Notwendigkeit auf Kundenakten zu', 'Un empleado accede a expedientes de clientes sin necesidad', 'Un collaboratore accede a pratiche dei clienti senza necessidad'), 'services.process.knowledge'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.1'
+export const CATALOGUE_PACK_VERSION = '1.2'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -170,7 +189,8 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
 
 /** Socle + pack choisi ; sans secteur, seul le socle est retourné. */
 export function listSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale): SectorSuggestion[] {
-  const items = sector ? [...TRANSVERSAL, ...SECTOR_ITEMS.filter(item => item.sector === sector)] : TRANSVERSAL
+  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS]
+  const items = sector ? [...base, ...SECTOR_ITEMS.filter(item => item.sector === sector)] : base
   return items.map(({ title, ...item }) => ({ ...item, title: title[locale], packVersion: CATALOGUE_PACK_VERSION }))
 }
 

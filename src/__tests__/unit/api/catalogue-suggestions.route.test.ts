@@ -4,16 +4,18 @@ const db = vi.hoisted(() => ({
   organization: { findUnique: vi.fn() },
   process: { findMany: vi.fn(), create: vi.fn() },
   risk: { findMany: vi.fn(), create: vi.fn() },
+  control: { findMany: vi.fn(), create: vi.fn() },
+  cfg: vi.fn(),
   queryRaw: vi.fn(), transaction: vi.fn(),
 }))
 const auth = vi.hoisted(() => ({ scope: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'user1', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  organization: db.organization, processus: db.process, riskItem: db.risk, $transaction: db.transaction,
+  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, $transaction: db.transaction,
 } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: auth.scope }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ registreRisquesActive: true })) }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: db.cfg }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '127.0.0.1') }))
 
 import { GET, POST } from '@/app/api/catalogue-suggestions/route'
@@ -26,11 +28,14 @@ beforeEach(() => {
   db.organization.findUnique.mockResolvedValue({ secteursActivite: ['FINANCE'] })
   db.process.findMany.mockResolvedValue([])
   db.risk.findMany.mockResolvedValue([])
+  db.control.findMany.mockResolvedValue([])
+  db.cfg.mockResolvedValue({ registreRisquesActive: true })
+  db.control.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.queryRaw.mockResolvedValue([])
   db.process.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.risk.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.transaction.mockImplementation(async (run: (tx: unknown) => Promise<unknown>) => run({
-    processus: db.process, riskItem: db.risk, $queryRaw: db.queryRaw,
+    processus: db.process, riskItem: db.risk, controle: db.control, $queryRaw: db.queryRaw,
   }))
 })
 
@@ -89,5 +94,27 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.govern'] }))
     expect(res.status).toBe(403)
     expect(db.process.create).not.toHaveBeenCalled()
+  })
+
+  it('contrôles-types : invisibles sans le module « contrôle permanent » ; importés comme définitions nues (aucune exécution, aucun responsable) avec provenance', async () => {
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.items.some((i: { kind: string }) => i.kind === 'CONTROL')).toBe(false)
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.control.access-review'], acceptUnlinked: true }))).status).toBe(403)
+    expect(db.control.create).not.toHaveBeenCalled()
+
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, controlePermanentActive: true, secondeLigneActive: true })
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.items.some((i: { kind: string }) => i.kind === 'CONTROL')).toBe(true)
+    const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.iam', 'core.control.access-review'] }))
+    expect(res.status).toBe(201)
+    const created = db.control.create.mock.calls[0][0].data
+    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.2', processusId: 'id-core.process.digital.iam' })
+    expect(created).not.toHaveProperty('responsable'); expect(created).not.toHaveProperty('executions')
+  })
+  it('contrôles-types : refusés à un rôle sans droit de définition 2ᵉ ligne', async () => {
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, controlePermanentActive: true, secondeLigneActive: true })
+    auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.control.access-review'], acceptUnlinked: true }))).status).toBe(403)
+    expect(db.control.create).not.toHaveBeenCalled()
   })
 })
