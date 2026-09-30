@@ -53,3 +53,32 @@ export function usageCriticalityGap(usage: NiveauCriticite | null, contract: Niv
   if (!usage || !contract) return false
   return RANG_CRITICITE[usage] > RANG_CRITICITE[contract]
 }
+
+// ─── Périmètre et dates de couverture d'une offre sous un contrat ────────────────────────────────────────────────────────
+export const MAX_COVERAGE_SCOPE = 2000
+export type CoverageDetail = { perimetre: string | null; dateDebut: string | null; dateFin: string | null }
+const isoDay = (v: unknown): string | null | undefined => {
+  const t = String(v ?? '').trim()
+  if (!t) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t)
+  if (!m) return undefined
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3] ? t : undefined
+}
+/** Nettoie `{ [serviceId]: { perimetre, dateDebut, dateFin } }` ; seules les offres effectivement couvertes sont retenues. */
+export function cleanCoverageDetails(raw: unknown, coveredServiceIds: readonly string[]):
+  { ok: true; value: Record<string, CoverageDetail> } | { ok: false; error: 'date_invalide' | 'dates_incoherentes' | 'perimetre_trop_long' } {
+  if (!raw || typeof raw !== 'object') return { ok: true, value: {} }
+  const out: Record<string, CoverageDetail> = {}
+  for (const id of coveredServiceIds) {
+    const d = (raw as Record<string, Record<string, unknown> | undefined>)[id]
+    if (!d || typeof d !== 'object') continue
+    const perimetre = String(d.perimetre ?? '').trim()
+    if (perimetre.length > MAX_COVERAGE_SCOPE) return { ok: false, error: 'perimetre_trop_long' }
+    const dateDebut = isoDay(d.dateDebut); const dateFin = isoDay(d.dateFin)
+    if (dateDebut === undefined || dateFin === undefined) return { ok: false, error: 'date_invalide' }
+    if (dateDebut && dateFin && dateFin < dateDebut) return { ok: false, error: 'dates_incoherentes' }
+    out[id] = { perimetre: perimetre || null, dateDebut, dateFin }
+  }
+  return { ok: true, value: out }
+}

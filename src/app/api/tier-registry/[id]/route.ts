@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     prisma.tierService.findMany({ where: { tierId: id }, select: { id: true, nom: true, typeService: true, description: true, actif: true }, orderBy: { nom: 'asc' } }),
     prisma.arrangementTic.findMany({
       where: { tierId: id, OR: [{ organizationId: ctx.orgId }, { beneficiaries: { some: { organizationId: ctx.orgId, status: 'CONFIRMED' } } }] },
-      select: { id: true, reference: true, organizationId: true, criticite: true, beneficiaries: { where: { organizationId: ctx.orgId }, select: { organizationId: true, status: true } }, servicesCouverts: { select: { id: true, tierServiceId: true } } },
+      select: { id: true, reference: true, organizationId: true, criticite: true, beneficiaries: { where: { organizationId: ctx.orgId }, select: { organizationId: true, status: true } }, servicesCouverts: { select: { id: true, tierServiceId: true, perimetre: true, dateDebut: true, dateFin: true } } },
       orderBy: { reference: 'asc' },
     }),
     prisma.tierServiceUsage.findMany({
@@ -48,6 +48,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       const beneficiaries = benRows.filter(b => b.arrangementId === a.id).map(b => ({ organizationId: b.organizationId, nom: b.organization.nom, status: b.status }))
       const taken = new Set(beneficiaries.filter(b => b.status === 'CONFIRMED' || b.status === 'PROPOSED').map(b => b.organizationId))
       return { id: a.id, reference: a.reference, ownedHere: a.organizationId === ctx.orgId, serviceIds: a.servicesCouverts.map(cs => cs.tierServiceId),
+        // Périmètre et dates par offre : visibles seulement pour les contrats de l'organisation (jamais ceux d'un contrat groupe d'une autre).
+        details: a.organizationId === ctx.orgId ? Object.fromEntries(a.servicesCouverts.map(cs => [cs.tierServiceId, { perimetre: cs.perimetre, dateDebut: cs.dateDebut?.toISOString().slice(0, 10) ?? null, dateFin: cs.dateFin?.toISOString().slice(0, 10) ?? null }])) : {},
         beneficiaries, proposable: a.organizationId === ctx.orgId ? descendants.filter(o => !taken.has(o.id)) : [] }
     }),
     contractServices: contractServices.map(({ id: csId, arrangementId, reference, serviceId }) => ({ id: csId, arrangementId, reference, serviceId })),

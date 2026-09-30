@@ -952,6 +952,10 @@ model TierContractService {
   tierServiceId  String
   tierService    TierService @relation(fields: [tierServiceId], references: [id], onDelete: Restrict)
   usages         TierServiceUsage[]
+  // Périmètre couvert et dates propres à cette offre sous ce contrat (facultatifs ; cf. lib/tier-offers.ts).
+  perimetre      String? @db.Text
+  dateDebut      DateTime?
+  dateFin        DateTime?
 
   @@unique([arrangementId, tierServiceId])
   @@index([tierServiceId])

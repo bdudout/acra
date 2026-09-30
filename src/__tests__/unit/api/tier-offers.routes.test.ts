@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   tierOrgFindUnique: vi.fn(), tierFindUnique: vi.fn(),
   svcFindMany: vi.fn(), svcFindUnique: vi.fn(), svcCreate: vi.fn(), svcUpdate: vi.fn(),
   arrFindMany: vi.fn(), arrFindFirst: vi.fn(),
-  tcsFindMany: vi.fn(), tcsCreateMany: vi.fn(), tcsDeleteMany: vi.fn(),
+  tcsFindMany: vi.fn(), tcsCreateMany: vi.fn(), tcsDeleteMany: vi.fn(), tcsUpdateMany: vi.fn(),
   usageFindMany: vi.fn(), usageFindUnique: vi.fn(), usageDelete: vi.fn(), usageGroupBy: vi.fn(),
   procFindMany: vi.fn(), tx: vi.fn(), benFindMany: vi.fn(), orgFindUnique: vi.fn(), orgFindMany: vi.fn(),
 }))
@@ -20,7 +20,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   tierOrganization: { findUnique: m.tierOrgFindUnique }, tier: { findUnique: m.tierFindUnique },
   tierService: { findMany: m.svcFindMany, findUnique: m.svcFindUnique, create: m.svcCreate, update: m.svcUpdate },
   arrangementTic: { findMany: m.arrFindMany, findFirst: m.arrFindFirst },
-  tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany },
+  tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany, updateMany: m.tcsUpdateMany },
   tierServiceUsage: { findMany: m.usageFindMany, findUnique: m.usageFindUnique, delete: m.usageDelete, groupBy: m.usageGroupBy },
   processus: { findMany: m.procFindMany }, $transaction: m.tx,
   tierContractBeneficiary: { findMany: m.benFindMany }, organization: { findUnique: m.orgFindUnique, findMany: m.orgFindMany },
@@ -46,7 +46,7 @@ beforeEach(() => {
   m.usageGroupBy.mockResolvedValue([]); m.benFindMany.mockResolvedValue([]); m.orgFindMany.mockResolvedValue([]); m.orgFindUnique.mockResolvedValue({ id: 'fil1', path: '/grp/fil1/' })
   m.svcCreate.mockImplementation(async ({ data }: { data: object }) => ({ id: 's-new', ...data }))
   m.svcUpdate.mockImplementation(async ({ data }: { data: object }) => ({ id: 's1', ...data }))
-  m.tx.mockImplementation(async (fn: (tx: unknown) => unknown) => fn({ tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany }, tierServiceUsage: { groupBy: m.usageGroupBy } }))
+  m.tx.mockImplementation(async (fn: (tx: unknown) => unknown) => fn({ tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany, updateMany: m.tcsUpdateMany }, tierServiceUsage: { groupBy: m.usageGroupBy } }))
 })
 
 describe('GET /api/tier-registry/[id] — fiche d’un tiers', () => {
@@ -147,6 +147,17 @@ describe('PUT /api/tier-registry/contracts/[arrangementId]/services — offres c
     expect(res.status).toBe(200)
     expect(m.tcsCreateMany.mock.calls[0][0].data).toEqual([{ arrangementId: 'a1', tierServiceId: 's2' }])
     expect(m.tcsDeleteMany.mock.calls[0][0].where).toMatchObject({ arrangementId: 'a1', tierServiceId: { in: ['s1'] } })
+  })
+  it('périmètre et dates par offre : enregistrés pour les offres couvertes ; date invalide ou fin avant début : 400 sans écriture', async () => {
+    const ok = await SET_COVERAGE(req({ serviceIds: ['s1'], details: { s1: { perimetre: 'Paie FR', dateDebut: '2025-01-01', dateFin: '2026-01-01' } } }, 'PUT'), p({ arrangementId: 'a1' }))
+    expect(ok.status).toBe(200)
+    const call = m.tcsUpdateMany.mock.calls[0][0]
+    expect(call.where).toEqual({ arrangementId: 'a1', tierServiceId: 's1' })
+    expect(call.data.perimetre).toBe('Paie FR'); expect(call.data.dateDebut.toISOString()).toBe('2025-01-01T00:00:00.000Z')
+    m.tcsUpdateMany.mockClear()
+    expect((await SET_COVERAGE(req({ serviceIds: ['s1'], details: { s1: { dateDebut: 'x' } } }, 'PUT'), p({ arrangementId: 'a1' }))).status).toBe(400)
+    expect((await SET_COVERAGE(req({ serviceIds: ['s1'], details: { s1: { dateDebut: '2026-02-01', dateFin: '2026-01-01' } } }, 'PUT'), p({ arrangementId: 'a1' }))).status).toBe(400)
+    expect(m.tcsUpdateMany).not.toHaveBeenCalled()
   })
   it('offre d’un autre tiers : 400 ; contrat sans tiers ou d’une autre organisation : 404', async () => {
     expect((await SET_COVERAGE(req({ serviceIds: ['sAutre'] }, 'PUT'), p({ arrangementId: 'a1' }))).status).toBe(400)

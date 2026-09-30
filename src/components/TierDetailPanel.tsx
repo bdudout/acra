@@ -12,7 +12,7 @@ type Usage = { id: string; useCase: string; processusNom: string | null; contrac
 type Service = { id: string; nom: string; typeService: string; actif: boolean; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
-  contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[]; beneficiaries?: { organizationId: string; nom: string; status: 'PROPOSED' | 'CONFIRMED' | 'REJECTED' }[]; proposable?: { id: string; nom: string }[] }[]
+  contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[]; details?: Record<string, { perimetre: string | null; dateDebut: string | null; dateFin: string | null }>; beneficiaries?: { organizationId: string; nom: string; status: 'PROPOSED' | 'CONFIRMED' | 'REJECTED' }[]; proposable?: { id: string; nom: string }[] }[]
   contractServices: { id: string; arrangementId: string; reference: string; serviceId: string }[]
   services: Service[]
 }
@@ -29,6 +29,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   const [busy, setBusy] = useState(false)
   const [offer, setOffer] = useState({ nom: '', typeService: 'AUTRE' })
   const [coverage, setCoverage] = useState<Record<string, string[]>>({})
+  const [covDetails, setCovDetails] = useState<Record<string, Record<string, { perimetre: string; dateDebut: string; dateFin: string }>>>({})
   const [proposeTo, setProposeTo] = useState<Record<string, string>>({})
   const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string; criticite: string }>>({})
 
@@ -39,6 +40,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       const d = await res.json() as Detail
       setDetail(d)
       setCoverage(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, k.serviceIds])))
+      setCovDetails(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, Object.fromEntries(Object.entries(k.details ?? {}).map(([sid, v]) => [sid, { perimetre: v.perimetre ?? '', dateDebut: v.dateDebut ?? '', dateFin: v.dateFin ?? '' }]))])))
       if (d.isAdmin) { const p = await fetch('/api/processus').then(r => r.ok ? r.json() : null).catch(() => null); setProcesses(p?.processus ?? []) }
     } catch { /* fiche indisponible */ }
   }, [tierId])
@@ -145,7 +147,18 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
               </label>
             ))}
           </div>
-          <button type="button" className="btn-secondary mt-2 text-xs" disabled={busy} onClick={() => void run(() => send(`/api/tier-registry/contracts/${k.id}/services`, 'PUT', { serviceIds: coverage[k.id] ?? [] }))}>{c.saveCoverage}</button>
+          {activeOffers.filter(s => (coverage[k.id] ?? []).includes(s.id)).map(s => {
+            const d = covDetails[k.id]?.[s.id] ?? { perimetre: '', dateDebut: '', dateFin: '' }
+            const set = (patch: Partial<typeof d>) => setCovDetails(cv => ({ ...cv, [k.id]: { ...(cv[k.id] ?? {}), [s.id]: { ...d, ...patch } } }))
+            return (
+              <div key={s.id} className="mt-2 grid gap-2 text-xs text-gray-700 dark:text-gray-200 sm:grid-cols-[2fr_1fr_1fr]">
+                <label>{c.scopeOf.replace('{name}', s.nom)}<input aria-label={c.scopeOf.replace('{name}', s.nom)} className="input mt-1 block w-full text-sm" value={d.perimetre} maxLength={2000} onChange={e => set({ perimetre: e.target.value })} /></label>
+                <label>{c.coverageStart}<input type="date" aria-label={`${c.coverageStart} — ${s.nom}`} className="input mt-1 block w-full text-sm" value={d.dateDebut} onChange={e => set({ dateDebut: e.target.value })} /></label>
+                <label>{c.coverageEnd}<input type="date" aria-label={`${c.coverageEnd} — ${s.nom}`} className="input mt-1 block w-full text-sm" value={d.dateFin} onChange={e => set({ dateFin: e.target.value })} /></label>
+              </div>
+            )
+          })}
+          <button type="button" className="btn-secondary mt-2 text-xs" disabled={busy} onClick={() => void run(() => send(`/api/tier-registry/contracts/${k.id}/services`, 'PUT', { serviceIds: coverage[k.id] ?? [], details: covDetails[k.id] ?? {} }))}>{c.saveCoverage}</button>
         </fieldset>
       ))}
 

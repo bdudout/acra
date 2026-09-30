@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { tierContext } from '@/lib/tier-registry.server'
-import { planCoverageChange } from '@/lib/tier-offers'
+import { cleanCoverageDetails, planCoverageChange } from '@/lib/tier-offers'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +18,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ arra
   if (!arrangement?.tierId) return NextResponse.json({ error: 'not_found' }, { status: 404 })
   const body = await req.json().catch(() => ({}))
   const requested: string[] = Array.isArray(body.serviceIds) ? body.serviceIds.filter((x: unknown): x is string => typeof x === 'string').slice(0, 100) : []
+  const details = cleanCoverageDetails(body.details, requested)
+  if (!details.ok) return NextResponse.json({ error: details.error }, { status: 400 })
   const offers = await prisma.tierService.findMany({ where: { tierId: arrangement.tierId }, select: { id: true } })
   const offerIds = new Set(offers.map(o => o.id))
   if (requested.some(id => !offerIds.has(id))) return NextResponse.json({ error: 'service_not_of_tier' }, { status: 400 })
@@ -31,6 +33,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ arra
     if (plan.blocked.length) return { blocked: plan.blocked }
     if (plan.toAdd.length) await tx.tierContractService.createMany({ data: plan.toAdd.map(tierServiceId => ({ arrangementId, tierServiceId })) })
     if (plan.toRemove.length) await tx.tierContractService.deleteMany({ where: { arrangementId, tierServiceId: { in: plan.toRemove } } })
+    // Périmètre et dates : écrits pour les offres qui restent couvertes (une offre sans détail n'est pas modifiée).
+    for (const [serviceId, d] of Object.entries(details.value)) {
+      await tx.tierContractService.updateMany({ where: { arrangementId, tierServiceId: serviceId }, data: {
+        perimetre: d.perimetre, dateDebut: d.dateDebut ? new Date(`${d.dateDebut}T00:00:00.000Z`) : null, dateFin: d.dateFin ? new Date(`${d.dateFin}T00:00:00.000Z`) : null,
+      } })
+    }
     return { plan }
   })
   if ('blocked' in result) return NextResponse.json({ error: 'has_usages', blocked: result.blocked }, { status: 409 })
