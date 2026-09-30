@@ -125,6 +125,9 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canPilotage) pilotage.push('pilotage')
   // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
   if (canPilotage && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
+  // Même parcours métier : les KRI alimentent le RAD. Le droit reste identique
+  // à celui qu'ils avaient dans Contrôle & audit (module actif, hors 1ʳᵉ ligne).
+  if (modules.kri && !firstLineOnly) pilotage.push('kri')
   entries.push(groupOrLink('pilotage', pilotage))
 
   // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
@@ -132,33 +135,38 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.registre && !firstLineOnly) analyses.push('cartographie')
   entries.push(groupOrLink('analyses', analyses))
 
-  // 3. Registre de risques (cartographie GRC) : registre, campagnes RCSA, processus.
-  if (modules.registre && !firstLineOnly) {
-    const registre: NavKey[] = ['registre', 'campagnes']
-    if (canGererProcessus) registre.push('processus')
-    entries.push(groupOrLink('registre', registre))
+  // 3. Registres : risques et arrangements TIC restent des objets distincts,
+  // rapprochés seulement dans la navigation. Le module réglementaire peut être
+  // actif seul : son lien doit rester atteignable sans registre de risques.
+  if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
+    const registres: NavKey[] = []
+    if (modules.registre) {
+      registres.push('registre', 'campagnes')
+      if (canGererProcessus) registres.push('processus')
+    }
+    if (modules.reglementaire) registres.push('registreTic')
+    entries.push(groupOrLink('registre', registres))
   }
 
   // 4. Contrôle & audit (les 3 lignes de défense) : incidents (1ʳᵉ ligne, ouvert à
-  //    tous), contrôle permanent + campagnes + KRI (2ᵉ ligne), audit interne (3ᵉ ligne).
+  //    tous), contrôle permanent + campagnes (2ᵉ ligne), audit interne (3ᵉ ligne).
   const controleAudit: NavKey[] = []
   if (modules.incidents) controleAudit.push('incidents')
   if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
-  if (modules.kri && !firstLineOnly) controleAudit.push('kri')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
   // Suivi régulateur (plans d'action régulateurs) : rattaché au contrôle & audit
   // (constats du superviseur + remédiation), aux côtés des 3 lignes de défense.
   if (modules.reglementaire && !firstLineOnly) controleAudit.push('suiviRegulateur')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
-  // 5. Conformité & réglementaire : conformité, référentiels, documents, dérogations,
-  //    RGPD + reporting DORA (art. 19), registre TIC (art. 28).
+  // 5. Conformité & réglementaire : conformité, référentiels, documents,
+  //    dérogations, RGPD et reporting DORA ; le registre TIC est dans Registres.
   const confReg: NavKey[] = [...gouvernance]
   // Reporting réglementaire et rapports de gestion (éditions figées, lot L2) : rattaché à la
   // conformité / au réglementaire, mêmes rôles que le cockpit.
   if (canPilotage) confReg.push('rapports')
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
-  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', 'registreTic', ...(canPilotage ? ['testsResilience' as const] : []))
+  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }

@@ -110,6 +110,8 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Cockpits** | `grc-cockpit`, `comite-pack`, `ras-export`, `donut`, `sr-ov-radar`, `most-frequent` |
 | **UI transverse** | `table-sort`, `table-filter` (tri/filtre « façon tableur »), `format`, `form-defaults`, `contrast-color`, `theme*`, `i18n/`, `useAutoSave`, `useAddedFeedback` |
 
+La navbar est construite par `navigation.buildNav` (rôle + modules effectifs), puis rendue par `Navbar` sur desktop et mobile avec les mêmes groupes : KRI dans Pilotage avec RAS/RAD ; registre des risques et registre TIC sous Registres, sans fusion de leurs données. Pour publier des risques d'analyse dans le registre, `api/risk-items/publish` verrouille la paire organisation/analyse dans une transaction PostgreSQL avant de lire et créer les `RiskItem`. `risk-publication.indexPublishedRisks` détecte une provenance déjà dupliquée ; la route renvoie 409 sans écriture dans ce cas. Une contrainte d'unicité en base reste à poser après diagnostic des doublons historiques.
+
 ---
 
 ## 5. Routes API — patterns d'authentification

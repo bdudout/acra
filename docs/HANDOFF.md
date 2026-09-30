@@ -6,6 +6,13 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (31) — navbar GRC et publication du registre (TDD)
+
+- Navigation : KRI rapproché de l’appétence RAS/RAD dans Pilotage ; registre TIC déplacé dans « Registres » auprès du registre des risques, sans fusion des objets ni extension des droits ; les deux liens restent visibles si seul leur module est actif. « Risques des analyses » distingue la page des risques de celle du registre. Groupes titrés aussi sur mobile. Libellés dans les 5 langues.
+- Publication Analyse → RiskItem : transaction PostgreSQL avec verrou par organisation/analyse avant lecture/création, empêchant deux appels simultanés à cette route de créer la même provenance. Une provenance déjà dupliquée renvoie 409 sans écriture ; message explicatif dans la cartographie (5 langues). La mise à jour idempotente préserve le statut du registre.
+- TDD : nouveaux tests navigation, mobile, détection des doublons, ordre verrou → lecture → création, refus des doublons et republication. Tests ciblés 31/31 ; `npx tsc --noEmit -p tsconfig.json` vert ; `npm test` 363 fichiers / 2 942 tests verts ; `npm run i18n:check` vert ; `npm run build` vert (avec accès réseau pour Inter). `git diff --check` vert.
+- Limites : pas de contrainte UNIQUE en base tant que les doublons historiques n’ont pas été diagnostiqués ; le verrou protège cette route, pas une écriture parallèle provenant d’un autre chemin. Docker Desktop absent (`open -a Docker` échoue, socket Docker introuvable) ; recette PostgreSQL et navigateur authentifié non effectuées. La base n’a été ni lue ni modifiée. Le disque avait atteint 100 % pendant le premier build/test ; seuls les caches générés `.next/cache` et `.next/dev` ont été supprimés, libérant environ 5,8 Go.
+
 ## 2026-09-30 (30) — export Word : matrice des risques ; Windows/WSL
 
 - `lib/risk-matrix-grid.ts` (modèle de matrice depuis la config + grille imprimable, partagé Word/PowerPoint) ; `analyse-docx.ts` : section « Matrice des risques » (brute, puis après traitement si résiduel), libellés ×5. Rendu vérifié en PDF (LibreOffice).

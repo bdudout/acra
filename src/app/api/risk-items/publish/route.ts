@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
-import { mapAnalyseRisques } from '@/lib/risk-publication'
+import { indexPublishedRisks, mapAnalyseRisques } from '@/lib/risk-publication'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -83,33 +83,41 @@ export async function POST(req: NextRequest) {
 
   const items = mapAnalyseRisques(analyse.risques, { id: analyse.id, nom: analyse.nom, organisation: analyse.organisation })
 
-  // Rapprochement en UN passage (au lieu d'un findFirst par risque) : on récupère
-  // en une requête les items déjà publiés pour cette analyse, puis on partitionne
-  // en créations (createMany) / mises à jour (parallélisées). Idempotent.
+  // Verrou transactionnel par organisation + analyse : deux publications
+  // concurrentes ne peuvent plus toutes deux lire « source absente » avant
+  // createMany. Les doublons historiques éventuels sont signalés, pas écrasés.
   const sourceIds = items.map(i => i.sourceId).filter((s): s is string => !!s)
-  const existants = sourceIds.length
-    ? await prisma.riskItem.findMany({
-        where: { organizationId: orgId, provenance: 'ACRA', sourceType: 'analyse', sourceId: { in: sourceIds } },
-        select: { id: true, sourceId: true },
-      })
-    : []
-  const idParSource = new Map(existants.map(e => [e.sourceId, e.id]))
-  const aCreer = items.filter(i => !idParSource.has(i.sourceId))
-  const aMettreAJour = items.filter(i => idParSource.has(i.sourceId))
+  const result = await prisma.$transaction(async (tx) => {
+    // Le verrou est libéré automatiquement au commit/rollback, y compris en cas
+    // d'erreur. Deux entiers hashés ne servent qu'à sélectionner la clé du verrou.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${orgId}), hashtext(${analyseId}))::text`
+    const existants = sourceIds.length
+      ? await tx.riskItem.findMany({
+          where: { organizationId: orgId, provenance: 'ACRA', sourceType: 'analyse', sourceId: { in: sourceIds } },
+          select: { id: true, sourceId: true },
+        })
+      : []
+    const { idParSource, duplicateSourceIds } = indexPublishedRisks(existants)
+    if (duplicateSourceIds.length) return { conflict: true as const, crees: 0, maj: 0 }
 
-  if (aCreer.length > 0) {
-    await prisma.riskItem.createMany({ data: aCreer.map(item => ({ ...item, organizationId: orgId })) })
-  }
-  // On rafraîchit la cotation/intitulé mais on PRÉSERVE le statut décidé dans le registre.
-  await Promise.all(aMettreAJour.map(item => prisma.riskItem.update({
-    where: { id: idParSource.get(item.sourceId)! },
-    data: {
-      intitule: item.intitule, description: item.description, entite: item.entite,
-      graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
-      graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
-    },
-  })))
-  const crees = aCreer.length, maj = aMettreAJour.length
+    const aCreer = items.filter(i => !idParSource.has(i.sourceId))
+    const aMettreAJour = items.filter(i => idParSource.has(i.sourceId))
+    if (aCreer.length) {
+      await tx.riskItem.createMany({ data: aCreer.map(item => ({ ...item, organizationId: orgId })) })
+    }
+    // Rafraîchir les cotations, en préservant le statut décidé dans le registre.
+    await Promise.all(aMettreAJour.map(item => tx.riskItem.update({
+      where: { id: idParSource.get(item.sourceId)! },
+      data: {
+        intitule: item.intitule, description: item.description, entite: item.entite,
+        graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
+        graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
+      },
+    })))
+    return { conflict: false as const, crees: aCreer.length, maj: aMettreAJour.length }
+  }, { timeout: 30_000 })
+  if (result.conflict) return NextResponse.json({ error: 'publication_source_dupliquee' }, { status: 409 })
+  const { crees, maj } = result
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'publish', analyseId, crees, maj } })
   return NextResponse.json({ ok: true, crees, maj, total: items.length })
 }

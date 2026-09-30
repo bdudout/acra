@@ -66,3 +66,26 @@ export function mapRisqueToRiskItem(risque: AcraRisqueSource, analyse: AcraAnaly
 export function mapAnalyseRisques(risques: AcraRisqueSource[], analyse: AcraAnalyseSource): PublishedRiskItem[] {
   return risques.map(r => mapRisqueToRiskItem(r, analyse))
 }
+
+/** Indexe les publications existantes ; une provenance ambiguë doit être traitée manuellement, jamais écrasée au hasard. */
+export function indexPublishedRisks(rows: Array<{ id: string; sourceId: string | null }>): {
+  idParSource: Map<string, string>
+  duplicateSourceIds: string[]
+} {
+  const idParSource = new Map<string, string>()
+  const duplicates = new Set<string>()
+  for (const row of rows) {
+    if (!row.sourceId) continue
+    if (idParSource.has(row.sourceId)) duplicates.add(row.sourceId)
+    else idParSource.set(row.sourceId, row.id)
+  }
+  return { idParSource, duplicateSourceIds: [...duplicates] }
+}
+
+export function publicationFailureMessage(
+  status: number,
+  error: unknown,
+  messages: { general: string; duplicate: string },
+): string {
+  return status === 409 && error === 'publication_source_dupliquee' ? messages.duplicate : messages.general
+}

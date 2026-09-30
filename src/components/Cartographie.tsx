@@ -19,6 +19,7 @@ import { buildRiskMatrixModel, type ScaleConfig } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
 import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
 import { synthetiserAppetit, type AppetitConfig } from '@/lib/appetit'
+import { publicationFailureMessage } from '@/lib/risk-publication'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 /** Ajoute un canal alpha (hex 2 caractères) à une couleur hex #rrggbb. */
@@ -146,7 +147,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
     const data = await res.json().catch(() => ({}))
     setPublishing(null)
     if (res.ok) { setFlash(c.publishOk.replace('{crees}', String(data.crees)).replace('{maj}', String(data.maj))); reload() }
-    else setFlash(c.publishErr)
+    else setFlash(publicationFailureMessage(res.status, data.error, { general: c.publishErr, duplicate: c.publishConflict }))
   }
 
   // Dimensions de la grille = échelles configurées (gravité en lignes haut→bas, vraisemblance en colonnes)
