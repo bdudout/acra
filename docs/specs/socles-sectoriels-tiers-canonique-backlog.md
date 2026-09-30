@@ -1,6 +1,6 @@
 # Expression de besoin — socles sectoriels, tiers uniques et écarts des modules
 
-Statut : cadrage proposé, non implémenté · 30 septembre 2026
+Statut : cadrage validé, **lot 1 livré en grande partie** (voir § 8) et lot 2 amorcé (schéma + règles + routes, sans écran) · mis à jour le 30 septembre 2026
 
 ## 1. Décisions de produit recherchées
 
@@ -280,3 +280,29 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
 3. **Décision actée** : l'ADMIN du groupe propose la qualité de bénéficiaire
    d'un contrat groupe ; un ADMIN directement membre de la filiale confirme ou
    refuse. Avant confirmation, le contrat ne donne aucun accès à la filiale.
+
+## 8. Avancement et écarts constatés (recette du 30 septembre 2026)
+
+### 8.1 Lot 1 — socle utilisable : livré et recetté sur PostgreSQL
+
+| Exigence (§ A) | État | Preuve |
+|---|---|---|
+| Secteurs de l'organisation (A.1 pt 1) | **Livré** : jusqu'à trois secteurs, le premier est le principal, écran dans /configuration › « Référentiels et options » (ADMIN), `GET/PUT /api/catalogue-suggestions/sectors`. | Recette navigateur + base : `["SAAS","SANTE"]` enregistré, le secteur principal est proposé par défaut. |
+| Suggestions sélectionnables, sans création automatique (A.1 pt 2-3, A.2) | **Livré** pour *processus* et *registre des risques* (8 secteurs + socle transversal, libellés ×5). Aperçu sans écriture, « déjà importé », sélection, avertissement si le processus parent n'est pas sélectionné (import sans lien, jamais de lien inventé). | 2 processus puis 1 risque créés ; `statut = IDENTIFIE`, **aucune cotation** ; 2ᵉ ouverture : lignes déjà importées non sélectionnables. |
+| Provenance stable et idempotence (A.3) | **Livré** : `catalogueKey` + `catalogueVersion`, index unique `(organisation, clé)`, verrou consultatif transactionnel. | Clés `core.process.govern`, `core.risk.ransomware` en base. |
+| **Import de fichier de processus** (A.1 pt 4, A.4 critère 3) | **Livré** : CSV/XLSX, aperçu ligne à ligne, parents par référence ou par nom, parent introuvable / ambigu, cycle, auto-parentage, doublon de référence, nom manquant ou trop long ; lignes valides importables ; doublon de nom = *possible* à confirmer (jamais de fusion) ; clé d'origine `import:<réf>` ⇒ réimport idempotent, liens et noms saisis conservés. | Fichier de 8 lignes : 3 créées avec hiérarchie, 4 rejetées expliquées, 1 vide ignorée ; réimport : 3 « déjà importées », 0 créée. |
+| Autres modules (contrôles, audit, KRI, incidents, RoPA, registre TIC — A.2) | **Non fait** (lot 3). | — |
+| Diff de version d'un pack (A.1 pt 5) | **Non fait** : seule la version (`1.0`) est tracée. | — |
+
+**Décisions prises pendant la mise en œuvre** (à confirmer) :
+1. La création de **processus** reste réservée aux ADMIN de l'organisation (comme le CRUD existant) ; les suggestions de **risques** sont ouvertes aux rôles d'écriture du registre.
+2. Un fichier de processus peut porter sa propre référence ; sans référence, seule la règle « même nom sous le même parent » signale un doublon possible.
+3. L'import de fichier ne crée ni criticité, ni RTO/RPO, ni propriétaire inventé : seuls nom, description et propriétaire **du fichier** sont repris.
+4. Limites : 500 lignes par fichier, débit partagé avec les imports Excel (30 / 10 min).
+
+### 8.2 Écarts à traiter
+
+- **Incohérence de droits sur /configuration** : la page décide `isAdmin` d'après le rôle *de session* (`session.user.role`), alors que les API d'écriture (secteurs, processus) utilisent le rôle *effectif dans l'organisation active*. Un ADMIN d'organisation au rôle global « analyste » ne voit pas l'onglet d'options. À harmoniser (rôle effectif partout) avec un test d'accès.
+- **Contenu du catalogue** : 4 processus et 5 risques par secteur, titres seuls. Il faut des descriptions indicatives, plus d'événements-types et une **revue métier** par secteur avant diffusion (questions 1 de § 7).
+- **Niveaux d'arbre** : les suggestions de processus n'ont qu'un niveau de parent (`core.process.*`) ; prévoir des sous-processus.
+- **Lot 2** : écrans Tiers / offres / contrats / usages, liste des propositions de bénéficiaires, rapprochement et recette PostgreSQL restent à faire (§ B.3).

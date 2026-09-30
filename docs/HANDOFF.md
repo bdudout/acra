@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (35) — Claude : recette réelle du lot 1 (secteurs, suggestions, import de processus) + bug « Nouveau projet 360 »
+
+- **Bug corrigé** : le menu « Nouveau projet 360 » ouvre désormais `/projets?nouveau=1` (formulaire de projet déjà ouvert) au lieu d'une analyse cyber.
+- **Recette sur PostgreSQL** (Docker relancé, migrations dont `20260930190000_sector_suggestions` appliquées) via `e2e/local-socles.spec.ts` (exclu de git) : 5/5 verts — secteurs, suggestions processus + risque (provenance, pas de cotation, avertissement « sans lien »), import de fichier (hiérarchie, cycle, parent inconnu, nom manquant, réimport idempotent), menu projet 360.
+- Spec mise à jour (§ 8 : avancement, décisions, écarts). Écart noté : /configuration décide `isAdmin` d'après le rôle de session et non le rôle effectif dans l'organisation.
+- Vérifié : `tsc` 0, `npm test` 3018, `i18n:check`, build OK.
+- Prochains pas : harmoniser l'`isAdmin` de /configuration ; enrichir le contenu du catalogue (descriptions, sous-processus, revue métier) ; lot 2 (écrans Tiers).
+
 ## 2026-09-30 (34) — Claude : socles sectoriels, lot 1 poursuivi (EN PAUSE — non poussé)
 
 - Repris et commités les travaux non commités de Codex : correctifs d'audit d'accès (`8156e44`) et suggestions de socle sectoriel (`d18467b`).
