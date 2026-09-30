@@ -29,3 +29,21 @@ describe('contrôles-types du catalogue', () => {
     expect(alone.unlinked).toEqual([{ key: 'core.control.access-review', dependencyKey: 'core.process.digital.iam' }])
   })
 })
+
+describe('KRI candidats du catalogue', () => {
+  it('propose des indicateurs transversaux sans aucun seuil ni valeur, rattachés à un processus, avec unité localisée et fréquence valide', () => {
+    for (const locale of LOCALES) {
+      const items = listSectorSuggestions(null, locale)
+      const processes = new Set(items.filter(i => i.kind === 'PROCESS').map(i => i.key))
+      const kris = items.filter(i => i.kind === 'KRI')
+      expect(kris.length).toBeGreaterThanOrEqual(8)
+      for (const x of kris) {
+        expect(x.title.trim(), x.key).not.toBe(''); expect(x.unite?.trim(), x.key).toBeTruthy()
+        expect(x.key).toMatch(/^core\.kri\./); expect(processes.has(x.processKey!)).toBe(true)
+        expect(['HAUSSE', 'BAISSE']).toContain(x.sens)
+        expect(['MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL']).toContain(x.periodicite)
+        expect(x).not.toHaveProperty('seuilAlerte'); expect(x).not.toHaveProperty('valeur')
+      }
+    }
+  })
+})

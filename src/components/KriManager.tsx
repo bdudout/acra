@@ -17,7 +17,7 @@ type KriTendance = 'AMELIORATION' | 'DEGRADATION' | 'STABLE' | 'INCONNU'
 
 interface KriRow {
   id: string; intitule: string; description: string | null; unite: string | null
-  sens: 'HAUSSE' | 'BAISSE'; seuilAlerte: number; seuilCritique: number; frequence: string
+  sens: 'HAUSSE' | 'BAISSE'; seuilAlerte: number | null; seuilCritique: number | null; frequence: string
   responsable: string | null; taxonomieCode: string | null; riskItemId: string | null; riskIntitule: string | null; actif: boolean
   derniereValeur: number | null; derniereMesureLe: string | null; statut: KriStatut; tendance: KriTendance
 }
@@ -77,7 +77,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
     setEditing(row.id); setShowForm(true); setErr(null)
     setForm({
       intitule: row.intitule, description: row.description ?? '', unite: row.unite ?? '', sens: row.sens,
-      seuilAlerte: String(row.seuilAlerte), seuilCritique: String(row.seuilCritique), frequence: row.frequence,
+      seuilAlerte: row.seuilAlerte == null ? '' : String(row.seuilAlerte), seuilCritique: row.seuilCritique == null ? '' : String(row.seuilCritique), frequence: row.frequence,
       responsable: row.responsable ?? '', taxonomieCode: row.taxonomieCode ?? '', riskItemId: row.riskItemId ?? '',
     })
   }
@@ -212,6 +212,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                     {k.sens}: {k.sensLabels[row.sens]} · {k.seuilAlerte} {fmt(row.seuilAlerte)} · {k.seuilCritique} {fmt(row.seuilCritique)}
                     {row.responsable ? ` · ${row.responsable}` : ''}
+                    {(row.seuilAlerte == null || row.seuilCritique == null) && <span role="status" className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">{k.thresholdsTbd}</span>}
                   </p>
                   {canMeasure && (
                     <div className="flex flex-wrap items-center gap-2 mb-3">

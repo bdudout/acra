@@ -10,15 +10,18 @@ type Localized = Record<CatalogueLocale, string>
 type CatalogueItem = {
   key: string
   sector: SectorCode | 'TRANSVERSAL'
-  kind: 'PROCESS' | 'RISK' | 'CONTROL'
+  kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI'
   title: Localized
   parentKey?: string
   processKey?: string
   // Contrôles seulement : périodicité et typologie SUGGÉRÉES (modifiables) ; aucune exécution ni efficacité n'est jamais créée.
   periodicite?: 'HEBDOMADAIRE' | 'MENSUEL' | 'TRIMESTRIEL' | 'SEMESTRIEL' | 'ANNUEL'
   controlType?: 'PREVENTIF' | 'DETECTIF' | 'CORRECTIF'
+  // KRI seulement : unité, sens de dégradation et fréquence SUGGÉRÉS ; aucun seuil, aucune valeur mesurée.
+  unite?: Localized
+  sens?: 'HAUSSE' | 'BAISSE'
 }
-export type SectorSuggestion = Omit<CatalogueItem, 'title'> & { title: string; packVersion: string }
+export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite'> & { title: string; unite?: string; packVersion: string }
 
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
 const p = (key: string, sector: CatalogueItem['sector'], title: Localized, parentKey?: string): CatalogueItem => ({ key, sector, kind: 'PROCESS', title, parentKey })
@@ -78,6 +81,25 @@ const TRANSVERSAL_CONTROLS: CatalogueItem[] = [
   c('core.control.payment-validation', l('Contrôle par échantillon de la double validation des paiements', 'Sample check of dual approval of payments', 'Stichprobenprüfung der doppelten Zahlungsfreigabe', 'Control por muestreo de la doble validación de los pagos', 'Controllo a campione della doppia autorizzazione dei pagamenti'), 'core.process.finance.payments', 'MENSUEL', 'PREVENTIF'),
   c('core.control.supplier-clauses', l('Vérification des clauses de sécurité des contrats fournisseurs', 'Check of security clauses in supplier contracts', 'Prüfung der Sicherheitsklauseln in Lieferantenverträgen', 'Verificación de las cláusulas de seguridad de los contratos con proveedores', 'Verifica delle clausole di sicurezza nei contratti con i fornitori'), 'core.process.buy.sourcing', 'ANNUEL', 'PREVENTIF'),
   c('core.control.supplier-review', l('Revue de performance des fournisseurs essentiels', 'Performance review of essential suppliers', 'Leistungsbewertung wesentlicher Lieferanten', 'Revisión del desempeño de los proveedores esenciales', 'Revisione delle prestazioni dei fornitori essenziali'), 'core.process.buy.review', 'ANNUEL', 'DETECTIF'),
+]
+
+const k = (key: string, title: Localized, processKey: string, unite: Localized, sens: 'HAUSSE' | 'BAISSE', periodicite: NonNullable<CatalogueItem['periodicite']>): CatalogueItem =>
+  ({ key, sector: 'TRANSVERSAL', kind: 'KRI', title, processKey, unite, sens, periodicite })
+const pct = l('%', '%', '%', '%', '%')
+const nb = l('nombre', 'count', 'Anzahl', 'número', 'numero')
+const jours = l('jours', 'days', 'Tage', 'días', 'giorni')
+
+// Indicateurs candidats : seuils À DÉFINIR par l'organisation (appétence), aucune valeur mesurée, aucun voyant par défaut.
+const TRANSVERSAL_KRIS: CatalogueItem[] = [
+  k('core.kri.overdue-patches', l('Vulnérabilités critiques non corrigées dans les délais', 'Critical vulnerabilities not fixed on time', 'Kritische Schwachstellen nicht fristgerecht behoben', 'Vulnerabilidades críticas no corregidas a tiempo', 'Vulnerabilità critiche non corrette in tempo'), 'core.process.digital.patch', nb, 'HAUSSE', 'MENSUEL'),
+  k('core.kri.leaver-accounts', l('Comptes actifs de collaborateurs partis', 'Active accounts of departed staff', 'Aktive Konten ausgeschiedener Mitarbeiter', 'Cuentas activas de personal saliente', 'Account attivi di personale uscito'), 'core.process.digital.iam', nb, 'HAUSSE', 'MENSUEL'),
+  k('core.kri.privileged-accounts', l('Comptes à privilèges non revus depuis plus d’un trimestre', 'Privileged accounts not reviewed for over a quarter', 'Seit über einem Quartal nicht überprüfte privilegierte Konten', 'Cuentas con privilegios sin revisar desde hace más de un trimestre', 'Account con privilegi non rivisti da oltre un trimestre'), 'core.process.digital.iam', nb, 'HAUSSE', 'TRIMESTRIEL'),
+  k('core.kri.backup-success', l('Taux de sauvegardes réussies', 'Backup success rate', 'Erfolgsquote der Sicherungen', 'Tasa de copias de seguridad correctas', 'Tasso di backup riusciti'), 'core.process.digital.backup', pct, 'BAISSE', 'MENSUEL'),
+  k('core.kri.restore-age', l('Ancienneté du dernier test de restauration', 'Age of the last restoration test', 'Alter des letzten Wiederherstellungstests', 'Antigüedad de la última prueba de restauración', 'Anzianità dell’ultimo test di ripristino'), 'core.process.digital.backup', jours, 'HAUSSE', 'MENSUEL'),
+  k('core.kri.security-incidents', l('Incidents de sécurité déclarés', 'Reported security incidents', 'Gemeldete Sicherheitsvorfälle', 'Incidentes de seguridad notificados', 'Incidenti di sicurezza segnalati'), 'core.process.govern.crisis', nb, 'HAUSSE', 'MENSUEL'),
+  k('core.kri.phishing-click', l('Taux de clic aux simulations d’hameçonnage', 'Click rate in phishing simulations', 'Klickrate bei Phishing-Simulationen', 'Tasa de clics en simulaciones de phishing', 'Tasso di clic nelle simulazioni di phishing'), 'core.process.people.skills', pct, 'HAUSSE', 'TRIMESTRIEL'),
+  k('core.kri.supplier-without-clauses', l('Fournisseurs essentiels sans clauses de sécurité', 'Essential suppliers without security clauses', 'Wesentliche Lieferanten ohne Sicherheitsklauseln', 'Proveedores esenciales sin cláusulas de seguridad', 'Fornitori essenziali senza clausole di sicurezza'), 'core.process.buy.sourcing', nb, 'HAUSSE', 'SEMESTRIEL'),
+  k('core.kri.payment-exceptions', l('Paiements sensibles sans double validation', 'Sensitive payments without dual approval', 'Sensible Zahlungen ohne doppelte Freigabe', 'Pagos sensibles sin doble validación', 'Pagamenti sensibili senza doppia autorizzazione'), 'core.process.finance.payments', nb, 'HAUSSE', 'MENSUEL'),
 ]
 
 const SECTOR_ITEMS: CatalogueItem[] = [
@@ -179,7 +201,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('services.risk.client-access', 'SERVICES', l('Un collaborateur accède à des dossiers clients sans nécessité', 'A staff member accesses client files without need', 'Ein Mitarbeiter greift ohne Notwendigkeit auf Kundenakten zu', 'Un empleado accede a expedientes de clientes sin necesidad', 'Un collaboratore accede a pratiche dei clienti senza necessidad'), 'services.process.knowledge'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.2'
+export const CATALOGUE_PACK_VERSION = '1.3'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -189,9 +211,9 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
 
 /** Socle + pack choisi ; sans secteur, seul le socle est retourné. */
 export function listSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale): SectorSuggestion[] {
-  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS]
+  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS]
   const items = sector ? [...base, ...SECTOR_ITEMS.filter(item => item.sector === sector)] : base
-  return items.map(({ title, ...item }) => ({ ...item, title: title[locale], packVersion: CATALOGUE_PACK_VERSION }))
+  return items.map(({ title, unite, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
 export function searchSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale, query: string): SectorSuggestion[] {

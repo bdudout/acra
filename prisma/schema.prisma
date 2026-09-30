@@ -1139,8 +1139,9 @@ model Kri {
   unite         String?
   // HAUSSE (plus haut = pire) | BAISSE (plus bas = pire)
   sens          String  @default("HAUSSE")
-  seuilAlerte   Float
-  seuilCritique Float
+  // null = seuils à définir (KRI proposé par le catalogue sectoriel) : statut INCONNU tant qu'ils ne sont pas fixés.
+  seuilAlerte   Float?
+  seuilCritique Float?
   // MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL
   frequence     String  @default("MENSUEL")
   responsable   String?
@@ -1155,6 +1156,10 @@ model Kri {
 
   mesures KriMesure[]
 
+  // Provenance d'une suggestion du catalogue sectoriel ; null = saisi par l'organisation.
+  catalogueKey     String?
+  catalogueVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1162,6 +1167,7 @@ model Kri {
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
+  @@unique([organizationId, catalogueKey])
 }
 
 // Mesure périodique d'un KRI (valeur relevée à une date).

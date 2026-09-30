@@ -87,3 +87,11 @@ describe('kri — validation mesure', () => {
     expect(c.dateMesure).toBeNull()
   })
 })
+
+describe('evaluerKri — seuils non définis (KRI issu du catalogue)', () => {
+  it('sans seuil, le statut reste INCONNU même avec un relevé : jamais de voyant « vert » par défaut', () => {
+    expect(evaluerKri(12, { sens: 'HAUSSE', seuilAlerte: null, seuilCritique: null })).toBe('INCONNU')
+    expect(evaluerKri(12, { sens: 'BAISSE', seuilAlerte: 5, seuilCritique: null })).toBe('INCONNU')
+    expect(evaluerKri(12, { sens: 'HAUSSE', seuilAlerte: null, seuilCritique: 20 })).toBe('INCONNU')
+  })
+})

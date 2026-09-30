@@ -33,7 +33,8 @@ export function planSuggestionSelection(input: {
   const depth = (item: SectorSuggestion): number => { let d = 0; let parent = item.parentKey; while (parent && d < 10) { d += 1; parent = byKey.get(parent)?.parentKey } return d }
   processes.sort((a, b) => depth(a) - depth(b))
   const controls = pending.filter(item => item.kind === 'CONTROL')
-  const toCreate = [...processes, ...risks, ...controls]
+  const kris = pending.filter(item => item.kind === 'KRI')
+  const toCreate = [...processes, ...risks, ...controls, ...kris]
   const unlinked: SuggestionPlan['unlinked'] = []
   for (const item of pending) {
     const dependencyKey = item.kind === 'PROCESS' ? item.parentKey : item.processKey

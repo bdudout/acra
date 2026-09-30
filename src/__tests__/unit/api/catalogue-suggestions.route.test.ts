@@ -5,6 +5,7 @@ const db = vi.hoisted(() => ({
   process: { findMany: vi.fn(), create: vi.fn() },
   risk: { findMany: vi.fn(), create: vi.fn() },
   control: { findMany: vi.fn(), create: vi.fn() },
+  kri: { findMany: vi.fn(), create: vi.fn() },
   cfg: vi.fn(),
   queryRaw: vi.fn(), transaction: vi.fn(),
 }))
@@ -12,7 +13,7 @@ const auth = vi.hoisted(() => ({ scope: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'user1', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, $transaction: db.transaction,
+  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, $transaction: db.transaction,
 } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: auth.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: db.cfg }))
@@ -29,13 +30,15 @@ beforeEach(() => {
   db.process.findMany.mockResolvedValue([])
   db.risk.findMany.mockResolvedValue([])
   db.control.findMany.mockResolvedValue([])
+  db.kri.findMany.mockResolvedValue([])
+  db.kri.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.cfg.mockResolvedValue({ registreRisquesActive: true })
   db.control.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.queryRaw.mockResolvedValue([])
   db.process.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.risk.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.transaction.mockImplementation(async (run: (tx: unknown) => Promise<unknown>) => run({
-    processus: db.process, riskItem: db.risk, controle: db.control, $queryRaw: db.queryRaw,
+    processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, $queryRaw: db.queryRaw,
   }))
 })
 
@@ -108,7 +111,7 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.iam', 'core.control.access-review'] }))
     expect(res.status).toBe(201)
     const created = db.control.create.mock.calls[0][0].data
-    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.2', processusId: 'id-core.process.digital.iam' })
+    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.3', processusId: 'id-core.process.digital.iam' })
     expect(created).not.toHaveProperty('responsable'); expect(created).not.toHaveProperty('executions')
   })
   it('contrôles-types : refusés à un rôle sans droit de définition 2ᵉ ligne', async () => {
@@ -116,5 +119,23 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
     expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.control.access-review'], acceptUnlinked: true }))).status).toBe(403)
     expect(db.control.create).not.toHaveBeenCalled()
+  })
+
+  it('KRI candidats : invisibles sans le module KRI ; importés SANS seuil ni mesure (statut inconnu), avec unité, sens et fréquence suggérés', async () => {
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.items.some((i: { kind: string }) => i.kind === 'KRI')).toBe(false)
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.kri.backup-success'], acceptUnlinked: true }))).status).toBe(403)
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, kriActive: true, secondeLigneActive: true })
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.items.some((i: { kind: string }) => i.kind === 'KRI')).toBe(true)
+    const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.backup', 'core.kri.backup-success'] }))
+    expect(res.status).toBe(201)
+    expect(db.kri.create.mock.calls[0][0].data).toMatchObject({ organizationId: 'org1', unite: '%', sens: 'BAISSE', frequence: 'MENSUEL', seuilAlerte: null, seuilCritique: null, catalogueKey: 'core.kri.backup-success', processusId: 'id-core.process.digital.backup' })
+  })
+  it('KRI candidats : refusés à un rôle sans droit de définition', async () => {
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, kriActive: true, secondeLigneActive: true })
+    auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.kri.backup-success'], acceptUnlinked: true }))).status).toBe(403)
+    expect(db.kri.create).not.toHaveBeenCalled()
   })
 })

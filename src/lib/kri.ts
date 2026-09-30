@@ -20,13 +20,15 @@ export type KriFrequence = (typeof KRI_FREQUENCES)[number]
 /** Seuils d'un KRI (sens + seuils alerte/critique) servant à déduire son statut. */
 export interface KriSeuils {
   sens: KriSens
-  seuilAlerte: number
-  seuilCritique: number
+  /** null = seuil à définir (KRI proposé par le catalogue) : le statut reste INCONNU, jamais « normal » par défaut. */
+  seuilAlerte: number | null
+  seuilCritique: number | null
 }
 
 /** Statut d'une valeur vis-à-vis des seuils, selon le sens de dégradation. */
 export function evaluerKri(valeur: number | null | undefined, def: KriSeuils): KriStatut {
   if (valeur == null || !Number.isFinite(valeur)) return 'INCONNU'
+  if (def.seuilAlerte == null || def.seuilCritique == null) return 'INCONNU'
   if (def.sens === 'HAUSSE') {
     if (valeur >= def.seuilCritique) return 'CRITIQUE'
     if (valeur >= def.seuilAlerte) return 'ALERTE'
