@@ -22,7 +22,7 @@ export default function NouvelleAnalyseMenu({ labels, projet360, onImport }: { l
       {open && (
         <div {...menuProps} className="absolute right-0 z-20 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
           <Link role="menuitem" href="/analyses/new" className={item} onClick={() => close(false)}><Plus size={15} aria-hidden="true" />{labels.analyse}</Link>
-          {projet360 && <Link role="menuitem" href="/analyses/new?methode=PROJET_360" className={item} onClick={() => close(false)}><FolderKanban size={15} aria-hidden="true" />{labels.projet360}</Link>}
+          {projet360 && <Link role="menuitem" href="/projets?nouveau=1" className={item} onClick={() => close(false)}><FolderKanban size={15} aria-hidden="true" />{labels.projet360}</Link>}
           {onImport
             ? <button type="button" role="menuitem" className={item} onClick={() => { close(false); onImport() }}><Upload size={15} aria-hidden="true" />{labels.importer}</button>
             : <Link role="menuitem" href="/analyses?import=1" className={item} onClick={() => close(false)}><Upload size={15} aria-hidden="true" />{labels.importer}</Link>}

@@ -8,7 +8,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ExampleChips from '@/components/ExampleChips'
@@ -23,7 +23,9 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
   const { t, locale } = useTranslation()
   const p = t.projets
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const searchParams = useSearchParams()
+  // ?nouveau=1 (menu « Nouveau projet 360 ») : le formulaire de création s'ouvre directement.
+  const [open, setOpen] = useState(() => canCreate && searchParams.get('nouveau') === '1')
   const [nom, setNom] = useState('')
   const [description, setDescription] = useState('')
   const [busy, setBusy] = useState(false)

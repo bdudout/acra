@@ -7,10 +7,11 @@ vi.mock('@/lib/i18n/context', async () => {
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
 const push = vi.fn()
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }))
+const search = { value: '' }
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(search.value) }))
 
 const fetchMock = vi.fn()
-beforeEach(() => { fetchMock.mockReset(); push.mockReset(); vi.stubGlobal('fetch', fetchMock) })
+beforeEach(() => { search.value = ''; fetchMock.mockReset(); push.mockReset(); vi.stubGlobal('fetch', fetchMock) })
 
 const projets = [{ id: 'p1', nom: 'Refonte portail', statut: 'EN_COURS', risques: 7, updatedAt: '2026-09-20T00:00:00.000Z', analyses: [{ id: 'c1', nom: 'Cyber — portail' }] }]
 
@@ -51,5 +52,18 @@ describe('ProjetsManager', () => {
     expect(screen.queryByRole('button', { name: 'Lancer un projet 360' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Lancer une analyse cyber' })).toBeNull()
     expect(screen.getByText('Aucun projet pour le moment.')).toBeTruthy()
+  })
+
+  it('?nouveau=1 (menu « Nouveau projet 360 ») : le formulaire de création est déjà ouvert', () => {
+    search.value = 'nouveau=1'
+    render(<ProjetsManager projets={[]} canCreate />)
+    expect(screen.getByLabelText('Nom du projet')).toBeTruthy()
+  })
+  it('sans ?nouveau=1 ou sans droit de création : formulaire fermé', () => {
+    render(<ProjetsManager projets={[]} canCreate />)
+    expect(screen.queryByLabelText('Nom du projet')).toBeNull()
+    search.value = 'nouveau=1'
+    const { container } = render(<ProjetsManager projets={[]} canCreate={false} />)
+    expect(container.querySelector('input')).toBeNull()
   })
 })
