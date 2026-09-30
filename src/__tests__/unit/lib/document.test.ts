@@ -72,3 +72,27 @@ describe('storageKeyFor', () => {
     expect(k).not.toContain('..')
   })
 })
+
+import { contentMatchesMime } from '@/lib/document'
+
+describe('contentMatchesMime (N06 — signature vs MIME annoncé)', () => {
+  const b = (...n: number[]) => Uint8Array.from(n)
+  const text = (s: string) => new TextEncoder().encode(s)
+  it('accepte les signatures cohérentes', () => {
+    expect(contentMatchesMime('application/pdf', text('%PDF-1.7\n'))).toBe(true)
+    expect(contentMatchesMime('image/png', b(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))).toBe(true)
+    expect(contentMatchesMime('image/jpeg', b(0xff, 0xd8, 0xff, 0xe0))).toBe(true)
+    expect(contentMatchesMime('application/vnd.openxmlformats-officedocument.wordprocessingml.document', b(0x50, 0x4b, 0x03, 0x04))).toBe(true)
+    expect(contentMatchesMime('application/msword', b(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1))).toBe(true)
+    expect(contentMatchesMime('text/plain', text('Politique de sécurité\n'))).toBe(true)
+  })
+  it('refuse un exécutable ou une archive déguisés', () => {
+    expect(contentMatchesMime('application/pdf', b(0x4d, 0x5a, 0x90, 0x00))).toBe(false)
+    expect(contentMatchesMime('text/plain', b(0x4d, 0x5a, 0x90, 0x00))).toBe(false)
+    expect(contentMatchesMime('text/csv', b(0x7f, 0x45, 0x4c, 0x46))).toBe(false)
+    expect(contentMatchesMime('text/plain', b(0x50, 0x4b, 0x03, 0x04))).toBe(false)
+    expect(contentMatchesMime('image/png', text('<svg onload=alert(1)>'))).toBe(false)
+    expect(contentMatchesMime('text/plain', b(0x41, 0x00, 0x42))).toBe(false)
+    expect(contentMatchesMime('application/x-unknown', text('x'))).toBe(false)
+  })
+})

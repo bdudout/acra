@@ -3,6 +3,10 @@
 > Re-audit statique ciblé (OWASP Top 10 2021, CWE Top 25, patterns SAST) de `src/` (Next.js 16 App Router, next-auth 4, Prisma 5, ~213 routes API) et des fichiers de déploiement.
 > Prend la suite de `audit-annotations/FINDINGS_INDEX.md` (2026-07-06), `docs/audit-remediation-2026-09-21.md` et `rapports/ACRA-Contre-Audit-Securite-2026-09-20.md`. Les constats déjà clos ne sont pas re-listés.
 
+## Statut de remédiation (2026-09-30)
+
+N01, N02, N03, N04, N05, N06, N07 corrigés ; N08 partiel (dependabot ajouté, override `brace-expansion` relevé à ^5.0.12 ; l'épinglage des actions GitHub par SHA reste à faire, il demande de résoudre chaque SHA). Vérifié : `tsc` propre, 363 fichiers / 2994 tests verts, `next build` OK sur 16.3.8, `npm audit` = 0, `i18n:check` OK. Restes assumés : SIEM sans allowlist par défaut (destinations internes légitimes, `SIEM_ALLOWED_HOSTS` recommandé) et découverte OIDC de next-auth qui ne passe que par la garde statique (SUPER_ADMIN uniquement).
+
 ## Synthèse
 
 **Score de risque global : ~3,5 / 10 — MOYEN-BON.** Aucune injection SQL/commande, aucun secret en dur, aucune IDOR nouvelle, aucun `eval`/`innerHTML` sur donnée utilisateur. Les faiblesses restantes se concentrent sur **la protection anti-SSRF** (trois implémentations divergentes et incomplètes) et **une dépendance critique** (Next.js).

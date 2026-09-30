@@ -2,18 +2,18 @@
 
 ## Re-audit du 2026-09-30 — OWASP / CWE / SAST (rapport complet : `rapports/ACRA-Audit-Code-OWASP-SAST-2026-09-30.md`)
 
-Score global ~3,5 / 10 (MOYEN-BON). Aucune injection, aucun secret en dur, aucune IDOR nouvelle ; points ouverts : SSRF et dépendance Next.js.
+Score global ~3,5 / 10 avant correctifs, ~1,5 / 10 après (correctifs du 2026-09-30). Aucune injection, aucun secret en dur, aucune IDOR nouvelle ; points ouverts : SSRF et dépendance Next.js.
 
 | ID | Sévérité | CVSS | Catégorie | Fichier:Ligne | Statut |
 |----|----------|------|-----------|---------------|--------|
-| N01 | ÉLEVÉ | advisory 9,8 (exposition faible) | A06 / CWE-1104 | package.json:39, package-lock.json (next 16.3.4) | OUVERT — passer à ≥ 16.3.8 |
-| N02 | MOYEN | 5,0 | A10 / CWE-918 | src/lib/entity-sync.ts:7-13, 84-91, 116-136 | OUVERT |
-| N03 | MOYEN | ~4,7 | A10 / CWE-918 | src/lib/webhook.ts:101-162 ; sso.ts:14 ; webhook.server.ts:103-135 | OUVERT |
-| N04 | FAIBLE | 3,7 | A07 / CWE-307,208 | src/lib/api-auth.server.ts:22-33 ; mcp/auth.server.ts:26-33 | OUVERT |
-| N05 | FAIBLE | 3,1 | A04 / CWE-306,778 | src/app/api/account/delete/route.ts:10-56 | OUVERT |
-| N06 | FAIBLE | 3,1 | A04 / CWE-434 | src/app/api/documents/route.ts:57-101 | OUVERT |
-| N07 | INFO | 0 | — | src/app/api/auth/register/route.ts:17-27 | annotation F004 périmée à retirer |
-| N08 | INFO | 0 | A08 / CWE-829 | .github/workflows/*.yml ; package.json overrides | OUVERT |
+| N01 | ÉLEVÉ | advisory 9,8 (exposition faible) | A06 / CWE-1104 | package.json:39, package-lock.json (next 16.3.4) | ✅ CORRIGÉ — next 16.3.8, brace-expansion ^5.0.12 (`npm audit` = 0) |
+| N02 | MOYEN | 5,0 | A10 / CWE-918 | src/lib/entity-sync.ts:7-13, 84-91, 116-136 | ✅ CORRIGÉ — ip-safety.ts + safe-fetch.server.ts (DNS validé dans la socket) |
+| N03 | MOYEN | ~4,7 | A10 / CWE-918 | src/lib/webhook.ts:101-162 ; sso.ts:14 ; webhook.server.ts:103-135 | ✅ CORRIGÉ — ip-safety.ts + safe-fetch.server.ts (DNS validé dans la socket) |
+| N04 | FAIBLE | 3,7 | A07 / CWE-307,208 | src/lib/api-auth.server.ts:22-33 ; mcp/auth.server.ts:26-33 | ✅ CORRIGÉ — api-key-lookup.server.ts |
+| N05 | FAIBLE | 3,1 | A04 / CWE-306,778 | src/app/api/account/delete/route.ts:10-56 | ✅ CORRIGÉ — mot de passe + rate-limit + audit après commit |
+| N06 | FAIBLE | 3,1 | A04 / CWE-434 | src/app/api/documents/route.ts:57-101 | ✅ CORRIGÉ — contentMatchesMime (signatures) |
+| N07 | INFO | 0 | — | src/app/api/auth/register/route.ts:17-27 | ✅ CORRIGÉ — annotation remplacée |
+| N08 | INFO | 0 | A08 / CWE-829 | .github/workflows/*.yml ; package.json overrides | 🟡 PARTIEL — dependabot.yml + override relevé ; épinglage des actions par SHA restant |
 
 Aucune annotation `// AUDIT` n'a été ajoutée dans le code source lors de ce passage (constats documentés uniquement).
 

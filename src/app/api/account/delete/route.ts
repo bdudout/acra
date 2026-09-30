@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { isDemoInstance } from '@/lib/demo-server'
 import { canSelfDeleteAccount } from '@/lib/self-service-account'
 import { auditLog, getClientIp } from '@/lib/logger'
+import bcrypt from 'bcryptjs'
+import { rateLimit, rateLimitHeaders, LIMIT_PASSWORD } from '@/lib/rate-limit'
 import { deletableOrganizationIds } from '@/lib/self-service-account'
 
 /** Supprime le compte courant, et seulement ses organisations de démo non partagées. */
@@ -19,6 +21,17 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'Indisponible' }, { status: 403 })
   }
 
+  // Action irréversible : débit limité + ré-authentification par le mot de passe courant
+  // (une session volée ou laissée ouverte ne suffit plus — audit 2026-09-30, N05).
+  const rl = await rateLimit(`account-delete:${userId}`, LIMIT_PASSWORD.limit, LIMIT_PASSWORD.windowMs)
+  if (!rl.allowed) return NextResponse.json({ error: 'Trop de tentatives' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+  const body = await req.json().catch(() => ({})) as { password?: unknown }
+  const account = await prisma.user.findUnique({ where: { id: userId! }, select: { passwordHash: true } })
+  if (!account) return NextResponse.json({ error: 'Indisponible' }, { status: 403 })
+  if (account.passwordHash && !(typeof body.password === 'string' && await bcrypt.compare(body.password, account.passwordHash))) {
+    return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 403 })
+  }
+
   const memberships = await prisma.orgMembership.findMany({
     where: { userId: userId! },
     select: { organizationId: true, organization: { select: { _count: { select: { membres: true } } } } },
@@ -28,6 +41,15 @@ export async function DELETE(req: Request) {
     memberCount: membership.organization._count.membres,
   })))
 
+  await prisma.$transaction(async tx => {
+    // Les espaces démo sont racines ; une suppression s'effectue après vérification
+    // explicite qu'aucun autre membre n'y est rattaché.
+    for (const organizationId of organizationIds) {
+      await tx.organization.delete({ where: { id: organizationId } })
+    }
+    await tx.user.delete({ where: { id: userId! } })
+  })
+  // Journal écrit APRÈS le commit : il n'affirme jamais une suppression qui a échoué.
   // Le journal reste conservé après la suppression : AuditLog n'a pas de FK User.
   await auditLog('ACCOUNT_SELF_DELETED', {
     userId,
@@ -36,15 +58,6 @@ export async function DELETE(req: Request) {
     ip: getClientIp(req),
     organizationId: null,
     details: { deletedOrganizationIds: organizationIds, preservedSharedOrganizations: memberships.length - organizationIds.length },
-  })
-
-  await prisma.$transaction(async tx => {
-    // Les espaces démo sont racines ; une suppression s'effectue après vérification
-    // explicite qu'aucun autre membre n'y est rattaché.
-    for (const organizationId of organizationIds) {
-      await tx.organization.delete({ where: { id: organizationId } })
-    }
-    await tx.user.delete({ where: { id: userId! } })
   })
   return NextResponse.json({ ok: true })
 }
