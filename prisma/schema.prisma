@@ -157,6 +157,8 @@ model Organization {
   enfants        Organization[] @relation("OrgArbre")
   // Chemin matérialisé "/<racineId>/…/<id>/" : sous-arbre = orgs dont path startsWith O.path.
   path           String         @default("/")
+  // Secteurs choisis par l'ADMIN pour les suggestions ; vide = socle transversal.
+  secteursActivite Json         @default("[]")
   // Logo personnalisé (data URL, optionnel). Absent ⇒ logo auto-généré (cf. lib/org-logo).
   logo           String?        @db.Text
   actif          Boolean        @default(true)
@@ -388,6 +390,9 @@ model Processus {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Provenance stable d'un exemple approuvé ; le nom reste librement éditable.
+  catalogueKey     String?
+  catalogueVersion String?
   // Hiérarchie : parent = macro-processus (null = niveau racine).
   parentId       String?
   parent         Processus?   @relation("ProcessusArbre", fields: [parentId], references: [id], onDelete: SetNull)
@@ -414,6 +419,7 @@ model Processus {
   serviceUsages TierServiceUsage[]
 
   @@index([organizationId])
+  @@unique([organizationId, catalogueKey])
   @@index([parentId])
 }
 
@@ -425,6 +431,8 @@ model RiskItem {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  catalogueKey     String?
+  catalogueVersion String?
 
   intitule      String
   description   String?    @db.Text
@@ -459,6 +467,7 @@ model RiskItem {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@unique([organizationId, catalogueKey])
   @@index([processusId])
   @@index([taxonomieCode])
 }

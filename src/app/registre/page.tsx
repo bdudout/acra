@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { type UserRole } from '@/lib/permissions'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
@@ -27,7 +27,7 @@ export default async function RegistrePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <RegistreRisques canEdit={userRole !== 'LECTEUR'} scaleConfig={scaleConfig} />
+        <RegistreRisques canEdit={scope.role !== 'LECTEUR'} canCreateProcesses={scope.role ? isAdminRole(scope.role) : false} scaleConfig={scaleConfig} />
       </main>
     </div>
   )
