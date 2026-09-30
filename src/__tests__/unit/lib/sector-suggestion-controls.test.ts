@@ -47,3 +47,19 @@ describe('KRI candidats du catalogue', () => {
     }
   })
 })
+
+describe('missions d’audit types du catalogue', () => {
+  it('propose des missions rattachées à un processus connu, avec des points de revue localisés et sans date ni notation', () => {
+    for (const locale of LOCALES) {
+      const items = listSectorSuggestions(null, locale)
+      const processes = new Set(items.filter(i => i.kind === 'PROCESS').map(i => i.key))
+      const audits = items.filter(i => i.kind === 'AUDIT')
+      expect(audits.length).toBeGreaterThanOrEqual(4)
+      for (const x of audits) {
+        expect(x.key).toMatch(/^core\.audit\./); expect(processes.has(x.processKey!)).toBe(true)
+        expect(x.points!.length).toBeGreaterThanOrEqual(4); expect(x.points!.every(pt => pt.trim() !== '')).toBe(true)
+        expect(x).not.toHaveProperty('notation'); expect(x).not.toHaveProperty('dateDebut')
+      }
+    }
+  })
+})

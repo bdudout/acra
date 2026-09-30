@@ -10,7 +10,7 @@ type Localized = Record<CatalogueLocale, string>
 type CatalogueItem = {
   key: string
   sector: SectorCode | 'TRANSVERSAL'
-  kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI'
+  kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT'
   title: Localized
   parentKey?: string
   processKey?: string
@@ -20,8 +20,10 @@ type CatalogueItem = {
   // KRI seulement : unité, sens de dégradation et fréquence SUGGÉRÉS ; aucun seuil, aucune valeur mesurée.
   unite?: Localized
   sens?: 'HAUSSE' | 'BAISSE'
+  // Mission d'audit seulement : points de revue types (programme) ; aucune date, aucune notation, aucun constat.
+  points?: Localized[]
 }
-export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite'> & { title: string; unite?: string; packVersion: string }
+export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points'> & { title: string; unite?: string; points?: string[]; packVersion: string }
 
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
 const p = (key: string, sector: CatalogueItem['sector'], title: Localized, parentKey?: string): CatalogueItem => ({ key, sector, kind: 'PROCESS', title, parentKey })
@@ -100,6 +102,37 @@ const TRANSVERSAL_KRIS: CatalogueItem[] = [
   k('core.kri.phishing-click', l('Taux de clic aux simulations d’hameçonnage', 'Click rate in phishing simulations', 'Klickrate bei Phishing-Simulationen', 'Tasa de clics en simulaciones de phishing', 'Tasso di clic nelle simulazioni di phishing'), 'core.process.people.skills', pct, 'HAUSSE', 'TRIMESTRIEL'),
   k('core.kri.supplier-without-clauses', l('Fournisseurs essentiels sans clauses de sécurité', 'Essential suppliers without security clauses', 'Wesentliche Lieferanten ohne Sicherheitsklauseln', 'Proveedores esenciales sin cláusulas de seguridad', 'Fornitori essenziali senza clausole di sicurezza'), 'core.process.buy.sourcing', nb, 'HAUSSE', 'SEMESTRIEL'),
   k('core.kri.payment-exceptions', l('Paiements sensibles sans double validation', 'Sensitive payments without dual approval', 'Sensible Zahlungen ohne doppelte Freigabe', 'Pagos sensibles sin doble validación', 'Pagamenti sensibili senza doppia autorizzazione'), 'core.process.finance.payments', nb, 'HAUSSE', 'MENSUEL'),
+]
+
+const a = (key: string, title: Localized, processKey: string, points: Localized[]): CatalogueItem =>
+  ({ key, sector: 'TRANSVERSAL', kind: 'AUDIT', title, processKey, points })
+
+// Missions types : un programme de revue à adapter ; jamais une mission « réalisée » (ni date, ni notation, ni constat).
+const TRANSVERSAL_AUDITS: CatalogueItem[] = [
+  a('core.audit.access', l('Audit de la gestion des accès', 'Audit of access management', 'Audit der Zugriffsverwaltung', 'Auditoría de la gestión de accesos', 'Audit della gestione degli accessi'), 'core.process.digital.iam', [
+    l('Les droits d’accès sont attribués sur demande validée', 'Access rights are granted on an approved request', 'Zugriffsrechte werden auf Basis genehmigter Anträge vergeben', 'Los derechos de acceso se conceden con una solicitud validada', 'I diritti di accesso sono assegnati su richiesta approvata'),
+    l('Les revues périodiques des droits sont réalisées et tracées', 'Periodic access reviews are carried out and traced', 'Regelmäßige Berechtigungsprüfungen werden durchgeführt und nachvollziehbar dokumentiert', 'Las revisiones periódicas de derechos se realizan y se registran', 'Le revisioni periodiche dei diritti sono eseguite e tracciate'),
+    l('Les accès des collaborateurs partis sont retirés dans les délais', 'Access of departed staff is removed on time', 'Zugänge ausgeschiedener Mitarbeiter werden fristgerecht entzogen', 'Los accesos del personal saliente se retiran a tiempo', 'Gli accessi del personale uscito sono rimossi nei tempi previsti'),
+    l('Les comptes à privilèges sont limités et supervisés', 'Privileged accounts are limited and supervised', 'Privilegierte Konten sind begrenzt und werden überwacht', 'Las cuentas con privilegios están limitadas y supervisadas', 'Gli account con privilegi sono limitati e supervisionati'),
+  ]),
+  a('core.audit.backup', l('Audit des sauvegardes et de la restauration', 'Audit of backup and restoration', 'Audit von Datensicherung und Wiederherstellung', 'Auditoría de copias de seguridad y restauración', 'Audit di backup e ripristino'), 'core.process.digital.backup', [
+    l('Le périmètre sauvegardé couvre les données essentielles', 'The backed-up scope covers essential data', 'Der gesicherte Umfang deckt die wesentlichen Daten ab', 'El perímetro respaldado cubre los datos esenciales', 'Il perimetro sottoposto a backup copre i dati essenziali'),
+    l('Des tests de restauration sont réalisés et leurs résultats conservés', 'Restoration tests are performed and results kept', 'Wiederherstellungstests werden durchgeführt und die Ergebnisse aufbewahrt', 'Se realizan pruebas de restauración y se conservan los resultados', 'Sono eseguiti test di ripristino e ne sono conservati gli esiti'),
+    l('Une copie est protégée contre la suppression ou le chiffrement malveillant', 'A copy is protected against malicious deletion or encryption', 'Eine Kopie ist gegen böswilliges Löschen oder Verschlüsseln geschützt', 'Una copia está protegida contra el borrado o cifrado malicioso', 'Una copia è protetta da cancellazione o cifratura dolosa'),
+    l('Les échecs de sauvegarde sont détectés et traités', 'Backup failures are detected and handled', 'Sicherungsfehler werden erkannt und behandelt', 'Los fallos de copia se detectan y se tratan', 'I fallimenti dei backup sono rilevati e gestiti'),
+  ]),
+  a('core.audit.suppliers', l('Audit de la maîtrise des fournisseurs', 'Audit of supplier management', 'Audit der Lieferantensteuerung', 'Auditoría de la gestión de proveedores', 'Audit della gestione dei fornitori'), 'core.process.buy.sourcing', [
+    l('Les fournisseurs essentiels sont identifiés et évalués avant contractualisation', 'Essential suppliers are identified and assessed before contracting', 'Wesentliche Lieferanten werden vor Vertragsabschluss identifiziert und bewertet', 'Los proveedores esenciales se identifican y evalúan antes de contratar', 'I fornitori essenziali sono identificati e valutati prima della contrattualizzazione'),
+    l('Les contrats comportent des exigences de sécurité et de notification d’incident', 'Contracts include security and incident-notification requirements', 'Verträge enthalten Sicherheits- und Meldeanforderungen bei Vorfällen', 'Los contratos incluyen requisitos de seguridad y notificación de incidentes', 'I contratti includono requisiti di sicurezza e notifica degli incidenti'),
+    l('Le suivi de la performance et des incidents fournisseurs est réalisé', 'Supplier performance and incidents are monitored', 'Leistung und Vorfälle der Lieferanten werden überwacht', 'Se supervisan el desempeño y los incidentes de los proveedores', 'Sono monitorati prestazioni e incidenti dei fornitori'),
+    l('Une stratégie de sortie ou de remplacement est définie pour les services essentiels', 'An exit or replacement strategy exists for essential services', 'Für wesentliche Dienste existiert eine Exit- oder Ersatzstrategie', 'Existe una estrategia de salida o sustitución para los servicios esenciales', 'Esiste una strategia di uscita o sostituzione per i servizi essenziali'),
+  ]),
+  a('core.audit.payments', l('Audit des paiements sensibles', 'Audit of sensitive payments', 'Audit sensibler Zahlungen', 'Auditoría de pagos sensibles', 'Audit dei pagamenti sensibili'), 'core.process.finance.payments', [
+    l('Les paiements sensibles nécessitent une double validation', 'Sensitive payments require dual approval', 'Sensible Zahlungen erfordern eine doppelte Freigabe', 'Los pagos sensibles requieren doble validación', 'I pagamenti sensibili richiedono una doppia autorizzazione'),
+    l('Les changements de coordonnées bancaires sont vérifiés par un canal indépendant', 'Bank-detail changes are verified through an independent channel', 'Änderungen von Bankdaten werden über einen unabhängigen Kanal geprüft', 'Los cambios de datos bancarios se verifican por un canal independiente', 'Le modifiche delle coordinate bancarie sono verificate tramite un canale indipendente'),
+    l('Les délégations et plafonds de paiement sont à jour', 'Payment delegations and limits are up to date', 'Zahlungsvollmachten und Limits sind aktuell', 'Las delegaciones y límites de pago están actualizados', 'Le deleghe e i massimali di pagamento sono aggiornati'),
+    l('Les anomalies de paiement sont analysées et escaladées', 'Payment anomalies are analysed and escalated', 'Zahlungsanomalien werden analysiert und eskaliert', 'Las anomalías de pago se analizan y se escalan', 'Le anomalie di pagamento sono analizzate e segnalate'),
+  ]),
 ]
 
 const SECTOR_ITEMS: CatalogueItem[] = [
@@ -201,7 +234,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('services.risk.client-access', 'SERVICES', l('Un collaborateur accède à des dossiers clients sans nécessité', 'A staff member accesses client files without need', 'Ein Mitarbeiter greift ohne Notwendigkeit auf Kundenakten zu', 'Un empleado accede a expedientes de clientes sin necesidad', 'Un collaboratore accede a pratiche dei clienti senza necessidad'), 'services.process.knowledge'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.3'
+export const CATALOGUE_PACK_VERSION = '1.4'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -211,9 +244,9 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
 
 /** Socle + pack choisi ; sans secteur, seul le socle est retourné. */
 export function listSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale): SectorSuggestion[] {
-  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS]
+  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS]
   const items = sector ? [...base, ...SECTOR_ITEMS.filter(item => item.sector === sector)] : base
-  return items.map(({ title, unite, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), packVersion: CATALOGUE_PACK_VERSION }))
+  return items.map(({ title, unite, points, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
 export function searchSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale, query: string): SectorSuggestion[] {

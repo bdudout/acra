@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, type UserRole } from '@/lib/permissions'
+import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, peutEcrireAudit, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
@@ -41,15 +41,16 @@ export async function GET(req: NextRequest) {
   if (sector === undefined) return NextResponse.json({ error: 'invalid_sector' }, { status: 400 })
   const locale = parseLocale(url.searchParams.get('locale'))
   const query = (url.searchParams.get('q') ?? '').slice(0, 120)
-  const [processes, risks, controls, kris] = await Promise.all([
+  const [processes, risks, controls, kris, audits] = await Promise.all([
     prisma.processus.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
     prisma.riskItem.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
     cfg.controlePermanentActive ? prisma.controle.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
     cfg.kriActive ? prisma.kri.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
+    cfg.auditInterneActive ? prisma.auditMission.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
   ])
-  const existing = new Set([...processes, ...risks, ...controls, ...kris].map(row => row.catalogueKey))
+  const existing = new Set([...processes, ...risks, ...controls, ...kris, ...audits].map(row => row.catalogueKey))
   // Les contrôles-types ne sont proposés que si le module « contrôle permanent » est activé pour l'organisation.
-  const items = searchSectorSuggestions(sector, locale, query).filter(item => (item.kind !== 'CONTROL' || cfg.controlePermanentActive) && (item.kind !== 'KRI' || cfg.kriActive)).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
+  const items = searchSectorSuggestions(sector, locale, query).filter(item => (item.kind !== 'CONTROL' || cfg.controlePermanentActive) && (item.kind !== 'KRI' || cfg.kriActive) && (item.kind !== 'AUDIT' || cfg.auditInterneActive)).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
   return NextResponse.json({ sector, configuredSectors: configured, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items })
 }
 
@@ -84,18 +85,24 @@ export async function POST(req: NextRequest) {
     if (!peutDefinirKri(ctx.role, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
+  if (selectedPlan.toCreate.some(item => item.kind === 'AUDIT')) {
+    if (!cfg.auditInterneActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
+    if (!peutEcrireAudit(ctx.role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
+
   const result = await prisma.$transaction(async tx => {
     // Le verrou protège la lecture de provenance et les créations concurrentes de cette route.
     await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${ctx.orgId}), hashtext('catalogue-suggestions'))::text`)
-    const [processes, risks, controls, kris] = await Promise.all([
+    const [processes, risks, controls, kris, audits] = await Promise.all([
       tx.processus.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
       tx.riskItem.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
       tx.controle.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
       tx.kri.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
+      tx.auditMission.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
     ])
     const plan = planSuggestionSelection({
       sector, locale, selectedKeys,
-      existingKeys: [...processes, ...risks, ...controls, ...kris].flatMap(row => row.catalogueKey ? [row.catalogueKey] : []),
+      existingKeys: [...processes, ...risks, ...controls, ...kris, ...audits].flatMap(row => row.catalogueKey ? [row.catalogueKey] : []),
     })
     if (plan.invalidKeys.length) return { status: 400 as const, error: 'invalid_keys', ...plan }
     if (plan.unlinked.length && body.acceptUnlinked !== true) return { status: 409 as const, error: 'unlinked_dependencies', ...plan }
@@ -119,6 +126,14 @@ export async function POST(req: NextRequest) {
           catalogueKey: item.key, catalogueVersion: item.packVersion,
         } })
         created.push({ key: item.key, id: controle.id, kind: item.kind })
+      } else if (item.kind === 'AUDIT') {
+        // Mission PLANIFIÉE : programme de revue à adapter ; ni dates, ni notation, ni constat, ni indépendance déclarée.
+        const mission = await tx.auditMission.create({ data: {
+          organizationId: ctx.orgId!, intitule: item.title, statut: 'PLANIFIEE', programme: item.points ?? [],
+          processusIds: item.processKey && processIds.get(item.processKey) ? [processIds.get(item.processKey)!] : [],
+          catalogueKey: item.key, catalogueVersion: item.packVersion,
+        } })
+        created.push({ key: item.key, id: mission.id, kind: item.kind })
       } else if (item.kind === 'KRI') {
         // Indicateur candidat : seuils à définir (null), aucune mesure ; le statut reste « inconnu » tant que l'organisation ne les fixe pas.
         const kri = await tx.kri.create({ data: {

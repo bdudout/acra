@@ -6,6 +6,7 @@ const db = vi.hoisted(() => ({
   risk: { findMany: vi.fn(), create: vi.fn() },
   control: { findMany: vi.fn(), create: vi.fn() },
   kri: { findMany: vi.fn(), create: vi.fn() },
+  mission: { findMany: vi.fn(), create: vi.fn() },
   cfg: vi.fn(),
   queryRaw: vi.fn(), transaction: vi.fn(),
 }))
@@ -13,7 +14,7 @@ const auth = vi.hoisted(() => ({ scope: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'user1', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, $transaction: db.transaction,
+  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, $transaction: db.transaction,
 } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: auth.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: db.cfg }))
@@ -31,6 +32,8 @@ beforeEach(() => {
   db.risk.findMany.mockResolvedValue([])
   db.control.findMany.mockResolvedValue([])
   db.kri.findMany.mockResolvedValue([])
+  db.mission.findMany.mockResolvedValue([])
+  db.mission.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.kri.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.cfg.mockResolvedValue({ registreRisquesActive: true })
   db.control.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
@@ -38,7 +41,7 @@ beforeEach(() => {
   db.process.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.risk.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.transaction.mockImplementation(async (run: (tx: unknown) => Promise<unknown>) => run({
-    processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, $queryRaw: db.queryRaw,
+    processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, $queryRaw: db.queryRaw,
   }))
 })
 
@@ -111,7 +114,7 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.iam', 'core.control.access-review'] }))
     expect(res.status).toBe(201)
     const created = db.control.create.mock.calls[0][0].data
-    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.3', processusId: 'id-core.process.digital.iam' })
+    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.4', processusId: 'id-core.process.digital.iam' })
     expect(created).not.toHaveProperty('responsable'); expect(created).not.toHaveProperty('executions')
   })
   it('contrôles-types : refusés à un rôle sans droit de définition 2ᵉ ligne', async () => {
@@ -137,5 +140,21 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
     expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.kri.backup-success'], acceptUnlinked: true }))).status).toBe(403)
     expect(db.kri.create).not.toHaveBeenCalled()
+  })
+
+  it('missions d’audit types : réservées à l’auditeur/admin avec module actif ; créées PLANIFIÉES avec programme, sans dates ni notation', async () => {
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.audit.access'], acceptUnlinked: true }))).status).toBe(403)
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, auditInterneActive: true })
+    auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.audit.access'], acceptUnlinked: true }))).status).toBe(403)
+    auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'AUDITEUR' })
+    const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.iam', 'core.audit.access'] }))
+    expect(res.status).toBe(403) // AUDITEUR n'a pas le droit de créer des processus : la sélection mixte est refusée en bloc
+    const ok = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.audit.access'], acceptUnlinked: true }))
+    expect(ok.status).toBe(201)
+    const created = db.mission.create.mock.calls[0][0].data
+    expect(created).toMatchObject({ organizationId: 'org1', statut: 'PLANIFIEE', catalogueKey: 'core.audit.access', processusIds: [] })
+    expect(created.programme).toHaveLength(4)
+    expect(created).not.toHaveProperty('notation'); expect(created).not.toHaveProperty('dateDebut')
   })
 })

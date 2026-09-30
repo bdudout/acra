@@ -34,7 +34,8 @@ export function planSuggestionSelection(input: {
   processes.sort((a, b) => depth(a) - depth(b))
   const controls = pending.filter(item => item.kind === 'CONTROL')
   const kris = pending.filter(item => item.kind === 'KRI')
-  const toCreate = [...processes, ...risks, ...controls, ...kris]
+  const audits = pending.filter(item => item.kind === 'AUDIT')
+  const toCreate = [...processes, ...risks, ...controls, ...kris, ...audits]
   const unlinked: SuggestionPlan['unlinked'] = []
   for (const item of pending) {
     const dependencyKey = item.kind === 'PROCESS' ? item.parentKey : item.processKey
