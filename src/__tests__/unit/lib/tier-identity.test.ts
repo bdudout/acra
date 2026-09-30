@@ -65,3 +65,18 @@ describe('rootOrganizationIdOf — racine du groupe d’après le chemin matéri
     expect(rootOrganizationIdOf('/', 'solo')).toBe('solo')
   })
 })
+
+import { certainMatches } from '@/lib/tier-identity'
+describe('certainMatches — rapprochement en masse (LEI identique uniquement)', () => {
+  const u = (id: string, candidates: { tierId: string; strength: 'STRONG' | 'WEAK' }[]) => ({ id, candidates })
+  it('retient les arrangements ayant exactement UN candidat fort ; ignore faibles, ambigus et sans candidat', () => {
+    const r = certainMatches([
+      u('a1', [{ tierId: 't1', strength: 'STRONG' }]),
+      u('a2', [{ tierId: 't1', strength: 'WEAK' }]),
+      u('a3', [{ tierId: 't1', strength: 'STRONG' }, { tierId: 't2', strength: 'STRONG' }]),
+      u('a4', []),
+      u('a5', [{ tierId: 't2', strength: 'STRONG' }, { tierId: 't3', strength: 'WEAK' }]),
+    ])
+    expect(r).toEqual([{ arrangementId: 'a1', tierId: 't1' }, { arrangementId: 'a5', tierId: 't2' }])
+  })
+})

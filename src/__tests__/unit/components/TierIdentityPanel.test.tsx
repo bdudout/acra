@@ -47,6 +47,16 @@ describe('TierIdentityPanel — identités de tiers', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tier-registry/link', expect.objectContaining({ method: 'POST' })))
     expect(JSON.parse(fetchMock.mock.calls.find(c => c[0] === '/api/tier-registry/link')![1].body)).toEqual({ arrangementId: 'a3', tierId: 't1' })
   })
+  it('rapprochement en masse : lie les correspondances certaines (LEI) sur clic explicite, une requête par arrangement', async () => {
+    render(<TierIdentityPanel />)
+    await screen.findByText(/C-3/)
+    expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: /Lier les 1 correspondance\(s\) certaine\(s\)/ }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tier-registry/link', expect.objectContaining({ method: 'POST' })))
+    const posts = fetchMock.mock.calls.filter(c => c[0] === '/api/tier-registry/link')
+    expect(posts).toHaveLength(1)
+    expect(JSON.parse(posts[0][1].body)).toEqual({ arrangementId: 'a3', tierId: 't1' })
+  })
   it('« Créer un tiers » depuis un arrangement : envoie nom, LEI et l’arrangement à rattacher ; doublon possible : demande confirmation', async () => {
     fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method !== 'POST') return ok(data)

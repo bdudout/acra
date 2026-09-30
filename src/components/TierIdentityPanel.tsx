@@ -6,6 +6,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { certainMatches } from '@/lib/tier-identity'
 import TierDetailPanel from '@/components/TierDetailPanel'
 
 type Candidate = { tierId: string; nom: string; reason: 'LEI' | 'NAME' | 'ALIAS'; strength: 'STRONG' | 'WEAK' }
@@ -80,6 +81,17 @@ export default function TierIdentityPanel() {
       const res = await send('/api/tier-registry/merge', 'POST', { sourceId: mergeFrom, targetId: mergeTarget })
       if (!res.ok) { const code = (await res.json().catch(() => ({}))).error as string; setError((c.mergeBlocked as Record<string, string>)[code] ?? errorText(code)); return }
       setMergeFrom(null); setMergeTarget(''); setMergePreview(null); setOpen(null); await load()
+    } catch { setError(c.errors.failed) }
+    finally { setBusy(false) }
+  }
+  async function linkCertain(matches: { arrangementId: string; tierId: string }[]) {
+    setBusy(true); setError(null)
+    try {
+      for (const m of matches) {
+        const res = await post('/api/tier-registry/link', m)
+        if (!res.ok) { setError(errorText((await res.json().catch(() => ({}))).error)); break }
+      }
+      await load()
     } catch { setError(c.errors.failed) }
     finally { setBusy(false) }
   }
@@ -192,6 +204,9 @@ export default function TierIdentityPanel() {
         <div>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.toLinkTitle.replace('{n}', String(data.unlinkedArrangements.length))}</h3>
           <p className="text-xs text-gray-600 dark:text-gray-300">{c.toLinkHint}</p>
+          {canManage && certainMatches(data.unlinkedArrangements).length > 0 && (
+            <button type="button" className="btn-secondary mt-2 text-xs" disabled={busy} onClick={() => void linkCertain(certainMatches(data.unlinkedArrangements))}>{c.linkCertain.replace('{n}', String(certainMatches(data.unlinkedArrangements).length))}</button>
+          )}
           <ul className="mt-2 space-y-2">
             {data.unlinkedArrangements.map(a => (
               <li key={a.id} className="rounded border border-gray-200 p-2 text-sm dark:border-gray-700">

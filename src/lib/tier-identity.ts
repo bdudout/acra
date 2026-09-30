@@ -69,3 +69,11 @@ export function rootOrganizationIdOf(path: string | null | undefined, organizati
   const first = (path ?? '').split('/').filter(Boolean)[0]
   return first || organizationId
 }
+
+/** Rapprochement en masse : uniquement les arrangements ayant UN SEUL candidat fort (LEI identique). Les correspondances de nom restent à confirmer une à une. */
+export function certainMatches(unlinked: readonly { id: string; candidates: readonly { tierId: string; strength: 'STRONG' | 'WEAK' }[] }[]): { arrangementId: string; tierId: string }[] {
+  return unlinked.flatMap(a => {
+    const strong = a.candidates.filter(x => x.strength === 'STRONG')
+    return strong.length === 1 ? [{ arrangementId: a.id, tierId: strong[0].tierId }] : []
+  })
+}
