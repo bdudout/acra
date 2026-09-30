@@ -1,0 +1,135 @@
+'use client'
+
+// ─── Identités de tiers (page Tiers) ─────────────────────────────────────────
+// Une identité = une personne morale. Liste des tiers de l'organisation avec leur couverture (cyber / TIC) et file de rapprochement
+// des arrangements TIC non rattachés : candidats proposés avec leur raison, lien posé seulement au clic, jamais automatiquement.
+
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from '@/lib/i18n/context'
+
+type Candidate = { tierId: string; nom: string; reason: 'LEI' | 'NAME' | 'ALIAS'; strength: 'STRONG' | 'WEAK' }
+type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED' }
+type Unlinked = { id: string; reference: string; prestataireNom: string; lei: string | null; candidates: Candidate[] }
+type Registry = { active: boolean; canManage?: boolean; tiers: TierRow[]; unlinkedArrangements: Unlinked[] }
+type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; linkArrangementIds?: string[] }; candidates: Candidate[] }
+
+const post = (url: string, body: object) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+export default function TierIdentityPanel() {
+  const { t } = useTranslation()
+  const c = t.tierIdentity
+  const [data, setData] = useState<Registry | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
+  const [form, setForm] = useState({ nom: '', lei: '', pays: '' })
+
+  const load = useCallback(async () => {
+    try { const res = await fetch('/api/tier-registry', { cache: 'no-store' }); if (res.ok) setData(await res.json() as Registry) } catch { /* lecture indisponible : panneau masqué */ }
+  }, [])
+  useEffect(() => { void load() }, [load])
+
+  if (!data?.active) return null
+  const canManage = data.canManage === true
+  const reasonLabel = (r: Candidate['reason']) => c.reasons[r]
+  const errorText = (code: string) => (c.errors as Record<string, string>)[code] ?? c.errors.failed
+
+  async function create(payload: Duplicate['payload'], confirmNew = false) {
+    setBusy(true); setError(null)
+    try {
+      const res = await post('/api/tier-registry', { ...payload, ...(confirmNew ? { confirmNew: true } : {}) })
+      const body = await res.json().catch(() => ({}))
+      if (res.status === 409 && body.error === 'possible_duplicate') { setDuplicate({ payload, candidates: body.candidates ?? [] }); return }
+      if (!res.ok) { setError(errorText(body.error)); return }
+      setDuplicate(null); setForm({ nom: '', lei: '', pays: '' }); await load()
+    } catch { setError(c.errors.failed) }
+    finally { setBusy(false) }
+  }
+  async function link(arrangementId: string, tierId: string | null) {
+    setBusy(true); setError(null)
+    try {
+      const res = await post('/api/tier-registry/link', { arrangementId, tierId })
+      if (!res.ok) { setError(errorText((await res.json().catch(() => ({}))).error)); return }
+      await load()
+    } catch { setError(c.errors.failed) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <section className="card mb-6 space-y-4 p-4" aria-label={c.title}>
+      <div>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{c.title}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
+      </div>
+      {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {duplicate && (
+        <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-medium">{c.duplicateTitle}</p>
+          <ul className="mt-1 list-disc pl-5">{duplicate.candidates.map(x => <li key={x.tierId}>{x.nom} — {reasonLabel(x.reason)}</li>)}</ul>
+          <div className="mt-2 flex gap-2">
+            <button type="button" className="btn-secondary text-sm" disabled={busy} onClick={() => void create(duplicate.payload, true)}>{c.createAnyway}</button>
+            <button type="button" className="btn-secondary text-sm" onClick={() => setDuplicate(null)}>{c.cancel}</button>
+          </div>
+        </div>
+      )}
+
+      {canManage && (
+        <form className="grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto] sm:items-end" onSubmit={e => { e.preventDefault(); if (form.nom.trim()) void create({ nom: form.nom, lei: form.lei || null, ...(form.pays ? { pays: form.pays } : {}) }) }}>
+          <label className="text-xs font-medium text-gray-700 dark:text-gray-200">{c.formName}
+            <input aria-label={c.formName} className="input mt-1 block w-full text-sm" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} maxLength={200} />
+          </label>
+          <label className="text-xs font-medium text-gray-700 dark:text-gray-200">{c.formLei}
+            <input aria-label={c.formLei} className="input mt-1 block w-full text-sm" value={form.lei} onChange={e => setForm(f => ({ ...f, lei: e.target.value }))} maxLength={24} />
+          </label>
+          <label className="text-xs font-medium text-gray-700 dark:text-gray-200">{c.formCountry}
+            <input aria-label={c.formCountry} className="input mt-1 block w-full text-sm" value={form.pays} onChange={e => setForm(f => ({ ...f, pays: e.target.value.toUpperCase() }))} maxLength={2} placeholder="FR" />
+          </label>
+          <button type="submit" className="btn-primary text-sm" disabled={busy || !form.nom.trim()}>{c.create}</button>
+        </form>
+      )}
+
+      {data.tiers.length === 0
+        ? <p className="text-sm text-gray-600 dark:text-gray-300">{c.empty}</p>
+        : (
+          <div className="overflow-x-auto">
+            <table aria-label={c.title} className="w-full text-sm">
+              <thead className="text-left text-xs text-gray-600 dark:text-gray-300"><tr><th className="px-2 py-1">{c.colName}</th><th className="px-2 py-1">{c.colLei}</th><th className="px-2 py-1">{c.colCoverage}</th><th className="px-2 py-1">{c.colArrangements}</th><th className="px-2 py-1">{c.colAnalyses}</th></tr></thead>
+              <tbody>{data.tiers.map(tier => (
+                <tr key={tier.id} className="border-t border-gray-100 dark:border-gray-800">
+                  <td className="px-2 py-1 font-medium text-gray-900 dark:text-gray-100">{tier.nom}{tier.pays && <span className="ml-2 text-xs text-gray-500">{tier.pays}</span>}</td>
+                  <td className="px-2 py-1 font-mono text-xs text-gray-600 dark:text-gray-300">{tier.lei ?? '—'}</td>
+                  <td className="px-2 py-1"><span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800 dark:bg-gray-800 dark:text-gray-100">{c.coverage[tier.coverage]}</span></td>
+                  <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.arrangements.map(a => a.reference).join(', ') || '—'}</td>
+                  <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.analysesCount}</td>
+                </tr>))}</tbody>
+            </table>
+          </div>
+        )}
+
+      {data.unlinkedArrangements.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.toLinkTitle.replace('{n}', String(data.unlinkedArrangements.length))}</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-300">{c.toLinkHint}</p>
+          <ul className="mt-2 space-y-2">
+            {data.unlinkedArrangements.map(a => (
+              <li key={a.id} className="rounded border border-gray-200 p-2 text-sm dark:border-gray-700">
+                <p className="text-gray-900 dark:text-gray-100"><span className="font-medium">{a.reference}</span> — {a.prestataireNom}{a.lei && <span className="ml-2 font-mono text-xs text-gray-500">{a.lei}</span>}</p>
+                {canManage && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {a.candidates.map(x => (
+                      <span key={x.tierId} className="inline-flex items-center gap-1">
+                        <button type="button" className="btn-secondary text-xs" disabled={busy} onClick={() => void link(a.id, x.tierId)}>{c.linkTo.replace('{name}', x.nom)}</button>
+                        <span className="text-xs text-gray-500">({reasonLabel(x.reason)})</span>
+                      </span>
+                    ))}
+                    <button type="button" className="btn-secondary text-xs" disabled={busy} onClick={() => void create({ nom: a.prestataireNom, lei: a.lei, linkArrangementIds: [a.id] })}>{c.createFrom}</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
+}

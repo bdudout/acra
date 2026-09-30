@@ -306,3 +306,18 @@ réelles de la base. « Non implémenté » est distingué de « non recetté »
 - **Contenu du catalogue** : 4 processus et 5 risques par secteur, titres seuls. Il faut des descriptions indicatives, plus d'événements-types et une **revue métier** par secteur avant diffusion (questions 1 de § 7).
 - **Niveaux d'arbre** : les suggestions de processus n'ont qu'un niveau de parent (`core.process.*`) ; prévoir des sous-processus.
 - **Lot 2** : écrans Tiers / offres / contrats / usages, liste des propositions de bénéficiaires, rapprochement et recette PostgreSQL restent à faire (§ B.3).
+
+### 8.3 Lot 2 — tiers canoniques : première tranche livrée et recettée (30/09/2026)
+
+| Exigence (§ B) | État | Preuve |
+|---|---|---|
+| Identité de tiers créable, sans doublon silencieux (B.1) | **Livré** : `POST /api/tier-registry` (ADMIN ou 2ᵉ ligne : `peutGererRegistreTic`), racine du groupe d'après le chemin de l'organisation, accès explicite accordé à l'organisation active, LEI normalisé, alias. Candidat existant (LEI identique = *fort* ; nom ou alias identique, forme juridique ignorée = *faible*) ⇒ 409 avec candidats ; création seulement avec confirmation. Un LEI déjà connu dans le groupe mais non autorisé pour l'organisation ⇒ 409 **sans rien révéler**. | Tests routes (9) + moteur (9) ; recette base : `Acme Logiciels`, LEI normalisé, `rootOrganizationId` = racine, accès `TierOrganization`. |
+| `/tiers` montre les tiers TIC seulement / cyber seulement / les deux (acceptation B.3) | **Livré** : panneau « Identités de tiers » sur `/tiers` avec couverture, LEI, références d'arrangements, nombre d'analyses **accessibles à l'utilisateur**. | Recette : un tiers lié uniquement à des arrangements apparaît « TIC seulement ». |
+| Rapprochement sûr (B.1, B.3 pt 2) | **Livré** pour les **arrangements TIC** : file « à rapprocher » avec candidats et raison affichée ; lien posé au clic seulement (`POST /api/tier-registry/link`), tiers doit être autorisé pour l'organisation de l'arrangement, détachement possible, nom historique du prestataire conservé (instantané), journal d'audit. | Recette : C-1 → création d'identité ; C-2 (« ACME LOGICIELS SAS ») proposé « nom identique », non lié avant clic, lié après ; nom conservé. |
+| Lecture seule pour les rôles non habilités (B.2) | **Livré** : liste visible, aucune action. | Recette navigateur (rôle analyste). |
+| Parties prenantes d'analyse rattachées à un tiers (B.2) | **Non fait** : rattachement depuis l'atelier (analyse non gelée) et file de doublons côté écosystème. | — |
+| Sélecteur de tiers dans la saisie / l'import du registre TIC (B.2) | **Non fait** (le rapprochement se fait depuis `/tiers`). | — |
+| Offres (`TierService`), contrats groupe / bénéficiaires, usages : **écrans** | **Non fait** : schéma, règles et routes de Codex existent, sans interface ni liste des propositions reçues. | — |
+| Fusion de tiers avec aperçu de toutes les relations | **Non fait**. | — |
+
+**Décisions prises** (à confirmer — cf. question 2 de § 7) : la création et le rapprochement d'identités sont ouverts à l'ADMIN **et** aux rôles de 2ᵉ ligne du registre TIC (RSSI, risk manager, conformité, DPO), comme la tenue du registre ; un simple analyste lit seulement. Les alias ne sont pas encore saisissables dans l'interface (champ géré côté API).

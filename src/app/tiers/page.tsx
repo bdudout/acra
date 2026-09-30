@@ -14,6 +14,7 @@ import { joinTiersToTic } from '@/lib/tiers-tic-link'
 import { getOrgConfig } from '@/lib/org-config.server'
 import type { ArrangementTic } from '@/lib/registre-tic'
 import TiersClient, { type TiersRow } from '@/components/TiersClient'
+import TierIdentityPanel from '@/components/TierIdentityPanel'
 
 // Toujours afficher des données fraîches
 export const dynamic = 'force-dynamic'
@@ -89,6 +90,8 @@ export default async function TiersPage() {
             <Radar size={16} aria-hidden="true" /> {t.tiers.cartoLink}
           </Link>
         </div>
+
+        <TierIdentityPanel />
 
         <TiersClient tiers={await withTicFlags(consolidateTiers(tiers), __org.activeOrgId)} canMerge={userRole !== 'LECTEUR'} />
       </main>

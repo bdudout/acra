@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (36) — Claude : catalogue v1.1, rôle effectif sur /configuration, tiers canoniques (tranche 1)
+
+- **Catalogue v1.1** : +18 sous-processus et +6 événements transversaux, +2 événements par secteur (×5 langues) ; liste hiérarchique dans le panneau de suggestions ; ordre de création robuste à plusieurs niveaux.
+- **/configuration** : `isAdmin` d'après le rôle effectif dans l'organisation active (`GET /api/org/active` expose `activeRole`, `lib/effective-admin.ts`).
+- **Tiers canoniques, tranche 1** : `lib/tier-identity.ts` (LEI, candidats fort/faible, couverture), `GET/POST /api/tier-registry`, `POST /api/tier-registry/link`, `TierIdentityPanel` sur `/tiers` (couverture cyber/TIC, création sans doublon, file de rapprochement des arrangements TIC). Recette réelle via `e2e/local-tiers.spec.ts` (hors git) : 3/3 ; `e2e/local-socles.spec.ts` : 5/5.
+- Vérifié : `tsc` 0, `npm test` 3053, `i18n:check`, recette PostgreSQL + navigateur. Spec § 8.3 à jour.
+- **Reste (lot 2)** : offres/contrats groupe/bénéficiaires/usages (écrans), rattachement des parties prenantes depuis l'atelier, sélecteur de tiers dans le registre TIC, fusion avec aperçu, file des propositions de bénéficiaires.
+
 ## 2026-09-30 (35) — Claude : recette réelle du lot 1 (secteurs, suggestions, import de processus) + bug « Nouveau projet 360 »
 
 - **Bug corrigé** : le menu « Nouveau projet 360 » ouvre désormais `/projets?nouveau=1` (formulaire de projet déjà ouvert) au lieu d'une analyse cyber.
