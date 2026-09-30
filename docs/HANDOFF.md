@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (40) — Claude : lot 2 tranche 5 — fusion d'identités de tiers
+
+- `lib/tier-merge.ts` (règles pures : même groupe, LEI, exposition à d'autres organisations ; fusion des alias), `GET/POST /api/tier-registry/merge` (aperçu / fusion transactionnelle verrouillée et recontrôlée), bouton « Fusionner » dans `TierIdentityPanel` (aperçu des relations déplacées, blocage expliqué, confirmation).
+- Règle de sécurité : fusion refusée si des données d'une autre organisation seraient touchées (renvoyée à l'admin du groupe).
+- Recette réelle `e2e/local-tiers-fusion.spec.ts` (hors git) 1/1 ; autres specs locales inchangées.
+- Vérifié : `tsc` 0, `npm test` 3117, `i18n:check`, build (voir ci-dessous). Spec § 8.7.
+- **Reste du lot 2** : criticité d'usage ; import de contrats avec identité (fichier) ; rapprochement en masse des arrangements existants ; fusion transverse côté groupe.
+
 ## 2026-09-30 (39) — Claude : lot 2 tranche 4 — parties prenantes → identités de tiers (atelier 3)
 
 - **Bug corrigé au passage** : l'autosave de l'atelier 3 détachait les liens `PartiePrenante.tierId` (delete-all + createMany sans `tierId`) ; `cleanPartiePrenante` le conserve, `sanitizeTierLinks` (`lib/tier-registry.server.ts`) ne garde que les tiers autorisés pour l'organisation de l'analyse (`tierLinksDropped` sinon).

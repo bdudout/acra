@@ -105,4 +105,32 @@ describe('TierIdentityPanel — identités de tiers', () => {
     const box = (await screen.findByText(/CG-7/)).closest('li')!
     expect(within(box).queryByRole('button', { name: 'Confirmer' })).toBeNull()
   })
+
+  it('fusion de deux identités : aperçu des relations déplacées, blocage expliqué, confirmation explicite', async () => {
+    const preview = { ok: true, source: { id: 't3', nom: 'Fournisseur cyber' }, target: { id: 't1', nom: 'Acme' }, counts: { arrangements: 0, parties: 2, services: 1, usages: 3 } }
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST' && url === '/api/tier-registry/merge') return ok({ ok: true })
+      if (url.startsWith('/api/tier-registry/merge?')) return ok(preview)
+      return ok(data)
+    })
+    render(<TierIdentityPanel />)
+    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
+    fireEvent.click(within(row).getByRole('button', { name: /Fusionner — Fournisseur cyber/ }))
+    fireEvent.change(screen.getByLabelText('Fusionner dans'), { target: { value: 't1' } })
+    const box = await screen.findByTestId('merge-preview')
+    expect(box).toHaveTextContent('2 partie(s) prenante(s)'); expect(box).toHaveTextContent('1 offre(s)'); expect(box).toHaveTextContent('3 usage(s)')
+    expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST' && c[0] === '/api/tier-registry/merge')).toBe(false) // rien avant confirmation
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fusion' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/tier-registry/merge', expect.objectContaining({ method: 'POST' })))
+    expect(JSON.parse(fetchMock.mock.calls.find(c => c[0] === '/api/tier-registry/merge' && c[1]?.method === 'POST')![1].body)).toEqual({ sourceId: 't3', targetId: 't1' })
+  })
+  it('fusion bloquée (données d’une autre organisation) : raison affichée, pas de bouton de confirmation', async () => {
+    fetchMock.mockImplementation((url: string) => (url.startsWith('/api/tier-registry/merge?') ? ok({ ok: false, error: 'shared_with_other_organizations', source: { id: 't3', nom: 'x' }, target: { id: 't1', nom: 'y' }, counts: { arrangements: 0, parties: 0, services: 0, usages: 0 } }) : ok(data)))
+    render(<TierIdentityPanel />)
+    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
+    fireEvent.click(within(row).getByRole('button', { name: /Fusionner — Fournisseur cyber/ }))
+    fireEvent.change(screen.getByLabelText('Fusionner dans'), { target: { value: 't1' } })
+    expect(await screen.findByTestId('merge-preview')).toHaveTextContent('administrateur du groupe')
+    expect(screen.queryByRole('button', { name: 'Confirmer la fusion' })).toBeNull()
+  })
 })

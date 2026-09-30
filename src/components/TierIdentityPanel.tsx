@@ -13,6 +13,7 @@ type TierRow = { id: string; nom: string; lei: string | null; pays: string | nul
 type Unlinked = { id: string; reference: string; prestataireNom: string; lei: string | null; candidates: Candidate[] }
 type Proposal = { arrangementId: string; reference: string; prestataireNom: string; ownerNom: string }
 type Registry = { active: boolean; canManage?: boolean; isAdmin?: boolean; orgId?: string; tiers: TierRow[]; unlinkedArrangements: Unlinked[]; proposals?: Proposal[] }
+type MergePreview = { ok: boolean; error?: string; source: { id: string; nom: string }; target: { id: string; nom: string }; counts: { arrangements: number; parties: number; services: number; usages: number } }
 type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; linkArrangementIds?: string[] }; candidates: Candidate[] }
 
 const send = (url: string, method: string, body: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -27,6 +28,9 @@ export default function TierIdentityPanel() {
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
   const [form, setForm] = useState({ nom: '', lei: '', pays: '' })
   const [open, setOpen] = useState<string | null>(null)
+  const [mergeFrom, setMergeFrom] = useState<string | null>(null)
+  const [mergeTarget, setMergeTarget] = useState('')
+  const [mergePreview, setMergePreview] = useState<MergePreview | null>(null)
 
   const load = useCallback(async () => {
     try { const res = await fetch('/api/tier-registry', { cache: 'no-store' }); if (res.ok) setData(await res.json() as Registry) } catch { /* lecture indisponible : panneau masqué */ }
@@ -56,6 +60,26 @@ export default function TierIdentityPanel() {
       const res = await send(`/api/tiers/contracts/${arrangementId}/beneficiaries/${data.orgId}`, 'PATCH', { decision })
       if (!res.ok) { setError(errorText((await res.json().catch(() => ({}))).error)); return }
       await load()
+    } catch { setError(c.errors.failed) }
+    finally { setBusy(false) }
+  }
+  async function previewMerge(sourceId: string, targetId: string) {
+    setMergeTarget(targetId); setMergePreview(null); setError(null)
+    if (!targetId) return
+    try {
+      const res = await fetch(`/api/tier-registry/merge?sourceId=${encodeURIComponent(sourceId)}&targetId=${encodeURIComponent(targetId)}`, { cache: 'no-store' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(errorText(body.error)); return }
+      setMergePreview(body as MergePreview)
+    } catch { setError(c.errors.failed) }
+  }
+  async function confirmMerge() {
+    if (!mergeFrom || !mergeTarget) return
+    setBusy(true); setError(null)
+    try {
+      const res = await send('/api/tier-registry/merge', 'POST', { sourceId: mergeFrom, targetId: mergeTarget })
+      if (!res.ok) { const code = (await res.json().catch(() => ({}))).error as string; setError((c.mergeBlocked as Record<string, string>)[code] ?? errorText(code)); return }
+      setMergeFrom(null); setMergeTarget(''); setMergePreview(null); setOpen(null); await load()
     } catch { setError(c.errors.failed) }
     finally { setBusy(false) }
   }
@@ -136,8 +160,28 @@ export default function TierIdentityPanel() {
                     <td className="px-2 py-1"><span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800 dark:bg-gray-800 dark:text-gray-100">{c.coverage[tier.coverage]}</span></td>
                     <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.arrangements.map(a => a.reference).join(', ') || '—'}</td>
                     <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.analysesCount}</td>
-                    <td className="px-2 py-1 text-right"><button type="button" className="btn-secondary text-xs" aria-expanded={open === tier.id} aria-label={`${c.offersAndUsages} — ${tier.nom}`} onClick={() => setOpen(o => o === tier.id ? null : tier.id)}>{c.offersAndUsages}</button></td>
+                    <td className="px-2 py-1 text-right whitespace-nowrap">{canManage && data.tiers.length > 1 && <button type="button" className="btn-secondary mr-1 text-xs" aria-expanded={mergeFrom === tier.id} aria-label={`${c.merge} — ${tier.nom}`} onClick={() => { setMergeFrom(m => m === tier.id ? null : tier.id); setMergeTarget(''); setMergePreview(null) }}>{c.merge}</button>}<button type="button" className="btn-secondary text-xs" aria-expanded={open === tier.id} aria-label={`${c.offersAndUsages} — ${tier.nom}`} onClick={() => setOpen(o => o === tier.id ? null : tier.id)}>{c.offersAndUsages}</button></td>
                   </tr>
+                  {mergeFrom === tier.id && (
+                    <tr><td colSpan={6} className="px-2 pb-3">
+                      <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                        <p>{c.mergeHint.replace('{name}', tier.nom)}</p>
+                        <label className="mt-2 block text-xs font-medium">{c.mergeInto}
+                          <select aria-label={c.mergeInto} className="input mt-1 block w-full text-sm sm:w-80" value={mergeTarget} onChange={e => void previewMerge(tier.id, e.target.value)}>
+                            <option value="">—</option>{data.tiers.filter(x => x.id !== tier.id).map(x => <option key={x.id} value={x.id}>{x.nom}</option>)}
+                          </select>
+                        </label>
+                        {mergePreview && (
+                          <div data-testid="merge-preview" className="mt-2 text-xs">
+                            {mergePreview.ok
+                              ? <p>{c.mergeMoves.replace('{arr}', String(mergePreview.counts.arrangements)).replace('{pp}', String(mergePreview.counts.parties)).replace('{svc}', String(mergePreview.counts.services)).replace('{use}', String(mergePreview.counts.usages))}</p>
+                              : <p role="alert">{(c.mergeBlocked as Record<string, string>)[mergePreview.error ?? ''] ?? c.errors.failed}</p>}
+                          </div>
+                        )}
+                        {mergePreview?.ok && <div className="mt-2 flex gap-2"><button type="button" className="btn-primary text-xs" disabled={busy} onClick={() => void confirmMerge()}>{c.mergeConfirm}</button><button type="button" className="btn-secondary text-xs" onClick={() => setMergeFrom(null)}>{c.cancel}</button></div>}
+                      </div>
+                    </td></tr>
+                  )}
                   {open === tier.id && <tr><td colSpan={6} className="px-2 pb-3"><TierDetailPanel tierId={tier.id} /></td></tr>}
                 </Fragment>))}</tbody>
             </table>
