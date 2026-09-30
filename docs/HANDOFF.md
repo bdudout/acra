@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (41) — Claude : fin du lot 2 et lot 3 (catalogue étendu)
+
+- **Lot 2 tranche 6** : criticité d'usage (+ écart avec le contrat), périmètre/dates de couverture par offre, rapprochement en masse sur LEI, **import de contrats TIC** (`lib/tic-contract-import.ts`, `POST /api/reglementaire/registre-tic/import`, `TicContractImportPanel`), **fusion par l'admin du groupe** (`isGroupAdminMerge`, accès des filiales conservés). Migrations `20260930200000` (usage.criticite) et `20261001120000` (couverture).
+- **Lot 3** : catalogue **1.4** — contrôles-types (1.2), KRI candidats **sans seuil** (1.3 ; `Kri.seuilAlerte/seuilCritique` nullable → `evaluerKri` renvoie INCONNU), missions d'audit-types (1.4), **nouveautés depuis la version importée** (`sector-suggestions-changelog.ts`). Migrations `20261001090000`, `…100000`, `…110000`. Route `catalogue-suggestions` : un module n'est proposé que s'il est actif et le rôle habilité (403 sinon).
+- **Piège** : toute hausse de `CATALOGUE_PACK_VERSION` exige une entrée dans `CATALOGUE_CHANGELOG` (test). `Kri.seuil*` peut être `null` : tout nouveau consommateur doit passer par `evaluerKri`.
+- **Piège e2e** : `DATABASE_URL` (host `localhost`) doit être exporté dans CHAQUE commande shell ; specs locales hors git : `local-tiers-criticite`, `local-tic-import`, `local-socles-controles|kri|nouveautes`, `local-tiers-fusion` (mise à jour : l'admin racine peut fusionner un tiers partagé).
+- Vérifié : `tsc` 0 · `npm test` 3164 · `i18n:check` · `npm run build` OK · recettes Playwright sur PostgreSQL 6/6 (voir spec § 8.7–8.9).
+- **Reste** : revue métier du contenu ; packs sectoriels spécifiques (contrôles/KRI/audit par secteur) ; incidents/résilience ; PR des commits depuis #192 (non ouverte, CI non passée).
+
 ## 2026-09-30 (40) — Claude : lot 2 tranche 5 — fusion d'identités de tiers
 
 - `lib/tier-merge.ts` (règles pures : même groupe, LEI, exposition à d'autres organisations ; fusion des alias), `GET/POST /api/tier-registry/merge` (aperçu / fusion transactionnelle verrouillée et recontrôlée), bouton « Fusionner » dans `TierIdentityPanel` (aperçu des relations déplacées, blocage expliqué, confirmation).
