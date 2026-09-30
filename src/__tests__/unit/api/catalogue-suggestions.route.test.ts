@@ -157,4 +157,15 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     expect(created.programme).toHaveLength(4)
     expect(created).not.toHaveProperty('notation'); expect(created).not.toHaveProperty('dateDebut')
   })
+
+  it('nouveautés : signale les clés ajoutées après la plus ancienne version importée, sans modifier l’existant ; rien si rien n’a été importé', async () => {
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.whatsNew).toEqual({ since: null, keys: [] })
+    db.process.findMany.mockResolvedValue([{ id: 'p1', catalogueKey: 'core.process.deliver', catalogueVersion: '1.0' }])
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.whatsNew.since).toBe('1.0')
+    expect(data.whatsNew.keys).toContain('core.process.digital.iam')
+    expect(data.whatsNew.keys).not.toContain('core.process.deliver')
+    expect(db.process.create).not.toHaveBeenCalled()
+  })
 })

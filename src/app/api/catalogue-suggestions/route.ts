@@ -8,6 +8,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, peutEcrireAudit, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
+import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 
 export const dynamic = 'force-dynamic'
@@ -42,16 +43,21 @@ export async function GET(req: NextRequest) {
   const locale = parseLocale(url.searchParams.get('locale'))
   const query = (url.searchParams.get('q') ?? '').slice(0, 120)
   const [processes, risks, controls, kris, audits] = await Promise.all([
-    prisma.processus.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
-    prisma.riskItem.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }),
-    cfg.controlePermanentActive ? prisma.controle.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
-    cfg.kriActive ? prisma.kri.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
-    cfg.auditInterneActive ? prisma.auditMission.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true } }) : Promise.resolve([]),
+    prisma.processus.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true, catalogueVersion: true } }),
+    prisma.riskItem.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true, catalogueVersion: true } }),
+    cfg.controlePermanentActive ? prisma.controle.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true, catalogueVersion: true } }) : Promise.resolve([]),
+    cfg.kriActive ? prisma.kri.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true, catalogueVersion: true } }) : Promise.resolve([]),
+    cfg.auditInterneActive ? prisma.auditMission.findMany({ where: { organizationId: ctx.orgId, catalogueKey: { not: null } }, select: { catalogueKey: true, catalogueVersion: true } }) : Promise.resolve([]),
   ])
-  const existing = new Set([...processes, ...risks, ...controls, ...kris, ...audits].map(row => row.catalogueKey))
+  const imported = [...processes, ...risks, ...controls, ...kris, ...audits]
+  const existing = new Set(imported.map(row => row.catalogueKey))
   // Les contrôles-types ne sont proposés que si le module « contrôle permanent » est activé pour l'organisation.
   const items = searchSectorSuggestions(sector, locale, query).filter(item => (item.kind !== 'CONTROL' || cfg.controlePermanentActive) && (item.kind !== 'KRI' || cfg.kriActive) && (item.kind !== 'AUDIT' || cfg.auditInterneActive)).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
-  return NextResponse.json({ sector, configuredSectors: configured, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items })
+  // Nouveautés depuis la plus ancienne version importée : des propositions à consulter, jamais une mise à jour automatique.
+  const since = oldestImportedVersion(imported.map(row => row.catalogueVersion))
+  const visibleKeys = new Set(items.map(item => item.key))
+  const whatsNew = { since, keys: newSince(since, [...existing].filter((k): k is string => !!k)).filter(key => visibleKeys.has(key)) }
+  return NextResponse.json({ sector, configuredSectors: configured, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew })
 }
 
 /** Une confirmation explicite importe un sous-ensemble, jamais tout un pack implicite. */
