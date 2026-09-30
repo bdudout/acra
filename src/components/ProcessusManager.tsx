@@ -12,6 +12,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { buildProcessusTree, type ProcessusTree } from '@/lib/processus'
 import { CRITICITES_DORA, formatDuree, type CriticiteDora } from '@/lib/processus-dora'
 import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
+import ProcessusImportPanel from '@/components/ProcessusImportPanel'
 
 interface Processus {
   id: string; parentId: string | null; nom: string; description: string | null
@@ -40,6 +41,7 @@ const DORA_STYLE: Record<CriticiteDora, string> = {
 }
 
 export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
+  const [showImport, setShowImport] = useState(false)
   const { t } = useTranslation()
   const p = t.processus
   const [list, setList] = useState<Processus[]>([])
@@ -129,6 +131,12 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1"><FolderTree size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
       {canEdit && <SectorSuggestionsPanel canCreateProcesses onImported={() => { void reload() }} />}
+      {canEdit && (
+        <div className="mb-5">
+          <button type="button" className="btn-secondary text-sm" aria-expanded={showImport} onClick={() => setShowImport(v => !v)}>{t.processusImport.title}</button>
+          {showImport && <div className="mt-3"><ProcessusImportPanel onImported={() => { void reload() }} /></div>}
+        </div>
+      )}
 
       {canEdit && (
         <div className="card p-4 mb-5 space-y-3">

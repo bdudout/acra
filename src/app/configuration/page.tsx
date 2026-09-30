@@ -1,5 +1,6 @@
 'use client'
 
+import SectorSettings from '@/components/SectorSettings'
 import { Lock, Palette, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { isAdminRole } from '@/lib/permissions'
@@ -1292,6 +1293,7 @@ export default function ConfigurationPage() {
           </section>
         )}
 
+        {section === 'options' && <SectorSettings />}
         {/* ── Fonctionnalités optionnelles (ADMIN uniquement) ──────────────── */}
         {isAdmin && (
           <section className="mt-8 card p-6">

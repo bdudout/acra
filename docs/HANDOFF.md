@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (34) — Claude : socles sectoriels, lot 1 poursuivi (EN PAUSE — non poussé)
+
+- Repris et commités les travaux non commités de Codex : correctifs d'audit d'accès (`8156e44`) et suggestions de socle sectoriel (`d18467b`).
+- Ajouté (commit local suivant, **non poussé**) : configuration des secteurs de l'organisation (`SectorSettings`, `GET /api/catalogue-suggestions/sectors`, section « Fonctionnalités » de /configuration) ; **import guidé de processus CSV/XLSX** (`lib/processus-import.ts`, `POST /api/processus/import` aperçu + import, `ProcessusImportPanel` dans /processus) : parents par référence ou par nom, cycles, doublons, réimport idempotent par référence (`catalogueKey = import:<réf>`), doublon possible à confirmer, jamais de fusion.
+- Vérifié : `tsc` 0, `npm test` 3016 verts, `i18n:check` vert, `npm run build` OK.
+- **Non vérifié** : tout ce qui touche la base — Docker n'a pas pu être démarré (la migration `20260930190000_sector_suggestions` n'a jamais été appliquée en local) ; aucune recette navigateur des trois écrans (secteurs, suggestions, import de processus).
+- Bug signalé par l'utilisateur, **non traité** : « Nouveau projet 360 » (menu) mène à une analyse cyber ; piste : `/analyses/new?methode=PROJET_360` — la méthode est retombée sur le défaut car PROJET_360 est exclue des méthodes proposées (`MODULE_METHODS`).
+- Prochains pas : corriger le bug 360 ; recette DB/navigateur ; mettre à jour le statut de la spec `socles-sectoriels-tiers-canonique-backlog.md` ; enrichir le contenu du catalogue ; lot 2 (UI Tiers/offres/usages).
+
 ## 2026-09-30 (33) — tiers canonique, contrats groupe et usages : première tranche TDD
 
 - Cadrage enrichi dans `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : prestataire unique, plusieurs offres (y compris du même type), couverture contrat↔offre, plusieurs usages locaux/processus ; décision utilisateur « ADMIN groupe propose, ADMIN filiale confirme ». Aucun accès automatique aux descendants.
