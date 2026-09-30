@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (32) — cadrage des socles sectoriels et des tiers uniques
+
+- Nouvelle expression de besoins `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : propositions de risques/processus par socle transversal puis packs sectoriels, imports guidés, même principe étendu aux autres modules ; inventaire ciblé des fonctionnalités manquantes/en développement avec distinction code absent vs recette absente ; cible Tier canonique liant parties prenantes d'analyses et arrangements TIC sans recopier les objets.
+- Décisions utilisateur : suggestions validées avant toute création, pas de préremplissage automatique ; socle transversal avant packs sectoriels. Questions encore ouvertes dans la spec : gouvernance du rapprochement de tiers, périmètre filiale/groupe et ordre précis des secteurs.
+- Existant vérifié : registre de risques prérempli en bloc par un catalogue FR, processus CRUD sans import/catalogue, catalogues de contrôles/audit/RoPA déjà présents, jonction tiers↔TIC par nom en lecture seulement. Aucune modification applicative ou de base dans ce tour. `git fetch origin` impossible (DNS). Baseline `tsc` vert, `npm test` 363 fichiers / 2 942 tests verts ; vérifications documentaires et `git diff --check` en fin de tour.
+
 ## 2026-09-30 (31) — navbar GRC et publication du registre (TDD)
 
 - Navigation : KRI rapproché de l’appétence RAS/RAD dans Pilotage ; registre TIC déplacé dans « Registres » auprès du registre des risques, sans fusion des objets ni extension des droits ; les deux liens restent visibles si seul leur module est actif. « Risques des analyses » distingue la page des risques de celle du registre. Groupes titrés aussi sur mobile. Libellés dans les 5 langues.
