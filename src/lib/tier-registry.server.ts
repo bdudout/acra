@@ -29,3 +29,15 @@ export async function tierContext(opts: { write?: 'manage' | 'admin' } = {}): Pr
 export async function tierGranted(tierId: string, orgId: string): Promise<boolean> {
   return !!(await prisma.tierOrganization.findUnique({ where: { tierId_organizationId: { tierId, organizationId: orgId } }, select: { tierId: true } }))
 }
+
+/**
+ * Champ facultatif `tierId` d'une saisie d'arrangement : absent = lien inchangé ; nul ou vide = détachement ; valeur = rattachement
+ * à condition que le tiers soit autorisé pour l'organisation (sinon `ok: false`).
+ */
+export async function resolveTierIdInput(body: Record<string, unknown>, orgId: string): Promise<{ ok: true; provided: false } | { ok: true; provided: true; tierId: string | null } | { ok: false }> {
+  if (!('tierId' in body)) return { ok: true, provided: false }
+  const raw = body.tierId
+  if (raw === null || raw === '' || raw === undefined) return { ok: true, provided: true, tierId: null }
+  if (typeof raw !== 'string' || !(await tierGranted(raw, orgId))) return { ok: false }
+  return { ok: true, provided: true, tierId: raw }
+}

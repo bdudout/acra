@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-09-30 (38) — Claude : lot 2 tranche 3 — bénéficiaires depuis l'UI du groupe, sélecteur de tiers dans le registre TIC
+
+- `GET /api/tier-registry/[id]` : pour l'ADMIN de l'organisation RACINE, état des filiales bénéficiaires et filiales proposables par contrat (rien pour une filiale / un non-admin) ; `TierDetailPanel` : « Filiales bénéficiaires de … » (Proposer).
+- Registre TIC : `tierId` facultatif en POST/PATCH (`resolveTierIdInput` : absent = inchangé, nul = détache, valeur = tiers autorisé sinon 400), `tiersOptions` en GET, sélecteur + préremplissage non destructif dans `RegistreTicManager`, badge « identité rattachée ».
+- Recette réelle : `local-tiers-groupe` 3/3 (proposition depuis l'UI), `local-tiers` 4/4 (dont registre TIC), `local-socles` 5/5. Piège local : le limiteur de connexion bloque les campagnes e2e répétées → redémarrer `next dev`.
+- Vérifié : `tsc` 0, `npm test` 3095, `i18n:check`, build. Spec § 8.5.
+- Reste : parties prenantes → tiers (atelier 3) ; fusion avec aperçu ; criticité d'usage ; import de contrats avec identité ; rapprochement en masse des arrangements existants.
+
 ## 2026-09-30 (37) — Claude : lot 2 tranche 2 — offres, couverture, usages, propositions de bénéficiaires
 
 - Décision utilisateur : création/rapprochement d'identités de tiers = ADMIN **et** 2ᵉ ligne (`peutGererRegistreTic`).

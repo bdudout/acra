@@ -9,7 +9,7 @@ const m = vi.hoisted(() => ({
   arrFindMany: vi.fn(), arrFindFirst: vi.fn(),
   tcsFindMany: vi.fn(), tcsCreateMany: vi.fn(), tcsDeleteMany: vi.fn(),
   usageFindMany: vi.fn(), usageFindUnique: vi.fn(), usageDelete: vi.fn(), usageGroupBy: vi.fn(),
-  procFindMany: vi.fn(), tx: vi.fn(),
+  procFindMany: vi.fn(), tx: vi.fn(), benFindMany: vi.fn(), orgFindUnique: vi.fn(), orgFindMany: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -23,6 +23,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany },
   tierServiceUsage: { findMany: m.usageFindMany, findUnique: m.usageFindUnique, delete: m.usageDelete, groupBy: m.usageGroupBy },
   processus: { findMany: m.procFindMany }, $transaction: m.tx,
+  tierContractBeneficiary: { findMany: m.benFindMany }, organization: { findUnique: m.orgFindUnique, findMany: m.orgFindMany },
 } }))
 import { GET as DETAIL } from '@/app/api/tier-registry/[id]/route'
 import { POST as ADD_SERVICE } from '@/app/api/tier-registry/[id]/services/route'
@@ -42,7 +43,7 @@ beforeEach(() => {
   m.tierOrgFindUnique.mockResolvedValue({ tierId: 't1' })
   m.tierFindUnique.mockResolvedValue({ id: 't1', nom: 'Acme', lei: null, pays: 'FR' })
   m.svcFindMany.mockResolvedValue([]); m.arrFindMany.mockResolvedValue([]); m.tcsFindMany.mockResolvedValue([]); m.usageFindMany.mockResolvedValue([]); m.procFindMany.mockResolvedValue([])
-  m.usageGroupBy.mockResolvedValue([])
+  m.usageGroupBy.mockResolvedValue([]); m.benFindMany.mockResolvedValue([]); m.orgFindMany.mockResolvedValue([]); m.orgFindUnique.mockResolvedValue({ id: 'fil1', path: '/grp/fil1/' })
   m.svcCreate.mockImplementation(async ({ data }: { data: object }) => ({ id: 's-new', ...data }))
   m.svcUpdate.mockImplementation(async ({ data }: { data: object }) => ({ id: 's1', ...data }))
   m.tx.mockImplementation(async (fn: (tx: unknown) => unknown) => fn({ tierContractService: { findMany: m.tcsFindMany, createMany: m.tcsCreateMany, deleteMany: m.tcsDeleteMany }, tierServiceUsage: { groupBy: m.usageGroupBy } }))
@@ -75,6 +76,31 @@ describe('GET /api/tier-registry/[id] — fiche d’un tiers', () => {
   it('tiers non autorisé pour l’organisation : 404', async () => {
     m.tierOrgFindUnique.mockResolvedValue(null)
     expect((await DETAIL(req(undefined, 'GET'), p({ id: 'tEtranger' }))).status).toBe(404)
+  })
+})
+
+describe('GET /api/tier-registry/[id] — bénéficiaires d’un contrat groupe', () => {
+  const groupContract = { id: 'aG', reference: 'CG-7', organizationId: 'grp', beneficiaries: [], servicesCouverts: [] }
+  it('l’ADMIN de l’organisation RACINE voit, pour ses contrats, l’état de chaque filiale et les filiales encore proposables', async () => {
+    m.scope.mockResolvedValue({ role: 'ADMIN', activeOrgId: 'grp', scope: { visibleOrgIds: ['grp'], isSuperAdmin: false } })
+    m.orgFindUnique.mockResolvedValue({ id: 'grp', path: '/grp/' })
+    m.arrFindMany.mockResolvedValue([{ ...groupContract }])
+    m.benFindMany.mockResolvedValue([{ arrangementId: 'aG', organizationId: 'f1', status: 'CONFIRMED', organization: { nom: 'Filiale 1' } }, { arrangementId: 'aG', organizationId: 'f2', status: 'PROPOSED', organization: { nom: 'Filiale 2' } }])
+    m.orgFindMany.mockResolvedValue([{ id: 'f1', nom: 'Filiale 1' }, { id: 'f2', nom: 'Filiale 2' }, { id: 'f3', nom: 'Filiale 3' }])
+    const body = await (await DETAIL(req(undefined, 'GET'), p({ id: 't1' }))).json()
+    const c = body.contracts[0]
+    expect(c.beneficiaries.map((b: { nom: string; status: string }) => [b.nom, b.status])).toEqual([['Filiale 1', 'CONFIRMED'], ['Filiale 2', 'PROPOSED']])
+    expect(c.proposable.map((o: { id: string }) => o.id)).toEqual(['f3']) // pas déjà confirmée / proposée
+    expect(m.orgFindMany.mock.calls[0][0].where).toMatchObject({ path: { startsWith: '/grp/' }, id: { not: 'grp' } })
+  })
+  it('une filiale (non racine) ne voit ni les bénéficiaires d’un contrat ni d’autres filiales ; un non-admin non plus', async () => {
+    m.arrFindMany.mockResolvedValue([{ ...groupContract, organizationId: 'fil1' }])
+    const filiale = await (await DETAIL(req(undefined, 'GET'), p({ id: 't1' }))).json()
+    expect(filiale.contracts[0].beneficiaries).toEqual([]); expect(filiale.contracts[0].proposable).toEqual([])
+    expect(m.orgFindMany).not.toHaveBeenCalled(); expect(m.benFindMany).not.toHaveBeenCalled()
+    m.scope.mockResolvedValue({ role: 'RSSI', activeOrgId: 'grp', scope: { visibleOrgIds: ['grp'], isSuperAdmin: false } }); m.orgFindUnique.mockResolvedValue({ id: 'grp', path: '/grp/' })
+    const rssi = await (await DETAIL(req(undefined, 'GET'), p({ id: 't1' }))).json()
+    expect(rssi.contracts[0].proposable).toEqual([])
   })
 })
 

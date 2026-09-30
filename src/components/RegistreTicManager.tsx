@@ -23,6 +23,7 @@ interface Arrangement {
   typeService: string; fonctionSupportee: string | null; criticite: string
   dateDebut: string | null; dateFin: string | null; paysDonnees: string | null; sousTraitance: boolean
   champsManquants: string[]
+  tierId?: string | null
   ecosysteme?: EcoResume | null
   qualification?: QualifVerdict
   questionnaire?: ReponseQuestion[]
@@ -45,13 +46,13 @@ const CRIT_BADGE: Record<string, string> = {
 
 const emptyForm = {
   reference: '', prestataireNom: '', identifiant: '', pays: '', typeService: 'CLOUD',
-  fonctionSupportee: '', criticite: 'NON_CRITIQUE', dateDebut: '', dateFin: '', paysDonnees: '', sousTraitance: false,
+  fonctionSupportee: '', criticite: 'NON_CRITIQUE', dateDebut: '', dateFin: '', paysDonnees: '', sousTraitance: false, tierId: '',
 }
 
 export default function RegistreTicManager({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation()
   const r = t.registreTic
-  const [data, setData] = useState<{ arrangements: Arrangement[]; synthese: Synthese; completude: Completude } | null>(null)
+  const [data, setData] = useState<{ arrangements: Arrangement[]; synthese: Synthese; completude: Completude; tiersOptions: { id: string; nom: string; lei: string | null; pays: string | null }[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -65,6 +66,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
       arrangements: d?.arrangements ?? [],
       synthese: d?.synthese ?? { arrangements: 0, prestataires: 0, critiques: 0, sousTraitance: 0, concentrationTop: null, expirentBientot: 0 },
       completude: d?.completude ?? { total: 0, complets: 0, incomplets: 0, taux: 1 },
+      tiersOptions: d?.tiersOptions ?? [],
     })
     setLoading(false)
   }
@@ -77,7 +79,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
       reference: a.reference, prestataireNom: a.prestataireNom, identifiant: a.identifiant ?? '', pays: a.pays ?? '',
       typeService: a.typeService, fonctionSupportee: a.fonctionSupportee ?? '', criticite: a.criticite,
       dateDebut: a.dateDebut ? a.dateDebut.slice(0, 10) : '', dateFin: a.dateFin ? a.dateFin.slice(0, 10) : '',
-      paysDonnees: a.paysDonnees ?? '', sousTraitance: a.sousTraitance,
+      paysDonnees: a.paysDonnees ?? '', sousTraitance: a.sousTraitance, tierId: a.tierId ?? '',
     })
     setErr(null); setShowForm(true)
   }
@@ -85,7 +87,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
   async function save(e: React.FormEvent) {
     e.preventDefault()
     const url = editing ? `/api/reglementaire/registre-tic/${editing}` : '/api/reglementaire/registre-tic'
-    const res = await fetch(url, { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    const res = await fetch(url, { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, tierId: form.tierId || null }) })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
       setErr(d.error === 'reference_requise' || d.error === 'prestataire_requis' ? r.errorRequired : (d.error || 'Erreur'))
@@ -187,6 +189,15 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
               <input className={`mt-1 ${inputCls}`} value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} required /></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.prestataire}</span>
               <input className={`mt-1 ${inputCls}`} value={form.prestataireNom} onChange={e => setForm({ ...form, prestataireNom: e.target.value })} required /></label>
+            <label className="block sm:col-span-2"><span className="text-sm text-gray-700 dark:text-gray-300">{r.tierChamp}</span>
+              <select aria-label={r.tierChamp} className={`mt-1 ${inputCls}`} value={form.tierId} onChange={e => {
+                // Choisir une identité préremplit nom, LEI et pays SEULEMENT s'ils sont vides (jamais d'écrasement d'une saisie).
+                const chosen = (data?.tiersOptions ?? []).find(o => o.id === e.target.value)
+                setForm(f => ({ ...f, tierId: e.target.value, ...(chosen ? { prestataireNom: f.prestataireNom || chosen.nom, identifiant: f.identifiant || (chosen.lei ?? ''), pays: f.pays || (chosen.pays ?? '') } : {}) }))
+              }}>
+                <option value="">{r.tierNone}</option>
+                {(data?.tiersOptions ?? []).map(o => <option key={o.id} value={o.id}>{o.nom}</option>)}
+              </select></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.identifiant}</span>
               <input className={`mt-1 ${inputCls}`} value={form.identifiant} onChange={e => setForm({ ...form, identifiant: e.target.value })} placeholder="LEI" /></label>
             <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.pays}</span>
@@ -242,6 +253,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
                   <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{a.reference}</td>
                   <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
                     {a.prestataireNom}
+                    {a.tierId && <span className="ml-1.5 text-xs text-green-700 dark:text-green-400" role="img" aria-label={r.tierLinked} title={r.tierLinked}>✓</span>}
                     {a.sousTraitance && <span className="ml-1.5 text-[10px] text-gray-400" title={r.champ.sousTraitance}>⛓</span>}
                   </td>
                   <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{r.typeOpt[a.typeService as keyof typeof r.typeOpt] ?? a.typeService}</td>

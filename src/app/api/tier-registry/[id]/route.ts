@@ -28,12 +28,27 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       orderBy: { createdAt: 'asc' },
     }),
   ])
+  // Organisation RACINE (contrats groupe) : l'ADMIN voit l'état de chaque filiale bénéficiaire et celles qu'il peut encore proposer.
+  const org = ctx.isAdmin ? await prisma.organization.findUnique({ where: { id: ctx.orgId }, select: { id: true, path: true } }) : null
+  const isGroupRoot = !!org && org.path === `/${org.id}/`
+  const ownedIds = arrangements.filter(a => a.organizationId === ctx.orgId).map(a => a.id)
+  const [benRows, descendants] = isGroupRoot && ownedIds.length
+    ? await Promise.all([
+        prisma.tierContractBeneficiary.findMany({ where: { arrangementId: { in: ownedIds } }, select: { arrangementId: true, organizationId: true, status: true, organization: { select: { nom: true } } } }),
+        prisma.organization.findMany({ where: { path: { startsWith: org!.path }, id: { not: org!.id }, actif: true }, select: { id: true, nom: true }, orderBy: { nom: 'asc' } }),
+      ])
+    : [[], []]
   const contractServices = arrangements.flatMap(a => a.servicesCouverts.map(cs => ({ id: cs.id, arrangementId: a.id, reference: a.reference, serviceId: cs.tierServiceId, owner: a.organizationId, status: a.beneficiaries[0]?.status ?? null })))
   const csById = new Map(contractServices.map(cs => [cs.id, cs]))
   return NextResponse.json({
     tier,
     orgId: ctx.orgId, canManage: ctx.canManage, isAdmin: ctx.isAdmin,
-    contracts: arrangements.map(a => ({ id: a.id, reference: a.reference, ownedHere: a.organizationId === ctx.orgId, serviceIds: a.servicesCouverts.map(cs => cs.tierServiceId) })),
+    contracts: arrangements.map(a => {
+      const beneficiaries = benRows.filter(b => b.arrangementId === a.id).map(b => ({ organizationId: b.organizationId, nom: b.organization.nom, status: b.status }))
+      const taken = new Set(beneficiaries.filter(b => b.status === 'CONFIRMED' || b.status === 'PROPOSED').map(b => b.organizationId))
+      return { id: a.id, reference: a.reference, ownedHere: a.organizationId === ctx.orgId, serviceIds: a.servicesCouverts.map(cs => cs.tierServiceId),
+        beneficiaries, proposable: a.organizationId === ctx.orgId ? descendants.filter(o => !taken.has(o.id)) : [] }
+    }),
     contractServices: contractServices.map(({ id: csId, arrangementId, reference, serviceId }) => ({ id: csId, arrangementId, reference, serviceId })),
     services: services.map(s => ({
       ...s,

@@ -102,4 +102,25 @@ describe('TierDetailPanel — offres, couverture et usages', () => {
     expect(screen.queryByLabelText('Nom de l’offre')).toBeNull(); expect(screen.queryByLabelText('Cas d’usage')).toBeNull()
     expect(screen.queryByRole('button', { name: /Supprimer l’usage/ })).toBeNull()
   })
+
+  it('contrat groupe (organisation racine) : état de chaque filiale bénéficiaire et proposition d’une nouvelle filiale', async () => {
+    const withBeneficiaries = { ...detail, contracts: [{ id: 'a1', reference: 'C-1', ownedHere: true, serviceIds: ['s1'],
+      beneficiaries: [{ organizationId: 'f1', nom: 'Filiale 1', status: 'CONFIRMED' }, { organizationId: 'f2', nom: 'Filiale 2', status: 'PROPOSED' }, { organizationId: 'f4', nom: 'Filiale 4', status: 'REJECTED' }],
+      proposable: [{ id: 'f3', nom: 'Filiale 3' }, { id: 'f4', nom: 'Filiale 4' }] }] }
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => (init?.method && init.method !== 'GET' ? ok({ ok: true }, 201) : url.startsWith('/api/processus') ? ok(processus) : ok(withBeneficiaries)))
+    render(<TierDetailPanel tierId="t1" />)
+    const box = await screen.findByRole('group', { name: 'Filiales bénéficiaires de C-1' })
+    expect(box).toHaveTextContent('Filiale 1'); expect(box).toHaveTextContent('Confirmée')
+    expect(box).toHaveTextContent('Proposée'); expect(box).toHaveTextContent('Refusée')
+    fireEvent.change(within(box).getByLabelText('Proposer à'), { target: { value: 'f3' } })
+    fireEvent.click(within(box).getByRole('button', { name: 'Proposer' }))
+    await waitFor(() => expect(posts()).toHaveLength(1))
+    expect(posts()[0][0]).toBe('/api/tiers/contracts/a1/beneficiaries')
+    expect(JSON.parse(String(posts()[0][1].body))).toEqual({ organizationId: 'f3' })
+  })
+  it('pas de section bénéficiaires pour un contrat sans filiale ni proposition possible', async () => {
+    render(<TierDetailPanel tierId="t1" />)
+    await screen.findByText('Offres et usages')
+    expect(screen.queryByRole('group', { name: /Filiales bénéficiaires/ })).toBeNull()
+  })
 })

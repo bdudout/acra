@@ -12,7 +12,7 @@ type Usage = { id: string; useCase: string; processusNom: string | null; contrac
 type Service = { id: string; nom: string; typeService: string; actif: boolean; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
-  contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[] }[]
+  contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[]; beneficiaries?: { organizationId: string; nom: string; status: 'PROPOSED' | 'CONFIRMED' | 'REJECTED' }[]; proposable?: { id: string; nom: string }[] }[]
   contractServices: { id: string; arrangementId: string; reference: string; serviceId: string }[]
   services: Service[]
 }
@@ -29,6 +29,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   const [busy, setBusy] = useState(false)
   const [offer, setOffer] = useState({ nom: '', typeService: 'AUTRE' })
   const [coverage, setCoverage] = useState<Record<string, string[]>>({})
+  const [proposeTo, setProposeTo] = useState<Record<string, string>>({})
   const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string }>>({})
 
   const load = useCallback(async () => {
@@ -134,6 +135,26 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
             ))}
           </div>
           <button type="button" className="btn-secondary mt-2 text-xs" disabled={busy} onClick={() => void run(() => send(`/api/tier-registry/contracts/${k.id}/services`, 'PUT', { serviceIds: coverage[k.id] ?? [] }))}>{c.saveCoverage}</button>
+        </fieldset>
+      ))}
+
+      {detail.isAdmin && ownContracts.filter(k => (k.beneficiaries?.length ?? 0) > 0 || (k.proposable?.length ?? 0) > 0).map(k => (
+        <fieldset key={`ben-${k.id}`} className="rounded border border-gray-200 p-2 dark:border-gray-700">
+          <legend className="px-1 text-xs font-medium text-gray-700 dark:text-gray-200">{c.beneficiariesTitle.replace('{ref}', k.reference)}</legend>
+          <ul className="space-y-1 text-xs text-gray-800 dark:text-gray-100">
+            {(k.beneficiaries ?? []).map(b => <li key={b.organizationId}>{b.nom} — <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{c.beneficiaryStatus[b.status]}</span></li>)}
+          </ul>
+          {(k.proposable?.length ?? 0) > 0 && (
+            <div className="mt-2 flex flex-wrap items-end gap-2">
+              <label className="text-xs text-gray-700 dark:text-gray-200">{c.proposeTo}
+                <select aria-label={c.proposeTo} className="input mt-1 block text-sm" value={proposeTo[k.id] ?? ''} onChange={e => setProposeTo(p => ({ ...p, [k.id]: e.target.value }))}>
+                  <option value="">—</option>{k.proposable!.map(o => <option key={o.id} value={o.id}>{o.nom}</option>)}
+                </select>
+              </label>
+              <button type="button" className="btn-secondary text-xs" disabled={busy || !proposeTo[k.id]} onClick={() => void run(async () => { const res = await send(`/api/tiers/contracts/${k.id}/beneficiaries`, 'POST', { organizationId: proposeTo[k.id] }); if (res.ok) setProposeTo(p => ({ ...p, [k.id]: '' })); return res })}>{c.propose}</button>
+            </div>
+          )}
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{c.beneficiariesHint}</p>
         </fieldset>
       ))}
     </div>
