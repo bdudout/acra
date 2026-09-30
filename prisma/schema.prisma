@@ -988,6 +988,7 @@ model TierServiceUsage {
   contractService   TierContractService? @relation(fields: [contractServiceId], references: [id], onDelete: SetNull)
   useCase           String
   description       String? @db.Text
+  criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

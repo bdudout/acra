@@ -37,3 +37,19 @@ export function usageCoverage(input: { organizationId: string; contractService: 
   if (c.ownerOrganizationId === input.organizationId) return 'CONFIRMED'
   return c.beneficiaryStatus === 'CONFIRMED' ? 'CONFIRMED' : 'UNCONFIRMED'
 }
+
+// ─── Criticité d'un usage (DORA : une fonction critique ou importante portée par un prestataire) ─────────────────────────
+import { NIVEAUX_CRITICITE, type NiveauCriticite } from './registre-tic'
+const RANG_CRITICITE: Record<NiveauCriticite, number> = { NON_CRITIQUE: 0, IMPORTANTE: 1, CRITIQUE: 2 }
+
+/** Facultative : absente = non renseignée ; une valeur inconnue est refusée (jamais corrigée en silence). */
+export function cleanUsageCriticality(raw: unknown): { ok: true; value: NiveauCriticite | null } | { ok: false; error: 'criticite_invalide' } {
+  if (raw === undefined || raw === null || raw === '') return { ok: true, value: null }
+  return (NIVEAUX_CRITICITE as readonly string[]).includes(String(raw)) ? { ok: true, value: raw as NiveauCriticite } : { ok: false, error: 'criticite_invalide' }
+}
+
+/** Vrai si l'usage est plus critique que le contrat qui le couvre : le contrat est sous-qualifié (à revoir), sans jamais le modifier seul. */
+export function usageCriticalityGap(usage: NiveauCriticite | null, contract: NiveauCriticite | null): boolean {
+  if (!usage || !contract) return false
+  return RANG_CRITICITE[usage] > RANG_CRITICITE[contract]
+}

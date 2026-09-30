@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { tierContext, tierGranted } from '@/lib/tier-registry.server'
-import { usageCoverage } from '@/lib/tier-offers'
+import { usageCoverage, usageCriticalityGap } from '@/lib/tier-offers'
+import type { NiveauCriticite } from '@/lib/registre-tic'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,12 +20,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     prisma.tierService.findMany({ where: { tierId: id }, select: { id: true, nom: true, typeService: true, description: true, actif: true }, orderBy: { nom: 'asc' } }),
     prisma.arrangementTic.findMany({
       where: { tierId: id, OR: [{ organizationId: ctx.orgId }, { beneficiaries: { some: { organizationId: ctx.orgId, status: 'CONFIRMED' } } }] },
-      select: { id: true, reference: true, organizationId: true, beneficiaries: { where: { organizationId: ctx.orgId }, select: { organizationId: true, status: true } }, servicesCouverts: { select: { id: true, tierServiceId: true } } },
+      select: { id: true, reference: true, organizationId: true, criticite: true, beneficiaries: { where: { organizationId: ctx.orgId }, select: { organizationId: true, status: true } }, servicesCouverts: { select: { id: true, tierServiceId: true } } },
       orderBy: { reference: 'asc' },
     }),
     prisma.tierServiceUsage.findMany({
       where: { organizationId: ctx.orgId, tierService: { tierId: id } },
-      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true },
+      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true, criticite: true },
       orderBy: { createdAt: 'asc' },
     }),
   ])
@@ -38,7 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         prisma.organization.findMany({ where: { path: { startsWith: org!.path }, id: { not: org!.id }, actif: true }, select: { id: true, nom: true }, orderBy: { nom: 'asc' } }),
       ])
     : [[], []]
-  const contractServices = arrangements.flatMap(a => a.servicesCouverts.map(cs => ({ id: cs.id, arrangementId: a.id, reference: a.reference, serviceId: cs.tierServiceId, owner: a.organizationId, status: a.beneficiaries[0]?.status ?? null })))
+  const contractServices = arrangements.flatMap(a => a.servicesCouverts.map(cs => ({ id: cs.id, arrangementId: a.id, reference: a.reference, serviceId: cs.tierServiceId, owner: a.organizationId, status: a.beneficiaries[0]?.status ?? null, criticite: a.criticite as NiveauCriticite })))
   const csById = new Map(contractServices.map(cs => [cs.id, cs]))
   return NextResponse.json({
     tier,
@@ -55,7 +56,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       coveredBy: contractServices.filter(cs => cs.serviceId === s.id).map(cs => ({ arrangementId: cs.arrangementId, reference: cs.reference, contractServiceId: cs.id })),
       usages: usages.filter(u => u.tierServiceId === s.id).map(u => {
         const cs = u.contractServiceId ? csById.get(u.contractServiceId) : undefined
-        return { id: u.id, useCase: u.useCase, description: u.description, processusId: u.processusId, processusNom: u.processus?.nom ?? null, contractServiceId: u.contractServiceId,
+        return { id: u.id, useCase: u.useCase, description: u.description, processusId: u.processusId, processusNom: u.processus?.nom ?? null, contractServiceId: u.contractServiceId, criticite: u.criticite,
+          criticiteContrat: cs?.criticite ?? null, criticiteEcart: usageCriticalityGap(u.criticite as NiveauCriticite | null, cs?.criticite ?? null),
           coverage: usageCoverage({ organizationId: ctx.orgId, contractService: cs ? { ownerOrganizationId: cs.owner, beneficiaryStatus: cs.status as 'PROPOSED' | 'CONFIRMED' | 'REJECTED' | null } : null }) }
       }),
     })),

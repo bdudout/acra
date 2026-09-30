@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { TYPES_SERVICE_TIC } from '@/lib/registre-tic'
 
-type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED' }
+type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED' }
 type Service = { id: string; nom: string; typeService: string; actif: boolean; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
@@ -30,7 +30,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   const [offer, setOffer] = useState({ nom: '', typeService: 'AUTRE' })
   const [coverage, setCoverage] = useState<Record<string, string[]>>({})
   const [proposeTo, setProposeTo] = useState<Record<string, string>>({})
-  const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string }>>({})
+  const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string; criticite: string }>>({})
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +69,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       {detail.services.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">{c.noOffers}</p>}
       <ul className="space-y-3">
         {detail.services.map(s => {
-          const form = usageForms[s.id] ?? { useCase: '', processusId: '', contractServiceId: '' }
+          const form = usageForms[s.id] ?? { useCase: '', processusId: '', contractServiceId: '', criticite: '' }
           const setForm = (patch: Partial<typeof form>) => setUsageForms(f => ({ ...f, [s.id]: { ...form, ...patch } }))
           const choices = detail.contractServices.filter(cs => cs.serviceId === s.id)
           return (
@@ -82,13 +82,19 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                     <li key={u.id} className="flex flex-wrap items-center gap-2 text-xs text-gray-800 dark:text-gray-100">
                       <span className="font-medium">{u.useCase}</span>{u.processusNom && <span>— {u.processusNom}</span>}
                       <span className={`rounded-full px-2 py-0.5 ${u.coverage === 'CONFIRMED' ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100' : 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100'}`}>{c.coverage[u.coverage]}</span>
+                      {detail.isAdmin
+                        ? <select aria-label={c.criticalityOf.replace('{name}', u.useCase)} className="input py-0.5 text-xs" value={u.criticite ?? ''} disabled={busy} onChange={e => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'PATCH', { criticite: e.target.value }))}>
+                            <option value="">{c.criticalityNone}</option>{Object.entries(c.criticalityLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        : u.criticite && <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{c.criticalityLabels[u.criticite as keyof typeof c.criticalityLabels] ?? u.criticite}</span>}
+                      {u.criticiteEcart && <span role="status" className="rounded-full bg-red-100 px-2 py-0.5 text-red-900 dark:bg-red-900/40 dark:text-red-100">{c.criticalityGap.replace('{contract}', c.criticalityLabels[u.criticiteContrat as keyof typeof c.criticalityLabels] ?? String(u.criticiteContrat))}</span>}
                       {detail.isAdmin && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
                     </li>
                   ))}
                 </ul>
               )}
               {detail.isAdmin && s.actif && (
-                <div className="mt-2 grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
+                <div className="mt-2 grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-end">
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.useCase}<input aria-label={c.useCase} className="input mt-1 block w-full text-sm" value={form.useCase} maxLength={1000} onChange={e => setForm({ useCase: e.target.value })} /></label>
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.process}
                     <select aria-label={c.process} className="input mt-1 block w-full text-sm" value={form.processusId} onChange={e => setForm({ processusId: e.target.value })}>
@@ -100,9 +106,14 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                       <option value="">{c.outOfContract}</option>{choices.map(cs => <option key={cs.id} value={cs.id}>{cs.reference}</option>)}
                     </select>
                   </label>
+                  <label className="text-xs text-gray-700 dark:text-gray-200">{c.criticality}
+                    <select aria-label={c.criticality} className="input mt-1 block w-full text-sm" value={form.criticite} onChange={e => setForm({ criticite: e.target.value })}>
+                      <option value="">{c.criticalityNone}</option>{Object.entries(c.criticalityLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </label>
                   <button type="button" className="btn-secondary text-sm" disabled={busy || !form.useCase.trim()} onClick={() => void run(async () => {
-                    const res = await send(`/api/tiers/services/${s.id}/usages`, 'POST', { organizationId: detail.orgId, useCase: form.useCase, ...(form.processusId ? { processusId: form.processusId } : {}), ...(form.contractServiceId ? { contractServiceId: form.contractServiceId } : {}) })
-                    if (res.ok) setUsageForms(f => ({ ...f, [s.id]: { useCase: '', processusId: '', contractServiceId: '' } }))
+                    const res = await send(`/api/tiers/services/${s.id}/usages`, 'POST', { organizationId: detail.orgId, useCase: form.useCase, ...(form.processusId ? { processusId: form.processusId } : {}), ...(form.contractServiceId ? { contractServiceId: form.contractServiceId } : {}), ...(form.criticite ? { criticite: form.criticite } : {}) })
+                    if (res.ok) setUsageForms(f => ({ ...f, [s.id]: { useCase: '', processusId: '', contractServiceId: '', criticite: '' } }))
                     return res
                   })}>{c.addUsage}</button>
                 </div>
