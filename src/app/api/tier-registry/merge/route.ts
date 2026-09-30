@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { tierContext, tierGranted } from '@/lib/tier-registry.server'
-import { mergeAliases, planTierMerge, type MergeError } from '@/lib/tier-merge'
+import { isGroupAdminMerge, mergeAliases, planTierMerge, type MergeError } from '@/lib/tier-merge'
 import { normalizeLei } from '@/lib/tier-identity'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 type Db = Pick<typeof prisma, 'tierOrganization' | 'arrangementTic' | 'partiePrenante' | 'tierService' | 'tierServiceUsage' | 'tier'>
 
 /** Ce que la fusion déplacerait, et ce qui appartiendrait à d'AUTRES organisations (auquel cas elle est refusée). */
-async function measure(db: Db, sourceId: string, orgId: string) {
+async function measure(db: Db, sourceId: string, orgId: string, group = false) {
   const [otherOrganizations, arrTotal, arrHere, ppTotal, ppHere, services, usageTotal, usageHere] = await Promise.all([
     db.tierOrganization.count({ where: { tierId: sourceId, organizationId: { not: orgId } } }),
     db.arrangementTic.count({ where: { tierId: sourceId } }), db.arrangementTic.count({ where: { tierId: sourceId, organizationId: orgId } }),
@@ -21,7 +21,10 @@ async function measure(db: Db, sourceId: string, orgId: string) {
   ])
   return {
     exposure: { otherOrganizations, foreignArrangements: arrTotal - arrHere, foreignParties: ppTotal - ppHere, foreignUsages: usageTotal - usageHere },
-    counts: { arrangements: arrHere, parties: ppHere, services, usages: usageHere },
+    // Administrateur du groupe : l'aperçu annonce TOUT ce qui est déplacé, filiales comprises.
+    counts: group
+      ? { arrangements: arrTotal, parties: ppTotal, services, usages: usageTotal, organizations: otherOrganizations }
+      : { arrangements: arrHere, parties: ppHere, services, usages: usageHere, organizations: 0 },
   }
 }
 
@@ -44,9 +47,11 @@ export async function GET(req: NextRequest) {
   const loaded = await load(url.searchParams.get('sourceId') ?? '', url.searchParams.get('targetId') ?? '', ctx.orgId)
   if ('error' in loaded) return NextResponse.json({ error: loaded.error }, { status: loaded.status })
   const { source, target } = loaded
-  const measured = await measure(prisma, source.id, ctx.orgId)
-  const plan = planTierMerge({ id: source.id, lei: source.lei, root: source.rootOrganizationId }, { id: target.id, lei: target.lei, root: target.rootOrganizationId }, measured.exposure)
-  return NextResponse.json({ ...(plan.ok ? { ok: true } : { ok: false, error: plan.error }), source: { id: source.id, nom: source.nom }, target: { id: target.id, nom: target.nom }, counts: measured.counts })
+  const sides = [{ id: source.id, lei: source.lei, root: source.rootOrganizationId }, { id: target.id, lei: target.lei, root: target.rootOrganizationId }] as const
+  const groupAdmin = isGroupAdminMerge(ctx, sides[0], sides[1])
+  const measured = await measure(prisma, source.id, ctx.orgId, groupAdmin)
+  const plan = planTierMerge(sides[0], sides[1], measured.exposure, { groupAdmin })
+  return NextResponse.json({ ...(plan.ok ? { ok: true } : { ok: false, error: plan.error }), groupAdmin, source: { id: source.id, nom: source.nom }, target: { id: target.id, nom: target.nom }, counts: measured.counts })
 }
 
 /**
@@ -67,12 +72,25 @@ export async function POST(req: NextRequest) {
     const tiers = await tx.tier.findMany({ where: { id: { in: [sourceId, targetId] } }, select: { id: true, nom: true, lei: true, pays: true, aliases: true, rootOrganizationId: true } })
     const source = tiers.find(t => t.id === sourceId); const target = tiers.find(t => t.id === targetId)
     if (!source || !target) return { error: 'not_found' as const }
-    const measured = await measure(tx as unknown as Db, source.id, ctx.orgId)
-    const plan = planTierMerge({ id: source.id, lei: source.lei, root: source.rootOrganizationId }, { id: target.id, lei: target.lei, root: target.rootOrganizationId }, measured.exposure)
+    const sides = [{ id: source.id, lei: source.lei, root: source.rootOrganizationId }, { id: target.id, lei: target.lei, root: target.rootOrganizationId }] as const
+    const groupAdmin = isGroupAdminMerge(ctx, sides[0], sides[1])
+    const measured = await measure(tx as unknown as Db, source.id, ctx.orgId, groupAdmin)
+    const plan = planTierMerge(sides[0], sides[1], measured.exposure, { groupAdmin })
     if (!plan.ok) return { error: plan.error }
-    await tx.arrangementTic.updateMany({ where: { tierId: source.id, organizationId: ctx.orgId }, data: { tierId: target.id } })
+    // Sans droit de groupe, seules les données de l'organisation sont concernées (le contrôle ci-dessus a garanti qu'il n'y a rien d'autre).
+    await tx.arrangementTic.updateMany({ where: { tierId: source.id, ...(groupAdmin ? {} : { organizationId: ctx.orgId }) }, data: { tierId: target.id } })
     await tx.partiePrenante.updateMany({ where: { tierId: source.id }, data: { tierId: target.id } })
     await tx.tierService.updateMany({ where: { tierId: source.id }, data: { tierId: target.id } })
+    if (groupAdmin) {
+      // Les filiales qui avaient accès à l'identité absorbée gardent un accès à l'identité conservée (jamais d'accès perdu ni élargi).
+      const [grants, already] = await Promise.all([
+        tx.tierOrganization.findMany({ where: { tierId: source.id }, select: { organizationId: true } }),
+        tx.tierOrganization.findMany({ where: { tierId: target.id }, select: { organizationId: true } }),
+      ])
+      const have = new Set(already.map(g => g.organizationId))
+      const missing = grants.filter(g => !have.has(g.organizationId))
+      if (missing.length) await tx.tierOrganization.createMany({ data: missing.map(g => ({ tierId: target.id, organizationId: g.organizationId })) })
+    }
     await tx.tierOrganization.deleteMany({ where: { tierId: source.id } })
     await tx.tier.update({ where: { id: target.id }, data: {
       aliases: mergeAliases({ nom: target.nom, aliases: asAliases(target.aliases) }, { nom: source.nom, aliases: asAliases(source.aliases) }),
@@ -80,9 +98,9 @@ export async function POST(req: NextRequest) {
       ...(!target.pays && source.pays ? { pays: source.pays } : {}),
     } })
     await tx.tier.delete({ where: { id: source.id } })
-    return { ok: true as const, counts: measured.counts, sourceNom: source.nom, targetNom: target.nom }
+    return { ok: true as const, groupAdmin, counts: measured.counts, sourceNom: source.nom, targetNom: target.nom }
   })
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : conflictStatus(result.error as MergeError) })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.role, organizationId: ctx.orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'merge', sourceId, targetId, source: result.sourceNom, target: result.targetNom, moved: result.counts } })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.role, organizationId: ctx.orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: result.groupAdmin ? 'merge-group' : 'merge', sourceId, targetId, source: result.sourceNom, target: result.targetNom, moved: result.counts } })
   return NextResponse.json({ ok: true, counts: result.counts })
 }

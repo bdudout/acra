@@ -14,7 +14,7 @@ type TierRow = { id: string; nom: string; lei: string | null; pays: string | nul
 type Unlinked = { id: string; reference: string; prestataireNom: string; lei: string | null; candidates: Candidate[] }
 type Proposal = { arrangementId: string; reference: string; prestataireNom: string; ownerNom: string }
 type Registry = { active: boolean; canManage?: boolean; isAdmin?: boolean; orgId?: string; tiers: TierRow[]; unlinkedArrangements: Unlinked[]; proposals?: Proposal[] }
-type MergePreview = { ok: boolean; error?: string; source: { id: string; nom: string }; target: { id: string; nom: string }; counts: { arrangements: number; parties: number; services: number; usages: number } }
+type MergePreview = { ok: boolean; error?: string; source: { id: string; nom: string }; target: { id: string; nom: string }; groupAdmin?: boolean; counts: { arrangements: number; parties: number; services: number; usages: number; organizations?: number } }
 type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; linkArrangementIds?: string[] }; candidates: Candidate[] }
 
 const send = (url: string, method: string, body: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -185,6 +185,7 @@ export default function TierIdentityPanel() {
                         </label>
                         {mergePreview && (
                           <div data-testid="merge-preview" className="mt-2 text-xs">
+                            {mergePreview.ok && mergePreview.groupAdmin && (mergePreview.counts.organizations ?? 0) > 0 && <p role="status" className="mb-1 font-medium">{c.mergeGroup.replace('{n}', String(mergePreview.counts.organizations))}</p>}
                             {mergePreview.ok
                               ? <p>{c.mergeMoves.replace('{arr}', String(mergePreview.counts.arrangements)).replace('{pp}', String(mergePreview.counts.parties)).replace('{svc}', String(mergePreview.counts.services)).replace('{use}', String(mergePreview.counts.usages))}</p>
                               : <p role="alert">{(c.mergeBlocked as Record<string, string>)[mergePreview.error ?? ''] ?? c.errors.failed}</p>}

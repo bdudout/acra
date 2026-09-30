@@ -1,6 +1,7 @@
 // ─── Fusion de deux identités de tiers en doublon (règles PURES) ──────────────────────────────────────────────────────────
 // Jamais automatique, jamais au détriment d'une autre organisation : la fusion n'est permise que si les données à déplacer
-// appartiennent toutes à l'organisation qui la demande (sinon, elle relève de l'administrateur du groupe).
+// appartiennent toutes à l'organisation qui la demande ; sinon elle relève de l'ADMINISTRATEUR DU GROUPE (organisation racine), qui
+// décide pour toutes les filiales (accès, contrats, parties prenantes et usages sont alors tous repris par l'identité conservée).
 
 import { comparableTierName, MAX_TIER_NAME, normalizeLei } from './tier-identity'
 
@@ -8,12 +9,17 @@ export interface MergeSide { id: string; lei: string | null; root: string }
 export interface MergeExposure { otherOrganizations: number; foreignArrangements: number; foreignParties: number; foreignUsages: number }
 export type MergeError = 'same_tier' | 'different_group' | 'lei_conflict' | 'shared_with_other_organizations'
 
-export function planTierMerge(source: MergeSide, target: MergeSide, exposure: MergeExposure): { ok: true } | { ok: false; error: MergeError } {
+/** Vrai si l'organisation active est la RACINE du groupe des deux identités et que l'utilisateur y est ADMIN : la fusion peut alors toucher les filiales. */
+export function isGroupAdminMerge(actor: { isAdmin: boolean; orgId: string }, source: MergeSide, target: MergeSide): boolean {
+  return actor.isAdmin && source.root === actor.orgId && target.root === actor.orgId
+}
+
+export function planTierMerge(source: MergeSide, target: MergeSide, exposure: MergeExposure, opts: { groupAdmin?: boolean } = {}): { ok: true } | { ok: false; error: MergeError } {
   if (source.id === target.id) return { ok: false, error: 'same_tier' }
   if (source.root !== target.root) return { ok: false, error: 'different_group' }
   const a = normalizeLei(source.lei); const b = normalizeLei(target.lei)
   if (a && b && a !== b) return { ok: false, error: 'lei_conflict' }
-  if (exposure.otherOrganizations || exposure.foreignArrangements || exposure.foreignParties || exposure.foreignUsages) return { ok: false, error: 'shared_with_other_organizations' }
+  if (!opts.groupAdmin && (exposure.otherOrganizations || exposure.foreignArrangements || exposure.foreignParties || exposure.foreignUsages)) return { ok: false, error: 'shared_with_other_organizations' }
   return { ok: true }
 }
 

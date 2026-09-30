@@ -4,13 +4,13 @@ import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), rl: vi.fn(), audit: vi.fn(), tx: vi.fn(), queryRaw: vi.fn(),
-  tierOrgFindUnique: vi.fn(), tierOrgCount: vi.fn(), tierOrgDeleteMany: vi.fn(),
+  tierOrgFindUnique: vi.fn(), tierOrgCount: vi.fn(), tierOrgDeleteMany: vi.fn(), tierOrgFindMany: vi.fn(), tierOrgCreateMany: vi.fn(),
   tierFindMany: vi.fn(), tierUpdate: vi.fn(), tierDelete: vi.fn(),
   arrCount: vi.fn(), arrUpdateMany: vi.fn(), ppCount: vi.fn(), ppUpdateMany: vi.fn(),
   svcCount: vi.fn(), svcUpdateMany: vi.fn(), usageCount: vi.fn(), models: undefined as unknown as () => object,
 }))
 m.models = () => ({
-  tierOrganization: { findUnique: m.tierOrgFindUnique, count: m.tierOrgCount, deleteMany: m.tierOrgDeleteMany },
+  tierOrganization: { findUnique: m.tierOrgFindUnique, count: m.tierOrgCount, deleteMany: m.tierOrgDeleteMany, findMany: m.tierOrgFindMany, createMany: m.tierOrgCreateMany },
   tier: { findMany: m.tierFindMany, update: m.tierUpdate, delete: m.tierDelete },
   arrangementTic: { count: m.arrCount, updateMany: m.arrUpdateMany }, partiePrenante: { count: m.ppCount, updateMany: m.ppUpdateMany },
   tierService: { count: m.svcCount, updateMany: m.svcUpdateMany }, tierServiceUsage: { count: m.usageCount }, $queryRaw: m.queryRaw,
@@ -99,5 +99,39 @@ describe('POST /api/tier-registry/merge', () => {
   it('limite de débit : 429', async () => {
     m.rl.mockResolvedValue({ allowed: false, remaining: 0, resetAt: 1 })
     expect((await POST(req('', { sourceId: 'tS', targetId: 'tT' }))).status).toBe(429)
+  })
+})
+
+describe('fusion par l’administrateur du groupe (organisation racine)', () => {
+  const asGroup = (role = 'ADMIN') => m.scope.mockResolvedValue({ role, activeOrgId: 'grp', scope: { visibleOrgIds: ['grp'], isSuperAdmin: false } })
+  it('aperçu : annonce TOUT ce qui est déplacé, filiales comprises, et n’est plus bloqué par le partage', async () => {
+    asGroup(); m.tierOrgCount.mockResolvedValue(2)
+    m.arrCount.mockImplementation(async ({ where }: { where: { organizationId?: unknown } }) => (where.organizationId === undefined ? 7 : 2))
+    const body = await (await GET(req('?sourceId=tS&targetId=tT'))).json()
+    expect(body).toMatchObject({ ok: true, groupAdmin: true, counts: { arrangements: 7, organizations: 2 } })
+  })
+  it('POST : déplace les contrats de TOUTES les organisations et conserve l’accès des filiales sur l’identité conservée', async () => {
+    asGroup(); m.tierOrgCount.mockResolvedValue(2)
+    m.arrCount.mockImplementation(async ({ where }: { where: { organizationId?: unknown } }) => (where.organizationId === undefined ? 7 : 2))
+    m.tierOrgFindMany.mockImplementation(async ({ where }: { where: { tierId: string } }) => (where.tierId === 'tS' ? [{ organizationId: 'fil1' }, { organizationId: 'fil2' }, { organizationId: 'grp' }] : [{ organizationId: 'grp' }, { organizationId: 'fil1' }]))
+    const res = await POST(req('', { sourceId: 'tS', targetId: 'tT' }))
+    expect(res.status).toBe(200)
+    expect(m.arrUpdateMany.mock.calls[0][0]).toEqual({ where: { tierId: 'tS' }, data: { tierId: 'tT' } }) // pas de filtre d'organisation
+    expect(m.tierOrgCreateMany.mock.calls[0][0]).toEqual({ data: [{ tierId: 'tT', organizationId: 'fil2' }] }) // seul l'accès manquant est ajouté
+    expect(m.tierOrgDeleteMany.mock.calls[0][0]).toEqual({ where: { tierId: 'tS' } })
+    expect(m.tierDelete).toHaveBeenCalledWith({ where: { id: 'tS' } })
+    expect(m.audit.mock.calls[0][1].details.action).toBe('merge-group')
+  })
+  it('un simple gestionnaire 2ᵉ ligne de la racine n’a pas ce pouvoir : la fusion partagée reste refusée', async () => {
+    asGroup('RSSI'); m.tierOrgCount.mockResolvedValue(2)
+    const res = await POST(req('', { sourceId: 'tS', targetId: 'tT' }))
+    expect(res.status).toBe(409); expect((await res.json()).error).toBe('shared_with_other_organizations')
+    expect(m.tierDelete).not.toHaveBeenCalled()
+  })
+  it('un ADMIN de filiale (organisation non racine) ne l’a pas non plus', async () => {
+    m.tierOrgCount.mockResolvedValue(2)
+    const res = await POST(req('', { sourceId: 'tS', targetId: 'tT' })) // activeOrgId = fil1 ≠ racine grp
+    expect(res.status).toBe(409)
+    expect(m.tierDelete).not.toHaveBeenCalled()
   })
 })
