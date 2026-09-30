@@ -11,6 +11,7 @@ import { Plus, Download, Trash2, Pencil, AlertTriangle, ShieldAlert, ClipboardCh
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import TicContractImportPanel from '@/components/TicContractImportPanel'
 import { QUESTIONNAIRE_TIC, REPONSES_TIC, type ReponseQuestion, type ReponseTic } from '@/lib/tic-questionnaire'
 
 const TYPES = ['HEBERGEMENT', 'CLOUD', 'LOGICIEL', 'RESEAU', 'SECURITE', 'DONNEES', 'SUPPORT', 'AUTRE'] as const
@@ -55,6 +56,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
   const [data, setData] = useState<{ arrangements: Arrangement[]; synthese: Synthese; completude: Completude; tiersOptions: { id: string; nom: string; lei: string | null; pays: string | null }[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [form, setForm] = useState({ ...emptyForm })
   const [err, setErr] = useState<string | null>(null)
@@ -151,6 +153,12 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
             <Download size={15} aria-hidden="true" /> {r.export}
           </a>
           {canManage && (
+            <button type="button" onClick={() => setShowImport(v => !v)} aria-expanded={showImport}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+              {t.ticImport.open}
+            </button>
+          )}
+          {canManage && (
             <button onClick={openCreate}
               className="inline-flex items-center gap-1.5 bg-ebios-600 hover:bg-ebios-700 text-white text-sm font-medium py-2 px-3 rounded-lg">
               <Plus size={15} aria-hidden="true" /> {r.add}
@@ -158,6 +166,8 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
           )}
         </div>
       </div>
+
+      {showImport && canManage && <TicContractImportPanel onImported={reload} />}
 
       {!canManage && (
         <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
