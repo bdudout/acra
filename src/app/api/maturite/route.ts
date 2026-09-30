@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { lockConformite } from '@/lib/row-lock.server'
 import { getServerLocale, getServerT } from '@/lib/i18n'
 import { maturityContext, maturityReferentiels, loadMaturityProfile, orgMaturityScale } from '@/lib/maturity.server'
 import { sanitizeMaturites, applyMaturityUpdate, isMaturityLevel } from '@/lib/maturity'
@@ -56,23 +57,30 @@ export async function PUT(req: NextRequest) {
   const incoming = body.maturites && typeof body.maturites === 'object' && !Array.isArray(body.maturites)
     ? Object.fromEntries(Object.entries(body.maturites as Record<string, unknown>).filter(([ref]) => refs.has(ref)).slice(0, 1000))
     : {}
-  const { maturites, changes } = applyMaturityUpdate(current.maturites, incoming, { userId: ctx.userId, now: new Date() })
-  const cibleChanged = cible !== undefined && cible !== current.maturiteCible
-  if (!changes.length && !cibleChanged) return NextResponse.json({ maturites: current.maturites, maturiteCible: current.maturiteCible, unchanged: true })
-
-  const data = { maturites: sanitizeMaturites(maturites, refs) as unknown as Prisma.InputJsonValue, ...(cible !== undefined ? { maturiteCible: cible } : {}) }
-  const saved = await prisma.conformite.upsert({
-    where: { organizationId_referentiel_entite: { organizationId: ctx.orgId, referentiel, entite: '' } },
-    create: { organizationId: ctx.orgId, referentiel, entite: '', entries: [], ...data },
-    update: data,
-    select: { id: true, maturites: true, maturiteCible: true, updatedAt: true },
+  // Fusion sous verrou de ligne (audit 2026-09-30, D2) : la maturité est relue DANS la
+  // transaction, sinon deux évaluateurs de points différents s'écrasent.
+  const key = { organizationId_referentiel_entite: { organizationId: ctx.orgId, referentiel, entite: '' } }
+  const outcome = await prisma.$transaction(async tx => {
+    const row = await tx.conformite.upsert({ where: key, create: { organizationId: ctx.orgId, referentiel, entite: '', entries: [] }, update: {}, select: { id: true, maturites: true, maturiteCible: true } })
+    await lockConformite(tx, row.id)
+    const fresh = await tx.conformite.findUniqueOrThrow({ where: { id: row.id }, select: { maturites: true, maturiteCible: true } })
+    const before = sanitizeMaturites(fresh.maturites, refs)
+    const beforeCible = isMaturityLevel(fresh.maturiteCible) ? fresh.maturiteCible : null
+    const { maturites, changes } = applyMaturityUpdate(before, incoming, { userId: ctx.userId, now: new Date() })
+    const cibleChanged = cible !== undefined && cible !== beforeCible
+    if (!changes.length && !cibleChanged) return { unchanged: true as const, maturites: before, maturiteCible: beforeCible }
+    const data = { maturites: sanitizeMaturites(maturites, refs) as unknown as Prisma.InputJsonValue, ...(cible !== undefined ? { maturiteCible: cible } : {}) }
+    const saved = await tx.conformite.update({ where: { id: row.id }, data, select: { id: true, maturites: true, maturiteCible: true, updatedAt: true } })
+    return { unchanged: false as const, saved, changes, cibleChanged, beforeCible }
   })
+  if (outcome.unchanged) return NextResponse.json({ maturites: outcome.maturites, maturiteCible: outcome.maturiteCible, unchanged: true })
+  const { saved, changes, cibleChanged } = outcome
   await auditLog('MATURITY_UPDATED', {
     userId: ctx.userId, userRole: ctx.role, ip: getClientIp(req), organizationId: ctx.orgId,
     targetId: saved.id, targetType: 'conformite',
     details: {
       referentiel,
-      ...(cibleChanged ? { maturiteCible: [current.maturiteCible, cible] } : {}),
+      ...(cibleChanged ? { maturiteCible: [outcome.beforeCible, cible] } : {}),
       changes: changes.slice(0, 50), changesCount: changes.length,
     },
   })

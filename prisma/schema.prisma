@@ -127,6 +127,8 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+
+  @@index([userId]) // FK non indexée (audit 2026-09-30, D6)
 }
 
 model Session {
@@ -136,6 +138,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // FK non indexée (audit 2026-09-30, D6)
 }
 
 model VerificationToken {
@@ -605,6 +609,9 @@ model Controle {
   @@index([actif])
   @@index([arrangementTicId])
   @@index([projetId])
+
+  // Déclaré (audit 2026-09-30, D5) : l'index existait en base via une migration.
+  @@index([referentielCode])
 }
 
 // Une exécution de contrôle : résultat, constat et échantillon réellement testé.
@@ -987,6 +994,9 @@ model AuditConstat {
   @@index([organizationId])
   @@index([statut])
   @@index([riskItemId])
+
+  // Déclaré (audit 2026-09-30, D5) : l'index existait en base via une migration.
+  @@index([referentielCode])
 }
 
 // ─── KRI — Indicateur clé de risque ──────────────────────────────────────────
@@ -1355,7 +1365,9 @@ model Analyse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict (audit 2026-09-30, D1) : une analyse est une preuve GRC, elle ne
+  // disparaît pas avec le compte de son auteur (désactiver ou réattribuer).
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   organization Organization? @relation(fields: [organizationId], references: [id])
 
   // Ateliers
@@ -1423,6 +1435,8 @@ model AnalyseAcces {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([analyseId, userId])
+
+  @@index([userId]) // « analyses partagées avec moi » (audit 2026-09-30, D6)
 }
 
 // ─── Atelier 1 : Cadrage et socle de sécurité ────────────────────────────────

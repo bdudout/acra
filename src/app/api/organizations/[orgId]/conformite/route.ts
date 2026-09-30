@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { lockConformite } from '@/lib/row-lock.server'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
@@ -96,15 +97,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
   }
 
   const conf = await getOrCreate(orgId, referentiel, entite)
-  const updated = applyConformiteEntry(sanitizeConformite(conf.entries), ref, { statut, commentaire, traitement })
-  if (missingExclusionJustifications(updated.filter(e => e.ref === ref)).length) {
-    return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
-  }
-  await prisma.conformite.update({ where: { id: conf.id }, data: { entries: updated as unknown as object } })
-  if (shouldSnapshotOnChange(orgConfig.conformiteSnapshotMode)) {
-    await prisma.conformiteSnapshot.create({ data: { conformiteId: conf.id, entries: updated as unknown as object, createdById: userId } })
-  }
-  return NextResponse.json({ ok: true, stats: conformiteStats(updated, controles.length) })
+  // Fusion sous verrou de ligne (audit 2026-09-30, D2) : relecture de la valeur à jour,
+  // sinon deux éditions concurrentes de deux points différents s'écrasent.
+  const result = await prisma.$transaction(async tx => {
+    await lockConformite(tx, conf.id)
+    const fresh = await tx.conformite.findUniqueOrThrow({ where: { id: conf.id }, select: { entries: true } })
+    const updated = applyConformiteEntry(sanitizeConformite(fresh.entries), ref, { statut, commentaire, traitement })
+    if (missingExclusionJustifications(updated.filter(e => e.ref === ref)).length) return null
+    await tx.conformite.update({ where: { id: conf.id }, data: { entries: updated as unknown as object } })
+    if (shouldSnapshotOnChange(orgConfig.conformiteSnapshotMode)) {
+      await tx.conformiteSnapshot.create({ data: { conformiteId: conf.id, entries: updated as unknown as object, createdById: userId } })
+    }
+    return updated
+  })
+  if (!result) return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
+  return NextResponse.json({ ok: true, stats: conformiteStats(result, controles.length) })
 }
 
 /**

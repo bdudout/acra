@@ -13,6 +13,7 @@ import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 import { getAnalyseScope } from '@/lib/org-context.server'
+import { decideUserDeletion } from '@/lib/user-deletion'
 
 /**
  * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
@@ -334,14 +335,45 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Vous ne pouvez pas supprimer votre propre compte' }, { status: 400 })
   }
 
-  // Périmètre : un ADMIN ne peut supprimer que les comptes de SON organisation.
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { email: true, name: true, role: true, memberships: { select: { organizationId: true } } },
+  })
+  if (!target) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+
+  // Décision centralisée (audit 2026-09-30 S1/S4/D1) : protection des SUPER_ADMIN,
+  // pas de suppression d'un compte partagé avec des organisations hors périmètre,
+  // pas de suppression d'un propriétaire d'analyses (preuves GRC).
   const scope = await usersScope(currentUserId, userRole)
-  if (!(await canManageTarget(scope, targetId))) {
-    return NextResponse.json({ error: 'Compte hors de votre périmètre' }, { status: 403 })
+  const [otherActiveSuperAdmins, ownedAnalyses] = await Promise.all([
+    prisma.user.count({ where: { role: 'SUPER_ADMIN', isActive: true, id: { not: targetId } } }),
+    prisma.analyse.count({ where: { userId: targetId } }),
+  ])
+  const decision = decideUserDeletion({
+    actorRole: userRole, actorAll: scope.all, actorVisibleOrgIds: scope.visibleOrgIds,
+    targetRole: target.role, targetMembershipOrgIds: target.memberships.map(m => m.organizationId),
+    otherActiveSuperAdmins, ownedAnalyses,
+  })
+  if (decision.action === 'REFUSE') {
+    const messages = {
+      SUPER_ADMIN_ONLY: 'Seul un super-administrateur peut supprimer ce compte',
+      LAST_SUPER_ADMIN: 'Au moins un super-administrateur doit subsister',
+      OUT_OF_SCOPE: 'Compte hors de votre périmètre',
+      OWNS_ANALYSES: `Ce compte est propriétaire de ${ownedAnalyses} analyse(s) : désactivez-le plutôt que de le supprimer, ou réattribuez ses analyses`,
+    } as const
+    return NextResponse.json({ error: messages[decision.code], code: decision.code }, { status: decision.status })
   }
 
-  const target = await prisma.user.findUnique({ where: { id: targetId }, select: { email: true, name: true } })
-  if (!target) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+  if (decision.action === 'DETACH') {
+    // Le compte appartient aussi à d'autres organisations : on ne retire que les
+    // appartenances du périmètre de l'administrateur ; le compte et ses données survivent.
+    await prisma.orgMembership.deleteMany({ where: { userId: targetId, organizationId: { in: decision.organizationIds } } })
+    await auditLog('ORG_MEMBER_REMOVED', {
+      userId: currentUserId, userRole, targetId, targetType: 'user', ip: getClientIp(req),
+      details: { targetEmail: target.email, organizationIds: decision.organizationIds, reason: 'user-delete-out-of-scope' },
+    })
+    return NextResponse.json({ success: true, detached: true })
+  }
 
   await prisma.user.delete({ where: { id: targetId } })
 
@@ -349,7 +381,7 @@ export async function DELETE(req: NextRequest) {
     userId: currentUserId, userRole,
     targetId, targetType: 'user',
     ip: getClientIp(req),
-    details: { targetEmail: target.email, targetName: target.name },
+    details: { targetEmail: target.email, targetName: target.name, targetRole: target.role },
   })
 
   return NextResponse.json({ success: true })

@@ -4,6 +4,11 @@
 > Périmètre : `prisma/schema.prisma` (2 184 lignes, 57 modèles, 154 migrations), `src/` (≈125 000 lignes hors tests, 213 routes API, 282 fichiers dans `src/lib/`), CI.
 > Méthode : lecture du code, **plus exécution réelle** : les 154 migrations ont été appliquées sur PostgreSQL 16 local, la dérive schéma/base mesurée avec `prisma migrate diff`, les FK et index inspectés dans `pg_catalog`, et 1 million de lignes de journal d'audit générées pour mesurer les plans (`EXPLAIN ANALYZE`).
 
+## Statut de remédiation (2026-09-30)
+
+**Corrigés** : S4, S1 (suppression), D1, D2 (verrou de ligne sur les 4 écritures par fusion), D5, D6. Vérifiés sur PostgreSQL 16 : la suppression d'un auteur d'analyse est refusée par la FK (`P2003`) ; 20 éditions concurrentes de la conformité → 4/20 conservées sans verrou, 20/20 avec. `tsc` propre, 364 fichiers / 3 001 tests verts, zéro dérive schéma ↔ migrations.
+**Reste** : inscrit au backlog `docs/CHANTIERS-EN-COURS.md`, section « Backlog technique » (T1 à T22), avec problème, solution et critère de fin.
+
 ## Synthèse
 
 | Axe | Note | En une phrase |

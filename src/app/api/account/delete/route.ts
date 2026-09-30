@@ -41,7 +41,15 @@ export async function DELETE(req: Request) {
     memberCount: membership.organization._count.membres,
   })))
 
+  // Les analyses sont des preuves GRC (FK Restrict, audit 2026-09-30 D1) : celles des
+  // espaces de démo supprimés partent avec eux ; une analyse dans une organisation
+  // partagée bloque la suppression (elle doit d'abord être réattribuée).
+  const kept = await prisma.analyse.count({ where: { userId: userId!, OR: [{ organizationId: null }, { organizationId: { notIn: organizationIds } }] } })
+  if (kept > 0) return NextResponse.json({ error: 'Vous êtes propriétaire d\'analyses dans une organisation partagée', code: 'OWNS_ANALYSES' }, { status: 409 })
+
   await prisma.$transaction(async tx => {
+    // Comme la purge démo : l'espace supprimé emporte TOUTES ses analyses (sinon SET NULL → orphelines).
+    await tx.analyse.deleteMany({ where: { organizationId: { in: organizationIds } } })
     // Les espaces démo sont racines ; une suppression s'effectue après vérification
     // explicite qu'aucun autre membre n'y est rattaché.
     for (const organizationId of organizationIds) {
