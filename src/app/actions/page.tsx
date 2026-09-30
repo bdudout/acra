@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
+import { resolvePageOrganizationIds } from '@/lib/org-context'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { gatherActionItems } from '@/lib/action-items.server'
 import PlansActionsView, { type SerializedActionItem } from '@/components/PlansActionsView'
@@ -25,16 +26,22 @@ export default async function ActionsPage({ searchParams }: PageProps) {
   const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
 
   const scope = await getAnalyseScope(userId, userRole)
-  if (!scope.activeOrgId) redirect('/dashboard')
-  const orgConfig = await getOrgConfig(scope.activeOrgId)
+  const orgIds = resolvePageOrganizationIds(scope.activeOrgId, scope.scope)
+  if (!orgIds.length) redirect('/dashboard')
 
-  const items = await gatherActionItems(scope.activeOrgId, {
-    incidentsActive: orgConfig.incidentsActive,
-    controlePermanentActive: orgConfig.controlePermanentActive,
-    auditInterneActive: orgConfig.auditInterneActive,
-    registreRisquesActive: orgConfig.registreRisquesActive,
-    conformiteActive: orgConfig.conformiteActive,
-  })
+  // Sans organisation focalisée, le SUPER_ADMIN consulte un bilan consolidé,
+  // strictement en lecture : l'édition d'une action orpheline reste liée à une
+  // organisation active explicite (prop orgId ci-dessous).
+  const items = (await Promise.all(orgIds.map(async (orgId) => {
+    const orgConfig = await getOrgConfig(orgId)
+    return gatherActionItems(orgId, {
+      incidentsActive: orgConfig.incidentsActive,
+      controlePermanentActive: orgConfig.controlePermanentActive,
+      auditInterneActive: orgConfig.auditInterneActive,
+      registreRisquesActive: orgConfig.registreRisquesActive,
+      conformiteActive: orgConfig.conformiteActive,
+    }, { userId, role: scope.role, scope: scope.scope })
+  }))).flat()
 
   const serialized: SerializedActionItem[] = items.map((i) => ({
     ...i,
@@ -51,7 +58,7 @@ export default async function ActionsPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <PlansActionsView items={serialized} orgId={scope.activeOrgId} initialPriorite={initialPriorite} initialEcheance={initialEcheance} />
+        <PlansActionsView items={serialized} orgId={scope.activeOrgId ?? undefined} initialPriorite={initialPriorite} initialEcheance={initialEcheance} />
       </main>
     </div>
   )

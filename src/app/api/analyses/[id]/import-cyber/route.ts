@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { analyseWhereClause } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { RISK_METHODS, METHOD_META } from '@/lib/methodes'
 import { planCyberImport } from '@/lib/projet360'
@@ -39,11 +39,18 @@ async function context(params: Params['params']) {
   const g = await guardDirectRisk(id, user.id, role)
   if (!g.ok) return { ok: false as const, res: NextResponse.json({ error: g.error }, { status: g.status }) }
   if (g.analyse.methode !== 'PROJET_360') return { ok: false as const, res: NextResponse.json({ error: 'methode_non_360' }, { status: 400 }) }
-  // Sources visibles : périmètre de lecture de l'utilisateur ∩ même organisation.
-  const scope = await getAnalyseScope(user.id, role)
+  const organizationId = g.analyse.organizationId
+  if (!organizationId) return { ok: false as const, res: NextResponse.json({ error: 'organisation_absente' }, { status: 400 }) }
+  // La cible peut être dans une autre organisation que l'organisation active.
+  // Une appartenance directe moins privilégiée y prime sur le rôle de session
+  // ou sur une appartenance ancêtre. Sans appartenance, seules les analyses
+  // explicitement possédées/partagées restent visibles.
+  const targetRole = await getEffectiveRoleForOrg(user.id, role, organizationId)
   const where = {
-    AND: [analyseWhereClause(user.id, role, scope.scope)],
-    organizationId: g.analyse.organizationId,
+    AND: [analyseWhereClause(user.id, targetRole ?? 'LECTEUR', {
+      visibleOrgIds: [organizationId], isSuperAdmin: false,
+    })],
+    organizationId,
     methode: { in: CYBER_METHODS as string[] },
     deletedAt: null,
     NOT: { id },

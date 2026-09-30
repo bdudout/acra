@@ -136,3 +136,17 @@ export function resolveActiveMembership(memberships: Membership[], requestedOrgI
   }
   return memberships[0]
 }
+
+/**
+ * Périmètre d'une vue transversale : l'organisation active reste toujours la
+ * référence. Seul le SUPER_ADMIN non focalisé peut consulter une consolidation
+ * de toutes les organisations visibles. Cela ne confère aucun droit d'écriture
+ * sans organisation active explicite.
+ */
+export function resolvePageOrganizationIds(
+  activeOrgId: string | null,
+  scope: { visibleOrgIds: string[]; isSuperAdmin?: boolean },
+): string[] {
+  if (activeOrgId) return [activeOrgId]
+  return scope.isSuperAdmin ? scope.visibleOrgIds : []
+}

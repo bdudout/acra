@@ -49,7 +49,8 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
   const now = new Date()
   const statut = c.edition.statut as RapportStatut
 
-  let data: Prisma.RapportEditionUpdateInput
+  let data: Prisma.RapportEditionUpdateManyMutationInput
+  let destinataires: string[] = []
   let envoyes = 0
   if (action === 'REGENERER') {
     if (!peutRegenerer(statut)) return NextResponse.json({ error: 'non_regenerable' }, { status: 400 })
@@ -65,19 +66,26 @@ export async function PATCH(req: NextRequest, { params }: Params): Promise<NextR
     if (vers === 'VALIDE') { data.validePar = c.userId; data.valideLe = now; if (!c.edition.releuPar) { data.releuPar = c.userId; data.releuLe = now } }
     if (vers === 'DIFFUSE') {
       data.diffuseLe = now
-      const entrees = Array.isArray(body.destinataires) ? body.destinataires.filter((x: unknown): x is string => typeof x === 'string') : []
-      const d = await diffuserRapport(c.orgId, entrees, { id, code: c.edition.code, langue: c.edition.langue, periode: `${c.edition.periodeDebut.toISOString().slice(0, 10)} → ${c.edition.periodeFin.toISOString().slice(0, 10)}` })
-      data.destinataires = d.destinataires as unknown as Prisma.InputJsonValue
-      envoyes = d.envoyes
+      destinataires = Array.isArray(body.destinataires) ? body.destinataires.filter((x: unknown): x is string => typeof x === 'string') : []
     }
   } else return NextResponse.json({ error: 'action_invalide' }, { status: 400 })
 
-  const updated = await prisma.rapportEdition.update({ where: { id }, data })
+  // La lecture de `charger` peut devenir obsolète entre deux requêtes. La
+  // transition est atomique : un seul acteur gagne, avant tout envoi d'e-mail.
+  const changed = await prisma.rapportEdition.updateMany({
+    where: { id, organizationId: c.orgId, statut }, data,
+  })
+  if (changed.count !== 1) return NextResponse.json({ error: 'edition_modifiee' }, { status: 409 })
+  if (action === 'DIFFUSE') {
+    const d = await diffuserRapport(c.orgId, destinataires, { id, code: c.edition.code, langue: c.edition.langue, periode: `${c.edition.periodeDebut.toISOString().slice(0, 10)} → ${c.edition.periodeFin.toISOString().slice(0, 10)}` })
+    await prisma.rapportEdition.update({ where: { id }, data: { destinataires: d.destinataires as unknown as Prisma.InputJsonValue } })
+    envoyes = d.envoyes
+  }
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.role, organizationId: c.orgId, ip: getClientIp(req),
     details: { scope: 'rapport', action: `edition:${action}`, id, code: c.edition.code, ...(action === 'DIFFUSE' ? { emailsEnvoyes: envoyes } : {}), ...(cfg.secondeLigneActive === false && action === 'VALIDE' && c.userId === c.edition.createdById ? { autoValidation: true } : {}) },
   })
-  return NextResponse.json({ id: updated.id, statut: updated.statut, ...(action === 'DIFFUSE' ? { envoyes } : {}) })
+  return NextResponse.json({ id, statut: action === 'REGENERER' ? statut : action, ...(action === 'DIFFUSE' ? { envoyes } : {}) })
 }
 
 // DELETE /api/rapports/[id] — supprime un brouillon uniquement.
@@ -87,7 +95,8 @@ export async function DELETE(req: Request, { params }: Params): Promise<NextResp
   if ('error' in c) return c.error as NextResponse
   if (!peutEcrireRapports(c.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!peutRegenerer(c.edition.statut as RapportStatut)) return NextResponse.json({ error: 'non_supprimable' }, { status: 400 })
-  await prisma.rapportEdition.delete({ where: { id } })
+  const deleted = await prisma.rapportEdition.deleteMany({ where: { id, organizationId: c.orgId, statut: 'BROUILLON' } })
+  if (deleted.count !== 1) return NextResponse.json({ error: 'edition_modifiee' }, { status: 409 })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.role, organizationId: c.orgId, ip: getClientIp(req as NextRequest),
     details: { scope: 'rapport', action: 'delete', id, code: c.edition.code },

@@ -10,6 +10,7 @@ import {
   subtreeIds,
   visibleOrgIds,
   resolveActiveMembership,
+  resolvePageOrganizationIds,
   type OrgNode,
   type Membership,
 } from '@/lib/org-context'
@@ -145,5 +146,19 @@ describe('resolveActiveMembership — organisation active', () => {
   })
   it('aucune appartenance → null', () => {
     expect(resolveActiveMembership([], 'g')).toBeNull()
+  })
+})
+
+describe('resolvePageOrganizationIds — vues consolidées du super-administrateur', () => {
+  it('conserve l’organisation sélectionnée pour une vue focalisée', () => {
+    expect(resolvePageOrganizationIds('a', { visibleOrgIds: ['a', 'a1'], isSuperAdmin: true })).toEqual(['a'])
+  })
+
+  it('consolide les organisations visibles du super-administrateur sans sélection', () => {
+    expect(resolvePageOrganizationIds(null, { visibleOrgIds: ['g', 'a', 'a1'], isSuperAdmin: true })).toEqual(['g', 'a', 'a1'])
+  })
+
+  it('ne donne jamais un périmètre consolidé à un utilisateur sans organisation active', () => {
+    expect(resolvePageOrganizationIds(null, { visibleOrgIds: ['a'], isSuperAdmin: false })).toEqual([])
   })
 })
