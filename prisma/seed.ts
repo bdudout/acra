@@ -176,6 +176,7 @@ async function main() {
   const analyse = await prisma.analyse.create({
     data: {
       userId: analyste.id,
+      organizationId: 'global',
       nom: 'CHU Métropole — Sécurité SI Patient',
       description:
         'Analyse des risques EBIOS RM portant sur le système d\'information de santé du CHU Métropole. ' +

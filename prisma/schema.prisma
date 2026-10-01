@@ -1323,8 +1323,10 @@ model Analyse {
   // docs/methodes-analyse-cadrage.md. Défaut EBIOS RM = rétrocompatibilité totale.
   methode              String        @default("EBIOS_RM") // EBIOS_RM | ISO_27005 | NIST_800_30 | ISO_31000
 
-  // Organisation propriétaire (multi-organisation). Migration : rattachée à la racine.
-  organizationId String?
+  // Organisation propriétaire (multi-organisation), OBLIGATOIRE (audit 2026-10-01, T11 :
+  // l'import créait des analyses sans organisation). Supprimer une organisation impose
+  // de supprimer ses analyses explicitement (FK Restrict).
+  organizationId String
 
   // Questionnaire de qualification optionnel (cf. lib/qualification.ts) — { <questionId>: bool | optionValue }
   qualification Json?
@@ -1368,7 +1370,7 @@ model Analyse {
   // Restrict (audit 2026-09-30, D1) : une analyse est une preuve GRC, elle ne
   // disparaît pas avec le compte de son auteur (désactiver ou réattribuer).
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   // Ateliers
   cadrage                Cadrage?

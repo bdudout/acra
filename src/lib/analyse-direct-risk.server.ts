@@ -15,7 +15,7 @@ import { usesDirectRiskEntry } from '@/lib/methodes'
 
 type Guarded = {
   ok: true
-  analyse: { id: string; organizationId: string | null; methode: string }
+  analyse: { id: string; organizationId: string; methode: string }
 } | { ok: false; status: number; error: string }
 
 /** Vérifie les 4 conditions (accès, méthode, édition, gel) ; renvoie l'analyse ou un refus. */

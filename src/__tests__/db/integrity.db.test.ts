@@ -17,6 +17,7 @@ vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined })
 
 import { PATCH as patchOrgConformite } from '@/app/api/organizations/[orgId]/conformite/route'
 import { DELETE as deleteUser, PATCH as patchUser } from '@/app/api/admin/users/route'
+import { POST as importAnalyse } from '@/app/api/import/route'
 
 const as = (u: { id: string; role: string }) => { session.user = { id: u.id, role: u.role } }
 beforeEach(() => { session.user = null })
@@ -117,5 +118,22 @@ describe('S1/S4/T1 — gestion de comptes par un admin restreint', () => {
     expect((await deleteUser(jsonRequest({ userId: leaver.id }))).status).toBe(200)
     expect(await prisma.user.findUnique({ where: { id: leaver.id } })).toBeNull()
     expect(await prisma.auditLog.count({ where: { action: 'ANALYSE_REASSIGNED', targetId: leaver.id } })).toBe(1)
+  })
+})
+
+describe('T11 — import d\'une analyse (JSON ACRA)', () => {
+  it('l\'analyse importée appartient à l\'organisation de l\'importeur ; un lecteur ne peut pas importer', async () => {
+    const org = await makeOrg()
+    const analyste = await makeUser('ANALYSTE', [org])
+    const lecteur = await makeUser('LECTEUR', [org])
+    as(analyste)
+    const ok = await importAnalyse(jsonRequest({ format: 'json', data: JSON.stringify({ nom: 'Import T11' }) }))
+    expect(ok.status).toBe(201)
+    const { id } = await ok.json() as { id: string }
+    expect((await prisma.analyse.findUniqueOrThrow({ where: { id } })).organizationId).toBe(org.id)
+    as(lecteur)
+    const ko = await importAnalyse(jsonRequest({ format: 'json', data: JSON.stringify({ nom: 'Import interdit' }) }))
+    expect(ko.status).toBe(403)
+    expect((await ko.json()).error).toBe('import_forbidden')
   })
 })

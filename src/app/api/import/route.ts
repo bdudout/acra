@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkAnalyseCreation } from '@/lib/analyse-create-guard.server'
+import type { UserRole } from '@/lib/permissions'
 import { diagnoseJsonText } from '@/lib/import-json-diagnostic'
 import { ImportError, importErrorStatus, type ImportErrorCode } from '@/lib/import-errors'
 import {
@@ -14,7 +16,7 @@ import {
 
 // ─── JSON import ──────────────────────────────────────────────────────────────
 
-async function importJSON(raw: string, userId: string) {
+async function importJSON(raw: string, userId: string, organizationId: string) {
   const diag = diagnoseJsonText(raw)
   if (!diag.ok) throw new ImportError(diag.code, { line: diag.line, column: diag.column, snippet: diag.snippet, hint: diag.hint })
   const payload = diag.value as any
@@ -32,6 +34,7 @@ async function importJSON(raw: string, userId: string) {
   const analyse = await prisma.analyse.create({
     data: {
       userId,
+      organizationId,
       nom,
       organisation:   src.organisation  || '',
       secteur:        src.secteur        || '',
@@ -73,7 +76,7 @@ async function importJSON(raw: string, userId: string) {
 // ─── CSV import ───────────────────────────────────────────────────────────────
 // Format: sections délimitées par "=== TITRE ===" comme dans l'export
 
-async function importCSV(raw: string, userId: string) {
+async function importCSV(raw: string, userId: string, organizationId: string) {
   const lines = raw.split(/\r?\n/)
   let section = ''
   let nom = 'Analyse importée (CSV)'
@@ -188,7 +191,7 @@ async function importCSV(raw: string, userId: string) {
 
   const analyse = await prisma.analyse.create({
     data: {
-      userId, nom: finalNom, organisation, secteur,
+      userId, organizationId, nom: finalNom, organisation, secteur,
       statut: 'EN_COURS', atelierCourant: 1,
       // capArr borne chaque collection à IMPORT_MAX_ITEMS (anti-DoS #117).
       sourcesRisque:         capArr(sourcesRisque).length         ? { create: capArr(sourcesRisque) }         : undefined,
@@ -209,6 +212,14 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const userId = (session.user as any).id
+
+  // Audit 2026-10-01 (T11) : même contrôle que la création d'analyse — rôle effectif,
+  // organisation active (l'analyse importée lui est rattachée), plafond démo.
+  const check = await checkAnalyseCreation(userId, (session.user as { role?: UserRole }).role ?? 'ANALYSTE')
+  if (!check.ok) {
+    const code: ImportErrorCode = check.reason === 'DEMO_CAP' ? 'import_demo_cap' : 'import_forbidden'
+    return NextResponse.json({ error: code }, { status: 403 })
+  }
 
   // Rate limiting : 10 imports / heure par utilisateur
   const { rateLimit: rl_fn, rateLimitHeaders: rlHeaders, LIMIT_IMPORT } = await import('@/lib/rate-limit')
@@ -232,8 +243,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = body.format === 'json'
-      ? await importJSON(body.data, userId)
-      : await importCSV(body.data, userId)
+      ? await importJSON(body.data, userId, check.organizationId)
+      : await importCSV(body.data, userId, check.organizationId)
 
     return NextResponse.json(result, { status: 201 })
   } catch (err: any) {

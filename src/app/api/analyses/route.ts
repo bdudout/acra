@@ -14,8 +14,7 @@ import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
 import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
-import { analysisCapReached } from '@/lib/demo'
-import { isDemoInstance, getDemoConfig } from '@/lib/demo-server'
+import { checkAnalyseCreation } from '@/lib/analyse-create-guard.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { sanitizeQualification } from '@/lib/qualification'
 
@@ -70,23 +69,15 @@ export async function POST(req: NextRequest) {
 
   const userId = (session.user as any).id
   const userRole = (session.user as any).role ?? 'ANALYSTE'
-  const __org = await getAnalyseScope(userId, userRole)
-
-  // Le rôle EFFECTIF dans l'organisation active gouverne le droit de créer.
-  if (!canCreateAnalyse({ id: userId, role: __org.role })) {
-    return NextResponse.json({ error: 'Votre rôle ne permet pas de créer des analyses' }, { status: 403 })
+  // Rôle EFFECTIF dans l'organisation active, organisation active, plafond démo :
+  // contrôle partagé avec l'import (lib/analyse-create-guard.server.ts).
+  const check = await checkAnalyseCreation(userId, userRole)
+  if (!check.ok) {
+    const messages = { ROLE: 'Votre rôle ne permet pas de créer des analyses', NO_ORG: 'Aucune organisation active', DEMO_CAP: 'DEMO_ANALYSIS_CAP' } as const
+    return NextResponse.json({ error: messages[check.reason] }, { status: 403 })
   }
-  if (!__org.activeOrgId) {
-    return NextResponse.json({ error: 'Aucune organisation active' }, { status: 403 })
-  }
-
-  // Site de démo : plafond d'analyses par organisation (anti-abus).
-  if (await isDemoInstance()) {
-    const count = await prisma.analyse.count({ where: { organizationId: __org.activeOrgId } })
-    if (analysisCapReached(count, await getDemoConfig())) {
-      return NextResponse.json({ error: 'DEMO_ANALYSIS_CAP' }, { status: 403 })
-    }
-  }
+  const __org = check.scope
+  const orgId = check.organizationId
 
   try {
     const body = await req.json()
@@ -98,10 +89,10 @@ export async function POST(req: NextRequest) {
     const { available, default: defMethode } = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
     // La qualification peut être saisie dès le choix de méthode. Elle est toujours
     // filtrée avec la configuration effective de l'organisation active.
-    const orgConfig = await getOrgConfig(__org.activeOrgId)
+    const orgConfig = await getOrgConfig(orgId)
     // Projet 360 : piloté par le module d'organisation (onglet Projets), pas par
     // l'activation d'instance des méthodes.
-    const methode = data.methode === 'PROJET_360' && orgConfig.projets360Active && __org.activeOrgId
+    const methode = data.methode === 'PROJET_360' && orgConfig.projets360Active && orgId
       ? 'PROJET_360'
       : isRiskMethod(data.methode) && available.includes(data.methode) ? data.methode : defMethode
     const qualification = sanitizeQualification(data.qualification, orgConfig.qualificationQuestionnaire)
@@ -116,7 +107,7 @@ export async function POST(req: NextRequest) {
             select: { id: true, methode: true, organizationId: true },
           })
         : null
-      const r = resolveProjetSource({ projet, orgId: __org.activeOrgId, projets360Active: orgConfig.projets360Active })
+      const r = resolveProjetSource({ projet, orgId: orgId, projets360Active: orgConfig.projets360Active })
       if (r.status === 'INTROUVABLE') return NextResponse.json({ error: 'Projet introuvable ou accès refusé' }, { status: 404 })
       if (r.status === 'OK') projetSourceId = r.projetId
     }
@@ -147,7 +138,7 @@ export async function POST(req: NextRequest) {
     const analyse = await prisma.analyse.create({
       data: {
         userId,
-        organizationId: __org.activeOrgId,
+        organizationId: orgId,
         nom: data.nom,
         description: data.description,
         organisation: data.organisation,
@@ -194,8 +185,8 @@ export async function POST(req: NextRequest) {
     // Projet 360 : questionnaire pré-rempli d'après les données existantes et risques
     // proposés créés sans doublon (lib/projet360.server).
     let population: { answers: number; risks: number } | null = null
-    if (methode === 'PROJET_360' && __org.activeOrgId) {
-      population = await populateProjet360(analyse.id, __org.activeOrgId, await getServerT())
+    if (methode === 'PROJET_360' && orgId) {
+      population = await populateProjet360(analyse.id, orgId, await getServerT())
     }
 
     await auditLog('ANALYSE_CREATED', {
