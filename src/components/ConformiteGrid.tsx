@@ -217,6 +217,16 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     onChange(next)
   }
 
+  // Applique en un clic le constat du contrôle permanent / de l'audit : l'exigence passe en
+  // « non conforme », l'origine est consignée dans le commentaire (traçabilité de la décision).
+  function appliquerConstat(ref: string) {
+    if (readOnly) return
+    const prev = byRef.get(ref)
+    const trace = t.conformiteConstats.autoComment.replace('{date}', new Date().toLocaleDateString(locale))
+    const commentaire = prev?.commentaire?.trim() ? `${prev.commentaire.trim()} — ${trace}` : trace
+    onChange([...entries.filter(e => e.ref !== ref), { ref, statut: 'non_conforme', commentaire, ...(prev?.traitement ? { traitement: prev.traitement } : {}) }])
+  }
+
   function setComment(ref: string, commentaire: string) {
     if (readOnly) return
     const prev = byRef.get(ref)
@@ -302,6 +312,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] ${tone}`}>
                       {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit))}
                       {k.divergent && <strong className="ml-1">· {cc.divergent}</strong>}
+                      {k.divergent && !readOnly && <button type="button" className="ml-2 underline" onClick={() => appliquerConstat(c.ref)}>{cc.appliquer}</button>}
                     </p>
                   })()}
                 </div>
