@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
 // Lot L5 : vocabulaire de l'organisation (affichage), champs personnalisés (requis, restreints par rôle).
 test.describe('Personnalisation — L5', () => {
   test('vocabulaire renommé à l’affichage, champ requis exigé, champ réservé masqué', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.incident.deleteMany({ where: { organizationId: E2E.orgId } })

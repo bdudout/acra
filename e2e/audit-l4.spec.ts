@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
@@ -8,7 +9,7 @@ import { E2E } from './fixtures'
 // de route (le seed E2E n'a pas d'utilisateur AUDITEUR).
 test.describe('Audit interne — L4', () => {
   test('l’audité déclare une recommandation réalisée, l’univers apparaît au plan, le rapport de suivi la liste', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.auditConstat.deleteMany({ where: { organizationId: E2E.orgId } })

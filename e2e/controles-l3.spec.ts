@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
 // Lot L3 : typologie, conception, plan annuel, rapport d'efficacité du dispositif.
 test.describe('Contrôle permanent — L3', () => {
   test('contrôle clé automatique, conception inadéquate, plan annuel et rapport d’efficacité', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.controle.deleteMany({ where: { organizationId: E2E.orgId } })

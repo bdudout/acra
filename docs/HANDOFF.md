@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (55) — Claude Code : migration Prisma 5 → 7 (branche `claude/prisma-7`, remplace #205)
+
+- Fait : `prisma.config.ts` (URL hors du schéma, `.env` chargé s'il existe, seed), adaptateur `@prisma/adapter-pg` partout (`src/lib/prisma.ts`, seeds, `scripts/*.mjs`), `@prisma/adapter-pg` et `pg` en `serverExternalPackages`, Dockerfile (étape `prisma-cli` + lien `node_modules/prisma`), options `migrate diff` (CI, `migrate-recover.sh`, runbook), tests de schéma lisant `schema.prisma` (DMMF allégé).
+- Vérifié : `tsc` ; `npm test` 419 / 3354 ; `npm run test:db` 15 / 66 ; build ; `prisma migrate diff` base ↔ schéma vide (pas de migration due au passage Prisma 6/7) ; serveur de production local (santé, connexion, API). Image Docker construite et testée : 171 migrations sur base vierge, 2e passage idempotent, commande de `docker-compose.release.yml`, réconciliation P3009 (acceptée si schéma conforme, refusée si colonne manquante), `create-admin.mjs`, connexion, `/api/analyses`, `/api/admin/users`, `/dashboard`.
+- Non vérifié : construction de l'image avec `apk add` (dépôts Alpine bloqués dans l'environnement de test : construite avec une copie du Dockerfile sans ces lignes) ; connexion SSO (passe par `@auth/prisma-adapter`, non couverte) ; déploiement réel.
+- Pièges : la CLI Prisma 7 doit être installée AVEC ses scripts (moteur de migration téléchargé au build ; sinon elle tente d'écrire dans node_modules à l'exécution, refusé à l'utilisateur nextjs). Ne jamais écrire `new PrismaClient()` sans `adapter`.
 ## 2026-10-01 (54) — Claude Code : PR Dependabot (fusion), Vitest 5, analyse Prisma 7
 
 - Fusionnées dans `main` : #208, puis les mises à jour Dependabot vertes #196–#203, #206 (#201 et #206 après `@dependabot rebase`). Branche `claude/tender-euler-bqjoe9` repartie de `origin/main` (b88fd88), l'ancienne branche distante y est fusionnée (sans changement de contenu) pour éviter un push forcé.
