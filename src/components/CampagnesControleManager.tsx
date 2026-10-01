@@ -290,6 +290,7 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
                     </td>
                     {canDefine && (
                       <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <a href={`/api/controles/campagnes/${a.id}/rapport-controle`} data-testid="rapport-controle" className="text-xs text-ebios-600 hover:underline mr-2" title={c.rapportControle.bouton} aria-label={c.rapportControle.bouton}>📄</a>
                         {!a.archiveLe && (
                           <label className="text-xs text-ebios-600 hover:underline cursor-pointer mr-2" title={c.archivage.rapportUpload}>
                             📎<input type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadRapport(a, f); e.currentTarget.value = '' }} />

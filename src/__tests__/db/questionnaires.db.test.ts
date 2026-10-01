@@ -22,6 +22,8 @@ import { POST as postPreco } from '@/app/api/preconisations/route'
 import { POST as suivi } from '@/app/api/preconisations/[id]/suivi/route'
 import { POST as planAction } from '@/app/api/preconisations/[id]/plan-action/route'
 import { GET as couverture } from '@/app/api/referentiels/couverture/route'
+import { GET as rapportControle } from '@/app/api/controles/campagnes/[id]/rapport-controle/route'
+import JSZip from 'jszip'
 
 const req = (body?: unknown, url = 'http://test.local/api') => new Request(url, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) as never
 const p = (id: string) => ({ params: Promise.resolve({ id }) })
@@ -124,5 +126,21 @@ describe('questionnaires de contrôle (vraie base)', () => {
     as(controleur)
     const cov = await (await couverture(req(undefined, 'http://test.local/api/referentiels/couverture?code=ISO27001'))).json()
     expect(cov.parExigence.find((e: { ref: string }) => e.ref === '8.2').statut).toBe('NON_COUVERT')
+  })
+  it('rapport de contrôle de la mission : 2ᵉ ligne seulement, compile questionnaires, non-conformités et préconisations', async () => {
+    const mission = await prisma.campagneControle.create({ data: { organizationId: org.id, intitule: 'Mission accès', niveau: 'N2', statut: 'EN_COURS' } })
+    await prisma.questionnaireEnvoi.updateMany({ where: { organizationId: org.id }, data: { campagneId: mission.id } })
+    await prisma.preconisation.update({ where: { id: precoId }, data: { campagneId: mission.id } })
+    as(metier)
+    expect((await rapportControle(req(), p(mission.id))).status).toBe(403)
+    as(controleur)
+    expect((await rapportControle(req(), p('inconnue'))).status).toBe(404)
+    const res = await rapportControle(req(), p(mission.id))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-disposition')).toContain('rapport-controle-mission-acces.docx')
+    const xml = await (await JSZip.loadAsync(await res.arrayBuffer())).file('word/document.xml')!.async('string')
+    expect(xml).toContain('Mission accès')
+    expect(xml).toContain('ISO27001 8.2')
+    expect(xml).toContain('Compensé par la revue trimestrielle du SOC')
   })
 })
