@@ -15,6 +15,7 @@ import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-p
 import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { checkAnalyseCreation } from '@/lib/analyse-create-guard.server'
+import { withRiskSummary } from '@/lib/analyses-summary.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { sanitizeQualification } from '@/lib/qualification'
 
@@ -54,12 +55,11 @@ export async function GET(req: NextRequest) {
       socle: { select: { id: true, nom: true } },
       createdAt: true, updatedAt: true,
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
-      risques: { select: { niveauRisque: true, strategie: true } },
-      mesures: { select: { statut: true, priorite: true } },
     },
   })
 
-  return NextResponse.json({ analyses })
+  // Indicateurs de risque calculés en base (T13) au lieu de renvoyer tous les risques et mesures.
+  return NextResponse.json({ analyses: await withRiskSummary(analyses) })
 }
 
 // POST /api/analyses — créer une analyse
