@@ -14,7 +14,7 @@ import ConformiteHistory from '@/components/ConformiteHistory'
 import TraitementsRegistre from '@/components/TraitementsRegistre'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/lib/conformite'
-import { confronterDeclaration, type CouvertureExigence } from '@/lib/couverture-referentiel'
+import { confronterDeclaration, type CouvertureExigenceLite } from '@/lib/conformite-constats'
 
 interface RefOpt { code: string; nom: string }
 
@@ -52,7 +52,7 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   const [controles, setControles] = useState<FrameworkControl[]>([])
   const stats = useMemo(() => conformiteStats(entries, controles.length), [entries, controles.length])
   // Ce que constatent le contrôle permanent et l'audit sur chaque exigence (lecture seule).
-  const [couverture, setCouverture] = useState<CouvertureExigence[]>([])
+  const [couverture, setCouverture] = useState<CouvertureExigenceLite[]>([])
   const constats = useMemo(() => confronterDeclaration(couverture, entries), [couverture, entries])
   const nbAnomalies = [...constats.values()].filter(x => x.statut === 'ANOMALIE').length
   const nbDivergences = [...constats.values()].filter(x => x.divergent).length

@@ -21,7 +21,7 @@ import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
-import type { ConstatSurExigence } from '@/lib/couverture-referentiel'
+import type { ConstatSurExigence } from '@/lib/conformite-constats'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
   CONFORMITE_STATUTS,

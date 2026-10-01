@@ -45,7 +45,7 @@ Droits : le métier ne voit que ses envois et ses réponses ; la revue, les pré
 
 ## 5. Conformité : déclaré vs constaté (lot 0, livré)
 
-Sur la page de conformité (`/conformite/socle`), chaque exigence affiche ce que constatent le contrôle permanent (efficacité des contrôles qui la couvrent) et l'audit (constats ouverts) ; une exigence **déclarée conforme mais en anomalie** est signalée « à revoir », avec un compteur en tête de page. Le statut déclaré **n'est jamais modifié automatiquement** (`confronterDeclaration`, `couverture-referentiel.ts`).
+Sur la page de conformité (`/conformite/socle`), chaque exigence affiche ce que constatent le contrôle permanent (efficacité des contrôles qui la couvrent) et l'audit (constats ouverts) ; une exigence **déclarée conforme mais en anomalie** est signalée « à revoir », avec un compteur en tête de page. Le statut déclaré **n'est jamais modifié automatiquement** (`confronterDeclaration`, `conformite-constats.ts`).
 
 ## 6. Questions de décision
 

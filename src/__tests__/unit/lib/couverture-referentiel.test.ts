@@ -92,7 +92,7 @@ describe('croiserApplicationsAnalyses — jointure RA ↔ référentiel', () => 
 
 describe('déclaré vs constaté (page de conformité)', () => {
   it('signale une divergence quand une exigence déclarée conforme est en anomalie selon le contrôle ou l’audit', async () => {
-    const { confronterDeclaration } = await import('@/lib/couverture-referentiel')
+    const { confronterDeclaration } = await import('@/lib/conformite-constats')
     const m = confronterDeclaration([
       { ref: 'A', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 1 },
       { ref: 'B', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 0 },
