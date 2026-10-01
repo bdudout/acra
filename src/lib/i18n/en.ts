@@ -1194,7 +1194,7 @@ export const en: Translations = {
     questionExigence: "{ref} — {nom}: is the requirement met? Attach evidence.",
     title: "Control questionnaires",
     subtitle: "Business teams answer questionnaires and support requirements with evidence; controllers review the answers and issue recommendations.",
-    tabs: { aRepondre: "To answer", preconisations: "Recommendations", modeles: "Templates", envois: "Campaigns and review" },
+    tabs: { aRepondre: "To answer", preconisations: "Recommendations", modeles: "Templates", envois: "Campaigns and review", relances: "Reminders" },
     loading: "Loading…", error: "Operation failed. Please try again.", close: "Close", cancel: "Cancel", save: "Save", none: "—",
     echeance: "Due date", statut: "Status", oui: "Yes", non: "No",
     statuts: { A_REPONDRE: "To answer", SOUMISE: "Submitted", A_COMPLETER: "To complete", REVUE: "Reviewed" },
@@ -1222,6 +1222,9 @@ export const en: Translations = {
     declarerRealise: "Mark as done", verifier: "Verify", reouvrir: "Reopen", demanderReport: "Request an extension", nouvelleEcheance: "New due date", motif: "Reason",
     approuver: "Approve", refuser: "Reject", plansLies: "Action plans", exigence: "Requirement {code} {ref}", depuisReponse: "From a questionnaire answer",
     reportDemande: "Extension requested to {date}: {motif}",
+    constatExecution: "Questionnaire \"{titre}\" — {question}: {commentaire}",
+    executionsCreees: "{n} anomaly execution(s) recorded on the related control points.",
+    relances: {"titre":"Automatic reminders","aide":"One summary e-mail per person: questionnaires to answer (respondent), recommendations (owner) and action plans (owner, otherwise the organisation’s governance).","actives":"Reminders enabled","joursAvant":"Reminder before the due date (days)","periodiciteJours":"Periodic and overdue reminder (days, 0 = none)","periodiciteAide":"Every 30 days by default while the item remains open.","enregistre":"Settings saved.","lectureSeule":"Only an administrator of the organisation can change these settings."},
   },
   interfacesConfig: {
     sectionTitle: 'Programmatic interfaces (instance)',

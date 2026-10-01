@@ -1194,7 +1194,7 @@ export const es: Translations = {
     questionExigence: "{ref} — {nom}: ¿se cumple el requisito? Adjunte una prueba.",
     title: "Cuestionarios de control",
     subtitle: "Las áreas de negocio responden a los cuestionarios y justifican los requisitos con pruebas; los controladores revisan las respuestas y emiten recomendaciones.",
-    tabs: { aRepondre: "Por responder", preconisations: "Recomendaciones", modeles: "Modelos", envois: "Envíos y revisión" },
+    tabs: { aRepondre: "Por responder", preconisations: "Recomendaciones", modeles: "Modelos", envois: "Envíos y revisión", relances: "Recordatorios" },
     loading: "Cargando…", error: "Operación imposible. Inténtelo de nuevo.", close: "Cerrar", cancel: "Cancelar", save: "Guardar", none: "—",
     echeance: "Plazo", statut: "Estado", oui: "Sí", non: "No",
     statuts: { A_REPONDRE: "Por responder", SOUMISE: "Enviada", A_COMPLETER: "Por completar", REVUE: "Revisada" },
@@ -1222,6 +1222,9 @@ export const es: Translations = {
     declarerRealise: "Declarar realizada", verifier: "Verificar", reouvrir: "Reabrir", demanderReport: "Solicitar una prórroga", nouvelleEcheance: "Nuevo plazo", motif: "Motivo",
     approuver: "Aprobar", refuser: "Rechazar", plansLies: "Planes de acción", exigence: "Requisito {code} {ref}", depuisReponse: "Procedente de una respuesta de cuestionario",
     reportDemande: "Prórroga solicitada al {date}: {motif}",
+    constatExecution: "Cuestionario «{titre}» — {question}: {commentaire}",
+    executionsCreees: "{n} ejecución(es) con anomalía registrada(s) en los puntos de control afectados.",
+    relances: {"titre":"Recordatorios automáticos","aide":"Un correo resumen por persona: cuestionarios por responder (encuestado), recomendaciones (responsable) y planes de acción (responsable o, en su defecto, la gobernanza de la organización).","actives":"Recordatorios activos","joursAvant":"Recordatorio antes del vencimiento (días)","periodiciteJours":"Recordatorio periódico y de retrasos (días, 0 = ninguno)","periodiciteAide":"Cada 30 días por defecto mientras el elemento siga abierto.","enregistre":"Parámetros guardados.","lectureSeule":"Solo un administrador de la organización puede modificar estos parámetros."},
   },
   interfacesConfig: {
     sectionTitle: 'Interfaces programáticas (instancia)',

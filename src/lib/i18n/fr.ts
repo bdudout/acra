@@ -1217,7 +1217,7 @@ export const fr = {
     questionExigence: "{ref} — {nom} : l’exigence est-elle respectée ? Joignez une preuve.",
     title: "Questionnaires de contrôle",
     subtitle: "Les métiers répondent aux questionnaires et justifient les exigences avec des preuves ; les contrôleurs revoient les réponses et posent des préconisations.",
-    tabs: { aRepondre: "À répondre", preconisations: "Préconisations", modeles: "Modèles", envois: "Envois et revue" },
+    tabs: { aRepondre: "À répondre", preconisations: "Préconisations", modeles: "Modèles", envois: "Envois et revue", relances: "Relances" },
     loading: "Chargement…", error: "Opération impossible. Réessayez.", close: "Fermer", cancel: "Annuler", save: "Enregistrer", none: "—",
     echeance: "Échéance", statut: "Statut", oui: "Oui", non: "Non",
     statuts: { A_REPONDRE: "À répondre", SOUMISE: "Soumise", A_COMPLETER: "À compléter", REVUE: "Revue" },
@@ -1245,6 +1245,9 @@ export const fr = {
     declarerRealise: "Déclarer réalisée", verifier: "Vérifier", reouvrir: "Rouvrir", demanderReport: "Demander un report", nouvelleEcheance: "Nouvelle échéance", motif: "Motif",
     approuver: "Approuver", refuser: "Refuser", plansLies: "Plans d’action", exigence: "Exigence {code} {ref}", depuisReponse: "Issue d’une réponse de questionnaire",
     reportDemande: "Report demandé au {date} : {motif}",
+    constatExecution: "Questionnaire « {titre} » — {question} : {commentaire}",
+    executionsCreees: "{n} exécution(s) en anomalie enregistrée(s) sur les points de contrôle concernés.",
+    relances: {"titre":"Relances automatiques","aide":"Un e-mail récapitulatif par personne : questionnaires à répondre (répondant), préconisations (responsable) et plans d’action (porteur, sinon gouvernance de l’organisation).","actives":"Relances actives","joursAvant":"Relance avant l’échéance (jours)","periodiciteJours":"Relance périodique et des retards (jours, 0 = aucune)","periodiciteAide":"Par défaut tous les 30 jours tant que l’élément reste ouvert.","enregistre":"Paramètres enregistrés.","lectureSeule":"Seul un administrateur de l’organisation peut modifier ces paramètres."},
   },
   interfacesConfig: {
     sectionTitle: 'Interfaces programmatiques (instance)',

@@ -143,4 +143,33 @@ describe('questionnaires de contrôle (vraie base)', () => {
     expect(xml).toContain('ISO27001 8.2')
     expect(xml).toContain('Compensé par la revue trimestrielle du SOC')
   })
+  it('non-conformité sur un point de contrôle ⇒ exécution « anomalie » du contrôle, seulement à la revue conclue', async () => {
+    const ctrl = await prisma.controle.create({ data: { organizationId: org.id, intitule: 'Revue des habilitations', alerteeLe: new Date() } })
+    as(controleur)
+    const { modele } = await (await postModele(req({ titre: 'Habilitations', mode: 'QUESTIONNAIRE', questions: [
+      { id: 'h1', libelle: 'Les habilitations sont-elles revues ?', type: 'OUI_NON', cible: { type: 'CONTROLE', id: ctrl.id } },
+      { id: 'h2', libelle: 'Date de la dernière revue', type: 'TEXTE' },
+    ] }))).json()
+    const { envoi } = await (await postEnvoi(req({ modeleId: modele.id, repondantIds: [metier.id] }))).json()
+    const rep = await prisma.questionnaireReponse.findFirstOrThrow({ where: { envoiId: envoi.id } })
+    const repondre = async () => {
+      as(metier)
+      await putReponse(req({ reponses: [{ questionId: 'h1', valeur: true, preuves: [pdf] }, { questionId: 'h2', valeur: 'mars' }] }), p(rep.id))
+      expect((await soumettre(req({}), p(rep.id))).status).toBe(200)
+      as(controleur)
+    }
+    await repondre()
+    // Renvoyée au métier : la revue n'est pas conclue, aucune exécution.
+    const r1 = await (await reviser(req({ revues: [{ questionId: 'h1', statut: 'NON_CONFORME', commentaire: 'Pas de trace' }, { questionId: 'h2', statut: 'A_COMPLETER', commentaire: 'Date précise' }] }), p(rep.id))).json()
+    expect(r1).toMatchObject({ statut: 'A_COMPLETER', executionsAnomalie: 0 })
+    expect(await prisma.controleExecution.count({ where: { controleId: ctrl.id } })).toBe(0)
+    await repondre()
+    const r2 = await (await reviser(req({ revues: [{ questionId: 'h1', statut: 'NON_CONFORME', commentaire: 'Pas de trace' }, { questionId: 'h2', statut: 'ACCEPTEE' }] }), p(rep.id))).json()
+    expect(r2).toMatchObject({ statut: 'REVUE', executionsAnomalie: 1 })
+    const ex = await prisma.controleExecution.findFirstOrThrow({ where: { controleId: ctrl.id } })
+    expect(ex).toMatchObject({ resultat: 'ANOMALIE', source: 'QUESTIONNAIRE', organizationId: org.id, executantId: controleur.id })
+    expect(ex.constat).toBe('Questionnaire « Habilitations » — Les habilitations sont-elles revues ? : Pas de trace')
+    expect(ex.preuves).toHaveLength(1)
+    expect((await prisma.controle.findUniqueOrThrow({ where: { id: ctrl.id } })).alerteeLe).toBeNull()
+  })
 })

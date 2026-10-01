@@ -189,3 +189,19 @@ export function nonConformitesExigences(
   }
   return out
 }
+
+/**
+ * Anomalies de contrôle issues d'une revue : chaque question NON_CONFORME rattachée à un point de
+ * contrôle devient une exécution « anomalie » de ce contrôle (commentaire du contrôleur, preuves
+ * du répondant). Une préconisation reste facultative.
+ */
+export function anomaliesControles(questions: Question[], reponses: Reponse[]):
+  { controleId: string; questionId: string; libelle: string; commentaire: string; preuves: Preuve[] }[] {
+  const parId = new Map(questions.map(q => [q.id, q]))
+  return reponses.flatMap(r => {
+    const q = parId.get(r.questionId)
+    if (r.revue?.statut !== 'NON_CONFORME' || q?.cible?.type !== 'CONTROLE') return []
+    return [{ controleId: q.cible.id, questionId: q.id, libelle: q.libelle, commentaire: r.revue.commentaire ?? '', preuves: r.preuves ?? [] }]
+  })
+}
+

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeQuestions, questionsDepuisExigences, sanitizeReponses, questionsIncompletes, appliquerRevue, nonConformitesExigences, peutRepondre, peutReviser, MAX_PREUVES_PAR_QUESTION } from '@/lib/questionnaire'
+import { sanitizeQuestions, questionsDepuisExigences, sanitizeReponses, questionsIncompletes, appliquerRevue, nonConformitesExigences, anomaliesControles, peutRepondre, peutReviser, MAX_PREUVES_PAR_QUESTION } from '@/lib/questionnaire'
 
 const pdf = (n = 'p.pdf') => ({ nom: n, mime: 'application/pdf', taille: 10, dataUrl: 'data:application/pdf;base64,AAAA' })
 
@@ -92,3 +92,23 @@ describe('non-conformités déjà reprises par une préconisation', () => {
     expect(nonConformitesExigences(envois, new Set(['r1|a']))).toEqual([{ referentielCode: 'ISO27001', ref: '8.2' }])
   })
 })
+
+describe('anomalies de contrôle issues d’une revue', () => {
+  const questions = sanitizeQuestions([
+    { id: 'q1', libelle: 'Revue des accès faite ?', type: 'OUI_NON', cible: { type: 'CONTROLE', id: 'c1' } },
+    { id: 'q2', libelle: 'Sauvegardes testées ?', type: 'OUI_NON', cible: { type: 'CONTROLE', id: 'c2' } },
+    { id: 'q3', libelle: 'Exigence', type: 'OUI_NON', cible: { type: 'EXIGENCE', referentielCode: 'ISO27001', ref: '8.2' } },
+  ])
+  const revue = (statut: string, commentaire?: string) => ({ statut, commentaire, par: 'C', le: '2026-10-01' })
+  it('une question NON_CONFORME rattachée à un point de contrôle donne une anomalie, avec commentaire et preuves', () => {
+    const reponses = [
+      { questionId: 'q1', valeur: true, preuves: [pdf()], revue: revue('NON_CONFORME', 'Revue non tracée') },
+      { questionId: 'q2', valeur: true, preuves: [], revue: revue('ACCEPTEE') },
+      { questionId: 'q3', valeur: false, preuves: [], revue: revue('NON_CONFORME', 'KO') },
+    ]
+    expect(anomaliesControles(questions, reponses as never)).toEqual([
+      { controleId: 'c1', questionId: 'q1', libelle: 'Revue des accès faite ?', commentaire: 'Revue non tracée', preuves: [pdf()] },
+    ])
+  })
+})
+

@@ -1193,7 +1193,7 @@ export const de: Translations = {
     questionExigence: "{ref} — {nom}: Wird die Anforderung erfüllt? Fügen Sie einen Nachweis bei.",
     title: "Kontrollfragebögen",
     subtitle: "Die Fachbereiche beantworten Fragebögen und belegen Anforderungen mit Nachweisen; die Kontrolleure prüfen die Antworten und geben Empfehlungen ab.",
-    tabs: { aRepondre: "Zu beantworten", preconisations: "Empfehlungen", modeles: "Vorlagen", envois: "Versand und Prüfung" },
+    tabs: { aRepondre: "Zu beantworten", preconisations: "Empfehlungen", modeles: "Vorlagen", envois: "Versand und Prüfung", relances: "Erinnerungen" },
     loading: "Wird geladen…", error: "Vorgang nicht möglich. Bitte erneut versuchen.", close: "Schließen", cancel: "Abbrechen", save: "Speichern", none: "—",
     echeance: "Frist", statut: "Status", oui: "Ja", non: "Nein",
     statuts: { A_REPONDRE: "Zu beantworten", SOUMISE: "Eingereicht", A_COMPLETER: "Zu ergänzen", REVUE: "Geprüft" },
@@ -1221,6 +1221,9 @@ export const de: Translations = {
     declarerRealise: "Als umgesetzt melden", verifier: "Verifizieren", reouvrir: "Wieder öffnen", demanderReport: "Fristverlängerung beantragen", nouvelleEcheance: "Neue Frist", motif: "Begründung",
     approuver: "Genehmigen", refuser: "Ablehnen", plansLies: "Maßnahmenpläne", exigence: "Anforderung {code} {ref}", depuisReponse: "Aus einer Fragebogenantwort",
     reportDemande: "Verlängerung beantragt bis {date}: {motif}",
+    constatExecution: "Fragebogen „{titre}“ — {question}: {commentaire}",
+    executionsCreees: "{n} Durchführung(en) mit Anomalie für die betroffenen Kontrollpunkte erfasst.",
+    relances: {"titre":"Automatische Erinnerungen","aide":"Eine Sammel-E-Mail pro Person: zu beantwortende Fragebögen (Antwortende), Empfehlungen (Verantwortliche) und Maßnahmenpläne (Verantwortliche, sonst Governance der Organisation).","actives":"Erinnerungen aktiv","joursAvant":"Erinnerung vor der Fälligkeit (Tage)","periodiciteJours":"Periodische und Verzugserinnerung (Tage, 0 = keine)","periodiciteAide":"Standardmäßig alle 30 Tage, solange der Eintrag offen ist.","enregistre":"Einstellungen gespeichert.","lectureSeule":"Nur ein Administrator der Organisation kann diese Einstellungen ändern."},
   },
   interfacesConfig: {
     sectionTitle: 'Programmatische Schnittstellen (Instanz)',

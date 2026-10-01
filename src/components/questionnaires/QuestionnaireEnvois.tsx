@@ -64,7 +64,10 @@ export default function QuestionnaireEnvois() {
     try {
       const res = await fetch(`/api/questionnaires/reponses/${revueDe}/revue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ revues: Object.entries(revues).map(([questionId, v]) => ({ questionId, ...v })) }) })
       if (!res.ok) { setError(q.error); return }
+      const { executionsAnomalie } = await res.json() as { executionsAnomalie?: number }
       setRevueDe(null); await ouvrir(detail.id); await charger()
+      // Non-conformités sur des points de contrôle : exécutions « anomalie » enregistrées par le serveur.
+      if (executionsAnomalie) setMsg(q.executionsCreees.replace('{n}', String(executionsAnomalie)))
     } finally { setBusy(false) }
   }
 

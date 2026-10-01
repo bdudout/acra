@@ -1194,7 +1194,7 @@ export const it: Translations = {
     questionExigence: "{ref} — {nom}: il requisito è rispettato? Allegate una prova.",
     title: "Questionari di controllo",
     subtitle: "Le funzioni operative rispondono ai questionari e documentano i requisiti con prove; i controllori esaminano le risposte e formulano raccomandazioni.",
-    tabs: { aRepondre: "Da compilare", preconisations: "Raccomandazioni", modeles: "Modelli", envois: "Invii e verifica" },
+    tabs: { aRepondre: "Da compilare", preconisations: "Raccomandazioni", modeles: "Modelli", envois: "Invii e verifica", relances: "Promemoria" },
     loading: "Caricamento…", error: "Operazione non riuscita. Riprovate.", close: "Chiudi", cancel: "Annulla", save: "Salva", none: "—",
     echeance: "Scadenza", statut: "Stato", oui: "Sì", non: "No",
     statuts: { A_REPONDRE: "Da compilare", SOUMISE: "Inviata", A_COMPLETER: "Da completare", REVUE: "Verificata" },
@@ -1222,6 +1222,9 @@ export const it: Translations = {
     declarerRealise: "Dichiara realizzata", verifier: "Verifica", reouvrir: "Riapri", demanderReport: "Chiedi una proroga", nouvelleEcheance: "Nuova scadenza", motif: "Motivo",
     approuver: "Approva", refuser: "Rifiuta", plansLies: "Piani d’azione", exigence: "Requisito {code} {ref}", depuisReponse: "Da una risposta a un questionario",
     reportDemande: "Proroga richiesta al {date}: {motif}",
+    constatExecution: "Questionario «{titre}» — {question}: {commentaire}",
+    executionsCreees: "{n} esecuzione/i con anomalia registrata/e sui punti di controllo interessati.",
+    relances: {"titre":"Promemoria automatici","aide":"Un’e-mail riepilogativa per persona: questionari da compilare (rispondente), raccomandazioni (responsabile) e piani d’azione (responsabile, altrimenti la governance dell’organizzazione).","actives":"Promemoria attivi","joursAvant":"Promemoria prima della scadenza (giorni)","periodiciteJours":"Promemoria periodico e dei ritardi (giorni, 0 = nessuno)","periodiciteAide":"Per impostazione predefinita ogni 30 giorni finché l’elemento resta aperto.","enregistre":"Impostazioni salvate.","lectureSeule":"Solo un amministratore dell’organizzazione può modificare queste impostazioni."},
   },
   interfacesConfig: {
     sectionTitle: 'Interfacce programmatiche (istanza)',
