@@ -2,6 +2,11 @@
 
 Dernière mise à jour : 30 septembre 2026. Ce document sert de backlog de travail et de support de priorisation. Les éléments « en cours » ne sont pas réputés disponibles avant tests complets, revue et publication d’une release stable.
 
+Complément de cadrage du 30 septembre 2026 : [socles sectoriels, identité de tiers
+unique et inventaire ciblé des écarts](specs/socles-sectoriels-tiers-canonique-backlog.md).
+Ce complément distingue l'existant, le manque fonctionnel et la recette encore
+nécessaire ; les états ci-dessous restent ceux relevés à leur date.
+
 ## Sécurité et gouvernance — implémenté, recette runtime en attente
 
 Les trois chantiers ci-dessous sont implémentés et **validés par les tests automatisés** (logique pure, composants, suite complète verte, `tsc` propre). Il reste la **recette runtime** (parcours à deux comptes démo sur base réelle) — non exécutée ici car Docker n’était pas démarré.

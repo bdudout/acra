@@ -129,6 +129,13 @@ describe('cleanPartiePrenante', () => {
     })
   })
 
+  it('conserve le lien vers l’identité du tiers (sinon chaque sauvegarde de l’atelier le détacherait), sans l’inventer', () => {
+    expect(cleanPartiePrenante({ ...raw, tierId: 'tier123' }, 'a1').tierId).toBe('tier123')
+    expect(cleanPartiePrenante(raw, 'a1').tierId).toBeNull()
+    expect(cleanPartiePrenante({ ...raw, tierId: '' }, 'a1').tierId).toBeNull()
+    expect(cleanPartiePrenante({ ...raw, tierId: 'x'.repeat(200) }, 'a1').tierId).toHaveLength(40)
+  })
+
   it('borne les sous-critères à [1,100] (échelles configurables, cotation flottante) et calcule les dérivés', () => {
     const result = cleanPartiePrenante({ nom: 'X', type: 'CLIENT', dependance: 150, penetration: 2.5, maturite: 0, confiance: 3, critique: true }, 'a1')
     expect(result.dependance).toBe(100)    // clampé haut

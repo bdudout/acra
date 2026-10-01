@@ -113,6 +113,8 @@ export function cleanPartiePrenante(p: Dict, analyseId: string) {
     rang:        Math.max(1, Math.min(3, Math.round(num(p.rang, 1)))),
     cle:         str(p.cle, 40) ?? null,
     parentCle:   str(p.parentCle, 40) ?? null,
+    // Identité du tiers (facultative) : conservée à chaque sauvegarde ; l'autorisation est vérifiée par la route (sanitizeTierLinks).
+    tierId:      str(p.tierId, 40) || null,
   }
 }
 

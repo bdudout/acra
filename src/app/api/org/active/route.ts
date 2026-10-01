@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { ACTIVE_ORG_COOKIE, resolveOrgContext, getAccessibleOrgIds } from '@/lib/org-context.server'
+import { ACTIVE_ORG_COOKIE, resolveOrgContext, getAccessibleOrgIds, getAnalyseScope } from '@/lib/org-context.server'
 
 // orgId vide ⇒ retour à la vue par défaut (toutes organisations pour un super-admin).
 const schema = z.object({ orgId: z.string().max(40) })
@@ -29,8 +29,10 @@ export async function GET() {
     where, select: { id: true, nom: true, path: true, logo: true }, orderBy: { path: 'asc' },
   })
 
+  // Rôle EFFECTIF dans l'organisation active (celui qu'appliquent les API), pour que l'interface affiche les mêmes options.
+  const scope = await getAnalyseScope(userId, role)
   // canSelectAll : le super-admin peut revenir à la vue « toutes organisations ».
-  return NextResponse.json({ activeOrgId: ctx.activeOrgId, options, canSelectAll: role === 'SUPER_ADMIN' })
+  return NextResponse.json({ activeOrgId: ctx.activeOrgId, activeRole: scope.activeOrgId ? scope.role : (role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : null), options, canSelectAll: role === 'SUPER_ADMIN' })
 }
 
 /**

@@ -14,13 +14,17 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id:
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/analyse-direct-risk.server', () => ({ guardDirectRisk: vi.fn(async () => guard.result) }))
-vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: vi.fn(async () => ({ scope: {} })) }))
+vi.mock('@/lib/org-context.server', () => ({
+  getEffectiveRoleForOrg: vi.fn(async () => 'ANALYSTE'),
+}))
 vi.mock('@/lib/permissions', async (orig) => ({ ...(await orig() as object), analyseWhereClause: vi.fn(() => ({ scope: 'visible' })) }))
 vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: 4 })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: () => '' }))
 
 import { GET, POST } from '@/app/api/analyses/[id]/import-cyber/route'
 import { PUT } from '@/app/api/analyses/[id]/qualification-360/route'
+import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { analyseWhereClause } from '@/lib/permissions'
 
 const params = { params: Promise.resolve({ id: 'p1' }) }
 const req = (body: unknown) => ({ json: async () => body, headers: new Headers() }) as never
@@ -43,6 +47,15 @@ describe('import-cyber', () => {
     expect(where.methode.in).not.toContain('ISO_31000')
     const d = await res.json()
     expect(d.sources[0].risques.map((r: { id: string; alreadyImported: boolean }) => [r.id, r.alreadyImported])).toEqual([['s1', true], ['s2', false]])
+  })
+
+  it('utilise le rôle effectif dans l’organisation cible et non celui de la session ou de l’organisation active', async () => {
+    vi.mocked(getEffectiveRoleForOrg).mockResolvedValueOnce('LECTEUR')
+    db.analyse.findMany.mockResolvedValue([])
+    await GET(req({}), params)
+    expect(analyseWhereClause).toHaveBeenCalledWith('u1', 'LECTEUR', {
+      visibleOrgIds: ['org1'], isSuperAdmin: false,
+    })
   })
 
   it('import : source hors filtre (autre org, non visible) → 404', async () => {
@@ -68,6 +81,13 @@ describe('import-cyber', () => {
     expect((await GET(req({}), params)).status).toBe(400)
     guard.result = { ok: false, status: 403, error: 'ANALYSE_GELEE' }
     expect((await POST(req({}), params)).status).toBe(403)
+  })
+
+  it('refuse une cible historique sans organisation plutôt que d’élargir la recherche de sources', async () => {
+    guard.result = { ok: true, analyse: { id: 'p1', organizationId: null, methode: 'PROJET_360' } }
+    const res = await GET(req({}), params)
+    expect(res.status).toBe(400)
+    expect(db.analyse.findMany).not.toHaveBeenCalled()
   })
 })
 

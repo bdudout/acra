@@ -10,6 +10,11 @@
  */
 import { describe, it, expect } from 'vitest'
 import { buildNav, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { fr } from '@/lib/i18n/fr'
+import { en } from '@/lib/i18n/en'
+import { de } from '@/lib/i18n/de'
+import { es } from '@/lib/i18n/es'
+import { it as itLocale } from '@/lib/i18n/it'
 
 const ALL_ON: NavModules = { registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true, profilsOperationnels: true }
 const ALL_OFF: NavModules = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
@@ -75,7 +80,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(m.mode).toBe('grc')
     // 1re entrée = menu « Pilotage » (tableau de bord + cockpit GRC + appétence RAS/RAD).
     // Le plan d'action unifié est le lien cœur « actions » (plus de doublon « plansActions »).
-    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence'] })
+    expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence', 'kri'] })
     // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
     expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
@@ -152,6 +157,49 @@ describe('buildNav — appétence (RAS / RAD)', () => {
     expect(pil('RSSI', { ...none, kri: true })).toContain('appetence')
     expect(pil('RSSI', { ...none, profilsOperationnels: true })).toContain('appetence')
     expect(pil('LECTEUR', { ...none, registre: true })).not.toContain('appetence')
+  })
+})
+
+describe('buildNav — regroupement KRI et registres', () => {
+  it('distingue clairement les deux registres et les risques des analyses dans les cinq langues', () => {
+    expect(fr.nav.grpRegistre).toBe('Registres')
+    expect(fr.nav.registre).toBe('Registre des risques')
+    expect(fr.nav.risks).toBe('Risques des analyses')
+    for (const locale of [fr, en, de, es, itLocale]) {
+      expect(locale.nav.grpRegistre).not.toBe(locale.nav.registre)
+      expect(locale.nav.registre).not.toBe(locale.nav.registreTic)
+      expect(locale.nav.risks).not.toBe(locale.nav.registre)
+      expect(locale.nav.registreTic).toContain('DORA')
+    }
+  })
+  it('place les KRI à côté de RAS/RAD dans Pilotage, sans lien dupliqué dans Contrôle & audit', () => {
+    const model = buildNav('RISK_MANAGER', ALL_ON)
+    const pilotage = model.entries.find(e => e.kind === 'group' && e.id === 'pilotage')
+    const controleAudit = model.entries.find(e => e.kind === 'group' && e.id === 'controleAudit')
+    expect(pilotage).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence', 'kri'] })
+    expect(controleAudit && controleAudit.kind === 'group' && controleAudit.items).not.toContain('kri')
+    expect(allKeys(model).filter(k => k === 'kri')).toHaveLength(1)
+  })
+
+  it('regroupe les registres de risques et TIC, même si seul le module réglementaire est activé', () => {
+    const both = buildNav('RSSI', ALL_ON)
+    expect(both.entries.find(e => e.kind === 'group' && e.id === 'registre')).toEqual({
+      kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'registreTic'],
+    })
+    const confReg = both.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
+    expect(confReg && confReg.kind === 'group' && confReg.items).not.toContain('registreTic')
+
+    const regulatoryOnly = buildNav('RSSI', { ...ALL_OFF, reglementaire: true })
+    expect(allKeys(regulatoryOnly)).toContain('registreTic')
+    expect(allKeys(regulatoryOnly)).not.toContain('registre')
+  })
+
+  it('conserve les droits : aucun KRI ni registre TIC pour la première ligne', () => {
+    for (const role of ['LECTEUR', 'METIER'] as const) {
+      const keys = allKeys(buildNav(role, ALL_ON))
+      expect(keys).not.toContain('kri')
+      expect(keys).not.toContain('registreTic')
+    }
   })
 })
 

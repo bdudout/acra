@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { cleanPartiePrenante } from '@/lib/workshop-sanitize'
+import { sanitizeTierLinks } from '@/lib/tier-registry.server'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -21,9 +22,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!canEditAnalyse({ id: userId, role: effectiveRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   const body = await req.json().catch(() => null)
   if (!Array.isArray(body?.partiesPrenantes) || body.partiesPrenantes.length > 200) return NextResponse.json({ error: 'Liste de tiers invalide' }, { status: 400 })
+  const parties = await sanitizeTierLinks<ReturnType<typeof cleanPartiePrenante>>(body.partiesPrenantes.map((p: Record<string, unknown>) => cleanPartiePrenante(p, id)), analyse.organizationId)
   await prisma.$transaction([
     prisma.partiePrenante.deleteMany({ where: { analyseId: id } }),
-    ...(body.partiesPrenantes.length ? [prisma.partiePrenante.createMany({ data: body.partiesPrenantes.map((p: Record<string, unknown>) => cleanPartiePrenante(p, id)) })] : []),
+    ...(parties.rows.length ? [prisma.partiePrenante.createMany({ data: parties.rows })] : []),
   ])
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, ...(parties.dropped ? { tierLinksDropped: parties.dropped } : {}) })
 }

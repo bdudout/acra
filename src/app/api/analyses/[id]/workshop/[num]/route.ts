@@ -16,6 +16,7 @@ import {
 } from '@/lib/workshop-sanitize'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { touchOrgActivity } from '@/lib/demo-server'
+import { sanitizeTierLinks } from '@/lib/tier-registry.server'
 
 /**
  * PUT /api/analyses/[id]/workshop/[num]
@@ -152,11 +153,13 @@ export async function PUT(
 
       case 3: {
         // A3 : parties prenantes + scénarios stratégiques en une seule transaction
+        // Liens vers les identités de tiers : seuls ceux autorisés pour l'organisation de l'analyse sont conservés.
+        const parties = await sanitizeTierLinks<ReturnType<typeof cleanPartiePrenante>>((body.partiesPrenantes ?? []).map((p: any) => cleanPartiePrenante(p, analyseId)), analyse.organizationId)
         await prisma.$transaction([
           prisma.partiePrenante.deleteMany({ where: { analyseId } }),
-          ...(body.partiesPrenantes?.length
+          ...(parties.rows.length
             ? [prisma.partiePrenante.createMany({
-                data: body.partiesPrenantes.map((p: any) => cleanPartiePrenante(p, analyseId)),
+                data: parties.rows,
               })]
             : []),
           prisma.scenarioStrategique.deleteMany({ where: { analyseId } }),

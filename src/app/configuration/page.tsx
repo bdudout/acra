@@ -1,8 +1,9 @@
 'use client'
 
+import SectorSettings from '@/components/SectorSettings'
+import { resolveIsAdmin } from '@/lib/effective-admin'
 import { Lock, Palette, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { isAdminRole } from '@/lib/permissions'
 import { sanitizeTaxonomie, type TaxonomieNode } from '@/lib/taxonomie'
 import TaxonomieEditor from '@/components/TaxonomieEditor'
 import { useRouter } from 'next/navigation'
@@ -111,7 +112,12 @@ export default function ConfigurationPage() {
   const { t, locale } = useTranslation()
   const { CATEGORIES_BIENS_SUPPORTS } = useEbiosData()
   const { data: session } = useSession()
-  const isAdmin = isAdminRole((session?.user as any)?.role)
+  // Rôle effectif dans l'organisation active (celui des API) ; repli sur le rôle de session le temps du chargement.
+  const [activeRole, setActiveRole] = useState<string | null | undefined>(undefined)
+  useEffect(() => {
+    fetch('/api/org/active', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d && 'activeRole' in d) setActiveRole(d.activeRole) }).catch(() => {})
+  }, [])
+  const isAdmin = resolveIsAdmin((session?.user as any)?.role, activeRole)
   const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN'
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -1292,6 +1298,7 @@ export default function ConfigurationPage() {
           </section>
         )}
 
+        {section === 'options' && <SectorSettings />}
         {/* ── Fonctionnalités optionnelles (ADMIN uniquement) ──────────────── */}
         {isAdmin && (
           <section className="mt-8 card p-6">

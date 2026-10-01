@@ -161,6 +161,8 @@ model Organization {
   enfants        Organization[] @relation("OrgArbre")
   // Chemin matérialisé "/<racineId>/…/<id>/" : sous-arbre = orgs dont path startsWith O.path.
   path           String         @default("/")
+  // Secteurs choisis par l'ADMIN pour les suggestions ; vide = socle transversal.
+  secteursActivite Json         @default("[]")
   // Logo personnalisé (data URL, optionnel). Absent ⇒ logo auto-généré (cf. lib/org-logo).
   logo           String?        @db.Text
   actif          Boolean        @default(true)
@@ -184,6 +186,10 @@ model Organization {
   auditMissions     AuditMission[]
   kris              Kri[]
   arrangementsTic   ArrangementTic[]
+  tiersRoot          Tier[] @relation("TierRootOrganization")
+  tierOrganizations  TierOrganization[] @relation("TierAccessOrganization")
+  ticBeneficiaries   TierContractBeneficiary[] @relation("TicBeneficiaryOrganization")
+  tierServiceUsages  TierServiceUsage[] @relation("TierUsageOrganization")
   campagnesControle CampagneControle[]
   referentiels      Referentiel[]
   documents         Document[]
@@ -389,6 +395,9 @@ model Processus {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Provenance stable d'un exemple approuvé ; le nom reste librement éditable.
+  catalogueKey     String?
+  catalogueVersion String?
   // Hiérarchie : parent = macro-processus (null = niveau racine).
   parentId       String?
   parent         Processus?   @relation("ProcessusArbre", fields: [parentId], references: [id], onDelete: SetNull)
@@ -412,8 +421,10 @@ model Processus {
   incidents Incident[]
   controles Controle[]
   kris      Kri[]
+  serviceUsages TierServiceUsage[]
 
   @@index([organizationId])
+  @@unique([organizationId, catalogueKey])
   @@index([parentId])
 }
 
@@ -425,6 +436,8 @@ model RiskItem {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  catalogueKey     String?
+  catalogueVersion String?
 
   intitule      String
   description   String?    @db.Text
@@ -459,6 +472,7 @@ model RiskItem {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@unique([organizationId, catalogueKey])
   @@index([processusId])
   @@index([taxonomieCode])
 }
@@ -596,6 +610,10 @@ model Controle {
   // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
   champs Json @default("{}")
 
+  // Provenance d'une suggestion du catalogue sectoriel (cf. lib/sector-suggestions.ts) ; null = saisi par l'organisation.
+  catalogueKey     String?
+  catalogueVersion String?
+
   // Lot L3 (suite) — rattachement à un tiers (ArrangementTic) et à un projet 360 (Analyse PROJET_360).
   // Liens logiques (pas de FK), vérifiés à l'écriture ; ignorés à la lecture s'ils ont disparu.
   arrangementTicId String?
@@ -610,6 +628,7 @@ model Controle {
   @@index([actif])
   @@index([arrangementTicId])
   @@index([projetId])
+  @@unique([organizationId, catalogueKey])
 
   // Déclaré (audit 2026-09-30, D5) : l'index existait en base via une migration.
   @@index([referentielCode])
@@ -852,6 +871,12 @@ model ArrangementTic {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  // Lien confirmé vers le prestataire canonique ; nullable pour les anciens contrats.
+  tierId           String?
+  tier             Tier? @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  servicesCouverts TierContractService[]
+  beneficiaries    TierContractBeneficiary[]
+
   reference         String
   prestataireNom    String
   identifiant       String? // LEI de préférence
@@ -872,6 +897,121 @@ model ArrangementTic {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([tierId])
+}
+
+// Une contrepartie réelle peut servir plusieurs filiales, sans devenir visible
+// automatiquement à tout le sous-arbre. Les accès sont portés par TierOrganization.
+model Tier {
+  id                 String @id @default(cuid())
+  rootOrganizationId String
+  rootOrganization   Organization @relation("TierRootOrganization", fields: [rootOrganizationId], references: [id], onDelete: Restrict)
+  nom                String
+  lei                String?
+  pays               String?
+  aliases            Json @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organizations    TierOrganization[]
+  services         TierService[]
+  arrangementsTic  ArrangementTic[]
+  partiesPrenantes PartiePrenante[]
+
+  @@index([rootOrganizationId])
+  @@index([lei])
+}
+
+// Autorisation explicite d'afficher/utiliser le Tier dans une organisation.
+model TierOrganization {
+  tierId         String
+  tier           Tier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation("TierAccessOrganization", fields: [organizationId], references: [id], onDelete: Cascade)
+  grantedAt      DateTime @default(now())
+
+  @@id([tierId, organizationId])
+  @@index([organizationId])
+}
+
+// Offre précise d'un prestataire ; typeService n'est qu'une catégorie.
+model TierService {
+  id          String @id @default(cuid())
+  tierId      String
+  tier        Tier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  nom         String
+  typeService String
+  description String? @db.Text
+  actif       Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contracts TierContractService[]
+  usages    TierServiceUsage[]
+
+  @@index([tierId])
+}
+
+// Une offre peut être couverte par plusieurs contrats ; un contrat par plusieurs offres.
+model TierContractService {
+  id             String @id @default(cuid())
+  arrangementId  String
+  arrangement    ArrangementTic @relation(fields: [arrangementId], references: [id], onDelete: Cascade)
+  tierServiceId  String
+  tierService    TierService @relation(fields: [tierServiceId], references: [id], onDelete: Restrict)
+  usages         TierServiceUsage[]
+  // Périmètre couvert et dates propres à cette offre sous ce contrat (facultatifs ; cf. lib/tier-offers.ts).
+  perimetre      String? @db.Text
+  dateDebut      DateTime?
+  dateFin        DateTime?
+
+  @@unique([arrangementId, tierServiceId])
+  @@index([tierServiceId])
+}
+
+enum TierBeneficiaryStatus {
+  PROPOSED
+  CONFIRMED
+  REJECTED
+}
+
+// Contrat groupe : proposé par l'ADMIN groupe, confirmé par l'ADMIN de la filiale.
+model TierContractBeneficiary {
+  arrangementId  String
+  arrangement    ArrangementTic @relation(fields: [arrangementId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation("TicBeneficiaryOrganization", fields: [organizationId], references: [id], onDelete: Restrict)
+  status         TierBeneficiaryStatus @default(PROPOSED)
+  proposedById   String?
+  confirmedById  String?
+  proposedAt     DateTime @default(now())
+  confirmedAt    DateTime?
+
+  @@id([arrangementId, organizationId])
+  @@index([organizationId, status])
+}
+
+// L'usage est local à une filiale et à un cas métier : plusieurs usages de la
+// même offre ou du même type sont légitimes, même sous un seul contrat groupe.
+model TierServiceUsage {
+  id                String @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation("TierUsageOrganization", fields: [organizationId], references: [id], onDelete: Restrict)
+  tierServiceId     String
+  tierService       TierService @relation(fields: [tierServiceId], references: [id], onDelete: Restrict)
+  processusId       String?
+  processus         Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
+  contractServiceId String?
+  contractService   TierContractService? @relation(fields: [contractServiceId], references: [id], onDelete: SetNull)
+  useCase           String
+  description       String? @db.Text
+  criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId, tierServiceId])
+  @@index([processusId])
+  @@index([contractServiceId])
 }
 
 // ─── Socle GRC — M2 : plan d'action / traitement d'un RiskItem ───────────────
@@ -935,9 +1075,14 @@ model AuditMission {
   // Lot L5 — valeurs des champs personnalisés définis par l'organisation (lib/champs-perso).
   champs Json @default("{}")
 
+  // Provenance d'une mission type proposée par le catalogue sectoriel ; null = saisie par l'auditeur.
+  catalogueKey     String?
+  catalogueVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([organizationId, catalogueKey])
   @@index([organizationId])
   @@index([statut])
 }
@@ -1014,8 +1159,9 @@ model Kri {
   unite         String?
   // HAUSSE (plus haut = pire) | BAISSE (plus bas = pire)
   sens          String  @default("HAUSSE")
-  seuilAlerte   Float
-  seuilCritique Float
+  // null = seuils à définir (KRI proposé par le catalogue sectoriel) : statut INCONNU tant qu'ils ne sont pas fixés.
+  seuilAlerte   Float?
+  seuilCritique Float?
   // MENSUEL | TRIMESTRIEL | SEMESTRIEL | ANNUEL
   frequence     String  @default("MENSUEL")
   responsable   String?
@@ -1030,6 +1176,10 @@ model Kri {
 
   mesures KriMesure[]
 
+  // Provenance d'une suggestion du catalogue sectoriel ; null = saisi par l'organisation.
+  catalogueKey     String?
+  catalogueVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1037,6 +1187,7 @@ model Kri {
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
+  @@unique([organizationId, catalogueKey])
 }
 
 // Mesure périodique d'un KRI (valeur relevée à une date).
@@ -1551,6 +1702,10 @@ model PartiePrenante {
   analyseId String
   analyse   Analyse @relation(fields: [analyseId], references: [id], onDelete: Cascade)
 
+  // Association vérifiée vers l'identité du tiers ; facultative pour l'historique.
+  tierId String?
+  tier   Tier? @relation(fields: [tierId], references: [id], onDelete: SetNull)
+
   nom         String
   // Nom court affiché sur le radar (≤ 12 car.) ; si absent, on affiche la réf T1, T2…
   nomCourt    String?
@@ -1587,6 +1742,7 @@ model PartiePrenante {
   updatedAt DateTime @updatedAt
 
   @@index([analyseId])
+  @@index([tierId])
 }
 
 enum TypePartiePrenante {

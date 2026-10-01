@@ -6,16 +6,103 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
-## 2026-10-01 (34) — Claude Code : T23 invitations (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
+## 2026-10-01 (42) — Claude Code : T23 invitations (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
 
 - **Décision utilisateur** : le rattachement dépend du déploiement. SaaS / communautaire → consentement (invitation) ; sur site → l'entreprise rattache ses employés (direct).
 - **Réglage d'instance** (`Configuration.membershipMode` AUTO|DIRECT|INVITATION, `membershipNotify`), section « Rattachement des comptes » dans `/admin/instance` (SUPER_ADMIN, `GET/PUT /api/admin/membership-config`). AUTO = INVITATION si démo ou inscription publique ouverte, sinon DIRECT (`lib/membership-mode.ts`, pur, testé).
 - **INVITATION** : `POST …/entites/[entiteId]/membres` répond 202 `{invited:true}` que le compte existe ou non ; modèle `OrgInvitation` (jeton 256 bits haché SHA-256, usage unique par écriture conditionnelle, 7 jours, remplace l'invitation en attente) ; débit 30/h par auteur, 3/h par destinataire ; page publique `/invitations/[token]` : accepter (session au même e-mail), changer de compte, ou créer le compte (e-mail vérifié par le lien, politique de mot de passe). Logique dans `lib/org-invitation.server.ts`. Audit `ORG_MEMBER_INVITED` (SIEM COMPTES) puis `ORG_MEMBER_ADDED` via invitation.
 - **DIRECT** : comportement inchangé + e-mail d'information (désactivable).
-- Migration `20261001120000_org_invitations`. i18n ×5 (`invitations`, `membershipConfig`, `entites.invitationSent`, e-mails).
+- Migration `20261001130000_org_invitations` (horodatage postérieur à `20261001120000_tier_…` de main ; base vierge : `migrate deploy` puis `migrate diff` vide). i18n ×5 (`invitations`, `membershipConfig`, `entites.invitationSent`, e-mails).
 - **Backlog** : T17 clos (risque accepté), T5/T6 optionnels et différés (activation par variable, import dynamique).
-- **Vérifié** : `tsc` ; `npm test` 369 fichiers / 3 043 tests ; `npm run test:db` 6 fichiers / 27 tests (dont `org-invitation.db.test.ts`) ; `i18n:check` OK ; `npm run build` OK ; navigateur (build de prod :3005) : section d'instance, invitation 202, page d'invitation, création de compte → connexion avec bandeau, appartenance créée.
+- **Vérifié** : `tsc` ; `npm test` 408 fichiers / 3 286 tests (après fusion de `origin/main`) ; `npm run test:db` 6 fichiers / 27 tests (dont `org-invitation.db.test.ts`) ; `i18n:check` OK ; `npm run build` OK ; navigateur (build de prod :3005) : section d'instance, invitation 202, page d'invitation, création de compte → connexion avec bandeau, appartenance créée.
 - **Prochain pas** : énumération résiduelle de `POST /api/admin/users` (409) en mode SaaS ; T3 phase 2 ; T9 ; T10 ; T8.
+## 2026-10-01 (41) — Claude : fin du lot 2 et lot 3 (catalogue étendu)
+
+- **Lot 2 tranche 6** : criticité d'usage (+ écart avec le contrat), périmètre/dates de couverture par offre, rapprochement en masse sur LEI, **import de contrats TIC** (`lib/tic-contract-import.ts`, `POST /api/reglementaire/registre-tic/import`, `TicContractImportPanel`), **fusion par l'admin du groupe** (`isGroupAdminMerge`, accès des filiales conservés). Migrations `20260930200000` (usage.criticite) et `20261001120000` (couverture).
+- **Lot 3** : catalogue **1.4** — contrôles-types (1.2), KRI candidats **sans seuil** (1.3 ; `Kri.seuilAlerte/seuilCritique` nullable → `evaluerKri` renvoie INCONNU), missions d'audit-types (1.4), **nouveautés depuis la version importée** (`sector-suggestions-changelog.ts`). Migrations `20261001090000`, `…100000`, `…110000`. Route `catalogue-suggestions` : un module n'est proposé que s'il est actif et le rôle habilité (403 sinon).
+- **Piège** : toute hausse de `CATALOGUE_PACK_VERSION` exige une entrée dans `CATALOGUE_CHANGELOG` (test). `Kri.seuil*` peut être `null` : tout nouveau consommateur doit passer par `evaluerKri`.
+- **Piège e2e** : `DATABASE_URL` (host `localhost`) doit être exporté dans CHAQUE commande shell ; specs locales hors git : `local-tiers-criticite`, `local-tic-import`, `local-socles-controles|kri|nouveautes`, `local-tiers-fusion` (mise à jour : l'admin racine peut fusionner un tiers partagé).
+- Vérifié : `tsc` 0 · `npm test` 3164 · `i18n:check` · `npm run build` OK · recettes Playwright sur PostgreSQL 6/6 (voir spec § 8.7–8.9).
+- **Reste** : revue métier du contenu ; packs sectoriels spécifiques (contrôles/KRI/audit par secteur) ; incidents/résilience ; PR des commits depuis #192 (non ouverte, CI non passée).
+
+## 2026-09-30 (40) — Claude : lot 2 tranche 5 — fusion d'identités de tiers
+
+- `lib/tier-merge.ts` (règles pures : même groupe, LEI, exposition à d'autres organisations ; fusion des alias), `GET/POST /api/tier-registry/merge` (aperçu / fusion transactionnelle verrouillée et recontrôlée), bouton « Fusionner » dans `TierIdentityPanel` (aperçu des relations déplacées, blocage expliqué, confirmation).
+- Règle de sécurité : fusion refusée si des données d'une autre organisation seraient touchées (renvoyée à l'admin du groupe).
+- Recette réelle `e2e/local-tiers-fusion.spec.ts` (hors git) 1/1 ; autres specs locales inchangées.
+- Vérifié : `tsc` 0, `npm test` 3117, `i18n:check`, build (voir ci-dessous). Spec § 8.7.
+- **Reste du lot 2** : criticité d'usage ; import de contrats avec identité (fichier) ; rapprochement en masse des arrangements existants ; fusion transverse côté groupe.
+
+## 2026-09-30 (39) — Claude : lot 2 tranche 4 — parties prenantes → identités de tiers (atelier 3)
+
+- **Bug corrigé au passage** : l'autosave de l'atelier 3 détachait les liens `PartiePrenante.tierId` (delete-all + createMany sans `tierId`) ; `cleanPartiePrenante` le conserve, `sanitizeTierLinks` (`lib/tier-registry.server.ts`) ne garde que les tiers autorisés pour l'organisation de l'analyse (`tierLinksDropped` sinon).
+- `PartyTierLink` (sélecteur + suggestion de rapprochement par nom/alias, lecture seule si analyse gelée) branché dans `Atelier3` ; `GET /api/tier-registry` alimente la liste.
+- Recette réelle `e2e/local-atelier3-tier.spec.ts` (hors git) 2/2 ; piège : l'atelier 3 n'est accessible que si `atelierCourant ≥ 3`.
+- Vérifié : `tsc` 0, `npm test` 3102, `i18n:check`, build à refaire avant push (fait ci-dessous). Spec § 8.6.
+- Reste (lot 2) : fusion de tiers avec aperçu ; criticité d'usage ; import de contrats avec identité ; rapprochement en masse des arrangements existants.
+
+## 2026-09-30 (38) — Claude : lot 2 tranche 3 — bénéficiaires depuis l'UI du groupe, sélecteur de tiers dans le registre TIC
+
+- `GET /api/tier-registry/[id]` : pour l'ADMIN de l'organisation RACINE, état des filiales bénéficiaires et filiales proposables par contrat (rien pour une filiale / un non-admin) ; `TierDetailPanel` : « Filiales bénéficiaires de … » (Proposer).
+- Registre TIC : `tierId` facultatif en POST/PATCH (`resolveTierIdInput` : absent = inchangé, nul = détache, valeur = tiers autorisé sinon 400), `tiersOptions` en GET, sélecteur + préremplissage non destructif dans `RegistreTicManager`, badge « identité rattachée ».
+- Recette réelle : `local-tiers-groupe` 3/3 (proposition depuis l'UI), `local-tiers` 4/4 (dont registre TIC), `local-socles` 5/5. Piège local : le limiteur de connexion bloque les campagnes e2e répétées → redémarrer `next dev`.
+- Vérifié : `tsc` 0, `npm test` 3095, `i18n:check`, build. Spec § 8.5.
+- Reste : parties prenantes → tiers (atelier 3) ; fusion avec aperçu ; criticité d'usage ; import de contrats avec identité ; rapprochement en masse des arrangements existants.
+
+## 2026-09-30 (37) — Claude : lot 2 tranche 2 — offres, couverture, usages, propositions de bénéficiaires
+
+- Décision utilisateur : création/rapprochement d'identités de tiers = ADMIN **et** 2ᵉ ligne (`peutGererRegistreTic`).
+- Livré : `lib/tier-offers.ts` (validation d'offre, plan de couverture, couverture d'usage), `lib/tier-registry.server.ts` (contexte + garde), routes `GET /api/tier-registry/[id]`, `POST …/[id]/services`, `PATCH …/services/[serviceId]`, `PUT …/contracts/[arrangementId]/services`, `DELETE …/usages/[usageId]` ; `GET /api/tier-registry` renvoie aussi les propositions de contrats groupe ; composants `TierDetailPanel` et propositions dans `TierIdentityPanel` (Confirmer / Refuser).
+- Recette réelle (`e2e/local-tiers-groupe.spec.ts`, hors git) : groupe + 2 filiales — contrat groupe, offres, couverture, usage du groupe, proposition → 404 avant confirmation → accès après, usages propres à la filiale, hors contrat « à confirmer », 3ᵉ organisation refusée. `local-tiers` 3/3, `local-socles` 5/5.
+- Vérifié : `tsc` 0, `npm test` 3083, `i18n:check`, recette PostgreSQL + navigateur. Spec § 8.4.
+- Reste : proposer les bénéficiaires depuis l'UI du groupe ; parties prenantes → tiers (atelier) ; sélecteur de tiers dans le registre TIC ; fusion avec aperçu ; criticité d'usage.
+
+## 2026-09-30 (36) — Claude : catalogue v1.1, rôle effectif sur /configuration, tiers canoniques (tranche 1)
+
+- **Catalogue v1.1** : +18 sous-processus et +6 événements transversaux, +2 événements par secteur (×5 langues) ; liste hiérarchique dans le panneau de suggestions ; ordre de création robuste à plusieurs niveaux.
+- **/configuration** : `isAdmin` d'après le rôle effectif dans l'organisation active (`GET /api/org/active` expose `activeRole`, `lib/effective-admin.ts`).
+- **Tiers canoniques, tranche 1** : `lib/tier-identity.ts` (LEI, candidats fort/faible, couverture), `GET/POST /api/tier-registry`, `POST /api/tier-registry/link`, `TierIdentityPanel` sur `/tiers` (couverture cyber/TIC, création sans doublon, file de rapprochement des arrangements TIC). Recette réelle via `e2e/local-tiers.spec.ts` (hors git) : 3/3 ; `e2e/local-socles.spec.ts` : 5/5.
+- Vérifié : `tsc` 0, `npm test` 3053, `i18n:check`, recette PostgreSQL + navigateur. Spec § 8.3 à jour.
+- **Reste (lot 2)** : offres/contrats groupe/bénéficiaires/usages (écrans), rattachement des parties prenantes depuis l'atelier, sélecteur de tiers dans le registre TIC, fusion avec aperçu, file des propositions de bénéficiaires.
+
+## 2026-09-30 (35) — Claude : recette réelle du lot 1 (secteurs, suggestions, import de processus) + bug « Nouveau projet 360 »
+
+- **Bug corrigé** : le menu « Nouveau projet 360 » ouvre désormais `/projets?nouveau=1` (formulaire de projet déjà ouvert) au lieu d'une analyse cyber.
+- **Recette sur PostgreSQL** (Docker relancé, migrations dont `20260930190000_sector_suggestions` appliquées) via `e2e/local-socles.spec.ts` (exclu de git) : 5/5 verts — secteurs, suggestions processus + risque (provenance, pas de cotation, avertissement « sans lien »), import de fichier (hiérarchie, cycle, parent inconnu, nom manquant, réimport idempotent), menu projet 360.
+- Spec mise à jour (§ 8 : avancement, décisions, écarts). Écart noté : /configuration décide `isAdmin` d'après le rôle de session et non le rôle effectif dans l'organisation.
+- Vérifié : `tsc` 0, `npm test` 3018, `i18n:check`, build OK.
+- Prochains pas : harmoniser l'`isAdmin` de /configuration ; enrichir le contenu du catalogue (descriptions, sous-processus, revue métier) ; lot 2 (écrans Tiers).
+
+## 2026-09-30 (34) — Claude : socles sectoriels, lot 1 poursuivi (EN PAUSE — non poussé)
+
+- Repris et commités les travaux non commités de Codex : correctifs d'audit d'accès (`8156e44`) et suggestions de socle sectoriel (`d18467b`).
+- Ajouté (commit local suivant, **non poussé**) : configuration des secteurs de l'organisation (`SectorSettings`, `GET /api/catalogue-suggestions/sectors`, section « Fonctionnalités » de /configuration) ; **import guidé de processus CSV/XLSX** (`lib/processus-import.ts`, `POST /api/processus/import` aperçu + import, `ProcessusImportPanel` dans /processus) : parents par référence ou par nom, cycles, doublons, réimport idempotent par référence (`catalogueKey = import:<réf>`), doublon possible à confirmer, jamais de fusion.
+- Vérifié : `tsc` 0, `npm test` 3016 verts, `i18n:check` vert, `npm run build` OK.
+- **Non vérifié** : tout ce qui touche la base — Docker n'a pas pu être démarré (la migration `20260930190000_sector_suggestions` n'a jamais été appliquée en local) ; aucune recette navigateur des trois écrans (secteurs, suggestions, import de processus).
+- Bug signalé par l'utilisateur, **non traité** : « Nouveau projet 360 » (menu) mène à une analyse cyber ; piste : `/analyses/new?methode=PROJET_360` — la méthode est retombée sur le défaut car PROJET_360 est exclue des méthodes proposées (`MODULE_METHODS`).
+- Prochains pas : corriger le bug 360 ; recette DB/navigateur ; mettre à jour le statut de la spec `socles-sectoriels-tiers-canonique-backlog.md` ; enrichir le contenu du catalogue ; lot 2 (UI Tiers/offres/usages).
+
+## 2026-09-30 (33) — tiers canonique, contrats groupe et usages : première tranche TDD
+
+- Cadrage enrichi dans `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : prestataire unique, plusieurs offres (y compris du même type), couverture contrat↔offre, plusieurs usages locaux/processus ; décision utilisateur « ADMIN groupe propose, ADMIN filiale confirme ». Aucun accès automatique aux descendants.
+- Schéma Prisma et migration additive `20260930180000_tiers_services_contracts` : nouveaux Tier, TierOrganization, TierService, TierContractService, TierContractBeneficiary, TierServiceUsage ; `tierId` nullable sur ArrangementTic/PartiePrenante. Pas de backfill par nom.
+- Règles pures `tier-contract-coverage.ts` et routes API de proposition/confirmation/refus + création d'usage (avec statut de couverture explicite). Journal d'audit/SIEM complété.
+- TDD : tests rouges observés avant code ; ciblés verts, `npx tsc --noEmit` vert, `npx prisma validate` vert, `npm run i18n:check` vert ; suite complète finale : **367 fichiers / 2 967 tests verts** ; `npm run build` vert (routes incluses), `git diff --check` vert. Garde-fou supplémentaire : contrat et Tier doivent appartenir au même groupe.
+- Reste : créer/rattacher Tier et offres dans l'UI/API, lister les propositions et usages, contrôle concurrent d'une révocation, précision des dates/périmètres/criticités d'usage, migration et recette DB/browser. Docker absent : aucune écriture DB réelle. Autres fichiers sales préexistants laissés intacts.
+
+
+## 2026-09-30 (32) — cadrage des socles sectoriels et des tiers uniques
+
+- Nouvelle expression de besoins `docs/specs/socles-sectoriels-tiers-canonique-backlog.md` : propositions de risques/processus par socle transversal puis packs sectoriels, imports guidés, même principe étendu aux autres modules ; inventaire ciblé des fonctionnalités manquantes/en développement avec distinction code absent vs recette absente ; cible Tier canonique liant parties prenantes d'analyses et arrangements TIC sans recopier les objets.
+- Décisions utilisateur : suggestions validées avant toute création, pas de préremplissage automatique ; socle transversal avant packs sectoriels. Questions encore ouvertes dans la spec : gouvernance du rapprochement de tiers, périmètre filiale/groupe et ordre précis des secteurs.
+- Existant vérifié : registre de risques prérempli en bloc par un catalogue FR, processus CRUD sans import/catalogue, catalogues de contrôles/audit/RoPA déjà présents, jonction tiers↔TIC par nom en lecture seulement. Aucune modification applicative ou de base dans ce tour. `git fetch origin` impossible (DNS). Baseline `tsc` vert, `npm test` 363 fichiers / 2 942 tests verts ; vérifications documentaires et `git diff --check` en fin de tour.
+
+## 2026-09-30 (31) — navbar GRC et publication du registre (TDD)
+
+- Navigation : KRI rapproché de l’appétence RAS/RAD dans Pilotage ; registre TIC déplacé dans « Registres » auprès du registre des risques, sans fusion des objets ni extension des droits ; les deux liens restent visibles si seul leur module est actif. « Risques des analyses » distingue la page des risques de celle du registre. Groupes titrés aussi sur mobile. Libellés dans les 5 langues.
+- Publication Analyse → RiskItem : transaction PostgreSQL avec verrou par organisation/analyse avant lecture/création, empêchant deux appels simultanés à cette route de créer la même provenance. Une provenance déjà dupliquée renvoie 409 sans écriture ; message explicatif dans la cartographie (5 langues). La mise à jour idempotente préserve le statut du registre.
+- TDD : nouveaux tests navigation, mobile, détection des doublons, ordre verrou → lecture → création, refus des doublons et republication. Tests ciblés 31/31 ; `npx tsc --noEmit -p tsconfig.json` vert ; `npm test` 363 fichiers / 2 942 tests verts ; `npm run i18n:check` vert ; `npm run build` vert (avec accès réseau pour Inter). `git diff --check` vert.
+- Limites : pas de contrainte UNIQUE en base tant que les doublons historiques n’ont pas été diagnostiqués ; le verrou protège cette route, pas une écriture parallèle provenant d’un autre chemin. Docker Desktop absent (`open -a Docker` échoue, socket Docker introuvable) ; recette PostgreSQL et navigateur authentifié non effectuées. La base n’a été ni lue ni modifiée. Le disque avait atteint 100 % pendant le premier build/test ; seuls les caches générés `.next/cache` et `.next/dev` ont été supprimés, libérant environ 5,8 Go.
 
 ## 2026-10-01 (33) — Claude Code : T3 phase 1 et faille T25 (même branche, PR #194)
 

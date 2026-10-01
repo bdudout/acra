@@ -22,6 +22,7 @@ import { readableTextColor } from '@/lib/contrast-color'
 import ColumnMenu from '@/components/ColumnMenu'
 import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
 import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
+import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
 
 /** Couleur (#) d'un niveau selon les seuils CONFIGURÉS (repli gris si absent). */
 function niveauHex(n: number | null, seuils: Seuil[]): string | null {
@@ -48,7 +49,7 @@ type Form = {
 }
 const EMPTY: Form = { intitule: '', taxonomieCode: '', processusId: '', entite: '', proprietaire: '', statut: 'IDENTIFIE', gi: '', vi: '', gr: '', vr: '' }
 
-export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boolean; scaleConfig?: Partial<ScaleConfig> | null }) {
+export default function RegistreRisques({ canEdit, canCreateProcesses = false, scaleConfig }: { canEdit: boolean; canCreateProcesses?: boolean; scaleConfig?: Partial<ScaleConfig> | null }) {
   const { t } = useTranslation()
   const r = t.registre
   // Échelle configurée (mêmes niveaux/seuils que l'analyse) → cohérence des cotations.
@@ -93,16 +94,6 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
     setLoading(false)
   }
   useEffect(() => { reload() }, [])
-
-  const [seeding, setSeeding] = useState(false)
-  async function seedDefaut() {
-    if (!confirm(r.seedConfirm)) return
-    setSeeding(true); setError(null)
-    const res = await fetch('/api/risk-items/seed-defaut', { method: 'POST' })
-    setSeeding(false)
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(err(d.error ?? 'erreur')); return }
-    await reload()
-  }
 
   function err(code: string) { return (r.errors as Record<string, string>)[code] ?? code }
   const num = (s: string) => (s ? Number(s) : null)
@@ -204,15 +195,11 @@ export default function RegistreRisques({ canEdit, scaleConfig }: { canEdit: boo
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><NotebookText size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {r.title}</h1>
         <div className="flex items-center gap-2">
-          {canEdit && !showForm && !loading && risks.length === 0 && (
-            <button onClick={seedDefaut} disabled={seeding} className="btn-secondary text-sm disabled:opacity-50" title={r.seedHint}>
-              {seeding ? r.seedBusy : r.seedBtn}
-            </button>
-          )}
           {canEdit && !showForm && <button onClick={() => { setForm({ ...EMPTY, entite: defaultEntite }); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{r.newBtn}</button>}
         </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
+      {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} onImported={() => { void reload() }} />}
 
       {canEdit && showForm && (
         <div className="card p-4 mb-5 space-y-3">

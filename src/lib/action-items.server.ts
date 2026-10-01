@@ -19,6 +19,7 @@ import {
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
+import { analyseWhereClause, type OrgScopeContext, type UserRole } from './permissions'
 
 interface ModulesLike {
   incidentsActive: boolean
@@ -34,13 +35,24 @@ interface ModulesLike {
  * leur module. Retourne les ActionItem non triés (le tri/filtre est appliqué
  * côté vue selon les préférences utilisateur).
  */
-export async function gatherActionItems(orgId: string, mod: ModulesLike): Promise<ActionItem[]> {
+export async function gatherActionItems(
+  orgId: string,
+  mod: ModulesLike,
+  access: { userId: string; role: UserRole; scope: OrgScopeContext },
+): Promise<ActionItem[]> {
   const orgFilter = { organizationId: orgId }
+  // Les analyses ont un contrôle d'accès plus fin que l'organisation : un
+  // analyste ne doit pas découvrir les mesures d'une analyse privée via /actions.
+  const accessibleAnalyses = await prisma.analyse.findMany({
+    where: { ...analyseWhereClause(access.userId, access.role, access.scope), ...orgFilter },
+    select: { id: true },
+  })
+  const analyseIds = accessibleAnalyses.map(a => a.id)
 
   const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
-      where: { analyse: { organizationId: orgId } },
+      where: { analyseId: { in: analyseIds } },
       select: {
         id: true, nom: true, description: true, statut: true, priorite: true,
         responsable: true, entite: true, echeance: true, analyseId: true,
@@ -48,7 +60,7 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
     }),
     // Mesures d'écosystème (Atelier 3) — stockées en JSON sur les scénarios stratégiques.
     prisma.analyse.findMany({
-      where: { organizationId: orgId },
+      where: { ...orgFilter, id: { in: analyseIds } },
       select: { id: true, scenariosStrategiques: { select: { mesuresEcosysteme: true } } },
     }),
     mod.registreRisquesActive
@@ -65,11 +77,11 @@ export async function gatherActionItems(orgId: string, mod: ModulesLike): Promis
     // NIST SP 800-30). Ce sont les mêmes objets PlanAction unifiés ; ils restent
     // visibles même si le module de registre M1 est désactivé.
     prisma.planAction.findMany({
-      where: { ...orgFilter, liens: { some: { type: 'RISQUE_ANALYSE' } } },
+      where: { ...orgFilter, liens: { some: { type: 'RISQUE_ANALYSE', ref: { in: analyseIds } } } },
       select: {
         id: true, titre: true, description: true, porteur: true, entite: true,
         echeance: true, statut: true, priorite: true,
-        liens: { where: { type: 'RISQUE_ANALYSE' }, select: { targetId: true, ref: true }, take: 1 },
+        liens: { where: { type: 'RISQUE_ANALYSE', ref: { in: analyseIds } }, select: { targetId: true, ref: true }, take: 1 },
       },
     }),
     // Facette « conformité » = traitements « plan d'action » (ConformiteTraitement)
