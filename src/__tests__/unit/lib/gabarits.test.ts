@@ -43,12 +43,32 @@ describe('planGabarit', () => {
   })
   it('déjà appliqué : aucun changement ; un vocabulaire déjà personnalisé n’est pas écrasé', () => {
     const sante = gabaritParId('SANTE')!
-    const deja = { modules: { ...courant.modules, ...sante.modules }, regimesActifs: [...sante.regimesActifs], vocabulaire: sante.vocabulaire ?? {} }
+    const deja = { modules: { ...courant.modules, ...sante.modules }, regimesActifs: [...sante.regimesActifs], vocabulaire: sante.vocabulaire ?? {}, secteurs: ['SANTE'] }
     expect(planGabarit('SANTE', deja)!.changements).toEqual([])
     const perso = planGabarit('SANTE', { ...courant, vocabulaire: { incident: { '*': 'Mon terme' } } })!
     expect(perso.patch.vocabulaire.incident).toEqual({ '*': 'Mon terme' })
   })
   it('gabarit inconnu → null', () => {
     expect(planGabarit('NOPE', courant)).toBeNull()
+  })
+})
+
+describe('gabarits → secteurs du catalogue', () => {
+  const vide = { modules: {}, regimesActifs: [], vocabulaire: {} }
+  it('propose le secteur du gabarit à une organisation qui n’en a déclaré aucun', async () => {
+    const { planGabarit } = await import('@/lib/gabarits')
+    const plan = planGabarit('BANQUE', vide)!
+    expect(plan.patch.secteurs).toEqual(['FINANCE'])
+    expect(plan.changements).toContainEqual({ type: 'SECTEUR', cle: 'FINANCE', avant: null, apres: true })
+  })
+  it('n’écrase jamais des secteurs déjà déclarés ; un gabarit sans secteur n’en impose pas', async () => {
+    const { planGabarit } = await import('@/lib/gabarits')
+    expect(planGabarit('BANQUE', { ...vide, secteurs: ['SANTE'] })!.patch.secteurs).toBeNull()
+    expect(planGabarit('NIS2', vide)!.patch.secteurs).toBeNull()
+  })
+  it('chaque secteur de gabarit existe dans le catalogue', async () => {
+    const { GABARITS } = await import('@/lib/gabarits')
+    const { SECTOR_CODES } = await import('@/lib/sector-suggestions')
+    for (const g of GABARITS) for (const code of g.secteurs ?? []) expect(SECTOR_CODES as readonly string[]).toContain(code)
   })
 })

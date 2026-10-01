@@ -3,7 +3,7 @@ import { SECTOR_CODES, listSectorSuggestions, searchSectorSuggestions, sanitizeS
 
 describe('catalogue de suggestions sectorielles', () => {
   it('propose un socle transversal et un pack pertinent pour chaque secteur disponible', () => {
-    expect(SECTOR_CODES).toEqual(['FINANCE', 'ASSURANCE', 'SANTE', 'PUBLIC', 'SAAS', 'INDUSTRIE', 'COMMERCE', 'SERVICES'])
+    expect(SECTOR_CODES).toEqual(['FINANCE', 'ASSURANCE', 'ENERGIE', 'TRANSPORT', 'TELECOM', 'SANTE', 'INDUSTRIE', 'PUBLIC', 'COMMERCE', 'SAAS', 'SERVICES'])
     for (const sector of SECTOR_CODES) {
       const items = listSectorSuggestions(sector, 'fr')
       expect(items.filter(item => item.sector === 'TRANSVERSAL' && item.kind === 'PROCESS' && !item.parentKey)).toHaveLength(6) // macro-processus
