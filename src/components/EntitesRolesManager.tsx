@@ -27,6 +27,7 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const [newNom, setNewNom] = useState('')
   const [newParent, setNewParent] = useState('')
@@ -69,13 +70,15 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
 
   async function ajouterMembre() {
     if (!selId || !mEmail.trim()) return
-    setAddingMember(true); setError(null)
+    setAddingMember(true); setError(null); setNotice(null)
     const res = await fetch(`${base}/${selId}/membres`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: mEmail.trim(), role: mRole, scope: mScope }),
     })
     setAddingMember(false)
     if (!res.ok) { setError(e.error); return }
+    // Mode INVITATION (T23) : rien n'est rattaché tant que la personne n'a pas accepté.
+    if (res.status === 202) { setNotice(e.invitationSent.replace('{email}', mEmail.trim())); setMEmail(''); return }
     setMEmail('')
     await Promise.all([loadMembers(selId), loadEntites()])
   }
@@ -97,6 +100,7 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>}
+      {notice && <div role="status" className="rounded-lg border border-green-200 bg-green-50 text-green-800 px-3 py-2 text-sm">{notice}</div>}
 
       {/* Ajouter une entité */}
       <div className="card p-4">

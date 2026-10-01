@@ -38,6 +38,7 @@ export default function AdminInstancePage() {
   const [mcpEnabled, setMcpEnabled] = useState(false)
   const [methodesActives, setMethodesActives] = useState<string[]>(['EBIOS_RM'])
   const [methodesImplemented, setMethodesImplemented] = useState<string[]>(['EBIOS_RM'])
+  const [membership, setMembership] = useState<{ mode: string; effective: string; instanceOpen: boolean; notify: boolean } | null>(null)
 
   useEffect(() => {
     if (status === 'authenticated' && !isAdmin) router.replace('/dashboard')
@@ -53,7 +54,17 @@ export default function AdminInstancePage() {
       .then(d => { if (d) { setApiEnabled(d.apiEnabled === true); setMcpEnabled(d.mcpEnabled === true) } }).catch(() => {})
     fetch('/api/admin/methodes-config').then(r => r.ok ? r.json() : null)
       .then(d => { if (d) { if (Array.isArray(d.active)) setMethodesActives(d.active); if (Array.isArray(d.implemented)) setMethodesImplemented(d.implemented) } }).catch(() => {})
+    fetch('/api/admin/membership-config').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setMembership(d) }).catch(() => {})
   }, [isSuperAdmin])
+
+  // Mode de rattachement des comptes aux organisations (T23) : la réponse du serveur fait foi.
+  async function saveMembership(patch: { mode?: string; notify?: boolean }) {
+    const res = await fetch('/api/admin/membership-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+    })
+    if (res.ok) { const d = await res.json().catch(() => null); if (d) setMembership(d) }
+  }
 
   // Active/désactive une méthode d'analyse au niveau instance (EBIOS RM verrouillé).
   async function toggleMethode(methode: string, on: boolean) {
@@ -231,6 +242,35 @@ export default function AdminInstancePage() {
               })}
             </div>
             <p className="text-xs text-gray-400 mt-2">{t.methodesConfig.hint}</p>
+          </section>
+        )}
+
+        {isSuperAdmin && membership && (
+          <section className="card p-6">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.membershipConfig.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.membershipConfig.sectionDesc}</p>
+            <div className="space-y-2">
+              {(['AUTO', 'DIRECT', 'INVITATION'] as const).map(m => (
+                <label key={m} className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer">
+                  <input type="radio" name="membershipMode" value={m} checked={membership.mode === m}
+                    onChange={() => saveMembership({ mode: m })} className="mt-1 h-4 w-4" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-100">{t.membershipConfig.modes[m].title}</span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t.membershipConfig.modes[m].desc}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">
+              {t.membershipConfig.effective.replace('{mode}', t.membershipConfig.modes[membership.effective === 'INVITATION' ? 'INVITATION' : 'DIRECT'].title)}
+              {' '}<span className="text-xs text-gray-500">({membership.instanceOpen ? t.membershipConfig.instanceOpen : t.membershipConfig.instanceClosed})</span>
+            </p>
+            <label className="mt-3 inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={membership.notify} onChange={e => saveMembership({ notify: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+              <span className="text-sm text-gray-700 dark:text-gray-300">{t.membershipConfig.notify}</span>
+            </label>
+            <p className="text-xs text-gray-400 mt-2">{t.membershipConfig.hint}</p>
           </section>
         )}
 
