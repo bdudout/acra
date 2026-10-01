@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (49) — Claude Code : relances des vérifications et validations en attente
+
+- Demande : relancer contrôleurs/auditeurs en attente de vérification pour clôturer une préconisation, et le RSSI pour la validation d'une analyse, d'un projet 360 ou d'une dérogation.
+- `lib/relances.ts` : `attenteJours` (défaut 7), `relanceAttenteDue` (un `rappelLe` antérieur au début de l'attente est ignoré → une re-soumission repart du début), `approbateursAnalyse`, `valideursDerogation`, `attenteDerogationDepuis` (purs, testés). Cron `relances` étendu (préconisations RESOLU, analyses SOUMIS, dérogations DEMANDEE / DOUBLE_REGARD / VALIDATION_METIER) ; décideurs = membres de l'org + des parents à portée SUBTREE. `relancesEmail` : 6 catégories et l'état « en attente depuis » ×5. Champ « décision en attente » dans l'onglet Relances.
+- Un plan d'action n'a pas d'étape de vérification propre : la vérification porte sur la préconisation (ou le constat d'audit, déjà relancé par `audit-rappels`).
+- Vérifications : `tsc` OK ; `npm test` 416 fichiers / 3345 tests OK ; `npm run test:db` 11 / 52 OK (préconisation à vérifier, analyse et projet 360, accès restreint, 3 étapes de dérogation dont RSSI groupe, module inactif, anti-doublon) ; `i18n:check` OK ; lint 0 erreur (805 avertissements, inchangé) ; build OK ; recette : analyse soumise depuis 8 j et préconisation réalisée relancées une fois, second passage 0 ; réglage enregistré depuis l'onglet.
+- Piège : le `beforeEach` d'un fichier de test vide les mocks après un `beforeAll` imbriqué — capturer les appels dans le `beforeAll`.
+
 ## 2026-10-01 (48) — Claude Code : anomalie de contrôle depuis un questionnaire, relances automatiques
 
 - Décisions de l'utilisateur : une NON_CONFORME sur un point de contrôle enregistre une exécution « anomalie » (préconisation non obligatoire) ; relances avant l'échéance pour les questionnaires **et** les plans d'action, puis régulièrement, tous les mois par défaut.
