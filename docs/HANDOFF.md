@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (42) — Claude Code : T23 invitations (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
+
+- **Décision utilisateur** : le rattachement dépend du déploiement. SaaS / communautaire → consentement (invitation) ; sur site → l'entreprise rattache ses employés (direct).
+- **Réglage d'instance** (`Configuration.membershipMode` AUTO|DIRECT|INVITATION, `membershipNotify`), section « Rattachement des comptes » dans `/admin/instance` (SUPER_ADMIN, `GET/PUT /api/admin/membership-config`). AUTO = INVITATION si démo ou inscription publique ouverte, sinon DIRECT (`lib/membership-mode.ts`, pur, testé).
+- **INVITATION** : `POST …/entites/[entiteId]/membres` répond 202 `{invited:true}` que le compte existe ou non ; modèle `OrgInvitation` (jeton 256 bits haché SHA-256, usage unique par écriture conditionnelle, 7 jours, remplace l'invitation en attente) ; débit 30/h par auteur, 3/h par destinataire ; page publique `/invitations/[token]` : accepter (session au même e-mail), changer de compte, ou créer le compte (e-mail vérifié par le lien, politique de mot de passe). Logique dans `lib/org-invitation.server.ts`. Audit `ORG_MEMBER_INVITED` (SIEM COMPTES) puis `ORG_MEMBER_ADDED` via invitation.
+- **DIRECT** : comportement inchangé + e-mail d'information (désactivable).
+- Migration `20261001130000_org_invitations` (horodatage postérieur à `20261001120000_tier_…` de main ; base vierge : `migrate deploy` puis `migrate diff` vide). i18n ×5 (`invitations`, `membershipConfig`, `entites.invitationSent`, e-mails).
+- **Backlog** : T17 clos (risque accepté), T5/T6 optionnels et différés (activation par variable, import dynamique).
+- **Vérifié** : `tsc` ; `npm test` 408 fichiers / 3 286 tests (après fusion de `origin/main`) ; `npm run test:db` 6 fichiers / 27 tests (dont `org-invitation.db.test.ts`) ; `i18n:check` OK ; `npm run build` OK ; navigateur (build de prod :3005) : section d'instance, invitation 202, page d'invitation, création de compte → connexion avec bandeau, appartenance créée.
+- **Prochain pas** : énumération résiduelle de `POST /api/admin/users` (409) en mode SaaS ; T3 phase 2 ; T9 ; T10 ; T8.
 ## 2026-10-01 (41) — Claude : fin du lot 2 et lot 3 (catalogue étendu)
 
 - **Lot 2 tranche 6** : criticité d'usage (+ écart avec le contrat), périmètre/dates de couverture par offre, rapprochement en masse sur LEI, **import de contrats TIC** (`lib/tic-contract-import.ts`, `POST /api/reglementaire/registre-tic/import`, `TicContractImportPanel`), **fusion par l'admin du groupe** (`isGroupAdminMerge`, accès des filiales conservés). Migrations `20260930200000` (usage.criticite) et `20261001120000` (couverture).

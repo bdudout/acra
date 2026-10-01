@@ -243,3 +243,43 @@ export function rapportDiffusionEmail(locale: string | null | undefined, p: Rapp
     html: emailLayout({ heading: L.heading, tone: 'warning', items: [{ label: p.titre, detail: quoi, tone: 'warning' }], paragraphs: [`${L.cta} ${p.lien}`], footer: 'ACRA' }),
   }
 }
+
+// ─── Rattachement à une organisation (T23) ───────────────────────────────────
+
+/** Paramètres de l'e-mail d'invitation (mode INVITATION). */
+export interface InvitationParams { orgNom: string; url: string; days: number }
+
+const invitationLabels: Record<EmailLocale, { subject: (o: string) => string; heading: (o: string) => string; body: (o: string, d: number) => string; action: string; ignore: string }> = {
+  fr: { subject: o => `[ACRA] Invitation à rejoindre « ${o} »`, heading: o => `Invitation à rejoindre « ${o} »`, body: (o, d) => `Vous êtes invité(e) à rejoindre l'organisation « ${o} » dans ACRA. Cette invitation est valable ${d} jours.`, action: 'Accepter l\'invitation', ignore: 'Si vous n\'attendiez pas cette invitation, ignorez ce message : rien ne sera fait sans votre accord.' },
+  en: { subject: o => `[ACRA] Invitation to join "${o}"`, heading: o => `Invitation to join "${o}"`, body: (o, d) => `You have been invited to join the organisation "${o}" in ACRA. This invitation is valid for ${d} days.`, action: 'Accept the invitation', ignore: 'If you were not expecting this invitation, ignore this message: nothing will happen without your consent.' },
+  de: { subject: o => `[ACRA] Einladung zu „${o}"`, heading: o => `Einladung zu „${o}"`, body: (o, d) => `Sie wurden eingeladen, der Organisation „${o}" in ACRA beizutreten. Diese Einladung ist ${d} Tage gültig.`, action: 'Einladung annehmen', ignore: 'Wenn Sie diese Einladung nicht erwartet haben, ignorieren Sie diese Nachricht: Ohne Ihre Zustimmung geschieht nichts.' },
+  es: { subject: o => `[ACRA] Invitación para unirse a «${o}»`, heading: o => `Invitación para unirse a «${o}»`, body: (o, d) => `Le han invitado a unirse a la organización «${o}» en ACRA. Esta invitación es válida durante ${d} días.`, action: 'Aceptar la invitación', ignore: 'Si no esperaba esta invitación, ignore este mensaje: no se hará nada sin su consentimiento.' },
+  it: { subject: o => `[ACRA] Invito a unirsi a «${o}»`, heading: o => `Invito a unirsi a «${o}»`, body: (o, d) => `Siete stati invitati a unirvi all'organizzazione «${o}» in ACRA. L'invito è valido per ${d} giorni.`, action: 'Accetta l\'invito', ignore: 'Se non vi aspettavate questo invito, ignorate il messaggio: nulla verrà fatto senza il vostro consenso.' },
+}
+
+/** E-mail d'invitation à rejoindre une organisation (texte + HTML). */
+export function orgInvitationEmail(locale: string | null | undefined, p: InvitationParams): BuiltEmail {
+  const L = invitationLabels[emailLocale(locale)]
+  const text = `${L.body(p.orgNom, p.days)}\n\n${L.action} : ${p.url}\n\n${L.ignore}`
+  const html = emailLayout({ heading: L.heading(p.orgNom), paragraphs: [L.body(p.orgNom, p.days), L.ignore], action: { label: L.action, url: p.url }, footer: 'ACRA' })
+  return { subject: L.subject(p.orgNom), text, html }
+}
+
+/** Paramètres de l'e-mail d'information (mode DIRECT). */
+export interface MemberAddedParams { orgNom: string; url: string }
+
+const memberAddedLabels: Record<EmailLocale, { subject: (o: string) => string; body: (o: string) => string; action: string }> = {
+  fr: { subject: o => `[ACRA] Vous avez été ajouté(e) à « ${o} »`, body: o => `Un administrateur vous a ajouté(e) à l'organisation « ${o} » dans ACRA.`, action: 'Ouvrir ACRA' },
+  en: { subject: o => `[ACRA] You have been added to "${o}"`, body: o => `An administrator added you to the organisation "${o}" in ACRA.`, action: 'Open ACRA' },
+  de: { subject: o => `[ACRA] Sie wurden zu „${o}" hinzugefügt`, body: o => `Ein Administrator hat Sie der Organisation „${o}" in ACRA hinzugefügt.`, action: 'ACRA öffnen' },
+  es: { subject: o => `[ACRA] Le han añadido a «${o}»`, body: o => `Un administrador le ha añadido a la organización «${o}» en ACRA.`, action: 'Abrir ACRA' },
+  it: { subject: o => `[ACRA] Siete stati aggiunti a «${o}»`, body: o => `Un amministratore vi ha aggiunti all'organizzazione «${o}» in ACRA.`, action: 'Apri ACRA' },
+}
+
+/** E-mail d'information : rattachement direct à une organisation (texte + HTML). */
+export function memberAddedEmail(locale: string | null | undefined, p: MemberAddedParams): BuiltEmail {
+  const L = memberAddedLabels[emailLocale(locale)]
+  const text = `${L.body(p.orgNom)}\n\n${L.action} : ${p.url}`
+  const html = emailLayout({ heading: L.subject(p.orgNom).replace('[ACRA] ', ''), paragraphs: [L.body(p.orgNom)], action: { label: L.action, url: p.url }, footer: 'ACRA' })
+  return { subject: L.subject(p.orgNom), text, html }
+}
