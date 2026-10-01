@@ -12,6 +12,13 @@ vérifié l'est avec la commande et son résultat.
 - Vérifié : `tsc` ; `npm test` 419 / 3354 ; `npm run test:db` 15 / 66 ; build ; `prisma migrate diff` base ↔ schéma vide (pas de migration due au passage Prisma 6/7) ; serveur de production local (santé, connexion, API). Image Docker construite et testée : 171 migrations sur base vierge, 2e passage idempotent, commande de `docker-compose.release.yml`, réconciliation P3009 (acceptée si schéma conforme, refusée si colonne manquante), `create-admin.mjs`, connexion, `/api/analyses`, `/api/admin/users`, `/dashboard`.
 - Non vérifié : construction de l'image avec `apk add` (dépôts Alpine bloqués dans l'environnement de test : construite avec une copie du Dockerfile sans ces lignes) ; connexion SSO (passe par `@auth/prisma-adapter`, non couverte) ; déploiement réel.
 - Pièges : la CLI Prisma 7 doit être installée AVEC ses scripts (moteur de migration téléchargé au build ; sinon elle tente d'écrire dans node_modules à l'exécution, refusé à l'utilisateur nextjs). Ne jamais écrire `new PrismaClient()` sans `adapter`.
+## 2026-10-01 (54) — Claude Code : PR Dependabot (fusion), Vitest 5, analyse Prisma 7
+
+- Fusionnées dans `main` : #208, puis les mises à jour Dependabot vertes #196–#203, #206 (#201 et #206 après `@dependabot rebase`). Branche `claude/tender-euler-bqjoe9` repartie de `origin/main` (b88fd88), l'ancienne branche distante y est fusionnée (sans changement de contenu) pour éviter un push forcé.
+- Vitest 5 (remplace #204) : `src/__tests__/setup.ts` importe `@testing-library/jest-dom/vitest` (seule entrée qui type `Assertion` sous Vitest 5) ; `clearMocks: false` dans `vitest.config.mts` et `vitest.db.config.mts` (Vitest 5 vide les mocks avant chaque test par défaut → les envois enregistrés dans un `beforeAll` disparaissaient, `tableau-bord.db.test.ts`).
+- Vérifications Vitest 5 : `tsc` OK ; `npm test` 419 / 3354 OK ; `npm run test:db` 15 / 66 OK ; build OK.
+- Prisma 7 (#205) NON fait : Dependabot ne monte que la CLI (client resté en 5, couple incompatible). Migration réelle = `prisma.config.ts` (URL hors du schéma, `.env` non chargé par la CLI), client via `@prisma/adapter-pg`, image Docker (la CLI 7 a ~115 dépendances, l'image ne copie que `prisma` et `@prisma`), `scripts/migrate-recover.sh` (options de `migrate diff` renommées), seeds et scripts qui instancient `PrismaClient`. Décision utilisateur attendue.
+- Piège : la base PostgreSQL locale s'arrête quand le conteneur redémarre → `service postgresql start`.
 
 ## 2026-10-01 (53) — Claude Code : petite structure (une personne, plusieurs rôles)
 
