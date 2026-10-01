@@ -433,6 +433,7 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 | Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
 | Brouillons de rapports planifiés (1er–3 du mois) | `rapports-planifies` | quotidien 05:00 |
 | Rappels des recommandations d'audit (échéance, retard, à vérifier) | `audit-rappels` | quotidien 06:00 (06:30 côté GitHub Actions) |
+| Relances des questionnaires, préconisations et plans d'action (avant échéance, retard, puis mensuelle par défaut) | `relances` | quotidien 06:00 (06:45 côté GitHub Actions) |
 | Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
 | Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
 

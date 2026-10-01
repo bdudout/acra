@@ -9,15 +9,16 @@ import QuestionnaireRepondre from './QuestionnaireRepondre'
 import QuestionnaireModeles from './QuestionnaireModeles'
 import QuestionnaireEnvois from './QuestionnaireEnvois'
 import PreconisationsPanel from './PreconisationsPanel'
+import RelancesConfigPanel from './RelancesConfigPanel'
 
-type Onglet = 'aRepondre' | 'preconisations' | 'modeles' | 'envois'
+type Onglet = 'aRepondre' | 'preconisations' | 'modeles' | 'envois' | 'relances'
 
 export default function QuestionnairesManager({ canDefine, conformiteActive }: { canDefine: boolean; conformiteActive: boolean }) {
   const { t } = useTranslation()
   const q = t.questionnaires
   const sp = useSearchParams()
   const [onglet, setOnglet] = useState<Onglet>(sp.get('preconisation') ? 'preconisations' : canDefine ? 'envois' : 'aRepondre')
-  const onglets: Onglet[] = canDefine ? ['envois', 'preconisations', 'modeles', 'aRepondre'] : ['aRepondre', 'preconisations']
+  const onglets: Onglet[] = canDefine ? ['envois', 'preconisations', 'modeles', 'aRepondre', 'relances'] : ['aRepondre', 'preconisations']
   return <div>
     <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><ClipboardList size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" />{q.title}</h1>
     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-5">{q.subtitle}</p>
@@ -31,5 +32,6 @@ export default function QuestionnairesManager({ canDefine, conformiteActive }: {
     {onglet === 'preconisations' && <PreconisationsPanel conformiteActive={conformiteActive} focusId={sp.get('preconisation')} />}
     {onglet === 'modeles' && canDefine && <QuestionnaireModeles conformiteActive={conformiteActive} />}
     {onglet === 'envois' && canDefine && <QuestionnaireEnvois />}
+    {onglet === 'relances' && canDefine && <RelancesConfigPanel />}
   </div>
 }

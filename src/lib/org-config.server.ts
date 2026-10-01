@@ -55,6 +55,7 @@ const CONFIG_SELECT = {
   champsPersonnalises: true,
   auditConfig: true,
   rapportsConfig: true,
+  relancesConfig: true,
   appetitRisque: true,
 } as const
 

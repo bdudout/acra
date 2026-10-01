@@ -1270,6 +1270,8 @@ model PlanAction {
   // A_FAIRE | EN_COURS | FAIT (le retard est dérivé de l'échéance, jamais stocké)
   statut         String       @default("A_FAIRE")
   createdById    String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -2081,6 +2083,8 @@ model OrganizationConfig {
   auditConfig                Json          @default("{}")
   // Lot L2 (suite) — gabarits de rapports surchargeables, planification des brouillons.
   rapportsConfig             Json          @default("{}")
+  // Relances automatiques (questionnaires, préconisations, plans d'action) : { actives, joursAvant, periodiciteJours } — cf. lib/relances.
+  relancesConfig             Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
@@ -2452,6 +2456,8 @@ model QuestionnaireReponse {
   soumiseLe      DateTime?
   revueLe        DateTime?
   revueParId     String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -2493,6 +2499,8 @@ model Preconisation {
   processusId              String?
   controleId               String?
   createdById              String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 

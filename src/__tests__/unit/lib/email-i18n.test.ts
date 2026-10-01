@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emailLocale, derogationExpiryEmail, derogationDigestEmail } from '@/lib/email-i18n'
+import { emailLocale, derogationExpiryEmail, derogationDigestEmail, relancesEmail } from '@/lib/email-i18n'
 
 describe('emailLocale', () => {
   it('normalise vers une locale supportée, repli fr', () => {
@@ -87,5 +87,26 @@ describe('versions HTML (multipart)', () => {
     const e = derogationDigestEmail('fr', { orgNom: '<script>x</script>', active: 0, expireBientot: 1, expiree: 0, items: [] })
     expect(e.html.includes('<script>')).toBe(false)
     expect(e.html).toContain('&lt;script&gt;')
+  })
+})
+
+describe('relancesEmail', () => {
+  const items = [
+    { categorie: 'QUESTIONNAIRE' as const, intitule: 'Accès <ISO>', type: 'ECHEANCE_PROCHE' as const, echeance: '2026-10-10' },
+    { categorie: 'PLAN_ACTION' as const, intitule: 'MFA', type: 'EN_RETARD' as const, echeance: '2026-09-01' },
+    { categorie: 'PRECONISATION' as const, intitule: 'Registre', type: 'PERIODIQUE' as const, echeance: null },
+  ]
+  it('récapitule les éléments par catégorie et état, avec un lien, et échappe le HTML', () => {
+    const m = relancesEmail('fr', { orgNom: 'Banque', items, url: 'https://acra.test/controles/questionnaires' })
+    expect(m.subject).toBe('[ACRA] 3 élément(s) à traiter — Banque')
+    expect(m.text).toContain('• Questionnaire à répondre — Accès <ISO> : échéance le 2026-10-10')
+    expect(m.text).toContain('Plan d’action — MFA : en retard (échéance le 2026-09-01)')
+    expect(m.text).toContain('Préconisation — Registre : toujours ouvert')
+    expect(m.html).toContain('Accès &lt;ISO&gt;')
+    expect(m.html).toContain('https://acra.test/controles/questionnaires')
+  })
+  it('est traduit, avec repli français, et sans lien si l’URL est inconnue', () => {
+    expect(relancesEmail('de', { orgNom: 'O', items, url: null }).subject).toContain('Einträge')
+    expect(relancesEmail('xx', { orgNom: 'O', items, url: null }).text).not.toContain('Ouvrir ACRA')
   })
 })

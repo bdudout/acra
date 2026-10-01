@@ -28,6 +28,7 @@ on:
     - cron: '0 5 * * *'   # quotidien 05:00 — brouillons de rapports planifiés
     - cron: '0 6 * * *'   # quotidien 06:00 — rappel des contrôles à exécuter
     - cron: '30 6 * * *'  # quotidien 06:30 — rappels des recommandations d'audit
+    - cron: '45 6 * * *'  # quotidien 06:45 — relances (questionnaires, préconisations, plans d'action)
     - cron: '0 7 * * *'   # quotidien 07:00 — alerte d'échéance des dérogations
     - cron: '0 8 1 * *'   # le 1er du mois 08:00 — synthèse des dérogations
   workflow_dispatch:
@@ -40,6 +41,7 @@ on:
           - conformite-snapshots
           - controles-echeances
           - audit-rappels
+          - relances
           - rapports-planifies
           - derogations-expiry
           - derogations-digest
@@ -70,6 +72,7 @@ jobs:
             '0 5 * * *')  TASK=rapports-planifies ;;
             '0 6 * * *')  TASK=controles-echeances ;;
             '30 6 * * *') TASK=audit-rappels ;;
+            '45 6 * * *') TASK=relances ;;
             '0 7 * * *')  TASK=derogations-expiry ;;
             '0 8 1 * *')  TASK=derogations-digest ;;
             *)            TASK="${MANUAL:-}" ;;

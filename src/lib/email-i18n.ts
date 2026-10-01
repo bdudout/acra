@@ -283,3 +283,60 @@ export function memberAddedEmail(locale: string | null | undefined, p: MemberAdd
   const html = emailLayout({ heading: L.subject(p.orgNom).replace('[ACRA] ', ''), paragraphs: [L.body(p.orgNom)], action: { label: L.action, url: p.url }, footer: 'ACRA' })
   return { subject: L.subject(p.orgNom), text, html }
 }
+
+// ─── Relances automatiques : questionnaires, préconisations, plans d'action ──
+
+export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
+export type RelanceEmailType = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE'
+/** Un élément relancé : catégorie, intitulé, type de relance, échéance (AAAA-MM-JJ) éventuelle. */
+export interface RelanceItem { categorie: RelanceCategorie; intitule: string; type: RelanceEmailType; echeance: string | null }
+export interface RelancesParams { orgNom: string; items: RelanceItem[]; url: string | null }
+
+const relancesLabels: Record<EmailLocale, {
+  subject: (o: string, n: number) => string; heading: (o: string) => string; intro: string; action: string
+  categories: Record<RelanceCategorie, string>; etat: Record<RelanceEmailType, (d: string | null) => string>
+}> = {
+  fr: {
+    subject: (o, n) => `[ACRA] ${n} élément(s) à traiter — ${o}`, heading: o => `Éléments à traiter — ${o}`,
+    intro: 'Les éléments suivants vous sont attribués et restent ouverts.', action: 'Ouvrir ACRA',
+    categories: { QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action' },
+    etat: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard (échéance le ${d})`, PERIODIQUE: d => (d ? `ouvert, échéance le ${d}` : 'toujours ouvert') },
+  },
+  en: {
+    subject: (o, n) => `[ACRA] ${n} item(s) to handle — ${o}`, heading: o => `Items to handle — ${o}`,
+    intro: 'The following items are assigned to you and are still open.', action: 'Open ACRA',
+    categories: { QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan' },
+    etat: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue (due on ${d})`, PERIODIQUE: d => (d ? `open, due on ${d}` : 'still open') },
+  },
+  de: {
+    subject: (o, n) => `[ACRA] ${n} offene(r) Eintrag/Einträge — ${o}`, heading: o => `Zu bearbeiten — ${o}`,
+    intro: 'Die folgenden Einträge sind Ihnen zugewiesen und noch offen.', action: 'ACRA öffnen',
+    categories: { QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan' },
+    etat: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig (fällig am ${d})`, PERIODIQUE: d => (d ? `offen, fällig am ${d}` : 'weiterhin offen') },
+  },
+  es: {
+    subject: (o, n) => `[ACRA] ${n} elemento(s) pendiente(s) — ${o}`, heading: o => `Elementos pendientes — ${o}`,
+    intro: 'Los siguientes elementos le están asignados y siguen abiertos.', action: 'Abrir ACRA',
+    categories: { QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción' },
+    etat: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `con retraso (vencía el ${d})`, PERIODIQUE: d => (d ? `abierto, vence el ${d}` : 'sigue abierto') },
+  },
+  it: {
+    subject: (o, n) => `[ACRA] ${n} elemento/i da gestire — ${o}`, heading: o => `Elementi da gestire — ${o}`,
+    intro: 'I seguenti elementi le sono assegnati e restano aperti.', action: 'Apri ACRA',
+    categories: { QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione' },
+    etat: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo (scadenza il ${d})`, PERIODIQUE: d => (d ? `aperto, scadenza il ${d}` : 'ancora aperto') },
+  },
+}
+
+/** E-mail récapitulatif des relances d'une personne pour une organisation (texte + HTML). */
+export function relancesEmail(locale: string | null | undefined, p: RelancesParams): BuiltEmail {
+  const L = relancesLabels[emailLocale(locale)]
+  const tone = (t: RelanceEmailType) => (t === 'EN_RETARD' ? ('danger' as const) : ('warning' as const))
+  const lignes = p.items.map(x => ({ label: `${L.categories[x.categorie]} — ${x.intitule}`, detail: L.etat[x.type](x.echeance), tone: tone(x.type) }))
+  const text = `${L.heading(p.orgNom)}\n\n${L.intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
+  const html = emailLayout({
+    heading: L.heading(p.orgNom), tone: p.items.some(x => x.type === 'EN_RETARD') ? 'danger' : 'warning',
+    paragraphs: [L.intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA',
+  })
+  return { subject: L.subject(p.orgNom, p.items.length), text, html }
+}
