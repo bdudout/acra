@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RELANCES_DEFAUT, sanitizeRelancesConfig, typeRelance, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis } from '@/lib/relances'
+import { RELANCES_DEFAUT, sanitizeRelancesConfig, typeRelance, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS } from '@/lib/relances'
 
 const J = 86_400_000
 const now = new Date('2026-10-01T06:00:00Z')
@@ -86,6 +86,24 @@ describe('destinataires des décisions en attente', () => {
     expect(attenteDerogationDepuis({ ...base, statut: 'DOUBLE_REGARD' })).toEqual(jour(-20))
     expect(attenteDerogationDepuis({ ...base, statut: 'VALIDATION_METIER' })).toEqual(jour(-10))
     expect(attenteDerogationDepuis({ ...base, statut: 'DEMANDEE', prolongationDemandee: jour(90), prolongations: [{ le: jour(-5).toISOString() }] })).toEqual(jour(-5))
+  })
+})
+
+describe('échéances seules', () => {
+  const cfg = RELANCES_DEFAUT
+  it('à l’approche et au dépassement, jamais périodique ; fenêtre propre (contrat TIC à 90 jours)', () => {
+    expect(typeEcheance(item({ echeance: jour(60) }), cfg, now)).toBeNull()
+    expect(typeEcheance(item({ echeance: jour(60) }), cfg, now, { joursAvant: PREAVIS_CONTRAT_TIC_JOURS })).toBe('ECHEANCE_PROCHE')
+    expect(typeEcheance(item({ echeance: jour(-1) }), cfg, now)).toBe('EN_RETARD')
+    expect(typeEcheance(item({ echeance: null, createdAt: jour(-400) }), cfg, now)).toBeNull()
+    expect(typeEcheance(item({ echeance: jour(200), createdAt: jour(-400) }), cfg, now)).toBeNull()
+  })
+  it('« une fois » : le retard n’est pas relancé à nouveau', () => {
+    expect(typeEcheance(item({ echeance: jour(-40), rappelLe: jour(-35) }), cfg, now)).toBe('EN_RETARD')
+    expect(typeEcheance(item({ echeance: jour(-40), rappelLe: jour(-35) }), cfg, now, { uneFois: true })).toBeNull()
+  })
+  it('contrôles d’une campagne non exécutés depuis son début', () => {
+    expect(controlesNonExecutes(['a', 'b', 'c'], [{ controleId: 'a', dateRealisation: jour(-2) }, { controleId: 'b', dateRealisation: jour(-40) }], jour(-30))).toEqual(['b', 'c'])
   })
 })
 

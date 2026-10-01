@@ -124,3 +124,30 @@ export function attenteDerogationDepuis(d: { statut: string; createdAt: Date; av
   }
   return d.createdAt
 }
+
+// ─── Échéances seules (contrats, tests, documents, missions, invitations…) ───
+
+/** Fenêtre de prévenance des contrats TIC (renouvellement ou sortie, DORA art. 28) : 90 jours. */
+export const PREAVIS_CONTRAT_TIC_JOURS = 90
+/** Fenêtre de relance d'une invitation non acceptée avant son expiration : 3 jours. */
+export const PREAVIS_INVITATION_JOURS = 3
+
+/**
+ * Relance d'un élément porté par une date (échéance, fin de contrat, revue…) : seulement à
+ * l'approche (`joursAvant`, sinon celui de l'organisation) et au dépassement, jamais « périodique ».
+ * `uneFois` : le retard n'est relancé qu'une fois (ex. invitation expirée).
+ */
+export function typeEcheance(
+  e: { echeance: Date | null; rappelLe: Date | null; createdAt: Date }, cfg: RelancesConfig, now: Date,
+  opts: { joursAvant?: number; uneFois?: boolean } = {},
+): 'ECHEANCE_PROCHE' | 'EN_RETARD' | null {
+  if (!e.echeance) return null
+  const t = typeRelance(e, { ...cfg, joursAvant: opts.joursAvant ?? cfg.joursAvant, periodiciteJours: opts.uneFois ? 0 : cfg.periodiciteJours }, now)
+  return t === 'PERIODIQUE' ? null : t
+}
+
+/** Contrôles du périmètre d'une campagne sans exécution depuis le début de la campagne. */
+export function controlesNonExecutes(controleIds: string[], executions: { controleId: string; dateRealisation: Date }[], depuis: Date): string[] {
+  const faits = new Set(executions.filter(x => x.dateRealisation.getTime() >= depuis.getTime()).map(x => x.controleId))
+  return controleIds.filter(id => !faits.has(id))
+}

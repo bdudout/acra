@@ -86,6 +86,8 @@ export function memberAddedEmail(locale: string | null | undefined, p: MemberAdd
 
 export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
   | 'CONSTAT_AUDIT' | 'CONTROLE_A_EXECUTER' | 'DEROGATION_EXPIRATION'
+  | 'CONTRAT_TIC' | 'TEST_RESILIENCE' | 'KRI_MESURE' | 'DOCUMENT_A_REVOIR' | 'CAMPAGNE_CONTROLE' | 'MISSION_AUDIT' | 'ANALYSE_ECHEANCE' | 'INVITATION'
+  | 'ACCEPTATION_RISQUES'
   // Décisions en attente : vérifications (2ᵉ et 3ᵉ lignes) et validations (RSSI, Risk Manager, direction métier).
   | 'PRECONISATION_A_VERIFIER' | 'CONSTAT_A_VERIFIER' | 'ANALYSE_A_APPROUVER' | 'PROJET360_A_APPROUVER'
   | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
@@ -103,6 +105,7 @@ const relancesLabels: Record<EmailLocale, {
     subject: (n, o) => `[ACRA] ${n} élément(s) à traiter${o ? ` — ${o}` : ''}`, heading: o => (o ? `Vos relances — ${o}` : 'Vos relances'),
     intro: 'Les éléments suivants attendent une action ou une décision de votre part.', action: 'Ouvrir ACRA',
     categories: {
+      CONTRAT_TIC: 'Contrat TIC arrivant à échéance', TEST_RESILIENCE: 'Test de résilience planifié', KRI_MESURE: 'KRI sans mesure récente', DOCUMENT_A_REVOIR: 'Document à revoir', CAMPAGNE_CONTROLE: 'Campagne de contrôle avec des contrôles non exécutés', MISSION_AUDIT: 'Mission d’audit planifiée', ANALYSE_ECHEANCE: 'Analyse de risques', INVITATION: 'Invitation non acceptée', ACCEPTATION_RISQUES: 'Risques résiduels à accepter',
       QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action',
       CONSTAT_AUDIT: 'Recommandation d’audit', CONTROLE_A_EXECUTER: 'Contrôle à exécuter', DEROGATION_EXPIRATION: 'Dérogation arrivant à expiration',
       PRECONISATION_A_VERIFIER: 'Préconisation réalisée à vérifier', CONSTAT_A_VERIFIER: 'Recommandation d’audit réalisée à vérifier', ANALYSE_A_APPROUVER: 'Analyse à approuver', PROJET360_A_APPROUVER: 'Projet 360 à approuver',
@@ -114,6 +117,7 @@ const relancesLabels: Record<EmailLocale, {
     subject: (n, o) => `[ACRA] ${n} item(s) to handle${o ? ` — ${o}` : ''}`, heading: o => (o ? `Your reminders — ${o}` : 'Your reminders'),
     intro: 'The following items are awaiting an action or a decision from you.', action: 'Open ACRA',
     categories: {
+      CONTRAT_TIC: 'ICT contract nearing its end date', TEST_RESILIENCE: 'Planned resilience test', KRI_MESURE: 'KRI without a recent measurement', DOCUMENT_A_REVOIR: 'Document to review', CAMPAGNE_CONTROLE: 'Control campaign with controls not performed', MISSION_AUDIT: 'Planned audit engagement', ANALYSE_ECHEANCE: 'Risk analysis', INVITATION: 'Invitation not accepted', ACCEPTATION_RISQUES: 'Residual risks to accept',
       QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan',
       CONSTAT_AUDIT: 'Audit recommendation', CONTROLE_A_EXECUTER: 'Control to perform', DEROGATION_EXPIRATION: 'Waiver about to expire',
       PRECONISATION_A_VERIFIER: 'Completed recommendation to verify', CONSTAT_A_VERIFIER: 'Completed audit recommendation to verify', ANALYSE_A_APPROUVER: 'Analysis to approve', PROJET360_A_APPROUVER: '360 project to approve',
@@ -125,6 +129,7 @@ const relancesLabels: Record<EmailLocale, {
     subject: (n, o) => `[ACRA] ${n} offene(r) Eintrag/Einträge${o ? ` — ${o}` : ''}`, heading: o => (o ? `Ihre Erinnerungen — ${o}` : 'Ihre Erinnerungen'),
     intro: 'Die folgenden Einträge warten auf eine Aktion oder Entscheidung von Ihnen.', action: 'ACRA öffnen',
     categories: {
+      CONTRAT_TIC: 'IKT-Vertrag läuft bald aus', TEST_RESILIENCE: 'Geplanter Resilienztest', KRI_MESURE: 'KRI ohne aktuelle Messung', DOCUMENT_A_REVOIR: 'Zu überprüfendes Dokument', CAMPAGNE_CONTROLE: 'Kontrollkampagne mit nicht durchgeführten Kontrollen', MISSION_AUDIT: 'Geplante Prüfung', ANALYSE_ECHEANCE: 'Risikoanalyse', INVITATION: 'Nicht angenommene Einladung', ACCEPTATION_RISQUES: 'Zu akzeptierende Restrisiken',
       QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan',
       CONSTAT_AUDIT: 'Prüfungsempfehlung', CONTROLE_A_EXECUTER: 'Durchzuführende Kontrolle', DEROGATION_EXPIRATION: 'Ausnahme läuft bald ab',
       PRECONISATION_A_VERIFIER: 'Umgesetzte Empfehlung zu prüfen', CONSTAT_A_VERIFIER: 'Umgesetzte Prüfungsempfehlung zu prüfen', ANALYSE_A_APPROUVER: 'Analyse zu genehmigen', PROJET360_A_APPROUVER: '360-Projekt zu genehmigen',
@@ -136,6 +141,7 @@ const relancesLabels: Record<EmailLocale, {
     subject: (n, o) => `[ACRA] ${n} elemento(s) pendiente(s)${o ? ` — ${o}` : ''}`, heading: o => (o ? `Sus recordatorios — ${o}` : 'Sus recordatorios'),
     intro: 'Los siguientes elementos esperan una acción o una decisión por su parte.', action: 'Abrir ACRA',
     categories: {
+      CONTRAT_TIC: 'Contrato TIC próximo a vencer', TEST_RESILIENCE: 'Prueba de resiliencia planificada', KRI_MESURE: 'KRI sin medición reciente', DOCUMENT_A_REVOIR: 'Documento por revisar', CAMPAGNE_CONTROLE: 'Campaña de control con controles no ejecutados', MISSION_AUDIT: 'Misión de auditoría planificada', ANALYSE_ECHEANCE: 'Análisis de riesgos', INVITATION: 'Invitación no aceptada', ACCEPTATION_RISQUES: 'Riesgos residuales por aceptar',
       QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción',
       CONSTAT_AUDIT: 'Recomendación de auditoría', CONTROLE_A_EXECUTER: 'Control por ejecutar', DEROGATION_EXPIRATION: 'Excepción a punto de caducar',
       PRECONISATION_A_VERIFIER: 'Recomendación realizada por verificar', CONSTAT_A_VERIFIER: 'Recomendación de auditoría realizada por verificar', ANALYSE_A_APPROUVER: 'Análisis por aprobar', PROJET360_A_APPROUVER: 'Proyecto 360 por aprobar',
@@ -147,6 +153,7 @@ const relancesLabels: Record<EmailLocale, {
     subject: (n, o) => `[ACRA] ${n} elemento/i da gestire${o ? ` — ${o}` : ''}`, heading: o => (o ? `I suoi promemoria — ${o}` : 'I suoi promemoria'),
     intro: 'I seguenti elementi attendono un’azione o una decisione da parte sua.', action: 'Apri ACRA',
     categories: {
+      CONTRAT_TIC: 'Contratto TIC in scadenza', TEST_RESILIENCE: 'Test di resilienza pianificato', KRI_MESURE: 'KRI senza misurazione recente', DOCUMENT_A_REVOIR: 'Documento da rivedere', CAMPAGNE_CONTROLE: 'Campagna di controllo con controlli non eseguiti', MISSION_AUDIT: 'Missione di audit pianificata', ANALYSE_ECHEANCE: 'Analisi dei rischi', INVITATION: 'Invito non accettato', ACCEPTATION_RISQUES: 'Rischi residui da accettare',
       QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione',
       CONSTAT_AUDIT: 'Raccomandazione di audit', CONTROLE_A_EXECUTER: 'Controllo da eseguire', DEROGATION_EXPIRATION: 'Deroga in scadenza',
       PRECONISATION_A_VERIFIER: 'Raccomandazione attuata da verificare', CONSTAT_A_VERIFIER: 'Raccomandazione di audit attuata da verificare', ANALYSE_A_APPROUVER: 'Analisi da approvare', PROJET360_A_APPROUVER: 'Progetto 360 da approvare',
