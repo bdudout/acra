@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (33) — Claude Code : T3 phase 1 et faille T25 (même branche, PR #194)
+
+- **T3 phase 1** : `lib/route-guard.server.ts` (`requireSession`, `requireInstanceAdmin`, `sessionUser` typé) ; 17 routes `/api/admin/*` migrées ; test cliquet `src/__tests__/unit/lib/route-guard-ratchet.test.ts` (refuse une garde locale ou une comparaison `role === 'SUPER_ADMIN'` dans une route, hors `admin/users` et `org/active`, usages métier).
+- **T25 (ÉLEVÉ)** : périmètre d'administration = organisations où le rôle EFFECTIF est administrateur (`getAdminOrgIds`, `getAdminScope` dans `lib/org-context.server.ts`) pour comptes, corbeille, journal d'audit + export, import d'utilisateurs en masse, création de compte. Test `src/__tests__/db/admin-scope.db.test.ts` (cookie d'org active simulé) : les 3 attaques réussissent sans la correction (vérifié par mutation), échouent avec.
+- **Doc** : `docs/ARCHITECTURE.md` §5 liste les gardes communes à utiliser.
+- **Vérifié** : `tsc` ; `npm test` 368 fichiers / 3 036 tests ; `npm run test:db` 19/19 ; `npm run lint` 0 erreur ; `npm run build` OK.
+- **Prochain pas** : T3 phase 2 (`withAccess` pour les routes d'écriture hors `/api/admin`), T9 sauvegarde d'atelier (verrou optimiste), T10 (enums), T8 (`ConformiteEntree`).
+
 ## 2026-10-01 (32) — Claude Code : backlog technique, suite (même branche, PR #194)
 
 - **Faits** : T7 (job CI `db-integration`, `npm run test:db`), T2 (réattribution des analyses : API + dialogue `/admin/users`, vérifié en navigateur), T24 (pas de liaison SSO auto d'un SUPER_ADMIN), T4 (ESLint + job CI `lint`), T12 (portée d'organisation sans charger toute l'instance : 10,4 → 3,9 ms à 2 871 orgs), T14 partiel (liste des actions du journal par balayage d'index : 87 → 0,3 ms à 1 M lignes), T9 partiel (double approbation projet 360 sous verrou), T11 (`Analyse.organizationId` obligatoire, migration `20261001090000_…`), T13 partiel (indicateurs de la liste des analyses en SQL).
