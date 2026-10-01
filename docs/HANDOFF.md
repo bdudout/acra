@@ -6,6 +6,13 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (51) — Claude Code : tableau de bord mensuel des RSSI et gestionnaires des risques
+
+- Demande : « les RSSI et RM doivent recevoir un dashboard mensuel avec le plus important par mail » ; réfléchir aux autres relances (proposition faite dans la réponse, non implémentée).
+- `lib/tableau-bord-mensuel.ts` (pur, testé) : `construireTableauBord` (indicateurs des modules actifs + points d'attention, réutilise postureBucket, estHorsAppetit, evaluerEfficacite, synthetiserConstats, evaluerKri, classifierIncident, perteNette, buildDerogationDigest), `moisEcoule`. `lib/tableau-bord-mensuel.server.ts` : organisations ayant un destinataire possible seulement (pré-filtre — sans lui, 21 457 orgs de test → > 30 s), destinataires RSSI/RISK_MANAGER (+ parents SUBTREE), ADMIN à défaut ; un e-mail par personne. Anti-doublon : modèle `EnvoiPeriodique` (unique tache+periode, réservé AVANT l'envoi), migration `20261001190000_envoi_periodique`.
+- `emailLayout` : `sections` (une par organisation) et compteurs par lignes de 4. `tableauBordEmail` ×5. `derogationDigestEmail` supprimé (intégré au tableau de bord) ; route `derogations-digest` = alias. Planificateurs : `tableau-bord-mensuel` le 1er à 08:00. Interrupteur `relancesConfig.tableauBordMensuel` (défaut actif) dans l'onglet Relances.
+- Vérifications : `tsc` OK ; `npm test` 417 / 3342 OK ; `npm run test:db` 12 / 56 OK (destinataires, section par organisation, mois écoulé seulement, organisation désactivée, repli admin, envoi unique + alias) ; `i18n:check` OK ; lint 0 erreur, 0 avertissement sur les fichiers touchés ; build OK ; appel réel : 55 organisations, 80 e-mails préparés en 2,5 s (sans SMTP), alias ensuite → `dejaEnvoye` ; rendu HTML vérifié en capture.
+
 ## 2026-10-01 (50) — Claude Code : relances synthétiques (un seul e-mail par personne)
 
 - Demande : les relances doivent être regroupées dans un seul e-mail.
