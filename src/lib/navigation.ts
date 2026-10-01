@@ -35,7 +35,7 @@ export type NavKey =
   | 'dashboard' | 'analyses' | 'risques' | 'tiers' | 'actions' | 'plansActions'
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
-  | 'incidents' | 'controles' | 'campagnesControle' | 'audit' | 'kri'
+  | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
   | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
@@ -153,6 +153,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const controleAudit: NavKey[] = []
   if (modules.incidents) controleAudit.push('incidents')
   if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
+  // Questionnaires de contrôle : les métiers (1ʳᵉ ligne) y répondent, la 2ᵉ ligne les gère.
+  if (modules.controles && role !== 'LECTEUR') controleAudit.push('questionnaires')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
   // Suivi régulateur (plans d'action régulateurs) : rattaché au contrôle & audit
   // (constats du superviseur + remédiation), aux côtés des 3 lignes de défense.
