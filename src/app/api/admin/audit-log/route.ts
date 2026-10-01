@@ -57,12 +57,23 @@ export async function GET(req: NextRequest) {
   ])
 
   // Actions distinctes pour le filtre (dans le même périmètre).
-  const actions = await auditLogModel.findMany({
-    where: scope.scope.isSuperAdmin ? undefined : { organizationId: { in: scope.scope.visibleOrgIds } },
-    select: { action: true },
-    distinct: ['action'],
-    orderBy: { action: 'asc' },
-  })
+  // Instance entière (SUPER_ADMIN) : balayage d'index « sauteur » (CTE récursive sur
+  // AuditLog_action_idx) au lieu d'un DISTINCT qui parcourait toute la table à chaque
+  // affichage (audit 2026-09-30, T14 : 87 ms → 0,3 ms sur 1 M lignes).
+  const actions: { action: string }[] = scope.scope.isSuperAdmin
+    ? (await prisma.$queryRaw<{ a: string }[]>`
+        WITH RECURSIVE t AS (
+          SELECT min(action) AS a FROM "AuditLog"
+          UNION ALL
+          SELECT (SELECT min(action) FROM "AuditLog" WHERE action > t.a) FROM t WHERE t.a IS NOT NULL
+        )
+        SELECT a FROM t WHERE a IS NOT NULL`).map(r => ({ action: r.a }))
+    : await auditLogModel.findMany({
+        where: { organizationId: { in: scope.scope.visibleOrgIds } },
+        select: { action: true },
+        distinct: ['action'],
+        orderBy: { action: 'asc' },
+      })
 
   return NextResponse.json({
     logs,
