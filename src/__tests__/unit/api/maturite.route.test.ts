@@ -7,11 +7,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({ role: 'RSSI', active: true, orgId: 'org1' as string | null }))
-const db = vi.hoisted(() => ({
-  conformite: { findUnique: vi.fn(), upsert: vi.fn() },
+const db = vi.hoisted(() => {
+  const d: Record<string, unknown> = {
+  conformite: { findUnique: vi.fn(), upsert: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() },
   planAction: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   organization: { findUnique: vi.fn() },
-}))
+  $queryRaw: vi.fn(async () => []),
+  }
+  d.$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(d))
+  return d as {
+    conformite: Record<'findUnique' | 'upsert' | 'findUniqueOrThrow' | 'update', ReturnType<typeof vi.fn>>
+    planAction: Record<'findFirst' | 'findMany' | 'create', ReturnType<typeof vi.fn>>
+    organization: Record<'findUnique', ReturnType<typeof vi.fn>>
+    $queryRaw: ReturnType<typeof vi.fn>
+    $transaction: ReturnType<typeof vi.fn>
+  }
+})
 const auditLog = vi.hoisted(() => vi.fn())
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'u1', role: 'ANALYSTE' } })) }))
@@ -48,7 +59,9 @@ beforeEach(() => {
   Object.assign(state, { role: 'RSSI', active: true, orgId: 'org1' })
   db.conformite.findUnique.mockResolvedValue({ id: 'c1', entries: [{ ref: 'A1', statut: 'partiel' }], maturites: { A1: { actuel: 1 } }, maturiteCible: 3, updatedAt: new Date() })
   db.planAction.findMany.mockResolvedValue([])
-  db.conformite.upsert.mockImplementation(async (a: { update: { maturites: unknown; maturiteCible?: number } }) => ({ id: 'c1', maturites: a.update.maturites, maturiteCible: a.update.maturiteCible ?? 3, updatedAt: new Date() }))
+  db.conformite.upsert.mockResolvedValue({ id: 'c1', maturites: { A1: { actuel: 1 } }, maturiteCible: 3 })
+  db.conformite.findUniqueOrThrow.mockResolvedValue({ maturites: { A1: { actuel: 1 } }, maturiteCible: 3 })
+  db.conformite.update.mockImplementation(async (a: { data: { maturites: unknown; maturiteCible?: number } }) => ({ id: 'c1', maturites: a.data.maturites, maturiteCible: a.data.maturiteCible ?? 3, updatedAt: new Date() }))
 })
 
 describe('/api/maturite', () => {
@@ -87,12 +100,14 @@ describe('/api/maturite', () => {
   it('PUT : écrit seulement la couche maturité (jamais entries), horodatage serveur, diff journalisé', async () => {
     const res = await PUT(req({ referentiel: 'NCSC_CAF', maturiteCible: 4, maturites: { A1: { actuel: 2, updatedById: 'pirate' }, ZZ: { actuel: 5 } } }))
     expect(res.status).toBe(200)
-    const arg = db.conformite.upsert.mock.calls[0][0]
-    expect(arg.where).toEqual({ organizationId_referentiel_entite: { organizationId: 'org1', referentiel: 'NCSC_CAF', entite: '' } })
-    expect(arg.update).not.toHaveProperty('entries')
-    expect(arg.update.maturiteCible).toBe(4)
-    expect(arg.update.maturites.A1).toMatchObject({ actuel: 2, updatedById: 'u1' })
-    expect(arg.update.maturites.ZZ).toBeUndefined()
+    expect(db.conformite.upsert.mock.calls[0][0].where).toEqual({ organizationId_referentiel_entite: { organizationId: 'org1', referentiel: 'NCSC_CAF', entite: '' } })
+    expect(db.conformite.upsert.mock.calls[0][0].update).toEqual({}) // l'upsert ne fait que garantir la ligne à verrouiller
+    expect(db.$queryRaw).toHaveBeenCalled() // verrou de ligne (audit D2) avant relecture
+    const arg = db.conformite.update.mock.calls[0][0]
+    expect(arg.data).not.toHaveProperty('entries')
+    expect(arg.data.maturiteCible).toBe(4)
+    expect(arg.data.maturites.A1).toMatchObject({ actuel: 2, updatedById: 'u1' })
+    expect(arg.data.maturites.ZZ).toBeUndefined()
     const [action, ctx] = auditLog.mock.calls[0]
     expect(action).toBe('MATURITY_UPDATED')
     expect(ctx.details.changes).toEqual([{ ref: 'A1', fields: { actuel: [1, 2] } }])

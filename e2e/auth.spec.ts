@@ -4,7 +4,7 @@ import { E2E } from './fixtures'
 
 test.describe('Authentification', () => {
   test('connexion réussie → accès au tableau de bord', async ({ page }) => {
-    await login(page, E2E.users.porteur.email)
+    await login(page, E2E.users.porteur.email, undefined, { fresh: true }) // vraie connexion, pas de session réutilisée
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/dashboard/)
     // Un élément stable du tableau de bord (la barre de navigation авec le lien Analyses).

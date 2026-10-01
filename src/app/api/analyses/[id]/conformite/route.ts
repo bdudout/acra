@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { lockCadrageOfAnalyse } from '@/lib/row-lock.server'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { canEditAnalyse, resolveAnalyseRole, isAdminRole } from '@/lib/permissions'
 import {
@@ -90,16 +91,17 @@ export async function PATCH(
   // Refuser un contrôle inexistant dans le référentiel (defense-in-depth).
   if (!validRefs.has(ref)) return NextResponse.json({ error: 'Contrôle inconnu du référentiel' }, { status: 400 })
 
-  const current = sanitizeConformite((analyse.cadrage as any).socleSecurite, validRefs)
-  const updated = applyConformiteEntry(current, ref, { statut, commentaire: typeof body.commentaire === 'string' ? body.commentaire : undefined })
-  if (missingExclusionJustifications(updated.filter(e => e.ref === ref)).length) {
-    return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
-  }
-
-  await prisma.cadrage.update({
-    where: { analyseId },
-    data: { socleSecurite: updated as unknown as object },
+  // Fusion sous verrou de ligne (audit 2026-09-30, D2) : relecture du socle à jour.
+  const updated = await prisma.$transaction(async tx => {
+    await lockCadrageOfAnalyse(tx, analyseId)
+    const fresh = await tx.cadrage.findUnique({ where: { analyseId }, select: { socleSecurite: true } })
+    const current = sanitizeConformite(fresh?.socleSecurite, validRefs)
+    const next = applyConformiteEntry(current, ref, { statut, commentaire: typeof body.commentaire === 'string' ? body.commentaire : undefined })
+    if (missingExclusionJustifications(next.filter(e => e.ref === ref)).length) return null
+    await tx.cadrage.update({ where: { analyseId }, data: { socleSecurite: next as unknown as object } })
+    return next
   })
+  if (!updated) return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
   await prisma.analyse.update({ where: { id: analyseId }, data: { updatedAt: new Date() } })
 
   return NextResponse.json({ ok: true, stats: conformiteStats(updated, controles.length) })

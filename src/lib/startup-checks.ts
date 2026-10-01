@@ -95,6 +95,13 @@ export function runStartupChecks() {
     ok(`NEXTAUTH_URL = ${nextAuthUrl}`)
   }
 
+  // ── SIEM_ALLOWED_HOSTS (défense SSRF, audit 2026-10-01 T17) ────────────────
+  // Vide = toute destination SIEM est acceptée : un endpoint mal configuré ou altéré
+  // peut viser un service interne. Avertissement (non bloquant : SIEM optionnel).
+  if (IS_PROD && !(process.env.SIEM_ALLOWED_HOSTS ?? '').trim()) {
+    warn('SIEM_ALLOWED_HOSTS non défini — destinations SIEM non restreintes (voir runbook § SIEM).')
+  }
+
   // ── Décision finale ────────────────────────────────────────────────────────
   const shouldBlock = hasMissing || (hasDefault && IS_PROD)
 

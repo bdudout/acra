@@ -16,15 +16,9 @@ const schema = z.object({
   password: z.string().min(1).max(100),
 })
 
-// AUDIT [F004] MEDIUM — CWE-862 / OWASP A01:2021 — Inscription anonyme ouverte
-// CVSS: 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N)
-// EVIDENCE: ce endpoint POST est public (voir lib/public-paths.ts → "/api/auth" est
-//   en accès libre). N'importe quel anonyme peut créer un compte ANALYSTE, accéder
-//   à l'app et à la base. Pour un outil d'analyse de risques d'entreprise,
-//   l'auto-inscription ouverte est probablement non désirée.
-// FIX: gater l'inscription (invitation ADMIN obligatoire / domaine email autorisé /
-//   feature-flag REGISTRATION_OPEN), ou supprimer ce endpoint au profit de la
-//   création par /api/admin/users.
+// Inscription publique : fermée par défaut (REGISTRATION_CLOSED). Elle n'est ouverte que sur
+// une instance de démo prouvée ou via le toggle SUPER_ADMIN ; le 1er compte SUPER_ADMIN ne
+// peut plus être créé ici (resolveSignupDecision → create-admin.mjs). Audit 2026-09-30 (N07).
 export async function POST(req: NextRequest) {
   // Rate limiting : 5 inscriptions par IP par heure
   const ip = getClientIp(req)
@@ -43,8 +37,7 @@ export async function POST(req: NextRequest) {
     // Charger la politique de mot de passe configurée par l'admin
     let policy: PasswordPolicyShape = DEFAULT_POLICY
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stored = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+      const stored = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
       if (stored) {
         policy = {
           minLength:        stored.minLength,

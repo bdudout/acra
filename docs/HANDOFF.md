@@ -94,6 +94,37 @@ vérifié l'est avec la commande et son résultat.
 - TDD : nouveaux tests navigation, mobile, détection des doublons, ordre verrou → lecture → création, refus des doublons et republication. Tests ciblés 31/31 ; `npx tsc --noEmit -p tsconfig.json` vert ; `npm test` 363 fichiers / 2 942 tests verts ; `npm run i18n:check` vert ; `npm run build` vert (avec accès réseau pour Inter). `git diff --check` vert.
 - Limites : pas de contrainte UNIQUE en base tant que les doublons historiques n’ont pas été diagnostiqués ; le verrou protège cette route, pas une écriture parallèle provenant d’un autre chemin. Docker Desktop absent (`open -a Docker` échoue, socket Docker introuvable) ; recette PostgreSQL et navigateur authentifié non effectuées. La base n’a été ni lue ni modifiée. Le disque avait atteint 100 % pendant le premier build/test ; seuls les caches générés `.next/cache` et `.next/dev` ont été supprimés, libérant environ 5,8 Go.
 
+## 2026-10-01 (33) — Claude Code : T3 phase 1 et faille T25 (même branche, PR #194)
+
+- **T3 phase 1** : `lib/route-guard.server.ts` (`requireSession`, `requireInstanceAdmin`, `sessionUser` typé) ; 17 routes `/api/admin/*` migrées ; test cliquet `src/__tests__/unit/lib/route-guard-ratchet.test.ts` (refuse une garde locale ou une comparaison `role === 'SUPER_ADMIN'` dans une route, hors `admin/users` et `org/active`, usages métier).
+- **T25 (ÉLEVÉ)** : périmètre d'administration = organisations où le rôle EFFECTIF est administrateur (`getAdminOrgIds`, `getAdminScope` dans `lib/org-context.server.ts`) pour comptes, corbeille, journal d'audit + export, import d'utilisateurs en masse, création de compte. Test `src/__tests__/db/admin-scope.db.test.ts` (cookie d'org active simulé) : les 3 attaques réussissent sans la correction (vérifié par mutation), échouent avec.
+- **Doc** : `docs/ARCHITECTURE.md` §5 liste les gardes communes à utiliser.
+- **Vérifié** : `tsc` ; `npm test` 368 fichiers / 3 036 tests ; `npm run test:db` 19/19 ; `npm run lint` 0 erreur ; `npm run build` OK.
+- **Prochain pas** : T3 phase 2 (`withAccess` pour les routes d'écriture hors `/api/admin`), T9 sauvegarde d'atelier (verrou optimiste), T10 (enums), T8 (`ConformiteEntree`).
+
+## 2026-10-01 (32) — Claude Code : backlog technique, suite (même branche, PR #194)
+
+- **Faits** : T7 (job CI `db-integration`, `npm run test:db`), T2 (réattribution des analyses : API + dialogue `/admin/users`, vérifié en navigateur), T24 (pas de liaison SSO auto d'un SUPER_ADMIN), T4 (ESLint + job CI `lint`), T12 (portée d'organisation sans charger toute l'instance : 10,4 → 3,9 ms à 2 871 orgs), T14 partiel (liste des actions du journal par balayage d'index : 87 → 0,3 ms à 1 M lignes), T9 partiel (double approbation projet 360 sous verrou), T11 (`Analyse.organizationId` obligatoire, migration `20261001090000_…`), T13 partiel (indicateurs de la liste des analyses en SQL).
+- **Bugs trouvés en chemin et corrigés** : création concurrente de la ligne `Conformite` (P2002 → 500) ; override global `brace-expansion` qui cassait ESLint et `minimatch@5` (exceljs) ; `/api/import` créait des analyses sans organisation, sans contrôle du droit de création ni du plafond démo.
+- **Pièges** : la migration `20261001090000` rattache les analyses sans organisation à `global` (créée si absente). `checkAnalyseCreation` (`lib/analyse-create-guard.server.ts`) est le point unique de contrôle de création d'analyse. `pkill -f "next dev …"` tue le shell appelant : utiliser `pkill -f "[n]ext dev …"`.
+- **Vérifié** : `tsc` propre ; `npm test` 366 fichiers / 3 026 tests ; `npm run test:db` 15/15 (PostgreSQL 16 local, base existante + base vierge) ; `npm run lint` 0 erreur ; `npm run build` OK ; `i18n:check` OK ; CI GitHub verte jusqu'au commit `e89f341` (les suivants en cours au moment de l'écriture).
+- **Décisions en attente (utilisateur)** : T5/T6 ajoutent une dépendance (client Redis, SDK S3) ; T17 validation DNS de l'issuer OIDC (refuserait les IdP internes) ; T23 parcours d'invitation (UX).
+- **Prochain pas technique** : T3 (`withAccess`, gros chantier), T8 (`ConformiteEntree`), T10 (enums), T9 sauvegarde d'atelier (verrou optimiste côté client).
+
+## 2026-10-01 (31) — Claude Code : audits sécurité/BDD et remédiation (branche `claude/tender-euler-bqjoe9`, PR #194)
+
+- **Audits** : `rapports/ACRA-Audit-Code-OWASP-SAST-2026-09-30.md`, `rapports/ACRA-Audit-Architecture-BDD-Maintenabilite-2026-09-30.md`. Backlog technique T1–T24 dans `docs/CHANTIERS-EN-COURS.md` (statut par ligne).
+- **Faits** : SSRF (`lib/ip-safety.ts`, `lib/safe-fetch.server.ts`), next 16.3.8, clés d'API (débit avant scrypt), upload (signatures), gestion des comptes (`lib/user-deletion.ts` : suppression, reset-password, SUPER_ADMIN protégé, comptes partagés, réattribution T2), plus d'auto-promotion SUPER_ADMIN, SSO (pas de rétrogradation ni de liaison auto d'un SUPER_ADMIN), secrets d'instance masqués (`maskSecret`), FK `Analyse.userId` RESTRICT (migration `20260930180000_…`), verrous de conformité (`lib/row-lock.server.ts`), ESLint + CI, tests d'intégration BDD.
+- **Nouveaux outils** : `npm run lint` ; `npm run test:db` (exige `DATABASE_URL` vers une base migrée ; job CI `db-integration`).
+- **Pièges** :
+  - Un compte propriétaire d'analyses n'est plus supprimable : réattribuer d'abord (dialogue `/admin/users`).
+  - `brace-expansion` : overrides **par branche majeure** (`minimatch@3/5/10`) ; un override global casse ESLint et `exceljs`.
+  - Les `.db.test.ts` sont exclus de `npm test` (config `vitest.db.config.mts`).
+  - Un SUPER_ADMIN se connecte par compte local + MFA (pas de liaison SSO automatique).
+- **Vérifié** : `tsc` propre ; `npm test` 366 fichiers / 3 023 tests ; `npm run test:db` 7/7 (PostgreSQL 16 local, stable sur 5 exécutions) ; `npm run lint` 0 erreur ; `npm run build` OK ; `npm audit` 0 ; `i18n:check` OK ; parcours de réattribution vérifié en navigateur (dev :3005).
+- **Non vérifié** : CI GitHub de ces commits ; recette navigateur des écrans SSO/SMTP/SIEM/SMS avec le marqueur `[CONFIGURED]` ; appels sortants réels (webhook, LDAP).
+- **Prochain pas** : T3 (`withAccess`), T5/T6 (Redis, S3), T12 (portée d'organisation par préfixe de `path`), T23 (invitation), décision produit sur la validation DNS de l'issuer OIDC (T17).
+
 ## 2026-09-30 (30) — export Word : matrice des risques ; Windows/WSL
 
 - `lib/risk-matrix-grid.ts` (modèle de matrice depuis la config + grille imprimable, partagé Word/PowerPoint) ; `analyse-docx.ts` : section « Matrice des risques » (brute, puis après traitement si résiduel), libellés ×5. Rendu vérifié en PDF (LibreOffice).

@@ -4,35 +4,25 @@
 //        EBIOS RM toujours présent). Cf. /admin/instance.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { cleanActiveMethodes, IMPLEMENTED_METHODS, MODULE_METHODS } from '@/lib/methodes'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 export const dynamic = 'force-dynamic'
 
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  if ((session.user as { role?: string }).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
-}
 
 // GET /api/admin/methodes-config
 export async function GET() {
-  const { error } = await requireSuperAdmin()
+  const { error } = await requireInstanceAdmin()
   if (error) return error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma.configuration as any).findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
+  const cfg = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
   return NextResponse.json({ active: cleanActiveMethodes(cfg?.methodesActives), implemented: IMPLEMENTED_METHODS.filter(m => !MODULE_METHODS.includes(m)) })
 }
 
 // PUT /api/admin/methodes-config — { methodes: string[] }
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireSuperAdmin()
+  const { error, session } = await requireInstanceAdmin()
   if (error) return error
   const body = await req.json().catch(() => ({}))
   if (!Array.isArray(body.methodes)) {
@@ -40,8 +30,7 @@ export async function PUT(req: NextRequest) {
   }
   const active = cleanActiveMethodes(body.methodes)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.configuration as any).update({ where: { id: 'global' }, data: { methodesActives: active } })
+  await prisma.configuration.update({ where: { id: 'global' }, data: { methodesActives: active } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: (session!.user as { id: string }).id, ip: getClientIp(req),
     targetType: 'configuration', details: { scope: 'methodes-config', active },

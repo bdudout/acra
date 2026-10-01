@@ -12,7 +12,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAdminScope } from '@/lib/org-context.server'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 import bcrypt from 'bcryptjs'
@@ -23,8 +23,7 @@ const MAX_ROWS = 500
 
 async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const p = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const p = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     if (p) return {
       minLength: p.minLength, requireUppercase: p.requireUppercase, requireLowercase: p.requireLowercase,
       requireNumbers: p.requireNumbers, requireSpecial: p.requireSpecial, maxAgeDays: p.maxAgeDays,
@@ -68,7 +67,12 @@ export async function POST(req: NextRequest) {
 
   const policy = await loadPasswordPolicy()
   // Organisation active de l'admin : les comptes importés y sont rattachés (périmètre).
-  const activeOrgId = (await getAnalyseScope(currentUserId, userRole)).activeOrgId
+  // L'auteur doit ADMINISTRER cette organisation (rôle effectif, audit 2026-10-01 T25).
+  const adminScope = await getAdminScope(currentUserId, userRole)
+  const activeOrgId = adminScope.activeOrgId
+  if (!adminScope.all && (!activeOrgId || !adminScope.orgIds.includes(activeOrgId))) {
+    return NextResponse.json({ error: 'Vous n\'administrez pas l\'organisation active' }, { status: 403 })
+  }
   const results: RowResult[] = []
 
   for (const row of rows) {
@@ -84,7 +88,6 @@ export async function POST(req: NextRequest) {
     const tempPassword = generateCompliantPassword(policy)
     const passwordHash = await bcrypt.hash(tempPassword, 12)
     const user = await prisma.user.create({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         name: row.name || row.email,
         email: row.email,

@@ -41,8 +41,7 @@ async function persistDeliveryTrace(res: { ok: boolean; code?: number; error?: s
   lastPersist = { at: now, ok: res.ok }
   try {
     const { prisma } = await import('./prisma')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (prisma as any).siemConfig.update({
+    await prisma.siemConfig.update({
       where: { id: 'global' },
       data: { lastDeliveryOk: res.ok, lastDeliveryAt: new Date(), lastError: res.ok ? null : (res.error ?? `HTTP ${res.code}`) },
     })
@@ -55,8 +54,7 @@ async function readConfig(): Promise<SiemConfigRow | null> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.cfg
   try {
     const { prisma } = await import('./prisma')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const row = await (prisma as any).siemConfig.findUnique({ where: { id: 'global' } })
+    const row = await prisma.siemConfig.findUnique({ where: { id: 'global' } })
     const cfg: SiemConfigRow | null = row
       ? {
           enabled: !!row.enabled,

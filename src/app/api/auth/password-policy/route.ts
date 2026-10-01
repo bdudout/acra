@@ -14,8 +14,7 @@ import { DEFAULT_POLICY } from '@/lib/password-policy'
 // GET /api/auth/password-policy — expose les règles de mot de passe (public) pour valider les formulaires côté client.
 export async function GET() {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const stored = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     if (stored) {
       return NextResponse.json({
         minLength:        stored.minLength,

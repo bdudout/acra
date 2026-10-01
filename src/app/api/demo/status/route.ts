@@ -15,8 +15,7 @@ export async function GET() {
 
   // Contenu public configurable (surcharges brutes ; le client applique le repli
   // i18n via resolvePublicContent). Lisible même par un visiteur anonyme.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma as any).configuration.findUnique({
+  const cfg = await prisma.configuration.findUnique({
     where: { id: 'global' },
     select: { publicNotice: true, publicContactUrl: true, publicContactLabel: true },
   }).catch(() => null)

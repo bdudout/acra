@@ -43,8 +43,7 @@ const sessionCookie = resolveSessionCookie()
  */
 async function loadLoginPolicy(): Promise<LoginPolicy> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const stored = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     return resolveLoginPolicy(stored, false)
   } catch {
     return resolveLoginPolicy(null, true)
@@ -122,8 +121,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error(`ACCOUNT_LOCKED::${existingLockout.retryAfterMs}`)
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user = await (prisma.user as any).findUnique({
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase().trim() },
           select: {
             id: true, email: true, name: true, role: true, phone: true,
@@ -219,8 +217,7 @@ export const authOptions: NextAuthOptions = {
         const mustChange = user.mustChangePassword === true || expired
 
         // Met à jour la dernière connexion (#12) et marque le changement forcé si expiré
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (prisma.user as any).update({
+        await prisma.user.update({
           where: { id: user.id },
           data: {
             lastLoginAt: new Date(),
@@ -253,7 +250,7 @@ export const authOptions: NextAuthOptions = {
         email: profile?.email ?? user?.email,
         name: profile?.name ?? user?.name,
         email_verified: profile?.email_verified,
-      })
+      }, account.providerAccountId)
       // Refus → false : NextAuth redirige vers la page d'erreur (motif déjà audité).
       return decision.ok
     },
@@ -274,8 +271,7 @@ export const authOptions: NextAuthOptions = {
       }
       // Rafraîchir le rôle, isActive ET mustChangePassword depuis la DB à chaque requête
       if (token.id && !user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const dbUser = await (prisma.user as any).findUnique({
+        const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { role: true, isActive: true, mustChangePassword: true, sessionVersion: true },
         })

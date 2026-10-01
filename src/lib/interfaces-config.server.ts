@@ -32,8 +32,7 @@ export async function isMcpEnabled(): Promise<boolean> {
  */
 export async function getActiveMethodes(): Promise<RiskMethod[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cfg = await (prisma.configuration as any).findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
+    const cfg = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
     return cleanActiveMethodes(cfg?.methodesActives)
   } catch {
     return cleanActiveMethodes(null)

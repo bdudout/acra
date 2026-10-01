@@ -18,7 +18,7 @@ export async function GET() {
   const userId = (session.user as any).id
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const socles = await (prisma.analyse as any).findMany({
+  const socles = await prisma.analyse.findMany({
     where: {
       isSocle: true,
       OR: [

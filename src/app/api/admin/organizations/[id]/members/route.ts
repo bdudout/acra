@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { canManageOrganizations } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (session.user as any).role ?? 'ANALYSTE'
-  if (!canManageOrganizations({ id: (session.user as any).id, role })) {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }) }
-  }
-  return { session }
-}
 
 // GET — membres d'une organisation
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
   const { id } = await params
 
@@ -38,7 +27,7 @@ const addSchema = z.object({
 
 // POST — ajouter (ou mettre à jour) une appartenance par e-mail
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
   const { id } = await params
 
@@ -73,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 // DELETE — retirer une appartenance (?membershipId=...)
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
   const { id } = await params
   const membershipId = new URL(req.url).searchParams.get('membershipId')
