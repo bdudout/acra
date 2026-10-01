@@ -52,12 +52,12 @@ describe('catalogue de suggestions sectorielles', () => {
     expect(sanitizeSectorSelection(['SANTE', 'SAAS', 'PUBLIC', 'FINANCE'])).toBeNull()
   })
 
-  it('socle transversal enrichi : 18 sous-processus rattachés aux 6 macro-processus et 12 événements-types', () => {
+  it('socle transversal enrichi : 18 sous-processus rattachés aux 6 macro-processus et 22 événements-types (dont 10 repris de l’ancien socle du registre)', () => {
     const items = listSectorSuggestions(null, 'fr')
     const subs = items.filter(item => item.kind === 'PROCESS' && item.parentKey?.startsWith('core.process.') && item.key.split('.').length === 4)
     expect(subs).toHaveLength(18)
     for (const sub of subs) expect(sub.key.startsWith(`${sub.parentKey}.`), sub.key).toBe(true)
-    expect(items.filter(item => item.kind === 'RISK')).toHaveLength(12)
+    expect(items.filter(item => item.kind === 'RISK')).toHaveLength(22)
     // un événement peut cibler un sous-processus
     expect(items.find(item => item.key === 'core.risk.privileged-access')?.processKey).toBe('core.process.digital.iam')
   })

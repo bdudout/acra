@@ -11,6 +11,7 @@ import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type Cat
 import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 import { ALL_SECTORS, effectiveSectors, parseSectorChoice } from '@/lib/sector-selection'
+import { resolveTaxonomie } from '@/lib/taxonomie'
 
 export const dynamic = 'force-dynamic'
 
@@ -134,6 +135,8 @@ export async function POST(req: NextRequest) {
     if (plan.unlinked.length && body.acceptUnlinked !== true) return { status: 409 as const, error: 'unlinked_dependencies', ...plan }
     if (!isAdminRole(ctx.role!) && plan.toCreate.some(item => item.kind === 'PROCESS')) return { status: 403 as const, error: 'forbidden', ...plan }
 
+    // Catégorie bâloise suggérée, appliquée seulement si la taxonomie de l'organisation contient ce code.
+    const taxonomyCodes = new Set(resolveTaxonomie(cfg.taxonomieRisques).map(node => node.code))
     const processIds = new Map(processes.flatMap(row => row.catalogueKey ? [[row.catalogueKey, row.id] as const] : []))
     const created: Array<{ key: string; id: string; kind: string }> = []
     for (const item of plan.toCreate) {
@@ -182,7 +185,8 @@ export async function POST(req: NextRequest) {
         created.push({ key: item.key, id: kri.id, kind: item.kind })
       } else {
         const risk = await tx.riskItem.create({ data: {
-          organizationId: ctx.orgId!, intitule: item.title,
+          organizationId: ctx.orgId!, intitule: item.title, description: item.description ?? null,
+          taxonomieCode: item.taxonomieCode && taxonomyCodes.has(item.taxonomieCode) ? item.taxonomieCode : null,
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
           catalogueKey: item.key, catalogueVersion: item.packVersion,
           provenance: 'ACRA', sourceType: 'catalogue', sourceId: item.key, statut: 'IDENTIFIE',

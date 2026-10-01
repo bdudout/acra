@@ -178,6 +178,19 @@ export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
       'transport.risk.stock-error',
       'transport.risk.telematics',
     ] },
+  { version: '1.8', added: [
+      'core.risk.continuity-plan',
+      'core.risk.financial-reporting',
+      'core.risk.internal-fraud',
+      'core.risk.it-outage',
+      'core.risk.mis-selling',
+      'core.risk.obligation-missed',
+      'core.risk.personal-data',
+      'core.risk.premises',
+      'core.risk.segregation',
+      'core.risk.workplace',
+      'finance.risk.aml',
+    ] },
 ]
 
 const parts = (v: string) => v.split('.').map(n => Number.parseInt(n, 10) || 0)

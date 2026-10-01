@@ -58,6 +58,10 @@ Décidé : pas de sous-processus sectoriels pour l'instant (complexité pour une
 | PUBLIC, SANTE, SAAS, INDUSTRIE, COMMERCE, SERVICES | Pas de plan de test sectoriel : le programme de tests DORA vise les entités financières ; le socle transversal suffit-il pour les autres ? |
 | Tous | Traductions DE / ES / IT : relecture par un locuteur natif du métier. |
 
+### 3.3 Convergence avec l'ancien socle du registre (catalogue 1.8)
+
+L'ancien socle (`registre-catalogue.ts`, 16 risques classés selon les 7 catégories bâloises, en français, importés en bloc) a été comparé au catalogue. Gardé du catalogue : formulation en événement, 5 langues, origine stable, lien au processus. Gardé de l'ancien socle : les **descriptions** et la **catégorie bâloise**. 6 situations étaient déjà couvertes (cyberattaque, fraude au paiement, homme-clé, défaillance d'un prestataire, erreur de traitement, données personnelles divulguées) ; les 10 autres ont été reprises (fraude interne, cumul de tâches incompatibles, droit du travail et santé-sécurité, traitement de données sans base légale, vente inadaptée, sinistre sur les locaux, panne informatique majeure, plan de continuité inefficace, information financière erronée, obligation manquée), plus la lutte contre le blanchiment pour la finance. Le « propriétaire » suggéré n'est pas repris (jamais présumé). Chaque risque du catalogue porte désormais une catégorie bâloise, appliquée seulement si la taxonomie de l'organisation la contient. **À relire** : le classement bâlois (`src/lib/catalogue-risks.ts`).
+
 ## 4. Suivi de la validation
 
 | Périmètre | Relecteur | Date | Avis |

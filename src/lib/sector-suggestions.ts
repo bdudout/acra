@@ -5,6 +5,7 @@
  */
 import { SECTOR_PACK_ITEMS } from './sector-packs'
 import { RESILIENCE_TEST_TEMPLATES } from './catalogue-resilience'
+import { RISK_BALE, MERGED_REGISTRY_RISKS } from './catalogue-risks'
 import type { TestResilienceType } from './tests-resilience'
 
 // Ordre = priorité : d'abord les secteurs qui pratiquent réellement la gestion du risque opérationnel
@@ -19,6 +20,8 @@ export type CatalogueItem = {
   sector: SectorCode | 'TRANSVERSAL'
   kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'
   title: Localized
+  // Risques : description indicative (reprise de l'ancien socle du registre) — facultative.
+  description?: Localized
   parentKey?: string
   processKey?: string
   // Contrôles seulement : périodicité et typologie SUGGÉRÉES (modifiables) ; aucune exécution ni efficacité n'est jamais créée.
@@ -32,7 +35,7 @@ export type CatalogueItem = {
   // Plan de test de résilience modèle seulement : type de test (DORA art. 25 § 1, jamais TLPT) ; ni date, ni testeur, ni résultat.
   testType?: Exclude<TestResilienceType, 'TLPT'>
 }
-export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points'> & { title: string; unite?: string; points?: string[]; packVersion: string }
+export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points' | 'description'> & { title: string; description?: string; unite?: string; points?: string[]; packVersion: string; taxonomieCode?: string }
 
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
 const p = (key: string, sector: CatalogueItem['sector'], title: Localized, parentKey?: string): CatalogueItem => ({ key, sector, kind: 'PROCESS', title, parentKey })
@@ -281,7 +284,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('telecom.risk.request-error', 'TELECOM', l('Une réquisition est traitée hors délai ou de façon erronée', 'An authority request is handled late or incorrectly', 'Eine Behördenanfrage wird verspätet oder fehlerhaft bearbeitet', 'Un requerimiento se tramita fuera de plazo o de forma errónea', 'Una richiesta delle autorità viene gestita in ritardo o in modo errato'), 'telecom.process.lawful'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.7'
+export const CATALOGUE_PACK_VERSION = '1.8'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -295,9 +298,9 @@ export type SectorScope = SectorCode | readonly SectorCode[] | null
 /** Socle + pack(s) choisi(s) ; sans secteur, seul le socle est retourné. Les clés sont propres à chaque secteur : l'union n'a pas de doublon. */
 export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale): SectorSuggestion[] {
   const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
-  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
-  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
-  return [...base, ...packs].map(({ title, unite, points, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
+  const base = [...TRANSVERSAL, ...MERGED_REGISTRY_RISKS.filter(item => item.sector === 'TRANSVERSAL'), ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
+  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
+  return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
 export function searchSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, query: string): SectorSuggestion[] {

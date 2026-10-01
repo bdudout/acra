@@ -73,3 +73,24 @@ describe('plans de test de résilience modèles (catalogue 1.6)', () => {
     expect(CATALOGUE_CHANGELOG.find(e => e.version === '1.6')!.added).toContain('core.resilience.pentest')
   })
 })
+
+describe('registre : convergence avec l’ancien socle (catalogue 1.8)', () => {
+  it('chaque risque du catalogue porte une catégorie bâloise, dans toutes les langues', () => {
+    for (const locale of LOCALES) {
+      for (const x of listSectorSuggestions([...SECTOR_CODES], locale).filter(i => i.kind === 'RISK')) {
+        expect(x.taxonomieCode, x.key).toMatch(/^BALE_[1-7]$/)
+      }
+    }
+  })
+  it('les situations reprises de l’ancien socle sont présentes, décrites et traduites', () => {
+    for (const locale of LOCALES) {
+      const items = listSectorSuggestions('FINANCE', locale)
+      for (const key of ['core.risk.internal-fraud', 'core.risk.premises', 'core.risk.continuity-plan', 'finance.risk.aml']) {
+        const x = items.find(i => i.key === key)!
+        expect(x, key).toBeDefined()
+        expect(x.description?.trim(), key).toBeTruthy()
+      }
+    }
+    expect(CATALOGUE_CHANGELOG.find(e => e.version === '1.8')!.added).toContain('finance.risk.aml')
+  })
+})

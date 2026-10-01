@@ -216,4 +216,14 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     expect(res.status).toBe(201)
     expect(db.risk.create.mock.calls[0][0].data).toMatchObject({ organizationId: 'filiale', catalogueKey: 'sante.risk.patient-data' })
   })
+
+  it('registre : description et catégorie bâloise reprises, la catégorie seulement si la taxonomie de l’organisation la contient', async () => {
+    const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.risk.internal-fraud'], acceptUnlinked: true }))
+    expect(res.status).toBe(201)
+    expect(db.risk.create.mock.calls[0][0].data).toMatchObject({ taxonomieCode: 'BALE_1', statut: 'IDENTIFIE', graviteInherente: null })
+    expect(db.risk.create.mock.calls[0][0].data.description).toMatch(/contournant les contrôles/)
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, taxonomieRisques: [{ code: 'MAISON', label: 'Maison', domaine: 'OP_RISK', ordre: 1 }] })
+    await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.risk.premises'], acceptUnlinked: true }))
+    expect(db.risk.create.mock.calls[1][0].data.taxonomieCode).toBeNull()
+  })
 })

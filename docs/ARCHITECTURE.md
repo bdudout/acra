@@ -59,7 +59,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 - **Analyse** EBIOS RM = 5 **ateliers** (`ATELIERS_META`, `atelier-icons`). Une analyse
   peut être un **socle** de sécurité réutilisable.
 - **Modules GRC** (préfixes `Mx` dans les commentaires `lib/`) :
-  - **M1** Cartographie des risques / registre (`cartographie`, `risk-*`, `registre-catalogue`) ;
+  - **M1** Cartographie des risques / registre (`cartographie`, `risk-*`, `catalogue-risks`) ;
   - **M2** Incidents & pertes (`incident`, `dora*`) + roll-up (`grc-rollup`) ;
   - **M3** Contrôle permanent N1/N2 (`controle`, `campagne*`) ;
   - **M4** Audit interne (`audit`, `audit-programmes-catalogue`) ;
@@ -87,7 +87,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | Domaine | Modules clés |
 |---|---|
 | **EBIOS / ateliers** | `ebios-data`, `ebios-gravite`, `atelier-icons`, `exemples-*`, `biens-supports`, `vraisemblance-methode` |
-| **Risques (M1)** | `cartographie`, `risk-item`, `risk-action`, `risk-scale`, `risk-filters`, `risk-current`, `risk-publication`, `registre-catalogue`, `appetit`, `taxonomie` |
+| **Risques (M1)** | `cartographie`, `risk-item`, `risk-action`, `risk-scale`, `risk-filters`, `risk-current`, `risk-publication`, `catalogue-risks` (risques repris de l'ancien socle, catégories bâloises), `appetit`, `taxonomie` |
 | **Incidents (M2)** | `incident`, `incident-dedup`, `kri`, `grc-rollup`, `grc-consolide.server` |
 | **Contrôle (M3)** | `controle`, `controles-catalogue`, `campagne`, `campagne-controle`, `archivage` |
 | **Audit (M4)** | `audit`, `audit-programmes-catalogue`, `audit-redact`, `rapport-controle-interne*` |
