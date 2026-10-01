@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
@@ -7,7 +8,7 @@ import { E2E } from './fixtures'
 // inactif alors que la barre proposait « Pilotage » (autre module GRC actif).
 test.describe('Cockpit GRC', () => {
   test('reste accessible avec un seul module GRC (contrôle permanent) et suit les projets 360', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.organizationConfig.update({ where, data: { registreRisquesActive: false, controlePermanentActive: true, projets360Active: true } })

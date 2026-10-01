@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
 // Lot L2 : éditions figées de rapports (génération, quatre-yeux, validation, figé).
 test.describe('Rapports GRC', () => {
   test('générer un rapport de pertes, quatre-yeux, puis validation en mode ligne unique', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.organizationConfig.update({ where, data: { incidentsActive: true, secondeLigneActive: true, incidentsConfig: { deviseReference: 'EUR', seuilGrandePerte: 5000 } } })

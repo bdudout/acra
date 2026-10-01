@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { login } from './helpers'
 import { E2E } from './fixtures'
 
 // Lot L1 : régimes de notification configurables, pertes multi-composantes.
 test.describe('Incidents — régimes de notification et pertes', () => {
   test('un incident significatif affiche l’horloge NIS2 ; marquer l’alerte précoce soumise ; pertes par composantes', async ({ page }) => {
-    const prisma = new PrismaClient()
+    const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
     const where = { id: E2E.orgId }
     try {
       await prisma.organizationConfig.update({ where, data: { incidentsActive: true, incidentsConfig: { deviseReference: 'EUR', seuilGrandePerte: 5000, regimes: [{ code: 'NIS2', actif: true }] } } })
