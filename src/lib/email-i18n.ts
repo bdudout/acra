@@ -303,3 +303,58 @@ export function tableauBordEmail(locale: string | null | undefined, p: TableauBo
   })
   return { subject: L.subject(mois), text, html }
 }
+
+// ─── Alertes DORA (déclaration des incidents majeurs, art. 19) ──────────────
+
+export interface AlerteDoraItem { organisation: string; incident: string; phase: 'INITIALE' | 'INTERMEDIAIRE' | 'FINALE'; statut: 'A_FAIRE' | 'EN_RETARD'; echeance: Date }
+export interface AlertesDoraParams { items: AlerteDoraItem[]; url: string | null }
+
+const alerteDoraLabels: Record<EmailLocale, {
+  subject: (n: number) => string; heading: string; intro: string; action: string
+  phases: Record<AlerteDoraItem['phase'], string>; statut: Record<AlerteDoraItem['statut'], (d: string) => string>
+}> = {
+  fr: {
+    subject: n => `[ACRA] URGENT — déclaration DORA : ${n} échéance(s)`, heading: 'Déclaration d’incident majeur (DORA)',
+    intro: 'Les déclarations suivantes à l’autorité compétente arrivent à échéance ou sont en retard (DORA, art. 19).', action: 'Ouvrir les incidents',
+    phases: { INITIALE: 'Notification initiale', INTERMEDIAIRE: 'Rapport intermédiaire', FINALE: 'Rapport final' },
+    statut: { A_FAIRE: d => `à soumettre avant le ${d}`, EN_RETARD: d => `EN RETARD — échéance dépassée le ${d}` },
+  },
+  en: {
+    subject: n => `[ACRA] URGENT — DORA reporting: ${n} deadline(s)`, heading: 'Major incident reporting (DORA)',
+    intro: 'The following reports to the competent authority are due or overdue (DORA, Art. 19).', action: 'Open incidents',
+    phases: { INITIALE: 'Initial notification', INTERMEDIAIRE: 'Intermediate report', FINALE: 'Final report' },
+    statut: { A_FAIRE: d => `to submit before ${d}`, EN_RETARD: d => `OVERDUE — deadline passed on ${d}` },
+  },
+  de: {
+    subject: n => `[ACRA] DRINGEND — DORA-Meldung: ${n} Frist(en)`, heading: 'Meldung schwerwiegender Vorfälle (DORA)',
+    intro: 'Die folgenden Meldungen an die zuständige Behörde sind fällig oder überfällig (DORA, Art. 19).', action: 'Vorfälle öffnen',
+    phases: { INITIALE: 'Erstmeldung', INTERMEDIAIRE: 'Zwischenbericht', FINALE: 'Abschlussbericht' },
+    statut: { A_FAIRE: d => `einzureichen vor ${d}`, EN_RETARD: d => `ÜBERFÄLLIG — Frist abgelaufen am ${d}` },
+  },
+  es: {
+    subject: n => `[ACRA] URGENTE — notificación DORA: ${n} plazo(s)`, heading: 'Notificación de incidente grave (DORA)',
+    intro: 'Las siguientes notificaciones a la autoridad competente vencen o están vencidas (DORA, art. 19).', action: 'Abrir los incidentes',
+    phases: { INITIALE: 'Notificación inicial', INTERMEDIAIRE: 'Informe intermedio', FINALE: 'Informe final' },
+    statut: { A_FAIRE: d => `a presentar antes del ${d}`, EN_RETARD: d => `CON RETRASO — plazo vencido el ${d}` },
+  },
+  it: {
+    subject: n => `[ACRA] URGENTE — notifica DORA: ${n} scadenza/e`, heading: 'Notifica di incidente grave (DORA)',
+    intro: 'Le seguenti notifiche all’autorità competente sono in scadenza o in ritardo (DORA, art. 19).', action: 'Apri gli incidenti',
+    phases: { INITIALE: 'Notifica iniziale', INTERMEDIAIRE: 'Relazione intermedia', FINALE: 'Relazione finale' },
+    statut: { A_FAIRE: d => `da presentare entro il ${d}`, EN_RETARD: d => `IN RITARDO — scadenza superata il ${d}` },
+  },
+}
+
+/** E-mail URGENT des échéances DORA d'une personne (toutes organisations) : date et heure UTC de chaque échéance. */
+export function alertesDoraEmail(locale: string | null | undefined, p: AlertesDoraParams): BuiltEmail {
+  const L = alerteDoraLabels[emailLocale(locale)]
+  const quand = (d: Date) => `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+  const plusieurs = new Set(p.items.map(i => i.organisation)).size > 1
+  const lignes = p.items.map(i => ({
+    label: `${plusieurs ? `${i.organisation} · ` : ''}${L.phases[i.phase]} — ${i.incident}`,
+    detail: L.statut[i.statut](quand(i.echeance)), tone: i.statut === 'EN_RETARD' ? ('danger' as const) : ('warning' as const),
+  }))
+  const text = `${L.heading}\n\n${L.intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
+  const html = emailLayout({ heading: L.heading, tone: 'danger', paragraphs: [L.intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA' })
+  return { subject: L.subject(p.items.length), text, html }
+}

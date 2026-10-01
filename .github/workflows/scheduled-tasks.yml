@@ -24,6 +24,7 @@ name: Scheduled tasks
 on:
   schedule:
     # Heures en UTC. Aligné sur scripts/scheduler.sh.
+    - cron: '5 * * * *'   # toutes les heures — alertes DORA (déclaration des incidents majeurs)
     - cron: '0 2 * * *'   # quotidien 02:00 — snapshots de conformité (mode AUTO)
     - cron: '0 5 * * *'   # quotidien 05:00 — brouillons de rapports planifiés
     - cron: '0 6 * * *'   # quotidien 06:00 — relances : un e-mail de synthèse par personne
@@ -37,6 +38,7 @@ on:
         options:
           - conformite-snapshots
           - relances
+          - alertes-dora
           - rapports-planifies
           - tableau-bord-mensuel
 
@@ -62,6 +64,7 @@ jobs:
           MANUAL: ${{ inputs.task }}
         run: |
           case "${SCHEDULE:-}" in
+            '5 * * * *')  TASK=alertes-dora ;;
             '0 2 * * *')  TASK=conformite-snapshots ;;
             '0 5 * * *')  TASK=rapports-planifies ;;
             '0 6 * * *')  TASK=relances ;;

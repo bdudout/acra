@@ -233,6 +233,8 @@ model TestResilience {
   statut           String       @default("PLANIFIE") // PLANIFIE | EN_COURS | REALISE | ANNULE
   datePrevue       DateTime?
   dateRealisation  DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   resultat         String?      @db.Text
   constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
   // Provenance d'un plan de test modèle du catalogue (idempotence de l'import, cf. sector-suggestions).
@@ -731,6 +733,8 @@ model Incident {
   doraInitialeSoumiseLe      DateTime?
   doraIntermediaireSoumiseLe DateTime?
   doraFinaleSoumiseLe        DateTime?
+  // Alertes DORA déjà envoyées : { "PHASE:STATUT": iso } (cron « alertes-dora », anti-doublon).
+  alertesDora                Json      @default("{}")
 
   // Lot L1 — type d'événement (catalogue de l'org), quasi-incident (aucune perte
   // réalisée), attributs pilotant les régimes de notification, notifications soumises,
@@ -786,6 +790,8 @@ model CampagneControle {
   createdBy   String?
   // Archivage (campagne close au-delà de la durée de conservation configurée).
   archiveLe   DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   // Rapports/preuves uploadés : [{nom, mime, taille, storageKey, checksum, uploadedLe, uploadedBy}].
   rapports    Json      @default("[]")
 
@@ -854,6 +860,8 @@ model Document {
   description  String?   @db.Text
   dateDocument DateTime?
   dateRevue    DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // Fichier stocké hors base.
   fichierNom String // nom d'origine (affichage)
@@ -897,6 +905,8 @@ model ArrangementTic {
   criticite         String    @default("NON_CRITIQUE") // CRITIQUE | IMPORTANTE | NON_CRITIQUE
   dateDebut         DateTime?
   dateFin           DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   paysDonnees       String? // pays de stockage/traitement des données
   sousTraitance     Boolean   @default(false)
 
@@ -1048,6 +1058,8 @@ model AuditMission {
   responsable String?
   dateDebut   DateTime?
   dateFin     DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // PLANIFIEE | EN_COURS | CLOTUREE
   statut String @default("PLANIFIEE")
@@ -1177,6 +1189,8 @@ model Kri {
   frequence     String  @default("MENSUEL")
   responsable   String?
   actif         Boolean @default(true)
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // Rattachement optionnel à la maille : catégorie de taxonomie / risque / processus.
   taxonomieCode String?
@@ -1470,6 +1484,8 @@ model OrgInvitation {
   expiresAt      DateTime
   acceptedAt     DateTime?
   acceptedById   String?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])
@@ -1541,6 +1557,8 @@ model Analyse {
   // Date de la dernière soumission pour approbation (relances des approbateurs) et dernière relance.
   soumisLe               DateTime?
   rappelLe               DateTime?
+  // Dernière relance d'échéance de l'analyse (auteur), distincte des relances d'approbation.
+  rappelEcheanceLe       DateTime?
 
   // Acceptation des RISQUES RÉSIDUELS (== acceptation du risque par la Direction métier),
   // DISTINCTE de la validation de l'analyse. Portée GLOBALE : une décision pour l'ensemble
