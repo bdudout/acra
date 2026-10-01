@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (32) — Claude Code : backlog technique, suite (même branche, PR #194)
+
+- **Faits** : T7 (job CI `db-integration`, `npm run test:db`), T2 (réattribution des analyses : API + dialogue `/admin/users`, vérifié en navigateur), T24 (pas de liaison SSO auto d'un SUPER_ADMIN), T4 (ESLint + job CI `lint`), T12 (portée d'organisation sans charger toute l'instance : 10,4 → 3,9 ms à 2 871 orgs), T14 partiel (liste des actions du journal par balayage d'index : 87 → 0,3 ms à 1 M lignes), T9 partiel (double approbation projet 360 sous verrou), T11 (`Analyse.organizationId` obligatoire, migration `20261001090000_…`), T13 partiel (indicateurs de la liste des analyses en SQL).
+- **Bugs trouvés en chemin et corrigés** : création concurrente de la ligne `Conformite` (P2002 → 500) ; override global `brace-expansion` qui cassait ESLint et `minimatch@5` (exceljs) ; `/api/import` créait des analyses sans organisation, sans contrôle du droit de création ni du plafond démo.
+- **Pièges** : la migration `20261001090000` rattache les analyses sans organisation à `global` (créée si absente). `checkAnalyseCreation` (`lib/analyse-create-guard.server.ts`) est le point unique de contrôle de création d'analyse. `pkill -f "next dev …"` tue le shell appelant : utiliser `pkill -f "[n]ext dev …"`.
+- **Vérifié** : `tsc` propre ; `npm test` 366 fichiers / 3 026 tests ; `npm run test:db` 15/15 (PostgreSQL 16 local, base existante + base vierge) ; `npm run lint` 0 erreur ; `npm run build` OK ; `i18n:check` OK ; CI GitHub verte jusqu'au commit `e89f341` (les suivants en cours au moment de l'écriture).
+- **Décisions en attente (utilisateur)** : T5/T6 ajoutent une dépendance (client Redis, SDK S3) ; T17 validation DNS de l'issuer OIDC (refuserait les IdP internes) ; T23 parcours d'invitation (UX).
+- **Prochain pas technique** : T3 (`withAccess`, gros chantier), T8 (`ConformiteEntree`), T10 (enums), T9 sauvegarde d'atelier (verrou optimiste côté client).
+
 ## 2026-10-01 (31) — Claude Code : audits sécurité/BDD et remédiation (branche `claude/tender-euler-bqjoe9`, PR #194)
 
 - **Audits** : `rapports/ACRA-Audit-Code-OWASP-SAST-2026-09-30.md`, `rapports/ACRA-Audit-Architecture-BDD-Maintenabilite-2026-09-30.md`. Backlog technique T1–T24 dans `docs/CHANTIERS-EN-COURS.md` (statut par ligne).
