@@ -105,3 +105,14 @@ describe('déclaré vs constaté (page de conformité)', () => {
     expect(m.has('D')).toBe(false) // rien constaté : rien à afficher
   })
 })
+
+describe('anomalies venant du contrôle permanent (questionnaires, préconisations)', () => {
+  it('rendent l’exigence en anomalie et sont comptées à part de l’audit ; une préconisation acceptée ou vérifiée ne compte plus', () => {
+    const cov = synthetiserCouverture([{ ref: 'A' }, { ref: 'B' }], [], [
+      { exigenceRef: 'A', statut: 'OUVERT', origine: 'CONTROLE' },
+      { exigenceRef: 'B', statut: 'ACCEPTE', origine: 'CONTROLE' },
+    ])
+    expect(cov.parExigence[0]).toMatchObject({ ref: 'A', statut: 'ANOMALIE', nbAnomaliesAudit: 0, nbAnomaliesControle: 1 })
+    expect(cov.parExigence[1]).toMatchObject({ ref: 'B', statut: 'NON_COUVERT', nbAnomaliesControle: 0 })
+  })
+})

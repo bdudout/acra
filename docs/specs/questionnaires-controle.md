@@ -1,6 +1,6 @@
 # Expression de besoin — questionnaires de contrôle, missions de contrôle et conformité
 
-Statut : **conception, à valider** (1er octobre 2026). Lot 0 livré : la page de conformité affiche ce que constatent le contrôle permanent et l'audit (§ 5).
+Statut : **décisions prises, en développement** (1er octobre 2026). Lot 0 livré : la page de conformité affiche ce que constatent le contrôle permanent et l'audit (§ 5).
 
 ## 1. Besoin exprimé
 
@@ -47,9 +47,9 @@ Droits : le métier ne voit que ses envois et ses réponses ; la revue, les pré
 
 Sur la page de conformité (`/conformite/socle`), chaque exigence affiche ce que constatent le contrôle permanent (efficacité des contrôles qui la couvrent) et l'audit (constats ouverts) ; une exigence **déclarée conforme mais en anomalie** est signalée « à revoir », avec un compteur en tête de page. Le statut déclaré **n'est jamais modifié automatiquement** (`confronterDeclaration`, `conformite-constats.ts`).
 
-## 6. Questions de décision
+## 6. Décisions (1er octobre 2026)
 
-1. **Destinataires** : uniquement des comptes de l'organisation, ou aussi des répondants sans compte (lien d'accès à usage limité) ?
-2. **Effet des réponses** : votre phrase « ces exigences et questionnaires complétés donnent lieu… » s'arrête ; à quoi doivent-ils donner lieu (exécution de contrôle, cotation d'efficacité, préconisation automatique, mise à jour de la conformité) ?
-3. **Conformité** : la non-conformité constatée reste-t-elle une association visible (lot 0), ou propose-t-on au responsable de mettre à jour le statut déclaré en un clic ?
-4. **Préconisations** : réutiliser le cycle de vie des constats d'audit (recommandation, échéance, report, vérification) — recommandé — ou un modèle plus léger ?
+1. **Répondants** : comptes de l'organisation uniquement.
+2. **Suite des réponses** : le contrôleur pose des **préconisations** ; le **métier** y répond par un **plan d'action**, suivi dans les plans d'action. Le lien à la conformité est **visible mais facultatif**. Le métier peut aussi faire **accepter le risque**, avec un suivi dans la conformité (traitement « acceptation de risque »).
+3. **Conformité** : la non-conformité constatée est affichée et le responsable peut **mettre à jour le statut en un clic** (trace dans le commentaire). Jamais de mise à jour automatique.
+4. **Préconisations** : même cycle de vie que les constats d'audit (recommandation, responsable, échéance, report, réalisation, vérification par une autre personne).

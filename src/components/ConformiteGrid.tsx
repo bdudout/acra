@@ -310,7 +310,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     const cc = t.conformiteConstats
                     const tone = k.statut === 'ANOMALIE' ? 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200' : k.statut === 'CONFORME' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
                     return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] ${tone}`}>
-                      {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit))}
+                      {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit)).replace('{q}', String(k.nbAnomaliesControle ?? 0))}
                       {k.divergent && <strong className="ml-1">· {cc.divergent}</strong>}
                       {k.divergent && !readOnly && <button type="button" className="ml-2 underline" onClick={() => appliquerConstat(c.ref)}>{cc.appliquer}</button>}
                     </p>

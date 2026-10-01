@@ -11,6 +11,7 @@ export interface CouvertureExigenceLite {
   statut: 'NON_COUVERT' | 'CONFORME' | 'PARTIEL' | 'ANOMALIE'
   nbControles: number
   nbAnomaliesAudit: number
+  nbAnomaliesControle?: number
 }
 
 /** Ce que le contrôle et l'audit disent d'une exigence, et s'il contredit la déclaration. */

@@ -24,6 +24,8 @@ export interface ControleCouvrant {
 export interface ConstatExigence {
   exigenceRef: string | null
   statut: string // OUVERT | EN_COURS | RESOLU | ACCEPTE
+  /** AUDIT (défaut) ou CONTROLE : réponse de questionnaire revue non conforme / préconisation ouverte. */
+  origine?: 'AUDIT' | 'CONTROLE'
 }
 
 /** Couverture d'une exigence donnée : statut + compteurs de contrôles/anomalies. */
@@ -32,6 +34,7 @@ export interface CouvertureExigence {
   statut: CouvertureStatut
   nbControles: number // contrôles actifs couvrant l'exigence
   nbAnomaliesAudit: number // constats non terminés visant l'exigence
+  nbAnomaliesControle: number // réponses revues non conformes et préconisations ouvertes (contrôle permanent)
 }
 
 /** Synthèse de couverture d'un référentiel : total, couverts, conformes, anomalies, taux. */
@@ -69,19 +72,22 @@ export function synthetiserCouverture(
       parExigenceControles.set(ref, arr)
     }
   }
-  // Indexe les constats NON terminés par exigence.
+  // Indexe les constats NON terminés par exigence (audit d'un côté, contrôle permanent de l'autre).
   const parExigenceAnomalies = new Map<string, number>()
+  const parExigenceControle = new Map<string, number>()
   for (const co of constats) {
     if (!co.exigenceRef || CONSTAT_TERMINES.has(co.statut)) continue
-    parExigenceAnomalies.set(co.exigenceRef, (parExigenceAnomalies.get(co.exigenceRef) ?? 0) + 1)
+    const m = co.origine === 'CONTROLE' ? parExigenceControle : parExigenceAnomalies
+    m.set(co.exigenceRef, (m.get(co.exigenceRef) ?? 0) + 1)
   }
 
   const parExigence: CouvertureExigence[] = exigences.map(ex => {
     const effs = parExigenceControles.get(ex.ref) ?? []
     const nbAnomaliesAudit = parExigenceAnomalies.get(ex.ref) ?? 0
+    const nbAnomaliesControle = parExigenceControle.get(ex.ref) ?? 0
 
     let statut: CouvertureStatut
-    if (nbAnomaliesAudit > 0) {
+    if (nbAnomaliesAudit > 0 || nbAnomaliesControle > 0) {
       statut = 'ANOMALIE' // un constat d'audit ouvert prime : non-conformité avérée
     } else if (effs.length === 0) {
       statut = 'NON_COUVERT'
@@ -93,7 +99,7 @@ export function synthetiserCouverture(
       statut = 'PARTIEL' // MOYENNE, ou contrôle pas encore évalué (null)
     }
 
-    return { ref: ex.ref, statut, nbControles: effs.length, nbAnomaliesAudit }
+    return { ref: ex.ref, statut, nbControles: effs.length, nbAnomaliesAudit, nbAnomaliesControle }
   })
 
   const total = parExigence.length

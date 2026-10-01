@@ -207,6 +207,9 @@ model Organization {
   rapportEditions RapportEdition[]
   auditUnivers AuditUnivers[]
   invitations  OrgInvitation[]
+  questionnaireModeles QuestionnaireModele[]
+  questionnaireEnvois  QuestionnaireEnvoi[]
+  preconisations       Preconisation[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -2392,4 +2395,110 @@ model AuditUnivers {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+}
+
+// ─── Questionnaires de contrôle permanent (cf. docs/specs/questionnaires-controle.md) ─────────
+// Modèle de questionnaire défini par la 2ᵉ ligne. Questions (Json, cf. lib/questionnaire.ts) :
+// [{ id, libelle, type, choix?, obligatoire, preuveRequise, cible? }] ; cible = point de contrôle,
+// exigence (referentielCode + ref), risque ou processus. mode EXIGENCES = généré depuis un référentiel.
+model QuestionnaireModele {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titre           String
+  description     String?      @db.Text
+  mode            String       @default("QUESTIONNAIRE") // QUESTIONNAIRE | EXIGENCES
+  referentielCode String?
+  questions       Json         @default("[]")
+  actif           Boolean      @default(true)
+  createdById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+// Envoi d'un questionnaire à des répondants (comptes de l'organisation), dans une mission de
+// contrôle (CampagneControle, lien logique). Les questions sont figées à l'envoi (instantané).
+model QuestionnaireEnvoi {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  modeleId       String?
+  campagneId     String?
+  titre          String
+  questions      Json                   @default("[]")
+  echeance       DateTime?
+  statut         String                 @default("OUVERT") // OUVERT | CLOTURE
+  createdById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  reponses       QuestionnaireReponse[]
+
+  @@index([organizationId])
+  @@index([campagneId])
+}
+
+// Réponse d'un répondant : réponses par question (valeur, commentaire, preuves) et revue du
+// contrôleur par question (ACCEPTEE | A_COMPLETER | NON_CONFORME).
+model QuestionnaireReponse {
+  id             String             @id @default(cuid())
+  envoiId        String
+  envoi          QuestionnaireEnvoi @relation(fields: [envoiId], references: [id], onDelete: Cascade)
+  organizationId String
+  repondantId    String
+  statut         String             @default("A_REPONDRE") // A_REPONDRE | SOUMISE | A_COMPLETER | REVUE
+  reponses       Json               @default("[]")
+  soumiseLe      DateTime?
+  revueLe        DateTime?
+  revueParId     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([envoiId, repondantId])
+  @@index([organizationId])
+  @@index([repondantId])
+}
+
+// Préconisation d'un contrôleur (2ᵉ ligne) : même cycle de vie qu'un constat d'audit
+// (lib/audit-l4 appliquerSuivi). Le métier y répond par un plan d'action ou une acceptation du risque.
+model Preconisation {
+  id                       String       @id @default(cuid())
+  organizationId           String
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campagneId               String?
+  reponseId                String?
+  questionId               String?
+  intitule                 String
+  description              String?      @db.Text
+  recommandation           String?      @db.Text
+  criticite                Int?
+  responsableAction        String?
+  responsableId            String?
+  echeance                 DateTime?
+  echeanceInitiale         DateTime?
+  reports                  Json         @default("[]")
+  statut                   String       @default("OUVERT") // OUVERT | EN_COURS | RESOLU | VERIFIE | ACCEPTE
+  realiseePar              String?
+  realiseeLe               DateTime?
+  verifiePar               String?
+  verifieLe                DateTime?
+  verificationCommentaire  String?      @db.Text
+  acceptationJustification String?      @db.Text
+  accepteePar              String?
+  accepteeLe               DateTime?
+  referentielCode          String?
+  exigenceRef              String?
+  riskItemId               String?
+  processusId              String?
+  controleId               String?
+  createdById              String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([campagneId])
+  @@index([referentielCode])
+  @@index([statut])
+  @@index([responsableId])
 }
