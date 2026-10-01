@@ -25,11 +25,13 @@ export default async function ConformiteGlobalPage() {
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
-  if (!(isAdminRole(userRole) || userRole === 'RSSI' || userRole === 'RISK_MANAGER')) redirect('/dashboard')
+  const scope = await getAnalyseScope(userId, userRole)
+  // Rôle EFFECTIF dans l'organisation active (même règle que l'API de conformité).
+  const role = scope.role ?? userRole
+  if (!(isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER')) redirect('/dashboard')
 
   const t = await getServerT()
   const locale = await getServerLocale()
-  const scope = await getAnalyseScope(userId, userRole)
   const visibleOrgIds = scope.scope.visibleOrgIds ?? []
 
   // Entités de conformité des organisations visibles (ou toutes en mono-organisation).
