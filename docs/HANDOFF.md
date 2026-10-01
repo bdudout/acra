@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (43) — Claude Code : catalogue 1.6 — packs sectoriels, plans de test de résilience, revue métier (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
+
+- **Packs sectoriels (1.5)** : `src/lib/sector-packs.ts` — 8 secteurs × (2 contrôles-types, 2 KRI candidats, 1 mission d'audit à 4 points), rattachés aux processus du secteur, ×5 langues ; branchés dans `listSectorSuggestions` (seulement avec le secteur choisi).
+- **Plans de test de résilience modèles (1.6)** : `src/lib/catalogue-resilience.ts` — 7 transversaux + 4 finance/assurance, types art. 25 § 1 DORA, jamais de TLPT. Nouvelle nature `RESILIENCE_TEST` : route `catalogue-suggestions` (module réglementaire actif, `peutEvaluerDora`), création d'un `TestResilience` PLANIFIÉ de l'année, sans date/testeur/résultat/constat, `fonctionCritique` et `independant` à `false` (jamais présumés). Migration `20261001140000_test_resilience_catalogue` (`catalogueKey`/`catalogueVersion` + index unique). Incidents : aucun modèle (typologies déjà éditables, un incident n'est jamais suggéré).
+- **Revue métier** : grille générée `docs/specs/catalogue-revue-grille.csv` (`npm run catalogue:review`, test de synchronisation `catalogue-review.test.ts`) + `docs/specs/catalogue-revue-metier.md` (critères, 6 corrections appliquées, points ouverts, tableau de validation par secteur). **Aucun secteur n'est validé par un expert métier.**
+- **Piège** : toute modification du catalogue exige `npm run catalogue:review` (sinon test rouge) et, pour une nouvelle version, une entrée dans `CATALOGUE_CHANGELOG`. Les tests de version sont désormais génériques (`after(v)`).
+- **Vérifié** : `tsc` ; `npm test` 410 fichiers / 3 295 tests ; `npm run test:db` 7 fichiers / 29 tests (dont `catalogue-resilience.db.test.ts` : import idempotent et concurrent) ; `lint` 0 erreur ; `i18n:check` ; `npm run build` ; navigateur (build de prod :3005, organisation FINANCE) : panneau « Suggestions par secteur » avec packs finance et plans de test (pas d'assurance), import de 4 éléments, test affiché « Planifié » dans `/reglementaire/tests-resilience`.
+- **Prochain pas** : relecture par des experts métier (grille) ; second niveau de processus sectoriels ; énumération `POST /api/admin/users` ; T3 phase 2.
+
 ## 2026-10-01 (42) — Claude Code : T23 invitations (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
 
 - **Décision utilisateur** : le rattachement dépend du déploiement. SaaS / communautaire → consentement (invitation) ; sur site → l'entreprise rattache ses employés (direct).

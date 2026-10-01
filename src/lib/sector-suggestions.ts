@@ -3,14 +3,18 @@
  * sont stables entre langues et versions ; les libellés peuvent évoluer.
  * Aucune cotation, obligation réputée satisfaite ou contrepartie fictive.
  */
+import { SECTOR_PACK_ITEMS } from './sector-packs'
+import { RESILIENCE_TEST_TEMPLATES } from './catalogue-resilience'
+import type { TestResilienceType } from './tests-resilience'
+
 export const SECTOR_CODES = ['FINANCE', 'ASSURANCE', 'SANTE', 'PUBLIC', 'SAAS', 'INDUSTRIE', 'COMMERCE', 'SERVICES'] as const
 export type SectorCode = (typeof SECTOR_CODES)[number]
 export type CatalogueLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
-type Localized = Record<CatalogueLocale, string>
-type CatalogueItem = {
+export type Localized = Record<CatalogueLocale, string>
+export type CatalogueItem = {
   key: string
   sector: SectorCode | 'TRANSVERSAL'
-  kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT'
+  kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'
   title: Localized
   parentKey?: string
   processKey?: string
@@ -22,6 +26,8 @@ type CatalogueItem = {
   sens?: 'HAUSSE' | 'BAISSE'
   // Mission d'audit seulement : points de revue types (programme) ; aucune date, aucune notation, aucun constat.
   points?: Localized[]
+  // Plan de test de résilience modèle seulement : type de test (DORA art. 25 § 1, jamais TLPT) ; ni date, ni testeur, ni résultat.
+  testType?: Exclude<TestResilienceType, 'TLPT'>
 }
 export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points'> & { title: string; unite?: string; points?: string[]; packVersion: string }
 
@@ -76,11 +82,11 @@ const c = (key: string, title: Localized, processKey: string, periodicite: NonNu
 const TRANSVERSAL_CONTROLS: CatalogueItem[] = [
   c('core.control.access-review', l('Revue périodique des droits d’accès', 'Periodic review of access rights', 'Regelmäßige Überprüfung der Zugriffsrechte', 'Revisión periódica de los derechos de acceso', 'Revisione periodica dei diritti di accesso'), 'core.process.digital.iam', 'TRIMESTRIEL', 'DETECTIF'),
   c('core.control.privileged-review', l('Revue des comptes à privilèges', 'Review of privileged accounts', 'Überprüfung privilegierter Konten', 'Revisión de las cuentas con privilegios', 'Revisione degli account con privilegi'), 'core.process.digital.iam', 'TRIMESTRIEL', 'DETECTIF'),
-  c('core.control.leavers', l('Retrait des accès des collaborateurs partis', 'Removal of access for departed staff', 'Entzug der Zugänge ausgeschiedener Mitarbeiter', 'Retirada de accesos del personal saliente', 'Rimozione degli accessi del personale uscito'), 'core.process.digital.iam', 'MENSUEL', 'DETECTIF'),
+  c('core.control.leavers', l('Vérification du retrait des accès des collaborateurs partis', 'Check that access of departed staff has been removed', 'Prüfung des Entzugs der Zugänge ausgeschiedener Mitarbeiter', 'Verificación de la retirada de accesos del personal saliente', 'Verifica della rimozione degli accessi del personale uscito'), 'core.process.digital.iam', 'MENSUEL', 'DETECTIF'),
   c('core.control.backup-restore', l('Test de restauration des sauvegardes', 'Backup restoration test', 'Test der Wiederherstellung von Sicherungen', 'Prueba de restauración de copias de seguridad', 'Test di ripristino dei backup'), 'core.process.digital.backup', 'SEMESTRIEL', 'DETECTIF'),
   c('core.control.patch-follow-up', l('Suivi des correctifs de sécurité en retard', 'Follow-up of overdue security patches', 'Nachverfolgung überfälliger Sicherheitspatches', 'Seguimiento de parches de seguridad pendientes', 'Monitoraggio delle patch di sicurezza in ritardo'), 'core.process.digital.patch', 'MENSUEL', 'DETECTIF'),
   c('core.control.security-alerts', l('Revue des alertes et journaux de sécurité', 'Review of security alerts and logs', 'Überprüfung von Sicherheitswarnungen und Protokollen', 'Revisión de alertas y registros de seguridad', 'Revisione di avvisi e log di sicurezza'), 'core.process.digital.monitor', 'MENSUEL', 'DETECTIF'),
-  c('core.control.payment-validation', l('Contrôle par échantillon de la double validation des paiements', 'Sample check of dual approval of payments', 'Stichprobenprüfung der doppelten Zahlungsfreigabe', 'Control por muestreo de la doble validación de los pagos', 'Controllo a campione della doppia autorizzazione dei pagamenti'), 'core.process.finance.payments', 'MENSUEL', 'PREVENTIF'),
+  c('core.control.payment-validation', l('Contrôle par échantillon de la double validation des paiements', 'Sample check of dual approval of payments', 'Stichprobenprüfung der doppelten Zahlungsfreigabe', 'Control por muestreo de la doble validación de los pagos', 'Controllo a campione della doppia autorizzazione dei pagamenti'), 'core.process.finance.payments', 'MENSUEL', 'DETECTIF'),
   c('core.control.supplier-clauses', l('Vérification des clauses de sécurité des contrats fournisseurs', 'Check of security clauses in supplier contracts', 'Prüfung der Sicherheitsklauseln in Lieferantenverträgen', 'Verificación de las cláusulas de seguridad de los contratos con proveedores', 'Verifica delle clausole di sicurezza nei contratti con i fornitori'), 'core.process.buy.sourcing', 'ANNUEL', 'PREVENTIF'),
   c('core.control.supplier-review', l('Revue de performance des fournisseurs essentiels', 'Performance review of essential suppliers', 'Leistungsbewertung wesentlicher Lieferanten', 'Revisión del desempeño de los proveedores esenciales', 'Revisione delle prestazioni dei fornitori essenziali'), 'core.process.buy.review', 'ANNUEL', 'DETECTIF'),
 ]
@@ -142,14 +148,14 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   p('finance.process.credit', 'FINANCE', l('Octroyer et suivre les financements', 'Originate and monitor credit', 'Kredite vergeben und überwachen', 'Conceder y supervisar créditos', 'Erogare e monitorare finanziamenti'), 'core.process.deliver'),
   p('finance.process.channels', 'FINANCE', l('Exploiter les canaux bancaires numériques', 'Operate digital banking channels', 'Digitale Bankkanäle betreiben', 'Operar canales bancarios digitales', 'Gestire i canali bancari digitali'), 'core.process.digital'),
   r('finance.risk.payment-routing', 'FINANCE', l('Un paiement est envoyé au mauvais bénéficiaire', 'A payment reaches the wrong beneficiary', 'Eine Zahlung erreicht den falschen Empfänger', 'Un pago llega al beneficiario equivocado', 'Un pagamento raggiunge il beneficiario errato'), 'finance.process.payments'),
-  r('finance.risk.account-takeover', 'FINANCE', l('Un compte client est pris en main frauduleusement', 'A customer account is taken over fraudulently', 'Ein Kundenkonto wird betrügerisch übernommen', 'Se toma el control fraudulento de una cuenta de cliente', 'Un conto cliente viene acquisito fraudolentemente'), 'finance.process.accounts'),
+  r('finance.risk.account-takeover', 'FINANCE', l('Un compte client est usurpé par un fraudeur', 'A customer account is taken over fraudulently', 'Ein Kundenkonto wird betrügerisch übernommen', 'Se toma el control fraudulento de una cuenta de cliente', 'Un conto cliente viene acquisito fraudolentemente'), 'finance.process.accounts'),
   r('finance.risk.credit-data', 'FINANCE', l('Une décision de financement repose sur des données erronées', 'A credit decision relies on incorrect data', 'Eine Kreditentscheidung beruht auf falschen Daten', 'Una decisión de crédito se basa en datos erróneos', 'Una decisione di credito si basa su dati errati'), 'finance.process.credit'),
   r('finance.risk.channel-outage', 'FINANCE', l('La banque en ligne devient indisponible', 'Digital banking becomes unavailable', 'Online-Banking ist nicht verfügbar', 'La banca en línea deja de estar disponible', 'La banca online non è disponibile'), 'finance.process.channels'),
   r('finance.risk.reconciliation', 'FINANCE', l('Des opérations ne sont pas rapprochées à temps', 'Transactions are not reconciled in time', 'Transaktionen werden nicht rechtzeitig abgeglichen', 'Las operaciones no se concilian a tiempo', 'Le operazioni non vengono riconciliate in tempo'), 'finance.process.payments'),
 
   p('assurance.process.underwrite', 'ASSURANCE', l('Souscrire et tarifer les contrats', 'Underwrite and price policies', 'Verträge zeichnen und tarifieren', 'Suscribir y tarificar pólizas', 'Sottoscrivere e prezzare polizze'), 'core.process.deliver'),
   p('assurance.process.claims', 'ASSURANCE', l('Gérer les sinistres et indemnisations', 'Handle claims and settlements', 'Schäden und Entschädigungen bearbeiten', 'Gestionar siniestros e indemnizaciones', 'Gestire sinistri e indennizzi'), 'core.process.deliver'),
-  p('assurance.process.brokers', 'ASSURANCE', l('Animer les courtiers et distributeurs', 'Manage brokers and distributors', 'Makler und Vertriebspartner betreuen', 'Gestionar corredores y distribuidores', 'Gestire broker e distributori'), 'core.process.buy'),
+  p('assurance.process.brokers', 'ASSURANCE', l('Animer les courtiers et distributeurs', 'Manage brokers and distributors', 'Makler und Vertriebspartner betreuen', 'Gestionar corredores y distribuidores', 'Gestire broker e distributori'), 'core.process.deliver'),
   p('assurance.process.policy', 'ASSURANCE', l('Administrer les contrats en cours', 'Administer active policies', 'Laufende Verträge verwalten', 'Administrar pólizas vigentes', 'Amministrare polizze attive'), 'core.process.deliver'),
   r('assurance.risk.claim-fraud', 'ASSURANCE', l('Un sinistre frauduleux est indemnisé', 'A fraudulent claim is paid', 'Ein betrügerischer Schaden wird ausgezahlt', 'Se paga un siniestro fraudulento', 'Un sinistro fraudolento viene liquidato'), 'assurance.process.claims'),
   r('assurance.risk.claim-delay', 'ASSURANCE', l('Un sinistre légitime est traité trop tard', 'A valid claim is handled too late', 'Ein berechtigter Schaden wird zu spät bearbeitet', 'Un siniestro legítimo se tramita demasiado tarde', 'Un sinistro legittimo viene gestito troppo tardi'), 'assurance.process.claims'),
@@ -159,7 +165,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
 
   p('sante.process.care', 'SANTE', l('Prendre en charge les patients', 'Provide patient care', 'Patienten versorgen', 'Atender a los pacientes', 'Assistere i pazienti'), 'core.process.deliver'),
   p('sante.process.records', 'SANTE', l('Gérer les dossiers de santé', 'Manage health records', 'Gesundheitsakten verwalten', 'Gestionar historias clínicas', 'Gestire le cartelle cliniche'), 'core.process.digital'),
-  p('sante.process.lab', 'SANTE', l('Réaliser les examens et résultats', 'Perform tests and report results', 'Untersuchungen durchführen und Ergebnisse melden', 'Realizar pruebas y comunicar resultados', 'Eseguire esami e comunicare risultati'), 'core.process.deliver'),
+  p('sante.process.lab', 'SANTE', l('Réaliser les examens et rendre les résultats', 'Perform tests and report results', 'Untersuchungen durchführen und Ergebnisse melden', 'Realizar pruebas y comunicar resultados', 'Eseguire esami e comunicare risultati'), 'core.process.deliver'),
   p('sante.process.supply', 'SANTE', l('Approvisionner médicaments et dispositifs', 'Supply medicines and devices', 'Arzneimittel und Geräte bereitstellen', 'Suministrar medicamentos y dispositivos', 'Fornire farmaci e dispositivi'), 'core.process.buy'),
   r('sante.risk.patient-data', 'SANTE', l('Des données de santé de patients sont divulguées', 'Patient health data is disclosed', 'Gesundheitsdaten von Patienten werden offengelegt', 'Se divulgan datos de salud de pacientes', 'Vengono divulgati dati sanitari dei pazienti'), 'sante.process.records'),
   r('sante.risk.care-outage', 'SANTE', l('Une panne retarde la prise en charge', 'An outage delays patient care', 'Ein Ausfall verzögert die Versorgung', 'Una avería retrasa la atención', 'Un guasto ritarda l’assistenza'), 'sante.process.care'),
@@ -234,7 +240,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('services.risk.client-access', 'SERVICES', l('Un collaborateur accède à des dossiers clients sans nécessité', 'A staff member accesses client files without need', 'Ein Mitarbeiter greift ohne Notwendigkeit auf Kundenakten zu', 'Un empleado accede a expedientes de clientes sin necesidad', 'Un collaboratore accede a pratiche dei clienti senza necessidad'), 'services.process.knowledge'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.4'
+export const CATALOGUE_PACK_VERSION = '1.6'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -244,8 +250,8 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
 
 /** Socle + pack choisi ; sans secteur, seul le socle est retourné. */
 export function listSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale): SectorSuggestion[] {
-  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS]
-  const items = sector ? [...base, ...SECTOR_ITEMS.filter(item => item.sector === sector)] : base
+  const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
+  const items = sector ? [...base, ...[...SECTOR_ITEMS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === sector)] : base
   return items.map(({ title, unite, points, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 

@@ -38,3 +38,7 @@ l'entité. Libellés dans la langue de l'utilisateur, intitulés réglementaires
 Module « Reporting réglementaire » (DORA) actif, sinon 404. Lecture : rôles à lecture globale
 du dispositif. Écriture : ADMIN, RSSI, RISK_MANAGER (`peutEvaluerDora`). Écritures limitées en
 débit et journalisées ; export journalisé.
+
+## 6. Plans de test modèles (catalogue 1.6)
+
+Le catalogue de suggestions (`src/lib/catalogue-resilience.ts`, panneau « Suggestions par secteur ») propose des plans de test modèles : 7 transversaux et 4 pour la finance et l'assurance, avec un type de l'article 25 § 1 uniquement (jamais de TLPT). L'import crée un test **planifié** de l'année en cours, sans date, testeur, résultat ni constat ; la fonction critique ou importante et l'indépendance ne sont **jamais présumées** (`false`), l'entité les déclare. Mêmes conditions que le programme : module actif et `peutEvaluerDora`. Revue métier : [catalogue-revue-metier.md](catalogue-revue-metier.md).

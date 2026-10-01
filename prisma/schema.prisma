@@ -232,10 +232,14 @@ model TestResilience {
   dateRealisation  DateTime?
   resultat         String?      @db.Text
   constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
+  // Provenance d'un plan de test modèle du catalogue (idempotence de l'import, cf. sector-suggestions).
+  catalogueKey     String?
+  catalogueVersion String?
   createdById      String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
+  @@unique([organizationId, catalogueKey])
   @@index([organizationId, annee])
 }
 
