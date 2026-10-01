@@ -18,6 +18,11 @@
   code Next (voir `AGENTS.md`), les conventions diffèrent des versions connues.
 - **React 18** (composants serveur par défaut ; `'use client'` explicite sinon).
 - **Prisma** + **PostgreSQL** (49 modèles, `prisma/schema.prisma`).
+  Prisma 7 : l'URL de connexion n'est plus dans le schéma. La CLI (migrations) la lit dans
+  `prisma.config.ts` (qui charge `.env` s'il existe) ; le client passe par l'adaptateur
+  `@prisma/adapter-pg` (`src/lib/prisma.ts`, seeds, `scripts/*.mjs`). Ne jamais écrire
+  `new PrismaClient()` sans `adapter`. Dans l'image Docker, la CLI est installée à part
+  (`/app/prisma-cli`, lien `node_modules/prisma`) pour le service migrator.
 - **NextAuth** (Credentials + SSO OIDC ; SAML en chantier de maintenance).
 - **Tailwind** pour le style ; **lucide-react** pour les icônes.
 - **Vitest** + Testing Library pour les tests.
