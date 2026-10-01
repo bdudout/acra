@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (31) — Claude Code : audits sécurité/BDD et remédiation (branche `claude/tender-euler-bqjoe9`, PR #194)
+
+- **Audits** : `rapports/ACRA-Audit-Code-OWASP-SAST-2026-09-30.md`, `rapports/ACRA-Audit-Architecture-BDD-Maintenabilite-2026-09-30.md`. Backlog technique T1–T24 dans `docs/CHANTIERS-EN-COURS.md` (statut par ligne).
+- **Faits** : SSRF (`lib/ip-safety.ts`, `lib/safe-fetch.server.ts`), next 16.3.8, clés d'API (débit avant scrypt), upload (signatures), gestion des comptes (`lib/user-deletion.ts` : suppression, reset-password, SUPER_ADMIN protégé, comptes partagés, réattribution T2), plus d'auto-promotion SUPER_ADMIN, SSO (pas de rétrogradation ni de liaison auto d'un SUPER_ADMIN), secrets d'instance masqués (`maskSecret`), FK `Analyse.userId` RESTRICT (migration `20260930180000_…`), verrous de conformité (`lib/row-lock.server.ts`), ESLint + CI, tests d'intégration BDD.
+- **Nouveaux outils** : `npm run lint` ; `npm run test:db` (exige `DATABASE_URL` vers une base migrée ; job CI `db-integration`).
+- **Pièges** :
+  - Un compte propriétaire d'analyses n'est plus supprimable : réattribuer d'abord (dialogue `/admin/users`).
+  - `brace-expansion` : overrides **par branche majeure** (`minimatch@3/5/10`) ; un override global casse ESLint et `exceljs`.
+  - Les `.db.test.ts` sont exclus de `npm test` (config `vitest.db.config.mts`).
+  - Un SUPER_ADMIN se connecte par compte local + MFA (pas de liaison SSO automatique).
+- **Vérifié** : `tsc` propre ; `npm test` 366 fichiers / 3 023 tests ; `npm run test:db` 7/7 (PostgreSQL 16 local, stable sur 5 exécutions) ; `npm run lint` 0 erreur ; `npm run build` OK ; `npm audit` 0 ; `i18n:check` OK ; parcours de réattribution vérifié en navigateur (dev :3005).
+- **Non vérifié** : CI GitHub de ces commits ; recette navigateur des écrans SSO/SMTP/SIEM/SMS avec le marqueur `[CONFIGURED]` ; appels sortants réels (webhook, LDAP).
+- **Prochain pas** : T3 (`withAccess`), T5/T6 (Redis, S3), T12 (portée d'organisation par préfixe de `path`), T23 (invitation), décision produit sur la validation DNS de l'issuer OIDC (T17).
+
 ## 2026-09-30 (30) — export Word : matrice des risques ; Windows/WSL
 
 - `lib/risk-matrix-grid.ts` (modèle de matrice depuis la config + grille imprimable, partagé Word/PowerPoint) ; `analyse-docx.ts` : section « Matrice des risques » (brute, puis après traitement si résiduel), libellés ×5. Rendu vérifié en PDF (LibreOffice).
