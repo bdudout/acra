@@ -1,5 +1,6 @@
 // ─── Gabarits d'e-mails localisés (tâches planifiées) ────────────────────────
-// Copie des e-mails de cron (dérogations) dans les 5 langues. Module SERVEUR
+// E-mails des tâches planifiées (synthèse des relances, digest des dérogations)
+// et des invitations, dans les 5 langues. Module SERVEUR
 // pur (hors bundle client) : chaque fonction renvoie { subject, text } selon la
 // langue du destinataire (User.locale), avec repli sur le français. Testé.
 
@@ -24,58 +25,6 @@ const echeancePhrase: Record<EmailLocale, (jours: number) => string> = {
   de: j => (j < 0 ? `seit ${-j} Tag(en) abgelaufen` : j === 0 ? 'läuft heute ab' : `läuft in ${j} Tag(en) ab`),
   es: j => (j < 0 ? `caducada hace ${-j} día(s)` : j === 0 ? 'caduca hoy' : `caduca en ${j} día(s)`),
   it: j => (j < 0 ? `scaduta da ${-j} giorno/i` : j === 0 ? 'scade oggi' : `scade tra ${j} giorno/i`),
-}
-
-/** Paramètres de l'e-mail d'expiration proche d'une dérogation (intitulé + jours restants). */
-export interface ExpiryParams { intitule: string; jours: number }
-
-const expiryTpl: Record<EmailLocale, (p: ExpiryParams, quand: string) => { subject: string; text: string }> = {
-  fr: (p, q) => ({
-    subject: `[ACRA] Dérogation « ${p.intitule} » — ${q}`,
-    text: `La dérogation « ${p.intitule} » ${q}.\nMerci de la prolonger, la clôturer ou la traiter dans ACRA.`,
-  }),
-  en: (p, q) => ({
-    subject: `[ACRA] Waiver "${p.intitule}" — ${q}`,
-    text: `The waiver "${p.intitule}" ${q}.\nPlease extend, close or handle it in ACRA.`,
-  }),
-  de: (p, q) => ({
-    subject: `[ACRA] Ausnahme „${p.intitule}" — ${q}`,
-    text: `Die Ausnahme „${p.intitule}" ${q}.\nBitte verlängern, schließen oder in ACRA bearbeiten.`,
-  }),
-  es: (p, q) => ({
-    subject: `[ACRA] Excepción «${p.intitule}» — ${q}`,
-    text: `La excepción «${p.intitule}» ${q}.\nRenuévela, ciérrala o gestiónala en ACRA.`,
-  }),
-  it: (p, q) => ({
-    subject: `[ACRA] Deroga «${p.intitule}» — ${q}`,
-    text: `La deroga «${p.intitule}» ${q}.\nProrogala, chiudila o gestiscila in ACRA.`,
-  }),
-}
-
-// Titre et invitation à agir de la version HTML (le texte reste le repli).
-const expiryHtmlLabels: Record<EmailLocale, { heading: string; cta: string }> = {
-  fr: { heading: 'Dérogation à traiter', cta: 'Prolongez, clôturez ou traitez cette dérogation dans ACRA.' },
-  en: { heading: 'Waiver requires attention', cta: 'Extend, close or handle this waiver in ACRA.' },
-  de: { heading: 'Ausnahme erfordert Aufmerksamkeit', cta: 'Verlängern, schließen oder in ACRA bearbeiten.' },
-  es: { heading: 'Excepción a gestionar', cta: 'Renueve, cierre o gestione esta excepción en ACRA.' },
-  it: { heading: 'Deroga da gestire', cta: 'Proroga, chiudi o gestisci questa deroga in ACRA.' },
-}
-
-/** E-mail d'alerte individuelle d'expiration d'une dérogation (texte + HTML). */
-export function derogationExpiryEmail(locale: string | null | undefined, p: ExpiryParams): BuiltEmail {
-  const loc = emailLocale(locale)
-  const quand = echeancePhrase[loc](p.jours)
-  const { subject, text } = expiryTpl[loc](p, quand)
-  const L = expiryHtmlLabels[loc]
-  const html = emailLayout({
-    heading: L.heading,
-    tone: p.jours < 0 ? 'danger' : 'warning',
-    // Intitulé et échéance passés en TEXTE BRUT : emailLayout les échappe.
-    items: [{ label: p.intitule, detail: quand, tone: p.jours < 0 ? 'danger' : 'warning' }],
-    paragraphs: [L.cta],
-    footer: 'ACRA',
-  })
-  return { subject, text, html }
 }
 
 /** Une dérogation listée dans l'e-mail de digest (intitulé + jours restants). */
@@ -116,109 +65,6 @@ export function derogationDigestEmail(locale: string | null | undefined, p: Dige
     footer: 'ACRA',
   })
   return { subject: L.subject(p.orgNom), text, html }
-}
-
-// ─── Rappel d'échéance de contrôle permanent (M3) ────────────────────────────
-
-export interface ControleEcheanceParams {
-  intitule: string
-  echeance: string
-  enRetard: boolean
-  responsable: string | null
-}
-
-const controleLabels: Record<EmailLocale, {
-  subjectDu: (i: string) => string; subjectRetard: (i: string) => string
-  headingDu: string; headingRetard: string
-  due: (d: string) => string; late: (d: string) => string
-  owner: string; cta: string
-}> = {
-  fr: {
-    subjectDu: i => `[ACRA] Contrôle à exécuter : ${i}`, subjectRetard: i => `[ACRA] Contrôle en retard : ${i}`,
-    headingDu: 'Contrôle à exécuter', headingRetard: 'Contrôle en retard',
-    due: d => `échéance au ${d}`, late: d => `échéance dépassée depuis le ${d}`,
-    owner: 'Responsable', cta: 'Enregistrez son exécution dans ACRA.',
-  },
-  en: {
-    subjectDu: i => `[ACRA] Control due: ${i}`, subjectRetard: i => `[ACRA] Control overdue: ${i}`,
-    headingDu: 'Control due', headingRetard: 'Control overdue',
-    due: d => `due on ${d}`, late: d => `overdue since ${d}`,
-    owner: 'Owner', cta: 'Record its execution in ACRA.',
-  },
-  de: {
-    subjectDu: i => `[ACRA] Kontrolle fällig: ${i}`, subjectRetard: i => `[ACRA] Kontrolle überfällig: ${i}`,
-    headingDu: 'Kontrolle fällig', headingRetard: 'Kontrolle überfällig',
-    due: d => `fällig am ${d}`, late: d => `überfällig seit ${d}`,
-    owner: 'Verantwortlich', cta: 'Erfassen Sie die Ausführung in ACRA.',
-  },
-  es: {
-    subjectDu: i => `[ACRA] Control por ejecutar: ${i}`, subjectRetard: i => `[ACRA] Control vencido: ${i}`,
-    headingDu: 'Control por ejecutar', headingRetard: 'Control vencido',
-    due: d => `vence el ${d}`, late: d => `vencido desde el ${d}`,
-    owner: 'Responsable', cta: 'Registre su ejecución en ACRA.',
-  },
-  it: {
-    subjectDu: i => `[ACRA] Controllo da eseguire: ${i}`, subjectRetard: i => `[ACRA] Controllo in ritardo: ${i}`,
-    headingDu: 'Controllo da eseguire', headingRetard: 'Controllo in ritardo',
-    due: d => `scadenza il ${d}`, late: d => `scaduto dal ${d}`,
-    owner: 'Responsabile', cta: "Registra la sua esecuzione in ACRA.",
-  },
-}
-
-/** E-mail de rappel d'échéance d'un contrôle permanent (texte + HTML). */
-export function controleEcheanceEmail(locale: string | null | undefined, p: ControleEcheanceParams): BuiltEmail {
-  const loc = emailLocale(locale)
-  const L = controleLabels[loc]
-  const quand = p.enRetard ? L.late(p.echeance) : L.due(p.echeance)
-  const subject = p.enRetard ? L.subjectRetard(p.intitule) : L.subjectDu(p.intitule)
-  const text = `${p.intitule} — ${quand}.\n`
-    + (p.responsable ? `${L.owner} : ${p.responsable}\n` : '')
-    + L.cta
-  const html = emailLayout({
-    heading: p.enRetard ? L.headingRetard : L.headingDu,
-    tone: p.enRetard ? 'danger' : 'warning',
-    items: [{ label: p.intitule, detail: quand, tone: p.enRetard ? 'danger' : 'warning' }],
-    paragraphs: [p.responsable ? `${L.owner} : ${p.responsable}` : L.cta, ...(p.responsable ? [L.cta] : [])],
-    footer: 'ACRA',
-  })
-  return { subject, text, html }
-}
-
-// ─── Rappels d'audit interne (lot L4, suite) ────────────────────────────────
-
-export interface AuditRappelParams { intitule: string; mission: string; type: 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'A_VERIFIER'; echeance: string | null }
-
-const auditLabels: Record<EmailLocale, { subject: Record<AuditRappelParams['type'], (i: string) => string>; heading: Record<AuditRappelParams['type'], string>; body: Record<AuditRappelParams['type'], (d: string | null) => string>; mission: string; cta: string }> = {
-  fr: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recommandation à échéance proche : ${i}`, EN_RETARD: i => `[ACRA] Recommandation en retard : ${i}`, A_VERIFIER: i => `[ACRA] Recommandation à vérifier : ${i}` },
-    heading: { ECHEANCE_PROCHE: 'Échéance proche', EN_RETARD: 'Recommandation en retard', A_VERIFIER: 'Vérification attendue' },
-    body: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard depuis le ${d}`, A_VERIFIER: () => 'déclarée réalisée, en attente de vérification par l’audit' },
-    mission: 'Mission', cta: 'Consultez le suivi dans ACRA.' },
-  en: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recommendation due soon: ${i}`, EN_RETARD: i => `[ACRA] Recommendation overdue: ${i}`, A_VERIFIER: i => `[ACRA] Recommendation to verify: ${i}` },
-    heading: { ECHEANCE_PROCHE: 'Due soon', EN_RETARD: 'Recommendation overdue', A_VERIFIER: 'Verification expected' },
-    body: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue since ${d}`, A_VERIFIER: () => 'declared as implemented, awaiting verification by audit' },
-    mission: 'Engagement', cta: 'Check the follow-up in ACRA.' },
-  de: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Empfehlung bald fällig: ${i}`, EN_RETARD: i => `[ACRA] Empfehlung überfällig: ${i}`, A_VERIFIER: i => `[ACRA] Empfehlung zu prüfen: ${i}` },
-    heading: { ECHEANCE_PROCHE: 'Bald fällig', EN_RETARD: 'Empfehlung überfällig', A_VERIFIER: 'Prüfung erwartet' },
-    body: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig seit ${d}`, A_VERIFIER: () => 'als umgesetzt gemeldet, Prüfung durch die Revision ausstehend' },
-    mission: 'Prüfung', cta: 'Sehen Sie die Nachverfolgung in ACRA.' },
-  es: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Recomendación con vencimiento próximo: ${i}`, EN_RETARD: i => `[ACRA] Recomendación vencida: ${i}`, A_VERIFIER: i => `[ACRA] Recomendación por verificar: ${i}` },
-    heading: { ECHEANCE_PROCHE: 'Vencimiento próximo', EN_RETARD: 'Recomendación vencida', A_VERIFIER: 'Verificación pendiente' },
-    body: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `vencida desde el ${d}`, A_VERIFIER: () => 'declarada como realizada, pendiente de verificación por auditoría' },
-    mission: 'Misión', cta: 'Consulte el seguimiento en ACRA.' },
-  it: { subject: { ECHEANCE_PROCHE: i => `[ACRA] Raccomandazione in scadenza: ${i}`, EN_RETARD: i => `[ACRA] Raccomandazione in ritardo: ${i}`, A_VERIFIER: i => `[ACRA] Raccomandazione da verificare: ${i}` },
-    heading: { ECHEANCE_PROCHE: 'Scadenza vicina', EN_RETARD: 'Raccomandazione in ritardo', A_VERIFIER: 'Verifica attesa' },
-    body: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo dal ${d}`, A_VERIFIER: () => 'dichiarata realizzata, in attesa di verifica da parte dell’audit' },
-    mission: 'Incarico', cta: 'Consulta il monitoraggio in ACRA.' },
-}
-
-/** E-mail de rappel d'une recommandation d'audit (texte + HTML). */
-export function auditRappelEmail(locale: string | null | undefined, p: AuditRappelParams): BuiltEmail {
-  const L = auditLabels[emailLocale(locale)]
-  const quand = L.body[p.type](p.echeance)
-  const tone = p.type === 'EN_RETARD' ? 'danger' : 'warning'
-  const text = `${p.intitule} — ${quand}.\n${L.mission} : ${p.mission}\n${L.cta}`
-  const html = emailLayout({ heading: L.heading[p.type], tone, items: [{ label: p.intitule, detail: quand, tone }], paragraphs: [`${L.mission} : ${p.mission}`, L.cta], footer: 'ACRA' })
-  return { subject: L.subject[p.type](p.intitule), text, html }
 }
 
 // ─── Diffusion d'un rapport validé (lot L2, suite) ──────────────────────────
@@ -284,61 +130,98 @@ export function memberAddedEmail(locale: string | null | undefined, p: MemberAdd
   return { subject: L.subject(p.orgNom), text, html }
 }
 
-// ─── Relances automatiques : questionnaires, préconisations, plans d'action ──
+// ─── Relances : un e-mail de synthèse par personne ───────────────────────────
 
 export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
-  // Décisions en attente : vérification (2ᵉ ligne) et validations (RSSI, Risk Manager, direction métier).
-  | 'PRECONISATION_A_VERIFIER' | 'ANALYSE_A_APPROUVER' | 'PROJET360_A_APPROUVER' | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
+  | 'CONSTAT_AUDIT' | 'CONTROLE_A_EXECUTER' | 'DEROGATION_EXPIRATION'
+  // Décisions en attente : vérifications (2ᵉ et 3ᵉ lignes) et validations (RSSI, Risk Manager, direction métier).
+  | 'PRECONISATION_A_VERIFIER' | 'CONSTAT_A_VERIFIER' | 'ANALYSE_A_APPROUVER' | 'PROJET360_A_APPROUVER'
+  | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
 export type RelanceEmailType = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE' | 'EN_ATTENTE'
 /** Un élément relancé : catégorie, intitulé, type de relance, date (AAAA-MM-JJ) : échéance, ou début d'attente pour EN_ATTENTE. */
 export interface RelanceItem { categorie: RelanceCategorie; intitule: string; type: RelanceEmailType; echeance: string | null }
-export interface RelancesParams { orgNom: string; items: RelanceItem[]; url: string | null }
+/** Éléments d'une personne, toutes organisations confondues (le nom de l'organisation n'est affiché que s'il y en a plusieurs). */
+export interface RelancesParams { items: (RelanceItem & { organisation: string })[]; url: string | null }
 
 const relancesLabels: Record<EmailLocale, {
-  subject: (o: string, n: number) => string; heading: (o: string) => string; intro: string; action: string
+  subject: (n: number, o: string | null) => string; heading: (o: string | null) => string; intro: string; action: string
   categories: Record<RelanceCategorie, string>; etat: Record<RelanceEmailType, (d: string | null) => string>
 }> = {
   fr: {
-    subject: (o, n) => `[ACRA] ${n} élément(s) à traiter — ${o}`, heading: o => `Éléments à traiter — ${o}`,
+    subject: (n, o) => `[ACRA] ${n} élément(s) à traiter${o ? ` — ${o}` : ''}`, heading: o => (o ? `Vos relances — ${o}` : 'Vos relances'),
     intro: 'Les éléments suivants attendent une action ou une décision de votre part.', action: 'Ouvrir ACRA',
-    categories: { QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action', PRECONISATION_A_VERIFIER: 'Préconisation réalisée à vérifier', ANALYSE_A_APPROUVER: 'Analyse à approuver', PROJET360_A_APPROUVER: 'Projet 360 à approuver', DEROGATION_AVIS: 'Dérogation : avis RSSI attendu', DEROGATION_DOUBLE_REGARD: 'Dérogation : double regard attendu', DEROGATION_VALIDATION: 'Dérogation : validation métier attendue' },
-    etat: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard (échéance le ${d})`, PERIODIQUE: d => (d ? `ouvert, échéance le ${d}` : 'toujours ouvert'), EN_ATTENTE: d => `en attente depuis le ${d}` },
+    categories: {
+      QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action',
+      CONSTAT_AUDIT: 'Recommandation d’audit', CONTROLE_A_EXECUTER: 'Contrôle à exécuter', DEROGATION_EXPIRATION: 'Dérogation arrivant à expiration',
+      PRECONISATION_A_VERIFIER: 'Préconisation réalisée à vérifier', CONSTAT_A_VERIFIER: 'Recommandation d’audit réalisée à vérifier', ANALYSE_A_APPROUVER: 'Analyse à approuver', PROJET360_A_APPROUVER: 'Projet 360 à approuver',
+      DEROGATION_AVIS: 'Dérogation : avis RSSI attendu', DEROGATION_DOUBLE_REGARD: 'Dérogation : double regard attendu', DEROGATION_VALIDATION: 'Dérogation : validation métier attendue',
+    },
+    etat: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard (échéance le ${d})`, PERIODIQUE: d => (d ? `ouvert, échéance le ${d}` : 'toujours ouvert'), EN_ATTENTE: d => (d ? `en attente depuis le ${d}` : 'en attente') },
   },
   en: {
-    subject: (o, n) => `[ACRA] ${n} item(s) to handle — ${o}`, heading: o => `Items to handle — ${o}`,
+    subject: (n, o) => `[ACRA] ${n} item(s) to handle${o ? ` — ${o}` : ''}`, heading: o => (o ? `Your reminders — ${o}` : 'Your reminders'),
     intro: 'The following items are awaiting an action or a decision from you.', action: 'Open ACRA',
-    categories: { QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan', PRECONISATION_A_VERIFIER: 'Completed recommendation to verify', ANALYSE_A_APPROUVER: 'Analysis to approve', PROJET360_A_APPROUVER: '360 project to approve', DEROGATION_AVIS: 'Waiver: CISO opinion expected', DEROGATION_DOUBLE_REGARD: 'Waiver: second review expected', DEROGATION_VALIDATION: 'Waiver: business approval expected' },
-    etat: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue (due on ${d})`, PERIODIQUE: d => (d ? `open, due on ${d}` : 'still open'), EN_ATTENTE: d => `pending since ${d}` },
+    categories: {
+      QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan',
+      CONSTAT_AUDIT: 'Audit recommendation', CONTROLE_A_EXECUTER: 'Control to perform', DEROGATION_EXPIRATION: 'Waiver about to expire',
+      PRECONISATION_A_VERIFIER: 'Completed recommendation to verify', CONSTAT_A_VERIFIER: 'Completed audit recommendation to verify', ANALYSE_A_APPROUVER: 'Analysis to approve', PROJET360_A_APPROUVER: '360 project to approve',
+      DEROGATION_AVIS: 'Waiver: CISO opinion expected', DEROGATION_DOUBLE_REGARD: 'Waiver: second review expected', DEROGATION_VALIDATION: 'Waiver: business approval expected',
+    },
+    etat: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue (due on ${d})`, PERIODIQUE: d => (d ? `open, due on ${d}` : 'still open'), EN_ATTENTE: d => (d ? `pending since ${d}` : 'pending') },
   },
   de: {
-    subject: (o, n) => `[ACRA] ${n} offene(r) Eintrag/Einträge — ${o}`, heading: o => `Zu bearbeiten — ${o}`,
+    subject: (n, o) => `[ACRA] ${n} offene(r) Eintrag/Einträge${o ? ` — ${o}` : ''}`, heading: o => (o ? `Ihre Erinnerungen — ${o}` : 'Ihre Erinnerungen'),
     intro: 'Die folgenden Einträge warten auf eine Aktion oder Entscheidung von Ihnen.', action: 'ACRA öffnen',
-    categories: { QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan', PRECONISATION_A_VERIFIER: 'Umgesetzte Empfehlung zu prüfen', ANALYSE_A_APPROUVER: 'Analyse zu genehmigen', PROJET360_A_APPROUVER: '360-Projekt zu genehmigen', DEROGATION_AVIS: 'Ausnahme: Stellungnahme des CISO erwartet', DEROGATION_DOUBLE_REGARD: 'Ausnahme: Zweitprüfung erwartet', DEROGATION_VALIDATION: 'Ausnahme: Freigabe durch den Fachbereich erwartet' },
-    etat: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig (fällig am ${d})`, PERIODIQUE: d => (d ? `offen, fällig am ${d}` : 'weiterhin offen'), EN_ATTENTE: d => `ausstehend seit ${d}` },
+    categories: {
+      QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan',
+      CONSTAT_AUDIT: 'Prüfungsempfehlung', CONTROLE_A_EXECUTER: 'Durchzuführende Kontrolle', DEROGATION_EXPIRATION: 'Ausnahme läuft bald ab',
+      PRECONISATION_A_VERIFIER: 'Umgesetzte Empfehlung zu prüfen', CONSTAT_A_VERIFIER: 'Umgesetzte Prüfungsempfehlung zu prüfen', ANALYSE_A_APPROUVER: 'Analyse zu genehmigen', PROJET360_A_APPROUVER: '360-Projekt zu genehmigen',
+      DEROGATION_AVIS: 'Ausnahme: Stellungnahme des CISO erwartet', DEROGATION_DOUBLE_REGARD: 'Ausnahme: Zweitprüfung erwartet', DEROGATION_VALIDATION: 'Ausnahme: Freigabe durch den Fachbereich erwartet',
+    },
+    etat: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig (fällig am ${d})`, PERIODIQUE: d => (d ? `offen, fällig am ${d}` : 'weiterhin offen'), EN_ATTENTE: d => (d ? `ausstehend seit ${d}` : 'ausstehend') },
   },
   es: {
-    subject: (o, n) => `[ACRA] ${n} elemento(s) pendiente(s) — ${o}`, heading: o => `Elementos pendientes — ${o}`,
+    subject: (n, o) => `[ACRA] ${n} elemento(s) pendiente(s)${o ? ` — ${o}` : ''}`, heading: o => (o ? `Sus recordatorios — ${o}` : 'Sus recordatorios'),
     intro: 'Los siguientes elementos esperan una acción o una decisión por su parte.', action: 'Abrir ACRA',
-    categories: { QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción', PRECONISATION_A_VERIFIER: 'Recomendación realizada por verificar', ANALYSE_A_APPROUVER: 'Análisis por aprobar', PROJET360_A_APPROUVER: 'Proyecto 360 por aprobar', DEROGATION_AVIS: 'Excepción: dictamen del RSSI pendiente', DEROGATION_DOUBLE_REGARD: 'Excepción: doble revisión pendiente', DEROGATION_VALIDATION: 'Excepción: validación de negocio pendiente' },
-    etat: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `con retraso (vencía el ${d})`, PERIODIQUE: d => (d ? `abierto, vence el ${d}` : 'sigue abierto'), EN_ATTENTE: d => `pendiente desde el ${d}` },
+    categories: {
+      QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción',
+      CONSTAT_AUDIT: 'Recomendación de auditoría', CONTROLE_A_EXECUTER: 'Control por ejecutar', DEROGATION_EXPIRATION: 'Excepción a punto de caducar',
+      PRECONISATION_A_VERIFIER: 'Recomendación realizada por verificar', CONSTAT_A_VERIFIER: 'Recomendación de auditoría realizada por verificar', ANALYSE_A_APPROUVER: 'Análisis por aprobar', PROJET360_A_APPROUVER: 'Proyecto 360 por aprobar',
+      DEROGATION_AVIS: 'Excepción: dictamen del RSSI pendiente', DEROGATION_DOUBLE_REGARD: 'Excepción: doble revisión pendiente', DEROGATION_VALIDATION: 'Excepción: validación de negocio pendiente',
+    },
+    etat: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `con retraso (vencía el ${d})`, PERIODIQUE: d => (d ? `abierto, vence el ${d}` : 'sigue abierto'), EN_ATTENTE: d => (d ? `pendiente desde el ${d}` : 'pendiente') },
   },
   it: {
-    subject: (o, n) => `[ACRA] ${n} elemento/i da gestire — ${o}`, heading: o => `Elementi da gestire — ${o}`,
+    subject: (n, o) => `[ACRA] ${n} elemento/i da gestire${o ? ` — ${o}` : ''}`, heading: o => (o ? `I suoi promemoria — ${o}` : 'I suoi promemoria'),
     intro: 'I seguenti elementi attendono un’azione o una decisione da parte sua.', action: 'Apri ACRA',
-    categories: { QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione', PRECONISATION_A_VERIFIER: 'Raccomandazione attuata da verificare', ANALYSE_A_APPROUVER: 'Analisi da approvare', PROJET360_A_APPROUVER: 'Progetto 360 da approvare', DEROGATION_AVIS: 'Deroga: parere del CISO atteso', DEROGATION_DOUBLE_REGARD: 'Deroga: doppia revisione attesa', DEROGATION_VALIDATION: 'Deroga: validazione di business attesa' },
-    etat: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo (scadenza il ${d})`, PERIODIQUE: d => (d ? `aperto, scadenza il ${d}` : 'ancora aperto'), EN_ATTENTE: d => `in attesa dal ${d}` },
+    categories: {
+      QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione',
+      CONSTAT_AUDIT: 'Raccomandazione di audit', CONTROLE_A_EXECUTER: 'Controllo da eseguire', DEROGATION_EXPIRATION: 'Deroga in scadenza',
+      PRECONISATION_A_VERIFIER: 'Raccomandazione attuata da verificare', CONSTAT_A_VERIFIER: 'Raccomandazione di audit attuata da verificare', ANALYSE_A_APPROUVER: 'Analisi da approvare', PROJET360_A_APPROUVER: 'Progetto 360 da approvare',
+      DEROGATION_AVIS: 'Deroga: parere del CISO atteso', DEROGATION_DOUBLE_REGARD: 'Deroga: doppia revisione attesa', DEROGATION_VALIDATION: 'Deroga: validazione di business attesa',
+    },
+    etat: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo (scadenza il ${d})`, PERIODIQUE: d => (d ? `aperto, scadenza il ${d}` : 'ancora aperto'), EN_ATTENTE: d => (d ? `in attesa dal ${d}` : 'in attesa') },
   },
 }
 
-/** E-mail récapitulatif des relances d'une personne pour une organisation (texte + HTML). */
+/**
+ * E-mail de synthèse des relances d'une personne (texte + HTML) : TOUS ses éléments en un seul
+ * message, toutes organisations confondues. Une seule organisation : nommée dans l'objet ;
+ * plusieurs : chaque ligne est préfixée par son organisation.
+ */
 export function relancesEmail(locale: string | null | undefined, p: RelancesParams): BuiltEmail {
   const L = relancesLabels[emailLocale(locale)]
+  const organisations = [...new Set(p.items.map(x => x.organisation))]
+  const seule = organisations.length === 1 ? organisations[0] || null : null
   const tone = (t: RelanceEmailType) => (t === 'EN_RETARD' ? ('danger' as const) : ('warning' as const))
-  const lignes = p.items.map(x => ({ label: `${L.categories[x.categorie]} — ${x.intitule}`, detail: L.etat[x.type](x.echeance), tone: tone(x.type) }))
-  const text = `${L.heading(p.orgNom)}\n\n${L.intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
+  const lignes = p.items.map(x => ({
+    label: `${!seule && x.organisation ? `${x.organisation} · ` : ''}${L.categories[x.categorie]} — ${x.intitule}`,
+    detail: L.etat[x.type](x.echeance), tone: tone(x.type),
+  }))
+  const text = `${L.heading(seule)}\n\n${L.intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
   const html = emailLayout({
-    heading: L.heading(p.orgNom), tone: p.items.some(x => x.type === 'EN_RETARD') ? 'danger' : 'warning',
+    heading: L.heading(seule), tone: p.items.some(x => x.type === 'EN_RETARD') ? 'danger' : 'warning',
     paragraphs: [L.intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA',
   })
-  return { subject: L.subject(p.orgNom, p.items.length), text, html }
+  return { subject: L.subject(p.items.length, seule), text, html }
 }

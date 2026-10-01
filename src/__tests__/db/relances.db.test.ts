@@ -155,3 +155,36 @@ describe('relances des décisions en attente (vraie base)', () => {
   })
 })
 
+describe('un seul e-mail de synthèse par personne, toutes sources et organisations confondues (vraie base)', () => {
+  it('questionnaire, recommandation d’audit, contrôle à exécuter et dérogation qui expire, sur deux organisations ⇒ un e-mail', async () => {
+    const banque = await makeOrg('Banque'), assurance = await makeOrg('Assurance')
+    await prisma.organizationConfig.create({ data: { id: banque.id, controlePermanentActive: true, auditInterneActive: true } })
+    await prisma.organizationConfig.create({ data: { id: assurance.id, controlePermanentActive: true, derogationsActive: true } })
+    const rssi = await makeUser('ANALYSTE', [{ id: banque.id, role: 'RSSI' }, { id: assurance.id, role: 'RSSI' }])
+    const demandeur = await makeUser('ANALYSTE', [{ id: assurance.id }])
+    await prisma.questionnaireEnvoi.create({ data: { organizationId: banque.id, titre: 'Habilitations', questions: [], echeance: jour(3), reponses: { create: { organizationId: banque.id, repondantId: rssi.id } } } })
+    const mission = await prisma.auditMission.create({ data: { organizationId: banque.id, intitule: 'Audit IAM' } })
+    await prisma.auditConstat.create({ data: { missionId: mission.id, organizationId: banque.id, intitule: 'MFA absent', statut: 'OUVERT', echeance: jour(-4) } })
+    await prisma.controle.create({ data: { organizationId: assurance.id, intitule: 'Revue des sauvegardes', periodicite: 'MENSUEL', createdAt: jour(-60) } })
+    await prisma.derogation.create({ data: { organizationId: assurance.id, portee: 'SOCLE', intitule: 'TLS 1.0', motif: 'm', mesuresCompensatoires: 'c', demandeurId: demandeur.id, statut: 'ACTIVE', dateDebut: jour(-80), dateFin: jour(10) } })
+
+    mail.send.mockClear()
+    const res = await (await cron(req())).json()
+    const mails = envoyesA(rssi.email)
+    expect(mails).toHaveLength(1)
+    expect(mails[0].subject).toBe('[ACRA] 4 élément(s) à traiter')
+    for (const ligne of ['· Questionnaire à répondre — Habilitations', '· Recommandation d’audit — MFA absent (Audit IAM) : en retard', '· Contrôle à exécuter — Revue des sauvegardes', '· Dérogation arrivant à expiration — TLS 1.0']) expect(mails[0].text).toContain(ligne)
+    // Le plus urgent d'abord (retards en tête).
+    expect(mails[0].text.indexOf('MFA absent')).toBeLessThan(mails[0].text.indexOf('Habilitations'))
+    // Le demandeur de la dérogation la reçoit aussi, dans son propre e-mail de synthèse.
+    expect(envoyesA(demandeur.email)).toHaveLength(1)
+    expect(res.reminded).toMatchObject({ constatsAudit: expect.any(Number), controles: expect.any(Number), derogationsExpiration: expect.any(Number) })
+
+    // Les anciennes tâches sont des alias du même passage, idempotent : aucun second e-mail.
+    mail.send.mockClear()
+    const { POST: ancienne } = await import('@/app/api/cron/audit-rappels/route')
+    expect(await (await ancienne(req())).json()).toMatchObject({ fusionneDans: 'relances' })
+    expect(envoyesA(rssi.email)).toHaveLength(0)
+  })
+})
+

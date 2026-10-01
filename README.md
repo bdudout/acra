@@ -430,11 +430,8 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 | Tâche | Endpoint | Cadence |
 |-------|----------|---------|
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
-| Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
 | Brouillons de rapports planifiés (1er–3 du mois) | `rapports-planifies` | quotidien 05:00 |
-| Rappels des recommandations d'audit (échéance, retard, à vérifier) | `audit-rappels` | quotidien 06:00 (06:30 côté GitHub Actions) |
-| Relances des questionnaires, préconisations et plans d'action (avant échéance, retard, puis mensuelle par défaut) et des décisions en attente (préconisation à vérifier, analyse / projet 360 à approuver, dérogation en revue) | `relances` | quotidien 06:00 (06:45 côté GitHub Actions) |
-| Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
+| Relances — **un seul e-mail de synthèse par personne**, toutes organisations confondues : questionnaires, préconisations et plans d'action (avant échéance, retard, puis mensuelle par défaut), recommandations d'audit, contrôles à exécuter, dérogations arrivant à expiration, décisions en attente (préconisation ou recommandation à vérifier, analyse / projet 360 à approuver, dérogation en revue). Les anciennes tâches `controles-echeances`, `audit-rappels` et `derogations-expiry` restent appelables : elles exécutent ce même passage, sans double envoi | `relances` | quotidien 06:00 |
 | Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
 
 > Sans `CRON_SECRET`, les endpoints répondent `503` et le `scheduler` reste inactif
