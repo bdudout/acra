@@ -42,3 +42,8 @@ export async function ensureConformiteRow(organizationId: string, referentiel: s
     return prisma.conformite.findUniqueOrThrow({ where, select: { id: true } })
   }
 }
+
+/** Verrouille une analyse jusqu'à la fin de la transaction (avis d'approbation successifs, T9). */
+export async function lockAnalyse(tx: Tx, id: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM "Analyse" WHERE id = ${id} FOR UPDATE`
+}
