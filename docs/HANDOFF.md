@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (44) — Claude Code : multisecteur, page Processus, bilan de cohérence des propositions par défaut
+
+- **Décisions utilisateur** : entreprise multisecteur (grand groupe) ; pas de sous-processus sectoriels pour l'instant.
+- **Multisecteur** : `listSectorSuggestions` accepte plusieurs secteurs (union des packs) ; route `catalogue-suggestions` : par défaut tous les secteurs effectifs (`sector: 'ALL'`), filiale sans secteur → secteurs de l'ancêtre le plus proche (`effectiveSectors`, `parseSectorChoice` dans `sector-selection.ts` ; réponse `effectiveSectors`, `inheritedSectors`). Panneau : option « Tous mes secteurs (…) », message d'héritage.
+- **Page Processus** : le panneau ne montre que les processus (`kinds={['PROCESS']}`).
+- **Bilan de cohérence** consigné dans la spec socles § 8.11 : doublons de catalogues contrôles/audit (anciens socles par référentiel FR vs catalogue ×5), ancien socle du registre orphelin (`seed-defaut`), RoPA hors moteur, trois taxonomies de secteurs, catalogues FR seulement, absence de badge « à compléter » sur les processus. **Non traités, à arbitrer.**
+- **Vérifié** : `tsc` ; `npm test` 410 fichiers / 3 299 tests ; `test:db` 29 ; `lint` 0 erreur ; `i18n:check` ; build ; navigateur (build de prod) : groupe FINANCE+ASSURANCE → « Tous mes secteurs », 18 + 18 suggestions sectorielles, 0 santé ; filiale sans secteur → message d'héritage et mêmes packs ; page Processus : 32 processus, 0 autre nature.
+- **Piège** : arrêter `next start` laisse un `next-server` orphelin qui sert l'ANCIEN build ; le tuer par PID (`ps -eo pid,comm`), jamais par `pgrep -f`/`pkill -f` avec un motif présent dans la commande du shell (le shell se tue lui-même).
+
 ## 2026-10-01 (43) — Claude Code : catalogue 1.6 — packs sectoriels, plans de test de résilience, revue métier (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
 
 - **Packs sectoriels (1.5)** : `src/lib/sector-packs.ts` — 8 secteurs × (2 contrôles-types, 2 KRI candidats, 1 mission d'audit à 4 points), rattachés aux processus du secteur, ×5 langues ; branchés dans `listSectorSuggestions` (seulement avec le secteur choisi).

@@ -248,14 +248,18 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
   return [...new Set(value as SectorCode[])]
 }
 
-/** Socle + pack choisi ; sans secteur, seul le socle est retourné. */
-export function listSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale): SectorSuggestion[] {
+/** Un secteur, plusieurs (organisation multisecteur : union des packs) ou aucun. */
+export type SectorScope = SectorCode | readonly SectorCode[] | null
+
+/** Socle + pack(s) choisi(s) ; sans secteur, seul le socle est retourné. Les clés sont propres à chaque secteur : l'union n'a pas de doublon. */
+export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale): SectorSuggestion[] {
+  const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
   const base = [...TRANSVERSAL, ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
-  const items = sector ? [...base, ...[...SECTOR_ITEMS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === sector)] : base
-  return items.map(({ title, unite, points, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
+  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
+  return [...base, ...packs].map(({ title, unite, points, ...item }) => ({ ...item, title: title[locale], ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
-export function searchSectorSuggestions(sector: SectorCode | null, locale: CatalogueLocale, query: string): SectorSuggestion[] {
+export function searchSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, query: string): SectorSuggestion[] {
   const normalized = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
   const words = normalized(query).split(/\s+/).filter(Boolean)
   return listSectorSuggestions(sector, locale).filter(item => words.every(word => normalized(item.title).includes(word)))

@@ -46,9 +46,10 @@ Les clés sont inchangées : une organisation qui a déjà importé ces élémen
 
 ### 3.2 Points ouverts pour les experts
 
+Décidé : pas de sous-processus sectoriels pour l'instant (complexité pour une petite structure) ; les sous-processus du socle transversal restent facultatifs.
+
 | Secteur / clé | Question |
 |---|---|
-| Tous les secteurs | 4 processus de premier niveau par secteur, sans sous-processus. Faut-il un second niveau (par exemple « Exécuter les paiements » → virements, prélèvements, paiements par carte) ? |
 | `assurance.risk.reserve` | Rattaché à « Administrer les contrats en cours » faute de processus actuariel. Ajouter un processus « Évaluer les engagements (actuariat) » ? Vérifier le terme « provisions techniques » (Solvabilité II). |
 | `core.kri.security-incidents` | Un nombre d'incidents **déclarés** qui « se dégrade à la hausse » peut décourager les déclarations. Préférer « incidents détectés tardivement » ou un délai de détection ? |
 | `commerce.process.stock` | Rangé sous les achats ; le relier plutôt à la livraison (logistique) ? |

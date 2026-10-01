@@ -1,4 +1,4 @@
-import { listSectorSuggestions, type CatalogueLocale, type SectorCode, type SectorSuggestion } from '@/lib/sector-suggestions'
+import { listSectorSuggestions, type CatalogueLocale, type SectorScope, type SectorSuggestion } from '@/lib/sector-suggestions'
 
 export type SuggestionPlan = {
   toCreate: SectorSuggestion[]
@@ -13,7 +13,7 @@ export type SuggestionPlan = {
  * peut avoir été renommé sans être réimporté.
  */
 export function planSuggestionSelection(input: {
-  sector: SectorCode | null
+  sector: SectorScope
   locale: CatalogueLocale
   selectedKeys: string[]
   existingKeys: string[]

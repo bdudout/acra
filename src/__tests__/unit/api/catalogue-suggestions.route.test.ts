@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const db = vi.hoisted(() => ({
-  organization: { findUnique: vi.fn() },
+  organization: { findUnique: vi.fn(), findMany: vi.fn() },
   process: { findMany: vi.fn(), create: vi.fn() },
   risk: { findMany: vi.fn(), create: vi.fn() },
   control: { findMany: vi.fn(), create: vi.fn() },
@@ -195,5 +195,25 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
     expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.resilience.pentest'], acceptUnlinked: true }))).status).toBe(403)
     expect(db.test.create).not.toHaveBeenCalled()
+  })
+
+  it('multisecteur : par défaut l’union des secteurs de l’organisation ; une filiale sans secteur hérite de ceux du groupe', async () => {
+    db.organization.findUnique.mockResolvedValue({ path: '/org1/', secteursActivite: ['FINANCE', 'ASSURANCE'] })
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.sector).toBe('ALL')
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('finance.'))).toBe(true)
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('assurance.'))).toBe(true)
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr&sector=ASSURANCE') as never)).json()
+    expect(data.sector).toBe('ASSURANCE')
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('finance.'))).toBe(false)
+
+    db.organization.findUnique.mockResolvedValue({ path: '/groupe/filiale/', secteursActivite: [] })
+    db.organization.findMany.mockResolvedValue([{ id: 'groupe', secteursActivite: ['SANTE'] }])
+    auth.scope.mockResolvedValue({ activeOrgId: 'filiale', role: 'ADMIN' })
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data).toMatchObject({ sector: 'SANTE', configuredSectors: [], effectiveSectors: ['SANTE'], inheritedSectors: true })
+    const res = await POST(request({ sector: 'ALL', locale: 'fr', selectedKeys: ['sante.risk.patient-data'], acceptUnlinked: true }))
+    expect(res.status).toBe(201)
+    expect(db.risk.create.mock.calls[0][0].data).toMatchObject({ organizationId: 'filiale', catalogueKey: 'sante.risk.patient-data' })
   })
 })

@@ -5,17 +5,18 @@ import { useTranslation } from '@/lib/i18n/context'
 import type { SectorCode } from '@/lib/sector-suggestions'
 
 type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string }
-type Preview = { sector: SectorCode | null; configuredSectors: SectorCode[]; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] } }
+type Choice = SectorCode | 'ALL' | null
+type Preview = { sector: Choice; configuredSectors: SectorCode[]; effectiveSectors?: SectorCode[]; inheritedSectors?: boolean; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] } }
 
 /** Sélection volontaire, jamais de création automatique à l'ouverture d'un module. */
-export default function SectorSuggestionsPanel({ canCreateProcesses, onImported }: { canCreateProcesses: boolean; onImported: () => void }) {
+export default function SectorSuggestionsPanel({ canCreateProcesses, onImported, kinds }: { canCreateProcesses: boolean; onImported: () => void; kinds?: Item['kind'][] }) {
   const { t, locale } = useTranslation()
   const s = t.sectorSuggestions
   const prefs = t.sectorSuggestionPrefs
   const [open, setOpen] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [onlyNew, setOnlyNew] = useState(false)
-  const [sector, setSector] = useState<SectorCode | null>(null)
+  const [sector, setSector] = useState<Choice>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [unlinked, setUnlinked] = useState<Array<{ key: string; dependencyKey: string }>>([])
@@ -24,7 +25,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  async function load(chosen?: SectorCode | null) {
+  async function load(chosen?: Choice) {
     setBusy(true); setError(null)
     const params = new URLSearchParams({ locale })
     if (chosen !== undefined) params.set('sector', chosen ?? 'TRANSVERSAL')
@@ -38,7 +39,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
   }
 
   async function saveSector() {
-    if (!sector || !preview) return
+    if (!sector || sector === 'ALL' || !preview) return
     const sectors = [...new Set([...(preview.configuredSectors ?? []), sector])]
     if (sectors.length > 3) { setError(prefs.maxSectors); return }
     setBusy(true); setError(null)
@@ -77,7 +78,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
   const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const words = norm(query).trim().split(/\s+/).filter(Boolean)
   const newKeys = new Set(preview?.whatsNew?.keys ?? [])
-  const visible = preview?.items.filter(item => words.every(word => norm(item.title).includes(word)) && (!onlyNew || newKeys.has(item.key))) ?? []
+  const visible = preview?.items.filter(item => (!kinds || kinds.includes(item.kind)) && words.every(word => norm(item.title).includes(word)) && (!onlyNew || newKeys.has(item.key))) ?? []
   // Hiérarchie lisible : processus racines puis leurs enfants (indentés), ensuite les risques (avec le processus concerné).
   const titleOf = new Map((preview?.items ?? []).map(item => [item.key, item.title]))
   const depthOf = (key: string): number => { const parent = preview?.items.find(i => i.key === key)?.parentKey; return parent ? 1 + depthOf(parent) : 0 }
@@ -98,8 +99,9 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-gray-700 dark:text-gray-200">{s.sector}
-          <select className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" value={sector ?? ''} onChange={event => { const next = event.target.value as SectorCode | ''; void load(next || null) }}>
+          <select className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" value={sector ?? ''} onChange={event => { const next = event.target.value as SectorCode | 'ALL' | ''; void load(next || null) }}>
             <option value="">{s.transversal}</option>
+            {(preview?.effectiveSectors?.length ?? 0) > 1 && <option value="ALL">{s.allSectors.replace('{list}', preview!.effectiveSectors!.map(code => s.sectors[code]).join(', '))}</option>}
             {(preview?.sectors ?? []).map(code => <option key={code} value={code}>{s.sectors[code]}</option>)}
           </select>
         </label>
@@ -107,7 +109,8 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported 
           <input className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" value={query} onChange={event => setQuery(event.target.value)} />
         </label>
       </div>
-      {canCreateProcesses && sector && !preview?.configuredSectors?.includes(sector) && <button type="button" disabled={busy} className="btn-secondary text-sm" onClick={() => void saveSector()}>{prefs.saveSector}</button>}
+      {preview?.inheritedSectors && <p className="text-sm text-gray-600 dark:text-gray-300">{s.inheritedSectors}</p>}
+      {canCreateProcesses && sector && sector !== 'ALL' && !preview?.configuredSectors?.includes(sector) && <button type="button" disabled={busy} className="btn-secondary text-sm" onClick={() => void saveSector()}>{prefs.saveSector}</button>}
       {sectorSaved && <p role="status" className="text-sm text-green-800 dark:text-green-300">{prefs.sectorSaved}</p>}
       {newKeys.size > 0 && <label className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-100"><input type="checkbox" checked={onlyNew} onChange={e => setOnlyNew(e.target.checked)} />{s.whatsNew.replace('{n}', String(newKeys.size)).replace('{since}', preview?.whatsNew?.since ?? '')}</label>}
       {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}

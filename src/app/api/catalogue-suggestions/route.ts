@@ -10,13 +10,11 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
 import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
+import { ALL_SECTORS, effectiveSectors, parseSectorChoice } from '@/lib/sector-selection'
 
 export const dynamic = 'force-dynamic'
 
 const LOCALES: CatalogueLocale[] = ['fr', 'en', 'de', 'es', 'it']
-const parseSector = (value: unknown): SectorCode | null | undefined =>
-  value === null || value === 'TRANSVERSAL' || value === '' ? null
-    : typeof value === 'string' && SECTOR_CODES.includes(value as SectorCode) ? value as SectorCode : undefined
 const parseLocale = (value: unknown): CatalogueLocale => LOCALES.includes(value as CatalogueLocale) ? value as CatalogueLocale : 'fr'
 
 async function context() {
@@ -28,6 +26,20 @@ async function context() {
   return { userId, role: scope.role, orgId: scope.activeOrgId }
 }
 
+/** Secteurs déclarés par l'organisation, sinon hérités de l'ancêtre le plus proche (groupe multisecteur). */
+async function orgSectors(orgId: string) {
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true, secteursActivite: true } })
+  const ancestorIds = (org?.path ?? '').split('/').filter(id => id && id !== orgId).reverse()
+  if (Array.isArray(org?.secteursActivite) && org.secteursActivite.length) return effectiveSectors([org.secteursActivite])
+  if (!ancestorIds.length) return effectiveSectors([org?.secteursActivite])
+  const ancestors = await prisma.organization.findMany({ where: { id: { in: ancestorIds } }, select: { id: true, secteursActivite: true } })
+  const byId = new Map(ancestors.map(a => [a.id, a.secteursActivite]))
+  return effectiveSectors([org?.secteursActivite, ...ancestorIds.map(id => byId.get(id))])
+}
+
+/** Libellé de réponse du choix : socle seul (null), un secteur, ou tous les secteurs effectifs. */
+const choiceLabel = (chosen: SectorCode[]): SectorCode | null | typeof ALL_SECTORS => chosen.length === 0 ? null : chosen.length === 1 ? chosen[0] : ALL_SECTORS
+
 /** Aperçu sans écriture : statut de provenance stable par ligne, filtrage localisable. */
 export async function GET(req: NextRequest) {
   const ctx = await context()
@@ -36,9 +48,9 @@ export async function GET(req: NextRequest) {
   const cfg = await getOrgConfig(ctx.orgId)
   if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
   const url = new URL(req.url)
-  const org = await prisma.organization.findUnique({ where: { id: ctx.orgId }, select: { secteursActivite: true } })
-  const configured = Array.isArray(org?.secteursActivite) ? org.secteursActivite.filter((s): s is SectorCode => SECTOR_CODES.includes(s as SectorCode)) : []
-  const sector = url.searchParams.has('sector') ? parseSector(url.searchParams.get('sector')) : (configured[0] ?? null)
+  const { own, effective, inherited } = await orgSectors(ctx.orgId)
+  // Par défaut : tous les secteurs de l'organisation (multisecteur), sinon le socle seul.
+  const sector = url.searchParams.has('sector') ? parseSectorChoice(url.searchParams.get('sector'), effective) : effective
   if (sector === undefined) return NextResponse.json({ error: 'invalid_sector' }, { status: 400 })
   const locale = parseLocale(url.searchParams.get('locale'))
   const query = (url.searchParams.get('q') ?? '').slice(0, 120)
@@ -58,7 +70,7 @@ export async function GET(req: NextRequest) {
   const since = oldestImportedVersion(imported.map(row => row.catalogueVersion))
   const visibleKeys = new Set(items.map(item => item.key))
   const whatsNew = { since, keys: newSince(since, [...existing].filter((k): k is string => !!k)).filter(key => visibleKeys.has(key)) }
-  return NextResponse.json({ sector, configuredSectors: configured, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew })
+  return NextResponse.json({ sector: choiceLabel(sector), configuredSectors: own, effectiveSectors: effective, inheritedSectors: inherited, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew })
 }
 
 /** Une confirmation explicite importe un sous-ensemble, jamais tout un pack implicite. */
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
   const cfg = await getOrgConfig(ctx.orgId)
   if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
   const body = await req.json().catch(() => ({}))
-  const sector = parseSector(body.sector)
+  const sector = parseSectorChoice(body.sector, (await orgSectors(ctx.orgId)).effective)
   if (sector === undefined) return NextResponse.json({ error: 'invalid_sector' }, { status: 400 })
   const locale = parseLocale(body.locale)
   const selectedKeys = body.selectedKeys
@@ -184,7 +196,7 @@ export async function POST(req: NextRequest) {
   if ('error' in result) return NextResponse.json(result, { status: result.status })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: ctx.userId, userRole: ctx.role ?? undefined, organizationId: ctx.orgId, ip: getClientIp(req),
-    details: { scope: 'catalogue-suggestions', action: 'import', sector, created: result.created.map(item => item.key) },
+    details: { scope: 'catalogue-suggestions', action: 'import', sectors: sector, created: result.created.map(item => item.key) },
   })
   return NextResponse.json(result, { status: result.status })
 }

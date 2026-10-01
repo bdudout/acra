@@ -130,7 +130,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1"><FolderTree size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
-      {canEdit && <SectorSuggestionsPanel canCreateProcesses onImported={() => { void reload() }} />}
+      {canEdit && <SectorSuggestionsPanel canCreateProcesses kinds={['PROCESS']} onImported={() => { void reload() }} />}
       {canEdit && (
         <div className="mb-5">
           <button type="button" className="btn-secondary text-sm" aria-expanded={showImport} onClick={() => setShowImport(v => !v)}>{t.processusImport.title}</button>
