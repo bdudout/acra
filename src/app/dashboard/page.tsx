@@ -40,7 +40,10 @@ export default async function DashboardPage() {
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
   const __org = await getAnalyseScope(userId, userRole)
   // Entrée « Nouveau projet 360 » du menu de création : seulement si le module est actif pour l'organisation.
-  const projets360Active = __org.activeOrgId ? (await getOrgConfig(__org.activeOrgId)).projets360Active : false
+  const __cfg = __org.activeOrgId ? await getOrgConfig(__org.activeOrgId) : null
+  const projets360Active = __cfg?.projets360Active ?? false
+  // Rôle EFFECTIF dans l'organisation active (et cumul des rôles en petite structure).
+  const peutCreerAnalyse = canCreateAnalyse({ id: userId, role: __org.role ?? userRole }, { petiteStructure: __cfg?.petiteStructure ?? false })
 
   const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, __org.role, __org.scope),
@@ -194,7 +197,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            {canCreateAnalyse({ id: userId, role: userRole }) && (
+            {peutCreerAnalyse && (
               <NouvelleAnalyseMenu
                 projet360={projets360Active}
                 labels={{ trigger: t.dashboard.newAnalysis, analyse: t.dashboard.newAnalysis, projet360: t.dashboard.newProjet360, importer: t.dashboard.importAnalyse }}
@@ -408,7 +411,7 @@ export default async function DashboardPage() {
               <Link href="/analyses" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                 <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickAll}
               </Link>
-              {canCreateAnalyse({ id: userId, role: userRole }) && (
+              {peutCreerAnalyse && (
                 <>
                   <Link href="/analyses/new" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                     <Plus size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickNew}

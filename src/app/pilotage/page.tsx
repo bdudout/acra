@@ -25,7 +25,7 @@ export default async function PilotagePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <PilotageGrc canCreateAnalyse={canCreateAnalyse({ id: userId, role: scope.role ?? userRole })} projets360={orgConfig.projets360Active} />
+        <PilotageGrc canCreateAnalyse={canCreateAnalyse({ id: userId, role: scope.role ?? userRole }, { petiteStructure: orgConfig.petiteStructure })} projets360={orgConfig.projets360Active} />
       </main>
     </div>
   )

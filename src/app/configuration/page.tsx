@@ -164,6 +164,7 @@ export default function ConfigurationPage() {
   const [acceptationRisquesActive, setAcceptationRisquesActive] = useState(false)
   const [gelApresAcceptationActive, setGelApresAcceptationActive] = useState(false)
   const [interdireAutoApprobation, setInterdireAutoApprobation] = useState(true)
+  const [petiteStructure, setPetiteStructure] = useState(false)
   const [derogationsActive, setDerogationsActive] = useState(false)
   const [derogationDuree, setDerogationDuree] = useState(180)
   const [derogationAlerte, setDerogationAlerte] = useState(30)
@@ -229,6 +230,7 @@ export default function ConfigurationPage() {
         setAcceptationRisquesActive(Boolean(data.acceptationRisquesActive))
         setGelApresAcceptationActive(Boolean(data.gelApresAcceptationActive))
         setInterdireAutoApprobation(data.interdireAutoApprobation !== false)
+        setPetiteStructure(Boolean(data.petiteStructure))
         setDerogationsActive(Boolean(data.derogationsActive))
         if (data.actionDelaisMois && typeof data.actionDelaisMois === 'object') setActionDelais({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24, ...data.actionDelaisMois })
         if (typeof data.derogationDureeDefautJours === 'number') setDerogationDuree(data.derogationDureeDefautJours)
@@ -285,6 +287,7 @@ export default function ConfigurationPage() {
     acceptationRisquesActive: setAcceptationRisquesActive,
     gelApresAcceptationActive: setGelApresAcceptationActive,
     interdireAutoApprobation: setInterdireAutoApprobation,
+    petiteStructure: setPetiteStructure,
     derogationsActive: setDerogationsActive,
     derogationDoubleRegard: setDerogationDoubleRegard,
     derogationSortCatalogue: setDerogationSortCatalogue,
@@ -298,7 +301,7 @@ export default function ConfigurationPage() {
     profilsOperationnelsActive: setProfilsOperationnelsActive,
     projets360Active: setProjets360Active,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active', value: boolean) {
+  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1314,6 +1317,7 @@ export default function ConfigurationPage() {
                 { field: 'acceptationRisquesActive' as const, value: acceptationRisquesActive, title: t.features.acceptationRisquesTitle, desc: t.features.acceptationRisquesDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'gelApresAcceptationActive' as const, value: gelApresAcceptationActive, title: t.features.gelApresAcceptationTitle, desc: t.features.gelApresAcceptationDesc, href: 'https://club-ebios.org/site/', disabled: !acceptationRisquesActive, indent: true },
                 { field: 'interdireAutoApprobation' as const, value: interdireAutoApprobation, title: t.features.interdireAutoApprobationTitle, desc: t.features.interdireAutoApprobationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
+                { field: 'petiteStructure' as const, value: petiteStructure, title: t.features.petiteStructureTitle, desc: t.features.petiteStructureDesc, href: '/configuration/entites', disabled: false, indent: false },
                 { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.registreRisques === 'FORCE_ON' || modulesPolicy.registreRisques === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreRisques },
                 { field: 'incidentsActive' as const, value: incidentsActive, title: t.features.incidentsTitle, desc: t.features.incidentsDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.incidents === 'FORCE_ON' || modulesPolicy.incidents === 'FORCE_OFF', indent: false, forced: modulesPolicy.incidents },
                 { field: 'controlePermanentActive' as const, value: controlePermanentActive, title: t.features.controlePermanentTitle, desc: t.features.controlePermanentDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.controlePermanent === 'FORCE_ON' || modulesPolicy.controlePermanent === 'FORCE_OFF', indent: false, forced: modulesPolicy.controlePermanent },
