@@ -13,7 +13,7 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/secret-crypto', () => ({ decryptSecret: (v: string | null) => v }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn() }))
 
-import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision, syncSsoRoleFromClaims } from '@/lib/sso.server'
+import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision, syncSsoRoleFromClaims, isSsoLinkRefused } from '@/lib/sso.server'
 
 const VALID = {
   id: 'global', enabled: true, protocol: 'OIDC',
@@ -63,6 +63,24 @@ describe('ssoSignInDecision', () => {
   it('refuse quand le SSO est désactivé', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, enabled: false })
     expect(await ssoSignInDecision({ email: 'a@acme.com' })).toEqual({ ok: false, reason: 'sso_desactive' })
+  })
+  it('T24 — refuse de lier une nouvelle identité IdP à un compte SUPER_ADMIN', async () => {
+    userFindUnique.mockResolvedValue({ id: 'sa', role: 'SUPER_ADMIN', accounts: [] })
+    expect(await ssoSignInDecision({ email: 'boss@acme.com', email_verified: true }, 'idp-123')).toEqual({ ok: false, reason: 'sso_liaison_super_admin_refusee' })
+  })
+  it('T24 — admet un SUPER_ADMIN déjà lié à CETTE identité', async () => {
+    userFindUnique.mockResolvedValue({ id: 'sa', role: 'SUPER_ADMIN', accounts: [{ providerAccountId: 'idp-123' }] })
+    expect(await ssoSignInDecision({ email: 'boss@acme.com', email_verified: true }, 'idp-123')).toEqual({ ok: true })
+  })
+})
+
+describe('isSsoLinkRefused (T24)', () => {
+  it('ne concerne que les SUPER_ADMIN', () => {
+    expect(isSsoLinkRefused('ADMIN', [], 'x')).toBe(false)
+    expect(isSsoLinkRefused('SUPER_ADMIN', [], 'x')).toBe(true)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['y'], 'x')).toBe(true)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['x'], 'x')).toBe(false)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['x'], undefined)).toBe(true)
   })
 })
 

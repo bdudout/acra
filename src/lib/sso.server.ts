@@ -97,14 +97,24 @@ export function buildSsoProvider(cfg: SsoOidcConfig): OAuthConfig<Record<string,
  * domaines, la vérification d'e-mail et la règle d'auto-provisioning selon
  * l'existence d'un utilisateur. Renvoie true, ou un code de refus (i18n).
  */
-export async function ssoSignInDecision(claims: OidcClaims): Promise<{ ok: true } | { ok: false; reason: string }> {
+export async function ssoSignInDecision(claims: OidcClaims, providerAccountId?: string): Promise<{ ok: true } | { ok: false; reason: string }> {
   const cfg = await loadSsoOidcConfig()
   if (!cfg) return { ok: false, reason: 'sso_desactive' }
   const email = typeof claims.email === 'string' ? claims.email.toLowerCase().trim() : ''
   let userExists = false
   if (email) {
-    const u = await prisma.user.findUnique({ where: { email }, select: { id: true } }).catch(() => null)
+    const u = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, role: true, accounts: { where: { provider: SSO_PROVIDER_ID }, select: { providerAccountId: true } } },
+    }).catch(() => null)
     userExists = !!u
+    // Audit 2026-10-01 (T24) : la liaison automatique par e-mail (allowDangerousEmailAccountLinking)
+    // ne capture jamais un compte SUPER_ADMIN. Seule une identité DÉJÀ liée à ce compte est admise ;
+    // sinon un IdP mal configuré (e-mail modifiable) donnerait l'administration de l'instance.
+    if (u && isSsoLinkRefused(u.role, (u.accounts ?? []).map(a => a.providerAccountId), providerAccountId)) {
+      await auditLog('LOGIN_FAILED', { userId: u.id, userEmail: email, details: { reason: 'sso_liaison_super_admin_refusee' } })
+      return { ok: false, reason: 'sso_liaison_super_admin_refusee' }
+    }
   }
   const decision = resolveJitProvisioning(
     { autoProvision: cfg.autoProvision, defaultRole: cfg.defaultRole, allowedDomains: cfg.allowedDomains },
@@ -154,4 +164,10 @@ export async function finalizeSsoProvisionedUser(userId: string): Promise<void> 
 /** Rôle global assignable par le SSO (jamais SUPER_ADMIN), validé à l'exécution. */
 function asSsoAssignableRole(role: string | null | undefined): Exclude<UserRole, 'SUPER_ADMIN'> | null {
   return role && (SSO_ASSIGNABLE_ROLES as readonly string[]).includes(role) ? role as Exclude<UserRole, 'SUPER_ADMIN'> : null
+}
+
+/** Liaison SSO refusée : compte SUPER_ADMIN non encore lié à CETTE identité de l'IdP (pur, testé). */
+export function isSsoLinkRefused(role: string, linkedAccountIds: string[], providerAccountId: string | undefined): boolean {
+  if (role !== 'SUPER_ADMIN') return false
+  return !providerAccountId || !linkedAccountIds.includes(providerAccountId)
 }

@@ -250,7 +250,7 @@ export const authOptions: NextAuthOptions = {
         email: profile?.email ?? user?.email,
         name: profile?.name ?? user?.name,
         email_verified: profile?.email_verified,
-      })
+      }, account.providerAccountId)
       // Refus → false : NextAuth redirige vers la page d'erreur (motif déjà audité).
       return decision.ok
     },
