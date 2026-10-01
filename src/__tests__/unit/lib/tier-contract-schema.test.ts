@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Prisma } from '@prisma/client'
+import { estFacultatif } from './schema-prisma'
 
 const model = (name: string) => Prisma.dmmf.datamodel.models.find(m => m.name === name)
 const field = (name: string, fieldName: string) => model(name)?.fields.find(f => f.name === fieldName)
@@ -24,7 +25,7 @@ describe('schéma tiers / services / contrats groupe', () => {
   })
 
   it('relie les contrats TIC et parties prenantes historiques sans imposer un backfill automatique', () => {
-    expect(field('ArrangementTic', 'tierId')?.isRequired).toBe(false)
-    expect(field('PartiePrenante', 'tierId')?.isRequired).toBe(false)
+    expect(estFacultatif('ArrangementTic', 'tierId')).toBe(true)
+    expect(estFacultatif('PartiePrenante', 'tierId')).toBe(true)
   })
 })
