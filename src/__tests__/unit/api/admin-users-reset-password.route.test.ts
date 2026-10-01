@@ -25,6 +25,8 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/org-context.server', () => ({
   getAnalyseScope: vi.fn(async () => ({ scope: { isSuperAdmin: actor.all, visibleOrgIds: actor.all ? [] : ['A'] }, activeOrgId: null })),
+  getAdminScope: vi.fn(async () => ({ all: actor.all, orgIds: actor.all ? [] : ['A'], activeOrgId: null })),
+  getAccessibleOrgIds: vi.fn(async () => ({ all: actor.all, ids: actor.all ? [] : ['A'] })),
 }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(async () => ({ ok: true })) }))

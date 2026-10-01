@@ -12,7 +12,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAdminScope } from '@/lib/org-context.server'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
 import bcrypt from 'bcryptjs'
@@ -67,7 +67,12 @@ export async function POST(req: NextRequest) {
 
   const policy = await loadPasswordPolicy()
   // Organisation active de l'admin : les comptes importés y sont rattachés (périmètre).
-  const activeOrgId = (await getAnalyseScope(currentUserId, userRole)).activeOrgId
+  // L'auteur doit ADMINISTRER cette organisation (rôle effectif, audit 2026-10-01 T25).
+  const adminScope = await getAdminScope(currentUserId, userRole)
+  const activeOrgId = adminScope.activeOrgId
+  if (!adminScope.all && (!activeOrgId || !adminScope.orgIds.includes(activeOrgId))) {
+    return NextResponse.json({ error: 'Vous n\'administrez pas l\'organisation active' }, { status: 403 })
+  }
   const results: RowResult[] = []
 
   for (const row of rows) {

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAdminScope } from '@/lib/org-context.server'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 
 // GET /api/admin/audit-log/export — export CSV du journal d'audit.
@@ -36,9 +36,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Scoping : ADMIN limité aux organisations visibles de son périmètre.
-  const scope = await getAnalyseScope(userId, userRole)
-  if (!scope.scope.isSuperAdmin) {
-    where.organizationId = { in: scope.scope.visibleOrgIds }
+  // Journal limité aux organisations ADMINISTRÉES (rôle effectif, T25).
+  const scope = await getAdminScope(userId, userRole)
+  if (!scope.all) {
+    where.organizationId = { in: scope.orgIds }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

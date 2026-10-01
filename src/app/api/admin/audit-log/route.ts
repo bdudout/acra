@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAdminScope } from '@/lib/org-context.server'
 
 // GET /api/admin/audit-log
 // Query params: page, limit, action, userId, from, to
@@ -40,9 +40,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Scoping : ADMIN limité aux organisations visibles de son périmètre.
-  const scope = await getAnalyseScope(userId, userRole)
-  if (!scope.scope.isSuperAdmin) {
-    where.organizationId = { in: scope.scope.visibleOrgIds }
+  // Journal limité aux organisations ADMINISTRÉES (rôle effectif, T25).
+  const scope = await getAdminScope(userId, userRole)
+  if (!scope.all) {
+    where.organizationId = { in: scope.orgIds }
   }
 
   const auditLogModel = prisma.auditLog
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
   // Instance entière (SUPER_ADMIN) : balayage d'index « sauteur » (CTE récursive sur
   // AuditLog_action_idx) au lieu d'un DISTINCT qui parcourait toute la table à chaque
   // affichage (audit 2026-09-30, T14 : 87 ms → 0,3 ms sur 1 M lignes).
-  const actions: { action: string }[] = scope.scope.isSuperAdmin
+  const actions: { action: string }[] = scope.all
     ? (await prisma.$queryRaw<{ a: string }[]>`
         WITH RECURSIVE t AS (
           SELECT min(action) AS a FROM "AuditLog"
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
         )
         SELECT a FROM t WHERE a IS NOT NULL`).map(r => ({ action: r.a }))
     : await auditLogModel.findMany({
-        where: { organizationId: { in: scope.scope.visibleOrgIds } },
+        where: { organizationId: { in: scope.orgIds } },
         select: { action: true },
         distinct: ['action'],
         orderBy: { action: 'asc' },

@@ -122,6 +122,19 @@ Deux familles, **ne pas les mélanger** :
 2. **Clé d'API** (machine, API publique v1, `/api/v1/**`) : `lib/api-auth.server`
    (Bearer), scopes `read | write | provision`. Import en masse via `lib/api-import`.
 
+**Gardes communes (audit 2026-09-30/10-01, ne pas recopier de garde locale)** :
+- réglage ou vue d'**instance** → `requireInstanceAdmin()` (`lib/route-guard.server`) ;
+- ressource d'une **organisation donnée** → rôle **effectif** dans CETTE org :
+  `getEffectiveRoleForOrg` (jamais le rôle global `session.user.role`) ;
+- **administration** (comptes, corbeille, journal) → `getAdminScope` / `getAdminOrgIds` :
+  seulement les organisations où le rôle effectif est administrateur ;
+- **création d'analyse** (y compris import) → `checkAnalyseCreation`
+  (`lib/analyse-create-guard.server`) ;
+- **gestion d'un compte** (mot de passe, suspension, suppression) → `decideUserManagement`
+  / `decideUserDeletion` (`lib/user-deletion`).
+Un test cliquet (`route-guard-ratchet.test.ts`) refuse les gardes locales et les
+comparaisons de rôle `SUPER_ADMIN` ad hoc dans les routes.
+
 Autres gardes : endpoints **cron** → `lib/cron-auth` ; instances **démo** →
 `isDemoInstance()` (`lib/demo-server`). Journaliser les actions sensibles via
 `auditLog` (`lib/logger`). Une route qui embarque de la logique décidable doit

@@ -12,24 +12,24 @@ import { generateCompliantPassword, DEFAULT_POLICY, type PasswordPolicyShape } f
 import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
-import { getAnalyseScope, getAccessibleOrgIds } from '@/lib/org-context.server'
+import { getAdminScope, getAccessibleOrgIds } from '@/lib/org-context.server'
 import { decideUserDeletion, decideUserManagement, planAnalysesReassignment } from '@/lib/user-deletion'
 
 /**
  * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
- * Sinon (ADMIN, ou super focalisé sur une org) → uniquement les comptes membres
- * d'une des organisations visibles. `where` s'applique au findMany users.
+ * Sinon → uniquement les comptes membres d'une organisation que l'utilisateur
+ * ADMINISTRE (rôle effectif, audit 2026-10-01 T25) dans le contexte actif — et non
+ * toute organisation visible (un ADMIN global simple LECTEUR d'une org n'y gère rien).
  */
 async function usersScope(userId: string, role: UserRole) {
-  const s = await getAnalyseScope(userId, role)
-  const isSuper = s.scope.isSuperAdmin === true
+  const s = await getAdminScope(userId, role)
   return {
-    all: isSuper,
-    visibleOrgIds: s.scope.visibleOrgIds,
+    all: s.all,
+    visibleOrgIds: s.orgIds,
     activeOrgId: s.activeOrgId,
-    where: isSuper
+    where: s.all
       ? {}
-      : { memberships: { some: { organizationId: { in: s.scope.visibleOrgIds } } } },
+      : { memberships: { some: { organizationId: { in: s.orgIds } } } },
   }
 }
 
@@ -73,6 +73,12 @@ export async function POST(req: NextRequest) {
   const { name, email, role } = parsed.data
   const emailNorm = email.toLowerCase().trim()
 
+  // Le compte est rattaché à l'organisation active : l'auteur doit l'ADMINISTRER (T25).
+  const scope = await usersScope(currentUserId, userRole)
+  if (!scope.all && (!scope.activeOrgId || !scope.visibleOrgIds.includes(scope.activeOrgId))) {
+    return NextResponse.json({ error: 'Vous n\'administrez pas l\'organisation active' }, { status: 403 })
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: emailNorm } })
   if (existing) {
     return NextResponse.json({ error: 'Un compte existe déjà avec cet email.' }, { status: 409 })
@@ -96,7 +102,6 @@ export async function POST(req: NextRequest) {
 
   // Rattache le compte à l'organisation active de l'admin (pour qu'il apparaisse dans
   // SON périmètre). Un ADMIN crée toujours des comptes DANS son organisation.
-  const scope = await usersScope(currentUserId, userRole)
   if (scope.activeOrgId) {
     await prisma.orgMembership.create({
       data: { userId: user.id, organizationId: scope.activeOrgId, role: role as PrismaUserRole, scope: 'NODE' },
