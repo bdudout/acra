@@ -6,6 +6,12 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (46) — Claude Code : badge « à compléter », conformité déclaré vs constaté, conception des questionnaires
+
+- `6625e59` : badge « à compléter » des processus (`processus-completude.ts` : propriétaire, criticité ; RTO/RPO si critique/important ou criticité ≥ 3), compteur en tête de cartographie.
+- `034aad4` : page de conformité — chaque exigence affiche l'efficacité des contrôles qui la couvrent et les constats d'audit ouverts (`/api/referentiels/couverture`), divergence « déclarée conforme : à revoir » (`confronterDeclaration`) ; statut déclaré jamais modifié automatiquement. Vérifié navigateur (build de prod).
+- Conception : `docs/specs/questionnaires-controle.md` (questionnaires métier, revue des preuves, préconisations, missions et rapport de contrôle) — **questions de décision en attente** (§ 6) avant de coder les lots 1-4.
+
 ## 2026-10-01 (45) — Claude Code : convergence des catalogues (secteurs, registre, RoPA, contrôles, audit)
 
 - **Décisions utilisateur** : converger quand c'est utile ; entrée référentiel / processus / risque au choix (contrôle et audit) ; RoPA traduit et ligne par ligne ; registre = meilleur des deux ; secteurs alignés sur l'analyse cyber, priorité gestion du risque opérationnel.
