@@ -6,13 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (53) — Claude Code : petite structure (une personne, plusieurs rôles)
+
+- Décision utilisateur : option A — réglage d'organisation `petiteStructure` (migration `20261001210000_petite_structure`), interrupteur dans Configuration › Référentiels et options.
+- En petite structure, un compte RSSI ou RISK_MANAGER exerce aussi les rôles RSSI, RM et ANALYSTE ; l'ADMIN exerce aussi RSSI et RM. Cœur : `exerceRole` (`lib/permissions`) + `optionsStructure(orgId)` (`org-config.server`). Effets : créer/soumettre/approuver ses analyses, une seule approbation suffit pour un projet 360 (`cumul: true`), avis RSSI et double regard sur sa propre dérogation, relances destinées en conséquence. La direction métier (validation métier des dérogations, acceptation des risques résiduels) et les rôles de contrôle/audit ne sont jamais cumulés.
+- Journal : `selfApproval`, `petiteStructure`, `cumul` (approbation) ; `parLeDemandeur`, `memePersonneQueLAvis` (dérogations).
+- Explication : encart `PetiteStructureGuide` dans Configuration › Entités & rôles (là où l'admin d'organisation attribue les rôles) et dans `/admin/users` (instance), mentions sur les cartes RSSI/RM/ADMIN du guide des rôles.
+- Correctifs au passage : le tableau de bord (« Nouvelle analyse »), la page d'une analyse (boutons du workflow) et `PATCH /api/derogations/[id]` utilisaient le rôle d'instance au lieu du rôle effectif dans l'organisation.
+- Vérifications : `tsc` OK ; `i18n:check` OK ; tests unitaires `petite-structure.test.ts` (5) et sur vraie base `petite-structure.db.test.ts` (4) verts, suites complètes ci-dessous ; build OK ; recette navigateur sur build de production (org `verif-q`) : interrupteur activé par l'admin, encart « Activé » sur Entités & rôles, « Nouvelle analyse » apparaît pour le RM (0 → 1). Réglage remis à `false` ensuite.
+- Piège : `/admin/users` est une page d'instance — un admin d'organisation (rôle d'instance ANALYSTE) y est redirigé ; la gestion des membres d'une org est dans `/configuration/entites`.
+
 ## 2026-10-01 (52) — Claude Code : toutes les relances proposées, par priorité
 
 - `f1ddccf` : alertes DORA (`lib/alertes-dora.ts` pur + `.server.ts`, cron `alertes-dora` horaire, e-mail urgent ×5 `alertesDoraEmail`, marqueur `Incident.alertesDora`). Migration `20261001200000_relances_etendues` (tous les marqueurs : `rappelLe` sur ArrangementTic, TestResilience, Kri, Document, CampagneControle, AuditMission, OrgInvitation ; `Analyse.rappelEcheanceLe`).
 - `48edd17` : relances 2 à 9 dans `executerRelances` (contrats TIC à 90 j, tests de résilience, KRI sans mesure via `prochaineEcheance`, acceptation des risques résiduels, documents en vigueur, campagnes avec contrôles non exécutés, missions d'audit non démarrées, échéances d'analyse, invitations à 3 j / expirées une fois). Pur : `typeEcheance`, `controlesNonExecutes`. 9 catégories ×5 dans `relancesEmail`.
 - Vérifications : `tsc` OK ; `npm test` 418 / 3349 OK ; `npm run test:db` 14 / 62 OK (`alertes-dora.db.test.ts`, `relances-etendues.db.test.ts`) ; `i18n:check` OK ; lint 0 erreur, 0 avertissement sur les fichiers touchés ; build OK ; appels réels des deux crons OK.
 - Piège : une invitation ne peut pas être « renvoyée » (le jeton n'est stocké que haché) → la relance va à la personne qui a invité.
-- Prochain pas : cumul de rôles pour les petites structures (RSSI + gestionnaire des risques + analyste) — analyse et proposition faites dans la réponse, en attente de décision.
+- Prochain pas : cumul de rôles pour les petites structures — fait en (53).
 
 ## 2026-10-01 (51) — Claude Code : tableau de bord mensuel des RSSI et gestionnaires des risques
 

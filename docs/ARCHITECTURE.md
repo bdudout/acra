@@ -177,6 +177,15 @@ l'**extraire en fonction pure testée** (cf. CLAUDE.md).
   terminologie **officielle** EUR-Lex/ISO, jamais de traduction maison, citer la version.
 - **RBAC** : `lib/permissions`. Échelles/matrice → ADMIN ; approbation → RISK_MANAGER &
   RSSI ; dérogation → workflow dédié (`lib/derogation`).
+- **Cumul de rôles (petite structure)** : `OrganizationConfig.petiteStructure`. Ne jamais
+  comparer `role === 'RSSI'` en dur : passer par `exerceRole(role, cible, opts)`
+  (`lib/permissions`) avec `opts = await optionsStructure(orgId)` (`org-config.server`).
+  Les contrôles `canCreateAnalyse`, `canSubmitAnalyse`, `canApproveAnalyse`,
+  `canAutoValidateAnalyse`, `canAvisRssiDerogation`, `canDoubleRegardDerogation`,
+  `applyApprobation` (projet 360) et les destinataires des relances prennent ces options.
+  RSSI ⇄ RISK_MANAGER ⇄ ANALYSTE cumulés ; ADMIN → RSSI et RISK_MANAGER ; jamais la
+  direction métier. Le rôle passé est toujours le **rôle effectif dans l'org de la
+  ressource** (`getEffectiveRoleForOrg`), et chaque cumul est journalisé.
 - **Colonnes de DB sans accent** (Prisma) : `valeursMetier`, pas `valeursMétier`.
 - **TDD** : test d'abord (`src/__tests__/unit/**`), mock `next/navigation`, `next/link`,
   `@/lib/i18n/context` pour les composants. Corriger toute erreur TS rencontrée.

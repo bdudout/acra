@@ -105,6 +105,7 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 ### 👥 Collaboration & gouvernance
 
 - **RBAC 12 rôles** couvrant les **3 lignes de défense** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · DIRECTION_METIER · ANALYSTE · LECTEUR · **CONTROLEUR** (contrôle permanent) · **CONFORMITE** · **DPO** (protection des données) · **AUDITEUR** (3ᵉ ligne) · **METIER** (opérationnel)
+- **Mode « petite structure »** (option d'organisation) : une même personne cumule les rôles RSSI, gestionnaire des risques et analyste — créer, soumettre et approuver ses analyses, valider seule un projet 360, rendre l'avis RSSI sur une dérogation — chaque cumul étant journalisé ; la direction métier et les rôles de contrôle restent séparés
 - **Multi-organisation** : arbre d'organisations avec périmètres hiérarchiques (nœud / sous-arbre) ; un ADMIN administre **uniquement les comptes de son organisation**, un SUPER_ADMIN gère l'instance
 - Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager), avec **séparation des tâches** — un approbateur ne peut pas approuver **sa propre** analyse (principe des quatre-yeux) — et **auto-validation** pour les organisations mono-utilisateur (cabinet libéral, où le quatre-yeux est impossible)
 - **Acceptation des risques résiduels** par la **Direction métier** (rôle dédié, lecture seule sur les analyses), distincte de la validation de l'analyse (acceptation du livrable)
