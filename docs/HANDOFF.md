@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (52) — Claude Code : toutes les relances proposées, par priorité
+
+- `f1ddccf` : alertes DORA (`lib/alertes-dora.ts` pur + `.server.ts`, cron `alertes-dora` horaire, e-mail urgent ×5 `alertesDoraEmail`, marqueur `Incident.alertesDora`). Migration `20261001200000_relances_etendues` (tous les marqueurs : `rappelLe` sur ArrangementTic, TestResilience, Kri, Document, CampagneControle, AuditMission, OrgInvitation ; `Analyse.rappelEcheanceLe`).
+- `48edd17` : relances 2 à 9 dans `executerRelances` (contrats TIC à 90 j, tests de résilience, KRI sans mesure via `prochaineEcheance`, acceptation des risques résiduels, documents en vigueur, campagnes avec contrôles non exécutés, missions d'audit non démarrées, échéances d'analyse, invitations à 3 j / expirées une fois). Pur : `typeEcheance`, `controlesNonExecutes`. 9 catégories ×5 dans `relancesEmail`.
+- Vérifications : `tsc` OK ; `npm test` 418 / 3349 OK ; `npm run test:db` 14 / 62 OK (`alertes-dora.db.test.ts`, `relances-etendues.db.test.ts`) ; `i18n:check` OK ; lint 0 erreur, 0 avertissement sur les fichiers touchés ; build OK ; appels réels des deux crons OK.
+- Piège : une invitation ne peut pas être « renvoyée » (le jeton n'est stocké que haché) → la relance va à la personne qui a invité.
+- Prochain pas : cumul de rôles pour les petites structures (RSSI + gestionnaire des risques + analyste) — analyse et proposition faites dans la réponse, en attente de décision.
+
 ## 2026-10-01 (51) — Claude Code : tableau de bord mensuel des RSSI et gestionnaires des risques
 
 - Demande : « les RSSI et RM doivent recevoir un dashboard mensuel avec le plus important par mail » ; réfléchir aux autres relances (proposition faite dans la réponse, non implémentée).
