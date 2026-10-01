@@ -37,3 +37,31 @@ export function decideUserDeletion(input: {
   if (input.ownedAnalyses > 0) return { action: 'REFUSE', status: 409, code: 'OWNS_ANALYSES' }
   return { action: 'DELETE' }
 }
+
+// ─── Actions GLOBALES sur un compte (PATCH /api/admin/users) ─────────────────
+// Audit 2026-10-01 (T1). `User.role`, `User.isActive` et le mot de passe sont
+// GLOBAUX : les modifier affecte toutes les organisations du compte. Un admin à
+// périmètre restreint ne peut donc agir que sur un compte entièrement dans son
+// périmètre ; un SUPER_ADMIN n'est gérable que par un SUPER_ADMIN. Sans cela,
+// `reset-password` (qui renvoie le mot de passe temporaire à l'admin) permettait
+// de prendre la main sur un SUPER_ADMIN ou sur un compte d'une autre organisation.
+
+export type UserManagementDecision =
+  | { allowed: true }
+  | { allowed: false; status: 403; code: 'SUPER_ADMIN_ONLY' | 'OUT_OF_SCOPE' | 'SHARED_ACCOUNT' }
+
+export function decideUserManagement(input: {
+  actorRole: string
+  actorAll: boolean
+  actorVisibleOrgIds: string[]
+  targetRole: string
+  targetMembershipOrgIds: string[]
+}): UserManagementDecision {
+  if (input.targetRole === 'SUPER_ADMIN' && input.actorRole !== 'SUPER_ADMIN') return { allowed: false, status: 403, code: 'SUPER_ADMIN_ONLY' }
+  if (input.actorAll) return { allowed: true }
+  const visible = new Set(input.actorVisibleOrgIds)
+  const inScope = input.targetMembershipOrgIds.filter(id => visible.has(id))
+  if (inScope.length === 0) return { allowed: false, status: 403, code: 'OUT_OF_SCOPE' }
+  if (inScope.length < input.targetMembershipOrgIds.length) return { allowed: false, status: 403, code: 'SHARED_ACCOUNT' }
+  return { allowed: true }
+}

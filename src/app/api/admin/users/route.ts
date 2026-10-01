@@ -13,7 +13,7 @@ import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { decideUserDeletion } from '@/lib/user-deletion'
+import { decideUserDeletion, decideUserManagement } from '@/lib/user-deletion'
 
 /**
  * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
@@ -33,16 +33,6 @@ async function usersScope(userId: string, role: UserRole) {
   }
 }
 
-/** Vrai si l'admin (selon son périmètre) a le droit de gérer le compte cible. */
-async function canManageTarget(scope: { all: boolean; visibleOrgIds: string[] }, targetId: string): Promise<boolean> {
-  if (scope.all) return true
-  if (scope.visibleOrgIds.length === 0) return false
-  const n = await prisma.orgMembership.count({
-    where: { userId: targetId, organizationId: { in: scope.visibleOrgIds } },
-  })
-  return n > 0
-}
-
 const createSchema = z.object({
   name:  z.string().min(2).max(100),
   email: z.string().email(),
@@ -51,8 +41,7 @@ const createSchema = z.object({
 
 async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const p = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const p = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     if (p) return {
       minLength: p.minLength, requireUppercase: p.requireUppercase, requireLowercase: p.requireLowercase,
       requireNumbers: p.requireNumbers, requireSpecial: p.requireSpecial, maxAgeDays: p.maxAgeDays,
@@ -95,7 +84,6 @@ export async function POST(req: NextRequest) {
   const passwordHash = await bcrypt.hash(tempPassword, 12)
 
   const user = await prisma.user.create({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: {
       name,
       email: emailNorm,
@@ -145,7 +133,7 @@ export async function GET(req: NextRequest) {
   const scope = await usersScope(userId, userRole)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const users = await (prisma.user as any).findMany({
+  const users = await prisma.user.findMany({
     where: scope.where,
     orderBy: { createdAt: 'asc' },
     select: {
@@ -179,10 +167,25 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json() as { userId: string; role?: UserRole; action?: 'suspend' | 'activate' | 'reset-password' }
   const { userId: targetId, role, action } = body
 
-  // Périmètre : un ADMIN ne peut agir que sur les comptes de SON organisation.
+  // Périmètre (audit 2026-10-01, T1) : rôle global, suspension et mot de passe sont
+  // GLOBAUX. Un admin restreint n'agit que sur un compte ENTIÈREMENT dans son
+  // périmètre ; un SUPER_ADMIN n'est gérable que par un SUPER_ADMIN.
   const scope = await usersScope(currentUserId, userRole)
-  if (!(await canManageTarget(scope, targetId))) {
-    return NextResponse.json({ error: 'Compte hors de votre périmètre' }, { status: 403 })
+  const managed = typeof targetId === 'string'
+    ? await prisma.user.findUnique({ where: { id: targetId }, select: { role: true, memberships: { select: { organizationId: true } } } })
+    : null
+  if (!managed) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+  const decision = decideUserManagement({
+    actorRole: userRole, actorAll: scope.all, actorVisibleOrgIds: scope.visibleOrgIds,
+    targetRole: managed.role, targetMembershipOrgIds: managed.memberships.map(m => m.organizationId),
+  })
+  if (!decision.allowed) {
+    const messages = {
+      SUPER_ADMIN_ONLY: 'Seul un super-administrateur peut gérer ce compte',
+      OUT_OF_SCOPE: 'Compte hors de votre périmètre',
+      SHARED_ACCOUNT: 'Ce compte appartient aussi à des organisations hors de votre périmètre : modifiez son rôle dans votre organisation, ou demandez au super-administrateur',
+    } as const
+    return NextResponse.json({ error: messages[decision.code], code: decision.code }, { status: decision.status })
   }
 
   // ── Réinitialisation du mot de passe (#6) ──
@@ -200,8 +203,7 @@ export async function PATCH(req: NextRequest) {
     // changement de mot de passe par l'utilisateur (api/user/password). Sinon un
     // mot de passe forcé ne coupe pas les sessions déjà ouvertes.
     const updated = await prisma.$transaction(async tx => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const u = await (tx.user as any).update({
+      const u = await tx.user.update({
         where: { id: targetId },
         data: { passwordHash, mustChangePassword: true, passwordChangedAt: null, sessionVersion: { increment: 1 } },
         select: { id: true, name: true, email: true, role: true, isActive: true },
@@ -239,13 +241,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Vous ne pouvez pas vous suspendre vous-même' }, { status: 400 })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const target = await (prisma.user as any).findUnique({ where: { id: targetId }, select: { email: true, isActive: true } })
+    const target = await prisma.user.findUnique({ where: { id: targetId }, select: { email: true, isActive: true } })
     if (!target) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
 
     const isActive = action === 'activate'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updated = await (prisma.user as any).update({
+    const updated = await prisma.user.update({
       where: { id: targetId },
       // F04 : la suspension révoque les sessions/JWT (incrément de version) →
       // les jetons restent invalides même après une éventuelle réactivation.
@@ -299,8 +299,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updated = await (prisma.user as any).update({
+  const updated = await prisma.user.update({
     where: { id: targetId },
     data: { role: role as PrismaUserRole },
     select: { id: true, name: true, email: true, role: true, isActive: true },

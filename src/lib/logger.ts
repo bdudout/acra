@@ -180,8 +180,7 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
       })
       organizationId = m?.organizationId ?? null
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (prisma as any).auditLog.create({
+    await prisma.auditLog.create({
       data: {
         action,
         userId:     ctx.userId,

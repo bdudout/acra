@@ -45,8 +45,7 @@ export async function GET(req: NextRequest) {
     where.organizationId = { in: scope.scope.visibleOrgIds }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const auditLogModel = (prisma as any).auditLog
+  const auditLogModel = prisma.auditLog
   const [logs, total] = await Promise.all([
     auditLogModel.findMany({
       where,

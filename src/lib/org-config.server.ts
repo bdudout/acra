@@ -87,8 +87,7 @@ export async function getOrgConfig(orgId: string | null | undefined): Promise<Or
  */
 async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigResolved> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inst = await (prisma as any).configuration.findUnique({
+    const inst = await prisma.configuration.findUnique({
       where: { id: 'global' }, select: { modulesPolicy: true },
     })
     const policy = sanitizeModulesPolicy(inst?.modulesPolicy)

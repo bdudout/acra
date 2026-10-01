@@ -42,3 +42,27 @@ describe('decideUserDeletion', () => {
     expect(decideUserDeletion({ ...base, actorRole: 'SUPER_ADMIN', actorAll: true, targetMembershipOrgIds: ['A', 'B'] })).toEqual({ action: 'DELETE' })
   })
 })
+
+import { decideUserManagement } from '@/lib/user-deletion'
+
+// Audit 2026-10-01 (T1) : rôle global, suspension et réinitialisation du mot de passe.
+describe('decideUserManagement', () => {
+  const m = { actorRole: 'ADMIN', actorAll: false, actorVisibleOrgIds: ['A'], targetRole: 'ANALYSTE', targetMembershipOrgIds: ['A'] }
+
+  it('autorise un compte entièrement dans le périmètre', () => {
+    expect(decideUserManagement(m)).toEqual({ allowed: true })
+  })
+  it('un ADMIN ne gère jamais un SUPER_ADMIN (reset-password renvoyait le mot de passe temporaire → prise de contrôle)', () => {
+    expect(decideUserManagement({ ...m, targetRole: 'SUPER_ADMIN' })).toMatchObject({ allowed: false, code: 'SUPER_ADMIN_ONLY' })
+    expect(decideUserManagement({ ...m, actorAll: true, targetRole: 'SUPER_ADMIN' })).toMatchObject({ allowed: false, code: 'SUPER_ADMIN_ONLY' })
+  })
+  it('refuse un compte partagé avec une organisation hors périmètre', () => {
+    expect(decideUserManagement({ ...m, targetMembershipOrgIds: ['A', 'B'] })).toMatchObject({ allowed: false, code: 'SHARED_ACCOUNT' })
+  })
+  it('refuse un compte hors périmètre', () => {
+    expect(decideUserManagement({ ...m, targetMembershipOrgIds: ['B'] })).toMatchObject({ allowed: false, code: 'OUT_OF_SCOPE' })
+  })
+  it('un SUPER_ADMIN non focalisé gère tout compte, y compris un autre SUPER_ADMIN', () => {
+    expect(decideUserManagement({ ...m, actorRole: 'SUPER_ADMIN', actorAll: true, targetRole: 'SUPER_ADMIN', targetMembershipOrgIds: ['A', 'B'] })).toEqual({ allowed: true })
+  })
+})

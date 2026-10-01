@@ -30,7 +30,7 @@ export default async function AnalysesPage() {
   const projets360 = scope.activeOrgId ? (await getOrgConfig(scope.activeOrgId)).projets360Active : false
   const canCreate = canCreateAnalyse({ id: userId, role: scope.role ?? userRole })
 
-  const analyses = await (prisma.analyse as any).findMany({
+  const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, scope.role, scope.scope),
     orderBy: { updatedAt: 'desc' },
     select: {

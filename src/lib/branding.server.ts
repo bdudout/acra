@@ -8,8 +8,7 @@ import { resolveBranding, type Branding } from '@/lib/branding'
  */
 export async function getBranding(defaults: Branding): Promise<Branding> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cfg = await (prisma as any).configuration.findUnique({
+    const cfg = await prisma.configuration.findUnique({
       where: { id: 'global' },
       select: { appName: true, appBaseline: true },
     })

@@ -11,7 +11,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 
 const SMTPSchema = z.object({
   enabled:     z.boolean().default(false),
@@ -41,9 +41,8 @@ async function requireAdmin() {
 export async function GET() {
   const { error } = await requireAdmin()
   if (error) return error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).sMTPConfig.upsert({ where: { id: 'global' }, create: SMTP_DEFAULTS, update: {} })
-  return NextResponse.json({ ...config, password: decryptSecret(config.password) })
+  const config = await prisma.sMTPConfig.upsert({ where: { id: 'global' }, create: SMTP_DEFAULTS, update: {} })
+  return NextResponse.json({ ...config, password: maskSecret(config.password) })
 }
 
 // PUT /api/admin/smtp-config — met à jour la configuration SMTP (hôte, port, identifiants) — SUPER_ADMIN.
@@ -61,15 +60,15 @@ export async function PUT(req: NextRequest) {
   }
   const data = { ...parsed.data, fromAddress: parsed.data.fromAddress || null }
 
-  const auditData = { ...data, password: data.password ? '[REDACTED]' : null }
+  const auditData = { ...data, password: data.password && data.password !== SECRET_PLACEHOLDER ? '[REDACTED]' : undefined }
   // Toute modification de config invalide le dernier test (re-test requis avant usage).
-  const toStore = { ...data, password: encryptSecret(data.password), lastTestOk: false, lastTestAt: null }
+  const current = await prisma.sMTPConfig.findUnique({ where: { id: 'global' }, select: { password: true } })
+  const toStore = { ...data, password: resolveSubmittedSecret(data.password, current?.password), lastTestOk: false, lastTestAt: null }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).sMTPConfig.upsert({
+  const config = await prisma.sMTPConfig.upsert({
     where: { id: 'global' }, create: { id: 'global', ...toStore }, update: toStore,
   })
 
   await auditLog('SMTP_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: auditData })
-  return NextResponse.json({ ...config, password: decryptSecret(config.password) })
+  return NextResponse.json({ ...config, password: maskSecret(config.password) })
 }

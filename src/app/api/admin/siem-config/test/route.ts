@@ -18,17 +18,15 @@ export async function POST(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((session.user as any).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma as any).siemConfig.findUnique({ where: { id: 'global' } })
+  const cfg = await prisma.siemConfig.findUnique({ where: { id: 'global' } })
   if (!cfg || !isValidSiemEndpoint(cfg.endpoint ?? '')) return NextResponse.json({ error: 'endpoint_invalide' }, { status: 400 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userEmail = (session.user as any).email ?? undefined
   const event = buildSiemEvent('ADMIN_ACTION', { userEmail, ip: getClientIp(req), details: { test: true, message: 'Événement de test SIEM ACRA' } })
-  const res = await deliverSiemEvent(cfg.endpoint, decryptSecret(cfg.authHeader) ?? null, event)
+  const res = await deliverSiemEvent(cfg.endpoint!, decryptSecret(cfg.authHeader) ?? null, event)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma as any).siemConfig.update({
+  await prisma.siemConfig.update({
     where: { id: 'global' },
     data: { lastDeliveryOk: res.ok, lastDeliveryAt: new Date(), lastError: res.ok ? null : (res.error ?? `HTTP ${res.code}`) },
   }).catch(() => {})

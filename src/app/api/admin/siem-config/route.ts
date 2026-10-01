@@ -11,7 +11,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 import { cleanSiemCategories, isValidSiemEndpoint, SIEM_CATEGORIES } from '@/lib/siem'
 import { invalidateSiemCache } from '@/lib/siem.server'
 
@@ -37,9 +37,8 @@ async function requireSuperAdmin() {
 export async function GET() {
   const { error } = await requireSuperAdmin()
   if (error) return error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).siemConfig.upsert({ where: { id: 'global' }, create: DEFAULTS, update: {} })
-  return NextResponse.json({ ...config, authHeader: decryptSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
+  const config = await prisma.siemConfig.upsert({ where: { id: 'global' }, create: DEFAULTS, update: {} })
+  return NextResponse.json({ ...config, authHeader: maskSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
 }
 
 // PUT /api/admin/siem-config — met à jour la configuration SIEM (endpoint, format, secret) — SUPER_ADMIN.
@@ -59,21 +58,21 @@ export async function PUT(req: NextRequest) {
   if (d.enabled && !isValidSiemEndpoint(endpoint ?? '')) return NextResponse.json({ error: 'endpoint_invalide' }, { status: 400 })
 
   const categories = cleanSiemCategories(d.categories)
+  const current = await prisma.siemConfig.findUnique({ where: { id: 'global' }, select: { authHeader: true } })
   const toStore = {
-    enabled: d.enabled, endpoint, authHeader: encryptSecret(d.authHeader?.trim() || null),
+    enabled: d.enabled, endpoint, authHeader: resolveSubmittedSecret(d.authHeader, current?.authHeader),
     categories, includeStdout: d.includeStdout,
     lastError: null,
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).siemConfig.upsert({
+  const config = await prisma.siemConfig.upsert({
     where: { id: 'global' }, create: { id: 'global', ...toStore }, update: toStore,
   })
   invalidateSiemCache()
 
   await auditLog('SIEM_CONFIG_UPDATED', {
     userId, userRole, ip: getClientIp(req),
-    details: { enabled: d.enabled, endpoint, categories, includeStdout: d.includeStdout, authHeader: d.authHeader ? '[REDACTED]' : null },
+    details: { enabled: d.enabled, endpoint, categories, includeStdout: d.includeStdout, authHeader: d.authHeader && d.authHeader !== SECRET_PLACEHOLDER ? '[REDACTED]' : undefined },
   })
-  return NextResponse.json({ ...config, authHeader: decryptSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
+  return NextResponse.json({ ...config, authHeader: maskSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
 }

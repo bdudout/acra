@@ -12,7 +12,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 import { cleanRoleMapping } from '@/lib/sso'
 
 // [F005 corrigé] CWE-312 / OWASP A02:2021 — Secrets chiffrés au repos
@@ -75,14 +75,13 @@ export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).sSOConfig.upsert({
+  const config = await prisma.sSOConfig.upsert({
     where:  { id: 'global' },
     create: SSO_DEFAULTS,
     update: {},
   })
   // [F005] Déchiffrement à la lecture pour l'UI admin (secret stocké chiffré au repos)
-  return NextResponse.json({ ...config, oidcClientSecret: decryptSecret(config.oidcClientSecret) })
+  return NextResponse.json({ ...config, oidcClientSecret: maskSecret(config.oidcClientSecret) })
 }
 
 // PUT /api/admin/sso-config — met à jour la configuration SSO (fournisseur, endpoints, secrets) — SUPER_ADMIN.
@@ -100,19 +99,19 @@ export async function PUT(req: NextRequest) {
   }
 
   // Ne pas journaliser les secrets dans l'audit trail
-  const auditData = { ...parsed.data, oidcClientSecret: parsed.data.oidcClientSecret ? '[REDACTED]' : null }
+  const auditData = { ...parsed.data, oidcClientSecret: parsed.data.oidcClientSecret && parsed.data.oidcClientSecret !== SECRET_PLACEHOLDER ? '[REDACTED]' : undefined }
 
   // [F005 corrigé] Chiffrement au repos du Client Secret OIDC (AES-256-GCM) avant persistance.
   // roleMapping nettoyé (rôles assignables uniquement) ; claim de groupes normalisé.
+  const current = await prisma.sSOConfig.findUnique({ where: { id: 'global' }, select: { oidcClientSecret: true } })
   const toStore = {
     ...parsed.data,
-    oidcClientSecret: encryptSecret(parsed.data.oidcClientSecret),
+    oidcClientSecret: resolveSubmittedSecret(parsed.data.oidcClientSecret, current?.oidcClientSecret),
     oidcGroupsClaim: (parsed.data.oidcGroupsClaim ?? 'groups') || 'groups',
     roleMapping: cleanRoleMapping(parsed.data.roleMapping),
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).sSOConfig.upsert({
+  const config = await prisma.sSOConfig.upsert({
     where:  { id: 'global' },
     create: { id: 'global', ...toStore },
     update: toStore,
@@ -120,5 +119,5 @@ export async function PUT(req: NextRequest) {
 
   await auditLog('SSO_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: auditData })
   // Renvoie la valeur en clair à l'UI (le stockage reste chiffré)
-  return NextResponse.json({ ...config, oidcClientSecret: decryptSecret(config.oidcClientSecret) })
+  return NextResponse.json({ ...config, oidcClientSecret: maskSecret(config.oidcClientSecret) })
 }

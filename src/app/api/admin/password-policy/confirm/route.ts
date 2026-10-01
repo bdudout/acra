@@ -22,16 +22,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const current = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+  const current = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
 
   // Si le MFA n'est pas en attente de confirmation, rien à faire
   if (!current?.mfaPendingConfirmation) {
     return NextResponse.json({ ok: true, alreadyConfirmed: true })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const policy = await (prisma as any).passwordPolicy.update({
+  const policy = await prisma.passwordPolicy.update({
     where: { id: 'global' },
     data: {
       mfaPendingConfirmation:  false,

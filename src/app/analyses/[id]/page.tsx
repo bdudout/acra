@@ -54,8 +54,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const userId = (session.user as any).id
   const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const analyse = await (prisma.analyse as any).findFirst({
+  const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(userId, userRole, id),
     include: {
       cadrage: true,

@@ -25,8 +25,7 @@ async function requireSuperAdmin() {
 export async function GET() {
   const { error } = await requireSuperAdmin()
   if (error) return error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma.configuration as any).findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
+  const cfg = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { methodesActives: true } })
   return NextResponse.json({ active: cleanActiveMethodes(cfg?.methodesActives), implemented: IMPLEMENTED_METHODS.filter(m => !MODULE_METHODS.includes(m)) })
 }
 
@@ -40,8 +39,7 @@ export async function PUT(req: NextRequest) {
   }
   const active = cleanActiveMethodes(body.methodes)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.configuration as any).update({ where: { id: 'global' }, data: { methodesActives: active } })
+  await prisma.configuration.update({ where: { id: 'global' }, data: { methodesActives: active } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: (session!.user as { id: string }).id, ip: getClientIp(req),
     targetType: 'configuration', details: { scope: 'methodes-config', active },

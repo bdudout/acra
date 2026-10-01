@@ -5,12 +5,14 @@
 
 import type { OAuthConfig } from 'next-auth/providers/oauth'
 import { prisma } from '@/lib/prisma'
+import type { UserRole } from '@prisma/client'
 import { decryptSecret } from '@/lib/secret-crypto'
 import { auditLog } from '@/lib/logger'
 import {
   isSafeIssuerUrl,
   resolveJitProvisioning,
   resolveSsoRole,
+  SSO_ASSIGNABLE_ROLES,
   SSO_PROVIDER_ID,
   type OidcClaims,
 } from '@/lib/sso'
@@ -35,8 +37,7 @@ export interface SsoOidcConfig {
  */
 export async function loadSsoOidcConfig(): Promise<SsoOidcConfig | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = await (prisma as any).sSOConfig.findUnique({ where: { id: 'global' } })
+    const c = await prisma.sSOConfig.findUnique({ where: { id: 'global' } })
     if (!c || c.enabled !== true || c.protocol !== 'OIDC') return null
     const issuer = (c.oidcIssuerUrl ?? '').trim().replace(/\/$/, '')
     const clientId = (c.oidcClientId ?? '').trim()
@@ -102,8 +103,7 @@ export async function ssoSignInDecision(claims: OidcClaims): Promise<{ ok: true 
   const email = typeof claims.email === 'string' ? claims.email.toLowerCase().trim() : ''
   let userExists = false
   if (email) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const u = await (prisma.user as any).findUnique({ where: { email }, select: { id: true } }).catch(() => null)
+    const u = await prisma.user.findUnique({ where: { email }, select: { id: true } }).catch(() => null)
     userExists = !!u
   }
   const decision = resolveJitProvisioning(
@@ -127,10 +127,12 @@ export async function ssoSignInDecision(claims: OidcClaims): Promise<{ ok: true 
 export async function syncSsoRoleFromClaims(userId: string, profile: Record<string, unknown> | undefined): Promise<string | null> {
   const cfg = await loadSsoOidcConfig()
   if (!cfg || !profile) return null
-  const role = resolveSsoRole(profile[cfg.groupsClaim], cfg.roleMapping, cfg.defaultRole)
+  const resolved = resolveSsoRole(profile[cfg.groupsClaim], cfg.roleMapping, cfg.defaultRole)
+  const role = asSsoAssignableRole(resolved)
   if (!role) return null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.user as any).update({ where: { id: userId }, data: { role } }).catch(() => { /* best-effort */ })
+  // Un SUPER_ADMIN n'est jamais rétrogradé par l'IdP (audit 2026-10-01) : sinon une
+  // simple connexion SSO sans groupe mappé faisait perdre l'administration de l'instance.
+  await prisma.user.updateMany({ where: { id: userId, role: { not: 'SUPER_ADMIN' } }, data: { role } }).catch(() => { /* best-effort */ })
   return role
 }
 
@@ -142,10 +144,14 @@ export async function syncSsoRoleFromClaims(userId: string, profile: Record<stri
 export async function finalizeSsoProvisionedUser(userId: string): Promise<void> {
   const cfg = await loadSsoOidcConfig()
   if (!cfg) return
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.user as any).update({
+  await prisma.user.update({
     where: { id: userId },
-    data: { role: cfg.defaultRole, emailVerified: new Date() },
+    data: { role: asSsoAssignableRole(cfg.defaultRole) ?? 'ANALYSTE', emailVerified: new Date() },
   }).catch(() => { /* best-effort */ })
   await auditLog('LOGIN_SUCCESS', { userId, details: { via: 'sso', provisioned: true } })
+}
+
+/** Rôle global assignable par le SSO (jamais SUPER_ADMIN), validé à l'exécution. */
+function asSsoAssignableRole(role: string | null | undefined): Exclude<UserRole, 'SUPER_ADMIN'> | null {
+  return role && (SSO_ASSIGNABLE_ROLES as readonly string[]).includes(role) ? role as Exclude<UserRole, 'SUPER_ADMIN'> : null
 }

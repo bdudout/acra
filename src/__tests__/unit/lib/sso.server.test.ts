@@ -7,7 +7,7 @@ const userUpdate = vi.fn()
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     sSOConfig: { findUnique: (...a: unknown[]) => ssoFindUnique(...a) },
-    user: { findUnique: (...a: unknown[]) => userFindUnique(...a), update: (...a: unknown[]) => userUpdate(...a) },
+    user: { findUnique: (...a: unknown[]) => userFindUnique(...a), update: (...a: unknown[]) => userUpdate(...a), updateMany: (...a: unknown[]) => userUpdate(...a) },
   },
 }))
 vi.mock('@/lib/secret-crypto', () => ({ decryptSecret: (v: string | null) => v }))
@@ -72,7 +72,7 @@ describe('syncSsoRoleFromClaims', () => {
   it('mappe un groupe IdP vers un rôle et met à jour l’utilisateur', async () => {
     const role = await syncSsoRoleFromClaims('u1', { groups: ['grp-rssi'] })
     expect(role).toBe('RSSI')
-    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1' }, data: { role: 'RSSI' } }))
+    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1', role: { not: 'SUPER_ADMIN' } }, data: { role: 'RSSI' } }))
   })
   it('sans mapping configuré → null, aucune écriture', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, roleMapping: {} })
@@ -82,5 +82,9 @@ describe('syncSsoRoleFromClaims', () => {
   it('claim de groupes personnalisé (ex. "roles")', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, oidcGroupsClaim: 'roles' })
     expect(await syncSsoRoleFromClaims('u1', { roles: ['grp-rssi'] })).toBe('RSSI')
+  })
+  it('audit 2026-10-01 : l\'écriture exclut toujours un SUPER_ADMIN (jamais rétrogradé par l\'IdP)', async () => {
+    await syncSsoRoleFromClaims('u1', { groups: [] }) // aucun groupe mappé → rôle par défaut
+    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1', role: { not: 'SUPER_ADMIN' } }, data: { role: 'LECTEUR' } }))
   })
 })

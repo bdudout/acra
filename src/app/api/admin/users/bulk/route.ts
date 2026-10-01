@@ -23,8 +23,7 @@ const MAX_ROWS = 500
 
 async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const p = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const p = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     if (p) return {
       minLength: p.minLength, requireUppercase: p.requireUppercase, requireLowercase: p.requireLowercase,
       requireNumbers: p.requireNumbers, requireSpecial: p.requireSpecial, maxAgeDays: p.maxAgeDays,
@@ -84,7 +83,6 @@ export async function POST(req: NextRequest) {
     const tempPassword = generateCompliantPassword(policy)
     const passwordHash = await bcrypt.hash(tempPassword, 12)
     const user = await prisma.user.create({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: {
         name: row.name || row.email,
         email: row.email,

@@ -37,8 +37,7 @@ export async function POST(req: NextRequest) {
     // Charger la politique de mot de passe configurée par l'admin
     let policy: PasswordPolicyShape = DEFAULT_POLICY
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stored = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+      const stored = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
       if (stored) {
         policy = {
           minLength:        stored.minLength,

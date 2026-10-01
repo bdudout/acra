@@ -46,8 +46,7 @@ export function shouldDeactivateForInactivity(
 export async function deactivateInactiveAccounts(): Promise<number> {
   try {
     const { prisma } = await import('@/lib/prisma')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const policy = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+    const policy = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
     const inactivityDays: number = policy?.inactivityDaysLimit ?? 0
     if (!inactivityDays || inactivityDays <= 0) return 0
 
@@ -55,7 +54,7 @@ export async function deactivateInactiveAccounts(): Promise<number> {
 
     // Comptes actifs, non-ADMIN, dont la référence d'activité est antérieure au seuil.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (prisma.user as any).updateMany({
+    const result = await prisma.user.updateMany({
       where: {
         isActive: true,
         role: { not: 'ADMIN' },

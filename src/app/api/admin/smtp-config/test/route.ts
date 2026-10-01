@@ -33,8 +33,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Enregistre le statut du test (garde-fou MFA e-mail + vérification d'e-mail)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma as any).sMTPConfig.update({
+  await prisma.sMTPConfig.update({
     where: { id: 'global' },
     data: { lastTestOk: result.ok, lastTestAt: new Date() },
   }).catch(() => { /* best-effort */ })

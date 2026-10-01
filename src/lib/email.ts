@@ -35,8 +35,7 @@ export interface SendResult {
 
 /** Charge la configuration SMTP (mot de passe déchiffré). */
 export async function getSmtpSettings(): Promise<SmtpSettings | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const c = await (prisma as any).sMTPConfig.findUnique({ where: { id: 'global' } })
+  const c = await prisma.sMTPConfig.findUnique({ where: { id: 'global' } })
   if (!c) return null
   return {
     enabled: c.enabled,

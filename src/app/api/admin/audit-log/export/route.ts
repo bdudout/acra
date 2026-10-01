@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logs = await (prisma as any).auditLog.findMany({
+  const logs = await prisma.auditLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: 10000, // cap à 10k lignes

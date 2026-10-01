@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   const __org = await getAnalyseScope(userId, userRole)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const analyses = await (prisma.analyse as any).findMany({
+  const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, __org.role, __org.scope),
     orderBy: { updatedAt: 'desc' },
     select: {
@@ -124,8 +124,7 @@ export async function POST(req: NextRequest) {
     // Si un socleId est fourni, vérifier qu'il existe et que l'utilisateur y a accès
     let socleData: { cadrage?: any; sourcesRisque?: any[] } = {}
     if (data.socleId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const socle = await (prisma.analyse as any).findFirst({
+      const socle = await prisma.analyse.findFirst({
         where: {
           id: data.socleId,
           isSocle: true,
@@ -145,8 +144,7 @@ export async function POST(req: NextRequest) {
       socleData = socle
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const analyse = await (prisma.analyse as any).create({
+    const analyse = await prisma.analyse.create({
       data: {
         userId,
         organizationId: __org.activeOrgId,

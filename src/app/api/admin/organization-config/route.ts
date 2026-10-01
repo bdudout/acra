@@ -57,8 +57,7 @@ export async function GET(_req: NextRequest) {
   // toggles de module imposés/interdits au niveau instance. Best-effort.
   let modulesPolicy: Record<string, string> = {}
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inst = await (prisma as any).configuration.findUnique({ where: { id: 'global' }, select: { modulesPolicy: true } })
+    const inst = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { modulesPolicy: true } })
     modulesPolicy = sanitizeModulesPolicy(inst?.modulesPolicy) as Record<string, string>
   } catch { /* défaut vide */ }
   return NextResponse.json({
