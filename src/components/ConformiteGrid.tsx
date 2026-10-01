@@ -21,6 +21,7 @@ import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import type { ConstatSurExigence } from '@/lib/couverture-referentiel'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
   CONFORMITE_STATUTS,
@@ -52,6 +53,8 @@ interface Props {
   onTraitementsChanged?: () => void
   /** Affiche le catalogue de vulnérabilités (écarts) — pertinent en analyse, pas en socle pur. */
   showVulnCatalog?: boolean
+  /** Ce que constatent le contrôle permanent et l'audit, par exigence (page de conformité). */
+  constats?: Map<string, ConstatSurExigence>
 }
 
 /** État dérogation d'un contrôle, dérivé de la liste des dérogations de l'analyse. */
@@ -69,7 +72,7 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * est activée (OrganizationConfig.conformiteActive). Les non-conformités dérivées
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
-export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true }: Props) {
+export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true, constats }: Props) {
   const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
 
@@ -291,6 +294,16 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     <span className="text-gray-400 dark:text-gray-500 mr-1.5">{c.ref}</span>{c.nom}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>
+                  {(() => {
+                    const k = constats?.get(c.ref)
+                    if (!k) return null
+                    const cc = t.conformiteConstats
+                    const tone = k.statut === 'ANOMALIE' ? 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200' : k.statut === 'CONFORME' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
+                    return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] ${tone}`}>
+                      {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit))}
+                      {k.divergent && <strong className="ml-1">· {cc.divergent}</strong>}
+                    </p>
+                  })()}
                 </div>
                 <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
                   {CONFORMITE_STATUTS.map(s => {

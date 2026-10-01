@@ -89,3 +89,19 @@ describe('croiserApplicationsAnalyses — jointure RA ↔ référentiel', () => 
     expect(croiserApplicationsAnalyses([], 'ISO27001').total).toBe(0)
   })
 })
+
+describe('déclaré vs constaté (page de conformité)', () => {
+  it('signale une divergence quand une exigence déclarée conforme est en anomalie selon le contrôle ou l’audit', async () => {
+    const { confronterDeclaration } = await import('@/lib/couverture-referentiel')
+    const m = confronterDeclaration([
+      { ref: 'A', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 1 },
+      { ref: 'B', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 0 },
+      { ref: 'C', statut: 'CONFORME', nbControles: 2, nbAnomaliesAudit: 0 },
+      { ref: 'D', statut: 'NON_COUVERT', nbControles: 0, nbAnomaliesAudit: 0 },
+    ], [{ ref: 'A', statut: 'conforme' }, { ref: 'B', statut: 'non_conforme' }, { ref: 'C', statut: 'conforme' }])
+    expect(m.get('A')?.divergent).toBe(true)
+    expect(m.get('B')?.divergent).toBe(false) // déjà déclarée non conforme : cohérent
+    expect(m.get('C')?.divergent).toBe(false)
+    expect(m.has('D')).toBe(false) // rien constaté : rien à afficher
+  })
+})
