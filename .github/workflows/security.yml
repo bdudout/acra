@@ -131,6 +131,43 @@ jobs:
           fi
           echo "✓ .env.example présent"
 
+  # ── Intégration base de données (audit 2026-09-30, T7) ──────────────────────
+  # Les tests unitaires mockent Prisma : ce job vérifie sur un vrai PostgreSQL que
+  # les migrations correspondent au schéma (aucune dérive) et que les contraintes,
+  # verrous et règles d'accès tiennent (src/__tests__/db, vraies routes).
+  db-integration:
+    name: Intégration base de données
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: acra_test
+          POSTGRES_PASSWORD: ci-isolated-test-only
+          POSTGRES_DB: acra_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U acra_test -d acra_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://acra_test:ci-isolated-test-only@localhost:5432/acra_test
+      NEXTAUTH_SECRET: ci-only-isolated-nextauth-secret-not-a-production-secret
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Migrations sur base vierge
+        run: npx prisma migrate deploy
+      - name: Aucune dérive schéma ↔ migrations
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      - name: Tests d'intégration (vraies routes, vrai PostgreSQL)
+        run: npm run test:db
+
   production-build-e2e:
     name: Production build & cyber E2E
     runs-on: ubuntu-latest

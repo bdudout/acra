@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig, configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
@@ -9,6 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/__tests__/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // Tests d'intégration sur vraie base : config dédiée (vitest.db.config.mts, job CI db-integration).
+    exclude: [...configDefaults.exclude, 'src/__tests__/db/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
