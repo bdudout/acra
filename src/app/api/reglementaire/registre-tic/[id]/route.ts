@@ -9,6 +9,7 @@ import { type UserRole } from '@/lib/permissions'
 import { cleanArrangementInput, validateArrangementInput } from '@/lib/registre-tic'
 import { peutGererRegistreTic } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { resolveTierIdInput } from '@/lib/tier-registry.server'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -39,10 +40,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const erreur = validateArrangementInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanArrangementInput(body)
+  const tierInput = await resolveTierIdInput(body, g.orgId)
+  if (!tierInput.ok) return NextResponse.json({ error: 'tier_invalide' }, { status: 400 })
 
   const updated = await prisma.arrangementTic.update({
     where: { id },
-    data: { ...data, questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
+    data: { ...data, ...(tierInput.provided ? { tierId: tierInput.tierId } : {}), questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),

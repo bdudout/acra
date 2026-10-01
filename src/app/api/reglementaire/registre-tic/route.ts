@@ -15,6 +15,7 @@ import { joinArrangementsToEcosysteme } from '@/lib/tiers-tic-link'
 import { consolidatedTiersForOrg } from '@/lib/tiers.server'
 import { toCsvCell } from '@/lib/spreadsheet-safe'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { resolveTierIdInput } from '@/lib/tier-registry.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,9 @@ export async function GET(req: NextRequest) {
   // tiers + verdict du questionnaire de qualification, pour chaque arrangement.
   const tiers = await consolidatedTiersForOrg(orgId)
   const enrichis = joinArrangementsToEcosysteme(asLib, tiers)
+  // Identités de tiers autorisées pour l'organisation : liste de choix à la saisie (aucune donnée d'une autre filiale).
+  const granted = await prisma.tierOrganization.findMany({ where: { organizationId: orgId }, select: { tier: { select: { id: true, nom: true, lei: true, pays: true } } } })
+  const tiersOptions = granted.map(g => g.tier).sort((a, b) => a.nom.localeCompare(b.nom))
   const arrangements = rows.map((r, i) => ({
     ...r,
     champsManquants: validerArrangement(r as unknown as ArrangementTic),
@@ -70,6 +74,7 @@ export async function GET(req: NextRequest) {
     completude: evaluerCompletude(asLib),
     synthese: synthetiserRegistre(asLib),
     canManage: peutGererRegistreTic(userRole),
+    tiersOptions,
   })
 }
 
@@ -87,9 +92,11 @@ export async function POST(req: NextRequest) {
   const erreur = validateArrangementInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanArrangementInput(body)
+  const tierInput = await resolveTierIdInput(body, orgId)
+  if (!tierInput.ok) return NextResponse.json({ error: 'tier_invalide' }, { status: 400 })
 
   const created = await prisma.arrangementTic.create({
-    data: { organizationId: orgId, ...data, questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
+    data: { organizationId: orgId, ...data, ...(tierInput.provided ? { tierId: tierInput.tierId } : {}), questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),

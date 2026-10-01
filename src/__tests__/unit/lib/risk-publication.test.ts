@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapRisqueToRiskItem, mapAnalyseRisques } from '@/lib/risk-publication'
+import { mapRisqueToRiskItem, mapAnalyseRisques, indexPublishedRisks, publicationFailureMessage } from '@/lib/risk-publication'
 
 const analyse = { id: 'an1', nom: 'Analyse SI RH', organisation: 'DRH' }
 
@@ -46,5 +46,29 @@ describe('mapAnalyseRisques', () => {
     )
     expect(items.map(i => i.sourceId)).toEqual(['a', 'b'])
     expect(items.every(i => i.provenance === 'ACRA' && i.sourceType === 'analyse')).toBe(true)
+  })
+})
+
+describe('indexPublishedRisks', () => {
+  it('détecte une provenance source déjà présente plusieurs fois sans choisir arbitrairement une ligne', () => {
+    const result = indexPublishedRisks([
+      { id: 'r1', sourceId: 'source-1' }, { id: 'r2', sourceId: 'source-1' },
+      { id: 'r3', sourceId: 'source-2' }, { id: 'ancien', sourceId: null },
+    ])
+    expect(result.duplicateSourceIds).toEqual(['source-1'])
+    expect(result.idParSource.get('source-2')).toBe('r3')
+  })
+})
+
+describe('publicationFailureMessage', () => {
+  const messages = { general: 'Échec', duplicate: 'Doublons détectés, aucune modification' }
+
+  it('explique explicitement le conflit de provenance', () => {
+    expect(publicationFailureMessage(409, 'publication_source_dupliquee', messages)).toBe(messages.duplicate)
+  })
+
+  it('conserve le message générique pour les autres erreurs', () => {
+    expect(publicationFailureMessage(500, 'internal', messages)).toBe(messages.general)
+    expect(publicationFailureMessage(409, 'other', messages)).toBe(messages.general)
   })
 })

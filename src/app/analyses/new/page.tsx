@@ -73,7 +73,7 @@ export default function NewAnalysePage() {
       .then(d => {
         if (!d?.available?.length) return
         setMethodes(d.available)
-        // ?methode=PROJET_360 (menu « Nouvelle analyse » du tableau de bord) : présélectionne si la méthode est disponible.
+        // ?methode=… : présélectionne la méthode si elle est disponible (le projet 360 a son propre formulaire : /projets?nouveau=1).
         const wanted = new URLSearchParams(window.location.search).get('methode')
         setMethode(wanted && d.available.includes(wanted) ? wanted : (d.default ?? 'EBIOS_RM'))
       })

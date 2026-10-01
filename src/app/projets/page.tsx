@@ -4,6 +4,7 @@ import { Briefcase } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
+import { resolvePageOrganizationIds } from '@/lib/org-context'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getServerT } from '@/lib/i18n'
@@ -21,10 +22,15 @@ export default async function ProjetsPage() {
   const userId = (session.user as { id: string }).id
   const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, instanceRole)
-  if (!scope.activeOrgId || !(await getOrgConfig(scope.activeOrgId)).projets360Active) notFound()
+  const orgIds = resolvePageOrganizationIds(scope.activeOrgId, scope.scope)
+  if (!orgIds.length) notFound()
+  const enabledOrgIds = (await Promise.all(orgIds.map(async (orgId) => (
+    (await getOrgConfig(orgId)).projets360Active ? orgId : null
+  )))).filter((orgId): orgId is string => orgId !== null)
+  if (!enabledOrgIds.length) notFound()
   const t = await getServerT()
   const rows = await prisma.analyse.findMany({
-    where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: scope.activeOrgId, methode: 'PROJET_360' },
+    where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: { in: enabledOrgIds }, methode: 'PROJET_360' },
     select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
     orderBy: { updatedAt: 'desc' },
     take: 200,
@@ -38,7 +44,7 @@ export default async function ProjetsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100"><Briefcase size={24} className="inline align-[-0.16em] mr-2 text-ebios-600" aria-hidden="true" />{t.projets.title}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.projets.subtitle}</p>
         </header>
-        <ProjetsManager projets={projets} canCreate={canCreateAnalyse({ id: userId, role: scope.role })} />
+        <ProjetsManager projets={projets} canCreate={Boolean(scope.activeOrgId) && canCreateAnalyse({ id: userId, role: scope.role })} />
       </main>
     </div>
   )

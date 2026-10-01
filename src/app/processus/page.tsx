@@ -26,7 +26,7 @@ export default async function ProcessusPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <ProcessusManager canEdit={isAdminRole(userRole)} />
+        <ProcessusManager canEdit={scope.role ? isAdminRole(scope.role) : false} />
       </main>
     </div>
   )

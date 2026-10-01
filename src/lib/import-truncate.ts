@@ -56,7 +56,7 @@ export function describeZodIssues(error: ZodError, limit = 8): string[] {
       if (typeof seg === 'number') parts.push(`n°${seg + 1}`)
       else parts.push(i === 0 ? String(seg) : `› ${seg}`)
     })
-    const where = parts.join(' ').replace(/ › /g, ' › ')
+    const where = parts.join(' ')
     const reason = issue.code === 'too_big' && issue.type === 'string' ? `texte trop long (max ${issue.maximum})`
       : issue.code === 'too_big' && issue.type === 'array' ? `trop d'éléments (max ${issue.maximum})`
         : issue.code === 'too_big' || issue.code === 'too_small' && issue.type !== 'string' ? 'valeur hors limites'

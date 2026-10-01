@@ -206,6 +206,18 @@ export default function Navbar() {
     >{n}</span>
   )
 
+  const mobileLink = (key: NavKey) => {
+    const item = NAV_META[key]
+    const active = isActive(item.href)
+    const pending = key === 'derogations' ? derogPending : 0
+    return <Link key={key} href={item.href} onClick={() => setMobileNavOpen(false)} aria-current={active ? 'page' : undefined}
+      className={`${navClass(active)} flex min-w-0 items-center gap-2 px-3 py-2.5`}>
+      <item.Icon size={17} className="shrink-0" aria-hidden="true" />
+      <span className="truncate">{item.label}</span>
+      {pending > 0 && badge(pending, `${pending} en attente`)}
+    </Link>
+  }
+
   return (
     <nav
       className="bg-white border-b border-gray-200 sticky top-0 z-40"
@@ -369,17 +381,16 @@ export default function Navbar() {
       <div id="mobile-main-navigation" className={`${mobileNavOpen ? 'block' : 'hidden'} border-t border-gray-100 bg-white md:hidden`}>
         <div className="max-w-6xl mx-auto grid grid-cols-2 gap-1 px-3 py-3">
           <div className="col-span-2 px-1 pb-2"><OrgSwitcher /></div>
-          {entries.flatMap(entry => entry.kind === 'link' ? [entry.key] : entry.items).map(key => {
-            const item = NAV_META[key]
-            const active = isActive(item.href)
-            const pending = key === 'derogations' ? derogPending : 0
-            return <Link key={key} href={item.href} onClick={() => setMobileNavOpen(false)} aria-current={active ? 'page' : undefined}
-              className={`${navClass(active)} flex min-w-0 items-center gap-2 px-3 py-2.5`}>
-              <item.Icon size={17} className="shrink-0" aria-hidden="true" />
-              <span className="truncate">{item.label}</span>
-              {pending > 0 && badge(pending, `${pending} en attente`)}
-            </Link>
-          })}
+          {entries.map(entry => entry.kind === 'link'
+            ? mobileLink(entry.key)
+            : <div key={`mobile-group:${entry.id}`} role="group" aria-label={NAV_GROUP_META[entry.id].label}
+                className="col-span-2 grid grid-cols-2 gap-1 border-t border-gray-100 pt-2 first:border-0 first:pt-0">
+                <h2 className="col-span-2 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {NAV_GROUP_META[entry.id].label}
+                </h2>
+                {entry.items.map(mobileLink)}
+              </div>
+          )}
         </div>
       </div>
       <div className="hidden border-t border-gray-100 md:block">

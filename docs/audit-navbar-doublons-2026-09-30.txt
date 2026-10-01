@@ -1,0 +1,153 @@
+ACRA — Audit ciblé de la navbar et des doublons
+30 septembre 2026
+
+Périmètre et limite
+------------------
+Revue du code de navigation, des pages/API concernées et du schéma Prisma. Il ne
+s'agit pas d'un test visuel authentifié. La base locale n'a pas pu être interrogée :
+Docker est arrêté et aucun PostgreSQL local ne répond. On peut donc qualifier les
+risques de doublons, mais pas affirmer combien de doublons existent réellement.
+Aucune donnée ni aucun code applicatif n'a été modifié pour cet audit.
+
+Mise à jour après l'audit (30 septembre 2026)
+-------------------------------------------
+Les regroupements de priorité 1 et la distinction des libellés ont été
+développés avec tests TDD, ainsi que les titres des groupes sur mobile. La route
+de publication des risques utilise maintenant une transaction et un verrou
+PostgreSQL par organisation/analyse ; une provenance déjà dupliquée est signalée
+sans écriture. Ce correctif de la route ne remplace pas la contrainte d'unicité
+en base proposée au point 6 : elle nécessitera d'abord un diagnostic et une
+résolution explicite des données historiques. Les sections ci-dessous décrivent
+l'état constaté au moment de l'audit initial, avant ces modifications.
+
+1. Navigation actuelle
+---------------------
+En mode GRC, buildNav répartit les liens entre Pilotage, Gestion des risques,
+Registre, Contrôle & audit et Conformité & réglementaire. Aujourd'hui :
+
+- « Registre TIC » est dans Conformité & réglementaire ; le registre des risques
+  est dans Registre.
+- « KRI » est dans Contrôle & audit ; « Appétence (RAS / RAD) » est dans Pilotage.
+- Le menu mobile aplatit tous les groupes en une grille de liens sans titres.
+- « Risques » (risques issus des analyses) et « Registre » (risques publiés et
+  gérés dans le dispositif GRC) sont difficiles à distinguer par leur seul nom.
+
+2. Recommandation de regroupement
+---------------------------------
+Priorité 1 : rapprocher « KRI » de « Appétence (RAS / RAD) » dans Pilotage.
+RAS/RAD consomme déjà les KRI et affiche leurs alertes. KRI reste la page où
+l'on définit et mesure les indicateurs ; RAS/RAD reste une vue de synthèse.
+Conserver les droits et les conditions d'activation actuels lors du déplacement.
+
+Priorité 1 : transformer le groupe « Registre » en « Registres », avec deux liens
+explicites : « Registre des risques » et « Registre TIC — prestataires/contrats ».
+Le lien TIC pourrait donc être déplacé depuis Conformité & réglementaire, mais
+les données ne doivent PAS être fusionnées. Le premier registre porte les risques ;
+le second porte les arrangements contractuels TIC requis pour DORA. Leur point
+commun est le type de document (« registre »), pas l'objet métier.
+
+Priorité 2 : nommer « Risques des analyses » le lien /risques, pour le distinguer
+du « Registre des risques » /registre. Garder des sections titrées et dans le
+même ordre sur mobile, au lieu d'aplatir la navigation.
+
+Avant développement, tester ces libellés et placements avec au moins un analyste,
+un Risk Manager et un profil conformité. Vérifier aussi les cas où seul le module
+réglementaire ou seul le module KRI est activé. Le déplacement de liens ne doit
+ni ouvrir des droits ni masquer une page autorisée.
+
+3. Objets en base : ressemblances voulues
+----------------------------------------
+- Risque est lié à une Analyse. RiskItem est l'enregistrement publié dans le
+  registre GRC. Il s'agit d'une copie traçable (provenance/sourceId) et de deux
+  cycles de vie distincts, pas automatiquement d'un doublon à supprimer.
+- PartiePrenante décrit un tiers dans une analyse ; ArrangementTic décrit un
+  contrat/service TIC. Un prestataire peut légitimement avoir plusieurs contrats.
+  Il n'existe pas encore de table Tier canonique : le rapprochement est fait par
+  nom normalisé, ce qui peut fragmenter un même prestataire sous plusieurs noms.
+- Kri et KriMesure sont persistés. RAS/RAD est une vue calculée à partir des KRI,
+  du registre, de la maturité et des seuils d'appétence. Il n'y a pas de seconde
+  table RAS/RAD contenant une copie des KRI.
+- La page Actions agrège Mesure, PlanAction et ConformiteTraitement. Une promotion
+  peut créer un PlanAction à partir d'une mesure tout en gardant l'objet source.
+  Cela peut correspondre à un même travail représenté deux fois ; ne pas
+  dédupliquer sur le titre seul.
+
+4. Risques de vrais doublons dans les chemins de création
+---------------------------------------------------------
+P1 — Publication Analyse vers RiskItem : la route recherche les sources déjà
+publiées puis lance createMany, sans contrainte UNIQUE en base sur
+(organizationId, provenance, sourceType, sourceId). Deux publications simultanées
+peuvent donc créer deux RiskItem pour le même risque source. Le commentaire de
+la route parle d'idempotence, mais la garantie n'est pas atomique.
+
+P2 — ArrangementTic : POST fait un create et le schéma ne contraint pas
+(organizationId, reference). Deux lignes de même référence contractuelle sont
+possibles. Attention : des références non uniques peuvent aussi refléter une
+convention métier ; il faut vérifier leur sens avant d'ajouter la contrainte.
+
+P2 — Kri : POST fait un create sans clé métier unique. Deux indicateurs de même
+nom, même risque et même processus sont possibles ; ce sont des candidats à
+examiner, pas des doublons certains.
+
+P2 — Tiers : la consolidation par nom normalisé regroupe certaines occurrences,
+mais les variantes (« Microsoft », « Microsoft Azure », etc.) peuvent rester
+séparées. Une entité tiers canonique avec alias et identifiants (LEI si applicable)
+serait plus solide qu'une jointure par nom.
+
+Garde-fous existants : Risque possède des contraintes UNIQUE sur
+(analyseId, sourceRisqueId) et (analyseId, qualificationRuleId). La duplication
+des risques importés depuis une source et de ceux créés par une même règle de
+qualification est donc empêchée au niveau base.
+
+5. Diagnostic SQL en lecture seule, à lancer quand PostgreSQL sera disponible
+-------------------------------------------------------------------------
+Les requêtes suivantes remontent des candidats. Ne supprimer aucune ligne sans
+examiner ses relations, son historique et le sens métier de la clé.
+
+-- Même risque d'analyse publié plusieurs fois dans le registre
+SELECT "organizationId", "sourceId", count(*) AS n
+FROM "RiskItem"
+WHERE "provenance" = 'ACRA' AND "sourceType" = 'analyse'
+  AND "sourceId" IS NOT NULL
+GROUP BY 1, 2 HAVING count(*) > 1;
+
+-- Même référence TIC dans une organisation
+SELECT "organizationId", lower(btrim("reference")) AS reference, count(*) AS n
+FROM "ArrangementTic"
+GROUP BY 1, 2 HAVING count(*) > 1;
+
+-- KRI potentiellement redondants au même périmètre
+SELECT "organizationId", lower(btrim("intitule")) AS intitule,
+       coalesce("riskItemId", '') AS risque,
+       coalesce("processusId", '') AS processus, count(*) AS n
+FROM "Kri"
+GROUP BY 1, 2, 3, 4 HAVING count(*) > 1;
+
+-- Parties prenantes de même nom au sein d'une même analyse (candidats seulement)
+SELECT "analyseId", lower(btrim("nom")) AS nom, count(*) AS n
+FROM "PartiePrenante"
+GROUP BY 1, 2 HAVING count(*) > 1;
+
+6. Plan d'action proposé
+------------------------
+1. Redémarrer une base de recette ou utiliser une copie autorisée ; exécuter le
+   diagnostic SQL et qualifier les candidats sans effacement automatique.
+2. Résoudre d'abord les doublons de publication éventuels, puis imposer une
+   unicité partielle pour les RiskItem publiés depuis ACRA et rendre la création
+   atomiquement idempotente. Tester deux publications concurrentes.
+3. Ajuster buildNav et ses tests pour les regroupements retenus, puis vérifier
+   desktop, mobile, droits et combinaisons de modules.
+4. Concevoir une identité tiers canonique avant toute fusion des données
+   PartiePrenante et ArrangementTic.
+
+Sources principales dans le dépôt
+---------------------------------
+src/lib/navigation.ts
+src/components/Navbar.tsx
+src/lib/ras-rad.server.ts
+src/lib/tiers-tic-link.ts
+src/lib/tiers.ts
+src/app/api/risk-items/publish/route.ts
+src/app/api/reglementaire/registre-tic/route.ts
+src/app/api/kri/route.ts
+prisma/schema.prisma
