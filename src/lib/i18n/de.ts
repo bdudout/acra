@@ -1171,6 +1171,20 @@ export const de: Translations = {
     forceOff: 'Verboten (nicht verfügbar)',
     hint: 'Einstellung auf Instanzebene (Super-Administrator).',
   },
+  membershipConfig: {
+    sectionTitle: 'Zuordnung von Konten zu Organisationen',
+    sectionDesc: 'Wie ein Organisationsadministrator eine Person per E-Mail hinzufügt.',
+    modes: {
+      AUTO: { title: 'Automatisch', desc: 'Einladung, wenn die Instanz öffentlich zugänglich ist (Demo oder freie Registrierung), sonst direkte Zuordnung.' },
+      DIRECT: { title: 'Direkte Zuordnung', desc: 'Das bestehende Konto wird sofort hinzugefügt (interne Bereitstellung: das Unternehmen verwaltet die Konten seiner Mitarbeitenden).' },
+      INVITATION: { title: 'Einladung zur Annahme', desc: 'Ein 7 Tage gültiger Link wird gesendet; die Person nimmt an (oder erstellt ihr Konto). Empfohlen für SaaS- oder Community-Instanzen: Einwilligung, keine Offenlegung, ob ein Konto existiert.' },
+    },
+    effective: 'Angewandter Modus: {mode}',
+    instanceOpen: 'öffentlich zugängliche Instanz',
+    instanceClosed: 'geschlossene Instanz',
+    notify: 'Direkt hinzugefügte Person per E-Mail benachrichtigen',
+    hint: 'Instanzeinstellung (Super-Administrator).',
+  },
   interfacesConfig: {
     sectionTitle: 'Programmatische Schnittstellen (Instanz)',
     sectionDesc: 'Aktiviert oder deaktiviert die öffentliche API und die MCP-Schnittstelle. Standardmäßig deaktiviert.',
@@ -4354,6 +4368,7 @@ export const de: Translations = {
     membresN: '{n} Mitglied(er)',
     analysesN: '{n} Analyse(n)',
     membresTitle: 'Mitglieder von „{nom}“',
+    invitationSent: 'Einladung an {email} gesendet: Die Person wird nach ihrer Annahme hinzugefügt.',
     selectEntite: 'Wählen Sie eine Einheit, um ihre Mitglieder und Rollen zu verwalten.',
     emailLabel: 'E-Mail des Mitglieds',
     emailPh: 'person@organisation.de',
@@ -4607,4 +4622,5 @@ export const de: Translations = {
   historicImportSaveMapping: { title: 'Dieses Mapping speichern', explanation: 'Der Import war erfolgreich. Speichern Sie diese Konfiguration zur Wiederverwendung.', newMapping: 'Neues Mapping', updateMapping: 'Mapping aktualisieren', save: 'Mapping speichern', saved: 'Mapping gespeichert' },
   historicImportSummary: { ateliers: { title: 'Importierte Workshops', counts: { businessValues: 'Geschäftswert(e)', supportAssets: 'unterstützende(r) Wert(e)', fearedEvents: 'befürchtete(s) Ereignis(se)', riskSources: 'Risikoquelle(n)', stakeholders: 'Stakeholder', strategicScenarios: 'strategische(s) Szenario(en)', operationalScenarios: 'operative(s) Szenario(en)', securityBaseline: 'Grundlagenanforderung(en)', residualRisks: 'Restrisiko(en)' } }, warnings: { title: 'Zu prüfen', codes: { support_asset_business_value_not_found: 'Unterstützender Wert: Geschäftswert „{ref}“ nicht gefunden, nicht verknüpft.', feared_event_business_value_not_found: 'Befürchtetes Ereignis: Geschäftswert „{ref}“ nicht gefunden, nicht verknüpft.', strategic_scenario_risk_source_not_found: 'Strategisches Szenario: Risikoquelle „{ref}“ nicht gefunden.', strategic_scenario_feared_event_not_found: 'Strategisches Szenario: befürchtetes Ereignis „{ref}“ nicht gefunden, nicht verknüpft.', strategic_scenario_stakeholder_not_found: 'Strategisches Szenario: Stakeholder „{ref}“ nicht gefunden.', operational_scenario_strategic_not_found: 'Operatives Szenario: strategisches Szenario „{ref}“ nicht gefunden.', residual_risk_reference_not_found: 'Restrisiko: ursprüngliches Risiko „{ref}“ nicht gefunden.', text_truncated: '{a} zu lange(r) Text(e) auf {b} Zeichen gekürzt ({n}).', strategic_scenario_gravity_differs: 'Strategisches Szenario „{n}“: Schwere {a} in der Datei weicht vom Maximum der genannten befürchteten Ereignisse ({b}) ab.', atelier_content_ignored_method: 'Workshops werden nur in eine EBIOS-RM-Analyse importiert: sie wurden ignoriert.', measure_risk_reference_not_found: 'Maßnahme: Risiko „{ref}“ nicht gefunden.', vulnerability_risk_reference_not_found: 'Schwachstelle: Risiko „{ref}“ nicht gefunden.', action_risk_reference_not_found: 'Aktionsplan: Risiko „{ref}“ nicht gefunden.' } }, ignoredTemplateRows: '{n} leere Vorlagenzeile(n) ignoriert: nur die Referenz war ausgefüllt.', title: 'Importbericht', explanation: 'Die Datei wurde verarbeitet. Nicht importierte Zeilen haben Ihre Daten nicht verändert.', imported: 'Importierte Analysen', importedRows: 'Importierte Zeilen', omittedFields: 'Mit ausgelassenem Feld importiert', rejectedRows: 'Nicht importierte Zeilen', created: { risks: 'Risiken', vulnerabilities: 'Schwachstellen', measures: 'Maßnahmen', actions: 'Aktionen' }, sourceValue: 'Quellwert', expectedValue: 'Erwartete Regel', emptyValue: 'leer', reasons: { MISSING_REQUIRED_VALUE: 'Pflichtfeld fehlt', INVALID_FORMAT: 'ungültiges Format', CARDINALITY_MISMATCH: 'nicht kompatible Referenz', DUPLICATE_REFERENCE: 'Referenz bereits in einer früheren Zeile verwendet: Zeile nicht importiert' }, close: 'Schließen', mapping: { title: 'Dieses Mapping speichern', explanation: 'Optional: Geben Sie einen neuen Namen ein oder wählen Sie ein vorhandenes Mapping zur Aktualisierung.', newMapping: 'Neues Mapping', updateMapping: 'Mapping aktualisieren', save: 'Mapping speichern', saved: 'Mapping gespeichert' } },
   historicImportEmbeddedFields: { embeddedVulnerabilities: 'Schwachstellen dieser Zeile', embeddedActions: 'Aktionspläne dieser Zeile' },
+  invitations: { title: 'Einladung', loading: 'Wird geladen…', notFound: 'Diese Einladung wurde nicht gefunden.', expired: 'Diese Einladung ist abgelaufen. Bitten Sie den Administrator der Organisation um eine neue.', used: 'Diese Einladung wurde bereits verwendet.', intro: 'Sie sind eingeladen, „{org}" mit der Rolle {role} beizutreten.', accept: 'Einladung annehmen', accepting: 'Wird angenommen…', accepted: 'Einladung angenommen.', wrongAccount: 'Sie sind mit einem anderen Konto angemeldet. Diese Einladung gilt für {email}.', signOut: 'Abmelden', loginToAccept: 'Melden Sie sich mit dem Konto {email} an, um anzunehmen.', login: 'Anmelden', createTitle: 'Konto erstellen, um anzunehmen', name: 'Name', password: 'Passwort', confirm: 'Passwort bestätigen', mismatch: 'Die Passwörter stimmen nicht überein.', policyError: 'Das Passwort entspricht nicht der Sicherheitsrichtlinie.', create: 'Konto erstellen und annehmen', created: 'Konto erstellt und Einladung angenommen: Bitte melden Sie sich an.', error: 'Die Einladung konnte nicht angenommen werden.' },
 }

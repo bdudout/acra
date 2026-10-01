@@ -1172,6 +1172,20 @@ export const it: Translations = {
     forceOff: 'Vietato (non disponibile)',
     hint: 'Impostazione a livello di istanza (super-amministratore).',
   },
+  membershipConfig: {
+    sectionTitle: 'Collegamento degli account alle organizzazioni',
+    sectionDesc: 'Come un amministratore di organizzazione aggiunge una persona tramite e-mail.',
+    modes: {
+      AUTO: { title: 'Automatico', desc: 'Invito se l\'istanza è aperta al pubblico (demo o registrazione libera), altrimenti collegamento diretto.' },
+      DIRECT: { title: 'Collegamento diretto', desc: 'L\'account esistente viene aggiunto subito (installazione interna: l\'azienda gestisce gli account dei dipendenti).' },
+      INVITATION: { title: 'Invito da accettare', desc: 'Viene inviato un link valido 7 giorni; la persona accetta (o crea il proprio account). Consigliato per SaaS o istanze comunitarie: consenso, nessuna rivelazione dell\'esistenza di un account.' },
+    },
+    effective: 'Modalità applicata: {mode}',
+    instanceOpen: 'istanza aperta al pubblico',
+    instanceClosed: 'istanza chiusa',
+    notify: 'Avvisare via e-mail la persona collegata direttamente',
+    hint: 'Impostazione d\'istanza (super amministratore).',
+  },
   interfacesConfig: {
     sectionTitle: 'Interfacce programmatiche (istanza)',
     sectionDesc: 'Attiva o disattiva l\'API pubblica e l\'interfaccia MCP. Disattivate per impostazione predefinita.',
@@ -4355,6 +4369,7 @@ export const it: Translations = {
     membresN: '{n} membro/i',
     analysesN: '{n} analisi',
     membresTitle: 'Membri di «{nom}»',
+    invitationSent: 'Invito inviato a {email}: la persona sarà aggiunta quando lo avrà accettato.',
     selectEntite: 'Seleziona un’entità per gestirne membri e ruoli.',
     emailLabel: 'E-mail del membro',
     emailPh: 'persona@organizzazione.it',
@@ -4608,4 +4623,5 @@ export const it: Translations = {
   historicImportSaveMapping: { title: 'Conservare questo mapping', explanation: 'L’importazione è riuscita. Salva questa configurazione per riutilizzarla.', newMapping: 'Nuovo mapping', updateMapping: 'Aggiornare un mapping', save: 'Salvare il mapping', saved: 'Mapping salvato' },
   historicImportSummary: { ateliers: { title: 'Workshop importati', counts: { businessValues: 'valore/i di business', supportAssets: 'bene/i di supporto', fearedEvents: 'evento/i temuto/i', riskSources: 'fonte/i di rischio', stakeholders: 'parte/i interessata/e', strategicScenarios: 'scenario/i strategico/i', operationalScenarios: 'scenario/i operativo/i', securityBaseline: 'requisito/i della base', residualRisks: 'rischio/i residuo/i' } }, warnings: { title: 'Punti da verificare', codes: { support_asset_business_value_not_found: 'Bene di supporto: valore di business «{ref}» non trovato, non collegato.', feared_event_business_value_not_found: 'Evento temuto: valore di business «{ref}» non trovato, non collegato.', strategic_scenario_risk_source_not_found: 'Scenario strategico: fonte di rischio «{ref}» non trovata.', strategic_scenario_feared_event_not_found: 'Scenario strategico: evento temuto «{ref}» non trovato, non collegato.', strategic_scenario_stakeholder_not_found: 'Scenario strategico: parte interessata «{ref}» non trovata.', operational_scenario_strategic_not_found: 'Scenario operativo: scenario strategico «{ref}» non trovato.', residual_risk_reference_not_found: 'Rischio residuo: rischio iniziale «{ref}» non trovato.', text_truncated: '{a} testo/i troppo lungo/i accorciato/i a {b} caratteri ({n}).', strategic_scenario_gravity_differs: 'Scenario strategico «{n}»: la gravità {a} nel file differisce dal massimo degli eventi temuti citati ({b}).', atelier_content_ignored_method: 'I workshop vengono importati solo in un’analisi EBIOS RM: sono stati ignorati.', measure_risk_reference_not_found: 'Misura: rischio «{ref}» non trovato.', vulnerability_risk_reference_not_found: 'Vulnerabilità: rischio «{ref}» non trovato.', action_risk_reference_not_found: 'Piano d’azione: rischio «{ref}» non trovato.' } }, ignoredTemplateRows: '{n} riga/righe modello vuota/e ignorata/e: era compilato solo il riferimento.', title: 'Report di importazione', explanation: 'Il file è stato elaborato. Le righe non importate non hanno modificato i dati.', imported: 'Analisi importate', importedRows: 'Righe importate', omittedFields: 'Importato con campo escluso', rejectedRows: 'Righe non importate', created: { risks: 'Rischi', vulnerabilities: 'Vulnerabilità', measures: 'Misure', actions: 'Azioni' }, sourceValue: 'Valore di origine', expectedValue: 'Regola attesa', emptyValue: 'vuoto', reasons: { MISSING_REQUIRED_VALUE: 'campo obbligatorio assente', INVALID_FORMAT: 'formato non valido', CARDINALITY_MISMATCH: 'riferimento incompatibile', DUPLICATE_REFERENCE: 'riferimento già usato da una riga precedente: riga non importata' }, close: 'Chiudi', mapping: { title: 'Conservare questo mapping', explanation: 'Facoltativo: inserisci un nuovo nome o scegli un mapping esistente da aggiornare.', newMapping: 'Nuovo mapping', updateMapping: 'Aggiornare un mapping', save: 'Salvare il mapping', saved: 'Mapping salvato' } },
   historicImportEmbeddedFields: { embeddedVulnerabilities: 'Vulnerabilità di questa riga', embeddedActions: 'Piani d’azione di questa riga' },
+  invitations: { title: 'Invito', loading: 'Caricamento…', notFound: 'Questo invito non è stato trovato.', expired: 'Questo invito è scaduto. Chiedetene uno nuovo all’amministratore dell’organizzazione.', used: 'Questo invito è già stato utilizzato.', intro: 'Siete invitati a unirvi a «{org}» con il ruolo {role}.', accept: 'Accetta l’invito', accepting: 'Accettazione…', accepted: 'Invito accettato.', wrongAccount: 'Avete effettuato l’accesso con un altro account. Questo invito è per {email}.', signOut: 'Esci', loginToAccept: 'Accedete con l’account {email} per accettare.', login: 'Accedi', createTitle: 'Create il vostro account per accettare', name: 'Nome', password: 'Password', confirm: 'Conferma password', mismatch: 'Le password non coincidono.', policyError: 'La password non rispetta la politica di sicurezza.', create: 'Crea il mio account e accetta', created: 'Account creato e invito accettato: effettuate l’accesso.', error: 'Non è stato possibile accettare l’invito.' },
 }

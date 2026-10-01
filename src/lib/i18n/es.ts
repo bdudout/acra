@@ -1172,6 +1172,20 @@ export const es: Translations = {
     forceOff: 'Prohibido (no disponible)',
     hint: 'Ajuste a nivel de instancia (superadministrador).',
   },
+  membershipConfig: {
+    sectionTitle: 'Vinculación de cuentas a organizaciones',
+    sectionDesc: 'Cómo un administrador de organización añade a una persona por su correo electrónico.',
+    modes: {
+      AUTO: { title: 'Automático', desc: 'Invitación si la instancia está abierta al público (demo o registro libre); si no, vinculación directa.' },
+      DIRECT: { title: 'Vinculación directa', desc: 'La cuenta existente se añade de inmediato (despliegue interno: la empresa gestiona las cuentas de sus empleados).' },
+      INVITATION: { title: 'Invitación para aceptar', desc: 'Se envía un enlace válido 7 días; la persona acepta (o crea su cuenta). Recomendado en SaaS o instancia comunitaria: consentimiento, sin revelar si existe una cuenta.' },
+    },
+    effective: 'Modo aplicado: {mode}',
+    instanceOpen: 'instancia abierta al público',
+    instanceClosed: 'instancia cerrada',
+    notify: 'Avisar por correo a la persona vinculada directamente',
+    hint: 'Ajuste de instancia (superadministrador).',
+  },
   interfacesConfig: {
     sectionTitle: 'Interfaces programáticas (instancia)',
     sectionDesc: 'Activa o desactiva la API pública y la interfaz MCP. Desactivadas por defecto.',
@@ -4355,6 +4369,7 @@ export const es: Translations = {
     membresN: '{n} miembro(s)',
     analysesN: '{n} análisis',
     membresTitle: 'Miembros de «{nom}»',
+    invitationSent: 'Invitación enviada a {email}: la persona se añadirá cuando la acepte.',
     selectEntite: 'Seleccione una entidad para gestionar sus miembros y roles.',
     emailLabel: 'Correo del miembro',
     emailPh: 'persona@organizacion.es',
@@ -4608,4 +4623,5 @@ export const es: Translations = {
   historicImportSaveMapping: { title: 'Conservar este mapeo', explanation: 'La importación se realizó correctamente. Guarde esta configuración para reutilizarla.', newMapping: 'Nuevo mapeo', updateMapping: 'Actualizar un mapeo', save: 'Guardar mapeo', saved: 'Mapeo guardado' },
   historicImportSummary: { ateliers: { title: 'Talleres importados', counts: { businessValues: 'valor(es) de negocio', supportAssets: 'bien(es) soporte', fearedEvents: 'evento(s) temido(s)', riskSources: 'fuente(s) de riesgo', stakeholders: 'parte(s) interesada(s)', strategicScenarios: 'escenario(s) estratégico(s)', operationalScenarios: 'escenario(s) operativo(s)', securityBaseline: 'requisito(s) de la base', residualRisks: 'riesgo(s) residual(es)' } }, warnings: { title: 'Puntos a revisar', codes: { support_asset_business_value_not_found: 'Bien soporte: valor de negocio «{ref}» no encontrado, sin vincular.', feared_event_business_value_not_found: 'Evento temido: valor de negocio «{ref}» no encontrado, sin vincular.', strategic_scenario_risk_source_not_found: 'Escenario estratégico: fuente de riesgo «{ref}» no encontrada.', strategic_scenario_feared_event_not_found: 'Escenario estratégico: evento temido «{ref}» no encontrado, sin vincular.', strategic_scenario_stakeholder_not_found: 'Escenario estratégico: parte interesada «{ref}» no encontrada.', operational_scenario_strategic_not_found: 'Escenario operativo: escenario estratégico «{ref}» no encontrado.', residual_risk_reference_not_found: 'Riesgo residual: riesgo inicial «{ref}» no encontrado.', text_truncated: '{a} texto(s) demasiado largo(s) acortado(s) a {b} caracteres ({n}).', strategic_scenario_gravity_differs: 'Escenario estratégico «{n}»: la gravedad {a} del archivo difiere del máximo de los eventos temidos citados ({b}).', atelier_content_ignored_method: 'Los talleres solo se importan en un análisis EBIOS RM: se han ignorado.', measure_risk_reference_not_found: 'Medida: riesgo «{ref}» no encontrado.', vulnerability_risk_reference_not_found: 'Vulnerabilidad: riesgo «{ref}» no encontrado.', action_risk_reference_not_found: 'Plan de acción: riesgo «{ref}» no encontrado.' } }, ignoredTemplateRows: '{n} fila(s) de plantilla vacía(s) ignorada(s): solo tenían la referencia.', title: 'Informe de importación', explanation: 'El archivo se ha procesado. Las filas no importadas no modificaron sus datos.', imported: 'Análisis importados', importedRows: 'Filas importadas', omittedFields: 'Importado con campo descartado', rejectedRows: 'Filas no importadas', created: { risks: 'Riesgos', vulnerabilities: 'Vulnerabilidades', measures: 'Medidas', actions: 'Acciones' }, sourceValue: 'Valor de origen', expectedValue: 'Regla esperada', emptyValue: 'vacío', reasons: { MISSING_REQUIRED_VALUE: 'falta un campo obligatorio', INVALID_FORMAT: 'formato no válido', CARDINALITY_MISMATCH: 'referencia incompatible', DUPLICATE_REFERENCE: 'referencia ya utilizada por una fila anterior: fila no importada' }, close: 'Cerrar', mapping: { title: 'Conservar este mapeo', explanation: 'Opcional: introduzca un nombre nuevo o elija un mapeo existente para actualizarlo.', newMapping: 'Nuevo mapeo', updateMapping: 'Actualizar un mapeo', save: 'Guardar mapeo', saved: 'Mapeo guardado' } },
   historicImportEmbeddedFields: { embeddedVulnerabilities: 'Vulnerabilidades de esta fila', embeddedActions: 'Planes de acción de esta fila' },
+  invitations: { title: 'Invitación', loading: 'Cargando…', notFound: 'No se encuentra esta invitación.', expired: 'Esta invitación ha caducado. Solicite una nueva al administrador de la organización.', used: 'Esta invitación ya se ha utilizado.', intro: 'Le invitan a unirse a «{org}» con el rol {role}.', accept: 'Aceptar la invitación', accepting: 'Aceptando…', accepted: 'Invitación aceptada.', wrongAccount: 'Ha iniciado sesión con otra cuenta. Esta invitación es para {email}.', signOut: 'Cerrar sesión', loginToAccept: 'Inicie sesión con la cuenta {email} para aceptar.', login: 'Iniciar sesión', createTitle: 'Cree su cuenta para aceptar', name: 'Nombre', password: 'Contraseña', confirm: 'Confirmar la contraseña', mismatch: 'Las contraseñas no coinciden.', policyError: 'La contraseña no cumple la política de seguridad.', create: 'Crear mi cuenta y aceptar', created: 'Cuenta creada e invitación aceptada: inicie sesión.', error: 'No se ha podido aceptar la invitación.' },
 }

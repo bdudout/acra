@@ -200,6 +200,7 @@ model Organization {
   @@index([path])
   rapportEditions RapportEdition[]
   auditUnivers AuditUnivers[]
+  invitations  OrgInvitation[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -1288,6 +1289,27 @@ model OrgMembership {
   @@index([organizationId])
 }
 
+// Invitation à rejoindre une organisation (T23, mode INVITATION) : le rattachement
+// n'est créé que si la personne accepte. Jeton à usage unique, haché (SHA-256),
+// expirant. L'e-mail ne révèle pas si un compte existe déjà.
+model OrgInvitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           UserRole     @default(ANALYSTE)
+  scope          OrgScope     @default(NODE)
+  tokenHash      String       @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  acceptedById   String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([email])
+}
+
 // ─── EBIOS RM ────────────────────────────────────────────────────────────────
 
 model Analyse {
@@ -2134,6 +2156,15 @@ model Configuration {
   // seul ; les autres méthodes câblées se débloquent ici. Cf. lib/methodes.ts et
   // docs/methodes-analyse-cadrage.md.
   methodesActives Json @default("[\"EBIOS_RM\"]")
+
+  // Rattachement d'un compte EXISTANT à une organisation par son e-mail (T23) :
+  //  - AUTO (défaut) : INVITATION si l'instance est ouverte (démo ou inscription
+  //    publique), DIRECT sinon (instance sur site : l'employeur décide) ;
+  //  - DIRECT : ajout immédiat ; INVITATION : la personne doit accepter.
+  // Cf. lib/membership-mode.ts.
+  membershipMode   String  @default("AUTO")
+  // Mode DIRECT : informer la personne rattachée par e-mail.
+  membershipNotify Boolean @default(true)
 
   // Contenu public configurable (niveau instance, SUPER_ADMIN) : personnalise le
   // bandeau public et l'appel à l'action de contact/déploiement SANS toucher aux

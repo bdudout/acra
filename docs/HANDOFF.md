@@ -6,6 +6,17 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (34) — Claude Code : T23 invitations (branche `claude/tender-euler-bqjoe9` repartie de `origin/main`)
+
+- **Décision utilisateur** : le rattachement dépend du déploiement. SaaS / communautaire → consentement (invitation) ; sur site → l'entreprise rattache ses employés (direct).
+- **Réglage d'instance** (`Configuration.membershipMode` AUTO|DIRECT|INVITATION, `membershipNotify`), section « Rattachement des comptes » dans `/admin/instance` (SUPER_ADMIN, `GET/PUT /api/admin/membership-config`). AUTO = INVITATION si démo ou inscription publique ouverte, sinon DIRECT (`lib/membership-mode.ts`, pur, testé).
+- **INVITATION** : `POST …/entites/[entiteId]/membres` répond 202 `{invited:true}` que le compte existe ou non ; modèle `OrgInvitation` (jeton 256 bits haché SHA-256, usage unique par écriture conditionnelle, 7 jours, remplace l'invitation en attente) ; débit 30/h par auteur, 3/h par destinataire ; page publique `/invitations/[token]` : accepter (session au même e-mail), changer de compte, ou créer le compte (e-mail vérifié par le lien, politique de mot de passe). Logique dans `lib/org-invitation.server.ts`. Audit `ORG_MEMBER_INVITED` (SIEM COMPTES) puis `ORG_MEMBER_ADDED` via invitation.
+- **DIRECT** : comportement inchangé + e-mail d'information (désactivable).
+- Migration `20261001120000_org_invitations`. i18n ×5 (`invitations`, `membershipConfig`, `entites.invitationSent`, e-mails).
+- **Backlog** : T17 clos (risque accepté), T5/T6 optionnels et différés (activation par variable, import dynamique).
+- **Vérifié** : `tsc` ; `npm test` 369 fichiers / 3 043 tests ; `npm run test:db` 6 fichiers / 27 tests (dont `org-invitation.db.test.ts`) ; `i18n:check` OK ; `npm run build` OK ; navigateur (build de prod :3005) : section d'instance, invitation 202, page d'invitation, création de compte → connexion avec bandeau, appartenance créée.
+- **Prochain pas** : énumération résiduelle de `POST /api/admin/users` (409) en mode SaaS ; T3 phase 2 ; T9 ; T10 ; T8.
+
 ## 2026-10-01 (33) — Claude Code : T3 phase 1 et faille T25 (même branche, PR #194)
 
 - **T3 phase 1** : `lib/route-guard.server.ts` (`requireSession`, `requireInstanceAdmin`, `sessionUser` typé) ; 17 routes `/api/admin/*` migrées ; test cliquet `src/__tests__/unit/lib/route-guard-ratchet.test.ts` (refuse une garde locale ou une comparaison `role === 'SUPER_ADMIN'` dans une route, hors `admin/users` et `org/active`, usages métier).

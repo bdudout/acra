@@ -1172,6 +1172,20 @@ export const en: Translations = {
     forceOff: 'Forbidden (unavailable)',
     hint: 'Instance-level setting (super-administrator).',
   },
+  membershipConfig: {
+    sectionTitle: 'Adding accounts to organisations',
+    sectionDesc: 'How an organisation administrator adds a person by e-mail.',
+    modes: {
+      AUTO: { title: 'Automatic', desc: 'Invitation if the instance is open to the public (demo or open sign-up), otherwise direct addition.' },
+      DIRECT: { title: 'Direct addition', desc: 'The existing account is added immediately (internal deployment: the company manages its employees\' accounts).' },
+      INVITATION: { title: 'Invitation to accept', desc: 'A link valid for 7 days is sent; the person accepts (or creates their account). Recommended for SaaS or community instances: consent, no disclosure of whether an account exists.' },
+    },
+    effective: 'Applied mode: {mode}',
+    instanceOpen: 'instance open to the public',
+    instanceClosed: 'closed instance',
+    notify: 'Notify the directly added person by e-mail',
+    hint: 'Instance setting (super administrator).',
+  },
   interfacesConfig: {
     sectionTitle: 'Programmatic interfaces (instance)',
     sectionDesc: 'Enable or disable the public API and the MCP interface. Disabled by default.',
@@ -4355,6 +4369,7 @@ export const en: Translations = {
     membresN: '{n} member(s)',
     analysesN: '{n} analysis(es)',
     membresTitle: 'Members of “{nom}”',
+    invitationSent: 'Invitation sent to {email}: the person will be added once they accept it.',
     selectEntite: 'Select an entity to manage its members and their roles.',
     emailLabel: 'Member e-mail',
     emailPh: 'person@organisation.com',
@@ -4608,4 +4623,5 @@ export const en: Translations = {
   historicImportSaveMapping: { title: 'Keep this mapping', explanation: 'The import succeeded. Save this configuration to reuse it.', newMapping: 'New mapping', updateMapping: 'Update a mapping', save: 'Save mapping', saved: 'Mapping saved' },
   historicImportSummary: { ateliers: { title: 'Workshops imported', counts: { businessValues: 'business value(s)', supportAssets: 'supporting asset(s)', fearedEvents: 'feared event(s)', riskSources: 'risk source(s)', stakeholders: 'stakeholder(s)', strategicScenarios: 'strategic scenario(s)', operationalScenarios: 'operational scenario(s)', securityBaseline: 'baseline requirement(s)', residualRisks: 'residual risk(s)' } }, warnings: { title: 'Points to check', codes: { support_asset_business_value_not_found: 'Supporting asset: business value “{ref}” not found, not linked.', feared_event_business_value_not_found: 'Feared event: business value “{ref}” not found, not linked.', strategic_scenario_risk_source_not_found: 'Strategic scenario: risk source “{ref}” not found.', strategic_scenario_feared_event_not_found: 'Strategic scenario: feared event “{ref}” not found, not linked.', strategic_scenario_stakeholder_not_found: 'Strategic scenario: stakeholder “{ref}” not found.', operational_scenario_strategic_not_found: 'Operational scenario: strategic scenario “{ref}” not found.', residual_risk_reference_not_found: 'Residual risk: initial risk “{ref}” not found.', text_truncated: '{a} text(s) too long, shortened to {b} characters ({n}).', strategic_scenario_gravity_differs: 'Strategic scenario “{n}”: severity {a} in the file differs from the maximum of the feared events it cites ({b}).', atelier_content_ignored_method: 'Workshops are only imported into an EBIOS RM analysis: they were ignored.', measure_risk_reference_not_found: 'Measure: risk “{ref}” not found.', vulnerability_risk_reference_not_found: 'Vulnerability: risk “{ref}” not found.', action_risk_reference_not_found: 'Action plan: risk “{ref}” not found.' } }, ignoredTemplateRows: '{n} empty template row(s) ignored: only their reference was filled in.', title: 'Import report', explanation: 'The file was processed. Rows not imported did not modify your data.', imported: 'Imported analyses', importedRows: 'Imported rows', omittedFields: 'Imported with field omitted', rejectedRows: 'Rows not imported', created: { risks: 'Risks', vulnerabilities: 'Vulnerabilities', measures: 'Measures', actions: 'Actions' }, sourceValue: 'Source value', expectedValue: 'Expected rule', emptyValue: 'empty', reasons: { MISSING_REQUIRED_VALUE: 'required field is missing', INVALID_FORMAT: 'invalid format', CARDINALITY_MISMATCH: 'incompatible reference', DUPLICATE_REFERENCE: 'reference already used by an earlier row: row not imported' }, close: 'Close', mapping: { title: 'Keep this mapping', explanation: 'Optional: enter a new name or choose an existing mapping to update.', newMapping: 'New mapping', updateMapping: 'Update a mapping', save: 'Save mapping', saved: 'Mapping saved' } },
   historicImportEmbeddedFields: { embeddedVulnerabilities: 'Vulnerabilities in this row', embeddedActions: 'Action plans in this row' },
+  invitations: { title: 'Invitation', loading: 'Loading…', notFound: 'This invitation cannot be found.', expired: 'This invitation has expired. Ask the organisation administrator for a new one.', used: 'This invitation has already been used.', intro: 'You are invited to join “{org}” with the role {role}.', accept: 'Accept the invitation', accepting: 'Accepting…', accepted: 'Invitation accepted.', wrongAccount: 'You are signed in with another account. This invitation is for {email}.', signOut: 'Sign out', loginToAccept: 'Sign in with the account {email} to accept.', login: 'Sign in', createTitle: 'Create your account to accept', name: 'Name', password: 'Password', confirm: 'Confirm password', mismatch: 'Passwords do not match.', policyError: 'The password does not meet the security policy.', create: 'Create my account and accept', created: 'Account created and invitation accepted: please sign in.', error: 'The invitation could not be accepted.' },
 }

@@ -1195,6 +1195,20 @@ export const fr = {
     forceOff: 'Interdit (indisponible)',
     hint: 'Réglage au niveau de l\'instance (super-administrateur).',
   },
+  membershipConfig: {
+    sectionTitle: 'Rattachement des comptes aux organisations',
+    sectionDesc: 'Comment un administrateur d\'organisation ajoute une personne par son e-mail.',
+    modes: {
+      AUTO: { title: 'Automatique', desc: 'Invitation si l\'instance est ouverte au public (démo ou inscription libre), sinon rattachement direct.' },
+      DIRECT: { title: 'Rattachement direct', desc: 'Le compte existant est ajouté immédiatement (déploiement interne : l\'entreprise gère les comptes de ses employés).' },
+      INVITATION: { title: 'Invitation à accepter', desc: 'Un lien valable 7 jours est envoyé ; la personne accepte (ou crée son compte). Recommandé en SaaS ou instance communautaire : consentement, aucune divulgation de l\'existence d\'un compte.' },
+    },
+    effective: 'Mode appliqué : {mode}',
+    instanceOpen: 'instance ouverte au public',
+    instanceClosed: 'instance fermée',
+    notify: 'Prévenir par e-mail la personne rattachée directement',
+    hint: 'Réglage d\'instance (super-administrateur).',
+  },
   interfacesConfig: {
     sectionTitle: 'Interfaces programmatiques (instance)',
     sectionDesc: 'Active ou désactive l\'API publique et l\'interface MCP. Désactivées par défaut.',
@@ -4404,6 +4418,7 @@ export const fr = {
     membresN: '{n} membre(s)',
     analysesN: '{n} analyse(s)',
     membresTitle: 'Membres de « {nom} »',
+    invitationSent: 'Invitation envoyée à {email} : la personne sera rattachée quand elle l’aura acceptée.',
     selectEntite: 'Sélectionnez une entité pour gérer ses membres et leurs rôles.',
     emailLabel: 'E-mail du membre',
     emailPh: 'personne@organisation.fr',
@@ -4658,6 +4673,7 @@ export const fr = {
   historicImportSaveMapping: { title: 'Conserver ce mapping', explanation: 'L’import a réussi. Enregistrez cette configuration pour la réutiliser.', newMapping: 'Nouveau mapping', updateMapping: 'Mettre à jour un mapping', save: 'Enregistrer le mapping', saved: 'Mapping enregistré' },
   historicImportSummary: { ateliers: { title: 'Ateliers importés', counts: { businessValues: 'valeur(s) métier', supportAssets: 'bien(s) support(s)', fearedEvents: 'événement(s) redouté(s)', riskSources: 'source(s) de risque', stakeholders: 'partie(s) prenante(s)', strategicScenarios: 'scénario(s) stratégique(s)', operationalScenarios: 'scénario(s) opérationnel(s)', securityBaseline: 'exigence(s) du socle', residualRisks: 'risque(s) résiduel(s)' } }, warnings: { title: 'Points à vérifier', codes: { support_asset_business_value_not_found: 'Bien support : valeur métier « {ref} » introuvable, non rattachée.', feared_event_business_value_not_found: 'Événement redouté : valeur métier « {ref} » introuvable, non rattachée.', strategic_scenario_risk_source_not_found: 'Scénario stratégique : source de risque « {ref} » introuvable.', strategic_scenario_feared_event_not_found: 'Scénario stratégique : événement redouté « {ref} » introuvable, non rattaché.', strategic_scenario_stakeholder_not_found: 'Scénario stratégique : partie prenante « {ref} » introuvable.', operational_scenario_strategic_not_found: 'Scénario opérationnel : scénario stratégique « {ref} » introuvable.', residual_risk_reference_not_found: 'Risque résiduel : risque initial « {ref} » introuvable.', text_truncated: '{a} texte(s) trop long(s) raccourci(s) à {b} caractères ({n}).', strategic_scenario_gravity_differs: 'Scénario stratégique « {n} » : gravité {a} dans le fichier, mais le maximum des événements redoutés cités est {b}.', atelier_content_ignored_method: 'Les ateliers ne sont importés que dans une analyse EBIOS RM : ils ont été ignorés.', measure_risk_reference_not_found: 'Mesure : risque « {ref} » introuvable.', vulnerability_risk_reference_not_found: 'Vulnérabilité : risque « {ref} » introuvable.', action_risk_reference_not_found: 'Plan d’action : risque « {ref} » introuvable.' } }, ignoredTemplateRows: '{n} ligne(s) modèle vide(s) ignorée(s) : seule leur référence était renseignée.', title: 'Bilan de l’import', explanation: 'Le fichier a été traité. Les lignes non importées n’ont pas modifié vos données.', imported: 'Analyses importées', importedRows: 'Lignes importées', omittedFields: 'Importé avec champ écarté', rejectedRows: 'Lignes non importées', created: { risks: 'Risques', vulnerabilities: 'Vulnérabilités', measures: 'Mesures', actions: 'Actions' }, sourceValue: 'Valeur source', expectedValue: 'Règle attendue', emptyValue: 'vide', reasons: { MISSING_REQUIRED_VALUE: 'champ obligatoire absent', INVALID_FORMAT: 'format invalide', CARDINALITY_MISMATCH: 'référence incompatible', DUPLICATE_REFERENCE: 'référence déjà utilisée par une ligne précédente : ligne non importée' }, close: 'Fermer', mapping: { title: 'Conserver ce mapping', explanation: 'Facultatif : donnez un nouveau nom ou choisissez un mapping existant à mettre à jour.', newMapping: 'Nouveau mapping', updateMapping: 'Mettre à jour un mapping', save: 'Enregistrer le mapping', saved: 'Mapping enregistré' } },
   historicImportEmbeddedFields: { embeddedVulnerabilities: 'Vulnérabilités de cette ligne', embeddedActions: 'Plans d’action de cette ligne' },
+  invitations: { title: 'Invitation', loading: 'Chargement…', notFound: 'Cette invitation est introuvable.', expired: 'Cette invitation a expiré. Demandez-en une nouvelle à l’administrateur de l’organisation.', used: 'Cette invitation a déjà été utilisée.', intro: 'Vous êtes invité(e) à rejoindre « {org} » avec le rôle {role}.', accept: 'Accepter l’invitation', accepting: 'Acceptation…', accepted: 'Invitation acceptée.', wrongAccount: 'Vous êtes connecté(e) avec un autre compte. Cette invitation est destinée à {email}.', signOut: 'Se déconnecter', loginToAccept: 'Connectez-vous avec le compte {email} pour accepter.', login: 'Se connecter', createTitle: 'Créer votre compte pour accepter', name: 'Nom', password: 'Mot de passe', confirm: 'Confirmer le mot de passe', mismatch: 'Les mots de passe ne correspondent pas.', policyError: 'Le mot de passe ne respecte pas la politique de sécurité.', create: 'Créer mon compte et accepter', created: 'Compte créé et invitation acceptée : connectez-vous.', error: 'L’invitation n’a pas pu être acceptée.' },
 } as const
 
 // Convertit tous les types littéraux en `string` pour que les autres langues

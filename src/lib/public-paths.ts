@@ -28,6 +28,10 @@ export function isPublicPath(pathname: string): boolean {
     // l'encart « mode démonstration ». Ne renvoie aucune donnée sensible.
     pathname === '/api/demo/status' ||
     // Page publique de documentation « déployer ACRA » (cible du bandeau démo).
+    // Invitation à rejoindre une organisation (T23) : l'invité peut ne pas avoir de compte ;
+    // le jeton (256 bits, haché, usage unique, 7 jours) fait office d'autorisation.
+    pathname.startsWith('/invitations/') ||
+    pathname.startsWith('/api/invitations/') ||
     pathname === '/deployer' ||
     pathname.startsWith('/legal')
   )
