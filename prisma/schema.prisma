@@ -348,10 +348,14 @@ model Traitement {
   mesuresSecurite          Json         @default("[]")
   grandeEchelle            Boolean      @default(false)
   surveillanceSystematique Boolean      @default(false)
+  // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
+  catalogueKey             String?
+  catalogueVersion         String?
   createdBy                String?
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 
+  @@unique([organizationId, catalogueKey])
   @@index([organizationId])
 }
 
