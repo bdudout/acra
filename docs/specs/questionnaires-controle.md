@@ -1,6 +1,6 @@
 # Expression de besoin — questionnaires de contrôle, missions de contrôle et conformité
 
-Statut : **décisions prises, en développement** (1er octobre 2026). Lot 0 livré : la page de conformité affiche ce que constatent le contrôle permanent et l'audit (§ 5).
+Statut : **livré** (1er octobre 2026) — lots 0 à 4, cf. § 7 pour ce qui a été réellement implémenté et les écarts avec la proposition initiale.
 
 ## 1. Besoin exprimé
 
@@ -53,3 +53,17 @@ Sur la page de conformité (`/conformite/socle`), chaque exigence affiche ce que
 2. **Suite des réponses** : le contrôleur pose des **préconisations** ; le **métier** y répond par un **plan d'action**, suivi dans les plans d'action. Le lien à la conformité est **visible mais facultatif**. Le métier peut aussi faire **accepter le risque**, avec un suivi dans la conformité (traitement « acceptation de risque »).
 3. **Conformité** : la non-conformité constatée est affichée et le responsable peut **mettre à jour le statut en un clic** (trace dans le commentaire). Jamais de mise à jour automatique.
 4. **Préconisations** : même cycle de vie que les constats d'audit (recommandation, responsable, échéance, report, réalisation, vérification par une autre personne).
+
+## 7. Implémentation livrée (1er octobre 2026)
+
+Page `/controles/questionnaires` (menu Contrôle & audit, module contrôle permanent actif, tout rôle sauf LECTEUR), onglets : **À répondre** (métier), **Préconisations** (contrôleur : toutes ; métier : celles dont il est responsable), **Modèles** et **Envois et revue** (2ᵉ ligne, `peutDefinir2eLigne` sur le rôle **effectif**).
+
+| Lot | Livré | Code |
+|---|---|---|
+| 1 — questionnaires | Modèles libres (questions OUI_NON/CHOIX/TEXTE/NOMBRE/DATE, obligatoire, preuve requise, rattachement contrôle/exigence/risque/processus) ou « exigences à justifier » générés depuis un référentiel ; envoi (questions **figées** à l'envoi) à des comptes de l'organisation, rattachable à une mission ; brouillon, soumission bloquée tant qu'une réponse obligatoire ou une preuve requise manque ; revue par question (ACCEPTEE / A_COMPLETER / NON_CONFORME + commentaire), jamais par le répondant lui-même. | `lib/questionnaire.ts` (pur), `lib/questionnaire.server.ts`, routes `api/questionnaires/**` |
+| 2 — préconisations | Modèle `Preconisation` dédié (même cycle de vie que les constats d'audit via `appliquerSuivi` : réalisation, vérification, réouverture, report) ; créée depuis une réponse NON_CONFORME (hérite l'exigence / le risque / le processus / le contrôle et le répondant comme responsable) ou librement ; le métier répond par un **plan d'action** (lien `PRECONISATION`, et facultativement `CONFORMITE` / `RISQUE`) ou **accepte le risque** (justification, traitement de conformité `ACCEPTATION_RISQUE` facultatif). | routes `api/preconisations/**` |
+| 3 — rapport | Rapport de contrôle Word **à la demande** depuis la liste des missions (📄) : synthèse, exécutions des contrôles du périmètre dans la fenêtre, questionnaires et taux de réponse, non-conformités relevées et leur rattachement, préconisations, plans d'action et acceptations, conclusions à compléter. | `lib/rapport-mission-controle.ts` (pur), `api/controles/campagnes/[id]/rapport-controle` |
+| 4 — conformité | Les réponses revues NON_CONFORME sur une exigence (non reprises par une préconisation) et les préconisations ouvertes comptent comme anomalies **de contrôle** dans la couverture ; la page de conformité les affiche et propose la mise à jour en un clic. | `couverture-referentiel.ts` (`nbAnomaliesControle`), `/api/referentiels/couverture` |
+
+Écarts avec la proposition (§ 2-3) : préconisations dans un modèle propre plutôt que `AuditConstat` (droits et périmètre différents, même fonctions de cycle de vie) ; preuves en data URL dans la réponse (`lib/preuves`, types inertes, 3 par question, 15 par réponse) plutôt que `Document` ; pas de statut `EN_REVUE` ; une NON_CONFORME rattachée à un point de contrôle **ne crée pas** d'exécution de contrôle (à décider) ; pas de relances automatiques.
+

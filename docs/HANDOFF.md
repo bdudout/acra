@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (47) — Claude Code : questionnaires de contrôle, préconisations, rapport de mission
+
+- `f0e1f99` : conformité — appliquer en un clic un constat du contrôle/de l'audit (statut non conforme + trace datée dans le commentaire ; jamais automatique).
+- `912e695` : API questionnaires (modèles libres ou « exigences à justifier », envois figés, réponses avec preuves, soumission, revue 2ᵉ ligne), préconisations (cycle de vie des constats d'audit, plan d'action du métier, acceptation de risque suivie en conformité), couverture `nbAnomaliesControle`. Migration `20261001160000_questionnaires_preconisations`.
+- Ce tour (commits suivants) : UI `/controles/questionnaires` (onglets À répondre / Préconisations / Modèles / Envois et revue) + entrée de menu ; rapport de contrôle Word d'une mission (📄 dans la liste des campagnes) ; **correctif** : `/conformite` et `/conformite/socle` filtraient sur le rôle **d'instance** (un RISK_MANAGER d'org mais ANALYSTE d'instance était renvoyé au tableau de bord) → rôle effectif, comme l'API.
+- Spec à jour : `docs/specs/questionnaires-controle.md` § 7 (livré, écarts : pas d'exécution de contrôle créée depuis une NON_CONFORME sur un point de contrôle, pas de relances).
+- Vérifications : `tsc` OK ; `npm test` 414 fichiers / 3326 tests OK ; `npm run test:db` 10 fichiers / 43 tests OK (dont parcours questionnaires + rapport sur vraie base) ; `i18n:check` OK ; lint sans avertissement sur les fichiers nouveaux ; `npm run build` OK ; navigateur (build de prod, comptes contrôleur RISK_MANAGER / métier ANALYSTE) : envoi lié à une mission → réponse avec preuves → revue 8.2 non conforme → préconisation → plan d'action du métier → conformité ISO 27001 affiche l'anomalie de contrôle → rapport .docx téléchargé et relu.
+- Pièges : `react-hooks/set-state-in-effect` signale `useEffect(() => { void charger() })` même si le setState suit un `await` → séparer `lire()` (sans effet) et `lire().then(setX)`.
+- Prochain pas possibles : NON_CONFORME sur point de contrôle → exécution ANOMALIE (décision produit) ; relances d'échéance ; traduction des socles de contrôles/programmes d'audit ; revue métier experte.
+
 ## 2026-10-01 (46) — Claude Code : badge « à compléter », conformité déclaré vs constaté, conception des questionnaires
 
 - `6625e59` : badge « à compléter » des processus (`processus-completude.ts` : propriétaire, criticité ; RTO/RPO si critique/important ou criticité ≥ 3), compteur en tête de cartographie.
