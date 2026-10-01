@@ -2047,6 +2047,9 @@ model OrganizationConfig {
   // Four-eyes : interdit à l'auteur d'approuver sa propre analyse / d'accepter ses
   // propres risques résiduels (séparation des tâches). Activé par défaut.
   interdireAutoApprobation   Boolean       @default(true)
+  // Petite structure : un RSSI ou gestionnaire des risques cumule les rôles RSSI, gestionnaire des
+  // risques et analyste (création, approbation de ses propres analyses, avis sur dérogation), tracé.
+  petiteStructure            Boolean       @default(false)
   // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
   // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
   derogationsActive          Boolean       @default(false)

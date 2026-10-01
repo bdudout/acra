@@ -46,6 +46,7 @@ export interface RawOrgConfig {
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
   interdireAutoApprobation: boolean
+  petiteStructure?: boolean
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
@@ -99,6 +100,8 @@ export interface OrgConfigResolved {
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
   interdireAutoApprobation: boolean
+  /** Petite structure : cumul RSSI + gestionnaire des risques + analyste (cf. permissions.exerceRole). */
+  petiteStructure: boolean
   derogationsActive: boolean
   derogationDureeDefautJours: number
   derogationAlerteJours: number
@@ -156,6 +159,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   acceptationRisquesActive: false,
   gelApresAcceptationActive: true,
   interdireAutoApprobation: true,
+  petiteStructure: false,
   derogationsActive: false,
   derogationDureeDefautJours: 180,
   derogationAlerteJours: 30,
@@ -195,7 +199,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
+type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
@@ -249,6 +253,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
     gelApresAcceptationActive: pickBool('gelApresAcceptationActive', defaults.gelApresAcceptationActive),
     interdireAutoApprobation: pickBool('interdireAutoApprobation', defaults.interdireAutoApprobation),
+    petiteStructure: pickBool('petiteStructure', defaults.petiteStructure),
     derogationsActive: pickBool('derogationsActive', defaults.derogationsActive),
     derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),

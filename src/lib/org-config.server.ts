@@ -30,6 +30,7 @@ const CONFIG_SELECT = {
   acceptationRisquesActive: true,
   gelApresAcceptationActive: true,
   interdireAutoApprobation: true,
+  petiteStructure: true,
   derogationsActive: true,
   derogationDureeDefautJours: true,
   derogationAlerteJours: true,
@@ -107,4 +108,9 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
   } catch {
     return cfg
   }
+}
+
+/** Options de structure d'une organisation pour les règles de droits (cumul des rôles en petite structure). */
+export async function optionsStructure(orgId: string | null | undefined): Promise<{ petiteStructure: boolean }> {
+  return { petiteStructure: orgId ? (await getOrgConfig(orgId)).petiteStructure : false }
 }
