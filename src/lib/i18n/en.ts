@@ -1200,6 +1200,10 @@ export const en: Translations = {
     hint: 'Instance-level setting (super-administrator). Disabled by default (minimal attack surface).',
   },
   processus: {
+    aCompleter: "To complete",
+    aCompleterHint: "To complete: {champs}",
+    aCompleterCount: "{n} process(es) to complete (owner, criticality, recovery times for critical processes).",
+    champs: { proprietaire: "owner", criticite: "criticality", rto: "RTO", rpo: "RPO" },
     title: 'Process repository',
     subtitle: 'Map of the organisation\'s macro-processes and processes — the backbone of operational risk analysis.',
     addTitle: 'Add a process',

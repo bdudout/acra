@@ -1200,6 +1200,10 @@ export const it: Translations = {
     hint: 'Impostazione a livello di istanza (super-amministratore). Disattivate per impostazione predefinita (superficie di attacco minima).',
   },
   processus: {
+    aCompleter: "Da completare",
+    aCompleterHint: "Da completare: {champs}",
+    aCompleterCount: "{n} processo/i da completare (responsabile, criticità, tempi di ripristino per i processi critici).",
+    champs: { proprietaire: "responsabile", criticite: "criticità", rto: "RTO", rpo: "RPO" },
     title: 'Repository dei processi',
     subtitle: 'Mappa dei macroprocessi e processi dell\'organizzazione — base dell\'analisi dei rischi operativi.',
     addTitle: 'Aggiungi un processo',

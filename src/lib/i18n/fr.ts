@@ -1223,6 +1223,10 @@ export const fr = {
     hint: 'Réglage au niveau de l\'instance (super-administrateur). Désactivées par défaut (surface d\'attaque minimale).',
   },
   processus: {
+    aCompleter: "À compléter",
+    aCompleterHint: "À compléter : {champs}",
+    aCompleterCount: "{n} processus à compléter (propriétaire, criticité, délais de reprise pour les processus critiques).",
+    champs: { proprietaire: "propriétaire", criticite: "criticité", rto: "RTO", rpo: "RPO" },
     title: 'Référentiel de processus',
     subtitle: 'Cartographie des macro-processus et processus de l\'organisation — ossature de l\'analyse des risques opérationnels.',
     addTitle: 'Ajouter un processus',

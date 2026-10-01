@@ -1199,6 +1199,10 @@ export const de: Translations = {
     hint: 'Einstellung auf Instanzebene (Super-Administrator). Standardmäßig deaktiviert (minimale Angriffsfläche).',
   },
   processus: {
+    aCompleter: "Zu ergänzen",
+    aCompleterHint: "Zu ergänzen: {champs}",
+    aCompleterCount: "{n} Prozess(e) zu ergänzen (Verantwortlicher, Kritikalität, Wiederanlaufzeiten für kritische Prozesse).",
+    champs: { proprietaire: "Verantwortlicher", criticite: "Kritikalität", rto: "RTO", rpo: "RPO" },
     title: 'Prozessverzeichnis',
     subtitle: 'Übersicht der Makroprozesse und Prozesse der Organisation — Grundlage der Analyse operationeller Risiken.',
     addTitle: 'Prozess hinzufügen',

@@ -1200,6 +1200,10 @@ export const es: Translations = {
     hint: 'Ajuste a nivel de instancia (superadministrador). Desactivadas por defecto (superficie de ataque mínima).',
   },
   processus: {
+    aCompleter: "Por completar",
+    aCompleterHint: "Por completar: {champs}",
+    aCompleterCount: "{n} proceso(s) por completar (responsable, criticidad, plazos de recuperación de los procesos críticos).",
+    champs: { proprietaire: "responsable", criticite: "criticidad", rto: "RTO", rpo: "RPO" },
     title: 'Repositorio de procesos',
     subtitle: 'Mapa de los macroprocesos y procesos de la organización — base del análisis de riesgos operativos.',
     addTitle: 'Añadir un proceso',

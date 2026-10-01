@@ -13,6 +13,7 @@ import { buildProcessusTree, type ProcessusTree } from '@/lib/processus'
 import { CRITICITES_DORA, formatDuree, type CriticiteDora } from '@/lib/processus-dora'
 import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
 import ProcessusImportPanel from '@/components/ProcessusImportPanel'
+import { champsManquantsProcessus } from '@/lib/processus-completude'
 
 interface Processus {
   id: string; parentId: string | null; nom: string; description: string | null
@@ -60,6 +61,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
   useEffect(() => { reload() }, [])
 
   const tree = useMemo(() => buildProcessusTree(list), [list])
+  const aCompleter = useMemo(() => list.filter(x => champsManquantsProcessus(x).length > 0).length, [list])
   // Options de parent (exclut le nœud en édition pour éviter l'auto-parentage évident).
   const parentOptions = useMemo(() => list.filter(x => x.id !== editId), [list, editId])
 
@@ -116,6 +118,12 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
           {n.rtoMinutes != null && <span className="text-[11px] text-gray-500 hidden sm:inline">{p.rtoShort} {formatDuree(n.rtoMinutes, p.dureeUnites)}</span>}
           {n.rpoMinutes != null && <span className="text-[11px] text-gray-500 hidden sm:inline">{p.rpoShort} {formatDuree(n.rpoMinutes, p.dureeUnites)}</span>}
           {n.proprietaire && <span className="text-xs text-gray-400 hidden sm:inline">{n.proprietaire}</span>}
+          {(() => {
+            const manquants = champsManquantsProcessus(n)
+            if (!manquants.length) return null
+            const detail = manquants.map(c => p.champs[c]).join(', ')
+            return <span data-testid="processus-a-completer" className="text-[11px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300" title={p.aCompleterHint.replace('{champs}', detail)} aria-label={p.aCompleterHint.replace('{champs}', detail)}>{p.aCompleter}</span>
+          })()}
           {canEdit && <>
             <button onClick={() => startEdit(n)} className="text-xs text-ebios-600 hover:underline">{p.edit}</button>
             <button onClick={() => remove(n.id)} className="text-xs text-red-500 hover:underline">{p.delete}</button>
@@ -130,6 +138,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1"><FolderTree size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{p.subtitle}</p>
+      {aCompleter > 0 && <p role="status" className="mb-4 text-sm text-orange-800 dark:text-orange-300">{p.aCompleterCount.replace('{n}', String(aCompleter))}</p>}
       {canEdit && <SectorSuggestionsPanel canCreateProcesses kinds={['PROCESS']} onImported={() => { void reload() }} />}
       {canEdit && (
         <div className="mb-5">
