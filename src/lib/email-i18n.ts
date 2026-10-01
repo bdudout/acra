@@ -1,10 +1,11 @@
 // ─── Gabarits d'e-mails localisés (tâches planifiées) ────────────────────────
-// E-mails des tâches planifiées (synthèse des relances, digest des dérogations)
+// E-mails des tâches planifiées (synthèse des relances, tableau de bord mensuel)
 // et des invitations, dans les 5 langues. Module SERVEUR
 // pur (hors bundle client) : chaque fonction renvoie { subject, text } selon la
 // langue du destinataire (User.locale), avec repli sur le français. Testé.
 
 import { emailLayout } from './email-html'
+import type { Indicateur, IndicateurCle, PointAttention, AttentionType } from './tableau-bord-mensuel'
 
 /** Langue d'un e-mail localisé (une des 5 locales de l'app). */
 export type EmailLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
@@ -16,55 +17,6 @@ export interface BuiltEmail { subject: string; text: string; html: string }
 /** Normalise une valeur de langue quelconque vers une EmailLocale (repli 'fr'). */
 export function emailLocale(l: string | null | undefined): EmailLocale {
   return l && (LOCALES as string[]).includes(l) ? (l as EmailLocale) : 'fr'
-}
-
-// Formulation « échéance » : dans X j / depuis X j (X = valeur absolue).
-const echeancePhrase: Record<EmailLocale, (jours: number) => string> = {
-  fr: j => (j < 0 ? `expirée depuis ${-j} j` : j === 0 ? "expire aujourd'hui" : `expire dans ${j} j`),
-  en: j => (j < 0 ? `expired ${-j} day(s) ago` : j === 0 ? 'expires today' : `expires in ${j} day(s)`),
-  de: j => (j < 0 ? `seit ${-j} Tag(en) abgelaufen` : j === 0 ? 'läuft heute ab' : `läuft in ${j} Tag(en) ab`),
-  es: j => (j < 0 ? `caducada hace ${-j} día(s)` : j === 0 ? 'caduca hoy' : `caduca en ${j} día(s)`),
-  it: j => (j < 0 ? `scaduta da ${-j} giorno/i` : j === 0 ? 'scade oggi' : `scade tra ${j} giorno/i`),
-}
-
-/** Une dérogation listée dans l'e-mail de digest (intitulé + jours restants). */
-export interface DigestItem { intitule: string; joursRestants: number }
-/** Paramètres de l'e-mail de digest des dérogations (compteurs par état + items). */
-export interface DigestParams { orgNom: string; active: number; expireBientot: number; expiree: number; items: DigestItem[] }
-
-const digestLabels: Record<EmailLocale, { subject: (org: string) => string; heading: (org: string) => string; active: string; soon: string; expired: string; toHandle: string }> = {
-  fr: { subject: o => `[ACRA] Synthèse des dérogations — ${o}`, heading: o => `Synthèse des dérogations — ${o}`, active: 'Actives', soon: 'Bientôt expirées', expired: 'Expirées', toHandle: 'À traiter' },
-  en: { subject: o => `[ACRA] Waivers summary — ${o}`, heading: o => `Waivers summary — ${o}`, active: 'Active', soon: 'Expiring soon', expired: 'Expired', toHandle: 'To handle' },
-  de: { subject: o => `[ACRA] Ausnahmen-Übersicht — ${o}`, heading: o => `Ausnahmen-Übersicht — ${o}`, active: 'Aktiv', soon: 'Bald ablaufend', expired: 'Abgelaufen', toHandle: 'Zu bearbeiten' },
-  es: { subject: o => `[ACRA] Resumen de excepciones — ${o}`, heading: o => `Resumen de excepciones — ${o}`, active: 'Activas', soon: 'Por caducar', expired: 'Caducadas', toHandle: 'A gestionar' },
-  it: { subject: o => `[ACRA] Riepilogo deroghe — ${o}`, heading: o => `Riepilogo deroghe — ${o}`, active: 'Attive', soon: 'In scadenza', expired: 'Scadute', toHandle: 'Da gestire' },
-}
-
-/** E-mail de synthèse (digest) périodique des dérogations (texte + HTML). */
-export function derogationDigestEmail(locale: string | null | undefined, p: DigestParams): BuiltEmail {
-  const loc = emailLocale(locale)
-  const L = digestLabels[loc]
-  const lignes = p.items.map(x => `• ${x.intitule} — ${echeancePhrase[loc](x.joursRestants)}`).join('\n')
-  const text = `${L.heading(p.orgNom)}\n\n`
-    + `${L.active} : ${p.active}\n${L.soon} : ${p.expireBientot}\n${L.expired} : ${p.expiree}\n\n`
-    + `${L.toHandle} :\n${lignes}\n`
-  const html = emailLayout({
-    heading: L.heading(p.orgNom),
-    tone: p.expiree > 0 ? 'danger' : 'warning',
-    stats: [
-      { label: L.active, value: p.active, tone: 'success' },
-      { label: L.soon, value: p.expireBientot, tone: 'warning' },
-      { label: L.expired, value: p.expiree, tone: 'danger' },
-    ],
-    itemsTitle: L.toHandle,
-    items: p.items.map(x => ({
-      label: x.intitule,
-      detail: echeancePhrase[loc](x.joursRestants),
-      tone: x.joursRestants < 0 ? ('danger' as const) : ('warning' as const),
-    })),
-    footer: 'ACRA',
-  })
-  return { subject: L.subject(p.orgNom), text, html }
 }
 
 // ─── Diffusion d'un rapport validé (lot L2, suite) ──────────────────────────
@@ -224,4 +176,130 @@ export function relancesEmail(locale: string | null | undefined, p: RelancesPara
     paragraphs: [L.intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA',
   })
   return { subject: L.subject(p.items.length, seule), text, html }
+}
+
+// ─── Tableau de bord mensuel (RSSI, gestionnaires des risques) ──────────────
+
+
+export interface TableauBordParams {
+  /** Premier jour du mois couvert. */
+  mois: Date
+  sections: { organisation: string; indicateurs: Indicateur[]; attention: PointAttention[] }[]
+  url: string | null
+}
+
+const tableauBordLabels: Record<EmailLocale, {
+  subject: (m: string) => string; heading: (m: string) => string; intro: string; attentionTitre: string; rienASignaler: string; action: string
+  niveau: (n: number) => string; date: Record<'echeance' | 'fin', (d: string) => string>
+  indicateurs: Record<IndicateurCle, string>; attention: Record<AttentionType, string>
+}> = {
+  fr: {
+    subject: m => `[ACRA] Tableau de bord — ${m}`, heading: m => `Tableau de bord — ${m}`,
+    intro: 'L’essentiel du mois écoulé : indicateurs clés et points d’attention.', attentionTitre: 'Points d’attention', rienASignaler: 'Aucun point d’attention ce mois-ci.', action: 'Ouvrir le pilotage',
+    niveau: n => `niveau ${n}`, date: { echeance: d => `échéance le ${d}`, fin: d => `fin le ${d}` },
+    indicateurs: {
+      risquesEleves: 'Risques élevés', horsAppetit: 'Hors appétit', plansEnRetard: 'Plans d’action en retard', incidentsMois: 'Incidents du mois', incidentsMajeurs: 'Incidents majeurs (DORA)',
+      perteNetteMois: 'Perte nette du mois', tauxConformite: 'Contrôles conformes', anomaliesMois: 'Anomalies de contrôle', recosEnRetard: 'Recommandations d’audit en retard',
+      constatsCritiques: 'Constats d’audit critiques', preconisationsEnRetard: 'Préconisations en retard', kriEnAlerte: 'KRI en alerte', derogationsAExpirer: 'Dérogations à expirer',
+      derogationsExpirees: 'Dérogations expirées', decisionsEnAttente: 'Décisions en attente',
+    },
+    attention: {
+      RISQUE_ELEVE: 'Risque élevé', RISQUE_HORS_APPETIT: 'Risque hors appétit', INCIDENT_MAJEUR: 'Incident majeur', PLAN_EN_RETARD: 'Plan d’action en retard', CONSTAT_CRITIQUE: 'Constat d’audit critique',
+      RECO_EN_RETARD: 'Recommandation d’audit en retard', KRI_CRITIQUE: 'KRI critique', DEROGATION_EXPIREE: 'Dérogation expirée', DEROGATION_A_EXPIRER: 'Dérogation à expirer',
+    },
+  },
+  en: {
+    subject: m => `[ACRA] Dashboard — ${m}`, heading: m => `Dashboard — ${m}`,
+    intro: 'The essentials of last month: key indicators and points of attention.', attentionTitre: 'Points of attention', rienASignaler: 'No point of attention this month.', action: 'Open the cockpit',
+    niveau: n => `level ${n}`, date: { echeance: d => `due on ${d}`, fin: d => `ends on ${d}` },
+    indicateurs: {
+      risquesEleves: 'High risks', horsAppetit: 'Outside appetite', plansEnRetard: 'Overdue action plans', incidentsMois: 'Incidents this month', incidentsMajeurs: 'Major incidents (DORA)',
+      perteNetteMois: 'Net loss this month', tauxConformite: 'Compliant controls', anomaliesMois: 'Control anomalies', recosEnRetard: 'Overdue audit recommendations',
+      constatsCritiques: 'Critical audit findings', preconisationsEnRetard: 'Overdue recommendations', kriEnAlerte: 'KRIs in alert', derogationsAExpirer: 'Waivers expiring',
+      derogationsExpirees: 'Expired waivers', decisionsEnAttente: 'Pending decisions',
+    },
+    attention: {
+      RISQUE_ELEVE: 'High risk', RISQUE_HORS_APPETIT: 'Risk outside appetite', INCIDENT_MAJEUR: 'Major incident', PLAN_EN_RETARD: 'Overdue action plan', CONSTAT_CRITIQUE: 'Critical audit finding',
+      RECO_EN_RETARD: 'Overdue audit recommendation', KRI_CRITIQUE: 'Critical KRI', DEROGATION_EXPIREE: 'Expired waiver', DEROGATION_A_EXPIRER: 'Waiver expiring',
+    },
+  },
+  de: {
+    subject: m => `[ACRA] Dashboard — ${m}`, heading: m => `Dashboard — ${m}`,
+    intro: 'Das Wichtigste des vergangenen Monats: Kennzahlen und Hinweise.', attentionTitre: 'Hinweise', rienASignaler: 'Keine Hinweise in diesem Monat.', action: 'Steuerung öffnen',
+    niveau: n => `Stufe ${n}`, date: { echeance: d => `fällig am ${d}`, fin: d => `endet am ${d}` },
+    indicateurs: {
+      risquesEleves: 'Hohe Risiken', horsAppetit: 'Außerhalb des Risikoappetits', plansEnRetard: 'Überfällige Maßnahmenpläne', incidentsMois: 'Vorfälle im Monat', incidentsMajeurs: 'Schwerwiegende Vorfälle (DORA)',
+      perteNetteMois: 'Nettoverlust im Monat', tauxConformite: 'Konforme Kontrollen', anomaliesMois: 'Kontrollanomalien', recosEnRetard: 'Überfällige Prüfungsempfehlungen',
+      constatsCritiques: 'Kritische Prüfungsfeststellungen', preconisationsEnRetard: 'Überfällige Empfehlungen', kriEnAlerte: 'KRI im Alarm', derogationsAExpirer: 'Bald ablaufende Ausnahmen',
+      derogationsExpirees: 'Abgelaufene Ausnahmen', decisionsEnAttente: 'Ausstehende Entscheidungen',
+    },
+    attention: {
+      RISQUE_ELEVE: 'Hohes Risiko', RISQUE_HORS_APPETIT: 'Risiko außerhalb des Appetits', INCIDENT_MAJEUR: 'Schwerwiegender Vorfall', PLAN_EN_RETARD: 'Überfälliger Maßnahmenplan', CONSTAT_CRITIQUE: 'Kritische Prüfungsfeststellung',
+      RECO_EN_RETARD: 'Überfällige Prüfungsempfehlung', KRI_CRITIQUE: 'Kritischer KRI', DEROGATION_EXPIREE: 'Abgelaufene Ausnahme', DEROGATION_A_EXPIRER: 'Bald ablaufende Ausnahme',
+    },
+  },
+  es: {
+    subject: m => `[ACRA] Cuadro de mando — ${m}`, heading: m => `Cuadro de mando — ${m}`,
+    intro: 'Lo esencial del mes pasado: indicadores clave y puntos de atención.', attentionTitre: 'Puntos de atención', rienASignaler: 'Ningún punto de atención este mes.', action: 'Abrir el pilotaje',
+    niveau: n => `nivel ${n}`, date: { echeance: d => `vence el ${d}`, fin: d => `finaliza el ${d}` },
+    indicateurs: {
+      risquesEleves: 'Riesgos altos', horsAppetit: 'Fuera del apetito', plansEnRetard: 'Planes de acción con retraso', incidentsMois: 'Incidentes del mes', incidentsMajeurs: 'Incidentes graves (DORA)',
+      perteNetteMois: 'Pérdida neta del mes', tauxConformite: 'Controles conformes', anomaliesMois: 'Anomalías de control', recosEnRetard: 'Recomendaciones de auditoría con retraso',
+      constatsCritiques: 'Hallazgos de auditoría críticos', preconisationsEnRetard: 'Recomendaciones con retraso', kriEnAlerte: 'KRI en alerta', derogationsAExpirer: 'Excepciones por caducar',
+      derogationsExpirees: 'Excepciones caducadas', decisionsEnAttente: 'Decisiones pendientes',
+    },
+    attention: {
+      RISQUE_ELEVE: 'Riesgo alto', RISQUE_HORS_APPETIT: 'Riesgo fuera del apetito', INCIDENT_MAJEUR: 'Incidente grave', PLAN_EN_RETARD: 'Plan de acción con retraso', CONSTAT_CRITIQUE: 'Hallazgo de auditoría crítico',
+      RECO_EN_RETARD: 'Recomendación de auditoría con retraso', KRI_CRITIQUE: 'KRI crítico', DEROGATION_EXPIREE: 'Excepción caducada', DEROGATION_A_EXPIRER: 'Excepción por caducar',
+    },
+  },
+  it: {
+    subject: m => `[ACRA] Cruscotto — ${m}`, heading: m => `Cruscotto — ${m}`,
+    intro: 'L’essenziale del mese trascorso: indicatori chiave e punti di attenzione.', attentionTitre: 'Punti di attenzione', rienASignaler: 'Nessun punto di attenzione questo mese.', action: 'Apri il pilotaggio',
+    niveau: n => `livello ${n}`, date: { echeance: d => `scadenza il ${d}`, fin: d => `termina il ${d}` },
+    indicateurs: {
+      risquesEleves: 'Rischi elevati', horsAppetit: 'Fuori propensione', plansEnRetard: 'Piani d’azione in ritardo', incidentsMois: 'Incidenti del mese', incidentsMajeurs: 'Incidenti gravi (DORA)',
+      perteNetteMois: 'Perdita netta del mese', tauxConformite: 'Controlli conformi', anomaliesMois: 'Anomalie di controllo', recosEnRetard: 'Raccomandazioni di audit in ritardo',
+      constatsCritiques: 'Rilievi di audit critici', preconisationsEnRetard: 'Raccomandazioni in ritardo', kriEnAlerte: 'KRI in allerta', derogationsAExpirer: 'Deroghe in scadenza',
+      derogationsExpirees: 'Deroghe scadute', decisionsEnAttente: 'Decisioni in attesa',
+    },
+    attention: {
+      RISQUE_ELEVE: 'Rischio elevato', RISQUE_HORS_APPETIT: 'Rischio fuori propensione', INCIDENT_MAJEUR: 'Incidente grave', PLAN_EN_RETARD: 'Piano d’azione in ritardo', CONSTAT_CRITIQUE: 'Rilievo di audit critico',
+      RECO_EN_RETARD: 'Raccomandazione di audit in ritardo', KRI_CRITIQUE: 'KRI critico', DEROGATION_EXPIREE: 'Deroga scaduta', DEROGATION_A_EXPIRER: 'Deroga in scadenza',
+    },
+  },
+}
+
+/**
+ * Tableau de bord mensuel d'une personne (texte + HTML) : une section par organisation, avec ses
+ * indicateurs clés puis ses points d'attention (le plus grave d'abord). Données métier échappées.
+ */
+export function tableauBordEmail(locale: string | null | undefined, p: TableauBordParams): BuiltEmail {
+  const loc = emailLocale(locale)
+  const L = tableauBordLabels[loc]
+  const mois = new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(p.mois)
+  const nombre = new Intl.NumberFormat(loc)
+  const valeur = (i: Indicateur) => `${nombre.format(i.valeur)}${i.unite ? ` ${i.unite}` : ''}`
+  const detail = (a: PointAttention) => (a.niveau != null ? L.niveau(a.niveau)
+    : a.date ? L.date[a.type.startsWith('DEROGATION') ? 'fin' : 'echeance'](a.date) : undefined)
+  const sections = p.sections.map(s => ({
+    heading: s.organisation,
+    stats: s.indicateurs.map(i => ({ label: L.indicateurs[i.cle], value: valeur(i), tone: i.ton })),
+    itemsTitle: L.attentionTitre,
+    items: s.attention.map(a => ({ label: `${L.attention[a.type]} — ${a.intitule}`, detail: detail(a), tone: a.ton })),
+    empty: L.rienASignaler,
+  }))
+  const text = [
+    L.heading(mois), '', L.intro,
+    ...p.sections.flatMap(s => ['', `■ ${s.organisation}`,
+      ...s.indicateurs.map(i => `  ${L.indicateurs[i.cle]} : ${valeur(i)}`),
+      ...(s.attention.length ? [`  ${L.attentionTitre} :`, ...s.attention.map(a => `  • ${L.attention[a.type]} — ${a.intitule}${detail(a) ? ` (${detail(a)})` : ''}`)] : [`  ${L.rienASignaler}`])]),
+    ...(p.url ? ['', `${L.action} : ${p.url}`] : []),
+  ].join('\n') + '\n'
+  const html = emailLayout({
+    heading: L.heading(mois), paragraphs: [L.intro], sections,
+    tone: p.sections.some(s => s.attention.some(a => a.ton === 'danger')) ? 'danger' : 'neutral',
+    ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA',
+  })
+  return { subject: L.subject(mois), text, html }
 }

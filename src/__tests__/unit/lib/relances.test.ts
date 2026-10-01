@@ -8,12 +8,12 @@ const item = (o: Partial<{ echeance: Date | null; rappelLe: Date | null; created
 
 describe('configuration des relances', () => {
   it('par défaut : actives, 14 jours avant l’échéance, puis tous les mois', () => {
-    expect(RELANCES_DEFAUT).toEqual({ actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7 })
+    expect(RELANCES_DEFAUT).toEqual({ actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7, tableauBordMensuel: true })
     expect(sanitizeRelancesConfig(undefined)).toEqual(RELANCES_DEFAUT)
   })
   it('borne les saisies ; 0 désactive la relance périodique', () => {
-    expect(sanitizeRelancesConfig({ actives: false, joursAvant: 500, periodiciteJours: 0, x: 1 })).toEqual({ actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7 })
-    expect(sanitizeRelancesConfig({ joursAvant: 0, periodiciteJours: 3, attenteJours: 99 })).toEqual({ actives: true, joursAvant: 1, periodiciteJours: 7, attenteJours: 60 })
+    expect(sanitizeRelancesConfig({ actives: false, joursAvant: 500, periodiciteJours: 0, x: 1 })).toEqual({ actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7, tableauBordMensuel: true })
+    expect(sanitizeRelancesConfig({ joursAvant: 0, periodiciteJours: 3, attenteJours: 99 })).toEqual({ actives: true, joursAvant: 1, periodiciteJours: 7, attenteJours: 60, tableauBordMensuel: true })
   })
 })
 

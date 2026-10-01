@@ -34,7 +34,7 @@ describe('POST /api/cron/relances', () => {
 
 describe('/api/relances/config', () => {
   it('GET : défauts (mensuel) et droit d’édition selon le rôle effectif', async () => {
-    expect(await (await GET()).json()).toEqual({ canEdit: true, config: { actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7 } })
+    expect(await (await GET()).json()).toEqual({ canEdit: true, config: { actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7, tableauBordMensuel: true } })
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RISK_MANAGER' })
     expect((await (await GET()).json()).canEdit).toBe(false)
   })
@@ -43,8 +43,8 @@ describe('/api/relances/config', () => {
     expect((await PUT(put({ actives: false }))).status).toBe(403)
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'ADMIN' })
     const res = await PUT(put({ actives: false, joursAvant: 365, periodiciteJours: 0 }))
-    expect((await res.json()).config).toEqual({ actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7 })
-    expect(m.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'o1' }, update: { relancesConfig: { actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7 } } }))
+    expect((await res.json()).config).toEqual({ actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7, tableauBordMensuel: true })
+    expect(m.upsert).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'o1' }, update: { relancesConfig: { actives: false, joursAvant: 90, periodiciteJours: 0, attenteJours: 7, tableauBordMensuel: true } } }))
     expect(m.audit).toHaveBeenCalledTimes(1)
   })
 })

@@ -18,9 +18,11 @@ export interface RelancesConfig {
   periodiciteJours: number
   /** Validation / vérification en attente : première relance après ce nombre de jours (1–60). */
   attenteJours: number
+  /** Tableau de bord mensuel des RSSI et gestionnaires des risques (1er du mois). */
+  tableauBordMensuel: boolean
 }
 
-export const RELANCES_DEFAUT: RelancesConfig = { actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7 }
+export const RELANCES_DEFAUT: RelancesConfig = { actives: true, joursAvant: 14, periodiciteJours: 30, attenteJours: 7, tableauBordMensuel: true }
 
 export type TypeRelance = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE'
 export interface ElementRelancable { echeance: Date | null; rappelLe: Date | null; createdAt: Date }
@@ -38,6 +40,7 @@ export function sanitizeRelancesConfig(input: unknown): RelancesConfig {
     joursAvant: borne(o.joursAvant, 1, 90, RELANCES_DEFAUT.joursAvant),
     periodiciteJours: periode,
     attenteJours: borne(o.attenteJours, 1, 60, RELANCES_DEFAUT.attenteJours),
+    tableauBordMensuel: typeof o.tableauBordMensuel === 'boolean' ? o.tableauBordMensuel : RELANCES_DEFAUT.tableauBordMensuel,
   }
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emailLocale, derogationDigestEmail, relancesEmail } from '@/lib/email-i18n'
+import { emailLocale, relancesEmail, tableauBordEmail } from '@/lib/email-i18n'
 
 describe('emailLocale', () => {
   it('normalise vers une locale supportée, repli fr', () => {
@@ -11,41 +11,42 @@ describe('emailLocale', () => {
   })
 })
 
-describe('derogationDigestEmail', () => {
-  const params = { orgNom: 'StarBank', active: 3, expireBientot: 2, expiree: 1, items: [
-    { intitule: 'Deux', joursRestants: 5 },
-    { intitule: 'Un', joursRestants: -2 },
-  ] }
-  it('anglais : compteurs et lignes localisés', () => {
-    const e = derogationDigestEmail('en', params)
-    expect(e.subject).toContain('Waivers summary')
-    expect(e.subject).toContain('StarBank')
-    expect(e.text).toContain('Active : 3')
-    expect(e.text).toContain('Expiring soon : 2')
-    expect(e.text).toContain('Expired : 1')
-    expect(e.text).toContain('expires in 5 day(s)')
-    expect(e.text).toContain('expired 2 day(s) ago')
+describe('tableauBordEmail — tableau de bord mensuel', () => {
+  const sections = [
+    { organisation: 'Banque <Groupe>', indicateurs: [
+      { cle: 'risquesEleves' as const, valeur: 2, ton: 'danger' as const },
+      { cle: 'perteNetteMois' as const, valeur: 40000, unite: '€' as const, ton: 'warning' as const },
+      { cle: 'tauxConformite' as const, valeur: 92, unite: '%' as const, ton: 'success' as const },
+    ], attention: [
+      { type: 'RISQUE_ELEVE' as const, intitule: 'Panne <SI> paiements', niveau: 16, ton: 'danger' as const },
+      { type: 'PLAN_EN_RETARD' as const, intitule: 'MFA partout', date: '2026-09-15', ton: 'warning' as const },
+      { type: 'DEROGATION_A_EXPIRER' as const, intitule: 'TLS 1.0', date: '2026-10-20', ton: 'warning' as const },
+    ] },
+    { organisation: 'Assurance', indicateurs: [{ cle: 'decisionsEnAttente' as const, valeur: 0, ton: 'success' as const }], attention: [] },
+  ]
+  it('une section par organisation : indicateurs formatés, points d’attention détaillés, rien à signaler sinon', () => {
+    const m = tableauBordEmail('fr', { mois: new Date('2026-09-01T00:00:00Z'), sections, url: 'https://acra.test/pilotage' })
+    expect(m.subject).toBe('[ACRA] Tableau de bord — septembre 2026')
+    expect(m.text).toContain('■ Banque <Groupe>')
+    expect(m.text).toMatch(/Perte nette du mois : 40\s000 €/)
+    expect(m.text).toContain('Contrôles conformes : 92 %')
+    expect(m.text).toContain('• Risque élevé — Panne <SI> paiements (niveau 16)')
+    expect(m.text).toContain('• Plan d’action en retard — MFA partout (échéance le 2026-09-15)')
+    expect(m.text).toContain('• Dérogation à expirer — TLS 1.0 (fin le 2026-10-20)')
+    expect(m.text).toContain('■ Assurance')
+    expect(m.text).toContain('Aucun point d’attention ce mois-ci.')
+    expect(m.html).toContain('Banque &lt;Groupe&gt;')
+    expect(m.html).toContain('Panne &lt;SI&gt; paiements')
+    expect(m.html.includes('<SI>')).toBe(false)
+    expect(m.html).toContain('#DC2626')
+    expect(m.html).toContain('https://acra.test/pilotage')
   })
-  it('français par défaut', () => {
-    const e = derogationDigestEmail(null, params)
-    expect(e.text).toContain('Actives : 3')
-    expect(e.text).toContain('Bientôt expirées : 2')
-  })
-})
-
-describe('versions HTML (multipart)', () => {
-  it('digest : compteurs et lignes présents dans le html, localisés', () => {
-    const e = derogationDigestEmail('en', { orgNom: 'StarBank', active: 3, expireBientot: 2, expiree: 1, items: [{ intitule: 'Legacy access', joursRestants: -2 }] })
-    expect(e.html).toContain('Waivers summary')
-    expect(e.html).toContain('StarBank')
-    expect(e.html).toContain('Expiring soon')
-    expect(e.html).toContain('Legacy access')
-    expect(e.html).toContain('expired 2 day(s) ago')
-  })
-  it('digest : nom d\'organisation hostile échappé', () => {
-    const e = derogationDigestEmail('fr', { orgNom: '<script>x</script>', active: 0, expireBientot: 1, expiree: 0, items: [] })
-    expect(e.html.includes('<script>')).toBe(false)
-    expect(e.html).toContain('&lt;script&gt;')
+  it('traduit (mois et libellés), repli français', () => {
+    const en = tableauBordEmail('en', { mois: new Date('2026-09-01T00:00:00Z'), sections, url: null })
+    expect(en.subject).toBe('[ACRA] Dashboard — September 2026')
+    expect(en.text).toContain('High risk — Panne <SI> paiements (level 16)')
+    expect(tableauBordEmail('de', { mois: new Date('2026-09-01T00:00:00Z'), sections, url: null }).subject).toContain('September 2026')
+    expect(tableauBordEmail('zz', { mois: new Date('2026-09-01T00:00:00Z'), sections, url: null }).text).toContain('Risques élevés : 2')
   })
 })
 

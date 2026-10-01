@@ -2515,3 +2515,15 @@ model Preconisation {
   @@index([statut])
   @@index([responsableId])
 }
+
+// Envois périodiques déjà effectués (ex. tableau de bord mensuel « 2026-09 ») : l'unicité
+// (tache, periode) garantit un seul envoi par période, même si le planificateur rappelle la tâche.
+model EnvoiPeriodique {
+  id        String   @id @default(cuid())
+  tache     String
+  periode   String
+  envoyeLe  DateTime @default(now())
+  bilan     Json     @default("{}")
+
+  @@unique([tache, periode])
+}

@@ -14,8 +14,8 @@ name: Scheduled tasks
 # appeler (les forks du dépôt ne subissent donc aucun échec).
 #
 # ⚠️ N'activer QU'UNE seule variante : soit ce workflow, soit le service
-# « scheduler » du compose. Les endpoints sont idempotents, mais un double
-# déclenchement enverrait le digest deux fois.
+# « scheduler » du compose. Les envois (relances, tableau de bord mensuel) sont
+# idempotents : un double déclenchement n'envoie pas deux fois, mais reste inutile.
 #
 # Note : la cadence de GitHub Actions est « best effort » — un déclenchement peut
 # être décalé de plusieurs minutes (voire ignoré si le dépôt est inactif depuis
@@ -27,7 +27,7 @@ on:
     - cron: '0 2 * * *'   # quotidien 02:00 — snapshots de conformité (mode AUTO)
     - cron: '0 5 * * *'   # quotidien 05:00 — brouillons de rapports planifiés
     - cron: '0 6 * * *'   # quotidien 06:00 — relances : un e-mail de synthèse par personne
-    - cron: '0 8 1 * *'   # le 1er du mois 08:00 — synthèse des dérogations
+    - cron: '0 8 1 * *'   # le 1er du mois 08:00 — tableau de bord mensuel (RSSI, gestionnaires des risques)
   workflow_dispatch:
     inputs:
       task:
@@ -38,7 +38,7 @@ on:
           - conformite-snapshots
           - relances
           - rapports-planifies
-          - derogations-digest
+          - tableau-bord-mensuel
 
 # Le workflow n'écrit rien dans le dépôt : aucun privilège nécessaire.
 permissions: {}
@@ -65,7 +65,7 @@ jobs:
             '0 2 * * *')  TASK=conformite-snapshots ;;
             '0 5 * * *')  TASK=rapports-planifies ;;
             '0 6 * * *')  TASK=relances ;;
-            '0 8 1 * *')  TASK=derogations-digest ;;
+            '0 8 1 * *')  TASK=tableau-bord-mensuel ;;
             *)            TASK="${MANUAL:-}" ;;
           esac
           if [ -z "$TASK" ]; then

@@ -432,7 +432,7 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
 | Brouillons de rapports planifiés (1er–3 du mois) | `rapports-planifies` | quotidien 05:00 |
 | Relances — **un seul e-mail de synthèse par personne**, toutes organisations confondues : questionnaires, préconisations et plans d'action (avant échéance, retard, puis mensuelle par défaut), recommandations d'audit, contrôles à exécuter, dérogations arrivant à expiration, décisions en attente (préconisation ou recommandation à vérifier, analyse / projet 360 à approuver, dérogation en revue). Les anciennes tâches `controles-echeances`, `audit-rappels` et `derogations-expiry` restent appelables : elles exécutent ce même passage, sans double envoi | `relances` | quotidien 06:00 |
-| Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
+| Tableau de bord mensuel aux RSSI et gestionnaires des risques — un e-mail par personne, une section par organisation : indicateurs clés (risques élevés et hors appétit, plans d'action en retard, incidents et pertes du mois, contrôles, audit, préconisations, KRI, dérogations, décisions en attente) et points d'attention nommés. Inclut la synthèse des dérogations (`derogations-digest` reste un alias). Un seul envoi par mois | `tableau-bord-mensuel` | mensuel, le 1er à 08:00 |
 
 > Sans `CRON_SECRET`, les endpoints répondent `503` et le `scheduler` reste inactif
 > (aucune boucle de redémarrage). Les traitements sont **idempotents** : un double

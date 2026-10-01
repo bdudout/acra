@@ -13,7 +13,9 @@
 #                             en attente (remplace controles-echeances, audit-rappels, derogations-expiry,
 #                             dont les routes restent des alias idempotents)
 #   • rapports-planifies    : quotidien à 05:00 (brouillons de rapports planifiés, les 1er–3 du mois)
-#   • derogations-digest    : mensuel, le 1er à 08:00 (synthèse par organisation)
+#   • tableau-bord-mensuel  : mensuel, le 1er à 08:00 — tableau de bord du mois écoulé aux RSSI et
+#                             gestionnaires des risques (inclut la synthèse des dérogations ;
+#                             derogations-digest reste un alias, sans double envoi)
 #
 # Sémantique proche de cron via un tick régulier + garde par jour/mois (anti-
 # doublon en mémoire). Les endpoints sont de toute façon IDEMPOTENTS. Le service
@@ -44,7 +46,7 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : webhooks-dispatch chaque tick · snapshots 02:00 · relances 06:00 · derogations-digest 1er 08:00"
+echo "[scheduler] planning : webhooks-dispatch chaque tick · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00"
 
 last_snap=""; last_rap=""; last_dig=""; last_rel=""
 while true; do
@@ -56,7 +58,7 @@ while true; do
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
   [ "$hour" = "05" ] && [ "$last_rap"  != "$day" ]   && { hit rapports-planifies;   last_rap="$day"; }
   [ "$hour" = "06" ] && [ "$last_rel"  != "$day" ]   && { hit relances;             last_rel="$day"; }
-  [ "$hour" = "08" ] && [ "$dom" = "01" ] && [ "$last_dig" != "$month" ] && { hit derogations-digest; last_dig="$month"; }
+  [ "$hour" = "08" ] && [ "$dom" = "01" ] && [ "$last_dig" != "$month" ] && { hit tableau-bord-mensuel; last_dig="$month"; }
 
   sleep "$TICK"
 done

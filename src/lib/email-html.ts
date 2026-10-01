@@ -52,6 +52,39 @@ export interface EmailLayoutInput {
   tone?: Tone
   /** Call-to-action with a server-validated absolute URL. */
   action?: { label: string; url: string }
+  /** Sections successives (ex. une par organisation) : sous-titre, compteurs et liste. */
+  sections?: EmailSection[]
+}
+
+/** Section d'un e-mail composé (tableau de bord) : sous-titre, compteurs, liste et message si vide. */
+export interface EmailSection { heading: string; stats?: EmailStat[]; items?: EmailItem[]; itemsTitle?: string; empty?: string }
+
+// Compteurs sur plusieurs lignes (4 par ligne) : un tableau de bord dépasse la largeur d'un e-mail.
+const PAR_LIGNE = 4
+function renderStats(stats: EmailStat[]): string {
+  const rows: string[] = []
+  for (let i = 0; i < stats.length; i += PAR_LIGNE) {
+    rows.push(`<tr>`, ...stats.slice(i, i + PAR_LIGNE).map(st => [
+      `<td style="padding:8px 14px 8px 0;vertical-align:top">`,
+      `<div style="font-size:11px;color:#6b7280">${escapeHtml(st.label)}</div>`,
+      `<div style="font-size:20px;font-weight:bold;color:${TONE_COLOR[st.tone ?? 'neutral']}">${escapeHtml(st.value)}</div>`,
+      `</td>`,
+    ].join('')), `</tr>`)
+  }
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 16px">${rows.join('')}</table>`
+}
+
+function renderItems(items: EmailItem[], title?: string): string {
+  const parts: string[] = []
+  if (title) parts.push(`<p style="margin:0 0 6px;font-size:13px;font-weight:bold">${escapeHtml(title)}</p>`)
+  parts.push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;font-size:13px">`)
+  for (const it of items) {
+    const color = TONE_COLOR[it.tone ?? 'neutral']
+    const detail = it.detail ? `<span style="color:${color};white-space:nowrap">&nbsp;— ${escapeHtml(it.detail)}</span>` : ''
+    parts.push(`<tr><td style="padding:5px 0;border-bottom:1px solid #f3f4f6;line-height:18px">`, `${escapeHtml(it.label)}${detail}`, `</td></tr>`)
+  }
+  parts.push(`</table>`)
+  return parts.join('')
 }
 
 /**
@@ -74,19 +107,7 @@ export function emailLayout(input: EmailLayoutInput): string {
     parts.push(`<p style="margin:0 0 12px;font-size:14px;line-height:20px">${escapeHtml(p)}</p>`)
   }
 
-  if (input.stats?.length) {
-    parts.push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 16px">`, `<tr>`)
-    for (const st of input.stats) {
-      const color = TONE_COLOR[st.tone ?? 'neutral']
-      parts.push(
-        `<td style="padding:8px 14px 8px 0">`,
-        `<div style="font-size:11px;color:#6b7280">${escapeHtml(st.label)}</div>`,
-        `<div style="font-size:20px;font-weight:bold;color:${color}">${escapeHtml(st.value)}</div>`,
-        `</td>`,
-      )
-    }
-    parts.push(`</tr></table>`)
-  }
+  if (input.stats?.length) parts.push(renderStats(input.stats))
 
   if (input.code) {
     if (input.code.label) {
@@ -100,23 +121,13 @@ export function emailLayout(input: EmailLayoutInput): string {
     )
   }
 
-  if (input.items?.length) {
-    if (input.itemsTitle) {
-      parts.push(`<p style="margin:0 0 6px;font-size:13px;font-weight:bold">${escapeHtml(input.itemsTitle)}</p>`)
-    }
-    parts.push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;font-size:13px">`)
-    for (const it of input.items) {
-      const color = TONE_COLOR[it.tone ?? 'neutral']
-      const detail = it.detail
-        ? `<span style="color:${color};white-space:nowrap">&nbsp;— ${escapeHtml(it.detail)}</span>`
-        : ''
-      parts.push(
-        `<tr><td style="padding:5px 0;border-bottom:1px solid #f3f4f6;line-height:18px">`,
-        `${escapeHtml(it.label)}${detail}`,
-        `</td></tr>`,
-      )
-    }
-    parts.push(`</table>`)
+  if (input.items?.length) parts.push(renderItems(input.items, input.itemsTitle))
+
+  for (const sec of input.sections ?? []) {
+    parts.push(`<h2 style="margin:20px 0 8px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:15px;line-height:20px;color:#111827">${escapeHtml(sec.heading)}</h2>`)
+    if (sec.stats?.length) parts.push(renderStats(sec.stats))
+    if (sec.items?.length) parts.push(renderItems(sec.items, sec.itemsTitle))
+    else if (sec.empty) parts.push(`<p style="margin:0 0 12px;font-size:13px;color:#6b7280">${escapeHtml(sec.empty)}</p>`)
   }
 
   if (input.action) {

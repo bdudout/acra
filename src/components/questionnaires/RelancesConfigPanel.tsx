@@ -43,6 +43,8 @@ export default function RelancesConfigPanel() {
       <label className={lbl}>{r.attenteJours}<input type="number" min={1} max={60} className={`${inp} block`} disabled={!etat.canEdit} value={etat.config.attenteJours} onChange={e => set({ attenteJours: Number(e.target.value) })} />
         <span className="mt-1 block max-w-xs text-gray-500 dark:text-gray-400">{r.attenteAide}</span></label>
     </div>
+    <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" disabled={!etat.canEdit} checked={etat.config.tableauBordMensuel} onChange={e => set({ tableauBordMensuel: e.target.checked })} />
+      <span>{r.tableauBord}<span className="block text-xs text-gray-500 dark:text-gray-400">{r.tableauBordAide}</span></span></label>
     {etat.canEdit
       ? <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void enregistrer()}>{q.save}</button>
       : <p className="text-xs text-gray-500 dark:text-gray-400">{r.lectureSeule}</p>}
