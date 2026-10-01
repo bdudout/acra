@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (50) — Claude Code : relances synthétiques (un seul e-mail par personne)
+
+- Demande : les relances doivent être regroupées dans un seul e-mail.
+- `lib/relances.server.ts` `executerRelances()` : un passage collecte toutes les sources (questionnaires, préconisations, plans d'action, recommandations d'audit via `calculerRappels`/`auditConfig`, contrôles à exécuter via `prochaineEcheance`/`etatEcheance`, dérogations à expiration via `needsExpiryAlert` + journal `DEROGATION_EXPIRING`, décisions en attente) et envoie **un e-mail par personne, toutes organisations confondues**, trié par urgence. Marqueurs inchangés (`rappelLe`, `alerteeLe`).
+- Routes `cron/relances`, `audit-rappels`, `controles-echeances`, `derogations-expiry` = même passage (idempotent ; les anciennes répondent `fusionneDans: 'relances'`). Planificateurs (`scheduler.sh`, workflow) : une seule tâche `relances` à 06:00 ; README et docker-compose à jour.
+- `relancesEmail` : paramètres `{ items (avec organisation), url }`, nouvelles catégories (CONSTAT_AUDIT, CONSTAT_A_VERIFIER, CONTROLE_A_EXECUTER, DEROGATION_EXPIRATION) ×5. Gabarits individuels supprimés (`auditRappelEmail`, `controleEcheanceEmail`, `derogationExpiryEmail`) et leurs tests remplacés.
+- Vérifications : `tsc` OK ; `npm test` 416 / 3339 OK ; `npm run test:db` 11 / 53 OK (nouveau : 4 sources sur 2 organisations ⇒ 1 e-mail, tri par urgence, alias sans second envoi) ; `i18n:check` OK ; lint 0 erreur, 0 avertissement sur les fichiers touchés ; build OK ; recette : préconisation à vérifier + analyse à approuver pour le même contrôleur ⇒ 1 e-mail ; les 3 alias ensuite ⇒ 0.
+- Reste à part : `derogations-digest` (synthèse mensuelle, pas une relance) et les e-mails transactionnels.
+
 ## 2026-10-01 (49) — Claude Code : relances des vérifications et validations en attente
 
 - Demande : relancer contrôleurs/auditeurs en attente de vérification pour clôturer une préconisation, et le RSSI pour la validation d'une analyse, d'un projet 360 ou d'une dérogation.
