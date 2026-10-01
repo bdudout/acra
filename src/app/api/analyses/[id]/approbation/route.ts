@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockAnalyse } from '@/lib/row-lock.server'
 import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -38,6 +38,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
   const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
   const sessionUser = { id: userId, role: effRole }
+  // Petite structure : cumul RSSI + gestionnaire des risques + analyste (quatre-yeux relâché, journalisé).
+  const structure = await optionsStructure(analyse.organizationId)
 
   // Auto-validation (organisation MONO-UTILISATEUR) : le propriétaire valide
   // directement son analyse (EN_COURS/REJETE → APPROUVE) car il n'existe aucun
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   // tâches (#120) reprend dès qu'un 2e membre existe.
   if (action === 'VALIDER') {
     const memberCount = await countOrgMembers(analyse.organizationId)
-    if (!canAutoValidateAnalyse(sessionUser, ownership, memberCount)) {
+    if (!canAutoValidateAnalyse(sessionUser, ownership, memberCount, structure)) {
       return NextResponse.json({ error: 'Auto-validation réservée aux organisations mono-utilisateur' }, { status: 403 })
     }
     if (analyse.statut !== 'EN_COURS' && analyse.statut !== 'REJETE') {
@@ -55,12 +57,12 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id },
       data: { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null },
     })
-    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, autoValidation: true } })
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, autoValidation: true, petiteStructure: structure.petiteStructure } })
     return NextResponse.json(updated)
   }
 
   if (action === 'SOUMETTRE') {
-    if (!canSubmitAnalyse(sessionUser, ownership)) {
+    if (!canSubmitAnalyse(sessionUser, ownership, structure)) {
       return NextResponse.json({ error: 'Seul le propriétaire analyste peut soumettre l\'analyse' }, { status: 403 })
     }
     if (analyse.statut !== 'EN_COURS' && analyse.statut !== 'REJETE') {
@@ -76,14 +78,14 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   if (action === 'APPROUVER') {
-    if (!canApproveAnalyse(sessionUser, ownership)) {
+    if (!canApproveAnalyse(sessionUser, ownership, structure)) {
       return NextResponse.json({ error: 'Seul un Risk Manager peut approuver l\'analyse' }, { status: 403 })
     }
     // Four-eyes (config org, activé par défaut) : l'auteur ne peut pas approuver
     // sa propre analyse, même s'il en a le rôle/les droits (ex. ADMIN).
     if (analyse.userId === userId) {
       const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
-      if (orgConfig?.interdireAutoApprobation) {
+      if (orgConfig?.interdireAutoApprobation && !orgConfig.petiteStructure) {
         return NextResponse.json({ error: 'Séparation des tâches : vous ne pouvez pas approuver votre propre analyse. Un second valideur est requis.' }, { status: 403 })
       }
     }
@@ -101,7 +103,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         await lockAnalyse(tx, id)
         const fresh = await tx.analyse.findUniqueOrThrow({ where: { id }, select: { statut: true, approbations: true } })
         if (fresh.statut !== 'SOUMIS') return { ok: false as const, error: 'L\'analyse doit être soumise pour être approuvée', status: 400 }
-        const r = applyApprobation(sanitizeApprobations(fresh.approbations), { userId, role: effRole, commentaire }, new Date())
+        const r = applyApprobation(sanitizeApprobations(fresh.approbations), { userId, role: effRole, commentaire }, new Date(), structure)
         if (!r.ok) return { ok: false as const, error: r.error, status: 409 }
         const approbations = r.approbations as unknown as Prisma.InputJsonValue
         const updated = await tx.analyse.update({
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       })
       if (!outcome.ok) return NextResponse.json({ error: outcome.error }, { status: outcome.status })
       const { r, updated } = outcome
-      await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role) } })
+      await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role), cumul: r.approbations.some(a => a.cumul), selfApproval: analyse.userId === userId } })
       return NextResponse.json(updated)
     }
 
@@ -130,12 +132,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Séparation des tâches (#120) : les RISK_MANAGER/RSSI propriétaires sont bloqués
     // par canApproveAnalyse ; seul un ADMIN-propriétaire peut atteindre ce point en
     // auto-approuvant → on le rend visible en audit (`selfApproval`).
-    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, selfApproval: analyse.userId === userId } })
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, selfApproval: analyse.userId === userId, petiteStructure: structure.petiteStructure } })
     return NextResponse.json(updated)
   }
 
   if (action === 'REJETER') {
-    if (!canApproveAnalyse(sessionUser, ownership)) {
+    if (!canApproveAnalyse(sessionUser, ownership, structure)) {
       return NextResponse.json({ error: 'Seul un Risk Manager peut rejeter l\'analyse' }, { status: 403 })
     }
     if (analyse.statut !== 'SOUMIS') {

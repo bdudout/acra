@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import {
   validateDerogationInput, statutInitial, calcDateFin,
@@ -27,7 +27,8 @@ export async function GET() {
   const sessionUser = { id: userId, role: userRole }
 
   // Seuls les rôles susceptibles d'agir font la requête complète.
-  if (userRole !== 'RSSI' && userRole !== 'DIRECTION_METIER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+  // (RISK_MANAGER : peut agir en petite structure, où il exerce aussi le rôle RSSI.)
+  if (userRole !== 'RSSI' && userRole !== 'RISK_MANAGER' && userRole !== 'DIRECTION_METIER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.json({ pending: 0 })
   }
   const rows = await prisma.derogation.findMany({
@@ -35,12 +36,16 @@ export async function GET() {
       statut: { in: ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER'] },
       ...(scope.scope.isSuperAdmin ? {} : { organizationId: { in: scope.scope.visibleOrgIds } }),
     },
-    select: { statut: true, demandeurId: true, avisRssiPar: true },
+    select: { statut: true, demandeurId: true, avisRssiPar: true, organizationId: true },
   })
+  // Cumul des rôles résolu par organisation (petite structure).
+  const structures = new Map<string, { petiteStructure: boolean }>()
+  for (const id of new Set(rows.map(r => r.organizationId))) structures.set(id, await optionsStructure(id))
   const pending = rows.filter(r => {
     const rbac = { statut: r.statut as DerogationStatut, demandeurId: r.demandeurId, avisRssiPar: r.avisRssiPar }
-    return canAvisRssiDerogation(sessionUser, rbac)
-      || canDoubleRegardDerogation(sessionUser, rbac)
+    const structure = structures.get(r.organizationId)
+    return canAvisRssiDerogation(sessionUser, rbac, structure)
+      || canDoubleRegardDerogation(sessionUser, rbac, structure)
       || canValiderDerogation(sessionUser, rbac)
   }).length
 

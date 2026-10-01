@@ -1,4 +1,6 @@
 import { it, expect, vi } from 'vitest'
+// Petite structure non activée (option de structure lue par les règles de droits).
+vi.mock('@/lib/org-config.server', async (orig) => ({ ...(await orig<typeof import('@/lib/org-config.server')>()), optionsStructure: vi.fn(async () => ({ petiteStructure: false })) }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'reader', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: vi.fn(async () => ({ activeOrgId: 'org', role: 'LECTEUR' })) }))

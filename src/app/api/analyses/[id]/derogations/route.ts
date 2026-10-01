@@ -42,6 +42,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       active: orgConfig.derogationsActive,
       workflow: orgConfig.derogationWorkflow,
       doubleRegard: orgConfig.derogationDoubleRegard,
+      petiteStructure: orgConfig.petiteStructure,
     },
   })
 }

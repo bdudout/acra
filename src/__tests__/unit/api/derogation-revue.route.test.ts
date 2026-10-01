@@ -16,6 +16,8 @@ vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/org-context.server', () => ({
   analyseAccessWhere: vi.fn(),
   getAccessibleOrgIds: vi.fn(async () => ({ all: false, ids: ['org1'] })),
+  // Rôle effectif d'organisation : absent → rôle de session (comportement historique de ces cas).
+  getEffectiveRoleForOrg: vi.fn(async () => null),
 }))
 vi.mock('@/lib/org-config.server', () => ({
   getOrgConfig: vi.fn(async () => ({ derogationWorkflow: 'RSSI_METIER', derogationDoubleRegard: false, derogationDureeDefautJours: 180, derogationDureeMaxJours: 365, secondeLigneActive: true })),

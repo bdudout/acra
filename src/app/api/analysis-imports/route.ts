@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { optionsStructure } from '@/lib/org-config.server'
 import { getServerSession } from 'next-auth'
 import ExcelJS from 'exceljs'
 import { z } from 'zod'
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const body = schema.parse(await req.json())
     const organizationId = body.organizationId ?? scope.activeOrgId
     const targetRole = organizationId ? await getEffectiveRoleForOrg(userId, role, organizationId) : null
-    if (!organizationId || !targetRole || !canCreateAnalyse({ id: userId, role: targetRole })) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
+    if (!organizationId || !targetRole || !canCreateAnalyse({ id: userId, role: targetRole }, await optionsStructure(organizationId))) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
     // Débit + taille décompressée vérifiés AVANT tout chargement ExcelJS (qui
     // décompresse tout en mémoire et bloque l'event loop sur un gros classeur).
     const rl = await rateLimit(`excel-parse:${userId}`, LIMIT_EXCEL_PARSE.limit, LIMIT_EXCEL_PARSE.windowMs)

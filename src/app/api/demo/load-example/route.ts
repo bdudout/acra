@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { optionsStructure } from '@/lib/org-config.server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getAnalyseScope } from '@/lib/org-context.server'
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Aucune organisation active' }, { status: 403 })
   }
 
-  if (!canCreateAnalyse({ id: userId, role: userRole })) {
+  if (!canCreateAnalyse({ id: userId, role: userRole }, await optionsStructure(scope.activeOrgId))) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
   let result
