@@ -150,7 +150,8 @@ export function domainStats360(risques: Risque360Lite[], appetit: number | null 
 
 export const APPROBATION_ROLES_REQUIS = ['RSSI', 'RISK_MANAGER'] as const
 export type ApprobationRole = (typeof APPROBATION_ROLES_REQUIS)[number] | 'ADMIN'
-export interface Approbation { role: ApprobationRole; userId: string; le: string; commentaire?: string }
+/** `cumul` : approbation unique d'une petite structure (une personne exerce RSSI et gestionnaire des risques). */
+export interface Approbation { role: ApprobationRole; userId: string; le: string; commentaire?: string; cumul?: true }
 export type ApprobationResult =
   | { ok: true; approbations: Approbation[]; complete: boolean }
   | { ok: false; error: 'ROLE_NON_APPROBATEUR' | 'ROLE_DEJA_APPROUVE' | 'MEME_PERSONNE' }
@@ -164,7 +165,7 @@ export function sanitizeApprobations(input: unknown): Approbation[] {
     const role = o.role
     if (role !== 'RSSI' && role !== 'RISK_MANAGER' && role !== 'ADMIN') return []
     if (typeof o.userId !== 'string' || typeof o.le !== 'string') return []
-    return [{ role, userId: o.userId, le: o.le, ...(typeof o.commentaire === 'string' && o.commentaire ? { commentaire: o.commentaire } : {}) }]
+    return [{ role, userId: o.userId, le: o.le, ...(typeof o.commentaire === 'string' && o.commentaire ? { commentaire: o.commentaire } : {}), ...(o.cumul === true ? { cumul: true as const } : {}) }]
   })
 }
 
@@ -173,11 +174,16 @@ export function sanitizeApprobations(input: unknown): Approbation[] {
  * (personnes distinctes) ont approuvé. Un ADMIN (organisations mono-administrateur,
  * dérogation historique) complète l'approbation à lui seul — tracé comme tel.
  */
-export function applyApprobation(existing: Approbation[], who: { userId: string; role: string; commentaire?: string }, now: Date): ApprobationResult {
+export function applyApprobation(existing: Approbation[], who: { userId: string; role: string; commentaire?: string }, now: Date, opts?: { petiteStructure?: boolean }): ApprobationResult {
   const isAdmin = who.role === 'ADMIN' || who.role === 'SUPER_ADMIN'
   if (!isAdmin && who.role !== 'RSSI' && who.role !== 'RISK_MANAGER') return { ok: false, error: 'ROLE_NON_APPROBATEUR' }
   if (existing.some(a => a.userId === who.userId)) return { ok: false, error: 'MEME_PERSONNE' }
   const role: ApprobationRole = isAdmin ? 'ADMIN' : (who.role as ApprobationRole)
+  // Petite structure : la même personne exerce RSSI et gestionnaire des risques — son approbation
+  // vaut les deux, tracée `cumul` (la double approbation par deux personnes est impossible).
+  if (opts?.petiteStructure && !isAdmin) {
+    return { ok: true, approbations: [...existing, { role, userId: who.userId, le: now.toISOString(), ...(who.commentaire?.trim() ? { commentaire: who.commentaire.trim().slice(0, 2000) } : {}), cumul: true }], complete: true }
+  }
   if (!isAdmin && existing.some(a => a.role === role)) return { ok: false, error: 'ROLE_DEJA_APPROUVE' }
   const approbations = [...existing, { role, userId: who.userId, le: now.toISOString(), ...(who.commentaire?.trim() ? { commentaire: who.commentaire.trim().slice(0, 2000) } : {}) }]
   const complete = isAdmin || APPROBATION_ROLES_REQUIS.every(r => approbations.some(a => a.role === r))

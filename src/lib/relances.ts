@@ -91,11 +91,14 @@ const ayant = (membres: MembreDecideur[], roles: readonly string[], exclus: (str
 export function approbateursAnalyse(
   membres: MembreDecideur[],
   a: { auteurId: string; projet360: boolean; rolesDejaApprouves: string[]; acces: { userId: string; permission: string }[] },
+  opts?: { petiteStructure?: boolean },
 ): string[] {
-  const roles = a.projet360 ? ['RSSI', 'RISK_MANAGER'].filter(r => !a.rolesDejaApprouves.includes(r)) : ['RSSI', 'RISK_MANAGER']
+  // Petite structure : cumul des rôles, l'auteur approuve lui-même (pas de second valideur).
+  const roles = a.projet360 && !opts?.petiteStructure ? ['RSSI', 'RISK_MANAGER'].filter(r => !a.rolesDejaApprouves.includes(r)) : ['RSSI', 'RISK_MANAGER']
   const restreints = a.acces.filter(x => x.permission !== 'APPROBATION').map(x => x.userId)
-  const ids = ayant(membres, roles, [a.auteurId, ...restreints])
-  return ids.length ? ids : ayant(membres, ADMINS, [a.auteurId, ...restreints])
+  const exclus = opts?.petiteStructure ? restreints : [a.auteurId, ...restreints]
+  const ids = ayant(membres, roles, exclus)
+  return ids.length ? ids : ayant(membres, ADMINS, exclus)
 }
 
 /**
@@ -103,7 +106,9 @@ export function approbateursAnalyse(
  * (≠ demandeur) et le double regard (≠ demandeur et ≠ premier avis), direction métier pour la
  * validation (≠ demandeur ; administrateurs à défaut). Autre statut : personne.
  */
-export function valideursDerogation(membres: MembreDecideur[], d: { statut: string; demandeurId: string; avisRssiPar: string | null }): string[] {
+export function valideursDerogation(membres: MembreDecideur[], d: { statut: string; demandeurId: string; avisRssiPar: string | null }, opts?: { petiteStructure?: boolean }): string[] {
+  // Petite structure : gestionnaire des risques et administrateur exercent aussi le rôle RSSI ; le demandeur peut rendre l'avis.
+  if (opts?.petiteStructure && (d.statut === 'DEMANDEE' || d.statut === 'DOUBLE_REGARD')) return ayant(membres, ['RSSI', 'RISK_MANAGER', 'ADMIN'], [])
   if (d.statut === 'DEMANDEE') return ayant(membres, ['RSSI'], [d.demandeurId])
   if (d.statut === 'DOUBLE_REGARD') return ayant(membres, ['RSSI'], [d.demandeurId, d.avisRssiPar])
   if (d.statut === 'VALIDATION_METIER') {

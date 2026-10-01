@@ -6,7 +6,7 @@
  * effectif (expiration), déclenchement des alertes, validation d'entrée et
  * garde-fous RBAC. Testé dans src/__tests__/unit/lib/derogation.test.ts.
  */
-import { isAdminRole, type SessionUser } from '@/lib/permissions'
+import { isAdminRole, exerceRole, type SessionUser, type OptionsStructure } from '@/lib/permissions'
 
 // Une dérogation cible TOUJOURS une mesure de référentiel (contrôle) OU un risque —
 // y compris au niveau organisation (« globale »). Le caractère global se traduit
@@ -227,13 +227,17 @@ export interface DerogationRbacSource {
   avisRssiPar?: string | null
 }
 
-/** Avis RSSI : un RSSI, différent du demandeur (quatre-yeux), depuis DEMANDEE. */
-export function canAvisRssiDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
-  return d.statut === 'DEMANDEE' && user.role === 'RSSI' && user.id !== d.demandeurId
+/**
+ * Avis RSSI : un RSSI, différent du demandeur (quatre-yeux), depuis DEMANDEE. Petite structure :
+ * le gestionnaire des risques exerce aussi le rôle RSSI et le demandeur peut rendre l'avis (journalisé).
+ */
+export function canAvisRssiDerogation(user: SessionUser, d: DerogationRbacSource, opts?: OptionsStructure): boolean {
+  return d.statut === 'DEMANDEE' && exerceRole(user.role, 'RSSI', opts) && (!!opts?.petiteStructure || user.id !== d.demandeurId)
 }
 
 /** Double regard : un RSSI DIFFÉRENT du premier (et du demandeur), depuis DOUBLE_REGARD. */
-export function canDoubleRegardDerogation(user: SessionUser, d: DerogationRbacSource): boolean {
+export function canDoubleRegardDerogation(user: SessionUser, d: DerogationRbacSource, opts?: OptionsStructure): boolean {
+  if (opts?.petiteStructure) return d.statut === 'DOUBLE_REGARD' && exerceRole(user.role, 'RSSI', opts)
   return d.statut === 'DOUBLE_REGARD' && user.role === 'RSSI'
     && user.id !== d.avisRssiPar && user.id !== d.demandeurId
 }

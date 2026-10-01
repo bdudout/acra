@@ -43,7 +43,7 @@ type Destinataire = { email: string; locale: string | null }
 type Membre = { role: string; user: { id: string; email: string; name: string | null; isActive: boolean; locale: string | null } }
 type Config = {
   relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
-  reglementaire: boolean; kri: boolean; conformite: boolean; acceptationRisques: boolean
+  reglementaire: boolean; kri: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
 }
 
 export interface ResultatRelances {
@@ -130,7 +130,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
         relances: sanitizeRelancesConfig(c.relancesConfig), controle: c.controlePermanentActive,
         audit: c.auditInterneActive, auditConfig: resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
-        reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive,
+        reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
       })
     }
     return cfgCache.get(orgId)!
@@ -269,7 +269,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const projet360 = a.methode === 'PROJET_360'
     const ids = approbateursAnalyse((await decideurs(a.organizationId)).map(m => ({ role: m.role, userId: m.user.id })), {
       auteurId: a.userId, projet360, rolesDejaApprouves: sanitizeApprobations(a.approbations).map(x => x.role), acces: a.accesUtilisateurs,
-    })
+    }, { petiteStructure: cfg.petiteStructure })
     ajouter(a.organizationId, await destsParIds(a.organizationId, ids), { categorie: projet360 ? 'PROJET360_A_APPROUVER' : 'ANALYSE_A_APPROUVER', intitule: a.nom, type: 'EN_ATTENTE', echeance: jour(depuis) })
     marques.analyses.push(a.id)
   }
@@ -277,7 +277,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const cfg = await cfgOf(d.organizationId)
     const depuis = attenteDerogationDepuis(d)
     if (!cfg.derogations || !relanceAttenteDue({ depuis, rappelLe: d.rappelLe }, cfg.relances, now)) continue
-    const ids = valideursDerogation((await decideurs(d.organizationId)).map(m => ({ role: m.role, userId: m.user.id })), d)
+    const ids = valideursDerogation((await decideurs(d.organizationId)).map(m => ({ role: m.role, userId: m.user.id })), d, { petiteStructure: cfg.petiteStructure })
     const categorie = d.statut === 'DEMANDEE' ? 'DEROGATION_AVIS' : d.statut === 'DOUBLE_REGARD' ? 'DEROGATION_DOUBLE_REGARD' : 'DEROGATION_VALIDATION'
     ajouter(d.organizationId, await destsParIds(d.organizationId, ids), { categorie, intitule: d.intitule, type: 'EN_ATTENTE', echeance: jour(depuis) })
     marques.derogations.push(d.id)
