@@ -156,6 +156,7 @@ export default function ProfilePage() {
             confirmation: t.profile.deleteAccountConfirm,
             button: t.profile.deleteAccountButton,
             error: t.profile.deleteAccountError,
+            password: t.profile.currentPassword,
           }}
         />
 

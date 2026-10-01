@@ -6,7 +6,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
-vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: vi.fn(), update: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => {
+  const prisma: Record<string, unknown> = { analyse: { findFirst: vi.fn(), update: vi.fn(), findUniqueOrThrow: vi.fn() }, $queryRaw: vi.fn(async () => []) }
+  prisma.$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma))
+  return { prisma }
+})
 vi.mock('@/lib/org-context.server', () => ({
   analyseAccessWhere: vi.fn(async () => ({})),
   countOrgMembers: vi.fn(async () => 3),
@@ -56,7 +60,7 @@ describe('APPROUVER — analyse projet 360 : RSSI ET Risk Manager', () => {
   const analyse360 = (approbations: unknown[] = []) => vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
     id: 'a1', nom: 'P', statut: 'SOUMIS', userId: 'auteur', organizationId: 'orgX', methode: 'PROJET_360',
     deletedAt: null, accesUtilisateurs: [], approbations,
-  } as never)
+  } as never) && vi.mocked(prisma.analyse.findUniqueOrThrow).mockResolvedValue({ statut: 'SOUMIS', approbations } as never)
 
   it('premier avis (RSSI) : enregistré, l’analyse reste soumise', async () => {
     analyse360()
@@ -76,6 +80,19 @@ describe('APPROUVER — analyse projet 360 : RSSI ET Risk Manager', () => {
     const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
     expect(data.statut).toBe('APPROUVE')
     expect((data.approbations as unknown[]).length).toBe(2)
+  })
+
+  it('T9 — l\'avis est appliqué sur la liste RELUE sous verrou, pas sur la lecture initiale', async () => {
+    analyse360([]) // lecture initiale : aucun avis…
+    // … mais un Risk Manager a approuvé entre-temps (lu sous verrou dans la transaction).
+    vi.mocked(prisma.analyse.findUniqueOrThrow).mockResolvedValue({ statut: 'SOUMIS', approbations: [{ role: 'RISK_MANAGER', userId: 'rm1', le: '2026-09-29T09:00:00.000Z' }] } as never)
+    setSession('ANALYSTE'); vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('RSSI')
+    const res = await POST(req({ action: 'APPROUVER' }), params)
+    expect(res.status).toBe(200)
+    expect(prisma.$queryRaw).toHaveBeenCalled()
+    const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
+    expect(data.statut).toBe('APPROUVE') // les deux avis sont conservés
+    expect((data.approbations as { role: string }[]).map(a => a.role).sort()).toEqual(['RISK_MANAGER', 'RSSI'])
   })
 
   it('deux RSSI ne suffisent pas : second avis du même rôle refusé (409)', async () => {

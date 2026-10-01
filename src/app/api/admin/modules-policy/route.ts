@@ -16,8 +16,7 @@ export async function GET() {
   if (!canAdminInstance({ id: (session.user as any).id, role: (session.user as any).role })) {
     return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma as any).configuration.findUnique({ where: { id: 'global' }, select: { modulesPolicy: true } })
+  const cfg = await prisma.configuration.findUnique({ where: { id: 'global' }, select: { modulesPolicy: true } })
   return NextResponse.json({ modulesPolicy: sanitizeModulesPolicy(cfg?.modulesPolicy), modules: GOVERNABLE_MODULES, etats: MODULE_POLICIES })
 }
 
@@ -32,8 +31,7 @@ export async function PUT(req: NextRequest) {
   }
   const body = await req.json().catch(() => ({})) as { modulesPolicy?: unknown }
   const modulesPolicy = sanitizeModulesPolicy(body.modulesPolicy)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma as any).configuration.update({ where: { id: 'global' }, data: { modulesPolicy } })
+  await prisma.configuration.update({ where: { id: 'global' }, data: { modulesPolicy } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, ip: getClientIp(req),
     details: { scope: 'modules-policy', modulesPolicy },

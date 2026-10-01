@@ -103,7 +103,7 @@ export default function JournalisationPage() {
 
           <div>
             <label className="block text-sm text-gray-700 mb-1">{s.authHeader}</label>
-            <input className={inputCls} value={cfg.authHeader} onChange={e => set('authHeader', e.target.value)} placeholder="Splunk 12345678-…  /  Bearer …" />
+            <input type="password" autoComplete="new-password" className={inputCls} value={cfg.authHeader} onChange={e => set('authHeader', e.target.value)} placeholder="Splunk 12345678-…  /  Bearer …" />
             <p className="text-xs text-gray-400 mt-1">{s.authHeaderHint}</p>
           </div>
 

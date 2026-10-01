@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { redactSecrets } from '@/lib/audit-redact'
-import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { maskSecret, resolveSubmittedSecret } from '@/lib/secret-crypto'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
-/** Déchiffre les secrets SMS d'une policy pour l'affichage admin (stockage chiffré au repos). */
+/** Masque les secrets SMS d'une policy pour l'UI : jamais renvoyés en clair (audit 2026-10-01). */
 function decryptPolicySecrets<T extends { smsApiKey?: unknown; smsApiSecret?: unknown }>(policy: T): T {
   return {
     ...policy,
-    smsApiKey:    decryptSecret(policy.smsApiKey as string | null | undefined),
-    smsApiSecret: decryptSecret(policy.smsApiSecret as string | null | undefined),
+    smsApiKey:    maskSecret(policy.smsApiKey as string | null | undefined),
+    smsApiSecret: maskSecret(policy.smsApiSecret as string | null | undefined),
   }
 }
 
@@ -48,15 +47,6 @@ const PolicySchema = z.object({
 /** Fenêtre de confirmation MFA : 60 minutes */
 const MFA_CONFIRMATION_WINDOW_MS = 60 * 60 * 1000
 
-async function requireAdmin(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  // Politique de mot de passe = réglage d'INSTANCE → SUPER_ADMIN uniquement.
-  if ((session.user as any).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
-}
 
 /**
  * Vérifie si la fenêtre de confirmation MFA a expiré.
@@ -69,8 +59,7 @@ async function autoRevertMfaIfExpired(policy: any): Promise<any> {
     policy.mfaConfirmationDeadline &&
     new Date() > new Date(policy.mfaConfirmationDeadline)
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const reverted = await (prisma as any).passwordPolicy.update({
+    const reverted = await prisma.passwordPolicy.update({
       where: { id: 'global' },
       data: {
         mfaEnabled:              false,
@@ -88,11 +77,10 @@ async function autoRevertMfaIfExpired(policy: any): Promise<any> {
 
 // GET /api/admin/password-policy — lit la politique de mot de passe de l'instance (SUPER_ADMIN).
 export async function GET(req: NextRequest) {
-  const { error } = await requireAdmin(req)
+  const { error } = await requireInstanceAdmin(req)
   if (error) return error
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let policy = await (prisma as any).passwordPolicy.upsert({
+  let policy = await prisma.passwordPolicy.upsert({
     where:  { id: 'global' },
     // Politique par défaut ANSSI guide d'hygiène v2 — 12 car., complexité complète, 90j, 5 tentatives
     create: {
@@ -114,7 +102,7 @@ export async function GET(req: NextRequest) {
 
 // PUT /api/admin/password-policy — met à jour la politique de mot de passe (peut exiger une confirmation MFA) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireAdmin(req)
+  const { error, session } = await requireInstanceAdmin(req)
   if (error) return error
 
   const userId   = (session!.user as any).id
@@ -127,8 +115,7 @@ export async function PUT(req: NextRequest) {
   }
 
   // Lire la politique actuelle pour détecter le changement d'état du MFA
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const current = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+  const current = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
   const mfaJustEnabled = parsed.data.mfaEnabled && !(current?.mfaEnabled ?? false)
   const mfaDisabled    = !parsed.data.mfaEnabled
 
@@ -150,12 +137,11 @@ export async function PUT(req: NextRequest) {
 
   // [F005 corrigé] Chiffrement au repos des secrets SMS (AES-256-GCM) avant persistance.
   const smsEnc = {
-    smsApiKey:    encryptSecret(parsed.data.smsApiKey),
-    smsApiSecret: encryptSecret(parsed.data.smsApiSecret),
+    smsApiKey:    resolveSubmittedSecret(parsed.data.smsApiKey, current?.smsApiKey),
+    smsApiSecret: resolveSubmittedSecret(parsed.data.smsApiSecret, current?.smsApiSecret),
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const policy = await (prisma as any).passwordPolicy.upsert({
+  const policy = await prisma.passwordPolicy.upsert({
     where:  { id: 'global' },
     create: { id: 'global', ...parsed.data, ...confirmationFields, ...smsEnc },
     update: { ...parsed.data, ...confirmationFields, ...smsEnc },
@@ -172,6 +158,6 @@ export async function PUT(req: NextRequest) {
     details: auditDetails,
   })
 
-  // Renvoie les secrets en clair à l'UI (le stockage reste chiffré)
+  // Secrets masqués pour l'UI (le stockage reste chiffré)
   return NextResponse.json(decryptPolicySecrets(policy))
 }

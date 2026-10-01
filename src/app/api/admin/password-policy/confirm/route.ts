@@ -6,32 +6,25 @@
  * Accessible aux ADMIN uniquement.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 // POST /api/admin/password-policy/confirm — confirme un changement de politique de mot de passe en attente (MFA) — SUPER_ADMIN.
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
-  // Politique de mot de passe = réglage d'INSTANCE → SUPER_ADMIN uniquement.
-  if ((session.user as any).role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
-  }
+  // Réglage d'INSTANCE → SUPER_ADMIN (garde commune, lib/route-guard.server.ts).
+  const guard = await requireInstanceAdmin()
+  if (guard.error) return guard.error
+  const session = guard.session
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const current = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+  const current = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
 
   // Si le MFA n'est pas en attente de confirmation, rien à faire
   if (!current?.mfaPendingConfirmation) {
     return NextResponse.json({ ok: true, alreadyConfirmed: true })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const policy = await (prisma as any).passwordPolicy.update({
+  const policy = await prisma.passwordPolicy.update({
     where: { id: 'global' },
     data: {
       mfaPendingConfirmation:  false,

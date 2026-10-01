@@ -7,7 +7,8 @@
 // dérivé scrypt salé, révocation/expiration, `lastUsedAt`).
 
 import { prisma } from '@/lib/prisma'
-import { parseAuthorizationHeader, verifyApiKey, apiKeyUtilisable, hasScope } from '@/lib/api-key'
+import { lookupApiKey } from '@/lib/api-key-lookup.server'
+import { parseAuthorizationHeader, apiKeyUtilisable, hasScope } from '@/lib/api-key'
 import { isMcpEnabled } from '@/lib/interfaces-config.server'
 
 /** Résultat d'authentification MCP : succès (org + clé) ou échec (status + message). */
@@ -26,10 +27,11 @@ export async function authenticateMcpRequest(req: Request): Promise<McpAuth> {
   const parsed = parseAuthorizationHeader(req.headers.get('authorization'))
   if (!parsed) return { ok: false, status: 401, error: 'missing_or_invalid_authorization' }
 
-  const key = await prisma.apiKey.findUnique({ where: { prefix: parsed.prefix } })
-  if (!key || !(await verifyApiKey(parsed.plaintext, key.hashedKey))) {
-    return { ok: false, status: 401, error: 'invalid_api_key' }
-  }
+  // Débit par IP avant scrypt + temps égalisé si le préfixe est inconnu (N04).
+  const found = await lookupApiKey(req, parsed)
+  if (found.status === 'throttled') return { ok: false, status: 429, error: 'rate_limited' }
+  if (found.status !== 'ok') return { ok: false, status: 401, error: 'invalid_api_key' }
+  const key = found.key
   if (!apiKeyUtilisable(key)) return { ok: false, status: 401, error: 'api_key_revoked_or_expired' }
 
   const scopes = Array.isArray(key.scopes) ? (key.scopes as string[]) : []

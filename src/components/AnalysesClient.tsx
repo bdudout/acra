@@ -210,8 +210,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
 
   // Tri : max niveau risque desc, puis nombre de risques desc, puis updatedAt desc
   const sorted = [...analyses].sort((a, b) => {
-    const maxA = a.risques?.length ? Math.max(...a.risques.map((r: any) => r.niveauRisque)) : 0
-    const maxB = b.risques?.length ? Math.max(...b.risques.map((r: any) => r.niveauRisque)) : 0
+    const maxA = a.riskSummary?.maxRisk ?? 0
+    const maxB = b.riskSummary?.maxRisk ?? 0
     if (maxB !== maxA) return maxB - maxA
     if (b._count.risques !== a._count.risques) return b._count.risques - a._count.risques
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -323,8 +323,9 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
               const _ai = Math.min(a.atelierCourant - 1, 4)
               const atelier = { ...ATELIERS_META[_ai], ...((t.ateliersMeta as any)[_ai] ?? {}) }
               const pct = Math.round((a.atelierCourant / 5) * 100)
-              const maxRisk = a.risques?.length ? Math.max(...a.risques.map((r: any) => r.niveauRisque)) : 0
-              const critiques = a.risques?.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique').length ?? 0
+              // Indicateurs calculés en base (lib/analyses-summary.server.ts, T13).
+              const maxRisk = a.riskSummary?.maxRisk ?? 0
+              const critiques = a.riskSummary?.critiques ?? 0
 
               const maxTier = getRiskTier(maxRisk)
               const riskBadge = maxTier === 'critique'
@@ -336,9 +337,9 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
                     : null
 
               // Mesures P1 à faire
-              const mesuresP1AFaire = (a.mesures ?? []).filter((m: any) => m.priorite === 1 && m.statut === 'A_FAIRE').length
+              const mesuresP1AFaire = a.riskSummary?.p1AFaire ?? 0
               // Risques avec stratégie "à réduire" non encore traités
-              const risquesReduire = (a.risques ?? []).filter((r: any) => r.strategie === 'REDUIRE').length
+              const risquesReduire = a.riskSummary?.reduire ?? 0
 
               const statutBadge = {
                 TERMINE:  { label: <><CheckCircle2 size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.analyses.doneStatus}</>,           cls: 'bg-green-100 text-green-700'   },

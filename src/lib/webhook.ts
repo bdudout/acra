@@ -4,6 +4,7 @@
 // La persistance et l'émission HTTP vivent dans les couches serveur/cron.
 
 import { createHmac } from 'crypto'
+import { isInternalHostname, isPrivateIp } from '@/lib/ip-safety'
 
 /** Vocabulaire canonique des événements émis (org-scopés). */
 export const WEBHOOK_EVENTS = [
@@ -94,51 +95,13 @@ export function resolveDeliveryUpdate(tentativesAvant: number, result: DeliveryR
 // Garde SSRF ──────────────────────────────────────────────────────────────────
 // Une URL de webhook est réglée par un ADMIN d'org : sans garde, elle permettrait
 // de faire émettre le serveur vers des adresses internes (pivot / metadata cloud).
-// v1 : https obligatoire + blocage des littéraux IP privés/loopback/link-local et
-// des hôtes locaux. (Limite connue : rebinding DNS — à durcir par résolution au
-// moment de l'envoi si nécessaire.)
+// Validation STATIQUE ici (https, pas d'identifiants, hôte non interne, IP littérale
+// publique) ; à l'envoi, `safeHttpsRequest` (safe-fetch.server.ts) résout et valide
+// l'IP DANS la socket (aucune fenêtre de rebinding). Logique d'adresse : ip-safety.ts.
 
-const PRIVATE_V4 = [
-  /^127\./, // loopback
-  /^10\./, // privé A
-  /^192\.168\./, // privé C
-  /^169\.254\./, // link-local / metadata
-  /^0\./, // « this host »
-]
+export { isPrivateIp }
 
-function isPrivateV4(host: string): boolean {
-  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false
-  if (PRIVATE_V4.some(re => re.test(host))) return true
-  // privé B : 172.16.0.0 – 172.31.255.255
-  const m = host.match(/^172\.(\d{1,3})\./)
-  if (m) {
-    const second = Number(m[1])
-    if (second >= 16 && second <= 31) return true
-  }
-  return false
-}
-
-/**
- * Une IP (v4 ou v6) est-elle privée / interne (loopback, RFC1918, link-local /
- * métadonnées cloud 169.254, ULA fc00::/7, IPv4-mapped) ? Utilisé pour valider
- * l'IP RÉSOLUE d'un hostname de webhook au moment de l'envoi (anti-SSRF, #132) :
- * `isSafeWebhookUrl` ne voit que le hostname littéral, pas ce vers quoi il résout.
- * Fail-closed : une entrée vide/inconnue est considérée privée (on préfère refuser).
- */
-export function isPrivateIp(ip: string): boolean {
-  const h = (ip ?? '').trim().toLowerCase().replace(/^\[|\]$/g, '')
-  if (!h) return true
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return isPrivateV4(h)
-  // IPv4-mapped IPv6 : ::ffff:a.b.c.d
-  const mapped = h.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)
-  if (mapped) return isPrivateV4(mapped[1])
-  if (h === '::1' || h === '::') return true          // loopback / non spécifié
-  if (/^f[cd][0-9a-f]{2}:/.test(h)) return true       // ULA fc00::/7
-  if (/^fe80:/.test(h)) return true                   // link-local fe80::/10
-  return false
-}
-
-/** Valide qu'une URL de webhook est sûre (schéma https, pas d'adresse interne/loopback) — anti-SSRF. */
+/** Valide qu'une URL de webhook est sûre (https, pas d'identifiants, hôte public) — anti-SSRF. */
 export function isSafeWebhookUrl(raw: unknown): boolean {
   if (typeof raw !== 'string' || raw.trim() === '') return false
   let u: URL
@@ -147,15 +110,6 @@ export function isSafeWebhookUrl(raw: unknown): boolean {
   } catch {
     return false
   }
-  if (u.protocol !== 'https:') return false
-  let host = u.hostname.toLowerCase()
-  // IPv6 littéral : URL.hostname le rend entre crochets retirés
-  if (host === '::1' || host === '[::1]') return false
-  host = host.replace(/^\[|\]$/g, '')
-  if (host === 'localhost' || host.endsWith('.localhost')) return false
-  if (host === '::1') return false
-  if (isPrivateV4(host)) return false
-  // IPv6 unique-local (fc00::/7) et link-local (fe80::/10)
-  if (/^f[cd][0-9a-f]{2}:/i.test(host) || /^fe80:/i.test(host)) return false
-  return true
+  if (u.protocol !== 'https:' || u.username || u.password) return false
+  return !isInternalHostname(u.hostname)
 }

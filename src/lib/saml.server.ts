@@ -25,8 +25,7 @@ export function isSamlMaintenanceMode(): boolean {
 export async function samlActive(): Promise<boolean> {
   if (isSamlMaintenanceMode()) return false
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = await (prisma as any).sSOConfig.findUnique({ where: { id: 'global' } })
+    const c = await prisma.sSOConfig.findUnique({ where: { id: 'global' } })
     if (!c || c.enabled !== true || c.protocol !== 'SAML') return false
     return validateSamlConfig(c) === null
   } catch {

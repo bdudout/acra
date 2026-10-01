@@ -15,8 +15,7 @@ export async function GET() {
   if (!canAdminInstance({ id: u.id, role: u.role })) {
     return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfg = await (prisma as any).configuration.findUnique({
+  const cfg = await prisma.configuration.findUnique({
     where: { id: 'global' },
     select: { publicNotice: true, publicContactUrl: true, publicContactLabel: true },
   })
@@ -50,8 +49,7 @@ export async function PUT(req: NextRequest) {
     publicContactLabel: clean(body.publicContactLabel, 60),
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma as any).configuration.update({ where: { id: 'global' }, data })
+  await prisma.configuration.update({ where: { id: 'global' }, data })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: u.id, userRole: u.role, ip: getClientIp(req),
     details: { scope: 'publicContent', ...data },

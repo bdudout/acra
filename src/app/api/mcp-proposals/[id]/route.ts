@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { lockConformite } from '@/lib/row-lock.server'
 import { canEditAnalyse, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -213,12 +214,14 @@ async function applyConformite(proposal: ProposalRow, userId: string, note?: str
   if (!isConformiteProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
   const record = await prisma.conformite.findFirst({
     where: { id: proposal.targetId, organizationId: proposal.organizationId },
-    select: { id: true, entries: true },
+    select: { id: true },
   })
   if (!record) return { ok: false, error: 'Référentiel de conformité introuvable' }
-  const entries = sanitizeConformite(record.entries)
-  const next = applyConformiteEntry(entries, payload.ref, { statut: payload.statut, commentaire: payload.commentaire ?? null })
   const appliedId = await prisma.$transaction(async tx => {
+    // Fusion sous verrou de ligne (audit 2026-09-30, D2).
+    await lockConformite(tx, record.id)
+    const fresh = await tx.conformite.findUniqueOrThrow({ where: { id: record.id }, select: { entries: true } })
+    const next = applyConformiteEntry(sanitizeConformite(fresh.entries), payload.ref, { statut: payload.statut, commentaire: payload.commentaire ?? null })
     await tx.conformite.update({ where: { id: record.id }, data: { entries: next as unknown as Prisma.InputJsonValue } })
     await markAccepted(tx, proposal.id, record.id, userId, note)
     return record.id

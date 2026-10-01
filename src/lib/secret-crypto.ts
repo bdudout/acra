@@ -69,3 +69,27 @@ export function decryptSecret(value: string | null | undefined): string | null |
     return null
   }
 }
+
+// ─── Secrets jamais renvoyés au navigateur (audit 2026-10-01) ────────────────
+// Les routes de configuration d'instance (SMTP, SIEM, SSO, SMS) renvoyaient le
+// secret DÉCHIFFRÉ à l'UI : une XSS ou une session détournée suffisait à
+// l'exfiltrer. L'UI reçoit désormais un marqueur ; le renvoyer tel quel (ou ne pas
+// envoyer le champ) conserve le secret stocké ; une chaîne vide/null l'efface.
+
+/** Marqueur affiché à la place d'un secret configuré. */
+export const SECRET_PLACEHOLDER = '[CONFIGURED]'
+
+/** Valeur exposée à l'UI pour un secret stocké : le marqueur, ou null si absent. */
+export function maskSecret(stored: string | null | undefined): string | null {
+  return stored ? SECRET_PLACEHOLDER : null
+}
+
+/**
+ * Valeur à PERSISTER (chiffrée) à partir de la saisie : marqueur ou champ absent →
+ * secret stocké inchangé ; vide/null → effacement ; sinon nouveau secret chiffré.
+ */
+export function resolveSubmittedSecret(submitted: string | null | undefined, stored: string | null | undefined): string | null {
+  if (submitted === undefined || submitted === SECRET_PLACEHOLDER) return stored ?? null
+  const v = submitted?.trim()
+  return v ? encryptSecret(v) : null
+}

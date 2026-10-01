@@ -12,7 +12,7 @@ import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
-import { mimeAutorise, sanitizeFilename, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
+import { mimeAutorise, contentMatchesMime, sanitizeFilename, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const rapportId = randomUUID()
   const bytes = Buffer.from(await file.arrayBuffer())
+  if (!contentMatchesMime(file.type, bytes.subarray(0, 1024))) return NextResponse.json({ error: 'mime_interdit' }, { status: 400 })
   const checksum = createHash('sha256').update(bytes).digest('hex')
   const storageKey = storageKeyFor(c.orgId, `campagne-${id}-${rapportId}`, file.name)
   const storage = await getDocumentStorage()

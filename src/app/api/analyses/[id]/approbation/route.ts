@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { lockAnalyse } from '@/lib/row-lock.server'
 import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { NextRequest, NextResponse } from 'next/server'
@@ -93,15 +94,26 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Analyse projet 360 : double approbation RSSI ET Risk Manager (personnes
     // distinctes). Le premier avis est enregistré, l'analyse reste soumise.
     if (analyse.methode === 'PROJET_360') {
-      const r = applyApprobation(sanitizeApprobations((analyse as { approbations?: unknown }).approbations), { userId, role: effRole, commentaire }, new Date())
-      if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 })
-      const approbations = r.approbations as unknown as Prisma.InputJsonValue
-      const updated = await prisma.analyse.update({
-        where: { id },
-        data: r.complete
-          ? { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null, approbations }
-          : { approbations },
+      // Avis lus et écrits SOUS VERROU (audit 2026-10-01, T9) : deux approbateurs
+      // simultanés (RSSI + Risk Manager) lisaient la même liste vide et le second
+      // effaçait l'avis du premier, alors que le journal enregistrait les deux.
+      const outcome = await prisma.$transaction(async tx => {
+        await lockAnalyse(tx, id)
+        const fresh = await tx.analyse.findUniqueOrThrow({ where: { id }, select: { statut: true, approbations: true } })
+        if (fresh.statut !== 'SOUMIS') return { ok: false as const, error: 'L\'analyse doit être soumise pour être approuvée', status: 400 }
+        const r = applyApprobation(sanitizeApprobations(fresh.approbations), { userId, role: effRole, commentaire }, new Date())
+        if (!r.ok) return { ok: false as const, error: r.error, status: 409 }
+        const approbations = r.approbations as unknown as Prisma.InputJsonValue
+        const updated = await tx.analyse.update({
+          where: { id },
+          data: r.complete
+            ? { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null, approbations }
+            : { approbations },
+        })
+        return { ok: true as const, r, updated }
       })
+      if (!outcome.ok) return NextResponse.json({ error: outcome.error }, { status: outcome.status })
+      const { r, updated } = outcome
       await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role) } })
       return NextResponse.json(updated)
     }

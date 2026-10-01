@@ -7,13 +7,13 @@ const userUpdate = vi.fn()
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     sSOConfig: { findUnique: (...a: unknown[]) => ssoFindUnique(...a) },
-    user: { findUnique: (...a: unknown[]) => userFindUnique(...a), update: (...a: unknown[]) => userUpdate(...a) },
+    user: { findUnique: (...a: unknown[]) => userFindUnique(...a), update: (...a: unknown[]) => userUpdate(...a), updateMany: (...a: unknown[]) => userUpdate(...a) },
   },
 }))
 vi.mock('@/lib/secret-crypto', () => ({ decryptSecret: (v: string | null) => v }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn() }))
 
-import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision, syncSsoRoleFromClaims } from '@/lib/sso.server'
+import { loadSsoOidcConfig, ssoEnabled, ssoSignInDecision, syncSsoRoleFromClaims, isSsoLinkRefused } from '@/lib/sso.server'
 
 const VALID = {
   id: 'global', enabled: true, protocol: 'OIDC',
@@ -64,6 +64,24 @@ describe('ssoSignInDecision', () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, enabled: false })
     expect(await ssoSignInDecision({ email: 'a@acme.com' })).toEqual({ ok: false, reason: 'sso_desactive' })
   })
+  it('T24 — refuse de lier une nouvelle identité IdP à un compte SUPER_ADMIN', async () => {
+    userFindUnique.mockResolvedValue({ id: 'sa', role: 'SUPER_ADMIN', accounts: [] })
+    expect(await ssoSignInDecision({ email: 'boss@acme.com', email_verified: true }, 'idp-123')).toEqual({ ok: false, reason: 'sso_liaison_super_admin_refusee' })
+  })
+  it('T24 — admet un SUPER_ADMIN déjà lié à CETTE identité', async () => {
+    userFindUnique.mockResolvedValue({ id: 'sa', role: 'SUPER_ADMIN', accounts: [{ providerAccountId: 'idp-123' }] })
+    expect(await ssoSignInDecision({ email: 'boss@acme.com', email_verified: true }, 'idp-123')).toEqual({ ok: true })
+  })
+})
+
+describe('isSsoLinkRefused (T24)', () => {
+  it('ne concerne que les SUPER_ADMIN', () => {
+    expect(isSsoLinkRefused('ADMIN', [], 'x')).toBe(false)
+    expect(isSsoLinkRefused('SUPER_ADMIN', [], 'x')).toBe(true)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['y'], 'x')).toBe(true)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['x'], 'x')).toBe(false)
+    expect(isSsoLinkRefused('SUPER_ADMIN', ['x'], undefined)).toBe(true)
+  })
 })
 
 describe('syncSsoRoleFromClaims', () => {
@@ -72,7 +90,7 @@ describe('syncSsoRoleFromClaims', () => {
   it('mappe un groupe IdP vers un rôle et met à jour l’utilisateur', async () => {
     const role = await syncSsoRoleFromClaims('u1', { groups: ['grp-rssi'] })
     expect(role).toBe('RSSI')
-    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1' }, data: { role: 'RSSI' } }))
+    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1', role: { not: 'SUPER_ADMIN' } }, data: { role: 'RSSI' } }))
   })
   it('sans mapping configuré → null, aucune écriture', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, roleMapping: {} })
@@ -82,5 +100,9 @@ describe('syncSsoRoleFromClaims', () => {
   it('claim de groupes personnalisé (ex. "roles")', async () => {
     ssoFindUnique.mockResolvedValue({ ...VALID, oidcGroupsClaim: 'roles' })
     expect(await syncSsoRoleFromClaims('u1', { roles: ['grp-rssi'] })).toBe('RSSI')
+  })
+  it('audit 2026-10-01 : l\'écriture exclut toujours un SUPER_ADMIN (jamais rétrogradé par l\'IdP)', async () => {
+    await syncSsoRoleFromClaims('u1', { groups: [] }) // aucun groupe mappé → rôle par défaut
+    expect(userUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1', role: { not: 'SUPER_ADMIN' } }, data: { role: 'LECTEUR' } }))
   })
 })

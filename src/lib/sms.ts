@@ -40,12 +40,12 @@ export function buildTwilioRequest(c: SmsConfig, to: string, body: string) {
 
 /** Charge la configuration SMS (secret déchiffré) depuis la politique globale. */
 export async function getSmsConfig(): Promise<SmsConfig | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const p = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+  const p = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
   if (!p) return null
   return {
     provider: p.smsProvider ?? 'TWILIO',
-    apiKey: p.smsApiKey ?? null,
+    // Stockée chiffrée comme le secret (password-policy PUT) : la déchiffrer aussi.
+    apiKey: decryptSecret(p.smsApiKey) ?? null,
     apiSecret: decryptSecret(p.smsApiSecret) ?? null,
     senderId: p.smsSenderId ?? null,
   }

@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
+import { withRiskSummary } from '@/lib/analyses-summary.server'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -30,7 +31,7 @@ export default async function AnalysesPage() {
   const projets360 = scope.activeOrgId ? (await getOrgConfig(scope.activeOrgId)).projets360Active : false
   const canCreate = canCreateAnalyse({ id: userId, role: scope.role ?? userRole })
 
-  const analyses = await (prisma.analyse as any).findMany({
+  const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, scope.role, scope.scope),
     orderBy: { updatedAt: 'desc' },
     select: {
@@ -40,8 +41,6 @@ export default async function AnalysesPage() {
       socle: { select: { id: true, nom: true } },
       createdAt: true, updatedAt: true,
       _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
-      risques: { select: { niveauRisque: true, strategie: true } },
-      mesures: { select: { statut: true, priorite: true } },
     },
   })
 
@@ -49,7 +48,7 @@ export default async function AnalysesPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">…</div>}>
-        <AnalysesClient initialAnalyses={analyses} demo={demo} projets360={projets360} canCreate={canCreate} />
+        <AnalysesClient initialAnalyses={await withRiskSummary(analyses)} demo={demo} projets360={projets360} canCreate={canCreate} />
       </Suspense>
     </div>
   )

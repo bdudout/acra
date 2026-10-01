@@ -8,13 +8,12 @@
  * Les réglages surchargent DEMO_DEFAULTS et sont persistés dans Configuration.demoConfig.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { resolveDemoConfig, orgExpiresAt, daysUntilPurge, type DemoConfig } from '@/lib/demo'
 import { isDemoInstance, getDemoConfig, purgeExpiredDemoOrgs } from '@/lib/demo-server'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 const ConfigSchema = z.object({
   inactivityDays:    z.coerce.number().int().min(1).max(3650),
@@ -24,16 +23,12 @@ const ConfigSchema = z.object({
   maxActiveOrgs:     z.coerce.number().int().min(1).max(1000000),
 })
 
+/** Réglages de démo : SUPER_ADMIN (garde commune) ET instance de démo prouvée. */
 async function requireSuperAdminDemo() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  if ((session.user as { role?: string }).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  if (!(await isDemoInstance())) {
-    return { error: NextResponse.json({ error: 'Instance non démo' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
+  const g = await requireInstanceAdmin()
+  if (g.error) return g
+  if (!(await isDemoInstance())) return { error: NextResponse.json({ error: 'Instance non démo' }, { status: 403 }), session: null, user: null }
+  return g
 }
 
 /** Tableau de bord : orgs actives + prochaines purges (les plus proches d'abord). */

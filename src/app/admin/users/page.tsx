@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/format'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, X, XCircle } from 'lucide-react'
 import AdminNav from '@/components/AdminNav'
+import ReassignAnalysesDialog from '@/components/ReassignAnalysesDialog'
 import {
   ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_COLORS,
   type UserRole,
@@ -44,6 +45,10 @@ export default function AdminUsersPage() {
     icon?: ReactNode
     variant?: 'danger' | 'warning' | 'primary' | 'success'
   } | null>(null)
+
+  // Réattribution des analyses avant suppression d'un propriétaire (audit 2026-10-01, T2)
+  const [reassignFor, setReassignFor] = useState<UserItem | null>(null)
+  const [reassignBusy, setReassignBusy] = useState(false)
 
   // ── Formulaire de création de compte ─────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false)
@@ -243,6 +248,8 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId: user.id }),
       })
       const data = await res.json()
+      // Propriétaire d'analyses : proposer d'abord de les réattribuer (les analyses sont des preuves).
+      if (res.status === 409 && data.code === 'OWNS_ANALYSES') { setReassignFor(user); return }
       if (!res.ok) { setError(data.error); return }
       setUsers(prev => prev.filter(u => u.id !== user.id))
       showSuccess(t.admin.deleteSuccessMsg)
@@ -250,6 +257,35 @@ export default function AdminUsersPage() {
       setError(t.networkError)
     } finally {
       setSaving(null)
+    }
+  }
+
+  async function reassignAndDelete(user: UserItem, toUserId: string) {
+    setReassignBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, action: 'reassign-analyses', toUserId }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error); return }
+      setReassignFor(null)
+      if (data.remaining > 0) { setError(t.admin.reassignPartial(data.remaining)); return }
+      const del = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const delData = await del.json()
+      if (!del.ok) { setError(delData.error); return }
+      setUsers(prev => prev.filter(u => u.id !== user.id))
+      showSuccess(t.admin.reassignSuccessMsg(data.transferred))
+    } catch {
+      setError(t.networkError)
+    } finally {
+      setReassignBusy(false)
     }
   }
 
@@ -677,6 +713,23 @@ export default function AdminUsersPage() {
         </div>
       </main>
 
+      {reassignFor && (
+        <ReassignAnalysesDialog
+          candidates={users.filter(u => u.isActive && u.id !== reassignFor.id).map(u => ({ id: u.id, label: u.name ? `${u.name} — ${u.email}` : u.email }))}
+          labels={{
+            title: t.admin.reassignTitle,
+            message: t.admin.reassignMessage(reassignFor.email, reassignFor._count.analyses),
+            toLabel: t.admin.reassignTo,
+            choose: t.admin.reassignChoose,
+            noCandidate: t.admin.reassignNoCandidate,
+            confirm: t.admin.reassignConfirmBtn,
+            cancel: t.cancel,
+          }}
+          busy={reassignBusy}
+          onConfirm={to => reassignAndDelete(reassignFor, to)}
+          onCancel={() => setReassignFor(null)}
+        />
+      )}
       {pendingConfirm && (
         <ConfirmDialog
           message={pendingConfirm.message}

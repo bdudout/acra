@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAccessibleOrgIds } from '@/lib/org-context.server'
+import { getAdminOrgIds } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 type Params = { params: Promise<{ id: string }> }
 
 // Filtre d'organisation pour la corbeille (SUPER_ADMIN : tout ; sinon son périmètre).
 async function recoveryOrgFilter(userId: string, userRole: string) {
-  const { all, ids } = await getAccessibleOrgIds(userId, userRole as any)
+  const { all, ids } = await getAdminOrgIds(userId, userRole as any)
   return all ? {} : { organizationId: { in: ids } }
 }
 

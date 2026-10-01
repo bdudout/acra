@@ -10,6 +10,7 @@ import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { decryptSecret } from '@/lib/secret-crypto'
 import { fetchLdapEntities, fetchRestEntities, normalizeExternalEntities, type EntitySyncConfig } from '@/lib/entity-sync'
+import { safeFetch, resolvePublicAddress } from '@/lib/safe-fetch.server'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { childPath } from '@/lib/org-context'
@@ -31,11 +32,11 @@ async function guard(orgId: string) {
 function config(value: unknown): EntitySyncConfig { return value && typeof value === 'object' ? value as EntitySyncConfig : {} }
 
 async function readConnector(cfg: EntitySyncConfig): Promise<string[]> {
-  if (cfg.type === 'REST' && cfg.endpoint) return fetchRestEntities(cfg.endpoint, decryptSecret(cfg.token) ?? null)
+  if (cfg.type === 'REST' && cfg.endpoint) return fetchRestEntities(cfg.endpoint, decryptSecret(cfg.token) ?? null, safeFetch)
   if (cfg.type === 'LDAP' && cfg.endpoint && cfg.bindDN && cfg.baseDN) {
     const password = decryptSecret(cfg.password)
     if (!password) throw new Error('connector_secret_unavailable')
-    return fetchLdapEntities({ url: cfg.endpoint, bindDN: cfg.bindDN, password, baseDN: cfg.baseDN, filter: cfg.filter })
+    return fetchLdapEntities({ url: cfg.endpoint, bindDN: cfg.bindDN, password, baseDN: cfg.baseDN, filter: cfg.filter, resolveHost: resolvePublicAddress })
   }
   throw new Error('connector_not_configured')
 }

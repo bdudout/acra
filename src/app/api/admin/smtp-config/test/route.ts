@@ -3,19 +3,18 @@
  * connecté en utilisant la configuration SMTP enregistrée. ADMIN uniquement.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 // POST /api/admin/smtp-config/test — envoie un e-mail de test via la configuration SMTP (SUPER_ADMIN).
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  // Réglage d'INSTANCE (SMTP partagé) → SUPER_ADMIN uniquement.
-  if ((session.user as any).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
+  // Réglage d'INSTANCE → SUPER_ADMIN (garde commune, lib/route-guard.server.ts).
+  const guard = await requireInstanceAdmin()
+  if (guard.error) return guard.error
+  const session = guard.session
 
   const to = (session.user as any).email as string
   if (!to) return NextResponse.json({ error: 'Aucune adresse e-mail sur le compte' }, { status: 400 })
@@ -33,8 +32,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Enregistre le statut du test (garde-fou MFA e-mail + vérification d'e-mail)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma as any).sMTPConfig.update({
+  await prisma.sMTPConfig.update({
     where: { id: 'global' },
     data: { lastTestOk: result.ok, lastTestAt: new Date() },
   }).catch(() => { /* best-effort */ })

@@ -15,13 +15,12 @@ import { usesDirectRiskEntry } from '@/lib/methodes'
 
 type Guarded = {
   ok: true
-  analyse: { id: string; organizationId: string | null; methode: string }
+  analyse: { id: string; organizationId: string; methode: string }
 } | { ok: false; status: number; error: string }
 
 /** Vérifie les 4 conditions (accès, méthode, édition, gel) ; renvoie l'analyse ou un refus. */
 export async function guardDirectRisk(analyseId: string, userId: string, instanceRole: UserRole): Promise<Guarded> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const analyse = await (prisma.analyse as any).findFirst({
+  const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(userId, instanceRole, analyseId),
     include: { accesUtilisateurs: true },
   })

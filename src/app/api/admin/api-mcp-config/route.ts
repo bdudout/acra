@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 export const dynamic = 'force-dynamic'
 
-// Interfaces programmatiques (API v1, MCP) — réglage d'INSTANCE réservé au
-// SUPER_ADMIN, sur toute instance. Désactivées par défaut.
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  if ((session.user as { role?: string }).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
-}
 
 // GET /api/admin/api-mcp-config — état des interrupteurs API v1 et MCP.
 export async function GET() {
-  const { error } = await requireSuperAdmin()
+  const { error } = await requireInstanceAdmin()
   if (error) return error
   const config = await prisma.configuration.findUnique({
     where: { id: 'global' },
@@ -33,7 +22,7 @@ export async function GET() {
 
 // PUT /api/admin/api-mcp-config — activer/désactiver l'API v1 et/ou MCP.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireSuperAdmin()
+  const { error, session } = await requireInstanceAdmin()
   if (error) return error
   const body = await req.json().catch(() => ({}))
 

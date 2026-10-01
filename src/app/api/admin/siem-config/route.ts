@@ -6,14 +6,13 @@
  * chiffré au repos (AES-256-GCM) et redacté dans l'audit trail.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { encryptSecret, decryptSecret } from '@/lib/secret-crypto'
+import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 import { cleanSiemCategories, isValidSiemEndpoint, SIEM_CATEGORIES } from '@/lib/siem'
 import { invalidateSiemCache } from '@/lib/siem.server'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 const SiemSchema = z.object({
   enabled: z.boolean().default(false),
@@ -25,26 +24,18 @@ const SiemSchema = z.object({
 
 const DEFAULTS = { id: 'global', enabled: false, endpoint: null, authHeader: null, categories: [], includeStdout: true }
 
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((session.user as any).role !== 'SUPER_ADMIN') return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  return { error: null, session }
-}
 
 // GET /api/admin/siem-config — lit la configuration de transfert des journaux vers un SIEM (SUPER_ADMIN).
 export async function GET() {
-  const { error } = await requireSuperAdmin()
+  const { error } = await requireInstanceAdmin()
   if (error) return error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).siemConfig.upsert({ where: { id: 'global' }, create: DEFAULTS, update: {} })
-  return NextResponse.json({ ...config, authHeader: decryptSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
+  const config = await prisma.siemConfig.upsert({ where: { id: 'global' }, create: DEFAULTS, update: {} })
+  return NextResponse.json({ ...config, authHeader: maskSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
 }
 
 // PUT /api/admin/siem-config — met à jour la configuration SIEM (endpoint, format, secret) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireSuperAdmin()
+  const { error, session } = await requireInstanceAdmin()
   if (error) return error
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userId = (session!.user as any).id
@@ -59,21 +50,21 @@ export async function PUT(req: NextRequest) {
   if (d.enabled && !isValidSiemEndpoint(endpoint ?? '')) return NextResponse.json({ error: 'endpoint_invalide' }, { status: 400 })
 
   const categories = cleanSiemCategories(d.categories)
+  const current = await prisma.siemConfig.findUnique({ where: { id: 'global' }, select: { authHeader: true } })
   const toStore = {
-    enabled: d.enabled, endpoint, authHeader: encryptSecret(d.authHeader?.trim() || null),
+    enabled: d.enabled, endpoint, authHeader: resolveSubmittedSecret(d.authHeader, current?.authHeader),
     categories, includeStdout: d.includeStdout,
     lastError: null,
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const config = await (prisma as any).siemConfig.upsert({
+  const config = await prisma.siemConfig.upsert({
     where: { id: 'global' }, create: { id: 'global', ...toStore }, update: toStore,
   })
   invalidateSiemCache()
 
   await auditLog('SIEM_CONFIG_UPDATED', {
     userId, userRole, ip: getClientIp(req),
-    details: { enabled: d.enabled, endpoint, categories, includeStdout: d.includeStdout, authHeader: d.authHeader ? '[REDACTED]' : null },
+    details: { enabled: d.enabled, endpoint, categories, includeStdout: d.includeStdout, authHeader: d.authHeader && d.authHeader !== SECRET_PLACEHOLDER ? '[REDACTED]' : undefined },
   })
-  return NextResponse.json({ ...config, authHeader: decryptSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
+  return NextResponse.json({ ...config, authHeader: maskSecret(config.authHeader) ?? '', categoriesDisponibles: SIEM_CATEGORIES })
 }

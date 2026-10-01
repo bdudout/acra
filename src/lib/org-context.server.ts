@@ -12,7 +12,7 @@
 
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import type { UserRole, OrgScopeContext } from '@/lib/permissions'
+import { isAdminRole, type UserRole, type OrgScopeContext } from '@/lib/permissions'
 import {
   visibleOrgIds,
   subtreeIds,
@@ -37,6 +37,32 @@ export interface ResolvedOrgContext {
   isSuperAdmin: boolean
 }
 
+const ORG_NODE_SELECT = { id: true, path: true, parentId: true } as const
+
+/**
+ * Charge UNIQUEMENT les organisations utiles à une décision d'accès (audit 2026-09-30,
+ * T12) : celles des appartenances, leurs sous-arbres pour une portée SUBTREE, et les
+ * organisations `extraIds` (cible). Auparavant, chaque appel chargeait TOUTES les
+ * organisations de l'instance (coût croissant avec chaque inscription démo).
+ * Les fonctions pures (`visibleOrgIds`, `subtreeIds`, `isInSubtree`) n'ont besoin
+ * que de ces nœuds : un nœud absent ne peut être ni visible ni couvert.
+ */
+async function loadRelevantOrgs(memberRows: { organizationId: string; scope: string }[], extraIds: string[] = []): Promise<OrgNode[]> {
+  const ids = [...new Set([...memberRows.map(m => m.organizationId), ...extraIds.filter(Boolean)])]
+  if (ids.length === 0) return []
+  const base = await prisma.organization.findMany({ where: { id: { in: ids } }, select: ORG_NODE_SELECT })
+  const subtreeRootIds = new Set(memberRows.filter(m => m.scope === 'SUBTREE').map(m => m.organizationId))
+  const roots = base.filter(o => subtreeRootIds.has(o.id))
+  if (roots.length === 0) return base
+  const descendants = await prisma.organization.findMany({
+    where: { OR: roots.map(r => ({ path: { startsWith: r.path } })) },
+    select: ORG_NODE_SELECT,
+  })
+  const byId = new Map<string, OrgNode>()
+  for (const o of [...base, ...descendants]) byId.set(o.id, { id: o.id, path: o.path, parentId: o.parentId })
+  return [...byId.values()]
+}
+
 /**
  * Résout le contexte d'organisation d'un utilisateur. `instanceRole` est le rôle
  * porté par la session (User.role) — sert à détecter le SUPER_ADMIN.
@@ -49,14 +75,16 @@ export async function resolveOrgContext(
 ): Promise<ResolvedOrgContext> {
   const isSuperAdmin = instanceRole === 'SUPER_ADMIN'
 
-  const [memberRows, allOrgs] = await Promise.all([
-    prisma.orgMembership.findMany({
-      where: { userId },
-      select: { organizationId: true, role: true, scope: true, organization: { select: { nom: true } } },
-      orderBy: { createdAt: 'asc' },
-    }),
-    prisma.organization.findMany({ select: { id: true, path: true, parentId: true } }),
-  ])
+  const memberRows = await prisma.orgMembership.findMany({
+    where: { userId },
+    select: { organizationId: true, role: true, scope: true, organization: { select: { nom: true } } },
+    orderBy: { createdAt: 'asc' },
+  })
+  // SUPER_ADMIN : périmètre = toute l'instance (ou le sous-arbre focalisé) → toutes les orgs ;
+  // sinon seulement les organisations de ses appartenances (T12).
+  const allOrgs = isSuperAdmin
+    ? await prisma.organization.findMany({ select: ORG_NODE_SELECT })
+    : await loadRelevantOrgs(memberRows)
 
   const memberships: (Membership & { nom: string })[] = memberRows.map(m => ({
     organizationId: m.organizationId,
@@ -127,11 +155,12 @@ export async function resolveOrgContext(
  */
 export async function getEffectiveRoleForOrg(userId: string, instanceRole: UserRole, orgId: string): Promise<UserRole | null> {
   if (instanceRole === 'SUPER_ADMIN') return 'SUPER_ADMIN'
-  const [memberRows, allOrgs] = await Promise.all([
-    prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, role: true, scope: true } }),
-    prisma.organization.findMany({ select: { id: true, path: true, parentId: true } }),
-  ])
-  const orgs: OrgNode[] = allOrgs.map(o => ({ id: o.id, path: o.path, parentId: o.parentId }))
+  const memberRows = await prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, role: true, scope: true } })
+  // Seuls l'org cible et les orgs des appartenances sont nécessaires (pas les sous-arbres) — T12.
+  const orgs: OrgNode[] = await prisma.organization.findMany({
+    where: { id: { in: [orgId, ...memberRows.map(m => m.organizationId)] } },
+    select: ORG_NODE_SELECT,
+  })
   const target = orgs.find(o => o.id === orgId)
   if (!target) return null
   const direct = memberRows.find(m => m.organizationId === orgId)
@@ -152,11 +181,8 @@ export async function getEffectiveRoleForOrg(userId: string, instanceRole: UserR
  */
 export async function getAccessibleOrgIds(userId: string, instanceRole: UserRole): Promise<{ all: boolean; ids: string[] }> {
   if (instanceRole === 'SUPER_ADMIN') return { all: true, ids: [] }
-  const [memberRows, allOrgs] = await Promise.all([
-    prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, scope: true } }),
-    prisma.organization.findMany({ select: { id: true, path: true, parentId: true } }),
-  ])
-  const orgs: OrgNode[] = allOrgs.map(o => ({ id: o.id, path: o.path, parentId: o.parentId }))
+  const memberRows = await prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, scope: true } })
+  const orgs: OrgNode[] = await loadRelevantOrgs(memberRows)
   const set = new Set<string>()
   for (const m of memberRows) {
     visibleOrgIds({ organizationId: m.organizationId, role: 'ANALYSTE', scope: m.scope as Membership['scope'] }, orgs)
@@ -215,4 +241,36 @@ export async function getAnalyseScope(userId: string, instanceRole: UserRole): P
 export async function countOrgMembers(organizationId: string | null | undefined): Promise<number> {
   if (!organizationId) return 0
   return prisma.orgMembership.count({ where: { organizationId } })
+}
+
+/**
+ * Organisations que l'utilisateur ADMINISTRE (rôle EFFECTIF administrateur : appartenance
+ * ADMIN, sur le nœud ou un ancêtre SUBTREE). SUPER_ADMIN → toutes.
+ * Audit 2026-10-01 (T25) : plusieurs routes d'administration (comptes, corbeille,
+ * journal) vérifiaient le rôle ADMIN GLOBAL puis travaillaient sur TOUTES les
+ * organisations visibles — y compris celles où l'utilisateur n'est que LECTEUR.
+ */
+export async function getAdminOrgIds(userId: string, instanceRole: UserRole): Promise<{ all: boolean; ids: string[] }> {
+  if (instanceRole === 'SUPER_ADMIN') return { all: true, ids: [] }
+  const memberRows = await prisma.orgMembership.findMany({ where: { userId }, select: { organizationId: true, role: true, scope: true } })
+  const adminRows = memberRows.filter(m => isAdminRole(m.role as UserRole))
+  if (adminRows.length === 0) return { all: false, ids: [] }
+  const orgs = await loadRelevantOrgs(adminRows)
+  const set = new Set<string>()
+  for (const m of adminRows) {
+    visibleOrgIds({ organizationId: m.organizationId, role: m.role as UserRole, scope: m.scope as Membership['scope'] }, orgs).forEach(id => set.add(id))
+  }
+  return { all: false, ids: [...set] }
+}
+
+/**
+ * Périmètre d'ADMINISTRATION courant : SUPER_ADMIN → périmètre de focalisation habituel
+ * (toute l'instance, ou l'organisation focalisée) ; sinon organisations visibles dans le
+ * contexte actif ∩ organisations administrées (T25).
+ */
+export async function getAdminScope(userId: string, instanceRole: UserRole): Promise<{ all: boolean; orgIds: string[]; activeOrgId: string | null }> {
+  const s = await getAnalyseScope(userId, instanceRole)
+  if (instanceRole === 'SUPER_ADMIN') return { all: s.scope.isSuperAdmin === true, orgIds: s.scope.visibleOrgIds, activeOrgId: s.activeOrgId }
+  const admin = new Set((await getAdminOrgIds(userId, instanceRole)).ids)
+  return { all: false, orgIds: s.scope.visibleOrgIds.filter(id => admin.has(id)), activeOrgId: s.activeOrgId }
 }

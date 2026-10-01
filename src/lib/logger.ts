@@ -87,6 +87,7 @@ export type AuditAction =
   | 'ANALYSE_REJECTED'
   | 'ANALYSE_SUBMITTED'
   | 'ANALYSE_REVISED'
+  | 'ANALYSE_REASSIGNED'
   | 'RESIDUAL_RISKS_DECISION'
   | 'DEROGATION_REQUESTED'
   | 'DEROGATION_RSSI_OPINION'
@@ -180,8 +181,7 @@ export async function auditLog(action: AuditAction, ctx: AuditContext = {}) {
       })
       organizationId = m?.organizationId ?? null
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (prisma as any).auditLog.create({
+    await prisma.auditLog.create({
       data: {
         action,
         userId:     ctx.userId,

@@ -144,6 +144,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">{r.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- téléchargement servi par une route API, pas une page */}
           <a href="/api/reglementaire/registre-tic?format=csv"
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <Download size={15} aria-hidden="true" /> {r.export}

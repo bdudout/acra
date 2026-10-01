@@ -1,15 +1,9 @@
 /** Utilitaires purs pour les connecteurs d'entités REST et LDAP.
  * Les connecteurs ne créent jamais une entité sans aperçu/validation explicite. */
 
-const PRIVATE_IPV4 = /^(127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/
-const MAX_REST_RESPONSE_BYTES = 1_048_576
+import { isInternalHostname } from '@/lib/ip-safety'
 
-function isPrivateHostname(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  return host === 'localhost' || host.endsWith('.local') || PRIVATE_IPV4.test(host)
-    || host === '::' || host === '::1' || host.startsWith('::ffff:')
-    || /^f[cd][0-9a-f:]*$/.test(host) || /^fe[89ab][0-9a-f:]*$/.test(host)
-}
+const MAX_REST_RESPONSE_BYTES = 1_048_576
 
 /** Lit un JSON réseau avec une vraie borne même lorsqu'un serveur omet
  * Content-Length (réponse chunked). */
@@ -70,13 +64,13 @@ export function publicEntitySyncConfig(config: EntitySyncConfig): Required<Omit<
   }
 }
 
-/** Accepte uniquement une URL HTTPS publique. La résolution DNS doit être
- * contrôlée une seconde fois au moment de la requête serveur. */
+/** Accepte uniquement une URL HTTPS publique (contrôle statique). La résolution DNS
+ * est validée au moment de la requête serveur (`safeFetch` REST, `resolvePublicLdap` LDAP). */
 export function validateSyncEndpoint(value: string): string | null {
   try {
     const url = new URL(value.trim())
     const hostname = url.hostname.toLowerCase()
-    if (url.protocol !== 'https:' || !hostname || isPrivateHostname(hostname)) return null
+    if (url.protocol !== 'https:' || url.username || url.password || !hostname || isInternalHostname(hostname)) return null
     return url.toString()
   } catch { return null }
 }
@@ -86,7 +80,7 @@ export function validateLdapEndpoint(value: string): string | null {
   try {
     const url = new URL(value.trim())
     const hostname = url.hostname.toLowerCase()
-    if (url.protocol !== 'ldaps:' || !hostname || isPrivateHostname(hostname)) return null
+    if (url.protocol !== 'ldaps:' || url.username || url.password || !hostname || isInternalHostname(hostname)) return null
     return url.toString()
   } catch { return null }
 }
@@ -136,11 +130,23 @@ export async function fetchRestEntities(endpoint: string, token: string | null, 
 
 /** Lecture LDAP bornée. Seul LDAPS est accepté : les identifiants ne transitent
  * jamais en clair. Le filtre est une configuration d'admin, pas une saisie libre. */
-export async function fetchLdapEntities(opts: { url: string; bindDN: string; password: string; baseDN: string; filter?: string }): Promise<string[]> {
+export async function fetchLdapEntities(opts: { url: string; bindDN: string; password: string; baseDN: string; filter?: string; resolveHost?: (hostname: string) => Promise<string> }): Promise<string[]> {
   const safeUrl = validateLdapEndpoint(opts.url)
   if (!safeUrl || !opts.bindDN || !opts.password || !opts.baseDN) throw new Error('ldap_config_invalide')
   const { Client } = await import('ldapts')
-  const client = new Client({ url: safeUrl, timeout: 5_000, connectTimeout: 5_000, tlsOptions: { rejectUnauthorized: true } })
+  // Anti-SSRF (N02) : l'hôte est résolu puis validé (IP publique) par l'appelant ; on se
+  // connecte à CETTE IP (pas de second DNS) en gardant le nom d'hôte pour le SNI et la
+  // vérification du certificat.
+  let url = safeUrl
+  let servername: string | undefined
+  if (opts.resolveHost) {
+    const parsed = new URL(safeUrl)
+    const ip = await opts.resolveHost(parsed.hostname)
+    servername = parsed.hostname.replace(/^\[|\]$/g, '')
+    parsed.hostname = ip.includes(':') ? `[${ip}]` : ip
+    url = parsed.toString()
+  }
+  const client = new Client({ url, timeout: 5_000, connectTimeout: 5_000, tlsOptions: { rejectUnauthorized: true, ...(servername ? { servername } : {}) } })
   try {
     await client.bind(opts.bindDN, opts.password)
     const result = await client.search(opts.baseDN, { scope: 'sub', filter: opts.filter || '(objectClass=organizationalUnit)', attributes: ['displayName', 'cn', 'ou'], sizeLimit: 500 })

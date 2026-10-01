@@ -2,11 +2,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), rl: vi.fn(), count: vi.fn(), create: vi.fn() }))
+const m = vi.hoisted(() => ({ session: vi.fn(), rl: vi.fn(), count: vi.fn(), create: vi.fn(), guard: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { count: m.count, create: m.create } } }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, rateLimitHeaders: () => ({}), LIMIT_IMPORT: { limit: 10, windowMs: 3_600_000 } }))
+vi.mock('@/lib/analyse-create-guard.server', () => ({ checkAnalyseCreation: m.guard }))
 import { POST } from '@/app/api/import/route'
 
 const post = (body: unknown) => new NextRequest('http://x/api/import', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } })
@@ -17,13 +18,26 @@ beforeEach(() => {
   m.rl.mockResolvedValue({ allowed: true, remaining: 5, resetAt: 0 })
   m.count.mockResolvedValue(0)
   m.create.mockResolvedValue({ id: 'a1', nom: 'Test (importé)' })
+  m.guard.mockResolvedValue({ ok: true, organizationId: 'org1' })
 })
 
 describe('POST /api/import', () => {
   it('JSON valide : analyse créée EN_COURS', async () => {
     const res = await POST(post({ format: 'json', data: '{"nom":"Test"}' }))
     expect(res.status).toBe(201)
-    expect(m.create.mock.calls[0][0].data).toMatchObject({ nom: 'Test (importé)', statut: 'EN_COURS' })
+    expect(m.create.mock.calls[0][0].data).toMatchObject({ nom: 'Test (importé)', statut: 'EN_COURS', organizationId: 'org1' })
+  })
+  it('T11 — l\'analyse importée est rattachée à l\'organisation active ; sans droit de création : 403 import_forbidden', async () => {
+    m.guard.mockResolvedValue({ ok: false, reason: 'ROLE' })
+    const res = await POST(post({ format: 'json', data: '{"nom":"Test"}' }))
+    expect(res.status).toBe(403)
+    expect((await res.json()).error).toBe('import_forbidden')
+    expect(m.create).not.toHaveBeenCalled()
+  })
+  it('T11 — plafond démo atteint : 403 import_demo_cap', async () => {
+    m.guard.mockResolvedValue({ ok: false, reason: 'DEMO_CAP' })
+    const res = await POST(post({ format: 'json', data: '{"nom":"Test"}' }))
+    expect((await res.json()).error).toBe('import_demo_cap')
   })
   it('JSON illisible : code json_invalid avec ligne, colonne, extrait et cause probable', async () => {
     const res = await POST(post({ format: 'json', data: '{\n "nom": "A",\n}' }))

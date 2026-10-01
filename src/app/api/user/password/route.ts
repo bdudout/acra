@@ -47,8 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Récupérer la politique
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const policyRow = await (prisma as any).passwordPolicy.findUnique({ where: { id: 'global' } })
+  const policyRow = await prisma.passwordPolicy.findUnique({ where: { id: 'global' } })
   const policy = policyRow ?? DEFAULT_POLICY
 
   if (validatePassword(newPassword, policy).length > 0) {

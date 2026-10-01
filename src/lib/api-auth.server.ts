@@ -3,7 +3,8 @@
 // Authorization. Point UNIQUE d'authentification des routes /api/v1/*.
 
 import { prisma } from '@/lib/prisma'
-import { parseAuthorizationHeader, verifyApiKey, apiKeyUtilisable, hasScope, type ApiScope } from '@/lib/api-key'
+import { lookupApiKey } from '@/lib/api-key-lookup.server'
+import { parseAuthorizationHeader, apiKeyUtilisable, hasScope, type ApiScope } from '@/lib/api-key'
 import { isApiEnabled } from '@/lib/interfaces-config.server'
 
 /** Résultat d'authentification d'une clé d'API : succès (org + scopes + keyId) ou échec (status + message). */
@@ -24,11 +25,11 @@ export async function authenticateApiRequest(req: Request, needed: ApiScope = 'r
   const parsed = parseAuthorizationHeader(req.headers.get('authorization'))
   if (!parsed) return { ok: false, status: 401, error: 'missing_or_invalid_authorization' }
 
-  const key = await prisma.apiKey.findUnique({ where: { prefix: parsed.prefix } })
-  // Vérification à temps constant du dérivé scrypt.
-  if (!key || !(await verifyApiKey(parsed.plaintext, key.hashedKey))) {
-    return { ok: false, status: 401, error: 'invalid_api_key' }
-  }
+  // Débit par IP avant scrypt + temps égalisé si le préfixe est inconnu (N04).
+  const found = await lookupApiKey(req, parsed)
+  if (found.status === 'throttled') return { ok: false, status: 429, error: 'rate_limited' }
+  if (found.status !== 'ok') return { ok: false, status: 401, error: 'invalid_api_key' }
+  const key = found.key
   if (!apiKeyUtilisable(key)) return { ok: false, status: 401, error: 'api_key_revoked_or_expired' }
 
   const scopes = Array.isArray(key.scopes) ? (key.scopes as string[]) : ['read']

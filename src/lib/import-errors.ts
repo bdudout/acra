@@ -15,6 +15,8 @@ export const IMPORT_ERROR_CODES = [
   'excel_no_importable_sheet', 'excel_too_many_rows', 'excel_duplicate_reference', 'excel_import_invalid',
   // Générique
   'import_rate_limited', 'import_failed',
+  // Droits (audit 2026-10-01, T11)
+  'import_forbidden', 'import_demo_cap',
 ] as const
 export type ImportErrorCode = (typeof IMPORT_ERROR_CODES)[number]
 
@@ -32,6 +34,7 @@ export function importErrorStatus(code: ImportErrorCode): number {
     case 'import_rate_limited': case 'excel_rate_limited': return 429
     case 'excel_workbook_unreadable': case 'json_invalid': case 'json_empty': case 'json_html': case 'json_binary':
     case 'json_not_object': case 'json_missing_name': case 'csv_not_acra': case 'excel_import_invalid': case 'import_failed': return 422
+    case 'import_forbidden': case 'import_demo_cap': return 403
     default: return 400
   }
 }

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAdmin } from '@/lib/permissions'
-import { getAccessibleOrgIds } from '@/lib/org-context.server'
+import { getAdminOrgIds } from '@/lib/org-context.server'
 import { purgeThreshold, daysRemaining, RECOVERY_RETENTION_DAYS } from '@/lib/recovery'
 
 // GET /api/admin/recovery — corbeille des analyses (ADMIN). Purge paresseuse > 30 j.
@@ -21,9 +21,9 @@ export async function GET(_req: NextRequest) {
   // Purge définitive des analyses supprimées depuis plus de 30 jours (cascade).
   await prisma.analyse.deleteMany({ where: { deletedAt: { not: null, lte: purgeThreshold(now) } } })
 
-  // Isolation multi-organisation : un admin d'organisation ne voit que la corbeille
-  // de son périmètre (SUPER_ADMIN voit tout).
-  const { all, ids } = await getAccessibleOrgIds(userId, userRole)
+  // Isolation multi-organisation : un admin ne voit que la corbeille des organisations
+  // qu'il ADMINISTRE (rôle effectif, T25) ; SUPER_ADMIN voit tout.
+  const { all, ids } = await getAdminOrgIds(userId, userRole)
   const orgFilter = all ? {} : { organizationId: { in: ids } }
 
   const rows = await prisma.analyse.findMany({

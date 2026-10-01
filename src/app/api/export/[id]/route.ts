@@ -117,8 +117,7 @@ export async function GET(
       const { renderAnalysePDF } = loadPdfRuntime('pdf-template')
       const { accesUtilisateurs: _ac, ...pdfData } = analyse
       // Échelles configurées par l'organisation (annexe dynamique du PDF)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      const config = await prisma.configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
       // Locale du rapport (?lang=) — validée contre la liste connue, repli fr
       const langParam = searchParams.get('lang')
       const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
@@ -143,8 +142,7 @@ export async function GET(
       const { renderAnalysePptx } = await import('@/lib/analyse-pptx')
       const { getOrgConfig } = await import('@/lib/org-config.server')
       const { accesUtilisateurs: _ap, ...pptxData } = analyse
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      const config = await prisma.configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
       // Appétit au risque résolu dans l'arbre d'organisations (best-effort)
       const orgCfg = await getOrgConfig(analyse.organizationId).catch(() => null)
       // Nom de l'approbateur (si l'analyse a été approuvée)
@@ -176,8 +174,7 @@ export async function GET(
     try {
       const { renderAnalyseDocx } = await import('@/lib/analyse-docx')
       const { accesUtilisateurs: _ad, ...docxData } = analyse
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config = await (prisma as any).configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
+      const config = await prisma.configuration.findUnique({ where: { id: 'global' } }).catch(() => null)
       const langParam = searchParams.get('lang')
       const locale = ['fr', 'en', 'de', 'es', 'it'].includes(langParam ?? '') ? (langParam as string) : 'fr'
       const buffer = await renderAnalyseDocx(docxData as Record<string, unknown>, config, locale)

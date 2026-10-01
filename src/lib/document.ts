@@ -39,6 +39,40 @@ export function mimeAutorise(mime: unknown): boolean {
   return typeof mime === 'string' && ALLOWED_DOCUMENT_MIME.has(mime)
 }
 
+/**
+ * Le contenu correspond-il au type MIME annoncé ? (audit 2026-09-30, N06 / CWE-434)
+ * `file.type` est déclaré par le client : on contrôle la signature (octets magiques)
+ * des formats binaires. Les formats texte ne doivent contenir ni NUL ni signature
+ * d'exécutable/archive. Pur, sur les premiers octets.
+ */
+export function contentMatchesMime(mime: string, head: Uint8Array): boolean {
+  const starts = (sig: number[], at = 0) => sig.every((b, i) => head[at + i] === b)
+  const zip = starts([0x50, 0x4b, 0x03, 0x04])
+  const ole = starts([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])
+  switch (mime) {
+    case 'application/pdf': return Buffer.from(head.subarray(0, 1024)).includes('%PDF-')
+    case 'image/png': return starts([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    case 'image/jpeg': return starts([0xff, 0xd8, 0xff])
+    case 'application/msword':
+    case 'application/vnd.ms-excel':
+    case 'application/vnd.ms-powerpoint': return ole
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+    case 'application/vnd.oasis.opendocument.text':
+    case 'application/vnd.oasis.opendocument.spreadsheet':
+    case 'application/vnd.oasis.opendocument.presentation': return zip
+    case 'text/plain':
+    case 'text/markdown':
+    case 'text/csv': {
+      if (head.includes(0)) return false
+      const exe = starts([0x4d, 0x5a]) || starts([0x7f, 0x45, 0x4c, 0x46]) || zip || starts([0x25, 0x50, 0x44, 0x46])
+      return !exe
+    }
+    default: return false
+  }
+}
+
 const txt = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 const txtOrNull = (v: unknown): string | null => (txt(v) ? txt(v) : null)
 

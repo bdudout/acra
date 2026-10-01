@@ -257,6 +257,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
   switch (frameworkId) {
     case 'ISO27001': {
       // Importé dynamiquement depuis ebios-data pour éviter la duplication
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- import différé (dépendance circulaire avec ebios-data)
       const { ISO27001_ANNEXE_A } = require('@/lib/ebios-data')
       return ISO27001_ANNEXE_A
     }
@@ -301,6 +302,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
   }
   switch (frameworkId) {
     case 'ISO27001': {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- import différé (dépendance circulaire avec ebios-data)
       const { ISO27001_CATEGORIES } = require('@/lib/ebios-data')
       return ISO27001_CATEGORIES
     }
