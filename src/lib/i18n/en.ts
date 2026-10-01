@@ -1186,6 +1186,7 @@ export const en: Translations = {
     notify: 'Notify the directly added person by e-mail',
     hint: 'Instance setting (super administrator).',
   },
+  controleCatalogue: { open: "Add from catalogue", title: "Control templates catalogue", hint: "Choose how to start: a framework, a process or a risk. Tick the controls to add; they still need to be qualified (owner, sample) and no execution is created.", angleLabel: "Starting point", angles: { REFERENTIEL: "By framework", PROCESSUS: "By process", RISQUE: "By risk" }, referentiel: "Framework", frenchOnly: "Framework baselines are currently written in French.", processHint: "The control is linked to the process if it is already in your process map.", riskHint: "The control is linked to the risk if it is already in your register.", processMissing: "process not in your map: control added without a link", riskMissing: "risk not in your register: control added without a link", status: { NEW: "new", ALREADY_IMPORTED: "already added", SIMILAR: "a control already has this title" }, import: "Add selection", report: "{n} control(s) added", selected: "{n} selected", empty: "No control template for this starting point.", close: "Close", error: "Operation failed. Please try again." },
   interfacesConfig: {
     sectionTitle: 'Programmatic interfaces (instance)',
     sectionDesc: 'Enable or disable the public API and the MCP interface. Disabled by default.',

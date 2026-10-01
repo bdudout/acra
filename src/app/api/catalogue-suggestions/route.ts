@@ -10,7 +10,8 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
 import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
-import { ALL_SECTORS, effectiveSectors, parseSectorChoice } from '@/lib/sector-selection'
+import { ALL_SECTORS, parseSectorChoice } from '@/lib/sector-selection'
+import { orgSectors } from '@/lib/sector-context.server'
 import { resolveTaxonomie } from '@/lib/taxonomie'
 
 export const dynamic = 'force-dynamic'
@@ -25,17 +26,6 @@ async function context() {
   const instanceRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
   const scope = await getAnalyseScope(userId, instanceRole)
   return { userId, role: scope.role, orgId: scope.activeOrgId }
-}
-
-/** Secteurs déclarés par l'organisation, sinon hérités de l'ancêtre le plus proche (groupe multisecteur). */
-async function orgSectors(orgId: string) {
-  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true, secteursActivite: true } })
-  const ancestorIds = (org?.path ?? '').split('/').filter(id => id && id !== orgId).reverse()
-  if (Array.isArray(org?.secteursActivite) && org.secteursActivite.length) return effectiveSectors([org.secteursActivite])
-  if (!ancestorIds.length) return effectiveSectors([org?.secteursActivite])
-  const ancestors = await prisma.organization.findMany({ where: { id: { in: ancestorIds } }, select: { id: true, secteursActivite: true } })
-  const byId = new Map(ancestors.map(a => [a.id, a.secteursActivite]))
-  return effectiveSectors([org?.secteursActivite, ...ancestorIds.map(id => byId.get(id))])
 }
 
 /** Libellé de réponse du choix : socle seul (null), un secteur, ou tous les secteurs effectifs. */
@@ -138,6 +128,8 @@ export async function POST(req: NextRequest) {
     // Catégorie bâloise suggérée, appliquée seulement si la taxonomie de l'organisation contient ce code.
     const taxonomyCodes = new Set(resolveTaxonomie(cfg.taxonomieRisques).map(node => node.code))
     const processIds = new Map(processes.flatMap(row => row.catalogueKey ? [[row.catalogueKey, row.id] as const] : []))
+    // Risques du registre (déjà présents ou créés dans ce lot) : un contrôle-type s'y rattache s'il les couvre.
+    const riskIds = new Map(risks.flatMap(row => row.catalogueKey ? [[row.catalogueKey, row.id] as const] : []))
     const created: Array<{ key: string; id: string; kind: string }> = []
     for (const item of plan.toCreate) {
       if (item.kind === 'PROCESS') {
@@ -152,6 +144,7 @@ export async function POST(req: NextRequest) {
         const controle = await tx.controle.create({ data: {
           organizationId: ctx.orgId!, intitule: item.title, periodicite: item.periodicite ?? 'TRIMESTRIEL', typeControle: item.controlType ?? null,
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
+          riskItemId: (item.riskKeys ?? []).map(k => riskIds.get(k)).find(Boolean) ?? null,
           catalogueKey: item.key, catalogueVersion: item.packVersion,
         } })
         created.push({ key: item.key, id: controle.id, kind: item.kind })
@@ -192,6 +185,7 @@ export async function POST(req: NextRequest) {
           provenance: 'ACRA', sourceType: 'catalogue', sourceId: item.key, statut: 'IDENTIFIE',
           graviteInherente: null, vraisemblanceInherente: null,
         } })
+        riskIds.set(item.key, risk.id)
         created.push({ key: item.key, id: risk.id, kind: item.kind })
       }
     }

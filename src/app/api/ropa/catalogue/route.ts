@@ -21,17 +21,17 @@ const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().to
 
 async function context() {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
+  if (!session?.user) return { ok: false as const, response: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
   const userId = (session.user as { id: string }).id
   const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
-  if (!scope.activeOrgId) return { error: NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 }) }
-  if (!canManageRopa(scope.role)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
-  return { userId, role: scope.role, orgId: scope.activeOrgId }
+  if (!scope.activeOrgId) return { ok: false as const, response: NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 }) }
+  if (!canManageRopa(scope.role)) return { ok: false as const, response: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  return { ok: true as const, userId, role: scope.role, orgId: scope.activeOrgId }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const ctx = await context()
-  if ('error' in ctx) return ctx.error
+  if (!ctx.ok) return ctx.response
   const locale = parseLocale(new URL(req.url).searchParams.get('locale'))
   const existing = await prisma.traitement.findMany({ where: { organizationId: ctx.orgId }, select: { nom: true, catalogueKey: true } })
   const keys = new Set(existing.map(t => t.catalogueKey).filter(Boolean))
@@ -40,9 +40,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ version: ROPA_CATALOGUE_VERSION, locale, items })
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const ctx = await context()
-  if ('error' in ctx) return ctx.error
+  if (!ctx.ok) return ctx.response
   const body = await req.json().catch(() => ({}))
   const locale = parseLocale(body.locale)
   const templates = new Map(listRopaTemplates(locale).map(t => [t.key, t]))

@@ -1186,6 +1186,7 @@ export const es: Translations = {
     notify: 'Avisar por correo a la persona vinculada directamente',
     hint: 'Ajuste de instancia (superadministrador).',
   },
+  controleCatalogue: { open: "Añadir desde el catálogo", title: "Catálogo de controles tipo", hint: "Elija por dónde empezar: un marco normativo, un proceso o un riesgo. Marque los controles que desea añadir; quedan por calificar (responsable, muestra) y no se crea ninguna ejecución.", angleLabel: "Punto de entrada", angles: { REFERENTIEL: "Por marco normativo", PROCESSUS: "Por proceso", RISQUE: "Por riesgo" }, referentiel: "Marco normativo", frenchOnly: "Las bases por marco normativo están redactadas por ahora en francés.", processHint: "El control se vincula al proceso si este ya figura en su mapa de procesos.", riskHint: "El control se vincula al riesgo si este ya figura en su registro.", processMissing: "proceso ausente de su mapa: control añadido sin vínculo", riskMissing: "riesgo ausente de su registro: control añadido sin vínculo", status: { NEW: "nuevo", ALREADY_IMPORTED: "ya añadido", SIMILAR: "ya existe un control con este título" }, import: "Añadir la selección", report: "{n} control(es) añadido(s)", selected: "{n} seleccionado(s)", empty: "Ningún control tipo para este punto de entrada.", close: "Cerrar", error: "Operación imposible. Inténtelo de nuevo." },
   interfacesConfig: {
     sectionTitle: 'Interfaces programáticas (instancia)',
     sectionDesc: 'Activa o desactiva la API pública y la interfaz MCP. Desactivadas por defecto.',

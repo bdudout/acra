@@ -1209,6 +1209,7 @@ export const fr = {
     notify: 'Prévenir par e-mail la personne rattachée directement',
     hint: 'Réglage d\'instance (super-administrateur).',
   },
+  controleCatalogue: { open: "Ajouter depuis le catalogue", title: "Catalogue des contrôles-types", hint: "Choisissez par où entrer : un référentiel, un processus ou un risque. Cochez les contrôles à ajouter ; ils restent à qualifier (responsable, échantillon) et aucune exécution n’est créée.", angleLabel: "Porte d’entrée", angles: { REFERENTIEL: "Par référentiel", PROCESSUS: "Par processus", RISQUE: "Par risque" }, referentiel: "Référentiel", frenchOnly: "Les socles par référentiel sont pour l’instant rédigés en français.", processHint: "Le contrôle est rattaché au processus si celui-ci figure déjà dans votre cartographie.", riskHint: "Le contrôle est rattaché au risque si celui-ci figure déjà dans votre registre.", processMissing: "processus absent de votre cartographie : contrôle ajouté sans lien", riskMissing: "risque absent de votre registre : contrôle ajouté sans lien", status: { NEW: "nouveau", ALREADY_IMPORTED: "déjà ajouté", SIMILAR: "un contrôle porte déjà cet intitulé" }, import: "Ajouter la sélection", report: "{n} contrôle(s) ajouté(s)", selected: "{n} sélectionné(s)", empty: "Aucun contrôle-type pour cette entrée.", close: "Fermer", error: "Opération impossible. Réessayez." },
   interfacesConfig: {
     sectionTitle: 'Interfaces programmatiques (instance)',
     sectionDesc: 'Active ou désactive l\'API publique et l\'interface MCP. Désactivées par défaut.',

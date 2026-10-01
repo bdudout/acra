@@ -6,6 +6,7 @@
 import { SECTOR_PACK_ITEMS } from './sector-packs'
 import { RESILIENCE_TEST_TEMPLATES } from './catalogue-resilience'
 import { RISK_BALE, MERGED_REGISTRY_RISKS } from './catalogue-risks'
+import { CONTROL_RISKS, AUDIT_RISKS } from './catalogue-links'
 import type { TestResilienceType } from './tests-resilience'
 
 // Ordre = priorité : d'abord les secteurs qui pratiquent réellement la gestion du risque opérationnel
@@ -35,7 +36,7 @@ export type CatalogueItem = {
   // Plan de test de résilience modèle seulement : type de test (DORA art. 25 § 1, jamais TLPT) ; ni date, ni testeur, ni résultat.
   testType?: Exclude<TestResilienceType, 'TLPT'>
 }
-export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points' | 'description'> & { title: string; description?: string; unite?: string; points?: string[]; packVersion: string; taxonomieCode?: string }
+export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points' | 'description'> & { title: string; description?: string; unite?: string; points?: string[]; packVersion: string; taxonomieCode?: string; riskKeys?: string[] }
 
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
 const p = (key: string, sector: CatalogueItem['sector'], title: Localized, parentKey?: string): CatalogueItem => ({ key, sector, kind: 'PROCESS', title, parentKey })
@@ -300,7 +301,7 @@ export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLoca
   const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
   const base = [...TRANSVERSAL, ...MERGED_REGISTRY_RISKS.filter(item => item.sector === 'TRANSVERSAL'), ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
   const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
-  return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
+  return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...((item.kind === 'CONTROL' ? CONTROL_RISKS : item.kind === 'AUDIT' ? AUDIT_RISKS : {})[item.key] ? { riskKeys: (item.kind === 'CONTROL' ? CONTROL_RISKS : AUDIT_RISKS)[item.key] } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
 export function searchSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, query: string): SectorSuggestion[] {

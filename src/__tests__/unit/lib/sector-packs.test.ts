@@ -94,3 +94,16 @@ describe('registre : convergence avec l’ancien socle (catalogue 1.8)', () => {
     expect(CATALOGUE_CHANGELOG.find(e => e.version === '1.8')!.added).toContain('finance.risk.aml')
   })
 })
+
+describe('liens contrôle / mission → risques couverts', () => {
+  it('chaque contrôle-type et chaque mission cite au moins un risque existant de son secteur ou du socle', () => {
+    for (const sector of SECTOR_CODES) {
+      const items = listSectorSuggestions(sector, 'fr')
+      const risks = new Set(items.filter(i => i.kind === 'RISK').map(i => i.key))
+      for (const x of items.filter(i => i.kind === 'CONTROL' || i.kind === 'AUDIT')) {
+        expect(x.riskKeys?.length, x.key).toBeGreaterThan(0)
+        for (const k of x.riskKeys!) expect(risks.has(k), `${x.key} → ${k}`).toBe(true)
+      }
+    }
+  })
+})
