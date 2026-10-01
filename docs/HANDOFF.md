@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (45) — Claude Code : convergence des catalogues (secteurs, registre, RoPA, contrôles, audit)
+
+- **Décisions utilisateur** : converger quand c'est utile ; entrée référentiel / processus / risque au choix (contrôle et audit) ; RoPA traduit et ligne par ligne ; registre = meilleur des deux ; secteurs alignés sur l'analyse cyber, priorité gestion du risque opérationnel.
+- Commits : `c46838f` secteurs (1.7 : énergie, transports, télécoms ; libellés alignés ; gabarit → secteur), `d8089d5` registre (1.8 : 10 risques repris + AML, catégorie bâloise, `seed-defaut` retiré), `73f5258` RoPA (×5, import ligne par ligne, migration `20261001150000`), `b7e1cb5` contrôles (catalogue unifié, `/api/controles/catalogue`, `controles/import` retiré), `66ba43c` audit (`/api/audit/modeles`, `AuditModelePicker`). Détail : spec socles § 8.12.
+- **Pièges** : clé des socles par référentiel = rang dans le socle (`ref.<socle>.<n>`) ⇒ n'ajouter un contrôle qu'en fin de socle ; `listSectorSuggestions` accepte un secteur, une liste ou null ; un contrôle/une mission ne se relie à un processus/risque que s'il existe déjà (même `catalogueKey`).
+- **Correctif** : pages `/controles` et `/audit` : droits d'écriture calculés sur le rôle EFFECTIF dans l'organisation (comme les API) — un ADMIN d'organisation au rôle global « analyste » ne voyait ni « Nouveau contrôle » ni le catalogue.
+- **Vérifié** : `tsc` ; `npm test` 411 fichiers / 3 308 tests ; `test:db` 9 fichiers / 35 tests (dont `controle-catalogue`, `ropa-catalogue`) ; `lint` 0 erreur ; `i18n:check` ; build ; navigateur (build de prod, organisation ÉNERGIE, admin d'org au rôle global analyste) : contrôle importé par l'entrée « risque » relié au risque et au processus existants, puis désactivé dans l'entrée « processus » ; modèle de mission « par processus » préremplit les points ; RoPA en anglais avec la durée signalée « French law, to be checked ».
+- **Reste** : traduction des socles par référentiel (contrôles, programmes d'audit) sur sources officielles ; badge « à compléter » des processus ; relecture métier (grille 256 éléments).
+
 ## 2026-10-01 (44) — Claude Code : multisecteur, page Processus, bilan de cohérence des propositions par défaut
 
 - **Décisions utilisateur** : entreprise multisecteur (grand groupe) ; pas de sous-processus sectoriels pour l'instant.

@@ -403,3 +403,17 @@ Le catalogue passe de 1.1 à **1.4** ; chaque module n'est proposé que s'il est
 | **Langues** | `controles-catalogue`, `audit-programmes-catalogue`, `ropa-catalogue`, `registre-catalogue` et `exemples-sectoriels` sont en français seulement (invariant i18n ×5 non respecté). | À traiter avec la convergence ci-dessus. |
 | Processus « à compléter » | Les processus importés n'ont que leur nom ; rien ne signale qu'il manque description, propriétaire, criticité ou RTO/RPO. | Badge « à compléter » dans la cartographie, comme `champsManquantsArt30` pour le RoPA. |
 
+### 8.12 Convergence des catalogues (1er octobre 2026)
+
+Décisions de l'utilisateur : converger quand c'est possible et utile ; en contrôle permanent comme en audit, le point d'entrée (référentiel, processus ou risque) est **au choix** du contrôleur ou de l'auditeur ; RoPA traduit et importable ligne par ligne ; registre : garder le meilleur des deux socles ; secteurs alignés sur l'analyse cyber, en priorisant ceux qui pratiquent la gestion du risque opérationnel.
+
+| Écart (§ 8.11) | Traitement |
+|---|---|
+| Deux catalogues de contrôles | **Catalogue unifié** (`controle-templates.ts`, `GET/POST /api/controles/catalogue`, `ControleCataloguePanel`) : socles par référentiel (exigences conservées) + contrôles-types du catalogue, clé stable par modèle (`ref.<socle>.<rang>` ou clé du catalogue) ⇒ jamais importé deux fois quelle que soit l'entrée. Entrées : référentiel, processus, risque. Lien au processus / au risque **seulement s'ils existent déjà** dans l'organisation. Ancienne route `controles/import` (socle entier) retirée. |
+| Deux catalogues d'audit | **Modèles de mission unifiés** (`audit-templates.ts`, `GET /api/audit/modeles`, `AuditModelePicker`) : programmes par référentiel + missions types ; le modèle préremplit intitulé, points de revue et processus, rien n'est enregistré sans validation. |
+| Registre : ancien socle | Comparé et fusionné dans le catalogue 1.8 (`catalogue-risks.ts`) : 10 situations reprises avec leur description ×5, lutte anti-blanchiment ajoutée, **catégorie bâloise** sur tous les risques (appliquée si la taxonomie de l'organisation la contient). Route `seed-defaut` et `registre-catalogue.ts` retirés. |
+| RoPA | **Traduit ×5**, clé stable par traitement, aperçu puis import ligne par ligne (`GET/POST /api/ropa/catalogue`, `RopaCataloguePanel`, migration `20261001150000_traitement_catalogue`). Hors français, les durées de conservation sont signalées comme références du droit français à vérifier. |
+| Trois taxonomies de secteurs | Libellés du catalogue alignés sur ceux de l'analyse cyber ; ordre = priorité gestion du risque opérationnel (banque, assurance, énergie, transports, télécoms, santé, puis industrie, public, commerce, numérique, services) ; **énergie, transports, télécoms ajoutés** (catalogue 1.7) ; un **gabarit** propose son secteur à une organisation qui n'en a aucun. L'assurance reste un secteur distinct du catalogue (rattachée à « Banque / Finance » côté analyse cyber). |
+| Langues | Restent en français : socles de contrôles et programmes d'audit **par référentiel** (terminologie réglementaire à traduire sur sources officielles) et exemples EBIOS des analyses. Signalé dans l'interface hors français. |
+| Processus « à compléter » | Non traité (badge à ajouter). |
+
