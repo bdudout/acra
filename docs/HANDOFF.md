@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (48) — Claude Code : anomalie de contrôle depuis un questionnaire, relances automatiques
+
+- Décisions de l'utilisateur : une NON_CONFORME sur un point de contrôle enregistre une exécution « anomalie » (préconisation non obligatoire) ; relances avant l'échéance pour les questionnaires **et** les plans d'action, puis régulièrement, tous les mois par défaut.
+- Revue conclue (REVUE) → `ControleExecution` ANOMALIE `source=QUESTIONNAIRE` par question NON_CONFORME ciblant un contrôle actif (même transaction ; `alerteeLe` remis à null ; rien lors d'un renvoi A_COMPLETER, pour éviter les doublons). Pas de plan d'action automatique.
+- Relances : `lib/relances.ts` (pur), `POST /api/cron/relances` (un e-mail récapitulatif par personne et par org, `relancesEmail` ×5, lien `appUrl`), `GET/PUT /api/relances/config` (PUT ADMIN, rôle effectif), onglet « Relances » ; `relancesConfig` résolu par `getOrgConfig` ; `rappelLe` sur `QuestionnaireReponse`, `Preconisation`, `PlanAction` ; migration `20261001170000_relances` ; tâche ajoutée à `scripts/scheduler.sh` (06:00) et `.github/workflows/scheduled-tasks.yml` (06:45), README.
+- Vérifications : `tsc` OK ; `npm test` 416 fichiers / 3339 tests OK ; `npm run test:db` 11 fichiers / 48 tests OK (nouveau `relances.db.test.ts` : regroupement, résolution du responsable, anti-doublon, désactivation ; parcours questionnaire → exécution anomalie) ; `i18n:check` OK ; lint 0 erreur (aucun nouvel avertissement) ; build OK ; navigateur (build de prod) : onglet Relances en lecture seule pour le contrôleur, enregistré par l'admin ; revue NON_CONFORME → message « 1 exécution(s) en anomalie », contrôle « Défaillant » ; cron : préconisation + plan lié antidatés de 35 j → 1 e-mail regroupé, second passage → 0.
+- Pièges : sans SMTP, `sendEmail` renvoie `ok:false` (compté `emailsSkipped`) mais `rappelLe` est tout de même posé, comme pour `audit-rappels`.
+- Prochains pas possibles : relance des préconisations « réalisées, à vérifier » vers les contrôleurs ; relance distincte pour les plans issus de l'audit (aujourd'hui couverts par la règle générale des plans d'action).
+
 ## 2026-10-01 (47) — Claude Code : questionnaires de contrôle, préconisations, rapport de mission
 
 - `f0e1f99` : conformité — appliquer en un clic un constat du contrôle/de l'audit (statut non conforme + trace datée dans le commentaire ; jamais automatique).
