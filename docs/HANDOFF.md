@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-01 (54) — Claude Code : PR Dependabot (fusion), Vitest 5, analyse Prisma 7
+
+- Fusionnées dans `main` : #208, puis les mises à jour Dependabot vertes #196–#203, #206 (#201 et #206 après `@dependabot rebase`). Branche `claude/tender-euler-bqjoe9` repartie de `origin/main` (b88fd88), l'ancienne branche distante y est fusionnée (sans changement de contenu) pour éviter un push forcé.
+- Vitest 5 (remplace #204) : `src/__tests__/setup.ts` importe `@testing-library/jest-dom/vitest` (seule entrée qui type `Assertion` sous Vitest 5) ; `clearMocks: false` dans `vitest.config.mts` et `vitest.db.config.mts` (Vitest 5 vide les mocks avant chaque test par défaut → les envois enregistrés dans un `beforeAll` disparaissaient, `tableau-bord.db.test.ts`).
+- Vérifications Vitest 5 : `tsc` OK ; `npm test` 419 / 3354 OK ; `npm run test:db` 15 / 66 OK ; build OK.
+- Prisma 7 (#205) NON fait : Dependabot ne monte que la CLI (client resté en 5, couple incompatible). Migration réelle = `prisma.config.ts` (URL hors du schéma, `.env` non chargé par la CLI), client via `@prisma/adapter-pg`, image Docker (la CLI 7 a ~115 dépendances, l'image ne copie que `prisma` et `@prisma`), `scripts/migrate-recover.sh` (options de `migrate diff` renommées), seeds et scripts qui instancient `PrismaClient`. Décision utilisateur attendue.
+- Piège : la base PostgreSQL locale s'arrête quand le conteneur redémarre → `service postgresql start`.
+
 ## 2026-10-01 (53) — Claude Code : petite structure (une personne, plusieurs rôles)
 
 - Décision utilisateur : option A — réglage d'organisation `petiteStructure` (migration `20261001210000_petite_structure`), interrupteur dans Configuration › Référentiels et options.
