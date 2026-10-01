@@ -179,7 +179,7 @@ jobs:
       - name: Migrations sur base vierge
         run: npx prisma migrate deploy
       - name: Aucune dérive schéma ↔ migrations
-        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
       - name: Tests d'intégration (vraies routes, vrai PostgreSQL)
         run: npm run test:db
 

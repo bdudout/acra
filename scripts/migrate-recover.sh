@@ -24,7 +24,7 @@ if echo "$STATUS" | grep -q "Database schema is up to date"; then
 else
   if echo "$STATUS" | grep -qiE "failed|not yet been applied|P3009"; then
     echo "[migrate-recover] Migrations non résolues détectées — diagnostic du schéma…"
-    DIFF="$($PRISMA migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script 2>/dev/null || echo '__DIFF_ERROR__')"
+    DIFF="$($PRISMA migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script 2>/dev/null || echo '__DIFF_ERROR__')"
     if echo "$DIFF" | grep -qiE "CREATE TABLE|ADD COLUMN|CREATE TYPE|ADD CONSTRAINT|CREATE INDEX|__DIFF_ERROR__"; then
       echo "[migrate-recover] ⚠ La base présente de VRAIES différences avec le schéma (objets manquants) ou le diff est indisponible."
       echo "[migrate-recover] Réconciliation automatique REFUSÉE — 'migrate deploy' va s'exécuter (échec probable → récupération manuelle, runbook §2)."
