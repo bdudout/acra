@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { lockConformite } from '@/lib/row-lock.server'
+import { lockConformite, ensureConformiteRow } from '@/lib/row-lock.server'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import {
@@ -58,15 +58,10 @@ async function guard(req: NextRequest, orgId: string) {
   return { userId, userRole, orgConfig, body, referentiel, entite }
 }
 
-/** Récupère (et crée si besoin) le SUIVI Conformite (organisation × référentiel × entité). */
+/** Récupère (et crée si besoin) le SUIVI Conformite (organisation × référentiel × entité), tolérant aux créations concurrentes. */
 async function getOrCreate(orgId: string, referentiel: string, entite: string) {
-  return prisma.conformite.upsert({
-    where: { organizationId_referentiel_entite: { organizationId: orgId, referentiel, entite } },
-    // À la création d'un suivi d'entité, on mémorise son libellé (nom = entité).
-    create: { organizationId: orgId, referentiel, entite, nom: entite || null, entries: [] },
-    update: {},
-    select: { id: true, entries: true },
-  })
+  const { id } = await ensureConformiteRow(orgId, referentiel, entite)
+  return prisma.conformite.findUniqueOrThrow({ where: { id }, select: { id: true, entries: true } })
 }
 
 /**

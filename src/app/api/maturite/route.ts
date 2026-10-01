@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { lockConformite } from '@/lib/row-lock.server'
+import { lockConformite, ensureConformiteRow } from '@/lib/row-lock.server'
 import { getServerLocale, getServerT } from '@/lib/i18n'
 import { maturityContext, maturityReferentiels, loadMaturityProfile, orgMaturityScale } from '@/lib/maturity.server'
 import { sanitizeMaturites, applyMaturityUpdate, isMaturityLevel } from '@/lib/maturity'
@@ -59,9 +59,9 @@ export async function PUT(req: NextRequest) {
     : {}
   // Fusion sous verrou de ligne (audit 2026-09-30, D2) : la maturité est relue DANS la
   // transaction, sinon deux évaluateurs de points différents s'écrasent.
-  const key = { organizationId_referentiel_entite: { organizationId: ctx.orgId, referentiel, entite: '' } }
+  // Ligne garantie HORS transaction (création concurrente tolérée), puis verrou + relecture.
+  const row = await ensureConformiteRow(ctx.orgId, referentiel, '')
   const outcome = await prisma.$transaction(async tx => {
-    const row = await tx.conformite.upsert({ where: key, create: { organizationId: ctx.orgId, referentiel, entite: '', entries: [] }, update: {}, select: { id: true, maturites: true, maturiteCible: true } })
     await lockConformite(tx, row.id)
     const fresh = await tx.conformite.findUniqueOrThrow({ where: { id: row.id }, select: { maturites: true, maturiteCible: true } })
     const before = sanitizeMaturites(fresh.maturites, refs)

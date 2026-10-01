@@ -65,3 +65,36 @@ export function decideUserManagement(input: {
   if (inScope.length < input.targetMembershipOrgIds.length) return { allowed: false, status: 403, code: 'SHARED_ACCOUNT' }
   return { allowed: true }
 }
+
+// ─── Réattribution des analyses d'un compte (audit 2026-10-01, T2) ───────────
+// Complète D1 : un propriétaire d'analyses n'est plus supprimable ; ses analyses
+// doivent d'abord être transférées. Une analyse n'est transférée que si elle est
+// dans le périmètre de l'administrateur ET accessible au destinataire (sinon le
+// destinataire posséderait une analyse qu'il ne peut pas ouvrir). Une analyse
+// sans organisation (héritage) n'est transférable que par un SUPER_ADMIN global.
+
+export interface ReassignmentPlan {
+  transfer: string[]
+  outOfActorScope: number
+  recipientNoAccess: number
+}
+
+export function planAnalysesReassignment(input: {
+  analyses: { id: string; organizationId: string | null }[]
+  actorAll: boolean
+  actorVisibleOrgIds: string[]
+  recipientAll: boolean
+  recipientOrgIds: string[]
+}): ReassignmentPlan {
+  const actor = new Set(input.actorVisibleOrgIds)
+  const recipient = new Set(input.recipientOrgIds)
+  const plan: ReassignmentPlan = { transfer: [], outOfActorScope: 0, recipientNoAccess: 0 }
+  for (const a of input.analyses) {
+    const inActorScope = input.actorAll || (a.organizationId != null && actor.has(a.organizationId))
+    if (!inActorScope) { plan.outOfActorScope++; continue }
+    const recipientCanSee = input.recipientAll || (a.organizationId != null && recipient.has(a.organizationId))
+    if (!recipientCanSee) { plan.recipientNoAccess++; continue }
+    plan.transfer.push(a.id)
+  }
+  return plan
+}

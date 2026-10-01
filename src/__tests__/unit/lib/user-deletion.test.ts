@@ -66,3 +66,24 @@ describe('decideUserManagement', () => {
     expect(decideUserManagement({ ...m, actorRole: 'SUPER_ADMIN', actorAll: true, targetRole: 'SUPER_ADMIN', targetMembershipOrgIds: ['A', 'B'] })).toEqual({ allowed: true })
   })
 })
+
+import { planAnalysesReassignment } from '@/lib/user-deletion'
+
+describe('planAnalysesReassignment (T2)', () => {
+  const base = { actorAll: false, actorVisibleOrgIds: ['A'], recipientAll: false, recipientOrgIds: ['A'] }
+  it('transfère les analyses du périmètre accessibles au destinataire', () => {
+    expect(planAnalysesReassignment({ ...base, analyses: [{ id: '1', organizationId: 'A' }, { id: '2', organizationId: 'A' }] }))
+      .toEqual({ transfer: ['1', '2'], outOfActorScope: 0, recipientNoAccess: 0 })
+  })
+  it('ne touche pas aux analyses hors du périmètre de l\'administrateur', () => {
+    expect(planAnalysesReassignment({ ...base, analyses: [{ id: '1', organizationId: 'B' }] })).toMatchObject({ transfer: [], outOfActorScope: 1 })
+  })
+  it('ne donne pas au destinataire une analyse qu\'il ne pourrait pas ouvrir', () => {
+    expect(planAnalysesReassignment({ ...base, actorVisibleOrgIds: ['A', 'C'], analyses: [{ id: '1', organizationId: 'C' }] }))
+      .toMatchObject({ transfer: [], recipientNoAccess: 1 })
+  })
+  it('analyse sans organisation : seulement par un SUPER_ADMIN global', () => {
+    expect(planAnalysesReassignment({ ...base, analyses: [{ id: '1', organizationId: null }] })).toMatchObject({ outOfActorScope: 1 })
+    expect(planAnalysesReassignment({ ...base, actorAll: true, recipientAll: true, analyses: [{ id: '1', organizationId: null }] })).toMatchObject({ transfer: ['1'] })
+  })
+})

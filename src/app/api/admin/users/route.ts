@@ -12,8 +12,8 @@ import { generateCompliantPassword, DEFAULT_POLICY, type PasswordPolicyShape } f
 import { deactivateInactiveAccounts } from '@/lib/account-lifecycle'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
-import { getAnalyseScope } from '@/lib/org-context.server'
-import { decideUserDeletion, decideUserManagement } from '@/lib/user-deletion'
+import { getAnalyseScope, getAccessibleOrgIds } from '@/lib/org-context.server'
+import { decideUserDeletion, decideUserManagement, planAnalysesReassignment } from '@/lib/user-deletion'
 
 /**
  * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
@@ -164,7 +164,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
   }
 
-  const body = await req.json() as { userId: string; role?: UserRole; action?: 'suspend' | 'activate' | 'reset-password' }
+  const body = await req.json() as { userId: string; role?: UserRole; action?: 'suspend' | 'activate' | 'reset-password' | 'reassign-analyses'; toUserId?: string }
   const { userId: targetId, role, action } = body
 
   // Périmètre (audit 2026-10-01, T1) : rôle global, suspension et mot de passe sont
@@ -186,6 +186,38 @@ export async function PATCH(req: NextRequest) {
       SHARED_ACCOUNT: 'Ce compte appartient aussi à des organisations hors de votre périmètre : modifiez son rôle dans votre organisation, ou demandez au super-administrateur',
     } as const
     return NextResponse.json({ error: messages[decision.code], code: decision.code }, { status: decision.status })
+  }
+
+  // ── Réattribution des analyses (audit 2026-10-01, T2) ──
+  // Préalable à la suppression d'un propriétaire d'analyses (FK Restrict, D1).
+  if (action === 'reassign-analyses') {
+    const toUserId = typeof body.toUserId === 'string' ? body.toUserId : ''
+    if (!toUserId || toUserId === targetId) return NextResponse.json({ error: 'Destinataire invalide', code: 'INVALID_RECIPIENT' }, { status: 400 })
+    const recipient = await prisma.user.findUnique({
+      where: { id: toUserId },
+      select: { id: true, email: true, role: true, isActive: true, memberships: { select: { organizationId: true } } },
+    })
+    const recipientVisible = !!recipient && (scope.all || recipient.memberships.some(m => scope.visibleOrgIds.includes(m.organizationId)))
+    if (!recipient || !recipient.isActive || !recipientVisible) {
+      return NextResponse.json({ error: 'Destinataire introuvable, inactif ou hors de votre périmètre', code: 'INVALID_RECIPIENT' }, { status: 400 })
+    }
+    const [owned, recipientAccess] = await Promise.all([
+      prisma.analyse.findMany({ where: { userId: targetId }, select: { id: true, organizationId: true } }),
+      getAccessibleOrgIds(recipient.id, recipient.role),
+    ])
+    const plan = planAnalysesReassignment({
+      analyses: owned, actorAll: scope.all, actorVisibleOrgIds: scope.visibleOrgIds,
+      recipientAll: recipientAccess.all, recipientOrgIds: recipientAccess.ids,
+    })
+    if (plan.transfer.length) {
+      await prisma.analyse.updateMany({ where: { id: { in: plan.transfer }, userId: targetId }, data: { userId: recipient.id } })
+      await auditLog('ANALYSE_REASSIGNED', {
+        userId: currentUserId, userRole, targetId, targetType: 'user', ip: getClientIp(req),
+        details: { from: targetId, to: recipient.id, toEmail: recipient.email, count: plan.transfer.length, analyseIds: plan.transfer.slice(0, 100) },
+      })
+    }
+    const remaining = await prisma.analyse.count({ where: { userId: targetId } })
+    return NextResponse.json({ transferred: plan.transfer.length, remaining, outOfScope: plan.outOfActorScope, recipientNoAccess: plan.recipientNoAccess })
   }
 
   // ── Réinitialisation du mot de passe (#6) ──

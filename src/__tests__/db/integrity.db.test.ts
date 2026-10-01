@@ -33,6 +33,8 @@ describe('D1 — FK Analyse.userId en RESTRICT', () => {
 })
 
 describe('D2 — conformité : éditions concurrentes via la vraie route', () => {
+  // Organisation neuve : les 20 requêtes créent aussi la ligne Conformite en concurrence
+  // (ancienne erreur 500 P2002, corrigée par ensureConformiteRow).
   it('20 éditions simultanées de 20 exigences différentes sont toutes conservées', async () => {
     const org = await makeOrg()
     const rssi = await makeUser('RSSI', [org])
@@ -93,5 +95,27 @@ describe('S1/S4/T1 — gestion de comptes par un admin restreint', () => {
     const res = await deleteUser(jsonRequest({ userId: author.id }))
     expect(res.status).toBe(409)
     expect((await res.json()).code).toBe('OWNS_ANALYSES')
+  })
+
+  it('T2 — réattribuer les analyses puis supprimer le compte ; rien ne part vers une autre organisation', async () => {
+    const [a, b] = [await makeOrg('A'), await makeOrg('B')]
+    const admin = await makeUser('ADMIN', [a])
+    const leaver = await makeUser('ANALYSTE', [a])
+    const successor = await makeUser('ANALYSTE', [a])
+    const outsider = await makeUser('ANALYSTE', [b])
+    await prisma.analyse.createMany({ data: [
+      { userId: leaver.id, nom: 'a1', organizationId: a.id },
+      { userId: leaver.id, nom: 'a2', organizationId: a.id },
+    ] })
+    as(admin)
+    // Destinataire d'une autre organisation : refusé.
+    expect((await patchUser(jsonRequest({ userId: leaver.id, action: 'reassign-analyses', toUserId: outsider.id }))).status).toBe(400)
+    const res = await patchUser(jsonRequest({ userId: leaver.id, action: 'reassign-analyses', toUserId: successor.id }))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ transferred: 2, remaining: 0 })
+    expect(await prisma.analyse.count({ where: { userId: successor.id } })).toBe(2)
+    expect((await deleteUser(jsonRequest({ userId: leaver.id }))).status).toBe(200)
+    expect(await prisma.user.findUnique({ where: { id: leaver.id } })).toBeNull()
+    expect(await prisma.auditLog.count({ where: { action: 'ANALYSE_REASSIGNED', targetId: leaver.id } })).toBe(1)
   })
 })
