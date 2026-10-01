@@ -1,5 +1,5 @@
 // Global test setup for Vitest
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
 
 // Polyfill localStorage : sous Node 26 + jsdom, `localStorage` global n'est pas
 // exposé (Node introduit son propre localStorage expérimental, indisponible sans
