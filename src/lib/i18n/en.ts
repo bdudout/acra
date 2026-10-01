@@ -1224,7 +1224,7 @@ export const en: Translations = {
     reportDemande: "Extension requested to {date}: {motif}",
     constatExecution: "Questionnaire \"{titre}\" — {question}: {commentaire}",
     executionsCreees: "{n} anomaly execution(s) recorded on the related control points.",
-    relances: {"titre":"Automatic reminders","aide":"One summary e-mail per person: questionnaires to answer (respondent), recommendations (owner) and action plans (owner, otherwise the organisation’s governance).","actives":"Reminders enabled","joursAvant":"Reminder before the due date (days)","periodiciteJours":"Periodic and overdue reminder (days, 0 = none)","periodiciteAide":"Every 30 days by default while the item remains open.","enregistre":"Settings saved.","lectureSeule":"Only an administrator of the organisation can change these settings."},
+    relances: {"titre":"Automatic reminders","aide":"One summary e-mail per person: questionnaires to answer (respondent), recommendations (owner), action plans (owner, otherwise governance), and pending decisions (verifications and approvals).","actives":"Reminders enabled","joursAvant":"Reminder before the due date (days)","periodiciteJours":"Periodic and overdue reminder (days, 0 = none)","periodiciteAide":"Every 30 days by default while the item remains open.","enregistre":"Settings saved.","lectureSeule":"Only an administrator of the organisation can change these settings.","attenteJours":"Pending decision: first reminder after (days)","attenteAide":"Completed recommendation to verify (controllers), analysis or 360 project to approve (CISO, Risk Manager), waiver under review (CISO, business management)."},
   },
   interfacesConfig: {
     sectionTitle: 'Programmatic interfaces (instance)',

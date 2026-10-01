@@ -110,3 +110,18 @@ describe('relancesEmail', () => {
     expect(relancesEmail('xx', { orgNom: 'O', items, url: null }).text).not.toContain('Ouvrir ACRA')
   })
 })
+
+describe('relancesEmail — décisions en attente', () => {
+  it('libelle vérifications et validations avec la date de début d’attente', () => {
+    const m = relancesEmail('fr', { orgNom: 'O', url: null, items: [
+      { categorie: 'PRECONISATION_A_VERIFIER', intitule: 'Registre', type: 'EN_ATTENTE', echeance: '2026-09-20' },
+      { categorie: 'DEROGATION_AVIS', intitule: 'TLS 1.0', type: 'EN_ATTENTE', echeance: '2026-09-15' },
+      { categorie: 'PROJET360_A_APPROUVER', intitule: 'CRM', type: 'EN_ATTENTE', echeance: '2026-09-10' },
+    ] })
+    expect(m.text).toContain('Préconisation réalisée à vérifier — Registre : en attente depuis le 2026-09-20')
+    expect(m.text).toContain('Dérogation : avis RSSI attendu — TLS 1.0')
+    expect(m.text).toContain('Projet 360 à approuver — CRM')
+    expect(relancesEmail('it', { orgNom: 'O', url: null, items: [{ categorie: 'ANALYSE_A_APPROUVER', intitule: 'A', type: 'EN_ATTENTE', echeance: '2026-09-01' }] }).text).toContain('Analisi da approvare — A : in attesa dal 2026-09-01')
+  })
+})
+

@@ -287,8 +287,10 @@ export function memberAddedEmail(locale: string | null | undefined, p: MemberAdd
 // ─── Relances automatiques : questionnaires, préconisations, plans d'action ──
 
 export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
-export type RelanceEmailType = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE'
-/** Un élément relancé : catégorie, intitulé, type de relance, échéance (AAAA-MM-JJ) éventuelle. */
+  // Décisions en attente : vérification (2ᵉ ligne) et validations (RSSI, Risk Manager, direction métier).
+  | 'PRECONISATION_A_VERIFIER' | 'ANALYSE_A_APPROUVER' | 'PROJET360_A_APPROUVER' | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
+export type RelanceEmailType = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE' | 'EN_ATTENTE'
+/** Un élément relancé : catégorie, intitulé, type de relance, date (AAAA-MM-JJ) : échéance, ou début d'attente pour EN_ATTENTE. */
 export interface RelanceItem { categorie: RelanceCategorie; intitule: string; type: RelanceEmailType; echeance: string | null }
 export interface RelancesParams { orgNom: string; items: RelanceItem[]; url: string | null }
 
@@ -298,33 +300,33 @@ const relancesLabels: Record<EmailLocale, {
 }> = {
   fr: {
     subject: (o, n) => `[ACRA] ${n} élément(s) à traiter — ${o}`, heading: o => `Éléments à traiter — ${o}`,
-    intro: 'Les éléments suivants vous sont attribués et restent ouverts.', action: 'Ouvrir ACRA',
-    categories: { QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action' },
-    etat: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard (échéance le ${d})`, PERIODIQUE: d => (d ? `ouvert, échéance le ${d}` : 'toujours ouvert') },
+    intro: 'Les éléments suivants attendent une action ou une décision de votre part.', action: 'Ouvrir ACRA',
+    categories: { QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action', PRECONISATION_A_VERIFIER: 'Préconisation réalisée à vérifier', ANALYSE_A_APPROUVER: 'Analyse à approuver', PROJET360_A_APPROUVER: 'Projet 360 à approuver', DEROGATION_AVIS: 'Dérogation : avis RSSI attendu', DEROGATION_DOUBLE_REGARD: 'Dérogation : double regard attendu', DEROGATION_VALIDATION: 'Dérogation : validation métier attendue' },
+    etat: { ECHEANCE_PROCHE: d => `échéance le ${d}`, EN_RETARD: d => `en retard (échéance le ${d})`, PERIODIQUE: d => (d ? `ouvert, échéance le ${d}` : 'toujours ouvert'), EN_ATTENTE: d => `en attente depuis le ${d}` },
   },
   en: {
     subject: (o, n) => `[ACRA] ${n} item(s) to handle — ${o}`, heading: o => `Items to handle — ${o}`,
-    intro: 'The following items are assigned to you and are still open.', action: 'Open ACRA',
-    categories: { QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan' },
-    etat: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue (due on ${d})`, PERIODIQUE: d => (d ? `open, due on ${d}` : 'still open') },
+    intro: 'The following items are awaiting an action or a decision from you.', action: 'Open ACRA',
+    categories: { QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan', PRECONISATION_A_VERIFIER: 'Completed recommendation to verify', ANALYSE_A_APPROUVER: 'Analysis to approve', PROJET360_A_APPROUVER: '360 project to approve', DEROGATION_AVIS: 'Waiver: CISO opinion expected', DEROGATION_DOUBLE_REGARD: 'Waiver: second review expected', DEROGATION_VALIDATION: 'Waiver: business approval expected' },
+    etat: { ECHEANCE_PROCHE: d => `due on ${d}`, EN_RETARD: d => `overdue (due on ${d})`, PERIODIQUE: d => (d ? `open, due on ${d}` : 'still open'), EN_ATTENTE: d => `pending since ${d}` },
   },
   de: {
     subject: (o, n) => `[ACRA] ${n} offene(r) Eintrag/Einträge — ${o}`, heading: o => `Zu bearbeiten — ${o}`,
-    intro: 'Die folgenden Einträge sind Ihnen zugewiesen und noch offen.', action: 'ACRA öffnen',
-    categories: { QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan' },
-    etat: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig (fällig am ${d})`, PERIODIQUE: d => (d ? `offen, fällig am ${d}` : 'weiterhin offen') },
+    intro: 'Die folgenden Einträge warten auf eine Aktion oder Entscheidung von Ihnen.', action: 'ACRA öffnen',
+    categories: { QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan', PRECONISATION_A_VERIFIER: 'Umgesetzte Empfehlung zu prüfen', ANALYSE_A_APPROUVER: 'Analyse zu genehmigen', PROJET360_A_APPROUVER: '360-Projekt zu genehmigen', DEROGATION_AVIS: 'Ausnahme: Stellungnahme des CISO erwartet', DEROGATION_DOUBLE_REGARD: 'Ausnahme: Zweitprüfung erwartet', DEROGATION_VALIDATION: 'Ausnahme: Freigabe durch den Fachbereich erwartet' },
+    etat: { ECHEANCE_PROCHE: d => `fällig am ${d}`, EN_RETARD: d => `überfällig (fällig am ${d})`, PERIODIQUE: d => (d ? `offen, fällig am ${d}` : 'weiterhin offen'), EN_ATTENTE: d => `ausstehend seit ${d}` },
   },
   es: {
     subject: (o, n) => `[ACRA] ${n} elemento(s) pendiente(s) — ${o}`, heading: o => `Elementos pendientes — ${o}`,
-    intro: 'Los siguientes elementos le están asignados y siguen abiertos.', action: 'Abrir ACRA',
-    categories: { QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción' },
-    etat: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `con retraso (vencía el ${d})`, PERIODIQUE: d => (d ? `abierto, vence el ${d}` : 'sigue abierto') },
+    intro: 'Los siguientes elementos esperan una acción o una decisión por su parte.', action: 'Abrir ACRA',
+    categories: { QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción', PRECONISATION_A_VERIFIER: 'Recomendación realizada por verificar', ANALYSE_A_APPROUVER: 'Análisis por aprobar', PROJET360_A_APPROUVER: 'Proyecto 360 por aprobar', DEROGATION_AVIS: 'Excepción: dictamen del RSSI pendiente', DEROGATION_DOUBLE_REGARD: 'Excepción: doble revisión pendiente', DEROGATION_VALIDATION: 'Excepción: validación de negocio pendiente' },
+    etat: { ECHEANCE_PROCHE: d => `vence el ${d}`, EN_RETARD: d => `con retraso (vencía el ${d})`, PERIODIQUE: d => (d ? `abierto, vence el ${d}` : 'sigue abierto'), EN_ATTENTE: d => `pendiente desde el ${d}` },
   },
   it: {
     subject: (o, n) => `[ACRA] ${n} elemento/i da gestire — ${o}`, heading: o => `Elementi da gestire — ${o}`,
-    intro: 'I seguenti elementi le sono assegnati e restano aperti.', action: 'Apri ACRA',
-    categories: { QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione' },
-    etat: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo (scadenza il ${d})`, PERIODIQUE: d => (d ? `aperto, scadenza il ${d}` : 'ancora aperto') },
+    intro: 'I seguenti elementi attendono un’azione o una decisione da parte sua.', action: 'Apri ACRA',
+    categories: { QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione', PRECONISATION_A_VERIFIER: 'Raccomandazione attuata da verificare', ANALYSE_A_APPROUVER: 'Analisi da approvare', PROJET360_A_APPROUVER: 'Progetto 360 da approvare', DEROGATION_AVIS: 'Deroga: parere del CISO atteso', DEROGATION_DOUBLE_REGARD: 'Deroga: doppia revisione attesa', DEROGATION_VALIDATION: 'Deroga: validazione di business attesa' },
+    etat: { ECHEANCE_PROCHE: d => `scadenza il ${d}`, EN_RETARD: d => `in ritardo (scadenza il ${d})`, PERIODIQUE: d => (d ? `aperto, scadenza il ${d}` : 'ancora aperto'), EN_ATTENTE: d => `in attesa dal ${d}` },
   },
 }
 

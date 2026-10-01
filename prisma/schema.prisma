@@ -1425,6 +1425,8 @@ model Derogation {
 
   // Anti-doublon de l'alerte individuelle d'expiration (comme Organization.warnedAt)
   alerteeLe DateTime?
+  // Dernière relance d'un valideur (avis RSSI, double regard, validation métier) — cron « relances ».
+  rappelLe  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1536,6 +1538,9 @@ model Analyse {
   // Avis d'approbation successifs (double approbation RSSI + Risk Manager, analyse
   // projet 360) : [{ role, userId, le, commentaire? }] — cf. lib/projet360.
   approbations           Json      @default("[]")
+  // Date de la dernière soumission pour approbation (relances des approbateurs) et dernière relance.
+  soumisLe               DateTime?
+  rappelLe               DateTime?
 
   // Acceptation des RISQUES RÉSIDUELS (== acceptation du risque par la Direction métier),
   // DISTINCTE de la validation de l'analyse. Portée GLOBALE : une décision pour l'ensemble

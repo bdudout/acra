@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const updated = await prisma.analyse.update({
       where: { id },
-      data: { statut: 'SOUMIS', commentaireApprobation: null, approbateurId: null, approuveLe: null, approbations: [] },
+      data: { statut: 'SOUMIS', soumisLe: new Date(), commentaireApprobation: null, approbateurId: null, approuveLe: null, approbations: [] },
     })
     await auditLog('ANALYSE_SUBMITTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom } })
     return NextResponse.json(updated)

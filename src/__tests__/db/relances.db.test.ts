@@ -86,3 +86,72 @@ describe('cron des relances (vraie base)', () => {
     expect((await prisma.questionnaireReponse.findUniqueOrThrow({ where: { id: ids.reponse } })).rappelLe).toBeNull()
   })
 })
+
+describe('relances des décisions en attente (vraie base)', () => {
+  let groupe: { id: string }, filiale: { id: string }, sansDerog: { id: string }
+  let rm: { id: string; email: string }, rssiA: { id: string; email: string }, rssiB: { id: string; email: string }, rssiGroupe: { id: string; email: string }
+  let dm: { id: string; email: string }, ctrl: { id: string; email: string }, analyste: { id: string; email: string }, restreint: { id: string; email: string }
+  // Le beforeEach du fichier vide le mock : on capture les e-mails du passage initial.
+  let captures: Envoye[] = []
+  const textes = (u: { email: string }) => captures.filter(m => m.to === u.email).map(m => m.text).join('\n')
+
+  beforeAll(async () => {
+    groupe = await makeOrg('Groupe')
+    const f = await makeOrg('Filiale')
+    filiale = await prisma.organization.update({ where: { id: f.id }, data: { path: `/${groupe.id}/${f.id}/`, parentId: groupe.id } })
+    sansDerog = await makeOrg('Sans dérogations')
+    await prisma.organizationConfig.create({ data: { id: filiale.id, controlePermanentActive: true, derogationsActive: true, secondeLigneActive: true } })
+    await prisma.organizationConfig.create({ data: { id: sansDerog.id, derogationsActive: false } })
+    rm = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'RISK_MANAGER' }])
+    rssiA = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'RSSI' }])
+    rssiB = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'RSSI' }])
+    rssiGroupe = await prisma.user.create({ data: { email: `rssi-groupe-${Date.now()}@test.acra`, name: 'RSSI groupe', role: 'ANALYSTE', memberships: { create: { organizationId: groupe.id, role: 'RSSI', scope: 'SUBTREE' } } } })
+    dm = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'DIRECTION_METIER' }])
+    ctrl = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'CONTROLEUR' }])
+    analyste = await makeUser('ANALYSTE', [{ id: filiale.id }, { id: sansDerog.id, role: 'RSSI' }])
+    restreint = await makeUser('ANALYSTE', [{ id: filiale.id, role: 'RISK_MANAGER' }])
+
+    await prisma.preconisation.create({ data: { organizationId: filiale.id, intitule: 'Revue des comptes faite', statut: 'RESOLU', realiseeLe: jour(-8), responsableId: analyste.id, createdById: ctrl.id } })
+    await prisma.preconisation.create({ data: { organizationId: filiale.id, intitule: 'Trop récente', statut: 'RESOLU', realiseeLe: jour(-2), responsableId: analyste.id, createdById: ctrl.id } })
+    const a = await prisma.analyse.create({ data: { nom: 'Analyse paiements', userId: analyste.id, organizationId: filiale.id, statut: 'SOUMIS', soumisLe: jour(-8) } })
+    await prisma.analyseAcces.create({ data: { analyseId: a.id, userId: restreint.id, permission: 'LECTURE' } })
+    await prisma.analyse.create({ data: { nom: 'Projet CRM', userId: analyste.id, organizationId: filiale.id, statut: 'SOUMIS', methode: 'PROJET_360', soumisLe: jour(-9), approbations: [{ role: 'RISK_MANAGER', userId: rm.id, le: jour(-5).toISOString() }] } })
+    const derog = (data: object) => prisma.derogation.create({ data: { organizationId: filiale.id, portee: 'SOCLE', motif: 'm', mesuresCompensatoires: 'c', demandeurId: analyste.id, createdAt: jour(-20), ...data } as never })
+    await derog({ intitule: 'TLS 1.0 legacy', statut: 'DEMANDEE', demandeurId: rssiA.id })
+    await derog({ intitule: 'Mots de passe partagés', statut: 'DOUBLE_REGARD', avisRssiPar: rssiB.id, avisRssiLe: jour(-10) })
+    await derog({ intitule: 'Sauvegarde hors site', statut: 'VALIDATION_METIER', avisRssiPar: rssiB.id, avisRssiLe: jour(-15), doubleRegardLe: jour(-9) })
+    await derog({ intitule: 'Avis tout récent', statut: 'DOUBLE_REGARD', avisRssiPar: rssiB.id, avisRssiLe: jour(-1) })
+    await prisma.derogation.create({ data: { organizationId: sansDerog.id, portee: 'SOCLE', intitule: 'Module inactif', motif: 'm', mesuresCompensatoires: 'c', demandeurId: rm.id, statut: 'DEMANDEE', createdAt: jour(-30) } })
+    mail.send.mockClear()
+    await cron(req())
+    captures = (mail.send.mock.calls as unknown as [Envoye][]).map(c => c[0])
+  })
+
+  it('préconisation réalisée à vérifier → le contrôleur qui l’a posée, jamais le responsable ; pas avant 7 jours', () => {
+    expect(textes(ctrl)).toContain('Préconisation réalisée à vérifier — Revue des comptes faite : en attente depuis le')
+    expect(textes(ctrl)).not.toContain('Trop récente')
+    expect(textes(analyste)).not.toContain('Revue des comptes faite')
+  })
+  it('analyse soumise → RSSI et Risk Manager, sauf l’auteur et un accès restreint ; projet 360 → rôle manquant (RSSI)', () => {
+    for (const u of [rm, rssiA, rssiB]) expect(textes(u)).toContain('Analyse à approuver — Analyse paiements')
+    expect(textes(restreint)).not.toContain('Analyse paiements')
+    expect(textes(analyste)).not.toContain('Analyse paiements')
+    expect(textes(rssiA)).toContain('Projet 360 à approuver — Projet CRM')
+    expect(textes(rm)).not.toContain('Projet CRM')
+  })
+  it('dérogations : avis RSSI (≠ demandeur), double regard (RSSI groupe inclus, ≠ premier avis), validation métier ; module inactif ignoré', () => {
+    expect(textes(rssiB)).toContain('Dérogation : avis RSSI attendu — TLS 1.0 legacy')
+    expect(textes(rssiA)).not.toContain('TLS 1.0 legacy')
+    expect(textes(rssiGroupe)).toContain('Dérogation : double regard attendu — Mots de passe partagés')
+    expect(textes(rssiB)).not.toContain('Mots de passe partagés')
+    expect(textes(dm)).toContain('Dérogation : validation métier attendue — Sauvegarde hors site : en attente depuis le')
+    expect(textes(rssiGroupe)).not.toContain('Avis tout récent')
+    expect(textes(analyste)).not.toContain('Module inactif')
+  })
+  it('anti-doublon : rien au second passage', async () => {
+    mail.send.mockClear()
+    await cron(req())
+    for (const u of [ctrl, rm, rssiA, rssiB, rssiGroupe, dm]) expect(envoyesA(u.email)).toHaveLength(0)
+  })
+})
+

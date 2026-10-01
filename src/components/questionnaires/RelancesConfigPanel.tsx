@@ -40,6 +40,8 @@ export default function RelancesConfigPanel() {
       <label className={lbl}>{r.joursAvant}<input type="number" min={1} max={90} className={`${inp} block`} disabled={!etat.canEdit} value={etat.config.joursAvant} onChange={e => set({ joursAvant: Number(e.target.value) })} /></label>
       <label className={lbl}>{r.periodiciteJours}<input type="number" min={0} max={180} className={`${inp} block`} disabled={!etat.canEdit} value={etat.config.periodiciteJours} onChange={e => set({ periodiciteJours: Number(e.target.value) })} />
         <span className="mt-1 block text-gray-500 dark:text-gray-400">{r.periodiciteAide}</span></label>
+      <label className={lbl}>{r.attenteJours}<input type="number" min={1} max={60} className={`${inp} block`} disabled={!etat.canEdit} value={etat.config.attenteJours} onChange={e => set({ attenteJours: Number(e.target.value) })} />
+        <span className="mt-1 block max-w-xs text-gray-500 dark:text-gray-400">{r.attenteAide}</span></label>
     </div>
     {etat.canEdit
       ? <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void enregistrer()}>{q.save}</button>
