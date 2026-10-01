@@ -51,6 +51,7 @@ export default function DemoBanner() {
         </div>
         {/* Actions : deux boutons homogènes (secondaire ligné / primaire plein) */}
         <div data-testid="demo-banner-actions" className="flex flex-wrap items-center justify-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- téléchargement servi par une route API, pas une page */}
           <a href="/api/export/org"
             className="rounded-lg border border-white/50 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
             {d.exportCta}

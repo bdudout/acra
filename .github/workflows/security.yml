@@ -131,6 +131,21 @@ jobs:
           fi
           echo "✓ .env.example présent"
 
+  # ── Lint (audit 2026-09-30, T4) ─────────────────────────────────────────────
+  # Échoue sur les ERREURS uniquement ; la dette (any, règles du compilateur React)
+  # est en avertissement et doit décroître (eslint.config.mjs).
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
   # ── Intégration base de données (audit 2026-09-30, T7) ──────────────────────
   # Les tests unitaires mockent Prisma : ce job vérifie sur un vrai PostgreSQL que
   # les migrations correspondent au schéma (aucune dérive) et que les contraintes,
