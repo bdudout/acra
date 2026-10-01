@@ -84,9 +84,33 @@ export function hasGlobalReadDispositif(role: UserRole): boolean {
     || role === 'CONTROLEUR' || role === 'CONFORMITE' || role === 'DPO' || role === 'AUDITEUR'
 }
 
+// ─── Petite structure : cumul des rôles ─────────────────────────────────────
+// Option d'organisation (`OrganizationConfig.petiteStructure`) : quand une seule personne porte la
+// sécurité et les risques, un compte RSSI ou gestionnaire des risques exerce AUSSI les deux autres
+// rôles (RSSI, gestionnaire des risques, analyste). Le quatre-yeux, matériellement impossible, est
+// alors relâché sur ces points et chaque cumul est journalisé par les routes. La direction métier
+// (validation des dérogations, acceptation des risques résiduels) n'est jamais cumulée.
+
+/** Rôles cumulables en petite structure. */
+export const ROLES_CUMULABLES: readonly UserRole[] = ['RSSI', 'RISK_MANAGER']
+export interface OptionsStructure { petiteStructure?: boolean }
+
+/**
+ * Le rôle `role` exerce-t-il le rôle `cible` (identité, ou cumul en petite structure) ? En petite
+ * structure, RSSI et gestionnaire des risques exercent ces deux rôles et celui d'analyste ;
+ * l'administrateur (souvent la même personne, qui gère aussi les comptes) exerce RSSI et
+ * gestionnaire des risques — il crée et approuve déjà les analyses par ailleurs.
+ */
+export function exerceRole(role: UserRole, cible: UserRole, opts?: OptionsStructure): boolean {
+  if (role === cible) return true
+  if (!opts?.petiteStructure) return false
+  if (ROLES_CUMULABLES.includes(role)) return ROLES_CUMULABLES.includes(cible) || cible === 'ANALYSTE'
+  return role === 'ADMIN' && ROLES_CUMULABLES.includes(cible)
+}
+
 /** L'utilisateur peut créer de nouvelles analyses */
-export function canCreateAnalyse(user: SessionUser): boolean {
-  return user.role === 'ANALYSTE' || isAdminRole(user.role)
+export function canCreateAnalyse(user: SessionUser, opts?: OptionsStructure): boolean {
+  return exerceRole(user.role, 'ANALYSTE', opts) || isAdminRole(user.role)
 }
 
 /**
@@ -194,13 +218,13 @@ export function canEditAnalyse(user: SessionUser, analyse: AnalyseOwnership): bo
 }
 
 /** L'utilisateur peut soumettre l'analyse pour approbation */
-export function canSubmitAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
+export function canSubmitAnalyse(user: SessionUser, analyse: AnalyseOwnership, opts?: OptionsStructure): boolean {
   if (isAdminRole(user.role)) return true
-  return analyse.userId === user.id && user.role === 'ANALYSTE'
+  return analyse.userId === user.id && exerceRole(user.role, 'ANALYSTE', opts)
 }
 
 /** L'utilisateur peut approuver ou rejeter l'analyse */
-export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
+export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership, opts?: OptionsStructure): boolean {
   // ADMIN/SUPER_ADMIN : override conservé (flux mono-admin TPE — un cabinet d'une
   // seule personne ne peut pas créer un « 2e compte » pour approuver). L'éventuelle
   // auto-approbation ADMIN est journalisée (`selfApproval`) côté route d'approbation.
@@ -210,7 +234,8 @@ export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership):
   // RSSI ne peut PAS approuver sa PROPRE analyse (maker ≠ checker), même s'il
   // dispose d'un accès APPROBATION. C'est le différenciateur « approbation à deux
   // niveaux » — il doit être appliqué au niveau du code, pas seulement documenté.
-  if (analyse.userId === user.id) return false
+  // Petite structure : aucun second valideur n'existe — l'auteur approuve (journalisé `selfApproval`).
+  if (analyse.userId === user.id && !opts?.petiteStructure) return false
   // Risk Manager / RSSI : peut approuver s'il a un accès APPROBATION ou s'il a accès global
   const acces = analyse.accesUtilisateurs?.find(a => a.userId === user.id)
   // Sans accès granulaire restrictif, ils peuvent approuver toutes les analyses soumises
@@ -227,12 +252,15 @@ export function canApproveAnalyse(user: SessionUser, analyse: AnalyseOwnership):
  * (`orgMemberCount > 1`), la séparation des tâches (#120) reprend et cette voie
  * est fermée. Pur → testable sans DB (le comptage est fait côté serveur).
  */
-export function canAutoValidateAnalyse(user: SessionUser, analyse: AnalyseOwnership, orgMemberCount: number): boolean {
+export function canAutoValidateAnalyse(user: SessionUser, analyse: AnalyseOwnership, orgMemberCount: number, opts?: OptionsStructure): boolean {
+  // Petite structure : le RSSI / gestionnaire des risques valide directement sa propre analyse,
+  // quel que soit le nombre de membres (les autres ne disposent pas de l'autorité d'approbation).
+  if (opts?.petiteStructure) return analyse.userId === user.id && canApproveAnalyse(user, analyse, opts)
   // Exactement 1 membre : ni 0 (org inconnue / analyse héritée sans org → on
   // n'offre pas l'auto-validation), ni ≥2 (quatre-yeux possible → SoD #120).
   if (orgMemberCount !== 1) return false
   if (analyse.userId !== user.id) return false
-  return canApproveAnalyse(user, analyse)
+  return canApproveAnalyse(user, analyse, opts)
 }
 
 /** L'utilisateur peut gérer les accès (inviter des collaborateurs) */

@@ -227,3 +227,12 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     expect(groupe('LECTEUR', 'conformiteReglementaire')).not.toContain('rapports')
   })
 })
+
+describe('questionnaires de contrôle', () => {
+  it('le métier (1ʳᵉ ligne) les voit pour y répondre, la 2ᵉ ligne aussi ; un lecteur non ; rien sans le module', () => {
+    expect(allKeys(buildNav('METIER' as never, ALL_ON))).toContain('questionnaires')
+    expect(allKeys(buildNav('RISK_MANAGER', ALL_ON))).toContain('questionnaires')
+    expect(allKeys(buildNav('LECTEUR', ALL_ON))).not.toContain('questionnaires')
+    expect(allKeys(buildNav('RISK_MANAGER', { ...ALL_ON, controles: false }))).not.toContain('questionnaires')
+  })
+})

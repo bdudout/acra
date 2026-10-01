@@ -376,4 +376,44 @@ Le catalogue passe de 1.1 à **1.4** ; chaque module n'est proposé que s'il est
 - Recette navigateur + base : contrôle importé avec son processus (`TRIMESTRIEL`, `DETECTIF`, 0 exécution, pas de responsable) ; KRI importé avec seuils nuls puis badge « seuils à définir » ; organisation ayant importé en 1.0 ⇒ « 33 proposition(s) », filtre 45 → 33 lignes.
 - **À faire avant diffusion** : revue **métier** du contenu (tous secteurs) — aucun libellé réglementaire n'a été écrit ; incidents/résilience : typologies et plans de test modèles restent à cadrer avec les régimes existants.
 
-**Reste** : revue métier du catalogue ; packs sectoriels spécifiques (contrôles/KRI/audit par secteur — seul le transversal est livré) ; migration des arrangements en masse au-delà du LEI (cas réels).
+**Reste** (mis à jour en § 8.10) : migration des arrangements en masse au-delà du LEI (cas réels).
+
+### 8.10 Lot 4 — packs sectoriels, plans de test de résilience, revue métier (1er octobre 2026)
+
+- **Packs sectoriels 1.5** (`src/lib/sector-packs.ts`) : pour chacun des 8 secteurs, 2 contrôles-types, 2 KRI candidats et 1 mission d'audit type (4 points de revue), rattachés aux processus **du secteur**, libellés ×5. Mêmes garanties que le socle : aucune exécution, aucun seuil ni valeur, aucune date, notation ou constat. Proposés seulement avec le secteur choisi.
+- **Plans de test de résilience modèles 1.6** (`src/lib/catalogue-resilience.ts`) : 7 transversaux (analyse de vulnérabilités, reprise après rançongiciel, cloisonnement réseau, test d'intrusion, défaillance d'un prestataire TIC, sécurité physique, revue de code) + 4 pour la finance et l'assurance. Types de l'art. 25 § 1 DORA uniquement, **jamais de TLPT** (art. 26 : décidé avec l'autorité). L'import crée un `TestResilience` **PLANIFIÉ** de l'année en cours, sans date, testeur, résultat ni constat, **sans présumer** fonction critique ou importante ni indépendance (`false`). Visible seulement si le module « reporting réglementaire » est actif ; import réservé à `peutEvaluerDora`. Provenance `catalogueKey`/`catalogueVersion` + index unique (migration `20261001140000_test_resilience_catalogue`).
+- **Incidents** : aucun modèle. Les typologies d'événement et de perte sont déjà un catalogue éditable (`incidents-config.ts`) et un incident n'est jamais suggéré (§ A.2).
+- **Revue métier** : grille générée `catalogue-revue-grille.csv` (`npm run catalogue:review`, test de synchronisation) et [catalogue-revue-metier.md](catalogue-revue-metier.md) — première passe (6 corrections, points ouverts pour les experts) ; **validation par des experts métier encore à faire** pour tous les secteurs.
+
+### 8.11 Multisecteur et cohérence des propositions par défaut (1er octobre 2026)
+
+**Décisions de l'utilisateur** : une entreprise, surtout un grand groupe, peut être **multisecteur** ; **pas de sous-processus sectoriels** pour l'instant (trop complexe pour une startup) — les 18 sous-processus du socle transversal restent de simples suggestions facultatives.
+
+**Livré** : le panneau propose par défaut **l'union des packs de tous les secteurs** de l'organisation (« Tous mes secteurs (…) »), un secteur précis ou le socle seul ; une **filiale sans secteur hérite** de ceux de l'ancêtre le plus proche (message affiché), ses propres secteurs priment (`effectiveSectors`, `parseSectorChoice` dans `sector-selection.ts`). La page Processus ne montre plus que les **processus** du catalogue (les risques, contrôles, KRI, missions et tests restent proposés depuis le registre).
+
+**Écarts de cohérence relevés** (non traités, à arbitrer) :
+
+| Écart | Constat | Proposition |
+|---|---|---|
+| Deux catalogues de **contrôles** | `controles-catalogue.ts` (socles par référentiel : ISO 27001, DORA, LCB-FT, sanctions, crédit, RGPD, MIF 2, IDD…, reliés aux exigences, FR seul, dédoublonnage par intitulé, import d'un socle entier) et les contrôles-types du catalogue (×5 langues, provenance, processus, sans lien au référentiel). Doublons possibles (revue des accès, sauvegardes, correctifs, fournisseurs, journaux). | Un seul catalogue : ajouter aux contrôles-types le lien facultatif vers les exigences, puis servir les socles par référentiel depuis le même moteur (aperçu, sélection, provenance). |
+| Deux catalogues d'**audit** | `audit-programmes-catalogue.ts` (programmes par référentiel chargés dans le formulaire de mission, FR seul) et les missions types du catalogue. | Même convergence que les contrôles. |
+| **Registre** : ancien socle | `POST /api/risk-items/seed-defaut` (16 risques Bâle, FR seul, dédoublonnage par intitulé) n'est plus appelé par l'interface. | Retirer la route et `registre-catalogue.ts`, ou en reprendre les événements utiles dans le catalogue. |
+| **RoPA** | `ropa-catalogue.ts` (socle CNIL simplifié, FR seul, dédoublonnage par nom, import en bloc, sans aperçu ni provenance). | Le passer au moteur du catalogue (aperçu, sélection, ×5 langues). |
+| **Trois taxonomies de secteurs** | Gabarits (`BANQUE`, `ASSURANCE`, `NIS2`, `SANTE`, `PUBLIC`, `PME`, `SAAS`, `CABINET`), catalogue (8 codes) et exemples EBIOS des analyses (16 familles reconnues dans un secteur saisi librement). Appliquer un gabarit ne renseigne pas les secteurs de l'organisation. | Table de correspondance gabarit → secteurs proposés ; secteur d'analyse prérempli depuis ceux de l'organisation. |
+| **Langues** | `controles-catalogue`, `audit-programmes-catalogue`, `ropa-catalogue`, `registre-catalogue` et `exemples-sectoriels` sont en français seulement (invariant i18n ×5 non respecté). | À traiter avec la convergence ci-dessus. |
+| Processus « à compléter » | Les processus importés n'ont que leur nom ; rien ne signale qu'il manque description, propriétaire, criticité ou RTO/RPO. | Badge « à compléter » dans la cartographie, comme `champsManquantsArt30` pour le RoPA. |
+
+### 8.12 Convergence des catalogues (1er octobre 2026)
+
+Décisions de l'utilisateur : converger quand c'est possible et utile ; en contrôle permanent comme en audit, le point d'entrée (référentiel, processus ou risque) est **au choix** du contrôleur ou de l'auditeur ; RoPA traduit et importable ligne par ligne ; registre : garder le meilleur des deux socles ; secteurs alignés sur l'analyse cyber, en priorisant ceux qui pratiquent la gestion du risque opérationnel.
+
+| Écart (§ 8.11) | Traitement |
+|---|---|
+| Deux catalogues de contrôles | **Catalogue unifié** (`controle-templates.ts`, `GET/POST /api/controles/catalogue`, `ControleCataloguePanel`) : socles par référentiel (exigences conservées) + contrôles-types du catalogue, clé stable par modèle (`ref.<socle>.<rang>` ou clé du catalogue) ⇒ jamais importé deux fois quelle que soit l'entrée. Entrées : référentiel, processus, risque. Lien au processus / au risque **seulement s'ils existent déjà** dans l'organisation. Ancienne route `controles/import` (socle entier) retirée. |
+| Deux catalogues d'audit | **Modèles de mission unifiés** (`audit-templates.ts`, `GET /api/audit/modeles`, `AuditModelePicker`) : programmes par référentiel + missions types ; le modèle préremplit intitulé, points de revue et processus, rien n'est enregistré sans validation. |
+| Registre : ancien socle | Comparé et fusionné dans le catalogue 1.8 (`catalogue-risks.ts`) : 10 situations reprises avec leur description ×5, lutte anti-blanchiment ajoutée, **catégorie bâloise** sur tous les risques (appliquée si la taxonomie de l'organisation la contient). Route `seed-defaut` et `registre-catalogue.ts` retirés. |
+| RoPA | **Traduit ×5**, clé stable par traitement, aperçu puis import ligne par ligne (`GET/POST /api/ropa/catalogue`, `RopaCataloguePanel`, migration `20261001150000_traitement_catalogue`). Hors français, les durées de conservation sont signalées comme références du droit français à vérifier. |
+| Trois taxonomies de secteurs | Libellés du catalogue alignés sur ceux de l'analyse cyber ; ordre = priorité gestion du risque opérationnel (banque, assurance, énergie, transports, télécoms, santé, puis industrie, public, commerce, numérique, services) ; **énergie, transports, télécoms ajoutés** (catalogue 1.7) ; un **gabarit** propose son secteur à une organisation qui n'en a aucun. L'assurance reste un secteur distinct du catalogue (rattachée à « Banque / Finance » côté analyse cyber). |
+| Langues | Restent en français : socles de contrôles et programmes d'audit **par référentiel** (terminologie réglementaire à traduire sur sources officielles) et exemples EBIOS des analyses. Signalé dans l'interface hors français. |
+| Processus « à compléter » | Non traité (badge à ajouter). |
+

@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server'
 const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), upsert: vi.fn(), audit: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
-vi.mock('@/lib/prisma', () => ({ prisma: { organizationConfig: { upsert: m.upsert } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { organizationConfig: { upsert: m.upsert }, organization: { findUnique: vi.fn(async () => ({ secteursActivite: ['FINANCE'] })), update: vi.fn() } } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))

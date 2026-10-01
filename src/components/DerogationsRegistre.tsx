@@ -75,7 +75,7 @@ function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
   }
 }
 
-export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365, userId = '', userRole = 'ANALYSTE', secondeLigneActive = true }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number; userId?: string; userRole?: UserRole; secondeLigneActive?: boolean }) {
+export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365, userId = '', userRole = 'ANALYSTE', secondeLigneActive = true, petiteStructure = false }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number; userId?: string; userRole?: UserRole; secondeLigneActive?: boolean; petiteStructure?: boolean }) {
   const { t } = useTranslation()
   const d = t.derogations
   const router = useRouter()
@@ -360,8 +360,8 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                           const rbac = { statut: detail.statut as DerogationStatut, demandeurId: detail.demandeurId, avisRssiPar: detail.avisRssiPar }
                           const st = detail.statut
                           const peutEditer = detail.demandeurId === userId || isAdminRole(userRole)
-                          const avis = st === 'DEMANDEE' && canAvisRssiDerogation(sessionUser, rbac)
-                          const dbl = st === 'DOUBLE_REGARD' && canDoubleRegardDerogation(sessionUser, rbac)
+                          const avis = st === 'DEMANDEE' && canAvisRssiDerogation(sessionUser, rbac, { petiteStructure })
+                          const dbl = st === 'DOUBLE_REGARD' && canDoubleRegardDerogation(sessionUser, rbac, { petiteStructure })
                           const valid = st === 'VALIDATION_METIER' && canValiderDerogation(sessionUser, rbac, { secondeLigneActive })
                           const cloture = st === 'ACTIVE' && canCloturerDerogation(sessionUser, rbac, peutEditer)
                           const revoque = st === 'ACTIVE' && canRevoquerDerogation(sessionUser, rbac)

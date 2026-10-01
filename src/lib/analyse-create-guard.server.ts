@@ -4,6 +4,7 @@
 // du droit de création (un LECTEUR pouvait importer) ni du plafond démo. Toute
 // création d'analyse passe désormais par ce contrôle, comme POST /api/analyses.
 
+import { optionsStructure } from '@/lib/org-config.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
@@ -17,7 +18,7 @@ export type AnalyseCreationCheck =
 /** Rôle EFFECTIF dans l'organisation active, organisation active obligatoire, plafond démo. */
 export async function checkAnalyseCreation(userId: string, instanceRole: UserRole): Promise<AnalyseCreationCheck> {
   const scope = await getAnalyseScope(userId, instanceRole)
-  if (!canCreateAnalyse({ id: userId, role: scope.role })) return { ok: false, reason: 'ROLE' }
+  if (!canCreateAnalyse({ id: userId, role: scope.role }, await optionsStructure(scope.activeOrgId))) return { ok: false, reason: 'ROLE' }
   if (!scope.activeOrgId) return { ok: false, reason: 'NO_ORG' }
   if (await isDemoInstance()) {
     const count = await prisma.analyse.count({ where: { organizationId: scope.activeOrgId } })

@@ -8,6 +8,7 @@ import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.serve
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import EntitesRolesManager from '@/components/EntitesRolesManager'
 import EntitySyncManager from '@/components/EntitySyncManager'
+import PetiteStructureGuide from '@/components/PetiteStructureGuide'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -34,6 +35,8 @@ export default async function ConfigurationEntitesPage() {
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-8">
         <Link href="/configuration" className="text-sm text-ebios-600 hover:underline">← {t.config.title}</Link>
         <div className="mt-3">
+          {/* Cumul des rôles RSSI / RM / analyste : expliqué là où l'on attribue les rôles. */}
+          <div className="mb-6"><PetiteStructureGuide /></div>
           <EntitesRolesManager orgId={orgId} />
           <div className="mt-6"><EntitySyncManager orgId={orgId} /></div>
         </div>

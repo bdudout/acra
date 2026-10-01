@@ -59,7 +59,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 - **Analyse** EBIOS RM = 5 **ateliers** (`ATELIERS_META`, `atelier-icons`). Une analyse
   peut être un **socle** de sécurité réutilisable.
 - **Modules GRC** (préfixes `Mx` dans les commentaires `lib/`) :
-  - **M1** Cartographie des risques / registre (`cartographie`, `risk-*`, `registre-catalogue`) ;
+  - **M1** Cartographie des risques / registre (`cartographie`, `risk-*`, `catalogue-risks`) ;
   - **M2** Incidents & pertes (`incident`, `dora*`) + roll-up (`grc-rollup`) ;
   - **M3** Contrôle permanent N1/N2 (`controle`, `campagne*`) ;
   - **M4** Audit interne (`audit`, `audit-programmes-catalogue`) ;
@@ -87,9 +87,9 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | Domaine | Modules clés |
 |---|---|
 | **EBIOS / ateliers** | `ebios-data`, `ebios-gravite`, `atelier-icons`, `exemples-*`, `biens-supports`, `vraisemblance-methode` |
-| **Risques (M1)** | `cartographie`, `risk-item`, `risk-action`, `risk-scale`, `risk-filters`, `risk-current`, `risk-publication`, `registre-catalogue`, `appetit`, `taxonomie` |
+| **Risques (M1)** | `cartographie`, `risk-item`, `risk-action`, `risk-scale`, `risk-filters`, `risk-current`, `risk-publication`, `catalogue-risks` (risques repris de l'ancien socle, catégories bâloises), `appetit`, `taxonomie` |
 | **Incidents (M2)** | `incident`, `incident-dedup`, `kri`, `grc-rollup`, `grc-consolide.server` |
-| **Contrôle (M3)** | `controle`, `controles-catalogue`, `campagne`, `campagne-controle`, `archivage` |
+| **Contrôle (M3)** | `controle`, `controles-catalogue`, `campagne`, `campagne-controle`, `archivage` ; questionnaires de contrôle `questionnaire` (questions, réponses, revue, non-conformités par exigence — pur) / `questionnaire.server` (contexte 2ᵉ ligne sur rôle effectif, répondants, chargement avec 404 hors périmètre), `rapport-mission-controle` (rapport Word d'une mission — pur), `relances` (relances questionnaires / préconisations / plans d'action et décisions en attente : vérifications, approbations, dérogations — pur) / `relances.server` (passage unique : un e-mail de synthèse par personne, toutes sources et organisations confondues), `alertes-dora` (alertes urgentes des échéances de déclaration — pur) / `.server` (cron horaire), `tableau-bord-mensuel` (indicateurs et points d'attention du mois — pur) / `.server` (envoi mensuel aux RSSI et gestionnaires des risques, `EnvoiPeriodique`) ; routes `questionnaires/**`, `preconisations/**`, `controles/campagnes/[id]/rapport-controle`, `relances/config`, cron `relances` ; UI `components/questionnaires/*`, page `/controles/questionnaires` |
 | **Audit (M4)** | `audit`, `audit-programmes-catalogue`, `audit-redact`, `rapport-controle-interne*` |
 | **Conformité** | `conformite*`, `referentiel*`, `couverture-referentiel`, `derogation*`, `conformite-traitement`, `socle-etat` |
 | **Plan d'action unifié** | `plan-action`, `plan-action.server`, `action-items`, `action-items.server`, `promotable-actions.server`, `mesure-categorie` |
@@ -101,7 +101,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Personnalisation (L5)** | `vocabulaire` (termes → chemins i18n, `applyVocabulaire`), `champs-perso` (définitions, valeurs, visibilité par rôle, fusion), `gabarits` (8 gabarits sectoriels, `planGabarit`) — purs ; `OrganizationConfig.vocabulaire/champsPersonnalises`, colonnes `champs` (Incident, Controle, AuditMission) ; routes `personnalisation`, `personnalisation/gabarit` ; UI `PersonnalisationManager`, `ChampsPersonnalisesFields`, `usePersonnalisationChamps` ; `I18nProvider` applique le vocabulaire ; page `/configuration/personnalisation` |
 | **Projet 360** | `projet360` (domaines, questionnaire 360, règles de risques proposés, synthèse par domaine, double approbation RSSI + RM, import cyber — pur) ; méthode `PROJET_360` dans `methodes` ; suivi cockpit (`synthetiserProjets360`), lien analyse cyber ⇄ projet (`resolveProjetSource`, `Analyse.projetSourceId`), garde du cockpit GRC (`isGrcActive`) ; routes `analyses/[id]/qualification-360`, `analyses/[id]/import-cyber`, `projets` (liste), bloc `projets` de `grc/rollup` ; UI `ProjetsManager`, `ProjetSourcePicker`, `ProjetsSuivi` |
 | **Gouvernance du risque** | `ras-rad` / `ras-rad.server` (vue `/appetence`), `processus-carto` (page `/cartographie/processus`, `OrganizationConfig.processusCartographie`) |
-| **Catalogue sectoriel** | `sector-suggestions` (processus, risques, contrôles, KRI, missions d'audit ; provenance `catalogueKey`), `sector-suggestions-changelog` (historique par version, « nouveautés »), `sector-suggestion-plan`, `sector-selection` ; route `catalogue-suggestions` (module actif + rôle habilité par type) ; UI `SectorSuggestionsPanel` |
+| **Catalogue sectoriel** | `sector-suggestions` (processus, risques, socle de contrôles, KRI, missions d'audit ; provenance `catalogueKey`), `sector-packs` (contrôles/KRI/audit par secteur), `catalogue-resilience` (plans de test DORA modèles), `catalogue-review` (grille de revue métier, `npm run catalogue:review`), `catalogue-risks` (risques repris de l'ancien socle, catégories bâloises), `catalogue-links` (contrôles/missions → risques couverts), `controle-templates` et `audit-templates` (catalogues unifiés de contrôles et de modèles de mission : entrée par référentiel, processus ou risque), `sector-context.server` (secteurs effectifs, hérités du groupe), `sector-suggestions-changelog` (historique par version, « nouveautés »), `sector-suggestion-plan`, `sector-selection` ; route `catalogue-suggestions` (module actif + rôle habilité par type) ; UI `SectorSuggestionsPanel` |
 | **Tiers canoniques** | `tier-identity`, `tier-offers`, `tier-merge`, `tier-contract-coverage`, `tier-registry.server` ; routes `tier-registry/*` ; UI `TierIdentityPanel`, `TierDetailPanel` |
 | **Régulatoire** | `tests-resilience` / `tests-resilience.server` (DORA art. 24-26, rapport de réexamen art. 6 § 5), `dora`, `dora-reporting`, `dora-its-export`, `nis2-mapping`, `ropa`, `ropa-catalogue`, `rgpd-sensitive`, `suivi-regulateur`, `registre-tic`, `tic-contract-import` (import guidé de contrats, pur), `tic-questionnaire`, `soa-*`, `politique-defaut` |
 | **Écosystème / tiers** | `tiers`, `tiers.server`, `ecosystem-*`, `tiers-tic-link`, `tier-contract-coverage`, `operateur-ae` ; schéma canonique additif `Tier` → offres `TierService` → contrats `ArrangementTic` / usages `TierServiceUsage` ; routes `api/tiers/contracts/[id]/beneficiaries`, `api/tiers/services/[id]/usages` ; UI et rapprochement restent à réaliser. |
@@ -177,6 +177,15 @@ l'**extraire en fonction pure testée** (cf. CLAUDE.md).
   terminologie **officielle** EUR-Lex/ISO, jamais de traduction maison, citer la version.
 - **RBAC** : `lib/permissions`. Échelles/matrice → ADMIN ; approbation → RISK_MANAGER &
   RSSI ; dérogation → workflow dédié (`lib/derogation`).
+- **Cumul de rôles (petite structure)** : `OrganizationConfig.petiteStructure`. Ne jamais
+  comparer `role === 'RSSI'` en dur : passer par `exerceRole(role, cible, opts)`
+  (`lib/permissions`) avec `opts = await optionsStructure(orgId)` (`org-config.server`).
+  Les contrôles `canCreateAnalyse`, `canSubmitAnalyse`, `canApproveAnalyse`,
+  `canAutoValidateAnalyse`, `canAvisRssiDerogation`, `canDoubleRegardDerogation`,
+  `applyApprobation` (projet 360) et les destinataires des relances prennent ces options.
+  RSSI ⇄ RISK_MANAGER ⇄ ANALYSTE cumulés ; ADMIN → RSSI et RISK_MANAGER ; jamais la
+  direction métier. Le rôle passé est toujours le **rôle effectif dans l'org de la
+  ressource** (`getEffectiveRoleForOrg`), et chaque cumul est journalisé.
 - **Colonnes de DB sans accent** (Prisma) : `valeursMetier`, pas `valeursMétier`.
 - **TDD** : test d'abord (`src/__tests__/unit/**`), mock `next/navigation`, `next/link`,
   `@/lib/i18n/context` pour les composants. Corriger toute erreur TS rencontrée.

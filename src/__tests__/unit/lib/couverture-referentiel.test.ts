@@ -89,3 +89,30 @@ describe('croiserApplicationsAnalyses — jointure RA ↔ référentiel', () => 
     expect(croiserApplicationsAnalyses([], 'ISO27001').total).toBe(0)
   })
 })
+
+describe('déclaré vs constaté (page de conformité)', () => {
+  it('signale une divergence quand une exigence déclarée conforme est en anomalie selon le contrôle ou l’audit', async () => {
+    const { confronterDeclaration } = await import('@/lib/conformite-constats')
+    const m = confronterDeclaration([
+      { ref: 'A', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 1 },
+      { ref: 'B', statut: 'ANOMALIE', nbControles: 1, nbAnomaliesAudit: 0 },
+      { ref: 'C', statut: 'CONFORME', nbControles: 2, nbAnomaliesAudit: 0 },
+      { ref: 'D', statut: 'NON_COUVERT', nbControles: 0, nbAnomaliesAudit: 0 },
+    ], [{ ref: 'A', statut: 'conforme' }, { ref: 'B', statut: 'non_conforme' }, { ref: 'C', statut: 'conforme' }])
+    expect(m.get('A')?.divergent).toBe(true)
+    expect(m.get('B')?.divergent).toBe(false) // déjà déclarée non conforme : cohérent
+    expect(m.get('C')?.divergent).toBe(false)
+    expect(m.has('D')).toBe(false) // rien constaté : rien à afficher
+  })
+})
+
+describe('anomalies venant du contrôle permanent (questionnaires, préconisations)', () => {
+  it('rendent l’exigence en anomalie et sont comptées à part de l’audit ; une préconisation acceptée ou vérifiée ne compte plus', () => {
+    const cov = synthetiserCouverture([{ ref: 'A' }, { ref: 'B' }], [], [
+      { exigenceRef: 'A', statut: 'OUVERT', origine: 'CONTROLE' },
+      { exigenceRef: 'B', statut: 'ACCEPTE', origine: 'CONTROLE' },
+    ])
+    expect(cov.parExigence[0]).toMatchObject({ ref: 'A', statut: 'ANOMALIE', nbAnomaliesAudit: 0, nbAnomaliesControle: 1 })
+    expect(cov.parExigence[1]).toMatchObject({ ref: 'B', statut: 'NON_COUVERT', nbAnomaliesControle: 0 })
+  })
+})

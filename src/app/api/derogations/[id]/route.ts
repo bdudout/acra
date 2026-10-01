@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getAccessibleOrgIds } from '@/lib/org-context.server'
+import { analyseAccessWhere, getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { canEditAnalyse, type UserRole } from '@/lib/permissions'
 import {
@@ -93,6 +93,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const orgConfig = await getOrgConfig(derog.organizationId)
   const rbac = { statut: derog.statut as DerogationStatut, demandeurId: derog.demandeurId, avisRssiPar: derog.avisRssiPar }
+  // Transitions (avis RSSI, double regard, validation…) : rôle EFFECTIF dans l'organisation de la
+  // dérogation, pas le rôle d'instance (un RSSI d'organisation au compte « analyste » doit pouvoir agir).
+  const roleOrg = await getEffectiveRoleForOrg(userId, userRole, derog.organizationId)
+  const decideur = { id: userId, role: roleOrg ?? userRole }
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>
   const action = String(body.action ?? '')
@@ -110,7 +114,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   switch (action) {
     // ── Avis RSSI (favorable, favorable avec réserves, défavorable ; + double regard) ──
     case 'AVIS_RSSI': {
-      if (!canAvisRssiDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canAvisRssiDerogation(decideur, rbac, { petiteStructure: orgConfig.petiteStructure })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const favorable = body.favorable === true
       const doubleRegard = body.demandeDoubleRegard === true
       if (!favorable && !commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour un avis défavorable' }, { status: 400 })
@@ -127,13 +131,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(statut === 'ACTIVE' ? { valideePar: userId, valideeLe: now, ...activation() } : {}),
         ...(statut === 'REJETEE' ? { rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire } : {}),
       })
-      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_RSSI_OPINION', { favorable, avecReserves: !!reserves, doubleRegard, statut })
+      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_RSSI_OPINION', { favorable, avecReserves: !!reserves, doubleRegard, statut, ...(orgConfig.petiteStructure ? { petiteStructure: true, parLeDemandeur: userId === derog.demandeurId } : {}) })
       return NextResponse.json(updated)
     }
 
     // ── Double regard (RSSI groupe) ──
     case 'DOUBLE_REGARD': {
-      if (!canDoubleRegardDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canDoubleRegardDerogation(decideur, rbac, { petiteStructure: orgConfig.petiteStructure })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const favorable = body.favorable === true
       if (!favorable && !commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour un avis défavorable' }, { status: 400 })
       const statut = statutApresDoubleRegard(favorable, workflow)
@@ -143,13 +147,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(statut === 'ACTIVE' ? { valideePar: userId, valideeLe: now, ...activation() } : {}),
         ...(statut === 'REJETEE' ? { rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire } : {}),
       })
-      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_DOUBLE_REVIEW', { favorable, statut })
+      await audit(statut === 'ACTIVE' ? 'DEROGATION_VALIDATED' : 'DEROGATION_DOUBLE_REVIEW', { favorable, statut, ...(orgConfig.petiteStructure ? { petiteStructure: true, memePersonneQueLAvis: userId === derog.avisRssiPar } : {}) })
       return NextResponse.json(updated)
     }
 
     // ── Validation métier → ACTIVE (ou application d'une prolongation) ──
     case 'VALIDER': {
-      if (!canValiderDerogation(sessionUser, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canValiderDerogation(decideur, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const prolongation = derog.prolongationDemandee != null
       const dateFin = prolongation ? derog.prolongationDemandee! : calcDateFin(now, orgConfig.derogationDureeDefautJours)
       const historique = prolongation
@@ -170,7 +174,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // ── Refus métier (au stade VALIDATION_METIER) ──
     case 'REJETER': {
-      if (!canValiderDerogation(sessionUser, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canValiderDerogation(decideur, rbac, { secondeLigneActive: orgConfig.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un commentaire est requis pour le refus' }, { status: 400 })
       const updated = await save({ statut: 'REJETEE', rejeteePar: userId, rejeteeLe: now, rejetMotif: commentaire })
       await audit('DEROGATION_REJECTED', {})
@@ -205,7 +209,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // ── Clôture avec preuves (non-conformité résolue) ──
     case 'CLOTURER': {
-      if (!canCloturerDerogation(sessionUser, rbac, peutEditer)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canCloturerDerogation(decideur, rbac, peutEditer)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const preuves = sanitizePreuves(body.preuves)
       if (preuves.length === 0) return NextResponse.json({ error: 'Au moins une preuve est requise pour clôturer' }, { status: 400 })
       const updated = await save({ statut: 'CLOTUREE', clotureePar: userId, clotureeLe: now, clotureCommentaire: commentaire, preuves })
@@ -215,7 +219,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // ── Révocation d'une dérogation active ──
     case 'REVOQUER': {
-      if (!canRevoquerDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canRevoquerDerogation(decideur, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un motif de révocation est requis' }, { status: 400 })
       const updated = await save({ statut: 'REVOQUEE', revoqueePar: userId, revoqueeLe: now, revoqueMotif: commentaire })
       await audit('DEROGATION_REVOKED', {})

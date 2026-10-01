@@ -67,6 +67,7 @@ export default function DerogationsPanel({
   const [list, setList] = useState<Derog[]>([])
   const [alerteJours, setAlerteJours] = useState(30)
   const [doubleRegardActif, setDoubleRegardActif] = useState(true)
+  const [petiteStructure, setPetiteStructure] = useState(false)
   const [dureeDefaut, setDureeDefaut] = useState(180)
   const [dureeMax, setDureeMax] = useState(365)
   // Référentiels de l'org (mesures existantes) + exigences du référentiel choisi.
@@ -86,6 +87,7 @@ export default function DerogationsPanel({
     setList(data.derogations ?? [])
     if (typeof data.config?.alerteJours === 'number') setAlerteJours(data.config.alerteJours)
     if (typeof data.config?.doubleRegard === 'boolean') setDoubleRegardActif(data.config.doubleRegard)
+    if (typeof data.config?.petiteStructure === 'boolean') setPetiteStructure(data.config.petiteStructure)
     if (typeof data.config?.dureeDefautJours === 'number') setDureeDefaut(data.config.dureeDefautJours)
     if (typeof data.config?.dureeMaxJours === 'number') setDureeMax(data.config.dureeMaxJours)
   }
@@ -235,8 +237,8 @@ export default function DerogationsPanel({
             const etat = etatDerogation({ statut: x.statut, dateFin: x.dateFin }, alerteJours)
             const jours = joursAvantExpiration(x.dateFin)
             const rbac = { statut: x.statut, demandeurId: x.demandeurId, avisRssiPar: x.avisRssiPar }
-            const canAvis = canAvisRssiDerogation(user, rbac)
-            const canDouble = canDoubleRegardDerogation(user, rbac)
+            const canAvis = canAvisRssiDerogation(user, rbac, { petiteStructure })
+            const canDouble = canDoubleRegardDerogation(user, rbac, { petiteStructure })
             const canVal = canValiderDerogation(user, rbac)
             const canRev = canRevoquerDerogation(user, rbac)
             const canClo = canCloturerDerogation(user, rbac, canEdit)

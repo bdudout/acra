@@ -7,9 +7,10 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, X, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, Users, X, XCircle } from 'lucide-react'
 import AdminNav from '@/components/AdminNav'
 import ReassignAnalysesDialog from '@/components/ReassignAnalysesDialog'
+import PetiteStructureGuide from '@/components/PetiteStructureGuide'
 import {
   ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_COLORS,
   type UserRole,
@@ -668,6 +669,9 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        {/* Petite structure : cumul des rôles quand une seule personne porte la sécurité et les risques */}
+        <PetiteStructureGuide />
+
         {/* Guide des rôles */}
         <div className="mt-6 card p-5">
           <h2 className="font-semibold text-gray-800 mb-4">{t.admin.rolesGuideTitle}</h2>
@@ -695,16 +699,19 @@ export default function AdminUsersPage() {
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rmCan1}</div>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rmCan2}</div>
                     <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.rmCant}</div>
+                    <div className="text-ebios-700 dark:text-ebios-300"><Users size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> {t.admin.petiteStructure.carte}</div>
                   </>}
                   {role === 'RSSI' && <>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rssiCan1}</div>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.rssiCan2}</div>
                     <div><XCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {t.admin.rssiCant}</div>
+                    <div className="text-ebios-700 dark:text-ebios-300"><Users size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> {t.admin.petiteStructure.carte}</div>
                   </>}
                   {role === 'ADMIN' && <>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan1}</div>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan2}</div>
                     <div><CheckCircle2 size={15} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" /> {t.admin.adminCan3}</div>
+                    <div className="text-ebios-700 dark:text-ebios-300"><Users size={15} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> {t.admin.petiteStructure.carteAdmin}</div>
                   </>}
                 </div>
               </div>

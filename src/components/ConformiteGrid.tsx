@@ -21,6 +21,7 @@ import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import type { ConstatSurExigence } from '@/lib/conformite-constats'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
   CONFORMITE_STATUTS,
@@ -52,6 +53,8 @@ interface Props {
   onTraitementsChanged?: () => void
   /** Affiche le catalogue de vulnérabilités (écarts) — pertinent en analyse, pas en socle pur. */
   showVulnCatalog?: boolean
+  /** Ce que constatent le contrôle permanent et l'audit, par exigence (page de conformité). */
+  constats?: Map<string, ConstatSurExigence>
 }
 
 /** État dérogation d'un contrôle, dérivé de la liste des dérogations de l'analyse. */
@@ -69,7 +72,7 @@ const STATUT_STYLE: Record<ConformiteStatut, { on: string; dot: string }> = {
  * est activée (OrganizationConfig.conformiteActive). Les non-conformités dérivées
  * forment le catalogue de vulnérabilités (cf. lib/conformite.ts).
  */
-export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true }: Props) {
+export default function ConformiteGrid({ controles, entries, onChange, readOnly = false, derogationCtx, traitementCtx, onTraitementsChanged, showVulnCatalog = true, constats }: Props) {
   const { t, locale } = useTranslation()
   const [search, setSearch] = useState('')
 
@@ -214,6 +217,16 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     onChange(next)
   }
 
+  // Applique en un clic le constat du contrôle permanent / de l'audit : l'exigence passe en
+  // « non conforme », l'origine est consignée dans le commentaire (traçabilité de la décision).
+  function appliquerConstat(ref: string) {
+    if (readOnly) return
+    const prev = byRef.get(ref)
+    const trace = t.conformiteConstats.autoComment.replace('{date}', new Date().toLocaleDateString(locale))
+    const commentaire = prev?.commentaire?.trim() ? `${prev.commentaire.trim()} — ${trace}` : trace
+    onChange([...entries.filter(e => e.ref !== ref), { ref, statut: 'non_conforme', commentaire, ...(prev?.traitement ? { traitement: prev.traitement } : {}) }])
+  }
+
   function setComment(ref: string, commentaire: string) {
     if (readOnly) return
     const prev = byRef.get(ref)
@@ -291,6 +304,17 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     <span className="text-gray-400 dark:text-gray-500 mr-1.5">{c.ref}</span>{c.nom}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>
+                  {(() => {
+                    const k = constats?.get(c.ref)
+                    if (!k) return null
+                    const cc = t.conformiteConstats
+                    const tone = k.statut === 'ANOMALIE' ? 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200' : k.statut === 'CONFORME' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
+                    return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] ${tone}`}>
+                      {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit)).replace('{q}', String(k.nbAnomaliesControle ?? 0))}
+                      {k.divergent && <strong className="ml-1">· {cc.divergent}</strong>}
+                      {k.divergent && !readOnly && <button type="button" className="ml-2 underline" onClick={() => appliquerConstat(c.ref)}>{cc.appliquer}</button>}
+                    </p>
+                  })()}
                 </div>
                 <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
                   {CONFORMITE_STATUTS.map(s => {

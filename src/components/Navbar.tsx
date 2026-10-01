@@ -172,6 +172,7 @@ export default function Navbar() {
     incidents:     { href: '/incidents',     Icon: Siren,           label: t.nav.incidents },
     controles:     { href: '/controles',     Icon: ClipboardCheck,  label: t.nav.controles },
     campagnesControle: { href: '/controles/campagnes', Icon: ClipboardList, label: t.nav.campagnesControle },
+    questionnaires: { href: '/controles/questionnaires', Icon: ClipboardList, label: t.nav.questionnaires },
     audit:         { href: '/audit',         Icon: Search,          label: t.nav.audit },
     kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
     reglementaire: { href: '/reglementaire', Icon: Landmark,        label: t.nav.reglementaire },

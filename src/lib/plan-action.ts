@@ -11,7 +11,7 @@ import { cleanPriorite, RISK_ACTION_STATUTS, type ActionPriorite, type RiskActio
 // RISQUE = risque du registre d'organisation (RiskItem) ; RISQUE_ANALYSE = risque
 // saisi dans une analyse (méthodes à saisie directe ISO 27005 / 31000), targetId =
 // Risque.id, ref = analyseId (pour reconstruire le lien profond vers l'atelier).
-export const PLAN_ACTION_LIEN_TYPES = ['ANALYSE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'RISQUE', 'RISQUE_ANALYSE', 'INCIDENT'] as const
+export const PLAN_ACTION_LIEN_TYPES = ['ANALYSE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'RISQUE', 'RISQUE_ANALYSE', 'INCIDENT', 'PRECONISATION'] as const
 /** Type de lien polymorphe d'un plan d'action vers son origine : analyse, conformité, contrôle, audit, risque ou incident. */
 export type PlanActionLienType = (typeof PLAN_ACTION_LIEN_TYPES)[number]
 export const isLienType = (v: unknown): v is PlanActionLienType =>
@@ -66,6 +66,7 @@ export function lienHref(lien: PlanActionLien): string {
     case 'CONTROLE': return `/controle-permanent?controle=${id}`
     case 'AUDIT': return `/audit?mission=${id}`
     case 'INCIDENT': return `/incidents?incident=${id}`
+    case 'PRECONISATION': return `/controles/questionnaires?preconisation=${id}`
   }
 }
 

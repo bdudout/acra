@@ -31,7 +31,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const raw = sanitizeIncidentsConfig(cfg.incidentsConfig)
   const regimesActifs = resolveRegimes(raw.regimes).filter(r => r.actif && !r.custom).map(r => r.code)
   const vocabulaire = sanitizeVocabulaire(cfg.vocabulaire)
-  const plan = planGabarit(String(body.id ?? ''), { modules, regimesActifs, vocabulaire })
+  const org = await prisma.organization.findUnique({ where: { id: scope.activeOrgId }, select: { secteursActivite: true } })
+  const secteurs = Array.isArray(org?.secteursActivite) ? org.secteursActivite.filter((x): x is string => typeof x === 'string') : []
+  const plan = planGabarit(String(body.id ?? ''), { modules, regimesActifs, vocabulaire, secteurs })
   if (!plan) return NextResponse.json({ error: 'gabarit_inconnu' }, { status: 400 })
   if (body.dryRun === true) return NextResponse.json({ changements: plan.changements })
 
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   ]
   const update = { ...plan.patch.modules, incidentsConfig: { ...raw, regimes } as unknown as Prisma.InputJsonValue, vocabulaire: plan.patch.vocabulaire as Prisma.InputJsonValue }
   await prisma.organizationConfig.upsert({ where: { id: scope.activeOrgId }, create: { id: scope.activeOrgId, ...update }, update })
+  if (plan.patch.secteurs) await prisma.organization.update({ where: { id: scope.activeOrgId }, data: { secteursActivite: plan.patch.secteurs } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: scope.activeOrgId, targetId: scope.activeOrgId, targetType: 'organization', ip: getClientIp(req),
     details: { scope: 'gabarit', id: body.id, changements: plan.changements.length },

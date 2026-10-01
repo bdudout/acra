@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutEcrireAudit, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import AuditManager from '@/components/AuditManager'
@@ -21,7 +21,8 @@ export default async function AuditPage() {
   if (!orgConfig.auditInterneActive) redirect('/dashboard')
 
   // Cloisonnement 3ᵉ ligne : seul l'AUDITEUR (et l'admin) écrit ; les autres lisent.
-  const canWrite = userRole === 'AUDITEUR' || isAdminRole(userRole)
+  // Rôle EFFECTIF dans l'organisation active, comme les API d'audit (peutEcrireAudit).
+  const canWrite = peutEcrireAudit((scope.role ?? userRole) as UserRole)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

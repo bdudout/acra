@@ -21,3 +21,28 @@ export function moveSector(current: readonly string[], code: string, direction: 
   ;[list[i], list[j]] = [list[j], list[i]]
   return list
 }
+
+const clean = (value: unknown): SectorCode[] => Array.isArray(value) ? [...new Set(value.filter((s): s is SectorCode => typeof s === 'string' && isSector(s)))] : []
+
+/**
+ * Secteurs effectifs d'une organisation, la chaîne étant donnée du nœud vers la racine :
+ * ceux qu'elle a déclarés, sinon ceux de l'ancêtre le plus proche qui en a déclaré
+ * (une filiale d'un groupe multisecteur hérite de ses secteurs tant qu'elle n'en choisit pas).
+ */
+export function effectiveSectors(chainSelfFirst: readonly unknown[]): { own: SectorCode[]; effective: SectorCode[]; inherited: boolean } {
+  const own = clean(chainSelfFirst[0])
+  if (own.length) return { own, effective: own, inherited: false }
+  for (const value of chainSelfFirst.slice(1)) {
+    const sectors = clean(value)
+    if (sectors.length) return { own, effective: sectors, inherited: true }
+  }
+  return { own, effective: [], inherited: false }
+}
+
+/** Valeur ALL : tous les secteurs effectifs (union des packs). Vide / TRANSVERSAL : socle seul. undefined = invalide. */
+export const ALL_SECTORS = 'ALL'
+export function parseSectorChoice(value: unknown, effective: readonly SectorCode[]): SectorCode[] | undefined {
+  if (value === null || value === undefined || value === '' || value === 'TRANSVERSAL') return []
+  if (value === ALL_SECTORS) return [...effective]
+  return typeof value === 'string' && isSector(value) ? [value] : undefined
+}

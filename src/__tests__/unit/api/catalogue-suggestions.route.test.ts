@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const db = vi.hoisted(() => ({
-  organization: { findUnique: vi.fn() },
+  organization: { findUnique: vi.fn(), findMany: vi.fn() },
   process: { findMany: vi.fn(), create: vi.fn() },
   risk: { findMany: vi.fn(), create: vi.fn() },
   control: { findMany: vi.fn(), create: vi.fn() },
   kri: { findMany: vi.fn(), create: vi.fn() },
   mission: { findMany: vi.fn(), create: vi.fn() },
+  test: { findMany: vi.fn(), create: vi.fn() },
   cfg: vi.fn(),
   queryRaw: vi.fn(), transaction: vi.fn(),
 }))
@@ -14,13 +15,14 @@ const auth = vi.hoisted(() => ({ scope: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'user1', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, $transaction: db.transaction,
+  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, testResilience: db.test, $transaction: db.transaction,
 } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: auth.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: db.cfg }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '127.0.0.1') }))
 
 import { GET, POST } from '@/app/api/catalogue-suggestions/route'
+import { CATALOGUE_PACK_VERSION } from '@/lib/sector-suggestions'
 
 const request = (body: object) => ({ json: async () => body }) as never
 
@@ -33,6 +35,8 @@ beforeEach(() => {
   db.control.findMany.mockResolvedValue([])
   db.kri.findMany.mockResolvedValue([])
   db.mission.findMany.mockResolvedValue([])
+  db.test.findMany.mockResolvedValue([])
+  db.test.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.mission.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.kri.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.cfg.mockResolvedValue({ registreRisquesActive: true })
@@ -41,7 +45,7 @@ beforeEach(() => {
   db.process.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.risk.create.mockImplementation(async ({ data }: { data: { catalogueKey: string } }) => ({ id: `id-${data.catalogueKey}`, ...data }))
   db.transaction.mockImplementation(async (run: (tx: unknown) => Promise<unknown>) => run({
-    processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, $queryRaw: db.queryRaw,
+    processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, testResilience: db.test, $queryRaw: db.queryRaw,
   }))
 })
 
@@ -114,7 +118,7 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.process.digital', 'core.process.digital.iam', 'core.control.access-review'] }))
     expect(res.status).toBe(201)
     const created = db.control.create.mock.calls[0][0].data
-    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: '1.4', processusId: 'id-core.process.digital.iam' })
+    expect(created).toMatchObject({ organizationId: 'org1', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF', catalogueKey: 'core.control.access-review', catalogueVersion: CATALOGUE_PACK_VERSION, processusId: 'id-core.process.digital.iam' })
     expect(created).not.toHaveProperty('responsable'); expect(created).not.toHaveProperty('executions')
   })
   it('contrôles-types : refusés à un rôle sans droit de définition 2ᵉ ligne', async () => {
@@ -167,5 +171,59 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     expect(data.whatsNew.keys).toContain('core.process.digital.iam')
     expect(data.whatsNew.keys).not.toContain('core.process.deliver')
     expect(db.process.create).not.toHaveBeenCalled()
+  })
+
+  it('plans de test de résilience : invisibles sans le module réglementaire ; créés PLANIFIÉS sans date, résultat, fonction critique ni indépendance présumées', async () => {
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.items.some((i: { kind: string }) => i.kind === 'RESILIENCE_TEST')).toBe(false)
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.resilience.pentest'], acceptUnlinked: true }))).status).toBe(403)
+    expect(db.test.create).not.toHaveBeenCalled()
+
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, reglementaireActive: true })
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    const keys = data.items.filter((i: { kind: string }) => i.kind === 'RESILIENCE_TEST').map((i: { key: string }) => i.key)
+    expect(keys).toContain('finance.resilience.payment-end-to-end') // pack du secteur de l'organisation (FINANCE)
+    expect(keys).not.toContain('assurance.resilience.claims-continuity')
+    const res = await POST(request({ sector: 'FINANCE', locale: 'fr', selectedKeys: ['core.process.digital', 'core.resilience.pentest'] }))
+    expect(res.status).toBe(201)
+    const created = db.test.create.mock.calls[0][0].data
+    expect(created).toMatchObject({ organizationId: 'org1', type: 'PENETRATION', statut: 'PLANIFIE', fonctionCritique: false, independant: false, annee: new Date().getFullYear(), processusId: 'id-core.process.digital', catalogueKey: 'core.resilience.pentest', catalogueVersion: CATALOGUE_PACK_VERSION })
+    for (const field of ['datePrevue', 'dateRealisation', 'resultat', 'constats', 'testeur']) expect(created).not.toHaveProperty(field)
+  })
+  it('plans de test de résilience : refusés à un rôle sans droit d’évaluation DORA', async () => {
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, reglementaireActive: true })
+    auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ANALYSTE' })
+    expect((await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.resilience.pentest'], acceptUnlinked: true }))).status).toBe(403)
+    expect(db.test.create).not.toHaveBeenCalled()
+  })
+
+  it('multisecteur : par défaut l’union des secteurs de l’organisation ; une filiale sans secteur hérite de ceux du groupe', async () => {
+    db.organization.findUnique.mockResolvedValue({ path: '/org1/', secteursActivite: ['FINANCE', 'ASSURANCE'] })
+    let data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data.sector).toBe('ALL')
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('finance.'))).toBe(true)
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('assurance.'))).toBe(true)
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr&sector=ASSURANCE') as never)).json()
+    expect(data.sector).toBe('ASSURANCE')
+    expect(data.items.some((i: { key: string }) => i.key.startsWith('finance.'))).toBe(false)
+
+    db.organization.findUnique.mockResolvedValue({ path: '/groupe/filiale/', secteursActivite: [] })
+    db.organization.findMany.mockResolvedValue([{ id: 'groupe', secteursActivite: ['SANTE'] }])
+    auth.scope.mockResolvedValue({ activeOrgId: 'filiale', role: 'ADMIN' })
+    data = await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()
+    expect(data).toMatchObject({ sector: 'SANTE', configuredSectors: [], effectiveSectors: ['SANTE'], inheritedSectors: true })
+    const res = await POST(request({ sector: 'ALL', locale: 'fr', selectedKeys: ['sante.risk.patient-data'], acceptUnlinked: true }))
+    expect(res.status).toBe(201)
+    expect(db.risk.create.mock.calls[0][0].data).toMatchObject({ organizationId: 'filiale', catalogueKey: 'sante.risk.patient-data' })
+  })
+
+  it('registre : description et catégorie bâloise reprises, la catégorie seulement si la taxonomie de l’organisation la contient', async () => {
+    const res = await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.risk.internal-fraud'], acceptUnlinked: true }))
+    expect(res.status).toBe(201)
+    expect(db.risk.create.mock.calls[0][0].data).toMatchObject({ taxonomieCode: 'BALE_1', statut: 'IDENTIFIE', graviteInherente: null })
+    expect(db.risk.create.mock.calls[0][0].data.description).toMatch(/contournant les contrôles/)
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, taxonomieRisques: [{ code: 'MAISON', label: 'Maison', domaine: 'OP_RISK', ordre: 1 }] })
+    await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.risk.premises'], acceptUnlinked: true }))
+    expect(db.risk.create.mock.calls[1][0].data.taxonomieCode).toBeNull()
   })
 })

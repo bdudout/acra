@@ -207,6 +207,9 @@ model Organization {
   rapportEditions RapportEdition[]
   auditUnivers AuditUnivers[]
   invitations  OrgInvitation[]
+  questionnaireModeles QuestionnaireModele[]
+  questionnaireEnvois  QuestionnaireEnvoi[]
+  preconisations       Preconisation[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -230,12 +233,18 @@ model TestResilience {
   statut           String       @default("PLANIFIE") // PLANIFIE | EN_COURS | REALISE | ANNULE
   datePrevue       DateTime?
   dateRealisation  DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   resultat         String?      @db.Text
   constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
+  // Provenance d'un plan de test modèle du catalogue (idempotence de l'import, cf. sector-suggestions).
+  catalogueKey     String?
+  catalogueVersion String?
   createdById      String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
+  @@unique([organizationId, catalogueKey])
   @@index([organizationId, annee])
 }
 
@@ -344,10 +353,14 @@ model Traitement {
   mesuresSecurite          Json         @default("[]")
   grandeEchelle            Boolean      @default(false)
   surveillanceSystematique Boolean      @default(false)
+  // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
+  catalogueKey             String?
+  catalogueVersion         String?
   createdBy                String?
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 
+  @@unique([organizationId, catalogueKey])
   @@index([organizationId])
 }
 
@@ -720,6 +733,8 @@ model Incident {
   doraInitialeSoumiseLe      DateTime?
   doraIntermediaireSoumiseLe DateTime?
   doraFinaleSoumiseLe        DateTime?
+  // Alertes DORA déjà envoyées : { "PHASE:STATUT": iso } (cron « alertes-dora », anti-doublon).
+  alertesDora                Json      @default("{}")
 
   // Lot L1 — type d'événement (catalogue de l'org), quasi-incident (aucune perte
   // réalisée), attributs pilotant les régimes de notification, notifications soumises,
@@ -775,6 +790,8 @@ model CampagneControle {
   createdBy   String?
   // Archivage (campagne close au-delà de la durée de conservation configurée).
   archiveLe   DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   // Rapports/preuves uploadés : [{nom, mime, taille, storageKey, checksum, uploadedLe, uploadedBy}].
   rapports    Json      @default("[]")
 
@@ -843,6 +860,8 @@ model Document {
   description  String?   @db.Text
   dateDocument DateTime?
   dateRevue    DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // Fichier stocké hors base.
   fichierNom String // nom d'origine (affichage)
@@ -886,6 +905,8 @@ model ArrangementTic {
   criticite         String    @default("NON_CRITIQUE") // CRITIQUE | IMPORTANTE | NON_CRITIQUE
   dateDebut         DateTime?
   dateFin           DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   paysDonnees       String? // pays de stockage/traitement des données
   sousTraitance     Boolean   @default(false)
 
@@ -1037,6 +1058,8 @@ model AuditMission {
   responsable String?
   dateDebut   DateTime?
   dateFin     DateTime?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // PLANIFIEE | EN_COURS | CLOTUREE
   statut String @default("PLANIFIEE")
@@ -1166,6 +1189,8 @@ model Kri {
   frequence     String  @default("MENSUEL")
   responsable   String?
   actif         Boolean @default(true)
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
 
   // Rattachement optionnel à la maille : catégorie de taxonomie / risque / processus.
   taxonomieCode String?
@@ -1259,6 +1284,8 @@ model PlanAction {
   // A_FAIRE | EN_COURS | FAIT (le retard est dérivé de l'échéance, jamais stocké)
   statut         String       @default("A_FAIRE")
   createdById    String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -1412,6 +1439,8 @@ model Derogation {
 
   // Anti-doublon de l'alerte individuelle d'expiration (comme Organization.warnedAt)
   alerteeLe DateTime?
+  // Dernière relance d'un valideur (avis RSSI, double regard, validation métier) — cron « relances ».
+  rappelLe  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1455,6 +1484,8 @@ model OrgInvitation {
   expiresAt      DateTime
   acceptedAt     DateTime?
   acceptedById   String?
+  // Dernière relance automatique (cron « relances », anti-doublon).
+  rappelLe       DateTime?
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])
@@ -1523,6 +1554,11 @@ model Analyse {
   // Avis d'approbation successifs (double approbation RSSI + Risk Manager, analyse
   // projet 360) : [{ role, userId, le, commentaire? }] — cf. lib/projet360.
   approbations           Json      @default("[]")
+  // Date de la dernière soumission pour approbation (relances des approbateurs) et dernière relance.
+  soumisLe               DateTime?
+  rappelLe               DateTime?
+  // Dernière relance d'échéance de l'analyse (auteur), distincte des relances d'approbation.
+  rappelEcheanceLe       DateTime?
 
   // Acceptation des RISQUES RÉSIDUELS (== acceptation du risque par la Direction métier),
   // DISTINCTE de la validation de l'analyse. Portée GLOBALE : une décision pour l'ensemble
@@ -2011,6 +2047,9 @@ model OrganizationConfig {
   // Four-eyes : interdit à l'auteur d'approuver sa propre analyse / d'accepter ses
   // propres risques résiduels (séparation des tâches). Activé par défaut.
   interdireAutoApprobation   Boolean       @default(true)
+  // Petite structure : un RSSI ou gestionnaire des risques cumule les rôles RSSI, gestionnaire des
+  // risques et analyste (création, approbation de ses propres analyses, avis sur dérogation), tracé.
+  petiteStructure            Boolean       @default(false)
   // Fonctionnalité optionnelle : dérogations (acceptation temporaire d'une non-conformité
   // au socle, avec échéance + suivi). Voir docs/derogations-spec.md.
   derogationsActive          Boolean       @default(false)
@@ -2070,6 +2109,8 @@ model OrganizationConfig {
   auditConfig                Json          @default("{}")
   // Lot L2 (suite) — gabarits de rapports surchargeables, planification des brouillons.
   rapportsConfig             Json          @default("{}")
+  // Relances automatiques (questionnaires, préconisations, plans d'action) : { actives, joursAvant, periodiciteJours } — cf. lib/relances.
+  relancesConfig             Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
   // — seuil de niveau résiduel (produit G×V, 1..25) accepté. Vide ⇒ hérité/aucun.
   appetitRisque              Json          @default("{}")
@@ -2384,4 +2425,126 @@ model AuditUnivers {
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+}
+
+// ─── Questionnaires de contrôle permanent (cf. docs/specs/questionnaires-controle.md) ─────────
+// Modèle de questionnaire défini par la 2ᵉ ligne. Questions (Json, cf. lib/questionnaire.ts) :
+// [{ id, libelle, type, choix?, obligatoire, preuveRequise, cible? }] ; cible = point de contrôle,
+// exigence (referentielCode + ref), risque ou processus. mode EXIGENCES = généré depuis un référentiel.
+model QuestionnaireModele {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titre           String
+  description     String?      @db.Text
+  mode            String       @default("QUESTIONNAIRE") // QUESTIONNAIRE | EXIGENCES
+  referentielCode String?
+  questions       Json         @default("[]")
+  actif           Boolean      @default(true)
+  createdById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+// Envoi d'un questionnaire à des répondants (comptes de l'organisation), dans une mission de
+// contrôle (CampagneControle, lien logique). Les questions sont figées à l'envoi (instantané).
+model QuestionnaireEnvoi {
+  id             String                 @id @default(cuid())
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  modeleId       String?
+  campagneId     String?
+  titre          String
+  questions      Json                   @default("[]")
+  echeance       DateTime?
+  statut         String                 @default("OUVERT") // OUVERT | CLOTURE
+  createdById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  reponses       QuestionnaireReponse[]
+
+  @@index([organizationId])
+  @@index([campagneId])
+}
+
+// Réponse d'un répondant : réponses par question (valeur, commentaire, preuves) et revue du
+// contrôleur par question (ACCEPTEE | A_COMPLETER | NON_CONFORME).
+model QuestionnaireReponse {
+  id             String             @id @default(cuid())
+  envoiId        String
+  envoi          QuestionnaireEnvoi @relation(fields: [envoiId], references: [id], onDelete: Cascade)
+  organizationId String
+  repondantId    String
+  statut         String             @default("A_REPONDRE") // A_REPONDRE | SOUMISE | A_COMPLETER | REVUE
+  reponses       Json               @default("[]")
+  soumiseLe      DateTime?
+  revueLe        DateTime?
+  revueParId     String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([envoiId, repondantId])
+  @@index([organizationId])
+  @@index([repondantId])
+}
+
+// Préconisation d'un contrôleur (2ᵉ ligne) : même cycle de vie qu'un constat d'audit
+// (lib/audit-l4 appliquerSuivi). Le métier y répond par un plan d'action ou une acceptation du risque.
+model Preconisation {
+  id                       String       @id @default(cuid())
+  organizationId           String
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campagneId               String?
+  reponseId                String?
+  questionId               String?
+  intitule                 String
+  description              String?      @db.Text
+  recommandation           String?      @db.Text
+  criticite                Int?
+  responsableAction        String?
+  responsableId            String?
+  echeance                 DateTime?
+  echeanceInitiale         DateTime?
+  reports                  Json         @default("[]")
+  statut                   String       @default("OUVERT") // OUVERT | EN_COURS | RESOLU | VERIFIE | ACCEPTE
+  realiseePar              String?
+  realiseeLe               DateTime?
+  verifiePar               String?
+  verifieLe                DateTime?
+  verificationCommentaire  String?      @db.Text
+  acceptationJustification String?      @db.Text
+  accepteePar              String?
+  accepteeLe               DateTime?
+  referentielCode          String?
+  exigenceRef              String?
+  riskItemId               String?
+  processusId              String?
+  controleId               String?
+  createdById              String?
+  // Dernière relance automatique (anti-doublon du cron « relances »).
+  rappelLe       DateTime?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([campagneId])
+  @@index([referentielCode])
+  @@index([statut])
+  @@index([responsableId])
+}
+
+// Envois périodiques déjà effectués (ex. tableau de bord mensuel « 2026-09 ») : l'unicité
+// (tache, periode) garantit un seul envoi par période, même si le planificateur rappelle la tâche.
+model EnvoiPeriodique {
+  id        String   @id @default(cuid())
+  tache     String
+  periode   String
+  envoyeLe  DateTime @default(now())
+  bilan     Json     @default("{}")
+
+  @@unique([tache, periode])
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { optionsStructure } from '@/lib/org-config.server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
   try { body = schema.parse(await req.json()) } catch { return NextResponse.json({ error: 'excel_file_invalid' }, { status: 400 }) }
   const targetOrganizationId = body.organizationId ?? scope.activeOrgId
   const targetRole = targetOrganizationId ? await getEffectiveRoleForOrg(userId, globalRole, targetOrganizationId) : null
-  if (!targetRole || !canCreateAnalyse({ id: userId, role: targetRole })) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
+  if (!targetRole || !canCreateAnalyse({ id: userId, role: targetRole }, await optionsStructure(targetOrganizationId))) return NextResponse.json({ error: 'Droit de création d’analyse requis' }, { status: 403 })
   // Format vérifié sur le CONTENU (signature) et l'extension : un .xls — même renommé — reçoit un message dédié.
   const buffer = Buffer.from(body.data, 'base64')
   const formatError = checkTabularUpload(body.filename, buffer.subarray(0, 16))

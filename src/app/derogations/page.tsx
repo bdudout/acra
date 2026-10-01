@@ -66,7 +66,7 @@ export default async function DerogationsPage() {
         <DerogationsRegistre rows={rows} locale={locale} canCreate={canCreate}
           dureeDefaut={activeConfig?.derogationDureeDefautJours ?? 180}
           dureeMax={activeConfig?.derogationDureeMaxJours ?? 365}
-          userId={userId} userRole={scope.role} secondeLigneActive={activeConfig?.secondeLigneActive ?? true} />
+          userId={userId} userRole={scope.role} secondeLigneActive={activeConfig?.secondeLigneActive ?? true} petiteStructure={activeConfig?.petiteStructure ?? false} />
       </main>
     </div>
   )
