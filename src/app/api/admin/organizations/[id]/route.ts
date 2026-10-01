@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { canManageOrganizations } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { isOrganizationClosureConfirmed, organizationDeletionBlocker, planOrganizationReparenting } from '@/lib/org-context'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (session.user as any).role ?? 'ANALYSTE'
-  if (!canManageOrganizations({ id: (session.user as any).id, role })) {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }) }
-  }
-  return { session }
-}
 
 // Logo personnalisé : data URL image, taille bornée (~64 Ko) pour éviter d'alourdir la base.
 const schema = z.object({
@@ -26,7 +15,7 @@ const schema = z.object({
 
 // PATCH /api/admin/organizations/:id — renommer, déplacer dans l'arbre, définir le logo
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
   const { id } = await params
 
@@ -88,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // DELETE /api/admin/organizations/:id — seulement une organisation réellement vide.
 // Les configurations techniques éventuelles sont supprimées en cascade, jamais les données métier.
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
   const { id } = await params
   let closeWithData = false

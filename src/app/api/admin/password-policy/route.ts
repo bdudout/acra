@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { redactSecrets } from '@/lib/audit-redact'
 import { maskSecret, resolveSubmittedSecret } from '@/lib/secret-crypto'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 /** Masque les secrets SMS d'une policy pour l'UI : jamais renvoyés en clair (audit 2026-10-01). */
 function decryptPolicySecrets<T extends { smsApiKey?: unknown; smsApiSecret?: unknown }>(policy: T): T {
@@ -48,15 +47,6 @@ const PolicySchema = z.object({
 /** Fenêtre de confirmation MFA : 60 minutes */
 const MFA_CONFIRMATION_WINDOW_MS = 60 * 60 * 1000
 
-async function requireAdmin(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  // Politique de mot de passe = réglage d'INSTANCE → SUPER_ADMIN uniquement.
-  if ((session.user as any).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
-}
 
 /**
  * Vérifie si la fenêtre de confirmation MFA a expiré.
@@ -87,7 +77,7 @@ async function autoRevertMfaIfExpired(policy: any): Promise<any> {
 
 // GET /api/admin/password-policy — lit la politique de mot de passe de l'instance (SUPER_ADMIN).
 export async function GET(req: NextRequest) {
-  const { error } = await requireAdmin(req)
+  const { error } = await requireInstanceAdmin(req)
   if (error) return error
 
   let policy = await prisma.passwordPolicy.upsert({
@@ -112,7 +102,7 @@ export async function GET(req: NextRequest) {
 
 // PUT /api/admin/password-policy — met à jour la politique de mot de passe (peut exiger une confirmation MFA) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireAdmin(req)
+  const { error, session } = await requireInstanceAdmin(req)
   if (error) return error
 
   const userId   = (session!.user as any).id

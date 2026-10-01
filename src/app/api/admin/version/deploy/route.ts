@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { APP_VERSION, GITHUB_REPO } from '@/lib/app-version'
 import { canDispatchReleaseDeployment } from '@/lib/version-check'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 const bodySchema = z.object({ version: z.string().regex(/^v?\d+\.\d+\.\d+$/) })
 
 /** Déclenche le workflow GitHub qualifié ; les secrets SSH restent exclusivement dans GitHub. */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  if ((session.user as { role?: string }).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
+  // Réglage d'INSTANCE → SUPER_ADMIN (garde commune, lib/route-guard.server.ts).
+  const guard = await requireInstanceAdmin()
+  if (guard.error) return guard.error
+  const session = guard.session
   const token = process.env.GITHUB_DEPLOY_TOKEN
   if (!token) return NextResponse.json({ error: 'Le déploiement en un clic n’est pas configuré. Utilisez la procédure manuelle.' }, { status: 503 })
   let body: z.infer<typeof bodySchema>

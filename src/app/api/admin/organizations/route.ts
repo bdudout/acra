@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { canManageOrganizations } from '@/lib/permissions'
 import { rootPath, childPath } from '@/lib/org-context'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 function slugify(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -22,19 +20,10 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${base}-${Date.now().toString(36)}`.slice(0, 40)
 }
 
-async function requireSuperAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (session.user as any).role ?? 'ANALYSTE'
-  if (!canManageOrganizations({ id: (session.user as any).id, role })) {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }) }
-  }
-  return { session }
-}
 
 // GET /api/admin/organizations — arbre des organisations (+ dépendances de suppression)
 export async function GET() {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
 
   const orgs = await prisma.organization.findMany({
@@ -54,7 +43,7 @@ const createSchema = z.object({
 
 // POST /api/admin/organizations — créer une organisation (racine ou enfant)
 export async function POST(req: NextRequest) {
-  const auth = await requireSuperAdmin()
+  const auth = await requireInstanceAdmin()
   if (auth.error) return auth.error
 
   let data: z.infer<typeof createSchema>

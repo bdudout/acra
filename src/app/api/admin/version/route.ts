@@ -4,11 +4,10 @@
  * l'installe pas). Réservé au SUPER_ADMIN. Appel GitHub best-effort, mémoïsé.
  */
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { APP_VERSION, GITHUB_REPO } from '@/lib/app-version'
 import { describeVersion } from '@/lib/version-check'
 import { readUpdateAgent } from '@/lib/update-request.server'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,10 +40,9 @@ async function fetchLatestRelease(): Promise<{ latest: Latest; reachable: boolea
 
 // GET /api/admin/version — version courante de l'application et disponibilité d'une mise à jour (notify-only).
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((session.user as any).role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
+  // Réglage d'INSTANCE → SUPER_ADMIN (garde commune, lib/route-guard.server.ts).
+  const guard = await requireInstanceAdmin()
+  if (guard.error) return guard.error
 
   const [{ latest, reachable }, agent] = await Promise.all([fetchLatestRelease(), readUpdateAgent()])
   // Canal (stable / bêta) et version validée de base (#185) : une bêta en avance sur

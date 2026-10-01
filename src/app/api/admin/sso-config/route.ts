@@ -7,13 +7,12 @@
  * Cette API ne modifie pas le flux d'authentification actuel.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 import { cleanRoleMapping } from '@/lib/sso'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 // [F005 corrigé] CWE-312 / OWASP A02:2021 — Secrets chiffrés au repos
 // oidcClientSecret est désormais chiffré (AES-256-GCM, src/lib/secret-crypto.ts) avant
@@ -47,17 +46,6 @@ const SSOSchema = z.object({
   roleMapping:     z.union([z.string().max(8192), z.record(z.string())]).nullable().optional(),
 })
 
-async function requireAdmin(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  }
-  // Configuration SSO/OIDC = réglage d'INSTANCE → SUPER_ADMIN uniquement.
-  if ((session.user as any).role !== 'SUPER_ADMIN') {
-    return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  }
-  return { error: null, session }
-}
 
 /** Valeurs par défaut pour la création initiale */
 const SSO_DEFAULTS = {
@@ -72,7 +60,7 @@ const SSO_DEFAULTS = {
 
 // GET /api/admin/sso-config — lit la configuration SSO d'entreprise (OIDC/SAML) de l'instance (SUPER_ADMIN).
 export async function GET(req: NextRequest) {
-  const { error } = await requireAdmin(req)
+  const { error } = await requireInstanceAdmin(req)
   if (error) return error
 
   const config = await prisma.sSOConfig.upsert({
@@ -86,7 +74,7 @@ export async function GET(req: NextRequest) {
 
 // PUT /api/admin/sso-config — met à jour la configuration SSO (fournisseur, endpoints, secrets) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireAdmin(req)
+  const { error, session } = await requireInstanceAdmin(req)
   if (error) return error
 
   const userId   = (session!.user as any).id

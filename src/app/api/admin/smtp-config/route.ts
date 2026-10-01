@@ -6,12 +6,11 @@
  * (AES-256-GCM, cf. secret-crypto.ts) et redacté dans l'audit trail.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 const SMTPSchema = z.object({
   enabled:     z.boolean().default(false),
@@ -29,17 +28,10 @@ const SMTP_DEFAULTS = {
   username: null, password: null, fromAddress: null, fromName: 'ACRA',
 }
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }), session: null }
-  // Réglage d'INSTANCE (SMTP partagé) → SUPER_ADMIN uniquement (pas un ADMIN d'organisation).
-  if ((session.user as any).role !== 'SUPER_ADMIN') return { error: NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 }), session: null }
-  return { error: null, session }
-}
 
 // GET /api/admin/smtp-config — lit la configuration SMTP d'envoi d'e-mails de l'instance (SUPER_ADMIN).
 export async function GET() {
-  const { error } = await requireAdmin()
+  const { error } = await requireInstanceAdmin()
   if (error) return error
   const config = await prisma.sMTPConfig.upsert({ where: { id: 'global' }, create: SMTP_DEFAULTS, update: {} })
   return NextResponse.json({ ...config, password: maskSecret(config.password) })
@@ -47,7 +39,7 @@ export async function GET() {
 
 // PUT /api/admin/smtp-config — met à jour la configuration SMTP (hôte, port, identifiants) — SUPER_ADMIN.
 export async function PUT(req: NextRequest) {
-  const { error, session } = await requireAdmin()
+  const { error, session } = await requireInstanceAdmin()
   if (error) return error
 
   const userId   = (session!.user as any).id
