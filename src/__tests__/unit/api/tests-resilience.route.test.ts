@@ -12,7 +12,9 @@ const db = vi.hoisted(() => ({
   processus: { findFirst: vi.fn() },
   organization: { findUnique: vi.fn() },
   incident: { findMany: vi.fn() },
-  planAction: { findFirst: vi.fn(), create: vi.fn() },
+  planAction: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+  arrangementTic: { findMany: vi.fn() },
+  auditConstat: { findMany: vi.fn() },
 }))
 const auditLog = vi.hoisted(() => vi.fn())
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'u1', role: 'ANALYSTE' } })) }))
@@ -41,6 +43,9 @@ beforeEach(() => {
   db.processus.findFirst.mockResolvedValue(null)
   db.testResilience.create.mockImplementation(async (a: { data: Record<string, unknown> }) => ({ id: 't1', ...a.data }))
   db.planAction.findFirst.mockResolvedValue(null)
+  db.planAction.findMany.mockResolvedValue([])
+  db.arrangementTic.findMany.mockResolvedValue([])
+  db.auditConstat.findMany.mockResolvedValue([])
   db.planAction.create.mockImplementation(async (a: { data: Record<string, unknown> }) => ({ id: 'pa1', ...a.data }))
 })
 
@@ -100,5 +105,19 @@ describe('/api/tests-resilience', () => {
     const buf = Buffer.from(await res.arrayBuffer())
     expect(buf.subarray(0, 2).toString()).toBe('PK')
     expect(auditLog).toHaveBeenCalledWith('EXPORT', expect.objectContaining({ targetType: 'test-resilience' }))
+  })
+
+  it('livrable DORA global : registre TIC, constats du régulateur et plans d’action des tests chargés dans l’organisation seulement', async () => {
+    db.testResilience.findMany.mockResolvedValue([])
+    db.organization.findUnique.mockResolvedValue({ nom: 'Acme', slug: 'acme' })
+    db.incident.findMany.mockResolvedValue([])
+    db.arrangementTic.findMany.mockResolvedValue([{ criticite: 'CRITIQUE', dateFin: new Date('2026-12-01'), questionnaire: [] }])
+    db.auditConstat.findMany.mockResolvedValue([{ statut: 'OUVERT', echeance: new Date('2026-01-01') }])
+    db.planAction.findMany.mockResolvedValue([{ statut: 'EN_COURS', echeance: new Date('2026-01-01') }])
+    const res = await RAPPORT(getReq('?annee=2026'))
+    expect(res.status).toBe(200)
+    expect(db.arrangementTic.findMany.mock.calls[0][0].where).toEqual({ organizationId: 'org1' })
+    expect(db.auditConstat.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'org1', source: 'REGULATEUR' })
+    expect(db.planAction.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'org1', liens: { some: { type: 'TEST_RESILIENCE' } } })
   })
 })

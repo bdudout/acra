@@ -32,7 +32,6 @@ describe('TestsResilienceManager', () => {
     expect(within(row).getByText('Réalisé')).toBeTruthy()
     expect(screen.getByText('100 %')).toBeTruthy()
     expect(screen.getByText('dont 1 de sévérité 4')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Rapport de réexamen (Word)' }).getAttribute('href')).toBe('/api/tests-resilience/rapport?annee=2026')
   })
 
   it('ajoute un test avec type, fonction critique, constat et risque lié', async () => {

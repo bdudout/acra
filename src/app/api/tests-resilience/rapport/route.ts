@@ -1,7 +1,8 @@
 // ─── Rapport sur le réexamen du cadre de gestion du risque lié aux TIC ───────
-// (DORA art. 6 § 5) — GET ?annee= : document Word compilant le programme de tests
-// de l'année, la couverture des fonctions critiques ou importantes, les constats,
-// les incidents majeurs liés aux TIC de l'année et les risques du registre liés.
+// (DORA art. 6 § 5) — GET ?annee= : livrable GRC DORA global (document Word) : programme de
+// tests de l'année et constats, plans d'action issus des tests, registre des arrangements TIC,
+// constats du régulateur, incidents majeurs liés aux TIC de l'année et risques du registre liés.
+// Accessible depuis la page Rapports (livrable de gouvernance, pas une sortie du module de tests).
 // Lecture ouverte aux rôles du contexte ; rate limit d'export ; journal EXPORT.
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -25,14 +26,28 @@ export async function GET(req: NextRequest) {
   const annee = Number(req.nextUrl.searchParams.get('annee')) || now.getUTCFullYear()
   const debut = new Date(Date.UTC(annee, 0, 1)), fin = new Date(Date.UTC(annee + 1, 0, 1))
 
-  const [rows, org, incidentRows] = await Promise.all([
+  const [rows, org, incidentRows, arrangements, constatsReg, actionsTests] = await Promise.all([
     prisma.testResilience.findMany({ where: { organizationId: ctx.orgId }, select: TEST_SELECT }),
     prisma.organization.findUnique({ where: { id: ctx.orgId }, select: { nom: true, slug: true } }),
     prisma.incident.findMany({
       where: { organizationId: ctx.orgId, OR: [{ dateDetection: { gte: debut, lt: fin } }, { dateSurvenance: { gte: debut, lt: fin } }] },
       select: { intitule: true, dateDetection: true, dateSurvenance: true, doraCriteres: true },
     }),
+    // Livrable GRC global : registre TIC (art. 28), constats du régulateur, plans d'action issus des tests.
+    prisma.arrangementTic.findMany({ where: { organizationId: ctx.orgId }, select: { criticite: true, dateFin: true, questionnaire: true } }),
+    prisma.auditConstat.findMany({ where: { organizationId: ctx.orgId, source: 'REGULATEUR' }, select: { statut: true, echeance: true } }),
+    prisma.planAction.findMany({ where: { organizationId: ctx.orgId, liens: { some: { type: 'TEST_RESILIENCE' } } }, select: { statut: true, echeance: true } }),
   ])
+  const termine = (st: string) => st === 'RESOLU' || st === 'VERIFIE' || st === 'ACCEPTE' || st === 'FAIT'
+  const dansUnAn = new Date(now.getTime() + 365 * 86_400_000)
+  const tiers = {
+    total: arrangements.length,
+    critiques: arrangements.filter(a => a.criticite === 'CRITIQUE' || a.criticite === 'IMPORTANTE').length,
+    finProche: arrangements.filter(a => a.dateFin && a.dateFin >= now && a.dateFin <= dansUnAn).length,
+    sansQuestionnaire: arrangements.filter(a => !Array.isArray(a.questionnaire) || a.questionnaire.length === 0).length,
+  }
+  const regulateur = { ouverts: constatsReg.filter(c => !termine(c.statut)).length, echus: constatsReg.filter(c => !termine(c.statut) && c.echeance && c.echeance < now).length }
+  const actions = { total: actionsTests.length, ouvertes: actionsTests.filter(a => !termine(a.statut)).length, enRetard: actionsTests.filter(a => !termine(a.statut) && a.echeance && a.echeance < now).length }
   const tests = rows.map(toLite)
   const riskIds = [...new Set(tests.filter(t => t.annee === annee).flatMap(t => t.riskItemIds))]
   const risks = riskIds.length ? await prisma.riskItem.findMany({
@@ -49,6 +64,7 @@ export async function GET(req: NextRequest) {
   const md = buildRapportReexamen({
     organisation: org?.nom ?? '', annee, now, tests, incidents,
     risques: risks.map(r => ({ intitule: r.intitule, niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle) })),
+    tiers, regulateur, actions,
     labels,
   })
   const buffer = await markdownToDocxBuffer(t.rapport.titre, md)

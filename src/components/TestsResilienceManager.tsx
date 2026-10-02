@@ -120,7 +120,6 @@ export default function TestsResilienceManager() {
           </select>
         </label>
         <div className="flex gap-2">
-          <a href={`/api/tests-resilience/rapport?annee=${data.annee}`} className="btn-secondary text-sm">{r.exportRapport}</a>
           {data.canWrite && <button type="button" onClick={() => { setMsg(null); setForm({ ...EMPTY }) }} className="btn-primary text-sm">{r.add}</button>}
         </div>
       </div>

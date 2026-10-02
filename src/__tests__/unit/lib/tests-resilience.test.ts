@@ -89,3 +89,24 @@ describe('buildRapportReexamen', () => {
     expect(blocks.some(b => b.type === 'table' && b.rows.length === 3)).toBe(true)
   })
 })
+
+describe('buildRapportReexamen — livrable GRC DORA global (au-delà des tests)', () => {
+  const L = {
+    titre: 'Rapport de réexamen', organisation: 'Organisation', annee: 'Année', programme: 'Programme', realisation: '{realises}/{planifies} ({taux} %)', parType: 'Par type', colType: 'Type', colPlanifies: 'Prévus', colRealises: 'Réalisés',
+    fonctionsCritiques: '{n} fonctions', constats: 'Constats', constatsDetail: '{ouverts} ouvert(s), {corriges} corrigé(s)', constatsOuverts: 'Ouverts', incidents: 'Incidents', aucunIncident: 'Aucun.', risques: 'Risques', aucunRisque: 'Aucun.',
+    tlpt: 'TLPT', tlptDetail: '{dernier} / {echeance}', tlptNone: 'aucun', conclusions: 'Conclusions', conclusionsHint: 'À compléter.', types: {} as Record<string, string>, severite: 'sévérité {n}',
+    tiers: 'Prestataires de services TIC', tiersDetail: '{total} arrangement(s), dont {critiques} critique(s) ou important(s), {finProche} arrivant à échéance sous 12 mois, {sansQuestionnaire} sans questionnaire',
+    regulateur: 'Constats du régulateur', regulateurDetail: '{ouverts} ouvert(s), dont {echus} échu(s)',
+    actions: 'Plans d’action issus des tests', actionsDetail: '{total} action(s), {ouvertes} ouverte(s), {enRetard} en retard',
+  }
+  it('ajoute registre TIC, constats du régulateur et plans d’action lorsqu’ils sont fournis ; les omet sinon', () => {
+    const base = { organisation: 'Acme', annee: 2026, now: new Date('2026-09-29T00:00:00Z'), tests: [], incidents: [], risques: [], labels: L }
+    const withExtra = buildRapportReexamen({ ...base, tiers: { total: 12, critiques: 3, finProche: 2, sansQuestionnaire: 4 }, regulateur: { ouverts: 5, echus: 1 }, actions: { total: 6, ouvertes: 4, enRetard: 1 } })
+    expect(withExtra).toContain('## Prestataires de services TIC')
+    expect(withExtra).toContain('12 arrangement(s), dont 3 critique(s) ou important(s), 2 arrivant à échéance sous 12 mois, 4 sans questionnaire')
+    expect(withExtra).toContain('5 ouvert(s), dont 1 échu(s)')
+    expect(withExtra).toContain('6 action(s), 4 ouverte(s), 1 en retard')
+    const without = buildRapportReexamen(base)
+    expect(without).not.toContain('Prestataires de services TIC'); expect(without).not.toContain('Constats du régulateur')
+  })
+})

@@ -142,6 +142,8 @@ export interface RapportLabels {
   incidents: string; aucunIncident: string; risques: string; aucunRisque: string
   tlpt: string; tlptDetail: string; tlptNone: string; conclusions: string; conclusionsHint: string
   types: Record<string, string>; severite: string
+  /** Sections du livrable GRC global (facultatives : omises si la donnée n'est pas fournie). */
+  tiers?: string; tiersDetail?: string; regulateur?: string; regulateurDetail?: string; actions?: string; actionsDetail?: string
 }
 
 /** Rapport de réexamen en Markdown (converti en .docx par lib/markdown-docx). */
@@ -150,6 +152,10 @@ export function buildRapportReexamen(args: {
   tests: TestResilienceLite[]
   incidents: { intitule: string; date: string }[]
   risques: { intitule: string; niveauResiduel: number | null }[]
+  /** Registre des arrangements TIC (DORA art. 28) ; constats du régulateur ; plans d'action issus des tests. */
+  tiers?: { total: number; critiques: number; finProche: number; sansQuestionnaire: number }
+  regulateur?: { ouverts: number; echus: number }
+  actions?: { total: number; ouvertes: number; enRetard: number }
   labels: RapportLabels
 }): string {
   const L = args.labels
@@ -177,6 +183,10 @@ export function buildRapportReexamen(args: {
     lines.push(`**${L.constatsOuverts}**`)
     for (const c of ouverts.sort((a, b) => b.severite - a.severite)) lines.push(`- ${c.description} (${L.severite.replace('{n}', String(c.severite))})`)
   }
+  const fill = (tpl: string, v: Record<string, number>) => Object.entries(v).reduce((acc, [k, n]) => acc.replace(`{${k}}`, String(n)), tpl)
+  if (args.actions && L.actions && L.actionsDetail) lines.push(`## ${L.actions}`, fill(L.actionsDetail, args.actions))
+  if (args.tiers && L.tiers && L.tiersDetail) lines.push(`## ${L.tiers}`, fill(L.tiersDetail, args.tiers))
+  if (args.regulateur && L.regulateur && L.regulateurDetail) lines.push(`## ${L.regulateur}`, fill(L.regulateurDetail, args.regulateur))
   lines.push(`## ${L.incidents}`)
   if (args.incidents.length) for (const i of args.incidents) lines.push(`- ${i.intitule} (${i.date})`)
   else lines.push(L.aucunIncident)

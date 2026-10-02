@@ -33,7 +33,7 @@ export async function GET(): Promise<NextResponse> {
     where: { organizationId: c.orgId }, orderBy: { createdAt: 'desc' }, take: 200,
     select: { id: true, code: true, statut: true, periodeDebut: true, periodeFin: true, langue: true, createdAt: true, createdById: true, valideLe: true, diffuseLe: true },
   })
-  return NextResponse.json({ editions, disponibles: rapportsDisponibles(cfg), canWrite: peutEcrireRapports(c.role) })
+  return NextResponse.json({ editions, disponibles: rapportsDisponibles(cfg), canWrite: peutEcrireRapports(c.role), livrableDora: !!cfg.reglementaireActive })
 }
 
 // POST /api/rapports — génère une édition (BROUILLON) : contenu calculé et figé pour la période.
