@@ -81,6 +81,7 @@ export const fr = {
     processus:      'Processus',
     registre:       'Registre des risques',
     cartographie:   'Cartographie',
+    vueListe: 'Liste',
     pilotage:       'Pilotage GRC',
     incidents:      'Incidents',
     controles:      'Contrôle permanent',

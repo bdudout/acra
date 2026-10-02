@@ -9,7 +9,7 @@
  * historique — seule la DISPOSITION change selon le mode.
  */
 import { describe, it, expect } from 'vitest'
-import { buildNav, activeNavHref, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, navPathFor, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { fr } from '@/lib/i18n/fr'
 import { en } from '@/lib/i18n/en'
 import { de } from '@/lib/i18n/de'
@@ -86,10 +86,15 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions'])
   })
 
-  it('la cartographie des risques est regroupée avec le registre des risques (menu Registres), juste après lui', () => {
+  it('la cartographie n’a plus d’entrée propre : c’est une vue du registre des risques (onglets Liste / Cartographie)', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
+    expect(allKeys(m)).not.toContain('cartographie')
     const reg = m.entries.find(e => e.kind === 'group' && e.id === 'registre')
-    expect(reg && reg.kind === 'group' && reg.items.slice(0, 2)).toEqual(['registre', 'cartographie'])
+    expect(reg && reg.kind === 'group' && reg.items[0]).toBe('registre')
+    // Sur /cartographie, l'entrée « Registre des risques » reste allumée.
+    expect(navPathFor('/cartographie')).toBe('/registre')
+    expect(navPathFor('/cartographie/processus')).toBe('/cartographie/processus')
+    expect(navPathFor('/registre')).toBe('/registre')
   })
 
   it('un lien n’est actif que s’il est la correspondance la plus précise : /reglementaire/suivi-regulateur n’active pas /reglementaire', () => {
@@ -115,7 +120,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
   it('RISK_MANAGER (gouvernance) : découpage en ~6 entrées, tous les modules accessibles', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     const keys = allKeys(m)
-    for (const k of ['cartographie', 'registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
+    for (const k of ['registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
       expect(keys).toContain(k)
     }
     // Nouveau découpage « pilotage en tête » : 3 menus thématiques.
@@ -129,7 +134,6 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     const keys = allKeys(m)
     expect(keys).toContain('controles')
     expect(keys).toContain('audit')
-    expect(keys).toContain('cartographie')
     // Pilotage = cockpit de LECTURE consolidée : désormais exposé (l'API /grc/rollup
     // le sert déjà) — cohérent avec la lecture globale du dispositif (#126).
     expect(keys).toContain('pilotage')
@@ -202,7 +206,7 @@ describe('buildNav — regroupement KRI et registres', () => {
   it('regroupe les registres de risques et TIC, même si seul le module réglementaire est activé', () => {
     const both = buildNav('RSSI', ALL_ON)
     expect(both.entries.find(e => e.kind === 'group' && e.id === 'registre')).toEqual({
-      kind: 'group', id: 'registre', items: ['registre', 'cartographie', 'campagnes', 'processus', 'registreTic'],
+      kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'registreTic'],
     })
     const confReg = both.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
     expect(confReg && confReg.kind === 'group' && confReg.items).not.toContain('registreTic')

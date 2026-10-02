@@ -7,6 +7,7 @@
 // filtrables (lib/risk-filters) et confrontées à l'appétit au risque
 // (lib/appetit). Couleurs de la matrice configurée (lib/risk-scale).
 
+import RisquesViewTabs from '@/components/RisquesViewTabs'
 import { Map as MapIcon, Target } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
@@ -159,6 +160,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
 
   return (
     <div>
+      <RisquesViewTabs current="carte" />
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><MapIcon size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">

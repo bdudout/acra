@@ -140,8 +140,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
     const registres: NavKey[] = []
     if (modules.registre) {
-      // La cartographie des risques est une vue du registre : elle lui est rattachée (hors 1ʳᵉ ligne).
-      registres.push('registre', 'cartographie', 'campagnes')
+      // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
+      registres.push('registre', 'campagnes')
       if (canGererProcessus) registres.push('processus')
     }
     if (modules.reglementaire) registres.push('registreTic')
@@ -184,4 +184,9 @@ export function activeNavHref(pathname: string, hrefs: readonly string[]): strin
     if ((pathname === href || pathname.startsWith(href + '/')) && (best === null || href.length > best.length)) best = href
   }
   return best
+}
+
+/** Chemin servant à allumer l'entrée de menu : la cartographie est une vue du registre des risques. */
+export function navPathFor(pathname: string): string {
+  return pathname === '/cartographie' ? '/registre' : pathname
 }

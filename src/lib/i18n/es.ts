@@ -80,6 +80,7 @@ export const es: Translations = {
     processus:      'Procesos',
     registre:       'Registro de riesgos',
     cartographie:   'Cartografía',
+    vueListe: 'Lista',
     pilotage:       'Pilotaje GRC',
     incidents:      'Incidentes',
     controles:      'Control permanente',

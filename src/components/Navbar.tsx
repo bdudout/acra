@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
-import { buildNav, activeNavHref, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, navPathFor, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { peekNavModules, loadNavModules, setCachedNavModules } from '@/lib/nav-modules-cache'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
@@ -189,7 +189,7 @@ export default function Navbar() {
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
   }
 
-  const currentHref = activeNavHref(pathname, shownKeys.map(k => NAV_META[k].href))
+  const currentHref = activeNavHref(navPathFor(pathname), shownKeys.map(k => NAV_META[k].href))
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
   const NAV_GROUP_META: Record<NavGroupId, { Icon: LucideIcon; label: string }> = {
