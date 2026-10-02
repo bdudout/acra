@@ -1791,6 +1791,10 @@ export const de: Translations = {
   notifRegimes: {
     NIS2: { label: 'NIS-2 — Richtlinie (EU) 2022/2555, Art. 23', phases: { ALERTE_PRECOCE: 'Frühwarnung', NOTIFICATION: 'Meldung des Sicherheitsvorfalls', RAPPORT_FINAL: 'Abschlussbericht' } },
     RGPD_33: { label: 'DSGVO — Verordnung (EU) 2016/679, Art. 33: Meldung von Verletzungen des Schutzes personenbezogener Daten an die Aufsichtsbehörde', phases: { NOTIFICATION: 'Meldung an die Aufsichtsbehörde' } },
+    CRA_14: { label: "CRA — Verordnung (EU) 2024/2847, Art. 14: Meldung aktiv ausgenutzter Schwachstellen und schwerwiegender Sicherheitsvorfälle", phases: {"ALERTE_PRECOCE": "Frühwarnung (24 Std.)", "NOTIFICATION": "Meldung (72 Std.)", "RAPPORT_FINAL": "Abschlussbericht"} },
+    SEC_8K: { label: "USA — SEC, Form 8-K, Item 1.05: wesentlicher Cybersicherheitsvorfall (4 Geschäftstage nach der Wesentlichkeitsfeststellung)", phases: {"FORM_8K": "Einreichung des Form 8-K"} },
+    NYDFS_500_17: { label: "USA — NYDFS, 23 NYCRR 500.17: Meldung an den Superintendent (72 Std.)", phases: {"NOTIFICATION": "Meldung an das NYDFS"} },
+    HIPAA_BREACH: { label: "USA — HIPAA, 45 CFR 164.404 und 164.408: Meldung einer Verletzung von Gesundheitsdaten (60 Tage)", phases: {"NOTIFICATION": "Benachrichtigung der Betroffenen und des HHS"} },
     INTERNE: { label: 'Intern (anpassbares Beispiel)', phases: { INFORMER_DIRECTION: 'Leitung informieren', COMPTE_RENDU_COMITE: 'Bericht an den Ausschuss' } },
   },
   rapports: {

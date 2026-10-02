@@ -9,8 +9,8 @@ const T0 = new Date('2026-09-29T08:00:00Z')
 const h = (n: number) => new Date(T0.getTime() + n * 3600_000)
 
 describe('catalogue et résolution', () => {
-  it('livre NIS2, RGPD art. 33 et un régime interne, tous inactifs par défaut (rétrocompatible)', () => {
-    expect(CATALOGUE_REGIMES.map(r => r.code)).toEqual(['NIS2', 'RGPD_33', 'INTERNE'])
+  it('livre NIS2, RGPD art. 33, CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA et un régime interne, tous inactifs par défaut (rétrocompatible)', () => {
+    expect(CATALOGUE_REGIMES.map(r => r.code)).toEqual(['NIS2', 'RGPD_33', 'CRA_14', 'SEC_8K', 'NYDFS_500_17', 'HIPAA_BREACH', 'INTERNE'])
     expect(resolveRegimes(undefined).every(r => !r.actif)).toBe(true)
   })
   it('NIS2 : alerte précoce 24 h, notification 72 h, rapport final un mois après la notification', () => {
@@ -73,7 +73,7 @@ describe('applicabilité', () => {
   })
   it('un régime inactif n’est jamais applicable ; le déclenchement manuel se fait par la liste `regimes`', () => {
     expect(regimeApplicable({ ...r('NIS2'), actif: false }, { significatif: true })).toBe(false)
-    const man = resolveRegimes([{ code: 'M1', actif: true, label: 'M', declencheur: 'MANUEL', phases: [{ code: 'P', label: 'p', delaiH: 1 }] }])[3]
+    const man = resolveRegimes([{ code: 'M1', actif: true, label: 'M', declencheur: 'MANUEL', phases: [{ code: 'P', label: 'p', delaiH: 1 }] }]).find(x => x.code === 'M1')!
     expect(regimeApplicable(man, {})).toBe(false)
     expect(regimeApplicable(man, { regimes: ['M1'] })).toBe(true)
   })
@@ -128,5 +128,29 @@ describe('notifications soumises', () => {
     expect(n).toHaveLength(1)
     expect(n[0].reference).toBe('B')
     expect(retirerSoumission(n, 'NIS2', 'NOTIFICATION')).toEqual([])
+  })
+})
+
+describe('régimes ajoutés : CRA, SEC 8-K, NYDFS, HIPAA', () => {
+  const regime = (code: string) => CATALOGUE_REGIMES.find(r => r.code === code)!
+  it('CRA (Règlement (UE) 2024/2847, art. 14) : alerte précoce 24 h, notification 72 h, rapport final un mois après la notification ; ajout manuel', () => {
+    expect(regime('CRA_14').phases.map(p => [p.code, p.delai, p.apres])).toEqual([
+      ['ALERTE_PRECOCE', { h: 24 }, 'CONNAISSANCE'], ['NOTIFICATION', { h: 72 }, 'CONNAISSANCE'], ['RAPPORT_FINAL', { mois: 1 }, 'NOTIFICATION'],
+    ])
+    expect(regime('CRA_14').declencheur).toBe('MANUEL')
+  })
+  it('SEC 8-K item 1.05 : 4 jours ouvrés ; NYDFS 500.17 : 72 h ; HIPAA : 60 jours', () => {
+    expect(regime('SEC_8K').phases[0].delai).toEqual({ jOuvres: 4 })
+    expect(regime('NYDFS_500_17').phases[0].delai).toEqual({ h: 72 })
+    expect(regime('HIPAA_BREACH').phases[0].delai).toEqual({ jours: 60 })
+  })
+  it('les délais en jours et en jours ouvrés (samedi/dimanche exclus) sont calculés', () => {
+    const regimes = resolveRegimes([{ code: 'SEC_8K', actif: true }, { code: 'HIPAA_BREACH', actif: true }])
+    const vendredi = new Date('2026-10-02T12:00:00Z') // vendredi
+    const h = calculerHorloges({ connaissance: vendredi, attributs: { regimes: ['SEC_8K', 'HIPAA_BREACH'] }, notifications: [] }, regimes, vendredi)
+    const sec = h.find(x => x.regime === 'SEC_8K')!.phases[0].echeance!
+    expect(sec.toISOString()).toBe('2026-10-08T12:00:00.000Z') // ven → lun(1) mar(2) mer(3) jeu(4)
+    const hipaa = h.find(x => x.regime === 'HIPAA_BREACH')!.phases[0].echeance!
+    expect(hipaa.toISOString()).toBe('2026-12-01T12:00:00.000Z') // +60 jours
   })
 })

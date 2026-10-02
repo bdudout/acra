@@ -1792,6 +1792,10 @@ export const es: Translations = {
   notifRegimes: {
     NIS2: { label: 'NIS2 — Directiva (UE) 2022/2555, art. 23', phases: { ALERTE_PRECOCE: 'Alerta temprana', NOTIFICATION: 'Notificación del incidente', RAPPORT_FINAL: 'Informe final' } },
     RGPD_33: { label: 'RGPD — Reglamento (UE) 2016/679, art. 33: Notificación de una violación de la seguridad de los datos personales a la autoridad de control', phases: { NOTIFICATION: 'Notificación a la autoridad de control' } },
+    CRA_14: { label: "CRA — Reglamento (UE) 2024/2847, art. 14: notificación de vulnerabilidades explotadas activamente e incidentes graves", phases: {"ALERTE_PRECOCE": "Alerta temprana (24 h)", "NOTIFICATION": "Notificación (72 h)", "RAPPORT_FINAL": "Informe final"} },
+    SEC_8K: { label: "Estados Unidos — SEC, Form 8-K, punto 1.05: incidente de ciberseguridad material (4 días hábiles tras determinar su materialidad)", phases: {"FORM_8K": "Presentación del Form 8-K"} },
+    NYDFS_500_17: { label: "Estados Unidos — NYDFS, 23 NYCRR 500.17: notificación al Superintendente (72 h)", phases: {"NOTIFICATION": "Notificación al NYDFS"} },
+    HIPAA_BREACH: { label: "Estados Unidos — HIPAA, 45 CFR 164.404 y 164.408: notificación de una violación de datos de salud (60 días)", phases: {"NOTIFICATION": "Notificación a las personas y al HHS"} },
     INTERNE: { label: 'Interno (ejemplo modificable)', phases: { INFORMER_DIRECTION: 'Informar a la dirección', COMPTE_RENDU_COMITE: 'Informe al comité' } },
   },
   rapports: {

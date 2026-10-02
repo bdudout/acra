@@ -1816,6 +1816,10 @@ export const fr = {
   notifRegimes: {
     NIS2: { label: 'NIS2 — Directive (UE) 2022/2555, art. 23', phases: { ALERTE_PRECOCE: 'Alerte précoce', NOTIFICATION: 'Notification d’incident', RAPPORT_FINAL: 'Rapport final' } },
     RGPD_33: { label: 'RGPD — Règlement (UE) 2016/679, art. 33 : Notification à l’autorité de contrôle d’une violation de données à caractère personnel', phases: { NOTIFICATION: 'Notification à l’autorité de contrôle' } },
+    CRA_14: { label: "CRA — Règlement (UE) 2024/2847, art. 14 : notification des vulnérabilités activement exploitées et des incidents graves", phases: {"ALERTE_PRECOCE": "Alerte précoce (24 h)", "NOTIFICATION": "Notification (72 h)", "RAPPORT_FINAL": "Rapport final"} },
+    SEC_8K: { label: "États-Unis — SEC, Form 8-K, item 1.05 : incident de cybersécurité significatif (4 jours ouvrés après la détermination du caractère significatif)", phases: {"FORM_8K": "Dépôt du Form 8-K"} },
+    NYDFS_500_17: { label: "États-Unis — NYDFS, 23 NYCRR 500.17 : notification au Superintendent (72 h)", phases: {"NOTIFICATION": "Notification au NYDFS"} },
+    HIPAA_BREACH: { label: "États-Unis — HIPAA, 45 CFR 164.404 et 164.408 : notification d’une violation de données de santé (60 jours)", phases: {"NOTIFICATION": "Notification des personnes et du HHS"} },
     INTERNE: { label: 'Interne (exemple modifiable)', phases: { INFORMER_DIRECTION: 'Informer la direction', COMPTE_RENDU_COMITE: 'Compte rendu au comité' } },
   },
   rapports: {
