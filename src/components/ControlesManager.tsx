@@ -12,7 +12,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { useSearchParams } from 'next/navigation'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
-import { CATALOGUES_CONTROLES } from '@/lib/controles-catalogue'
+import ControleCataloguePanel from '@/components/ControleCataloguePanel'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 import Link from 'next/link'
 import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
@@ -238,19 +238,6 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     await fetch(`/api/controles/${id}`, { method: 'DELETE' }); reload()
   }
 
-  // Import d'un socle de contrôles-types (ISO 27001 / DORA). Idempotent côté serveur.
-  async function importerSocle(catalogue: string) {
-    setBusy(true); setError(null); setFlash(null)
-    const res = await fetch('/api/controles/import', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ catalogue }),
-    })
-    const data = await res.json().catch(() => ({}))
-    setBusy(false)
-    if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
-    setFlash(c.importResultat.replace('{n}', String(data.created ?? 0)).replace('{s}', String(data.skipped ?? 0)))
-    reload()
-  }
-
   const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
   const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
@@ -272,16 +259,12 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
         {!showForm && <Link href="/controles/plan" className="btn-secondary text-sm">{c.ctl_planBtn}</Link>}
         {canDefine && !showForm && (
           <div className="flex items-center gap-1.5">
-            <select value="" disabled={busy} onChange={e => { if (e.target.value) importerSocle(e.target.value); e.target.value = '' }}
-              className={inp} aria-label={c.importLabel} title={c.importHint}>
-              <option value="">{c.importLabel}</option>
-              {CATALOGUES_CONTROLES.map(cat => <option key={cat.id} value={cat.id}>{cat.nom}</option>)}
-            </select>
             <button onClick={() => { setForm(emptyForm()); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>
           </div>
         )}
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{c.subtitle}</p>
+      {canDefine && !showForm && <div className="mb-5"><ControleCataloguePanel onImported={reload} /></div>}
 
       {flash && <p className="text-xs text-ebios-600 mb-3">{flash}</p>}
 

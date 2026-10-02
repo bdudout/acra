@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, countOrgMembers } from '@/lib/org-context.server'
+import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { ATELIERS_META, getNiveauRisqueLabel } from '@/lib/ebios-data'
@@ -16,7 +16,7 @@ export const revalidate = 0
 import RiskMatrixTabs from '@/components/RiskMatrixTabs'
 import EcosystemRadar from '@/components/EcosystemRadar'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { analyseGelee } from '@/lib/gel-analyse'
 import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
@@ -38,7 +38,7 @@ import RevisionPanel from '@/components/RevisionPanel'
 import { formatDate } from '@/lib/format'
 import {
   canViewAnalyse, canEditAnalyse, canSubmitAnalyse,
-  canApproveAnalyse, canAutoValidateAnalyse, canManageAccess, canAcceptResidualRisks, STATUT_APPROBATION_LABELS,
+  canApproveAnalyse, canAutoValidateAnalyse, canManageAccess, canAcceptResidualRisks, STATUT_APPROBATION_LABELS, resolveAnalyseRole,
   type UserRole,
 } from '@/lib/permissions'
 import ResidualRisksPanel from '@/components/ResidualRisksPanel'
@@ -80,12 +80,18 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   if (!canViewAnalyse(sessionUser, ownership)) notFound()
 
   const editable = canEditAnalyse(sessionUser, ownership)
-  const canSubmit = canSubmitAnalyse(sessionUser, ownership)
-  const canApprove = canApproveAnalyse(sessionUser, ownership)
+  // Workflow d'approbation : mêmes règles que la route (rôle EFFECTIF dans l'organisation de
+  // l'analyse, cumul des rôles en petite structure).
+  const orgAnalyse = (analyse as any).organizationId as string | null
+  const roleWorkflow = resolveAnalyseRole(userRole, orgAnalyse, orgAnalyse ? await getEffectiveRoleForOrg(userId, userRole, orgAnalyse) : null)
+  const userWorkflow = { id: userId, role: roleWorkflow }
+  const structure = await optionsStructure(orgAnalyse)
+  const canSubmit = canSubmitAnalyse(userWorkflow, ownership, structure)
+  const canApprove = canApproveAnalyse(userWorkflow, ownership, structure)
   const canManage = canManageAccess(sessionUser, ownership)
-  // Organisation mono-utilisateur (cabinet libéral) → auto-validation directe.
-  const orgMemberCount = await countOrgMembers((analyse as any).organizationId)
-  const canAutoValidate = canAutoValidateAnalyse(sessionUser, ownership, orgMemberCount)
+  // Organisation mono-utilisateur (cabinet libéral) ou petite structure → auto-validation directe.
+  const orgMemberCount = await countOrgMembers(orgAnalyse)
+  const canAutoValidate = canAutoValidateAnalyse(userWorkflow, ownership, orgMemberCount, structure)
 
   // Échelle/seuils configurés (admin) pour piloter la matrice des risques
   const scaleConfig = await getEffectiveScaleConfig((analyse as any).organizationId)

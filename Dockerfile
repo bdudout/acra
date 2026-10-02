@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-COPY package.json package-lock.json* .npmrc* ./
+COPY package.json package-lock.json* .npmrc* prisma.config.ts ./
 COPY prisma ./prisma/
 
 RUN --mount=type=cache,target=/root/.npm \
@@ -29,6 +29,16 @@ ENV NODE_OPTIONS=--max-old-space-size=2048
 RUN npx prisma generate
 RUN npm run build
 
+# CLI Prisma autonome pour le service migrator (Prisma 7 : la CLI a de nombreuses
+# dépendances, absentes de la sortie standalone de Next). Même version que le lockfile.
+FROM base AS prisma-cli
+WORKDIR /prisma-cli
+COPY package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    PRISMA_VERSION="$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version")" \
+    && echo '{"private":true}' > package.json \
+    && npm install --no-audit --no-fund "prisma@${PRISMA_VERSION}"
+
 # Production image
 FROM base AS runner
 RUN apk add --no-cache openssl
@@ -48,9 +58,12 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+# CLI Prisma et ses dépendances à part ; le lien garde le chemin historique
+# node_modules/prisma/build/index.js (service migrator, scripts/migrate-recover.sh).
+COPY --from=prisma-cli /prisma-cli/node_modules ./prisma-cli/node_modules
+RUN ln -s ../prisma-cli/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/create-admin.mjs ./scripts/create-admin.mjs

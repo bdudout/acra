@@ -9,9 +9,10 @@ import { resolveDemoSeedPasswords } from '../src/lib/demo-seed-policy'
  * et ses données. Ne pas utiliser sur une organisation client.
  */
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
 const ORG = { slug: 'demo-clusir-novera', nom: 'Novera Services — Démo CLUSIR' }
 const ANALYSE = "Accès d'administration externalisés — données de facturation"
 const passwords = resolveDemoSeedPasswords(process.env)

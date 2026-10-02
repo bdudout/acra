@@ -20,7 +20,7 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
-import { PROGRAMMES_AUDIT, getProgrammeAudit } from '@/lib/audit-programmes-catalogue'
+import AuditModelePicker from '@/components/AuditModelePicker'
 
 interface Synthese { total: number; ouverts: number; resolus: number; enRetard: number; critiques: number; tauxResolution: number }
 type ChecklistStatut = 'OK' | 'KO' | 'NA'
@@ -302,11 +302,12 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
           <div>
             <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
               <div className="text-xs text-gray-500 dark:text-gray-400">{a.programme} <span className="text-gray-400">— {a.programmeHint}</span></div>
-              <select value="" onChange={e => { const p = getProgrammeAudit(e.target.value); if (p) setMForm(f => ({ ...f, programme: [...f.programme, ...p.points.filter(pt => !f.programme.includes(pt))] })); e.target.value = '' }}
-                className={inp} aria-label={a.programmeCharger} title={a.programmeChargerHint}>
-                <option value="">{a.programmeCharger}</option>
-                {PROGRAMMES_AUDIT.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
-              </select>
+              <AuditModelePicker onApply={choice => setMForm(f => ({
+                ...f,
+                intitule: f.intitule.trim() ? f.intitule : choice.title,
+                programme: [...f.programme, ...choice.points.filter(pt => !f.programme.includes(pt))],
+                processusIds: choice.processusId && !f.processusIds.includes(choice.processusId) ? [...f.processusIds, choice.processusId] : f.processusIds,
+              }))} />
             </div>
             <div className="space-y-1.5">
               {mForm.programme.map((pt, i) => (

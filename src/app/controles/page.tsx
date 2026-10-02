@@ -21,9 +21,11 @@ export default async function ControlesPage() {
   if (!orgConfig.controlePermanentActive) redirect('/dashboard')
 
   // Définir le plan de contrôle = 2ᵉ ligne ; l'exécuter = 1ʳᵉ ligne (tous sauf LECTEUR).
-  // Aligné sur le garde de l'API POST /api/controles (peutDefinir2eLigne).
-  const canDefine = peutDefinir2eLigne(userRole, { secondeLigneActive: orgConfig.secondeLigneActive })
-  const canExecute = userRole !== 'LECTEUR'
+  // Rôle EFFECTIF dans l'organisation active, comme les API (/api/controles, /api/controles/catalogue) :
+  // un ADMIN d'organisation au rôle global « analyste » voit les actions que l'API lui permet.
+  const role = (scope.role ?? userRole) as UserRole
+  const canDefine = peutDefinir2eLigne(role, { secondeLigneActive: orgConfig.secondeLigneActive })
+  const canExecute = role !== 'LECTEUR'
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

@@ -12,10 +12,11 @@
  */
 
 import { PrismaClient, UserRole } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'node:crypto'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

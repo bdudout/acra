@@ -8,7 +8,7 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -105,6 +105,7 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 ### 👥 Collaboration & gouvernance
 
 - **RBAC 12 rôles** couvrant les **3 lignes de défense** : SUPER_ADMIN · ADMIN · RSSI · RISK_MANAGER · DIRECTION_METIER · ANALYSTE · LECTEUR · **CONTROLEUR** (contrôle permanent) · **CONFORMITE** · **DPO** (protection des données) · **AUDITEUR** (3ᵉ ligne) · **METIER** (opérationnel)
+- **Mode « petite structure »** (option d'organisation) : une même personne cumule les rôles RSSI, gestionnaire des risques et analyste — créer, soumettre et approuver ses analyses, valider seule un projet 360, rendre l'avis RSSI sur une dérogation — chaque cumul étant journalisé ; la direction métier et les rôles de contrôle restent séparés
 - **Multi-organisation** : arbre d'organisations avec périmètres hiérarchiques (nœud / sous-arbre) ; un ADMIN administre **uniquement les comptes de son organisation**, un SUPER_ADMIN gère l'instance
 - Workflow d'approbation : soumission → révision → approbation (RSSI ou Risk Manager), avec **séparation des tâches** — un approbateur ne peut pas approuver **sa propre** analyse (principe des quatre-yeux) — et **auto-validation** pour les organisations mono-utilisateur (cabinet libéral, où le quatre-yeux est impossible)
 - **Acceptation des risques résiduels** par la **Direction métier** (rôle dédié, lecture seule sur les analyses), distincte de la validation de l'analyse (acceptation du livrable)
@@ -430,11 +431,10 @@ réseau) les endpoints `/api/cron/*`, authentifiés par le jeton **`CRON_SECRET`
 | Tâche | Endpoint | Cadence |
 |-------|----------|---------|
 | Snapshots de conformité (mode auto) | `conformite-snapshots` | quotidien 02:00 |
-| Rappel des contrôles à exécuter | `controles-echeances` | quotidien 06:00 |
 | Brouillons de rapports planifiés (1er–3 du mois) | `rapports-planifies` | quotidien 05:00 |
-| Rappels des recommandations d'audit (échéance, retard, à vérifier) | `audit-rappels` | quotidien 06:00 (06:30 côté GitHub Actions) |
-| Alerte d'échéance des dérogations | `derogations-expiry` | quotidien 07:00 |
-| Synthèse des dérogations | `derogations-digest` | mensuel, le 1er à 08:00 |
+| Alertes DORA — e-mail **urgent** dédié aux RSSI et gestionnaires des risques : notification initiale dès qu'elle est due, rapport intermédiaire 24 h avant, rapport final 7 jours avant, et tout retard (DORA art. 19) ; une alerte par phase et par statut | `alertes-dora` | toutes les heures |
+| Relances — **un seul e-mail de synthèse par personne**, toutes organisations confondues : questionnaires, préconisations et plans d'action (avant échéance, retard, puis mensuelle par défaut), recommandations d'audit, contrôles à exécuter, dérogations arrivant à expiration, contrats TIC (90 jours avant la fin), tests de résilience, KRI sans mesure, documents à revoir, campagnes de contrôle incomplètes, missions d'audit non démarrées, échéances d'analyse, invitations non acceptées, décisions en attente (préconisation ou recommandation à vérifier, analyse / projet 360 à approuver, dérogation en revue, risques résiduels à accepter). Les anciennes tâches `controles-echeances`, `audit-rappels` et `derogations-expiry` restent appelables : elles exécutent ce même passage, sans double envoi | `relances` | quotidien 06:00 |
+| Tableau de bord mensuel aux RSSI et gestionnaires des risques — un e-mail par personne, une section par organisation : indicateurs clés (risques élevés et hors appétit, plans d'action en retard, incidents et pertes du mois, contrôles, audit, préconisations, KRI, dérogations, décisions en attente) et points d'attention nommés. Inclut la synthèse des dérogations (`derogations-digest` reste un alias). Un seul envoi par mois | `tableau-bord-mensuel` | mensuel, le 1er à 08:00 |
 
 > Sans `CRON_SECRET`, les endpoints répondent `503` et le `scheduler` reste inactif
 > (aucune boucle de redémarrage). Les traitements sont **idempotents** : un double

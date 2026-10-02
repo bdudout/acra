@@ -76,6 +76,7 @@ export default function PersonnalisationManager() {
   const libelleChangement = (c: Changement): string => {
     if (c.type === 'MODULE') return `${(p.gabarits.modules as Record<string, string>)[c.cle] ?? c.cle} : ${c.apres ? p.gabarits.on : p.gabarits.off}`
     if (c.type === 'REGIME') return `${c.cle} : ${c.apres ? p.gabarits.on : p.gabarits.off}`
+    if (c.type === 'SECTEUR') return `${p.gabarits.secteur} : ${(t.sectorSuggestions.sectors as Record<string, string>)[c.cle] ?? c.cle}`
     return `${c.cle} → ${String(c.apres)}`
   }
 

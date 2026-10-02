@@ -82,3 +82,21 @@ describe('emailLayout', () => {
     expect(html).toContain('&lt;Réinitialiser&gt;')
   })
 })
+
+describe('emailLayout — sections (tableau de bord)', () => {
+  it('une section par bloc, sous-titre échappé, compteurs par lignes de 4, message si liste vide', () => {
+    const stats = Array.from({ length: 6 }, (_, i) => ({ label: `S${i}`, value: i }))
+    const html = emailLayout({ heading: 'H', sections: [
+      { heading: 'Org <A>', stats, items: [{ label: 'Risque <x>', detail: 'niveau 16', tone: 'danger' }], itemsTitle: 'Points' },
+      { heading: 'Org B', stats: [], items: [], empty: 'Rien à signaler' },
+    ] })
+    expect(html).toContain('Org &lt;A&gt;')
+    expect(html).toContain('Risque &lt;x&gt;')
+    expect(html.includes('<x>')).toBe(false)
+    expect(html.match(/<h2/g)).toHaveLength(2)
+    expect(html).toContain('Rien à signaler')
+    // 6 compteurs : deux lignes (4 + 2).
+    const bloc = html.slice(html.indexOf('S0'), html.indexOf('Risque'))
+    expect(bloc.match(/<tr>/g)?.length).toBe(2)
+  })
+})

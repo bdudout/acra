@@ -46,8 +46,8 @@ jobs:
             echo "Notes de version manquantes : docs/releases/$VERSION.md (cf. docs/releases/README.md)." >&2; exit 1
           fi
           gh run list --workflow security.yml --commit "$GITHUB_SHA" --branch main --event push --json conclusion --jq '.[0].conclusion' | grep -qx success
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -70,7 +70,7 @@ jobs:
       # Syft scanne l'image POUSSÉE (via son digest exact) → un SBOM CycloneDX JSON
       # complet (npm + OS Alpine). Archivé comme asset de release + hashé (intégrité).
       - name: Générer le SBOM CycloneDX de l'image
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           image: ghcr.io/bdudout/acra@${{ steps.build.outputs.digest }}
           format: cyclonedx-json

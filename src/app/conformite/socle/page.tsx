@@ -24,11 +24,12 @@ export default async function ConformiteSoclePage({ searchParams }: {
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
   const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  if (!(isAdminRole(instanceRole) || instanceRole === 'RSSI' || instanceRole === 'RISK_MANAGER')) redirect('/conformite')
-
   const scope = await getAnalyseScope(userId, instanceRole)
   const orgId = scope.activeOrgId
   if (!orgId) redirect('/dashboard')
+  // Rôle EFFECTIF dans l'organisation active (même règle que l'API de conformité).
+  const role = scope.role ?? instanceRole
+  if (!(isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER')) redirect('/conformite')
   const cfg = await getOrgConfig(orgId)
   const t = await getServerT()
   const locale = await getServerLocale()

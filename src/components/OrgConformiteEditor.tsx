@@ -14,6 +14,7 @@ import ConformiteHistory from '@/components/ConformiteHistory'
 import TraitementsRegistre from '@/components/TraitementsRegistre'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import { conformiteStats, type ConformiteEntry, type ConformiteStatut } from '@/lib/conformite'
+import { confronterDeclaration, type CouvertureExigenceLite } from '@/lib/conformite-constats'
 
 interface RefOpt { code: string; nom: string }
 
@@ -50,6 +51,11 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   // Contrôles du référentiel sélectionné — résolus côté serveur (builtin OU custom).
   const [controles, setControles] = useState<FrameworkControl[]>([])
   const stats = useMemo(() => conformiteStats(entries, controles.length), [entries, controles.length])
+  // Ce que constatent le contrôle permanent et l'audit sur chaque exigence (lecture seule).
+  const [couverture, setCouverture] = useState<CouvertureExigenceLite[]>([])
+  const constats = useMemo(() => confronterDeclaration(couverture, entries), [couverture, entries])
+  const nbAnomalies = [...constats.values()].filter(x => x.statut === 'ANOMALIE').length
+  const nbDivergences = [...constats.values()].filter(x => x.divergent).length
 
   // Changer de référentiel repart sur le suivi org-wide.
   useEffect(() => { setEntite('') }, [ref])
@@ -63,9 +69,11 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
       fetch(`/api/referentiels/exigences?code=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
       fetch(`/api/organizations/${orgId}/conformite/import?referentiel=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
       fetch(`/api/organizations/${orgId}/conformite/suivis?referentiel=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/referentiels/couverture?code=${encodeURIComponent(ref)}`).then(r => r.ok ? r.json() : null).catch(() => null),
     ])
-      .then(([conf, exi, imp, sv]) => {
+      .then(([conf, exi, imp, sv, cov]) => {
         if (annule) return
+        setCouverture(Array.isArray(cov?.parExigence) ? cov.parExigence : [])
         setEntries(Array.isArray(conf?.entries) ? conf.entries : [])
         setControles(Array.isArray(exi?.exigences) ? exi.exigences.map((e: { ref: string; nom: string; categorie?: string }) => ({ ref: e.ref, nom: e.nom, categorie: e.categorie })) : [])
         setAnalysesDispo(Array.isArray(imp?.analyses) ? imp.analyses : [])
@@ -221,9 +229,16 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">{error}</div>}
 
+      {!loading && nbAnomalies > 0 && (
+        <div role="status" className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+          {t.conformiteConstats.banner.replace('{n}', String(nbAnomalies))}
+          {nbDivergences > 0 && <> {t.conformiteConstats.bannerDivergences.replace('{n}', String(nbDivergences))}</>}
+        </div>
+      )}
+
       {loading
         ? <p className="text-gray-400 text-sm py-8 text-center">{t.loading}</p>
-        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false}
+        : <ConformiteGrid controles={controles} entries={entries} onChange={onChange} showVulnCatalog={false} constats={constats}
             traitementCtx={{ orgId, referentiel: ref, entite }} onTraitementsChanged={() => setTraitementsKey(k => k + 1)} />}
 
       {/* Registre des traitements réels (plans / dérogations / acceptations de risque) */}

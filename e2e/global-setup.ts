@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import { E2E } from './fixtures'
 
@@ -9,7 +10,7 @@ import { E2E } from './fixtures'
  * Idempotent : on nettoie d'abord (préfixe e2e_).
  */
 export default async function globalSetup() {
-  const prisma = new PrismaClient()
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
   try {
     await cleanup(prisma)
 

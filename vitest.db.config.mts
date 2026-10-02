@@ -11,6 +11,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    // Vitest 5 vide les mocks avant chaque test par défaut : on garde le comportement de Vitest 4
+    // (des appels enregistrés dans un beforeAll restent visibles dans les tests).
+    clearMocks: false,
     include: ['src/__tests__/db/**/*.db.test.ts'],
     fileParallelism: false,
     testTimeout: 30_000,

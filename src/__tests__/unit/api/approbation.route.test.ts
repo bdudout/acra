@@ -4,6 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // EFFECTIF d'org, pas le rôle d'instance. Un instance=RISK_MANAGER membre LECTEUR d'une
 // org ne doit PAS pouvoir approuver une analyse de cette org.
 
+// Petite structure non activée (option de structure lue par les règles de droits).
+vi.mock('@/lib/org-config.server', async (orig) => ({ ...(await orig<typeof import('@/lib/org-config.server')>()), optionsStructure: vi.fn(async () => ({ petiteStructure: false })) }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => {

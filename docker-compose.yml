@@ -100,12 +100,12 @@ services:
   # Planificateur des tâches périodiques (/api/cron/*) — snapshots de conformité
   # et alertes/synthèses de dérogations. Appelle l'app EN INTERNE (http://app:3000)
   # avec le CRON_SECRET ; aucune exposition réseau. Inactif si CRON_SECRET absent.
-  # Cadence (cf. scripts/scheduler.sh) : snapshots 02:00 · derogations-expiry
-  # 07:00 · derogations-digest le 1er à 08:00. Le fuseau suit TZ (défaut UTC).
+  # Cadence (cf. scripts/scheduler.sh) : snapshots 02:00 · relances (un e-mail
+  # de synthèse par personne) 06:00 · tableau-bord-mensuel le 1er à 08:00. Le fuseau suit TZ (défaut UTC).
   #
   # ⚠️ Variante CLOUD alternative : .github/workflows/scheduled-tasks.yml (appelle
   # l'instance déployée depuis GitHub Actions). N'activer QUE l'UNE des deux, sinon
-  # le digest mensuel partirait deux fois.
+  # les deux planificateurs appelleraient les mêmes tâches (sans double envoi, mais inutilement).
   # ---------------------------------------------------------------------------
   scheduler:
     image: curlimages/curl:8.11.1

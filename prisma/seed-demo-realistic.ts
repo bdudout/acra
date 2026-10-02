@@ -13,12 +13,13 @@
  * Sources : ENISA Threat Landscape 2025 (finance & santé).
  */
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import { buildPolitiqueDefaut } from '../src/lib/politique-defaut'
 import { cleanReferentielInput } from '../src/lib/referentiel'
 import { classifierIncident, type DoraCriteres } from '../src/lib/dora'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
 const PWD = 'Demo@Acra2026!'
 
 interface IncidentSeed {

@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { withRiskSummary } from '@/lib/analyses-summary.server'
 import Navbar from '@/components/Navbar'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isDemoInstance } from '@/lib/demo-server'
 import AnalysesClient from '@/components/AnalysesClient'
@@ -29,7 +29,7 @@ export default async function AnalysesPage() {
   const scope = await getAnalyseScope(userId, userRole)
   const demo = await isDemoInstance()
   const projets360 = scope.activeOrgId ? (await getOrgConfig(scope.activeOrgId)).projets360Active : false
-  const canCreate = canCreateAnalyse({ id: userId, role: scope.role ?? userRole })
+  const canCreate = canCreateAnalyse({ id: userId, role: scope.role ?? userRole }, await optionsStructure(scope.activeOrgId))
 
   const analyses = await prisma.analyse.findMany({
     where: analyseWhereClause(userId, scope.role, scope.scope),

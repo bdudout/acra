@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), role: vi.fn(), rl: vi.fn() }))
+// Petite structure non activée (option de structure lue par les règles de droits).
+vi.mock('@/lib/org-config.server', async (orig) => ({ ...(await orig<typeof import('@/lib/org-config.server')>()), optionsStructure: vi.fn(async () => ({ petiteStructure: false })) }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope, getEffectiveRoleForOrg: m.role }))
