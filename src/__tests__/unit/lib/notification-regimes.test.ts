@@ -10,7 +10,7 @@ const h = (n: number) => new Date(T0.getTime() + n * 3600_000)
 
 describe('catalogue et résolution', () => {
   it('livre NIS2, RGPD art. 33, CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA et un régime interne, tous inactifs par défaut (rétrocompatible)', () => {
-    expect(CATALOGUE_REGIMES.map(r => r.code)).toEqual(['NIS2', 'RGPD_33', 'CRA_14', 'SEC_8K', 'NYDFS_500_17', 'HIPAA_BREACH', 'INTERNE'])
+    expect(CATALOGUE_REGIMES.map(r => r.code)).toEqual(['NIS2', 'RGPD_33', 'CRA_14', 'SEC_8K', 'NYDFS_500_17', 'HIPAA_BREACH', 'US_BANKING_36H', 'FTC_SAFEGUARDS', 'INTERNE'])
     expect(resolveRegimes(undefined).every(r => !r.actif)).toBe(true)
   })
   it('NIS2 : alerte précoce 24 h, notification 72 h, rapport final un mois après la notification', () => {
@@ -152,5 +152,19 @@ describe('régimes ajoutés : CRA, SEC 8-K, NYDFS, HIPAA', () => {
     expect(sec.toISOString()).toBe('2026-10-08T12:00:00.000Z') // ven → lun(1) mar(2) mer(3) jeu(4)
     const hipaa = h.find(x => x.regime === 'HIPAA_BREACH')!.phases[0].echeance!
     expect(hipaa.toISOString()).toBe('2026-12-01T12:00:00.000Z') // +60 jours
+  })
+})
+
+describe('régimes bancaires et FTC des États-Unis', () => {
+  const regime = (code: string) => CATALOGUE_REGIMES.find(r => r.code === code)!
+  it('agences bancaires fédérales : 36 h après la détermination ; FTC Safeguards : 30 jours ; ajout manuel, inactifs par défaut', () => {
+    expect(regime('US_BANKING_36H').phases[0].delai).toEqual({ h: 36 }); expect(regime('FTC_SAFEGUARDS').phases[0].delai).toEqual({ jours: 30 })
+    expect(regime('US_BANKING_36H').declencheur).toBe('MANUEL'); expect(regime('FTC_SAFEGUARDS').actif).toBe(false)
+  })
+  it('échéance FTC calculée en jours calendaires', () => {
+    const regimes = resolveRegimes([{ code: 'FTC_SAFEGUARDS', actif: true }])
+    const t0 = new Date('2026-10-02T12:00:00Z')
+    const h = calculerHorloges({ connaissance: t0, attributs: { regimes: ['FTC_SAFEGUARDS'] }, notifications: [] }, regimes, t0)
+    expect(h[0].phases[0].echeance!.toISOString()).toBe('2026-11-01T12:00:00.000Z')
   })
 })

@@ -35,7 +35,7 @@ describe('GET /api/incidents/config', () => {
     expect(j.active).toBe(true)
     expect(j.canEdit).toBe(true)
     expect(j.config.deviseReference).toBe('EUR')
-    expect(j.config.regimes.map((r: { code: string }) => r.code)).toEqual(['NIS2', 'RGPD_33', 'CRA_14', 'SEC_8K', 'NYDFS_500_17', 'HIPAA_BREACH', 'INTERNE'])
+    expect(j.config.regimes.map((r: { code: string }) => r.code)).toEqual(['NIS2', 'RGPD_33', 'CRA_14', 'SEC_8K', 'NYDFS_500_17', 'HIPAA_BREACH', 'US_BANKING_36H', 'FTC_SAFEGUARDS', 'INTERNE'])
   })
   it('canEdit faux pour un rôle non administrateur', async () => {
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'ANALYSTE' })

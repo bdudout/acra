@@ -10,6 +10,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { fieldsOfStage, isMandatoryAt, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
+import RegimeInfoBlock from '@/components/RegimeInfoBlock'
 
 export interface DeclarationIncidentView {
   id: string; intitule: string
@@ -77,7 +78,6 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
     if (await call(`/api/incidents/${incident.id}/declaration`, 'PUT', { declaration: payload })) setMsg(d.saved)
   }
   const setField = (id: string, v: DeclarationValue | '') => setCompl(c => ({ ...c, [id]: v }))
-  const shown = (v: DeclarationValue | undefined) => (v === undefined ? '' : Array.isArray(v) ? v.join('; ') : String(v))
   async function addRegulatorCode(code: string) {
     const a = incident.attributs ?? {}
     return call(`/api/incidents/${incident.id}`, 'PATCH', { attributs: { ...a, regimes: [...new Set([...(a.regimes ?? []), code])] } })
@@ -109,6 +109,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
         {showDora && (
           <section aria-label={d.dora} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{d.dora}</h3>
+            <RegimeInfoBlock code="DORA" />
             {incident.dora!.classe !== 'MAJEUR' && <p className="text-[11px] italic text-gray-500">{d.notMajor}</p>}
             <ul className="mt-2 space-y-3">
               {incident.dora!.echeances.map(e => {
@@ -153,6 +154,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
         {incident.horloges.map(h => (
           <section key={h.regime} aria-label={h.label ?? tr(h.labelKey, h.regime)} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{h.label ?? tr(h.labelKey, h.regime)}</h3>
+            <RegimeInfoBlock code={h.regime} />
             <ul className="mt-2 space-y-3">
               {h.phases.map(p => {
                 const key = `${h.regime}/${p.code}`; const done = p.statut === 'SOUMIS'

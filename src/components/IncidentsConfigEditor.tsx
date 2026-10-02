@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { configToRaw, type IncidentsConfig, type IncidentsConfigRaw, type CatalogueItem } from '@/lib/incidents-config'
 import type { Regime } from '@/lib/notification-regimes'
+import RegimeInfoBlock from '@/components/RegimeInfoBlock'
 
 const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40)
@@ -66,10 +67,11 @@ export default function IncidentsConfigEditor({ config, onSave, busy }: { config
                     <input type="number" min="1" aria-label={`${nom} — ${n.delaiH}`} value={p.delai.h} onChange={e => setDelai(r.code, p.code, Number(e.target.value))} className={`${inp} block w-24 mt-0.5`} />
                   </label>
                 ) : (
-                  <span key={p.code} className="text-xs text-gray-500">{nom} — {p.delai.mois} {n.delaiMois.toLowerCase()}</span>
+                  <span key={p.code} className="text-xs text-gray-500">{nom} — {p.delai.mois !== undefined ? `${p.delai.mois} ${n.delaiMois.toLowerCase()}` : p.delai.jOuvres !== undefined ? `${p.delai.jOuvres} ${n.delaiJoursOuvres}` : `${p.delai.jours} ${n.delaiJours}`}</span>
                 )
               })}
             </div>
+            <RegimeInfoBlock code={r.code} />
           </div>
         ))}
         {!adding && <button type="button" onClick={() => setAdding(true)} className="text-xs text-ebios-700 hover:underline">{n.regimeAdd}</button>}

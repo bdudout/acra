@@ -99,7 +99,7 @@ describe('DeclarationModal', () => {
   })
   it('lecture seule : aucune case, aucun export, aucun ajout', () => {
     render(<DeclarationModal {...props({ canQualify: false })} />)
-    expect(screen.queryAllByRole('checkbox')).toHaveLength(0); expect(screen.queryAllByRole('link')).toHaveLength(0); expect(screen.queryByLabelText('Ajouter un régulateur ou une autorité')).not.toBeInTheDocument()
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0); expect(screen.queryAllByRole('link', { name: /Exporter/ })).toHaveLength(0); expect(screen.queryByLabelText('Ajouter un régulateur ou une autorité')).not.toBeInTheDocument()
   })
   it('incident type : suggère les obligations activées dans la configuration (CRA pour une vulnérabilité exploitée), rappelle l’évaluation DORA, ajout en un clic', async () => {
     render(<DeclarationModal {...props({ incident: { ...incident, catalogueKey: 'cyber.vulnerability-exploited' } })} />)
