@@ -40,4 +40,14 @@ describe('IncidentTypePicker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retirer l’incident type' })); expect(onClear).toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Changer d’incident type' })).toBeInTheDocument()
   })
+
+  it('secteurs de l’organisation : seuls le socle et ces secteurs sont proposés ; « Tous les secteurs » élargit ; l’incident sectoriel porte son secteur', () => {
+    render(<IncidentTypePicker sectors={['SANTE']} onPick={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Choisir un incident type' }))
+    const texts = () => within(screen.getByRole('listbox')).getAllByRole('option').map(o => o.textContent ?? '')
+    expect(texts().some(x => /dossiers? de santé|données de santé/i.test(x) && /Santé/.test(x))).toBe(true)
+    expect(texts().some(x => /classifié/i.test(x))).toBe(false)           // défense : hors secteurs choisis
+    fireEvent.click(screen.getByRole('button', { name: 'Tous les secteurs' }))
+    expect(texts().some(x => /classifié/i.test(x))).toBe(true)
+  })
 })
