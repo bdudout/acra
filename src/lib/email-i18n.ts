@@ -5,6 +5,7 @@
 // langue du destinataire (User.locale), avec repli sur le français. Testé.
 
 import { emailLayout } from './email-html'
+import { getT } from './i18n'
 import type { Indicateur, IndicateurCle, PointAttention, AttentionType } from './tableau-bord-mensuel'
 
 /** Langue d'un e-mail localisé (une des 5 locales de l'app). */
@@ -313,40 +314,49 @@ export function tableauBordEmail(locale: string | null | undefined, p: TableauBo
 
 // ─── Alertes DORA (déclaration des incidents majeurs, art. 19) ──────────────
 
-export interface AlerteDoraItem { organisation: string; incident: string; phase: 'INITIALE' | 'INTERMEDIAIRE' | 'FINALE'; statut: 'A_FAIRE' | 'EN_RETARD'; echeance: Date }
+/** `phase` = phase DORA ; sinon `regime*`/`phase*` = phase d'un régime de notification (libellés résolus dans la langue du destinataire). */
+export interface AlerteDoraItem {
+  organisation: string; incident: string; phase?: 'INITIALE' | 'INTERMEDIAIRE' | 'FINALE'; statut: 'A_FAIRE' | 'EN_RETARD'; echeance: Date
+  regimeLabelKey?: string; regimeLabel?: string; phaseLabelKey?: string; phaseLabel?: string; phaseCode?: string
+}
 export interface AlertesDoraParams { items: AlerteDoraItem[]; url: string | null }
 
 const alerteDoraLabels: Record<EmailLocale, {
   subject: (n: number) => string; heading: string; intro: string; action: string
-  phases: Record<AlerteDoraItem['phase'], string>; statut: Record<AlerteDoraItem['statut'], (d: string) => string>
+  phases: Record<NonNullable<AlerteDoraItem['phase']>, string>; generic: { subject: (n: number) => string; heading: string; intro: string }; statut: Record<AlerteDoraItem['statut'], (d: string) => string>
 }> = {
   fr: {
     subject: n => `[ACRA] URGENT — déclaration DORA : ${n} échéance(s)`, heading: 'Déclaration d’incident majeur (DORA)',
     intro: 'Les déclarations suivantes à l’autorité compétente arrivent à échéance ou sont en retard (DORA, art. 19).', action: 'Ouvrir les incidents',
+    generic: { subject: n => `[ACRA] URGENT — déclarations d’incident : ${n} échéance(s)`, heading: 'Déclarations d’incident à effectuer', intro: 'Les déclarations suivantes (autorités, régulateurs, CERT/CSIRT) arrivent à échéance ou sont en retard.' },
     phases: { INITIALE: 'Notification initiale', INTERMEDIAIRE: 'Rapport intermédiaire', FINALE: 'Rapport final' },
     statut: { A_FAIRE: d => `à soumettre avant le ${d}`, EN_RETARD: d => `EN RETARD — échéance dépassée le ${d}` },
   },
   en: {
     subject: n => `[ACRA] URGENT — DORA reporting: ${n} deadline(s)`, heading: 'Major incident reporting (DORA)',
     intro: 'The following reports to the competent authority are due or overdue (DORA, Art. 19).', action: 'Open incidents',
+    generic: { subject: n => `[ACRA] URGENT — incident reporting: ${n} deadline(s)`, heading: 'Incident reports to file', intro: 'The following reports (authorities, regulators, CERT/CSIRT) are due or overdue.' },
     phases: { INITIALE: 'Initial notification', INTERMEDIAIRE: 'Intermediate report', FINALE: 'Final report' },
     statut: { A_FAIRE: d => `to submit before ${d}`, EN_RETARD: d => `OVERDUE — deadline passed on ${d}` },
   },
   de: {
     subject: n => `[ACRA] DRINGEND — DORA-Meldung: ${n} Frist(en)`, heading: 'Meldung schwerwiegender Vorfälle (DORA)',
     intro: 'Die folgenden Meldungen an die zuständige Behörde sind fällig oder überfällig (DORA, Art. 19).', action: 'Vorfälle öffnen',
+    generic: { subject: n => `[ACRA] DRINGEND — Vorfallmeldungen: ${n} Frist(en)`, heading: 'Zu erstattende Vorfallmeldungen', intro: 'Die folgenden Meldungen (Behörden, Aufsicht, CERT/CSIRT) sind fällig oder überfällig.' },
     phases: { INITIALE: 'Erstmeldung', INTERMEDIAIRE: 'Zwischenbericht', FINALE: 'Abschlussbericht' },
     statut: { A_FAIRE: d => `einzureichen vor ${d}`, EN_RETARD: d => `ÜBERFÄLLIG — Frist abgelaufen am ${d}` },
   },
   es: {
     subject: n => `[ACRA] URGENTE — notificación DORA: ${n} plazo(s)`, heading: 'Notificación de incidente grave (DORA)',
     intro: 'Las siguientes notificaciones a la autoridad competente vencen o están vencidas (DORA, art. 19).', action: 'Abrir los incidentes',
+    generic: { subject: n => `[ACRA] URGENTE — notificaciones de incidentes: ${n} plazo(s)`, heading: 'Notificaciones de incidentes por presentar', intro: 'Las siguientes notificaciones (autoridades, reguladores, CERT/CSIRT) vencen o están vencidas.' },
     phases: { INITIALE: 'Notificación inicial', INTERMEDIAIRE: 'Informe intermedio', FINALE: 'Informe final' },
     statut: { A_FAIRE: d => `a presentar antes del ${d}`, EN_RETARD: d => `CON RETRASO — plazo vencido el ${d}` },
   },
   it: {
     subject: n => `[ACRA] URGENTE — notifica DORA: ${n} scadenza/e`, heading: 'Notifica di incidente grave (DORA)',
     intro: 'Le seguenti notifiche all’autorità competente sono in scadenza o in ritardo (DORA, art. 19).', action: 'Apri gli incidenti',
+    generic: { subject: n => `[ACRA] URGENTE — notifiche di incidenti: ${n} scadenza/e`, heading: 'Notifiche di incidenti da presentare', intro: 'Le seguenti notifiche (autorità, regolatori, CERT/CSIRT) sono in scadenza o in ritardo.' },
     phases: { INITIALE: 'Notifica iniziale', INTERMEDIAIRE: 'Relazione intermedia', FINALE: 'Relazione finale' },
     statut: { A_FAIRE: d => `da presentare entro il ${d}`, EN_RETARD: d => `IN RITARDO — scadenza superata il ${d}` },
   },
@@ -357,11 +367,17 @@ export function alertesDoraEmail(locale: string | null | undefined, p: AlertesDo
   const L = alerteDoraLabels[emailLocale(locale)]
   const quand = (d: Date) => `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`
   const plusieurs = new Set(p.items.map(i => i.organisation)).size > 1
+  const T = getT(locale ?? 'fr') as unknown as Record<string, unknown>
+  const tr = (key?: string, fallback?: string) => (key ? (key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], T) as string | undefined) : undefined) ?? fallback ?? key ?? ''
+  const mixte = p.items.some(i => !i.phase)
+  const nomPhase = (i: AlerteDoraItem) => i.phase ? L.phases[i.phase] : `${tr(i.regimeLabelKey, i.regimeLabel)} — ${tr(i.phaseLabelKey, i.phaseLabel ?? i.phaseCode)}`
   const lignes = p.items.map(i => ({
-    label: `${plusieurs ? `${i.organisation} · ` : ''}${L.phases[i.phase]} — ${i.incident}`,
+    label: `${plusieurs ? `${i.organisation} · ` : ''}${nomPhase(i)} — ${i.incident}`,
     detail: L.statut[i.statut](quand(i.echeance)), tone: i.statut === 'EN_RETARD' ? ('danger' as const) : ('warning' as const),
   }))
-  const text = `${L.heading}\n\n${L.intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
-  const html = emailLayout({ heading: L.heading, tone: 'danger', paragraphs: [L.intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA' })
-  return { subject: L.subject(p.items.length), text, html }
+  const heading = mixte ? L.generic.heading : L.heading
+  const intro = mixte ? L.generic.intro : L.intro
+  const text = `${heading}\n\n${intro}\n${lignes.map(l => `• ${l.label} : ${l.detail}`).join('\n')}\n${p.url ? `\n${L.action} : ${p.url}\n` : ''}`
+  const html = emailLayout({ heading, tone: 'danger', paragraphs: [intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA' })
+  return { subject: mixte ? L.generic.subject(p.items.length) : L.subject(p.items.length), text, html }
 }

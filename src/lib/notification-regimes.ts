@@ -262,6 +262,8 @@ export interface HorlogePhase {
   soumisLe: Date | null; reference?: string
   /** Soumise après l'échéance. */
   tardive: boolean
+  /** Point de départ du délai (connaissance ou soumission de la phase précédente) : sert à dimensionner les relances. */
+  ancre?: Date | null
 }
 export interface HorlogeRegime { regime: string; labelKey?: string; label?: string; autorite?: string; phases: HorlogePhase[] }
 
@@ -297,7 +299,7 @@ export function calculerHorloges(
       const soumisLe = s ? new Date(s.soumisLe) : null
       const tardive = !!(soumisLe && echeance && soumisLe.getTime() > echeance.getTime())
       const statut: HorlogeStatut = soumisLe ? 'SOUMIS' : !echeance ? 'EN_ATTENTE' : now.getTime() > echeance.getTime() ? 'EN_RETARD' : 'A_FAIRE'
-      return { code: p.code, labelKey: p.labelKey, label: p.label, echeance, statut, soumisLe, ...(s?.reference ? { reference: s.reference } : {}), tardive }
+      return { code: p.code, labelKey: p.labelKey, label: p.label, echeance, statut, soumisLe, ...(s?.reference ? { reference: s.reference } : {}), tardive, ancre }
     })
     return { regime: r.code, labelKey: r.labelKey, label: r.label, autorite: r.autorite, phases }
   })

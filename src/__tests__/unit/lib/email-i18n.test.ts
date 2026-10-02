@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emailLocale, relancesEmail, tableauBordEmail } from '@/lib/email-i18n'
+import { alertesDoraEmail, emailLocale, relancesEmail, tableauBordEmail } from '@/lib/email-i18n'
 
 describe('emailLocale', () => {
   it('normalise vers une locale supportée, repli fr', () => {
@@ -102,5 +102,24 @@ describe('relancesEmail — décisions en attente', () => {
     expect(m.text).toContain('Dérogation : avis RSSI attendu — TLS 1.0')
     expect(m.text).toContain('Projet 360 à approuver — CRM')
     expect(relancesEmail('it', { url: null, items: [{ organisation: 'O', categorie: 'ANALYSE_A_APPROUVER', intitule: 'A', type: 'EN_ATTENTE', echeance: '2026-09-01' }] }).text).toContain('Analisi da approvare — A : in attesa dal 2026-09-01')
+  })
+})
+
+describe('alertesDoraEmail — déclarations d’autres régimes (NIS2, CRA…)', () => {
+  const echeance = new Date('2026-10-06T08:00:00Z')
+  it('libellés du régime et de la phase résolus dans la langue du destinataire ; sujet générique quand un régime non DORA est présent', () => {
+    const items = [{ organisation: 'Banque', incident: 'Rançongiciel', statut: 'A_FAIRE' as const, echeance, regimeLabelKey: 'notifRegimes.CRA_14.label', phaseLabelKey: 'notifRegimes.CRA_14.phases.ALERTE_PRECOCE', phaseCode: 'ALERTE_PRECOCE' }]
+    const fr = alertesDoraEmail('fr', { items, url: null }); const en = alertesDoraEmail('en', { items, url: null })
+    expect(fr.subject).toBe('[ACRA] URGENT — déclarations d’incident : 1 échéance(s)')
+    expect(fr.text).toContain('CRA — Règlement (UE) 2024/2847'); expect(fr.text).toContain('Alerte précoce (24 h)'); expect(fr.text).toContain('Rançongiciel')
+    expect(en.subject).toBe('[ACRA] URGENT — incident reporting: 1 deadline(s)'); expect(en.text).toContain('Early warning (24 h)')
+  })
+  it('un régime personnalisé (sans clé de traduction) utilise son libellé saisi', () => {
+    const m = alertesDoraEmail('fr', { items: [{ organisation: 'O', incident: 'I', statut: 'EN_RETARD', echeance, regimeLabel: 'Régulateur X', phaseLabel: 'Déclaration finale' }], url: null })
+    expect(m.text).toContain('Régulateur X — Déclaration finale'); expect(m.text).toContain('EN RETARD')
+  })
+  it('uniquement DORA : sujet et libellés historiques inchangés', () => {
+    const m = alertesDoraEmail('fr', { items: [{ organisation: 'O', incident: 'I', phase: 'INITIALE', statut: 'A_FAIRE', echeance }], url: null })
+    expect(m.subject).toBe('[ACRA] URGENT — déclaration DORA : 1 échéance(s)')
   })
 })
