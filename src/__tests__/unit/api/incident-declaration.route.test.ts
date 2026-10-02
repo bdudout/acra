@@ -14,6 +14,7 @@ const params = { params: Promise.resolve({ id: 'i1' }) }
 const get = (qs = '') => GET(new NextRequest(`http://x/api/incidents/i1/declaration${qs}`), params)
 const put = (body: unknown) => PUT(new NextRequest('http://x/api/incidents/i1/declaration', { method: 'PUT', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }), params)
 const row = {
+  catalogueKey: null,
   id: 'i1', intitule: 'Rançongiciel sur le SI', description: 'Chiffrement des serveurs', dateSurvenance: new Date('2026-10-05T06:00:00Z'), dateDetection: new Date('2026-10-05T07:00:00Z'),
   doraClasseMajeurLe: new Date('2026-10-05T08:00:00Z'), doraCriteres: { clientsAffectes: 5000, serviceCritique: true }, montantBrut: 1_500_000, recuperations: null,
   clotureLe: null, clotureCommentaire: null, causeRacine: 'EXTERNE', causeDetail: null, typeEvenement: 'CYBER', statut: 'QUALIFIE',
@@ -36,17 +37,20 @@ describe('GET declaration', () => {
     m.load.mockResolvedValue({ userRole: 'LECTEUR', secondeLigneActive: true, incident: { id: 'i1', organizationId: 'o1' }, incidentsConfig: {} })
     expect((await get('?regime=DORA&stage=INITIAL')).status).toBe(403); expect(m.find).not.toHaveBeenCalled()
   })
-  it('sans paramètre : compléments saisis, nettoyés (champ inconnu retiré)', async () => {
-    expect(await (await get()).json()).toEqual({ declaration: { '2.8': 'Prestataire X;LEI123;LEI;' } })
+  it('sans paramètre : compléments saisis (nettoyés) et valeurs que le fichier reprendrait de l’incident', async () => {
+    const j = await (await get()).json()
+    expect(j.declaration).toEqual({ '2.8': 'Prestataire X;LEI123;LEI;' })
+    expect(j.derived).toMatchObject({ '1.5': 'Banque Exemple', '2.1': 'ACRA-i1', '2.2': '2026-10-05T07:00:00Z', '3.4': 5000 })
   })
   it('DORA initiale : JSON prérempli (organisation, critères, devise), compléments pris en compte, export journalisé', async () => {
     const res = await get('?regime=DORA&stage=INITIAL&download=1')
     expect(res.status).toBe(200)
     expect(res.headers.get('content-disposition')).toBe('attachment; filename="dora-initial-i1.json"')
+    expect(res.headers.get('content-type')).toMatch(/json/)
     const j = await res.json()
     expect(j.schema).toBe('acra.dora-incident-report/1'); expect(j.submissionType).toBe('initial_notification')
     expect(j.fields['1.5']).toBe('Banque Exemple'); expect(j.fields['1.15']).toBe('EUR'); expect(j.fields['2.1']).toBe('ACRA-i1')
-    expect(j.fields['2.5']).toEqual(['clients_counterparts_transactions', 'critical_services_affected'])
+    expect(j.fields['2.5']).toEqual(['clients, financial counterparts and transactions affected', 'critical services affected'])
     expect(j.fields['2.8']).toBe('Prestataire X;LEI123;LEI;'); expect(j.missing).not.toContain('2.8'); expect(j.missing).toContain('2.7')
     expect(m.audit.mock.calls[0][1].details).toMatchObject({ action: 'declaration-export', regime: 'DORA' })
   })
@@ -63,12 +67,28 @@ describe('GET declaration', () => {
   })
 })
 
-describe('PUT declaration', () => {
-  it('enregistre uniquement les champs ITS éditables (bornés) et journalise', async () => {
-    const res = await put({ declaration: { '2.7': 'Détecté par la supervision', '2.2': 'interdit', '3.4': '1200', 'x': 'y' } })
+describe('export Excel', () => {
+  it('?format=xlsx : classeur .xlsx (feuille de lecture + feuille de l’étape), journalisé avec le format', async () => {
+    const res = await get('?regime=DORA&stage=FINAL&format=xlsx&lang=en')
     expect(res.status).toBe(200)
-    expect(m.update.mock.calls[0][0].data.declaration).toEqual({ '2.7': 'Détecté par la supervision', '3.4': 1200 })
-    expect(m.audit.mock.calls[0][1].details).toMatchObject({ action: 'declaration-update', champs: 2 })
+    expect(res.headers.get('content-type')).toContain('spreadsheetml'); expect(res.headers.get('content-disposition')).toBe('attachment; filename="dora-final-i1.xlsx"')
+    const buf = Buffer.from(await res.arrayBuffer()); expect(buf.subarray(0, 2).toString()).toBe('PK') // zip OOXML
+    expect(m.audit.mock.calls[0][1].details).toMatchObject({ action: 'declaration-export', regime: 'DORA', format: 'xlsx' })
+  })
+  it('autre régime en Excel ; étape ou régime invalides : 400 ; rôle non habilité : 403', async () => {
+    expect((await get('?regime=CRA_14&phase=ALERTE_PRECOCE&format=xlsx')).status).toBe(200)
+    expect((await get('?regime=DORA&stage=X&format=xlsx')).status).toBe(400)
+    m.load.mockResolvedValue({ userRole: 'LECTEUR', secondeLigneActive: true, incident: { id: 'i1', organizationId: 'o1' }, incidentsConfig: {} })
+    expect((await get('?regime=DORA&stage=INITIAL&format=xlsx')).status).toBe(403)
+  })
+})
+
+describe('PUT declaration', () => {
+  it('enregistre uniquement les champs ITS éditables, contrôlés selon le glossaire (types et listes de valeurs), et journalise', async () => {
+    const res = await put({ declaration: { '2.7': 'monitoring systems', '2.2': 'interdit', '3.4': '1200', '3.23': ['Cybersecurity-related', 'Faux'], 'x': 'y' } })
+    expect(res.status).toBe(200)
+    expect(m.update.mock.calls[0][0].data.declaration).toEqual({ '2.7': 'monitoring systems', '3.4': 1200, '3.23': ['Cybersecurity-related'] })
+    expect(m.audit.mock.calls[0][1].details).toMatchObject({ action: 'declaration-update', champs: 3 })
   })
   it('refusé hors 2ᵉ ligne : aucune écriture', async () => {
     m.load.mockResolvedValue({ userRole: 'ANALYSTE', secondeLigneActive: true, incident: { id: 'i1', organizationId: 'o1' }, incidentsConfig: {} })

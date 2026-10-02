@@ -101,6 +101,17 @@ export const CATALOGUE_REGIMES: Regime[] = [
     phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.HIPAA_BREACH.phases.NOTIFICATION', delai: { jours: 60 }, apres: 'CONNAISSANCE' }],
   },
   {
+    // États-Unis — agences bancaires fédérales (12 CFR 225 sous-partie N, 12 CFR 53, 12 CFR 304 sous-partie C) : notification au régulateur
+    // fédéral principal dès que possible et au plus tard 36 h après la détermination d'un « incident de notification ».
+    code: 'US_BANKING_36H', labelKey: 'notifRegimes.US_BANKING_36H.label', declencheur: 'MANUEL', actif: false,
+    phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.US_BANKING_36H.phases.NOTIFICATION', delai: { h: 36 }, apres: 'CONNAISSANCE' }],
+  },
+  {
+    // États-Unis — FTC, Safeguards Rule, 16 CFR 314.4(j) : événement touchant ≥ 500 consommateurs, notification à la FTC ≤ 30 jours après la découverte.
+    code: 'FTC_SAFEGUARDS', labelKey: 'notifRegimes.FTC_SAFEGUARDS.label', declencheur: 'MANUEL', actif: false,
+    phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.FTC_SAFEGUARDS.phases.NOTIFICATION', delai: { jours: 30 }, apres: 'CONNAISSANCE' }],
+  },
+  {
     code: 'INTERNE', labelKey: 'notifRegimes.INTERNE.label', declencheur: 'TOUJOURS', actif: false,
     phases: [
       { code: 'INFORMER_DIRECTION', labelKey: 'notifRegimes.INTERNE.phases.INFORMER_DIRECTION', delai: { h: 4 }, apres: 'CONNAISSANCE' },

@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-02 (57) — Claude : listes officielles DORA, export Excel, délais et fiches des régimes
+
+- **PR #213 fusionnée** (déclarations d'incidents, types, pack banque / assurance / mutuelle).
+- **Champs DORA officiels** (`lib/incident-declaration.ts`) : glossaire de données de l'annexe II du règlement d'exécution (UE) 2025/302 — types, listes de valeurs admises, obligatoire par étape, formats ; étapes cumulatives ; saisie typée dans `DeclarationModal` ; valeurs hors liste refusées. **Export Excel** (`lib/incident-declaration-xlsx.ts`, `?format=xlsx&lang=`).
+- **Délais** : correction DORA — rapport final **1 mois après le rapport intermédiaire** (RTS 2025/301 art. 5), plus 30 j après l'initiale ; nouveaux régimes **US bancaire fédéral 36 h** et **FTC Safeguards 30 j** ; fiches d'information ×5 langues (`lib/regime-info.ts`, `RegimeInfoBlock`) dans la configuration et l'écran Déclaration.
+- **Recherche ACPR / BCE** : l'ACPR reçoit les incidents DORA par OneGate (DSB / DSA, rapport `DORA_IR`) en **JSON validé par `DORA_IR_Schema_v1.3.JSON`** + règles de validation v1.4 (XLSX sur eSurfi) ; établissements importants : BCE (son outil). **Le fichier de schéma n'est pas accessible : à fournir pour produire le JSON exact de dépôt.** Le JSON ACRA est un pivot (champs ITS), pas le format de dépôt.
+- Source des listes : transcription springlex.eu de l'annexe II ; EUR-Lex illisible par l'outil → **à confirmer sur EUR-Lex**.
+- Vérifié : `tsc` 0 · `npm test` 3433 · `test:db` 67 · `i18n:check` · recettes Playwright locales (`local-incident-declaration` avec Excel, `local-incident-types`).
+- **Reste** : schéma `DORA_IR_Schema` v1.3 (mappage exact) ; CIRCIA dès publication de la règle finale ; BCE comme régime distinct si besoin ; calendrier de jours fériés.
+
 ## 2026-10-02 (56) — Claude : déclarations d'incidents (types, régulateurs, JSON, relances) et pack banque / assurance / mutuelle
 
 - **Incidents** (spec `docs/specs/declarations-incidents.md`) : catalogue de 28 incidents types cherchables (`lib/incident-types-catalogue.ts`, `IncidentTypePicker`, `Incident.catalogueKey`) ; régimes CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA (délais jours / jours ouvrés) ; écran **Déclaration** (`DeclarationModal`) avec case « formalisée en interne » + date, ajout de régulateurs, compléments ITS DORA (`Incident.declaration`, annexe I du règlement d'exécution (UE) 2025/302) et **export JSON** (`GET/PUT /api/incidents/[id]/declaration`) ; relances de tous les régimes (`lib/alertes-notifications.ts`, cron `alertes-dora`).

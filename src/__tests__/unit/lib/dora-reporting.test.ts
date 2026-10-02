@@ -61,7 +61,16 @@ describe('planifierDeclarationDora — phases intermédiaire & finale', () => {
     }, at('2026-03-01T11:00:00Z'))
     expect(phase(r, 'INITIALE').statut).toBe('SOUMIS')
     expect(phase(r, 'INTERMEDIAIRE').echeance).toEqual(at('2026-03-04T10:00:00Z')) // +72 h
-    expect(phase(r, 'FINALE').echeance).toEqual(at('2026-03-31T10:00:00Z'))        // +30 j
+    // RTS 2025/301 art. 5 : rapport final au plus tard UN MOIS après le rapport intermédiaire (ici projeté depuis son échéance)
+    expect(phase(r, 'FINALE').echeance).toEqual(at('2026-04-04T10:00:00Z'))
+  })
+
+  it('le rapport final court un mois après la soumission du rapport intermédiaire, puis après sa dernière mise à jour', () => {
+    const base = { classe: 'MAJEUR' as const, dateDetection: '2026-03-01T08:00:00Z', dateClassification: '2026-03-01T08:00:00Z', initialeSoumiseLe: '2026-03-01T10:00:00Z' }
+    const r = planifierDeclarationDora({ ...base, intermediaireSoumiseLe: '2026-03-03T09:00:00Z' }, at('2026-03-05T00:00:00Z'))
+    expect(phase(r, 'FINALE').echeance).toEqual(at('2026-04-03T09:00:00Z')) // 3 mars + 1 mois
+    const maj = planifierDeclarationDora({ ...base, intermediaireSoumiseLe: '2026-03-20T09:00:00Z' }, at('2026-03-21T00:00:00Z')) // intermédiaire mis à jour le 20 mars
+    expect(phase(maj, 'FINALE').echeance).toEqual(at('2026-04-20T09:00:00Z'))
   })
 
   it('sans soumission initiale, elles se projettent depuis l’échéance initiale', () => {
@@ -70,7 +79,7 @@ describe('planifierDeclarationDora — phases intermédiaire & finale', () => {
     }, at('2026-03-01T09:00:00Z'))
     // base = échéance initiale = 12:00
     expect(phase(r, 'INTERMEDIAIRE').echeance).toEqual(at('2026-03-04T12:00:00Z'))
-    expect(phase(r, 'FINALE').echeance).toEqual(at('2026-03-31T12:00:00Z'))
+    expect(phase(r, 'FINALE').echeance).toEqual(at('2026-04-04T12:00:00Z'))
   })
 
   it('une phase soumise est SOUMIS quelle que soit l’heure', () => {

@@ -7,7 +7,7 @@
 //   - initiale     : ≤ 4 h après classification « majeur » ET ≤ 24 h après détection
 //                    → l'échéance retenue est la PLUS TÔT (les deux contraintes valent) ;
 //   - intermédiaire: ≤ 72 h après la notification initiale ;
-//   - finale       : ≤ 1 mois (≈ 30 j) après la notification initiale.
+//   - finale       : ≤ 1 mois après le rapport intermédiaire (ou après sa dernière mise à jour) — RTS 2025/301 art. 5.
 //
 // Ne s'applique QU'AUX incidents MAJEURS. Outil d'aide à la décision — ne vaut pas
 // obligation réglementaire officielle. Logique PURE et testée.
@@ -29,15 +29,15 @@ export interface DoraDelaisConfig {
   initialeApresDetectionH: number
   /** Délai du rapport intermédiaire après la notification initiale (heures). */
   intermediaireApresInitialeH: number
-  /** Délai du rapport final après la notification initiale (jours). */
-  finaleApresInitialeJours: number
+  /** Délai du rapport final après le rapport intermédiaire (mois civils) — RTS (UE) 2025/301, art. 5. */
+  finaleApresIntermediaireMois: number
 }
 
 export const DORA_DELAIS_DEFAUT: DoraDelaisConfig = {
   initialeApresClassifH: 4,
   initialeApresDetectionH: 24,
   intermediaireApresInitialeH: 72,
-  finaleApresInitialeJours: 30,
+  finaleApresIntermediaireMois: 1,
 }
 
 /** Entrée d'évaluation du reporting DORA : classe de l'incident + jalons temporels des phases. */
@@ -61,7 +61,6 @@ export interface DoraEcheance {
 }
 
 const H = 3_600_000
-const J = 86_400_000
 
 function parseDate(v: Date | string | null | undefined): Date | null {
   if (v == null) return null
@@ -94,7 +93,9 @@ export function planifierDeclarationDora(
   // Base des phases suivantes : la soumission initiale si faite, sinon son échéance.
   const base = initSoumise ?? initEcheance
   const interEcheance = estMajeur && base ? new Date(base.getTime() + cfg.intermediaireApresInitialeH * H) : null
-  const finaleEcheance = estMajeur && base ? new Date(base.getTime() + cfg.finaleApresInitialeJours * J) : null
+  // Rapport final : un mois après la soumission du rapport intermédiaire (la dernière mise à jour fait foi), à défaut après son échéance.
+  const baseFinale = interSoumise ?? interEcheance
+  const finaleEcheance = estMajeur && baseFinale ? (() => { const d = new Date(baseFinale.getTime()); d.setUTCMonth(d.getUTCMonth() + cfg.finaleApresIntermediaireMois); return d })() : null
 
   const build = (phase: DoraPhase, echeance: Date | null, soumiseLe: Date | null): DoraEcheance => {
     let statut: DoraPhaseStatut

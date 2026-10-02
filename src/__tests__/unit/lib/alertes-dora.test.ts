@@ -17,10 +17,10 @@ describe('alertes DORA', () => {
     expect(alertesDoraDues(e, { 'INITIALE:A_FAIRE': 'x', 'INITIALE:EN_RETARD': 'x' }, now)).toEqual([])
   })
   it('rapport intermédiaire 24 h avant, rapport final 7 jours avant', () => {
-    // Initiale soumise il y a 50 h : intermédiaire à 72 h → dans 22 h ; finale à 1 mois → hors fenêtre.
+    // Initiale soumise il y a 50 h : intermédiaire à 72 h → dans 22 h ; finale un mois après le rapport intermédiaire (RTS 2025/301 art. 5) → hors fenêtre.
     const e = planifierDeclarationDora({ classe: 'MAJEUR', dateDetection: h(-60), dateClassification: h(-55), initialeSoumiseLe: h(-50) }, now)
     expect(alertesDoraDues(e, {}, now).map(a => a.cle)).toEqual(['INTERMEDIAIRE:A_FAIRE'])
-    const tard = new Date(h(-50).getTime() + 25 * 24 * H)
+    const tard = new Date(h(-50).getTime() + 28 * 24 * H) // échéance finale ≈ 5 j plus tard
     const eTard = planifierDeclarationDora({ classe: 'MAJEUR', dateDetection: h(-60), dateClassification: h(-55), initialeSoumiseLe: h(-50) }, tard)
     expect(alertesDoraDues(eTard, { 'INTERMEDIAIRE:A_FAIRE': 'x' }, tard).map(a => a.cle)).toEqual(['INTERMEDIAIRE:EN_RETARD', 'FINALE:A_FAIRE'])
   })
