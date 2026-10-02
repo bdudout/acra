@@ -80,9 +80,9 @@ export default function ProfilePage() {
       .catch(() => {})
 
     // Charger la politique de mots de passe active
-    fetch('/api/admin/password-policy')
+    fetch('/api/auth/password-policy')
       .then(r => r.json())
-      .then(d => { if (d.policy) setPolicy(d.policy) })
+      .then(d => { if (d && typeof d.minLength === 'number') setPolicy(d) })
       .catch(() => {})
   }, [])
 
