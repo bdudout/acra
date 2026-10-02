@@ -4,7 +4,10 @@
  * contrôle importé est rattaché au risque correspondant SEULEMENT si l'organisation l'a déjà dans
  * son registre (même clé de catalogue) — jamais de risque créé implicitement.
  */
+import { EXT_CONTROL_RISKS, EXT_AUDIT_RISKS } from './sector-packs-ext'
+
 export const CONTROL_RISKS: Record<string, string[]> = {
+  ...EXT_CONTROL_RISKS,
   // Pack banque / assurance / mutuelle (1.9)
   'finance.control.control-plan': ['core.risk.process-error', 'core.risk.obligation-missed'],
   'finance.control.delegations': ['core.risk.segregation', 'core.risk.internal-fraud'],
@@ -95,6 +98,7 @@ export const CONTROL_RISKS: Record<string, string[]> = {
 }
 
 export const AUDIT_RISKS: Record<string, string[]> = {
+  ...EXT_AUDIT_RISKS,
   'core.audit.access': ['core.risk.privileged-access', 'core.risk.leavers'],
   'core.audit.backup': ['core.risk.backup-failure', 'core.risk.ransomware'],
   'core.audit.suppliers': ['core.risk.supplier-outage', 'core.risk.supplier-contract'],

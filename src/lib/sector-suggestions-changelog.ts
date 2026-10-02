@@ -2,6 +2,8 @@
 // Sert à signaler « nouveautés depuis la version que vous avez importée » : on n'écrase rien, on propose seulement.
 // Règle : toute évolution du catalogue (CATALOGUE_PACK_VERSION) ajoute UNE entrée ici avec les clés ajoutées (un test le vérifie).
 
+import { EXT_ITEMS } from './sector-packs-ext'
+
 export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
   { version: '1.1', added: [
       'assurance.risk.customer-data',
@@ -261,6 +263,8 @@ export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
       'assurance.control.resilience-testing',
       'assurance.control.incident-reporting-drill',
     ] },
+  // 1.10 : contenu sectoriel étendu (7 nouveaux secteurs + approfondissement des autres) — clés issues des packs `sector-packs-ext*`.
+  { version: '1.10', added: EXT_ITEMS.map(item => item.key).sort() },
 ]
 
 const parts = (v: string) => v.split('.').map(n => Number.parseInt(n, 10) || 0)

@@ -4,16 +4,19 @@
  * Aucune cotation, obligation réputée satisfaite ou contrepartie fictive.
  */
 import { SECTOR_PACK_ITEMS } from './sector-packs'
+import { EXT_ITEMS } from './sector-packs-ext'
 import { BANCASSURANCE_ITEMS } from './sector-packs-bancassurance'
 import { RESILIENCE_TEST_TEMPLATES } from './catalogue-resilience'
 import { RISK_BALE, MERGED_REGISTRY_RISKS } from './catalogue-risks'
 import { CONTROL_RISKS, AUDIT_RISKS } from './catalogue-links'
 import type { TestResilienceType } from './tests-resilience'
 
-// Ordre = priorité : d'abord les secteurs qui pratiquent réellement la gestion du risque opérationnel
-// (banque, assurance, énergie, transport, télécoms, santé), puis les autres. Libellés alignés sur les
-// secteurs de l'analyse de risque cyber (SECTEURS_ACTIVITE) ; l'assurance y est rattachée à « Banque / Finance ».
-export const SECTOR_CODES = ['FINANCE', 'ASSURANCE', 'ENERGIE', 'TRANSPORT', 'TELECOM', 'SANTE', 'INDUSTRIE', 'PUBLIC', 'COMMERCE', 'SAAS', 'SERVICES'] as const
+// Ordre = celui des secteurs de l'analyse de risque cyber (SECTEURS_ACTIVITE) ; l'assurance suit « Banque / Finance »
+// dont elle relève dans l'analyse. Seuls les secteurs choisis par l'organisation sont proposés (cf. sector-selection).
+export const SECTOR_CODES = [
+  'PUBLIC', 'FINANCE', 'ASSURANCE', 'DEFENSE', 'EDUCATION', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT',
+  'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS',
+] as const
 export type SectorCode = (typeof SECTOR_CODES)[number]
 export type CatalogueLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
 export type Localized = Record<CatalogueLocale, string>
@@ -288,7 +291,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('telecom.risk.request-error', 'TELECOM', l('Une réquisition est traitée hors délai ou de façon erronée', 'An authority request is handled late or incorrectly', 'Eine Behördenanfrage wird verspätet oder fehlerhaft bearbeitet', 'Un requerimiento se tramita fuera de plazo o de forma errónea', 'Una richiesta delle autorità viene gestita in ritardo o in modo errato'), 'telecom.process.lawful'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.9'
+export const CATALOGUE_PACK_VERSION = '1.10'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -303,7 +306,7 @@ export type SectorScope = SectorCode | readonly SectorCode[] | null
 export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale): SectorSuggestion[] {
   const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
   const base = [...TRANSVERSAL, ...MERGED_REGISTRY_RISKS.filter(item => item.sector === 'TRANSVERSAL'), ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
-  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...BANCASSURANCE_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
+  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...BANCASSURANCE_ITEMS, ...EXT_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
   return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...((item.kind === 'CONTROL' ? CONTROL_RISKS : item.kind === 'AUDIT' ? AUDIT_RISKS : {})[item.key] ? { riskKeys: (item.kind === 'CONTROL' ? CONTROL_RISKS : AUDIT_RISKS)[item.key] } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
