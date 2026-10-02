@@ -735,6 +735,8 @@ model Incident {
   doraFinaleSoumiseLe        DateTime?
   // Alertes DORA déjà envoyées : { "PHASE:STATUT": iso } (cron « alertes-dora », anti-doublon).
   alertesDora                Json      @default("{}")
+  // Compléments de déclaration à une autorité (champs de l'ITS DORA 2025/302 que l'incident ne porte pas) : { "2.8": "…" } — cf. lib/incident-declaration.ts.
+  declaration                Json      @default("{}")
 
   // Lot L1 — type d'événement (catalogue de l'org), quasi-incident (aucune perte
   // réalisée), attributs pilotant les régimes de notification, notifications soumises,
