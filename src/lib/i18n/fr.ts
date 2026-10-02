@@ -706,6 +706,8 @@ export const fr = {
       audit:      'Audit',
       regulateur: 'Régulateur',
       incident:   'Incident',
+      resilience: 'Résilience',
+      preconisation: 'Préconisation',
       orpheline:  'Orpheline',
     },
     priorites: {

@@ -268,17 +268,22 @@ Les lots sont indépendants ; l'ordre privilégie la **valeur visible** et la **
 
 Chaque lot : test d'abord (TDD), i18n ×5, `tsc` / `npm test` / `i18n:check` / build, recette sur vraie base **et** navigateur sur build de production, mise à jour de la documentation, PR avec CI verte.
 
-## 10. Points de décision ouverts
+## 10. Décisions
 
-1. **Ordre des secteurs** et nom de l'expert relecteur par secteur (sans expert, le contenu reste « brouillon » et l'application l'affiche).
-2. **Ajouter des secteurs** à `SECTOR_CODES` (éducation, agricole, défense, immobilier / BTP, média, tourisme, associations) maintenant, plus tard, ou jamais.
-3. **Profil de taille** (A-9) : jeu de périodicités « petite structure » à proposer ou non.
-4. **Interrupteur MCP par organisation** (B.2.6) : oui / non ; sinon l'activation reste d'instance + clé.
-5. **`propose_incident_from_type`** et lecture des incidents par MCP (B.2.4) : oui / non.
-6. **Rétention** des instantanés d'appétit et des propositions MCP expirées (durée par défaut).
-7. **Consolidation de groupe** de la vue d'appétence (C1-7) : périmètre et droits.
-8. **Pièces de preuve** : type de document dédié (`PREUVE` existant) ou nouveau type « preuve de test ».
-9. **Format du portefeuille** : un PDF unique ou un PDF par projet regroupé.
+### Tranchées par l'utilisateur (2026-10-02)
+
+1. **Ordre et affichage des secteurs** : les secteurs sont rangés dans le même ordre que dans les analyses de risques ; seuls les secteurs **sélectionnés pour l'organisation** s'affichent. Pour une entreprise **multisecteur**, l'utilisateur choisit le **secteur actif** au moment de l'usage, qui filtre le catalogue. Le nom de l'expert relecteur n'est pas fourni : le contenu reste « à relire » et l'application l'affiche (statut de relecture par élément).
+2. **Secteurs ajoutés** : oui — éducation, agricole, défense, immobilier / BTP, média, tourisme, associations rejoignent `SECTOR_CODES` et le catalogue de suggestions.
+3. **Interrupteur MCP par organisation** : oui (3 niveaux : défaut OFF, ADMIN d'organisation, politique d'instance FORCE_ON / FORCE_OFF).
+4. **Périodicités « petite structure »** : oui — un jeu allégé de périodicités est proposé selon un profil de taille.
+
+### Par défaut retenus (non tranchés, modifiables)
+
+5. `propose_incident_from_type` et lecture des incidents par MCP : **non** dans ce chantier (reporté).
+6. Rétention : instantanés d'appétit 36 mois ; propositions MCP expirées purgées après 90 jours.
+7. Consolidation de groupe de l'appétence : lecture seule, rôles de lecture globale uniquement.
+8. Pièces de preuve : réutiliser le type de document `PREUVE` existant.
+9. Portefeuille projet 360 : un seul PDF de synthèse, plus un Excel détaillé.
 
 ## 11. Risques
 

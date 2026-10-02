@@ -69,6 +69,8 @@ const ORIGINE_STYLE: Record<ActionOrigine, string> = {
   audit: 'bg-teal-50 text-teal-700 border-teal-200',
   regulateur: 'bg-amber-50 text-amber-800 border-amber-200',
   incident: 'bg-rose-50 text-rose-700 border-rose-200',
+  resilience: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+  preconisation: 'bg-lime-50 text-lime-800 border-lime-200',
   // Orpheline = alerte : action non rattachée à une source.
   orpheline: 'bg-red-100 text-red-800 border-red-300 font-semibold',
 }

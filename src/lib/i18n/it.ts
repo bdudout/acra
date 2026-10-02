@@ -694,6 +694,8 @@ export const it: Translations = {
       audit:      'Audit',
       regulateur: 'Regolatore',
       incident:   'Incidente',
+      resilience: 'Resilienza',
+      preconisation: 'Raccomandazione',
       orpheline:  'Orfana',
     },
     priorites: {
