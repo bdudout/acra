@@ -90,4 +90,17 @@ describe('DeclarationModal', () => {
     render(<DeclarationModal {...props({ canQualify: false })} />)
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0); expect(screen.queryAllByRole('link')).toHaveLength(0); expect(screen.queryByLabelText('Ajouter un régulateur ou une autorité')).not.toBeInTheDocument()
   })
+  it('incident type : suggère les obligations activées dans la configuration (CRA pour une vulnérabilité exploitée), rappelle l’évaluation DORA, ajout en un clic', async () => {
+    render(<DeclarationModal {...props({ incident: { ...incident, catalogueKey: 'cyber.vulnerability-exploited' } })} />)
+    const box = screen.getByRole('region', { name: 'Obligations à examiner pour ce type d’incident' })
+    expect(box).toHaveTextContent('Incident lié aux TIC : évaluer la classification DORA')
+    expect(within(box).queryByRole('button', { name: /NIS2/ })).not.toBeInTheDocument() // déjà applicable
+    fireEvent.click(within(box).getByRole('button', { name: /CRA — Règlement/ }))
+    await waitFor(() => expect(calls('PATCH')).toHaveLength(1))
+    expect(JSON.parse(calls('PATCH')[0][1].body).attributs.regimes).toEqual(['CRA_14'])
+  })
+  it('sans incident type : aucun encart de suggestion', () => {
+    render(<DeclarationModal {...props()} />)
+    expect(screen.queryByRole('region', { name: 'Obligations à examiner pour ce type d’incident' })).not.toBeInTheDocument()
+  })
 })

@@ -5,6 +5,7 @@
 // net = brut − récupérations. Logique PURE et testée.
 
 import { sanitizeAttributs, type IncidentAttributs } from './notification-regimes'
+import { incidentTypeByKey } from './incident-types-catalogue'
 import { sanitizePertes, sanitizeRecuperations, totauxPertes, type LignePerte, type LigneRecuperation, type DevisesConfig } from './pertes'
 import { resolveIncidentsConfig, type CatalogueItem } from './incidents-config'
 import { sanitizeChronologie, cleanCauseRacine, sanitizeImpacts, sanitizeAllocations, type EvenementChronologie, type CauseRacine, type ImpactNonFinancier, type Allocation } from './incident-l1b'
@@ -40,6 +41,7 @@ export interface IncidentInput {
   typeEvenement?: unknown
   quasiIncident?: unknown
   attributs?: unknown
+  catalogueKey?: unknown
   pertes?: unknown
   recuperationsLignes?: unknown
   dateReglement?: unknown
@@ -71,6 +73,7 @@ export interface CleanIncident {
   riskItemId: string | null
   statut: IncidentStatut
   typeEvenement: string | null
+  catalogueKey: string | null
   quasiIncident: boolean
   attributs: IncidentAttributs
   pertes: LignePerte[]
@@ -193,6 +196,7 @@ export function cleanIncidentInput(body: IncidentInput, cfg: IncidentCleanConfig
     riskItemId: txt(body.riskItemId),
     statut: INCIDENT_STATUTS.includes(s) ? s : 'DECLARE',
     typeEvenement: type || null,
+    catalogueKey: incidentTypeByKey(typeof body.catalogueKey === 'string' ? body.catalogueKey : null)?.key ?? null,
     quasiIncident: quasi,
     attributs: sanitizeAttributs(body.attributs),
     pertes,

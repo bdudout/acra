@@ -742,6 +742,8 @@ model Incident {
   // réalisée), attributs pilotant les régimes de notification, notifications soumises,
   // pertes multi-composantes (les agrégats montantBrut/recuperations en sont la somme).
   typeEvenement       String?
+  // Incident type du catalogue (lib/incident-types-catalogue.ts) dont la déclaration est partie ; null = saisie libre.
+  catalogueKey        String?
   quasiIncident       Boolean   @default(false)
   attributs           Json      @default("{}")
   notifications       Json      @default("[]")

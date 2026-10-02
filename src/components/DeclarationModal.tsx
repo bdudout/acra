@@ -9,12 +9,14 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { DORA_ITS_FIELDS, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
+import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 
 export interface DeclarationIncidentView {
   id: string; intitule: string
   dora?: { classe: string; echeances: { phase: string; echeance: string | null; statut: string; soumiseLe: string | null }[] } | null
   horloges: HorlogeRegimeJson[]
   attributs?: { significatif?: boolean; donneesPersonnelles?: boolean; contractuel?: boolean; regimes?: string[] }
+  catalogueKey?: string | null
 }
 export interface RegimeDisponible { code: string; label?: string; labelKey?: string; autorite?: string }
 
@@ -70,10 +72,12 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
   async function saveCompl() {
     if (await call(`/api/incidents/${incident.id}/declaration`, 'PUT', { declaration: compl })) setMsg(d.saved)
   }
-  async function addRegulator() {
-    if (!add) return
+  async function addRegulatorCode(code: string) {
     const a = incident.attributs ?? {}
-    if (await call(`/api/incidents/${incident.id}`, 'PATCH', { attributs: { ...a, regimes: [...new Set([...(a.regimes ?? []), add])] } })) setAdd('')
+    return call(`/api/incidents/${incident.id}`, 'PATCH', { attributs: { ...a, regimes: [...new Set([...(a.regimes ?? []), code])] } })
+  }
+  async function addRegulator() {
+    if (add && await addRegulatorCode(add)) setAdd('')
   }
 
   const known = new Set(incident.horloges.map(h => h.regime))
@@ -81,6 +85,9 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
   const editable = (s: string) => DORA_ITS_FIELDS.filter(f => f.editable && (f.stage === 'GENERAL' || f.stage === s))
   const jsonHref = (q: string) => `/api/incidents/${incident.id}/declaration?${q}&download=1`
   const showDora = !!incident.dora
+  // Obligations à examiner selon l'incident type : régimes suggérés ET activés dans la configuration, pas encore applicables.
+  const type = incidentTypeByKey(incident.catalogueKey)
+  const suggested = type ? addable.filter(r => type.regimes.includes(r.code)) : []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -176,6 +183,19 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
             </ul>
           </section>
         ))}
+
+        {type && (suggested.length > 0 || type.tic) && (
+          <section aria-label={n.catalogueTypes.suggested} className="rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 p-3 text-xs text-indigo-900 dark:text-indigo-100 space-y-1.5">
+            <p className="font-semibold">{n.catalogueTypes.suggested} — {type.title[(['fr', 'en', 'de', 'es', 'it'].includes(locale) ? locale : 'fr') as 'fr']}</p>
+            {type.tic && <p>{n.catalogueTypes.ticDora}</p>}
+            {suggested.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {suggested.map(r => <button key={r.code} type="button" disabled={busy || !canQualify} className="btn-secondary text-[11px]" onClick={() => void addRegulatorCode(r.code)}>+ {r.label ?? tr(r.labelKey, r.code)}</button>)}
+              </div>
+            )}
+            <p className="text-[11px] opacity-80">{n.catalogueTypes.suggestedHint}</p>
+          </section>
+        )}
 
         {!showDora && incident.horloges.length === 0 && <p className="text-sm italic text-gray-500">{d.none}</p>}
 
