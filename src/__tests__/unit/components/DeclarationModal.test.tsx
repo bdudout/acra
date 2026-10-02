@@ -66,16 +66,27 @@ describe('DeclarationModal', () => {
     expect(Object.keys(JSON.parse(calls('PATCH')[0][1].body))).toEqual(['doraInitialeSoumiseLe'])
     expect(typeof JSON.parse(calls('PATCH')[0][1].body).doraInitialeSoumiseLe).toBe('string')
   })
-  it('compléments ITS : champs de l’annexe I de l’étape, valeurs existantes préremplies, enregistrement PUT', async () => {
+  it('compléments ITS : saisie typée selon le glossaire (listes officielles, booléen, cases à cocher), valeurs existantes préremplies, valeur de l’incident suggérée, enregistrement PUT', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => (!init?.method || init.method === 'GET') && String(url).endsWith('/declaration') ? ok({ declaration: { '2.7': 'staff', '2.9': true }, derived: { '1.5': 'Banque Exemple', '2.5': ['reputational impact'] } }) : ok({}))
     render(<DeclarationModal {...props()} />)
     fireEvent.click(screen.getAllByRole('button', { name: 'Compléter les champs' })[0])
-    const field = await screen.findByLabelText(/2\.7 Discovery of the major ICT-related incident/)
-    await waitFor(() => expect(field).toHaveValue('Supervision'))
-    fireEvent.change(screen.getByLabelText(/2\.9 Activation of business continuity plan/), { target: { value: 'PCA activé à 09 h' } })
+    const discovery = await screen.findByLabelText(/2\.7 Discovery of the major ICT-related incident/)
+    await waitFor(() => expect(discovery).toHaveValue('staff'))
+    expect(within(discovery).getByRole('option', { name: 'monitoring systems' })).toBeInTheDocument() // liste officielle
+    expect(screen.getByLabelText(/2\.9 Activation of business continuity plan/)).toHaveValue('true')
+    expect(screen.getAllByText(/Valeur reprise de l’incident : Banque Exemple/).length).toBeGreaterThan(0)
+    fireEvent.change(discovery, { target: { value: 'internal audit' } })
+    fireEvent.click(screen.getByLabelText('1.4 credit institution'))
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les compléments' }))
     await waitFor(() => expect(calls('PUT')).toHaveLength(1))
-    expect(JSON.parse(calls('PUT')[0][1].body).declaration).toMatchObject({ '2.7': 'Supervision', '2.9': 'PCA activé à 09 h' })
+    expect(JSON.parse(calls('PUT')[0][1].body).declaration).toMatchObject({ '2.7': 'internal audit', '2.9': 'true', '1.4': ['credit institution'] })
     expect(await screen.findByRole('status')).toHaveTextContent('Compléments enregistrés')
+  })
+  it('export Excel proposé à côté du JSON pour DORA et pour chaque phase de régime', () => {
+    render(<DeclarationModal {...props()} />)
+    expect(screen.getByRole('link', { name: /Exporter en Excel — Rapport final/ })).toHaveAttribute('href', '/api/incidents/i1/declaration?regime=DORA&stage=FINAL&format=xlsx&lang=fr&download=1')
+    const nis2 = screen.getByRole('region', { name: /NIS2/ })
+    expect(within(nis2).getAllByRole('link', { name: 'Exporter en Excel' })[0]).toHaveAttribute('href', '/api/incidents/i1/declaration?regime=NIS2&phase=ALERTE_PRECOCE&format=xlsx&lang=fr&download=1')
   })
   it('ajouter un régulateur activé dans la configuration : ajouté aux régimes de l’incident (attributs.regimes)', async () => {
     render(<DeclarationModal {...props()} />)

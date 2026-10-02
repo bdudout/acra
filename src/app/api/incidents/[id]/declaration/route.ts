@@ -7,7 +7,8 @@ import { type UserRole } from '@/lib/permissions'
 import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { calculerHorloges, sanitizeAttributs, sanitizeNotifications } from '@/lib/notification-regimes'
-import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, DORA_STAGES, type DeclarationIncident, type DoraStage } from '@/lib/incident-declaration'
+import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, deriveDeclaration, DORA_STAGES, type DeclarationIncident, type DoraStage } from '@/lib/incident-declaration'
+import { buildDeclarationWorkbook, type DeclarationExport, type ExportLang } from '@/lib/incident-declaration-xlsx'
 import type { DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -40,43 +41,55 @@ export async function GET(req: NextRequest, ctx: Params): Promise<NextResponse> 
     select: {
       id: true, intitule: true, description: true, dateSurvenance: true, dateDetection: true, doraClasseMajeurLe: true, doraCriteres: true,
       montantBrut: true, recuperations: true, clotureLe: true, clotureCommentaire: true, causeRacine: true, causeDetail: true, typeEvenement: true, statut: true,
-      attributs: true, notifications: true, declaration: true, organization: { select: { nom: true } },
+      attributs: true, notifications: true, declaration: true, catalogueKey: true, organization: { select: { nom: true } },
     },
   })
   if (!row) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
   const url = new URL(req.url)
   const regime = url.searchParams.get('regime')
   const declaration = cleanDeclaration(row.declaration)
-  if (!regime) return NextResponse.json({ declaration })
 
   const cfg = resolveIncidentsConfig(c.incidentsConfig)
   const incident: DeclarationIncident = {
     id: row.id, intitule: row.intitule, description: row.description, dateSurvenance: row.dateSurvenance, dateDetection: row.dateDetection,
     doraClasseMajeurLe: row.doraClasseMajeurLe, doraCriteres: row.doraCriteres as DoraCriteres, montantBrut: num(row.montantBrut), recuperations: num(row.recuperations),
-    clotureLe: row.clotureLe, clotureCommentaire: row.clotureCommentaire, causeRacine: row.causeRacine, causeDetail: row.causeDetail, typeEvenement: row.typeEvenement, statut: row.statut,
+    clotureLe: row.clotureLe, clotureCommentaire: row.clotureCommentaire, causeRacine: row.causeRacine, causeDetail: row.causeDetail, typeEvenement: row.typeEvenement, catalogueKey: row.catalogueKey, statut: row.statut,
   }
   const context = { organisationNom: row.organization.nom, devise: cfg.deviseReference, now: new Date() }
-  let body: unknown; let name: string
+  // Sans paramètre : compléments saisis ET valeurs que le fichier reprendrait de l'incident (affichées comme valeurs proposées).
+  if (!regime) return NextResponse.json({ declaration, derived: deriveDeclaration(incident, context) })
+
+  const format = url.searchParams.get('format') === 'xlsx' ? 'xlsx' : 'json'
+  const lang = (['fr', 'en', 'de', 'es', 'it'].includes(url.searchParams.get('lang') ?? '') ? url.searchParams.get('lang') : 'fr') as ExportLang
+  let what: DeclarationExport; let name: string; let json: unknown
   if (regime === 'DORA') {
     const stage = (url.searchParams.get('stage') ?? '') as DoraStage
     if (!DORA_STAGES.includes(stage)) return NextResponse.json({ error: 'etape_invalide' }, { status: 400 })
-    body = buildDoraReportJson(incident, stage, declaration, context)
-    name = `dora-${stage.toLowerCase()}-${row.id}.json`
+    what = { kind: 'DORA', stage, declaration }
+    json = buildDoraReportJson(incident, stage, declaration, context)
+    name = `dora-${stage.toLowerCase()}-${row.id}`
   } else {
     const phase = url.searchParams.get('phase') ?? ''
     const r = cfg.regimes.find(x => x.code === regime)
     const p = r?.phases.find(x => x.code === phase)
     if (!r || !p) return NextResponse.json({ error: 'regime_invalide' }, { status: 400 })
     const h = calculerHorloges({ connaissance: row.dateDetection, attributs: { ...sanitizeAttributs(row.attributs), regimes: [r.code] }, notifications: sanitizeNotifications(row.notifications) }, [{ ...r, actif: true }], context.now)[0]?.phases.find(x => x.code === phase)
-    body = buildNotificationJson(incident, { code: r.code, label: r.label, autorite: r.autorite, phase: { code: p.code, label: p.label }, echeance: h?.echeance ?? null, soumisLe: h?.soumisLe ?? null, reference: h?.reference }, context)
-    name = `${r.code.toLowerCase()}-${p.code.toLowerCase()}-${row.id}.json`
+    const n = { code: r.code, label: r.label, autorite: r.autorite, phase: { code: p.code, label: p.label }, echeance: h?.echeance ?? null, soumisLe: h?.soumisLe ?? null, reference: h?.reference }
+    what = { kind: 'REGIME', ...n }
+    json = buildNotificationJson(incident, n, context)
+    name = `${r.code.toLowerCase()}-${p.code.toLowerCase()}-${row.id}`
   }
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.userRole as string, organizationId: c.incident.organizationId, ip: getClientIp(req),
-    details: { scope: 'incident', action: 'declaration-export', id, regime },
+    details: { scope: 'incident', action: 'declaration-export', id, regime, format },
   })
-  const headers: Record<string, string> = url.searchParams.get('download') === '1' ? { 'Content-Disposition': `attachment; filename="${name}"` } : {}
-  return NextResponse.json(body, { headers })
+  const download = url.searchParams.get('download') === '1'
+  if (format === 'xlsx') {
+    const buf = await buildDeclarationWorkbook(what, incident, context, lang)
+    return new NextResponse(buf as unknown as BodyInit, { headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${name}.xlsx"`, 'Cache-Control': 'no-store' } })
+  }
+  const headers: Record<string, string> = download ? { 'Content-Disposition': `attachment; filename="${name}.json"` } : {}
+  return NextResponse.json(json, { headers })
 }
 
 // PUT /api/incidents/[id]/declaration — enregistre les compléments (champs ITS éditables, bornés).

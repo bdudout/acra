@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { DORA_ITS_FIELDS, type DoraStage } from '@/lib/incident-declaration'
+import { fieldsOfStage, isMandatoryAt, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 
@@ -43,7 +43,8 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
   const [when, setWhen] = useState<Record<string, string>>({})
   const [refs, setRefs] = useState<Record<string, string>>({})
   const [stage, setStage] = useState<DoraStage | null>(null)
-  const [compl, setCompl] = useState<Record<string, string>>({})
+  const [compl, setCompl] = useState<Record<string, DeclarationValue | ''>>({})
+  const [derived, setDerived] = useState<Record<string, DeclarationValue>>({})
   const [add, setAdd] = useState('')
   const tr = (key?: string, fallback?: string) => (key ? (key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], t) as string | undefined) : undefined) ?? fallback ?? key ?? ''
   const fmt = (iso: string) => new Date(iso).toLocaleString(locale)
@@ -52,7 +53,8 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
 
   useEffect(() => {
     fetch(`/api/incidents/${incident.id}/declaration`).then(r => (r.ok ? r.json() : null)).then(j => {
-      if (j?.declaration) setCompl(Object.fromEntries(Object.entries(j.declaration as Record<string, unknown>).map(([k, v]) => [k, Array.isArray(v) ? v.join('; ') : String(v)])))
+      if (j?.declaration) setCompl(Object.fromEntries(Object.entries(j.declaration as Record<string, DeclarationValue>).map(([k, v]) => [k, typeof v === 'boolean' ? String(v) : v])) as Record<string, DeclarationValue | ''>)
+      if (j?.derived) setDerived(j.derived as Record<string, DeclarationValue>)
     }).catch(() => {})
   }, [incident.id])
 
@@ -70,8 +72,12 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
     ? call(`/api/incidents/${incident.id}/notifications`, 'POST', { regime, phase, soumisLe: toIso(when[`${regime}/${phase}`] ?? toLocal(null)), ...((refs[`${regime}/${phase}`] ?? '').trim() ? { reference: refs[`${regime}/${phase}`].trim() } : {}) })
     : call(`/api/incidents/${incident.id}/notifications`, 'DELETE', { regime, phase })
   async function saveCompl() {
-    if (await call(`/api/incidents/${incident.id}/declaration`, 'PUT', { declaration: compl })) setMsg(d.saved)
+    // Les dates saisies en heure locale sont envoyées en UTC.
+    const payload = Object.fromEntries(Object.entries(compl).map(([k, v]) => [k, typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? new Date(v).toISOString() : v]))
+    if (await call(`/api/incidents/${incident.id}/declaration`, 'PUT', { declaration: payload })) setMsg(d.saved)
   }
+  const setField = (id: string, v: DeclarationValue | '') => setCompl(c => ({ ...c, [id]: v }))
+  const shown = (v: DeclarationValue | undefined) => (v === undefined ? '' : Array.isArray(v) ? v.join('; ') : String(v))
   async function addRegulatorCode(code: string) {
     const a = incident.attributs ?? {}
     return call(`/api/incidents/${incident.id}`, 'PATCH', { attributs: { ...a, regimes: [...new Set([...(a.regimes ?? []), code])] } })
@@ -82,7 +88,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
 
   const known = new Set(incident.horloges.map(h => h.regime))
   const addable = available.filter(r => !known.has(r.code))
-  const editable = (s: string) => DORA_ITS_FIELDS.filter(f => f.editable && (f.stage === 'GENERAL' || f.stage === s))
+  const editable = (s: DoraStage) => fieldsOfStage(s).filter(f => f.editable)
   const jsonHref = (q: string) => `/api/incidents/${incident.id}/declaration?${q}&download=1`
   const showDora = !!incident.dora
   // Obligations à examiner selon l'incident type : régimes suggérés ET activés dans la configuration, pas encore applicables.
@@ -125,18 +131,14 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                       )}
                       {canQualify && <button type="button" className="btn-secondary text-[11px]" aria-expanded={stage === st} onClick={() => setStage(s => (s === st ? null : st))}>{d.complete}</button>}
                       {canQualify && <a className="btn-secondary text-[11px]" href={jsonHref(`regime=DORA&stage=${st}`)} download>{d.exportJson} — {stageName[st]}</a>}
+                      {canQualify && <a className="btn-secondary text-[11px]" href={jsonHref(`regime=DORA&stage=${st}&format=xlsx&lang=${locale}`)} download>{d.exportXlsx} — {stageName[st]}</a>}
                     </div>
                     {stage === st && canQualify && (
                       <div className="mt-2 rounded border border-gray-100 dark:border-gray-700 p-2">
                         <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.completeTitle}</p>
+                        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{d.mandatoryHint}</p>
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                          {editable(st).map(f => (
-                            <label key={f.id} className="text-[11px] text-gray-600 dark:text-gray-300">{f.id} — {f.name}
-                              {f.kind === 'bool'
-                                ? <select aria-label={`${f.id} ${f.name}`} className="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-1 text-xs" value={compl[f.id] ?? ''} onChange={ev => setCompl(c => ({ ...c, [f.id]: ev.target.value }))}><option value="">—</option><option value="true">{d.yes}</option><option value="false">{d.no}</option></select>
-                                : <input aria-label={`${f.id} ${f.name}`} className="mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-1 text-xs" value={compl[f.id] ?? ''} maxLength={2000} onChange={ev => setCompl(c => ({ ...c, [f.id]: ev.target.value }))} />}
-                            </label>
-                          ))}
+                          {editable(st).map(f => <FieldInput key={f.id} field={f} stage={st} value={compl[f.id] ?? ''} suggested={derived[f.id]} onChange={v => setField(f.id, v)} labels={d} />)}
                         </div>
                         <button type="button" className="btn-primary text-xs mt-2" disabled={busy} onClick={() => void saveCompl()}>{d.save}</button>
                       </div>
@@ -176,6 +178,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                         </>
                       )}
                       {canQualify && <a className="btn-secondary text-[11px]" href={jsonHref(`regime=${encodeURIComponent(h.regime)}&phase=${encodeURIComponent(p.code)}`)} download>{d.exportJson}</a>}
+                      {canQualify && <a className="btn-secondary text-[11px]" href={jsonHref(`regime=${encodeURIComponent(h.regime)}&phase=${encodeURIComponent(p.code)}&format=xlsx&lang=${locale}`)} download>{d.exportXlsx}</a>}
                     </div>
                   </li>
                 )
@@ -214,4 +217,63 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
       </div>
     </div>
   )
+}
+
+type Labels = { yes: string; no: string; suggestedValue: string; conditionLabel: string }
+const inputCls = 'mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-1 text-xs'
+
+/** Champ du glossaire de l'ITS : saisie adaptée au type (liste de valeurs officielles, date-heure, durée JJ:HH:MM…). */
+function FieldInput({ field, stage, value, suggested, onChange, labels }: { field: DoraItsField; stage: DoraStage; value: DeclarationValue | ''; suggested?: DeclarationValue; onChange: (v: DeclarationValue | '') => void; labels: Labels }) {
+  const label = `${field.id} ${field.name}`
+  const mandatory = isMandatoryAt(field, stage)
+  const hint = suggested !== undefined && (value === '' || value === undefined) ? `${labels.suggestedValue} : ${Array.isArray(suggested) ? suggested.join('; ') : String(suggested)}` : null
+  const caption = (
+    <span className="block">{field.id} — {field.name}{mandatory && <span aria-hidden="true" className="text-red-600"> *</span>}
+      {field.condition && <span className="block text-[10px] text-gray-400">{labels.conditionLabel} : {field.condition}</span>}</span>
+  )
+  const wrap = (control: React.ReactNode) => <label className="text-[11px] text-gray-600 dark:text-gray-300">{caption}{control}{hint && <span className="block text-[10px] text-indigo-700 dark:text-indigo-300">{hint}</span>}</label>
+  const sv = typeof value === 'string' || typeof value === 'number' ? String(value) : ''
+  switch (field.kind) {
+    case 'bool':
+      return wrap(<select aria-label={label} className={inputCls} value={typeof value === 'boolean' ? String(value) : sv} onChange={e => onChange(e.target.value)}><option value="">—</option><option value="true">{labels.yes}</option><option value="false">{labels.no}</option></select>)
+    case 'choice':
+      return wrap(<select aria-label={label} className={inputCls} value={sv} onChange={e => onChange(e.target.value)}><option value="">—</option>{field.options?.map(o => <option key={o} value={o}>{o}</option>)}</select>)
+    case 'multi': {
+      const selected = Array.isArray(value) ? value : []
+      const toggle = (o: string) => onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o])
+      const groups = field.groups ? Object.entries(field.groups) : [['', field.options ?? []] as [string, string[]]]
+      return (
+        <fieldset className="text-[11px] text-gray-600 dark:text-gray-300 sm:col-span-2">
+          <legend>{caption}</legend>
+          {hint && <span className="block text-[10px] text-indigo-700 dark:text-indigo-300">{hint}</span>}
+          <div className="mt-1 max-h-44 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 p-1.5 space-y-1">
+            {groups.map(([g, opts]) => (
+              <div key={g || 'all'}>
+                {g && <p className="font-medium text-gray-500 dark:text-gray-400">{g}</p>}
+                {opts.map(o => <label key={`${g}/${o}`} className="flex items-start gap-1.5"><input type="checkbox" checked={selected.includes(o)} onChange={() => toggle(o)} aria-label={`${field.id} ${o}`} /><span>{o}</span></label>)}
+              </div>
+            ))}
+          </div>
+        </fieldset>
+      )
+    }
+    case 'datetime':
+      return wrap(<input aria-label={label} type="datetime-local" className={inputCls} value={/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(sv) ? sv : sv ? toLocalValue(sv) : ''} onChange={e => onChange(e.target.value)} />)
+    case 'integer': case 'percent': case 'amount':
+      return wrap(<input aria-label={label} type="number" min={0} max={field.kind === 'percent' ? 100 : undefined} step={field.kind === 'percent' ? 0.1 : field.kind === 'amount' ? 'any' : 1} className={inputCls} value={sv} onChange={e => onChange(e.target.value)} />)
+    case 'duration':
+      return wrap(<input aria-label={label} className={inputCls} placeholder="JJ:HH:MM" pattern="\\d{1,3}:[0-2]\\d:[0-5]\\d" value={sv} onChange={e => onChange(e.target.value)} />)
+    case 'country':
+      return wrap(<input aria-label={label} className={inputCls} placeholder="FR; DE" value={Array.isArray(value) ? value.join('; ') : sv} onChange={e => onChange(e.target.value)} />)
+    case 'lei':
+      return wrap(<input aria-label={label} className={inputCls} maxLength={20} placeholder="LEI (20)" value={sv} onChange={e => onChange(e.target.value.toUpperCase())} />)
+    default:
+      return wrap(<input aria-label={label} className={inputCls} maxLength={2000} value={sv} onChange={e => onChange(e.target.value)} />)
+  }
+}
+/** ISO UTC → valeur d'un champ datetime-local (heure locale). */
+function toLocalValue(iso: string): string {
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return ''
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`
 }
