@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { SectorCode } from '@/lib/sector-suggestions'
 
-type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string }
+type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string; references?: string[] }
 type Choice = SectorCode | 'ALL' | null
 type Preview = { sector: Choice; configuredSectors: SectorCode[]; effectiveSectors?: SectorCode[]; inheritedSectors?: boolean; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] } }
 
@@ -121,7 +121,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
           const disabled = item.status === 'ALREADY_IMPORTED' || (item.kind === 'PROCESS' && !canCreateProcesses)
           return <label key={item.key} data-testid="suggestion-row" data-key={item.key} data-depth={depthOf(item.key)} style={{ paddingLeft: `${8 + depthOf(item.key) * 20}px` }} className="flex gap-2 rounded py-1.5 pr-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">
             <input type="checkbox" className="mt-1" checked={selected.includes(item.key)} disabled={disabled} onChange={() => toggle(item.key)} aria-label={item.title} />
-            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : item.kind === 'CONTROL' ? s.control : item.kind === 'KRI' ? s.kri : item.kind === 'AUDIT' ? s.audit : item.kind === 'RESILIENCE_TEST' ? s.resilienceTest : s.risk}</span>{item.title}{newKeys.has(item.key) && <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-900 dark:bg-blue-900/40 dark:text-blue-100">{s.newBadge}</span>}{item.kind !== 'PROCESS' && item.processKey && titleOf.get(item.processKey) && <span className="block text-xs text-gray-500 dark:text-gray-400">↳ {titleOf.get(item.processKey)}</span>}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
+            <span className="min-w-0"><span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-2">{item.kind === 'PROCESS' ? s.process : item.kind === 'CONTROL' ? s.control : item.kind === 'KRI' ? s.kri : item.kind === 'AUDIT' ? s.audit : item.kind === 'RESILIENCE_TEST' ? s.resilienceTest : s.risk}</span>{item.title}{newKeys.has(item.key) && <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-900 dark:bg-blue-900/40 dark:text-blue-100">{s.newBadge}</span>}{item.references && item.references.length > 0 && <span className="block text-[11px] text-gray-400 dark:text-gray-500">{item.references.join(' · ')}</span>}{item.kind !== 'PROCESS' && item.processKey && titleOf.get(item.processKey) && <span className="block text-xs text-gray-500 dark:text-gray-400">↳ {titleOf.get(item.processKey)}</span>}{item.status === 'ALREADY_IMPORTED' && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({s.imported})</span>}</span>
           </label>
         })}
       </div>

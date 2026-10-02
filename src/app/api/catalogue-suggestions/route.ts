@@ -16,6 +16,7 @@ import { resolveTaxonomie } from '@/lib/taxonomie'
 
 export const dynamic = 'force-dynamic'
 
+const REFERENCES_LABEL: Record<CatalogueLocale, string> = { fr: 'Références', en: 'References', de: 'Quellen', es: 'Referencias', it: 'Riferimenti' }
 const LOCALES: CatalogueLocale[] = ['fr', 'en', 'de', 'es', 'it']
 const parseLocale = (value: unknown): CatalogueLocale => LOCALES.includes(value as CatalogueLocale) ? value as CatalogueLocale : 'fr'
 
@@ -143,6 +144,7 @@ export async function POST(req: NextRequest) {
         // Définition seule : aucune exécution, aucun responsable, aucune efficacité ; périodicité et type sont des suggestions.
         const controle = await tx.controle.create({ data: {
           organizationId: ctx.orgId!, intitule: item.title, periodicite: item.periodicite ?? 'TRIMESTRIEL', typeControle: item.controlType ?? null,
+          description: item.references?.length ? `${REFERENCES_LABEL[locale]} : ${item.references.join(' ; ')}` : null,
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
           riskItemId: (item.riskKeys ?? []).map(k => riskIds.get(k)).find(Boolean) ?? null,
           catalogueKey: item.key, catalogueVersion: item.packVersion,

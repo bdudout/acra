@@ -226,4 +226,12 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     await POST(request({ sector: null, locale: 'fr', selectedKeys: ['core.risk.premises'], acceptUnlinked: true }))
     expect(db.risk.create.mock.calls[1][0].data.taxonomieCode).toBeNull()
   })
+  it('contrôle bancassurance : les textes de référence sont repris dans la description du contrôle créé (langue de l’utilisateur)', async () => {
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, controlePermanentActive: true, secondeLigneActive: true })
+    const res = await POST(request({ sector: 'FINANCE', locale: 'en', selectedKeys: ['finance.process.ict', 'finance.control.ict-register'] }))
+    expect(res.status).toBe(201)
+    const created = db.control.create.mock.calls[0][0].data
+    expect(created).toMatchObject({ catalogueKey: 'finance.control.ict-register', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF' })
+    expect(created.description).toBe('References : Règlement (UE) 2022/2554 (DORA)')
+  })
 })

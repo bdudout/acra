@@ -186,3 +186,12 @@ describe('incident — dates du workflow DORA', () => {
     expect(validateIncidentInput({ intitule: 'X', doraFinaleSoumiseLe: 'pas-une-date' })).toBe('date_invalide')
   })
 })
+
+describe('catalogueKey (incident type)', () => {
+  it('conserve une clé du catalogue ; ignore une clé inconnue ou non textuelle', () => {
+    expect(cleanIncidentInput({ intitule: 'x', catalogueKey: 'cyber.phishing' }).catalogueKey).toBe('cyber.phishing')
+    expect(cleanIncidentInput({ intitule: 'x', catalogueKey: 'nimporte.quoi' }).catalogueKey).toBeNull()
+    expect(cleanIncidentInput({ intitule: 'x', catalogueKey: 42 }).catalogueKey).toBeNull()
+    expect(cleanIncidentInput({ intitule: 'x' }).catalogueKey).toBeNull()
+  })
+})

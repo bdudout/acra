@@ -4,6 +4,7 @@
  * Aucune cotation, obligation réputée satisfaite ou contrepartie fictive.
  */
 import { SECTOR_PACK_ITEMS } from './sector-packs'
+import { BANCASSURANCE_ITEMS } from './sector-packs-bancassurance'
 import { RESILIENCE_TEST_TEMPLATES } from './catalogue-resilience'
 import { RISK_BALE, MERGED_REGISTRY_RISKS } from './catalogue-risks'
 import { CONTROL_RISKS, AUDIT_RISKS } from './catalogue-links'
@@ -35,6 +36,8 @@ export type CatalogueItem = {
   points?: Localized[]
   // Plan de test de résilience modèle seulement : type de test (DORA art. 25 § 1, jamais TLPT) ; ni date, ni testeur, ni résultat.
   testType?: Exclude<TestResilienceType, 'TLPT'>
+  // Textes d'origine cités (intitulé officiel, version) : ancrent le domaine ; ne reproduisent aucun libellé d'exigence. Reprises dans la description du contrôle créé.
+  references?: string[]
 }
 export type SectorSuggestion = Omit<CatalogueItem, 'title' | 'unite' | 'points' | 'description'> & { title: string; description?: string; unite?: string; points?: string[]; packVersion: string; taxonomieCode?: string; riskKeys?: string[] }
 
@@ -285,7 +288,7 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('telecom.risk.request-error', 'TELECOM', l('Une réquisition est traitée hors délai ou de façon erronée', 'An authority request is handled late or incorrectly', 'Eine Behördenanfrage wird verspätet oder fehlerhaft bearbeitet', 'Un requerimiento se tramita fuera de plazo o de forma errónea', 'Una richiesta delle autorità viene gestita in ritardo o in modo errato'), 'telecom.process.lawful'),
 ]
 
-export const CATALOGUE_PACK_VERSION = '1.8'
+export const CATALOGUE_PACK_VERSION = '1.9'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -300,7 +303,7 @@ export type SectorScope = SectorCode | readonly SectorCode[] | null
 export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale): SectorSuggestion[] {
   const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
   const base = [...TRANSVERSAL, ...MERGED_REGISTRY_RISKS.filter(item => item.sector === 'TRANSVERSAL'), ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
-  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
+  const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...BANCASSURANCE_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
   return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...((item.kind === 'CONTROL' ? CONTROL_RISKS : item.kind === 'AUDIT' ? AUDIT_RISKS : {})[item.key] ? { riskKeys: (item.kind === 'CONTROL' ? CONTROL_RISKS : AUDIT_RISKS)[item.key] } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 

@@ -62,3 +62,28 @@ describe('alertes DORA (vraie base)', () => {
     expect(envoyes(rssi)[0].text).toContain('Notification initiale — Panne du SI de paiement : EN RETARD')
   })
 })
+
+describe('alertes des régimes de notification (NIS2, CRA) sur vraie base', () => {
+  it('régimes activés dans la configuration : alerte à l’approche de l’échéance, une seule fois ; régime désactivé ⇒ rien', async () => {
+    const org = await makeOrg('Entreprise NIS2/CRA')
+    await prisma.organizationConfig.create({ data: { id: org.id, incidentsActive: true, reglementaireActive: false,
+      incidentsConfig: { regimes: [{ code: 'NIS2', actif: true }, { code: 'CRA_14', actif: false }] } } })
+    const resp = await makeUser('ANALYSTE', [{ id: org.id, role: 'RSSI' }])
+    // détecté il y a 20 h : l'alerte précoce NIS2 (24 h) n'a plus que 4 h ; le CRA désactivé ne produit rien
+    const inc = await prisma.incident.create({ data: { organizationId: org.id, intitule: 'Compromission de messagerie', declarantId: 'x', statut: 'QUALIFIE', dateDetection: h(-20), attributs: { significatif: true, regimes: ['CRA_14'] } } })
+    mail.send.mockClear()
+    await cron(req())
+    const m = envoyes(resp)
+    expect(m).toHaveLength(1)
+    expect(m[0].subject).toBe('[ACRA] URGENT — déclarations d’incident : 1 échéance(s)')
+    expect(m[0].text).toContain('NIS2'); expect(m[0].text).toContain('Alerte précoce'); expect(m[0].text).not.toContain('CRA —')
+    const i = await prisma.incident.findUniqueOrThrow({ where: { id: inc.id } })
+    expect(Object.keys(i.alertesDora as object)).toEqual(['NIS2:ALERTE_PRECOCE:A_FAIRE'])
+    mail.send.mockClear(); await cron(req())
+    expect(envoyes(resp)).toHaveLength(0) // une seule alerte par phase
+    // la phase est formalisée en interne : plus de retard à signaler
+    await prisma.incident.update({ where: { id: inc.id }, data: { dateDetection: h(-40), notifications: [{ regime: 'NIS2', phase: 'ALERTE_PRECOCE', soumisLe: h(-30).toISOString() }] } })
+    mail.send.mockClear(); await cron(req())
+    expect(envoyes(resp).filter(x => x.text.includes('EN RETARD') && x.text.includes('Alerte précoce'))).toHaveLength(0)
+  })
+})

@@ -75,3 +75,20 @@ L'ancien socle (`registre-catalogue.ts`, 16 risques classés selon les 7 catégo
 | Industrie | — | — | à relire |
 | Commerce | — | — | à relire |
 | Services professionnels | — | — | à relire |
+
+## 5. Pack banque / assurance / mutuelle (catalogue 1.9, 2 octobre 2026)
+
+Recherche faite sur les textes d'origine (Légifrance, EUR-Lex, ACPR) pour ancrer des **domaines de contrôle** ; chaque contrôle cite ses références (champ `references`, repris dans la description du contrôle créé) mais **aucun libellé d'exigence n'est reproduit**. Revue par des experts bancaires, assurantiels et mutualistes : **à faire**.
+
+| Secteur | Domaines | Contrôles | Textes cités |
+|---|---|---|---|
+| Banque (`FINANCE`) | gouvernance et contrôle interne, crédit, marchés / liquidité / bilan, paiements et canaux, LCB-FT et sanctions, conformité et protection de la clientèle, information comptable et réglementaire, TIC et prestataires | 26 | arrêté du 3 novembre 2014 relatif au contrôle interne (banque, services de paiement, services d'investissement), règlement (UE) 2022/2554 (DORA), règlement (UE) n° 575/2013 (CRR), DSP2 (directive (UE) 2015/2366) et règlement délégué (UE) 2018/389, MIF II (directive 2014/65/UE), règlement d'exécution (UE) 2021/451, Code monétaire et financier (LCB-FT, gel des avoirs) |
+| Assurance / mutuelle (`ASSURANCE`) | gouvernance et fonctions clés, ORSA et capital, souscription et tarification, provisions techniques, sinistres, distribution, placements et réassurance, LCB-FT, adhérents (mutuelles), TIC et prestataires | 29 | directive 2009/138/CE (Solvabilité II), DORA, directive (UE) 2016/97 (DDA), règlement délégué (UE) 2017/2358 (gouvernance des produits), Code monétaire et financier, Code de la mutualité |
+
+**Points à valider par le relecteur** (non vérifiés au niveau de l'article) :
+- les **numéros d'articles** de la directive Solvabilité II cités (art. 41, 42, 44 à 49, 82, 132) — à confirmer sur EUR-Lex ;
+- les **périodicités** (point de départ raisonnable, à adapter à la taille et au profil de l'entité) ;
+- la répartition **mutuelle** : les mutuelles relèvent du pack « Assurance / Mutuelle » ; seules les mutuelles du livre II du Code de la mutualité sont soumises à Solvabilité II, celles du livre III ont un régime distinct — le domaine « adhérents » est commun, les contrôles Solvabilité II sont à écarter pour une mutuelle du livre III ;
+- les **KRI** et **missions d'audit** propres à ces deux secteurs ne sont pas étendus (seuls 2 KRI et 1 mission existent) : à décider avec les experts.
+
+Les contrôles sont rattachés à des **risques existants** du catalogue (`CONTROL_RISKS`) ; aucun risque n'est créé implicitement.

@@ -18,7 +18,8 @@
  * Outil d'aide au SUIVI : ne vaut pas déclaration.
  */
 
-export interface Delai { h?: number; mois?: number }
+/** `jOuvres` : jours ouvrés (samedi et dimanche exclus ; pas de calendrier de jours fériés — à ajuster si besoin). */
+export interface Delai { h?: number; mois?: number; jours?: number; jOuvres?: number }
 /** `apres` : 'CONNAISSANCE' (détection) ou le code d'une phase précédente du même régime. */
 export interface RegimePhase { code: string; labelKey?: string; label?: string; delai: Delai; apres: string }
 
@@ -72,6 +73,32 @@ export const CATALOGUE_REGIMES: Regime[] = [
   {
     code: 'RGPD_33', labelKey: 'notifRegimes.RGPD_33.label', declencheur: 'DONNEES_PERSONNELLES', actif: false,
     phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.RGPD_33.phases.NOTIFICATION', delai: { h: 72 }, apres: 'CONNAISSANCE' }],
+  },
+  {
+    // Cyber Resilience Act — Règlement (UE) 2024/2847, art. 14 (obligations de notification applicables depuis le 11 septembre 2026) :
+    // alerte précoce ≤ 24 h, notification ≤ 72 h, rapport final ≤ 1 mois après la notification (incident grave ; pour une vulnérabilité
+    // activement exploitée : 14 jours après la mise à disposition d'une mesure corrective — à adapter dans la configuration).
+    code: 'CRA_14', labelKey: 'notifRegimes.CRA_14.label', declencheur: 'MANUEL', actif: false,
+    phases: [
+      { code: 'ALERTE_PRECOCE', labelKey: 'notifRegimes.CRA_14.phases.ALERTE_PRECOCE', delai: { h: 24 }, apres: 'CONNAISSANCE' },
+      { code: 'NOTIFICATION', labelKey: 'notifRegimes.CRA_14.phases.NOTIFICATION', delai: { h: 72 }, apres: 'CONNAISSANCE' },
+      { code: 'RAPPORT_FINAL', labelKey: 'notifRegimes.CRA_14.phases.RAPPORT_FINAL', delai: { mois: 1 }, apres: 'NOTIFICATION' },
+    ],
+  },
+  {
+    // États-Unis — SEC, Form 8-K item 1.05 : 4 jours ouvrés après la détermination du caractère significatif (matérialité) de l'incident.
+    code: 'SEC_8K', labelKey: 'notifRegimes.SEC_8K.label', declencheur: 'MANUEL', actif: false,
+    phases: [{ code: 'FORM_8K', labelKey: 'notifRegimes.SEC_8K.phases.FORM_8K', delai: { jOuvres: 4 }, apres: 'CONNAISSANCE' }],
+  },
+  {
+    // États-Unis — NYDFS, 23 NYCRR 500.17 : notification au Superintendent ≤ 72 h après la détermination de l'incident de cybersécurité.
+    code: 'NYDFS_500_17', labelKey: 'notifRegimes.NYDFS_500_17.label', declencheur: 'MANUEL', actif: false,
+    phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.NYDFS_500_17.phases.NOTIFICATION', delai: { h: 72 }, apres: 'CONNAISSANCE' }],
+  },
+  {
+    // États-Unis — HIPAA, 45 CFR 164.404 et 164.408 : notification des personnes (et du HHS à partir de 500 personnes) ≤ 60 jours après la découverte.
+    code: 'HIPAA_BREACH', labelKey: 'notifRegimes.HIPAA_BREACH.label', declencheur: 'MANUEL', actif: false,
+    phases: [{ code: 'NOTIFICATION', labelKey: 'notifRegimes.HIPAA_BREACH.phases.NOTIFICATION', delai: { jours: 60 }, apres: 'CONNAISSANCE' }],
   },
   {
     code: 'INTERNE', labelKey: 'notifRegimes.INTERNE.label', declencheur: 'TOUJOURS', actif: false,
@@ -235,12 +262,19 @@ export interface HorlogePhase {
   soumisLe: Date | null; reference?: string
   /** Soumise après l'échéance. */
   tardive: boolean
+  /** Point de départ du délai (connaissance ou soumission de la phase précédente) : sert à dimensionner les relances. */
+  ancre?: Date | null
 }
 export interface HorlogeRegime { regime: string; labelKey?: string; label?: string; autorite?: string; phases: HorlogePhase[] }
 
 function ajouter(d: Date, delai: Delai): Date {
   const r = new Date(d.getTime())
   if (delai.mois) r.setUTCMonth(r.getUTCMonth() + delai.mois)
+  if (delai.jours) r.setUTCDate(r.getUTCDate() + delai.jours)
+  if (delai.jOuvres) {
+    let restant = delai.jOuvres
+    while (restant > 0) { r.setUTCDate(r.getUTCDate() + 1); const j = r.getUTCDay(); if (j !== 0 && j !== 6) restant-- }
+  }
   if (delai.h) r.setTime(r.getTime() + delai.h * 3600_000)
   return r
 }
@@ -265,7 +299,7 @@ export function calculerHorloges(
       const soumisLe = s ? new Date(s.soumisLe) : null
       const tardive = !!(soumisLe && echeance && soumisLe.getTime() > echeance.getTime())
       const statut: HorlogeStatut = soumisLe ? 'SOUMIS' : !echeance ? 'EN_ATTENTE' : now.getTime() > echeance.getTime() ? 'EN_RETARD' : 'A_FAIRE'
-      return { code: p.code, labelKey: p.labelKey, label: p.label, echeance, statut, soumisLe, ...(s?.reference ? { reference: s.reference } : {}), tardive }
+      return { code: p.code, labelKey: p.labelKey, label: p.label, echeance, statut, soumisLe, ...(s?.reference ? { reference: s.reference } : {}), tardive, ancre }
     })
     return { regime: r.code, labelKey: r.labelKey, label: r.label, autorite: r.autorite, phases }
   })

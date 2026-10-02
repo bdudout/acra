@@ -1,0 +1,1 @@
+ALTER TABLE "Incident" ADD COLUMN "declaration" JSONB NOT NULL DEFAULT '{}';

@@ -25,6 +25,9 @@ import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamp
 import type { ChampsValeurs } from '@/lib/champs-perso'
 import IncidentAnalysePanel, { type AnalyseValue } from '@/components/IncidentAnalysePanel'
 import NotificationsPanel, { type HorlogeRegimeJson } from '@/components/NotificationsPanel'
+import DeclarationModal from '@/components/DeclarationModal'
+import IncidentTypePicker from '@/components/IncidentTypePicker'
+import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 import PertesEditor from '@/components/PertesEditor'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
 import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config'
@@ -42,7 +45,7 @@ interface Incident {
   doraReporting?: DoraReporting
   doublons?: { id: string; intitule: string; statut: string; score: number }[]
   // Lot L1
-  typeEvenement?: string | null; quasiIncident?: boolean; champs?: ChampsValeurs
+  typeEvenement?: string | null; quasiIncident?: boolean; champs?: ChampsValeurs; catalogueKey?: string | null
   causeRacine?: string | null; causeDetail?: string | null; leconsApprises?: string | null
   chronologie?: AnalyseValue['chronologie']; impactsNonFinanciers?: AnalyseValue['impactsNonFinanciers']; allocations?: AnalyseValue['allocations']
   attributs?: { significatif?: boolean; donneesPersonnelles?: boolean; contractuel?: boolean; regimes?: string[] }
@@ -63,8 +66,9 @@ type DeclForm = {
   processusId: string; entite: string; impactEstime: string
   typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean
   champs: ChampsValeurs
+  catalogueKey: string
 }
-const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, champs: {} }
+const EMPTY_DECL: DeclForm = { intitule: '', description: '', dateSurvenance: '', dateDetection: '', processusId: '', entite: '', impactEstime: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, catalogueKey: '', champs: {} }
 // Formulaire de déclaration vierge : dates de survenance et détection = aujourd'hui
 // par défaut (l'incident vient en général d'être constaté). Modifiables.
 function emptyDecl(): DeclForm {
@@ -111,6 +115,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const [showConfig, setShowConfig] = useState(false)
   const [configMsg, setConfigMsg] = useState<string | null>(null)
   const [notifId, setNotifId] = useState<string | null>(null)
+  const [declId, setDeclId] = useState<string | null>(null)
   const defsChamps = usePersonnalisationChamps('incident')
   const [analyse, setAnalyse] = useState<AnalyseValue>({ causeRacine: '', causeDetail: '', leconsApprises: '', chronologie: [], impactsNonFinanciers: [], allocations: [] })
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -195,7 +200,10 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         dateSurvenance: decl.dateSurvenance || null, dateDetection: decl.dateDetection || null,
         processusId: decl.processusId || null, entite: decl.entite || null,
         impactEstime: decl.impactEstime || null,
-        typeEvenement: decl.typeEvenement || null, quasiIncident: decl.quasiIncident, champs: decl.champs,
+        // Le type d'un incident type n'est envoyé que s'il est actif au catalogue de l'organisation (sinon : non renseigné, jamais une erreur).
+        typeEvenement: decl.typeEvenement && (!cfg || cfg.typesEvenement.some(x => x.code === decl.typeEvenement && x.actif)) ? decl.typeEvenement : null,
+        quasiIncident: decl.quasiIncident, champs: decl.champs,
+        ...(decl.catalogueKey ? { catalogueKey: decl.catalogueKey, causeRacine: incidentTypeByKey(decl.catalogueKey)?.causeRacine } : {}),
         attributs: { significatif: decl.significatif, donneesPersonnelles: decl.donneesPersonnelles, contractuel: decl.contractuel },
       }),
     })
@@ -437,6 +445,9 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{n.declareTitle}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{n.declareHint}</p>
           {error && <p className="text-xs text-red-600">{error}</p>}
+          <IncidentTypePicker selectedKey={decl.catalogueKey || null}
+            onPick={tpl => setDecl(f => ({ ...f, catalogueKey: tpl.catalogueKey, intitule: tpl.intitule, description: tpl.description, typeEvenement: tpl.typeEvenement, donneesPersonnelles: tpl.donneesPersonnelles || f.donneesPersonnelles }))}
+            onClear={() => setDecl(f => ({ ...f, catalogueKey: '' }))} />
           <input value={decl.intitule} onChange={e => setDecl(f => ({ ...f, intitule: e.target.value }))} placeholder={n.intitulePlaceholder} className={`${inp} w-full`} />
           {declDoublons.length > 0 && (
             <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
@@ -552,6 +563,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                         <span className="text-xs text-gray-400">…</span>
                       ) : (
                         <>
+                          <button onClick={() => setDeclId(i.id)} className="text-xs text-ebios-600 hover:underline mr-2">{n.decl.button}</button>
                           <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline mr-2">{n.qualify}</button>
                           {!i.riskItemId && (
                             <button onClick={() => promouvoir(i.id)} disabled={busy} title={n.promoteHint}
@@ -650,6 +662,15 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
             </div>
           </div>
         )
+      })()}
+
+      {/* Déclaration réglementaire (DORA + régimes activés) */}
+      {declId && (() => {
+        const i = incidents.find(x => x.id === declId)
+        if (!i) return null
+        return <DeclarationModal incident={{ id: i.id, intitule: i.intitule, dora: i.doraReporting ?? null, horloges: i.l1?.horloges ?? [], attributs: i.attributs, catalogueKey: i.catalogueKey ?? null }}
+          available={(cfg?.regimes ?? []).filter(r => r.actif).map(r => ({ code: r.code, label: r.label, labelKey: r.labelKey, autorite: r.autorite }))}
+          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }} />
       })()}
 
       {/* Détail de la déclaration DORA (3 phases) — art. 19 */}
