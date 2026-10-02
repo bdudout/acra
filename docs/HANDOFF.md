@@ -6,6 +6,15 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-02 (56) — Claude : déclarations d'incidents (types, régulateurs, JSON, relances) et pack banque / assurance / mutuelle
+
+- **Incidents** (spec `docs/specs/declarations-incidents.md`) : catalogue de 28 incidents types cherchables (`lib/incident-types-catalogue.ts`, `IncidentTypePicker`, `Incident.catalogueKey`) ; régimes CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA (délais jours / jours ouvrés) ; écran **Déclaration** (`DeclarationModal`) avec case « formalisée en interne » + date, ajout de régulateurs, compléments ITS DORA (`Incident.declaration`, annexe I du règlement d'exécution (UE) 2025/302) et **export JSON** (`GET/PUT /api/incidents/[id]/declaration`) ; relances de tous les régimes (`lib/alertes-notifications.ts`, cron `alertes-dora`).
+- **Bug corrigé** : `PATCH /api/incidents/[id]` partiel (horodatages DORA, attributs) était refusé « intitule_requis » depuis L1.
+- **Catalogue 1.9** : 12 domaines et 55 contrôles-types banque / assurance-mutuelle avec références (`lib/sector-packs-bancassurance.ts`, `references`, description du contrôle créé) ; secteur renommé « Assurance / Mutuelle ». Revue métier : `docs/specs/catalogue-revue-metier.md` § 5.
+- Migrations : `20261002100000_incident_declaration`, `20261002110000_incident_catalogue_key`. **Redémarrer le dev après `prisma generate`** (sinon `Unknown argument catalogueKey`).
+- Vérifié : `tsc` 0 · `npm test` 3414 · `i18n:check` · tests sur vraie base (`alertes-dora.db`) · recettes Playwright locales : `local-incident-declaration`, `local-incident-types`, `local-bancassurance` 3/3 sur PostgreSQL.
+- **Non fait / à décider** : revue par des experts (articles Solvabilité II, périodicités, mutuelles livre II / III) ; KRI et missions d'audit propres à la banque et à l'assurance ; listes de choix de l'ITS DORA (champs en texte libre) ; format de dépôt réel selon l'autorité nationale (ACPR) ; modélisation CRA « vulnérabilité exploitée » (14 jours après correctif) et rançon NYDFS.
+
 ## 2026-10-01 (55) — Claude Code : migration Prisma 5 → 7 (branche `claude/prisma-7`, remplace #205)
 
 - Fait : `prisma.config.ts` (URL hors du schéma, `.env` chargé s'il existe, seed), adaptateur `@prisma/adapter-pg` partout (`src/lib/prisma.ts`, seeds, `scripts/*.mjs`), `@prisma/adapter-pg` et `pg` en `serverExternalPackages`, Dockerfile (étape `prisma-cli` + lien `node_modules/prisma`), options `migrate diff` (CI, `migrate-recover.sh`, runbook), tests de schéma lisant `schema.prisma` (DMMF allégé).
