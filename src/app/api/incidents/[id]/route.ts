@@ -32,9 +32,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // Pertes multi-composantes : si le corps touche aux lignes ou au quasi-incident, on
   // recalcule les agrégats sur l'ENSEMBLE (lignes fournies + lignes déjà enregistrées).
   const toucheLignes = ['pertes', 'recuperationsLignes', 'quasiIncident'].some(k => k in body)
+  // Mise à jour PARTIELLE : l'intitulé et le statut enregistrés valent pour la validation quand le corps ne les fournit pas
+  // (sinon un simple horodatage DORA ou l'ajout d'un régulateur était refusé « intitulé requis » ou ramenait l'état à DECLARE).
+  const base = { intitule: incident.intitule, statut: incident.statut, taxonomieCode: incident.taxonomieCode, ...body }
   const effectif = toucheLignes
-    ? { ...body, pertes: body.pertes ?? incident.pertes, recuperationsLignes: body.recuperationsLignes ?? incident.recuperationsLignes, quasiIncident: body.quasiIncident ?? incident.quasiIncident }
-    : body
+    ? { ...base, pertes: body.pertes ?? incident.pertes, recuperationsLignes: body.recuperationsLignes ?? incident.recuperationsLignes, quasiIncident: body.quasiIncident ?? incident.quasiIncident }
+    : base
   const erreur = validateIncidentInput(effectif, cfgL1)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanIncidentInput(effectif, cfgL1)

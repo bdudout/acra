@@ -26,7 +26,7 @@ export async function loadIncidentInScope(session: { user: { id: string; role?: 
   const incident = await prisma.incident.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: {
-      id: true, organizationId: true, statut: true, declarantId: true, taxonomieCode: true,
+      id: true, organizationId: true, statut: true, declarantId: true, taxonomieCode: true, intitule: true,
       quasiIncident: true, pertes: true, recuperationsLignes: true, notifications: true, champs: true,
     },
   })

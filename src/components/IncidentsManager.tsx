@@ -25,6 +25,7 @@ import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamp
 import type { ChampsValeurs } from '@/lib/champs-perso'
 import IncidentAnalysePanel, { type AnalyseValue } from '@/components/IncidentAnalysePanel'
 import NotificationsPanel, { type HorlogeRegimeJson } from '@/components/NotificationsPanel'
+import DeclarationModal from '@/components/DeclarationModal'
 import PertesEditor from '@/components/PertesEditor'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
 import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config'
@@ -111,6 +112,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const [showConfig, setShowConfig] = useState(false)
   const [configMsg, setConfigMsg] = useState<string | null>(null)
   const [notifId, setNotifId] = useState<string | null>(null)
+  const [declId, setDeclId] = useState<string | null>(null)
   const defsChamps = usePersonnalisationChamps('incident')
   const [analyse, setAnalyse] = useState<AnalyseValue>({ causeRacine: '', causeDetail: '', leconsApprises: '', chronologie: [], impactsNonFinanciers: [], allocations: [] })
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -552,6 +554,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                         <span className="text-xs text-gray-400">…</span>
                       ) : (
                         <>
+                          <button onClick={() => setDeclId(i.id)} className="text-xs text-ebios-600 hover:underline mr-2">{n.decl.button}</button>
                           <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline mr-2">{n.qualify}</button>
                           {!i.riskItemId && (
                             <button onClick={() => promouvoir(i.id)} disabled={busy} title={n.promoteHint}
@@ -650,6 +653,15 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
             </div>
           </div>
         )
+      })()}
+
+      {/* Déclaration réglementaire (DORA + régimes activés) */}
+      {declId && (() => {
+        const i = incidents.find(x => x.id === declId)
+        if (!i) return null
+        return <DeclarationModal incident={{ id: i.id, intitule: i.intitule, dora: i.doraReporting ?? null, horloges: i.l1?.horloges ?? [], attributs: i.attributs }}
+          available={(cfg?.regimes ?? []).filter(r => r.actif).map(r => ({ code: r.code, label: r.label, labelKey: r.labelKey, autorite: r.autorite }))}
+          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }} />
       })()}
 
       {/* Détail de la déclaration DORA (3 phases) — art. 19 */}
