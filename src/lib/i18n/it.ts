@@ -2744,6 +2744,7 @@ export const it: Translations = {
     col: { intitule: 'Rilievo', criticite: 'Criticità', statut: 'Stato', echeance: 'Scadenza', responsable: 'Responsabile', mission: 'Missione / fonte' },
     statutOpt: { OUVERT: 'Aperto', EN_COURS: 'In corso', RESOLU: 'Risolto', ACCEPTE: 'Accettato' },
     enRetard: 'in ritardo',
+    filtres: { search: 'Cerca (titolo, raccomandazione, responsabile, incarico)', statut: 'Stato', criticite: 'Criticità', echeance: 'Scadenza', tous: 'Tutti', none: 'Non indicata', echeanceOpt: { ECHUE: 'Scaduta', SOUS_30J: 'Entro 30 giorni', A_VENIR: 'In arrivo', SANS: 'Senza scadenza' }, ouverts: 'Solo aperti', reset: 'Reimposta', count: '{n} su {total}', noMatch: 'Nessun rilievo corrisponde ai filtri.' },
   },
   campagneControle: {
     title: 'Campagne di controllo di primo livello',

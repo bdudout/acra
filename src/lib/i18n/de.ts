@@ -2743,6 +2743,7 @@ export const de: Translations = {
     col: { intitule: 'Feststellung', criticite: 'Kritikalität', statut: 'Status', echeance: 'Frist', responsable: 'Verantwortlich', mission: 'Auftrag / Quelle' },
     statutOpt: { OUVERT: 'Offen', EN_COURS: 'Laufend', RESOLU: 'Gelöst', ACCEPTE: 'Akzeptiert' },
     enRetard: 'überfällig',
+    filtres: { search: 'Suchen (Titel, Empfehlung, Verantwortliche, Prüfung)', statut: 'Status', criticite: 'Kritikalität', echeance: 'Fälligkeit', tous: 'Alle', none: 'Nicht angegeben', echeanceOpt: { ECHUE: 'Überfällig', SOUS_30J: 'Innerhalb von 30 Tagen', A_VENIR: 'Bevorstehend', SANS: 'Ohne Fälligkeit' }, ouverts: 'Nur offene', reset: 'Zurücksetzen', count: '{n} von {total}', noMatch: 'Keine Feststellung entspricht den Filtern.' },
   },
   campagneControle: {
     title: 'Kontrollkampagnen der ersten Ebene',

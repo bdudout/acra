@@ -2744,6 +2744,7 @@ export const es: Translations = {
     col: { intitule: 'Hallazgo', criticite: 'Criticidad', statut: 'Estado', echeance: 'Vencimiento', responsable: 'Responsable', mission: 'Misión / fuente' },
     statutOpt: { OUVERT: 'Abierto', EN_COURS: 'En curso', RESOLU: 'Resuelto', ACCEPTE: 'Aceptado' },
     enRetard: 'vencido',
+    filtres: { search: 'Buscar (título, recomendación, responsable, misión)', statut: 'Estado', criticite: 'Criticidad', echeance: 'Vencimiento', tous: 'Todos', none: 'No indicada', echeanceOpt: { ECHUE: 'Vencido', SOUS_30J: 'En 30 días', A_VENIR: 'Próximo', SANS: 'Sin vencimiento' }, ouverts: 'Solo abiertos', reset: 'Restablecer', count: '{n} de {total}', noMatch: 'Ningún hallazgo coincide con los filtros.' },
   },
   campagneControle: {
     title: 'Campañas de control de primer nivel',

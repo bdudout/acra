@@ -2768,6 +2768,7 @@ export const fr = {
     col: { intitule: 'Constat', criticite: 'Criticité', statut: 'Statut', echeance: 'Échéance', responsable: 'Responsable', mission: 'Mission / source' },
     statutOpt: { OUVERT: 'Ouvert', EN_COURS: 'En cours', RESOLU: 'Résolu', ACCEPTE: 'Accepté' },
     enRetard: 'en retard',
+    filtres: { search: 'Rechercher (intitulé, recommandation, responsable, mission)', statut: 'Statut', criticite: 'Criticité', echeance: 'Échéance', tous: 'Tous', none: 'Non renseignée', echeanceOpt: { ECHUE: 'Échue', SOUS_30J: 'Sous 30 jours', A_VENIR: 'À venir', SANS: 'Sans échéance' }, ouverts: 'Ouverts seulement', reset: 'Réinitialiser', count: '{n} sur {total}', noMatch: 'Aucun constat ne correspond aux filtres.' },
   },
   campagneControle: {
     title: 'Campagnes de contrôle N1',

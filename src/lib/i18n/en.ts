@@ -2744,6 +2744,7 @@ export const en: Translations = {
     col: { intitule: 'Finding', criticite: 'Severity', statut: 'Status', echeance: 'Deadline', responsable: 'Owner', mission: 'Mission / source' },
     statutOpt: { OUVERT: 'Open', EN_COURS: 'In progress', RESOLU: 'Resolved', ACCEPTE: 'Accepted' },
     enRetard: 'overdue',
+    filtres: { search: 'Search (title, recommendation, owner, engagement)', statut: 'Status', criticite: 'Criticality', echeance: 'Due date', tous: 'All', none: 'Not set', echeanceOpt: { ECHUE: 'Overdue', SOUS_30J: 'Within 30 days', A_VENIR: 'Upcoming', SANS: 'No due date' }, ouverts: 'Open only', reset: 'Reset', count: '{n} of {total}', noMatch: 'No finding matches the filters.' },
   },
   campagneControle: {
     title: 'First-line control campaigns',

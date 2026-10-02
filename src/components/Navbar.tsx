@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
-import { buildNav, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { peekNavModules, loadNavModules, setCachedNavModules } from '@/lib/nav-modules-cache'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
@@ -149,7 +149,10 @@ export default function Navbar() {
   }
 
   // Une route est active si elle est exacte ou parente de la route courante.
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  // Hrefs réellement affichés (liens + éléments de menus) : la correspondance la plus précise l'emporte.
+  const shownKeys = entries.flatMap(e => (e.kind === 'link' ? [e.key] : e.items))
+  // Seul le lien le plus précis est actif (évite que « Réglementaire » reste allumé sur « Suivi régulateur »).
+  const isActive = (href: string) => href === currentHref
 
   // Métadonnées d'affichage (icône + libellé i18n) de chaque lien. Défini DANS le
   // composant car les libellés sont traduits (règle i18n du projet).
@@ -185,6 +188,8 @@ export default function Navbar() {
     rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
   }
+
+  const currentHref = activeNavHref(pathname, shownKeys.map(k => NAV_META[k].href))
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
   const NAV_GROUP_META: Record<NavGroupId, { Icon: LucideIcon; label: string }> = {

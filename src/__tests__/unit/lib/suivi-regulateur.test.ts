@@ -106,3 +106,34 @@ describe('suiviRegulateurToCsvRow', () => {
     expect(row.some(cell => typeof cell === 'string' && cell.startsWith("'="))).toBe(true)
   })
 })
+
+import { filtrerConstatsSuivi, type ConstatRegulateur as CR } from '@/lib/suivi-regulateur'
+
+describe('filtrerConstatsSuivi (filtres de la vue)', () => {
+  const now = new Date('2026-10-02T00:00:00Z')
+  const mk = (o: Partial<CR>): CR => ({ id: 'x', intitule: 'Constat', description: null, recommandation: null, criticite: 2, source: 'REGULATEUR', statut: 'OUVERT', echeance: null, responsableAction: null, missionIntitule: null, ...o })
+  const list = [
+    mk({ id: 'a', intitule: 'Gouvernance TIC', criticite: 4, statut: 'OUVERT', echeance: '2026-09-01', responsableAction: 'RSSI' }),
+    mk({ id: 'b', intitule: 'Plan de continuité', criticite: 2, statut: 'EN_COURS', echeance: '2026-10-20', responsableAction: 'DSI', missionIntitule: 'Mission ACPR 2026' }),
+    mk({ id: 'c', intitule: 'Registre des tiers', criticite: 3, statut: 'RESOLU', echeance: '2026-08-01' }),
+    mk({ id: 'd', intitule: 'Cartographie', criticite: null, statut: 'OUVERT', echeance: null, recommandation: 'Mettre à jour la cartographie' }),
+  ]
+  const ids = (f: Parameters<typeof filtrerConstatsSuivi>[1]) => filtrerConstatsSuivi(list, f, now).map(c => c.id)
+  it('sans filtre : tout', () => expect(ids({})).toEqual(['a', 'b', 'c', 'd']))
+  it('texte (intitulé, recommandation, responsable, mission), sans accents ni casse', () => {
+    expect(ids({ q: 'continuite' })).toEqual(['b'])
+    expect(ids({ q: 'METTRE a jour' })).toEqual(['d'])
+    expect(ids({ q: 'rssi' })).toEqual(['a'])
+    expect(ids({ q: 'mission acpr' })).toEqual(['b'])
+  })
+  it('statut, criticité (dont « non renseignée ») et état d’échéance', () => {
+    expect(ids({ statut: 'OUVERT' })).toEqual(['a', 'd'])
+    expect(ids({ criticite: '4' })).toEqual(['a'])
+    expect(ids({ criticite: 'NONE' })).toEqual(['d'])
+    expect(ids({ echeance: 'ECHUE' })).toEqual(['a'])        // un constat résolu n'est jamais « échu »
+    expect(ids({ echeance: 'SOUS_30J' })).toEqual(['b'])
+    expect(ids({ echeance: 'SANS' })).toEqual(['d'])
+    expect(ids({ ouvertsSeulement: true })).toEqual(['a', 'b', 'd'])
+  })
+  it('les filtres se cumulent', () => expect(ids({ statut: 'OUVERT', echeance: 'ECHUE', q: 'tic' })).toEqual(['a']))
+})

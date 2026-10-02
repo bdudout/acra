@@ -8,8 +8,9 @@
 // Cf. lib/suivi-regulateur et page /reglementaire/suivi-regulateur.
 
 import { Download, CalendarClock } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { filtrerConstatsSuivi, type FiltresSuiviRegulateur } from '@/lib/suivi-regulateur'
 
 interface Constat {
   id: string; intitule: string; description: string | null; recommandation: string | null
@@ -42,6 +43,9 @@ export default function SuiviRegulateurManager() {
   const [synthese, setSynthese] = useState<Synthese | null>(null)
   const [prochaine, setProchaine] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [f, setF] = useState<FiltresSuiviRegulateur>({})
+  const visibles = useMemo(() => filtrerConstatsSuivi(constats, f), [constats, f])
+  const filtreActif = !!(f.q || f.statut || f.criticite || f.echeance || f.ouvertsSeulement)
 
   useEffect(() => {
     fetch('/api/reglementaire/suivi-regulateur')
@@ -97,8 +101,39 @@ export default function SuiviRegulateurManager() {
         </p>
       )}
 
+      {constats.length > 0 && (
+        <div className="card p-3 flex flex-wrap items-end gap-3" role="search" aria-label={s.filtres.search}>
+          <label className="flex-1 min-w-[14rem] text-xs text-gray-500 dark:text-gray-400">{s.filtres.search}
+            <input type="search" value={f.q ?? ''} onChange={e => setF({ ...f, q: e.target.value })} className="mt-1 w-full px-2.5 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          </label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.statut}
+            <select value={f.statut ?? ''} onChange={e => setF({ ...f, statut: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <option value="">{s.filtres.tous}</option>
+              {(Object.keys(s.statutOpt) as (keyof typeof s.statutOpt)[]).map(k => <option key={k} value={k}>{s.statutOpt[k]}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.criticite}
+            <select value={f.criticite ?? ''} onChange={e => setF({ ...f, criticite: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <option value="">{s.filtres.tous}</option>
+              {[4, 3, 2, 1].map(n => <option key={n} value={String(n)}>{n}</option>)}
+              <option value="NONE">{s.filtres.none}</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.echeance}
+            <select value={f.echeance ?? ''} onChange={e => setF({ ...f, echeance: (e.target.value || undefined) as FiltresSuiviRegulateur['echeance'] })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <option value="">{s.filtres.tous}</option>
+              {(['ECHUE', 'SOUS_30J', 'A_VENIR', 'SANS'] as const).map(k => <option key={k} value={k}>{s.filtres.echeanceOpt[k]}</option>)}
+            </select>
+          </label>
+          <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 pb-2"><input type="checkbox" checked={!!f.ouvertsSeulement} onChange={e => setF({ ...f, ouvertsSeulement: e.target.checked || undefined })} />{s.filtres.ouverts}</label>
+          <div className="pb-2 text-xs text-gray-500 dark:text-gray-400 tabular-nums">{s.filtres.count.replace('{n}', String(visibles.length)).replace('{total}', String(constats.length))}{filtreActif && <button type="button" onClick={() => setF({})} className="ml-2 underline">{s.filtres.reset}</button>}</div>
+        </div>
+      )}
+
       {constats.length === 0 ? (
         <div className="card p-10 text-center text-gray-400 dark:text-gray-500 text-sm">{s.empty}</div>
+      ) : visibles.length === 0 ? (
+        <div className="card p-10 text-center text-gray-400 dark:text-gray-500 text-sm">{s.filtres.noMatch}</div>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
@@ -113,7 +148,7 @@ export default function SuiviRegulateurManager() {
               </tr>
             </thead>
             <tbody>
-              {constats.map(c => (
+              {visibles.map(c => (
                 <tr key={c.id} className="border-t border-gray-100 dark:border-gray-700 align-top">
                   <td className="px-3 py-2">
                     <div className="font-medium text-gray-800 dark:text-gray-100">{c.intitule}</div>

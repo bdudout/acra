@@ -9,7 +9,7 @@
  * historique — seule la DISPOSITION change selon le mode.
  */
 import { describe, it, expect } from 'vitest'
-import { buildNav, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { fr } from '@/lib/i18n/fr'
 import { en } from '@/lib/i18n/en'
 import { de } from '@/lib/i18n/de'
@@ -81,9 +81,27 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     // 1re entrée = menu « Pilotage » (tableau de bord + cockpit GRC + appétence RAS/RAD).
     // Le plan d'action unifié est le lien cœur « actions » (plus de doublon « plansActions »).
     expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence', 'kri'] })
-    // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
+    // L'analyse cyber (cœur EBIOS) est regroupée dans un menu ; la cartographie des risques vit avec le registre.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
-    expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
+    expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions'])
+  })
+
+  it('la cartographie des risques est regroupée avec le registre des risques (menu Registres), juste après lui', () => {
+    const m = buildNav('RISK_MANAGER', ALL_ON)
+    const reg = m.entries.find(e => e.kind === 'group' && e.id === 'registre')
+    expect(reg && reg.kind === 'group' && reg.items.slice(0, 2)).toEqual(['registre', 'cartographie'])
+  })
+
+  it('un lien n’est actif que s’il est la correspondance la plus précise : /reglementaire/suivi-regulateur n’active pas /reglementaire', () => {
+    const hrefs = ['/reglementaire', '/reglementaire/suivi-regulateur', '/reglementaire/tests-resilience', '/controles', '/controles/campagnes']
+    expect(activeNavHref('/reglementaire/suivi-regulateur', hrefs)).toBe('/reglementaire/suivi-regulateur')
+    expect(activeNavHref('/reglementaire/suivi-regulateur/abc', hrefs)).toBe('/reglementaire/suivi-regulateur')
+    expect(activeNavHref('/reglementaire', hrefs)).toBe('/reglementaire')
+    expect(activeNavHref('/reglementaire/dora', hrefs)).toBe('/reglementaire')
+    expect(activeNavHref('/controles/campagnes/12', hrefs)).toBe('/controles/campagnes')
+    expect(activeNavHref('/controles', hrefs)).toBe('/controles')
+    expect(activeNavHref('/autre', hrefs)).toBeNull()
+    expect(activeNavHref('/controlesX', hrefs)).toBeNull()
   })
 
   it('suivi régulateur (plans d’action régulateurs) est dans le menu Contrôle & audit', () => {
@@ -184,7 +202,7 @@ describe('buildNav — regroupement KRI et registres', () => {
   it('regroupe les registres de risques et TIC, même si seul le module réglementaire est activé', () => {
     const both = buildNav('RSSI', ALL_ON)
     expect(both.entries.find(e => e.kind === 'group' && e.id === 'registre')).toEqual({
-      kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'registreTic'],
+      kind: 'group', id: 'registre', items: ['registre', 'cartographie', 'campagnes', 'processus', 'registreTic'],
     })
     const confReg = both.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
     expect(confReg && confReg.kind === 'group' && confReg.items).not.toContain('registreTic')

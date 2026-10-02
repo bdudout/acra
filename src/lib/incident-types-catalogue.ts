@@ -4,6 +4,8 @@
 // de l'entité ; le type sert seulement à suggérer les obligations à examiner (régimes de notification) et à préremplir les
 // indices de déclaration (nature TIC ou non, cause racine probable, données personnelles possibles).
 
+import { SECTOR_INCIDENT_TYPES } from './incident-types-sector'
+
 export type IncidentLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
 type Localized = Record<IncidentLocale, string>
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
@@ -13,6 +15,8 @@ export type CauseRacineType = 'PROCESSUS' | 'PERSONNES' | 'SYSTEMES' | 'EXTERNE'
 
 export interface IncidentType {
   key: string
+  /** Secteur du catalogue sectoriel (SECTOR_CODES) pour les incidents propres à un métier ; absent = socle générique. */
+  sector?: string
   categorie: IncidentCategorie
   title: Localized
   /** Synonymes de recherche (toutes langues, sans accents). */
@@ -115,16 +119,20 @@ export const INCIDENT_TYPES: IncidentType[] = [
     ['conformite', 'manquement', 'reglementaire', 'non conformite', 'obligation', 'lcb-ft', 'sanction', 'compliance'], { cause: 'PROCESSUS', aCompleter: ['mesures', 'clients', 'autorites', 'pertes'] }),
 ]
 
+INCIDENT_TYPES.push(...SECTOR_INCIDENT_TYPES)
+
 const BY_KEY = new Map(INCIDENT_TYPES.map(x => [x.key, x]))
 export const incidentTypeByKey = (key: string | null | undefined): IncidentType | undefined => (key ? BY_KEY.get(key) : undefined)
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
-/** Recherche tolérante (accents, casse, plusieurs mots) sur le titre dans la langue de l'utilisateur et sur les synonymes ; vide = tout. */
-export function searchIncidentTypes(query: string, locale: IncidentLocale): IncidentType[] {
+/** Recherche tolérante (accents, casse, plusieurs mots ; filtre facultatif par secteurs) sur le titre dans la langue de l'utilisateur et sur les synonymes ; vide = tout. */
+export function searchIncidentTypes(query: string, locale: IncidentLocale, sectors?: readonly string[]): IncidentType[] {
   const words = fold(query).split(' ').filter(Boolean)
-  if (!words.length) return INCIDENT_TYPES
-  return INCIDENT_TYPES.filter(x => {
+  // Secteurs choisis : le socle générique reste proposé, ainsi que les incidents des secteurs choisis (multisecteur : union) ; aucun secteur = tout.
+  const base = sectors && sectors.length ? INCIDENT_TYPES.filter(x => !x.sector || sectors.includes(x.sector)) : INCIDENT_TYPES
+  if (!words.length) return base
+  return base.filter(x => {
     const hay = `${fold(x.title[locale])} ${fold(x.title.en)} ${x.aliases.map(fold).join(' ')}`
     return words.every(w => hay.includes(w))
   })

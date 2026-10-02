@@ -130,9 +130,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.kri && !firstLineOnly) pilotage.push('kri')
   entries.push(groupOrLink('pilotage', pilotage))
 
-  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
+  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions.
   const analyses: NavKey[] = [...core(modules)]
-  if (modules.registre && !firstLineOnly) analyses.push('cartographie')
   entries.push(groupOrLink('analyses', analyses))
 
   // 3. Registres : risques et arrangements TIC restent des objets distincts,
@@ -141,7 +140,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
     const registres: NavKey[] = []
     if (modules.registre) {
-      registres.push('registre', 'campagnes')
+      // La cartographie des risques est une vue du registre : elle lui est rattachée (hors 1ʳᵉ ligne).
+      registres.push('registre', 'cartographie', 'campagnes')
       if (canGererProcessus) registres.push('processus')
     }
     if (modules.reglementaire) registres.push('registreTic')
@@ -172,4 +172,16 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }
+}
+
+/**
+ * Lien actif = la correspondance la PLUS précise (la plus longue) parmi les liens affichés : « /reglementaire/suivi-regulateur »
+ * n'active pas aussi « /reglementaire » (sinon deux menus sont en surbrillance). null si aucun lien ne correspond.
+ */
+export function activeNavHref(pathname: string, hrefs: readonly string[]): string | null {
+  let best: string | null = null
+  for (const href of hrefs) {
+    if ((pathname === href || pathname.startsWith(href + '/')) && (best === null || href.length > best.length)) best = href
+  }
+  return best
 }
