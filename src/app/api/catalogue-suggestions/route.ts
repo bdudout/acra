@@ -13,6 +13,7 @@ import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 import { ALL_SECTORS, parseSectorChoice } from '@/lib/sector-selection'
 import { orgSectors } from '@/lib/sector-context.server'
 import { resolveTaxonomie } from '@/lib/taxonomie'
+import { reviewNotice } from '@/lib/catalogue-review-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
   const since = oldestImportedVersion(imported.map(row => row.catalogueVersion))
   const visibleKeys = new Set(items.map(item => item.key))
   const whatsNew = { since, keys: newSince(since, [...existing].filter((k): k is string => !!k)).filter(key => visibleKeys.has(key)) }
-  return NextResponse.json({ sector: choiceLabel(sector), configuredSectors: own, effectiveSectors: effective, inheritedSectors: inherited, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew })
+  return NextResponse.json({ sector: choiceLabel(sector), configuredSectors: own, effectiveSectors: effective, inheritedSectors: inherited, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew, reviewPending: reviewNotice(sector) })
 }
 
 /** Une confirmation explicite importe un sous-ensemble, jamais tout un pack implicite. */

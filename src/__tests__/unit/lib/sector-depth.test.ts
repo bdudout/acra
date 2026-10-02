@@ -6,6 +6,7 @@ const TARGETS = { CONTROL: 20, KRI: 8, AUDIT: 4, RISK: 12 } as const
 // Secteurs dont le contenu a atteint la cible : la liste ne fait que croître (cliquet) jusqu'à couvrir tous les secteurs.
 const DEEP: readonly string[] = [
   'DEFENSE', 'EDUCATION', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS',
+  'PUBLIC', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT', 'COMMERCE', 'SERVICES', 'FINANCE', 'ASSURANCE',
 ]
 
 describe('profondeur du catalogue par secteur', () => {
@@ -21,6 +22,13 @@ describe('profondeur du catalogue par secteur', () => {
     })
   }
   it('cliquet : tous les secteurs finiront dans la liste (échoue tant qu’un secteur n’a pas atteint ses cibles)', () => {
-    for (const code of DEEP) expect(SECTOR_CODES as readonly string[]).toContain(code)  // TODO: passer à l'égalité stricte une fois tous les secteurs au niveau
+    expect([...DEEP].sort()).toEqual([...SECTOR_CODES].sort())
+  })
+  it('chaque secteur ancre au moins 2 contrôles sur un texte d’origine cité (références, sans reprise d’exigence)', () => {
+    for (const sector of SECTOR_CODES) {
+      const withRefs = listSectorSuggestions(sector, 'fr').filter(i => i.sector === sector && i.kind === 'CONTROL' && (i.references?.length ?? 0) > 0)
+      expect(withRefs.length, sector).toBeGreaterThanOrEqual(2)
+      for (const i of withRefs) for (const ref of i.references!) expect(ref.length, `${i.key} référence trop longue (reprise d’exigence ?)`).toBeLessThanOrEqual(220)
+    }
   })
 })

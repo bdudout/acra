@@ -24,6 +24,13 @@ beforeEach(() => {
 })
 
 describe('SectorSuggestionsPanel', () => {
+  it('signale les secteurs à relire par un expert (jamais « relu » sans relecteur)', async () => {
+    fetchMock.mockImplementation(() => ok({ sector: 'SANTE', configuredSectors: ['SANTE'], sectors: ['SANTE'], locale: 'fr', version: '1.10', items, reviewPending: ['SANTE'] }))
+    render(<SectorSuggestionsPanel canCreateProcesses onImported={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions par secteur/ }))
+    expect(await screen.findByText(/à relire par un expert du secteur/i)).toBeInTheDocument()
+  })
+
   it('montre les suggestions sans sélection automatique, permet de choisir et affiche le bilan', async () => {
     const onImported = vi.fn()
     render(<SectorSuggestionsPanel canCreateProcesses onImported={onImported} />)
