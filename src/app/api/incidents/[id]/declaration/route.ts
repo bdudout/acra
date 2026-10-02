@@ -75,8 +75,8 @@ export async function GET(req: NextRequest, ctx: Params): Promise<NextResponse> 
     if (!r || !p) return NextResponse.json({ error: 'regime_invalide' }, { status: 400 })
     const h = calculerHorloges({ connaissance: row.dateDetection, attributs: { ...sanitizeAttributs(row.attributs), regimes: [r.code] }, notifications: sanitizeNotifications(row.notifications) }, [{ ...r, actif: true }], context.now)[0]?.phases.find(x => x.code === phase)
     const n = { code: r.code, label: r.label, autorite: r.autorite, phase: { code: p.code, label: p.label }, echeance: h?.echeance ?? null, soumisLe: h?.soumisLe ?? null, reference: h?.reference }
-    what = { kind: 'REGIME', ...n }
-    json = buildNotificationJson(incident, n, context)
+    what = { kind: 'REGIME', ...n, declaration }
+    json = buildNotificationJson(incident, n, context, declaration)
     name = `${r.code.toLowerCase()}-${p.code.toLowerCase()}-${row.id}`
   }
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

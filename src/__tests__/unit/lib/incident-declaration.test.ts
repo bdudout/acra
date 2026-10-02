@@ -115,3 +115,25 @@ describe('buildNotificationJson — autres régimes (NIS2, CRA, RGPD, SEC…)', 
     expect(j.notice).toBeTruthy()
   })
 })
+
+import { RGPD_FIELDS, cleanRgpd } from '@/lib/incident-declaration'
+
+describe('notification RGPD art. 33 § 3 (CNIL)', () => {
+  it('rubriques : nature, personnes (catégories, nombre), données (catégories, nombre), DPO, conséquences, mesures, motif du retard', () => {
+    expect(RGPD_FIELDS.map(f => f.id)).toEqual(['rgpd.nature', 'rgpd.categoriesPersonnes', 'rgpd.nbPersonnes', 'rgpd.categoriesDonnees', 'rgpd.nbEnregistrements', 'rgpd.dpo', 'rgpd.consequences', 'rgpd.mesures', 'rgpd.retardMotif'])
+    expect(RGPD_FIELDS.find(f => f.id === 'rgpd.nbPersonnes')!.kind).toBe('integer')
+  })
+  it('nettoyage : champs inconnus écartés, entiers positifs, textes bornés', () => {
+    expect(cleanRgpd({ 'rgpd.nature': '  Exfiltration  ', 'rgpd.nbPersonnes': '1200.7', 'rgpd.nbEnregistrements': -4, 'rgpd.inconnu': 'x', 'rgpd.dpo': 'a'.repeat(5000) })).toEqual({ 'rgpd.nature': 'Exfiltration', 'rgpd.nbPersonnes': 1200, 'rgpd.dpo': 'a'.repeat(2000) })
+  })
+  it('cleanDeclaration conserve les rubriques RGPD en plus des champs ITS ; le JSON du régime RGPD_33 les reprend dans un bloc « rgpd » (autres régimes : aucun bloc)', () => {
+    const decl = cleanDeclaration({ 'rgpd.nature': 'Envoi à un mauvais destinataire', 'rgpd.nbPersonnes': 40, '2.1': 'x' })
+    expect(decl['rgpd.nature']).toBe('Envoi à un mauvais destinataire'); expect(decl['rgpd.nbPersonnes']).toBe(40)
+    const n = { code: 'RGPD_33', phase: { code: 'NOTIFICATION' }, echeance: null, soumisLe: null }
+    const json = buildNotificationJson(incident, n, ctx, decl)
+    expect(json.rgpd).toMatchObject({ nature: 'Envoi à un mauvais destinataire', nbPersonnes: 40 })
+    expect(buildNotificationJson(incident, { ...n, code: 'NIS2' }, ctx, decl).rgpd).toBeUndefined()
+    expect(buildNotificationJson(incident, n, ctx).rgpd).toBeDefined() // bloc présent, rubriques à compléter (nature proposée depuis la description)
+    expect(buildNotificationJson(incident, n, ctx).rgpd!.nature).toBe('Indisponibilité du moteur de paiement')
+  })
+})

@@ -162,10 +162,40 @@ function cleanValue(field: DoraItsField, raw: unknown): DeclarationValue | undef
   }
 }
 
+// ─── RGPD art. 33 § 3 : contenu de la notification de violation à l'autorité de contrôle (CNIL en France) ────────────────
+// Rubriques libres complétées par l'entité (rien n'est présumé) ; stockées avec la déclaration sous des clés `rgpd.*`.
+export interface RgpdField { id: string; key: string; kind: 'text' | 'integer'; art: string }
+export const RGPD_FIELDS: RgpdField[] = [
+  { id: 'rgpd.nature', key: 'nature', kind: 'text', art: '33(3)(a)' },
+  { id: 'rgpd.categoriesPersonnes', key: 'categoriesPersonnes', kind: 'text', art: '33(3)(a)' },
+  { id: 'rgpd.nbPersonnes', key: 'nbPersonnes', kind: 'integer', art: '33(3)(a)' },
+  { id: 'rgpd.categoriesDonnees', key: 'categoriesDonnees', kind: 'text', art: '33(3)(a)' },
+  { id: 'rgpd.nbEnregistrements', key: 'nbEnregistrements', kind: 'integer', art: '33(3)(a)' },
+  { id: 'rgpd.dpo', key: 'dpo', kind: 'text', art: '33(3)(b)' },
+  { id: 'rgpd.consequences', key: 'consequences', kind: 'text', art: '33(3)(c)' },
+  { id: 'rgpd.mesures', key: 'mesures', kind: 'text', art: '33(3)(d)' },
+  { id: 'rgpd.retardMotif', key: 'retardMotif', kind: 'text', art: '33(1)' },
+]
+const RGPD_BY_ID = new Map(RGPD_FIELDS.map(f => [f.id, f]))
+const RGPD_MAX_TEXT = 2000
+
+/** Rubriques RGPD saisies : texte borné, entier positif ; clés inconnues écartées. */
+export function cleanRgpd(input: unknown): Declaration {
+  const out: Declaration = {}
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out
+  for (const [id, raw] of Object.entries(input as Record<string, unknown>)) {
+    const f = RGPD_BY_ID.get(id)
+    if (!f) continue
+    if (f.kind === 'integer') { const n = Math.floor(Number(raw)); if (Number.isFinite(n) && n >= 0 && raw !== '' && raw != null) out[id] = n }
+    else { const t = String(raw ?? '').trim().slice(0, RGPD_MAX_TEXT); if (t) out[id] = t }
+  }
+  return out
+}
+
 /** Compléments saisis : seuls les champs ITS éditables sont gardés ; chaque valeur est contrôlée selon le type et la liste de valeurs admises du glossaire. */
 export function cleanDeclaration(input: unknown): Declaration {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return {}
-  const out: Declaration = {}
+  const out: Declaration = { ...cleanRgpd(input) }
   for (const [id, raw] of Object.entries(input as Record<string, unknown>)) {
     const field = BY_ID.get(id)
     if (!field || !field.editable) continue
@@ -285,11 +315,13 @@ export interface NotificationJsonInput {
 export interface NotificationJson {
   schema: 'acra.incident-notification/1'; notice: string; generatedAt: string
   regime: { code: string; label?: string; authority?: string; phase: string; phaseLabel?: string; deadline: string | null; submittedAt: string | null; reference?: string }
+  /** Rubriques de l'art. 33 § 3 du RGPD (régime RGPD_33 seulement) : à compléter par l'entité. */
+  rgpd?: Record<string, string | number | boolean | string[]>
   incident: { reference: string; title: string; description?: string; detectedAt?: string; occurredAt?: string; status?: string; eventType?: string; organisation: string; classifiedMajorAt?: string; closedAt?: string; resolutionSummary?: string; rootCause?: string; rootCauseDetail?: string }
 }
 
 /** Fichier JSON générique pour un régime autre que DORA (NIS2, CRA, RGPD, SEC 8-K, NYDFS, HIPAA, interne, personnalisé). */
-export function buildNotificationJson(inc: DeclarationIncident, n: NotificationJsonInput, ctx: DeclarationContext): NotificationJson {
+export function buildNotificationJson(inc: DeclarationIncident, n: NotificationJsonInput, ctx: DeclarationContext, declaration: Declaration = {}): NotificationJson {
   return {
     schema: 'acra.incident-notification/1', generatedAt: ctx.now.toISOString(),
     notice: 'Aide à la déclaration : le contenu, le canal et le format de dépôt sont fixés par l’autorité ou le contrat concernés ; ce fichier n’a pas été transmis.',
@@ -302,5 +334,6 @@ export function buildNotificationJson(inc: DeclarationIncident, n: NotificationJ
       ...(iso(inc.doraClasseMajeurLe) ? { classifiedMajorAt: iso(inc.doraClasseMajeurLe) } : {}), ...(iso(inc.clotureLe) ? { closedAt: iso(inc.clotureLe) } : {}),
       ...(inc.clotureCommentaire ? { resolutionSummary: inc.clotureCommentaire } : {}), ...(inc.causeRacine ? { rootCause: inc.causeRacine } : {}), ...(inc.causeDetail ? { rootCauseDetail: inc.causeDetail } : {}),
     },
+    ...(n.code === 'RGPD_33' ? { rgpd: Object.fromEntries(RGPD_FIELDS.map(f => [f.key, declaration[f.id] ?? (f.key === 'nature' ? inc.description ?? undefined : undefined)]).filter(([, v]) => v !== undefined)) } : {}),
   }
 }

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { fieldsOfStage, isMandatoryAt, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
+import { fieldsOfStage, isMandatoryAt, RGPD_FIELDS, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 import RegimeInfoBlock from '@/components/RegimeInfoBlock'
@@ -155,6 +155,26 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
           <section key={h.regime} aria-label={h.label ?? tr(h.labelKey, h.regime)} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{h.label ?? tr(h.labelKey, h.regime)}</h3>
             <RegimeInfoBlock code={h.regime} />
+            {h.regime === 'RGPD_33' && canQualify && (
+              <div className="mt-2 rounded border border-gray-100 dark:border-gray-700 p-2">
+                <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.rgpd.title}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">{d.rgpd.hint}</p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {RGPD_FIELDS.map(f => {
+                    const label = (d.rgpd.fields as Record<string, string>)[f.key]
+                    const val = compl[f.id] ?? ''
+                    return (
+                      <label key={f.id} className={`text-[11px] text-gray-600 dark:text-gray-300 ${f.kind === 'text' && f.key !== 'nature' && f.key !== 'dpo' ? 'sm:col-span-2' : ''}`}>{label} <span className="text-gray-400">({f.art})</span>
+                        {f.kind === 'integer'
+                          ? <input type="number" min={0} aria-label={label} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />
+                          : <textarea aria-label={label} rows={2} maxLength={2000} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />}
+                      </label>
+                    )
+                  })}
+                </div>
+                <button type="button" className="btn-primary text-xs mt-2" disabled={busy} onClick={() => void saveCompl()}>{d.save}</button>
+              </div>
+            )}
             <ul className="mt-2 space-y-3">
               {h.phases.map(p => {
                 const key = `${h.regime}/${p.code}`; const done = p.statut === 'SOUMIS'
