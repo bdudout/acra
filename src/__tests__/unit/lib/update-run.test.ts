@@ -1,6 +1,6 @@
 // Machine à états de la mise à jour (docs/specs/sauvegarde-rollback-spec.md, lot 2) : table normative d'échec, reprise, journal.
 import { describe, it, expect } from 'vitest'
-import { UPDATE_STATES, UPDATE_ERROR_CODES, nextOnFailure, needsDbRestore, resumeAction, parseRunJournal, type UpdateRunState } from '@/lib/update-run'
+import { UPDATE_STATES, UPDATE_ERROR_CODES, nextOnFailure, needsDbRestore, resumeAction, parseRunJournal } from '@/lib/update-run'
 
 describe('nextOnFailure (table 2.1)', () => {
   it.each([
@@ -18,7 +18,7 @@ describe('nextOnFailure (table 2.1)', () => {
     expect(nextOnFailure(state)).toEqual({ action, code })
   })
   it('tous les codes publiés sont déclarés pour l’i18n', () => {
-    for (const s of UPDATE_STATES.filter(s => s !== 'DONE')) expect(UPDATE_ERROR_CODES).toContain(nextOnFailure(s as Exclude<UpdateRunState, 'DONE'>).code)
+    for (const s of UPDATE_STATES.filter(s => s !== 'DONE')) expect(UPDATE_ERROR_CODES).toContain(nextOnFailure(s as Exclude<(typeof UPDATE_STATES)[number], 'DONE'>).code)
   })
 })
 

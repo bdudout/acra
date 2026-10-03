@@ -29,7 +29,7 @@ describe('/api/admin/version/update', () => {
     const res = await POST(req({ channel: 'stable' }))
     expect(res.status).toBe(202)
     const written = JSON.parse(fs.readFileSync(path.join(dir, 'inbox', 'request.json'), 'utf8'))
-    expect(Object.keys(written).sort()).toEqual(['channel', 'id', 'requestedAt', 'requestedBy'])
+    expect(Object.keys(written).sort()).toEqual(['action', 'channel', 'id', 'requestedAt', 'requestedBy'])
     expect(written.channel).toBe('stable')
     expect(auditLog).toHaveBeenCalledOnce()
   })
@@ -53,6 +53,6 @@ describe('/api/admin/version/update', () => {
   it('GET : disponibilité de l’agent et dernier statut assaini', async () => {
     fs.mkdirSync(path.join(dir, 'inbox')); beat()
     fs.writeFileSync(path.join(dir, 'status.json'), JSON.stringify({ state: 'SUCCESS', channel: 'stable', version: '1.0.3', secret: 'x' }))
-    expect(await (await GET()).json()).toEqual({ agentAvailable: true, status: { state: 'SUCCESS', channel: 'stable', version: '1.0.3' } })
+    expect(await (await GET()).json()).toEqual({ agentAvailable: true, status: { state: 'SUCCESS', channel: 'stable', version: '1.0.3' }, snapshots: [], run: null })
   })
 })

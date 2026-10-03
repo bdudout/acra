@@ -70,6 +70,20 @@ fi
 # Pulsation : l'interface n'active le bouton que si l'agent s'est manifesté < 5 min.
 printf '{"at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$DIR/agent.json.tmp" && mv "$DIR/agent.json.tmp" "$DIR/agent.json"
 
+# Pas de verrou d'exécution vivant : un journal d'exécution interrompu (kill, redémarrage de l'hôte) est REPRIS
+# (retour arrière automatique) avant toute nouvelle demande — cf. docs/specs/sauvegarde-rollback-spec.md § 2.2.
+RUN_CUR="$DIR/run/current.json"
+if [ -f "$RUN_CUR" ]; then
+  RUN_PID="$(cat "$DIR/run/lock/pid" 2>/dev/null || true)"
+  if [ -z "$RUN_PID" ] || ! kill -0 "$RUN_PID" 2>/dev/null; then
+    # shellcheck disable=SC1090
+    [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+    export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] reprise d'une mise à jour interrompue"
+    scripts/update.sh resume --status-file "$DIR/status.json" || true
+  fi
+fi
+
 REQ="$INBOX/request.json"
 [ -f "$REQ" ] || exit 0
 
@@ -78,16 +92,32 @@ LOCK="$DIR/.lock"
 mkdir "$LOCK" 2>/dev/null || exit 0
 trap 'rmdir "$LOCK"' EXIT
 
-# Seul le canal est lu, puis validé contre une liste fermée ; le reste est ignoré.
-CHANNEL="$(head -c 4096 "$REQ" | sed -n 's/.*"channel"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' | head -1)"
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+invalid() { printf '{"state":"FAILED","message":"Demande invalide ignorée","code":"invalid_request","at":"%s"}\n' "$(now)" > "$DIR/status.json"; exit 0; }
+# Seuls l'action, le canal et l'identifiant de point sont lus, chacun validé contre une liste fermée
+# (ou, pour l'identifiant, contre l'index publié par scripts/acra-snapshot.sh) ; le reste est ignoré.
+BODY="$(head -c 4096 "$REQ")"
 rm -f "$REQ"
-case "$CHANNEL" in
-  stable|beta) ;;
-  *) printf '{"state":"FAILED","message":"Demande invalide ignorée","at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$DIR/status.json"; exit 0 ;;
-esac
-
+field() { printf '%s' "$BODY" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1; }
+ACTION="$(field action)"; ACTION="${ACTION:-update}"
 # shellcheck disable=SC1090
 [ -f "$ENV_FILE" ] && . "$ENV_FILE"
 export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
-echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] mise à jour demandée : canal $CHANNEL"
-scripts/update.sh "$CHANNEL" --yes --status-file "$DIR/status.json" || true
+
+case "$ACTION" in
+  update)
+    CHANNEL="$(field channel)"
+    case "$CHANNEL" in stable|beta) ;; *) invalid ;; esac
+    echo "[$(now)] mise à jour demandée : canal $CHANNEL"
+    scripts/update.sh "$CHANNEL" --yes --status-file "$DIR/status.json" || true ;;
+  rollback)
+    SNAP="$(field snapshotId)"
+    ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
+    printf '%s' "$SNAP" | grep -Eq "$ID_RE" || invalid
+    # L'identifiant doit exister dans l'index de l'AGENT (l'application n'est pas digne de confiance sur ce point).
+    SNAP_RE="$(printf '%s' "$SNAP" | sed 's/[.+]/\\&/g')"
+    { [ -f "$DIR/snapshots.json" ] && grep -Eq "\"id\"[[:space:]]*:[[:space:]]*\"$SNAP_RE\"" "$DIR/snapshots.json"; } || invalid
+    echo "[$(now)] retour arrière demandé : point $SNAP"
+    scripts/update.sh rollback "$SNAP" --yes --status-file "$DIR/status.json" || true ;;
+  *) invalid ;;
+esac

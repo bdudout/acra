@@ -13,7 +13,7 @@ const ALL_STATES: readonly string[] = [...UPDATE_STATES, 'ROLLBACK', 'ROLLED_BAC
 export const UPDATE_ERROR_CODES = [
   'precheck_failed', 'precheck_dirty', 'precheck_fetch', 'precheck_branch', 'precheck_same', 'precheck_not_ff', 'precheck_space', 'precheck_no_stop_cmd', 'precheck_busy',
   'quiesce_failed', 'snapshot_failed', 'snapshot_space', 'fetch_failed', 'handoff_failed', 'migrate_failed', 'start_failed', 'health_failed', 'smoke_failed', 'finalize_failed',
-  'interrupted_before_snapshot', 'rollback_not_ancestor', 'rollback_failed', 'invalid_request',
+  'interrupted_before_snapshot', 'interrupted', 'rollback_not_ancestor', 'rollback_failed', 'invalid_request',
 ] as const
 export type UpdateErrorCode = (typeof UPDATE_ERROR_CODES)[number]
 

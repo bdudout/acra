@@ -1,14 +1,14 @@
 // #185 — bouton « Mettre à jour » d'une instance auto-hébergée : l'application
 // dépose une DEMANDE (canal uniquement), un agent hôte l'exécute. Logique pure.
 import { describe, expect, it } from 'vitest'
-import { buildUpdateRequest, agentAlive, parseUpdateStatus, AGENT_MAX_AGE_MS } from '@/lib/update-request'
+import { buildUpdateRequest, buildRollbackRequest, agentAlive, parseUpdateStatus, AGENT_MAX_AGE_MS } from '@/lib/update-request'
 
 const now = new Date('2026-09-29T10:00:00Z')
 
 describe('buildUpdateRequest', () => {
   it('ne contient que le canal, l’auteur et la date', () => {
     expect(buildUpdateRequest({ channel: 'stable', userId: 'u1', now, id: 'r1' }))
-      .toEqual({ id: 'r1', channel: 'stable', requestedBy: 'u1', requestedAt: '2026-09-29T10:00:00.000Z' })
+      .toEqual({ id: 'r1', action: 'update', channel: 'stable', requestedBy: 'u1', requestedAt: '2026-09-29T10:00:00.000Z' })
   })
   it('refuse tout canal inconnu', () => {
     expect(() => buildUpdateRequest({ channel: 'main && curl evil' as never, userId: 'u1', now, id: 'r1' })).toThrow()
@@ -32,5 +32,34 @@ describe('parseUpdateStatus', () => {
   it('état inconnu → null', () => {
     expect(parseUpdateStatus({ state: 'HACK' })).toBeNull()
     expect(parseUpdateStatus('texte')).toBeNull()
+  })
+})
+
+describe('buildRollbackRequest (lot 3)', () => {
+  const entry = { id: '20261003T101500Z-pre-update-1.0.4', reason: 'pre-update' as const, createdAt: '2026-10-03T10:15:00Z', version: '1.0.4', verified: 'full' as const, clone: true, documents: true, encrypted: false, sizeBytes: 1 }
+  const index = { snapshots: [entry] }
+  it('ne contient que l’action, l’identifiant du point, la version confirmée, l’auteur et la date', () => {
+    expect(buildRollbackRequest({ snapshotId: entry.id, confirmVersion: '1.0.4', index, userId: 'u1', now, id: 'r2' }))
+      .toEqual({ id: 'r2', action: 'rollback', snapshotId: entry.id, confirmVersion: '1.0.4', requestedBy: 'u1', requestedAt: '2026-09-29T10:00:00.000Z' })
+  })
+  it('refuse un identifiant invalide, inconnu de l’index, ou une version confirmée différente', () => {
+    expect(() => buildRollbackRequest({ snapshotId: '../x', confirmVersion: '1.0.4', index, userId: 'u', now, id: 'r' })).toThrow('invalid_snapshot')
+    expect(() => buildRollbackRequest({ snapshotId: '20261003T101500Z-manual-9', confirmVersion: '9', index, userId: 'u', now, id: 'r' })).toThrow('unknown_snapshot')
+    expect(() => buildRollbackRequest({ snapshotId: entry.id, confirmVersion: '1.0.5', index, userId: 'u', now, id: 'r' })).toThrow('confirm_mismatch')
+  })
+})
+
+describe('parseUpdateStatus — champs de la machine à états (lot 2)', () => {
+  it('conserve étape, code, point, retour arrière et étapes ; ignore le reste', () => {
+    const out = parseUpdateStatus({ state: 'FAILED', step: 'MIGRATE', code: 'migrate_failed', snapshotId: '20261003T101500Z-pre-update-1.0.4', from: '1.0.4', to: '1.0.5', rolledBack: true,
+      steps: [{ step: 'PRECHECK', ok: true, at: '2026-10-03T10:00:00Z', x: 1 }, { step: 'HACK', ok: true, at: 'x' }], evil: 1 })
+    expect(out).toMatchObject({ state: 'FAILED', step: 'MIGRATE', code: 'migrate_failed', from: '1.0.4', to: '1.0.5', rolledBack: true })
+    expect(out?.snapshotId).toBe('20261003T101500Z-pre-update-1.0.4')
+    expect(out?.steps).toEqual([{ step: 'PRECHECK', ok: true, at: '2026-10-03T10:00:00Z' }])
+    expect(JSON.stringify(out)).not.toContain('evil')
+  })
+  it('un identifiant de point invalide ou un code inconnu est écarté', () => {
+    const out = parseUpdateStatus({ state: 'FAILED', snapshotId: '../x', code: 'rm -rf' })
+    expect(out?.snapshotId).toBeUndefined(); expect(out?.code).toBeUndefined()
   })
 })

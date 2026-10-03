@@ -6,6 +6,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { agentAlive, parseUpdateStatus, type UpdateRequest, type UpdateStatus } from '@/lib/update-request'
+import { parseSnapshotIndex, type SnapshotEntry, type SnapshotIndex } from '@/lib/snapshot'
+import { parseRunJournal, type RunJournal } from '@/lib/update-run'
 
 /** Dossier d'échange (surchageable pour les tests / déploiements particuliers). */
 export function updateDir(): string {
@@ -20,15 +22,26 @@ async function readJson(file: string): Promise<unknown> {
   } catch { return null }
 }
 
-/** Disponibilité de l'agent (pulsation récente + boîte de dépôt présente) et dernier statut. */
-export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null }> {
+/** Index des points de restauration publié par scripts/acra-snapshot.sh (assaini). */
+export async function readSnapshotIndex(): Promise<SnapshotIndex> {
+  return parseSnapshotIndex(await readJson(path.join(updateDir(), 'snapshots.json')))
+}
+
+export interface RunSummary { kind: RunJournal['kind']; state: RunJournal['state']; from: string; to: string; snapshotId: string | null; startedAt: string; updatedAt: string; steps: RunJournal['steps'] }
+
+/** Disponibilité de l'agent (pulsation récente + boîte de dépôt présente), dernier statut, points de restauration et exécution en cours. */
+export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null; snapshots: SnapshotEntry[]; run: RunSummary | null }> {
   const dir = updateDir()
-  const [heartbeat, status, inbox] = await Promise.all([
+  const [heartbeat, status, inbox, index, journal] = await Promise.all([
     readJson(path.join(dir, 'agent.json')),
     readJson(path.join(dir, 'status.json')),
     fs.stat(path.join(dir, 'inbox')).then(s => s.isDirectory()).catch(() => false),
+    readSnapshotIndex(),
+    readJson(path.join(dir, 'run', 'current.json')),
   ])
-  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status) }
+  const j = parseRunJournal(journal)
+  const run: RunSummary | null = j ? { kind: j.kind, state: j.state, from: j.from.version, to: j.to.version, snapshotId: j.snapshotId, startedAt: j.startedAt, updatedAt: j.updatedAt, steps: j.steps } : null
+  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status), snapshots: index.snapshots, run }
 }
 
 /** Dépose la demande (écriture atomique : fichier temporaire puis renommage). */

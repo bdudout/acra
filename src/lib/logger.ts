@@ -141,6 +141,10 @@ export type AuditAction =
   | 'MCP_TOOL_INVOKED'
   | 'MCP_PROPOSAL_REVIEWED'
   | 'MATURITY_UPDATED'
+  | 'INSTANCE_ROLLBACK_REQUESTED'
+  | 'INSTANCE_RESTORED'
+  | 'INSTANCE_UPDATED'
+  | 'INSTANCE_UPDATE_ROLLED_BACK'
 
 /** Contexte joint à un événement d'audit (utilisateur, IP, organisation, cible…). */
 export interface AuditContext {

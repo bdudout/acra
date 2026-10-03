@@ -98,7 +98,7 @@ resume_run() {
       echo "Reprise : mise à jour interrompue à l'étape $STATE — retour arrière."
       local needdb=0; case "$STATE" in MIGRATE|START|HEALTH|SMOKE|ROLLBACK) needdb=1 ;; esac
       # ROLLBACK interrompu : rejoué (restore est idempotent : base courante déjà conforme ⇒ le renommage est refait proprement).
-      do_rollback "interrupted_${STATE}" "$needdb" || exit 1; exit 0 ;;
+      do_rollback interrupted "$needdb" || exit 1; exit 0 ;;
     FINALIZE|DONE) event "UPDATED $FROM $TO $(iso)"; archive_run; status SUCCESS "Mise à jour terminée (reprise)" ;;
     *) archive_run ;;
   esac

@@ -145,7 +145,7 @@ describe('update.sh v2 — reprise après interruption', () => {
     const r = inst.run('scripts/update.sh', ['resume', '--status-file', STATUS])
     expect(r.status, r.stderr).toBe(0)
     expect(inst.calls().some(x => x.includes('RENAME TO') && x.includes('__failed_'))).toBe(true)
-    expect(status()).toMatchObject({ rolledBack: true, code: 'interrupted_MIGRATE' })
+    expect(status()).toMatchObject({ rolledBack: true, code: 'interrupted' })
   })
 })
 
