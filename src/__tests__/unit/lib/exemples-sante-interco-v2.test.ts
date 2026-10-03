@@ -44,8 +44,8 @@ describe('catalogue 1.13', () => {
     expect(t).toContain('technique.risk.parser-exploit'); expect(t).toContain('technique.control.input-validation-review')
     const s = new Set(listSectorSuggestions('SANTE', 'fr').map(i => i.key))
     expect(s).toContain('sante.control.platform-continuity-test'); expect(s).toContain('sante.risk.portal-malicious-attachment')
-    expect(CATALOGUE_PACK_VERSION).toBe('1.13')
-    expect(CATALOGUE_CHANGELOG.at(-1)!.added).toEqual(expect.arrayContaining(['technique.risk.parser-exploit', 'sante.control.platform-continuity-test']))
+    expect(Number(CATALOGUE_PACK_VERSION.split('.')[1])).toBeGreaterThanOrEqual(13)
+    expect(CATALOGUE_CHANGELOG.find(e => e.version === '1.13')!.added).toEqual(expect.arrayContaining(['technique.risk.parser-exploit', 'sante.control.platform-continuity-test']))
   })
 })
 

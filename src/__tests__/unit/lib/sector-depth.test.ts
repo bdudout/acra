@@ -6,7 +6,7 @@ const TARGETS = { CONTROL: 20, KRI: 8, AUDIT: 4, RISK: 12 } as const
 // Secteurs dont le contenu a atteint la cible : la liste ne fait que croître (cliquet) jusqu'à couvrir tous les secteurs.
 const DEEP: readonly string[] = [
   'DEFENSE', 'EDUCATION', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS',
-  'PUBLIC', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT', 'COMMERCE', 'SERVICES', 'FINANCE', 'ASSURANCE', 'TECHNIQUE',
+  'PUBLIC', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT', 'COMMERCE', 'SERVICES', 'FINANCE', 'ASSURANCE', 'TECHNIQUE', 'PROTECTION_SOCIALE',
 ]
 
 describe('profondeur du catalogue par secteur', () => {

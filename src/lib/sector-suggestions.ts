@@ -15,7 +15,7 @@ import type { TestResilienceType } from './tests-resilience'
 // dont elle relève dans l'analyse. Seuls les secteurs choisis par l'organisation sont proposés (cf. sector-selection).
 export const SECTOR_CODES = [
   'PUBLIC', 'FINANCE', 'ASSURANCE', 'DEFENSE', 'EDUCATION', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT',
-  'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS', 'TECHNIQUE',
+  'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS', 'PROTECTION_SOCIALE', 'TECHNIQUE',
 ] as const
 export type SectorCode = (typeof SECTOR_CODES)[number]
 export type CatalogueLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
@@ -298,7 +298,7 @@ export function adaptPeriodicite<T extends NonNullable<CatalogueItem['periodicit
   return (next[p] ?? p) as T
 }
 
-export const CATALOGUE_PACK_VERSION = '1.13'
+export const CATALOGUE_PACK_VERSION = '1.14'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {

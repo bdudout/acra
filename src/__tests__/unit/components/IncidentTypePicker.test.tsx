@@ -16,8 +16,10 @@ describe('IncidentTypePicker', () => {
     expect(within(list).getAllByRole('option').length).toBeGreaterThanOrEqual(26)
     fireEvent.change(screen.getByLabelText(/Rechercher un incident type/), { target: { value: 'hameçonnage' } })
     const found = within(screen.getByRole('listbox')).getAllByRole('option')
-    expect(found).toHaveLength(1); expect(found[0]).toHaveTextContent('Hameçonnage')
-    fireEvent.click(within(found[0]).getByRole('button'))
+    // Sans filtre de secteur, les incidents types sectoriels qui parlent d'hameçonnage sont aussi proposés.
+    expect(found.map(o => o.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Hameçonnage')]))
+    const generic = found.find(o => !/Campagne d’hameçonnage/.test(o.textContent ?? '') && /Hameçonnage/.test(o.textContent ?? ''))!
+    fireEvent.click(within(generic).getByRole('button'))
     expect(onPick).toHaveBeenCalledTimes(1)
     const tpl = onPick.mock.calls[0][0]
     expect(tpl).toMatchObject({ catalogueKey: 'cyber.phishing', typeEvenement: 'CYBER', significatif: false })

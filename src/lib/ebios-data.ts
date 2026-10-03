@@ -36,6 +36,8 @@ export const SECTEURS_ACTIVITE = [
   'Agriculture / Agroalimentaire', 'Immobilier / Construction',
   'Médias / Culture', 'Eau / Assainissement',
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
+  // Organismes de protection sociale (régimes de base, assurance maladie obligatoire…)
+  'Protection sociale / Sécurité sociale',
   // Catégorie technique (objet de l'analyse = une interconnexion entre SI, quel que soit le métier)
   'Technique / Interconnexion de SI',
   'Autre',
@@ -106,6 +108,20 @@ export const SOUS_SECTEURS = [
   // Immobilier (issue #100) — agence vs construction/BTP
   { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
   { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
+  // Protection sociale — organismes de sécurité sociale organisés en réseau
+  { id: 'protsoc-tete-reseau', famille: 'protection_sociale', label: 'Tête de réseau (pilotage national, référentiels, maîtrise des risques du réseau)' },
+  { id: 'protsoc-caisse-locale', famille: 'protection_sociale', label: 'Caisse locale (accueil, gestion des droits, liquidation)' },
+  { id: 'protsoc-controle-medical', famille: 'protection_sociale', label: 'Service du contrôle médical (avis, arrêts de travail, accords préalables)' },
+  { id: 'protsoc-production', famille: 'protection_sociale', label: 'Centre de production informatique (traitements de masse, éditique, paiements)' },
+  { id: 'protsoc-services-usagers', famille: 'protection_sociale', label: 'Services en ligne aux usagers (compte, application, carte dématérialisée)' },
+  { id: 'protsoc-services-pro', famille: 'protection_sociale', label: 'Services aux professionnels de santé (téléservices, conventionnement)' },
+  { id: 'protsoc-risques-pro', famille: 'protection_sociale', label: 'Risques professionnels (accidents du travail, maladies professionnelles, tarification)' },
+  { id: 'protsoc-prevention', famille: 'protection_sociale', label: 'Gestion du risque et prévention (dépistage, accompagnement, centres d’examens)' },
+  { id: 'protsoc-fraude', famille: 'protection_sociale', label: 'Lutte contre la fraude (exploration de données, enquêtes, contentieux)' },
+  { id: 'protsoc-donnees', famille: 'protection_sociale', label: 'Données nationales (entrepôt, mise à disposition, statistiques publiques)' },
+  { id: 'protsoc-international', famille: 'protection_sociale', label: 'Relations internationales (soins à l’étranger, coordination européenne)' },
+  { id: 'protsoc-action-sociale', famille: 'protection_sociale', label: 'Action sanitaire et sociale (aides individuelles)' },
+  { id: 'protsoc-mandats', famille: 'protection_sociale', label: 'Gestion pour le compte d’autres régimes (mandats, délégations)' },
   // Technique — interconnexions entre systèmes d'information (tous métiers)
   { id: 'technique-interco-prestataire', famille: 'technique', label: 'Interconnexion avec un prestataire qui livre des données' },
   { id: 'technique-interco-metier', famille: 'technique', label: 'Échange de données métier entre SI (partenaire, filiale, délégataire)' },

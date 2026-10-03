@@ -11,12 +11,14 @@
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
 /** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'technique'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'technique' | 'protection_sociale'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
   // En tête : « Interconnessione » (it) contient des sous-chaînes d'autres familles.
   { famille: 'technique', kw: ['technique', 'interconnexion', 'interconnection', 'technical', 'technik', 'kopplung', 'técnico', 'tecnico', 'interconexión', 'interconexion', 'interconnessione'] },
+  // Avant santé et banque : « Sozialversicherung » contient « versicherung », « assurance maladie » contient « assur ».
+  { famille: 'protection_sociale', kw: ['protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'proteccion social', 'seguridad social', 'protezione sociale', 'previdenza sociale'] },
   { famille: 'sante', kw: ['santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health', 'salud', 'gesundheit', 'sanità', 'sanita'] },
   { famille: 'banque', kw: ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech', 'bank', 'insurance', 'versicherung', 'seguro', 'assicura'] },
   { famille: 'defense', kw: ['défense', 'defense', 'défence', 'defence', 'militaire', 'verteidigung', 'defensa', 'difesa', 'national'] },

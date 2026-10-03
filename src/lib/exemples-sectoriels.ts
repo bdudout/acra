@@ -44,7 +44,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'technique'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'technique' | 'protection_sociale'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -836,8 +836,16 @@ const TECHNIQUE: SectorFamily = {
   exemples: {},
 }
 
+// PROTECTION SOCIALE — organismes de sécurité sociale : contenu dans exemples-protection-sociale.ts
+const PROTECTION_SOCIALE: SectorFamily = {
+  key: 'protection_sociale',
+  match: ['protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'proteccion social', 'seguridad social', 'protezione sociale', 'previdenza sociale'],
+  exemples: {},
+}
+
 // TECHNIQUE en tête : « Interconnessione » (it) contient « ess » (famille associations).
-export const SECTOR_FAMILIES: SectorFamily[] = [TECHNIQUE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
+// PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
+export const SECTOR_FAMILIES: SectorFamily[] = [TECHNIQUE, PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
@@ -847,6 +855,8 @@ export const SECTOR_FAMILIES: SectorFamily[] = [TECHNIQUE, SANTE, FINANCE, INDUS
 /** Sous-profession / sous-mode ciblé à partir d'un id de sous-secteur (juridique, transport…). */
 function professionFromSousSecteur(sousSecteur?: string | null): string | undefined {
   const v = (sousSecteur ?? '').toLowerCase()
+  // Protection sociale : la sous-profession est l'id sans préfixe (ex. protsoc-fraude → fraude)
+  if (v.startsWith('protsoc-')) return v.slice('protsoc-'.length)
   // Interconnexions entre SI (famille technique)
   if (v.includes('technique-interco-prestataire')) return 'prestataire'
   if (v.includes('technique-interco-metier')) return 'metier'
@@ -969,7 +979,11 @@ export function sectorExemplesFor(
   const seen = new Set<string>()
   const out: Record<string, unknown>[] = []
   for (const x of parts.flat()) { const k = exempleKey(x); if (k && seen.has(k)) continue; seen.add(k); out.push(x) }
-  return out
+  if (parts.length < 2) return out
+  // Élément commun = présent dans toutes les parties : il passe après les éléments propres aux sous-secteurs choisis.
+  const keysByPart = parts.map(p => new Set(p.map(exempleKey)))
+  const isCommon = (x: Record<string, unknown>) => keysByPart.every(ks => ks.has(exempleKey(x)))
+  return [...out.filter(x => !isCommon(x)), ...out.filter(isCommon)]
 }
 
 /** Applique les traductions à un exemple (repli sur le texte FR source si clé absente). */

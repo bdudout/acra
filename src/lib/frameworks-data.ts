@@ -346,6 +346,9 @@ export function adaptFrameworksForSize(base: FrameworkId[], taille?: TailleAnaly
 function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
   const s = (secteur ?? '').toLowerCase()
   const has = (...kw: string[]) => kw.some(k => s.includes(k))
+  // Organismes de protection sociale (autorités administratives : téléservices homologués, données de santé) — en tête,
+  // car « Sozialversicherung » / « sécurité sociale » croiseraient d'autres branches.
+  if (has('protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'seguridad social', 'protezione sociale', 'previdenza sociale')) return ['RGS', 'ANSSI_HYG', 'HDS', 'ISO27001']
   if (has('banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ')) return ['DORA', 'PCI_DSS', 'ISO27001']
   if (has('santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health')) return ['HDS', 'ISO27001']
   if (has('défense', 'defense', 'national', 'militaire', 'defence')) return ['NIST_800_53', 'ANSSI_HYG']

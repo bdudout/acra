@@ -46,6 +46,12 @@ describe('exemples : union des sous-secteurs choisis, uniquement ce qui est coh�
     const noms = sectorExemplesFor(SANTE, 'mesures', 'fr', ['sante-amc', 'technique-interco-prestataire']).map(x => String(x.nom))
     expect(new Set(noms).size).toBe(noms.length)
   })
+  it('les éléments propres à chacun des sous-secteurs choisis passent avant le socle commun', () => {
+    const noms = sectorExemplesFor('Protection sociale / Sécurité sociale', 'mesures', 'fr', ['protsoc-caisse-locale', 'protsoc-services-usagers']).map(x => String(x.nom))
+    const iSocle = noms.findIndex(n => /Délai de sécurité et confirmation/.test(n))
+    const iUsagers = noms.findIndex(n => /Authentification renforcée pour les opérations sensibles du compte usager/.test(n))
+    expect(iUsagers).toBeGreaterThan(-1); expect(iUsagers).toBeLessThan(iSocle)
+  })
   it('un sous-secteur d’un autre secteur est ignoré, même passé directement', () => {
     expect(txt(SANTE, 'valeursMetier', ['sante-amc', 'banque-detail'])).toBe(txt(SANTE, 'valeursMetier', ['sante-amc']))
   })
