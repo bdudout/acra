@@ -298,7 +298,7 @@ export function adaptPeriodicite<T extends NonNullable<CatalogueItem['periodicit
   return (next[p] ?? p) as T
 }
 
-export const CATALOGUE_PACK_VERSION = '1.10'
+export const CATALOGUE_PACK_VERSION = '1.11'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {

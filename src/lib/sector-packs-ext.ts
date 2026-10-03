@@ -16,8 +16,9 @@ import { DEEPEN_A_PACKS } from './sector-packs-deepen-a'
 import { DEEPEN_B_PACKS } from './sector-packs-deepen-b'
 import { DEEPEN_C_PACKS } from './sector-packs-deepen-c'
 import { DEEPEN_D_PACKS } from './sector-packs-deepen-d'
+import { MUTUELLE_PACK } from './sector-packs-mutuelle'
 
-const PACKS: SectorPack[] = [DEFENSE_PACK, EDUCATION_PACK, AGRICOLE_PACK, IMMOBILIER_PACK, MEDIA_PACK, TOURISME_PACK, ASSOCIATIONS_PACK, ...DEEPEN_A_PACKS, ...DEEPEN_B_PACKS, ...DEEPEN_C_PACKS, ...DEEPEN_D_PACKS]
+const PACKS: SectorPack[] = [DEFENSE_PACK, EDUCATION_PACK, AGRICOLE_PACK, IMMOBILIER_PACK, MEDIA_PACK, TOURISME_PACK, ASSOCIATIONS_PACK, ...DEEPEN_A_PACKS, ...DEEPEN_B_PACKS, ...DEEPEN_C_PACKS, ...DEEPEN_D_PACKS, MUTUELLE_PACK]
 
 export const EXT_ITEMS: CatalogueItem[] = PACKS.flatMap(p => p.items)
 export const EXT_BALE: SectorPack['bale'] = Object.assign({}, ...PACKS.map(p => p.bale))

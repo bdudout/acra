@@ -64,3 +64,21 @@ describe('recommend_risks_scenarios', () => {
     expect(parse(await recommendRisksScenariosTool.handler({ limit: 0 }, ctx)).catalogueRisks.length).toBe(1)
   })
 })
+
+describe('recommend_control_plan', () => {
+  it('est enregistré, calculé par ACRA (aucun LLM) et sans accès base', async () => {
+    const { recommendControlPlanTool } = await import('@/lib/mcp/tools-recommend.server')
+    expect(buildMcpTools().map(t => t.name)).toContain('recommend_control_plan')
+    expect(recommendControlPlanTool.description).toMatch(/aucun LLM|sans LLM/i)
+    const out = parse(await recommendControlPlanTool.handler({ profile: 'MUTUELLE_SANTE', count: 12 }, ctx))
+    expect(out.controls).toHaveLength(12)
+    expect(new Set(out.controls.map((c: { domain: string }) => c.domain)).size).toBe(12)
+    expect(riskItemFindMany).not.toHaveBeenCalled()
+  })
+  it('profil inconnu : erreur explicite avec les profils disponibles', async () => {
+    const { recommendControlPlanTool } = await import('@/lib/mcp/tools-recommend.server')
+    const r = await recommendControlPlanTool.handler({ profile: 'XYZ' }, ctx)
+    expect(r.isError).toBe(true)
+    expect(r.content[0].text).toContain('MUTUELLE_SANTE')
+  })
+})

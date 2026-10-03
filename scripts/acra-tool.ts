@@ -7,7 +7,7 @@ async function main() {
   const { buildMcpTools } = await import('../src/lib/mcp/tools.server')
   const tools = buildMcpTools()
   const [name, raw] = process.argv.slice(2)
-  const SANS_BASE = new Set(['read_notification_regimes', 'read_incident_types', 'read_dora_fields', 'read_catalogue', 'read_resilience_tests', 'read_taxonomie', 'read_sector_examples', 'analyse_import_preview'])
+  const SANS_BASE = new Set(['read_notification_regimes', 'read_incident_types', 'read_dora_fields', 'read_catalogue', 'read_resilience_tests', 'read_taxonomie', 'read_sector_examples', 'analyse_import_preview', 'recommend_control_plan'])
   if (!name) { for (const t of tools.filter(x => SANS_BASE.has(x.name))) console.log(`${t.name} — ${t.description}\n  schéma: ${JSON.stringify(t.inputSchema)}\n`); return }
   const tool = tools.find(t => t.name === name && SANS_BASE.has(t.name))
   if (!tool) { console.error(`Outil inconnu ou nécessitant une organisation : ${name}`); process.exit(2) }

@@ -3,6 +3,9 @@
 // Règle : toute évolution du catalogue (CATALOGUE_PACK_VERSION) ajoute UNE entrée ici avec les clés ajoutées (un test le vérifie).
 
 import { EXT_ITEMS } from './sector-packs-ext'
+import { MUTUELLE_PACK } from './sector-packs-mutuelle'
+
+const MUTUELLE_KEYS = new Set(MUTUELLE_PACK.items.map(item => item.key))
 
 export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
   { version: '1.1', added: [
@@ -264,7 +267,9 @@ export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
       'assurance.control.incident-reporting-drill',
     ] },
   // 1.10 : contenu sectoriel étendu (7 nouveaux secteurs + approfondissement des autres) — clés issues des packs `sector-packs-ext*`.
-  { version: '1.10', added: EXT_ITEMS.map(item => item.key).sort() },
+  { version: '1.10', added: EXT_ITEMS.map(item => item.key).filter(k => !MUTUELLE_KEYS.has(k)).sort() },
+  // 1.11 : contrôles de mutuelle santé manquants (LCB-FT, données de santé, continuité) pour le plan de contrôle type.
+  { version: '1.11', added: [...MUTUELLE_KEYS].sort() },
 ]
 
 const parts = (v: string) => v.split('.').map(n => Number.parseInt(n, 10) || 0)

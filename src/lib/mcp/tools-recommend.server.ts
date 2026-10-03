@@ -10,6 +10,7 @@ import { orgSectors } from '@/lib/sector-context.server'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import type { McpContext } from './tools.server'
 import { anchorExistsInOrg } from './anchors.server'
+import { buildControlPlan, CONTROL_PLAN_PROFILES } from '@/lib/control-plan-template'
 
 const MAX = 50
 const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
@@ -66,5 +67,29 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
         .map(s => ({ intitule: s.intitule, gravite: s.gravite, vraisemblance: s.vraisemblance }))
     }
     return toolText(out)
+  },
+}
+
+export const recommendControlPlanTool: McpTool<McpContext> = {
+  name: 'recommend_control_plan',
+  description:
+    "Compose un plan de contrôle permanent ÉQUILIBRÉ pour un profil de métier (ex. MUTUELLE_SANTE) : un contrôle du catalogue par domaine " +
+    "(gouvernance, honorabilité, LCB-FT, conseil, réclamations, données de santé, prestations, cotisations, délégataires, résilience TIC, " +
+    "continuité, solvabilité), avec périodicité, type et référence. Calculé par ACRA (aucun LLM), en lecture seule ; à qualifier par l'organisation.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      profile: { type: 'string', enum: Object.keys(CONTROL_PLAN_PROFILES), description: 'Profil de métier (défaut MUTUELLE_SANTE).' },
+      count: { type: 'integer', minimum: 1, maximum: 30, description: 'Nombre de contrôles (défaut 12).' },
+      locale: { type: 'string', enum: [...LOCALES], description: 'Langue des libellés (défaut fr).' },
+    },
+    additionalProperties: false,
+  },
+  async handler(args): Promise<McpToolResult> {
+    const profile = typeof args.profile === 'string' ? args.profile : 'MUTUELLE_SANTE'
+    const locale = (LOCALES as readonly string[]).includes(String(args.locale)) ? (args.locale as (typeof LOCALES)[number]) : 'fr'
+    const plan = buildControlPlan(profile, { count: typeof args.count === 'number' ? args.count : 12, locale })
+    if (!plan.controls.length) return { content: [{ type: 'text', text: `profil_inconnu — profils disponibles : ${plan.profiles.join(', ')}` }], isError: true }
+    return toolText(plan)
   },
 }
