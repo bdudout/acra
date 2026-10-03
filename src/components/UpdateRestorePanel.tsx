@@ -10,6 +10,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import type { UpdateStatus } from '@/lib/update-request'
 import type { SnapshotEntry } from '@/lib/snapshot'
 import type { RunSummary } from '@/lib/update-request.server'
+import { offsiteHealth, type OffsiteState } from '@/lib/offsite-status'
 
 interface Props {
   status: UpdateStatus | null
@@ -17,6 +18,8 @@ interface Props {
   snapshots: SnapshotEntry[]
   impacts?: Record<string, { auditEntries: number; documents: number }>
   retentionDays?: number
+  offsite?: OffsiteState | null
+  offsiteMaxAgeHours?: number
   agentAvailable: boolean
   onChanged: () => void
 }
@@ -24,7 +27,7 @@ interface Props {
 const mb = (n: number) => `${Math.max(1, Math.round(n / 1048576))} Mo`
 const fill = (s: string, vars: Record<string, string>) => Object.entries(vars).reduce((a, [k, v]) => a.replaceAll(`{${k}}`, v), s)
 
-export default function UpdateRestorePanel({ status, run, snapshots, impacts, retentionDays = 14, agentAvailable, onChanged }: Props) {
+export default function UpdateRestorePanel({ status, run, snapshots, impacts, retentionDays = 14, offsite = null, offsiteMaxAgeHours = 48, agentAvailable, onChanged }: Props) {
   const { t, locale } = useTranslation()
   const v = t.version
   const steps = v.updateSteps as Record<string, string>
@@ -130,6 +133,8 @@ export default function UpdateRestorePanel({ status, run, snapshots, impacts, re
       </div>
       {message && <p className="text-sm text-ebios-700">{message}</p>}
 
+      <OffsiteSection offsite={offsite} maxAgeHours={offsiteMaxAgeHours} />
+
       {target && (
         <div role="dialog" aria-modal="true" aria-labelledby="restore-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
@@ -160,4 +165,27 @@ function failedStep(s: UpdateStatus): string {
   if (ko) return ko.step
   const m: Record<string, string> = { migrate_failed: 'MIGRATE', start_failed: 'START', health_failed: 'HEALTH', smoke_failed: 'SMOKE', handoff_failed: 'HANDOFF', fetch_failed: 'FETCH' }
   return (s.code && m[s.code]) || 'MIGRATE'
+}
+
+function OffsiteSection({ offsite, maxAgeHours }: { offsite: OffsiteState | null; maxAgeHours: number }) {
+  const { t } = useTranslation()
+  const o = t.version.offsite
+  const drivers = o.drivers as Record<string, string>
+  const h = offsiteHealth(offsite, new Date(), maxAgeHours)
+  const tone = h.status === 'OK' ? 'text-green-700' : h.status === 'NONE' ? 'text-gray-500' : 'text-red-700'
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-800">{o.title}</h3>
+      {h.status === 'NONE' ? (
+        <p className="mt-1 text-sm text-gray-500">{o.none}</p>
+      ) : (
+        <p role={h.status === 'OK' ? 'status' : 'alert'} className={`mt-1 text-sm ${tone}`} data-testid="offsite-status">
+          {o.states[h.status as 'OK' | 'LATE' | 'FAILED']}
+          {' — '}{drivers[offsite?.driver ?? 'none'] ?? offsite?.driver}
+          {offsite?.lastSuccessAt ? ` — ${o.lastSend.replace('{hours}', String(h.ageHours ?? 0))}` : ` — ${o.never}`}
+          {h.status === 'LATE' && ` (${o.threshold.replace('{hours}', String(maxAgeHours))})`}
+        </p>
+      )}
+    </div>
+  )
 }

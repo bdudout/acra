@@ -14,6 +14,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import UpdateRestorePanel from '@/components/UpdateRestorePanel'
 import type { UpdateStatus as FullUpdateStatus } from '@/lib/update-request'
 import type { SnapshotEntry } from '@/lib/snapshot'
+import type { OffsiteState } from '@/lib/offsite-status'
 import type { RunSummary } from '@/lib/update-request.server'
 
 type Channel = 'stable' | 'beta'
@@ -27,6 +28,8 @@ interface VersionInfo {
   snapshots?: SnapshotEntry[]
   impacts?: Record<string, { auditEntries: number; documents: number }>
   failedDbRetentionDays?: number
+  offsite?: OffsiteState | null
+  offsiteMaxAgeHours?: number
   run?: RunSummary | null
   latest: string | null
   latestName: string | null
@@ -156,7 +159,7 @@ export default function VersionCard() {
       )}
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
       {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
-        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} agentAvailable={info.agentAvailable} onChanged={load} />
+        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} onChanged={load} />
       )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">

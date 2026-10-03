@@ -1,6 +1,6 @@
 # Proposition — sauvegarde externe des points de restauration
 
-Date : 2026-10-03 · Statut : **proposition, à arbitrer** (rien n'est codé) · Prolonge
+Date : 2026-10-03 · Statut : **lots S1 (fs, command) et S2 (s3 via rclone) et panneau d'état développés** ; restic (S4) et PITR non faits · Prolonge
 [`sauvegarde-rollback-spec.md`](sauvegarde-rollback-spec.md) (points de restauration locaux).
 
 ## 1. Pourquoi

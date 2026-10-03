@@ -8,6 +8,7 @@ import path from 'node:path'
 import { agentAlive, parseUpdateStatus, type UpdateRequest, type UpdateStatus } from '@/lib/update-request'
 import { parseSnapshotIndex, type SnapshotEntry, type SnapshotIndex } from '@/lib/snapshot'
 import { parseRunJournal, type RunJournal } from '@/lib/update-run'
+import { parseOffsiteState, type OffsiteState } from '@/lib/offsite-status'
 
 /** Dossier d'échange (surchageable pour les tests / déploiements particuliers). */
 export function updateDir(): string {
@@ -30,18 +31,19 @@ export async function readSnapshotIndex(): Promise<SnapshotIndex> {
 export interface RunSummary { kind: RunJournal['kind']; state: RunJournal['state']; from: string; to: string; snapshotId: string | null; startedAt: string; updatedAt: string; steps: RunJournal['steps'] }
 
 /** Disponibilité de l'agent (pulsation récente + boîte de dépôt présente), dernier statut, points de restauration et exécution en cours. */
-export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null; snapshots: SnapshotEntry[]; run: RunSummary | null }> {
+export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null; snapshots: SnapshotEntry[]; run: RunSummary | null; offsite: OffsiteState | null }> {
   const dir = updateDir()
-  const [heartbeat, status, inbox, index, journal] = await Promise.all([
+  const [heartbeat, status, inbox, index, journal, offsiteRaw] = await Promise.all([
     readJson(path.join(dir, 'agent.json')),
     readJson(path.join(dir, 'status.json')),
     fs.stat(path.join(dir, 'inbox')).then(s => s.isDirectory()).catch(() => false),
     readSnapshotIndex(),
     readJson(path.join(dir, 'run', 'current.json')),
+    readJson(path.join(dir, 'offsite.json')),
   ])
   const j = parseRunJournal(journal)
   const run: RunSummary | null = j ? { kind: j.kind, state: j.state, from: j.from.version, to: j.to.version, snapshotId: j.snapshotId, startedAt: j.startedAt, updatedAt: j.updatedAt, steps: j.steps } : null
-  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status), snapshots: index.snapshots, run }
+  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status), snapshots: index.snapshots, run, offsite: parseOffsiteState(offsiteRaw) }
 }
 
 /** Dépose la demande (écriture atomique : fichier temporaire puis renommage). */

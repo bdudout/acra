@@ -16,6 +16,13 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (60) — Claude : retour arrière (dialogue d'impact) et sauvegarde externe (lots S1/S2)
+
+- **Dialogue « Revenir à ce point »** : chiffre les saisies perdues (entrées d'audit et documents postérieurs au point, calcul serveur `snapshot-impact.server.ts`), la durée de conservation de la base écrasée et la clé des secrets (commit `311c64d`).
+- **Sauvegarde externe** (`docs/specs/sauvegarde-externe-proposition.md`) : `scripts/acra-offsite.sh` (push/fetch/test/status) avec pilotes **fs** et **command** (S1, `468b30a`) puis **s3** via rclone (S2, `fc09d1c`) ; garde-fous : refus d'un point non chiffré hors serveur (codes 52), copie vérifiée (51), échec publié sans bloquer le point, rétention, identifiants par l'environnement. État publié `.acra-update/offsite.json` → panneau lecture seule (`offsite-status.ts`, i18n ×5). Branché sur `acra-snapshot.sh create` (`ACRA_OFFSITE_DRIVER`).
+- **Vérifié** : tests unitaires des scripts avec `rclone`/`docker` simulés, composants, i18n. **NON vérifié** : aucun envoi réel (S3, NFS) ; rclone jamais exécuté ; `rclone check` sur des fichiers multipart non éprouvé ; Object Lock non testé.
+- **Reste** : restic (S4), alerte e-mail (non décidée), PITR (chantier séparé), recette réelle.
+
 ## 2026-10-03 (59) — Claude : étude sauvegarde/rollback des mises à jour ; contenu santé, mutuelle et interconnexions (catalogue 1.12)
 
 **Rien n'est poussé** ; commits locaux sur `feat/historical-excel-import`.

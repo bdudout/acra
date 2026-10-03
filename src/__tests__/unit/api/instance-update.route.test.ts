@@ -53,6 +53,6 @@ describe('/api/admin/version/update', () => {
   it('GET : disponibilité de l’agent et dernier statut assaini', async () => {
     fs.mkdirSync(path.join(dir, 'inbox')); beat()
     fs.writeFileSync(path.join(dir, 'status.json'), JSON.stringify({ state: 'SUCCESS', channel: 'stable', version: '1.0.3', secret: 'x' }))
-    expect(await (await GET()).json()).toEqual({ agentAvailable: true, status: { state: 'SUCCESS', channel: 'stable', version: '1.0.3' }, snapshots: [], run: null })
+    expect(await (await GET()).json()).toEqual({ agentAvailable: true, status: { state: 'SUCCESS', channel: 'stable', version: '1.0.3' }, snapshots: [], run: null, offsite: null })
   })
 })

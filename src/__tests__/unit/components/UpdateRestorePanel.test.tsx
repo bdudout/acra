@@ -78,6 +78,18 @@ describe('UpdateRestorePanel', () => {
     expect(screen.getByRole('dialog').textContent).toContain('conservée 30 jours')
   })
 
+  it('sauvegarde externe : absente ⇒ explication ; à jour ⇒ pilote et âge ; en échec ⇒ alerte', () => {
+    const { rerender } = render(<UpdateRestorePanel {...base} offsite={null} />)
+    expect(screen.getByText(/Aucune sauvegarde externe configurée/)).toBeTruthy()
+    const recent = new Date(Date.now() - 3 * 3600_000).toISOString()
+    rerender(<UpdateRestorePanel {...base} offsite={{ driver: 's3', lastSnapshotId: snap.id, lastSuccessAt: recent, lastFailureAt: null, lastCode: 0 }} />)
+    expect(screen.getByTestId('offsite-status').textContent).toContain('À jour — Stockage objet S3 — dernier envoi il y a 3 h')
+    rerender(<UpdateRestorePanel {...base} offsite={{ driver: 'fs', lastSnapshotId: snap.id, lastSuccessAt: recent, lastFailureAt: new Date().toISOString(), lastCode: 51 }} />)
+    expect(screen.getByRole('alert').textContent).toContain('En échec')
+    rerender(<UpdateRestorePanel {...base} offsiteMaxAgeHours={1} offsite={{ driver: 'fs', lastSnapshotId: snap.id, lastSuccessAt: recent, lastFailureAt: null, lastCode: 0 }} />)
+    expect(screen.getByRole('alert').textContent).toContain('En retard')
+  })
+
   it('signale les migrations destructives en attente (PRECHECK)', () => {
     render(<UpdateRestorePanel {...base} status={{ state: 'RUNNING', precheck: { destructive: ['20261004000000_drop_x'] } }} />)
     expect(screen.getByRole('note').textContent).toContain('1 migration(s) destructive(s)')
