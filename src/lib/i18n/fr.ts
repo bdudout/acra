@@ -1734,7 +1734,7 @@ export const fr = {
     resultat: 'Résultat',
     constats: 'Constats',
     addConstat: 'Ajouter un constat',
-    createAction: 'Créer une action', actionCreated: 'Action créée', actionExists: 'Action ouverte existante', actionError: 'Impossible de créer l’action : {error}',
+    actionsOpen: "{n} action(s) en cours", actionsDone: "Toutes les actions liées sont faites.", proposeClose: "Marquer le constat comme corrigé", createAction: 'Créer une action', actionCreated: 'Action créée', actionExists: 'Action ouverte existante', actionError: 'Impossible de créer l’action : {error}',
     constatDesc: 'Description du constat',
     severite: 'Sévérité',
     corrige: 'Corrigé',

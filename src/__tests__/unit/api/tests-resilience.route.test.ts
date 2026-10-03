@@ -28,7 +28,7 @@ vi.mock('@/lib/logger', () => ({ auditLog: (...a: unknown[]) => auditLog(...a), 
 import { GET, POST } from '@/app/api/tests-resilience/route'
 import { PATCH, DELETE } from '@/app/api/tests-resilience/[id]/route'
 import { GET as RAPPORT } from '@/app/api/tests-resilience/rapport/route'
-import { POST as PROMOTE_CONSTAT } from '@/app/api/tests-resilience/[id]/actions/route'
+import { POST as PROMOTE_CONSTAT, PATCH as SET_CONSTAT } from '@/app/api/tests-resilience/[id]/actions/route'
 
 const getReq = (q = '') => ({ nextUrl: new URL(`http://x/api/tests-resilience${q}`), headers: new Headers() }) as never
 const req = (body: unknown) => ({ json: async () => body, headers: new Headers() }) as never
@@ -119,5 +119,20 @@ describe('/api/tests-resilience', () => {
     expect(db.arrangementTic.findMany.mock.calls[0][0].where).toEqual({ organizationId: 'org1' })
     expect(db.auditConstat.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'org1', source: 'REGULATEUR' })
     expect(db.planAction.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'org1', liens: { some: { type: 'TEST_RESILIENCE' } } })
+  })
+
+  it('liste : actions par constat (statuts) pour proposer la clôture ; PATCH constat : action humaine, org-scopée, 400 si index invalide', async () => {
+    db.testResilience.findMany.mockResolvedValue([])
+    db.planAction.findMany.mockResolvedValue([{ statut: 'FAIT', liens: [{ targetId: 't9', ref: 'constat:0' }] }, { statut: 'EN_COURS', liens: [{ targetId: 't9', ref: 'constat:1' }] }])
+    const j = await (await GET(getReq('?annee=2026'))).json()
+    expect(j.actionsParConstat).toEqual({ t9: { 0: { ouvertes: 0, faites: 1 }, 1: { ouvertes: 1, faites: 0 } } })
+    expect(db.planAction.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'org1', liens: { some: { type: 'TEST_RESILIENCE' } } })
+    db.testResilience.findFirst.mockResolvedValue({ id: 't9', constats: [{ description: 'MFA absent', severite: 4, corrige: false }] })
+    db.testResilience.update.mockResolvedValue({ id: 't9' })
+    expect((await SET_CONSTAT(req({ constatIndex: 0, corrige: true }), params)).status).toBe(200)
+    expect(db.testResilience.findFirst.mock.calls.at(-1)![0].where).toEqual({ id: 't9', organizationId: 'org1' })
+    expect(db.testResilience.update.mock.calls.at(-1)![0].data.constats).toEqual([{ description: 'MFA absent', severite: 4, corrige: true }])
+    expect((await SET_CONSTAT(req({ constatIndex: 5, corrige: true }), params)).status).toBe(400)
+    state.role = 'AUDITEUR'; expect((await SET_CONSTAT(req({ constatIndex: 0, corrige: true }), params)).status).toBe(403)
   })
 })

@@ -1710,7 +1710,7 @@ export const en: Translations = {
     resultat: 'Result',
     constats: 'Findings',
     addConstat: 'Add a finding',
-    createAction: 'Create action', actionCreated: 'Action created', actionExists: 'Open action already exists', actionError: 'Unable to create the action: {error}',
+    actionsOpen: "{n} action(s) open", actionsDone: "All linked actions are done.", proposeClose: "Mark the finding as corrected", createAction: 'Create action', actionCreated: 'Action created', actionExists: 'Open action already exists', actionError: 'Unable to create the action: {error}',
     constatDesc: 'Finding description',
     severite: 'Severity',
     corrige: 'Remediated',

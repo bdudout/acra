@@ -1709,7 +1709,7 @@ export const de: Translations = {
     resultat: 'Ergebnis',
     constats: 'Feststellungen',
     addConstat: 'Feststellung hinzufügen',
-    createAction: 'Maßnahme erstellen', actionCreated: 'Maßnahme erstellt', actionExists: 'Offene Maßnahme existiert bereits', actionError: 'Maßnahme kann nicht erstellt werden: {error}',
+    actionsOpen: "{n} offene Maßnahme(n)", actionsDone: "Alle verknüpften Maßnahmen sind erledigt.", proposeClose: "Feststellung als behoben markieren", createAction: 'Maßnahme erstellen', actionCreated: 'Maßnahme erstellt', actionExists: 'Offene Maßnahme existiert bereits', actionError: 'Maßnahme kann nicht erstellt werden: {error}',
     constatDesc: 'Beschreibung der Feststellung',
     severite: 'Schweregrad',
     corrige: 'Behoben',

@@ -1710,7 +1710,7 @@ export const it: Translations = {
     resultat: 'Risultato',
     constats: 'Rilievi',
     addConstat: 'Aggiungi un rilievo',
-    createAction: 'Crea azione', actionCreated: 'Azione creata', actionExists: 'Esiste già un’azione aperta', actionError: 'Impossibile creare l’azione: {error}',
+    actionsOpen: "{n} azione/i aperta/e", actionsDone: "Tutte le azioni collegate sono completate.", proposeClose: "Segna il rilievo come corretto", createAction: 'Crea azione', actionCreated: 'Azione creata', actionExists: 'Esiste già un’azione aperta', actionError: 'Impossibile creare l’azione: {error}',
     constatDesc: 'Descrizione del rilievo',
     severite: 'Gravità',
     corrige: 'Corretto',

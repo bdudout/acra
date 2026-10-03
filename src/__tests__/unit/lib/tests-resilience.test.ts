@@ -110,3 +110,21 @@ describe('buildRapportReexamen — livrable GRC DORA global (au-delà des tests)
     expect(without).not.toContain('Prestataires de services TIC'); expect(without).not.toContain('Constats du régulateur')
   })
 })
+
+import { actionsParConstat, constatsAClore } from '@/lib/tests-resilience'
+describe('synchronisation constat ↔ plan d’action', () => {
+  const liens = [
+    { ref: 'constat:0', statut: 'FAIT' }, { ref: 'constat:0', statut: 'FAIT' },
+    { ref: 'constat:1', statut: 'FAIT' }, { ref: 'constat:1', statut: 'EN_COURS' },
+    { ref: 'constat:2', statut: 'A_FAIRE' }, { ref: 'autre', statut: 'FAIT' },
+  ]
+  it('regroupe les actions par index de constat (refs invalides ignorées)', () => {
+    expect(actionsParConstat(liens)).toEqual({ 0: { ouvertes: 0, faites: 2 }, 1: { ouvertes: 1, faites: 1 }, 2: { ouvertes: 1, faites: 0 } })
+  })
+  it('propose de clore un constat seulement si toutes ses actions sont faites et qu’il n’est pas déjà corrigé ; jamais automatiquement', () => {
+    const constats = [{ description: 'a', severite: 3, corrige: false }, { description: 'b', severite: 2, corrige: false }, { description: 'c', severite: 2, corrige: false }, { description: 'd', severite: 1, corrige: true }]
+    expect(constatsAClore(constats, actionsParConstat(liens))).toEqual([0])
+    expect(constatsAClore(constats, { 3: { ouvertes: 0, faites: 1 } })).toEqual([])   // déjà corrigé
+    expect(constatsAClore(constats, {})).toEqual([])                                  // aucune action : rien à proposer
+  })
+})

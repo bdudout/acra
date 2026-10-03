@@ -1710,7 +1710,7 @@ export const es: Translations = {
     resultat: 'Resultado',
     constats: 'Hallazgos',
     addConstat: 'Añadir un hallazgo',
-    createAction: 'Crear acción', actionCreated: 'Acción creada', actionExists: 'Ya existe una acción abierta', actionError: 'No se puede crear la acción: {error}',
+    actionsOpen: "{n} acción(es) abierta(s)", actionsDone: "Todas las acciones vinculadas están hechas.", proposeClose: "Marcar el hallazgo como corregido", createAction: 'Crear acción', actionCreated: 'Acción creada', actionExists: 'Ya existe una acción abierta', actionError: 'No se puede crear la acción: {error}',
     constatDesc: 'Descripción del hallazgo',
     severite: 'Gravedad',
     corrige: 'Corregido',

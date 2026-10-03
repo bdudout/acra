@@ -196,3 +196,21 @@ export function buildRapportReexamen(args: {
   lines.push(`## ${L.conclusions}`, L.conclusionsHint)
   return lines.join('\n\n')
 }
+
+// ─── Synchronisation constat ↔ plan d'action ─────────────────────────────────────────────────────────────────────────
+/** Actions liées à un constat (ref `constat:<index>`) regroupées par index : ouvertes (non FAIT) et faites. */
+export function actionsParConstat(liens: readonly { ref?: string | null; statut: string }[]): Record<number, { ouvertes: number; faites: number }> {
+  const out: Record<number, { ouvertes: number; faites: number }> = {}
+  for (const l of liens) {
+    const m = /^constat:(\d+)$/.exec(l.ref ?? '')
+    if (!m) continue
+    const i = Number(m[1]); const e = (out[i] ??= { ouvertes: 0, faites: 0 })
+    if (l.statut === 'FAIT') e.faites++; else e.ouvertes++
+  }
+  return out
+}
+
+/** Index des constats dont TOUTES les actions sont faites et qui ne sont pas encore corrigés : la clôture est PROPOSÉE, jamais appliquée seule. */
+export function constatsAClore(constats: readonly { corrige: boolean }[], par: Record<number, { ouvertes: number; faites: number }>): number[] {
+  return constats.flatMap((c, i) => (!c.corrige && par[i] && par[i].ouvertes === 0 && par[i].faites > 0 ? [i] : []))
+}
