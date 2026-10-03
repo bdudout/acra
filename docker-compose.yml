@@ -47,6 +47,8 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      # 0 pendant une mise à jour (scripts/update.sh) : jamais de « migrate resolve » automatique.
+      ACRA_MIGRATE_AUTO_RESOLVE: ${ACRA_MIGRATE_AUTO_RESOLVE:-1}
     depends_on:
       db:
         condition: service_healthy
@@ -61,6 +63,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Identité servie par /api/health (la mise à jour vérifie la révision cible).
+      args:
+        ACRA_VERSION: ${ACRA_VERSION:-development}
+        ACRA_REVISION: ${ACRA_REVISION:-unknown}
     container_name: ebios_app
     restart: unless-stopped
     environment:
@@ -94,6 +100,9 @@ services:
     # affiche simplement les commandes de mise à jour.
     volumes:
       - ./.acra-update:/app/.acra-update
+      # Documents téléversés : volume nommé (sans lui ils vivent dans la couche du conteneur
+      # et sont perdus à chaque recréation, donc à chaque mise à jour).
+      - documents_data:/app/.data/documents
     command: ["node", "server.js"]
 
   # ---------------------------------------------------------------------------
@@ -154,6 +163,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  documents_data:
     driver: local
   backup_data:
     driver: local
