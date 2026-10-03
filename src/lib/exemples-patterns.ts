@@ -6,10 +6,12 @@ import type { Locale } from '@/lib/i18n'
 import type { SecteurFamille } from '@/lib/sous-secteurs'
 import { localizePatternItem, selectPatternItems, type PatternCategory, type PatternItem } from '@/lib/exemples-patterns-core'
 import { EXPOSITION_ITEMS } from '@/lib/exemples-patterns-exposition'
+import { INTERCO_ITEMS } from '@/lib/exemples-patterns-interco'
+import { ADMIN_POSTES_ITEMS } from '@/lib/exemples-patterns-admin-postes'
 
 export { selectPatternItems, localizePatternItem, type PatternItem, type PatternCategory } from '@/lib/exemples-patterns-core'
 
-export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS]
+export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS]
 
 /** Exemples localisés des patterns cochés pour une catégorie d'atelier. */
 export function patternExemplesFor(patterns: readonly string[] | null | undefined, category: PatternCategory, locale: Locale = 'fr', famille: SecteurFamille | null = null): Record<string, unknown>[] {
