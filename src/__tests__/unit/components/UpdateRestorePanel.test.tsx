@@ -56,6 +56,8 @@ describe('UpdateRestorePanel', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog.textContent).toContain('ACRA 1.0.4 sera restauré')
     expect(dialog.textContent).toContain('saisies faites après ce point seront perdues')
+    expect(dialog.textContent).toContain('conservée 14 jours')
+    expect(dialog.textContent).toContain('clé de chiffrement des secrets')
     const confirm = screen.getByRole('button', { name: 'Restaurer ce point' }) as HTMLButtonElement
     expect(confirm.disabled).toBe(true)
     fireEvent.change(screen.getByLabelText(/Saisissez le numéro de version 1\.0\.4/), { target: { value: '1.0.5' } })
@@ -67,6 +69,13 @@ describe('UpdateRestorePanel', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/admin/version/rollback')
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ snapshotId: snap.id, confirmVersion: '1.0.4' })
     await waitFor(() => expect(onChanged).toHaveBeenCalled())
+  })
+
+  it('dialogue : chiffre les saisies perdues et la durée de conservation fournies par le serveur', () => {
+    render(<UpdateRestorePanel {...base} impacts={{ [snap.id]: { auditEntries: 12, documents: 3 } }} retentionDays={30} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir à ce point' }))
+    expect(screen.getByTestId('restore-impact').textContent).toContain('12 entrée(s) du journal d’audit et 3 document(s)')
+    expect(screen.getByRole('dialog').textContent).toContain('conservée 30 jours')
   })
 
   it('signale les migrations destructives en attente (PRECHECK)', () => {

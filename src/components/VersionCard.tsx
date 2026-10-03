@@ -25,6 +25,8 @@ interface VersionInfo {
   agentAvailable: boolean
   updateStatus: (UpdateStatus & Partial<FullUpdateStatus>) | null
   snapshots?: SnapshotEntry[]
+  impacts?: Record<string, { auditEntries: number; documents: number }>
+  failedDbRetentionDays?: number
   run?: RunSummary | null
   latest: string | null
   latestName: string | null
@@ -154,7 +156,7 @@ export default function VersionCard() {
       )}
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
       {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
-        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} agentAvailable={info.agentAvailable} onChanged={load} />
+        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} agentAvailable={info.agentAvailable} onChanged={load} />
       )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">

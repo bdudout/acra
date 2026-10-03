@@ -15,6 +15,8 @@ interface Props {
   status: UpdateStatus | null
   run: Pick<RunSummary, 'steps' | 'state'> | null
   snapshots: SnapshotEntry[]
+  impacts?: Record<string, { auditEntries: number; documents: number }>
+  retentionDays?: number
   agentAvailable: boolean
   onChanged: () => void
 }
@@ -22,7 +24,7 @@ interface Props {
 const mb = (n: number) => `${Math.max(1, Math.round(n / 1048576))} Mo`
 const fill = (s: string, vars: Record<string, string>) => Object.entries(vars).reduce((a, [k, v]) => a.replaceAll(`{${k}}`, v), s)
 
-export default function UpdateRestorePanel({ status, run, snapshots, agentAvailable, onChanged }: Props) {
+export default function UpdateRestorePanel({ status, run, snapshots, impacts, retentionDays = 14, agentAvailable, onChanged }: Props) {
   const { t, locale } = useTranslation()
   const v = t.version
   const steps = v.updateSteps as Record<string, string>
@@ -133,7 +135,12 @@ export default function UpdateRestorePanel({ status, run, snapshots, agentAvaila
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
             <h3 id="restore-dialog-title" className="text-base font-semibold text-gray-900">{v.restore.dialogTitle}</h3>
             <p className="mt-2 text-sm text-gray-700">{fill(v.restore.dialogIntro, { version: target.version, date: date(target.createdAt) })}</p>
-            <p className="mt-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" /> {v.restore.dialogWarning}</p>
+            <div className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="flex items-start gap-1.5"><AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" /> {v.restore.dialogWarning}</p>
+              {impacts?.[target.id] && <p className="mt-1" data-testid="restore-impact">{fill(v.restore.dialogImpact, { audit: String(impacts[target.id].auditEntries), documents: String(impacts[target.id].documents) })}</p>}
+              <p className="mt-1">{fill(v.restore.dialogKeep, { days: String(retentionDays) })}</p>
+              <p className="mt-1">{v.restore.dialogSecrets}</p>
+            </div>
             <label htmlFor="restore-confirm" className="mt-3 block text-sm font-medium text-gray-800">{fill(v.restore.confirmLabel, { version: target.version })}</label>
             <input id="restore-confirm" className="input mt-1 w-full font-mono" value={typed} onChange={e => setTyped(e.target.value)} autoComplete="off" />
             <div className="mt-4 flex justify-end gap-2">
