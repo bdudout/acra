@@ -46,7 +46,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'technique' | 'protection_sociale'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'protection_sociale'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -832,12 +832,6 @@ const ASSOCIATION: SectorFamily = {
 // ─────────────────────────────────────────────────────────────────────────────
 // TECHNIQUE — interconnexions entre SI (tout métier) : contenu dans exemples-sectoriels-ext.ts
 // ─────────────────────────────────────────────────────────────────────────────
-const TECHNIQUE: SectorFamily = {
-  key: 'technique',
-  match: ['technique', 'interconnexion', 'interconnection', 'technical', 'technik', 'kopplung', 'técnico', 'tecnico', 'interconexión', 'interconexion', 'interconnessione'],
-  exemples: {},
-}
-
 // PROTECTION SOCIALE — organismes de sécurité sociale : contenu dans exemples-protection-sociale.ts
 const PROTECTION_SOCIALE: SectorFamily = {
   key: 'protection_sociale',
@@ -845,9 +839,8 @@ const PROTECTION_SOCIALE: SectorFamily = {
   exemples: {},
 }
 
-// TECHNIQUE en tête : « Interconnessione » (it) contient « ess » (famille associations).
 // PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
-export const SECTOR_FAMILIES: SectorFamily[] = [TECHNIQUE, PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
+export const SECTOR_FAMILIES: SectorFamily[] = [PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
@@ -859,11 +852,6 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   const v = (sousSecteur ?? '').toLowerCase()
   // Protection sociale : la sous-profession est l'id sans préfixe (ex. protsoc-fraude → fraude)
   if (v.startsWith('protsoc-')) return v.slice('protsoc-'.length)
-  // Interconnexions entre SI (famille technique)
-  if (v.includes('technique-interco-prestataire')) return 'prestataire'
-  if (v.includes('technique-interco-metier')) return 'metier'
-  if (v.includes('technique-api')) return 'api'
-  if (v.includes('technique-integration')) return 'integration'
   // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'
@@ -959,9 +947,7 @@ function exemplesForOne(
   return exemplesTagged(secteur, category, locale, sousSecteur).map(t => t.item)
 }
 
-const TECHNIQUE_IDS = new Set(SOUS_SECTEURS.filter(x => x.famille === 'technique').map(x => x.id))
 const KNOWN_IDS = new Set(SOUS_SECTEURS.map(x => x.id))
-const TECHNIQUE_SECTEUR = 'Technique / Interconnexion de SI'
 const exempleKey = (x: Record<string, unknown>) => String(x.nom ?? x.mesure ?? x.description ?? '').toLowerCase().trim()
 
 /**
@@ -974,7 +960,6 @@ function withPatterns(secteur: string | null | undefined, category: SectorExempl
   let ownCovered = false
   for (const id of ids) {
     if (KNOWN_IDS.has(id) && !selectable.has(id)) continue // incohérent avec le secteur
-    if (TECHNIQUE_IDS.has(id) && secteurFamily(secteur) !== 'technique') { parts.push(exemplesTagged(TECHNIQUE_SECTEUR, category, locale, id)); continue }
     parts.push(exemplesTagged(secteur, category, locale, id)); ownCovered = true
   }
   if (!ownCovered) parts.unshift(exemplesTagged(secteur, category, locale, null))
@@ -990,8 +975,8 @@ function withPatterns(secteur: string | null | undefined, category: SectorExempl
 /**
  * Exemples SECTORIELS pour une catégorie d'atelier, selon le secteur et un ou plusieurs sous-secteurs.
  * Plusieurs sous-secteurs : union dédoublonnée, dans l'ordre de la sélection (le principal d'abord). Cohérence : un
- * sous-secteur d'un autre secteur est ignoré ; un sous-secteur « technique » (interconnexion) choisi pour un autre
- * secteur apporte le contenu des interconnexions. Une valeur inconnue (libellé libre) garde l'ancien comportement.
+ * sous-secteur d'un autre secteur est ignoré. Une valeur inconnue (libellé libre) garde l'ancien comportement.
+ * L'interconnexion avec un tiers, les API exposées, etc. relèvent des patterns d'architecture, pas des sous-secteurs.
  */
 export function sectorExemplesFor(
   secteur: string | null | undefined,
@@ -1010,10 +995,6 @@ export function sectorExemplesFor(
   let ownCovered = false
   for (const id of ids) {
     if (KNOWN_IDS.has(id) && !selectable.has(id)) continue // incohérent avec le secteur
-    if (TECHNIQUE_IDS.has(id) && secteurFamily(secteur) !== 'technique') {
-      parts.push(exemplesForOne(TECHNIQUE_SECTEUR, category, locale, id))
-      continue
-    }
     parts.push(exemplesForOne(secteur, category, locale, id)); ownCovered = true
   }
   // Seulement des interconnexions choisies : le contenu général du secteur reste proposé.

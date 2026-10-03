@@ -6,7 +6,7 @@
 
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
-import { MAX_SOUS_SECTEURS, normalizeSousSecteurs, secteurFamily, selectableSousSecteurIds } from '@/lib/sous-secteurs'
+import { MAX_SOUS_SECTEURS, normalizeSousSecteurs, selectableSousSecteurIds } from '@/lib/sous-secteurs'
 
 export default function SousSecteursPicker({ secteur, value, onChange, disabled = false }: {
   secteur: string
@@ -20,9 +20,7 @@ export default function SousSecteursPicker({ secteur, value, onChange, disabled 
   if (!ids.length) return null
   const selected = normalizeSousSecteurs(secteur, value)
   const label = new Map((SOUS_SECTEURS as { id: string; label: string }[]).map(s => [s.id, s.label]))
-  const isTechniqueSector = secteurFamily(secteur) === 'technique'
-  const own = ids.filter(id => isTechniqueSector || !id.startsWith('technique-'))
-  const technique = isTechniqueSector ? [] : ids.filter(id => id.startsWith('technique-'))
+  const own = ids
   const full = selected.length >= MAX_SOUS_SECTEURS
 
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id])
@@ -44,12 +42,6 @@ export default function SousSecteursPicker({ secteur, value, onChange, disabled 
       <legend className="label">{t.newAnalysis.subSector} <span className="text-gray-400 font-normal">({t.optional})</span></legend>
       <p className="text-xs text-gray-500">{t.newAnalysis.subSectorsMulti.replace('{max}', String(MAX_SOUS_SECTEURS))}</p>
       <div className="grid gap-1 sm:grid-cols-2">{own.map(item)}</div>
-      {technique.length > 0 && (
-        <>
-          <p className="text-xs font-medium text-gray-600 pt-1">{t.newAnalysis.subSectorsTechnique}</p>
-          <div className="grid gap-1 sm:grid-cols-2">{technique.map(item)}</div>
-        </>
-      )}
       <p className="text-xs text-gray-500">{t.newAnalysis.subSectorHint}</p>
     </fieldset>
   )

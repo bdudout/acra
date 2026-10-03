@@ -38,8 +38,6 @@ export const SECTEURS_ACTIVITE = [
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
   // Organismes de protection sociale (régimes de base, assurance maladie obligatoire…)
   'Protection sociale / Sécurité sociale',
-  // Catégorie technique (objet de l'analyse = une interconnexion entre SI, quel que soit le métier)
-  'Technique / Interconnexion de SI',
   'Autre',
 ]
 
@@ -122,11 +120,6 @@ export const SOUS_SECTEURS = [
   { id: 'protsoc-international', famille: 'protection_sociale', label: 'Relations internationales (soins à l’étranger, coordination européenne)' },
   { id: 'protsoc-action-sociale', famille: 'protection_sociale', label: 'Action sanitaire et sociale (aides individuelles)' },
   { id: 'protsoc-mandats', famille: 'protection_sociale', label: 'Gestion pour le compte d’autres régimes (mandats, délégations)' },
-  // Technique — interconnexions entre systèmes d'information (tous métiers)
-  { id: 'technique-interco-prestataire', famille: 'technique', label: 'Interconnexion avec un prestataire qui livre des données' },
-  { id: 'technique-interco-metier', famille: 'technique', label: 'Échange de données métier entre SI (partenaire, filiale, délégataire)' },
-  { id: 'technique-api-exposee', famille: 'technique', label: 'API exposées à des tiers (partenaires, clients)' },
-  { id: 'technique-integration', famille: 'technique', label: 'Plateforme d’intégration / transfert de fichiers (bus, MFT, ETL)' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

@@ -864,7 +864,6 @@ export const it: Translations = {
     subSectorPh: 'Specificare il sotto-settore…',
     subSectorHint: 'Affina ulteriormente i riferimenti e gli esempi in base alla tua attività specifica.',
     subSectorsMulti: 'Più sotto-settori possibili (fino a {max}): il primo selezionato è il principale.',
-    subSectorsTechnique: 'Interconnessioni tra SI (da aggiungere se l’analisi riguarda anche uno scambio di dati)',
     subSectorPrimary: 'principale',
       tagsLabel: 'Tag / programma (facoltativo)',
       tagsPlaceholder: 'es. Programma SI, BU Paghe',

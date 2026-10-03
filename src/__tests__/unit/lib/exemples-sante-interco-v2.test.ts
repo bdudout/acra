@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { sectorExemplesFor } from '@/lib/exemples-sectoriels'
+import { patternExemplesFor, PATTERN_ITEMS } from '@/lib/exemples-patterns'
 import { EXT_ITEMS } from '@/lib/exemples-sectoriels-ext'
 import { listSectorSuggestions, CATALOGUE_PACK_VERSION } from '@/lib/sector-suggestions'
 import { CATALOGUE_CHANGELOG } from '@/lib/sector-suggestions-changelog'
 import { readSectorExamplesTool } from '@/lib/mcp/tools-context.server'
 
 const SANTE = 'Santé / Médico-social'
-const TECH = 'Technique / Interconnexion de SI'
 const all = (sec: string, sub: string) => JSON.stringify(['evenementsRedoutes', 'actionsElementaires', 'mesures', 'partiesPrenantes'].flatMap(c => sectorExemplesFor(sec, c as never, 'fr', sub)))
 
 describe('contenu sectoriel — compléments (pièces jointes, intégrité, analyseurs, continuité, écosystème)', () => {
@@ -16,23 +16,24 @@ describe('contenu sectoriel — compléments (pièces jointes, intégrité, anal
     expect(p).toMatch(/intégrité du contenu|empreinte/i)
   })
   it('interconnexions : validation de schéma et analyseurs de fichiers durcis, dans les mesures communes', () => {
-    const m = JSON.stringify(sectorExemplesFor(TECH, 'mesures', 'fr'))
+    const m = JSON.stringify(patternExemplesFor(['INTERCO_TIERS'], 'mesures', 'fr'))
     expect(m).toMatch(/schéma/i); expect(m).toMatch(/entités externes/i); expect(m).toMatch(/formules/i)
-    expect(all(TECH, 'technique-interco-prestataire')).toMatch(/analyseur/i)
+    expect(JSON.stringify(['evenementsRedoutes', 'actionsElementaires', 'mesures', 'partiesPrenantes'].flatMap(c => patternExemplesFor(['INTERCO_TIERS', 'EXTERNALISATION_DONNEES', 'API_PARTENAIRES', 'ECHANGE_FICHIERS'], c as never, 'fr')))).toMatch(/analyseur/i)
   })
   it('e-santé : test de continuité et de reprise de la plateforme', () => {
     expect(JSON.stringify(sectorExemplesFor(SANTE, 'mesures', 'fr', 'sante-esante'))).toMatch(/test du plan de continuité et de reprise de la plateforme/i)
   })
   it('écosystème : les personnes concernées et les autorités figurent parmi les parties prenantes', () => {
-    for (const [sec, sub] of [[SANTE, 'sante-delegataire'], [SANTE, 'sante-amc'], [SANTE, 'sante-portail'], [TECH, 'technique-interco-metier']]) {
-      const pp = sectorExemplesFor(sec, 'partiesPrenantes', 'fr', sub)
+    for (const sub of ['sante-delegataire', 'sante-amc', 'sante-portail']) {
+      const pp = sectorExemplesFor(SANTE, 'partiesPrenantes', 'fr', sub)
       expect(pp.some(x => x.type === 'ORGANISME_REGULATION'), `${sub} autorité`).toBe(true)
     }
+    expect(patternExemplesFor(['INTERCO_TIERS'], 'partiesPrenantes', 'fr').some(x => x.type === 'ORGANISME_REGULATION'), 'INTERCO_TIERS autorité').toBe(true)
     expect(JSON.stringify(sectorExemplesFor(SANTE, 'partiesPrenantes', 'fr', 'sante-delegataire'))).toMatch(/assurés|adhérents/i)
   })
   it('chaque action élémentaire de l’extension porte sa technique MITRE ATT&CK (identifiant bien formé)', () => {
-    const ae = EXT_ITEMS.filter(x => x.category === 'actionsElementaires')
-    expect(ae.length).toBeGreaterThan(20)
+    const ae = [...EXT_ITEMS, ...PATTERN_ITEMS].filter(x => x.category === 'actionsElementaires')
+    expect(ae.length).toBeGreaterThan(30)
     for (const x of ae) expect(String(x.data.attack), JSON.stringify(x.data.nom)).toMatch(/^T\d{4}(\.\d{3})?$/)
     expect(sectorExemplesFor(SANTE, 'actionsElementaires', 'en', 'sante-portail')[0].attack).toMatch(/^T\d{4}/)
   })

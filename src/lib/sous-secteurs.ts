@@ -11,12 +11,10 @@
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
 /** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'technique' | 'protection_sociale'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'protection_sociale'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
-  // En tête : « Interconnessione » (it) contient des sous-chaînes d'autres familles.
-  { famille: 'technique', kw: ['technique', 'interconnexion', 'interconnection', 'technical', 'technik', 'kopplung', 'técnico', 'tecnico', 'interconexión', 'interconexion', 'interconnessione'] },
   // Avant santé et banque : « Sozialversicherung » contient « versicherung », « assurance maladie » contient « assur ».
   { famille: 'protection_sociale', kw: ['protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'proteccion social', 'seguridad social', 'protezione sociale', 'previdenza sociale'] },
   { famille: 'sante', kw: ['santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health', 'salud', 'gesundheit', 'sanità', 'sanita'] },
@@ -64,20 +62,17 @@ export function showsHdsCaveat(sousSecteur?: string | null): boolean {
 }
 
 // ─── Plusieurs sous-secteurs par analyse ──────────────────────────────────────
-// Une analyse peut combiner jusqu'à MAX_SOUS_SECTEURS sous-secteurs (ex. complémentaire santé + interconnexion avec un
-// prestataire). Règle de cohérence : seuls les sous-secteurs de la famille du secteur sont proposés, plus ceux de la
-// catégorie « technique » (interconnexions, transverses à tous les métiers) ; jamais ceux d'un autre secteur.
-// Le premier sous-secteur est le principal (repris dans `Analyse.sousSecteur` pour les usages à valeur unique).
+// Une analyse peut combiner jusqu'à MAX_SOUS_SECTEURS sous-secteurs. Règle de cohérence : seuls les sous-secteurs de la
+// famille du secteur sont proposés ; jamais ceux d'un autre secteur. Le premier sous-secteur est le principal (repris
+// dans `Analyse.sousSecteur` pour les usages à valeur unique). La forme technique du système (exposition, interconnexions,
+// administration…) se décrit par les PATTERNS d'architecture (lib/patterns-archi), indépendants du secteur.
 
 export const MAX_SOUS_SECTEURS = 4
 
-/** Ids proposables pour ce secteur : sa famille, puis les interconnexions (technique). Vide sans secteur. */
+/** Ids proposables pour ce secteur : ceux de sa famille. Vide sans secteur. */
 export function selectableSousSecteurIds(secteur?: string | null): string[] {
   if (!(secteur ?? '').trim()) return []
-  const fam = secteurFamily(secteur)
-  const technique = SOUS_SECTEURS.filter(s => s.famille === 'technique').map(s => s.id)
-  if (fam === 'technique') return technique
-  return [...sousSecteurIdsFor(secteur), ...technique]
+  return sousSecteurIdsFor(secteur)
 }
 
 /** Sélection assainie : ids cohérents avec le secteur, sans doublon, ordre conservé, plafonnée. */

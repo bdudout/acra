@@ -864,7 +864,6 @@ export const en: Translations = {
     subSectorPh: 'Specify the sub-sector…',
     subSectorHint: 'Further refines frameworks and examples to your specific activity.',
     subSectorsMulti: 'Several sub-sectors allowed (up to {max}): the first one ticked is the main one.',
-    subSectorsTechnique: 'Interconnections between information systems (add if the analysis also covers a data exchange)',
     subSectorPrimary: 'main',
       tagsLabel: 'Tags / programme (optional)',
       tagsPlaceholder: 'e.g. IS programme, Payroll BU',

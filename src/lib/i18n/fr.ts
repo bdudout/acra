@@ -878,7 +878,6 @@ export const fr = {
     subSectorPh: 'Préciser le sous-secteur…',
     subSectorHint: 'Affine encore les référentiels et exemples selon votre activité précise.',
     subSectorsMulti: 'Plusieurs sous-secteurs possibles (jusqu’à {max}) : le premier coché est le principal.',
-    subSectorsTechnique: 'Interconnexions entre SI (à ajouter si l’analyse porte aussi sur un échange de données)',
     subSectorPrimary: 'principal',
       tagsLabel: 'Tags / programme (facultatif)',
       tagsPlaceholder: 'ex. Programme SI, BU Paie',

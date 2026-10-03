@@ -54,12 +54,11 @@ describe('read_sector_examples', () => {
     expect(out.exemples.valeursMetier.length).toBeGreaterThan(0)
   })
 
-  it('expose les ateliers 3 à 5 (actions élémentaires, mesures) et les sous-secteurs de la famille (dont la catégorie technique)', async () => {
+  it('expose les ateliers 3 à 5 (actions élémentaires, mesures) et les sous-secteurs de la famille (sans catégorie technique : remplacée par les patterns)', async () => {
     const all = parse(await readSectorExamplesTool.handler({}, ctx))
     expect(all.categories).toEqual(expect.arrayContaining(['actionsElementaires', 'mesuresEcosysteme', 'mesures']))
-    expect(all.famillesDisponibles.some((f: { key: string }) => f.key === 'technique')).toBe(true)
-    const out = parse(await readSectorExamplesTool.handler({ secteur: 'Technique / Interconnexion de SI', sousSecteur: 'technique-interco-prestataire' }, ctx))
-    expect(out.sousSecteursDisponibles).toEqual(expect.arrayContaining(['technique-interco-prestataire', 'technique-api-exposee']))
+    expect(all.famillesDisponibles.some((f: { key: string }) => f.key === 'technique')).toBe(false)
+    const out = parse(await readSectorExamplesTool.handler({ patterns: ['EXTERNALISATION_DONNEES'] }, ctx))
     expect(out.exemples.mesures.length).toBeGreaterThan(5)
     const sante = parse(await readSectorExamplesTool.handler({ secteur: 'santé' }, ctx))
     expect(sante.sousSecteursDisponibles).toContain('sante-portail')

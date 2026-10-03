@@ -17,9 +17,9 @@ const idx = () => SECTEURS_ACTIVITE.indexOf(PS)
 const textOf = (x: Record<string, unknown>) => String(x.nom ?? x.mesure ?? x.description ?? '')
 
 describe('famille « Protection sociale » — taxonomie', () => {
-  it('secteur présent avant les interconnexions et « Autre », reconnu comme sa propre famille dans les 5 langues', () => {
+  it('secteur présent juste avant « Autre », reconnu comme sa propre famille dans les 5 langues', () => {
     expect(idx()).toBeGreaterThan(-1)
-    expect(SECTEURS_ACTIVITE[idx() + 1]).toBe('Technique / Interconnexion de SI')
+    expect(SECTEURS_ACTIVITE[idx() + 1]).toBe('Autre')
     for (const loc of ['fr', ...LOCS] as Locale[]) {
       const label = getEbiosData(loc).SECTEURS_ACTIVITE[idx()]
       expect(secteurFamily(label), `${loc}: ${label}`).toBe('protection_sociale')
@@ -28,9 +28,9 @@ describe('famille « Protection sociale » — taxonomie', () => {
     // pas de collision : les secteurs voisins gardent leur famille
     expect(secteurFamily(SANTE)).toBe('sante'); expect(secteurFamily('Banque / Finance')).toBe('banque')
   })
-  it('13 sous-secteurs, plus les interconnexions en complément', () => {
+  it('13 sous-secteurs (les interconnexions relèvent des patterns)', () => {
     expect(sousSecteurIdsFor(PS)).toEqual(IDS)
-    expect(selectableSousSecteurIds(PS)).toEqual(expect.arrayContaining([...IDS, 'technique-interco-prestataire']))
+    expect(selectableSousSecteurIds(PS)).toEqual(IDS)
     expect(selectableSousSecteurIds(SANTE)).not.toContain('protsoc-fraude')
   })
 })
