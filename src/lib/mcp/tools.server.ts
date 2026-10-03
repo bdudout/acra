@@ -10,6 +10,7 @@ import { toolText, type McpTool, type McpToolResult } from './protocol'
 import { buildContextTools } from './tools-context.server'
 import { buildProposeTools } from './tools-propose.server'
 import { recommendRisksScenariosTool } from './tools-recommend.server'
+import { buildKnowledgeTools } from './tools-knowledge.server'
 
 /** Contexte serveur injecté aux outils : périmètre organisationnel + clé d'API émettrice. */
 export interface McpContext { organizationId: string; keyId: string }
@@ -80,5 +81,5 @@ export const readReferentielsTool: McpTool<McpContext> = {
  * (cf. `tools-context.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools(), recommendRisksScenariosTool, ...buildProposeTools()]
+  return [readReferentielsTool, ...buildContextTools(), recommendRisksScenariosTool, ...buildKnowledgeTools(), ...buildProposeTools()]
 }
