@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (58) — Claude : chantier contenu sectoriel, MCP phase 5, rapports et exports (lots L0–L5 en grande partie)
+
+Spec : `docs/specs/chantier-contenu-sectoriel-mcp-rapports.md` (décisions de l'utilisateur consignées § 10). **Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import`.
+
+- **L0** — `TEST_RESILIENCE` déclaré dans `PLAN_ACTION_LIEN_TYPES` (+ cliquet : tout `{ type, targetId }` écrit par une route doit être déclaré) ; origines `resilience` et `preconisation` visibles dans `/actions` (elles étaient invisibles) ; lien profond `?test=`.
+- **Catalogue 1.10** — 18 secteurs (ordre = analyses ; 7 nouveaux : défense, éducation, agricole, immobilier/BTP, médias, tourisme, associations), chacun ≥ 20 contrôles, 8 KRI, 4 missions, 12 risques, 3 incidents types, ≥ 2 contrôles ancrés sur un texte cité (`sector-packs-*.ts` via `catalogue-pack-builder`, `sector-packs-ext.ts`, `incident-types-sector.ts`) ; **cliquet `sector-depth.test.ts`** ; statut « à relire par un expert » affiché (`catalogue-review-status.ts`, aucun secteur « relu » sans relecteur nommé) ; périodicités allégées si `petiteStructure` (`adaptPeriodicite`). **Le contenu n'a pas été relu par un expert du secteur.**
+- **Analyses** — sous-secteurs santé / assurance maladie (cabinet, gestion de cabinets, MSP, AMO, AMC, tiers payant, imagerie/dialyse, transport sanitaire, DM/optique, e-santé) avec exemples ×5 (`exemples-sectoriels.ts`, générés ; ne s'affichent que si le sous-secteur est choisi).
+- **Navbar / UX** — une seule entrée active (`activeNavHref`) ; la cartographie devient un onglet « Liste | Cartographie » du registre (`RisquesViewTabs`) ; filtres du suivi régulateur ; sélecteur d'incidents types filtré par secteurs.
+- **Déclarations** — RGPD art. 33 § 3 (rubriques, JSON, Excel) ; rapport de réexamen DORA déplacé vers **Rapports** et élargi (registre TIC, constats du régulateur, plans d'action des tests).
+- **MCP phase 5** — interrupteur **par organisation** `mcpActive` (migration `20261003100000_org_mcp_active`, `403 mcp_org_disabled`) ; `recommend_risks_scenarios` (calculé par ACRA, sans LLM) ; matrice d'isolation `mcp-isolation-matrix.test.ts` ; traitement de conformité couvert par `propose_plan_action` (ancre CONFORMITE) — dérogation / acceptation volontairement non proposables.
+- **Rapports** — portefeuille de projets 360 (carte de chaleur, appétit, Excel : `projet360-portefeuille*.ts`, `/api/projets/portefeuille`) ; historique d'appétence mensuel (`AppetenceSnapshot`, migration `20261003110000_appetence_snapshot`, cron `appetence-snapshots` le 1er à 03:00, tendances, Excel) ; résilience : statut des actions par constat et **clôture proposée** (PATCH explicite).
+- **Vérifié** : `tsc` 0 · `npm test` 445 fichiers / 3515 tests (avant le dernier commit résilience, relancé ensuite sur les fichiers touchés) · `i18n:check`. **Non vérifié** : migrations `20261003100000` et `20261003110000` **non appliquées** à une base (Docker indisponible dans ce tour : disque presque plein) → à faire : `prisma migrate deploy`, `npm run test:db`, redémarrer le dev après `prisma generate`, recette navigateur sur build de production, `npm run build`, lint.
+- **Reste du spec** : pièces de preuve sur les tests (L3), Excel RAS/RAD courant et pack de comité (L4), intake MCP depuis un document, file de validation (expiration / relances, L7), guide exploitant MCP, recette navigateur de tout ce qui précède, comparaison « Claude avec ACRA » vs « Claude seul ».
+- **Pièges** : `prisma format` réécrit tout le schéma (ne pas l'utiliser) ; ne jamais changer les indices des exemples sectoriels existants (les traductions sont indexées par position — ajouter en fin de tableau) ; `zsh` : `setopt nonomatch` pour les globs.
+
 ## 2026-10-02 (57) — Claude : listes officielles DORA, export Excel, délais et fiches des régimes
 
 - **PR #213 fusionnée** (déclarations d'incidents, types, pack banque / assurance / mutuelle).
