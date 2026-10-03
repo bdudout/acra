@@ -1,6 +1,6 @@
 # Patterns d'architecture de SI — expression de besoins
 
-**Statut :** expression de besoins validée (décisions D1–D5 prises le 2026-10-03, rien n'est codé) · **Date :** 2026-10-03
+**Statut :** livré — lots A1 à A6 (décisions D1–D5 prises le 2026-10-03) · **Date :** 2026-10-03
 **Périmètre :** analyses de risques (toutes méthodes) et projets 360
 
 ## 1. Constat
