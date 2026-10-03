@@ -229,7 +229,7 @@ export async function PUT(req: NextRequest) {
     data.archivageMissionsAnnees = Math.max(1, Math.min(30, Math.round(body.archivageMissionsAnnees)))
   }
   if (typeof body.patternsArchiMax === 'number' && Number.isFinite(body.patternsArchiMax)) {
-    data.patternsArchiMax = Math.max(1, Math.min(24, Math.floor(body.patternsArchiMax)))
+    data.patternsArchiMax = Math.max(1, Math.min(PATTERNS_MAX_MAX, Math.floor(body.patternsArchiMax)))
   }
   if (Array.isArray(body.patternsArchiMasques)) data.patternsArchiMasques = normalizePatterns(body.patternsArchiMasques, { max: PATTERNS_MAX_MAX })
   if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {

@@ -112,7 +112,7 @@ describe('read_risk_posture', () => {
 describe('read_sector_examples — patterns d’architecture (lot A5)', () => {
   it('sans secteur ni pattern : les familles ET les patterns disponibles sont listés', async () => {
     const out = parse(await readSectorExamplesTool.handler({}, ctx))
-    expect(out.patternsDisponibles).toHaveLength(24)
+    expect(out.patternsDisponibles).toHaveLength(25)
     expect(out.patternsDisponibles[0]).toMatchObject({ code: 'EXPOSITION_INTERNET', famille: 'exposition' })
   })
   it('les patterns apportent leurs exemples, avec ou sans secteur ; codes inconnus ignorés', async () => {

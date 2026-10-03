@@ -1,8 +1,9 @@
-/** Contenu générique des patterns du lot 2 : suggestions à qualifier, jamais des faits présumés. */
+/** Contenu générique des patterns du lot 2 et du socle SI standard : suggestions à qualifier, jamais des faits présumés. */
 import { L, ae, bs, er, me, ms, ss, type PatternItem, type Tr } from './exemples-patterns-core'
 
 type Subject = { code: string; label: Tr }
 const subjects: Subject[] = [
+  { code: 'SI_STANDARD', label: L('système d’information standard', 'standard information system', 'Standard-Informationssystem', 'sistema de información estándar', 'sistema informativo standard') },
   { code: 'APPLICATIONS_MOBILES', label: L('applications et terminaux mobiles', 'mobile applications and devices', 'mobile Anwendungen und Geräte', 'aplicaciones y terminales móviles', 'applicazioni e dispositivi mobili') },
   { code: 'CLOUD_SAAS', label: L('services SaaS', 'SaaS services', 'SaaS-Dienste', 'servicios SaaS', 'servizi SaaS') },
   { code: 'CLOUD_IAAS_PAAS', label: L('hébergement IaaS/PaaS', 'IaaS/PaaS hosting', 'IaaS/PaaS-Hosting', 'alojamiento IaaS/PaaS', 'hosting IaaS/PaaS') },

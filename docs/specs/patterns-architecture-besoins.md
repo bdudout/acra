@@ -35,7 +35,7 @@ de ceux du secteur et des sous-secteurs.
 
 ## 3. Proposition de patterns
 
-24 patterns en 5 familles. La liste couvre les exemples demandés (repérés ★) et
+25 patterns en 5 familles. La liste couvre les exemples demandés (repérés ★) et
 ajoute ceux qui reviennent le plus souvent dans les analyses.
 **Lot 1** = socle recommandé pour la première livraison.
 
@@ -66,6 +66,7 @@ ajoute ceux qui reviennent le plus souvent dans les analyses.
 
 | Code | Libellé | Ce que ça couvre | Lot |
 |---|---|---|---|
+| `SI_STANDARD` | SI standard | système courant sans exposition, nuage, interconnexion ni contrainte particulière déclarée ; repli à choisir explicitement | 1 |
 | `SI_ADMINISTRATION` ★ | Système d'administration | bastion, postes d'administration dédiés, annuaire, outils de déploiement, comptes à privilèges | 1 |
 | `FLUX_INTERNES_DC` ★ | Flux internes au datacenter | flux « est-ouest » entre serveurs, segmentation, micro-segmentation | 1 |
 | `SAUVEGARDE` | Infrastructure de sauvegarde | sauvegardes, copies hors ligne, restauration | 2 |
@@ -100,9 +101,12 @@ specs, après vérification sur la source officielle.
   pour **toutes les méthodes**, y compris les projets 360.
 - Cases regroupées par famille (§ 3), chaque pattern accompagné d'une aide courte
   (définition, exemple).
-- **Facultatif** : aucune case cochée = comportement actuel inchangé.
+- **Obligatoire à la création** : au moins un pattern doit être choisi. Lorsque
+  aucune caractéristique particulière ne s'applique, l'utilisateur choisit
+  explicitement `SI_STANDARD`. La modification reste possible sans rétroactivité
+  sur les analyses existantes et les imports historiques.
 - Plafond **configurable** (décision D4) : défaut **12**, réglé par l'administrateur de
-  l'organisation dans `/configuration` (borné de 1 à 24, hérité dans l'arbre
+  l'organisation dans `/configuration` (borné de 1 à 25, hérité dans l'arbre
   multi-organisation). Une architecture réelle combine souvent 4 à 8 patterns.
 
 ### BE-2 — Indépendance vis-à-vis du secteur
@@ -198,7 +202,7 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
   accent), migration **additive** uniquement (défaut : liste vide).
 - **Codes stables** : un code de pattern ne change jamais ; un pattern retiré reste lu.
 - **Configuration** : plafond de sélection dans `OrganizationConfig` (`patternsArchiMax`,
-  défaut 12, borné 1–24), lu par la résolution de configuration habituelle.
+  défaut 12, borné 1–25), lu par la résolution de configuration habituelle.
 - **Validation** : codes inconnus ignorés à l'enregistrement, doublons retirés.
 - **Tests** : fonctions de résolution pures et testées (union, ordre, combinaisons,
   pré-remplissage sans écrasement, plafond configurable), plancher de profondeur du contenu, composant de
@@ -211,7 +215,8 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
 1. Une mutuelle qui coche `EXPOSITION_INTERNET` et `INTERCO_TIERS` voit, dans les
    biens supports et les mesures, à la fois son contenu mutuelle et le contenu propre à
    ces deux patterns, sans doublon.
-2. Une analyse sans pattern coché affiche exactement le même contenu qu'aujourd'hui.
+2. Une nouvelle analyse requiert au moins un pattern ; `SI_STANDARD` fournit le
+   comportement de repli quand aucune caractéristique particulière ne s'applique.
 3. Le secteur « Technique / Interconnexion de SI » n'est plus proposé ; le contenu
    d'interconnexion qu'il portait apparaît en cochant `INTERCO_TIERS`,
    `EXTERNALISATION_DONNEES`, `API_PARTENAIRES` ou `ECHANGE_FICHIERS`.
@@ -231,7 +236,8 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
 | D1 | Retirer le secteur « Technique » ? | **Oui, et sans conserver l'existant** (pas de client en production) : suppression du secteur et de ses sous-secteurs, contenu déplacé vers les patterns. |
 | D2 | Liste du lot 1 | **Validée** : les 17 patterns marqués « Lot 1 » (dont les 12 demandés). |
 | D3 | Masquage par organisation (BE-11) | **Oui, plus tard** (lot A6). |
-| D4 | Plafond de patterns cochés | **12 par défaut, configurable** par l'administrateur de l'organisation (1–24). |
+| D4 | Plafond de patterns cochés | **12 par défaut, configurable** par l'administrateur de l'organisation (1–25). |
+| D6 | Cadrage obligatoire à la création | **Secteur et au moins un pattern** ; `SI_STANDARD` est le repli explicite et reste visible même si l'organisation masque ce pattern. |
 | D5 | Pré-remplissage du questionnaire (BE-6) | **Oui, sans jamais écraser une réponse saisie.** |
 
 ## 8. Découpage proposé

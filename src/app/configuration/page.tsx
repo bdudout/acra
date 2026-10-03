@@ -381,7 +381,7 @@ export default function ConfigurationPage() {
     return res.ok
   }
 
-  // Plafond de patterns d'architecture de SI cochés par analyse (1 à 24, défaut 12).
+  // Plafond de patterns d'architecture de SI cochés par analyse (1 à 25, défaut 12).
   async function savePatternsMax(value: number) {
     setPatternsMax(value)
     setSavingFeatures(true)
@@ -1510,7 +1510,7 @@ export default function ConfigurationPage() {
             <p className="text-sm text-gray-500 mb-4">{t.patternsArchi.maxHelp}</p>
             <label className="text-sm text-gray-700">
               <span className="block text-xs font-medium text-gray-600 mb-1">{t.patternsArchi.maxLabel}</span>
-              <input type="number" min={1} max={24} value={patternsMax}
+              <input type="number" min={1} max={PATTERNS_MAX_MAX} value={patternsMax}
                 onChange={e => setPatternsMax(Number(e.target.value))}
                 onBlur={e => savePatternsMax(Math.max(1, Math.min(24, Math.floor(Number(e.target.value)) || 12)))}
                 disabled={savingFeatures}

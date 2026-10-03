@@ -9,9 +9,10 @@ vi.mock('@/lib/i18n/context', async () => {
 })
 
 describe('PatternsArchiPicker', () => {
-  it('affiche les 24 patterns regroupés par famille, chacun avec son aide', () => {
+  it('affiche les 25 patterns regroupés par famille, dont le repli SI standard', () => {
     render(<PatternsArchiPicker value={[]} onChange={() => {}} max={12} />)
-    expect(screen.getAllByRole('checkbox')).toHaveLength(24)
+    expect(screen.getAllByRole('checkbox')).toHaveLength(25)
+    expect(screen.getByRole('checkbox', { name: /SI standard/ })).toBeTruthy()
     expect(screen.getByText('Exposition et zones de sécurité')).toBeTruthy()
     expect(screen.getByText('Interconnexions, tiers et externalisation')).toBeTruthy()
     expect(screen.getByText(/Frontaux, reverse proxy, relais et filtrage/)).toBeTruthy()
@@ -47,5 +48,9 @@ describe('PatternsArchiPicker', () => {
     expect(screen.queryByRole('checkbox', { name: /Zone démilitarisée/ })).toBeNull()
     rerender(<PatternsArchiPicker value={['DMZ']} hiddenCodes={['DMZ']} onChange={() => {}} max={12} />)
     expect(screen.getByRole('checkbox', { name: /Zone démilitarisée/ })).toBeTruthy()
+  })
+  it('laisse toujours le repli SI standard disponible quand le choix est requis', () => {
+    render(<PatternsArchiPicker value={[]} hiddenCodes={['SI_STANDARD']} required onChange={() => {}} max={12} />)
+    expect(screen.getByRole('checkbox', { name: /SI standard/ })).toBeTruthy()
   })
 })

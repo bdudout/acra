@@ -70,6 +70,9 @@ export const ARCHI_PATTERNS: readonly ArchiPattern[] = [
     L('Hébergement en nuage (IaaS / PaaS)', 'Cloud hosting (IaaS / PaaS)', 'Cloud-Hosting (IaaS / PaaS)', 'Alojamiento en la nube (IaaS / PaaS)', 'Hosting cloud (IaaS / PaaS)'),
     L('Infrastructure ou plateforme chez un fournisseur de nuage.', 'Infrastructure or platform at a cloud provider.', 'Infrastruktur oder Plattform bei einem Cloud-Anbieter.', 'Infraestructura o plataforma en un proveedor de nube.', 'Infrastruttura o piattaforma presso un fornitore cloud.')),
   // ── Administration et exploitation ────────────────────────────────────────────────────────────
+  P('SI_STANDARD', 'admin', 1,
+    L('SI standard', 'Standard IS', 'Standard-IS', 'SI estándar', 'SI standard'),
+    L('Système d’information courant, sans exposition, nuage, interconnexion ni contrainte technique particulière déclarée.', 'Usual information system, with no declared Internet exposure, cloud, interconnection or special technical constraint.', 'Übliches Informationssystem ohne erklärte Internet-Exposition, Cloud-Nutzung, Verbindung oder besondere technische Einschränkung.', 'Sistema de información habitual, sin exposición a Internet, nube, interconexión ni restricción técnica particular declarada.', 'Sistema informativo ordinario, senza esposizione a Internet, cloud, interconnessioni o particolari vincoli tecnici dichiarati.')),
   P('SI_ADMINISTRATION', 'admin', 1,
     L('Système d’administration', 'Administration system', 'Administrationssystem', 'Sistema de administración', 'Sistema di amministrazione'),
     L('Bastion, postes d’administration dédiés, annuaire, outils de déploiement, comptes à privilèges.', 'Bastion host, dedicated admin workstations, directory, deployment tools, privileged accounts.', 'Bastion-Host, dedizierte Admin-Arbeitsplätze, Verzeichnisdienst, Deployment-Werkzeuge, privilegierte Konten.', 'Bastión, puestos de administración dedicados, directorio, herramientas de despliegue, cuentas con privilegios.', 'Bastion, postazioni di amministrazione dedicate, directory, strumenti di distribuzione, account privilegiati.')),
@@ -112,7 +115,7 @@ export const LOT1_CODES: readonly string[] = ARCHI_PATTERNS.filter(p => p.lot ==
 
 export const PATTERNS_MAX_DEFAULT = 12
 export const PATTERNS_MAX_MIN = 1
-export const PATTERNS_MAX_MAX = 24
+export const PATTERNS_MAX_MAX = 25
 
 export function isPatternCode(v: unknown): v is string { return typeof v === 'string' && BY_CODE.has(v) }
 export function patternLabel(code: string, locale: Locale = 'fr'): string { return BY_CODE.get(code)?.label[IDX[locale] ?? 0] ?? code }
@@ -124,7 +127,7 @@ export function patternsByFamily(): Array<{ family: (typeof PATTERN_FAMILIES)[nu
   return PATTERN_FAMILIES.map(family => ({ family, patterns: ARCHI_PATTERNS.filter(p => p.family === family.id) }))
 }
 
-/** Plafond de sélection : entier de 1 à 24, défaut 12 (valeur invalide ⇒ défaut). */
+/** Plafond de sélection : entier de 1 à 25, défaut 12 (valeur invalide ⇒ défaut). */
 export function clampPatternsMax(v: unknown): number {
   if (typeof v !== 'number' || !Number.isFinite(v)) return PATTERNS_MAX_DEFAULT
   return Math.min(PATTERNS_MAX_MAX, Math.max(PATTERNS_MAX_MIN, Math.floor(v)))
@@ -141,6 +144,16 @@ export function normalizePatterns(input: unknown, opts: { max?: number; strict?:
   for (const v of input) if (isPatternCode(v) && !out.includes(v)) out.push(v)
   if (out.length > max) { if (opts.strict) throw new Error('patterns_too_many'); return out.slice(0, max) }
   return out
+}
+
+/**
+ * Garde-fou de création : la taxonomie métier et la vision technique sont toutes
+ * deux nécessaires pour produire des suggestions utiles. Les analyses existantes
+ * et les imports historiques restent volontairement hors de ce contrôle.
+ */
+export function validateInitialAnalysisContext(input: { secteur?: unknown; patterns?: unknown }): 'sector_required' | 'pattern_required' | null {
+  if (typeof input.secteur !== 'string' || !input.secteur.trim()) return 'sector_required'
+  return normalizePatterns(input.patterns, { max: PATTERNS_MAX_MAX }).length ? null : 'pattern_required'
 }
 
 /**

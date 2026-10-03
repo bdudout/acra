@@ -284,7 +284,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
     derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
     archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
-    patternsArchiMax: Math.min(24, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
+    patternsArchiMax: Math.min(PATTERNS_MAX_MAX, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
     patternsArchiMasques: normalizePatterns(pickJson('patternsArchiMasques', defaults.patternsArchiMasques), { max: PATTERNS_MAX_MAX }),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),

@@ -120,6 +120,7 @@ export default function NewAnalysePage() {
     if (!form.nom.trim()) { setError(t.newAnalysis.nameRequired); return }
     if (!form.organisation.trim()) { setError(t.newAnalysis.orgRequired); return }
     if (!form.secteur) { setError(t.newAnalysis.sectorRequired); return }
+    if (!form.patternsArchi.length) { setError(t.patternsArchi.required); return }
     setLoading(true)
     setError('')
 
@@ -194,7 +195,7 @@ export default function NewAnalysePage() {
             {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}
             <div className="mt-3">
               <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
-              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
+              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} required onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
             </div>
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (
