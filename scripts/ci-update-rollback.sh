@@ -7,6 +7,7 @@
 set -Eeuo pipefail
 WORK=/tmp/acra-ci; rm -rf "$WORK"; mkdir -p "$WORK"
 PR_SHA="$(git rev-parse HEAD)"
+SNAPSHOT_SCRIPT="$(cd "$(dirname "$0")" && pwd)/acra-snapshot.sh"
 ORIGIN="$WORK/origin.git"
 git clone -q --bare . "$ORIGIN"
 git -C "$ORIGIN" update-ref refs/heads/main "$PR_SHA"
@@ -41,7 +42,13 @@ step "1-2. Version précédente, point de restauration et restauration"
 A="$WORK/a"; setup_instance "$A"; doc "$A"
 before="$(count "$A")"
 export COMPOSE_PROJECT_NAME="acraci$(basename "$A")"
-( cd "$A"; docker compose stop app >/dev/null; ID="$(bash scripts/acra-snapshot.sh create --reason manual --verify full)"; bash scripts/acra-snapshot.sh restore "$ID" --yes; docker compose up -d --wait app )
+( cd "$A"; docker compose stop app >/dev/null
+  # La version source peut précéder le lot snapshot : le script est celui livré
+  # par la révision cible, comme lors d'une première mise à jour réelle.
+  cp "$SNAPSHOT_SCRIPT" scripts/acra-snapshot.sh; chmod +x scripts/acra-snapshot.sh
+  ID="$(bash scripts/acra-snapshot.sh create --reason manual --verify full)"
+  bash scripts/acra-snapshot.sh restore "$ID" --yes
+  docker compose up -d --wait app )
 [ "$(count "$A")" = "$before" ] || fail "comptes différents après restauration"
 down "$A"
 

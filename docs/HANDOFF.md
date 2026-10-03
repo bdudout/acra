@@ -16,6 +16,10 @@ vérifié l'est avec la commande et son résultat.
 - **Non vérifié localement** : e2e Playwright est arrêté par la base de recette disponible, dépourvue de la table `Derogation`, et Docker Desktop est indisponible ; la CI utilise sa base migrée et doit exécuter les deux parcours. Lint local reste indisponible parce que le paquet local `eslint-plugin-react-hooks` est incohérent, alors que la CI avait signalé la seule erreur de code corrigée ici.
 - **Prochain pas** : commit/push de ce lot puis contrôler les checks de la PR #215 ; ne pas inclure les fichiers non suivis `.agents/`, `.claude/launch.json` ou `rapports/`.
 
+### Correctif CI après le push
+
+- Le scénario Docker de rollback révélait que la version source antérieure ne contenait pas encore `acra-snapshot.sh` (`exit 127`). `ci-update-rollback.sh` copie maintenant explicitement le script de la révision cible dans cette instance, ce qui reproduit la première mise à jour réelle. `bash -n` est vert ; le scénario Docker complet sera rejoué par CI après le commit dédié.
+
 ## 2026-10-03 (62) — Codex : clôture patterns A6 et reprise sans conflit
 
 - **Conflits** : les 15 fichiers laissés indexés par Claude terminaient BE-6 (pré-remplissage Projet 360 non destructif depuis les patterns) et le passage des patterns au catalogue ; ils ont été validés puis commités sans chevauchement avec les lots sauvegarde/rollback (`ff310cc`).
