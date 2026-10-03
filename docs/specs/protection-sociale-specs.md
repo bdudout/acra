@@ -176,7 +176,7 @@ parcours navigateur (dev :3005 sur base locale migrée), y compris lecture seule
 |---|---|---|
 | P1 | livré (catalogue 1.14, 13 sous-secteurs, ateliers 1 à 5, 6 types d’incident) | df75376 |
 | P2 | livré (3 modules activables ; homologation : registre, dossier, décision, séparation, relance) ; reste : lien depuis la fiche d’analyse (spécifié ci-dessus, confié à une autre session) | c8aa809 |
-| P3 | à faire | |
+| P3 | livré (référence → déclinaison idempotente dans les entités descendantes visibles, consolidation contrôle × entité, export Excel, page /controles/reseau) | ce commit |
 | P4 | à faire | |
 | P5 | à faire | |
 | P6 | à faire | |

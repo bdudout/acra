@@ -634,10 +634,17 @@ model Controle {
   arrangementTicId String?
   projetId         String?
 
+  // Maîtrise des risques en réseau (P3) : contrôle « de référence » de la mère, décliné dans les entités
+  // descendantes ; une déclinaison pointe vers sa référence (lien logique, une seule par entité).
+  estReference Boolean @default(false)
+  referenceId  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([referenceId])
+  @@unique([organizationId, referenceId])
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
