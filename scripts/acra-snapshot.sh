@@ -20,7 +20,7 @@
 # Jamais de secret dans un journal, un manifeste ou un nom de fichier.
 set -Eeuo pipefail
 umask 077
-cd "$(dirname "$0")/.."
+cd "${ACRA_ROOT:-$(dirname "$0")/..}"
 
 ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
 COUNTED_TABLES="User Organization Analyse Risque PlanAction AuditLog Document _prisma_migrations"
@@ -60,6 +60,10 @@ existing_services() {
 # ── Verrou (mkdir atomique + pid) ─────────────────────────────────────────────────────────────────
 LOCK=""
 take_lock() {
+  # Une mise à jour en cours (scripts/update.sh) est seule maîtresse des points de restauration.
+  if [ "${ACRA_RUN_OWNER:-0}" != "1" ] && [ -f "$UPDATE_DIR/run/lock/pid" ] && kill -0 "$(cat "$UPDATE_DIR/run/lock/pid" 2>/dev/null)" 2>/dev/null; then
+    die 40 "Une mise à jour est en cours : opération refusée."
+  fi
   mkdir -p "$BACKUP_DIR"; chmod 700 "$BACKUP_DIR"
   LOCK="$BACKUP_DIR/.lock"
   if ! mkdir "$LOCK" 2>/dev/null; then

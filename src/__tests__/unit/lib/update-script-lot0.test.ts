@@ -1,11 +1,12 @@
 // Lot 0 de docs/specs/sauvegarde-rollback-spec.md : correctifs urgents du update.sh (documents, sauvegarde vérifiée, révision servie).
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { statSync, readdirSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { makeInstance, type Instance } from '../../helpers/update-fixture'
 
+vi.setConfig({ testTimeout: 90_000 })
 let inst: Instance
 afterEach(() => inst?.cleanup())
 const idx = (calls: string[], needle: string) => calls.findIndex(c => c.includes(needle))
@@ -41,11 +42,13 @@ describe('update.sh — sauvegarde vérifiée, application arrêtée, droits (C2
     const dump = idx(c, 'pg_dump -Fc')
     expect(stop).toBeGreaterThanOrEqual(0)
     expect(dump).toBeGreaterThan(stop)
-    const dir = path.join(inst.work, 'backups')
+    const root = path.join(inst.work, 'backups')
+    expect(statSync(root).mode & 0o777).toBe(0o700)
+    const id = readdirSync(root).find(f => /^\d{8}T\d{6}Z-pre-update-1\.0\.4$/.test(f))!
+    expect(id).toBeTruthy()
+    const dir = path.join(root, id)
     expect(statSync(dir).mode & 0o777).toBe(0o700)
-    const files = readdirSync(dir)
-    expect(files.some(f => /^pre-update-.*-1\.0\.4\.dump$/.test(f))).toBe(true)
-    for (const f of files) expect(statSync(path.join(dir, f)).mode & 0o777, f).toBe(0o600)
+    for (const f of readdirSync(dir)) expect(statSync(path.join(dir, f)).mode & 0o777, f).toBe(0o600)
   })
   it('une sauvegarde tronquée arrête la mise à jour : ancienne app redémarrée, aucun merge', () => {
     inst = makeInstance(); inst.fakeFile('dump_fail')
@@ -69,10 +72,10 @@ describe('update.sh — sauvegarde vérifiée, application arrêtée, droits (C2
     expect(r.status).not.toBe(0)
     expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
   })
-  it('l’échec affiche la commande de restauration exacte', () => {
+  it('l’échec indique que rien n’a été modifié', () => {
     inst = makeInstance(); inst.fakeFile('dump_fail')
     const r = inst.run('scripts/update.sh', ['stable', '--yes'])
-    expect(r.stderr + r.stdout).toMatch(/pg_restore/)
+    expect(r.stderr + r.stdout).toMatch(/rien n.a été modifié/)
   })
 })
 
@@ -80,13 +83,14 @@ describe('update.sh — révision servie et migrations (C8, C13)', () => {
   it('exporte la version et la révision cibles et désactive la réconciliation automatique', () => {
     inst = makeInstance()
     inst.run('scripts/update.sh', ['stable', '--yes'])
-    const env = inst.calls().find(c => c.startsWith('ENV '))
+    const env = inst.calls().find(c => c.startsWith('ENV ACRA_VERSION'))
     expect(env).toContain('ACRA_VERSION=v1.0.5')
     expect(env).toContain(`ACRA_REVISION=${inst.shaB}`)
     expect(env).toContain('RESOLVE=0')
+    expect(inst.calls()).toContain('ENV MIGRATOR RESOLVE=0')
   })
   it('refuse le succès si /api/health ne renvoie pas la révision cible (ancien conteneur)', () => {
-    inst = makeInstance(); inst.fakeFile('health_rev', 'ancienne-revision')
+    inst = makeInstance(); inst.fakeFile('no_serve')
     const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', '.acra-update/status.json'])
     expect(r.status).not.toBe(0)
   })

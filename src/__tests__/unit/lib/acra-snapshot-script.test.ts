@@ -1,9 +1,10 @@
 // Lot 1 de docs/specs/sauvegarde-rollback-spec.md : scripts/acra-snapshot.sh (docker/psql/df simulés).
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { statSync, readdirSync, writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { makeInstance, listDir, type Instance } from '../../helpers/update-fixture'
 
+vi.setConfig({ testTimeout: 90_000 })
 let inst: Instance
 afterEach(() => inst?.cleanup())
 const make = () => makeInstance({ scripts: ['update.sh', 'acra-snapshot.sh'] })

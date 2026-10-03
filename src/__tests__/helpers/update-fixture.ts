@@ -47,8 +47,9 @@ case "$a" in
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;
   *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
   *"run --rm"*"tar"*) f tar_fail && exit 1; printf 'docs' | gzip ;;
-  *wget*) rev="$(cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev" ;;
-  *"up -d"*) echo "ENV ACRA_VERSION=$ACRA_VERSION ACRA_REVISION=$ACRA_REVISION RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f up_fail && exit 1 ;;
+  *wget*) case "$a" in *" -S "*) f smoke_fail || echo "  HTTP/1.1 200 OK" >&2 ;; *) if f health_json; then cat "$FAKE_DIR/health_json"; else rev="$(cat "$FAKE_DIR/health_stuck" 2>/dev/null || cat "$FAKE_DIR/served_rev" 2>/dev/null || cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev"; fi ;; esac ;;
+  *"run --rm --no-deps migrator"*) echo "ENV MIGRATOR RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f migrate_fail && exit 1 ;;
+  *"up -d"*) echo "ENV ACRA_VERSION=$ACRA_VERSION ACRA_REVISION=$ACRA_REVISION RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f up_fail && exit 1; if [ -n "$ACRA_REVISION" ] && ! f no_serve; then printf '%s' "$ACRA_REVISION" > "$FAKE_DIR/served_rev"; fi ;;
 esac
 exit 0
 `
@@ -66,7 +67,7 @@ export interface Instance {
 }
 
 /** Origine nue + clone sur la version A (1.0.4) ; la version B (1.0.5) est publiée sur origin/stable. `scripts` : scripts réels à copier. */
-export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<string, string> } = {}): Instance {
+export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<string, string>; targetFiles?: Record<string, string> } = {}): Instance {
   const root = mkdtempSync(path.join(tmpdir(), 'acra-upd-'))
   const origin = path.join(root, 'origin.git'); const work = path.join(root, 'work'); const bin = path.join(root, 'bin'); const fake = path.join(root, 'fake')
   mkdirSync(bin); mkdirSync(fake)
@@ -74,7 +75,7 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
   const commit = (dir: string, version: string, extra: Record<string, string> = {}) => {
     writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'acra', version }, null, 2))
     mkdirSync(path.join(dir, 'scripts'), { recursive: true })
-    for (const s of opts.scripts ?? ['update.sh']) { if (existsSync(path.join(REPO, 'scripts', s))) copyFileSync(path.join(REPO, 'scripts', s), path.join(dir, 'scripts', s)); chmodSync(path.join(dir, 'scripts', s), 0o755) }
+    for (const s of opts.scripts ?? ['update.sh', 'update-lib.sh', 'update-steps.sh', 'acra-snapshot.sh']) { if (existsSync(path.join(REPO, 'scripts', s))) copyFileSync(path.join(REPO, 'scripts', s), path.join(dir, 'scripts', s)); chmodSync(path.join(dir, 'scripts', s), 0o755) }
     for (const [rel, c] of Object.entries({ ...opts.extraFiles, ...extra })) { mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); writeFileSync(path.join(dir, rel), c) }
     git(dir, 'add', '-A'); git(dir, 'commit', '-q', '-m', `v${version}`)
   }
@@ -82,11 +83,11 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
   commit(work, '1.0.4'); git(work, 'push', '-q', 'origin', 'stable')
   const shaA = git(work, 'rev-parse', 'HEAD')
   const other = path.join(root, 'other'); git(root, 'clone', '-q', origin, other); git(other, 'checkout', '-q', 'stable')
-  commit(other, '1.0.5', { 'CHANGED.txt': 'b' }); git(other, 'push', '-q', 'origin', 'stable')
+  commit(other, '1.0.5', { 'CHANGED.txt': 'b', ...opts.targetFiles }); git(other, 'push', '-q', 'origin', 'stable')
   const shaB = git(other, 'rev-parse', 'HEAD')
   writeFileSync(path.join(bin, 'docker'), FAKE_DOCKER, { mode: 0o755 })
   writeFileSync(path.join(bin, 'df'), '#!/bin/sh\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted\\nx 1 1 %s 1%% /\\n" "$(cat "$FAKE_DIR/df_host" 2>/dev/null || echo 99999999)"\n', { mode: 0o755 })
-  writeFileSync(path.join(fake, 'health_rev'), shaB)
+  writeFileSync(path.join(fake, 'served_rev'), shaA)
   const audit = path.join(root, 'calls'); writeFileSync(audit, '')
   const env = (extra: Record<string, string> = {}) => ({ ...process.env, ...GIT_ENV, PATH: `${bin}:${process.env.PATH}`, AUDIT_LOG: audit, FAKE_DIR: fake, ACRA_HEALTH_RETRIES: '2', ACRA_HEALTH_INTERVAL: '0', ...extra })
   return {
