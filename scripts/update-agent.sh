@@ -112,7 +112,7 @@ case "$ACTION" in
     scripts/update.sh "$CHANNEL" --yes --status-file "$DIR/status.json" || true ;;
   rollback)
     SNAP="$(field snapshotId)"
-    ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
+    ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
     printf '%s' "$SNAP" | grep -Eq "$ID_RE" || invalid
     # L'identifiant doit exister dans l'index de l'AGENT (l'application n'est pas digne de confiance sur ce point).
     SNAP_RE="$(printf '%s' "$SNAP" | sed 's/[.+]/\\&/g')"

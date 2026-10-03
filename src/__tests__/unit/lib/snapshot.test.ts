@@ -8,6 +8,14 @@ describe('isSnapshotId', () => {
   it.each(['../x', ';rm -rf /', '20261003T101500Z-other-1.0.4', '20261003T101500Z-pre-update-', '20261003T101500Z-pre-update-' + 'a'.repeat(41), 'x/20261003T101500Z-manual-1', '20261003T101500Z-manual-1.0\n', '', 12 as unknown as string])('refuse %s', id => expect(isSnapshotId(id)).toBe(false))
 })
 
+describe('points planifiés', () => {
+  it('identifiant scheduled accepté ; tiers assainis', () => {
+    expect(isSnapshotId('20261003T020000Z-scheduled-1.0.4')).toBe(true)
+    const e = { id: '20261003T020000Z-scheduled-1.0.4', reason: 'scheduled', tiers: ['daily', 'weekly', 'hourly', 3], createdAt: '2026-10-03T02:00:00Z', version: '1.0.4', verified: 'quick', clone: false, documents: true, encrypted: false, sizeBytes: 1 }
+    expect(parseSnapshotIndex({ schema: 1, snapshots: [e] }).snapshots[0]).toMatchObject({ reason: 'scheduled', tiers: ['daily', 'weekly'] })
+  })
+})
+
 describe('parseSnapshotIndex', () => {
   const ok = { id: '20261003T101500Z-pre-update-1.0.4', reason: 'pre-update', createdAt: '2026-10-03T10:15:00Z', version: '1.0.4', toVersion: '1.0.5', verified: 'full', clone: true, documents: true, encrypted: false, sizeBytes: 123 }
   it('assainit : champs connus seulement, identifiant invalide écarté, textes bornés', () => {

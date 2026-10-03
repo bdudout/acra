@@ -270,3 +270,54 @@ describe('acra-snapshot — mode base externe (lot 6)', () => {
     expect(r.stderr).toMatch(/Crochet ACRA_SNAPSHOT_HOOK en échec/)
   })
 })
+
+describe('points planifiés et rétention grand-père / père / fils', () => {
+  it('create --reason scheduled : fréquences et date planifiée au manifeste et à l’index', () => {
+    inst = make()
+    const r = snap(['create', '--reason', 'scheduled', '--tier', 'daily,weekly', '--scheduled-for', '2026-10-04', '--from-version', '1.0.4', '--no-clone', '--verify', 'quick'])
+    expect(r.status, r.stderr).toBe(0)
+    const id = r.stdout.trim()
+    expect(id).toMatch(/Z-scheduled-1\.0\.4$/)
+    const m = JSON.parse(readFileSync(path.join(backups(), id, 'manifest.json'), 'utf8'))
+    expect(m).toMatchObject({ reason: 'scheduled', tiers: 'daily,weekly', scheduledFor: '2026-10-04' })
+    expect(m.database.clone).toBeNull()
+    expect(JSON.parse(inst.read('.acra-update/snapshots.json')).snapshots[0]).toMatchObject({ id, reason: 'scheduled', tiers: ['daily', 'weekly'] })
+  })
+
+  it('refuse un point planifié sans fréquence ou sans date valide', () => {
+    inst = make()
+    expect(snap(['create', '--reason', 'scheduled', '--scheduled-for', '2026-10-04']).status).toBe(2)
+    expect(snap(['create', '--reason', 'scheduled', '--tier', 'hourly', '--scheduled-for', '2026-10-04']).status).toBe(2)
+    expect(snap(['create', '--reason', 'scheduled', '--tier', 'daily', '--scheduled-for', 'demain']).status).toBe(2)
+  })
+
+  const seed = (id: string, tiers: string) => {
+    const d = path.join(backups(), id); mkdirSync(d, { recursive: true })
+    writeFileSync(path.join(d, 'manifest.json'), `{\n  "schema": 1,\n  "id": "${id}",\n  "reason": "scheduled",\n  "createdAt": "2026-10-01T02:00:00Z",\n  "tiers": "${tiers}",\n  "scheduledFor": "2026-10-01",\n  "acra": {\n    "version": "1.0.4"\n  }\n}\n`)
+  }
+  const policy = (keep: { daily: number; weekly: number; monthly: number }) => { mkdirSync(path.join(inst.work, '.acra-update'), { recursive: true }); writeFileSync(path.join(inst.work, '.acra-update/backup-policy.json'), `{\n  "schema": 1,\n  "daily": { "enabled": true, "keep": ${keep.daily} },\n  "weekly": { "enabled": true, "keep": ${keep.weekly}, "weekday": 0 },\n  "monthly": { "enabled": true, "keep": ${keep.monthly}, "day": 1 },\n  "hour": 2\n}\n`) }
+
+  it('prune garde pour chaque fréquence ses N copies les plus récentes ; un point partagé compte pour chacune', () => {
+    inst = make(); policy({ daily: 2, weekly: 1, monthly: 1 })
+    // plus ancien → plus récent
+    seed('20260901T020000Z-scheduled-1.0.4', 'monthly')          // 2ᵉ mensuel (hors N=1) ⇒ supprimé
+    seed('20260915T020000Z-scheduled-1.0.4', 'weekly')           // 2ᵉ hebdo ⇒ supprimé
+    seed('20261001T020000Z-scheduled-1.0.4', 'daily,weekly,monthly') // gardé (mensuel + hebdo)
+    seed('20261002T020000Z-scheduled-1.0.4', 'daily')            // 2ᵉ quotidien ⇒ gardé
+    seed('20261003T020000Z-scheduled-1.0.4', 'daily')            // 1ᵉʳ quotidien ⇒ gardé
+    seed('20260929T020000Z-scheduled-1.0.4', 'daily')            // 3ᵉ quotidien ⇒ supprimé
+    expect(snap(['prune']).status).toBe(0)
+    const left = listDir(backups()).filter(x => !x.startsWith('.')).sort()
+    expect(left).toEqual(['20261001T020000Z-scheduled-1.0.4', '20261002T020000Z-scheduled-1.0.4', '20261003T020000Z-scheduled-1.0.4'])
+  })
+
+  it('3 copies par défaut sans fichier de politique ; les points pre-update et manual ne sont pas touchés', () => {
+    inst = make()
+    for (const d of ['20261001', '20261002', '20261003', '20261004', '20261005']) seed(`${d}T020000Z-scheduled-1.0.4`, 'daily')
+    seed('20260801T000000Z-manual-1.0.0', ''); 
+    const mid = path.join(backups(), '20260801T000000Z-manual-1.0.0/manifest.json'); writeFileSync(mid, readFileSync(mid, 'utf8').replace('"reason": "scheduled"', '"reason": "manual"'))
+    snap(['prune'])
+    const left = listDir(backups()).filter(x => !x.startsWith('.')).sort()
+    expect(left).toEqual(['20260801T000000Z-manual-1.0.0', '20261003T020000Z-scheduled-1.0.4', '20261004T020000Z-scheduled-1.0.4', '20261005T020000Z-scheduled-1.0.4'])
+  })
+})

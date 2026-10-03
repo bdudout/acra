@@ -4,7 +4,7 @@
 # documents, empreintes, manifeste (écrit EN DERNIER), et un clone de la base (restauration rapide).
 #
 # Usage :
-#   scripts/acra-snapshot.sh create  --reason pre-update|manual [--from-version V] [--to-version V] [--verify full|quick] [--no-clone] [--json]
+#   scripts/acra-snapshot.sh create  --reason pre-update|manual|scheduled [--tier daily,weekly,monthly --scheduled-for AAAA-MM-JJ (scheduled)] [--from-version V] [--to-version V] [--verify full|quick] [--no-clone] [--json]
 #   scripts/acra-snapshot.sh verify  <id> [--full]
 #   scripts/acra-snapshot.sh list    [--json]
 #   scripts/acra-snapshot.sh restore <id> [--yes] [--keep-current]     # base + documents ; ne touche pas au code
@@ -22,7 +22,7 @@ set -Eeuo pipefail
 umask 077
 cd "${ACRA_ROOT:-$(dirname "$0")/..}"
 
-ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
+ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
 COUNTED_TABLES="User Organization Analyse Risque PlanAction AuditLog Document _prisma_migrations"
 
 BACKUP_DIR="${ACRA_BACKUP_DIR:-./backups}"
@@ -122,6 +122,8 @@ release_lock() { [ -z "$LOCK" ] || rm -rf "$LOCK"; LOCK=""; }
 
 # ── Lecture d'un manifeste (un champ par ligne, cf. write_manifest) ───────────────────────────────
 mget() { sed -n "s/^[[:space:]]*\"$2\":[[:space:]]*\"\{0,1\}\([^\",]*\)\"\{0,1\},\{0,1\}[[:space:]]*\$/\1/p" "$1" | head -1; }
+# Valeur textuelle pouvant contenir des virgules (ex. "daily,weekly").
+mget_list() { sed -n "s/^[[:space:]]*\"$2\":[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$1" | head -1; }
 snapshot_dir() { printf '%s/%s' "$BACKUP_DIR" "$1"; }
 
 # ── Empreintes ────────────────────────────────────────────────────────────────────────────────────
@@ -183,7 +185,7 @@ verify_full() { # dossier db before after → 0 si les comptes restaurés corres
 write_manifest() { # dossier + variables M_*
   local d="$1" t first=1 line
   {
-    printf '{\n  "schema": 1,\n  "id": "%s",\n  "reason": "%s",\n  "createdAt": "%s",\n' "$M_ID" "$M_REASON" "$M_CREATED"
+    printf '{\n  "schema": 1,\n  "id": "%s",\n  "reason": "%s",\n  "createdAt": "%s",\n  "tiers": "%s",\n  "scheduledFor": "%s",\n' "$M_ID" "$M_REASON" "$M_CREATED" "${M_TIERS:-}" "${M_SFOR:-}"
     printf '  "acra": {\n    "version": "%s",\n    "revision": "%s",\n    "image": %s,\n    "channel": %s,\n    "toVersion": %s\n  },\n' "$M_VERSION" "$M_REVISION" "$M_IMAGE" "$M_CHANNEL" "$M_TOVERSION"
     printf '  "database": {\n    "mode": "%s",\n    "serverVersion": "%s",\n    "name": "%s",\n    "sizeBytes": %s,\n    "dumpFile": "%s",\n    "dumpBytes": %s,\n    "encrypted": %s,\n    "clone": %s,\n' "$DB_MODE" "$M_SERVER" "$M_DB" "$M_DBBYTES" "$M_DUMPFILE" "$M_DUMPBYTES" "$M_ENCRYPTED" "$M_CLONE"
     printf '    "migrationsCount": %s,\n    "migrationsLast": "%s",\n    "migrationsHash": "%s",\n' "${M_MIGCOUNT:-0}" "${M_MIGLAST:-}" "${M_MIGHASH:-}"
@@ -212,8 +214,8 @@ cmd_index() {
       [ -f "${d}manifest.json" ] || continue
       id="$(basename "$d")"; is_id "$id" || continue
       [ "$first" -eq 1 ] || printf ','; first=0
-      printf '\n  { "id": "%s", "reason": "%s", "createdAt": "%s", "version": "%s", "toVersion": "%s", "verified": "%s", "clone": %s, "documents": %s, "encrypted": %s, "sizeBytes": %s }' \
-        "$id" "$(mget "${d}manifest.json" reason)" "$(mget "${d}manifest.json" createdAt)" "$(mget "${d}manifest.json" version)" \
+      printf '\n  { "id": "%s", "reason": "%s", "tiers": [%s], "createdAt": "%s", "version": "%s", "toVersion": "%s", "verified": "%s", "clone": %s, "documents": %s, "encrypted": %s, "sizeBytes": %s }' \
+        "$id" "$(mget "${d}manifest.json" reason)" "$(tl=$(mget_list "${d}manifest.json" tiers); printf '%s' "$tl" | sed 's/\([a-z]*\)/"\1"/g')" "$(mget "${d}manifest.json" createdAt)" "$(mget "${d}manifest.json" version)" \
         "$(m=$(mget "${d}manifest.json" toVersion); [ "$m" = "null" ] && m=""; printf '%s' "$m")" \
         "$(mget "${d}manifest.json" level)" \
         "$(c=$(mget "${d}manifest.json" clone); if [ -n "$c" ] && [ "$c" != "null" ]; then echo true; else echo false; fi)" \
@@ -233,7 +235,7 @@ cleanup_create() {
 
 # ── create ────────────────────────────────────────────────────────────────────────────────────────
 cmd_create() {
-  local reason="" from="" to="" level="${ACRA_SNAPSHOT_VERIFY:-}" clone=1 json=0
+  local reason="" from="" to="" level="${ACRA_SNAPSHOT_VERIFY:-}" clone=1 json=0 tiers="" sfor=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --reason) reason="${2:-}"; shift ;;
@@ -241,12 +243,18 @@ cmd_create() {
       --to-version) to="${2:-}"; shift ;;
       --verify) level="${2:-}"; shift ;;
       --no-clone) clone=0 ;;
+      --tier) tiers="${2:-}"; shift ;;
+      --scheduled-for) sfor="${2:-}"; shift ;;
       --json) json=1 ;;
       *) die 2 "Option inconnue : $1" ;;
     esac
     shift
   done
-  case "$reason" in pre-update|manual) ;; *) die 2 "--reason pre-update|manual requis" ;; esac
+  case "$reason" in pre-update|manual|scheduled) ;; *) die 2 "--reason pre-update|manual|scheduled requis" ;; esac
+  if [ "$reason" = "scheduled" ]; then
+    printf '%s' "$tiers" | grep -Eq '^(daily|weekly|monthly)(,(daily|weekly|monthly))*$' || die 2 "--tier daily,weekly,monthly requis pour un point planifié"
+    printf '%s' "$sfor" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || die 2 "--scheduled-for AAAA-MM-JJ requis pour un point planifié"
+  else tiers=""; sfor=""; fi
   case "$level" in ""|full|quick) ;; *) die 2 "--verify full|quick" ;; esac
   printf '%s' "${from:-x}" | grep -Eq '^[0-9A-Za-z.+-]{1,40}$' || die 2 "--from-version invalide"
   [ -z "$to" ] || printf '%s' "$to" | grep -Eq '^[0-9A-Za-z.+-]{1,40}$' || die 2 "--to-version invalide"
@@ -263,6 +271,8 @@ cmd_create() {
   [ -n "$db" ] || die 10 "Nom de la base introuvable."
   if [ -z "$from" ]; then from="$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -1)"; from="${from:-unknown}"; fi
   local stamp id dir; stamp="$(now_stamp)"; id="${stamp}-${reason}-${from}"
+  # Deux points dans la même seconde auraient le même identifiant : on attend la seconde suivante plutôt que d'écraser.
+  while [ -e "$(snapshot_dir "$id")" ] || [ -e "$(snapshot_dir "$id").invalid" ]; do sleep 1; stamp="$(now_stamp)"; id="${stamp}-${reason}-${from}"; done
   is_id "$id" || die 2 "Identifiant calculé invalide : $id"
 
   # Mesures et espace disque (avant tout fichier).
@@ -345,6 +355,7 @@ cmd_create() {
 
   # Métadonnées du manifeste.
   counts="$after"
+  M_TIERS="$tiers"; M_SFOR="$sfor"
   M_ID="$id"; M_REASON="$reason"; M_CREATED="$(now_iso)"; M_VERSION="$from"
   M_REVISION="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
   if [ -n "${ACRA_IMAGE:-}" ]; then M_IMAGE="\"$(json_escape "${ACRA_IMAGE}")\""; else M_IMAGE=null; fi
@@ -508,6 +519,26 @@ cmd_prune() {
       local mt; mt="$(stat -c %Y "${d%/}" 2>/dev/null || stat -f %m "${d%/}")"
       [ $(( now_s - mt )) -gt 86400 ] && act "$id (incomplet)" "rm -rf '${d%/}'"
     fi
+  done
+  # Points planifiés : politique grand-père/père/fils — chaque fréquence garde ses N copies les plus récentes
+  # (N lu dans .acra-update/backup-policy.json, 3 par défaut) ; un point sans fréquence retenue est supprimé.
+  pol_keep() { local v; v="$(sed -n "s/^[[:space:]]*\"$1\":[[:space:]]*{.*\"keep\":[[:space:]]*\([0-9][0-9]*\).*/\1/p" "$UPDATE_DIR/backup-policy.json" 2>/dev/null | head -1)"; printf '%s' "${v:-3}"; }
+  local keepset="" tier cnt kn tl
+  for tier in daily weekly monthly; do
+    kn="$(pol_keep "$tier")"; cnt=0
+    for id in $(ls -1 "$BACKUP_DIR" 2>/dev/null | sort -r); do
+      is_id "$id" || continue; case "$id" in *-scheduled-*) ;; *) continue ;; esac
+      [ -f "$BACKUP_DIR/$id/manifest.json" ] || continue
+      tl="$(mget_list "$BACKUP_DIR/$id/manifest.json" tiers)"
+      case ",$tl," in *",$tier,"*) cnt=$(( cnt + 1 )); [ "$cnt" -gt "$kn" ] || keepset="$keepset
+$id" ;; esac
+    done
+  done
+  for id in $(ls -1 "$BACKUP_DIR" 2>/dev/null | sort -r); do
+    is_id "$id" || continue; case "$id" in *-scheduled-*) ;; *) continue ;; esac
+    d="$BACKUP_DIR/$id"; [ -f "$d/manifest.json" ] || continue
+    [ "$id" != "$protect" ] || continue; [ ! -f "$d/keep" ] || continue
+    printf '%s\n' "$keepset" | grep -qx "$id" || act "$id" "rm -rf '$d'"
   done
   # pre-update : garder les KEEP derniers valides + le point protégé ; manual : jamais (sauf --include-manual)
   for id in $(ls -1 "$BACKUP_DIR" 2>/dev/null | sort -r); do

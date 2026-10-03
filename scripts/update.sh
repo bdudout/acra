@@ -108,7 +108,7 @@ resume_run || true
 
 # ── Retour arrière manuel ─────────────────────────────────────────────────────────────────────────
 if [ "$MODE" = rollback ]; then
-  printf '%s' "$ROLLBACK_ID" | grep -Eq '^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$' || { status FAILED "Identifiant de point invalide" invalid_request; exit 1; }
+  printf '%s' "$ROLLBACK_ID" | grep -Eq '^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$' || { status FAILED "Identifiant de point invalide" invalid_request; exit 1; }
   MAN="backups/$ROLLBACK_ID/manifest.json"
   [ -f "$MAN" ] || { status FAILED "Point de restauration inconnu" invalid_request; exit 1; }
   [ "$YES" -eq 1 ] || { read -r -p "Restaurer le point $ROLLBACK_ID (les saisies postérieures seront perdues) ? [o/N] " a; case "$a" in o|O|y|Y) ;; *) echo "Annulé."; exit 1 ;; esac; }

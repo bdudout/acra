@@ -3,7 +3,7 @@
 // (`.acra-update/snapshots.json`) : identifiants validés, champs connus seulement, aucun chemin ni nom de base.
 
 /** Même expression que `ID_RE` du script (un test de parité les compare). */
-export const SNAPSHOT_ID_PATTERN = '^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
+export const SNAPSHOT_ID_PATTERN = '^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
 const ID_RE = new RegExp(SNAPSHOT_ID_PATTERN)
 
 /** Tables dont le nombre de lignes est consigné au manifeste et recontrôlé à la restauration (parité avec le script). */
@@ -12,10 +12,12 @@ export const SNAPSHOT_COUNTED_TABLES = ['User', 'Organization', 'Analyse', 'Risq
 export const SNAPSHOT_INDEX_MAX_BYTES = 64 * 1024
 const MAX_ENTRIES = 100
 
-export type SnapshotReason = 'pre-update' | 'manual'
+export type SnapshotReason = 'pre-update' | 'manual' | 'scheduled'
+export type SnapshotTier = 'daily' | 'weekly' | 'monthly'
 export type SnapshotVerification = 'full' | 'quick'
 export interface SnapshotEntry {
   id: string; reason: SnapshotReason; createdAt: string; version: string; toVersion?: string
+  tiers?: SnapshotTier[]
   verified: SnapshotVerification; clone: boolean; documents: boolean; encrypted: boolean; sizeBytes: number
 }
 export interface SnapshotIndex { generatedAt?: string; snapshots: SnapshotEntry[] }
@@ -30,13 +32,14 @@ function parseEntry(raw: unknown): SnapshotEntry | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
   if (!isSnapshotId(o.id)) return null
-  if (o.reason !== 'pre-update' && o.reason !== 'manual') return null
+  if (o.reason !== 'pre-update' && o.reason !== 'manual' && o.reason !== 'scheduled') return null
   if (o.verified !== 'full' && o.verified !== 'quick') return null
   const createdAt = text(o.createdAt, 40); const version = text(o.version, 40)
   if (!createdAt || !version || !Number.isFinite(Date.parse(createdAt))) return null
   if (typeof o.sizeBytes !== 'number' || !Number.isFinite(o.sizeBytes) || o.sizeBytes < 0) return null
   const toVersion = text(o.toVersion, 40)
-  return { id: o.id, reason: o.reason, createdAt, version, ...(toVersion ? { toVersion } : {}), verified: o.verified, clone: o.clone === true, documents: o.documents === true, encrypted: o.encrypted === true, sizeBytes: Math.floor(o.sizeBytes) }
+  const tiers = Array.isArray(o.tiers) ? o.tiers.filter((t): t is SnapshotTier => t === 'daily' || t === 'weekly' || t === 'monthly') : []
+  return { id: o.id, reason: o.reason, createdAt, version, ...(toVersion ? { toVersion } : {}), ...(tiers.length ? { tiers } : {}), verified: o.verified, clone: o.clone === true, documents: o.documents === true, encrypted: o.encrypted === true, sizeBytes: Math.floor(o.sizeBytes) }
 }
 
 /** Index publié par le script, assaini ; schéma inconnu ou entrée invalide → écartés. Plus récent d'abord. */

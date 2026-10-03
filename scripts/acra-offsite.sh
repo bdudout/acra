@@ -25,7 +25,7 @@ set -Eeuo pipefail
 umask 077
 cd "${ACRA_ROOT:-$(dirname "$0")/..}"
 
-ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual)-[0-9A-Za-z.+-]{1,40}$'
+ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
 BACKUP_DIR="${ACRA_BACKUP_DIR:-./backups}"
 STATE=".acra-update/offsite.json"
 DRIVER="${ACRA_OFFSITE_DRIVER:-}"
