@@ -57,3 +57,18 @@ describe('read_resilience_tests (DORA art. 25-26)', () => {
     expect(fr.note).toMatch(/à confirmer/i)
   })
 })
+
+describe('ergonomie des outils de connaissance (retours du comparatif)', () => {
+  it('accepte « secteur » comme alias de « sector » et signale clairement un argument inconnu au lieu de l’ignorer', async () => {
+    const r = await run(readCatalogueTool, { secteur: 'ASSURANCE', kind: 'CONTROL', limit: 100 })
+    expect(r.items.length).toBeGreaterThan(0); expect(r.items.some((i: { sector: string }) => i.sector === 'ASSURANCE')).toBe(true); expect(r.items.every((i: { sector: string }) => i.sector === 'ASSURANCE' || i.sector === 'TRANSVERSAL')).toBe(true)
+    const bad = await readNotificationRegimesTool.handler({ secteur: 'SANTE' }, ctx)
+    expect(bad.isError).toBe(true); expect(bad.content[0].text).toMatch(/argument_inconnu.*secteur.*code, locale/)
+  })
+  it('la recherche porte aussi sur le domaine (processus) et les références : « mutuelle » trouve les contrôles des adhérents', async () => {
+    const r = await run(readCatalogueTool, { sector: 'ASSURANCE', kind: 'CONTROL', query: 'mutuelle', limit: 50 })
+    const keys = r.items.map((i: { key: string }) => i.key)
+    expect(keys).toContain('assurance.control.member-contributions'); expect(keys).toContain('assurance.control.statutes-assembly')
+    expect((await run(readCatalogueTool, { sector: 'ASSURANCE', query: 'Code de la mutualité', limit: 100 })).items.length).toBeGreaterThan(0)
+  })
+})

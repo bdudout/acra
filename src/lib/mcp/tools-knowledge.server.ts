@@ -6,7 +6,7 @@ import { CATALOGUE_REGIMES } from '@/lib/notification-regimes'
 import { REGIME_INFO, regimeInfo, type InfoLocale } from '@/lib/regime-info'
 import { searchIncidentTypes, INCIDENT_CHECKLIST, type IncidentLocale } from '@/lib/incident-types-catalogue'
 import { DORA_STAGES, fieldsOfStage, type DoraStage } from '@/lib/incident-declaration'
-import { SECTOR_CODES, CATALOGUE_PACK_VERSION, searchSectorSuggestions, type SectorCode } from '@/lib/sector-suggestions'
+import { SECTOR_CODES, CATALOGUE_PACK_VERSION, listSectorSuggestions, type SectorCode } from '@/lib/sector-suggestions'
 import { TEST_RESILIENCE_TYPES } from '@/lib/tests-resilience'
 import { getT } from '@/lib/i18n'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
@@ -15,9 +15,25 @@ import type { McpContext } from './tools.server'
 const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
 const loc = (v: unknown) => ((LOCALES as readonly string[]).includes(String(v)) ? String(v) : 'fr') as InfoLocale
 const lim = (v: unknown, def: number, max: number) => { const n = typeof v === 'number' ? Math.floor(v) : NaN; return Number.isFinite(n) ? Math.min(max, Math.max(1, n)) : def }
+/** Refuse un argument inconnu (message explicite avec les noms valides) au lieu de l'ignorer en silence ; `aliases` : synonymes acceptés. */
+function guardArgs(tool: McpTool<McpContext>, aliases: Record<string, string> = {}): McpTool<McpContext> {
+  const valid = Object.keys((tool.inputSchema as { properties?: Record<string, unknown> }).properties ?? {})
+  return {
+    ...tool,
+    async handler(args, ctx) {
+      const norm: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(args)) {
+        const key = aliases[k] ?? k
+        if (!valid.includes(key)) return { content: [{ type: 'text', text: `argument_inconnu: ${k} (arguments valides : ${valid.join(', ')})` }], isError: true }
+        norm[key] = v
+      }
+      return tool.handler(norm, ctx)
+    },
+  }
+}
 const NOTE = 'Informations de cadrage tirées des textes publiés : à confirmer auprès de l’autorité ou du conseil juridique (ce n’est pas un avis juridique).'
 
-export const readNotificationRegimesTool: McpTool<McpContext> = {
+const readNotificationRegimesToolRaw: McpTool<McpContext> = {
   name: 'read_notification_regimes',
   description:
     "Régimes de déclaration d'incident livrés (DORA, NIS2, RGPD art. 33, CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA, US bancaire fédéral, FTC Safeguards…) : " +
@@ -41,7 +57,7 @@ export const readNotificationRegimesTool: McpTool<McpContext> = {
   },
 }
 
-export const readIncidentTypesTool: McpTool<McpContext> = {
+const readIncidentTypesToolRaw: McpTool<McpContext> = {
   name: 'read_incident_types',
   description:
     "Incidents types (cyber : hameçonnage, rançongiciel, DDoS… ; autres risques : panne, fraude, sinistre… ; et ceux propres à un secteur) : intitulé, catégorie, " +
@@ -58,7 +74,7 @@ export const readIncidentTypesTool: McpTool<McpContext> = {
   },
 }
 
-export const readDoraFieldsTool: McpTool<McpContext> = {
+const readDoraFieldsToolRaw: McpTool<McpContext> = {
   name: 'read_dora_fields',
   description:
     "Champs de la déclaration d'incident majeur DORA (règlement d'exécution (UE) 2025/302, annexe II) par étape (INITIAL, INTERMEDIATE, FINAL, cumulatives) : numéro, intitulé officiel, " +
@@ -77,7 +93,7 @@ export const readDoraFieldsTool: McpTool<McpContext> = {
   },
 }
 
-export const readCatalogueTool: McpTool<McpContext> = {
+const readCatalogueToolRaw: McpTool<McpContext> = {
   name: 'read_catalogue',
   description:
     "Catalogue sectoriel ACRA (processus, risques, contrôles-types, KRI, missions d'audit, plans de test de résilience) : suggestions à qualifier, jamais des éléments évalués. " +
@@ -88,14 +104,19 @@ export const readCatalogueTool: McpTool<McpContext> = {
     const sector = typeof args.sector === 'string' && args.sector ? args.sector : null
     if (sector && !(SECTOR_CODES as readonly string[]).includes(sector)) return toolText({ version: CATALOGUE_PACK_VERSION, count: 0, items: [] })
     const kind = typeof args.kind === 'string' ? args.kind : null
-    const items = searchSectorSuggestions(sector as SectorCode | null, locale, typeof args.query === 'string' ? args.query : '')
+    const fold = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    const all = listSectorSuggestions(sector as SectorCode | null, locale)
+    const processTitle = new Map(all.filter(i => i.kind === 'PROCESS').map(i => [i.key, i.title]))
+    const words = fold(typeof args.query === 'string' ? args.query : '').split(/\s+/).filter(Boolean)
+    const items = all
+      .filter(i => words.every(w => fold(`${i.title} ${processTitle.get(i.processKey ?? '') ?? ''} ${(i.references ?? []).join(' ')} ${i.key}`).includes(w)))
       .filter(i => !kind || i.kind === kind).slice(0, lim(args.limit, 30, 100))
       .map(i => ({ key: i.key, kind: i.kind, sector: i.sector, title: i.title, ...(i.periodicite ? { periodicite: i.periodicite } : {}), ...(i.controlType ? { controlType: i.controlType } : {}), ...(i.unite ? { unite: i.unite } : {}), ...(i.points ? { points: i.points } : {}), ...(i.references?.length ? { references: i.references } : {}), ...(i.riskKeys?.length ? { riskKeys: i.riskKeys } : {}) }))
     return toolText({ version: CATALOGUE_PACK_VERSION, count: items.length, items })
   },
 }
 
-export const readResilienceTestsTool: McpTool<McpContext> = {
+const readResilienceTestsToolRaw: McpTool<McpContext> = {
   name: 'read_resilience_tests',
   description:
     "Programme de tests de résilience opérationnelle numérique DORA : les douze types de tests de l'article 25 § 1 (libellés officiels dans la langue demandée) et, à part, " +
@@ -117,5 +138,17 @@ export const readResilienceTestsTool: McpTool<McpContext> = {
     })
   },
 }
+
+
+
+export const readNotificationRegimesTool = guardArgs(readNotificationRegimesToolRaw, {})
+
+export const readIncidentTypesTool = guardArgs(readIncidentTypesToolRaw, { secteurs: 'sectors', sector: 'sectors' })
+
+export const readDoraFieldsTool = guardArgs(readDoraFieldsToolRaw, { etape: 'stage' })
+
+export const readCatalogueTool = guardArgs(readCatalogueToolRaw, { secteur: 'sector', type: 'kind', nature: 'kind' })
+
+export const readResilienceTestsTool = guardArgs(readResilienceTestsToolRaw, {})
 
 export function buildKnowledgeTools(): McpTool<McpContext>[] { return [readNotificationRegimesTool, readIncidentTypesTool, readDoraFieldsTool, readCatalogueTool, readResilienceTestsTool] }
