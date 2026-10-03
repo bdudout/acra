@@ -6,12 +6,13 @@
 import { useTranslation } from '@/lib/i18n/context'
 import { familyLabel, normalizePatterns, patternHelp, patternLabel, patternsByFamily, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
-interface Props { value: string[]; onChange: (v: string[]) => void; max: number; disabled?: boolean }
+interface Props { value: string[]; onChange: (v: string[]) => void; max: number; hiddenCodes?: string[]; disabled?: boolean }
 
-export default function PatternsArchiPicker({ value, onChange, max, disabled = false }: Props) {
+export default function PatternsArchiPicker({ value, onChange, max, hiddenCodes = [], disabled = false }: Props) {
   const { t, locale } = useTranslation()
   const p = t.patternsArchi
   const selected = normalizePatterns(value, { max: PATTERNS_MAX_MAX })
+  const hidden = new Set(normalizePatterns(hiddenCodes, { max: PATTERNS_MAX_MAX }))
   const full = selected.length >= max
 
   function toggle(code: string) {
@@ -24,11 +25,14 @@ export default function PatternsArchiPicker({ value, onChange, max, disabled = f
       <p className="text-xs text-gray-500">{p.intro}</p>
       <p className="text-xs font-medium text-gray-700" aria-live="polite">{p.counter.replace('{n}', String(selected.length)).replace('{max}', String(max))}</p>
       {full && !disabled && <p className="text-xs text-amber-700">{p.limit}</p>}
-      {patternsByFamily().map(({ family, patterns }) => (
+      {patternsByFamily().map(({ family, patterns }) => {
+        const visible = patterns.filter(pattern => !hidden.has(pattern.code) || selected.includes(pattern.code))
+        if (!visible.length) return null
+        return (
         <div key={family.id}>
           <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{familyLabel(family.id, locale)}</h4>
           <ul className="grid gap-1.5 sm:grid-cols-2">
-            {patterns.map(pt => {
+            {visible.map(pt => {
               const checked = selected.includes(pt.code)
               return (
                 <li key={pt.code}>
@@ -44,7 +48,7 @@ export default function PatternsArchiPicker({ value, onChange, max, disabled = f
             })}
           </ul>
         </div>
-      ))}
+      )})}
     </fieldset>
   )
 }

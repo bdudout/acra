@@ -143,6 +143,24 @@ export function normalizePatterns(input: unknown, opts: { max?: number; strict?:
   return out
 }
 
+/**
+ * Lecture prudente d'une cellule d'import : les codes stables sont préférés,
+ * mais les libellés affichés dans les cinq langues sont aussi reconnus. Les
+ * séparateurs sont explicites (virgule, point-virgule, barre ou retour ligne) ;
+ * un texte qui ne correspond à aucun pattern est ignoré, jamais deviné.
+ */
+export function parseImportedPatterns(value: unknown): string[] {
+  if (typeof value !== 'string') return []
+  const canonical = (input: string) => input.toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
+  const byLabel = new Map<string, string>()
+  for (const pattern of ARCHI_PATTERNS) for (const label of pattern.label) byLabel.set(canonical(label), pattern.code)
+  const codes = value.split(/[;,|\n]/).map(part => {
+    const candidate = part.trim().toUpperCase()
+    return isPatternCode(candidate) ? candidate : byLabel.get(canonical(part))
+  }).filter((code): code is string => Boolean(code))
+  return normalizePatterns(codes, { max: PATTERNS_MAX_MAX })
+}
+
 /** Patterns d'une analyse (colonne JSON `patternsArchi`), assainis ; absente ⇒ []. */
 export function patternsOf(a: { patternsArchi?: unknown } | null | undefined): string[] {
   return a ? normalizePatterns(a.patternsArchi, { max: PATTERNS_MAX_MAX }) : []

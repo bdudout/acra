@@ -33,6 +33,16 @@ describe('GET /api/projets/portefeuille', () => {
     const where = m.find.mock.calls[0][0].where
     expect(where).toMatchObject({ organizationId: 'o1', methode: 'PROJET_360', deletedAt: null })
   })
+  it('filtre le portefeuille par les patterns d’architecture explicitement demandés', async () => {
+    await GET(req('?patterns=EXPOSITION_INTERNET,INTERCO_TIERS,inconnu'))
+    const where = m.find.mock.calls[0][0].where
+    expect(where.AND).toEqual(expect.arrayContaining([
+      expect.objectContaining({ OR: [
+        { patternsArchi: { array_contains: 'EXPOSITION_INTERNET' } },
+        { patternsArchi: { array_contains: 'INTERCO_TIERS' } },
+      ] }),
+    ]))
+  })
   it('export Excel : fichier .xlsx, débit limité, export journalisé', async () => {
     const res = await GET(req('?format=xlsx&lang=fr'))
     expect(res.status).toBe(200); expect(res.headers.get('Content-Type')).toContain('spreadsheetml')

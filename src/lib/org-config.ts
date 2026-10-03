@@ -22,6 +22,7 @@ import {
 import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
 import { DEFAULT_ACTION_DELAIS_MOIS, cleanActionDelais, type ActionDelaisMois } from '@/lib/risk-action'
 import { sanitizeQualificationConfig, EMPTY_QUALIFICATION_CONFIG, type QualificationConfig } from '@/lib/qualification'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 /** Entités responsables de mesures par défaut. */
 export const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
@@ -54,6 +55,7 @@ export interface RawOrgConfig {
   archivageMissionsAnnees: number
   /** Plafond de patterns d'architecture cochés par analyse (lot A1) : null = hérité, défaut 12. */
   patternsArchiMax?: number | null
+  patternsArchiMasques?: unknown
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -114,6 +116,8 @@ export interface OrgConfigResolved {
   derogationDureeMaxJours: number
   archivageMissionsAnnees: number
   patternsArchiMax: number
+  /** Patterns masqués dans les sélecteurs de l'organisation (les données existantes restent lues). */
+  patternsArchiMasques: string[]
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -181,6 +185,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationDureeMaxJours: 365,
   archivageMissionsAnnees: 5,
   patternsArchiMax: 12,
+  patternsArchiMasques: [],
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -218,7 +223,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques'
 type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
@@ -280,6 +285,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
     archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
     patternsArchiMax: Math.min(24, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
+    patternsArchiMasques: normalizePatterns(pickJson('patternsArchiMasques', defaults.patternsArchiMasques), { max: PATTERNS_MAX_MAX }),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),

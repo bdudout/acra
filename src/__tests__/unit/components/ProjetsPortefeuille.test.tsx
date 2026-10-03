@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProjetsPortefeuille from '@/components/ProjetsPortefeuille'
 
@@ -30,5 +30,12 @@ describe('ProjetsPortefeuille', () => {
     const { container } = render(<ProjetsPortefeuille />)
     await waitFor(() => expect(fetch).toHaveBeenCalled())
     expect(container.querySelector('table')).toBeNull()
+  })
+  it('permet de filtrer le portefeuille par un ou plusieurs patterns et garde ce filtre à l’export', async () => {
+    render(<ProjetsPortefeuille />)
+    await screen.findByRole('table', { name: /Portefeuille/ })
+    fireEvent.click(screen.getByLabelText(/Exposition sur Internet/))
+    await waitFor(() => expect(fetch).toHaveBeenLastCalledWith('/api/projets/portefeuille?patterns=EXPOSITION_INTERNET'))
+    expect(screen.getByRole('link', { name: /Exporter \(Excel\)/ }).getAttribute('href')).toContain('patterns=EXPOSITION_INTERNET')
   })
 })

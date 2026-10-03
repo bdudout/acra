@@ -27,6 +27,7 @@ import MaturityScaleEditor from '@/components/config/MaturityScaleEditor'
 import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
 import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
+import { ARCHI_PATTERNS, normalizePatterns, PATTERNS_MAX_MAX, patternLabel } from '@/lib/patterns-archi'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ export default function ConfigurationPage() {
   const [derogationDureeMax, setDerogationDureeMax] = useState(365)
   const [archivageAnnees, setArchivageAnnees] = useState(5)
   const [patternsMax, setPatternsMax] = useState(12)
+  const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -243,6 +245,7 @@ export default function ConfigurationPage() {
         if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
         if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
         if (typeof data.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
+        if (Array.isArray(data.patternsArchiMasques)) setHiddenPatterns(normalizePatterns(data.patternsArchiMasques, { max: PATTERNS_MAX_MAX }))
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -388,6 +391,15 @@ export default function ConfigurationPage() {
     })
     setSavingFeatures(false)
     return res.ok
+  }
+
+  async function saveHiddenPatterns(next: string[]) {
+    const clean = normalizePatterns(next, { max: PATTERNS_MAX_MAX })
+    setHiddenPatterns(clean)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patternsArchiMasques: clean }) })
+    setSavingFeatures(false)
+    if (!res.ok) setHiddenPatterns(hiddenPatterns)
   }
 
   // Délais d'échéance par défaut d'une action selon sa priorité (mois).
@@ -1488,6 +1500,17 @@ export default function ConfigurationPage() {
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.patternsArchi.hiddenLabel}</legend>
+              <p className="mt-1 text-xs text-gray-500">{t.patternsArchi.hiddenHelp}</p>
+              <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                {ARCHI_PATTERNS.map(pattern => <label key={pattern.code} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={hiddenPatterns.includes(pattern.code)} disabled={savingFeatures}
+                    onChange={() => { const next = hiddenPatterns.includes(pattern.code) ? hiddenPatterns.filter(code => code !== pattern.code) : [...hiddenPatterns, pattern.code]; void saveHiddenPatterns(next) }} />
+                  {patternLabel(pattern.code, locale)}
+                </label>)}
+              </div>
+            </fieldset>
           </section>
         )}
 

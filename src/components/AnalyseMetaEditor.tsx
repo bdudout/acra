@@ -34,6 +34,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   const [open, setOpen] = useState(false)
   const initialPatterns = patternsArchi ?? []
   const [patternsMax, setPatternsMax] = useState(12)
+  const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
   const [form, setForm] = useState({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS, patternsArchi: initialPatterns })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -41,7 +42,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   // Plafond de sélection de l'organisation (lu à l'ouverture du formulaire).
   useEffect(() => {
     if (!open) return
-    fetch('/api/admin/organization-config', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (typeof d?.patternsArchiMax === 'number') setPatternsMax(d.patternsArchiMax) }).catch(() => {})
+    fetch('/api/admin/organization-config', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (typeof d?.patternsArchiMax === 'number') setPatternsMax(d.patternsArchiMax); if (Array.isArray(d?.patternsArchiMasques)) setHiddenPatterns(d.patternsArchiMasques) }).catch(() => {})
   }, [open])
 
   if (!canEdit) return null
@@ -104,7 +105,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
 
             <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
 
-            <PatternsArchiPicker value={form.patternsArchi} max={patternsMax} onChange={v => setForm({ ...form, patternsArchi: v })} />
+            <PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} onChange={v => setForm({ ...form, patternsArchi: v })} />
 
             <div className="flex justify-end gap-2 pt-1">
               <button type="button" onClick={() => setOpen(false)} className="px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">{t.cancel}</button>

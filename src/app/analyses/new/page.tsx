@@ -29,6 +29,7 @@ export default function NewAnalysePage() {
   const { t } = useTranslation()
   const { SECTEURS_ACTIVITE } = useEbiosData()
   const [patternsMax, setPatternsMax] = useState(12)
+  const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
   const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteurs: [] as string[], patternsArchi: [] as string[], mentionProtection: 'NON_PROTEGEE', tags: '' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const [socleId, setSocleId] = useState('')
@@ -90,6 +91,7 @@ export default function NewAnalysePage() {
       .then(data => {
         if (data?.qualificationQuestionnaire) setQualificationConfig(data.qualificationQuestionnaire)
         if (typeof data?.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
+        if (Array.isArray(data?.patternsArchiMasques)) setHiddenPatterns(data.patternsArchiMasques)
       })
       .catch(() => {})
   }, [])
@@ -192,7 +194,7 @@ export default function NewAnalysePage() {
             {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}
             <div className="mt-3">
               <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
-              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
+              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
             </div>
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (

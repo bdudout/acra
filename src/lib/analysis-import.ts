@@ -8,13 +8,14 @@ import { resolveMethodes } from '@/lib/methodes'
 import { canonicalRef } from '@/lib/import-transforms'
 import { truncateStringsBySchema } from '@/lib/import-truncate'
 import { atelierContentSchema, hasAtelierContent, summarizeAtelierContent, writeAtelierContent } from '@/lib/analysis-import-ateliers'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 const string = z.string().trim().min(1).max(255)
 const externalId = z.string().trim().min(1).max(255)
 const item = z.object({ externalId: externalId.optional(), title: string, description: z.string().max(2000).optional(), riskExternalId: externalId.optional(), gravity: z.coerce.number().int().min(1).max(4).optional(), likelihood: z.coerce.number().int().min(1).max(4).optional(), strategy: z.string().max(30).optional(), status: z.string().max(30).optional(), responsible: z.string().max(200).optional(), dueDate: z.string().max(40).optional() })
 const schema = z.object({
   idempotencyKey: z.string().trim().min(8).max(120),
-  analysis: z.object({ title: string.max(200), description: z.string().max(2000).optional(), methode: z.enum(['EBIOS_RM', 'ISO_27005', 'ISO_31000', 'NIST_800_30']).optional() }),
+  analysis: z.object({ title: string.max(200), description: z.string().max(2000).optional(), methode: z.enum(['EBIOS_RM', 'ISO_27005', 'ISO_31000', 'NIST_800_30']).optional(), patternsArchi: z.array(z.string().max(60)).max(PATTERNS_MAX_MAX).optional() }),
   risks: z.array(item).max(IMPORT_MAX_ITEMS).default([]),
   vulnerabilities: z.array(z.object({ externalId: externalId.optional(), riskExternalId: externalId, title: z.string().trim().min(1).max(500), description: z.string().max(2000).optional() })).max(IMPORT_MAX_ITEMS).default([]),
   measures: z.array(item).max(IMPORT_MAX_ITEMS).default([]),
@@ -39,6 +40,7 @@ export function truncateImportRequest(input: unknown) { return truncateStringsBy
 
 export function parseAnalysisImportRequest(input: unknown): AnalysisImportRequest {
   const parsed = schema.parse(input)
+  parsed.analysis.patternsArchi = normalizePatterns(parsed.analysis.patternsArchi, { max: PATTERNS_MAX_MAX })
   assertUniqueExternalIds(parsed.risks, 'risks')
   assertUniqueExternalIds(parsed.vulnerabilities, 'vulnerabilities')
   assertUniqueExternalIds(parsed.measures, 'measures')
@@ -161,7 +163,7 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
   const summary = summarizeAnalysisImport(input)
   try {
     const response = await prisma.$transaction(async tx => {
-    const analyse = await tx.analyse.create({ data: { userId: ctx.userId, organizationId: ctx.organizationId, nom: input.analysis.title, description: input.analysis.description, methode, statut: 'EN_COURS', atelierCourant: 5, cadrage: { create: {} } }, select: { id: true, nom: true } })
+    const analyse = await tx.analyse.create({ data: { userId: ctx.userId, organizationId: ctx.organizationId, nom: input.analysis.title, description: input.analysis.description, methode, patternsArchi: input.analysis.patternsArchi ?? [], statut: 'EN_COURS', atelierCourant: 5, cadrage: { create: {} } }, select: { id: true, nom: true } })
     // Les ateliers 1 à 4 ne concernent que la méthode EBIOS RM : une autre méthode ne reçoit pas ces objets (signalé).
     const ateliers = methode === 'EBIOS_RM' ? await writeAtelierContent(tx, input, { analyseId: analyse.id, riskRefs: input.risks.flatMap(risk => (risk.externalId ? [risk.externalId] : [])) }) : { counts: {}, warnings: hasAtelierContent(input) ? ['atelier_content_ignored_method'] : [] }
     await writeImportContent(tx, input, { analyseId: analyse.id, organizationId: ctx.organizationId, userId: ctx.userId })

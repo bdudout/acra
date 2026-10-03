@@ -1,6 +1,6 @@
 // Patterns d'architecture de SI (docs/specs/patterns-architecture-besoins.md, lot A1) : référentiel, normalisation, plafond.
 import { describe, it, expect } from 'vitest'
-import { ARCHI_PATTERNS, PATTERN_FAMILIES, PATTERNS_MAX_DEFAULT, PATTERNS_MAX_MIN, PATTERNS_MAX_MAX, patternLabel, patternHelp, isPatternCode, normalizePatterns, patternsOf, clampPatternsMax, patternsByFamily, LOT1_CODES } from '@/lib/patterns-archi'
+import { ARCHI_PATTERNS, PATTERN_FAMILIES, PATTERNS_MAX_DEFAULT, PATTERNS_MAX_MIN, PATTERNS_MAX_MAX, patternLabel, patternHelp, isPatternCode, normalizePatterns, parseImportedPatterns, patternsOf, clampPatternsMax, patternsByFamily, LOT1_CODES } from '@/lib/patterns-archi'
 
 const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
 
@@ -59,5 +59,11 @@ describe('patternsOf', () => {
   it('lit la colonne JSON d’une analyse, assainie ; absente = []', () => {
     expect(patternsOf({ patternsArchi: ['DMZ', 'X', 'DMZ'] })).toEqual(['DMZ'])
     expect(patternsOf({})).toEqual([]); expect(patternsOf(null)).toEqual([]); expect(patternsOf({ patternsArchi: 'DMZ' })).toEqual([])
+  })
+})
+
+describe('parseImportedPatterns', () => {
+  it('reconnaît les codes ou les libellés des cinq langues, séparés explicitement, sans inventer de pattern', () => {
+    expect(parseImportedPatterns('EXPOSITION_INTERNET ; Interconnexion avec un tiers | Internet exposure\nInconnu')).toEqual(['EXPOSITION_INTERNET', 'INTERCO_TIERS'])
   })
 })

@@ -58,6 +58,12 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(resolveOrgConfig([enfant, racine]).referentielsDesactives).toEqual(['DORA'])
   })
 
+  it('patterns masqués : aucun par défaut ; la liste valide la plus proche est héritée', () => {
+    expect(resolveOrgConfig([]).patternsArchiMasques).toEqual([])
+    expect(resolveOrgConfig([row({ patternsArchiMasques: ['DMZ', 'inconnu', 'DMZ'] })]).patternsArchiMasques).toEqual(['DMZ'])
+    expect(resolveOrgConfig([row({ patternsArchiMasques: [] }), row({ patternsArchiMasques: ['SI_TPE'] })]).patternsArchiMasques).toEqual(['SI_TPE'])
+  })
+
   it('2ᵉ ligne de défense : active par défaut (rétrocompatible), désactivable par row', () => {
     expect(resolveOrgConfig([]).secondeLigneActive).toBe(true)
     expect(DEFAULT_ORG_CONFIG.secondeLigneActive).toBe(true)

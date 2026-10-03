@@ -9,6 +9,7 @@ import { portefeuille360 } from '@/lib/projet360-portefeuille'
 import { buildPortefeuille360Xlsx } from '@/lib/projet360-portefeuille-xlsx'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_EXPORT } from '@/lib/rate-limit'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,12 +27,23 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!cfg.projets360Active) return vide
 
   const xlsx = req.nextUrl.searchParams.get('format') === 'xlsx'
+  // Un filtre inconnu ou malformé ne doit jamais élargir artificiellement la vue :
+  // seuls les codes du référentiel sont conservés. `hasSome` correspond à une
+  // recherche « l'un de ces patterns » — pratique pour identifier une surface
+  // d'exposition, sans exclure les projets qui en combinent plusieurs.
+  const patterns = normalizePatterns(req.nextUrl.searchParams.get('patterns')?.split(',') ?? [], { max: PATTERNS_MAX_MAX })
   if (xlsx) {
     const rl = await rateLimit(`projets-portefeuille:${userId}`, LIMIT_EXPORT.limit, LIMIT_EXPORT.windowMs)
     if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
   }
   const rows = await prisma.analyse.findMany({
-    where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: scope.activeOrgId, methode: 'PROJET_360', deletedAt: null },
+    where: {
+      AND: [
+        analyseWhereClause(userId, scope.role, scope.scope),
+        ...(patterns.length ? [{ OR: patterns.map(pattern => ({ patternsArchi: { array_contains: pattern } })) }] : []),
+      ],
+      organizationId: scope.activeOrgId, methode: 'PROJET_360', deletedAt: null,
+    },
     select: { id: true, nom: true, statut: true, risques: { select: { id: true, nom: true, domaine: true, niveauRisque: true, niveauResiduel: true }, take: 2000 } },
     orderBy: { updatedAt: 'desc' }, take: 200,
   })

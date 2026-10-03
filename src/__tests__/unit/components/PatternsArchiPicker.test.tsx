@@ -42,4 +42,10 @@ describe('PatternsArchiPicker', () => {
     render(<PatternsArchiPicker value={['PIRATE', 'DMZ']} onChange={() => {}} max={12} />)
     expect(screen.getByText('1 sélectionné(s) sur 12')).toBeTruthy()
   })
+  it('masque les patterns non pertinents sans cacher un pattern déjà porté par l’analyse', () => {
+    const { rerender } = render(<PatternsArchiPicker value={[]} hiddenCodes={['DMZ']} onChange={() => {}} max={12} />)
+    expect(screen.queryByRole('checkbox', { name: /Zone démilitarisée/ })).toBeNull()
+    rerender(<PatternsArchiPicker value={['DMZ']} hiddenCodes={['DMZ']} onChange={() => {}} max={12} />)
+    expect(screen.getByRole('checkbox', { name: /Zone démilitarisée/ })).toBeTruthy()
+  })
 })

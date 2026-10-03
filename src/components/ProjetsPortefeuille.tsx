@@ -8,20 +8,38 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 import { DOMAINES_360 } from '@/lib/projet360'
 import type { Portefeuille360 } from '@/lib/projet360-portefeuille'
+import { ARCHI_PATTERNS, normalizePatterns, PATTERNS_MAX_MAX, patternLabel } from '@/lib/patterns-archi'
 
 export default function ProjetsPortefeuille() {
   const { t, locale } = useTranslation()
   const p = t.projets.portefeuille
   const [data, setData] = useState<Portefeuille360 | null>(null)
-  useEffect(() => { fetch('/api/projets/portefeuille').then(r => (r.ok ? r.json() : null)).then(setData).catch(() => {}) }, [])
+  const [patterns, setPatterns] = useState<string[]>([])
+  useEffect(() => {
+    const query = patterns.length ? `?patterns=${encodeURIComponent(patterns.join(','))}` : ''
+    fetch(`/api/projets/portefeuille${query}`).then(r => (r.ok ? r.json() : null)).then(setData).catch(() => {})
+  }, [patterns])
   if (!data || data.projets.length === 0) return null
   const dom = t.projet360.domaines as Record<string, string>
+  const exportQuery = new URLSearchParams({ format: 'xlsx', lang: locale })
+  if (patterns.length) exportQuery.set('patterns', patterns.join(','))
+  function togglePattern(code: string) {
+    setPatterns(current => normalizePatterns(current.includes(code) ? current.filter(value => value !== code) : [...current, code], { max: PATTERNS_MAX_MAX }))
+  }
   return (
     <section className="card p-5 mb-6" aria-label={p.title}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{p.title}</h2>
-        <a href={`/api/projets/portefeuille?format=xlsx&lang=${locale}`} className="btn-secondary text-xs">{p.export}</a>
+        <a href={`/api/projets/portefeuille?${exportQuery.toString()}`} className="btn-secondary text-xs">{p.export}</a>
       </div>
+      <fieldset className="mb-3 flex flex-wrap gap-x-3 gap-y-1" aria-label={p.filters}>
+        <legend className="sr-only">{p.filters}</legend>
+        {ARCHI_PATTERNS.map(pattern => <label key={pattern.code} className="flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
+          <input type="checkbox" checked={patterns.includes(pattern.code)} onChange={() => togglePattern(pattern.code)} />
+          {patternLabel(pattern.code, locale)}
+        </label>)}
+        {patterns.length > 0 && <button type="button" className="text-xs text-ebios-700 hover:underline" onClick={() => setPatterns([])}>{p.clearFilters}</button>}
+      </fieldset>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{data.appetit != null ? p.hintAppetit.replace('{n}', String(data.appetit)) : p.hintNoAppetit}</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" aria-label={p.title}>

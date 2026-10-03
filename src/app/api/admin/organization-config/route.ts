@@ -20,6 +20,7 @@ import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeMaturityScale } from '@/lib/maturity'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
 
@@ -85,6 +86,7 @@ export async function GET(_req: NextRequest) {
     derogationDureeMaxJours: cfg.derogationDureeMaxJours,
     archivageMissionsAnnees: cfg.archivageMissionsAnnees,
     patternsArchiMax: cfg.patternsArchiMax,
+    patternsArchiMasques: cfg.patternsArchiMasques,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
@@ -229,6 +231,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.patternsArchiMax === 'number' && Number.isFinite(body.patternsArchiMax)) {
     data.patternsArchiMax = Math.max(1, Math.min(24, Math.floor(body.patternsArchiMax)))
   }
+  if (Array.isArray(body.patternsArchiMasques)) data.patternsArchiMasques = normalizePatterns(body.patternsArchiMasques, { max: PATTERNS_MAX_MAX })
   if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {
     data.derogationDureeMaxJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeMaxJours)))
   }
