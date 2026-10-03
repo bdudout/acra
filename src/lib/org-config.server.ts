@@ -36,6 +36,7 @@ export const CONFIG_SELECT = {
   derogationAlerteJours: true,
   derogationDureeMaxJours: true,
   archivageMissionsAnnees: true,
+  patternsArchiMax: true,
   derogationWorkflow: true,
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,

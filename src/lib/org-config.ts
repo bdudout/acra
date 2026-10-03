@@ -52,6 +52,8 @@ export interface RawOrgConfig {
   derogationAlerteJours: number
   derogationDureeMaxJours: number
   archivageMissionsAnnees: number
+  /** Plafond de patterns d'architecture cochés par analyse (lot A1) : null = hérité, défaut 12. */
+  patternsArchiMax?: number | null
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -111,6 +113,7 @@ export interface OrgConfigResolved {
   derogationAlerteJours: number
   derogationDureeMaxJours: number
   archivageMissionsAnnees: number
+  patternsArchiMax: number
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -177,6 +180,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationAlerteJours: 30,
   derogationDureeMaxJours: 365,
   archivageMissionsAnnees: 5,
+  patternsArchiMax: 12,
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -217,7 +221,7 @@ function isEmptyJson(v: unknown): boolean {
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
 type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
-type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
+type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -275,6 +279,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
     derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
     archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
+    patternsArchiMax: Math.min(24, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),

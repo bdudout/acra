@@ -11,6 +11,7 @@ import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { MAX_SOUS_SECTEURS, resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
+import { normalizePatterns } from '@/lib/patterns-archi'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
 import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
@@ -26,6 +27,7 @@ const createSchema = z.object({
   secteur:      z.string().max(100).optional(),
   sousSecteur:  z.string().max(60).optional(), // id stable de sous-secteur (issue #25) — ancien champ unique
   sousSecteurs: z.array(z.string().max(60)).max(MAX_SOUS_SECTEURS * 2).optional(), // plusieurs sous-secteurs (premier = principal)
+  patternsArchi: z.array(z.string().max(60)).max(24).optional(), // patterns d'architecture de SI (vision technique)
   tags:         z.array(z.string()).optional(), // tags / programme (regroupement)
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
@@ -136,6 +138,11 @@ export async function POST(req: NextRequest) {
       socleData = socle
     }
 
+    // Patterns d'architecture : codes connus, sans doublon, plafond de l'organisation (400 au-delà).
+    let patternsArchi: string[]
+    try { patternsArchi = normalizePatterns(data.patternsArchi, { max: orgConfig.patternsArchiMax, strict: true }) }
+    catch { return NextResponse.json({ error: 'patterns_too_many' }, { status: 400 }) }
+
     const analyse = await prisma.analyse.create({
       data: {
         userId,
@@ -146,6 +153,7 @@ export async function POST(req: NextRequest) {
         secteur: data.secteur,
         // Sous-secteurs conservés seulement s'ils sont cohérents avec le secteur (famille + interconnexions).
         ...resolveSousSecteursUpdate({ secteur: data.secteur, input: { sousSecteurs: data.sousSecteurs, sousSecteur: data.sousSecteur } }),
+        patternsArchi,
         tags: cleanTags(data.tags),
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,

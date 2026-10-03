@@ -19,6 +19,7 @@ import {
 import { matrixModelFromConfig } from './risk-matrix-grid'
 import { synthetiserAppetit, seuilApplicable, evaluerAppetit, APPETIT_DEFAULT, type AppetitConfig } from './appetit'
 import { SOUS_SECTEURS } from './ebios-data'
+import { patternLabel, patternsOf } from './patterns-archi'
 
 type Any = Record<string, unknown> // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -320,6 +321,8 @@ export async function renderAnalysePptx(analyse: Any, config: Any | null, locale
   if (analyse.secteur) meta.push(`${L.secteur} : ${s(analyse.secteur)}`)
   const ssLabel = SOUS_SECTEUR_LABEL.get(s(analyse.sousSecteur))
   if (ssLabel) meta.push(ssLabel)
+  const archi = patternsOf(analyse as { patternsArchi?: unknown }).map(c => patternLabel(c, 'fr')).join(', ')
+  if (archi) meta.push(archi)
   cover.addText(meta.join('    ·    '), { x: 0.7, y: 3.5, w: 12, h: 0.4, fontSize: 14, color: 'E0E7FF' })
   // Gouvernance : version · statut · approbateur
   const gov: string[] = []

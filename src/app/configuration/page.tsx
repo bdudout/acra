@@ -170,6 +170,7 @@ export default function ConfigurationPage() {
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationDureeMax, setDerogationDureeMax] = useState(365)
   const [archivageAnnees, setArchivageAnnees] = useState(5)
+  const [patternsMax, setPatternsMax] = useState(12)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -241,6 +242,7 @@ export default function ConfigurationPage() {
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
         if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
+        if (typeof data.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -371,6 +373,18 @@ export default function ConfigurationPage() {
     const res = await fetch('/api/admin/organization-config', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ archivageMissionsAnnees: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
+  }
+
+  // Plafond de patterns d'architecture de SI cochés par analyse (1 à 24, défaut 12).
+  async function savePatternsMax(value: number) {
+    setPatternsMax(value)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patternsArchiMax: value }),
     })
     setSavingFeatures(false)
     return res.ok
@@ -1471,6 +1485,22 @@ export default function ConfigurationPage() {
               <input type="number" min={1} max={30} value={archivageAnnees}
                 onChange={e => setArchivageAnnees(Number(e.target.value))}
                 onBlur={e => saveArchivageAnnees(Math.max(1, Math.min(30, Number(e.target.value) || 5)))}
+                disabled={savingFeatures}
+                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+            </label>
+          </section>
+        )}
+
+        {/* ── Patterns d'architecture de SI : plafond de sélection par analyse ── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.patternsArchi.title}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.patternsArchi.maxHelp}</p>
+            <label className="text-sm text-gray-700">
+              <span className="block text-xs font-medium text-gray-600 mb-1">{t.patternsArchi.maxLabel}</span>
+              <input type="number" min={1} max={24} value={patternsMax}
+                onChange={e => setPatternsMax(Number(e.target.value))}
+                onBlur={e => savePatternsMax(Math.max(1, Math.min(24, Math.floor(Number(e.target.value)) || 12)))}
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>

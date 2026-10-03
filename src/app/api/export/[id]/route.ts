@@ -10,6 +10,7 @@ import ExcelJS from 'exceljs'
 import { loadPdfRuntime } from '@/lib/pdf-runtime'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { usesDirectRiskEntry } from '@/lib/methodes'
+import { patternLabel, patternsOf } from '@/lib/patterns-archi'
 import { loadDirectReport } from '@/lib/rapport-methode-directe.server'
 import { buildDirectReportWorkbook } from '@/lib/rapport-methode-directe-xlsx'
 // Import side-effect uniquement : force Next à TRACER @react-pdf/renderer dans le
@@ -201,6 +202,7 @@ export async function GET(
     lines.push(`Nom,${esc(analyse.nom)}`)
     lines.push(`Organisation,${esc(analyse.organisation)}`)
     lines.push(`Secteur,${esc(analyse.secteur)}`)
+    lines.push(`Patterns d'architecture,${esc(patternsOf(analyse).map(c => patternLabel(c, 'fr')).join(' ; '))}`)
     lines.push(`Date,${new Date(analyse.createdAt).toLocaleDateString('fr-FR')}`)
     lines.push('')
 
@@ -309,6 +311,7 @@ export async function GET(
       ['Nom de l\'analyse', S(analyse.nom)],
       ['Organisation', S(analyse.organisation ?? '')],
       ['Secteur', S(analyse.secteur ?? '')],
+      ['Patterns d\'architecture', S(patternsOf(analyse).map(c => patternLabel(c, 'fr')).join(' ; '))],
       ['Périmètre', S(cadrage?.perimetre ?? '')],
       ['Statut', analyse.statut],
       ['Date de création', new Date(analyse.createdAt).toLocaleDateString('fr-FR')],

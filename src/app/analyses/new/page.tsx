@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
+import PatternsArchiPicker from '@/components/PatternsArchiPicker'
 import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
@@ -27,7 +28,8 @@ export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
   const { SECTEURS_ACTIVITE } = useEbiosData()
-  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteurs: [] as string[], mentionProtection: 'NON_PROTEGEE', tags: '' })
+  const [patternsMax, setPatternsMax] = useState(12)
+  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteurs: [] as string[], patternsArchi: [] as string[], mentionProtection: 'NON_PROTEGEE', tags: '' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const [socleId, setSocleId] = useState('')
   // Projet 360 dont part l'analyse (module Projets 360 actif) : ?projet=<id> ou sélection.
@@ -87,6 +89,7 @@ export default function NewAnalysePage() {
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (data?.qualificationQuestionnaire) setQualificationConfig(data.qualificationQuestionnaire)
+        if (typeof data?.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
       })
       .catch(() => {})
   }, [])
@@ -189,6 +192,7 @@ export default function NewAnalysePage() {
             {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}
             <div className="mt-3">
               <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
+              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
             </div>
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (

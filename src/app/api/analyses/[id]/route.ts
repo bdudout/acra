@@ -10,6 +10,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 import { resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
+import { normalizePatterns } from '@/lib/patterns-archi'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
 import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
@@ -114,6 +115,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const secteurEff = ('secteur' in data ? data.secteur : existing.secteur) as string | null
     const input = 'sousSecteurs' in body ? { sousSecteurs: body.sousSecteurs } : 'sousSecteur' in data ? { sousSecteur: data.sousSecteur } : {}
     Object.assign(data, resolveSousSecteursUpdate({ secteur: secteurEff, input, existing }))
+  }
+  // Patterns d'architecture (vision technique, indépendante du secteur) : codes connus, sans doublon, plafond de
+  // l'organisation (défaut 12) ; une liste plus longue est refusée.
+  if ('patternsArchi' in body) {
+    const orgId = (existing as { organizationId?: string | null }).organizationId
+    const cfg = orgId ? await getOrgConfig(orgId) : null
+    try { data.patternsArchi = normalizePatterns(body.patternsArchi, { max: cfg?.patternsArchiMax, strict: true }) }
+    catch { return NextResponse.json({ error: 'patterns_too_many' }, { status: 400 }) }
   }
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {

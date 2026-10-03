@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
+import PatternsArchiPicker from '@/components/PatternsArchiPicker'
 import AutocompleteInput from '@/components/AutocompleteInput'
 
 /**
@@ -14,7 +15,7 @@ import AutocompleteInput from '@/components/AutocompleteInput'
  * depuis sa page principale — permet de corriger un secteur/une organisation oubliés
  * (recette comité). PATCH /api/analyses/[id] puis rafraîchissement du composant serveur.
  */
-export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteur, sousSecteur, sousSecteurs, canEdit }: {
+export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteur, sousSecteur, sousSecteurs, patternsArchi, canEdit }: {
   analyseId: string
   nom: string
   organisation: string | null
@@ -22,6 +23,8 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   sousSecteur: string | null
   /** Sous-secteurs de l'analyse (le premier = principal) ; à défaut, l'ancien champ unique. */
   sousSecteurs?: string[]
+  /** Patterns d'architecture de SI cochés (vision technique, indépendante du secteur). */
+  patternsArchi?: string[]
   canEdit: boolean
 }) {
   const { t } = useTranslation()
@@ -29,9 +32,17 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   const { SECTEURS_ACTIVITE } = useEbiosData()
   const initialSS = sousSecteurs?.length ? sousSecteurs : sousSecteur ? [sousSecteur] : []
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS })
+  const initialPatterns = patternsArchi ?? []
+  const [patternsMax, setPatternsMax] = useState(12)
+  const [form, setForm] = useState({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS, patternsArchi: initialPatterns })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Plafond de sélection de l'organisation (lu à l'ouverture du formulaire).
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/admin/organization-config', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (typeof d?.patternsArchiMax === 'number') setPatternsMax(d.patternsArchiMax) }).catch(() => {})
+  }, [open])
 
   if (!canEdit) return null
 
@@ -43,7 +54,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
     setSaving(true); setError('')
     const res = await fetch(`/api/analyses/${analyseId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: form.nom, organisation: form.organisation, secteur: form.secteur, sousSecteurs: form.sousSecteurs }),
+      body: JSON.stringify({ nom: form.nom, organisation: form.organisation, secteur: form.secteur, sousSecteurs: form.sousSecteurs, patternsArchi: form.patternsArchi }),
     })
     setSaving(false)
     if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || t.error); return }
@@ -55,7 +66,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
 
   return (
     <>
-      <button onClick={() => { setForm({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS }); setError(''); setOpen(true) }}
+      <button onClick={() => { setForm({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS, patternsArchi: initialPatterns }); setError(''); setOpen(true) }}
         className="text-gray-400 hover:text-ebios-600 p-1 align-[-0.15em]" aria-label={t.analysis.editMeta} title={t.analysis.editMeta}>
         <Pencil size={15} aria-hidden="true" />
       </button>
@@ -92,6 +103,8 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
             </label>
 
             <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
+
+            <PatternsArchiPicker value={form.patternsArchi} max={patternsMax} onChange={v => setForm({ ...form, patternsArchi: v })} />
 
             <div className="flex justify-end gap-2 pt-1">
               <button type="button" onClick={() => setOpen(false)} className="px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">{t.cancel}</button>
