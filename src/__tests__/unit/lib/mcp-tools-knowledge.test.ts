@@ -87,3 +87,12 @@ describe('enrichissements issus du comparatif', () => {
     expect(domains.size).toBeGreaterThan(5)
   })
 })
+
+describe('alias de secteur pour les incidents types', () => {
+  it('« secteur » ou « sector » acceptent une chaîne seule comme une liste', async () => {
+    for (const a of [{ secteur: 'SANTE' }, { sector: 'SANTE' }, { sectors: 'SANTE' }]) {
+      const r = await run(readIncidentTypesTool, { ...a, limit: 100 })
+      expect(r.types.some((t: { sector?: string }) => t.sector === 'SANTE')).toBe(true); expect(r.types.some((t: { sector?: string }) => t.sector === 'DEFENSE')).toBe(false)
+    }
+  })
+})

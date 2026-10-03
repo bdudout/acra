@@ -79,7 +79,8 @@ const readIncidentTypesToolRaw: McpTool<McpContext> = {
   inputSchema: { type: 'object', properties: { query: { type: 'string' }, sectors: { type: 'array', items: { type: 'string' } }, locale: { type: 'string', enum: [...LOCALES] }, limit: { type: 'integer', minimum: 1, maximum: 100 } }, additionalProperties: false },
   async handler(args): Promise<McpToolResult> {
     const locale = loc(args.locale) as IncidentLocale
-    const sectors = Array.isArray(args.sectors) ? args.sectors.map(String).filter(s => (SECTOR_CODES as readonly string[]).includes(s)) : undefined
+    const sectorsIn = typeof args.sectors === 'string' ? [args.sectors] : args.sectors
+    const sectors = Array.isArray(sectorsIn) ? sectorsIn.map(String).filter(s => (SECTOR_CODES as readonly string[]).includes(s)) : undefined
     const types = searchIncidentTypes(typeof args.query === 'string' ? args.query : '', locale, sectors).slice(0, lim(args.limit, 30, 100)).map(t => ({
       key: t.key, title: t.title[locale], categorie: t.categorie, ...(t.sector ? { sector: t.sector } : {}), tic: t.tic, donneesPersonnelles: t.donnees, causeRacine: t.causeRacine,
       regimes: t.regimes, aCompleter: t.aCompleter.map(id => INCIDENT_CHECKLIST[id]?.[locale] ?? id), ...(t.itsType ? { itsType: t.itsType } : {}),
@@ -157,7 +158,7 @@ const readResilienceTestsToolRaw: McpTool<McpContext> = {
 
 export const readNotificationRegimesTool = guardArgs(readNotificationRegimesToolRaw, {})
 
-export const readIncidentTypesTool = guardArgs(readIncidentTypesToolRaw, { secteurs: 'sectors', sector: 'sectors' })
+export const readIncidentTypesTool = guardArgs(readIncidentTypesToolRaw, { secteurs: 'sectors', sector: 'sectors', secteur: 'sectors' })
 
 export const readDoraFieldsTool = guardArgs(readDoraFieldsToolRaw, { etape: 'stage' })
 
