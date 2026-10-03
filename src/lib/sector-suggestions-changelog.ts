@@ -4,10 +4,11 @@
 
 import { EXT_ITEMS } from './sector-packs-ext'
 import { MUTUELLE_PACK } from './sector-packs-mutuelle'
-import { MUTUELLE_SANTE_PACK, SANTE_EXT_PACK, TECHNIQUE_PACK } from './sector-packs-sante-technique'
+import { MUTUELLE_SANTE_PACK, SANTE_EXT_PACK, TECHNIQUE_PACK, TECHNIQUE_V113_PACK, SANTE_V113_PACK } from './sector-packs-sante-technique'
 
 const MUTUELLE_KEYS = new Set(MUTUELLE_PACK.items.map(item => item.key))
 const V112_KEYS = new Set([SANTE_EXT_PACK, MUTUELLE_SANTE_PACK, TECHNIQUE_PACK].flatMap(p => p.items.map(item => item.key)))
+const V113_KEYS = new Set([TECHNIQUE_V113_PACK, SANTE_V113_PACK].flatMap(p => p.items.map(item => item.key)))
 
 export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
   { version: '1.1', added: [
@@ -269,11 +270,13 @@ export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
       'assurance.control.incident-reporting-drill',
     ] },
   // 1.10 : contenu sectoriel étendu (7 nouveaux secteurs + approfondissement des autres) — clés issues des packs `sector-packs-ext*`.
-  { version: '1.10', added: EXT_ITEMS.map(item => item.key).filter(k => !MUTUELLE_KEYS.has(k) && !V112_KEYS.has(k)).sort() },
+  { version: '1.10', added: EXT_ITEMS.map(item => item.key).filter(k => !MUTUELLE_KEYS.has(k) && !V112_KEYS.has(k) && !V113_KEYS.has(k)).sort() },
   // 1.11 : contrôles de mutuelle santé manquants (LCB-FT, données de santé, continuité) pour le plan de contrôle type.
   { version: '1.11', added: [...MUTUELLE_KEYS].sort() },
   // 1.12 : santé (portail, entrepôt de données, flux reçus), mutuelle santé (IBAN, délégation, tiers payant), secteur Technique / Interconnexion de SI.
   { version: '1.12', added: [...V112_KEYS].sort() },
+  // 1.13 : analyseurs de fichiers et validation des entrées, pièces jointes de la messagerie d'un portail, continuité d'une plateforme de santé.
+  { version: '1.13', added: [...V113_KEYS].sort() },
 ]
 
 const parts = (v: string) => v.split('.').map(n => Number.parseInt(n, 10) || 0)

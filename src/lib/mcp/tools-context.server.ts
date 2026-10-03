@@ -11,6 +11,7 @@ import {
 } from '@/lib/ebios-data'
 import { SECTOR_FAMILIES, sectorExemplesFor, type SectorExempleCategory } from '@/lib/exemples-sectoriels'
 import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
+import { ASSISTANT_GUIDANCE } from '@/lib/mcp/assistant-guidance'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import type { Locale } from '@/lib/i18n/index'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
@@ -91,7 +92,7 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
     const exemples: Record<string, unknown[]> = {}
     for (const cat of wanted) exemples[cat] = sectorExemplesFor(secteur, cat, locale, sousSecteur)
     const total = Object.values(exemples).reduce((n, a) => n + a.length, 0)
-    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, sousSecteursDisponibles: sousSecteurIdsFor(secteur), locale, total, exemples })
+    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, sousSecteursDisponibles: sousSecteurIdsFor(secteur), locale, total, exemples, consignes: ASSISTANT_GUIDANCE })
   },
 }
 

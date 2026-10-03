@@ -2,6 +2,7 @@
 // Donnent à l'agent des faits vérifiés et sourcés livrés avec ACRA (régimes de déclaration d'incident et délais, incidents types,
 // champs DORA de l'ITS 2025/302, catalogue sectoriel) plutôt que des souvenirs. Aucun accès aux données d'une organisation.
 
+import { ASSISTANT_GUIDANCE } from '@/lib/mcp/assistant-guidance'
 import { CATALOGUE_REGIMES } from '@/lib/notification-regimes'
 import { REGIME_INFO, regimeInfo, type InfoLocale } from '@/lib/regime-info'
 import { searchIncidentTypes, INCIDENT_CHECKLIST, type IncidentLocale } from '@/lib/incident-types-catalogue'
@@ -127,7 +128,7 @@ const readCatalogueToolRaw: McpTool<McpContext> = {
       .filter(i => words.every(w => fold(`${i.title} ${processTitle.get(i.processKey ?? '') ?? ''} ${(i.references ?? []).join(' ')} ${i.key}`).includes(w)))
       .filter(i => !kind || i.kind === kind).slice(0, lim(args.limit, 30, 100))
       .map(i => ({ key: i.key, kind: i.kind, sector: i.sector, title: i.title, ...(processTitle.get(i.processKey ?? '') ? { domain: processTitle.get(i.processKey ?? '') } : {}), ...(i.periodicite ? { periodicite: i.periodicite } : {}), ...(i.controlType ? { controlType: i.controlType } : {}), ...(i.unite ? { unite: i.unite } : {}), ...(i.points ? { points: i.points } : {}), ...(i.references?.length ? { references: i.references } : {}), ...(i.riskKeys?.length ? { riskKeys: i.riskKeys } : {}) }))
-    return toolText({ version: CATALOGUE_PACK_VERSION, count: items.length, items })
+    return toolText({ version: CATALOGUE_PACK_VERSION, count: items.length, items, consignes: ASSISTANT_GUIDANCE })
   },
 }
 

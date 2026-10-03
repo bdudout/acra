@@ -36,7 +36,7 @@ describe('catalogue 1.12 : santé (portail, entrepôt, interconnexions), mutuell
     expect(SECTOR_INCIDENT_TYPES.filter(t => t.sector === 'TECHNIQUE').length).toBeGreaterThanOrEqual(3)
   })
   it('les nouveautés sont datées dans l’historique du catalogue (version 1.12)', () => {
-    expect(CATALOGUE_PACK_VERSION).toBe('1.12')
+    expect(['1.12', '1.13']).toContain(CATALOGUE_PACK_VERSION)
     const added = CATALOGUE_CHANGELOG.find(e => e.version === '1.12')!.added
     expect(added).toEqual(expect.arrayContaining(['sante.risk.portal-account-takeover', 'technique.process.exchange', 'assurance.risk.iban-diversion']))
   })
