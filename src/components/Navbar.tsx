@@ -24,6 +24,7 @@ import {
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
   LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, Briefcase, type LucideIcon,
+  BadgeCheck, UserCheck, BrainCircuit,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -87,6 +88,9 @@ export default function Navbar() {
           reglementaire: Boolean(d.reglementaireActive),
           profilsOperationnels: Boolean(d.profilsOperationnelsActive),
           projets: Boolean(d.projets360Active),
+          homologations: Boolean(d.homologationsActive),
+          recertification: Boolean(d.recertificationActive),
+          registreIa: Boolean(d.registreIaActive),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -187,6 +191,9 @@ export default function Navbar() {
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
     rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
+    homologations: { href: '/homologations', Icon: BadgeCheck, label: t.nav.homologations },
+    recertification: { href: '/recertification', Icon: UserCheck, label: t.nav.recertification },
+    registreIa:    { href: '/registre-ia',   Icon: BrainCircuit,    label: t.nav.registreIa },
   }
 
   const currentHref = activeNavHref(navPathFor(pathname), shownKeys.map(k => NAV_META[k].href))

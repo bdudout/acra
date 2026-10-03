@@ -66,6 +66,9 @@ export interface RawOrgConfig {
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
   projets360Active?: boolean
+  homologationsActive?: boolean
+  recertificationActive?: boolean
+  registreIaActive?: boolean
   mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
@@ -124,6 +127,12 @@ export interface OrgConfigResolved {
   profilsOperationnelsActive: boolean
   /** Module « Projets 360 » (onglet Projets, méthode PROJET_360), activé par défaut. */
   projets360Active: boolean
+  /** Module « Homologations » (décisions d'homologation de sécurité des SI), désactivé par défaut. */
+  homologationsActive: boolean
+  /** Module « Revues d'habilitations » (campagnes de recertification), désactivé par défaut. */
+  recertificationActive: boolean
+  /** Module « Registre IA » (algorithmes et systèmes d'IA), désactivé par défaut. */
+  registreIaActive: boolean
   /** Serveur MCP autorisé pour cette organisation (défaut : non). */
   mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
@@ -181,6 +190,9 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
   projets360Active: true,
+  homologationsActive: false,
+  recertificationActive: false,
+  registreIaActive: false,
   mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
@@ -203,7 +215,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
-type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
+type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
@@ -276,6 +288,9 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
+    homologationsActive: pickBool('homologationsActive', defaults.homologationsActive),
+    recertificationActive: pickBool('recertificationActive', defaults.recertificationActive),
+    registreIaActive: pickBool('registreIaActive', defaults.registreIaActive),
     mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),

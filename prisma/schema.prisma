@@ -178,6 +178,7 @@ model Organization {
   config            OrganizationConfig?
   conformites       Conformite[]
   derogations       Derogation[]
+  homologations     Homologation[]
   processus         Processus[]
   riskItems         RiskItem[]
   incidents         Incident[]
@@ -1627,6 +1628,7 @@ model Analyse {
   accesUtilisateurs AnalyseAcces[]
   revisions         RevisionAnalyse[]
   derogations       Derogation[]
+  homologations     Homologation[]
 
   @@index([userId])
   @@index([statut])
@@ -2125,6 +2127,9 @@ model OrganizationConfig {
   // Module « Projets 360 » (analyses projet 360 du risque opérationnel, onglet Projets).
   // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
   projets360Active           Boolean       @default(true)
+  homologationsActive        Boolean       @default(false)
+  recertificationActive      Boolean       @default(false)
+  registreIaActive           Boolean       @default(false)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
@@ -2582,4 +2587,33 @@ model EnvoiPeriodique {
   bilan     Json     @default("{}")
 
   @@unique([tache, periode])
+}
+
+// Homologation de sécurité d'un système d'information (décision d'une autorité, durée limitée) — spec P2.
+model Homologation {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  analyseId           String?
+  analyse             Analyse?     @relation(fields: [analyseId], references: [id], onDelete: SetNull)
+  systeme             String
+  perimetre           String?      @db.Text
+  // PREPARATION | COMMISSION | HOMOLOGUE | HOMOLOGUE_RESERVES | REFUSE
+  statut              String       @default("PREPARATION")
+  preparePar          String
+  autoriteId          String?
+  dureeMois           Int          @default(36)
+  dateDecision        DateTime?
+  dateFin             DateTime?
+  decidePar           String?
+  commentaireDecision String?      @db.Text
+  reserves            Json         @default("[]")
+  pieces              Json         @default("[]")
+  rappelLe            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organizationId, statut])
+  @@index([analyseId])
+  @@index([dateFin])
 }

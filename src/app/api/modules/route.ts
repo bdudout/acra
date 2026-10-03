@@ -23,5 +23,8 @@ export async function GET() {
     reglementaireActive: cfg.reglementaireActive,
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     projets360Active: cfg.projets360Active,
+    homologationsActive: cfg.homologationsActive,
+    recertificationActive: cfg.recertificationActive,
+    registreIaActive: cfg.registreIaActive,
   })
 }

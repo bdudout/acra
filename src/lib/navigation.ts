@@ -28,6 +28,12 @@ export interface NavModules {
   profilsOperationnels: boolean
   /** Module « Projets 360 » (onglet Projets). */
   projets?: boolean
+  /** Homologation de sécurité des systèmes d'information. */
+  homologations?: boolean
+  /** Revues d'habilitations (recertification). */
+  recertification?: boolean
+  /** Registre des algorithmes et systèmes d'IA. */
+  registreIa?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -37,6 +43,7 @@ export type NavKey =
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
   | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
+  | 'homologations' | 'recertification' | 'registreIa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -87,6 +94,11 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
   if (modules.profilsOperationnels && canGovern) gouvernance.push('profilsOperationnels')
   if (canDerog) gouvernance.push('derogations')
+  // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).
+  if (modules.homologations && (canGovern || role === 'DIRECTION_METIER')) gouvernance.push('homologations')
+  if (modules.registreIa && canGovern) gouvernance.push('registreIa')
+  // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
+  if (modules.recertification && role !== 'LECTEUR') gouvernance.push('recertification')
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
   if (canManageRopa(role)) gouvernance.push('ropa')
 

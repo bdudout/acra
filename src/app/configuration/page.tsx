@@ -183,6 +183,9 @@ export default function ConfigurationPage() {
   const [secondeLigneActive, setSecondeLigneActive] = useState(true) // défaut true = mode réglementé
   const [profilsOperationnelsActive, setProfilsOperationnelsActive] = useState(false)
   const [projets360Active, setProjets360Active] = useState(true)
+  const [homologationsActive, setHomologationsActive] = useState(false)
+  const [recertificationActive, setRecertificationActive] = useState(false)
+  const [registreIaActive, setRegistreIaActive] = useState(false)
   const [mcpActive, setMcpActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
@@ -249,6 +252,9 @@ export default function ConfigurationPage() {
         setSecondeLigneActive(data.secondeLigneActive !== false) // défaut true
         setProfilsOperationnelsActive(Boolean(data.profilsOperationnelsActive))
         setProjets360Active(data.projets360Active !== false)
+        setHomologationsActive(data.homologationsActive === true)
+        setRecertificationActive(data.recertificationActive === true)
+        setRegistreIaActive(data.registreIaActive === true)
         setMcpActive(data.mcpActive === true)
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
@@ -302,9 +308,12 @@ export default function ConfigurationPage() {
     secondeLigneActive: setSecondeLigneActive,
     profilsOperationnelsActive: setProfilsOperationnelsActive,
     projets360Active: setProjets360Active,
+    homologationsActive: setHomologationsActive,
+    recertificationActive: setRecertificationActive,
+    registreIaActive: setRegistreIaActive,
     mcpActive: setMcpActive,
   }
-  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1330,6 +1339,9 @@ export default function ConfigurationPage() {
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
                 { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
                 { field: 'projets360Active' as const, value: projets360Active, title: t.features.projets360Title, desc: t.features.projets360Desc, href: '/projets', disabled: modulesPolicy.projets360 === 'FORCE_ON' || modulesPolicy.projets360 === 'FORCE_OFF', indent: false, forced: modulesPolicy.projets360 },
+                { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
+                { field: 'recertificationActive' as const, value: recertificationActive, title: t.features.recertificationTitle, desc: t.features.recertificationDesc, href: '/recertification', disabled: modulesPolicy.recertification === 'FORCE_ON' || modulesPolicy.recertification === 'FORCE_OFF', indent: false, forced: modulesPolicy.recertification },
+                { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },
                 { field: 'mcpActive' as const, value: mcpActive, title: t.features.mcpTitle, desc: t.features.mcpDesc, href: '/mcp-propositions', disabled: false },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined

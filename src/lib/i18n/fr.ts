@@ -74,6 +74,9 @@ export const fr = {
     appetence: 'Appétence (RAS / RAD)',
     rapports: 'Rapports GRC',
     projets: 'Projets',
+    homologations: 'Homologations',
+    recertification: 'Revues d’habilitations',
+    registreIa: 'Registre IA',
     testsResilience: 'Tests de résilience (DORA)',
     conformite:     'Conformité',
     referentiels:   'Référentiels',
@@ -4374,6 +4377,12 @@ export const fr = {
     mcpDesc: "Autorise cette organisation à connecter un agent IA par clé d’API (scope « mcp ») : lecture et propositions soumises à validation humaine, jamais d’écriture directe. Désactivé par défaut ; exige aussi l’interrupteur MCP de l’instance (super-administrateur).",
     projets360Title: 'Projets 360',
     projets360Desc: 'Onglet « Projets » : analyses projet 360 du risque opérationnel (cyber, IT, projet, métier, fraude, externalisation), démarche ISO 31000, validées par le RSSI et le Risk Manager. Activé par défaut.',
+    homologationsTitle: 'Homologations de sécurité',
+    homologationsDesc: 'Décisions d’homologation des systèmes d’information (dossier, autorité, validité, renouvellement), reliées aux analyses de risques. Destiné notamment aux autorités administratives (RGS).',
+    recertificationTitle: 'Revues d’habilitations',
+    recertificationDesc: 'Campagnes de recertification des droits d’accès : import des droits, revue par les responsables, retraits à exécuter, relances.',
+    registreIaTitle: 'Registre IA',
+    registreIaDesc: 'Registre des algorithmes et systèmes d’intelligence artificielle : finalité, données, intervention humaine, classe indicative (règlement (UE) 2024/1689, à vérifier), revues.',
     qualificationObligRequires: 'Nécessite l\'activation de la qualification ci-dessus.',
     conformiteTitle:    'Analyse de conformité à un référentiel (atelier 1)',
     conformiteDesc:     "Permet d'évaluer la conformité au socle de sécurité dès le cadrage et d'exploiter les écarts (non-conformités) dans les ateliers suivants.",
@@ -4763,6 +4772,7 @@ export const fr = {
   sectorSettings: { title: 'Secteurs d’activité', desc: 'Indiquez jusqu’à trois secteurs : le premier est proposé par défaut dans les suggestions de processus et de risques. Aucune donnée n’est créée automatiquement.', principal: 'Secteur principal', hint: 'Le socle transversal reste toujours disponible.', maxReached: '{n} secteurs au maximum : décochez-en un pour en choisir un autre.', save: 'Enregistrer les secteurs', saved: 'Secteurs enregistrés.', error: 'Enregistrement impossible.', moveUp: 'Monter {name}', moveDown: 'Descendre {name}' },
   sectorSuggestionPrefs: { saveSector: 'Mémoriser ce secteur', sectorSaved: 'Secteur ajouté à l’organisation.', maxSectors: 'Trois secteurs au maximum ; retirez-en un dans la configuration.' },
 } as const
+  homologation: {"title": "Homologations de sécurité", "subtitle": "Décision formelle d'une autorité d'homologation, prise sur un dossier, pour une durée limitée.", "inactive": "Le module Homologations n'est pas activé pour cette organisation.", "readOnly": "Consultation seule : la préparation revient au RSSI, au gestionnaire des risques ou à un administrateur.", "new": "Nouveau dossier", "systeme": "Système à homologuer", "perimetre": "Périmètre", "analyse": "Analyse de risques rattachée", "aucuneAnalyse": "— Aucune —", "duree": "Durée de validité (mois)", "create": "Ouvrir le dossier", "empty": "Aucune homologation pour l'instant.", "colSysteme": "Système", "colStatut": "Statut", "colEtat": "Validité", "colFin": "Fin de validité", "colAnalyse": "Analyse", "statut": {"PREPARATION": "En préparation", "COMMISSION": "En commission", "HOMOLOGUE": "Homologué", "HOMOLOGUE_RESERVES": "Homologué avec réserves", "REFUSE": "Refusé"}, "etat": {"NON_DECIDEE": "Non décidée", "VALIDE": "Valide", "A_RENOUVELER": "À renouveler", "EXPIREE": "Expirée", "REFUSEE": "Refusée"}, "pieces": {"ANALYSE_RISQUES": "Analyse de risques", "PLAN_TRAITEMENT": "Plan de traitement des risques", "RISQUES_RESIDUELS": "Risques résiduels acceptés", "TEST_INTRUSION": "Test d'intrusion", "PCA_PRA": "Plan de continuité et de reprise d'activité", "ATTESTATIONS_PRESTATAIRES": "Attestations des prestataires"}, "dossier": "Pièces du dossier", "dossierIncomplet": "Dossier incomplet : toutes les pièces doivent être fournies pour homologuer.", "fourni": "Fournie", "reference": "Référence (document, lien)", "autorite": "Autorité d'homologation", "autoriteNone": "— Non désignée —", "save": "Enregistrer", "saved": "Dossier enregistré.", "decision": "Décision", "commentaire": "Commentaire", "reserves": "Réserves", "reserveAdd": "Ajouter une réserve", "reserveTexte": "Réserve", "reserveEcheance": "Échéance", "actions": {"COMMISSION": "Présenter en commission", "HOMOLOGUE": "Homologuer", "HOMOLOGUE_RESERVES": "Homologuer avec réserves", "REFUSE": "Refuser", "PREPARATION": "Renvoyer en préparation", "reexamen": "Rouvrir pour réexamen"}, "errors": {"transition_interdite": "Transition impossible depuis ce statut.", "role_interdit": "Droits insuffisants pour cette action.", "separation": "La personne qui prépare le dossier ne peut pas le décider.", "dossier_incomplet": "Dossier incomplet : toutes les pièces doivent être fournies.", "reserves_requises": "Indiquez au moins une réserve.", "failed": "L'opération a échoué."}, "decidedOn": "Décidée le {date}", "validUntil": "Valide jusqu'au {date}", "open": "Ouvrir", "close": "Fermer", "separationHint": "Vous avez préparé ce dossier : la décision revient à une autre personne."},
 
 // Convertit tous les types littéraux en `string` pour que les autres langues
 // puissent utiliser leurs propres valeurs sans erreur TypeScript.

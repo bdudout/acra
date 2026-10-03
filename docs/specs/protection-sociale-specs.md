@@ -159,8 +159,8 @@ parcours navigateur (dev :3005 sur base locale migrée), y compris lecture seule
 
 | Lot | État | Commit |
 |---|---|---|
-| P1 | à faire | |
-| P2 | à faire | |
+| P1 | livré (catalogue 1.14, 13 sous-secteurs, ateliers 1 à 5, 6 types d’incident) | df75376 |
+| P2 | livré (3 modules activables ; homologation : registre, dossier, décision, séparation, relance) ; reste : lien depuis la fiche d’analyse | ce commit |
 | P3 | à faire | |
 | P4 | à faire | |
 | P5 | à faire | |
