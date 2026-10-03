@@ -2096,6 +2096,8 @@ model OrganizationConfig {
   // Module « Projets 360 » (analyses projet 360 du risque opérationnel, onglet Projets).
   // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
   projets360Active           Boolean       @default(true)
+  // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
+  mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
   // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
   echelleMaturite            Json          @default("[]")

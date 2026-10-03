@@ -66,6 +66,7 @@ export interface RawOrgConfig {
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
   projets360Active?: boolean
+  mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
   incidentsConfig?: unknown
@@ -123,6 +124,8 @@ export interface OrgConfigResolved {
   profilsOperationnelsActive: boolean
   /** Module « Projets 360 » (onglet Projets, méthode PROJET_360), activé par défaut. */
   projets360Active: boolean
+  /** Serveur MCP autorisé pour cette organisation (défaut : non). */
+  mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
   echelleMaturite: unknown[]
   /** Processus de cartographie personnalisé ({} ⇒ texte par défaut). Cf. lib/processus-carto. */
@@ -178,6 +181,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
   projets360Active: true,
+  mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
   incidentsConfig: {},
@@ -199,7 +203,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
+type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
 
@@ -272,6 +276,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
+    mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
     incidentsConfig: pickJson('incidentsConfig', defaults.incidentsConfig),

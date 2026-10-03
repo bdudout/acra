@@ -4309,6 +4309,8 @@ export const it: Translations = {
     qualificationObligDesc:  'Blocca l\'accesso al Workshop 1 finché il questionario di qualificazione non è completato.',
     profilsOperationnelsTitle: 'Maturità (profili obiettivo CMMI)',
     profilsOperationnelsDesc: 'Valuta la maturità attuale e obiettivo (scala CMMI) sui framework di conformità, tra cui NIST CSF 2.0 e NCSC CAF v4.0: lacune per dominio e azioni. Disattivato per impostazione predefinita.',
+    mcpTitle: "Server MCP (agenti IA)",
+    mcpDesc: "Consente a questa organizzazione di collegare un agente IA con una chiave API (ambito «mcp»): lettura e proposte soggette a convalida umana, mai scrittura diretta. Disattivato per impostazione predefinita; richiede anche l’interruttore MCP dell’istanza (super amministratore).",
     projets360Title: 'Progetti 360',
     projets360Desc: 'Scheda «Progetti»: analisi di progetto 360 del rischio operativo (cyber, IT, progetto, business, frode, esternalizzazione), approccio ISO 31000, approvate da RSSI e Risk Manager. Attivato per impostazione predefinita.',
     qualificationObligRequires: 'Richiede l\'attivazione della qualificazione qui sopra.',

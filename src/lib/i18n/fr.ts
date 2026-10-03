@@ -4358,6 +4358,8 @@ export const fr = {
     qualificationObligDesc:  'Bloque l\'entrée dans l\'atelier 1 tant que le questionnaire de qualification n\'est pas complété.',
     profilsOperationnelsTitle: 'Maturité (profils cibles CMMI)',
     profilsOperationnelsDesc: 'Évalue la maturité actuelle et visée (échelle CMMI) sur les référentiels de conformité, dont NIST CSF 2.0 et NCSC CAF v4.0 : écarts par domaine et actions. Désactivé par défaut.',
+    mcpTitle: "Serveur MCP (agents IA)",
+    mcpDesc: "Autorise cette organisation à connecter un agent IA par clé d’API (scope « mcp ») : lecture et propositions soumises à validation humaine, jamais d’écriture directe. Désactivé par défaut ; exige aussi l’interrupteur MCP de l’instance (super-administrateur).",
     projets360Title: 'Projets 360',
     projets360Desc: 'Onglet « Projets » : analyses projet 360 du risque opérationnel (cyber, IT, projet, métier, fraude, externalisation), démarche ISO 31000, validées par le RSSI et le Risk Manager. Activé par défaut.',
     qualificationObligRequires: 'Nécessite l\'activation de la qualification ci-dessus.',

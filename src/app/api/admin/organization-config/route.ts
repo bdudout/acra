@@ -98,6 +98,7 @@ export async function GET(_req: NextRequest) {
     secondeLigneActive: cfg.secondeLigneActive,
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     projets360Active: cfg.projets360Active,
+    mcpActive: cfg.mcpActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
     // Personnalisation (éventuellement héritée) de l'échelle de maturité CMMI.
     echelleMaturite: sanitizeMaturityScale(cfg.echelleMaturite),
@@ -241,6 +242,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.secondeLigneActive === 'boolean') data.secondeLigneActive = body.secondeLigneActive
   if (typeof body.profilsOperationnelsActive === 'boolean') data.profilsOperationnelsActive = body.profilsOperationnelsActive
   if (typeof body.projets360Active === 'boolean') data.projets360Active = body.projets360Active
+  if (typeof body.mcpActive === 'boolean') data.mcpActive = body.mcpActive
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 

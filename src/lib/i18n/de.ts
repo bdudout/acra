@@ -4308,6 +4308,8 @@ export const de: Translations = {
     qualificationObligDesc:  'Sperrt den Zugang zu Workshop 1, bis der Qualifizierungsfragebogen ausgefüllt ist.',
     profilsOperationnelsTitle: 'Reifegrad (CMMI-Zielprofile)',
     profilsOperationnelsDesc: 'Bewertet den aktuellen und angestrebten Reifegrad (CMMI-Skala) für Compliance-Rahmenwerke, darunter NIST CSF 2.0 und NCSC CAF v4.0: Lücken je Bereich und Maßnahmen. Standardmäßig deaktiviert.',
+    mcpTitle: "MCP-Server (KI-Agenten)",
+    mcpDesc: "Erlaubt dieser Organisation, einen KI-Agenten per API-Schlüssel (Scope „mcp“) anzubinden: Lesezugriff und Vorschläge mit menschlicher Freigabe, nie direktes Schreiben. Standardmäßig aus; erfordert zusätzlich den MCP-Schalter der Instanz (Superadministrator).",
     projets360Title: 'Projekte 360',
     projets360Desc: 'Registerkarte „Projekte“: Projektanalysen 360 des operationellen Risikos (Cyber, IT, Projekt, Fachbereich, Betrug, Auslagerung), Vorgehen nach ISO 31000, freigegeben durch RSSI und Risk Manager. Standardmäßig aktiviert.',
     qualificationObligRequires: 'Erfordert die Aktivierung der Qualifizierung oben.',

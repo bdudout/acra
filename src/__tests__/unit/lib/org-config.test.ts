@@ -140,3 +140,11 @@ describe('resolveOrgConfig — échelle de maturité (CMMI)', () => {
     expect(resolveOrgConfig([row({}), parent]).echelleMaturite).toEqual([{ niveau: 3, libelle: 'Défini groupe', definition: '' }])
   })
 })
+
+describe('mcpActive (interrupteur MCP par organisation)', () => {
+  it('désactivé par défaut ; une filiale hérite de l’organisation parente ; la valeur propre l’emporte', () => {
+    expect(resolveOrgConfig([null]).mcpActive).toBe(false)
+    expect(resolveOrgConfig([null, { mcpActive: true } as never]).mcpActive).toBe(true)
+    expect(resolveOrgConfig([{ mcpActive: false } as never, { mcpActive: true } as never]).mcpActive).toBe(false)
+  })
+})

@@ -4309,6 +4309,8 @@ export const en: Translations = {
     qualificationObligDesc:  'Blocks entry to Workshop 1 until the qualification questionnaire is completed.',
     profilsOperationnelsTitle: 'Maturity (CMMI target profiles)',
     profilsOperationnelsDesc: 'Assesses current and target maturity (CMMI scale) on compliance frameworks, including NIST CSF 2.0 and NCSC CAF v4.0: gaps by domain and actions. Disabled by default.',
+    mcpTitle: "MCP server (AI agents)",
+    mcpDesc: "Allows this organisation to connect an AI agent with an API key (“mcp” scope): read access and proposals subject to human review, never direct writes. Off by default; also requires the instance-level MCP switch (super administrator).",
     projets360Title: 'Projects 360',
     projets360Desc: '“Projects” tab: project 360 analyses of operational risk (cyber, IT, project, business, fraud, outsourcing), ISO 31000 approach, approved by the RSSI and the Risk Manager. Enabled by default.',
     qualificationObligRequires: 'Requires enabling qualification above.',

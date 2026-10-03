@@ -49,6 +49,7 @@ const CONFIG_SELECT = {
   secondeLigneActive: true,
   profilsOperationnelsActive: true,
   projets360Active: true,
+  mcpActive: true,
   echelleMaturite: true,
   processusCartographie: true,
   incidentsConfig: true,
