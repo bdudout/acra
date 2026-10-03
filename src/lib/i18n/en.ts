@@ -1648,7 +1648,7 @@ export const en: Translations = {
       p360_reversibilite: { title: 'Provider lock-in (reversibility)', description: 'Inability to change provider or bring the activity back in-house.' },
     },
   },
-  appetence: {
+  appetence: { historique: {"title": "History and trend", "hint": "Monthly snapshots of aggregates (no risk titles) frozen automatically each month; history starts at the first snapshot.", "capture": "Freeze this month’s snapshot", "export": "Export (Excel)", "empty": "No snapshot yet: freeze the first month.", "saved": "Snapshot saved.", "failed": "Could not save.", "periode": "Month", "globalLabel": "Overall level", "hors": "Beyond appetite", "kri": "KRIs in alert / critical", "maturite": "Requirements below target", "sensCol": "Trend", "sens": {"AMELIORATION": "Improving", "DEGRADATION": "Worsening", "STABLE": "Stable"}},
     guide: { what: 'Two complementary views: what governance accepts (RAS, appetite thresholds) and where the organisation stands against these limits (RAD).', how: 'Set thresholds per risk category and the target maturity per framework; the dashboard then compares the actual situation with these limits.', result: 'Clear indicators (within limits, to watch, outside appetite) and material to present to the risk committee.' },
     title: 'Risk appetite',
     subtitle: 'Risk appetite statement (RAS) and risk appetite dashboard (RAD): the limits set by governance and the organisation’s actual position.',

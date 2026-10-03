@@ -210,6 +210,7 @@ model Organization {
   questionnaireModeles QuestionnaireModele[]
   questionnaireEnvois  QuestionnaireEnvoi[]
   preconisations       Preconisation[]
+  appetenceSnapshots AppetenceSnapshot[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -1364,6 +1365,21 @@ model ConformiteSnapshot {
   createdAt    DateTime   @default(now())
 
   @@index([conformiteId])
+}
+
+// Instantané mensuel d'appétence (RAS / RAD) : RÉSUMÉ d'agrégats figé pour un mois (aucun intitulé de risque ni de KRI).
+// Un par organisation et par mois (AAAA-MM, UTC) ; l'historique commence au premier instantané capturé.
+model AppetenceSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periode        String // AAAA-MM
+  resume         Json
+  createdById    String? // null = capture automatique (cron)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, periode])
+  @@index([organizationId])
 }
 
 // Dérogation : acceptation TEMPORAIRE d'une non-conformité au socle (voir

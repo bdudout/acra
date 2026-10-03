@@ -1672,7 +1672,7 @@ export const fr = {
       p360_reversibilite: { title: 'Dépendance au prestataire (réversibilité)', description: 'Impossibilité de changer de prestataire ou de reprendre l’activité en interne.' },
     },
   },
-  appetence: {
+  appetence: { historique: {"title": "Historique et tendance", "hint": "Instantanés mensuels d’agrégats (aucun intitulé de risque) figés automatiquement chaque mois ; l’historique commence au premier instantané.", "capture": "Figer l’instantané du mois", "export": "Exporter (Excel)", "empty": "Aucun instantané pour le moment : figez le premier mois.", "saved": "Instantané enregistré.", "failed": "Enregistrement impossible.", "periode": "Mois", "globalLabel": "Niveau global", "hors": "Hors appétit", "kri": "KRI en alerte / critiques", "maturite": "Exigences sous la cible", "sensCol": "Tendance", "sens": {"AMELIORATION": "Amélioration", "DEGRADATION": "Dégradation", "STABLE": "Stable"}},
     guide: { what: 'Deux vues complémentaires : ce que la gouvernance accepte (RAS, seuils d’appétit) et où en est l’organisation face à ces limites (RAD).', how: 'Fixez les seuils par catégorie de risque et la maturité visée par référentiel ; le tableau de bord compare ensuite la situation réelle à ces limites.', result: 'Des voyants clairs (dans la limite, à surveiller, hors appétit) et un support à présenter au comité des risques.' },
     title: 'Appétence au risque',
     subtitle: 'Déclaration d’appétence (RAS) et tableau de bord d’appétence (RAD) : les limites fixées par la gouvernance et la position réelle de l’organisation.',

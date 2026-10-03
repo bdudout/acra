@@ -1648,7 +1648,7 @@ export const it: Translations = {
       p360_reversibilite: { title: 'Dipendenza dal fornitore (reversibilità)', description: 'Impossibilità di cambiare fornitore o di riportare l’attività internamente.' },
     },
   },
-  appetence: {
+  appetence: { historique: {"title": "Storico e tendenza", "hint": "Istantanee mensili di aggregati (nessun titolo di rischio) acquisite automaticamente ogni mese; lo storico inizia con la prima istantanea.", "capture": "Acquisisci l’istantanea del mese", "export": "Esporta (Excel)", "empty": "Nessuna istantanea: acquisisci il primo mese.", "saved": "Istantanea salvata.", "failed": "Salvataggio non riuscito.", "periode": "Mese", "globalLabel": "Livello globale", "hors": "Oltre l’appetito", "kri": "KRI in allerta / critici", "maturite": "Requisiti sotto l’obiettivo", "sensCol": "Tendenza", "sens": {"AMELIORATION": "Miglioramento", "DEGRADATION": "Peggioramento", "STABLE": "Stabile"}},
     guide: { what: 'Due viste complementari: ciò che la governance accetta (RAS, soglie di appetito) e dove si colloca l’organizzazione rispetto a tali limiti (RAD).', how: 'Fissate le soglie per categoria di rischio e la maturità obiettivo per quadro di riferimento; la dashboard confronta poi la situazione reale con questi limiti.', result: 'Indicatori chiari (entro i limiti, da monitorare, oltre l’appetito) e un supporto da presentare al comitato rischi.' },
     title: 'Propensione al rischio',
     subtitle: 'Dichiarazione di propensione al rischio (RAS) e cruscotto di propensione (RAD): i limiti fissati dalla governance e la posizione reale dell’organizzazione.',

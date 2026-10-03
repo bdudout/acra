@@ -1648,7 +1648,7 @@ export const es: Translations = {
       p360_reversibilite: { title: 'Dependencia del proveedor (reversibilidad)', description: 'Imposibilidad de cambiar de proveedor o de recuperar la actividad internamente.' },
     },
   },
-  appetence: {
+  appetence: { historique: {"title": "Histórico y tendencia", "hint": "Instantáneas mensuales de agregados (sin títulos de riesgo) fijadas automáticamente cada mes; el histórico comienza en la primera instantánea.", "capture": "Fijar la instantánea del mes", "export": "Exportar (Excel)", "empty": "Aún no hay instantáneas: fije el primer mes.", "saved": "Instantánea guardada.", "failed": "No se pudo guardar.", "periode": "Mes", "globalLabel": "Nivel global", "hors": "Fuera del apetito", "kri": "KRI en alerta / críticos", "maturite": "Requisitos bajo el objetivo", "sensCol": "Tendencia", "sens": {"AMELIORATION": "Mejora", "DEGRADATION": "Empeora", "STABLE": "Estable"}},
     guide: { what: 'Dos vistas complementarias: lo que acepta la dirección (RAS, umbrales de apetito) y dónde se sitúa la organización frente a esos límites (RAD).', how: 'Fije los umbrales por categoría de riesgo y la madurez objetivo por marco; el panel compara después la situación real con esos límites.', result: 'Indicadores claros (dentro del límite, a vigilar, fuera del apetito) y un soporte para presentar al comité de riesgos.' },
     title: 'Apetito de riesgo',
     subtitle: 'Declaración de apetito de riesgo (RAS) y cuadro de mando de apetito (RAD): los límites fijados por la gobernanza y la posición real de la organización.',

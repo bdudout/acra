@@ -1647,7 +1647,7 @@ export const de: Translations = {
       p360_reversibilite: { title: 'Abhängigkeit vom Dienstleister (Reversibilität)', description: 'Dienstleister kann nicht gewechselt, die Tätigkeit nicht zurückgeholt werden.' },
     },
   },
-  appetence: {
+  appetence: { historique: {"title": "Verlauf und Trend", "hint": "Monatliche Momentaufnahmen von Aggregaten (keine Risikobezeichnungen), automatisch jeden Monat festgehalten; der Verlauf beginnt mit der ersten Momentaufnahme.", "capture": "Momentaufnahme des Monats festhalten", "export": "Exportieren (Excel)", "empty": "Noch keine Momentaufnahme: ersten Monat festhalten.", "saved": "Momentaufnahme gespeichert.", "failed": "Speichern nicht möglich.", "periode": "Monat", "globalLabel": "Gesamtniveau", "hors": "Über Risikoappetit", "kri": "KRI in Warnung / kritisch", "maturite": "Anforderungen unter Ziel", "sensCol": "Trend", "sens": {"AMELIORATION": "Verbesserung", "DEGRADATION": "Verschlechterung", "STABLE": "Stabil"}},
     guide: { what: 'Zwei ergänzende Sichten: was die Leitung akzeptiert (RAS, Risikoappetit-Schwellen) und wo die Organisation gegenüber diesen Grenzen steht (RAD).', how: 'Legen Sie Schwellen je Risikokategorie und die angestrebte Reife je Regelwerk fest; das Dashboard vergleicht dann die tatsächliche Lage mit diesen Grenzen.', result: 'Klare Ampeln (innerhalb der Grenzen, beobachten, außerhalb des Appetits) und Material für den Risikoausschuss.' },
     title: 'Risikoappetit',
     subtitle: 'Risikoappetit-Erklärung (RAS) und Risikoappetit-Dashboard (RAD): die von der Governance gesetzten Grenzen und die tatsächliche Lage der Organisation.',
