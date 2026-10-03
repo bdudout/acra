@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (62) — Codex : clôture patterns A6 et reprise sans conflit
+
+- **Conflits** : les 15 fichiers laissés indexés par Claude terminaient BE-6 (pré-remplissage Projet 360 non destructif depuis les patterns) et le passage des patterns au catalogue ; ils ont été validés puis commités sans chevauchement avec les lots sauvegarde/rollback (`ff310cc`).
+- **A6** (`2afdaee`) : portefeuille Projet 360 filtrable par un ou plusieurs patterns (recherche « au moins un », export Excel conserve le filtre) ; import canonique et Excel reconnaît les codes ou libellés de pattern en FR/EN/DE/ES/IT (séparateurs explicites, inconnu ignoré) et les persiste ; `patternsArchiMasques` dans `OrganizationConfig` (migration `20261004090000_patterns_archi_masques`) est hérité, administrable dans `/configuration`, et masque seulement les propositions des formulaires — un pattern déjà présent dans une analyse reste visible/modifiable.
+- **Vérifié** : 84 tests ciblés verts (portefeuille, import, patterns, config) ; `tsc` 0 ; `i18n:check` 1612 clés ; `check-migrations` conforme (182 migrations) ; `git diff --check` propre. La suite complète a été lancée séquentiellement mais dépasse la fenêtre de retour de l’outil dans cette session : ne pas la déclarer verte sans son bilan final. Docker/base réelle non disponible dans ce tour.
+
+---
+
 ## 2026-10-04 (61) — Claude : sauvegardes planifiées (quotidienne / hebdomadaire / mensuelle), conservation et espace disque
 
 - **Politique** `.acra-update/backup-policy.json` (défaut : jour + semaine + mois activés, **3 copies de chaque**, 02 h) ; lib pure `backup-policy.ts` (validation, estimation `estimateStorage`, verdict `diskAdvice`, conseils `policyAdvice` 7/4/6, `nextRuns`, `backupOverview`).
