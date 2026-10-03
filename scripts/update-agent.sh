@@ -84,8 +84,18 @@ if [ -f "$RUN_CUR" ]; then
   fi
 fi
 
+# Sauvegardes planifiées (quotidienne / hebdomadaire / mensuelle) : décidées et exécutées par scripts/acra-schedule.sh,
+# appelé à chaque passage (cron, chaque minute) ; il ignore les passages sans échéance et ne s'exécute jamais pendant une mise à jour.
+run_schedule() {
+  [ -x scripts/acra-schedule.sh ] || return 0
+  # shellcheck disable=SC1090
+  [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+  export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
+  scripts/acra-schedule.sh tick >> "$DIR/schedule.log" 2>&1 || true
+}
+
 REQ="$INBOX/request.json"
-[ -f "$REQ" ] || exit 0
+[ -f "$REQ" ] || { run_schedule; exit 0; }
 
 # Verrou portable (mkdir atomique) : une seule mise à jour à la fois.
 LOCK="$DIR/.lock"
@@ -119,5 +129,27 @@ case "$ACTION" in
     { [ -f "$DIR/snapshots.json" ] && grep -Eq "\"id\"[[:space:]]*:[[:space:]]*\"$SNAP_RE\"" "$DIR/snapshots.json"; } || invalid
     echo "[$(now)] retour arrière demandé : point $SNAP"
     scripts/update.sh rollback "$SNAP" --yes --status-file "$DIR/status.json" || true ;;
+  backup-policy)
+    # Politique de sauvegarde : chaque valeur est relue puis validée (booléen, bornes) ; rien d'autre n'est lu ni exécuté.
+    D="$(printf '%s' "$BODY" | sed -n 's/.*"daily":{"enabled":\([a-z]*\),"keep":\([0-9]*\)}.*/\1 \2/p' | head -1)"
+    W="$(printf '%s' "$BODY" | sed -n 's/.*"weekly":{"enabled":\([a-z]*\),"keep":\([0-9]*\),"weekday":\([0-9]*\)}.*/\1 \2 \3/p' | head -1)"
+    M="$(printf '%s' "$BODY" | sed -n 's/.*"monthly":{"enabled":\([a-z]*\),"keep":\([0-9]*\),"day":\([0-9]*\)}.*/\1 \2 \3/p' | head -1)"
+    H="$(printf '%s' "$BODY" | sed -n 's/.*"hour":\([0-9]*\).*/\1/p' | head -1)"
+    # shellcheck disable=SC2086
+    set -- $D; D_EN="${1:-}"; D_KEEP="${2:-}"
+    # shellcheck disable=SC2086
+    set -- $W; W_EN="${1:-}"; W_KEEP="${2:-}"; W_DAY="${3:-}"
+    # shellcheck disable=SC2086
+    set -- $M; M_EN="${1:-}"; M_KEEP="${2:-}"; M_DAY="${3:-}"
+    ok_bool() { [ "$1" = "true" ] || [ "$1" = "false" ]; }
+    ok_int() { printf '%s' "$1" | grep -Eq '^[0-9]{1,2}$' && [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]; }
+    { ok_bool "$D_EN" && ok_bool "$W_EN" && ok_bool "$M_EN" && ok_int "$D_KEEP" 1 60 && ok_int "$W_KEEP" 1 60 && ok_int "$M_KEEP" 1 60 \
+      && ok_int "$W_DAY" 0 6 && ok_int "$M_DAY" 1 28 && ok_int "$H" 0 23; } || { echo "[$(now)] politique de sauvegarde invalide ignorée" >&2; exit 0; }
+    [ "$D_EN" = true ] || [ "$W_EN" = true ] || [ "$M_EN" = true ] || { echo "[$(now)] politique sans aucune fréquence ignorée" >&2; exit 0; }
+    printf '{\n  "schema": 1,\n  "daily": { "enabled": %s, "keep": %s },\n  "weekly": { "enabled": %s, "keep": %s, "weekday": %s },\n  "monthly": { "enabled": %s, "keep": %s, "day": %s },\n  "hour": %s\n}\n' \
+      "$D_EN" "$((10#$D_KEEP))" "$W_EN" "$((10#$W_KEEP))" "$((10#$W_DAY))" "$M_EN" "$((10#$M_KEEP))" "$((10#$M_DAY))" "$((10#$H))" > "$DIR/backup-policy.json.tmp"
+    chmod 644 "$DIR/backup-policy.json.tmp"; mv "$DIR/backup-policy.json.tmp" "$DIR/backup-policy.json"
+    echo "[$(now)] politique de sauvegarde mise à jour"
+    run_schedule ;;
   *) invalid ;;
 esac

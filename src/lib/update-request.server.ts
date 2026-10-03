@@ -9,6 +9,7 @@ import { agentAlive, parseUpdateStatus, type UpdateRequest, type UpdateStatus } 
 import { parseSnapshotIndex, type SnapshotEntry, type SnapshotIndex } from '@/lib/snapshot'
 import { parseRunJournal, type RunJournal } from '@/lib/update-run'
 import { parseOffsiteState, type OffsiteState } from '@/lib/offsite-status'
+import { parseBackupPolicy, parseBackupStats, type BackupPolicy, type BackupStats } from '@/lib/backup-policy'
 
 /** Dossier d'échange (surchageable pour les tests / déploiements particuliers). */
 export function updateDir(): string {
@@ -31,19 +32,21 @@ export async function readSnapshotIndex(): Promise<SnapshotIndex> {
 export interface RunSummary { kind: RunJournal['kind']; state: RunJournal['state']; from: string; to: string; snapshotId: string | null; startedAt: string; updatedAt: string; steps: RunJournal['steps'] }
 
 /** Disponibilité de l'agent (pulsation récente + boîte de dépôt présente), dernier statut, points de restauration et exécution en cours. */
-export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null; snapshots: SnapshotEntry[]; run: RunSummary | null; offsite: OffsiteState | null }> {
+export async function readUpdateAgent(now = new Date()): Promise<{ agentAvailable: boolean; status: UpdateStatus | null; snapshots: SnapshotEntry[]; run: RunSummary | null; offsite: OffsiteState | null; backup: { policy: BackupPolicy; stats: BackupStats | null } }> {
   const dir = updateDir()
-  const [heartbeat, status, inbox, index, journal, offsiteRaw] = await Promise.all([
+  const [heartbeat, status, inbox, index, journal, offsiteRaw, policyRaw, statsRaw] = await Promise.all([
     readJson(path.join(dir, 'agent.json')),
     readJson(path.join(dir, 'status.json')),
     fs.stat(path.join(dir, 'inbox')).then(s => s.isDirectory()).catch(() => false),
     readSnapshotIndex(),
     readJson(path.join(dir, 'run', 'current.json')),
     readJson(path.join(dir, 'offsite.json')),
+    readJson(path.join(dir, 'backup-policy.json')),
+    readJson(path.join(dir, 'backup-stats.json')),
   ])
   const j = parseRunJournal(journal)
   const run: RunSummary | null = j ? { kind: j.kind, state: j.state, from: j.from.version, to: j.to.version, snapshotId: j.snapshotId, startedAt: j.startedAt, updatedAt: j.updatedAt, steps: j.steps } : null
-  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status), snapshots: index.snapshots, run, offsite: parseOffsiteState(offsiteRaw) }
+  return { agentAvailable: inbox && agentAlive(heartbeat, now), status: parseUpdateStatus(status), snapshots: index.snapshots, run, offsite: parseOffsiteState(offsiteRaw), backup: { policy: parseBackupPolicy(policyRaw), stats: parseBackupStats(statsRaw) } }
 }
 
 /** Dépose la demande (écriture atomique : fichier temporaire puis renommage). */
@@ -52,4 +55,9 @@ export async function writeUpdateRequest(req: UpdateRequest): Promise<void> {
   const tmp = path.join(inbox, `.request-${req.id}.tmp`)
   await fs.writeFile(tmp, JSON.stringify(req), { mode: 0o644, flag: 'wx' })
   await fs.rename(tmp, path.join(inbox, 'request.json'))
+}
+
+/** Une demande attend déjà l'agent (la boîte de dépôt n'a qu'un emplacement). */
+export async function requestPending(): Promise<boolean> {
+  return fs.stat(path.join(updateDir(), 'inbox', 'request.json')).then(() => true).catch(() => false)
 }

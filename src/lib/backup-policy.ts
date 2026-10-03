@@ -101,3 +101,40 @@ export function nextRuns(p: BackupPolicy, now: Date): { daily: Date | null; week
   const monthly = p.monthly.enabled ? (() => { const t = at(now); t.setDate(p.monthly.day); if (t <= now) { t.setMonth(t.getMonth() + 1); t.setDate(p.monthly.day) } return t })() : null
   return { daily, weekly, monthly }
 }
+
+export interface BackupStats {
+  at: string; freeBytes: number | null; backupsBytes: number; points: number; scheduledPoints: number
+  lastScheduledPointBytes: number | null; lastPreUpdatePointBytes: number | null; dbBytes: number | null
+  lastRunAt: string | null; lastCode: number | null; lastTiers: Array<'daily' | 'weekly' | 'monthly'>
+}
+const nn = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null)
+const isoOrNull = (v: unknown): string | null => (typeof v === 'string' && v.length <= 40 && Number.isFinite(Date.parse(v)) ? v : null)
+
+/** `.acra-update/backup-stats.json`, publié par scripts/acra-schedule.sh (espace libre, occupé, taille d'un point, dernier passage). */
+export function parseBackupStats(raw: unknown): BackupStats | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  if (o.schema !== 1) return null
+  const at = isoOrNull(o.at)
+  if (!at) return null
+  const tiers = typeof o.lastTiers === 'string' ? o.lastTiers.split(',').filter((t): t is 'daily' | 'weekly' | 'monthly' => t === 'daily' || t === 'weekly' || t === 'monthly') : []
+  return {
+    at, freeBytes: nn(o.freeBytes), backupsBytes: nn(o.backupsBytes) ?? 0, points: nn(o.points) ?? 0, scheduledPoints: nn(o.scheduledPoints) ?? 0,
+    lastScheduledPointBytes: nn(o.lastScheduledPointBytes), lastPreUpdatePointBytes: nn(o.lastPreUpdatePointBytes), dbBytes: nn(o.dbBytes),
+    lastRunAt: isoOrNull(o.lastRunAt), lastCode: nn(o.lastCode), lastTiers: tiers,
+  }
+}
+
+/** Taille d'un point sans mesure : un dump compressé pèse environ 40 % de la base. */
+const DUMP_RATIO = 0.4
+export const PRE_UPDATE_KEEP = 3
+
+/** Estimation et verdict d'espace pour une politique donnée, à partir des mesures de l'agent. */
+export function backupOverview(policy: BackupPolicy, stats: BackupStats | null): { pointBytes: number; estimate: StorageEstimate; advice: DiskAdvice } {
+  const db = stats?.dbBytes ?? 0
+  const pointBytes = stats?.lastScheduledPointBytes ?? stats?.lastPreUpdatePointBytes ?? Math.round(db * DUMP_RATIO)
+  const preUpdatePointBytes = stats?.lastPreUpdatePointBytes ?? pointBytes
+  const estimate = estimateStorage({ policy, pointBytes, preUpdateKeep: PRE_UPDATE_KEEP, preUpdatePointBytes, cloneBytes: db })
+  const advice = stats ? diskAdvice({ freeBytes: stats.freeBytes, neededBytes: estimate.totalBytes, usedByBackupsBytes: stats.backupsBytes, pointBytes }) : { status: 'UNKNOWN' as DiskStatus, missingBytes: 0, additionalBytes: estimate.totalBytes }
+  return { pointBytes, estimate, advice }
+}

@@ -1,6 +1,6 @@
 // Lot 3 — scripts/update-agent.sh : demandes `rollback` (identifiant validé contre SON index) et reprise à chaque passage.
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { makeInstance, type Instance } from '../../helpers/update-fixture'
 
@@ -60,5 +60,38 @@ describe('update-agent.sh', () => {
     agent()
     expect(updateCalls()).toEqual([])
     expect(existsSync(path.join(inst.work, '.acra-update/inbox'))).toBe(true)
+  })
+})
+
+describe('update-agent.sh — sauvegardes planifiées (lot S-plan)', () => {
+  const stubSchedule = () => writeFileSync(path.join(inst.work, 'scripts/acra-schedule.sh'), '#!/usr/bin/env bash\necho "SCHEDULE $*" >> "$AUDIT_LOG"\n', { mode: 0o755 })
+  const scheduleCalls = () => inst.calls().filter(c => c.startsWith('SCHEDULE'))
+  const policyReq = (policy: string) => request(`{"id":"r","action":"backup-policy","policy":${policy},"requestedBy":"u","requestedAt":"2026-10-04T00:00:00.000Z"}`)
+  const good = '{"daily":{"enabled":true,"keep":7},"weekly":{"enabled":true,"keep":4,"weekday":0},"monthly":{"enabled":true,"keep":6,"day":1},"hour":3}'
+  const policyFile = () => path.join(inst.work, '.acra-update/backup-policy.json')
+
+  it('chaque passage appelle le planificateur (sans demande en attente)', () => {
+    setup(); stubSchedule()
+    agent(); agent()
+    expect(scheduleCalls()).toEqual(['SCHEDULE tick', 'SCHEDULE tick'])
+  })
+
+  it('demande backup-policy valide : fichier de politique écrit (mise en forme canonique, 0644), update.sh jamais appelé', () => {
+    setup(); stubSchedule(); policyReq(good)
+    agent()
+    expect(readFileSync(policyFile(), 'utf8')).toBe('{\n  "schema": 1,\n  "daily": { "enabled": true, "keep": 7 },\n  "weekly": { "enabled": true, "keep": 4, "weekday": 0 },\n  "monthly": { "enabled": true, "keep": 6, "day": 1 },\n  "hour": 3\n}\n')
+    expect(statSync(policyFile()).mode & 0o777).toBe(0o644)
+    expect(updateCalls()).toEqual([])
+  })
+
+  it('politique invalide ou piégée : ignorée, fichier inchangé', () => {
+    setup(); stubSchedule(); policyReq(good); agent()
+    const before = readFileSync(policyFile(), 'utf8')
+    for (const bad of [
+      good.replace('"keep":7', '"keep":0'), good.replace('"hour":3', '"hour":24'), good.replace('"day":1', '"day":29'), good.replace('"weekday":0', '"weekday":7'),
+      good.replace('"enabled":true,"keep":7', '"enabled":"$(rm -rf /)","keep":7'), good.replace('"keep":7', '"keep":"7; rm -rf /"'),
+      '{"daily":{"enabled":false,"keep":3},"weekly":{"enabled":false,"keep":3,"weekday":0},"monthly":{"enabled":false,"keep":3,"day":1},"hour":2}',
+    ]) { policyReq(bad); agent(); expect(readFileSync(policyFile(), 'utf8'), bad).toBe(before) }
+    expect(updateCalls()).toEqual([])
   })
 })

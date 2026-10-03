@@ -96,3 +96,41 @@ describe('nextRuns', () => {
   })
   it('fréquence désactivée : null', () => expect(nextRuns({ ...DEFAULT_BACKUP_POLICY, weekly: { enabled: false, keep: 3, weekday: 0 } }, now).weekly).toBeNull())
 })
+
+import { parseBackupStats, backupOverview } from '@/lib/backup-policy'
+
+describe('parseBackupStats', () => {
+  const ok = { schema: 1, at: '2026-10-04T03:00:00Z', freeBytes: 50 * GB, backupsBytes: 4 * GB, points: 5, scheduledPoints: 3, lastScheduledPointBytes: GB, lastPreUpdatePointBytes: 2 * GB, dbBytes: 3 * GB, lastRunAt: '2026-10-04T02:00:05Z', lastCode: 0, lastTiers: 'daily,weekly' }
+  it('lit les statistiques publiées par l’agent, assainies', () => {
+    expect(parseBackupStats({ ...ok, extra: 'x' })).toEqual({ at: ok.at, freeBytes: 50 * GB, backupsBytes: 4 * GB, points: 5, scheduledPoints: 3, lastScheduledPointBytes: GB, lastPreUpdatePointBytes: 2 * GB, dbBytes: 3 * GB, lastRunAt: ok.lastRunAt, lastCode: 0, lastTiers: ['daily', 'weekly'] })
+  })
+  it('valeurs nulles ou invalides ⇒ null ; schéma inconnu ⇒ null', () => {
+    const s = parseBackupStats({ ...ok, freeBytes: null, lastScheduledPointBytes: -1, lastCode: null, lastTiers: 'hourly,daily' })
+    expect(s).toMatchObject({ freeBytes: null, lastScheduledPointBytes: null, lastCode: null, lastTiers: ['daily'] })
+    expect(parseBackupStats({ ...ok, schema: 2 })).toBeNull()
+    expect(parseBackupStats(null)).toBeNull()
+  })
+})
+
+describe('backupOverview', () => {
+  const stats = parseBackupStats({ schema: 1, at: '2026-10-04T03:00:00Z', freeBytes: 100 * GB, backupsBytes: 0, points: 0, scheduledPoints: 0, lastScheduledPointBytes: GB, lastPreUpdatePointBytes: GB, dbBytes: 2 * GB, lastRunAt: null, lastCode: null, lastTiers: '' })!
+  it('combine politique, mesures et espace libre : estimation et verdict', () => {
+    const o = backupOverview(DEFAULT_BACKUP_POLICY, stats)
+    expect(o.estimate.scheduledPoints).toBe(9)
+    expect(o.estimate.totalBytes).toBe(9 * GB + 3 * (GB + 2 * GB))
+    expect(o.advice.status).toBe('OK')
+  })
+  it('sans mesure d’un point : estimation à partir de la base (≈ 40 %)', () => {
+    const o = backupOverview(DEFAULT_BACKUP_POLICY, { ...stats, lastScheduledPointBytes: null, lastPreUpdatePointBytes: null })
+    expect(o.pointBytes).toBeCloseTo(0.4 * 2 * GB, -3)
+  })
+  it('pas de statistiques : verdict UNKNOWN', () => {
+    expect(backupOverview(DEFAULT_BACKUP_POLICY, null).advice.status).toBe('UNKNOWN')
+  })
+  it('plus de conservation ⇒ besoin plus élevé, verdict qui se dégrade', () => {
+    const tight = { ...stats, freeBytes: 20 * GB }
+    expect(backupOverview(DEFAULT_BACKUP_POLICY, tight).advice.status).toBe('WARN')
+    const big = { ...DEFAULT_BACKUP_POLICY, daily: { enabled: true, keep: 30 } }
+    expect(backupOverview(big, tight).advice.status).toBe('CRITICAL')
+  })
+})

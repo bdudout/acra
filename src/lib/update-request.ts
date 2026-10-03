@@ -7,13 +7,15 @@
 import { isUpdateChannel, type UpdateChannel } from '@/lib/version-check'
 import { isSnapshotId, type SnapshotIndex } from '@/lib/snapshot'
 import { UPDATE_STATES, type UpdateRunState } from '@/lib/update-run'
+import { validateBackupPolicy, type BackupPolicy } from '@/lib/backup-policy'
 
 /** Au-delà de ce délai sans pulsation, l'agent est considéré absent. */
 export const AGENT_MAX_AGE_MS = 5 * 60 * 1000
 
 export type UpdateRequestUpdate = { id: string; action: 'update'; channel: UpdateChannel; requestedBy: string; requestedAt: string }
 export type UpdateRequestRollback = { id: string; action: 'rollback'; snapshotId: string; confirmVersion: string; requestedBy: string; requestedAt: string }
-export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback
+export type UpdateRequestBackupPolicy = { id: string; action: 'backup-policy'; policy: BackupPolicy; requestedBy: string; requestedAt: string }
+export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback | UpdateRequestBackupPolicy
 export type UpdateState = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
 export interface UpdateStatusStep { step: string; ok: boolean; at: string }
 export interface UpdateStatus {
@@ -35,6 +37,19 @@ export function buildRollbackRequest(a: { snapshotId: string; confirmVersion: st
   if (!entry) throw new Error('unknown_snapshot')
   if (typeof a.confirmVersion !== 'string' || a.confirmVersion.trim() !== entry.version) throw new Error('confirm_mismatch')
   return { id: a.id, action: 'rollback', snapshotId: entry.id, confirmVersion: entry.version, requestedBy: a.userId, requestedAt: a.now.toISOString() }
+}
+
+/** Demande de nouvelle politique de sauvegarde : validée, et réduite aux seuls champs connus. Lève `invalid_policy`. */
+export function buildBackupPolicyRequest(a: { policy: unknown; userId: string; now: Date; id: string }): UpdateRequestBackupPolicy {
+  if (!validateBackupPolicy(a.policy).ok) throw new Error('invalid_policy')
+  const p = a.policy as BackupPolicy
+  const policy: BackupPolicy = {
+    daily: { enabled: p.daily.enabled, keep: p.daily.keep },
+    weekly: { enabled: p.weekly.enabled, keep: p.weekly.keep, weekday: p.weekly.weekday },
+    monthly: { enabled: p.monthly.enabled, keep: p.monthly.keep, day: p.monthly.day },
+    hour: p.hour,
+  }
+  return { id: a.id, action: 'backup-policy', policy, requestedBy: a.userId, requestedAt: a.now.toISOString() }
 }
 
 /** L'agent hôte a-t-il publié une pulsation récente ? */

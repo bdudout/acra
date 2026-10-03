@@ -93,6 +93,13 @@ publish_stats() {
   chmod 644 "$STATS.tmp"; mv "$STATS.tmp" "$STATS"
 }
 
+# Hors échéance, les statistiques (df/du) ne sont rafraîchies que toutes les ACRA_STATS_TTL_MIN minutes (10) : le passage a lieu chaque minute.
+stats_if_stale() {
+  local at; at="$(mget "$STATS" at 2>/dev/null || true)"
+  if [ -n "$at" ] && [ $(( ( $(date -u +%s) - $(epoch_of "$at") ) / 60 )) -lt "${ACRA_STATS_TTL_MIN:-10}" ]; then return 0; fi
+  publish_stats
+}
+
 cmd_tick() {
   # Jamais pendant une mise à jour, ni deux passages en parallèle (une sauvegarde peut durer plus d'une minute).
   [ ! -f "$UPDATE_DIR/run/current.json" ] || exit 0
@@ -107,11 +114,11 @@ cmd_tick() {
   echo "$$" > "$LOCKDIR/pid"; trap 'rm -rf "$LOCKDIR"' EXIT
 
   local tiers; tiers="$(due_tiers)"
-  if [ -z "$tiers" ]; then publish_stats; exit 0; fi
+  if [ -z "$tiers" ]; then stats_if_stale; exit 0; fi
   # Après un échec : pas de nouvelle tentative avant ACRA_SCHEDULE_RETRY_MINUTES.
   local lc la; lc="$(mget "$STATS" lastCode 2>/dev/null || true)"; la="$(mget "$STATS" lastRunAt 2>/dev/null || true)"
   if [ -n "$lc" ] && [ "$lc" != "0" ] && [ "$lc" != "null" ] && [ -n "$la" ] && [ "$la" != "null" ]; then
-    [ $(( ( $(date -u +%s) - $(epoch_of "$la") ) / 60 )) -ge "$RETRY_MIN" ] || { publish_stats; exit 0; }
+    [ $(( ( $(date -u +%s) - $(epoch_of "$la") ) / 60 )) -ge "$RETRY_MIN" ] || { stats_if_stale; exit 0; }
   fi
   local verify=quick; case ",$tiers," in *,weekly,*|*,monthly,*) verify=full ;; esac
   local ver; ver="$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' package.json 2>/dev/null | head -1)"
