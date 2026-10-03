@@ -26,6 +26,9 @@ describe('santé : portail, entrepôt de données, délégataire de gestion', ()
       expect(sectorExemplesFor(SANTE, cat, 'fr', id).length, `${id}/${cat}`).toBeGreaterThan(0)
     }
     expect(sectorExemplesFor(SANTE, 'mesures', 'fr', 'sante-portail').length).toBeGreaterThanOrEqual(8)
+    // Les mesures propres au sous-secteur passent avant les mesures communes au secteur.
+    expect(String(sectorExemplesFor(SANTE, 'mesures', 'fr', 'sante-portail')[0].nom)).toMatch(/patients/)
+    expect(String(sectorExemplesFor(TECH, 'mesures', 'fr', 'technique-interco-prestataire')[0].nom)).toMatch(/livraison/)
   })
   it('le portail voit l’usurpation de compte patient et l’accès direct à un objet non autorisé, pas l’entrepôt de recherche', () => {
     const p = JSON.stringify(ALL_CATS.flatMap(c => sectorExemplesFor(SANTE, c, 'fr', 'sante-portail')))

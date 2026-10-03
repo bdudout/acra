@@ -49,7 +49,9 @@ export function localizeExt(item: ExtItem, locale: Locale): Record<string, unkno
 
 /** Éléments d'extension visibles pour une famille, une catégorie et une sous-profession. */
 export function extItemsFor(famille: string, category: string, prof: string | undefined): ExtItem[] {
-  return EXT_ITEMS.filter(x => x.famille === famille && x.category === category && (!x.profs || (prof !== undefined && x.profs.includes(prof))))
+  const visible = EXT_ITEMS.filter(x => x.famille === famille && x.category === category && (!x.profs || (prof !== undefined && x.profs.includes(prof))))
+  // Éléments propres à la sous-profession d'abord, puis éléments communs à la famille (tri stable).
+  return [...visible.filter(x => x.profs), ...visible.filter(x => !x.profs)]
 }
 
 // ─── Constructeurs compacts ────────────────────────────────────────────────────

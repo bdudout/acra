@@ -777,7 +777,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
             </div>
           )}
 
-          <SectorMeasuresPanel items={sectorMeasures} existingNames={mesures.map((m: any) => String(m.nom ?? ''))} onAdd={addSectorMeasure} />
+          {editable && <SectorMeasuresPanel items={sectorMeasures} existingNames={mesures.map((m: any) => String(m.nom ?? ''))} onAdd={addSectorMeasure} />}
 
           {/* Écarts du socle (non-conformités A1) à traiter — importables comme mesures (issue #3) */}
           {nonConformites.length > 0 && (() => {
