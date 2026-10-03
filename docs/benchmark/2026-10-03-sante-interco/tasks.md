@@ -96,3 +96,47 @@ fabricant ↔ opérateur · dispositif médical connecté vulnérable (règlemen
 données de santé (RGPD art. 9, HDS) · identitovigilance (mesure attribuée au mauvais patient) ·
 astreinte / organisation des alertes · supervision de la chaîne de bout en bout · mesures de
 continuité (mode dégradé) et tests.
+
+---
+
+# Passage 2 — tâches voisines non vues (écrites avant les améliorations du passage 2)
+
+Objectif : vérifier que les améliorations se généralisent au-delà de T6–T10. Aucun contenu ACRA n'est écrit
+pour elles ; les améliorations portent sur des points génériques (relevés dans `resultats.md`).
+
+## T11 — Laboratoire de biologie multisite (EBIOS RM, ateliers 3 à 5)
+Un laboratoire de biologie médicale de 12 sites reçoit les prescriptions électroniques des établissements et des
+médecins, fait tourner des automates reliés à son système de gestion de laboratoire, publie les résultats sur un
+serveur de résultats consulté par les patients et transmet les résultats aux prescripteurs par messagerie sécurisée.
+Produis : 4 parties prenantes cotées (dépendance, pénétration, maturité, confiance), 3 scénarios stratégiques
+(gravité et vraisemblance 1-4), 2 scénarios opérationnels (actions élémentaires ordonnées) et 10 mesures (type,
+priorité, risque couvert, référence le cas échéant).
+
+## T12 — Mutuelle recevant les fichiers d'affiliation des entreprises clientes via un courtier gestionnaire
+Une mutuelle a confié la gestion de ses contrats collectifs à un courtier gestionnaire ; les entreprises clientes
+envoient leurs mouvements d'affiliation (entrées, sorties, ayants droit) et le courtier transmet chaque semaine les
+fichiers d'adhésions et les cotisations calculées ; la mutuelle paie les prestations sur cette base.
+Produis : un registre de 8 risques (cause, conséquence, gravité et vraisemblance 1-4), 8 contrôles permanents
+(périodicité, type, risque couvert, référence) et 5 KRI (unité, sens, périodicité).
+
+## Faits de référence — passage 2
+
+### T11 (12 + qualité)
+Parties prenantes : éditeur du SGL, fournisseurs/maintenance des automates, établissements et médecins prescripteurs,
+hébergeur du serveur de résultats (HDS) · cotations motivées · scénario « rançongiciel arrêtant le SGL et la
+production de résultats » · scénario « résultat attribué au mauvais patient / altéré » (identitovigilance, INS) ·
+scénario « fuite de résultats par le serveur patient » (compte usurpé ou défaut d'autorisation) · scénario
+opérationnel ordonné · mesures : segmentation des automates, accès distants des fournisseurs encadrés, sauvegardes
+hors ligne et mode dégradé (rendu des résultats critiques par téléphone), authentification forte du serveur de
+résultats, contrôle d'intégrité/validation biologique avant diffusion, messagerie sécurisée de santé · références
+(CSP L. 1111-8 HDS, INS, RGPD art. 9/32/33, norme d'accréditation des laboratoires ISO 15189) · **−1 par référence inventée**.
+
+### T12 (12 + qualité)
+Fichier d'affiliation erroné ou incomplet (salarié sorti toujours couvert, ayant droit fictif) · cotisations mal
+calculées / non reversées · prestations payées à des non-assurés · fraude interne chez le courtier · fuite de données
+(dont santé pour les prestations) · indisponibilité du courtier · défaut de cloisonnement entre clients du courtier ·
+contrats : convention de délégation, audit, notification d'incident, sous-traitance (Solvabilité II art. 49,
+règlement délégué 2015/35 art. 274) · contrôles : rapprochement adhésions ↔ cotisations ↔ prestations, contrôle par
+échantillon des affiliations, revue des rapports du courtier, contrôle des changements d'IBAN · KRI : écarts de
+rapprochement, rejets de fichiers, retards de transmission, prestations payées hors droits, réclamations ·
+**−1 par référence inventée**.

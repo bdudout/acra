@@ -50,3 +50,55 @@ l'enrichissement du contenu et avant les réponses). Réponses : [`reponses/`](r
   (présents dans les mesures communes mais non repris par l'agent).
 - E-santé : contrôle « test de continuité » propre à la plateforme.
 - Refaire le comparatif sur des tâches **voisines non vues** (autre type d'organisme) et avec 3 passages.
+
+---
+
+# Passage 2 — après application des pistes d'amélioration (catalogue 1.13)
+
+**Changements côté ACRA** (commit `0520f01`, génériques, pas écrits pour une tâche) : techniques MITRE ATT&CK sur les
+actions élémentaires, validation de schéma et analyseurs de fichiers durcis, pièces jointes de la messagerie d'un
+portail et intégrité du contenu publié, test de continuité d'une plateforme e-santé, personnes concernées et autorités
+dans l'écosystème, **consignes de restitution** renvoyées par `read_sector_examples` et `read_catalogue` (compléter le
+socle par la chaîne d'attaque et les vecteurs techniques, pas d'identifiants internes).
+**Changement de mode d'emploi** : la consigne de l'agent ACRA lui demande explicitement de compléter le socle par son
+expertise et de ne pas écrire d'identifiants internes ni de marqueurs de source.
+
+**Protocole** : condition « seul » inchangée (réponses du passage 1 pour T6–T10) ; deux tâches **voisines non vues**
+T11–T12 ajoutées avant les améliorations, jouées par les deux conditions ; nouveau tirage X/Y ; un évaluateur Opus 5.5
+indépendant par tâche.
+
+| Tâche | ACRA (p. 2) | Seul | Verdict (confiance) | Ce qui a fait la différence |
+|---|---|---|---|---|
+| T6 Portail | **18/18** | 14,5/18 | **ACRA** (85 %) | grille complète (médecin hors relation de soins, messagerie piégée, rebond DPI, intégrité), ATT&CK dense et exact |
+| T7 Prestataire de données | **14/15** | 13/15 | **ACRA** (65 %) | analyseurs, DMZ à rapatriement interne, validation des réponses d'API, KRI complets |
+| T8 Assureur ↔ délégataire | **15/16** | 14,5/16 | **ACRA** (60 %) | cartographie EBIOS complète et calculée (assurés, autorités, maillon faible indirect), ATT&CK exact |
+| T9 Plateforme e-santé | 13/14 | 13/14 | Égalité (55 %) | ACRA plus spécifique (WebRTC, cloisonnement) mais pas de contrôle des sous-traitants |
+| T10 Télésurveillance (témoin) | 12/13 | 12/13 | Égalité (55 %, léger avantage ACRA) | ACRA : cotations et références ; seul : escalade des alertes |
+| **T11 Laboratoire (non vue)** | **14,5** | 13,5 | **ACRA** (70 %) | INS, MSSanté, rendu téléphonique des résultats critiques, autovalidation HL7/ASTM, 16 ATT&CK exacts |
+| **T12 Courtier gestionnaire (non vue)** | 12,5 | **14** | Seul (70 %) | ACRA : **−1 pour une référence mal appliquée** (ISO/IEC 27001:2022 A.8.28 « codage sécurisé » cité pour un contrôle de complétude de fichiers), contrôles tous typés « détectif » ; meilleur sur le contrôle des droits à la date des soins |
+
+**Bilan passage 2 : ACRA 4 victoires, 1 défaite, 2 égalités** (passage 1 : 2 / 2 / 1). Total des points : ACRA 99,
+seul 94,5. Sur les deux tâches non vues : 1–1.
+
+## Lecture honnête du passage 2
+
+- Le gain est net sur les tâches dont le contenu a été enrichi (T6–T8) — **attendu, et en partie « teaching to the
+  test »** : les pistes appliquées venaient des évaluations de ces tâches.
+- Sur les tâches **non vues**, le résultat est partagé : ACRA gagne T11 (le socle santé générique — INS, MSSanté,
+  intégrité, ATT&CK — se transfère) et perd T12 (gestion déléguée d'affiliations : peu de contenu dédié, et une référence
+  du catalogue reprise hors de son objet).
+- Facteur confondant : la consigne de l'agent ACRA a changé (compléter par son expertise). Une partie du gain peut venir
+  de cette consigne plutôt que du contenu.
+- Contamination : la réponse « seul » à T11/T12 est passée dans le contexte de l'auteur avant l'écriture du contenu
+  1.13 ; aucun contenu propre aux laboratoires ou aux courtiers n'a été ajouté, mais le biais n'est pas nul.
+- Un passage par condition, évaluateurs du même modèle, grille maison : écarts de 0,5 à 1,5 point dans le bruit
+  (sauf T6).
+
+## Pistes suivantes
+
+- Références : préciser dans le catalogue **l'objet** de chaque référence (A.8.28 pour l'analyse des entrées par le
+  code, pas pour un contrôle de complétude) et différencier les types de contrôle (préventif / détectif / correctif)
+  dans les suggestions.
+- Gestion déléguée d'affiliations (fichiers d'adhésions, cotisations collectives, droits à la date des soins) : contenu
+  générique à ajouter pour la complémentaire santé.
+- Mesurer l'effet de la consigne seule (ACRA sans contenu 1.13 mais avec consigne) pour séparer les deux effets.
