@@ -54,6 +54,8 @@ export async function GET() {
     base: state.base,
     agentAvailable: agent.agentAvailable,
     updateStatus: agent.status,
+    snapshots: agent.snapshots,
+    run: agent.run,
     latest: latest.version,
     latestName: latest.name,
     releaseUrl: latest.url,

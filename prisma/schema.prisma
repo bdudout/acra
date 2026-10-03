@@ -1369,6 +1369,17 @@ model ConformiteSnapshot {
 
 // Instantané mensuel d'appétence (RAS / RAD) : RÉSUMÉ d'agrégats figé pour un mois (aucun intitulé de risque ni de KRI).
 // Un par organisation et par mois (AAAA-MM, UTC) ; l'historique commence au premier instantané capturé.
+// Événements du cycle de vie de l'instance (mise à jour, retour arrière, restauration) lus dans
+// .acra-update/events.log : la clé unique (la ligne) évite de les journaliser deux fois. Après une
+// restauration la table revient à l'état du point : l'événement de restauration y est donc absent
+// et sera bien écrit.
+model InstanceEvent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  kind      String
+  createdAt DateTime @default(now())
+}
+
 model AppetenceSnapshot {
   id             String       @id @default(cuid())
   organizationId String
