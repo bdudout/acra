@@ -66,6 +66,21 @@ homologation décidée sauf réexamen), audit `HOMOLOGATION_*`. Module `homologa
 **Tests** : transitions, séparation préparateur / décideur, dossier incomplet, validité, routes (401/403/404 hors
 périmètre, module inactif), relance.
 
+**Reste à faire — lien homologation ↔ analyse** (confié à une autre session) :
+- Fiche d'analyse (y compris projet 360) : encart « Homologation », affiché **seulement si** le module est actif pour
+  l'organisation de l'analyse. Liste les homologations rattachées (`Homologation.analyseId`) avec statut, état de
+  validité (badge, mêmes couleurs que `/homologations`) et date de fin ; lien vers `/homologations?h=<id>`.
+- Bouton « Ouvrir un dossier d'homologation » pour un préparateur (`canPreparerHomologation` sur le rôle **effectif**
+  dans l'organisation de l'analyse) : `POST /api/homologations` avec `analyseId` et `systeme` = nom de l'analyse,
+  puis redirection vers la fiche.
+- `/homologations?h=<id>` ouvre directement la fiche correspondante (paramètre lu à l'initialisation du composant).
+- Pièce « Analyse de risques » : quand le dossier est rattaché à une analyse **approuvée**, la proposer cochée par
+  défaut à la création (référence = nom de l'analyse) ; jamais cochée automatiquement après coup.
+- Lecture : `GET /api/homologations?analyseId=<id>` (filtre facultatif ; l'analyse doit être accessible, sinon 404).
+- i18n ×5 ; tests : route (filtre, 404 hors périmètre, module inactif), composant de l'encart (masqué si module
+  inactif, bouton seulement pour un préparateur), ouverture par paramètre.
+- Suppression d'une analyse : l'homologation reste (relation `SetNull`), le registre affiche « — ».
+
 ## P3 — Maîtrise des risques en réseau (B3)
 
 **Principe** : un contrôle de l'organisation **mère** marqué « de référence » est **décliné** dans chaque entité fille
@@ -160,7 +175,7 @@ parcours navigateur (dev :3005 sur base locale migrée), y compris lecture seule
 | Lot | État | Commit |
 |---|---|---|
 | P1 | livré (catalogue 1.14, 13 sous-secteurs, ateliers 1 à 5, 6 types d’incident) | df75376 |
-| P2 | livré (3 modules activables ; homologation : registre, dossier, décision, séparation, relance) ; reste : lien depuis la fiche d’analyse | ce commit |
+| P2 | livré (3 modules activables ; homologation : registre, dossier, décision, séparation, relance) ; reste : lien depuis la fiche d’analyse (spécifié ci-dessus, confié à une autre session) | c8aa809 |
 | P3 | à faire | |
 | P4 | à faire | |
 | P5 | à faire | |

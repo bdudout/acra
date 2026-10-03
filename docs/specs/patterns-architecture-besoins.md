@@ -1,6 +1,6 @@
 # Patterns d'architecture de SI — expression de besoins
 
-**Statut :** expression de besoins (rien n'est codé) · **Date :** 2026-10-03
+**Statut :** expression de besoins validée (décisions D1–D5 prises le 2026-10-03, rien n'est codé) · **Date :** 2026-10-03
 **Périmètre :** analyses de risques (toutes méthodes) et projets 360
 
 ## 1. Constat
@@ -101,8 +101,9 @@ specs, après vérification sur la source officielle.
 - Cases regroupées par famille (§ 3), chaque pattern accompagné d'une aide courte
   (définition, exemple).
 - **Facultatif** : aucune case cochée = comportement actuel inchangé.
-- Pas de plafond bas : une architecture réelle combine souvent 4 à 8 patterns
-  (plafond technique proposé : 12).
+- Plafond **configurable** (décision D4) : défaut **12**, réglé par l'administrateur de
+  l'organisation dans `/configuration` (borné de 1 à 24, hérité dans l'arbre
+  multi-organisation). Une architecture réelle combine souvent 4 à 8 patterns.
 
 ### BE-2 — Indépendance vis-à-vis du secteur
 - Les patterns sont proposés **quel que soit le secteur**, y compris « Autre » ou sans
@@ -176,12 +177,16 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
 
 - Leur contenu (exemples et pack catalogue) est **repris** dans ces patterns, pas
   perdu.
-- **Rétrocompatibilité** : une analyse existante qui porte ce secteur ou ces
-  sous-secteurs continue d'afficher le même contenu (lecture traduite vers les patterns
-  équivalents), sans migration destructive.
-- Les nouvelles analyses ne proposent plus ce secteur (voir décision D1).
+- **Pas de rétrocompatibilité à assurer** (décision D1 : aucun client en production) :
+  le secteur « Technique / Interconnexion de SI » et ses 4 sous-secteurs sont
+  **supprimés** de la taxonomie, des familles d'exemples et du catalogue sectoriel (le
+  contenu est déplacé vers les patterns, pas dupliqué). Les données de démonstration ou
+  de recette qui les portent sont converties en patterns par la migration de données du
+  lot, ou simplement recréées.
+- Les sous-secteurs transverses proposés à tous les secteurs (interconnexions) cessent
+  d'exister : ce rôle est tenu par les patterns.
 
-### BE-11 — Personnalisation par l'organisation (facultatif)
+### BE-11 — Personnalisation par l'organisation (lot ultérieur, décision D3)
 - L'administrateur de l'organisation peut **masquer** des patterns non pertinents pour
   elle (par exemple `SI_INDUSTRIEL` pour une organisation sans système industriel).
   Pas d'activation de module : la fonctionnalité est disponible pour tous.
@@ -192,9 +197,11 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
 - **Données** : un champ liste de codes stables sur l'analyse (`patternsArchi`, sans
   accent), migration **additive** uniquement (défaut : liste vide).
 - **Codes stables** : un code de pattern ne change jamais ; un pattern retiré reste lu.
+- **Configuration** : plafond de sélection dans `OrganizationConfig` (`patternsArchiMax`,
+  défaut 12, borné 1–24), lu par la résolution de configuration habituelle.
 - **Validation** : codes inconnus ignorés à l'enregistrement, doublons retirés.
 - **Tests** : fonctions de résolution pures et testées (union, ordre, combinaisons,
-  rétrocompatibilité Technique), plancher de profondeur du contenu, composant de
+  pré-remplissage sans écrasement, plafond configurable), plancher de profondeur du contenu, composant de
   sélection.
 - **Performance** : la résolution des exemples reste en mémoire, sans requête
   supplémentaire.
@@ -205,31 +212,35 @@ Certains risques n'apparaissent qu'en combinaison. Le contenu peut être conditi
    biens supports et les mesures, à la fois son contenu mutuelle et le contenu propre à
    ces deux patterns, sans doublon.
 2. Une analyse sans pattern coché affiche exactement le même contenu qu'aujourd'hui.
-3. Une analyse existante sur le secteur « Technique / Interconnexion de SI » affiche le
-   même contenu qu'avant la livraison.
+3. Le secteur « Technique / Interconnexion de SI » n'est plus proposé ; le contenu
+   d'interconnexion qu'il portait apparaît en cochant `INTERCO_TIERS`,
+   `EXTERNALISATION_DONNEES`, `API_PARTENAIRES` ou `ECHANGE_FICHIERS`.
 4. Un projet 360 qui coche `EXPOSITION_INTERNET` trouve la question d'exposition à
-   Internet pré-remplie à « oui ».
+   Internet pré-remplie à « oui » ; si la question avait déjà reçu « non », elle reste à
+   « non ».
+7. Avec un plafond réglé à 6 par l'administrateur, une 7ᵉ case ne peut pas être cochée
+   (et l'API refuse une liste plus longue).
 5. Le contenu d'une combinaison (`TELEMAINTENANCE` + `SI_INDUSTRIEL`) n'apparaît que si
    les deux sont cochés.
 6. Les patterns sont visibles dans l'export et filtrables dans le portefeuille.
 
-## 7. Décisions à prendre
+## 7. Décisions (prises le 2026-10-03)
 
-| # | Question | Recommandation |
+| # | Question | Décision |
 |---|---|---|
-| D1 | Retirer le secteur « Technique » des nouvelles analyses ? | Oui, après reprise de son contenu dans les patterns ; conservé en lecture pour l'existant. |
-| D2 | Liste du lot 1 | Les 17 patterns marqués « Lot 1 » (dont les 12 demandés). |
-| D3 | Masquage par organisation (BE-11) | Oui, mais en lot ultérieur. |
-| D4 | Plafond de patterns cochés | 12. |
-| D5 | Pré-remplissage du questionnaire (BE-6) | Oui, sans jamais écraser une réponse saisie. |
+| D1 | Retirer le secteur « Technique » ? | **Oui, et sans conserver l'existant** (pas de client en production) : suppression du secteur et de ses sous-secteurs, contenu déplacé vers les patterns. |
+| D2 | Liste du lot 1 | **Validée** : les 17 patterns marqués « Lot 1 » (dont les 12 demandés). |
+| D3 | Masquage par organisation (BE-11) | **Oui, plus tard** (lot A6). |
+| D4 | Plafond de patterns cochés | **12 par défaut, configurable** par l'administrateur de l'organisation (1–24). |
+| D5 | Pré-remplissage du questionnaire (BE-6) | **Oui, sans jamais écraser une réponse saisie.** |
 
 ## 8. Découpage proposé
 
 | Lot | Contenu |
 |---|---|
-| A1 | Référentiel des patterns (codes, familles, libellés ×5), champ `patternsArchi`, sélection par cases à cocher (création, métadonnées, projets 360), API, export |
+| A1 | Référentiel des patterns (codes, familles, libellés ×5), champ `patternsArchi`, plafond configurable `patternsArchiMax`, sélection par cases à cocher (création, métadonnées, projets 360), API, export |
 | A2 | Moteur d'exemples : union sous-secteurs + patterns + socle, ordre, combinaisons ; suggestions de risques |
 | A3 | Contenu du lot 1 : exemples par pattern (toutes catégories, ×5 langues), plancher de profondeur testé |
-| A4 | Migration du secteur Technique vers les patterns (contenu, rétrocompatibilité, retrait du secteur à la création) |
+| A4 | Suppression du secteur Technique : contenu déplacé vers les patterns, taxonomie et catalogue nettoyés, tests existants adaptés |
 | A5 | Catalogue (contrôles, KRI, audits par pattern, version de catalogue), questionnaire 360 pré-rempli, MCP et assistant |
 | A6 | Portefeuille filtrable, import universel, contenu du lot 2, masquage par organisation |
