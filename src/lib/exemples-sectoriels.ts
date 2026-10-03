@@ -20,6 +20,8 @@ import it from '@/lib/i18n/exemples-sectoriels/it'
 import { extItemsFor, localizeExt } from '@/lib/exemples-sectoriels-ext'
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 import { secteurFamily, selectableSousSecteurIds } from '@/lib/sous-secteurs'
+import { isPatternCode } from '@/lib/patterns-archi'
+import { patternExemplesFor } from '@/lib/exemples-patterns'
 
 /** Catégorie d'exemples sectoriels (sous-ensemble des catégories d'atelier proposées par secteur). */
 export type SectorExempleCategory =
@@ -919,13 +921,16 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
  */
 const DETAILED_ONLY = new Set(['cabinet', 'gestionpro', 'amo', 'amc', 'tierspayant', 'labo', 'officine', 'imagerie', 'transport', 'dm', 'esante'])
 
-/** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale. */
-function exemplesForOne(
+/** Exemple sectoriel et indication « propre à la sous-profession choisie » (par opposition au socle commun de la famille). */
+interface Tagged { item: Record<string, unknown>; specific: boolean }
+
+/** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale (avec marquage). */
+function exemplesTagged(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
   locale: Locale,
   sousSecteur?: string | null,
-): Record<string, unknown>[] {
+): Tagged[] {
   const s = (secteur ?? '').toLowerCase()
   if (!s) return []
   const fam = SECTOR_FAMILIES.find(f => f.match.some(m => s.includes(m)))
@@ -935,19 +940,52 @@ function exemplesForOne(
   const prof = professionFromSousSecteur(sousSecteur) ?? professionFromSecteur(fam.key, s)
   // Localisation par INDICE D'ORIGINE (clés i18n indexées), puis filtrage par
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
-  const base = items
+  const base: Tagged[] = items
     .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
     .filter(it => (prof ? !it.sousProfession || it.sousProfession === prof : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
-    .map(({ sousProfession, ...rest }) => rest)
+    .map(({ sousProfession, ...rest }) => ({ item: rest, specific: Boolean(prof && sousProfession === prof) }))
   // Extension (textes ×5 dans la donnée) : éléments communs + ceux de la sous-profession choisie.
-  const ext = extItemsFor(fam.key, category, prof).map(x => localizeExt(x, locale))
+  const ext: Tagged[] = extItemsFor(fam.key, category, prof).map(x => ({ item: localizeExt(x, locale), specific: Boolean(x.profs) }))
   return [...base, ...ext]
+}
+
+/** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale. */
+function exemplesForOne(
+  secteur: string | null | undefined,
+  category: SectorExempleCategory,
+  locale: Locale,
+  sousSecteur?: string | null,
+): Record<string, unknown>[] {
+  return exemplesTagged(secteur, category, locale, sousSecteur).map(t => t.item)
 }
 
 const TECHNIQUE_IDS = new Set(SOUS_SECTEURS.filter(x => x.famille === 'technique').map(x => x.id))
 const KNOWN_IDS = new Set(SOUS_SECTEURS.map(x => x.id))
 const TECHNIQUE_SECTEUR = 'Technique / Interconnexion de SI'
 const exempleKey = (x: Record<string, unknown>) => String(x.nom ?? x.mesure ?? x.description ?? '').toLowerCase().trim()
+
+/**
+ * Union secteur + sous-secteurs + patterns cochés. Ordre : éléments propres aux sous-secteurs choisis, puis ceux des
+ * patterns, puis le socle commun du secteur ; sans doublon (clé = nom). Sans secteur, seuls les patterns apportent du contenu.
+ */
+function withPatterns(secteur: string | null | undefined, category: SectorExempleCategory, locale: Locale, ids: string[], patterns: string[]): Record<string, unknown>[] {
+  const selectable = new Set(selectableSousSecteurIds(secteur))
+  const parts: Tagged[][] = []
+  let ownCovered = false
+  for (const id of ids) {
+    if (KNOWN_IDS.has(id) && !selectable.has(id)) continue // incohérent avec le secteur
+    if (TECHNIQUE_IDS.has(id) && secteurFamily(secteur) !== 'technique') { parts.push(exemplesTagged(TECHNIQUE_SECTEUR, category, locale, id)); continue }
+    parts.push(exemplesTagged(secteur, category, locale, id)); ownCovered = true
+  }
+  if (!ownCovered) parts.unshift(exemplesTagged(secteur, category, locale, null))
+  const specific = parts.flatMap(p => p.filter(t => t.specific).map(t => t.item))
+  const common = parts.flatMap(p => p.filter(t => !t.specific).map(t => t.item))
+  const fromPatterns = patternExemplesFor(patterns, category, locale, secteurFamily(secteur))
+  const seen = new Set<string>()
+  const out: Record<string, unknown>[] = []
+  for (const x of [...specific, ...fromPatterns, ...common]) { const k = exempleKey(x); if (k && seen.has(k)) continue; seen.add(k); out.push(x) }
+  return out
+}
 
 /**
  * Exemples SECTORIELS pour une catégorie d'atelier, selon le secteur et un ou plusieurs sous-secteurs.
@@ -960,8 +998,12 @@ export function sectorExemplesFor(
   category: SectorExempleCategory,
   locale: Locale = 'fr',
   sousSecteur?: string | readonly string[] | null,
+  patterns?: readonly string[] | null,
 ): Record<string, unknown>[] {
   const ids = (Array.isArray(sousSecteur) ? sousSecteur : sousSecteur ? [sousSecteur] : []).filter((x): x is string => typeof x === 'string' && x.trim() !== '')
+  // Patterns d'architecture cochés (vision technique, indépendante du secteur) : union avec le secteur et les sous-secteurs.
+  const checked = (patterns ?? []).filter(isPatternCode)
+  if (checked.length > 0) return withPatterns(secteur, category, locale, ids, checked)
   if (ids.length === 0) return exemplesForOne(secteur, category, locale, null)
   const selectable = new Set(selectableSousSecteurIds(secteur))
   const parts: Record<string, unknown>[][] = []
@@ -1015,8 +1057,9 @@ export function withSectorExemples<T extends Record<string, unknown>>(
   category: SectorExempleCategory,
   locale: Locale = 'fr',
   sousSecteur?: string | readonly string[] | null,
+  patterns?: readonly string[] | null,
 ): T[] {
-  const sector = sectorExemplesFor(secteur, category, locale, sousSecteur) as T[]
+  const sector = sectorExemplesFor(secteur, category, locale, sousSecteur, patterns) as T[]
   if (!sector.length) return generic
   const keyOf = (e: T) =>
     String((e as { nom?: unknown }).nom ?? (e as { description?: unknown }).description ?? '')

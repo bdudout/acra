@@ -9,4 +9,6 @@ export const ASSISTANT_GUIDANCE =
   'et par les vecteurs techniques propres au contexte (formats de fichiers et analyseurs, API, accès d’administration et de support, sauvegardes) ; ' +
   '(2) couvrez tout l’écosystème : prestataires et leurs sous-traitants, personnes concernées, autorités ; ' +
   '(3) gardez les références citées telles quelles et marquez « à vérifier » ce qui ne vient pas de l’outil ; ' +
-  '(4) restituez des libellés lisibles, sans identifiants internes (clés de catalogue) dans un livrable destiné à un humain.'
+  '(4) restituez des libellés lisibles, sans identifiants internes (clés de catalogue) dans un livrable destiné à un humain ; ' +
+  '(5) distinguez la vision MÉTIER (secteur, sous-secteurs : que fait l’organisation ?) de la vision TECHNIQUE (patterns d’architecture : exposition sur Internet, DMZ, interconnexions, télémaintenance, administration… ' +
+  'comment le système est-il construit ?) : les deux se combinent, demandez ou déduisez les patterns du système étudié.'

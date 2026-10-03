@@ -4,6 +4,7 @@
 // ce qui existe déjà (registre, analyse) est écarté. L'agent peut ensuite déposer une proposition ancrée (`propose_*`).
 
 import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import { prisma } from '@/lib/prisma'
 import { listSectorSuggestions } from '@/lib/sector-suggestions'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
@@ -60,9 +61,9 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
     }
 
     if (kinds.includes('SCENARIO') && analyseId) {
-      const analyse = await prisma.analyse.findFirst({ where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null }, select: { secteur: true, sousSecteur: true, sousSecteurs: true } })
+      const analyse = await prisma.analyse.findFirst({ where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null }, select: { secteur: true, patternsArchi: true, sousSecteur: true, sousSecteurs: true } })
       const deja = new Set((await prisma.risque.findMany({ where: { analyse: { id: analyseId, organizationId: ctx.organizationId } }, select: { nom: true } })).map(r => fold(r.nom)))
-      out.analysisScenarios = suggestRisqueExemples({ secteur: analyse?.secteur ?? null, sousSecteur: sousSecteursOf(analyse), locale, limit: MAX })
+      out.analysisScenarios = suggestRisqueExemples({ secteur: analyse?.secteur ?? null, sousSecteur: sousSecteursOf(analyse), patterns: patternsOf(analyse), locale, limit: MAX })
         .filter(s => !deja.has(fold(s.intitule)))
         .slice(0, limit)
         .map(s => ({ intitule: s.intitule, gravite: s.gravite, vraisemblance: s.vraisemblance }))

@@ -56,6 +56,7 @@ import QualificationRisksAtelier5 from '@/components/QualificationRisksAtelier5'
 import { qualificationRiskToAtelier5Risk } from '@/lib/qualification-risks'
 import type { ProposedRisk } from '@/components/QualificationRiskProposal'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import SectorMeasuresPanel, { type SectorMeasure } from '@/components/workshops/SectorMeasuresPanel'
 import { sectorExemplesFor } from '@/lib/exemples-sectoriels'
 
@@ -192,7 +193,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const [mesures, setMesures] = useState<any[]>(initialData?.mesures || [])
   // Mesures proposées pour le secteur / sous-secteur de l'analyse (packs sectoriels)
   const sectorMeasures = useMemo(
-    () => sectorExemplesFor(analyse?.secteur, 'mesures', locale, sousSecteursOf(analyse)) as SectorMeasure[],
+    () => sectorExemplesFor(analyse?.secteur, 'mesures', locale, sousSecteursOf(analyse), patternsOf(analyse)) as SectorMeasure[],
     [analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
   )
   function addSectorMeasure(m: SectorMeasure) {

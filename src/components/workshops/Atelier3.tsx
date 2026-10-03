@@ -35,6 +35,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { PRIORITES_MESURE, comparePriorite, measuresApplyingTo } from '@/lib/ecosystem-measures'
 import { CONTRACTUAL_CLAUSE_KEYS, contractualClauseMeasure, isContractualMeasure, groupMeasuresByPartiePrenante } from '@/lib/ecosystem-contractual-clauses'
@@ -155,19 +156,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
   const ppExamples = useMemo(() => resolveExemples(exOverride.partiesPrenantes, defaultExemplesFor('partiesPrenantes', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Parties prenantes sectorielles (ex. autorités santé ANS/CERT Santé/ARS) en tête (issue #81)
   const ppExamplesSector = useMemo(
-    () => withSectorExemples(ppExamples, analyse?.secteur, 'partiesPrenantes', locale, sousSecteursOf(analyse)) as any[],
+    () => withSectorExemples(ppExamples, analyse?.secteur, 'partiesPrenantes', locale, sousSecteursOf(analyse), patternsOf(analyse)) as any[],
     [ppExamples, analyse?.secteur, sousSecteurLabel, locale] // eslint-disable-line react-hooks/exhaustive-deps
   )
   const scExamples = useMemo(() => resolveExemples(exOverride.scenariosStrategiques, defaultExemplesFor('scenariosStrategiques', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : scénarios stratégiques sectoriels remontés en tête
   const scExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale, sousSecteursOf(analyse)), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale, sousSecteursOf(analyse), patternsOf(analyse)), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [scExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
   const meExamplesBase = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Mesures d'écosystème sectorielles (contrats des éditeurs/hébergeurs, conventions d'interconnexion…) en tête
   const meExamples = useMemo(
-    () => withSectorExemples(meExamplesBase, analyse?.secteur, 'mesuresEcosysteme', locale, sousSecteursOf(analyse)) as any[],
+    () => withSectorExemples(meExamplesBase, analyse?.secteur, 'mesuresEcosysteme', locale, sousSecteursOf(analyse), patternsOf(analyse)) as any[],
     [meExamplesBase, analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
   )
 

@@ -109,3 +109,23 @@ describe('read_risk_posture', () => {
     expect(out.plansAction).toEqual({ total: 5, parStatut: { A_FAIRE: 5 } })
   })
 })
+
+describe('read_sector_examples — patterns d’architecture (lot A5)', () => {
+  it('sans secteur ni pattern : les familles ET les patterns disponibles sont listés', async () => {
+    const out = parse(await readSectorExamplesTool.handler({}, ctx))
+    expect(out.patternsDisponibles).toHaveLength(24)
+    expect(out.patternsDisponibles[0]).toMatchObject({ code: 'EXPOSITION_INTERNET', famille: 'exposition' })
+  })
+  it('les patterns apportent leurs exemples, avec ou sans secteur ; codes inconnus ignorés', async () => {
+    const seul = parse(await readSectorExamplesTool.handler({ patterns: ['EXPOSITION_INTERNET', 'PIRATE'], category: 'biensSupports' }, ctx))
+    expect(seul.patterns).toEqual(['EXPOSITION_INTERNET'])
+    expect(seul.exemples.biensSupports.length).toBeGreaterThan(0)
+    const base = parse(await readSectorExamplesTool.handler({ secteur: 'santé', category: 'biensSupports' }, ctx))
+    const comb = parse(await readSectorExamplesTool.handler({ secteur: 'santé', patterns: ['EXPOSITION_INTERNET'], category: 'biensSupports' }, ctx))
+    expect(comb.exemples.biensSupports.length).toBeGreaterThan(base.exemples.biensSupports.length)
+  })
+  it('les consignes distinguent la vision métier de la vision technique', async () => {
+    const out = parse(await readSectorExamplesTool.handler({ secteur: 'santé' }, ctx))
+    expect(out.consignes).toMatch(/MÉTIER/); expect(out.consignes).toMatch(/TECHNIQUE/); expect(out.consignes).toMatch(/patterns d’architecture/)
+  })
+})

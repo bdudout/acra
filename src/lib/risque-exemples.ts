@@ -51,16 +51,20 @@ export function stripEbiosCritere(intitule: string): string {
 export function suggestRisqueExemples(opts: {
   secteur?: string | null
   sousSecteur?: string | readonly string[] | null
+  /** Patterns d'architecture cochés : leurs scénarios et événements redoutés s'ajoutent à ceux du secteur. */
+  patterns?: readonly string[] | null
   locale?: Locale
   limit?: number
   /** Socle de risques TRANSVERSES (tous secteurs), résolu i18n par la page.
    *  Toujours proposé — même sans secteur — pour ne jamais laisser l'écran vide. */
   base?: readonly { intitule: string; gravite: number; vraisemblance: number }[]
 }): RisqueExemple[] {
-  const { secteur, sousSecteur, locale = 'fr', limit = 12, base = [] } = opts
+  const { secteur, sousSecteur, patterns, locale = 'fr', limit = 12, base = [] } = opts
 
-  const scen = secteur ? sectorExemplesFor(secteur, 'scenariosStrategiques', locale, sousSecteur) : []
-  const evt = secteur ? sectorExemplesFor(secteur, 'evenementsRedoutes', locale, sousSecteur) : []
+  // Les patterns apportent du contenu même sans secteur (vision technique indépendante du métier).
+  const hasPatterns = (patterns?.length ?? 0) > 0
+  const scen = secteur || hasPatterns ? sectorExemplesFor(secteur, 'scenariosStrategiques', locale, sousSecteur, patterns) : []
+  const evt = secteur || hasPatterns ? sectorExemplesFor(secteur, 'evenementsRedoutes', locale, sousSecteur, patterns) : []
 
   // Objets « rankables » (conservent nom/description/impacts pour le scoring) +
   // champs privés portant l'intitulé et les notes suggérées.
