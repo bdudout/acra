@@ -22,6 +22,28 @@ case "$a" in
   inspect*) f mounts && cat "$FAKE_DIR/mounts" ;;
   cp\\ *) dest="\${@: -1}"; mkdir -p "$dest"; echo rescued > "$dest/doc1.txt" ;;
   *"compose"*" cp "*) : ;;
+  *"printenv POSTGRES_DB"*) echo acra_rm ;;
+  *"df -Pk"*) printf 'Filesystem 1024-blocks Used Available Capacity Mounted\nx 1 1 %s 1%% /\n' "$(cat "$FAKE_DIR/pg_free" 2>/dev/null || echo 99999999)" ;;
+  *"psql -U"*)
+    sql="\${@: -1}"
+    case "$sql" in
+      *pg_terminate_backend*) ;;
+      *pg_database_size*) cat "$FAKE_DIR/dbsize" 2>/dev/null || echo 1000000 ;;
+      *pg_stat_activity*) cat "$FAKE_DIR/activity" 2>/dev/null || echo 0 ;;
+      *"SHOW server_version"*) echo 16.4 ;;
+      *"migration_name||checksum"*) printf 'm1abc\nm2def\n' ;;
+      *"migration_name FROM"*) echo 20261003110000_x ;;
+      *"FROM \"AuditLog\" WHERE"*) cat "$FAKE_DIR/later" 2>/dev/null || echo 2 ;;
+      *"count(*) FROM"*) t="$(printf '%s' "$sql" | sed 's/.*FROM "\\(.*\\)".*/\\1/')"
+        if [ -e "$FAKE_DIR/renamed" ] && [ -e "$FAKE_DIR/rows2_$t" ]; then cat "$FAKE_DIR/rows2_$t"; elif [ -e "$FAKE_DIR/rows_$t" ]; then cat "$FAKE_DIR/rows_$t"; else echo 5; fi ;;
+      *"CREATE DATABASE"*__snap_*) [ -e "$FAKE_DIR/clone_fail" ] && exit 1 ;;
+      *"FROM pg_database WHERE datname LIKE"*) cat "$FAKE_DIR/dblist" 2>/dev/null ;;
+      *"FROM pg_database WHERE datname"*) cat "$FAKE_DIR/clone_exists" 2>/dev/null || echo 1 ;;
+      *"RENAME TO"*__failed_*) : > "$FAKE_DIR/renamed" ;;
+    esac ;;
+  *"pg_restore -U"*) cat > /dev/null; f restore_fail && exit 1 ;;
+  *"du -sk"*) cat "$FAKE_DIR/docs_kb" 2>/dev/null || echo 100 ;;
+  *"find /app/.data"*) cat "$FAKE_DIR/docs_files" 2>/dev/null || echo 3 ;;
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;
   *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
   *"run --rm"*"tar"*) f tar_fail && exit 1; printf 'docs' | gzip ;;
@@ -63,6 +85,7 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
   commit(other, '1.0.5', { 'CHANGED.txt': 'b' }); git(other, 'push', '-q', 'origin', 'stable')
   const shaB = git(other, 'rev-parse', 'HEAD')
   writeFileSync(path.join(bin, 'docker'), FAKE_DOCKER, { mode: 0o755 })
+  writeFileSync(path.join(bin, 'df'), '#!/bin/sh\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted\\nx 1 1 %s 1%% /\\n" "$(cat "$FAKE_DIR/df_host" 2>/dev/null || echo 99999999)"\n', { mode: 0o755 })
   writeFileSync(path.join(fake, 'health_rev'), shaB)
   const audit = path.join(root, 'calls'); writeFileSync(audit, '')
   const env = (extra: Record<string, string> = {}) => ({ ...process.env, ...GIT_ENV, PATH: `${bin}:${process.env.PATH}`, AUDIT_LOG: audit, FAKE_DIR: fake, ACRA_HEALTH_RETRIES: '2', ACRA_HEALTH_INTERVAL: '0', ...extra })
