@@ -22,7 +22,15 @@ Leçon : ACRA gagne là où il détient des faits vérifiés ; il ne gagne pas s
 | T3 EBIOS cabinet médical | 13/15 | 11,5/15 | ACRA |
 | T4 Contrôles mutuelle | 10,5/15 | 12/15 | **Seul**, de peu (~70 %) : ACRA consacre 5 contrôles sur 12 aux TIC/DORA et laisse hors plan gouvernance, honorabilité, LCB-FT, cotisations. Références d'ACRA plus précises. |
 
-Bilan honnête : ACRA meilleur sur 4 tâches sur 5 (T1, T5, T2, T3) mais **pas sur T4** ; il ne faut pas conclure à une supériorité générale.
+### Passage 3 de T4 (après correction : outil `recommend_control_plan`, contrôles LCB-FT / données de santé / continuité / remédiation, catalogue 1.11)
+
+| Tâche | ACRA | Seul | Verdict (confiance) |
+|---|---|---|---|
+| T4 Contrôles mutuelle | ≈ 13/15 | ≈ 11,5/15 | ACRA (~75 %) : un contrôle par domaine, références vérifiables ; le « seul » est plus riche sur provisions/ORSA mais verbeux, types multiples, références incomplètes |
+
+Attention : cette correction a été faite **après** avoir vu l'échec sur T4 et testée sur la même tâche : le gain est en partie du « teaching to the test » ; il faudrait une tâche voisine non vue (autre type d'organisme) pour confirmer. Faiblesses restantes relevées : gel des avoirs et provisions/ORSA couverts à moitié, aucun contrôle correctif dans un plan de 12.
+
+Bilan honnête : après correction ACRA est meilleur sur les 5 tâches, mais l'écart de T4 est obtenu en ciblant la tâche ; ne pas conclure à une supériorité générale.
 
 ## Limites
 
