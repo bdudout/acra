@@ -405,11 +405,23 @@ export function resolveProjetSource(o: {
   return { status: 'OK', projetId: p.id }
 }
 
-/** Préremplit nom/description d'une analyse cyber depuis le projet, sans écraser la saisie. */
-export function prefillFromProjet(projet: { nom: string; description?: string | null }, current: { nom: string; description: string }): { nom: string; description: string } {
+/**
+ * Préremplit une analyse cyber depuis le projet, sans jamais écraser la saisie.
+ * Le secteur et les patterns font partie du cadrage obligatoire : les reprendre
+ * évite à l'utilisateur de devoir refaire un choix déjà validé pour le projet.
+ */
+export function prefillFromProjet(
+  projet: { nom: string; description?: string | null; secteur?: string | null; patternsArchi?: unknown },
+  current: { nom: string; description: string; secteur: string; patternsArchi: string[] },
+): { nom: string; description: string; secteur: string; patternsArchi: string[] } {
+  const projectPatterns = Array.isArray(projet.patternsArchi)
+    ? projet.patternsArchi.filter((pattern): pattern is string => typeof pattern === 'string')
+    : []
   return {
     nom: current.nom || `Analyse cyber — ${projet.nom}`,
     description: current.description || (projet.description ?? ''),
+    secteur: current.secteur || projet.secteur || '',
+    patternsArchi: current.patternsArchi.length ? current.patternsArchi : projectPatterns,
   }
 }
 

@@ -307,7 +307,7 @@ cmd_create() {
   before="$(row_counts "$db")"
 
   # Dump (format custom), écrit sous un nom provisoire.
-  note "Dump de la base $db…"
+  note "Dump de la base ${db}…"
   if ! pg_dump_cmd "$db" > "$dir/database.dump.partial" 2>>"$dir/create.log"; then
     rm -rf "$dir"; trap - ERR; die 20 "Dump de la base en échec."
   fi

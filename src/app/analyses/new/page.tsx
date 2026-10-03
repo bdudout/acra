@@ -38,7 +38,9 @@ export default function NewAnalysePage() {
   const [projetId, setProjetId] = useState('')
   function choisirProjet(p: ProjetOption | null) {
     setProjetId(p?.id ?? '')
-    if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, { nom: f.nom, description: f.description }) }))
+    if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, {
+      nom: f.nom, description: f.description, secteur: f.secteur, patternsArchi: f.patternsArchi,
+    }) }))
   }
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')

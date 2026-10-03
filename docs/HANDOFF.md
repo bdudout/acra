@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-04 (63) — Codex : correction CI et continuité de cadrage Projet 360 → cyber
+
+- **CI réparée** : le script de point de restauration utilisait `$db…` sous Bash `set -u` ; l’ellipse était lue comme partie du nom de variable. `${db}…` restaure la création de point. Le lien d’export du réseau est un `Link` Next.js (erreur ESLint CI).
+- **Cadrage obligatoire cohérent** : la création d’un Projet 360 demande désormais elle aussi un secteur et au moins un pattern, avant le questionnaire. Lorsqu’une analyse cyber est lancée depuis ce projet, secteur et patterns sont préremplis sans jamais écraser les choix déjà saisis. L’API `/api/projets` expose uniquement ces deux métadonnées de cadrage supplémentaires aux projets déjà autorisés dans l’organisation active.
+- **Catalogue** : `SI_STANDARD` comporte maintenant risque, deux contrôles et KRI ; le préfixe est rattaché au pattern pour la validation du catalogue.
+- **Tests ajoutés/ajustés** : composant Projet 360, API projets, préremplissage pur, catalogue, e2e Projet 360 (propagation du secteur/pattern) et e2e cycle cyber (pattern requis).
+- **Vérifié** : 51 tests ciblés verts ; snapshots 31/31, offsite 21/21, planification 12/12 ; `tsc` 0 ; `i18n:check` 1612 clés ; `npm run build` OK (warning préexistant d’import dynamique dans `document-storage.ts`).
+- **Non vérifié localement** : e2e Playwright est arrêté par la base de recette disponible, dépourvue de la table `Derogation`, et Docker Desktop est indisponible ; la CI utilise sa base migrée et doit exécuter les deux parcours. Lint local reste indisponible parce que le paquet local `eslint-plugin-react-hooks` est incohérent, alors que la CI avait signalé la seule erreur de code corrigée ici.
+- **Prochain pas** : commit/push de ce lot puis contrôler les checks de la PR #215 ; ne pas inclure les fichiers non suivis `.agents/`, `.claude/launch.json` ou `rapports/`.
+
 ## 2026-10-03 (62) — Codex : clôture patterns A6 et reprise sans conflit
 
 - **Conflits** : les 15 fichiers laissés indexés par Claude terminaient BE-6 (pré-remplissage Projet 360 non destructif depuis les patterns) et le passage des patterns au catalogue ; ils ont été validés puis commités sans chevauchement avec les lots sauvegarde/rollback (`ff310cc`).

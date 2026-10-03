@@ -6,6 +6,7 @@
 // d'un contrôle de l'organisation dans les entités descendantes, export Excel. Cf. page /controles/reseau (P3).
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Download, Network } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
@@ -77,7 +78,7 @@ export default function ControlesReseauView() {
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{l.subtitle}</p>
         </div>
         {data.references.length > 0 && (
-          <a href="/api/controles/reseau/export" className={`${BTN} border border-gray-300 dark:border-gray-600`}><Download className="h-4 w-4" aria-hidden />{l.exporter}</a>
+          <Link href="/api/controles/reseau/export" className={`${BTN} border border-gray-300 dark:border-gray-600`}><Download className="h-4 w-4" aria-hidden />{l.exporter}</Link>
         )}
       </div>
 
