@@ -9,7 +9,7 @@ import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.se
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
-import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
 import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
@@ -108,12 +108,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if ('methodeVraisemblance' in body) {
     data.methodeVraisemblance = normalizeMethode(body.methodeVraisemblance)
   }
-  // Cohérence secteur ↔ sous-secteur (issue #25) : on retient le sous-secteur
-  // seulement s'il appartient bien au secteur effectif (nouveau ou existant).
-  if ('sousSecteur' in data || 'secteur' in data) {
+  // Cohérence secteur ↔ sous-secteurs (issue #25) : on ne retient que les sous-secteurs cohérents avec le secteur
+  // effectif (nouveau ou existant) ; la liste prime sur l'ancien champ unique ; le premier devient le principal.
+  if ('sousSecteurs' in body || 'sousSecteur' in data || 'secteur' in data) {
     const secteurEff = ('secteur' in data ? data.secteur : existing.secteur) as string | null
-    const ssEff = ('sousSecteur' in data ? data.sousSecteur : existing.sousSecteur) as string | null
-    data.sousSecteur = isSousSecteurOfSecteur(secteurEff, ssEff) ? ssEff : null
+    const input = 'sousSecteurs' in body ? { sousSecteurs: body.sousSecteurs } : 'sousSecteur' in data ? { sousSecteur: data.sousSecteur } : {}
+    Object.assign(data, resolveSousSecteursUpdate({ secteur: secteurEff, input, existing }))
   }
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {

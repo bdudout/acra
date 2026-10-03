@@ -3,6 +3,7 @@
 // catalogue sectoriel et des exemples livrés — AUCUN LLM, AUCUNE écriture. Strictement borné à l'organisation de la clé ;
 // ce qui existe déjà (registre, analyse) est écarté. L'agent peut ensuite déposer une proposition ancrée (`propose_*`).
 
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { prisma } from '@/lib/prisma'
 import { listSectorSuggestions } from '@/lib/sector-suggestions'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
@@ -59,9 +60,9 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
     }
 
     if (kinds.includes('SCENARIO') && analyseId) {
-      const analyse = await prisma.analyse.findFirst({ where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null }, select: { secteur: true, sousSecteur: true } })
+      const analyse = await prisma.analyse.findFirst({ where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null }, select: { secteur: true, sousSecteur: true, sousSecteurs: true } })
       const deja = new Set((await prisma.risque.findMany({ where: { analyse: { id: analyseId, organizationId: ctx.organizationId } }, select: { nom: true } })).map(r => fold(r.nom)))
-      out.analysisScenarios = suggestRisqueExemples({ secteur: analyse?.secteur ?? null, sousSecteur: analyse?.sousSecteur ?? null, locale, limit: MAX })
+      out.analysisScenarios = suggestRisqueExemples({ secteur: analyse?.secteur ?? null, sousSecteur: sousSecteursOf(analyse), locale, limit: MAX })
         .filter(s => !deja.has(fold(s.intitule)))
         .slice(0, limit)
         .map(s => ({ intitule: s.intitule, gravite: s.gravite, vraisemblance: s.vraisemblance }))

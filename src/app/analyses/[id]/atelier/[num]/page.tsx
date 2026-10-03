@@ -1,4 +1,5 @@
 import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -128,7 +129,7 @@ export default async function AtelierPage({
     }))
     // R3 — suggestions de risques sectoriels (pré-remplissent le formulaire).
     const risqueSuggestions = editable
-      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
+      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: sousSecteursOf(analyse), locale, base: t.risquesDirects.risquesTransverses })
       : []
     // Projet 360 : les risques DÉJÀ au registre de l'organisation sont proposés en tête
     // (domaine déduit de la taxonomie de Bâle) — réutiliser plutôt que ressaisir ; un

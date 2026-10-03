@@ -27,6 +27,8 @@ export interface ExtItem {
   famille: 'sante' | 'technique'
   category: ExtCategory
   profs?: readonly string[]
+  /** Sous-professions pour lesquelles un élément commun à la famille serait incohérent (il ne leur est pas proposé). */
+  notFor?: readonly string[]
   /** Champs : chaînes / nombres conservés tels quels ; `Tr` localisé ; `Tr[]` localisé élément par élément. */
   data: Record<string, unknown>
 }
@@ -49,7 +51,9 @@ export function localizeExt(item: ExtItem, locale: Locale): Record<string, unkno
 
 /** Éléments d'extension visibles pour une famille, une catégorie et une sous-profession. */
 export function extItemsFor(famille: string, category: string, prof: string | undefined): ExtItem[] {
-  const visible = EXT_ITEMS.filter(x => x.famille === famille && x.category === category && (!x.profs || (prof !== undefined && x.profs.includes(prof))))
+  const visible = EXT_ITEMS.filter(x => x.famille === famille && x.category === category
+    && (!x.profs || (prof !== undefined && x.profs.includes(prof)))
+    && !(prof !== undefined && x.notFor?.includes(prof)))
   // Éléments propres à la sous-profession d'abord, puis éléments communs à la famille (tri stable).
   return [...visible.filter(x => x.profs), ...visible.filter(x => !x.profs)]
 }
@@ -800,3 +804,29 @@ export const EXT_ITEMS: ExtItem[] = [
     L('Chaque flux a un propriétaire et une criticité', 'Each flow has an owner and a criticality', 'Jeder Datenfluss hat einen Verantwortlichen und eine Kritikalität', 'Cada flujo tiene un propietario y una criticidad', 'Ogni flusso ha un responsabile e una criticità'),
     'ORGANISATIONNELLE', 'GOUVERNANCE', 2),
 ]
+
+// ─── Cohérence du contenu commun santé ─────────────────────────────────────────
+// Un élément « commun » à la santé n'est proposé qu'aux sous-secteurs pour lesquels il a un sens : rien de « santé
+// humaine » (INS, CPS, DPI…) pour la santé animale ; pas d'équipements biomédicaux ni de cartes de professionnel pour
+// les organismes d'assurance, les délégataires ou un entrepôt de recherche. Clé : début du libellé français.
+const PAYEURS = ['amo', 'amc', 'delegataire', 'tierspayant', 'gestionpro']
+const NOT_FOR: [prefix: string, notFor: string[]][] = [
+  ['Identitovigilance : identité nationale de santé', ['veterinaire', 'gestionpro', 'amc', 'delegataire', 'tierspayant']],
+  ['Hébergement des données de santé chez un hébergeur certifié HDS', ['veterinaire']],
+  ['Authentification forte des professionnels par carte CPS', ['veterinaire', 'amc', 'delegataire', 'entrepot', 'gestionpro']],
+  ['Journalisation et revue des accès aux dossiers de santé', ['veterinaire']],
+  ['Échange des documents de santé par messagerie sécurisée de santé', ['veterinaire', 'delegataire', 'entrepot']],
+  ['Gestion des vulnérabilités des logiciels et équipements de santé', [...PAYEURS, 'entrepot', 'portail', 'veterinaire']],
+  ['Hameçonnage d’un professionnel de santé', ['veterinaire']],
+  ['Rebond depuis un équipement biomédical', [...PAYEURS, 'entrepot', 'portail', 'veterinaire']],
+  ['Extraction massive de dossiers de santé', ['veterinaire']],
+  ['Altération discrète de résultats ou de documents de santé', ['amc', 'delegataire', 'gestionpro', 'tierspayant', 'veterinaire']],
+  ['Clauses de sécurité, de notification d’incident et d’audit dans les contrats des éditeurs et hébergeurs de santé', ['veterinaire']],
+  ['Exigence de certification HDS ou ISO/IEC 27001', ['veterinaire']],
+]
+for (const item of EXT_ITEMS) {
+  if (item.famille !== 'sante' || item.profs) continue
+  const fr = String(((item.data.nom ?? item.data.mesure) as Tr | undefined)?.[0] ?? '')
+  const rule = NOT_FOR.find(([prefix]) => fr.startsWith(prefix))
+  if (rule) item.notFor = rule[1]
+}

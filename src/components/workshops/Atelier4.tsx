@@ -32,6 +32,7 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
@@ -71,8 +72,8 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
   const aeExamplesBase = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Modes opératoires propres au secteur / sous-secteur (ex. bourrage d'identifiants sur un portail patient) en tête
   const aeExamples = useMemo(
-    () => withSectorExemples(aeExamplesBase, analyse?.secteur, 'actionsElementaires', locale, analyse?.sousSecteur) as any[],
-    [aeExamplesBase, analyse?.secteur, analyse?.sousSecteur, locale],
+    () => withSectorExemples(aeExamplesBase, analyse?.secteur, 'actionsElementaires', locale, sousSecteursOf(analyse)) as any[],
+    [aeExamplesBase, analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
   )
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)

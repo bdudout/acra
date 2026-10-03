@@ -50,7 +50,7 @@ export function stripEbiosCritere(intitule: string): string {
  */
 export function suggestRisqueExemples(opts: {
   secteur?: string | null
-  sousSecteur?: string | null
+  sousSecteur?: string | readonly string[] | null
   locale?: Locale
   limit?: number
   /** Socle de risques TRANSVERSES (tous secteurs), résolu i18n par la page.
@@ -79,7 +79,8 @@ export function suggestRisqueExemples(opts: {
     })),
   ].filter(x => x._intitule.length > 0)
 
-  const ranked = rankExemples(raw, { secteur, sousSecteur })
+  // Classement : vocabulaire du sous-secteur principal (le premier choisi).
+  const ranked = rankExemples(raw, { secteur, sousSecteur: Array.isArray(sousSecteur) ? (sousSecteur[0] ?? null) : (sousSecteur as string | null | undefined) })
 
   // Candidats : sectoriels (les plus pertinents en tête) PUIS socle transverse.
   // Le socle transverse est toujours proposé (pertinent=false) — jamais d'écran vide.

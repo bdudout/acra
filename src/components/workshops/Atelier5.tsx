@@ -55,6 +55,7 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import QualificationRisksAtelier5 from '@/components/QualificationRisksAtelier5'
 import { qualificationRiskToAtelier5Risk } from '@/lib/qualification-risks'
 import type { ProposedRisk } from '@/components/QualificationRiskProposal'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import SectorMeasuresPanel, { type SectorMeasure } from '@/components/workshops/SectorMeasuresPanel'
 import { sectorExemplesFor } from '@/lib/exemples-sectoriels'
 
@@ -191,8 +192,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   const [mesures, setMesures] = useState<any[]>(initialData?.mesures || [])
   // Mesures proposées pour le secteur / sous-secteur de l'analyse (packs sectoriels)
   const sectorMeasures = useMemo(
-    () => sectorExemplesFor(analyse?.secteur, 'mesures', locale, analyse?.sousSecteur) as SectorMeasure[],
-    [analyse?.secteur, analyse?.sousSecteur, locale],
+    () => sectorExemplesFor(analyse?.secteur, 'mesures', locale, sousSecteursOf(analyse)) as SectorMeasure[],
+    [analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
   )
   function addSectorMeasure(m: SectorMeasure) {
     const refs = Array.isArray(m.references) && m.references.length ? ` — ${t.workshop.a5.sectorMeasRefs} : ${(m.references as string[]).join(' ; ')}` : ''

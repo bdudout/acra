@@ -34,6 +34,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { CLASSIFICATIONS, isClassified } from '@/lib/classification'
@@ -157,7 +158,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   )
   // Exemples contextuels : remonter les valeurs métier pertinentes pour le secteur
   const vmExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier', locale, analyse?.sousSecteur), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    () => rankExemples(withSectorExemples(vmExamples, analyse?.secteur, 'valeursMetier', locale, sousSecteursOf(analyse)), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [vmExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
   const erExamples = useMemo(
@@ -202,7 +203,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   // Exemples contextuels : biens supports pertinents selon le secteur ET les
   // valeurs métier déjà saisies (réponses précédentes → mots-clés).
   const bsExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports', locale, analyse?.sousSecteur), {
+    () => rankExemples(withSectorExemples(bsExamples, analyse?.secteur, 'biensSupports', locale, sousSecteursOf(analyse)), {
       secteur: analyse?.secteur,
       sousSecteur: sousSecteurLabel,
       extraKeywords: keywordsFromAnswers(vms),
@@ -216,7 +217,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   const rgpdArt9 = useMemo(() => detectRgpdArt9(vms), [vms])
 
   const erExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes', locale, analyse?.sousSecteur), {
+    () => rankExemples(withSectorExemples(erExamples, analyse?.secteur, 'evenementsRedoutes', locale, sousSecteursOf(analyse)), {
       secteur: analyse?.secteur,
       sousSecteur: sousSecteurLabel,
       extraKeywords: keywordsFromAnswers(vms),

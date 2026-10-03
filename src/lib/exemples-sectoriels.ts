@@ -18,6 +18,8 @@ import de from '@/lib/i18n/exemples-sectoriels/de'
 import es from '@/lib/i18n/exemples-sectoriels/es'
 import it from '@/lib/i18n/exemples-sectoriels/it'
 import { extItemsFor, localizeExt } from '@/lib/exemples-sectoriels-ext'
+import { SOUS_SECTEURS } from '@/lib/ebios-data'
+import { secteurFamily, selectableSousSecteurIds } from '@/lib/sous-secteurs'
 
 /** Catégorie d'exemples sectoriels (sous-ensemble des catégories d'atelier proposées par secteur). */
 export type SectorExempleCategory =
@@ -854,6 +856,8 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'
   if (v.includes('sante-delegataire')) return 'delegataire'
+  // Santé animale : ne reçoit ni le contenu hospitalier ni le contenu « santé humaine » (INS, CPS, DPI…).
+  if (v.includes('sante-veterinaire')) return 'veterinaire'
   if (v.includes('notaire')) return 'notaire'
   if (v.includes('avocat')) return 'avocat'
   if (v.includes('huissier')) return 'huissier'
@@ -906,10 +910,10 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
 const DETAILED_ONLY = new Set(['cabinet', 'gestionpro', 'amo', 'amc', 'tierspayant', 'labo', 'officine', 'imagerie', 'transport', 'dm', 'esante'])
 
 /** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale. */
-export function sectorExemplesFor(
+function exemplesForOne(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
-  locale: Locale = 'fr',
+  locale: Locale,
   sousSecteur?: string | null,
 ): Record<string, unknown>[] {
   const s = (secteur ?? '').toLowerCase()
@@ -928,6 +932,44 @@ export function sectorExemplesFor(
   // Extension (textes ×5 dans la donnée) : éléments communs + ceux de la sous-profession choisie.
   const ext = extItemsFor(fam.key, category, prof).map(x => localizeExt(x, locale))
   return [...base, ...ext]
+}
+
+const TECHNIQUE_IDS = new Set(SOUS_SECTEURS.filter(x => x.famille === 'technique').map(x => x.id))
+const KNOWN_IDS = new Set(SOUS_SECTEURS.map(x => x.id))
+const TECHNIQUE_SECTEUR = 'Technique / Interconnexion de SI'
+const exempleKey = (x: Record<string, unknown>) => String(x.nom ?? x.mesure ?? x.description ?? '').toLowerCase().trim()
+
+/**
+ * Exemples SECTORIELS pour une catégorie d'atelier, selon le secteur et un ou plusieurs sous-secteurs.
+ * Plusieurs sous-secteurs : union dédoublonnée, dans l'ordre de la sélection (le principal d'abord). Cohérence : un
+ * sous-secteur d'un autre secteur est ignoré ; un sous-secteur « technique » (interconnexion) choisi pour un autre
+ * secteur apporte le contenu des interconnexions. Une valeur inconnue (libellé libre) garde l'ancien comportement.
+ */
+export function sectorExemplesFor(
+  secteur: string | null | undefined,
+  category: SectorExempleCategory,
+  locale: Locale = 'fr',
+  sousSecteur?: string | readonly string[] | null,
+): Record<string, unknown>[] {
+  const ids = (Array.isArray(sousSecteur) ? sousSecteur : sousSecteur ? [sousSecteur] : []).filter((x): x is string => typeof x === 'string' && x.trim() !== '')
+  if (ids.length === 0) return exemplesForOne(secteur, category, locale, null)
+  const selectable = new Set(selectableSousSecteurIds(secteur))
+  const parts: Record<string, unknown>[][] = []
+  let ownCovered = false
+  for (const id of ids) {
+    if (KNOWN_IDS.has(id) && !selectable.has(id)) continue // incohérent avec le secteur
+    if (TECHNIQUE_IDS.has(id) && secteurFamily(secteur) !== 'technique') {
+      parts.push(exemplesForOne(TECHNIQUE_SECTEUR, category, locale, id))
+      continue
+    }
+    parts.push(exemplesForOne(secteur, category, locale, id)); ownCovered = true
+  }
+  // Seulement des interconnexions choisies : le contenu général du secteur reste proposé.
+  if (!ownCovered) parts.unshift(exemplesForOne(secteur, category, locale, null))
+  const seen = new Set<string>()
+  const out: Record<string, unknown>[] = []
+  for (const x of parts.flat()) { const k = exempleKey(x); if (k && seen.has(k)) continue; seen.add(k); out.push(x) }
+  return out
 }
 
 /** Applique les traductions à un exemple (repli sur le texte FR source si clé absente). */
@@ -958,7 +1000,7 @@ export function withSectorExemples<T extends Record<string, unknown>>(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
   locale: Locale = 'fr',
-  sousSecteur?: string | null,
+  sousSecteur?: string | readonly string[] | null,
 ): T[] {
   const sector = sectorExemplesFor(secteur, category, locale, sousSecteur) as T[]
   if (!sector.length) return generic
