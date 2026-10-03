@@ -54,7 +54,23 @@ describe('plan type — équilibre des types', () => {
   it('expose la répartition des types et le contrôle correctif disponible en complément', () => {
     const p12 = buildControlPlan('MUTUELLE_SANTE', { count: 12 })
     expect(Object.values(p12.typeBalance).reduce((a, b) => a + b, 0)).toBe(12)
-    const p13 = buildControlPlan('MUTUELLE_SANTE', { count: 13 })
-    expect(p13.typeBalance.CORRECTIF).toBeGreaterThanOrEqual(1)
+    const p16 = buildControlPlan('MUTUELLE_SANTE', { count: 16 })
+    expect(p16.typeBalance.CORRECTIF).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('plan type — provisions, ORSA et gel des avoirs', () => {
+  it('par défaut : tous les domaines (15), dont ORSA, provisions techniques et gel des avoirs', () => {
+    const plan = buildControlPlan('MUTUELLE_SANTE', {})
+    expect(plan.controls).toHaveLength(15)
+    const domains = plan.controls.map(c => c.domain)
+    for (const d of ['orsa', 'reserves', 'asset-freeze']) expect(domains).toContain(d)
+    expect(new Set(plan.controls.map(c => c.key)).size).toBe(15)
+    for (const c of plan.controls) expect(c.references.length, c.key).toBeGreaterThan(0)
+  })
+  it('12 contrôles demandés : les 12 domaines prioritaires, sans les trois compléments', () => {
+    const domains = buildControlPlan('MUTUELLE_SANTE', { count: 12 }).controls.map(c => c.domain)
+    expect(domains).toContain('continuity')
+    expect(domains).not.toContain('reserves')
   })
 })

@@ -25,10 +25,12 @@ export const CONTROL_PLAN_PROFILES: Record<string, Profile> = {
       { id: 'aml', key: 'assurance.control.aml-framework' },
       { id: 'ict', key: 'assurance.control.resilience-testing' },
       { id: 'continuity', key: 'assurance.control.continuity-test' },
+      { id: 'asset-freeze', key: 'assurance.control.asset-freeze' },
+      { id: 'orsa', key: 'assurance.control.orsa-process' },
+      { id: 'reserves', key: 'assurance.control.reserve-backtesting' },
     ],
     extras: [
-      'assurance.control.remediation-followup', 'assurance.control.orsa-process', 'assurance.control.reserve-backtesting', 'assurance.control.asset-freeze',
-      'assurance.control.statutes-assembly', 'assurance.control.incident-reporting-drill', 'core.control.access-review',
+      'assurance.control.remediation-followup', 'assurance.control.statutes-assembly', 'assurance.control.incident-reporting-drill', 'core.control.access-review',
       'core.control.backup-restore', 'assurance.control.ict-register', 'assurance.control.policies-review',
     ],
   },
@@ -42,7 +44,7 @@ export function buildControlPlan(profile: string, opts: { count?: number; locale
   const note = 'Ossature calculée par ACRA (aucun LLM) : un contrôle par domaine du métier, à qualifier et à compléter par l’organisation ; contenu « à relire par un expert ».'
   const def = CONTROL_PLAN_PROFILES[profile]
   if (!def) return { profile, controls: [], typeBalance: {}, profiles, note }
-  const count = Math.min(30, Math.max(1, Math.floor(opts.count ?? 12)))
+  const count = Math.min(30, Math.max(1, Math.floor(opts.count ?? def.domains.length)))
   const catalogue = new Map(listSectorSuggestions([def.sector], opts.locale ?? 'fr').map(i => [i.key, i]))
   const slots: Array<{ domain: string; key: string }> = [
     ...def.domains.map(d => ({ domain: d.id, key: d.key })),

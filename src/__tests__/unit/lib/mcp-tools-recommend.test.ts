@@ -73,6 +73,8 @@ describe('recommend_control_plan', () => {
     const out = parse(await recommendControlPlanTool.handler({ profile: 'MUTUELLE_SANTE', count: 12 }, ctx))
     expect(out.controls).toHaveLength(12)
     expect(new Set(out.controls.map((c: { domain: string }) => c.domain)).size).toBe(12)
+    const full = parse(await recommendControlPlanTool.handler({ profile: 'MUTUELLE_SANTE' }, ctx))
+    expect(full.controls).toHaveLength(15)
     expect(riskItemFindMany).not.toHaveBeenCalled()
   })
   it('profil inconnu : erreur explicite avec les profils disponibles', async () => {
