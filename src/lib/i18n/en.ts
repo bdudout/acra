@@ -1557,7 +1557,7 @@ export const en: Translations = {
   },
   projet360: {
     prefillHint: 'Answers pre-filled from your organisation’s data: check them, then save to confirm.', prefillBadge: 'Pre-filled', fromRegistre: 'From the register',
-    prefillSources: { analyseCyber: 'a cyber analysis exists in your organisation', tic: 'ICT register: a provider supports a critical or important function', cloud: 'ICT register: cloud or hosting service', processus: 'a critical process is mapped', ropa: 'processing activities are in the GDPR register', dora: 'DORA regulatory reporting is active (financial entity)' },
+    prefillSources: { patterns: 'your ticked architecture patterns (exposure, third parties, cloud…)', analyseCyber: 'a cyber analysis exists in your organisation', tic: 'ICT register: a provider supports a critical or important function', cloud: 'ICT register: cloud or hosting service', processus: 'a critical process is mapped', ropa: 'processing activities are in the GDPR register', dora: 'DORA regulatory reporting is active (financial entity)' },
     approvalErrors: { ROLE_DEJA_APPROUVE: 'This role has already given its opinion: approval is waiting for the other role.', MEME_PERSONNE: 'You have already given an opinion: the other one must come from a different person.', ROLE_NON_APPROBATEUR: 'Only an RSSI and a Risk Manager can approve this analysis.' },
     filterDomain: 'Filter by domain', newRiskDomain: 'Domain of the new risk',
     pageTitle: 'Project 360 analysis',

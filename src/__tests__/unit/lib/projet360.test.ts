@@ -161,3 +161,37 @@ describe('sanitizeSources360', () => {
     expect(sanitizeSources360(null)).toEqual({})
   })
 })
+
+import { prefillFromPatterns, mergePrefill } from '@/lib/projet360'
+describe('questionnaire 360 pré-rempli par les patterns d’architecture (lot A5, BE-6)', () => {
+  const F = { analysesCyber: 0, ticCritiques: 0, ticCloud: 0, processusCritiques: 0, traitementsRgpd: 0, doraActif: false }
+  it('EXPOSITION_INTERNET → « exposition à Internet : oui » ; INTERCO / EXTERNALISATION / TELEMAINTENANCE → prestataire ; SaaS / IaaS → cloud ; SI sensible → données sensibles', () => {
+    expect(prefillFromPatterns(['EXPOSITION_INTERNET']).answers).toEqual({ 'p360.cyber.exposeInternet': true })
+    for (const p of ['INTERCO_TIERS', 'EXTERNALISATION_DONNEES', 'TELEMAINTENANCE']) expect(prefillFromPatterns([p]).answers).toEqual({ 'p360.ext.prestataireCritique': true })
+    for (const p of ['CLOUD_SAAS', 'CLOUD_IAAS_PAAS']) expect(prefillFromPatterns([p]).answers).toEqual({ 'p360.ext.cloud': true })
+    expect(prefillFromPatterns(['SI_SENSIBLE']).answers).toEqual({ 'p360.cyber.donneesSensibles': true })
+    expect(prefillFromPatterns(['SI_PATRIMONIAL']).answers).toEqual({ 'p360.it.obsolescence': true })
+  })
+  it('chaque réponse porte sa source « patterns » ; un pattern sans lien avec le questionnaire ne pré-remplit rien ; codes inconnus ignorés', () => {
+    expect(prefillFromPatterns(['EXPOSITION_INTERNET']).sources).toEqual({ 'p360.cyber.exposeInternet': 'patterns' })
+    expect(prefillFromPatterns(['DMZ', 'BUREAUTIQUE', 'PIRATE']).answers).toEqual({})
+  })
+  it('jamais de « non » deviné : seules des réponses « oui »', () => {
+    const all = prefillFromPatterns(['EXPOSITION_INTERNET', 'INTERCO_TIERS', 'CLOUD_SAAS', 'SI_SENSIBLE', 'SI_PATRIMONIAL']).answers
+    expect(Object.values(all).every(v => v === true)).toBe(true)
+  })
+  it('fusion sans écrasement : une réponse déjà donnée (oui OU non) est conservée', () => {
+    const base = { 'p360.cyber.exposeInternet': false, 'p360.ext.cloud': true }
+    const m = mergePrefill(base, prefillFromPatterns(['EXPOSITION_INTERNET', 'CLOUD_SAAS', 'INTERCO_TIERS']))
+    expect(m.answers['p360.cyber.exposeInternet']).toBe(false)           // « non » conservé
+    expect(m.answers['p360.ext.cloud']).toBe(true)
+    expect(m.answers['p360.ext.prestataireCritique']).toBe(true)         // non répondu : pré-rempli
+    expect(m.sources).toEqual({ 'p360.ext.prestataireCritique': 'patterns' }) // seule la réponse ajoutée porte une source
+  })
+  it('defaultAnswers360 : les faits de l’organisation et les patterns se complètent ; la source des faits prime', () => {
+    const r = defaultAnswers360({ ...F, ticCloud: 2, patterns: ['CLOUD_SAAS', 'EXPOSITION_INTERNET'] })
+    expect(r.sources['p360.ext.cloud']).toBe('cloud')
+    expect(r.answers['p360.cyber.exposeInternet']).toBe(true); expect(r.sources['p360.cyber.exposeInternet']).toBe('patterns')
+    expect(defaultAnswers360({ ...F }).answers).toEqual({})
+  })
+})

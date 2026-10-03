@@ -1557,7 +1557,7 @@ export const it: Translations = {
   },
   projet360: {
     prefillHint: 'Risposte precompilate a partire dai dati della vostra organizzazione: verificatele e salvatele per confermarle.', prefillBadge: 'Precompilato', fromRegistre: 'Dal registro',
-    prefillSources: { analyseCyber: 'esiste un’analisi cyber nella vostra organizzazione', tic: 'registro TIC: un fornitore supporta una funzione essenziale o importante', cloud: 'registro TIC: servizio cloud o di hosting', processus: 'è mappato un processo critico', ropa: 'ci sono trattamenti nel registro GDPR', dora: 'il reporting normativo DORA è attivo (entità finanziaria)' },
+    prefillSources: { patterns: 'i pattern di architettura selezionati (esposizione, terze parti, cloud…)', analyseCyber: 'esiste un’analisi cyber nella vostra organizzazione', tic: 'registro TIC: un fornitore supporta una funzione essenziale o importante', cloud: 'registro TIC: servizio cloud o di hosting', processus: 'è mappato un processo critico', ropa: 'ci sono trattamenti nel registro GDPR', dora: 'il reporting normativo DORA è attivo (entità finanziaria)' },
     approvalErrors: { ROLE_DEJA_APPROUVE: 'Questo ruolo ha già espresso il parere: l’approvazione attende l’altro ruolo.', MEME_PERSONNE: 'Avete già espresso un parere: l’altro deve provenire da un’altra persona.', ROLE_NON_APPROBATEUR: 'Solo un RSSI e un Risk Manager possono approvare questa analisi.' },
     filterDomain: 'Filtra per dominio', newRiskDomain: 'Dominio del nuovo rischio',
     pageTitle: 'Analisi di progetto 360',

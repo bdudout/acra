@@ -46,3 +46,20 @@ describe('PATCH /api/analyses/[id] — patternsArchi', () => {
     expect('patternsArchi' in data).toBe(false)
   })
 })
+
+describe('PATCH — projet 360 : pré-remplissage du questionnaire par les patterns (sans écraser)', () => {
+  it('pré-remplit les réponses non données ; conserve une réponse « non » déjà saisie ; ajoute la source « patterns »', async () => {
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue({ id: 'a', userId: 'owner', organizationId: 'org', statut: 'EN_COURS', methode: 'PROJET_360', risquesResiduelsStatut: 'EN_ATTENTE', patternsArchi: [], qualification: { 'p360.cyber.exposeInternet': false }, accesUtilisateurs: [] } as never)
+    const res = await patch({ patternsArchi: ['EXPOSITION_INTERNET', 'CLOUD_SAAS'] })
+    expect(res.status).toBe(200)
+    const q = (vi.mocked(prisma.analyse.update).mock.calls[0][0].data as { qualification: Record<string, unknown> }).qualification
+    expect(q['p360.cyber.exposeInternet']).toBe(false)
+    expect(q['p360.ext.cloud']).toBe(true)
+    expect(q['p360._sources']).toEqual({ 'p360.ext.cloud': 'patterns' })
+  })
+  it('hors projet 360 : le questionnaire n’est pas touché', async () => {
+    await patch({ patternsArchi: ['EXPOSITION_INTERNET'] })
+    const data = vi.mocked(prisma.analyse.update).mock.calls[0][0].data as Record<string, unknown>
+    expect('qualification' in data).toBe(false)
+  })
+})

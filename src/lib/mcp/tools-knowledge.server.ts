@@ -8,6 +8,7 @@ import { REGIME_INFO, regimeInfo, type InfoLocale } from '@/lib/regime-info'
 import { searchIncidentTypes, INCIDENT_CHECKLIST, type IncidentLocale } from '@/lib/incident-types-catalogue'
 import { DORA_STAGES, fieldsOfStage, type DoraStage } from '@/lib/incident-declaration'
 import { SECTOR_CODES, CATALOGUE_PACK_VERSION, listSectorSuggestions, type SectorCode } from '@/lib/sector-suggestions'
+import { normalizePatterns } from '@/lib/patterns-archi'
 import { TEST_RESILIENCE_TYPES } from '@/lib/tests-resilience'
 import { getT } from '@/lib/i18n'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
@@ -114,14 +115,14 @@ const readCatalogueToolRaw: McpTool<McpContext> = {
   description:
     "Catalogue sectoriel ACRA (processus, risques, contrôles-types, KRI, missions d'audit, plans de test de résilience) : suggestions à qualifier, jamais des éléments évalués. " +
     "`sector` (code, ex. SANTE), `kind` (PROCESS|RISK|CONTROL|KRI|AUDIT|RESILIENCE_TEST), `query`, `locale`, `limit`. Contenu à relire par un expert du secteur.",
-  inputSchema: { type: 'object', properties: { sector: { type: 'string' }, kind: { type: 'string', enum: ['PROCESS', 'RISK', 'CONTROL', 'KRI', 'AUDIT', 'RESILIENCE_TEST'] }, query: { type: 'string' }, locale: { type: 'string', enum: [...LOCALES] }, limit: { type: 'integer', minimum: 1, maximum: 100 } }, additionalProperties: false },
+  inputSchema: { type: 'object', properties: { sector: { type: 'string' }, patterns: { type: 'array', items: { type: 'string' }, description: "Patterns d'architecture de SI (vision technique, indépendante du secteur) : leurs contrôles, KRI, audits et risques s'ajoutent." }, kind: { type: 'string', enum: ['PROCESS', 'RISK', 'CONTROL', 'KRI', 'AUDIT', 'RESILIENCE_TEST'] }, query: { type: 'string' }, locale: { type: 'string', enum: [...LOCALES] }, limit: { type: 'integer', minimum: 1, maximum: 100 } }, additionalProperties: false },
   async handler(args): Promise<McpToolResult> {
     const locale = loc(args.locale)
     const sector = typeof args.sector === 'string' && args.sector ? args.sector : null
     if (sector && !(SECTOR_CODES as readonly string[]).includes(sector)) return toolText({ version: CATALOGUE_PACK_VERSION, count: 0, items: [] })
     const kind = typeof args.kind === 'string' ? args.kind : null
     const fold = (v: string) => v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    const all = listSectorSuggestions(sector as SectorCode | null, locale)
+    const all = listSectorSuggestions(sector as SectorCode | null, locale, normalizePatterns(args.patterns, { max: 24 }))
     const processTitle = new Map(all.filter(i => i.kind === 'PROCESS').map(i => [i.key, i.title]))
     const words = fold(typeof args.query === 'string' ? args.query : '').split(/\s+/).filter(Boolean)
     const items = all

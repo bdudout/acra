@@ -1556,7 +1556,7 @@ export const de: Translations = {
   },
   projet360: {
     prefillHint: 'Aus den Daten Ihrer Organisation vorausgefüllte Antworten: prüfen und zum Bestätigen speichern.', prefillBadge: 'Vorausgefüllt', fromRegistre: 'Aus dem Register',
-    prefillSources: { analyseCyber: 'in Ihrer Organisation gibt es eine Cyber-Analyse', tic: 'IKT-Register: ein Dienstleister unterstützt eine kritische oder wichtige Funktion', cloud: 'IKT-Register: Cloud- oder Hosting-Dienst', processus: 'ein kritischer Prozess ist erfasst', ropa: 'im DSGVO-Verzeichnis sind Verarbeitungen erfasst', dora: 'das DORA-Meldewesen ist aktiv (Finanzunternehmen)' },
+    prefillSources: { patterns: 'Ihre angekreuzten Architekturmuster (Exposition, Dritte, Cloud …)', analyseCyber: 'in Ihrer Organisation gibt es eine Cyber-Analyse', tic: 'IKT-Register: ein Dienstleister unterstützt eine kritische oder wichtige Funktion', cloud: 'IKT-Register: Cloud- oder Hosting-Dienst', processus: 'ein kritischer Prozess ist erfasst', ropa: 'im DSGVO-Verzeichnis sind Verarbeitungen erfasst', dora: 'das DORA-Meldewesen ist aktiv (Finanzunternehmen)' },
     approvalErrors: { ROLE_DEJA_APPROUVE: 'Diese Rolle hat bereits Stellung genommen: Die Freigabe wartet auf die andere Rolle.', MEME_PERSONNE: 'Sie haben bereits Stellung genommen: Die andere Stellungnahme muss von einer anderen Person kommen.', ROLE_NON_APPROBATEUR: 'Nur ein RSSI und ein Risk Manager können diese Analyse freigeben.' },
     filterDomain: 'Nach Bereich filtern', newRiskDomain: 'Bereich des neuen Risikos',
     pageTitle: 'Projektanalyse 360',

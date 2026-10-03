@@ -239,8 +239,9 @@ export interface Faits360 {
   processusCritiques: number // processus cartographiés critiques
   traitementsRgpd: number    // traitements au registre RGPD (art. 30)
   doraActif: boolean         // module de reporting réglementaire DORA actif (entité financière)
+  patterns?: readonly string[] // patterns d'architecture de SI cochés dans l'analyse (vision technique)
 }
-export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora'
+export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora' | 'patterns'
 
 /**
  * Réponses pré-remplies : « oui » UNIQUEMENT quand une donnée existante le prouve
@@ -257,6 +258,36 @@ export function defaultAnswers360(f: Faits360): { answers: QualificationAnswers;
   if (f.processusCritiques > 0) set('p360.metier.processusCritique', 'processus')
   if (f.traitementsRgpd > 0) set('p360.cyber.donneesSensibles', 'ropa')
   if (f.doraActif) { set('p360.metier.exigenceReglementaire', 'dora'); set('p360.fraude.fluxFinanciers', 'dora') }
+  // Patterns d'architecture : complètent les faits de l'organisation (la source d'un fait déjà établi prime).
+  const fromPatterns = prefillFromPatterns(f.patterns ?? [])
+  for (const q of Object.keys(fromPatterns.answers)) if (!(q in answers)) set(q, 'patterns')
+  return { answers, sources }
+}
+
+/** Question du questionnaire 360 qu'un pattern d'architecture permet de pré-remplir (« oui » seulement). */
+const PATTERN_PREFILL: Record<string, string> = {
+  EXPOSITION_INTERNET: 'p360.cyber.exposeInternet',
+  INTERCO_TIERS: 'p360.ext.prestataireCritique', EXTERNALISATION_DONNEES: 'p360.ext.prestataireCritique', TELEMAINTENANCE: 'p360.ext.prestataireCritique',
+  CLOUD_SAAS: 'p360.ext.cloud', CLOUD_IAAS_PAAS: 'p360.ext.cloud',
+  SI_SENSIBLE: 'p360.cyber.donneesSensibles', SI_PATRIMONIAL: 'p360.it.obsolescence',
+}
+
+/** Réponses pré-remplies par les patterns cochés : « oui » seulement (jamais de « non » deviné), source « patterns ». */
+export function prefillFromPatterns(patterns: readonly string[]): { answers: QualificationAnswers; sources: Record<string, SourcePrefill> } {
+  const answers: QualificationAnswers = {}
+  const sources: Record<string, SourcePrefill> = {}
+  for (const p of patterns) { const q = PATTERN_PREFILL[p]; if (q) { answers[q] = true; sources[q] = 'patterns' } }
+  return { answers, sources }
+}
+
+/** Ajoute les réponses pré-remplies SANS écraser une réponse déjà donnée (oui ou non) ; ne renvoie que ce qui est ajouté. */
+export function mergePrefill(existing: Record<string, unknown>, prefill: { answers: QualificationAnswers; sources: Record<string, SourcePrefill> }): { answers: QualificationAnswers; sources: Record<string, SourcePrefill> } {
+  const answers: QualificationAnswers = { ...(existing as QualificationAnswers) }
+  const sources: Record<string, SourcePrefill> = {}
+  for (const [q, v] of Object.entries(prefill.answers)) {
+    if (typeof existing[q] === 'boolean') continue
+    answers[q] = v; sources[q] = prefill.sources[q]
+  }
   return { answers, sources }
 }
 

@@ -11,6 +11,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
 import { resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
 import { normalizePatterns } from '@/lib/patterns-archi'
+import { mergePrefill, prefillFromPatterns } from '@/lib/projet360'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
 import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
@@ -142,6 +143,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       : null
     // Les réponses du questionnaire 360 (`p360.*`, route dédiée) sont conservées.
     data.qualification = { ...sanitizeAnswers360(existing.qualification), ...sanitizeQualification(body.qualification, qCfg?.qualificationQuestionnaire) }
+  }
+
+  // Projet 360 : les patterns cochés pré-remplissent les réponses correspondantes du questionnaire, SANS écraser une réponse donnée.
+  if (Array.isArray(data.patternsArchi) && (existing as { methode?: string }).methode === 'PROJET_360') {
+    const base = (data.qualification ?? (existing as { qualification?: unknown }).qualification) as Record<string, unknown> | null
+    const current = base && typeof base === 'object' && !Array.isArray(base) ? base : {}
+    const merged = mergePrefill(current, prefillFromPatterns(data.patternsArchi as string[]))
+    if (Object.keys(merged.sources).length) {
+      const prev = (current['p360._sources'] && typeof current['p360._sources'] === 'object' ? current['p360._sources'] : {}) as Record<string, unknown>
+      data.qualification = { ...merged.answers, 'p360._sources': { ...prev, ...merged.sources } }
+    }
   }
 
   const updated = await prisma.analyse.update({ where: { id }, data })

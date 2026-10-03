@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const db = vi.hoisted(() => ({
   organization: { findUnique: vi.fn(), findMany: vi.fn() },
+  analyse: { findMany: vi.fn(async () => [] as unknown[]) },
   process: { findMany: vi.fn(), create: vi.fn() },
   risk: { findMany: vi.fn(), create: vi.fn() },
   control: { findMany: vi.fn(), create: vi.fn() },
@@ -15,7 +16,7 @@ const auth = vi.hoisted(() => ({ scope: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'user1', role: 'ADMIN' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  organization: db.organization, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, testResilience: db.test, $transaction: db.transaction,
+  organization: db.organization, analyse: db.analyse, processus: db.process, riskItem: db.risk, controle: db.control, kri: db.kri, auditMission: db.mission, testResilience: db.test, $transaction: db.transaction,
 } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: auth.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: db.cfg }))
@@ -30,6 +31,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   auth.scope.mockResolvedValue({ activeOrgId: 'org1', role: 'ADMIN' })
   db.organization.findUnique.mockResolvedValue({ secteursActivite: ['FINANCE'] })
+  db.analyse.findMany.mockResolvedValue([])
   db.process.findMany.mockResolvedValue([])
   db.risk.findMany.mockResolvedValue([])
   db.control.findMany.mockResolvedValue([])
@@ -233,5 +235,20 @@ describe('catalogue de suggestions — aperçu et import partiel', () => {
     const created = db.control.create.mock.calls[0][0].data
     expect(created).toMatchObject({ catalogueKey: 'finance.control.ict-register', periodicite: 'TRIMESTRIEL', typeControle: 'DETECTIF' })
     expect(created.description).toBe('References : Règlement (UE) 2022/2554 (DORA)')
+  })
+})
+
+describe('patterns d’architecture des analyses de l’organisation (lot A5)', () => {
+  it('GET : les éléments rattachés aux patterns cochés dans les analyses sont proposés ; sans pattern, aucun', async () => {
+    db.cfg.mockResolvedValue({ registreRisquesActive: true, controlePermanentActive: true, kriActive: true, auditInterneActive: true, reglementaireActive: true })
+    const get = async () => (await (await GET(new Request('http://localhost/api/catalogue-suggestions?locale=fr') as never)).json()) as { items: { key: string }[]; patterns: string[] }
+    const sans = await get()
+    expect(sans.patterns).toEqual([]); expect(sans.items.some(i => i.key.startsWith('technique.') || i.key.startsWith('archi.'))).toBe(false)
+    db.analyse.findMany.mockResolvedValue([{ patternsArchi: ['API_PARTENAIRES', 'DMZ'] }, { patternsArchi: ['DMZ', 'PIRATE'] }, { patternsArchi: null }])
+    const avec = await get()
+    expect(avec.patterns).toEqual(['API_PARTENAIRES', 'DMZ'])
+    expect(avec.items.some(i => i.key === 'technique.control.api-authz-tests')).toBe(true)
+    expect(avec.items.some(i => i.key === 'archi.control.dmz-rules-review')).toBe(true)
+    expect((db.analyse.findMany.mock.calls as unknown as Array<[{ where: unknown }]>)[0][0].where).toMatchObject({ organizationId: 'org1', deletedAt: null })
   })
 })

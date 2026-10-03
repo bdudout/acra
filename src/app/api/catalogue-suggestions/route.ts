@@ -11,7 +11,7 @@ import { CATALOGUE_PACK_VERSION, SECTOR_CODES, adaptPeriodicite, searchSectorSug
 import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 import { ALL_SECTORS, parseSectorChoice } from '@/lib/sector-selection'
-import { orgSectors } from '@/lib/sector-context.server'
+import { orgSectors, orgPatterns } from '@/lib/sector-context.server'
 import { resolveTaxonomie } from '@/lib/taxonomie'
 import { reviewNotice } from '@/lib/catalogue-review-status'
 
@@ -58,12 +58,13 @@ export async function GET(req: NextRequest) {
   const imported = [...processes, ...risks, ...controls, ...kris, ...audits, ...tests]
   const existing = new Set(imported.map(row => row.catalogueKey))
   // Les contrôles-types ne sont proposés que si le module « contrôle permanent » est activé pour l'organisation.
-  const items = searchSectorSuggestions(sector, locale, query).filter(item => (item.kind !== 'CONTROL' || cfg.controlePermanentActive) && (item.kind !== 'KRI' || cfg.kriActive) && (item.kind !== 'AUDIT' || cfg.auditInterneActive) && (item.kind !== 'RESILIENCE_TEST' || cfg.reglementaireActive)).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
+  const patterns = await orgPatterns(ctx.orgId)
+  const items = searchSectorSuggestions(sector, locale, query, patterns).filter(item => (item.kind !== 'CONTROL' || cfg.controlePermanentActive) && (item.kind !== 'KRI' || cfg.kriActive) && (item.kind !== 'AUDIT' || cfg.auditInterneActive) && (item.kind !== 'RESILIENCE_TEST' || cfg.reglementaireActive)).map(item => ({ ...item, status: existing.has(item.key) ? 'ALREADY_IMPORTED' : 'NEW' }))
   // Nouveautés depuis la plus ancienne version importée : des propositions à consulter, jamais une mise à jour automatique.
   const since = oldestImportedVersion(imported.map(row => row.catalogueVersion))
   const visibleKeys = new Set(items.map(item => item.key))
   const whatsNew = { since, keys: newSince(since, [...existing].filter((k): k is string => !!k)).filter(key => visibleKeys.has(key)) }
-  return NextResponse.json({ sector: choiceLabel(sector), configuredSectors: own, effectiveSectors: effective, inheritedSectors: inherited, sectors: SECTOR_CODES, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew, reviewPending: reviewNotice(sector) })
+  return NextResponse.json({ sector: choiceLabel(sector), configuredSectors: own, effectiveSectors: effective, inheritedSectors: inherited, sectors: SECTOR_CODES, patterns, locale, version: CATALOGUE_PACK_VERSION, items, whatsNew, reviewPending: reviewNotice(sector) })
 }
 
 /** Une confirmation explicite importe un sous-ensemble, jamais tout un pack implicite. */
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(selectedKeys) || selectedKeys.length === 0 || selectedKeys.length > 100 || selectedKeys.some((key: unknown) => typeof key !== 'string')) {
     return NextResponse.json({ error: 'invalid_selection' }, { status: 400 })
   }
-  const selectedPlan = planSuggestionSelection({ sector, locale, selectedKeys, existingKeys: [] })
+  const patterns = await orgPatterns(ctx.orgId)
+  const selectedPlan = planSuggestionSelection({ sector, locale, selectedKeys, existingKeys: [], patterns })
   if (selectedPlan.invalidKeys.length) return NextResponse.json({ error: 'invalid_keys', invalidKeys: selectedPlan.invalidKeys }, { status: 400 })
   if (ctx.role === 'LECTEUR' || !ctx.role || (selectedPlan.toCreate.some(item => item.kind === 'PROCESS') && !isAdminRole(ctx.role))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
       tx.testResilience.findMany({ where: { organizationId: ctx.orgId!, catalogueKey: { not: null } }, select: { id: true, catalogueKey: true } }),
     ])
     const plan = planSuggestionSelection({
-      sector, locale, selectedKeys,
+      sector, locale, selectedKeys, patterns,
       existingKeys: [...processes, ...risks, ...controls, ...kris, ...audits, ...tests].flatMap(row => row.catalogueKey ? [row.catalogueKey] : []),
     })
     if (plan.invalidKeys.length) return { status: 400 as const, error: 'invalid_keys', ...plan }
