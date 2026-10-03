@@ -15,7 +15,7 @@ import type { TestResilienceType } from './tests-resilience'
 // dont elle relève dans l'analyse. Seuls les secteurs choisis par l'organisation sont proposés (cf. sector-selection).
 export const SECTOR_CODES = [
   'PUBLIC', 'FINANCE', 'ASSURANCE', 'DEFENSE', 'EDUCATION', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT',
-  'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS', 'PROTECTION_SOCIALE', 'TECHNIQUE',
+  'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS', 'PROTECTION_SOCIALE',
 ] as const
 export type SectorCode = (typeof SECTOR_CODES)[number]
 export type CatalogueLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
@@ -23,6 +23,8 @@ export type Localized = Record<CatalogueLocale, string>
 export type CatalogueItem = {
   key: string
   sector: SectorCode | 'TRANSVERSAL'
+  /** Patterns d'architecture de SI qui rendent l'élément pertinent (tous requis) : proposé seulement s'ils sont cochés, quel que soit le secteur. */
+  patterns?: readonly string[]
   kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'
   title: Localized
   // Risques : description indicative (reprise de l'ancien socle du registre) — facultative.
@@ -298,7 +300,7 @@ export function adaptPeriodicite<T extends NonNullable<CatalogueItem['periodicit
   return (next[p] ?? p) as T
 }
 
-export const CATALOGUE_PACK_VERSION = '1.14'
+export const CATALOGUE_PACK_VERSION = '1.15'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
@@ -310,15 +312,18 @@ export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {
 export type SectorScope = SectorCode | readonly SectorCode[] | null
 
 /** Socle + pack(s) choisi(s) ; sans secteur, seul le socle est retourné. Les clés sont propres à chaque secteur : l'union n'a pas de doublon. */
-export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale): SectorSuggestion[] {
+export function listSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, patterns?: readonly string[] | null): SectorSuggestion[] {
   const chosen = new Set<string>(sector === null ? [] : typeof sector === 'string' ? [sector] : sector)
   const base = [...TRANSVERSAL, ...MERGED_REGISTRY_RISKS.filter(item => item.sector === 'TRANSVERSAL'), ...TRANSVERSAL_CONTROLS, ...TRANSVERSAL_KRIS, ...TRANSVERSAL_AUDITS, ...RESILIENCE_TEST_TEMPLATES.filter(item => item.sector === 'TRANSVERSAL')]
   const packs = SECTOR_CODES.filter(code => chosen.has(code)).flatMap(code => [...SECTOR_ITEMS, ...MERGED_REGISTRY_RISKS, ...SECTOR_PACK_ITEMS, ...BANCASSURANCE_ITEMS, ...EXT_ITEMS, ...RESILIENCE_TEST_TEMPLATES].filter(item => item.sector === code))
-  return [...base, ...packs].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...((item.kind === 'CONTROL' ? CONTROL_RISKS : item.kind === 'AUDIT' ? AUDIT_RISKS : {})[item.key] ? { riskKeys: (item.kind === 'CONTROL' ? CONTROL_RISKS : AUDIT_RISKS)[item.key] } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
+  // Éléments rattachés à des patterns d'architecture : proposés si TOUS leurs patterns sont cochés (vision technique, indépendante du secteur).
+  const checked = new Set(patterns ?? [])
+  const byPattern = checked.size ? EXT_ITEMS.filter(item => item.patterns?.length && item.patterns.every(p => checked.has(p))) : []
+  return [...base, ...packs, ...byPattern].map(({ title, unite, points, description, ...item }) => ({ ...item, title: title[locale], ...(description ? { description: description[locale] } : {}), ...(item.kind === 'RISK' && RISK_BALE[item.key] ? { taxonomieCode: `BALE_${RISK_BALE[item.key]}` } : {}), ...((item.kind === 'CONTROL' ? CONTROL_RISKS : item.kind === 'AUDIT' ? AUDIT_RISKS : {})[item.key] ? { riskKeys: (item.kind === 'CONTROL' ? CONTROL_RISKS : AUDIT_RISKS)[item.key] } : {}), ...(unite ? { unite: unite[locale] } : {}), ...(points ? { points: points.map(point => point[locale]) } : {}), packVersion: CATALOGUE_PACK_VERSION }))
 }
 
-export function searchSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, query: string): SectorSuggestion[] {
+export function searchSectorSuggestions(sector: SectorScope, locale: CatalogueLocale, query: string, patterns?: readonly string[] | null): SectorSuggestion[] {
   const normalized = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
   const words = normalized(query).split(/\s+/).filter(Boolean)
-  return listSectorSuggestions(sector, locale).filter(item => words.every(word => normalized(item.title).includes(word)))
+  return listSectorSuggestions(sector, locale, patterns).filter(item => words.every(word => normalized(item.title).includes(word)))
 }

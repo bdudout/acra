@@ -5,7 +5,7 @@
  * d'intégration). Suggestions à qualifier : jamais d'exécution, de seuil, de date, de résultat ni de conformité acquise.
  * Les `references` citent le texte d'origine et sa version sans reproduire d'exigence. Contenu « à relire par un expert ».
  */
-import { sectorPack, U_NB, U_PCT, U_MIN } from './catalogue-pack-builder'
+import { sectorPack, tagPatterns, U_NB, U_PCT, U_MIN } from './catalogue-pack-builder'
 
 const ISO = 'ISO/IEC 27001:2022, annexe A'
 const OWASP_API = 'OWASP API Security Top 10 — 2023'
@@ -59,7 +59,7 @@ ass.kri('iban-changes', ['Changements de coordonnées bancaires d’adhérents',
 ass.kri('tpa-feed-gaps', ['Écarts de rapprochement des flux de tiers payant', 'Direct-billing flow reconciliation gaps', 'Abgleichsdifferenzen der Direktabrechnungsdatenflüsse', 'Diferencias de conciliación de los flujos de tercero pagador', 'Scostamenti di riconciliazione dei flussi di terzo pagante'], 'assurance.process.claims', U_NB, 'HAUSSE', 'MENSUEL')
 
 // ════════════════════════ Technique / Interconnexion de SI ══════════════════
-const tq = sectorPack('TECHNIQUE')
+const tq = sectorPack('TRANSVERSAL', 'technique')
 tq.process('exchange', ['Exploiter les échanges de données entre systèmes d’information', 'Operate data exchanges between information systems', 'Datenaustausch zwischen IT-Systemen betreiben', 'Operar los intercambios de datos entre sistemas de información', 'Gestire gli scambi di dati tra sistemi informativi'], 'core.process.digital')
 tq.process('onboard', ['Raccorder et suivre les partenaires et prestataires interconnectés', 'Connect and monitor interconnected partners and providers', 'Gekoppelte Partner und Dienstleister anbinden und überwachen', 'Conectar y supervisar a los socios y proveedores interconectados', 'Collegare e monitorare partner e fornitori interconnessi'], 'core.process.buy')
 tq.process('receive', ['Recevoir et intégrer les données livrées par des tiers', 'Receive and integrate data delivered by third parties', 'Von Dritten gelieferte Daten empfangen und übernehmen', 'Recibir e integrar los datos entregados por terceros', 'Ricevere e integrare i dati consegnati da terzi'], 'exchange')
@@ -142,7 +142,7 @@ tq.audit('integration-platform', ['Audit de la plateforme d’intégration et de
 // ════════════════════ Catalogue 1.13 — compléments issus du comparatif ══════════════════
 // Analyseurs de fichiers et validation des entrées (interconnexions), pièces jointes de la messagerie d'un portail,
 // test de continuité d'une plateforme de santé. Packs distincts pour dater les ajouts dans l'historique.
-const tq13 = sectorPack('TECHNIQUE')
+const tq13 = sectorPack('TRANSVERSAL', 'technique')
 tq13.risk('parser-exploit', 6, ['Un fichier ou message reçu exploite l’analyseur pour exécuter du code ou lire des fichiers internes', 'A received file or message exploits the parser to run code or read internal files', 'Eine empfangene Datei oder Nachricht nutzt den Parser aus, um Code auszuführen oder interne Dateien zu lesen', 'Un fichero o mensaje recibido explota el analizador para ejecutar código o leer ficheros internos', 'Un file o messaggio ricevuto sfrutta il parser per eseguire codice o leggere file interni'], 'technique.process.receive')
 tq13.control('input-validation-review', ['Revue de la validation des entrées et du durcissement des analyseurs de fichiers (tests avec des fichiers malformés)', 'Review of input validation and file-parser hardening (tests with malformed files)', 'Überprüfung der Eingabevalidierung und der Härtung der Datei-Parser (Tests mit fehlerhaften Dateien)', 'Revisión de la validación de entradas y del refuerzo de los analizadores de ficheros (pruebas con ficheros malformados)', 'Revisione della validazione degli input e del rafforzamento dei parser di file (test con file malformati)'], 'technique.process.receive', 'TRIMESTRIEL', 'DETECTIF', ['parser-exploit', 'technique.risk.forged-feed'], [`${ISO}, mesure 8.28`])
 tq13.kri('malformed-files', ['Fichiers ou messages rejetés pour structure invalide', 'Files or messages rejected for invalid structure', 'Wegen ungültiger Struktur abgelehnte Dateien oder Nachrichten', 'Ficheros o mensajes rechazados por estructura no válida', 'File o messaggi rifiutati per struttura non valida'], 'technique.process.receive', U_NB, 'HAUSSE', 'MENSUEL')
@@ -154,6 +154,17 @@ sante13.control('platform-continuity-test', ['Test du plan de continuité et de 
 
 export const SANTE_EXT_PACK = sante.pack
 export const MUTUELLE_SANTE_PACK = ass.pack
-export const TECHNIQUE_PACK = tq.pack
-export const TECHNIQUE_V113_PACK = tq13.pack
+// Ancien secteur « Technique / Interconnexion de SI » (supprimé, décision D1) : son contenu est rattaché aux patterns
+// d'architecture, selon le processus de l'élément. Les clés `technique.*` restent inchangées (stabilité du journal).
+const PATTERN_OF_PROCESS: Record<string, string> = {
+  'technique.process.exchange': 'INTERCO_TIERS', 'technique.process.onboard': 'INTERCO_TIERS',
+  'technique.process.receive': 'EXTERNALISATION_DONNEES', 'technique.process.expose': 'API_PARTENAIRES', 'technique.process.integrate': 'ECHANGE_FICHIERS',
+}
+const FILE_PARSING = new Set(['technique.risk.parser-exploit', 'technique.control.input-validation-review', 'technique.kri.malformed-files'])
+const archiOf = (item: { key: string; kind: string; processKey?: string }): string[] => {
+  if (FILE_PARSING.has(item.key)) return ['ECHANGE_FICHIERS']
+  return [PATTERN_OF_PROCESS[item.kind === 'PROCESS' ? item.key : item.processKey ?? ''] ?? 'INTERCO_TIERS']
+}
+export const TECHNIQUE_PACK = tagPatterns(tq.pack, archiOf)
+export const TECHNIQUE_V113_PACK = tagPatterns(tq13.pack, archiOf)
 export const SANTE_V113_PACK = sante13.pack

@@ -41,7 +41,7 @@ describe('contenu sectoriel — compléments (pièces jointes, intégrité, anal
 
 describe('catalogue 1.13', () => {
   it('ajoute l’exploitation d’un analyseur de fichiers, sa revue de validation des entrées et le test de continuité d’une plateforme de santé', () => {
-    const t = new Set(listSectorSuggestions('TECHNIQUE', 'fr').map(i => i.key))
+    const t = new Set(listSectorSuggestions(null, 'fr', ['ECHANGE_FICHIERS']).map(i => i.key))
     expect(t).toContain('technique.risk.parser-exploit'); expect(t).toContain('technique.control.input-validation-review')
     const s = new Set(listSectorSuggestions('SANTE', 'fr').map(i => i.key))
     expect(s).toContain('sante.control.platform-continuity-test'); expect(s).toContain('sante.risk.portal-malicious-attachment')

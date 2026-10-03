@@ -62,8 +62,8 @@ describe('famille « Protection sociale » — exemples d’ateliers', () => {
 })
 
 describe('catalogue PROTECTION_SOCIALE (1.14)', () => {
-  it('secteur de catalogue présent avant TECHNIQUE, avec fraude, paiements de masse et homologation', () => {
-    expect(SECTOR_CODES.indexOf('PROTECTION_SOCIALE')).toBe(SECTOR_CODES.indexOf('TECHNIQUE') - 1)
+  it('secteur de catalogue en dernier (le secteur Technique est supprimé), avec fraude, paiements de masse et homologation', () => {
+    expect(SECTOR_CODES.at(-1)).toBe('PROTECTION_SOCIALE')
     const keys = new Set(listSectorSuggestions('PROTECTION_SOCIALE', 'fr').map(i => i.key))
     for (const k of ['protection_sociale.risk.mass-payment-error', 'protection_sociale.risk.fake-professional', 'protection_sociale.control.teleservice-homologation', 'protection_sociale.kri.undue-detected', 'protection_sociale.audit.fraud-framework']) expect(keys, k).toContain(k)
   })

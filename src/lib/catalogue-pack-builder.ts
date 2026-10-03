@@ -20,8 +20,12 @@ export interface SectorPack {
   auditRisks: Record<string, string[]>
 }
 
-export function sectorPack(sector: SectorCode) {
-  const pre = sector.toLowerCase()
+/**
+ * `prefix` : préfixe des clés (défaut : le code du secteur en minuscules). Un pack rattaché à des PATTERNS d'architecture
+ * (et non à un secteur) utilise le secteur `TRANSVERSAL` et conserve éventuellement l'ancien préfixe pour garder des clés stables.
+ */
+export function sectorPack(sector: SectorCode | 'TRANSVERSAL', prefix?: string) {
+  const pre = prefix ?? sector.toLowerCase()
   const pack: SectorPack = { items: [], bale: {}, controlRisks: {}, auditRisks: {} }
   const full = (type: string, slug: string) => (slug.includes('.') ? slug : `${pre}.${type}.${slug}`)
   const api = {
@@ -55,3 +59,9 @@ export const U_NB: Tr = ['nombre', 'count', 'Anzahl', 'número', 'numero']
 export const U_DAYS: Tr = ['jours', 'days', 'Tage', 'días', 'giorni']
 export const U_HOURS: Tr = ['heures', 'hours', 'Stunden', 'horas', 'ore']
 export const U_MIN: Tr = ['minutes', 'minutes', 'Minuten', 'minutos', 'minuti']
+
+/** Rattache chaque élément d'un pack à des patterns d'architecture (tous requis) ; `of` reçoit l'élément. Renvoie le pack. */
+export function tagPatterns(pack: SectorPack, of: (item: CatalogueItem) => readonly string[]): SectorPack {
+  for (const item of pack.items) item.patterns = of(item)
+  return pack
+}

@@ -10,10 +10,10 @@ import { it as itDict } from '@/lib/i18n/it'
 
 const keys = (sector: (typeof SECTOR_CODES)[number]) => new Set(listSectorSuggestions(sector, 'fr').map(i => i.key))
 
-describe('catalogue 1.12 : santé (portail, entrepôt, interconnexions), mutuelle santé et Technique / Interconnexion de SI', () => {
-  it('le secteur TECHNIQUE existe (dernier, comme dans la liste des secteurs d’analyse) et a un libellé ×5', () => {
-    expect(SECTOR_CODES.at(-1)).toBe('TECHNIQUE')
-    for (const d of [fr, en, de, es, itDict]) expect((d.sectorSuggestions.sectors as Record<string, string>).TECHNIQUE).toBeTruthy()
+describe('catalogue 1.12 : santé (portail, entrepôt, interconnexions), mutuelle santé et interconnexions (désormais patterns)', () => {
+  it('le secteur TECHNIQUE n’existe plus (remplacé par des patterns) : plus de libellé de secteur, PROTECTION_SOCIALE est le dernier', () => {
+    expect(SECTOR_CODES.at(-1)).toBe('PROTECTION_SOCIALE'); expect((SECTOR_CODES as readonly string[]).includes('TECHNIQUE')).toBe(false)
+    for (const d of [fr, en, de, es, itDict]) expect((d.sectorSuggestions.sectors as Record<string, string>).TECHNIQUE).toBeUndefined()
   })
   it('santé : risques, contrôles et KRI du portail, de l’entrepôt de données et des flux reçus', () => {
     const k = keys('SANTE')
@@ -24,16 +24,17 @@ describe('catalogue 1.12 : santé (portail, entrepôt, interconnexions), mutuell
     const k = keys('ASSURANCE')
     for (const key of ['assurance.risk.iban-diversion', 'assurance.risk.delegate-segregation', 'assurance.control.iban-change-review', 'assurance.control.delegate-reporting', 'assurance.kri.iban-changes']) expect(k, key).toContain(key)
   })
-  it('technique : chaque contrôle couvre au moins un risque du catalogue', () => {
-    const items = listSectorSuggestions('TECHNIQUE', 'fr').filter(i => i.sector === 'TECHNIQUE')
-    const risks = new Set(listSectorSuggestions('TECHNIQUE', 'fr').filter(i => i.kind === 'RISK').map(i => i.key))
+  it('interconnexions (patterns) : chaque contrôle couvre au moins un risque du même ensemble', () => {
+    const PAT = ['INTERCO_TIERS', 'EXTERNALISATION_DONNEES', 'API_PARTENAIRES', 'ECHANGE_FICHIERS']
+    const items = listSectorSuggestions(null, 'fr', PAT).filter(i => i.key.startsWith('technique.'))
+    const risks = new Set(items.filter(i => i.kind === 'RISK').map(i => i.key))
     for (const c of items.filter(i => i.kind === 'CONTROL')) {
       expect(c.riskKeys?.length, c.key).toBeGreaterThan(0)
       for (const r of c.riskKeys!) expect(risks.has(r), `${c.key} → ${r}`).toBe(true)
     }
   })
-  it('technique : au moins 3 incidents types (flux falsifié, partenaire compromis, interruption de flux)', () => {
-    expect(SECTOR_INCIDENT_TYPES.filter(t => t.sector === 'TECHNIQUE').length).toBeGreaterThanOrEqual(3)
+  it('interconnexions : au moins 3 incidents types génériques (flux falsifié, partenaire compromis, interruption de flux)', () => {
+    expect(SECTOR_INCIDENT_TYPES.filter(t => t.key.startsWith('technique.') && !t.sector).length).toBeGreaterThanOrEqual(3)
   })
   it('les nouveautés sont datées dans l’historique du catalogue (version 1.12)', () => {
     expect(Number(CATALOGUE_PACK_VERSION.split('.')[1])).toBeGreaterThanOrEqual(12)
