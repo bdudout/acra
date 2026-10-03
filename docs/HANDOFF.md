@@ -6,6 +6,16 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (60) — Claude : plusieurs sous-secteurs par analyse, cohérence du contenu, expression de besoins protection sociale
+
+- **Plusieurs sous-secteurs** (`d614f57`) : `Analyse.sousSecteurs` (JSON ; migration `20261003130000_analyse_sous_secteurs`, classée « data », reprise de `sousSecteur`) ; le premier reste le principal dans `sousSecteur` (référentiels recommandés, mise en garde HDS, exports). Pur : `selectableSousSecteurIds`, `normalizeSousSecteurs`, `sousSecteursOf`, `resolveSousSecteursUpdate` (`lib/sous-secteurs.ts`) ; UI `SousSecteursPicker` (création + `AnalyseMetaEditor`) ; routes POST/PATCH ; ateliers 1–5, suggestions de risques, MCP (`read_sector_examples.sousSecteurs`, `recommend_risks_scenarios`).
+- **Cohérence** : proposés = famille du secteur + interconnexions (transverses), jamais un autre secteur ; re-validés côté serveur et au changement de secteur ; `sectorExemplesFor` accepte une liste (union dédoublonnée, sous-secteur incohérent ignoré) ; contenu commun santé masqué là où il n'a pas de sens (`ExtItem.notFor` ; profession `veterinaire` ajoutée : la santé animale ne reçoit plus le contenu hospitalier).
+- **Expression de besoins** : `docs/specs/protection-sociale-besoins.md` (taxonomie protection sociale, homologation, maîtrise des risques en réseau, registre IA, fraude, volumes ; exemples génériques ; décisions D1–D4).
+- **Vérifié** : `tsc` 0 · `npm test` 467 fichiers / 3760 tests · `i18n:check` · `check-migrations` conforme · `npm run build` OK · recette navigateur dev :3005 : 25 cases (21 santé + 4 interconnexions, aucune d'un autre secteur), création avec 2 sous-secteurs → base `["sante-amc","technique-interco-prestataire"]`, atelier 5 = union (IBAN + complétude des livraisons) sans INS/CPS/biomédical, PATCH secteur Banque → reste l'interconnexion seule, PATCH avec `banque-detail` pour une analyse santé → rejeté, éditeur d'analyse affiche les deux cases cochées (principal marqué).
+- **Environnement** : la base embarquée de `/private/tmp/claude-502/pg` a disparu (nettoyage du dossier temporaire) ; nouvelle base dans le scratchpad de session (`…/scratchpad/pg`, `node start.mjs`, mot de passe dans `pw.txt`), migrations appliquées, organisation « Organisation de recette » et compte local SUPER_ADMIN (mot de passe dans `test-account.txt`, non commité). Serveur de dev arrêté après la recette (build lancé ensuite).
+
+---
+
 ## 2026-10-03 (59) — Claude : étude sauvegarde/rollback des mises à jour ; contenu santé, mutuelle et interconnexions (catalogue 1.12)
 
 **Rien n'est poussé** ; commits locaux sur `feat/historical-excel-import`.
