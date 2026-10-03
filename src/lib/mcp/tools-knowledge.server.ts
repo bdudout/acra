@@ -7,6 +7,8 @@ import { REGIME_INFO, regimeInfo, type InfoLocale } from '@/lib/regime-info'
 import { searchIncidentTypes, INCIDENT_CHECKLIST, type IncidentLocale } from '@/lib/incident-types-catalogue'
 import { DORA_STAGES, fieldsOfStage, type DoraStage } from '@/lib/incident-declaration'
 import { SECTOR_CODES, CATALOGUE_PACK_VERSION, searchSectorSuggestions, type SectorCode } from '@/lib/sector-suggestions'
+import { TEST_RESILIENCE_TYPES } from '@/lib/tests-resilience'
+import { getT } from '@/lib/i18n'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import type { McpContext } from './tools.server'
 
@@ -93,4 +95,27 @@ export const readCatalogueTool: McpTool<McpContext> = {
   },
 }
 
-export function buildKnowledgeTools(): McpTool<McpContext>[] { return [readNotificationRegimesTool, readIncidentTypesTool, readDoraFieldsTool, readCatalogueTool] }
+export const readResilienceTestsTool: McpTool<McpContext> = {
+  name: 'read_resilience_tests',
+  description:
+    "Programme de tests de résilience opérationnelle numérique DORA : les douze types de tests de l'article 25 § 1 (libellés officiels dans la langue demandée) et, à part, " +
+    "les règles essentielles du test de pénétration fondé sur la menace (TLPT, article 26). `locale` facultatif. Lecture seule.",
+  inputSchema: { type: 'object', properties: { locale: { type: 'string', enum: [...LOCALES] } }, additionalProperties: false },
+  async handler(args): Promise<McpToolResult> {
+    const locale = loc(args.locale)
+    const labels = getT(locale).testsResilience.types as Record<string, string>
+    return toolText({
+      art25: TEST_RESILIENCE_TYPES.filter(c => c !== 'TLPT').map(code => ({ code, label: labels[code] ?? code })),
+      tlpt: {
+        article: 'Règlement (UE) 2022/2554, art. 26 (testeurs : art. 27)',
+        frequence: 'au moins tous les 3 ans pour les entités financières concernées (autres que les microentreprises) ; l’autorité compétente peut demander de la réduire ou de l’augmenter',
+        entite: 'organiser et financer le test, désigner des testeurs conformes à l’art. 27 (externes ; testeurs internes seulement dans les conditions prévues, avec recours à des testeurs externes tous les trois tests), couvrir les fonctions critiques ou importantes',
+        autorite: 'identifier les entités tenues de réaliser un TLPT, valider le périmètre, délivrer l’attestation de réalisation et pouvoir ajuster la fréquence',
+        note: 'Cadrage à confirmer sur EUR-Lex (art. 26-27 et règlement délégué sur les TLPT) ; ce n’est pas un avis juridique.',
+      },
+      note: 'Types de l’article 25 § 1 : à confirmer sur EUR-Lex ; le choix et le calendrier des tests restent ceux de l’entité (approche fondée sur les risques).',
+    })
+  },
+}
+
+export function buildKnowledgeTools(): McpTool<McpContext>[] { return [readNotificationRegimesTool, readIncidentTypesTool, readDoraFieldsTool, readCatalogueTool, readResilienceTestsTool] }

@@ -44,3 +44,16 @@ describe('connaissance MCP', () => {
     expect((await run(readCatalogueTool, { sector: 'INCONNU' })).items).toEqual([])
   })
 })
+
+import { readResilienceTestsTool } from '@/lib/mcp/tools-knowledge.server'
+describe('read_resilience_tests (DORA art. 25-26)', () => {
+  it('douze types de l’article 25 § 1, libellés dans la langue demandée ; TLPT à part avec ses règles et la répartition entité / autorité', async () => {
+    const fr = await run(readResilienceTestsTool, { locale: 'fr' })
+    expect(fr.art25.map((t: { code: string }) => t.code)).toHaveLength(12)
+    expect(fr.art25.map((t: { code: string }) => t.code)).not.toContain('TLPT')
+    expect(fr.art25.find((t: { code: string }) => t.code === 'PENETRATION').label).toBe('Tests de pénétration')
+    expect((await run(readResilienceTestsTool, { locale: 'en' })).art25.find((t: { code: string }) => t.code === 'PENETRATION').label).toMatch(/penetration/i)
+    expect(fr.tlpt.frequence).toMatch(/3 ans/); expect(fr.tlpt.article).toMatch(/26/); expect(fr.tlpt.entite).toBeTruthy(); expect(fr.tlpt.autorite).toBeTruthy()
+    expect(fr.note).toMatch(/à confirmer/i)
+  })
+})

@@ -15,6 +15,7 @@ const MATRICE: Record<string, { kind: Kind; preuve: string }> = {
   read_notification_regimes: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   read_incident_types: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   read_dora_fields: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
+  read_resilience_tests: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   read_catalogue: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   propose_risk: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
   propose_measure: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
