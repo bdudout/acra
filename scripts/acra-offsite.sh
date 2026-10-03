@@ -119,8 +119,69 @@ command_push() { # id dir
   bash -c "$ACRA_OFFSITE_CMD" >/dev/null 2>&1 || return 50
 }
 
-# ── Pilote s3 (lot S2) : défini plus bas ──────────────────────────────────────────────────────────
-s3_prepare() { die 10 "Pilote s3 non disponible dans cette version."; }
+# ── Pilote s3 (lot S2) : stockage objet compatible S3 via rclone ──────────────────────────────────
+# Variables : ACRA_S3_BUCKET (requis) · ACRA_S3_PREFIX (acra) · ACRA_S3_ENDPOINT (vide = AWS) · ACRA_S3_REGION ·
+#   ACRA_S3_PROVIDER (AWS | Other | Scaleway | OVH… selon rclone ; défaut AWS sans endpoint, Other avec) ·
+#   identifiants : ACRA_S3_ACCESS_KEY_ID / ACRA_S3_SECRET_ACCESS_KEY, ou ..._FILE (chemin d'un fichier), ou
+#   ACRA_S3_ENV_AUTH=1 (rôle IAM / profil d'instance) · ACRA_S3_SSE (AES256 | aws:kms) · ACRA_S3_VERIFY_DOWNLOAD=1
+#   (relit les octets au lieu de comparer les empreintes) · ACRA_RCLONE (binaire, défaut rclone).
+# Les identifiants passent par l'ENVIRONNEMENT de rclone (jamais en argument, jamais dans un journal ni dans l'état).
+# Immutabilité : activer Object Lock (mode conformité) sur le bucket ; la purge de rétention ignore alors les refus.
+RCLONE_BIN="${ACRA_RCLONE:-rclone}"
+S3_REMOTE="ACRAS3"
+S3_PREFIX_PATH=""
+s3_prepare() {
+  command -v "$RCLONE_BIN" >/dev/null 2>&1 || die 10 "rclone est introuvable (pilote s3) : l'installer (https://rclone.org/install/) ou définir ACRA_RCLONE."
+  [ -n "${ACRA_S3_BUCKET:-}" ] || die 10 "ACRA_S3_BUCKET non défini (pilote s3)."
+  local kid="${ACRA_S3_ACCESS_KEY_ID:-}" sec="${ACRA_S3_SECRET_ACCESS_KEY:-}"
+  [ -z "${ACRA_S3_ACCESS_KEY_ID_FILE:-}" ] || kid="$(tr -d '\r\n' < "$ACRA_S3_ACCESS_KEY_ID_FILE" 2>/dev/null || true)"
+  [ -z "${ACRA_S3_SECRET_ACCESS_KEY_FILE:-}" ] || sec="$(tr -d '\r\n' < "$ACRA_S3_SECRET_ACCESS_KEY_FILE" 2>/dev/null || true)"
+  export RCLONE_CONFIG_ACRAS3_TYPE=s3
+  export RCLONE_CONFIG_ACRAS3_NO_CHECK_BUCKET=true
+  if [ "${ACRA_S3_ENV_AUTH:-0}" = "1" ]; then export RCLONE_CONFIG_ACRAS3_ENV_AUTH=true
+  else
+    [ -n "$kid" ] && [ -n "$sec" ] || die 10 "Identifiants S3 absents : ACRA_S3_ACCESS_KEY_ID/ACRA_S3_SECRET_ACCESS_KEY (ou ..._FILE, ou ACRA_S3_ENV_AUTH=1)."
+    export RCLONE_CONFIG_ACRAS3_ACCESS_KEY_ID="$kid" RCLONE_CONFIG_ACRAS3_SECRET_ACCESS_KEY="$sec"
+  fi
+  if [ -n "${ACRA_S3_ENDPOINT:-}" ]; then export RCLONE_CONFIG_ACRAS3_ENDPOINT="$ACRA_S3_ENDPOINT" RCLONE_CONFIG_ACRAS3_PROVIDER="${ACRA_S3_PROVIDER:-Other}"
+  else export RCLONE_CONFIG_ACRAS3_PROVIDER="${ACRA_S3_PROVIDER:-AWS}"; fi
+  [ -z "${ACRA_S3_REGION:-}" ] || export RCLONE_CONFIG_ACRAS3_REGION="$ACRA_S3_REGION"
+  [ -z "${ACRA_S3_SSE:-}" ] || export RCLONE_CONFIG_ACRAS3_SERVER_SIDE_ENCRYPTION="$ACRA_S3_SSE"
+  S3_PREFIX_PATH="${ACRA_S3_BUCKET}/${ACRA_S3_PREFIX:-acra}"
+}
+s3_remote() { printf '%s:%s/%s' "$S3_REMOTE" "$S3_PREFIX_PATH" "$1"; }
+s3_push() { # id dir
+  local id="$1" dir="$2" remote vflag=()
+  remote="$(s3_remote "$id")"
+  [ "${ACRA_S3_VERIFY_DOWNLOAD:-0}" != "1" ] || vflag=(--download)
+  "$RCLONE_BIN" copy "$dir" "$remote" --checksum >/dev/null 2>&1 || return 50
+  if ! "$RCLONE_BIN" check "$dir" "$remote" --one-way ${vflag[@]+"${vflag[@]}"} >/dev/null 2>&1; then
+    "$RCLONE_BIN" purge "$remote" >/dev/null 2>&1 || true
+    return 51
+  fi
+  # Rétention : les KEEP derniers points ; un refus (Object Lock, droits) n'est pas une erreur.
+  local n=0 x
+  for x in $("$RCLONE_BIN" lsf --dirs-only "$S3_REMOTE:$S3_PREFIX_PATH" 2>/dev/null | tr -d '/' | sort -r); do
+    is_id "$x" || continue
+    n=$(( n + 1 ))
+    [ "$n" -le "$KEEP" ] || "$RCLONE_BIN" purge "$(s3_remote "$x")" >/dev/null 2>&1 || true
+  done
+  return 0
+}
+s3_fetch() { # id dossier_provisoire
+  local remote; remote="$(s3_remote "$1")"
+  [ -n "$("$RCLONE_BIN" lsf "$remote" 2>/dev/null | head -1)" ] || return 53
+  "$RCLONE_BIN" copy "$remote" "$2" --checksum >/dev/null 2>&1 || return 53
+}
+s3_test() {
+  local probe=".probe-$$" tmp; tmp="$(mktemp "${TMPDIR:-/tmp}/acra-probe.XXXXXX")"
+  printf 'acra-offsite-%s' "$$" > "$tmp"
+  local remote; remote="$S3_REMOTE:$S3_PREFIX_PATH/$probe"
+  "$RCLONE_BIN" copyto "$tmp" "$remote" >/dev/null 2>&1 || { rm -f "$tmp"; return 10; }
+  [ "$("$RCLONE_BIN" cat "$remote" 2>/dev/null)" = "acra-offsite-$$" ] || { rm -f "$tmp"; return 10; }
+  "$RCLONE_BIN" deletefile "$remote" >/dev/null 2>&1 || true
+  rm -f "$tmp"
+}
 
 # ── Commandes ─────────────────────────────────────────────────────────────────────────────────────
 cmd_push() {
