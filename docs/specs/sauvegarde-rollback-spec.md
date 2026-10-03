@@ -1,6 +1,6 @@
 # Spec de réalisation — point de restauration avant mise à jour et retour arrière
 
-Date : 2026-10-03 · Statut : **prête à développer** (décisions D1–D5 de l'étude prises par défaut,
+Date : 2026-10-03 · Statut : **développée (lots 0 à 7, sans validation sur Docker réel — voir `docs/HANDOFF.md` entrée 59)** (décisions D1–D5 de l'étude prises par défaut,
 modifiables) · Destinataire : agent de développement (Sonnet 5.5) · Étude et ADR :
 [`sauvegarde-rollback-etude.md`](sauvegarde-rollback-etude.md).
 

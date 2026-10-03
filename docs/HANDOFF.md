@@ -22,6 +22,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (59) — Claude : point de restauration avant mise à jour et retour arrière (spec `sauvegarde-rollback-spec.md`, lots 0 à 7)
+
+**Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import` (commits `796551a` lot 0, `30a87a9` lot 1, `2d00341` lot 2, `365aef4` lot 3, `6c7d6ad` lot 4, `2af29bb` lot 5, `ac7b5b6` lot 6, `a8cf046` mode B, + docs lot 7).
+
+- **Lot 0** — `update.sh` : documents sauvés hors d'un conteneur sans volume puis recopiés (`documents_data` ajouté à `docker-compose.yml`), application arrêtée avant la sauvegarde, dump format custom vérifié (`pg_restore --list`, `TABLE DATA`), fichiers `0600`/dossier `0700`, `ACRA_MIGRATE_AUTO_RESOLVE=0` pendant une mise à jour, santé vérifiée sur la **révision** cible (`ACRA_VERSION`/`ACRA_REVISION` en build args).
+- **Lot 1** — `scripts/acra-snapshot.sh` (create/verify/list/restore/prune/index), `src/lib/snapshot.ts` (identifiant, index publié `.acra-update/snapshots.json`, parité testée avec le script). Clone `TEMPLATE … STRATEGY FILE_COPY`, vérification `full`/`quick`, manifeste écrit en dernier, `restore` renomme toujours la base courante en `__failed_`.
+- **Lot 2** — `update.sh` v2 (lanceur : PRECHECK→FETCH→HANDOFF, se ré-exécute depuis une copie), `update-lib.sh` (journal `run/current.json`, statut, `do_rollback`, santé, fumée), `update-steps.sh` (MIGRATE→FINALIZE, **depuis la version cible**, contrat `ACRA_UPDATE_STEPS_API=1`), `src/lib/update-run.ts` (table d'échec normative). Reprise après interruption (`update.sh resume`, agent à chaque passage).
+- **Lot 3** — demande `rollback` (`buildRollbackRequest`), route `POST /api/admin/version/rollback` (SUPER_ADMIN, identifiant validé contre l'index, version confirmée, audit `INSTANCE_ROLLBACK_REQUESTED`), `update-agent.sh` valide l'identifiant contre SON index.
+- **Lot 4** — `/api/health?deep=1` (migrations en attente/en échec ⇒ 503), `InstanceEvent` + migration `20261003120000_instance_event`, journal d'audit `INSTANCE_UPDATED/RESTORED/UPDATE_ROLLED_BACK` au démarrage (`instrumentation.ts`), `UpdateRestorePanel` (avancement, retour arrière, points, dialogue de confirmation), i18n ×5 (`version.restore/updateSteps/updateCodes`).
+- **Lot 5** — `migration-policy` / `migration-check` + `scripts/check-migrations.ts` (CI `migrations.yml`, PRECHECK des migrations destructives publiées dans `status.json`), workflow `update-rollback.yml` + `scripts/ci-update-rollback.sh` (5 scénarios Docker réels).
+- **Lot 6** — `ACRA_DB_MODE=url` (client dans `postgres:<majeure>-alpine` ou sur l'hôte, code 10 si client plus ancien), mode `--no-docker` (`ACRA_STOP_CMD`/`ACRA_START_CMD`, refus sinon), documents sur disque (`ACRA_DOCUMENTS_DIR`), `ACRA_SNAPSHOT_HOOK`.
+- **Mode B** — `deploy-release.sh` crée un point `pre-update` et, si les migrations diffèrent, **restaure** avant de relancer l'image précédente (au lieu d'arrêter).
+- **Lot 7** — runbook § 4 et nouveau § 6, README ×5, ARCHITECTURE, notes v1.0.4.
+- **Vérifié** : `tsc` 0 · `npm test` 467 fichiers / 3760 tests · `i18n:check` · `test:db` 70/70 (PostgreSQL embarqué :5433). Les scripts shell sont testés avec des `docker`/`psql`/`git` **simulés** (banc `src/__tests__/helpers/update-fixture.ts`), dépôt git temporaire réel.
+- **NON vérifié** : **aucun scénario sur Docker réel** (Docker indisponible dans ce tour) — le script `ci-update-rollback.sh` et le workflow `update-rollback.yml` n'ont jamais tourné ; `shellcheck` absent (relecture seulement) ; `docker compose cp`/`run`/`exec -u 0`, `CREATE DATABASE … STRATEGY FILE_COPY` (PostgreSQL ≥ 15) et le comportement réel de `pg_restore` ne sont validés que par simulation ; le mode `--no-docker` et la base externe jamais essayés sur un vrai hôte ; recette navigateur du panneau `UpdateRestorePanel` non faite (tests de composant seulement). **Première mise à jour d'une instance ≤ v1.0.4** : c'est l'ancien script qui s'exécute (le lot 0 doit être publié avant le lot 2) — scénario manuel à consigner avant release.
+- **Pièges** : le fixture bash du simulé impose bash 3.2 (macOS) : pas de tableaux associatifs ; `sed` BSD sans `\|` ; un `docker` simulé ne reproduit pas les erreurs réelles de compose. `src/instrumentation.ts` existait déjà (j'y ai seulement ajouté l'appel `recordInstanceEvents`).
+
 ## 2026-10-03 (58) — Claude : chantier contenu sectoriel, MCP phase 5, rapports et exports (lots L0–L5 en grande partie)
 
 Spec : `docs/specs/chantier-contenu-sectoriel-mcp-rapports.md` (décisions de l'utilisateur consignées § 10). **Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import`.
