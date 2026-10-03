@@ -6,6 +6,14 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-04 (61) — Claude : sauvegardes planifiées (quotidienne / hebdomadaire / mensuelle), conservation et espace disque
+
+- **Politique** `.acra-update/backup-policy.json` (défaut : jour + semaine + mois activés, **3 copies de chaque**, 02 h) ; lib pure `backup-policy.ts` (validation, estimation `estimateStorage`, verdict `diskAdvice`, conseils `policyAdvice` 7/4/6, `nextRuns`, `backupOverview`).
+- **Exécution** : `scripts/acra-schedule.sh tick` (appelé chaque minute par `update-agent.sh`) → `acra-snapshot.sh create --reason scheduled --tier … --scheduled-for … --no-clone` (un point partagé entre fréquences, vérification complète si hebdo/mensuel), rétention GFS dans `acra-snapshot.sh prune`, reprise après échec (30 min), statistiques `backup-stats.json` (df/du, rafraîchies toutes les 10 min hors échéance).
+- **Interface** : `BackupSchedulePanel` (fréquences, copies, jour, heure ; estimation en direct, espace libre/occupé, verdict OK/marge faible/insuffisant, conseils de bonnes pratiques, dernier passage, prochaines exécutions) ; `POST /api/admin/backup/policy` (SUPER_ADMIN, validation, audit `INSTANCE_BACKUP_POLICY_CHANGED`) → demande `backup-policy` validée de nouveau par l'agent.
+- **Vérifié** : tests unitaires (lib, scripts avec docker simulé et heure simulée `ACRA_SCHEDULE_NOW`, composant, route). **NON vérifié** : aucune exécution réelle sur plusieurs jours (cron, `date` BSD/GNU hors macOS, `df`/`du` sur de gros volumes) ; estimation approximative tant qu'aucun point n'est mesuré (≈ 40 % de la base).
+- **Pièges** : l'heure de planification est celle du serveur ; un point planifié survit tant qu'une de ses fréquences le retient ; deux points créés dans la même seconde attendent la seconde suivante.
+
 ## 2026-10-03 (60) — Claude : plusieurs sous-secteurs par analyse, cohérence du contenu, expression de besoins protection sociale
 
 - **Plusieurs sous-secteurs** (`d614f57`) : `Analyse.sousSecteurs` (JSON ; migration `20261003130000_analyse_sous_secteurs`, classée « data », reprise de `sousSecteur`) ; le premier reste le principal dans `sousSecteur` (référentiels recommandés, mise en garde HDS, exports). Pur : `selectableSousSecteurIds`, `normalizeSousSecteurs`, `sousSecteursOf`, `resolveSousSecteursUpdate` (`lib/sous-secteurs.ts`) ; UI `SousSecteursPicker` (création + `AnalyseMetaEditor`) ; routes POST/PATCH ; ateliers 1–5, suggestions de risques, MCP (`read_sector_examples.sousSecteurs`, `recommend_risks_scenarios`).

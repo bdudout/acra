@@ -134,3 +134,15 @@ describe('backupOverview', () => {
     expect(backupOverview(big, tight).advice.status).toBe('CRITICAL')
   })
 })
+
+import { formatBytes } from '@/lib/backup-policy'
+describe('formatBytes', () => {
+  it('Mo en dessous de 1 Go, Go au-dessus, décimales utiles', () => {
+    expect(formatBytes(0, 'fr')).toBe('0 Mo')
+    expect(formatBytes(512 * 1024 ** 2, 'fr')).toBe('512 Mo')
+    expect(formatBytes(1.5 * GB, 'fr')).toBe('1,5 Go')
+    expect(formatBytes(18 * GB, 'fr')).toBe('18 Go')
+    expect(formatBytes(1.5 * GB, 'en')).toBe('1.5 GB')
+    expect(formatBytes(2048 * GB, 'fr')).toBe('2,0 To')
+  })
+})

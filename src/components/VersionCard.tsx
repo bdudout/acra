@@ -15,6 +15,8 @@ import UpdateRestorePanel from '@/components/UpdateRestorePanel'
 import type { UpdateStatus as FullUpdateStatus } from '@/lib/update-request'
 import type { SnapshotEntry } from '@/lib/snapshot'
 import type { OffsiteState } from '@/lib/offsite-status'
+import BackupSchedulePanel from '@/components/BackupSchedulePanel'
+import type { BackupPolicy, BackupStats } from '@/lib/backup-policy'
 import type { RunSummary } from '@/lib/update-request.server'
 
 type Channel = 'stable' | 'beta'
@@ -29,6 +31,7 @@ interface VersionInfo {
   impacts?: Record<string, { auditEntries: number; documents: number }>
   failedDbRetentionDays?: number
   offsite?: OffsiteState | null
+  backup?: { policy: BackupPolicy; stats: BackupStats | null }
   offsiteMaxAgeHours?: number
   run?: RunSummary | null
   latest: string | null
@@ -160,6 +163,12 @@ export default function VersionCard() {
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
       {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
         <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} onChanged={load} />
+      )}
+
+      {info && !info.deployConfigured && info.backup && (info.agentAvailable || info.backup.stats) && (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <BackupSchedulePanel key={JSON.stringify(info.backup.policy)} policy={info.backup.policy} stats={info.backup.stats} agentAvailable={info.agentAvailable} offsiteConfigured={Boolean(info.offsite)} onChanged={load} />
+        </div>
       )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">

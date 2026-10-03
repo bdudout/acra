@@ -59,6 +59,7 @@ export async function GET() {
     snapshots: agent.snapshots,
     impacts,
     offsite: agent.offsite,
+    backup: agent.backup,
     offsiteMaxAgeHours: Number.isInteger(Number(process.env.ACRA_OFFSITE_MAX_AGE_HOURS)) && Number(process.env.ACRA_OFFSITE_MAX_AGE_HOURS) > 0 ? Number(process.env.ACRA_OFFSITE_MAX_AGE_HOURS) : 48,
     failedDbRetentionDays: failedDbRetentionDays(process.env),
     run: agent.run,

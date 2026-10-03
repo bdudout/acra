@@ -138,3 +138,13 @@ export function backupOverview(policy: BackupPolicy, stats: BackupStats | null):
   const advice = stats ? diskAdvice({ freeBytes: stats.freeBytes, neededBytes: estimate.totalBytes, usedByBackupsBytes: stats.backupsBytes, pointBytes }) : { status: 'UNKNOWN' as DiskStatus, missingBytes: 0, additionalBytes: estimate.totalBytes }
   return { pointBytes, estimate, advice }
 }
+
+/** Taille lisible (Mo, Go, To ; unités localisées). */
+export function formatBytes(n: number, locale: string): string {
+  const fr = locale === 'fr', sp = locale === 'de' ? 'B' : fr ? 'o' : locale === 'es' || locale === 'it' ? 'B' : 'B'
+  const u = (k: string) => (fr ? `${k}o` : `${k}${sp}`)
+  const dec = (v: number) => v.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+  if (n >= 1024 * GB) return `${(n / (1024 * GB)).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${u('T')}`
+  if (n >= GB) return `${dec(n / GB)} ${u('G')}`
+  return `${Math.round(n / 1024 ** 2)} ${u('M')}`
+}
