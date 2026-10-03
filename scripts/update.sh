@@ -149,6 +149,8 @@ fi
 
 journal_init update "$FROM" "$FROM_SHA" "$TO" "$TO_SHA"
 status RUNNING "Préparation"
+if [ "$DOCKER" -eq 1 ]; then precheck_migrations "$TO_SHA"; fi
+status RUNNING "Préparation"
 step_ok PRECHECK
 
 # ── Mode sans Docker : le code seulement (comportement historique ; lot 6 pour la suite) ─────────

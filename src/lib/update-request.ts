@@ -18,6 +18,7 @@ export type UpdateState = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
 export interface UpdateStatusStep { step: string; ok: boolean; at: string }
 export interface UpdateStatus {
   state: UpdateState; channel?: UpdateChannel; version?: string; message?: string; at?: string
+  precheck?: { destructive: string[] }
   step?: UpdateRunState; code?: string; snapshotId?: string; from?: string; to?: string; rolledBack?: boolean; steps?: UpdateStatusStep[]
 }
 
@@ -62,6 +63,11 @@ export function parseUpdateStatus(raw: unknown): UpdateStatus | null {
   const from = str(o.from, 40); if (from) out.from = from
   const to = str(o.to, 40); if (to) out.to = to
   if (typeof o.rolledBack === 'boolean') out.rolledBack = o.rolledBack
+  const pre = o.precheck as { destructive?: unknown } | undefined
+  if (pre && Array.isArray(pre.destructive)) {
+    const d = pre.destructive.filter((x): x is string => typeof x === 'string' && /^\d{14}_[A-Za-z0-9_]{1,100}$/.test(x)).slice(0, 20)
+    if (d.length) out.precheck = { destructive: d }
+  }
   if (Array.isArray(o.steps)) {
     out.steps = o.steps.slice(-20).flatMap((x): UpdateStatusStep[] => {
       if (!x || typeof x !== 'object') return []

@@ -21,6 +21,7 @@ pkg_version() { sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p'
 RUN_ID=""; KIND="update"; FROM=""; FROM_SHA=""; TO=""; TO_SHA=""; SNAPSHOT_ID=""; STATE=""; STARTED=""
 STEP_ITEMS=()
 ROLLED_BACK=false; LAST_CODE=""
+PRECHECK_DESTRUCTIVE="${ACRA_PRECHECK_DESTRUCTIVE:-}"   # noms de migrations destructives en attente (PRECHECK, lot 5), séparés par des espaces
 
 journal_write() {
   mkdir -p "$RUN_DIR"
@@ -71,8 +72,9 @@ status() { # state message [code]
     [ "$first" -eq 1 ] || steps="$steps,"; first=0
     steps="$steps{\"step\":\"$st\",\"ok\":$ok,\"at\":\"$at\"}"
   done
-  printf '{"state":"%s","channel":"%s","version":"%s","message":"%s","at":"%s","step":"%s","code":%s,"snapshotId":%s,"from":"%s","to":"%s","rolledBack":%s,"steps":[%s]}\n' \
-    "$state" "${CHANNEL:-}" "${TO:-}" "$msg" "$(iso)" "${STATE:-}" "$codej" "$sid" "${FROM:-}" "${TO:-}" "$ROLLED_BACK" "$steps" > "$STATUS.tmp" \
+  local destr="" d; for d in $PRECHECK_DESTRUCTIVE; do destr="$destr${destr:+,}\"$d\""; done
+  printf '{"state":"%s","channel":"%s","version":"%s","message":"%s","at":"%s","step":"%s","code":%s,"snapshotId":%s,"from":"%s","to":"%s","rolledBack":%s,"precheck":{"destructive":[%s]},"steps":[%s]}\n' \
+    "$state" "${CHANNEL:-}" "${TO:-}" "$msg" "$(iso)" "${STATE:-}" "$codej" "$sid" "${FROM:-}" "${TO:-}" "$ROLLED_BACK" "$destr" "$steps" > "$STATUS.tmp" \
     && chmod 644 "$STATUS.tmp" && mv "$STATUS.tmp" "$STATUS"
 }
 
@@ -96,6 +98,20 @@ restart_old() { # redémarre sans reconstruire (les images de l'ancienne version
   # shellcheck disable=SC2086
   [ -z "$list" ] || "${COMPOSE[@]}" up -d --no-build $list >/dev/null 2>&1 || true
   STOPPED=0
+}
+
+# ── PRECHECK : migrations en attente et destructives (lot 5) — facultatif (nécessite node et tsx sur l'hôte) ──────────
+precheck_migrations() { # sha cible
+  command -v npx >/dev/null 2>&1 || return 0
+  local tmp out; tmp="$(mktemp "${TMPDIR:-/tmp}/acra-applied.XXXXXX")"
+  # shellcheck disable=SC2016
+  "${COMPOSE[@]}" exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -c "SELECT migration_name FROM \"_prisma_migrations\" WHERE finished_at IS NOT NULL"' > "$tmp" 2>/dev/null || { rm -f "$tmp"; return 0; }
+  out="$(npx --no-install tsx scripts/check-migrations.ts --json --ref "$1" --applied-file "$tmp" 2>/dev/null)" || { rm -f "$tmp"; return 0; }
+  rm -f "$tmp"
+  PRECHECK_DESTRUCTIVE="$(printf '%s' "$out" | sed -n 's/.*"destructive":\[\([^]]*\)\].*/\1/p' | tr -d '",' )"
+  export ACRA_PRECHECK_DESTRUCTIVE="$PRECHECK_DESTRUCTIVE"
+  [ -z "$PRECHECK_DESTRUCTIVE" ] || echo "⚠ Migrations destructives en attente : $PRECHECK_DESTRUCTIVE (le point de restauration protège ; un retour arrière du code seul ne suffirait pas)." >&2
+  return 0
 }
 
 # ── Santé et fumée ────────────────────────────────────────────────────────────────────────────────

@@ -63,3 +63,11 @@ describe('parseUpdateStatus — champs de la machine à états (lot 2)', () => {
     expect(out?.snapshotId).toBeUndefined(); expect(out?.code).toBeUndefined()
   })
 })
+
+describe('parseUpdateStatus — precheck (lot 5)', () => {
+  it('ne garde que des noms de migrations valides', () => {
+    const out = parseUpdateStatus({ state: 'RUNNING', precheck: { destructive: ['20261004000000_drop_x', '../evil', 5] } })
+    expect(out?.precheck).toEqual({ destructive: ['20261004000000_drop_x'] })
+    expect(parseUpdateStatus({ state: 'RUNNING', precheck: { destructive: [] } })?.precheck).toBeUndefined()
+  })
+})

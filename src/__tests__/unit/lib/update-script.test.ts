@@ -171,3 +171,20 @@ describe('update.sh v2 — retour arrière manuel', () => {
     expect(status().code).toBe('invalid_request')
   })
 })
+
+describe('update.sh v2 — PRECHECK des migrations (lot 5)', () => {
+  it('publie les migrations destructives en attente dans le statut quand tsx est disponible', () => {
+    inst = makeInstance()
+    writeFileSync(path.join(inst.bin, 'npx'), '#!/bin/sh\necho \'{"violations":[],"pending":[{"migration":"20261004000000_drop_x","class":"destructive"}],"destructive":["20261004000000_drop_x"]}\'\n', { mode: 0o755 })
+    const r = update()
+    expect(r.status, r.stderr).toBe(0)
+    expect(status().precheck).toEqual({ destructive: ['20261004000000_drop_x'] })
+    expect(r.stderr).toMatch(/Migrations destructives en attente/)
+  })
+  it('sans npx : pas de PRECHECK des migrations, la mise à jour continue', () => {
+    inst = makeInstance()
+    const r = update()
+    expect(r.status).toBe(0)
+    expect(status().precheck).toEqual({ destructive: [] })
+  })
+})

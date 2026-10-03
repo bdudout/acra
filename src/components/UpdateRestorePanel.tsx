@@ -54,6 +54,11 @@ export default function UpdateRestorePanel({ status, run, snapshots, agentAvaila
 
   return (
     <div className="mt-4 space-y-3">
+      {status?.precheck?.destructive?.length ? (
+        <p role="note" className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" /> {fill(v.restore.destructiveNote, { count: String(status.precheck.destructive.length) })}
+        </p>
+      ) : null}
       {inProgress && (
         <div>
           <h3 className="text-sm font-semibold text-gray-800">{v.restore.progressTitle}</h3>

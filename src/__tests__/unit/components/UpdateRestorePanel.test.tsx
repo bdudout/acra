@@ -69,6 +69,11 @@ describe('UpdateRestorePanel', () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalled())
   })
 
+  it('signale les migrations destructives en attente (PRECHECK)', () => {
+    render(<UpdateRestorePanel {...base} status={{ state: 'RUNNING', precheck: { destructive: ['20261004000000_drop_x'] } }} />)
+    expect(screen.getByRole('note').textContent).toContain('1 migration(s) destructive(s)')
+  })
+
   it('annuler ferme le dialogue sans appel réseau ; mise à jour en cours : pas de bouton de retour', () => {
     const { rerender } = render(<UpdateRestorePanel {...base} />)
     fireEvent.click(screen.getByRole('button', { name: 'Revenir à ce point' }))
