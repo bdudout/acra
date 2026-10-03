@@ -10,6 +10,7 @@ import {
   STRATEGIES_TRAITEMENT, ATELIERS_META,
 } from '@/lib/ebios-data'
 import { SECTOR_FAMILIES, sectorExemplesFor, type SectorExempleCategory } from '@/lib/exemples-sectoriels'
+import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import type { Locale } from '@/lib/i18n/index'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
@@ -45,7 +46,7 @@ export const readTaxonomieTool: McpTool<McpContext> = {
 }
 
 const SECTOR_CATEGORIES: SectorExempleCategory[] =
-  ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques', 'partiesPrenantes']
+  ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques', 'partiesPrenantes', 'actionsElementaires', 'mesuresEcosysteme', 'mesures']
 const LOCALES: Locale[] = ['fr', 'en', 'it', 'es', 'de']
 
 /**
@@ -64,7 +65,7 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
     type: 'object',
     properties: {
       secteur: { type: 'string', description: "Libellé du secteur (ex. « santé », « finance »)." },
-      sousSecteur: { type: 'string', description: 'Sous-secteur / profession (affine les exemples).' },
+      sousSecteur: { type: 'string', description: 'Identifiant de sous-secteur (cf. `sousSecteursDisponibles` de la réponse) : affine fortement les exemples.' },
       category: { type: 'string', enum: SECTOR_CATEGORIES, description: 'Catégorie ciblée (toutes si absent).' },
       locale: { type: 'string', enum: LOCALES, description: 'Langue des libellés (défaut fr).' },
     },
@@ -90,7 +91,7 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
     const exemples: Record<string, unknown[]> = {}
     for (const cat of wanted) exemples[cat] = sectorExemplesFor(secteur, cat, locale, sousSecteur)
     const total = Object.values(exemples).reduce((n, a) => n + a.length, 0)
-    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, locale, total, exemples })
+    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, sousSecteursDisponibles: sousSecteurIdsFor(secteur), locale, total, exemples })
   },
 }
 

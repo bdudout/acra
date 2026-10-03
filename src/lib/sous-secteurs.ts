@@ -11,10 +11,12 @@
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
 /** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'technique'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
+  // En tête : « Interconnessione » (it) contient des sous-chaînes d'autres familles.
+  { famille: 'technique', kw: ['technique', 'interconnexion', 'interconnection', 'technical', 'technik', 'kopplung', 'técnico', 'tecnico', 'interconexión', 'interconexion', 'interconnessione'] },
   { famille: 'sante', kw: ['santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health', 'salud', 'gesundheit', 'sanità', 'sanita'] },
   { famille: 'banque', kw: ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech', 'bank', 'insurance', 'versicherung', 'seguro', 'assicura'] },
   { famille: 'defense', kw: ['défense', 'defense', 'défence', 'defence', 'militaire', 'verteidigung', 'defensa', 'difesa', 'national'] },

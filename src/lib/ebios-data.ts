@@ -36,6 +36,8 @@ export const SECTEURS_ACTIVITE = [
   'Agriculture / Agroalimentaire', 'Immobilier / Construction',
   'Médias / Culture', 'Eau / Assainissement',
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
+  // Catégorie technique (objet de l'analyse = une interconnexion entre SI, quel que soit le métier)
+  'Technique / Interconnexion de SI',
   'Autre',
 ]
 
@@ -63,6 +65,9 @@ export const SOUS_SECTEURS = [
   { id: 'sante-transport', famille: 'sante', label: 'Transport sanitaire (ambulances, VSL, taxis conventionnés)' },
   { id: 'sante-dm-optique', famille: 'sante', label: 'Dispositifs médicaux, optique, audioprothèse, orthopédie' },
   { id: 'sante-esante', famille: 'sante', label: 'Télémédecine / plateforme e-santé / hébergeur de données de santé' },
+  { id: 'sante-portail', famille: 'sante', label: 'Portail d’accès aux données de santé (patients, adhérents, professionnels)' },
+  { id: 'sante-entrepot', famille: 'sante', label: 'Entrepôt de données de santé / plateforme d’accès pour la recherche' },
+  { id: 'sante-delegataire', famille: 'sante', label: 'Délégataire de gestion / courtier gestionnaire en assurance santé' },
   // Banque / Finance
   { id: 'banque-detail', famille: 'banque', label: 'Banque de détail' },
   { id: 'banque-assurance', famille: 'banque', label: 'Assurance / mutuelle' },
@@ -101,6 +106,11 @@ export const SOUS_SECTEURS = [
   // Immobilier (issue #100) — agence vs construction/BTP
   { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
   { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
+  // Technique — interconnexions entre systèmes d'information (tous métiers)
+  { id: 'technique-interco-prestataire', famille: 'technique', label: 'Interconnexion avec un prestataire qui livre des données' },
+  { id: 'technique-interco-metier', famille: 'technique', label: 'Échange de données métier entre SI (partenaire, filiale, délégataire)' },
+  { id: 'technique-api-exposee', famille: 'technique', label: 'API exposées à des tiers (partenaires, clients)' },
+  { id: 'technique-integration', famille: 'technique', label: 'Plateforme d’intégration / transfert de fichiers (bus, MFT, ETL)' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

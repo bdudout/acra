@@ -17,6 +17,7 @@ import en from '@/lib/i18n/exemples-sectoriels/en'
 import de from '@/lib/i18n/exemples-sectoriels/de'
 import es from '@/lib/i18n/exemples-sectoriels/es'
 import it from '@/lib/i18n/exemples-sectoriels/it'
+import { extItemsFor, localizeExt } from '@/lib/exemples-sectoriels-ext'
 
 /** Catégorie d'exemples sectoriels (sous-ensemble des catégories d'atelier proposées par secteur). */
 export type SectorExempleCategory =
@@ -26,6 +27,10 @@ export type SectorExempleCategory =
   | 'sourcesRisque'
   | 'scenariosStrategiques'
   | 'partiesPrenantes'
+  // Ateliers 3 à 5 (contenu d'extension, cf. exemples-sectoriels-ext.ts)
+  | 'actionsElementaires'
+  | 'mesuresEcosysteme'
+  | 'mesures'
 
 // Dictionnaires de traduction (FR = source dans les données ci-dessous, donc absent).
 // Clé : `${famille}.${categorie}.${index}.${champ}` (+ `.impacts.${j}` pour les tableaux).
@@ -37,7 +42,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'technique'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -820,7 +825,17 @@ const ASSOCIATION: SectorFamily = {
   },
 }
 
-export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
+// ─────────────────────────────────────────────────────────────────────────────
+// TECHNIQUE — interconnexions entre SI (tout métier) : contenu dans exemples-sectoriels-ext.ts
+// ─────────────────────────────────────────────────────────────────────────────
+const TECHNIQUE: SectorFamily = {
+  key: 'technique',
+  match: ['technique', 'interconnexion', 'interconnection', 'technical', 'technik', 'kopplung', 'técnico', 'tecnico', 'interconexión', 'interconexion', 'interconnessione'],
+  exemples: {},
+}
+
+// TECHNIQUE en tête : « Interconnessione » (it) contient « ess » (famille associations).
+export const SECTOR_FAMILIES: SectorFamily[] = [TECHNIQUE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
@@ -830,6 +845,15 @@ export const SECTOR_FAMILIES: SectorFamily[] = [SANTE, FINANCE, INDUSTRIE, PUBLI
 /** Sous-profession / sous-mode ciblé à partir d'un id de sous-secteur (juridique, transport…). */
 function professionFromSousSecteur(sousSecteur?: string | null): string | undefined {
   const v = (sousSecteur ?? '').toLowerCase()
+  // Interconnexions entre SI (famille technique)
+  if (v.includes('technique-interco-prestataire')) return 'prestataire'
+  if (v.includes('technique-interco-metier')) return 'metier'
+  if (v.includes('technique-api')) return 'api'
+  if (v.includes('technique-integration')) return 'integration'
+  // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
+  if (v.includes('sante-portail')) return 'portail'
+  if (v.includes('sante-entrepot')) return 'entrepot'
+  if (v.includes('sante-delegataire')) return 'delegataire'
   if (v.includes('notaire')) return 'notaire'
   if (v.includes('avocat')) return 'avocat'
   if (v.includes('huissier')) return 'huissier'
@@ -897,10 +921,13 @@ export function sectorExemplesFor(
   const prof = professionFromSousSecteur(sousSecteur) ?? professionFromSecteur(fam.key, s)
   // Localisation par INDICE D'ORIGINE (clés i18n indexées), puis filtrage par
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
-  return items
+  const base = items
     .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
     .filter(it => (prof ? !it.sousProfession || it.sousProfession === prof : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
     .map(({ sousProfession, ...rest }) => rest)
+  // Extension (textes ×5 dans la donnée) : éléments communs + ceux de la sous-profession choisie.
+  const ext = extItemsFor(fam.key, category, prof).map(x => localizeExt(x, locale))
+  return [...base, ...ext]
 }
 
 /** Applique les traductions à un exemple (repli sur le texte FR source si clé absente). */

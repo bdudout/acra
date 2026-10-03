@@ -163,7 +163,12 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
     () => rankExemples(withSectorExemples(scExamples, analyse?.secteur, 'scenariosStrategiques', locale, analyse?.sousSecteur), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [scExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
-  const meExamples = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const meExamplesBase = useMemo(() => resolveExemples(exOverride.mesuresEcosysteme, defaultExemplesFor('mesuresEcosysteme', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Mesures d'écosystème sectorielles (contrats des éditeurs/hébergeurs, conventions d'interconnexion…) en tête
+  const meExamples = useMemo(
+    () => withSectorExemples(meExamplesBase, analyse?.secteur, 'mesuresEcosysteme', locale, analyse?.sousSecteur) as any[],
+    [meExamplesBase, analyse?.secteur, analyse?.sousSecteur, locale],
+  )
 
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
