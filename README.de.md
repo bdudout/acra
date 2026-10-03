@@ -414,6 +414,8 @@ scripts/update-agent.sh --install                      # optional: aktiviert die
 docker compose up -d --build
 ```
 
+**Wiederherstellungspunkt und automatisches Zurücksetzen.** Vor jeder Änderung hält das Update die Anwendung an und legt einen **geprüften Wiederherstellungspunkt** an (`scripts/acra-snapshot.sh`: Datenbank-Dump im Custom-Format, Dokumente, Prüfsummen, Datenbankklon für schnelle Wiederherstellung). Schlägt Migration, Start oder Gesundheitsprüfung fehl, erfolgt das **Zurücksetzen automatisch** (Code, Datenbank, Dokumente); das Ergebnis erscheint unter Administration → Version, wo auch die Punkte aufgelistet sind und **„Zu diesem Punkt zurückkehren“** angeboten wird (zur Bestätigung ist die Version einzugeben). Variablen: `ACRA_BACKUP_DIR`, `ACRA_SNAPSHOT_KEEP`, `ACRA_BACKUP_AGE_RECIPIENT` (`age`-Verschlüsselung), `ACRA_FAILED_DB_RETENTION_DAYS`. Benötigter Speicherplatz: etwa 2 × Datenbank + Dokumente. Manuelles Verfahren: `docs/runbook-exploitation.md` § 6.
+
 ---
 
 ### Sicherung und Wiederherstellung

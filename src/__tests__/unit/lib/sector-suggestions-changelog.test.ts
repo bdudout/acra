@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, listSectorSuggestions } from '@/lib/sector-suggestions'
+import { ARCHI_PATTERNS } from '@/lib/patterns-archi'
 import { CATALOGUE_CHANGELOG, compareCatalogueVersions, newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 
 describe('historique du catalogue', () => {
   it('chaque clé de l’historique existe dans le catalogue, une seule fois ; la dernière version est la version courante', () => {
-    const all = new Set(SECTOR_CODES.flatMap(s => listSectorSuggestions(s, 'fr').map(i => i.key)))
+    // Le catalogue = socle + secteurs + éléments rattachés aux patterns d'architecture (tous cochés).
+    const patterns = ARCHI_PATTERNS.map(p => p.code)
+    const all = new Set([null, ...SECTOR_CODES].flatMap(s => listSectorSuggestions(s as never, 'fr', patterns).map(i => i.key)))
     const seen = new Set<string>()
     for (const entry of CATALOGUE_CHANGELOG) for (const key of entry.added) {
       expect(all.has(key), key).toBe(true); expect(seen.has(key), `doublon ${key}`).toBe(false); seen.add(key)

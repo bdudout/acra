@@ -11,10 +11,12 @@
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
 /** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'protection_sociale'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
+  // Avant santé et banque : « Sozialversicherung » contient « versicherung », « assurance maladie » contient « assur ».
+  { famille: 'protection_sociale', kw: ['protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'proteccion social', 'seguridad social', 'protezione sociale', 'previdenza sociale'] },
   { famille: 'sante', kw: ['santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health', 'salud', 'gesundheit', 'sanità', 'sanita'] },
   { famille: 'banque', kw: ['banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech', 'bank', 'insurance', 'versicherung', 'seguro', 'assicura'] },
   { famille: 'defense', kw: ['défense', 'defense', 'défence', 'defence', 'militaire', 'verteidigung', 'defensa', 'difesa', 'national'] },
@@ -57,4 +59,58 @@ const HDS_SELF_HOSTING = new Set(['sante-hopital', 'sante-ehpad'])
 /** Faut-il afficher la mise en garde HDS ? Non pour les hébergeurs (CHU/EHPAD). */
 export function showsHdsCaveat(sousSecteur?: string | null): boolean {
   return !HDS_SELF_HOSTING.has(sousSecteur ?? '')
+}
+
+// ─── Plusieurs sous-secteurs par analyse ──────────────────────────────────────
+// Une analyse peut combiner jusqu'à MAX_SOUS_SECTEURS sous-secteurs. Règle de cohérence : seuls les sous-secteurs de la
+// famille du secteur sont proposés ; jamais ceux d'un autre secteur. Le premier sous-secteur est le principal (repris
+// dans `Analyse.sousSecteur` pour les usages à valeur unique). La forme technique du système (exposition, interconnexions,
+// administration…) se décrit par les PATTERNS d'architecture (lib/patterns-archi), indépendants du secteur.
+
+export const MAX_SOUS_SECTEURS = 4
+
+/** Ids proposables pour ce secteur : ceux de sa famille. Vide sans secteur. */
+export function selectableSousSecteurIds(secteur?: string | null): string[] {
+  if (!(secteur ?? '').trim()) return []
+  return sousSecteurIdsFor(secteur)
+}
+
+/** Sélection assainie : ids cohérents avec le secteur, sans doublon, ordre conservé, plafonnée. */
+export function normalizeSousSecteurs(secteur: string | null | undefined, input: unknown): string[] {
+  if (!Array.isArray(input)) return []
+  const allowed = new Set(selectableSousSecteurIds(secteur))
+  const out: string[] = []
+  for (const v of input) {
+    if (typeof v === 'string' && allowed.has(v) && !out.includes(v)) out.push(v)
+    if (out.length >= MAX_SOUS_SECTEURS) break
+  }
+  return out
+}
+
+/** Sous-secteurs d'une analyse : la liste si renseignée, sinon l'ancien champ unique. */
+export function sousSecteursOf(a: { sousSecteurs?: unknown; sousSecteur?: string | null } | null | undefined): string[] {
+  if (!a) return []
+  // Colonne JSON : on ne garde que des chaînes.
+  const list = Array.isArray(a.sousSecteurs) ? a.sousSecteurs.filter((x): x is string => typeof x === 'string' && x !== '') : []
+  if (list.length) return list
+  return a.sousSecteur ? [a.sousSecteur] : []
+}
+
+/**
+ * Valeurs à enregistrer à la création / modification d'une analyse. `input.sousSecteurs` (liste) est prioritaire ;
+ * à défaut `input.sousSecteur` (ancien champ unique) ; à défaut les valeurs existantes, re-validées contre le secteur
+ * effectif (un changement de secteur retire ce qui devient incohérent).
+ */
+export function resolveSousSecteursUpdate(a: {
+  secteur: string | null | undefined
+  input: { sousSecteurs?: unknown; sousSecteur?: unknown }
+  existing?: { sousSecteurs?: unknown; sousSecteur?: string | null } | null
+}): { sousSecteurs: string[]; sousSecteur: string | null } {
+  const raw = 'sousSecteurs' in a.input && a.input.sousSecteurs !== undefined
+    ? a.input.sousSecteurs
+    : 'sousSecteur' in a.input && a.input.sousSecteur !== undefined
+      ? (a.input.sousSecteur ? [a.input.sousSecteur] : [])
+      : sousSecteursOf(a.existing)
+  const sousSecteurs = normalizeSousSecteurs(a.secteur, raw)
+  return { sousSecteurs, sousSecteur: sousSecteurs[0] ?? null }
 }

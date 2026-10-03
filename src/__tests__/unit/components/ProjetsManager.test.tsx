@@ -6,6 +6,7 @@ vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
+vi.mock('@/lib/i18n/use-ebios-data', () => ({ useEbiosData: () => ({ SECTEURS_ACTIVITE: ['Santé', 'Autre'] }) }))
 const push = vi.fn()
 const search = { value: '' }
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(search.value) }))
@@ -28,9 +29,18 @@ describe('ProjetsManager', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lancer un projet 360' }))
     fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Migration cloud' } })
     fireEvent.change(screen.getByLabelText('Description / périmètre'), { target: { value: 'Paie et RH' } })
+    fireEvent.change(screen.getByRole('combobox', { name: /secteur/i }), { target: { value: 'Santé' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /SI standard/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Créer le projet' }))
     await waitFor(() => expect(push).toHaveBeenCalledWith('/analyses/n1/atelier/1?phase=qualification'))
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', methode: 'PROJET_360' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', secteur: 'Santé', patternsArchi: ['SI_STANDARD'], methode: 'PROJET_360' })
+  })
+
+  it('ne permet pas de créer sans le secteur et le pattern qui cadrent le projet', () => {
+    render(<ProjetsManager projets={[]} canCreate />)
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer un projet 360' }))
+    fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Projet à cadrer' } })
+    expect((screen.getByRole('button', { name: 'Créer le projet' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('propose de lancer une analyse cyber depuis le projet et liste les analyses déjà rattachées', () => {

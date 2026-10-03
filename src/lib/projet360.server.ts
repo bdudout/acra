@@ -11,6 +11,7 @@ import { getEffectiveScaleConfig } from './configuration-server'
 import { RISK_METHODS, METHOD_META } from './methodes'
 import { sanitizeDirectRisque } from './risque-direct'
 import { defaultAnswers360, planPopulation360, isDomaine360, type Faits360 } from './projet360'
+import { patternsOf } from './patterns-archi'
 import type { Translations } from './i18n'
 
 const CYBER_METHODS = RISK_METHODS.filter(m => METHOD_META[m].cyber) as string[]
@@ -33,11 +34,11 @@ export async function populateProjet360(analyseId: string, orgId: string, t: Tra
   const [faits, cfg, analyse, scale] = await Promise.all([
     collectFaits360(orgId),
     getOrgConfig(orgId),
-    prisma.analyse.findUnique({ where: { id: analyseId }, select: { qualification: true, risques: { select: { nom: true, qualificationRuleId: true } } } }),
+    prisma.analyse.findUnique({ where: { id: analyseId }, select: { qualification: true, patternsArchi: true, risques: { select: { nom: true, qualificationRuleId: true } } } }),
     getEffectiveScaleConfig(orgId),
   ])
   if (!analyse) return { answers: 0, risks: 0 }
-  const { answers, sources } = defaultAnswers360(faits)
+  const { answers, sources } = defaultAnswers360({ ...faits, patterns: patternsOf(analyse) })
   const base = analyse.qualification && typeof analyse.qualification === 'object' && !Array.isArray(analyse.qualification) ? analyse.qualification as Record<string, unknown> : {}
   await prisma.analyse.update({ where: { id: analyseId }, data: { qualification: { ...base, ...answers, 'p360._sources': sources } } })
 

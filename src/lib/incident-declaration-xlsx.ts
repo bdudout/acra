@@ -3,12 +3,12 @@
 // il n'est pas au format de dépôt. Toute chaîne est neutralisée contre l'injection de formule (CWE-1236).
 import ExcelJS from 'exceljs'
 import { sanitizeForSpreadsheet as S } from './spreadsheet-safe'
-import { doraFieldRows, itsDatetime, type DeclarationIncident, type DeclarationContext, type Declaration, type DeclarationValue, type DoraStage } from './incident-declaration'
+import { doraFieldRows, itsDatetime, RGPD_FIELDS, type DeclarationIncident, type DeclarationContext, type Declaration, type DeclarationValue, type DoraStage } from './incident-declaration'
 
 export type ExportLang = 'fr' | 'en' | 'de' | 'es' | 'it'
 export type DeclarationExport =
   | { kind: 'DORA'; stage: DoraStage; declaration: Declaration }
-  | { kind: 'REGIME'; code: string; label?: string; autorite?: string; phase: { code: string; label?: string }; echeance: Date | null; soumisLe: Date | null; reference?: string }
+  | { kind: 'REGIME'; code: string; label?: string; autorite?: string; phase: { code: string; label?: string }; echeance: Date | null; soumisLe: Date | null; reference?: string; declaration?: Declaration }
 
 const L: Record<ExportLang, Record<string, string>> = {
   fr: { readme: 'Lisez-moi', stage_INITIAL: 'Notification initiale', stage_INTERMEDIATE: 'Rapport intermédiaire', stage_FINAL: 'Rapport final', decl: 'Déclaration', no: 'N°', field: 'Champ', type: 'Type', mandatory: 'Obligatoire', condition: 'Condition', value: 'Valeur', status: 'Statut', allowed: 'Valeurs admises',
@@ -40,6 +40,15 @@ const L: Record<ExportLang, Record<string, string>> = {
 
 const show = (v: DeclarationValue | undefined): string | number => v === undefined ? '' : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : Array.isArray(v) ? S(v.join('; ')) : typeof v === 'number' ? v : S(v)
 const head = (row: ExcelJS.Row) => row.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4338CA' } }; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.alignment = { vertical: 'middle', wrapText: true } })
+
+// Rubriques de l'art. 33 § 3 du RGPD (formulation proche du texte officiel ; vérifier sur EUR-Lex avant dépôt).
+const RG: Record<ExportLang, { sheet: string; todo: string; label: Record<string, string> }> = {
+  fr: { sheet: 'RGPD art. 33 § 3', todo: 'À compléter', label: { nature: 'Nature de la violation de données à caractère personnel', categoriesPersonnes: 'Catégories de personnes concernées', nbPersonnes: 'Nombre approximatif de personnes concernées', categoriesDonnees: 'Catégories d’enregistrements de données concernés', nbEnregistrements: 'Nombre approximatif d’enregistrements concernés', dpo: 'Nom et coordonnées du délégué à la protection des données ou autre point de contact', consequences: 'Conséquences probables de la violation', mesures: 'Mesures prises ou proposées pour remédier à la violation et atténuer ses conséquences', retardMotif: 'Motifs du retard (notification au-delà de 72 heures)' } },
+  en: { sheet: 'GDPR Art. 33(3)', todo: 'To complete', label: { nature: 'Nature of the personal data breach', categoriesPersonnes: 'Categories of data subjects concerned', nbPersonnes: 'Approximate number of data subjects concerned', categoriesDonnees: 'Categories of personal data records concerned', nbEnregistrements: 'Approximate number of personal data records concerned', dpo: 'Name and contact details of the data protection officer or other contact point', consequences: 'Likely consequences of the personal data breach', mesures: 'Measures taken or proposed to address the breach and mitigate its possible adverse effects', retardMotif: 'Reasons for the delay (notification after 72 hours)' } },
+  de: { sheet: 'DSGVO Art. 33 Abs. 3', todo: 'Zu ergänzen', label: { nature: 'Art der Verletzung des Schutzes personenbezogener Daten', categoriesPersonnes: 'Kategorien der betroffenen Personen', nbPersonnes: 'Ungefähre Zahl der betroffenen Personen', categoriesDonnees: 'Kategorien der betroffenen personenbezogenen Datensätze', nbEnregistrements: 'Ungefähre Zahl der betroffenen personenbezogenen Datensätze', dpo: 'Name und Kontaktdaten des Datenschutzbeauftragten oder einer sonstigen Anlaufstelle', consequences: 'Wahrscheinliche Folgen der Verletzung', mesures: 'Ergriffene oder vorgeschlagene Maßnahmen zur Behebung und Abmilderung', retardMotif: 'Gründe für die Verzögerung (Meldung nach mehr als 72 Stunden)' } },
+  es: { sheet: 'RGPD art. 33.3', todo: 'Por completar', label: { nature: 'Naturaleza de la violación de la seguridad de los datos personales', categoriesPersonnes: 'Categorías de interesados afectados', nbPersonnes: 'Número aproximado de interesados afectados', categoriesDonnees: 'Categorías de registros de datos personales afectados', nbEnregistrements: 'Número aproximado de registros de datos personales afectados', dpo: 'Nombre y datos de contacto del delegado de protección de datos u otro punto de contacto', consequences: 'Posibles consecuencias de la violación', mesures: 'Medidas adoptadas o propuestas para poner remedio y mitigar los posibles efectos negativos', retardMotif: 'Motivos del retraso (notificación pasadas 72 horas)' } },
+  it: { sheet: 'GDPR art. 33 par. 3', todo: 'Da completare', label: { nature: 'Natura della violazione dei dati personali', categoriesPersonnes: 'Categorie di interessati', nbPersonnes: 'Numero approssimativo di interessati', categoriesDonnees: 'Categorie di registrazioni dei dati personali', nbEnregistrements: 'Numero approssimativo di registrazioni dei dati personali', dpo: 'Nome e dati di contatto del responsabile della protezione dei dati o di altro punto di contatto', consequences: 'Probabili conseguenze della violazione', mesures: 'Misure adottate o di cui si propone l’adozione per porre rimedio e attenuare i possibili effetti negativi', retardMotif: 'Motivi del ritardo (notifica oltre le 72 ore)' } },
+}
 
 export async function buildDeclarationWorkbook(what: DeclarationExport, inc: DeclarationIncident, ctx: DeclarationContext, lang: ExportLang): Promise<Buffer> {
   const t = L[lang] ?? L.fr
@@ -81,6 +90,18 @@ export async function buildDeclarationWorkbook(what: DeclarationExport, inc: Dec
     if (inc.dateDetection) add(t.detected, itsDatetime(inc.dateDetection) ?? ''); if (inc.dateSurvenance) add(t.occurred, itsDatetime(inc.dateSurvenance) ?? '')
     if (inc.statut) add(t.statusInc, inc.statut)
     ws.getColumn(1).font = { bold: true }; ws.eachRow(r => { r.alignment = { vertical: 'top', wrapText: true } })
+    if (what.code === 'RGPD_33') {
+      const rg = RG[lang] ?? RG.fr
+      const w2 = wb.addWorksheet(rg.sheet)
+      w2.columns = [{ width: 70 }, { width: 70 }]
+      for (const f of RGPD_FIELDS) {
+        const v = what.declaration?.[f.id] ?? (f.key === 'nature' ? inc.description ?? undefined : undefined)
+        const row = w2.addRow([`${rg.label[f.key]} (${f.art})`, v === undefined ? rg.todo : show(v)])
+        row.alignment = { vertical: 'top', wrapText: true }
+        if (v === undefined) row.getCell(2).font = { bold: true, color: { argb: 'FFB91C1C' } }
+      }
+      w2.getColumn(1).font = { bold: true }
+    }
   }
   return Buffer.from(await wb.xlsx.writeBuffer())
 }

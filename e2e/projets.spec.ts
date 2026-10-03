@@ -9,6 +9,10 @@ test.describe('Projets 360', () => {
     await page.getByRole('button', { name: 'Lancer un projet 360' }).click()
     await page.getByLabel('Nom du projet').fill('e2e_Projet portail')
     await page.getByLabel('Description / périmètre').fill('Portail client — périmètre e2e')
+    const sector = page.getByRole('combobox', { name: /secteur/i })
+    await sector.selectOption({ index: 1 })
+    const chosenSector = await sector.inputValue()
+    await page.getByRole('checkbox', { name: /SI standard/ }).check()
     await page.getByRole('button', { name: 'Créer le projet' }).click()
     // Le questionnaire de qualification s'ouvre directement.
     await expect(page).toHaveURL(/\/atelier\/1\?phase=qualification/)
@@ -20,5 +24,7 @@ test.describe('Projets 360', () => {
     await expect(page).toHaveURL(/\/analyses\/new\?projet=/)
     await expect(page.locator('#projet-source')).not.toHaveValue('')
     await expect(page.locator('#analyse-nom')).toHaveValue('Analyse cyber — e2e_Projet portail')
+    await expect(page.getByRole('combobox', { name: /secteur/i })).toHaveValue(chosenSector)
+    await expect(page.getByRole('checkbox', { name: /SI standard/ })).toBeChecked()
   })
 })

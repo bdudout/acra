@@ -9,6 +9,7 @@
  * L'ancien « propriétaire » suggéré (fonction) n'est pas repris : un propriétaire n'est jamais présumé.
  */
 import type { CatalogueItem, Localized } from './sector-suggestions'
+import { EXT_BALE } from './sector-packs-ext'
 
 const l = (fr: string, en: string, de: string, es: string, it: string): Localized => ({ fr, en, de, es, it })
 const r = (key: string, sector: CatalogueItem['sector'], title: Localized, processKey: string, description: Localized): CatalogueItem =>
@@ -46,6 +47,7 @@ export const MERGED_REGISTRY_RISKS: CatalogueItem[] = [
  * des processus). Classement proposé, à revoir avec la revue métier.
  */
 export const RISK_BALE: Record<string, 1 | 2 | 3 | 4 | 5 | 6 | 7> = {
+  ...EXT_BALE,
   'core.risk.payment-fraud': 2, 'core.risk.ransomware': 2, 'core.risk.supplier-outage': 6, 'core.risk.data-leak': 4,
   'core.risk.key-person': 3, 'core.risk.process-error': 7, 'core.risk.privileged-access': 2, 'core.risk.leavers': 7,
   'core.risk.backup-failure': 6, 'core.risk.unpatched': 6, 'core.risk.supplier-contract': 7, 'core.risk.detection-gap': 2,

@@ -45,6 +45,43 @@ export function filtrerControleExterne<T extends { source: string }>(constats: T
   return constats.filter(c => c.source === 'REGULATEUR' || c.source === 'AUDITEUR_EXTERNE')
 }
 
+export interface FiltresSuiviRegulateur {
+  q?: string
+  statut?: string
+  /** '1'…'4' ou 'NONE' (criticité non renseignée). */
+  criticite?: string
+  /** ECHUE (non terminé, échéance dépassée) | SOUS_30J | A_VENIR (au-delà de 30 j) | SANS (aucune échéance). */
+  echeance?: 'ECHUE' | 'SOUS_30J' | 'A_VENIR' | 'SANS'
+  ouvertsSeulement?: boolean
+}
+const plier = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+/** Filtre les constats de la vue de suivi (texte, statut, criticité, état d'échéance) ; les filtres se cumulent. */
+export function filtrerConstatsSuivi<T extends ConstatRegulateur>(constats: T[], f: FiltresSuiviRegulateur, now: Date = new Date()): T[] {
+  const mots = plier(f.q ?? '').split(/\s+/).filter(Boolean)
+  return constats.filter(c => {
+    if (f.statut && c.statut !== f.statut) return false
+    if (f.ouvertsSeulement && estTermine(c.statut)) return false
+    if (f.criticite) { if (f.criticite === 'NONE' ? c.criticite != null : String(c.criticite) !== f.criticite) return false }
+    if (f.echeance) {
+      const d = parseDate(c.echeance)
+      if (f.echeance === 'SANS') { if (d) return false }
+      else {
+        if (!d || estTermine(c.statut)) return false
+        const delta = d.getTime() - now.getTime()
+        if (f.echeance === 'ECHUE' && delta >= 0) return false
+        if (f.echeance === 'SOUS_30J' && !(delta >= 0 && delta <= 30 * DAY)) return false
+        if (f.echeance === 'A_VENIR' && delta <= 30 * DAY) return false
+      }
+    }
+    if (mots.length) {
+      const hay = plier([c.intitule, c.description, c.recommandation, c.responsableAction, c.missionIntitule].filter(Boolean).join(' '))
+      if (!mots.every(m => hay.includes(m))) return false
+    }
+    return true
+  })
+}
+
 /** Synthèse du suivi régulateur : total, ouverts/résolus, échus, à venir, critiques, taux de résolution. */
 export interface SuiviRegulateurSynthese {
   total: number

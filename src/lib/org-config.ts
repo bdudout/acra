@@ -22,6 +22,7 @@ import {
 import { APPETIT_DEFAULT, type AppetitConfig } from '@/lib/appetit'
 import { DEFAULT_ACTION_DELAIS_MOIS, cleanActionDelais, type ActionDelaisMois } from '@/lib/risk-action'
 import { sanitizeQualificationConfig, EMPTY_QUALIFICATION_CONFIG, type QualificationConfig } from '@/lib/qualification'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 /** Entités responsables de mesures par défaut. */
 export const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
@@ -52,6 +53,9 @@ export interface RawOrgConfig {
   derogationAlerteJours: number
   derogationDureeMaxJours: number
   archivageMissionsAnnees: number
+  /** Plafond de patterns d'architecture cochés par analyse (lot A1) : null = hérité, défaut 12. */
+  patternsArchiMax?: number | null
+  patternsArchiMasques?: unknown
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -66,6 +70,10 @@ export interface RawOrgConfig {
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
   projets360Active?: boolean
+  homologationsActive?: boolean
+  recertificationActive?: boolean
+  registreIaActive?: boolean
+  mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
   incidentsConfig?: unknown
@@ -107,6 +115,9 @@ export interface OrgConfigResolved {
   derogationAlerteJours: number
   derogationDureeMaxJours: number
   archivageMissionsAnnees: number
+  patternsArchiMax: number
+  /** Patterns masqués dans les sélecteurs de l'organisation (les données existantes restent lues). */
+  patternsArchiMasques: string[]
   derogationWorkflow: string
   derogationDoubleRegard: boolean
   derogationSortCatalogue: boolean
@@ -123,6 +134,14 @@ export interface OrgConfigResolved {
   profilsOperationnelsActive: boolean
   /** Module « Projets 360 » (onglet Projets, méthode PROJET_360), activé par défaut. */
   projets360Active: boolean
+  /** Module « Homologations » (décisions d'homologation de sécurité des SI), désactivé par défaut. */
+  homologationsActive: boolean
+  /** Module « Revues d'habilitations » (campagnes de recertification), désactivé par défaut. */
+  recertificationActive: boolean
+  /** Module « Registre IA » (algorithmes et systèmes d'IA), désactivé par défaut. */
+  registreIaActive: boolean
+  /** Serveur MCP autorisé pour cette organisation (défaut : non). */
+  mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
   echelleMaturite: unknown[]
   /** Processus de cartographie personnalisé ({} ⇒ texte par défaut). Cf. lib/processus-carto. */
@@ -165,6 +184,8 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   derogationAlerteJours: 30,
   derogationDureeMaxJours: 365,
   archivageMissionsAnnees: 5,
+  patternsArchiMax: 12,
+  patternsArchiMasques: [],
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -178,6 +199,10 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   secondeLigneActive: true,
   profilsOperationnelsActive: false,
   projets360Active: true,
+  homologationsActive: false,
+  recertificationActive: false,
+  registreIaActive: false,
+  mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
   incidentsConfig: {},
@@ -198,10 +223,10 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig'
-type BoolKey = 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active'
+type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques'
+type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
-type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees'
+type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -259,6 +284,8 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     derogationAlerteJours: pickInt('derogationAlerteJours', defaults.derogationAlerteJours),
     derogationDureeMaxJours: pickInt('derogationDureeMaxJours', defaults.derogationDureeMaxJours),
     archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
+    patternsArchiMax: Math.min(PATTERNS_MAX_MAX, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
+    patternsArchiMasques: normalizePatterns(pickJson('patternsArchiMasques', defaults.patternsArchiMasques), { max: PATTERNS_MAX_MAX }),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
     derogationSortCatalogue: pickBool('derogationSortCatalogue', defaults.derogationSortCatalogue),
@@ -272,6 +299,10 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
+    homologationsActive: pickBool('homologationsActive', defaults.homologationsActive),
+    recertificationActive: pickBool('recertificationActive', defaults.recertificationActive),
+    registreIaActive: pickBool('registreIaActive', defaults.registreIaActive),
+    mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
     incidentsConfig: pickJson('incidentsConfig', defaults.incidentsConfig),

@@ -20,7 +20,7 @@ export async function GET() {
   if (!scope.activeOrgId || !(await getOrgConfig(scope.activeOrgId)).projets360Active) return NextResponse.json({ projets: [] })
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: scope.activeOrgId, methode: 'PROJET_360', deletedAt: null },
-    select: { id: true, nom: true, description: true },
+    select: { id: true, nom: true, description: true, secteur: true, patternsArchi: true },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })

@@ -36,6 +36,8 @@ export const SECTEURS_ACTIVITE = [
   'Agriculture / Agroalimentaire', 'Immobilier / Construction',
   'Médias / Culture', 'Eau / Assainissement',
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
+  // Organismes de protection sociale (régimes de base, assurance maladie obligatoire…)
+  'Protection sociale / Sécurité sociale',
   'Autre',
 ]
 
@@ -53,6 +55,19 @@ export const SOUS_SECTEURS = [
   { id: 'sante-pharma', famille: 'sante', label: 'Pharmacie / officine' },
   { id: 'sante-veterinaire', famille: 'sante', label: 'Clinique vétérinaire / santé animale' },
   { id: 'sante-saad', famille: 'sante', label: 'Aide à domicile (SAAD / SAP)' },
+  { id: 'sante-cabinet', famille: 'sante', label: 'Cabinet médical / professionnel de santé libéral' },
+  { id: 'sante-gestion-pro', famille: 'sante', label: 'Gestion de cabinets et de professionnels de santé (société de moyens, SISA, centre de gestion)' },
+  { id: 'sante-msp', famille: 'sante', label: 'Maison / centre de santé pluriprofessionnel' },
+  { id: 'sante-amo', famille: 'sante', label: 'Assurance maladie obligatoire (CNAM, CPAM, MSA, régimes spéciaux)' },
+  { id: 'sante-amc', famille: 'sante', label: 'Complémentaire santé (mutuelle, institution de prévoyance, assureur santé)' },
+  { id: 'sante-tiers-payant', famille: 'sante', label: 'Gestionnaire de tiers payant / réseau de soins / plateforme de services' },
+  { id: 'sante-imagerie', famille: 'sante', label: 'Centre d’imagerie / radiologie / radiothérapie / dialyse' },
+  { id: 'sante-transport', famille: 'sante', label: 'Transport sanitaire (ambulances, VSL, taxis conventionnés)' },
+  { id: 'sante-dm-optique', famille: 'sante', label: 'Dispositifs médicaux, optique, audioprothèse, orthopédie' },
+  { id: 'sante-esante', famille: 'sante', label: 'Télémédecine / plateforme e-santé / hébergeur de données de santé' },
+  { id: 'sante-portail', famille: 'sante', label: 'Portail d’accès aux données de santé (patients, adhérents, professionnels)' },
+  { id: 'sante-entrepot', famille: 'sante', label: 'Entrepôt de données de santé / plateforme d’accès pour la recherche' },
+  { id: 'sante-delegataire', famille: 'sante', label: 'Délégataire de gestion / courtier gestionnaire en assurance santé' },
   // Banque / Finance
   { id: 'banque-detail', famille: 'banque', label: 'Banque de détail' },
   { id: 'banque-assurance', famille: 'banque', label: 'Assurance / mutuelle' },
@@ -91,6 +106,20 @@ export const SOUS_SECTEURS = [
   // Immobilier (issue #100) — agence vs construction/BTP
   { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
   { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
+  // Protection sociale — organismes de sécurité sociale organisés en réseau
+  { id: 'protsoc-tete-reseau', famille: 'protection_sociale', label: 'Tête de réseau (pilotage national, référentiels, maîtrise des risques du réseau)' },
+  { id: 'protsoc-caisse-locale', famille: 'protection_sociale', label: 'Caisse locale (accueil, gestion des droits, liquidation)' },
+  { id: 'protsoc-controle-medical', famille: 'protection_sociale', label: 'Service du contrôle médical (avis, arrêts de travail, accords préalables)' },
+  { id: 'protsoc-production', famille: 'protection_sociale', label: 'Centre de production informatique (traitements de masse, éditique, paiements)' },
+  { id: 'protsoc-services-usagers', famille: 'protection_sociale', label: 'Services en ligne aux usagers (compte, application, carte dématérialisée)' },
+  { id: 'protsoc-services-pro', famille: 'protection_sociale', label: 'Services aux professionnels de santé (téléservices, conventionnement)' },
+  { id: 'protsoc-risques-pro', famille: 'protection_sociale', label: 'Risques professionnels (accidents du travail, maladies professionnelles, tarification)' },
+  { id: 'protsoc-prevention', famille: 'protection_sociale', label: 'Gestion du risque et prévention (dépistage, accompagnement, centres d’examens)' },
+  { id: 'protsoc-fraude', famille: 'protection_sociale', label: 'Lutte contre la fraude (exploration de données, enquêtes, contentieux)' },
+  { id: 'protsoc-donnees', famille: 'protection_sociale', label: 'Données nationales (entrepôt, mise à disposition, statistiques publiques)' },
+  { id: 'protsoc-international', famille: 'protection_sociale', label: 'Relations internationales (soins à l’étranger, coordination européenne)' },
+  { id: 'protsoc-action-sociale', famille: 'protection_sociale', label: 'Action sanitaire et sociale (aides individuelles)' },
+  { id: 'protsoc-mandats', famille: 'protection_sociale', label: 'Gestion pour le compte d’autres régimes (mandats, délégations)' },
 ]
 
 // ─── Atelier 1 : Biens supports ──────────────────────────────────────────────

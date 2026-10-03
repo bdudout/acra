@@ -123,6 +123,9 @@ export default function AdminInstancePage() {
     { key: 'secondeLigne', label: t.features.secondeLigneTitle },
     { key: 'profilsOperationnels', label: t.features.profilsOperationnelsTitle },
     { key: 'projets360', label: t.features.projets360Title },
+    { key: 'homologations', label: t.features.homologationsTitle },
+    { key: 'recertification', label: t.features.recertificationTitle },
+    { key: 'registreIa', label: t.features.registreIaTitle },
   ]
 
   if (status === 'loading' || !isAdmin) {

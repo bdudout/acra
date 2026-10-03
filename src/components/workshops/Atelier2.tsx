@@ -34,6 +34,8 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
@@ -105,7 +107,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
   const srExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale, analyse?.sousSecteur), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale, sousSecteursOf(analyse), patternsOf(analyse)), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [srExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
 

@@ -414,6 +414,8 @@ scripts/update-agent.sh --install                      # facoltativo: attiva il 
 docker compose up -d --build
 ```
 
+**Punto di ripristino e rollback automatico.** Prima di modificare qualsiasi cosa, l'aggiornamento arresta l'applicazione e crea un **punto di ripristino verificato** (`scripts/acra-snapshot.sh`: dump del database in formato custom, documenti, checksum, clone del database per un ripristino rapido). Se migrazione, avvio o controllo di integrità falliscono, il **rollback è automatico** (codice, database, documenti) e l'esito compare in Amministrazione → Versione, che elenca anche i punti e offre **«Torna a questo punto»** (per confermare si digita la versione). Variabili: `ACRA_BACKUP_DIR`, `ACRA_SNAPSHOT_KEEP`, `ACRA_BACKUP_AGE_RECIPIENT` (cifratura `age`), `ACRA_FAILED_DB_RETENTION_DAYS`. Spazio su disco necessario: circa 2 × il database + i documenti. Procedura manuale: `docs/runbook-exploitation.md` § 6.
+
 ---
 
 ### Backup e ripristino

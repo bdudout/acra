@@ -414,6 +414,8 @@ scripts/update-agent.sh --install                      # opcional: activa el bot
 docker compose up -d --build
 ```
 
+**Punto de restauración y reversión automática.** Antes de cambiar nada, la actualización detiene la aplicación y crea un **punto de restauración verificado** (`scripts/acra-snapshot.sh`: volcado de la base en formato custom, documentos, sumas de verificación, clon de la base para una restauración rápida). Si falla la migración, el arranque o el control de salud, la **reversión es automática** (código, base, documentos) y el resultado aparece en Administración → Versión, que también lista los puntos y ofrece **«Volver a este punto»** (hay que escribir la versión para confirmar). Variables: `ACRA_BACKUP_DIR`, `ACRA_SNAPSHOT_KEEP`, `ACRA_BACKUP_AGE_RECIPIENT` (cifrado `age`), `ACRA_FAILED_DB_RETENTION_DAYS`. Espacio en disco necesario: aproximadamente 2 × la base + los documentos. Procedimiento manual: `docs/runbook-exploitation.md` § 6.
+
 ---
 
 ### Copia de seguridad y restauración

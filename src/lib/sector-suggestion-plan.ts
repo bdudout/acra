@@ -17,8 +17,10 @@ export function planSuggestionSelection(input: {
   locale: CatalogueLocale
   selectedKeys: string[]
   existingKeys: string[]
+  /** Patterns d'architecture cochés dans l'organisation : leurs éléments rattachés sont sélectionnables. */
+  patterns?: readonly string[] | null
 }): SuggestionPlan {
-  const available = new Map(listSectorSuggestions(input.sector, input.locale).map(item => [item.key, item]))
+  const available = new Map(listSectorSuggestions(input.sector, input.locale, input.patterns).map(item => [item.key, item]))
   const existing = new Set(input.existingKeys)
   const selected = [...new Set(input.selectedKeys)].slice(0, 100)
   const selectedSet = new Set(selected)

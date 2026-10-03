@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BANCASSURANCE_ITEMS } from '@/lib/sector-packs-bancassurance'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, listSectorSuggestions } from '@/lib/sector-suggestions'
-import { CATALOGUE_CHANGELOG } from '@/lib/sector-suggestions-changelog'
+import { CATALOGUE_CHANGELOG, compareCatalogueVersions } from '@/lib/sector-suggestions-changelog'
 import { PERIODICITES } from '@/lib/controle'
 
 const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
@@ -40,7 +40,7 @@ describe('pack banque / assurance / mutuelle (catalogue 1.9)', () => {
       const keys = listSectorSuggestions(sector, 'fr').map(i => i.key)
       expect(new Set(keys).size).toBe(keys.length)
     }
-    expect(CATALOGUE_PACK_VERSION).toBe('1.9')
+    expect(compareCatalogueVersions(CATALOGUE_PACK_VERSION, '1.9')).toBeGreaterThanOrEqual(0)
     const entry = CATALOGUE_CHANGELOG.find(e => e.version === '1.9')!
     expect(new Set(entry.added)).toEqual(new Set(BANCASSURANCE_ITEMS.map(i => i.key)))
   })

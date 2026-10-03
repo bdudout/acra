@@ -70,24 +70,86 @@ fi
 # Pulsation : l'interface n'active le bouton que si l'agent s'est manifesté < 5 min.
 printf '{"at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$DIR/agent.json.tmp" && mv "$DIR/agent.json.tmp" "$DIR/agent.json"
 
+# Pas de verrou d'exécution vivant : un journal d'exécution interrompu (kill, redémarrage de l'hôte) est REPRIS
+# (retour arrière automatique) avant toute nouvelle demande — cf. docs/specs/sauvegarde-rollback-spec.md § 2.2.
+RUN_CUR="$DIR/run/current.json"
+if [ -f "$RUN_CUR" ]; then
+  RUN_PID="$(cat "$DIR/run/lock/pid" 2>/dev/null || true)"
+  if [ -z "$RUN_PID" ] || ! kill -0 "$RUN_PID" 2>/dev/null; then
+    # shellcheck disable=SC1090
+    [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+    export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] reprise d'une mise à jour interrompue"
+    scripts/update.sh resume --status-file "$DIR/status.json" || true
+  fi
+fi
+
+# Sauvegardes planifiées (quotidienne / hebdomadaire / mensuelle) : décidées et exécutées par scripts/acra-schedule.sh,
+# appelé à chaque passage (cron, chaque minute) ; il ignore les passages sans échéance et ne s'exécute jamais pendant une mise à jour.
+run_schedule() {
+  [ -x scripts/acra-schedule.sh ] || return 0
+  # shellcheck disable=SC1090
+  [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+  export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
+  scripts/acra-schedule.sh tick >> "$DIR/schedule.log" 2>&1 || true
+}
+
 REQ="$INBOX/request.json"
-[ -f "$REQ" ] || exit 0
+[ -f "$REQ" ] || { run_schedule; exit 0; }
 
 # Verrou portable (mkdir atomique) : une seule mise à jour à la fois.
 LOCK="$DIR/.lock"
 mkdir "$LOCK" 2>/dev/null || exit 0
 trap 'rmdir "$LOCK"' EXIT
 
-# Seul le canal est lu, puis validé contre une liste fermée ; le reste est ignoré.
-CHANNEL="$(head -c 4096 "$REQ" | sed -n 's/.*"channel"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' | head -1)"
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+invalid() { printf '{"state":"FAILED","message":"Demande invalide ignorée","code":"invalid_request","at":"%s"}\n' "$(now)" > "$DIR/status.json"; exit 0; }
+# Seuls l'action, le canal et l'identifiant de point sont lus, chacun validé contre une liste fermée
+# (ou, pour l'identifiant, contre l'index publié par scripts/acra-snapshot.sh) ; le reste est ignoré.
+BODY="$(head -c 4096 "$REQ")"
 rm -f "$REQ"
-case "$CHANNEL" in
-  stable|beta) ;;
-  *) printf '{"state":"FAILED","message":"Demande invalide ignorée","at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$DIR/status.json"; exit 0 ;;
-esac
-
+field() { printf '%s' "$BODY" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1; }
+ACTION="$(field action)"; ACTION="${ACTION:-update}"
 # shellcheck disable=SC1090
 [ -f "$ENV_FILE" ] && . "$ENV_FILE"
 export ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}"
-echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] mise à jour demandée : canal $CHANNEL"
-scripts/update.sh "$CHANNEL" --yes --status-file "$DIR/status.json" || true
+
+case "$ACTION" in
+  update)
+    CHANNEL="$(field channel)"
+    case "$CHANNEL" in stable|beta) ;; *) invalid ;; esac
+    echo "[$(now)] mise à jour demandée : canal $CHANNEL"
+    scripts/update.sh "$CHANNEL" --yes --status-file "$DIR/status.json" || true ;;
+  rollback)
+    SNAP="$(field snapshotId)"
+    ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
+    printf '%s' "$SNAP" | grep -Eq "$ID_RE" || invalid
+    # L'identifiant doit exister dans l'index de l'AGENT (l'application n'est pas digne de confiance sur ce point).
+    SNAP_RE="$(printf '%s' "$SNAP" | sed 's/[.+]/\\&/g')"
+    { [ -f "$DIR/snapshots.json" ] && grep -Eq "\"id\"[[:space:]]*:[[:space:]]*\"$SNAP_RE\"" "$DIR/snapshots.json"; } || invalid
+    echo "[$(now)] retour arrière demandé : point $SNAP"
+    scripts/update.sh rollback "$SNAP" --yes --status-file "$DIR/status.json" || true ;;
+  backup-policy)
+    # Politique de sauvegarde : chaque valeur est relue puis validée (booléen, bornes) ; rien d'autre n'est lu ni exécuté.
+    D="$(printf '%s' "$BODY" | sed -n 's/.*"daily":{"enabled":\([a-z]*\),"keep":\([0-9]*\)}.*/\1 \2/p' | head -1)"
+    W="$(printf '%s' "$BODY" | sed -n 's/.*"weekly":{"enabled":\([a-z]*\),"keep":\([0-9]*\),"weekday":\([0-9]*\)}.*/\1 \2 \3/p' | head -1)"
+    M="$(printf '%s' "$BODY" | sed -n 's/.*"monthly":{"enabled":\([a-z]*\),"keep":\([0-9]*\),"day":\([0-9]*\)}.*/\1 \2 \3/p' | head -1)"
+    H="$(printf '%s' "$BODY" | sed -n 's/.*"hour":\([0-9]*\).*/\1/p' | head -1)"
+    # shellcheck disable=SC2086
+    set -- $D; D_EN="${1:-}"; D_KEEP="${2:-}"
+    # shellcheck disable=SC2086
+    set -- $W; W_EN="${1:-}"; W_KEEP="${2:-}"; W_DAY="${3:-}"
+    # shellcheck disable=SC2086
+    set -- $M; M_EN="${1:-}"; M_KEEP="${2:-}"; M_DAY="${3:-}"
+    ok_bool() { [ "$1" = "true" ] || [ "$1" = "false" ]; }
+    ok_int() { printf '%s' "$1" | grep -Eq '^[0-9]{1,2}$' && [ "$1" -ge "$2" ] && [ "$1" -le "$3" ]; }
+    { ok_bool "$D_EN" && ok_bool "$W_EN" && ok_bool "$M_EN" && ok_int "$D_KEEP" 1 60 && ok_int "$W_KEEP" 1 60 && ok_int "$M_KEEP" 1 60 \
+      && ok_int "$W_DAY" 0 6 && ok_int "$M_DAY" 1 28 && ok_int "$H" 0 23; } || { echo "[$(now)] politique de sauvegarde invalide ignorée" >&2; exit 0; }
+    [ "$D_EN" = true ] || [ "$W_EN" = true ] || [ "$M_EN" = true ] || { echo "[$(now)] politique sans aucune fréquence ignorée" >&2; exit 0; }
+    printf '{\n  "schema": 1,\n  "daily": { "enabled": %s, "keep": %s },\n  "weekly": { "enabled": %s, "keep": %s, "weekday": %s },\n  "monthly": { "enabled": %s, "keep": %s, "day": %s },\n  "hour": %s\n}\n' \
+      "$D_EN" "$((10#$D_KEEP))" "$W_EN" "$((10#$W_KEEP))" "$((10#$W_DAY))" "$M_EN" "$((10#$M_KEEP))" "$((10#$M_DAY))" "$((10#$H))" > "$DIR/backup-policy.json.tmp"
+    chmod 644 "$DIR/backup-policy.json.tmp"; mv "$DIR/backup-policy.json.tmp" "$DIR/backup-policy.json"
+    echo "[$(now)] politique de sauvegarde mise à jour"
+    run_schedule ;;
+  *) invalid ;;
+esac

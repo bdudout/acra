@@ -32,6 +32,8 @@ export default function RapportsManager() {
   const [editions, setEditions] = useState<EditionRow[]>([])
   const [disponibles, setDisponibles] = useState<{ code: string }[]>([])
   const [canWrite, setCanWrite] = useState(false)
+  const [livrableDora, setLivrableDora] = useState(false)
+  const [anneeDora, setAnneeDora] = useState(new Date().getUTCFullYear())
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
@@ -46,7 +48,7 @@ export default function RapportsManager() {
 
   useEffect(() => {
     fetch('/api/rapports').then(x => (x.ok ? x.json() : null)).then(d => {
-      if (d) { setEditions(d.editions ?? []); setDisponibles(d.disponibles ?? []); setCanWrite(!!d.canWrite); setCode(c => c || d.disponibles?.[0]?.code || '') }
+      if (d) { setEditions(d.editions ?? []); setDisponibles(d.disponibles ?? []); setCanWrite(!!d.canWrite); setLivrableDora(!!d.livrableDora); setCode(c => c || d.disponibles?.[0]?.code || '') }
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -99,6 +101,20 @@ export default function RapportsManager() {
             <button type="button" disabled={busy || !code} onClick={generer} className="btn-primary text-sm disabled:opacity-50">{r.generate}</button>
             <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-500 hover:underline">{r.cancel}</button>
             {error && <span role="alert" className="text-xs text-red-700">{error}</span>}
+          </div>
+        </section>
+      )}
+      {livrableDora && (
+        <section className="card p-4 flex flex-wrap items-end justify-between gap-3" aria-label={r.livrableDora.titre}>
+          <div className="max-w-2xl">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">{r.livrableDora.titre}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{r.livrableDora.desc}</p>
+          </div>
+          <div className="flex items-end gap-2">
+            <label className="text-xs text-gray-500">{r.livrableDora.annee}
+              <input type="number" min={2023} max={2100} value={anneeDora} onChange={e => setAnneeDora(Number(e.target.value) || new Date().getUTCFullYear())} className={`${inp} block mt-1 w-24`} />
+            </label>
+            <a href={`/api/reglementaire/reexamen-dora?annee=${anneeDora}`} className="btn-secondary text-sm">{r.livrableDora.telecharger}</a>
           </div>
         </section>
       )}

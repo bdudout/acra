@@ -22,6 +22,8 @@ import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import PptxExportButton from '@/components/PptxExportButton'
 import DocxExportButton from '@/components/DocxExportButton'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import AnalyseMetaEditor from '@/components/AnalyseMetaEditor'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
@@ -177,6 +179,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 organisation={analyse.organisation}
                 secteur={analyse.secteur}
                 sousSecteur={(analyse as any).sousSecteur ?? null}
+                sousSecteurs={sousSecteursOf(analyse as { sousSecteurs?: unknown; sousSecteur?: string | null })}
+                patternsArchi={patternsOf(analyse as { patternsArchi?: unknown })}
                 canEdit={isOwner && !locked}
               />
             </p>

@@ -11,6 +11,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { RefreshCw, CheckCircle2, ArrowUpCircle, AlertTriangle, Rocket, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import UpdateRestorePanel from '@/components/UpdateRestorePanel'
+import type { UpdateStatus as FullUpdateStatus } from '@/lib/update-request'
+import type { SnapshotEntry } from '@/lib/snapshot'
+import type { OffsiteState } from '@/lib/offsite-status'
+import BackupSchedulePanel from '@/components/BackupSchedulePanel'
+import type { BackupPolicy, BackupStats } from '@/lib/backup-policy'
+import type { RunSummary } from '@/lib/update-request.server'
 
 type Channel = 'stable' | 'beta'
 interface UpdateStatus { state: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'; channel?: Channel; version?: string; message?: string; at?: string }
@@ -19,7 +26,14 @@ interface VersionInfo {
   channel: Channel
   base: string | null
   agentAvailable: boolean
-  updateStatus: UpdateStatus | null
+  updateStatus: (UpdateStatus & Partial<FullUpdateStatus>) | null
+  snapshots?: SnapshotEntry[]
+  impacts?: Record<string, { auditEntries: number; documents: number }>
+  failedDbRetentionDays?: number
+  offsite?: OffsiteState | null
+  backup?: { policy: BackupPolicy; stats: BackupStats | null }
+  offsiteMaxAgeHours?: number
+  run?: RunSummary | null
   latest: string | null
   latestName: string | null
   releaseUrl: string | null
@@ -129,7 +143,10 @@ export default function VersionCard() {
 
       {/* Instance auto-hébergée avec agent : mise à jour depuis l'interface. */}
       {info && !info.deployConfigured && info.agentAvailable && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <p className="mt-3 text-xs text-gray-500">{v.restore.preUpdateNote}</p>
+      )}
+      {info && !info.deployConfigured && info.agentAvailable && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <button onClick={() => requestUpdate(info.channel)} disabled={busy || inProgress} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50">
             <Download size={14} aria-hidden="true" /> {v.updateNow}
           </button>
@@ -144,6 +161,15 @@ export default function VersionCard() {
         </p>
       )}
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
+      {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
+        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} onChanged={load} />
+      )}
+
+      {info && !info.deployConfigured && info.backup && (info.agentAvailable || info.backup.stats) && (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <BackupSchedulePanel key={JSON.stringify(info.backup.policy)} policy={info.backup.policy} stats={info.backup.stats} agentAvailable={info.agentAvailable} offsiteConfigured={Boolean(info.offsite)} onChanged={load} />
+        </div>
+      )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
         <summary className="cursor-pointer font-medium text-gray-700">{v.helpTitle}</summary>

@@ -58,6 +58,12 @@ describe('resolveOrgConfig — héritage de configuration par organisation', () 
     expect(resolveOrgConfig([enfant, racine]).referentielsDesactives).toEqual(['DORA'])
   })
 
+  it('patterns masqués : aucun par défaut ; la liste valide la plus proche est héritée', () => {
+    expect(resolveOrgConfig([]).patternsArchiMasques).toEqual([])
+    expect(resolveOrgConfig([row({ patternsArchiMasques: ['DMZ', 'inconnu', 'DMZ'] })]).patternsArchiMasques).toEqual(['DMZ'])
+    expect(resolveOrgConfig([row({ patternsArchiMasques: [] }), row({ patternsArchiMasques: ['SI_TPE'] })]).patternsArchiMasques).toEqual(['SI_TPE'])
+  })
+
   it('2ᵉ ligne de défense : active par défaut (rétrocompatible), désactivable par row', () => {
     expect(resolveOrgConfig([]).secondeLigneActive).toBe(true)
     expect(DEFAULT_ORG_CONFIG.secondeLigneActive).toBe(true)
@@ -138,5 +144,13 @@ describe('resolveOrgConfig — échelle de maturité (CMMI)', () => {
     expect(resolveOrgConfig([]).echelleMaturite).toEqual([])
     const parent = row({ echelleMaturite: [{ niveau: 3, libelle: 'Défini groupe', definition: '' }] })
     expect(resolveOrgConfig([row({}), parent]).echelleMaturite).toEqual([{ niveau: 3, libelle: 'Défini groupe', definition: '' }])
+  })
+})
+
+describe('mcpActive (interrupteur MCP par organisation)', () => {
+  it('désactivé par défaut ; une filiale hérite de l’organisation parente ; la valeur propre l’emporte', () => {
+    expect(resolveOrgConfig([null]).mcpActive).toBe(false)
+    expect(resolveOrgConfig([null, { mcpActive: true } as never]).mcpActive).toBe(true)
+    expect(resolveOrgConfig([{ mcpActive: false } as never, { mcpActive: true } as never]).mcpActive).toBe(false)
   })
 })

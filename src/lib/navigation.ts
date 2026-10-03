@@ -28,6 +28,12 @@ export interface NavModules {
   profilsOperationnels: boolean
   /** Module « Projets 360 » (onglet Projets). */
   projets?: boolean
+  /** Homologation de sécurité des systèmes d'information. */
+  homologations?: boolean
+  /** Revues d'habilitations (recertification). */
+  recertification?: boolean
+  /** Registre des algorithmes et systèmes d'IA. */
+  registreIa?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -37,6 +43,7 @@ export type NavKey =
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
   | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
+  | 'homologations' | 'recertification' | 'registreIa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
@@ -87,6 +94,11 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
   if (modules.profilsOperationnels && canGovern) gouvernance.push('profilsOperationnels')
   if (canDerog) gouvernance.push('derogations')
+  // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).
+  if (modules.homologations && (canGovern || role === 'DIRECTION_METIER')) gouvernance.push('homologations')
+  if (modules.registreIa && canGovern) gouvernance.push('registreIa')
+  // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
+  if (modules.recertification && role !== 'LECTEUR') gouvernance.push('recertification')
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
   if (canManageRopa(role)) gouvernance.push('ropa')
 
@@ -130,9 +142,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.kri && !firstLineOnly) pilotage.push('kri')
   entries.push(groupOrLink('pilotage', pilotage))
 
-  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
+  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions.
   const analyses: NavKey[] = [...core(modules)]
-  if (modules.registre && !firstLineOnly) analyses.push('cartographie')
   entries.push(groupOrLink('analyses', analyses))
 
   // 3. Registres : risques et arrangements TIC restent des objets distincts,
@@ -141,6 +152,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
     const registres: NavKey[] = []
     if (modules.registre) {
+      // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
       registres.push('registre', 'campagnes')
       if (canGererProcessus) registres.push('processus')
     }
@@ -172,4 +184,21 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
 
   return { mode: 'grc', entries }
+}
+
+/**
+ * Lien actif = la correspondance la PLUS précise (la plus longue) parmi les liens affichés : « /reglementaire/suivi-regulateur »
+ * n'active pas aussi « /reglementaire » (sinon deux menus sont en surbrillance). null si aucun lien ne correspond.
+ */
+export function activeNavHref(pathname: string, hrefs: readonly string[]): string | null {
+  let best: string | null = null
+  for (const href of hrefs) {
+    if ((pathname === href || pathname.startsWith(href + '/')) && (best === null || href.length > best.length)) best = href
+  }
+  return best
+}
+
+/** Chemin servant à allumer l'entrée de menu : la cartographie est une vue du registre des risques. */
+export function navPathFor(pathname: string): string {
+  return pathname === '/cartographie' ? '/registre' : pathname
 }

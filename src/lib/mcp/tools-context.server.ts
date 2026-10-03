@@ -10,6 +10,9 @@ import {
   STRATEGIES_TRAITEMENT, ATELIERS_META,
 } from '@/lib/ebios-data'
 import { SECTOR_FAMILIES, sectorExemplesFor, type SectorExempleCategory } from '@/lib/exemples-sectoriels'
+import { selectableSousSecteurIds } from '@/lib/sous-secteurs'
+import { ARCHI_PATTERNS, normalizePatterns, patternHelp, patternLabel } from '@/lib/patterns-archi'
+import { ASSISTANT_GUIDANCE } from '@/lib/mcp/assistant-guidance'
 import { getRiskTier, type RiskTier } from '@/lib/risk-scale'
 import type { Locale } from '@/lib/i18n/index'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
@@ -45,7 +48,7 @@ export const readTaxonomieTool: McpTool<McpContext> = {
 }
 
 const SECTOR_CATEGORIES: SectorExempleCategory[] =
-  ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques', 'partiesPrenantes']
+  ['valeursMetier', 'biensSupports', 'evenementsRedoutes', 'sourcesRisque', 'scenariosStrategiques', 'partiesPrenantes', 'actionsElementaires', 'mesuresEcosysteme', 'mesures']
 const LOCALES: Locale[] = ['fr', 'en', 'it', 'es', 'de']
 
 /**
@@ -64,7 +67,9 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
     type: 'object',
     properties: {
       secteur: { type: 'string', description: "Libellé du secteur (ex. « santé », « finance »)." },
-      sousSecteur: { type: 'string', description: 'Sous-secteur / profession (affine les exemples).' },
+      sousSecteur: { type: 'string', description: 'Identifiant de sous-secteur (cf. `sousSecteursDisponibles` de la réponse) : affine fortement les exemples.' },
+      sousSecteurs: { type: 'array', items: { type: 'string' }, description: 'Plusieurs sous-secteurs (ex. complémentaire santé + interconnexion) : union des exemples cohérents avec le secteur.' },
+      patterns: { type: 'array', items: { type: 'string' }, description: "Patterns d'architecture de SI (vision technique, indépendante du secteur ; cf. `patternsDisponibles`) : leurs exemples s'ajoutent à ceux du secteur et des sous-secteurs." },
       category: { type: 'string', enum: SECTOR_CATEGORIES, description: 'Catégorie ciblée (toutes si absent).' },
       locale: { type: 'string', enum: LOCALES, description: 'Langue des libellés (défaut fr).' },
     },
@@ -72,15 +77,19 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
   },
   async handler(args): Promise<McpToolResult> {
     const secteur = typeof args.secteur === 'string' && args.secteur.trim() ? args.secteur.trim() : null
-    const sousSecteur = typeof args.sousSecteur === 'string' ? args.sousSecteur : null
+    const sousSecteur: string | string[] | null = Array.isArray(args.sousSecteurs)
+      ? (args.sousSecteurs as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 8)
+      : typeof args.sousSecteur === 'string' ? args.sousSecteur : null
     const locale: Locale = LOCALES.includes(args.locale as Locale) ? (args.locale as Locale) : 'fr'
+    const patterns = normalizePatterns(args.patterns, { max: 24 })
 
-    if (!secteur) {
+    if (!secteur && patterns.length === 0) {
       // Découvrabilité : familles reconnues + motifs de correspondance.
       return toolText({
         secteur: null,
         famillesDisponibles: SECTOR_FAMILIES.map(f => ({ key: f.key, motifs: f.match })),
         categories: SECTOR_CATEGORIES,
+        patternsDisponibles: ARCHI_PATTERNS.map(p => ({ code: p.code, famille: p.family, libelle: patternLabel(p.code, locale), aide: patternHelp(p.code, locale) })),
       })
     }
 
@@ -88,9 +97,9 @@ export const readSectorExamplesTool: McpTool<McpContext> = {
       ? [args.category as SectorExempleCategory]
       : SECTOR_CATEGORIES
     const exemples: Record<string, unknown[]> = {}
-    for (const cat of wanted) exemples[cat] = sectorExemplesFor(secteur, cat, locale, sousSecteur)
+    for (const cat of wanted) exemples[cat] = sectorExemplesFor(secteur, cat, locale, sousSecteur, patterns)
     const total = Object.values(exemples).reduce((n, a) => n + a.length, 0)
-    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, locale, total, exemples })
+    return toolText({ secteur, sousSecteur: sousSecteur ?? undefined, patterns: patterns.length ? patterns : undefined, sousSecteursDisponibles: selectableSousSecteurIds(secteur), patternsDisponibles: ARCHI_PATTERNS.map(p => ({ code: p.code, famille: p.family, libelle: patternLabel(p.code, locale) })), locale, total, exemples, consignes: ASSISTANT_GUIDANCE })
   },
 }
 

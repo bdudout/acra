@@ -2,6 +2,18 @@
 // Sert à signaler « nouveautés depuis la version que vous avez importée » : on n'écrase rien, on propose seulement.
 // Règle : toute évolution du catalogue (CATALOGUE_PACK_VERSION) ajoute UNE entrée ici avec les clés ajoutées (un test le vérifie).
 
+import { EXT_ITEMS } from './sector-packs-ext'
+import { MUTUELLE_PACK } from './sector-packs-mutuelle'
+import { PROTECTION_SOCIALE_PACK } from './sector-packs-protection-sociale'
+import { PATTERNS_PACK } from './sector-packs-patterns'
+import { MUTUELLE_SANTE_PACK, SANTE_EXT_PACK, TECHNIQUE_PACK, TECHNIQUE_V113_PACK, SANTE_V113_PACK } from './sector-packs-sante-technique'
+
+const MUTUELLE_KEYS = new Set(MUTUELLE_PACK.items.map(item => item.key))
+const V112_KEYS = new Set([SANTE_EXT_PACK, MUTUELLE_SANTE_PACK, TECHNIQUE_PACK].flatMap(p => p.items.map(item => item.key)))
+const V113_KEYS = new Set([TECHNIQUE_V113_PACK, SANTE_V113_PACK].flatMap(p => p.items.map(item => item.key)))
+const V114_KEYS = new Set(PROTECTION_SOCIALE_PACK.items.map(item => item.key))
+const V115_KEYS = new Set(PATTERNS_PACK.items.map(item => item.key))
+
 export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
   { version: '1.1', added: [
       'assurance.risk.customer-data',
@@ -261,6 +273,18 @@ export const CATALOGUE_CHANGELOG: { version: string; added: string[] }[] = [
       'assurance.control.resilience-testing',
       'assurance.control.incident-reporting-drill',
     ] },
+  // 1.10 : contenu sectoriel étendu (7 nouveaux secteurs + approfondissement des autres) — clés issues des packs `sector-packs-ext*`.
+  { version: '1.10', added: EXT_ITEMS.map(item => item.key).filter(k => !MUTUELLE_KEYS.has(k) && !V112_KEYS.has(k) && !V113_KEYS.has(k) && !V114_KEYS.has(k) && !V115_KEYS.has(k)).sort() },
+  // 1.11 : contrôles de mutuelle santé manquants (LCB-FT, données de santé, continuité) pour le plan de contrôle type.
+  { version: '1.11', added: [...MUTUELLE_KEYS].sort() },
+  // 1.12 : santé (portail, entrepôt de données, flux reçus), mutuelle santé (IBAN, délégation, tiers payant), secteur Technique / Interconnexion de SI.
+  { version: '1.12', added: [...V112_KEYS].sort() },
+  // 1.13 : analyseurs de fichiers et validation des entrées, pièces jointes de la messagerie d'un portail, continuité d'une plateforme de santé.
+  { version: '1.13', added: [...V113_KEYS].sort() },
+  // 1.14 : secteur Protection sociale / Sécurité sociale (droits, paiements de masse, contrôle médical, services en ligne, fraude).
+  { version: '1.14', added: [...V114_KEYS].sort() },
+  // 1.15 : éléments rattachés aux patterns d'architecture de SI (le secteur Technique est supprimé : ses éléments, aux clés inchangées, sont rattachés à des patterns).
+  { version: '1.15', added: [...V115_KEYS].sort() },
 ]
 
 const parts = (v: string) => v.split('.').map(n => Number.parseInt(n, 10) || 0)

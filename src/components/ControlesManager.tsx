@@ -257,6 +257,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><FlaskConical size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {c.title}</h1>
         {!showForm && <Link href="/controles/plan" className="btn-secondary text-sm">{c.ctl_planBtn}</Link>}
+        {!showForm && <Link href="/controles/reseau" className="btn-secondary text-sm">{c.ctl_reseauBtn}</Link>}
         {canDefine && !showForm && (
           <div className="flex items-center gap-1.5">
             <button onClick={() => { setForm(emptyForm()); setEditId(null); setShowForm(true) }} className="btn-primary text-sm">{c.newBtn}</button>

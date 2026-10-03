@@ -178,6 +178,7 @@ model Organization {
   config            OrganizationConfig?
   conformites       Conformite[]
   derogations       Derogation[]
+  homologations     Homologation[]
   processus         Processus[]
   riskItems         RiskItem[]
   incidents         Incident[]
@@ -210,6 +211,7 @@ model Organization {
   questionnaireModeles QuestionnaireModele[]
   questionnaireEnvois  QuestionnaireEnvoi[]
   preconisations       Preconisation[]
+  appetenceSnapshots AppetenceSnapshot[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -632,10 +634,17 @@ model Controle {
   arrangementTicId String?
   projetId         String?
 
+  // Maîtrise des risques en réseau (P3) : contrôle « de référence » de la mère, décliné dans les entités
+  // descendantes ; une déclinaison pointe vers sa référence (lien logique, une seule par entité).
+  estReference Boolean @default(false)
+  referenceId  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([referenceId])
+  @@unique([organizationId, referenceId])
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
@@ -1366,6 +1375,32 @@ model ConformiteSnapshot {
   @@index([conformiteId])
 }
 
+// Instantané mensuel d'appétence (RAS / RAD) : RÉSUMÉ d'agrégats figé pour un mois (aucun intitulé de risque ni de KRI).
+// Un par organisation et par mois (AAAA-MM, UTC) ; l'historique commence au premier instantané capturé.
+// Événements du cycle de vie de l'instance (mise à jour, retour arrière, restauration) lus dans
+// .acra-update/events.log : la clé unique (la ligne) évite de les journaliser deux fois. Après une
+// restauration la table revient à l'état du point : l'événement de restauration y est donc absent
+// et sera bien écrit.
+model InstanceEvent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  kind      String
+  createdAt DateTime @default(now())
+}
+
+model AppetenceSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periode        String // AAAA-MM
+  resume         Json
+  createdById    String? // null = capture automatique (cron)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, periode])
+  @@index([organizationId])
+}
+
 // Dérogation : acceptation TEMPORAIRE d'une non-conformité au socle (voir
 // docs/derogations-spec.md). Rattachée à un contrôle d'un référentiel, à un
 // risque, ou (plus tard) au socle d'une organisation. Cycle de vie séparé du
@@ -1506,6 +1541,10 @@ model Analyse {
   organisation         String?
   secteur              String?
   sousSecteur          String? // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
+  // Plusieurs sous-secteurs (ids stables, le premier = principal, recopié dans sousSecteur) : string[]
+  sousSecteurs         Json          @default("[]")
+  // Patterns d'architecture de SI cochés (codes stables, cf. lib/patterns-archi) : vision technique, indépendante du secteur.
+  patternsArchi        Json          @default("[]")
   // Tags / programme (regroupement libre pour les grandes organisations) : string[]
   tags                 Json          @default("[]")
   dateDebut            DateTime      @default(now())
@@ -1598,6 +1637,7 @@ model Analyse {
   accesUtilisateurs AnalyseAcces[]
   revisions         RevisionAnalyse[]
   derogations       Derogation[]
+  homologations     Homologation[]
 
   @@index([userId])
   @@index([statut])
@@ -2066,6 +2106,10 @@ model OrganizationConfig {
   // Durée de conservation avant archivage des missions de contrôle/audit closes,
   // en années (défaut 5 ; les missions closes plus anciennes deviennent archivables).
   archivageMissionsAnnees    Int           @default(5)
+  // Plafond de patterns d'architecture cochés par analyse (null = hérité ; défaut 12, borné 1–24).
+  patternsArchiMax           Int?
+  // Patterns non pertinents masqués à la saisie pour cette organisation ([] = hérite / aucun au défaut).
+  patternsArchiMasques       Json          @default("[]")
   // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
   // (validation RSSI, défaut), "RSSI_METIER" (RSSI puis Direction métier).
   derogationWorkflow         String        @default("RSSI")
@@ -2096,6 +2140,11 @@ model OrganizationConfig {
   // Module « Projets 360 » (analyses projet 360 du risque opérationnel, onglet Projets).
   // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
   projets360Active           Boolean       @default(true)
+  homologationsActive        Boolean       @default(false)
+  recertificationActive      Boolean       @default(false)
+  registreIaActive           Boolean       @default(false)
+  // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
+  mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
   // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
   echelleMaturite            Json          @default("[]")
@@ -2551,4 +2600,33 @@ model EnvoiPeriodique {
   bilan     Json     @default("{}")
 
   @@unique([tache, periode])
+}
+
+// Homologation de sécurité d'un système d'information (décision d'une autorité, durée limitée) — spec P2.
+model Homologation {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  analyseId           String?
+  analyse             Analyse?     @relation(fields: [analyseId], references: [id], onDelete: SetNull)
+  systeme             String
+  perimetre           String?      @db.Text
+  // PREPARATION | COMMISSION | HOMOLOGUE | HOMOLOGUE_RESERVES | REFUSE
+  statut              String       @default("PREPARATION")
+  preparePar          String
+  autoriteId          String?
+  dureeMois           Int          @default(36)
+  dateDecision        DateTime?
+  dateFin             DateTime?
+  decidePar           String?
+  commentaireDecision String?      @db.Text
+  reserves            Json         @default("[]")
+  pieces              Json         @default("[]")
+  rappelLe            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organizationId, statut])
+  @@index([analyseId])
+  @@index([dateFin])
 }

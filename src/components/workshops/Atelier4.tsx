@@ -32,6 +32,9 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
+import { withSectorExemples } from '@/lib/exemples-sectoriels'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { OPERATEURS_AE, normalizeOperateur } from '@/lib/operateur-ae'
@@ -67,7 +70,12 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
     }).catch(() => {})
   }, [])
-  const aeExamples = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const aeExamplesBase = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Modes opératoires propres au secteur / sous-secteur (ex. bourrage d'identifiants sur un portail patient) en tête
+  const aeExamples = useMemo(
+    () => withSectorExemples(aeExamplesBase, analyse?.secteur, 'actionsElementaires', locale, sousSecteursOf(analyse), patternsOf(analyse)) as any[],
+    [aeExamplesBase, analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
+  )
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   // Reconstruire scenarioStrategiqueNom depuis scenarioStrategiqueId au chargement depuis DB

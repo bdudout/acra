@@ -63,3 +63,16 @@ describe('missions d’audit types du catalogue', () => {
     }
   })
 })
+
+import { adaptPeriodicite } from '@/lib/sector-suggestions'
+describe('périodicités « petite structure »', () => {
+  it('allège d’un cran les contrôles fréquents ; les périodicités semestrielle et annuelle sont conservées ; structure standard inchangée', () => {
+    expect(adaptPeriodicite('HEBDOMADAIRE', true)).toBe('MENSUEL')
+    expect(adaptPeriodicite('MENSUEL', true)).toBe('TRIMESTRIEL')
+    expect(adaptPeriodicite('TRIMESTRIEL', true)).toBe('SEMESTRIEL')
+    expect(adaptPeriodicite('SEMESTRIEL', true)).toBe('SEMESTRIEL')
+    expect(adaptPeriodicite('ANNUEL', true)).toBe('ANNUEL')
+    for (const p of ['HEBDOMADAIRE', 'MENSUEL', 'TRIMESTRIEL', 'SEMESTRIEL', 'ANNUEL'] as const) expect(adaptPeriodicite(p, false)).toBe(p)
+    expect(adaptPeriodicite(undefined, true)).toBeUndefined()
+  })
+})

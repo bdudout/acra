@@ -1,0 +1,33 @@
+name: Mise à jour et retour arrière (Docker réel)
+
+# Lot 5 de docs/specs/sauvegarde-rollback-spec.md : sur toute PR touchant prisma/, scripts/ ou docker-compose*.yml,
+# rejoue sur Docker réel les cinq scénarios (point de restauration, mise à jour, migration fautive, interruption).
+on:
+  pull_request:
+    paths: ['prisma/**', 'scripts/**', 'docker-compose*.yml', 'Dockerfile', '.github/workflows/update-rollback.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-rollback:
+    name: Scénarios de mise à jour
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Scénarios 1 à 5
+        run: bash scripts/ci-update-rollback.sh
+      - name: Artefacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: update-rollback-logs
+          path: |
+            /tmp/acra-ci/**/.acra-update/**
+            /tmp/acra-ci/**/backups/*/manifest.json
+            /tmp/acra-ci/*.log
+          if-no-files-found: ignore

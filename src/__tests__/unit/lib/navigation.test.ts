@@ -9,7 +9,7 @@
  * historique — seule la DISPOSITION change selon le mode.
  */
 import { describe, it, expect } from 'vitest'
-import { buildNav, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, navPathFor, type NavModel, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { fr } from '@/lib/i18n/fr'
 import { en } from '@/lib/i18n/en'
 import { de } from '@/lib/i18n/de'
@@ -81,9 +81,32 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     // 1re entrée = menu « Pilotage » (tableau de bord + cockpit GRC + appétence RAS/RAD).
     // Le plan d'action unifié est le lien cœur « actions » (plus de doublon « plansActions »).
     expect(m.entries[0]).toEqual({ kind: 'group', id: 'pilotage', items: ['dashboard', 'pilotage', 'appetence', 'kri'] })
-    // L'analyse cyber (cœur EBIOS + cartographie) est regroupée dans un menu.
+    // L'analyse cyber (cœur EBIOS) est regroupée dans un menu ; la cartographie des risques vit avec le registre.
     const analyses = m.entries.find(e => e.kind === 'group' && e.id === 'analyses')
-    expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions', 'cartographie'])
+    expect(analyses && analyses.kind === 'group' && analyses.items).toEqual(['analyses', 'risques', 'tiers', 'actions'])
+  })
+
+  it('la cartographie n’a plus d’entrée propre : c’est une vue du registre des risques (onglets Liste / Cartographie)', () => {
+    const m = buildNav('RISK_MANAGER', ALL_ON)
+    expect(allKeys(m)).not.toContain('cartographie')
+    const reg = m.entries.find(e => e.kind === 'group' && e.id === 'registre')
+    expect(reg && reg.kind === 'group' && reg.items[0]).toBe('registre')
+    // Sur /cartographie, l'entrée « Registre des risques » reste allumée.
+    expect(navPathFor('/cartographie')).toBe('/registre')
+    expect(navPathFor('/cartographie/processus')).toBe('/cartographie/processus')
+    expect(navPathFor('/registre')).toBe('/registre')
+  })
+
+  it('un lien n’est actif que s’il est la correspondance la plus précise : /reglementaire/suivi-regulateur n’active pas /reglementaire', () => {
+    const hrefs = ['/reglementaire', '/reglementaire/suivi-regulateur', '/reglementaire/tests-resilience', '/controles', '/controles/campagnes']
+    expect(activeNavHref('/reglementaire/suivi-regulateur', hrefs)).toBe('/reglementaire/suivi-regulateur')
+    expect(activeNavHref('/reglementaire/suivi-regulateur/abc', hrefs)).toBe('/reglementaire/suivi-regulateur')
+    expect(activeNavHref('/reglementaire', hrefs)).toBe('/reglementaire')
+    expect(activeNavHref('/reglementaire/dora', hrefs)).toBe('/reglementaire')
+    expect(activeNavHref('/controles/campagnes/12', hrefs)).toBe('/controles/campagnes')
+    expect(activeNavHref('/controles', hrefs)).toBe('/controles')
+    expect(activeNavHref('/autre', hrefs)).toBeNull()
+    expect(activeNavHref('/controlesX', hrefs)).toBeNull()
   })
 
   it('suivi régulateur (plans d’action régulateurs) est dans le menu Contrôle & audit', () => {
@@ -97,7 +120,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
   it('RISK_MANAGER (gouvernance) : découpage en ~6 entrées, tous les modules accessibles', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     const keys = allKeys(m)
-    for (const k of ['cartographie', 'registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
+    for (const k of ['registre', 'campagnes', 'pilotage', 'processus', 'controles', 'kri', 'audit', 'reglementaire', 'registreTic', 'conformite', 'derogations']) {
       expect(keys).toContain(k)
     }
     // Nouveau découpage « pilotage en tête » : 3 menus thématiques.
@@ -111,7 +134,6 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     const keys = allKeys(m)
     expect(keys).toContain('controles')
     expect(keys).toContain('audit')
-    expect(keys).toContain('cartographie')
     // Pilotage = cockpit de LECTURE consolidée : désormais exposé (l'API /grc/rollup
     // le sert déjà) — cohérent avec la lecture globale du dispositif (#126).
     expect(keys).toContain('pilotage')

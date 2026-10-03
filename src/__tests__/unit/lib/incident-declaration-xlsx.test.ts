@@ -44,3 +44,15 @@ describe('buildDeclarationWorkbook — autres régimes', () => {
     expect(rows.join('\n')).toContain('CRA_14'); expect(rows.join('\n')).toContain('2026-10-06T07:00:00Z'); expect(rows.join('\n')).toContain('Banque Exemple'); expect(rows.join('\n')).toContain('Non déposée')
   })
 })
+
+describe('buildDeclarationWorkbook — RGPD art. 33 § 3', () => {
+  it('ajoute une feuille avec les rubriques de l’art. 33 § 3 (valeurs saisies, « à compléter » sinon) pour RGPD_33 seulement', async () => {
+    const base = { kind: 'REGIME' as const, code: 'RGPD_33', phase: { code: 'NOTIFICATION' }, echeance: null, soumisLe: null }
+    const wb = await load(await buildDeclarationWorkbook({ ...base, declaration: { 'rgpd.nature': 'Envoi à un mauvais destinataire', 'rgpd.nbPersonnes': 40 } }, incident, ctx, 'fr'))
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Lisez-moi', 'Déclaration', 'RGPD art. 33 § 3'])
+    const rows = wb.getWorksheet('RGPD art. 33 § 3')!.getSheetValues().filter(Boolean).map(r => (r as unknown[]).slice(1).map(String).join(' | ')).join('\n')
+    expect(rows).toContain('Envoi à un mauvais destinataire'); expect(rows).toContain('40'); expect(rows).toContain('À compléter')
+    const other = await load(await buildDeclarationWorkbook({ ...base, code: 'NIS2' }, incident, ctx, 'fr'))
+    expect(other.worksheets).toHaveLength(2)
+  })
+})

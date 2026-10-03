@@ -7,7 +7,13 @@
 import { Briefcase } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
-export interface ProjetOption { id: string; nom: string; description?: string | null }
+export interface ProjetOption {
+  id: string
+  nom: string
+  description?: string | null
+  secteur?: string | null
+  patternsArchi?: string[]
+}
 
 export default function ProjetSourcePicker({ projets, value, onChange }: { projets: ProjetOption[]; value: string; onChange: (p: ProjetOption | null) => void }) {
   const { t } = useTranslation()

@@ -42,6 +42,11 @@ describe('GET /api/rapports', () => {
     expect(j.canWrite).toBe(true)
     expect(m.find.mock.calls[0][0].where).toEqual({ organizationId: 'o1' })
   })
+  it('signale le livrable DORA (réexamen du cadre TIC) seulement si le module réglementaire est actif', async () => {
+    expect((await (await GET()).json()).livrableDora).toBe(false)
+    m.config.mockResolvedValue({ incidentsActive: true, reglementaireActive: true })
+    expect((await (await GET()).json()).livrableDora).toBe(true)
+  })
 })
 
 describe('POST /api/rapports', () => {

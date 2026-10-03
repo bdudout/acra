@@ -412,6 +412,8 @@ scripts/update-agent.sh --install                      # optional: enables the b
 docker compose up -d --build
 ```
 
+**Restore point and automatic rollback.** Before changing anything, the update stops the application and creates a **verified restore point** (`scripts/acra-snapshot.sh`: custom-format database dump, documents, checksums, a database clone for fast restore). If the migration, the start-up or the health check fails, the **rollback is automatic** (code, database, documents) and the outcome shows in Administration → Version, which also lists the points and offers **“Revert to this point”** (you type the version to confirm). Variables: `ACRA_BACKUP_DIR`, `ACRA_SNAPSHOT_KEEP`, `ACRA_BACKUP_AGE_RECIPIENT` (`age` encryption), `ACRA_FAILED_DB_RETENTION_DAYS`. Disk space needed: about 2 × the database + the documents. Manual procedure: `docs/runbook-exploitation.md` § 6.
+
 ---
 
 ### Backup and restore

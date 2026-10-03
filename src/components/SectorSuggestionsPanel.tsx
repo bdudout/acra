@@ -6,7 +6,7 @@ import type { SectorCode } from '@/lib/sector-suggestions'
 
 type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string; references?: string[] }
 type Choice = SectorCode | 'ALL' | null
-type Preview = { sector: Choice; configuredSectors: SectorCode[]; effectiveSectors?: SectorCode[]; inheritedSectors?: boolean; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] } }
+type Preview = { sector: Choice; configuredSectors: SectorCode[]; effectiveSectors?: SectorCode[]; inheritedSectors?: boolean; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] }; reviewPending?: SectorCode[] }
 
 /** Sélection volontaire, jamais de création automatique à l'ouverture d'un module. */
 export default function SectorSuggestionsPanel({ canCreateProcesses, onImported, kinds }: { canCreateProcesses: boolean; onImported: () => void; kinds?: Item['kind'][] }) {
@@ -110,6 +110,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
         </label>
       </div>
       {preview?.inheritedSectors && <p className="text-sm text-gray-600 dark:text-gray-300">{s.inheritedSectors}</p>}
+      {!!preview?.reviewPending?.length && <p className="text-sm text-amber-800 dark:text-amber-300">{s.reviewPending.replace('{list}', preview.reviewPending.map(code => s.sectors[code] ?? code).join(', '))}</p>}
       {canCreateProcesses && sector && sector !== 'ALL' && !preview?.configuredSectors?.includes(sector) && <button type="button" disabled={busy} className="btn-secondary text-sm" onClick={() => void saveSector()}>{prefs.saveSector}</button>}
       {sectorSaved && <p role="status" className="text-sm text-green-800 dark:text-green-300">{prefs.sectorSaved}</p>}
       {newKeys.size > 0 && <label className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-100"><input type="checkbox" checked={onlyNew} onChange={e => setOnlyNew(e.target.checked)} />{s.whatsNew.replace('{n}', String(newKeys.size)).replace('{since}', preview?.whatsNew?.since ?? '')}</label>}

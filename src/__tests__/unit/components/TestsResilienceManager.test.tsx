@@ -32,7 +32,6 @@ describe('TestsResilienceManager', () => {
     expect(within(row).getByText('Réalisé')).toBeTruthy()
     expect(screen.getByText('100 %')).toBeTruthy()
     expect(screen.getByText('dont 1 de sévérité 4')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Rapport de réexamen (Word)' }).getAttribute('href')).toBe('/api/tests-resilience/rapport?annee=2026')
   })
 
   it('ajoute un test avec type, fonction critique, constat et risque lié', async () => {
@@ -58,5 +57,20 @@ describe('TestsResilienceManager', () => {
     expect((screen.getByLabelText('Intitulé') as HTMLInputElement).value).toBe('Analyse de vulnérabilités du SI de paiement')
     expect((screen.getByLabelText('Type de test') as HTMLSelectElement).value).toBe('VULNERABILITY')
     expect((screen.getByLabelText('Soutient une fonction critique ou importante') as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('constat dont toutes les actions sont faites : clôture PROPOSÉE (bouton), appliquée seulement sur clic ; action en cours : simple indication', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.startsWith('/api/risk-items')) return ok({ risks: [] })
+      if (init?.method === 'PATCH') return ok({ ok: true })
+      return ok({ ...liste, actionsParConstat: { t1: { 0: { ouvertes: 0, faites: 2 } } } })
+    })
+    render(<TestsResilienceManager />)
+    const btn = await screen.findByRole('button', { name: /Marquer le constat comme corrigé/ })
+    expect(screen.getByText(/Toutes les actions liées sont faites/)).toBeTruthy()
+    fireEvent.click(btn)
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PATCH')).toBe(true))
+    const call = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')!
+    expect(call[0]).toBe('/api/tests-resilience/t1/actions'); expect(JSON.parse(call[1].body)).toEqual({ constatIndex: 0, corrige: true })
   })
 })

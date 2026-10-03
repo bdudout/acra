@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
-import { sousSecteurIdsFor } from '@/lib/sous-secteurs'
+import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
+import SousSecteursPicker from '@/components/SousSecteursPicker'
+import PatternsArchiPicker from '@/components/PatternsArchiPicker'
 import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
@@ -25,17 +27,20 @@ const METHODE_I18N: Record<string, string> = {
 export default function NewAnalysePage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { SECTEURS_ACTIVITE, SOUS_SECTEURS } = useEbiosData()
-  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteur: '', mentionProtection: 'NON_PROTEGEE', tags: '' })
+  const { SECTEURS_ACTIVITE } = useEbiosData()
+  const [patternsMax, setPatternsMax] = useState(12)
+  const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
+  const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteurs: [] as string[], patternsArchi: [] as string[], mentionProtection: 'NON_PROTEGEE', tags: '' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
-  const sousSecteurOptions = SOUS_SECTEURS.filter(s => sousSecteurIdsFor(form.secteur).includes(s.id))
   const [socleId, setSocleId] = useState('')
   // Projet 360 dont part l'analyse (module Projets 360 actif) : ?projet=<id> ou sélection.
   const [projets, setProjets] = useState<ProjetOption[]>([])
   const [projetId, setProjetId] = useState('')
   function choisirProjet(p: ProjetOption | null) {
     setProjetId(p?.id ?? '')
-    if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, { nom: f.nom, description: f.description }) }))
+    if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, {
+      nom: f.nom, description: f.description, secteur: f.secteur, patternsArchi: f.patternsArchi,
+    }) }))
   }
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')
@@ -87,6 +92,8 @@ export default function NewAnalysePage() {
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (data?.qualificationQuestionnaire) setQualificationConfig(data.qualificationQuestionnaire)
+        if (typeof data?.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
+        if (Array.isArray(data?.patternsArchiMasques)) setHiddenPatterns(data.patternsArchiMasques)
       })
       .catch(() => {})
   }, [])
@@ -115,13 +122,14 @@ export default function NewAnalysePage() {
     if (!form.nom.trim()) { setError(t.newAnalysis.nameRequired); return }
     if (!form.organisation.trim()) { setError(t.newAnalysis.orgRequired); return }
     if (!form.secteur) { setError(t.newAnalysis.sectorRequired); return }
+    if (!form.patternsArchi.length) { setError(t.patternsArchi.required); return }
     setLoading(true)
     setError('')
 
     const res = await fetch('/api/analyses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: parseTagsInput(form.tags), methode, qualification, ...(socleId ? { socleId } : {}), ...(projetId ? { projetSourceId: projetId } : {}) }),
+      body: JSON.stringify({ ...form, sousSecteur: form.sousSecteurs[0], tags: parseTagsInput(form.tags), methode, qualification, ...(socleId ? { socleId } : {}), ...(projetId ? { projetSourceId: projetId } : {}) }),
     })
 
     const data = await res.json()
@@ -180,25 +188,17 @@ export default function NewAnalysePage() {
           <div>
             <label className="label">{t.newAnalysis.sector} <span className="text-red-500">*</span></label>
             <select value={form.secteur} required
-              onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteur: '' })}
+              onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteurs: normalizeSousSecteurs(e.target.value, form.sousSecteurs) })}
               className="input">
               <option value="">{t.newAnalysis.sectorPh}</option>
               {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.sectorHint}</p>
-            {/* Sous-secteur (optionnel) — affiché seulement si le secteur en propose */}
-            {sousSecteurOptions.length > 0 && (
-              <div className="mt-3">
-                <label className="label">{t.newAnalysis.subSector} <span className="text-gray-400 font-normal">({t.optional})</span></label>
-                <select value={form.sousSecteur}
-                  onChange={e => setForm({ ...form, sousSecteur: e.target.value })}
-                  className="input">
-                  <option value="">{t.newAnalysis.subSectorPh}</option>
-                  {sousSecteurOptions.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.subSectorHint}</p>
-              </div>
-            )}
+            {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}
+            <div className="mt-3">
+              <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
+              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} required onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
+            </div>
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (
               <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">

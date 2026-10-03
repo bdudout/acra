@@ -20,6 +20,7 @@ import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeMaturityScale } from '@/lib/maturity'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 
 const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
 
@@ -84,6 +85,8 @@ export async function GET(_req: NextRequest) {
     derogationAlerteJours: cfg.derogationAlerteJours,
     derogationDureeMaxJours: cfg.derogationDureeMaxJours,
     archivageMissionsAnnees: cfg.archivageMissionsAnnees,
+    patternsArchiMax: cfg.patternsArchiMax,
+    patternsArchiMasques: cfg.patternsArchiMasques,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
     derogationSortCatalogue: cfg.derogationSortCatalogue,
@@ -98,6 +101,10 @@ export async function GET(_req: NextRequest) {
     secondeLigneActive: cfg.secondeLigneActive,
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     projets360Active: cfg.projets360Active,
+    homologationsActive: cfg.homologationsActive,
+    recertificationActive: cfg.recertificationActive,
+    registreIaActive: cfg.registreIaActive,
+    mcpActive: cfg.mcpActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
     // Personnalisation (éventuellement héritée) de l'échelle de maturité CMMI.
     echelleMaturite: sanitizeMaturityScale(cfg.echelleMaturite),
@@ -221,6 +228,10 @@ export async function PUT(req: NextRequest) {
   if (typeof body.archivageMissionsAnnees === 'number' && Number.isFinite(body.archivageMissionsAnnees)) {
     data.archivageMissionsAnnees = Math.max(1, Math.min(30, Math.round(body.archivageMissionsAnnees)))
   }
+  if (typeof body.patternsArchiMax === 'number' && Number.isFinite(body.patternsArchiMax)) {
+    data.patternsArchiMax = Math.max(1, Math.min(PATTERNS_MAX_MAX, Math.floor(body.patternsArchiMax)))
+  }
+  if (Array.isArray(body.patternsArchiMasques)) data.patternsArchiMasques = normalizePatterns(body.patternsArchiMasques, { max: PATTERNS_MAX_MAX })
   if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {
     data.derogationDureeMaxJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeMaxJours)))
   }
@@ -241,6 +252,10 @@ export async function PUT(req: NextRequest) {
   if (typeof body.secondeLigneActive === 'boolean') data.secondeLigneActive = body.secondeLigneActive
   if (typeof body.profilsOperationnelsActive === 'boolean') data.profilsOperationnelsActive = body.profilsOperationnelsActive
   if (typeof body.projets360Active === 'boolean') data.projets360Active = body.projets360Active
+  if (typeof body.homologationsActive === 'boolean') data.homologationsActive = body.homologationsActive
+  if (typeof body.recertificationActive === 'boolean') data.recertificationActive = body.recertificationActive
+  if (typeof body.registreIaActive === 'boolean') data.registreIaActive = body.registreIaActive
+  if (typeof body.mcpActive === 'boolean') data.mcpActive = body.mcpActive
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   if (Array.isArray(body.taxonomieRisques)) data.taxonomieRisques = sanitizeTaxonomie(body.taxonomieRisques)
 

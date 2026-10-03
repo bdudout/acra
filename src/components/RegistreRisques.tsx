@@ -7,6 +7,7 @@
 // (RiskActionsPanel). Colonnes triables et filtrables « façon tableur » via
 // ColumnMenu (lib/table-sort + table-filter). Pendant analyse : RisquesClient.
 
+import RisquesViewTabs from '@/components/RisquesViewTabs'
 import { AlertTriangle, NotebookText, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
@@ -192,6 +193,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
 
   return (
     <div>
+      <RisquesViewTabs current="liste" />
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><NotebookText size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {r.title}</h1>
         <div className="flex items-center gap-2">

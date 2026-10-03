@@ -4,7 +4,7 @@ import { E2E } from './fixtures'
 
 test('cycle cyber : sauvegarder 5 ateliers, approuver, accepter, geler et exporter', async ({ page }) => {
   await login(page, E2E.users.porteur.email)
-  const created = await page.request.post('/api/analyses', { data: { nom: 'E2E cycle cyber', organisation: 'E2E', secteur: 'AUTRE' } })
+  const created = await page.request.post('/api/analyses', { data: { nom: 'E2E cycle cyber', organisation: 'E2E', secteur: 'AUTRE', patternsArchi: ['SI_STANDARD'] } })
   expect(created.status()).toBe(201)
   const { analyse } = await created.json()
   const url = `/api/analyses/${analyse.id}`
