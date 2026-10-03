@@ -368,7 +368,10 @@ cmd_create() {
   cmd_index
 
   [ -z "${ACRA_SNAPSHOT_HOOK:-}" ] || "$ACRA_SNAPSHOT_HOOK" "$id" >>"$dir/create.log" 2>&1 || note "Crochet ACRA_SNAPSHOT_HOOK en échec (non bloquant)."
-  if [ -n "${ACRA_SNAPSHOT_OFFSITE_CMD:-}" ]; then
+  if [ -n "${ACRA_OFFSITE_DRIVER:-}" ]; then
+    # Sauvegarde externe vérifiée (scripts/acra-offsite.sh) : un échec est publié mais ne fait jamais échouer le point.
+    ACRA_BACKUP_DIR="$BACKUP_DIR" ACRA_ROOT="$PWD" bash "$(dirname "$0")/acra-offsite.sh" push "$id" >>"$dir/create.log" 2>&1 || note "Envoi hors site en échec (non bloquant) : voir scripts/acra-offsite.sh status."
+  elif [ -n "${ACRA_SNAPSHOT_OFFSITE_CMD:-}" ]; then
     # shellcheck disable=SC2086
     $ACRA_SNAPSHOT_OFFSITE_CMD "$dir" >>"$dir/create.log" 2>&1 || note "Copie hors site en échec (non bloquant)."
   fi
