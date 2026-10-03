@@ -1500,17 +1500,6 @@ export default function ConfigurationPage() {
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>
-            <fieldset className="mt-5">
-              <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.patternsArchi.hiddenLabel}</legend>
-              <p className="mt-1 text-xs text-gray-500">{t.patternsArchi.hiddenHelp}</p>
-              <div className="mt-2 grid gap-1 sm:grid-cols-2">
-                {ARCHI_PATTERNS.map(pattern => <label key={pattern.code} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" checked={hiddenPatterns.includes(pattern.code)} disabled={savingFeatures}
-                    onChange={() => { const next = hiddenPatterns.includes(pattern.code) ? hiddenPatterns.filter(code => code !== pattern.code) : [...hiddenPatterns, pattern.code]; void saveHiddenPatterns(next) }} />
-                  {patternLabel(pattern.code, locale)}
-                </label>)}
-              </div>
-            </fieldset>
           </section>
         )}
 
@@ -1527,6 +1516,17 @@ export default function ConfigurationPage() {
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.patternsArchi.hiddenLabel}</legend>
+              <p className="mt-1 text-xs text-gray-500">{t.patternsArchi.hiddenHelp}</p>
+              <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                {ARCHI_PATTERNS.map(pattern => <label key={pattern.code} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={hiddenPatterns.includes(pattern.code)} disabled={savingFeatures}
+                    onChange={() => { const next = hiddenPatterns.includes(pattern.code) ? hiddenPatterns.filter(code => code !== pattern.code) : [...hiddenPatterns, pattern.code]; void saveHiddenPatterns(next) }} />
+                  {patternLabel(pattern.code, locale)}
+                </label>)}
+              </div>
+            </fieldset>
           </section>
         )}
 

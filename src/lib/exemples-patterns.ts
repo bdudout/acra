@@ -8,10 +8,11 @@ import { localizePatternItem, selectPatternItems, type PatternCategory, type Pat
 import { EXPOSITION_ITEMS } from '@/lib/exemples-patterns-exposition'
 import { INTERCO_ITEMS } from '@/lib/exemples-patterns-interco'
 import { ADMIN_POSTES_ITEMS } from '@/lib/exemples-patterns-admin-postes'
+import { LOT2_ITEMS } from '@/lib/exemples-patterns-lot2'
 
 export { selectPatternItems, localizePatternItem, type PatternItem, type PatternCategory } from '@/lib/exemples-patterns-core'
 
-export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS]
+export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS, ...LOT2_ITEMS]
 
 /** Exemples localisés des patterns cochés pour une catégorie d'atelier. */
 export function patternExemplesFor(patterns: readonly string[] | null | undefined, category: PatternCategory, locale: Locale = 'fr', famille: SecteurFamille | null = null): Record<string, unknown>[] {

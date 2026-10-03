@@ -19,6 +19,16 @@ describe('plancher de profondeur (patterns du lot 1)', () => {
   }
 })
 
+describe('contenu du lot 2', () => {
+  for (const code of ARCHI_PATTERNS.filter(p => p.lot === 2).map(p => p.code)) {
+    it(`${code} : suggestions propres dans au moins six catégories`, () => {
+      const own = PATTERN_ITEMS.filter(i => i.patterns.length === 1 && i.patterns[0] === code)
+      expect(own.length).toBeGreaterThanOrEqual(6)
+      expect(new Set(own.map(i => i.category)).size).toBeGreaterThanOrEqual(6)
+    })
+  }
+})
+
 describe('intégrité des données', () => {
   it('chaque élément référence des patterns connus, sans doublon', () => {
     for (const i of PATTERN_ITEMS) {
