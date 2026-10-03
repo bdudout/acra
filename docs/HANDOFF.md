@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-03 (59) — Claude : étude sauvegarde/rollback des mises à jour ; contenu santé, mutuelle et interconnexions (catalogue 1.12)
+
+**Rien n'est poussé** ; commits locaux sur `feat/historical-excel-import`.
+
+- **Axe 1 — étude + spec (aucun code)** : `docs/specs/sauvegarde-rollback-etude.md` (constats C1–C14, ADR-001 à 005) et `docs/specs/sauvegarde-rollback-spec.md` (lots 0 à 7, prêts pour Sonnet 5.5). **Constat P0** : en `docker-compose.yml` (et surcouche production), `/app/.data/documents` n'est pas sur un volume → **les pièces jointes sont perdues à chaque `update.sh`** (recréation du conteneur). Le lot 0 (volume + sauvetage `docker cp` avant recréation, app arrêtée avant `pg_dump -Fc` vérifié, `ACRA_MIGRATE_AUTO_RESOLVE=0` pendant une mise à jour) doit sortir **avant** tout le reste : c'est le `update.sh` installé chez le client qui fera sa prochaine sauvegarde.
+- **Axe 2 — contenu** (spec `docs/specs/contenu-sante-interconnexions.md`) : secteur d'analyse « Technique / Interconnexion de SI » (4 sous-secteurs) ; sous-secteurs santé portail / entrepôt / délégataire ; `lib/exemples-sectoriels-ext.ts` (ateliers 1 à 5, dont nouvelles catégories `actionsElementaires`, `mesuresEcosysteme`, `mesures`, textes ×5 dans la donnée) ; atelier 5 `SectorMeasuresPanel` ; MCP `read_sector_examples` étendu ; catalogue **1.12** (`sector-packs-sante-technique.ts` : secteur TECHNIQUE complet, compléments SANTE et ASSURANCE, 4 incidents types TECHNIQUE).
+- **Pièges** : `SECTEURS_ACTIVITE` est indexé dans les dictionnaires `ebios-data/*.ts` → insérer avant « Autre » impose de décaler `SECTEURS_ACTIVITE.19/20` dans les 5 langues puis `node scripts/extract-ebios-data-i18n.mjs` (ne réécrit que fr.ts) ; tout ajout au catalogue impose `npm run catalogue:review` (grille CSV testée). Nouveau contenu d'exemples : l'écrire dans `exemples-sectoriels-ext.ts` (pas d'index positionnel).
+- **Comparatif Opus seul / Opus + ACRA** (`docs/benchmark/2026-10-03-sante-interco/resultats.md`) : ACRA gagne T6 (portail, 16,5 vs 15) et T10 (témoin), seul gagne de justesse T7 et T8, égalité T9 ; aucune référence inventée ; pas de supériorité générale démontrée (un passage, contamination partielle signalée).
+- **Vérifié** : `tsc` 0 erreur · `npm test` 450 fichiers / 3565 tests verts · `npm run i18n:check` OK (1603 clés) · `npm run catalogue:review` régénéré · recette navigateur dev :3005 : secteur Technique et sous-secteurs visibles à la création d'analyse, atelier 1 propose les valeurs métier du portail (pas celles de l'hôpital), atelier 5 affiche « Mesures proposées pour votre secteur », ajout d'une mesure au plan → « Ajoutée », mesures du sous-secteur en tête après correctif. **Non vérifié** : masquage du panneau en lecture seule dans le navigateur (code + test unitaire du composant seulement) ; `npm run build` non lancé (aucune route ni configuration Next modifiée) ; références à confirmer listées dans `docs/specs/contenu-sante-interconnexions.md`.
+- **Prochain pas** : faire développer le **lot 0** de la spec rollback et le publier ; décider D1–D5 (étude § 9) ; relecture experte du contenu 1.12.
+- Recette locale : serveur de dev :3005 sur le PostgreSQL embarqué :5433 (`/private/tmp/claude-502/pg/start.mjs`), compte local de recette (SUPER_ADMIN, mot de passe dans le scratchpad de session, non commité). Le serveur :3000 est un build de production du tour (58), **périmé**.
+
+---
+
 ## 2026-10-03 (58) — Claude : chantier contenu sectoriel, MCP phase 5, rapports et exports (lots L0–L5 en grande partie)
 
 Spec : `docs/specs/chantier-contenu-sectoriel-mcp-rapports.md` (décisions de l'utilisateur consignées § 10). **Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import`.
