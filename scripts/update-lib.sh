@@ -87,13 +87,17 @@ existing_services() {
   return 0
 }
 STOPPED=0
+# Mode sans Docker (ACRA_NO_DOCKER=1) : l'arrêt et le démarrage passent par ACRA_STOP_CMD / ACRA_START_CMD (ex. systemctl).
+nodocker() { [ "${ACRA_NO_DOCKER:-0}" = "1" ]; }
 stop_services() {
+  if nodocker; then bash -c "${ACRA_STOP_CMD:?}" >/dev/null 2>&1 || return 1; STOPPED=1; return 0; fi
   local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
   # shellcheck disable=SC2086
   [ -z "$list" ] || "${COMPOSE[@]}" stop $list >/dev/null 2>&1 || return 1
   STOPPED=1
 }
 restart_old() { # redémarre sans reconstruire (les images de l'ancienne version sont encore là)
+  if nodocker; then bash -c "${ACRA_START_CMD:?}" >/dev/null 2>&1 || true; STOPPED=0; return 0; fi
   local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
   # shellcheck disable=SC2086
   [ -z "$list" ] || "${COMPOSE[@]}" up -d --no-build $list >/dev/null 2>&1 || true
@@ -118,7 +122,8 @@ precheck_migrations() { # sha cible
 wait_health() { # sha
   local sha="$1" out i
   for (( i = 0; i < ${ACRA_HEALTH_RETRIES:-60}; i++ )); do
-    out="$("${COMPOSE[@]}" exec -T app wget -q -O - 'http://127.0.0.1:3000/api/health?deep=1' 2>/dev/null || true)"
+    if nodocker; then out="$(curl -fsS "http://127.0.0.1:${ACRA_PORT:-3000}/api/health?deep=1" 2>/dev/null || true)"
+    else out="$("${COMPOSE[@]}" exec -T app wget -q -O - 'http://127.0.0.1:3000/api/health?deep=1' 2>/dev/null || true)"; fi
     if printf '%s' "$out" | grep -q "\"revision\":\"$sha\"" && printf '%s' "$out" | grep -q '"status":"ok"'; then
       # Si l'application publie l'état des migrations (santé approfondie), rien ne doit être en attente ni en échec.
       if ! printf '%s' "$out" | grep -q '"migrations"' || { printf '%s' "$out" | grep -q '"pending":\[\]' && printf '%s' "$out" | grep -q '"failed":\[\]'; }; then return 0; fi
@@ -130,7 +135,8 @@ wait_health() { # sha
 smoke_ok() {
   local p out
   for p in / /login /api/health; do
-    out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null --max-redirect=0 "http://127.0.0.1:3000$p" 2>&1 || true)"
+    if nodocker; then out="HTTP/1.1 $(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${ACRA_PORT:-3000}$p" 2>/dev/null || echo 000)"
+    else out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null --max-redirect=0 "http://127.0.0.1:3000$p" 2>&1 || true)"; fi
     printf '%s' "$out" | grep -Eq 'HTTP/[0-9.]+ (200|307)' || return 1
   done
 }
@@ -160,9 +166,13 @@ do_rollback() {
     ACRA_RUN_OWNER=1 bash "$snap" restore "$SNAPSHOT_ID" --yes >/dev/null || { rollback_failed "$cause"; return 1; }
   fi
   export ACRA_VERSION="v$FROM" ACRA_REVISION="$FROM_SHA"
-  local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
-  # shellcheck disable=SC2086
-  "${COMPOSE[@]}" up -d --build --no-deps $list >/dev/null 2>&1 || { rollback_failed "$cause"; return 1; }
+  if nodocker; then
+    { npm ci >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && bash -c "${ACRA_START_CMD:?}" >/dev/null 2>&1; } || { rollback_failed "$cause"; return 1; }
+  else
+    local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
+    # shellcheck disable=SC2086
+    "${COMPOSE[@]}" up -d --build --no-deps $list >/dev/null 2>&1 || { rollback_failed "$cause"; return 1; }
+  fi
   wait_health "$FROM_SHA" || { rollback_failed "$cause"; return 1; }
   STATE="ROLLED_BACK"; ROLLED_BACK=true; step_ok ROLLED_BACK
   event "ROLLED_BACK $TO $FROM $cause $(iso)"
@@ -187,14 +197,20 @@ run_steps() {
   local migrate_fail=0
   step_enter MIGRATE "Migration de la base"
   export ACRA_VERSION="v$TO" ACRA_REVISION="$TO_SHA" ACRA_MIGRATE_AUTO_RESOLVE=0
-  if ! { "${COMPOSE[@]}" build app migrator >/dev/null 2>&1 || "${COMPOSE[@]}" build >/dev/null 2>&1; } || ! "${COMPOSE[@]}" run --rm --no-deps migrator >/dev/null 2>&1; then migrate_fail=1; fi
+  if nodocker; then
+    npx prisma migrate deploy >/dev/null 2>&1 || migrate_fail=1
+  elif ! { "${COMPOSE[@]}" build app migrator >/dev/null 2>&1 || "${COMPOSE[@]}" build >/dev/null 2>&1; } || ! "${COMPOSE[@]}" run --rm --no-deps migrator >/dev/null 2>&1; then migrate_fail=1; fi
   if [ "$migrate_fail" -eq 1 ]; then step_ko MIGRATE migrate_failed; do_rollback migrate_failed 1; return 1; fi
   step_ok MIGRATE
 
   step_enter START "Démarrage de la nouvelle version"
-  local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
-  # shellcheck disable=SC2086
-  if ! "${COMPOSE[@]}" up -d --build --no-deps $list >/dev/null 2>&1; then step_ko START start_failed; do_rollback start_failed 1; return 1; fi
+  if nodocker; then
+    if ! { npm ci >/dev/null 2>&1 && npm run build >/dev/null 2>&1 && bash -c "${ACRA_START_CMD:?}" >/dev/null 2>&1; }; then step_ko START start_failed; do_rollback start_failed 1; return 1; fi
+  else
+    local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
+    # shellcheck disable=SC2086
+    if ! "${COMPOSE[@]}" up -d --build --no-deps $list >/dev/null 2>&1; then step_ko START start_failed; do_rollback start_failed 1; return 1; fi
+  fi
   STOPPED=0
   step_ok START
 

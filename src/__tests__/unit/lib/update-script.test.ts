@@ -188,3 +188,45 @@ describe('update.sh v2 — PRECHECK des migrations (lot 5)', () => {
     expect(status().precheck).toEqual({ destructive: [] })
   })
 })
+
+describe('update.sh --no-docker (lot 6)', () => {
+  const stubs = () => {
+    for (const n of ['npm', 'npx']) writeFileSync(path.join(inst.bin, n), `#!/bin/sh\necho "${n.toUpperCase()} $*" >> "$AUDIT_LOG"\n[ -e "$FAKE_DIR/${n}_fail" ] && exit 1\nexit 0\n`, { mode: 0o755 })
+    writeFileSync(path.join(inst.bin, 'curl'), '#!/bin/sh\ncase "$*" in *"-w"*) echo 200 ;; *) printf \'{"status":"ok","revision":"%s"}\' "$(cat "$FAKE_DIR/served_rev")" ;; esac\n', { mode: 0o755 })
+    writeFileSync(path.join(inst.root, 'stop.sh'), '#!/bin/sh\necho STOPCMD >> "$AUDIT_LOG"\n', { mode: 0o755 })
+    writeFileSync(path.join(inst.root, 'start.sh'), '#!/bin/sh\necho "STARTCMD rev=$ACRA_REVISION" >> "$AUDIT_LOG"\nprintf %s "$ACRA_REVISION" > "$FAKE_DIR/served_rev"\n', { mode: 0o755 })
+  }
+  const env = () => ({ ACRA_STOP_CMD: path.join(inst.root, 'stop.sh'), ACRA_START_CMD: path.join(inst.root, 'start.sh'), DATABASE_URL: 'postgresql://u:p@db.example.org:5432/appdb', ACRA_PG_CLIENT: 'docker' })
+
+  it('sans ACRA_STOP_CMD : refus precheck_no_stop_cmd, rien n’est modifié', () => {
+    inst = makeInstance()
+    const r = update(['--no-docker'])
+    expect(r.status).not.toBe(0)
+    expect(status()).toMatchObject({ state: 'FAILED', code: 'precheck_no_stop_cmd' })
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+    expect(inst.calls().filter(c => !c.startsWith('compose')).length).toBe(0)
+  })
+
+  it('avec les commandes : arrêt, point de restauration (base externe), code, prisma migrate deploy, build, démarrage, santé', () => {
+    inst = makeInstance(); stubs()
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--no-docker', '--status-file', STATUS], env())
+    expect(r.status, r.stderr + r.stdout).toBe(0)
+    const c = inst.calls()
+    const order = ['STOPCMD', 'pg_dump', 'NPX prisma migrate deploy', 'NPM ci', 'NPM run build', `STARTCMD rev=${inst.shaB}`]
+    let last = -1
+    for (const n of order) { const i = c.findIndex((x, k) => k > last && x.includes(n)); expect(i, n).toBeGreaterThan(last); last = i }
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaB)
+    expect(status()).toMatchObject({ state: 'SUCCESS', rolledBack: false })
+  })
+
+  it('échec de migrate deploy : retour arrière (code, base, reconstruction, démarrage)', () => {
+    inst = makeInstance(); stubs(); inst.fakeFile('npx_fail')
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--no-docker', '--status-file', STATUS], env())
+    expect(r.status).not.toBe(0)
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+    const c = inst.calls()
+    expect(c.some(x => x.includes('RENAME TO') && x.includes('__failed_'))).toBe(true)
+    expect(c.some(x => x === `STARTCMD rev=${inst.shaA}`)).toBe(true)
+    expect(status()).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'migrate_failed' })
+  })
+})

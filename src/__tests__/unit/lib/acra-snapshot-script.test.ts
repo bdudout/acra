@@ -228,3 +228,45 @@ describe('acra-snapshot list / prune', () => {
     expect(existsSync(path.join(backups(), id))).toBe(true)
   })
 })
+
+describe('acra-snapshot — mode base externe (lot 6)', () => {
+  const url = { ACRA_DB_MODE: 'url', DATABASE_URL: 'postgresql://u:secret-pw@db.example.org:5432/appdb?sslmode=require', ACRA_PG_CLIENT: 'docker' }
+  it('url + Docker : outils clients dans postgres:<majeure>-alpine, base issue de DATABASE_URL, mot de passe jamais écrit', () => {
+    inst = make()
+    const r = snap(['create', '--reason', 'manual', '--from-version', '1.0.4'], url)
+    expect(r.status, r.stderr).toBe(0)
+    const c = inst.calls()
+    expect(c.some(x => x.startsWith('run --rm -i --network host postgres:16-alpine') && x.includes('pg_dump') && x.includes('/appdb?sslmode=require'))).toBe(true)
+    expect(c.some(x => x.includes('compose') && x.includes('pg_dump'))).toBe(false)
+    const id = r.stdout.trim()
+    const manifest = readFileSync(path.join(backups(), id, 'manifest.json'), 'utf8')
+    expect(manifest).toMatch(/"name": "appdb"/); expect(manifest).toMatch(/"mode": "url"/)
+    expect(manifest).not.toContain('secret-pw')
+    expect(readFileSync(path.join(backups(), id, 'create.log'), 'utf8')).not.toContain('secret-pw')
+  })
+
+  it('sans DATABASE_URL : code 10', () => {
+    inst = make()
+    expect(snap(['create', '--reason', 'manual', '--from-version', '1.0.4'], { ACRA_DB_MODE: 'url', DATABASE_URL: '' }).status).toBe(10)
+  })
+
+  it('hôte sans Docker : client plus ancien que le serveur ⇒ code 10 explicite', () => {
+    inst = make()
+    const host = path.join(inst.root, 'hostbin'); mkdirSync(host)
+    writeFileSync(path.join(host, 'psql'), '#!/bin/sh\necho 160004\n', { mode: 0o755 })
+    for (const t of ['pg_dump', 'pg_restore']) writeFileSync(path.join(host, t), '#!/bin/sh\necho "' + t + ' (PostgreSQL) 14.2"\n', { mode: 0o755 })
+    const r = snap(['create', '--reason', 'manual', '--from-version', '1.0.4'], { ...url, ACRA_PG_CLIENT: 'host', PATH: `${host}:${inst.bin}:/usr/bin:/bin` })
+    expect(r.status).toBe(10)
+    expect(r.stderr).toMatch(/plus ancien que le serveur/)
+    expect(listDir(backups()).filter(x => !x.startsWith('.'))).toEqual([])
+  })
+
+  it('crochet ACRA_SNAPSHOT_HOOK appelé avec l’identifiant ; son échec n’est pas bloquant', () => {
+    inst = make()
+    const hook = path.join(inst.root, 'hook.sh'); writeFileSync(hook, '#!/bin/sh\necho "HOOK $1" >> "$AUDIT_LOG"\nexit 1\n', { mode: 0o755 })
+    const r = snap(['create', '--reason', 'manual', '--from-version', '1.0.4'], { ACRA_SNAPSHOT_HOOK: hook })
+    expect(r.status, r.stderr).toBe(0)
+    expect(inst.calls().some(x => x === `HOOK ${r.stdout.trim()}`)).toBe(true)
+    expect(r.stderr).toMatch(/Crochet ACRA_SNAPSHOT_HOOK en échec/)
+  })
+})

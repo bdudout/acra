@@ -24,12 +24,13 @@ case "$a" in
   *"compose"*" cp "*) : ;;
   *"printenv POSTGRES_DB"*) echo acra_rm ;;
   *"df -Pk"*) printf 'Filesystem 1024-blocks Used Available Capacity Mounted\nx 1 1 %s 1%% /\n' "$(cat "$FAKE_DIR/pg_free" 2>/dev/null || echo 99999999)" ;;
-  *"psql -U"*)
+  *"psql -U"*|*"psql -d"*)
     sql="\${@: -1}"
     case "$sql" in
       *pg_terminate_backend*) ;;
       *pg_database_size*) cat "$FAKE_DIR/dbsize" 2>/dev/null || echo 1000000 ;;
       *pg_stat_activity*) cat "$FAKE_DIR/activity" 2>/dev/null || echo 0 ;;
+      *server_version_num*) echo 160004 ;;
       *"SHOW server_version"*) echo 16.4 ;;
       *"migration_name||checksum"*) printf 'm1abc\nm2def\n' ;;
       *"migration_name FROM"*) echo 20261003110000_x ;;
@@ -41,7 +42,7 @@ case "$a" in
       *"FROM pg_database WHERE datname"*) cat "$FAKE_DIR/clone_exists" 2>/dev/null || echo 1 ;;
       *"RENAME TO"*__failed_*) : > "$FAKE_DIR/renamed" ;;
     esac ;;
-  *"pg_restore -U"*) cat > /dev/null; f restore_fail && exit 1 ;;
+  *"pg_restore -U"*|*"pg_restore -d"*) cat > /dev/null; f restore_fail && exit 1 ;;
   *"du -sk"*) cat "$FAKE_DIR/docs_kb" 2>/dev/null || echo 100 ;;
   *"find /app/.data"*) cat "$FAKE_DIR/docs_files" 2>/dev/null || echo 3 ;;
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;

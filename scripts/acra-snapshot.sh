@@ -16,7 +16,7 @@
 #   31 identifiant inconnu · 32 empreinte de clé différente · 40 verrou détenu.
 # Variables : ACRA_BACKUP_DIR (./backups) · ACRA_COMPOSE_FILES · ACRA_SNAPSHOT_VERIFY · ACRA_SNAPSHOT_FULL_MAX_MB (2048)
 #   · ACRA_SNAPSHOT_KEEP (3) · ACRA_FAILED_DB_RETENTION_DAYS (14) · ACRA_BACKUP_AGE_RECIPIENT / ACRA_BACKUP_AGE_IDENTITY
-#   · ACRA_DB_MODE (compose|url ; lot 6) · ACRA_SNAPSHOT_HOOK (commande appelée avec l'identifiant) · ACRA_SNAPSHOT_OFFSITE_CMD.
+#   · ACRA_DB_MODE (compose|url ; lot 6) · ACRA_PG_CLIENT (auto|docker|host : où tournent pg_dump/pg_restore/psql en mode url) · ACRA_DOCUMENTS_DIR (documents sur disque, installation sans Docker) · ACRA_SNAPSHOT_HOOK (commande appelée avec l'identifiant) · ACRA_SNAPSHOT_OFFSITE_CMD.
 # Jamais de secret dans un journal, un manifeste ou un nom de fichier.
 set -Eeuo pipefail
 umask 077
@@ -49,8 +49,53 @@ json_escape() { printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"
 
 # ── Accès base (mode compose ; le mode url est traité au lot 6) ───────────────────────────────────
 # shellcheck disable=SC2016
-dbq() { "${COMPOSE[@]}" exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$1" -tA -c "$2"' _ "$1" "$2"; }
-db_name() { "${COMPOSE[@]}" exec -T db printenv POSTGRES_DB | tr -d '\r\n'; }
+# Mode url (base externe ou managée, lot 6) : DATABASE_URL (environnement ou .env, jamais affichée) ; les outils clients
+# tournent dans un conteneur éphémère postgres:<majeure du serveur>-alpine si Docker est présent, sinon sur l'hôte à condition
+# que leur version majeure soit ≥ celle du serveur (sinon code 10).
+db_url() { local u="${DATABASE_URL:-}"; [ -n "$u" ] || u="$(sed -n 's/^DATABASE_URL=//p' .env 2>/dev/null | head -1 | tr -d '"'"'"'\r')"; printf '%s' "$u"; }
+url_for() { local u base q; u="$(db_url)"; base="${u%%\?*}"; q="${u#"$base"}"; printf '%s/%s%s' "${base%/*}" "$1" "$q"; }
+PG_PREFIX=()
+pgx() { if [ "${#PG_PREFIX[@]}" -gt 0 ]; then "${PG_PREFIX[@]}" "$@"; else "$@"; fi; }
+init_db() {
+  [ "$DB_MODE" = "url" ] || return 0
+  [ -n "$(db_url)" ] || die 10 "ACRA_DB_MODE=url : DATABASE_URL introuvable (environnement ou .env)."
+  local major cmajor t u client="${ACRA_PG_CLIENT:-auto}"   # auto | docker | host
+  u="$(url_for postgres)"
+  if [ "$client" = "host" ] || { [ "$client" = "auto" ] && ! command -v docker >/dev/null 2>&1; }; then client=host; else client=docker; fi
+  if [ "$client" = "host" ]; then major="$(psql -d "$u" -tA -c 'SHOW server_version_num' 2>/dev/null | tr -d '[:space:]')"
+  else major="$(docker run --rm -i --network host postgres:alpine psql -d "$u" -tA -c 'SHOW server_version_num' 2>/dev/null | tr -d '[:space:]')"; fi
+  [ -n "${major:-}" ] || die 10 "Base inaccessible (SHOW server_version_num en échec)."
+  major=$(( major / 10000 ))
+  if [ "$client" = "docker" ]; then
+    PG_PREFIX=(docker run --rm -i --network host "postgres:${major}-alpine")
+  else
+    for t in pg_dump pg_restore psql; do
+      command -v "$t" >/dev/null 2>&1 || die 10 "Ni Docker ni $t sur l'hôte : impossible de sauvegarder une base externe."
+      cmajor="$("$t" --version | sed -n 's/[^0-9]*\([0-9][0-9]*\)\..*/\1/p' | head -1)"
+      [ "${cmajor:-0}" -ge "$major" ] || die 10 "$t (version majeure ${cmajor:-?}) est plus ancien que le serveur PostgreSQL ($major) : installer un client ≥ $major ou Docker."
+    done
+  fi
+}
+dbq() {
+  if [ "$DB_MODE" = "url" ]; then pgx psql -d "$(url_for "$1")" -tA -c "$2"
+  else "${COMPOSE[@]}" exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$1" -tA -c "$2"' _ "$1" "$2"; fi
+}
+db_name() {
+  if [ "$DB_MODE" = "url" ]; then local u base; u="$(db_url)"; base="${u%%\?*}"; printf '%s' "${base##*/}"
+  else "${COMPOSE[@]}" exec -T db printenv POSTGRES_DB | tr -d '\r\n'; fi
+}
+# Dump, liste et restauration (stdin/stdout transmis).
+pg_dump_cmd() { # db
+  if [ "$DB_MODE" = "url" ]; then pgx pg_dump -d "$(url_for "$1")" -Fc -Z 6
+  # shellcheck disable=SC2016
+  else "${COMPOSE[@]}" exec -T db sh -c 'pg_dump -Fc -Z 6 -U "$POSTGRES_USER" "$POSTGRES_DB"'; fi
+}
+pg_list_cmd() { if [ "$DB_MODE" = "url" ]; then pgx pg_restore --list; else "${COMPOSE[@]}" exec -T db pg_restore --list; fi; }
+pg_restore_cmd() { # db
+  if [ "$DB_MODE" = "url" ]; then pgx pg_restore -d "$(url_for "$1")" --no-owner --exit-on-error
+  # shellcheck disable=SC2016
+  else "${COMPOSE[@]}" exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$1" --no-owner --exit-on-error' _ "$1"; fi
+}
 existing_services() {
   local defined svc; defined="$("${COMPOSE[@]}" config --services 2>/dev/null || true)"
   for svc in "$@"; do printf '%s\n' "$defined" | grep -qx "$svc" && printf '%s\n' "$svc"; done
@@ -112,7 +157,7 @@ verify_quick() { # dossier
   local d="$1" dump="$1/database.dump"
   check_sums "$d" || return 1
   if [ -f "$dump" ]; then
-    "${COMPOSE[@]}" exec -T db pg_restore --list < "$dump" 2>/dev/null | grep -q 'TABLE DATA' || return 1
+    pg_list_cmd < "$dump" 2>/dev/null | grep -q 'TABLE DATA' || return 1
   fi
   if [ -f "$d/documents.tar.gz" ]; then gzip -t "$d/documents.tar.gz" 2>/dev/null || return 1; fi
   return 0
@@ -123,8 +168,7 @@ verify_full() { # dossier db before after → 0 si les comptes restaurés corres
   # shellcheck disable=SC2064
   trap "dbq postgres \"DROP DATABASE IF EXISTS \\\"$vdb\\\"\" >/dev/null 2>&1 || true" RETURN
   dbq postgres "CREATE DATABASE \"$vdb\"" >/dev/null || return 1
-  # shellcheck disable=SC2016
-  "${COMPOSE[@]}" exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$1" --no-owner --exit-on-error' _ "$vdb" < "$d/database.dump" >/dev/null 2>&1 || return 1
+  pg_restore_cmd "$vdb" < "$d/database.dump" >/dev/null 2>&1 || return 1
   local restored; restored="$(row_counts "$vdb")"
   RESTORED_COUNTS="$restored"
   for t in $COUNTED_TABLES; do
@@ -207,8 +251,11 @@ cmd_create() {
   printf '%s' "${from:-x}" | grep -Eq '^[0-9A-Za-z.+-]{1,40}$' || die 2 "--from-version invalide"
   [ -z "$to" ] || printf '%s' "$to" | grep -Eq '^[0-9A-Za-z.+-]{1,40}$' || die 2 "--to-version invalide"
 
-  "${COMPOSE[@]}" ps >/dev/null 2>&1 || die 10 "docker compose ne répond pas."
-  "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx db || die 10 "Le service db n'est pas démarré."
+  if [ "$DB_MODE" = "url" ]; then init_db
+  else
+    "${COMPOSE[@]}" ps >/dev/null 2>&1 || die 10 "docker compose ne répond pas."
+    "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx db || die 10 "Le service db n'est pas démarré."
+  fi
   take_lock
   trap 'release_lock' EXIT
 
@@ -221,11 +268,13 @@ cmd_create() {
   # Mesures et espace disque (avant tout fichier).
   local dbbytes docskb dbkb need free pgfree
   dbbytes="$(dbq "$db" 'SELECT pg_database_size(current_database())' | tr -d '[:space:]')"; dbbytes="${dbbytes:-0}"; dbkb=$(( dbbytes / 1024 ))
-  docskb="$("${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh app -c 'du -sk /app/.data/documents 2>/dev/null | cut -f1' 2>/dev/null | tr -d '[:space:]' || true)"; docskb="${docskb:-0}"
+  if [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then docskb="$(du -sk "$ACRA_DOCUMENTS_DIR" 2>/dev/null | cut -f1 | tr -d '[:space:]' || true)"
+  else docskb="$("${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh app -c 'du -sk /app/.data/documents 2>/dev/null | cut -f1' 2>/dev/null | tr -d '[:space:]' || true)"; fi
+  docskb="${docskb:-0}"
   need=$(( (dbkb * 6 / 10 + docskb) * 12 / 10 + 200 * 1024 ))
   free="$(free_kb "$BACKUP_DIR")"; free="${free:-0}"
   [ "$free" -ge "$need" ] || die 11 "Espace insuffisant dans $BACKUP_DIR : ${free} Ko libres, ${need} Ko nécessaires."
-  if [ "$clone" -eq 1 ]; then
+  if [ "$clone" -eq 1 ] && [ "$DB_MODE" = "compose" ]; then
     pgfree="$("${COMPOSE[@]}" exec -T db df -Pk /var/lib/postgresql/data 2>/dev/null | awk 'NR==2{print $4}')"; pgfree="${pgfree:-0}"
     if [ "$pgfree" -lt $(( dbkb * 13 / 10 + 500 * 1024 )) ]; then clone=0; note "Clone sauté : espace insuffisant sur le volume PostgreSQL."; fi
   fi
@@ -249,8 +298,7 @@ cmd_create() {
 
   # Dump (format custom), écrit sous un nom provisoire.
   note "Dump de la base $db…"
-  # shellcheck disable=SC2016
-  if ! "${COMPOSE[@]}" exec -T db sh -c 'pg_dump -Fc -Z 6 -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$dir/database.dump.partial" 2>>"$dir/create.log"; then
+  if ! pg_dump_cmd "$db" > "$dir/database.dump.partial" 2>>"$dir/create.log"; then
     rm -rf "$dir"; trap - ERR; die 20 "Dump de la base en échec."
   fi
   [ -s "$dir/database.dump.partial" ] || { rm -rf "$dir"; trap - ERR; die 20 "Dump de la base vide."; }
@@ -267,7 +315,12 @@ cmd_create() {
 
   # Documents.
   local docsIncluded=false docsArchive="" docsBytes=0
-  if "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint tar app -C /app/.data -czf - documents > "$dir/documents.tar.gz" 2>>"$dir/create.log" && gzip -t "$dir/documents.tar.gz" 2>/dev/null; then
+  local docsOk=0
+  if [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then
+    # Installation sans Docker : documents sur le disque de l'hôte.
+    [ -d "$ACRA_DOCUMENTS_DIR" ] && tar -czf "$dir/documents.tar.gz" -C "$(dirname "$ACRA_DOCUMENTS_DIR")" "$(basename "$ACRA_DOCUMENTS_DIR")" 2>>"$dir/create.log" && docsOk=1
+  elif "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint tar app -C /app/.data -czf - documents > "$dir/documents.tar.gz" 2>>"$dir/create.log"; then docsOk=1; fi
+  if [ "$docsOk" -eq 1 ] && gzip -t "$dir/documents.tar.gz" 2>/dev/null; then
     docsIncluded=true; docsArchive="documents.tar.gz"; docsBytes="$(file_size "$dir/documents.tar.gz")"
   else rm -f "$dir/documents.tar.gz"; fi
 
@@ -304,7 +357,9 @@ cmd_create() {
   M_MIGLAST="$(dbq "$db" 'SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name DESC LIMIT 1' 2>/dev/null | tr -d '[:space:]' | cut -c1-120 || true)"
   M_MIGHASH="$(dbq "$db" 'SELECT migration_name||checksum FROM "_prisma_migrations" ORDER BY migration_name' 2>/dev/null | { if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi; } | cut -d' ' -f1 || true)"
   M_COUNTS="$counts"; M_DOCS_INCLUDED="$docsIncluded"; M_DOCS_ARCHIVE="$docsArchive"; M_DOCS_BYTES="$docsBytes"
-  M_DOCS_FILES="$("${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh app -c 'find /app/.data/documents -type f 2>/dev/null | wc -l' 2>/dev/null | tr -d '[:space:]' || true)"; M_DOCS_FILES="${M_DOCS_FILES:-0}"
+  if [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then M_DOCS_FILES="$(find "$ACRA_DOCUMENTS_DIR" -type f 2>/dev/null | wc -l | tr -d '[:space:]' || true)"
+  else M_DOCS_FILES="$("${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh app -c 'find /app/.data/documents -type f 2>/dev/null | wc -l' 2>/dev/null | tr -d '[:space:]' || true)"; fi
+  M_DOCS_FILES="${M_DOCS_FILES:-0}"
   local key=""; [ -f .env ] && key="$(sed -n 's/^SECRETS_ENCRYPTION_KEY=//p' .env | head -1 | tr -d '"'"'"'\r')"
   if [ -n "$key" ]; then M_FINGERPRINT="\"$(sha256_str "$key" | cut -c1-12)\""; else M_FINGERPRINT=null; fi
   M_LEVEL="$level"
@@ -329,6 +384,7 @@ cmd_verify() {
   is_id "$id" || die 31 "Identifiant invalide."
   local dir; dir="$(snapshot_dir "$id")"
   [ -f "$dir/manifest.json" ] || die 31 "Point de restauration inconnu : $id"
+  init_db
   verify_quick "$dir" || die 21 "Vérification rapide en échec."
   if [ "$full" -eq 1 ]; then
     [ "$(mget "$dir/manifest.json" encrypted)" != "true" ] || die 21 "Vérification complète d'un point chiffré : déchiffrer d'abord."
@@ -358,6 +414,7 @@ cmd_restore() {
   is_id "$id" || die 31 "Identifiant invalide."
   dir="$(snapshot_dir "$id")"
   [ -f "$dir/manifest.json" ] || die 31 "Point de restauration inconnu : $id"
+  init_db
   take_lock; trap 'release_lock' EXIT
   check_sums "$dir" || die 21 "Empreintes SHA-256 invalides : point corrompu."
 
@@ -394,11 +451,9 @@ cmd_restore() {
     local dumpfile; dumpfile="$(mget "$dir/manifest.json" dumpFile)"
     if [ "$dumpfile" = "database.dump.age" ]; then
       [ -n "${ACRA_BACKUP_AGE_IDENTITY:-}" ] || { rollback_rename; die 10 "Point chiffré : ACRA_BACKUP_AGE_IDENTITY requis."; }
-      # shellcheck disable=SC2016
-      age -d -i "$ACRA_BACKUP_AGE_IDENTITY" "$dir/database.dump.age" | "${COMPOSE[@]}" exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$1" --no-owner --exit-on-error' _ "$db" >>"$dir/restore.log" 2>&1 || { rollback_rename; die 30 "Restauration du dump en échec (base précédente remise en place)."; }
+      age -d -i "$ACRA_BACKUP_AGE_IDENTITY" "$dir/database.dump.age" | pg_restore_cmd "$db" >>"$dir/restore.log" 2>&1 || { rollback_rename; die 30 "Restauration du dump en échec (base précédente remise en place)."; }
     else
-      # shellcheck disable=SC2016
-      "${COMPOSE[@]}" exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$1" --no-owner --exit-on-error' _ "$db" < "$dir/database.dump" >>"$dir/restore.log" 2>&1 || { rollback_rename; die 30 "Restauration du dump en échec (base précédente remise en place)."; }
+      pg_restore_cmd "$db" < "$dir/database.dump" >>"$dir/restore.log" 2>&1 || { rollback_rename; die 30 "Restauration du dump en échec (base précédente remise en place)."; }
     fi
   fi
 
@@ -418,7 +473,9 @@ cmd_restore() {
   # Documents.
   if [ "$(mget "$dir/manifest.json" included)" = "true" ]; then
     local arc; arc="$(mget "$dir/manifest.json" archive)"
-    if [ -f "$dir/$arc" ]; then
+    if [ -f "$dir/$arc" ] && [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then
+      mkdir -p "$ACRA_DOCUMENTS_DIR" && find "$ACRA_DOCUMENTS_DIR" -mindepth 1 -delete 2>/dev/null; tar -xzf "$dir/$arc" -C "$(dirname "$ACRA_DOCUMENTS_DIR")" >>"$dir/restore.log" 2>&1 || note "Avertissement : restauration des documents en échec (voir restore.log)."
+    elif [ -f "$dir/$arc" ]; then
       "${COMPOSE[@]}" run --rm --no-deps -T -u 0 --entrypoint sh app -c 'rm -rf /app/.data/documents/* && tar -xzf - -C /app/.data && chown -R 1001:1001 /app/.data/documents' < "$dir/$arc" >>"$dir/restore.log" 2>&1 || note "Avertissement : restauration des documents en échec (voir restore.log)."
     fi
   fi
@@ -433,6 +490,7 @@ cmd_prune() {
   while [ $# -gt 0 ]; do
     case "$1" in --keep) KEEP="${2:-3}"; shift ;; --dry-run) dry=1 ;; --include-manual) includeManual=1 ;; *) die 2 "Option inconnue : $1" ;; esac; shift
   done
+  init_db
   take_lock; trap 'release_lock' EXIT
   local protect=""
   [ -f "$UPDATE_DIR/run/current.json" ] && protect="$(sed -n 's/.*"snapshotId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$UPDATE_DIR/run/current.json" | head -1)"

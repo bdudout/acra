@@ -153,7 +153,7 @@ if [ "$DOCKER" -eq 1 ]; then precheck_migrations "$TO_SHA"; fi
 status RUNNING "Préparation"
 step_ok PRECHECK
 
-# ── Mode sans Docker : le code seulement (comportement historique ; lot 6 pour la suite) ─────────
+# ── Mode sans Docker (lot 6) : arrêt/démarrage par commandes de l'exploitant, base externe, migrate via npx ──────────
 checkout_and_merge() {
   if [ "$(git rev-parse --abbrev-ref HEAD)" != "$BRANCH" ]; then
     if git show-ref --verify --quiet "refs/heads/$BRANCH"; then git checkout -q "$BRANCH" || return 1
@@ -162,11 +162,36 @@ checkout_and_merge() {
   git merge --ff-only -q "$REMOTE/$BRANCH"
 }
 if [ "$DOCKER" -eq 0 ]; then
+  # Sans commande d'arrêt, on refuse : on ne migre jamais une base en service.
+  if [ -z "${ACRA_STOP_CMD:-}" ] || [ -z "${ACRA_START_CMD:-}" ]; then
+    echo "✗ Mode sans Docker : définir ACRA_STOP_CMD et ACRA_START_CMD (ex. systemctl stop acra / systemctl start acra)." >&2
+    STATE=PRECHECK; step_ko PRECHECK precheck_no_stop_cmd; archive_run
+    status FAILED "Mode sans Docker : ACRA_STOP_CMD et ACRA_START_CMD sont requis (la base ne sera pas migrée en service)." precheck_no_stop_cmd; exit 1
+  fi
+  export ACRA_NO_DOCKER=1 ACRA_DB_MODE="${ACRA_DB_MODE:-url}"
+  step_ok PRECHECK
+  step_enter QUIESCE "Arrêt de l'application"
+  stop_services || fail quiesce_failed "Arrêt de l'application impossible (ACRA_STOP_CMD)."
+  step_ok QUIESCE
+  step_enter SNAPSHOT "Point de restauration"
+  SNAP_OUT=""; SNAP_RC=0
+  SNAP_OUT="$(bash "$ACRA_SNAPSHOT_SCRIPT" create --reason pre-update --from-version "$FROM" --to-version "$TO" 2>&1)" || SNAP_RC=$?
+  if [ "$SNAP_RC" -ne 0 ]; then
+    echo "$SNAP_OUT" >&2
+    [ "$SNAP_RC" -ne 11 ] || fail snapshot_space "Espace disque insuffisant pour le point de restauration : rien n'a été modifié."
+    fail snapshot_failed "Point de restauration impossible (code $SNAP_RC) : rien n'a été modifié, application redémarrée."
+  fi
+  SNAPSHOT_ID="$(printf '%s\n' "$SNAP_OUT" | tail -1)"; step_ok SNAPSHOT
   step_enter FETCH "Mise à jour du code"
-  checkout_and_merge || fail fetch_failed "Mise à jour du code impossible."
-  step_ok FETCH; STATE=DONE; step_ok FINALIZE
-  echo "✓ Code à jour ($TO). Étapes suivantes : npm ci && npx prisma migrate deploy && npm run build, puis redémarrer."
-  status SUCCESS "Code mis à jour (installation sans Docker : reconstruire et redémarrer)"; archive_run; exit 0
+  if ! checkout_and_merge; then git reset --hard -q "$FROM_SHA" || true; fail fetch_failed "Mise à jour du code impossible : code d'origine rétabli."; fi
+  step_ok FETCH
+  step_enter HANDOFF "Passage de main à la version cible"; step_ok HANDOFF
+  export ACRA_ROOT
+  if [ -f scripts/update-steps.sh ] && grep -q '^ACRA_UPDATE_STEPS_API=1' scripts/update-steps.sh; then
+    cp scripts/update-steps.sh "$TMPDIR_RUN/update-steps.sh"; bash "$TMPDIR_RUN/update-steps.sh" "$CURRENT" && RC=0 || RC=$?
+  else run_steps && RC=0 || RC=$?; fi
+  [ "$RC" -eq 0 ] && echo "✓ ACRA $TO opérationnel." || echo "✗ Mise à jour échouée : voir le statut (retour arrière tenté)." >&2
+  exit "$RC"
 fi
 
 # ── Instance Docker : est-elle démarrée ? ──────────────────────────────────────────────────────────
