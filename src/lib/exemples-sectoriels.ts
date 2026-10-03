@@ -89,6 +89,9 @@ const SANTE: SectorFamily = {
       { nom: 'Service de télémédecine ou plateforme de rendez-vous', type: 'PROCESSUS', description: 'Consultations à distance, prise de rendez-vous et échanges patients-professionnels', responsable: 'Direction produit / exploitation', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'esante' },
       { nom: 'Données de santé hébergées pour le compte de clients', type: 'INFORMATION', description: 'Dossiers et documents de santé confiés par les établissements et professionnels clients (RGPD art. 9)', responsable: 'RSSI / DPO', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'esante' },
       { nom: 'Interopérabilité avec les services nationaux (messagerie sécurisée, dossier partagé)', type: 'PROCESSUS', description: 'Échanges avec les services publics de santé numérique et les logiciels des professionnels', responsable: 'Direction produit / RSSI', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Téléconsultation et prise de rendez-vous en ligne', type: 'PROCESSUS', description: 'Plateforme de rendez-vous en ligne et de consultation à distance utilisée par les patients du cabinet', responsable: 'Médecins / secrétariat', disponibilite: 3, integrite: 3, confidentialite: 4, tracabilite: 3, sousProfession: 'cabinet' },
+      { nom: 'Gestion des remplaçants et collaborateurs saisonniers', type: 'PROCESSUS', description: 'Accueil des remplaçants : droits d’accès nominatifs, carte de professionnel de santé, convention de remplacement et retrait des accès à leur départ', responsable: 'Médecin responsable du cabinet', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'cabinet' },
     ],
     biensSupports: [
       { nom: 'Système d’information hospitalier (SIH / DPI)', type: 'LOGICIEL', description: 'Application centrale hébergeant les dossiers patients', sousProfession: 'hopital' },
@@ -124,6 +127,10 @@ const SANTE: SectorFamily = {
       { nom: 'Plateforme de télétransmission et de demande de prise en charge', type: 'SOUS_TRAITANCE', description: 'Services d’échange avec les organismes d’assurance maladie obligatoire et complémentaire', sousProfession: 'dm' },
       { nom: 'Plateforme SaaS de santé numérique', type: 'LOGICIEL', description: 'Service multi-clients exposé sur Internet traitant des données de santé', sousProfession: 'esante' },
       { nom: 'Interfaces et connecteurs vers les services nationaux et les logiciels de santé', type: 'RESEAU', description: 'API, certificats et flux d’interopérabilité dont la compromission expose plusieurs clients', sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Box internet et réseau local du cabinet (Wi-Fi, objets connectés)', type: 'RESEAU', description: 'Accès internet souvent grand public, mot de passe d’administration d’origine, réseau unique mêlant postes médicaux, Wi-Fi des patients et objets connectés', sousProfession: 'cabinet' },
+      { nom: 'Comptes des remplaçants et comptes partagés des postes de consultation', type: 'ORGANISATION', description: 'Identifiants nominatifs ou, trop souvent, partagés ; fin de droits non pilotée à la date de fin de remplacement', sousProfession: 'cabinet' },
+      { nom: 'Plateforme de téléconsultation et de prise de rendez-vous en ligne', type: 'SOUS_TRAITANCE', description: 'Service tiers hébergeant l’agenda et les échanges avec les patients', sousProfession: 'cabinet' },
     ],
     evenementsRedoutes: [
       { description: 'Indisponibilité du SIH bloquant la prise en charge des patients', impacts: ['Report de soins et d’interventions', 'Risque vital pour les patients', 'Bascule en mode dégradé papier'], graviteDefaut: 4, sousProfession: 'hopital' },
@@ -156,6 +163,9 @@ const SANTE: SectorFamily = {
       { description: 'Facturation abusive ou falsifiée de dispositifs (devis, 100 % santé, tiers payant)', impacts: ['Indus et contrôle des organismes', 'Déréférencement des réseaux', 'Atteinte à la réputation'], graviteDefaut: 3, sousProfession: 'dm' },
       { description: 'Fuite massive de données de santé depuis la plateforme (mauvaise isolation entre clients, API exposée)', impacts: ['Violation de données de santé pour de nombreux clients', 'Perte de la certification d’hébergement', 'Responsabilité contractuelle et sanctions'], graviteDefaut: 4, sousProfession: 'esante' },
       { description: 'Indisponibilité prolongée de la plateforme : consultations et accès aux dossiers interrompus', impacts: ['Continuité des soins dégradée pour les clients', 'Pénalités contractuelles', 'Perte de clients'], graviteDefaut: 3, sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { description: 'Altération de données médicales (allergies, traitements, résultats) pouvant conduire à une erreur de prise en charge', impacts: ['Risque pour la sécurité du patient', 'Responsabilité du médecin', 'Difficile à détecter sans journalisation'], graviteDefaut: 4, sousProfession: 'cabinet' },
+      { description: 'Consultation ou copie indue de dossiers par un remplaçant ou un ancien collaborateur', impacts: ['Violation du secret médical', 'Notification de violation de données (RGPD)', 'Atteinte à la confiance des patients'], graviteDefaut: 3, sousProfession: 'cabinet' },
     ],
     sourcesRisque: [
       { nom: 'Groupe de rançongiciel ciblant les hôpitaux', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels exploitant la criticité vitale des soins pour maximiser la pression au paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
@@ -165,6 +175,8 @@ const SANTE: SectorFamily = {
       { nom: 'Groupe cherchant à revendre des données de santé de masse', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels ciblant les bases d’assurés (identité, situation sociale, remboursements) pour l’hameçonnage et l’usurpation', motivation: 'Lucratif', ressources: 'Élevées', sousProfession: 'amo' },
       { nom: 'Professionnel ou adhérent complice de fraude aux remboursements', categorie: 'CYBERCRIMINEL', description: 'Acteur interne ou externe fabriquant de faux justificatifs ou de faux devis pour obtenir des prestations', motivation: 'Lucratif', ressources: 'Faibles', sousProfession: 'amc' },
       { nom: 'Groupe ciblant les plateformes de santé numérique et leurs clients', categorie: 'CYBERCRIMINEL', description: 'Attaquants exploitant une faille d’API ou d’isolation pour accéder aux données de nombreux clients à la fois', motivation: 'Lucratif', ressources: 'Élevées', sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Remplaçant, ancien collaborateur ou secrétaire (menace interne, malveillante ou négligente)', categorie: 'EMPLOYE_MALVEILLANT', description: 'Accès légitime au dossier patient utilisé par curiosité, vengeance, avantage concurrentiel ou par simple erreur', motivation: 'Curiosité / vengeance / négligence', ressources: 'Faibles', sousProfession: 'cabinet' },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'hopital' },
@@ -195,6 +207,9 @@ const SANTE: SectorFamily = {
       { critere: 'I', nom: 'Fraude à la prise en charge (devis gonflés, produits non délivrés) (I)', description: 'Des facturations falsifiées sont transmises aux organismes obligatoires et complémentaires', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'dm' },
       { critere: 'C', nom: 'Exfiltration de données de santé via une API ou un compte client compromis (C)', description: 'Une faille d’isolation ou une clé d’API volée donne accès aux données de plusieurs clients', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'esante' },
       { critere: 'D', nom: 'Indisponibilité prolongée de la plateforme hébergée (D)', description: 'Un incident chez l’hébergeur ou un rançongiciel interrompt les services des établissements clients', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { critere: 'C', nom: 'Compromission de l’éditeur du logiciel de cabinet exposant les dossiers de nombreux cabinets (C)', description: 'Un accès de maintenance ou une faille de l’éditeur ou de son hébergeur permet d’exfiltrer les bases de tous ses clients, dont le cabinet', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: 'cabinet' },
+      { critere: 'I', nom: 'Abus d’accès par un remplaçant ou un compte non révoqué (I)', description: 'Un remplaçant ou ancien collaborateur utilise un compte partagé ou resté actif pour consulter, copier ou falsifier des dossiers et facturer à tort', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'cabinet' },
     ],
     // Autorités sectorielles santé (NIS2 : ANS autorité compétente) — issue #81
     partiesPrenantes: [
@@ -216,6 +231,8 @@ const SANTE: SectorFamily = {
       { nom: 'Éditeur de logiciel de régulation et opérateur de géolocalisation', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'transport' },
       { nom: 'Éditeur du logiciel de magasin et plateforme de télétransmission', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'dm' },
       { nom: 'Hébergeur de données de santé et fournisseurs cloud', type: 'FOURNISSEUR', dependance: 4, penetration: 4, maturite: 4, confiance: 3, sousProfession: 'esante' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+
     ],
   },
 }

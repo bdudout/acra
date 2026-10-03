@@ -72,3 +72,18 @@ describe('ergonomie des outils de connaissance (retours du comparatif)', () => {
     expect((await run(readCatalogueTool, { sector: 'ASSURANCE', query: 'Code de la mutualité', limit: 100 })).items.length).toBeGreaterThan(0)
   })
 })
+
+describe('enrichissements issus du comparatif', () => {
+  it('régimes : liste des obligations connexes non modélisées (rançon NYDFS, plainte LOPMI, SAR, MAR, OIV/OSE, santé…), absente quand on cible un code', async () => {
+    const all = await run(readNotificationRegimesTool, {})
+    const sujets = all.connexes.map((c: { sujet: string }) => c.sujet).join(' | ')
+    for (const m of [/rançon/i, /LOPMI/, /SAR/, /MAR/, /ANSSI/, /santé/i]) expect(sujets).toMatch(m)
+    expect(all.connexes.every((c: { detail: string }) => c.detail.length > 20)).toBe(true)
+    expect((await run(readNotificationRegimesTool, { code: 'DORA' })).connexes).toBeUndefined()
+  })
+  it('catalogue : chaque élément indique son domaine (processus) pour couvrir un plan par domaine', async () => {
+    const r = await run(readCatalogueTool, { sector: 'ASSURANCE', kind: 'CONTROL', limit: 100 })
+    const domains = new Set(r.items.map((i: { domain?: string }) => i.domain).filter(Boolean))
+    expect(domains.size).toBeGreaterThan(5)
+  })
+})

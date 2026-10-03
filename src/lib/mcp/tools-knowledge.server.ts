@@ -33,6 +33,20 @@ function guardArgs(tool: McpTool<McpContext>, aliases: Record<string, string> = 
 }
 const NOTE = 'Informations de cadrage tirées des textes publiés : à confirmer auprès de l’autorité ou du conseil juridique (ce n’est pas un avis juridique).'
 
+/** Obligations et démarches proches, NON modélisées dans ACRA, à examiner selon le cas (cadrage à confirmer auprès du conseil juridique). */
+const OBLIGATIONS_CONNEXES = [
+  { sujet: 'Paiement d’une rançon (NYDFS 23 NYCRR 500.17(c))', detail: 'notification au Superintendent dans les 24 h suivant le paiement, puis description écrite des motifs et des diligences (dont sanctions) sous 30 jours' },
+  { sujet: 'Dépôt de plainte pour indemnisation cyber (loi LOPMI n° 2023-22)', detail: 'dépôt de plainte dans les 72 h suivant la connaissance de l’atteinte, condition d’indemnisation par l’assureur (article du Code des assurances à vérifier)' },
+  { sujet: 'Rapport d’activité suspecte (SAR, FinCEN, 31 CFR 1020.320)', detail: 'pour une succursale américaine : en principe sous 30 jours après la détection, délai porté à 60 jours si aucun suspect n’est identifié (à vérifier)' },
+  { sujet: 'Sanctions financières avant tout paiement de rançon (OFAC, UE)', detail: 'vérification préalable obligatoire ; l’autodivulgation volontaire à l’OFAC reste une option' },
+  { sujet: 'Règlement (UE) n° 596/2014 (MAR), art. 17', detail: 'si l’entité est cotée en Europe : information privilégiée à communiquer au public dès que possible (report possible sous conditions)' },
+  { sujet: 'Opérateur d’importance vitale / opérateur de services essentiels (ANSSI)', detail: 'déclaration sans délai des incidents affectant les systèmes d’information d’importance vitale ou les services essentiels, selon la désignation de l’entité et la transposition en vigueur' },
+  { sujet: 'Lois d’État américaines sur les violations de données (ex. NY SHIELD Act, GBL § 899-aa)', detail: 'seulement si des résidents de l’État sont concernés ; délais et destinataires à vérifier' },
+  { sujet: 'CIRCIA (États-Unis)', detail: 'notification d’incident sous 72 h et de paiement de rançon sous 24 h pour les infrastructures critiques, dès l’entrée en vigueur de la règle finale (à vérifier)' },
+  { sujet: 'Notifications contractuelles', detail: 'assureur cyber, SWIFT (Customer Security Programme), systèmes de paiement, schémas de cartes, banques correspondantes, commissaires aux comptes : délais propres à chaque contrat' },
+  { sujet: 'Établissements de santé et opérateurs du secteur (France)', detail: 'signalement sans délai des incidents graves de sécurité des systèmes d’information de santé à l’ARS / au CERT Santé (Code de la santé publique, art. L1111-8-2 à vérifier)' },
+]
+
 const readNotificationRegimesToolRaw: McpTool<McpContext> = {
   name: 'read_notification_regimes',
   description:
@@ -53,7 +67,7 @@ const readNotificationRegimesToolRaw: McpTool<McpContext> = {
         note: NOTE,
       }
     })
-    return toolText({ count: regimes.length, regimes })
+    return toolText({ count: regimes.length, regimes, ...(wanted ? {} : { connexes: OBLIGATIONS_CONNEXES }) })
   },
 }
 
@@ -111,7 +125,7 @@ const readCatalogueToolRaw: McpTool<McpContext> = {
     const items = all
       .filter(i => words.every(w => fold(`${i.title} ${processTitle.get(i.processKey ?? '') ?? ''} ${(i.references ?? []).join(' ')} ${i.key}`).includes(w)))
       .filter(i => !kind || i.kind === kind).slice(0, lim(args.limit, 30, 100))
-      .map(i => ({ key: i.key, kind: i.kind, sector: i.sector, title: i.title, ...(i.periodicite ? { periodicite: i.periodicite } : {}), ...(i.controlType ? { controlType: i.controlType } : {}), ...(i.unite ? { unite: i.unite } : {}), ...(i.points ? { points: i.points } : {}), ...(i.references?.length ? { references: i.references } : {}), ...(i.riskKeys?.length ? { riskKeys: i.riskKeys } : {}) }))
+      .map(i => ({ key: i.key, kind: i.kind, sector: i.sector, title: i.title, ...(processTitle.get(i.processKey ?? '') ? { domain: processTitle.get(i.processKey ?? '') } : {}), ...(i.periodicite ? { periodicite: i.periodicite } : {}), ...(i.controlType ? { controlType: i.controlType } : {}), ...(i.unite ? { unite: i.unite } : {}), ...(i.points ? { points: i.points } : {}), ...(i.references?.length ? { references: i.references } : {}), ...(i.riskKeys?.length ? { riskKeys: i.riskKeys } : {}) }))
     return toolText({ version: CATALOGUE_PACK_VERSION, count: items.length, items })
   },
 }
