@@ -291,6 +291,13 @@ const SECTOR_ITEMS: CatalogueItem[] = [
   r('telecom.risk.request-error', 'TELECOM', l('Une réquisition est traitée hors délai ou de façon erronée', 'An authority request is handled late or incorrectly', 'Eine Behördenanfrage wird verspätet oder fehlerhaft bearbeitet', 'Un requerimiento se tramita fuera de plazo o de forma errónea', 'Una richiesta delle autorità viene gestita in ritardo o in modo errato'), 'telecom.process.lawful'),
 ]
 
+/** Périodicité d'un contrôle ou d'un KRI : pour une petite structure (config `petiteStructure`), allégée d'un cran (hebdo→mensuel→trimestriel→semestriel) ; sinon inchangée. */
+export function adaptPeriodicite<T extends NonNullable<CatalogueItem['periodicite']> | undefined>(p: T, petiteStructure: boolean): T {
+  if (!petiteStructure || !p) return p
+  const next: Record<string, NonNullable<CatalogueItem['periodicite']>> = { HEBDOMADAIRE: 'MENSUEL', MENSUEL: 'TRIMESTRIEL', TRIMESTRIEL: 'SEMESTRIEL' }
+  return (next[p] ?? p) as T
+}
+
 export const CATALOGUE_PACK_VERSION = '1.10'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */

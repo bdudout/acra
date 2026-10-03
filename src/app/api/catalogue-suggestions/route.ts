@@ -7,7 +7,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, peutEcrireAudit, peutEvaluerDora, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { CATALOGUE_PACK_VERSION, SECTOR_CODES, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
+import { CATALOGUE_PACK_VERSION, SECTOR_CODES, adaptPeriodicite, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
 import { newSince, oldestImportedVersion } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 import { ALL_SECTORS, parseSectorChoice } from '@/lib/sector-selection'
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
       } else if (item.kind === 'CONTROL') {
         // Définition seule : aucune exécution, aucun responsable, aucune efficacité ; périodicité et type sont des suggestions.
         const controle = await tx.controle.create({ data: {
-          organizationId: ctx.orgId!, intitule: item.title, periodicite: item.periodicite ?? 'TRIMESTRIEL', typeControle: item.controlType ?? null,
+          organizationId: ctx.orgId!, intitule: item.title, periodicite: adaptPeriodicite(item.periodicite, cfg.petiteStructure) ?? 'TRIMESTRIEL', typeControle: item.controlType ?? null,
           description: item.references?.length ? `${REFERENCES_LABEL[locale]} : ${item.references.join(' ; ')}` : null,
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
           riskItemId: (item.riskKeys ?? []).map(k => riskIds.get(k)).find(Boolean) ?? null,
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
         // Indicateur candidat : seuils à définir (null), aucune mesure ; le statut reste « inconnu » tant que l'organisation ne les fixe pas.
         const kri = await tx.kri.create({ data: {
           organizationId: ctx.orgId!, intitule: item.title, unite: item.unite ?? null, sens: item.sens ?? 'HAUSSE',
-          frequence: item.periodicite && item.periodicite !== 'HEBDOMADAIRE' ? item.periodicite : 'MENSUEL',
+          frequence: item.periodicite && item.periodicite !== 'HEBDOMADAIRE' ? adaptPeriodicite(item.periodicite, cfg.petiteStructure) : 'MENSUEL',
           seuilAlerte: null, seuilCritique: null,
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
           catalogueKey: item.key, catalogueVersion: item.packVersion,
