@@ -56,6 +56,39 @@ const SANTE: SectorFamily = {
       // Aide à domicile / SAAD-SAP (issue #115) — sousProfession 'saad'
       { nom: 'Coordination des interventions à domicile', type: 'PROCESSUS', description: 'Planification et suivi des interventions des aides à domicile chez les personnes accompagnées', responsable: 'Responsable de secteur', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'saad' },
       { nom: 'Données des personnes aidées', type: 'INFORMATION', description: 'Coordonnées, situation de dépendance et parfois données de santé des bénéficiaires (RGPD art. 9)', responsable: 'Direction / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'saad' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Dossier médical des patients du cabinet', type: 'INFORMATION', description: 'Dossier patient tenu dans le logiciel de gestion de cabinet : antécédents, ordonnances, comptes rendus', responsable: 'Professionnel de santé / responsable du cabinet', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'cabinet' },
+      { nom: 'Facturation et télétransmission des actes à l’Assurance Maladie', type: 'PROCESSUS', description: 'Feuilles de soins électroniques, tiers payant et rapprochement des paiements', responsable: 'Professionnel de santé / secrétariat', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'cabinet' },
+      { nom: 'Prise de rendez-vous et continuité des consultations', type: 'PROCESSUS', description: 'Agenda, rappels aux patients et téléconsultation', responsable: 'Secrétariat / professionnel de santé', disponibilite: 3, integrite: 3, confidentialite: 3, tracabilite: 2, sousProfession: 'cabinet' },
+      { nom: 'Gestion administrative et comptable des professionnels rattachés', type: 'PROCESSUS', description: 'Comptabilité, répartition des charges et des honoraires, déclarations sociales et fiscales', responsable: 'Gérant / responsable administratif', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'gestionpro' },
+      { nom: 'Données des professionnels et de leurs patients gérées pour le compte des cabinets', type: 'INFORMATION', description: 'Identités, rémunérations, contrats et, selon le service rendu, données de patients (RGPD art. 9)', responsable: 'Gérant / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'gestionpro' },
+      { nom: 'Paie et rémunération des collaborateurs et remplaçants', type: 'PROCESSUS', description: 'Paie, charges sociales et paiements aux remplaçants', responsable: 'Responsable administratif', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'gestionpro' },
+      { nom: 'Liquidation et paiement des prestations aux assurés et aux professionnels', type: 'PROCESSUS', description: 'Calcul, contrôle et paiement des remboursements et des feuilles de soins', responsable: 'Direction des prestations / DSI', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'amo' },
+      { nom: 'Droits et données de santé des assurés', type: 'INFORMATION', description: 'Ouverture des droits, situation sociale et données de remboursement révélant l’état de santé (RGPD art. 9)', responsable: 'Direction des assurés / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'amo' },
+      { nom: 'Lutte contre la fraude et contrôle médical', type: 'PROCESSUS', description: 'Détection des facturations abusives ou fictives et contrôle des prestations', responsable: 'Direction du contrôle / lutte contre la fraude', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'amo' },
+      { nom: 'Remboursements complémentaires et décomptes', type: 'PROCESSUS', description: 'Calcul et paiement des garanties santé après intervention de l’assurance maladie obligatoire', responsable: 'Direction des prestations santé', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'amc' },
+      { nom: 'Données de santé des adhérents et ayants droit', type: 'INFORMATION', description: 'Données de remboursement, devis et pièces médicales (optique, dentaire, hospitalisation) — RGPD art. 9', responsable: 'Direction des adhérents / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'amc' },
+      { nom: 'Cotisations, adhésions et recouvrement', type: 'PROCESSUS', description: 'Appels de cotisations, prélèvements, radiations et gestion des contrats collectifs', responsable: 'Direction technique / recouvrement', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'amc' },
+      { nom: 'Gestion des droits et des prises en charge en tiers payant', type: 'PROCESSUS', description: 'Vérification des droits en temps réel et accords de prise en charge pour les professionnels de santé', responsable: 'Direction des opérations / DSI', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'tierspayant' },
+      { nom: 'Conventionnement et tarifs des réseaux de soins', type: 'INFORMATION', description: 'Contrats, grilles tarifaires et engagements des professionnels partenaires', responsable: 'Direction des réseaux', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'tierspayant' },
+      { nom: 'Flux de facturation avec les professionnels et les organismes', type: 'PROCESSUS', description: 'Échange et rapprochement des demandes de paiement entre professionnels, assurance maladie obligatoire et complémentaires', responsable: 'Direction financière', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'tierspayant' },
+      { nom: 'Résultats d’analyses de biologie médicale', type: 'INFORMATION', description: 'Résultats, valeurs critiques et comptes rendus transmis aux prescripteurs et aux patients', responsable: 'Biologiste responsable', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'labo' },
+      { nom: 'Chaîne pré-analytique et analytique', type: 'PROCESSUS', description: 'Identification des échantillons, passage sur automates, validation biologique', responsable: 'Biologiste responsable / qualité', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'labo' },
+      { nom: 'Facturation des actes de biologie', type: 'PROCESSUS', description: 'Télétransmission aux organismes d’assurance maladie et rapprochement des paiements', responsable: 'Responsable administratif', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'labo' },
+      { nom: 'Dispensation et délivrance des médicaments', type: 'PROCESSUS', description: 'Analyse des ordonnances, délivrance, conseil et traçabilité des produits', responsable: 'Pharmacien titulaire', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'officine' },
+      { nom: 'Facturation à l’Assurance Maladie et aux complémentaires (tiers payant)', type: 'PROCESSUS', description: 'Télétransmission, tiers payant et rapprochement des paiements des organismes', responsable: 'Pharmacien titulaire / comptabilité', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'officine' },
+      { nom: 'Dossier pharmaceutique et données des patients', type: 'INFORMATION', description: 'Historique de délivrance et données de santé des patients de l’officine (RGPD art. 9)', responsable: 'Pharmacien titulaire / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'officine' },
+      { nom: 'Examens d’imagerie et comptes rendus', type: 'INFORMATION', description: 'Images, protocoles d’irradiation et comptes rendus des examens', responsable: 'Médecin responsable', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'imagerie' },
+      { nom: 'Plateau technique (scanner, IRM, accélérateurs, générateurs de dialyse)', type: 'PROCESSUS', description: 'Équipements lourds dont l’arrêt ou le dérèglement affecte directement la sécurité des patients', responsable: 'Direction technique / physique médicale', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4, sousProfession: 'imagerie' },
+      { nom: 'Régulation et planification des transports sanitaires', type: 'PROCESSUS', description: 'Prise de commandes, affectation des équipages et suivi des véhicules', responsable: 'Responsable d’exploitation', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3, sousProfession: 'transport' },
+      { nom: 'Facturation des transports à l’Assurance Maladie', type: 'PROCESSUS', description: 'Prescriptions médicales de transport, bons de transport et télétransmission', responsable: 'Gérant / comptabilité', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'transport' },
+      { nom: 'Données des patients transportés', type: 'INFORMATION', description: 'Identité, adresses, pathologies et déplacements récurrents (dialyse, chimiothérapie) — RGPD art. 9', responsable: 'Gérant / DPO', disponibilite: 3, integrite: 3, confidentialite: 4, tracabilite: 3, sousProfession: 'transport' },
+      { nom: 'Délivrance d’équipements sur prescription (optique, audition, orthopédie)', type: 'PROCESSUS', description: 'Prise de mesures, prescriptions, devis, commande et délivrance', responsable: 'Responsable du magasin / du centre', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: 'dm' },
+      { nom: 'Facturation en tiers payant (assurance maladie obligatoire et complémentaires)', type: 'PROCESSUS', description: 'Dossiers 100 % santé, devis normalisés et télétransmission aux organismes', responsable: 'Responsable administratif', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'dm' },
+      { nom: 'Données de santé des clients (ordonnances, corrections, appareillage)', type: 'INFORMATION', description: 'Données de santé et de remboursement des clients (RGPD art. 9)', responsable: 'Responsable / DPO', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'dm' },
+      { nom: 'Service de télémédecine ou plateforme de rendez-vous', type: 'PROCESSUS', description: 'Consultations à distance, prise de rendez-vous et échanges patients-professionnels', responsable: 'Direction produit / exploitation', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 3, sousProfession: 'esante' },
+      { nom: 'Données de santé hébergées pour le compte de clients', type: 'INFORMATION', description: 'Dossiers et documents de santé confiés par les établissements et professionnels clients (RGPD art. 9)', responsable: 'RSSI / DPO', disponibilite: 4, integrite: 4, confidentialite: 4, tracabilite: 4, sousProfession: 'esante' },
+      { nom: 'Interopérabilité avec les services nationaux (messagerie sécurisée, dossier partagé)', type: 'PROCESSUS', description: 'Échanges avec les services publics de santé numérique et les logiciels des professionnels', responsable: 'Direction produit / RSSI', disponibilite: 3, integrite: 4, confidentialite: 3, tracabilite: 4, sousProfession: 'esante' },
     ],
     biensSupports: [
       { nom: 'Système d’information hospitalier (SIH / DPI)', type: 'LOGICIEL', description: 'Application centrale hébergeant les dossiers patients', sousProfession: 'hopital' },
@@ -66,6 +99,31 @@ const SANTE: SectorFamily = {
       { nom: 'Logiciel de télégestion (Filien, Ximi, Apologic, Ogust)', type: 'LOGICIEL', description: 'Planification, pointage et facturation des interventions à domicile', sousProfession: 'saad' },
       { nom: 'Tablettes / smartphones des intervenants', type: 'MATERIEL', description: 'Terminaux mobiles des intervenants terrain (pointage, données des aidés)', sousProfession: 'saad' },
       { nom: 'CESU dématérialisé', type: 'SOUS_TRAITANCE', description: 'Titre de paiement dématérialisé des prestations à domicile', sousProfession: 'saad' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Logiciel de gestion de cabinet (LGC)', type: 'LOGICIEL', description: 'Application métier tenant le dossier patient, l’agenda et la facturation', sousProfession: 'cabinet' },
+      { nom: 'Carte de professionnel de santé (CPS / e-CPS) et lecteur de carte Vitale', type: 'MATERIEL', description: 'Moyens d’authentification et de facturation du professionnel, dont la perte permet des usurpations', sousProfession: 'cabinet' },
+      { nom: 'Messagerie sécurisée de santé et poste de travail du cabinet', type: 'LOGICIEL', description: 'Échanges de comptes rendus et d’ordonnances avec confrères, laboratoires et établissements', sousProfession: 'cabinet' },
+      { nom: 'Logiciel de comptabilité, de paie et de gestion des honoraires', type: 'LOGICIEL', description: 'Applications financières partagées par plusieurs cabinets ou professionnels', sousProfession: 'gestionpro' },
+      { nom: 'Espace de partage de documents avec les professionnels adhérents', type: 'SOUS_TRAITANCE', description: 'Dépôt de pièces comptables, contrats, bulletins de paie et pièces de patients', sousProfession: 'gestionpro' },
+      { nom: 'Chaîne de liquidation des prestations', type: 'LOGICIEL', description: 'Applications calculant et ordonnançant les remboursements et paiements aux professionnels', sousProfession: 'amo' },
+      { nom: 'Référentiel des bénéficiaires et des droits', type: 'DONNEES', description: 'Base de référence des assurés, ayants droit et situations de couverture', sousProfession: 'amo' },
+      { nom: 'Portails des assurés et des professionnels de santé', type: 'LOGICIEL', description: 'Services en ligne d’accès aux droits, remboursements et télé-services', sousProfession: 'amo' },
+      { nom: 'Plateforme de gestion santé et prévoyance', type: 'LOGICIEL', description: 'Progiciel de gestion des adhésions, garanties, décomptes et cotisations', sousProfession: 'amc' },
+      { nom: 'Flux d’échange avec l’assurance maladie obligatoire', type: 'RESEAU', description: 'Retours de remboursement et flux de droits indispensables au calcul des prestations', sousProfession: 'amc' },
+      { nom: 'Plateforme de tiers payant et de gestion des accords de prise en charge', type: 'LOGICIEL', description: 'Services de vérification de droits et de calcul en temps réel utilisés par les professionnels', sousProfession: 'tierspayant' },
+      { nom: 'Interfaces avec les logiciels des professionnels de santé', type: 'RESEAU', description: 'API et connecteurs exposés aux pharmacies, opticiens et établissements', sousProfession: 'tierspayant' },
+      { nom: 'Système de gestion de laboratoire (SGL)', type: 'LOGICIEL', description: 'Application centrale d’enregistrement des demandes, résultats et validation', sousProfession: 'labo' },
+      { nom: 'Automates d’analyse connectés', type: 'MATERIEL', description: 'Instruments de biologie reliés au SGL dont la compromission peut fausser des résultats', sousProfession: 'labo' },
+      { nom: 'Logiciel de gestion d’officine (LGO)', type: 'LOGICIEL', description: 'Application de dispensation, stock, facturation et dossier pharmaceutique', sousProfession: 'officine' },
+      { nom: 'Automate de stockage et terminaux de caisse', type: 'MATERIEL', description: 'Équipements connectés au LGO dont l’arrêt bloque la délivrance', sousProfession: 'officine' },
+      { nom: 'Système d’information radiologique et archivage d’images (RIS / PACS)', type: 'LOGICIEL', description: 'Planification, stockage et diffusion des images et comptes rendus', sousProfession: 'imagerie' },
+      { nom: 'Équipements lourds connectés (scanner, IRM, accélérateurs, générateurs de dialyse)', type: 'MATERIEL', description: 'Équipements pilotés par logiciel dont la mise à jour est souvent dépendante du fabricant', sousProfession: 'imagerie' },
+      { nom: 'Logiciel de régulation et de facturation des transports', type: 'LOGICIEL', description: 'Application de planification, géolocalisation et télétransmission des bons de transport', sousProfession: 'transport' },
+      { nom: 'Terminaux embarqués et smartphones des équipages', type: 'MATERIEL', description: 'Terminaux mobiles contenant des données de patients et des lecteurs de cartes', sousProfession: 'transport' },
+      { nom: 'Logiciel de gestion de magasin (optique, audition, orthopédie)', type: 'LOGICIEL', description: 'Clients, prescriptions, devis, stocks et facturation', sousProfession: 'dm' },
+      { nom: 'Plateforme de télétransmission et de demande de prise en charge', type: 'SOUS_TRAITANCE', description: 'Services d’échange avec les organismes d’assurance maladie obligatoire et complémentaire', sousProfession: 'dm' },
+      { nom: 'Plateforme SaaS de santé numérique', type: 'LOGICIEL', description: 'Service multi-clients exposé sur Internet traitant des données de santé', sousProfession: 'esante' },
+      { nom: 'Interfaces et connecteurs vers les services nationaux et les logiciels de santé', type: 'RESEAU', description: 'API, certificats et flux d’interopérabilité dont la compromission expose plusieurs clients', sousProfession: 'esante' },
     ],
     evenementsRedoutes: [
       { description: 'Indisponibilité du SIH bloquant la prise en charge des patients', impacts: ['Report de soins et d’interventions', 'Risque vital pour les patients', 'Bascule en mode dégradé papier'], graviteDefaut: 4, sousProfession: 'hopital' },
@@ -74,9 +132,39 @@ const SANTE: SectorFamily = {
       // Aide à domicile / SAAD-SAP (issue #115)
       { description: 'Vol d’une tablette d’intervenant exposant les données des personnes vulnérables', impacts: ['Violation de données (RGPD art. 9)', 'Sanction CNIL', 'Préjudice pour des personnes vulnérables'], graviteDefaut: 4, sousProfession: 'saad' },
       { description: 'Indisponibilité de la télégestion bloquant l’envoi des intervenants', impacts: ['Interruption des interventions à domicile', 'Risque pour des personnes dépendantes', 'Perte de facturation'], graviteDefaut: 4, sousProfession: 'saad' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { description: 'Chiffrement du dossier patient par un rançongiciel, cabinet à l’arrêt', impacts: ['Consultations reportées', 'Perte de données de santé', 'Violation à notifier (RGPD)'], graviteDefaut: 3, sousProfession: 'cabinet' },
+      { description: 'Usurpation de la carte ou des identifiants du professionnel pour facturer à tort', impacts: ['Facturation frauduleuse imputée au professionnel', 'Indus à rembourser et enquête de l’assurance maladie', 'Atteinte à la réputation'], graviteDefaut: 3, sousProfession: 'cabinet' },
+      { description: 'Détournement de paiements ou de coordonnées bancaires des professionnels rattachés', impacts: ['Perte financière pour plusieurs cabinets', 'Responsabilité du gestionnaire', 'Perte de confiance des adhérents'], graviteDefaut: 3, sousProfession: 'gestionpro' },
+      { description: 'Fuite des données des professionnels et de leurs patients hébergées chez le gestionnaire', impacts: ['Violation de données de santé (RGPD art. 9)', 'Sanction de l’autorité de contrôle', 'Responsabilité contractuelle envers les cabinets'], graviteDefaut: 4, sousProfession: 'gestionpro' },
+      { description: 'Versement de prestations indues ou détournées par la fraude (faux professionnels, faux assurés, coordonnées bancaires modifiées)', impacts: ['Perte financière pour les fonds publics', 'Atteinte à la confiance des assurés', 'Contrôles et enquêtes lourds'], graviteDefaut: 4, sousProfession: 'amo' },
+      { description: 'Indisponibilité de la liquidation ou des portails : remboursements et paiements aux professionnels retardés', impacts: ['Professionnels et assurés privés de remboursement', 'Difficultés de trésorerie des cabinets et officines', 'Mission de service public dégradée'], graviteDefaut: 4, sousProfession: 'amo' },
+      { description: 'Fuite massive de données de santé et de situation sociale des assurés', impacts: ['Atteinte grave à la vie privée de millions de personnes', 'Sanction de l’autorité de contrôle', 'Hameçonnage ciblé des assurés'], graviteDefaut: 4, sousProfession: 'amo' },
+      { description: 'Fuite des données de santé des adhérents et ayants droit', impacts: ['Violation de données sensibles (RGPD art. 9)', 'Sanction de l’autorité de contrôle', 'Perte d’adhérents'], graviteDefaut: 4, sousProfession: 'amc' },
+      { description: 'Remboursements erronés ou frauduleux (faux justificatifs, devis falsifiés, flux de droits erronés)', impacts: ['Prestations indues', 'Dégradation du ratio sinistres/cotisations', 'Hausse des cotisations'], graviteDefaut: 3, sousProfession: 'amc' },
+      { description: 'Indisponibilité du service de droits en temps réel : professionnels contraints de faire l’avance de frais', impacts: ['Patients privés du tiers payant', 'Pénalités ou ruptures de contrat avec les organismes', 'Perte de confiance des professionnels'], graviteDefaut: 3, sousProfession: 'tierspayant' },
+      { description: 'Altération des droits ou des tarifs transmis aux professionnels', impacts: ['Paiements erronés à grande échelle', 'Litiges avec les organismes et les professionnels', 'Perte financière'], graviteDefaut: 3, sousProfession: 'tierspayant' },
+      { description: 'Altération ou perte de résultats d’analyses (erreur d’identification, automate compromis)', impacts: ['Erreur de diagnostic ou de traitement', 'Risque vital pour des patients', 'Perte d’accréditation'], graviteDefaut: 4, sousProfession: 'labo' },
+      { description: 'Rançongiciel sur le SGL : arrêt de la rédaction et de la transmission des résultats', impacts: ['Résultats urgents non transmis', 'Prise en charge des patients retardée', 'Perte de chiffre d’affaires'], graviteDefaut: 4, sousProfession: 'labo' },
+      { description: 'Arrêt du logiciel d’officine : délivrance et facturation impossibles', impacts: ['Patients sans traitement', 'Perte de chiffre d’affaires', 'Retard de paiement des organismes'], graviteDefaut: 3, sousProfession: 'officine' },
+      { description: 'Facturation de médicaments non délivrés ou usurpation des identifiants de l’officine', impacts: ['Indus de l’assurance maladie', 'Poursuites ou sanctions', 'Atteinte à la réputation'], graviteDefaut: 3, sousProfession: 'officine' },
+      { description: 'Dérèglement ou arrêt d’un équipement lourd piloté par logiciel', impacts: ['Risque pour la sécurité des patients (irradiation, séance interrompue)', 'Annulation d’examens', 'Coût de remise en conformité'], graviteDefaut: 4, sousProfession: 'imagerie' },
+      { description: 'Fuite ou indisponibilité des images et comptes rendus (PACS)', impacts: ['Violation de données de santé', 'Retard de diagnostic', 'Sanction de l’autorité de contrôle'], graviteDefaut: 4, sousProfession: 'imagerie' },
+      { description: 'Facturation de transports fictifs ou falsification des bons de transport', impacts: ['Indus et sanctions de l’assurance maladie', 'Déconventionnement', 'Poursuites pénales'], graviteDefaut: 3, sousProfession: 'transport' },
+      { description: 'Panne de la régulation ou de la géolocalisation : transports urgents ou récurrents non assurés', impacts: ['Patients dialysés ou en chimiothérapie sans transport', 'Perte de chiffre d’affaires', 'Atteinte à la réputation'], graviteDefaut: 3, sousProfession: 'transport' },
+      { description: 'Fuite de données de santé des clients ou dossiers de prise en charge', impacts: ['Violation de données de santé', 'Sanction de l’autorité de contrôle', 'Perte de confiance des clients'], graviteDefaut: 3, sousProfession: 'dm' },
+      { description: 'Facturation abusive ou falsifiée de dispositifs (devis, 100 % santé, tiers payant)', impacts: ['Indus et contrôle des organismes', 'Déréférencement des réseaux', 'Atteinte à la réputation'], graviteDefaut: 3, sousProfession: 'dm' },
+      { description: 'Fuite massive de données de santé depuis la plateforme (mauvaise isolation entre clients, API exposée)', impacts: ['Violation de données de santé pour de nombreux clients', 'Perte de la certification d’hébergement', 'Responsabilité contractuelle et sanctions'], graviteDefaut: 4, sousProfession: 'esante' },
+      { description: 'Indisponibilité prolongée de la plateforme : consultations et accès aux dossiers interrompus', impacts: ['Continuité des soins dégradée pour les clients', 'Pénalités contractuelles', 'Perte de clients'], graviteDefaut: 3, sousProfession: 'esante' },
     ],
     sourcesRisque: [
       { nom: 'Groupe de rançongiciel ciblant les hôpitaux', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels exploitant la criticité vitale des soins pour maximiser la pression au paiement', motivation: 'Lucratif', ressources: 'Élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 3, activiteScoreDefaut: 3 },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Groupe de rançongiciel opportuniste ciblant les petites structures de santé', categorie: 'CYBERCRIMINEL', description: 'Attaques automatisées sur des postes peu protégés, exploitant des mises à jour tardives et des sauvegardes locales', motivation: 'Lucratif', ressources: 'Moyennes', sousProfession: 'cabinet' },
+      { nom: 'Réseau organisé de fraude aux prestations de santé', categorie: 'CYBERCRIMINEL', description: 'Fraudeurs usurpant des identités de professionnels ou d’assurés pour détourner des remboursements à grande échelle', motivation: 'Lucratif', ressources: 'Élevées', sousProfession: 'amo' },
+      { nom: 'Groupe cherchant à revendre des données de santé de masse', categorie: 'CYBERCRIMINEL', description: 'Cybercriminels ciblant les bases d’assurés (identité, situation sociale, remboursements) pour l’hameçonnage et l’usurpation', motivation: 'Lucratif', ressources: 'Élevées', sousProfession: 'amo' },
+      { nom: 'Professionnel ou adhérent complice de fraude aux remboursements', categorie: 'CYBERCRIMINEL', description: 'Acteur interne ou externe fabriquant de faux justificatifs ou de faux devis pour obtenir des prestations', motivation: 'Lucratif', ressources: 'Faibles', sousProfession: 'amc' },
+      { nom: 'Groupe ciblant les plateformes de santé numérique et leurs clients', categorie: 'CYBERCRIMINEL', description: 'Attaquants exploitant une faille d’API ou d’isolation pour accéder aux données de nombreux clients à la fois', motivation: 'Lucratif', ressources: 'Élevées', sousProfession: 'esante' },
     ],
     scenariosStrategiques: [
       { critere: 'D', nom: 'Arrêt du SIH par rançongiciel (D)', description: 'Un rançongiciel chiffre le SIH et bloque l’accès aux dossiers et aux plateaux techniques', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'hopital' },
@@ -84,6 +172,29 @@ const SANTE: SectorFamily = {
       // Aide à domicile / SAAD-SAP (issue #115)
       { critere: 'C', nom: 'Vol de tablette exposant les données des aidés (C)', description: 'La perte ou le vol d’une tablette d’intervenant expose les données des personnes accompagnées', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'saad' },
       { critere: 'D', nom: 'Rançongiciel bloquant la télégestion (D)', description: 'Un rançongiciel chiffre le logiciel de télégestion et empêche d’organiser les interventions', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'saad' },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { critere: 'D', nom: 'Rançongiciel opportuniste sur le poste du cabinet (D)', description: 'Un message piégé ou une faille du poste chiffre le dossier patient et les sauvegardes locales', vraisemblanceDefaut: 4, graviteDefaut: 3, sousProfession: 'cabinet' },
+      { critere: 'I', nom: 'Usurpation des moyens d’authentification du professionnel (I)', description: 'Un tiers utilise les identifiants ou la carte pour facturer ou consulter des données', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'cabinet' },
+      { critere: 'I', nom: 'Fraude au virement ciblant le gestionnaire (I)', description: 'Un faux ordre ou un changement frauduleux de coordonnées détourne les paiements de plusieurs cabinets', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'gestionpro' },
+      { critere: 'C', nom: 'Compromission de l’espace d’échange partagé avec les adhérents (C)', description: 'Un accès volé expose les pièces comptables, sociales et de patients de tous les adhérents', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'gestionpro' },
+      { critere: 'I', nom: 'Fraude organisée aux prestations par usurpation d’identités de professionnels ou d’assurés (I)', description: 'Un réseau détourne des remboursements via de faux comptes, de fausses facturations ou des coordonnées bancaires modifiées', vraisemblanceDefaut: 4, graviteDefaut: 4, sousProfession: 'amo' },
+      { critere: 'D', nom: 'Arrêt de la chaîne de liquidation par rançongiciel ou attaque d’un prestataire (D)', description: 'Le chiffrement des systèmes centraux ou d’un éditeur empêche les remboursements pendant plusieurs jours', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'amo' },
+      { critere: 'C', nom: 'Exfiltration de données de santé des adhérents via un prestataire de gestion (C)', description: 'Un délégataire de gestion ou un sous-traitant est compromis et expose les dossiers de remboursement', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'amc' },
+      { critere: 'I', nom: 'Fraude aux remboursements par faux justificatifs ou devis (I)', description: 'Des adhérents ou des professionnels complices obtiennent des prestations indues', vraisemblanceDefaut: 4, graviteDefaut: 2, sousProfession: 'amc' },
+      { critere: 'D', nom: 'Saturation ou panne de la plateforme de droits en temps réel (D)', description: 'Une attaque par déni de service ou une défaillance technique empêche les vérifications de droits des professionnels', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'tierspayant' },
+      { critere: 'I', nom: 'Falsification des flux de facturation ou des tarifs (I)', description: 'Un attaquant ou un initié modifie les montants ou bénéficiaires dans les échanges entre professionnels et organismes', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: 'tierspayant' },
+      { critere: 'D', nom: 'Rançongiciel sur le SGL et les automates (D)', description: 'Le chiffrement du SGL arrête la validation et la transmission des résultats', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'labo' },
+      { critere: 'I', nom: 'Manipulation de résultats ou d’identifications d’échantillons (I)', description: 'Une intrusion ou une erreur d’interface modifie des résultats avant leur transmission', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: 'labo' },
+      { critere: 'D', nom: 'Rançongiciel sur le logiciel d’officine et sa sauvegarde (D)', description: 'Le chiffrement du LGO et des sauvegardes locales stoppe la délivrance et la facturation', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'officine' },
+      { critere: 'I', nom: 'Usurpation de l’identité de l’officine pour une facturation frauduleuse (I)', description: 'Un tiers utilise les identifiants ou la carte pour facturer des produits non délivrés', vraisemblanceDefaut: 2, graviteDefaut: 3, sousProfession: 'officine' },
+      { critere: 'D', nom: 'Arrêt du PACS ou des équipements par une attaque (D)', description: 'Un rançongiciel ou un accès distant du fabricant compromis arrête l’imagerie et les traitements', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'imagerie' },
+      { critere: 'C', nom: 'Exfiltration d’images et de comptes rendus (C)', description: 'Un serveur d’images exposé sur Internet est exploité pour copier des examens', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'imagerie' },
+      { critere: 'I', nom: 'Falsification de bons de transport ou facturation fictive (I)', description: 'Des prescriptions ou des trajets sont falsifiés pour obtenir des remboursements indus', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'transport' },
+      { critere: 'D', nom: 'Rançongiciel sur la régulation et les terminaux embarqués (D)', description: 'Le chiffrement du logiciel de régulation arrête la prise en charge des patients', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'transport' },
+      { critere: 'C', nom: 'Exfiltration des données de santé de la clientèle (C)', description: 'Un accès volé au logiciel de magasin expose ordonnances, corrections et remboursements', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'dm' },
+      { critere: 'I', nom: 'Fraude à la prise en charge (devis gonflés, produits non délivrés) (I)', description: 'Des facturations falsifiées sont transmises aux organismes obligatoires et complémentaires', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'dm' },
+      { critere: 'C', nom: 'Exfiltration de données de santé via une API ou un compte client compromis (C)', description: 'Une faille d’isolation ou une clé d’API volée donne accès aux données de plusieurs clients', vraisemblanceDefaut: 3, graviteDefaut: 4, sousProfession: 'esante' },
+      { critere: 'D', nom: 'Indisponibilité prolongée de la plateforme hébergée (D)', description: 'Un incident chez l’hébergeur ou un rançongiciel interrompt les services des établissements clients', vraisemblanceDefaut: 3, graviteDefaut: 3, sousProfession: 'esante' },
     ],
     // Autorités sectorielles santé (NIS2 : ANS autorité compétente) — issue #81
     partiesPrenantes: [
@@ -91,6 +202,20 @@ const SANTE: SectorFamily = {
       { nom: 'CERT Santé (ANS)', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 4, confiance: 4 },
       { nom: 'Agence Régionale de Santé (ARS)', type: 'ORGANISME_REGULATION', dependance: 2, penetration: 1, maturite: 3, confiance: 4 },
       { nom: 'Hébergeur de données de santé (HDS)', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 4, confiance: 3 },
+      // Assurance maladie et écosystème de santé — sous-secteurs santé détaillés (sousProfession)
+      { nom: 'Éditeur du logiciel de gestion de cabinet', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'cabinet' },
+      { nom: 'Assurance Maladie (organisme de remboursement)', type: 'CLIENT', dependance: 3, penetration: 2, maturite: 4, confiance: 4, sousProfession: 'cabinet' },
+      { nom: 'Prestataire d’hébergement et de messagerie du gestionnaire', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'gestionpro' },
+      { nom: 'Éditeurs et opérateurs de la chaîne de liquidation', type: 'FOURNISSEUR', dependance: 4, penetration: 4, maturite: 3, confiance: 3, sousProfession: 'amo' },
+      { nom: 'Professionnels de santé facturant l’Assurance Maladie', type: 'CLIENT', dependance: 3, penetration: 4, maturite: 2, confiance: 3, sousProfession: 'amo' },
+      { nom: 'Délégataires de gestion et prestataires de tiers payant', type: 'FOURNISSEUR', dependance: 4, penetration: 4, maturite: 3, confiance: 3, sousProfession: 'amc' },
+      { nom: 'Pharmacies, opticiens et établissements raccordés', type: 'CLIENT', dependance: 4, penetration: 4, maturite: 2, confiance: 3, sousProfession: 'tierspayant' },
+      { nom: 'Fabricants d’automates et éditeur du SGL', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'labo' },
+      { nom: 'Éditeur du logiciel d’officine et grossistes-répartiteurs', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'officine' },
+      { nom: 'Fabricants d’équipements et prestataires de maintenance à distance', type: 'FOURNISSEUR', dependance: 4, penetration: 4, maturite: 3, confiance: 3, sousProfession: 'imagerie' },
+      { nom: 'Éditeur de logiciel de régulation et opérateur de géolocalisation', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'transport' },
+      { nom: 'Éditeur du logiciel de magasin et plateforme de télétransmission', type: 'FOURNISSEUR', dependance: 4, penetration: 3, maturite: 3, confiance: 3, sousProfession: 'dm' },
+      { nom: 'Hébergeur de données de santé et fournisseurs cloud', type: 'FOURNISSEUR', dependance: 4, penetration: 4, maturite: 4, confiance: 3, sousProfession: 'esante' },
     ],
   },
 }
@@ -704,6 +829,18 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   if (v.includes('pharma-chimie') || v.includes('industrie-pharma') || v.includes('industrie-chimie')) return 'pharma'
   // Aide à domicile / SAAD-SAP (issue #115)
   if (v.includes('saad') || v.includes('domicile')) return 'saad'
+  // Santé détaillée (assurance maladie et usages) — sous-secteurs `sante-*`
+  if (v.includes('sante-cabinet') || v.includes('sante-msp')) return 'cabinet'
+  if (v.includes('sante-gestion-pro')) return 'gestionpro'
+  if (v.includes('sante-amo')) return 'amo'
+  if (v.includes('sante-amc')) return 'amc'
+  if (v.includes('sante-tiers-payant')) return 'tierspayant'
+  if (v.includes('sante-labo')) return 'labo'
+  if (v.includes('sante-pharma')) return 'officine'
+  if (v.includes('sante-imagerie')) return 'imagerie'
+  if (v.includes('sante-transport')) return 'transport'
+  if (v.includes('sante-dm-optique')) return 'dm'
+  if (v.includes('sante-esante') || v.includes('sante-editeur')) return 'esante'
   // Établissements hospitaliers (issue #115) — voient les actifs hospitaliers
   // (DPI/SIH/PACS), pas les actifs d'aide à domicile.
   if (v.includes('hopital') || v.includes('hôpital') || v.includes('clinique') || v.includes('ehpad')) return 'hopital'
@@ -720,6 +857,12 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
   if (/assur|mutuelle|prévoyance|prevoyance|réassur|reassur/.test(secteur)) return 'assurance'
   return 'banque'
 }
+
+/**
+ * Sous-professions santé « détaillées » (assurance maladie et usages) : leurs exemples ne sont proposés que lorsque
+ * le sous-secteur correspondant est choisi (sinon ils noieraient les exemples généraux du secteur).
+ */
+const DETAILED_ONLY = new Set(['cabinet', 'gestionpro', 'amo', 'amc', 'tierspayant', 'labo', 'officine', 'imagerie', 'transport', 'dm', 'esante'])
 
 /** Exemples SECTORIELS proposés pour une catégorie d'atelier, selon le secteur/sous-secteur et la locale. */
 export function sectorExemplesFor(
@@ -739,7 +882,7 @@ export function sectorExemplesFor(
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
   return items
     .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
-    .filter(it => !prof || !it.sousProfession || it.sousProfession === prof)
+    .filter(it => (prof ? !it.sousProfession || it.sousProfession === prof : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
     .map(({ sousProfession, ...rest }) => rest)
 }
 
