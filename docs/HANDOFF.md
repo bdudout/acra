@@ -49,7 +49,9 @@ vérifié l'est avec la commande et son résultat.
   installe donc explicitement `update.sh`, ses bibliothèques et les étapes de la
   révision testée avant de déclencher la montée de version. Cela contrôle le
   comportement effectivement livré, sans masquer les données ni le compose de
-  l’instance antérieure.
+  l’instance antérieure. Ces quatre fichiers sont marqués `assume-unchanged`
+  uniquement dans ce clone de CI : le pré-contrôle conserve son refus des vraies
+  modifications locales et le merge de la cible réécrit les fichiers ensuite.
 
 ---
 

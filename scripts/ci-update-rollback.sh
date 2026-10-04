@@ -40,6 +40,10 @@ install_update_launcher() { # dossier — le lanceur cible doit pouvoir protége
   ( cd "$1"
     for script in update.sh update-lib.sh update-steps.sh acra-snapshot.sh; do
       cp "$SCRIPTS_DIR/$script" "scripts/$script"; chmod +x "scripts/$script"
+      # Le pré-contrôle refuse les éditions locales. Ces seules copies sont le
+      # lanceur livré par la cible, volontairement injecté par le banc de CI.
+      # L'index reste sur la révision stable et le merge écrase ensuite les fichiers.
+      git update-index --assume-unchanged "scripts/$script"
     done )
 }
 count() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T db psql -U acra -d acra_ci -tA -c "SELECT (SELECT count(*) FROM \"User\")||'/'||(SELECT count(*) FROM \"_prisma_migrations\")" ); }
