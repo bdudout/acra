@@ -31,11 +31,18 @@ describe('update.sh — documents persistants (C1)', () => {
     expect(inst.calls().some(x => /^cp cid123:\/app\/\.data\/documents/.test(x))).toBe(true)
   })
   it('si la restitution des documents sauvés échoue, annule la mise à jour plutôt que de confirmer une perte', () => {
-    inst = makeInstance(); inst.fakeFile('mounts', '/app/.acra-update\n'); inst.fakeFile('rescue_copy_fail')
+    inst = makeInstance(); inst.fakeFile('mounts', '/app/.acra-update\n'); inst.fakeFile('rescue_copy_fail_once')
     const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', '.acra-update/status.json'])
     expect(r.status).not.toBe(0)
     expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
     expect(JSON.parse(inst.read('.acra-update/status.json'))).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'documents_restore_failed' })
+  })
+  it('signale un rollback non sûr si la copie des documents échoue aussi vers la stable', () => {
+    inst = makeInstance(); inst.fakeFile('rescue_copy_fail')
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', '.acra-update/status.json'])
+    expect(r.status).not.toBe(0)
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+    expect(JSON.parse(inst.read('.acra-update/status.json'))).toMatchObject({ state: 'FAILED', rolledBack: false, code: 'rollback_failed' })
   })
 })
 

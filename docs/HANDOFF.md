@@ -52,6 +52,15 @@ vérifié l'est avec la commande et son résultat.
   de cette copie marque le rollback en échec au lieu de prétendre que les données
   sont restaurées. Une assertion de non-régression est ajoutée au test de
   migration fautive ; la recette Docker complète doit encore confirmer.
+- **Recette réelle validée** : le job Docker du commit `e067a07` a terminé les
+  cinq scénarios en 14 min 54 s (`✓ Cinq scénarios passés.`), y compris le
+  document après rollback et la reprise après `kill -9`. Les contrôles build,
+  TypeScript, ESLint, sécurité, base et E2E sont verts. Vitest a signalé une
+  seule attente obsolète : le faux Docker simulait un échec permanent de toute
+  copie `compose cp`, alors que le test attendait un rollback réussi. Le banc
+  distingue désormais l'échec ponctuel (rollback sûr) de l'échec persistant
+  (statut `rollback_failed`, application arrêtée). Le dernier run CI après cette
+  correction du simulateur reste à vérifier.
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.

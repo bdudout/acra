@@ -21,7 +21,7 @@ case "$a" in
   *"ps -q app"*) f no_app_container || echo cid123 ;;
   inspect*) f mounts && cat "$FAKE_DIR/mounts" ;;
   cp\\ *) dest="\${@: -1}"; mkdir -p "$dest"; echo rescued > "$dest/doc1.txt" ;;
-  *"compose"*" cp "*) f rescue_copy_fail && exit 1 ;;
+  *"compose"*" cp "*) if f rescue_copy_fail_once; then rm "$FAKE_DIR/rescue_copy_fail_once"; exit 1; fi; f rescue_copy_fail && exit 1 ;;
   *"printenv POSTGRES_DB"*) echo acra_rm ;;
   *"df -Pk"*) printf 'Filesystem 1024-blocks Used Available Capacity Mounted\nx 1 1 %s 1%% /\n' "$(cat "$FAKE_DIR/pg_free" 2>/dev/null || echo 99999999)" ;;
   *"psql -U"*|*"psql -d"*)
