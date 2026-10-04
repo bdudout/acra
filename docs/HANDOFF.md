@@ -43,6 +43,13 @@ vérifié l'est avec la commande et son résultat.
   introduit un volume nommé. La copie hôte est maintenant systématique avant
   toute mise à jour et son échec annule l’opération ; elle est recopiée après le
   démarrage cible. Le scénario Docker réel doit confirmer ce cas.
+- **Banc de migration inter-version** : les instances de recette partent d’une
+  révision stable, dont le lanceur `update.sh` ne contient pas nécessairement les
+  garanties ajoutées par la cible. Comme pour le script de snapshot, le scénario
+  installe donc explicitement `update.sh`, ses bibliothèques et les étapes de la
+  révision testée avant de déclencher la montée de version. Cela contrôle le
+  comportement effectivement livré, sans masquer les données ni le compose de
+  l’instance antérieure.
 
 ---
 

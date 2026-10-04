@@ -8,6 +8,7 @@ set -Eeuo pipefail
 WORK=/tmp/acra-ci; rm -rf "$WORK"; mkdir -p "$WORK"
 PR_SHA="$(git rev-parse HEAD)"
 SNAPSHOT_SCRIPT="$(cd "$(dirname "$0")" && pwd)/acra-snapshot.sh"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 ORIGIN="$WORK/origin.git"
 git clone -q --bare . "$ORIGIN"
 git -C "$ORIGIN" update-ref refs/heads/main "$PR_SHA"
@@ -35,6 +36,12 @@ EOF
     export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"
     docker compose up -d --build --wait app )
 }
+install_update_launcher() { # dossier — le lanceur cible doit pouvoir protéger une instance stable antérieure
+  ( cd "$1"
+    for script in update.sh update-lib.sh update-steps.sh acra-snapshot.sh; do
+      cp "$SCRIPTS_DIR/$script" "scripts/$script"; chmod +x "scripts/$script"
+    done )
+}
 count() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T db psql -U acra -d acra_ci -tA -c "SELECT (SELECT count(*) FROM \"User\")||'/'||(SELECT count(*) FROM \"_prisma_migrations\")" ); }
 doc() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T app sh -c 'mkdir -p /app/.data/documents && echo ci-document > /app/.data/documents/ci.txt' ); }
 has_doc() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T app cat /app/.data/documents/ci.txt | grep -q ci-document ); }
@@ -57,6 +64,7 @@ down "$A"
 
 step "3. Mise à jour vers le commit de la PR"
 B="$WORK/b"; setup_instance "$B"; doc "$B"
+install_update_launcher "$B"
 ( cd "$B"; export COMPOSE_PROJECT_NAME="acraci$(basename "$B")"; bash scripts/update.sh beta --yes --status-file .acra-update/status.json ) || fail "mise à jour en échec"
 [ "$(status_of "$B" state)" = SUCCESS ] || fail "statut non SUCCESS"
 has_doc "$B" || fail "document perdu par la mise à jour"
@@ -64,6 +72,7 @@ down "$B"
 
 step "4. Migration fautive : retour arrière automatique"
 C="$WORK/c"; setup_instance "$C"; doc "$C"; before="$(count "$C")"
+install_update_launcher "$C"
 git clone -q "$ORIGIN" "$WORK/inject"; ( cd "$WORK/inject"; git checkout -q main; mkdir -p prisma/migrations/99999999999999_ci_fail; echo 'SELECT 1/0;' > prisma/migrations/99999999999999_ci_fail/migration.sql
   git -c user.name=ci -c user.email=ci@ci add -A; git -c user.name=ci -c user.email=ci@ci commit -q -m "ci: migration fautive"; git push -q origin HEAD:refs/heads/main )
 ( cd "$C"; export COMPOSE_PROJECT_NAME="acraci$(basename "$C")"; bash scripts/update.sh beta --yes --status-file .acra-update/status.json ) && fail "la mise à jour fautive aurait dû échouer" || true
@@ -74,6 +83,7 @@ down "$C"
 
 step "5. kill -9 pendant MIGRATE puis reprise"
 D="$WORK/d"; setup_instance "$D"; before="$(count "$D")"
+install_update_launcher "$D"
 ( cd "$D"; export COMPOSE_PROJECT_NAME="acraci$(basename "$D")"; bash scripts/update.sh beta --yes --status-file .acra-update/status.json >/dev/null 2>&1 & echo $! > "$WORK/upd.pid" )
 for _ in $(seq 1 600); do grep -q '"state": "MIGRATE"' "$D/.acra-update/run/current.json" 2>/dev/null && break; sleep 1; done
 pkill -9 -P "$(cat "$WORK/upd.pid")" || true; kill -9 "$(cat "$WORK/upd.pid")" || true
