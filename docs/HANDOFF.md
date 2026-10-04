@@ -49,10 +49,12 @@ vérifié l'est avec la commande et son résultat.
   installe donc explicitement `update.sh`, ses bibliothèques et les étapes de la
   révision testée avant de déclencher la montée de version. Cela contrôle le
   comportement effectivement livré, sans masquer les données ni le compose de
-  l’instance antérieure. Les fichiers déjà suivis par la révision stable sont
-  marqués `assume-unchanged` uniquement dans ce clone de CI ; les bibliothèques
-  absentes restent non suivies. Le pré-contrôle conserve ainsi son refus des
-  vraies modifications locales et le merge de la cible réécrit les fichiers.
+  l’instance antérieure. Le lanceur cible, sa bibliothèque et le snapshot sont
+  désormais exécutés depuis le checkout testé, **sans copie dans le clone
+  stable** : son pré-contrôle Git reste donc réel et la mise à jour peut écraser
+  proprement les fichiers de la cible. `ACRA_UPDATE_LIB_PATH` et un script de
+  snapshot explicitement fourni ne servent qu’à ce point d’entrée contrôlé ; le
+  lancement normal garde la copie locale auto-réexécutée.
 
 ---
 

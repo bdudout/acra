@@ -93,7 +93,7 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
   const env = (extra: Record<string, string> = {}) => ({ ...process.env, ...GIT_ENV, PATH: `${bin}:${process.env.PATH}`, AUDIT_LOG: audit, FAKE_DIR: fake, ACRA_HEALTH_RETRIES: '2', ACRA_HEALTH_INTERVAL: '0', ...extra })
   return {
     root, work, bin, fake, audit, shaA, shaB,
-    run: (script, args, extra) => { const r = spawnSync('bash', [path.join(work, script), ...args], { cwd: work, env: env(extra), encoding: 'utf8', timeout: 60_000 }); return { status: r.status, stdout: r.stdout, stderr: r.stderr } },
+    run: (script, args, extra) => { const r = spawnSync('bash', [path.isAbsolute(script) ? script : path.join(work, script), ...args], { cwd: work, env: env(extra), encoding: 'utf8', timeout: 60_000 }); return { status: r.status, stdout: r.stdout, stderr: r.stderr } },
     calls: () => readFileSync(audit, 'utf8').split('\n').filter(Boolean),
     fakeFile: (name, content = '1') => writeFileSync(path.join(fake, name), content),
     read: rel => readFileSync(path.join(work, rel), 'utf8'),

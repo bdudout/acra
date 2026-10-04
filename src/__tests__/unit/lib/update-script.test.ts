@@ -46,6 +46,21 @@ describe('update.sh v2 — mise à jour réussie', () => {
     expect(status()).toMatchObject({ state: 'FAILED', code: 'precheck_dirty' })
     expect(inst.calls().some(c => c.includes('stop app'))).toBe(false)
   })
+  it('le lanceur cible peut mettre à jour une instance antérieure sans y injecter de scripts locaux', () => {
+    // Une instance antérieure peut ne posséder ni les bibliothèques séparées,
+    // ni le script de snapshot. Le banc inter-version lance alors le code cible
+    // depuis l'extérieur du clone, qui doit rester entièrement propre pour Git.
+    inst = makeInstance({ scripts: [] })
+    const root = process.cwd()
+    const r = inst.run(path.join(root, 'scripts/update.sh'), ['stable', '--yes', '--status-file', STATUS], {
+      ACRA_UPDATE_REEXEC: '1',
+      ACRA_ROOT: inst.work,
+      ACRA_UPDATE_LIB_PATH: path.join(root, 'scripts/update-lib.sh'),
+      ACRA_SNAPSHOT_SCRIPT: path.join(root, 'scripts/acra-snapshot.sh'),
+    })
+    expect(r.status, r.stderr + r.stdout).toBe(0)
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaB)
+  })
 })
 
 describe('update.sh v2 — échecs avant toute modification du code', () => {

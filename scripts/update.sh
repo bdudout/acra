@@ -28,10 +28,18 @@ if [ "${ACRA_UPDATE_REEXEC:-0}" != "1" ]; then
   cp "$0" "$TMPDIR_RUN/update.sh"
   [ ! -f "$ACRA_ROOT/scripts/acra-snapshot.sh" ] || cp "$ACRA_ROOT/scripts/acra-snapshot.sh" "$TMPDIR_RUN/acra-snapshot.sh"
   ACRA_UPDATE_REEXEC=1 exec bash "$TMPDIR_RUN/update.sh" "$@"
+else
+  # Point d'entrée explicite pour la recette inter-version : le lanceur cible
+  # vit hors du clone stable, dont l'arbre Git doit rester strictement intact.
+  # Un répertoire de travail reste nécessaire pour transmettre les étapes cible.
+  TMPDIR_RUN="${TMPDIR_RUN:-$(mktemp -d "${TMPDIR:-/tmp}/acra-update.XXXXXX")}"; export TMPDIR_RUN
 fi
 cd "$ACRA_ROOT"
 # Le script de points de restauration INSTALLÉ (pas celui de la cible) fait le travail.
-if [ -f "$TMPDIR_RUN/acra-snapshot.sh" ]; then ACRA_SNAPSHOT_SCRIPT="$TMPDIR_RUN/acra-snapshot.sh"; else ACRA_SNAPSHOT_SCRIPT=""; fi
+if [ -n "${ACRA_SNAPSHOT_SCRIPT:-}" ]; then :
+elif [ -f "$TMPDIR_RUN/acra-snapshot.sh" ]; then ACRA_SNAPSHOT_SCRIPT="$TMPDIR_RUN/acra-snapshot.sh"
+else ACRA_SNAPSHOT_SCRIPT=""
+fi
 export ACRA_SNAPSHOT_SCRIPT ACRA_RUN_OWNER=1
 cleanup_tmp() { [ -z "${TMPDIR_RUN:-}" ] || rm -rf "$TMPDIR_RUN"; }
 trap cleanup_tmp EXIT
@@ -56,11 +64,12 @@ done
 case "$CHANNEL" in stable) BRANCH=stable ;; beta) BRANCH=main ;; *) echo "Canal inconnu : $CHANNEL" >&2; exit 2 ;; esac
 REMOTE="${ACRA_REMOTE:-origin}"
 
-if [ -f scripts/update-lib.sh ]; then
+UPDATE_LIB_PATH="${ACRA_UPDATE_LIB_PATH:-scripts/update-lib.sh}"
+if [ -f "$UPDATE_LIB_PATH" ]; then
   # shellcheck disable=SC1091
-  . scripts/update-lib.sh
+  . "$UPDATE_LIB_PATH"
 else
-  echo "scripts/update-lib.sh introuvable." >&2; exit 2
+  echo "$UPDATE_LIB_PATH introuvable." >&2; exit 2
 fi
 export ACRA_STATUS_FILE="$STATUS"
 
