@@ -46,7 +46,7 @@ case "$a" in
   *"du -sk"*) cat "$FAKE_DIR/docs_kb" 2>/dev/null || echo 100 ;;
   *"find /app/.data"*) cat "$FAKE_DIR/docs_files" 2>/dev/null || echo 3 ;;
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;
-  *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
+  *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list_many; then exec awk 'BEGIN { print "; Archive"; print "123; 0 0 TABLE DATA public User x"; for (n = 1; n <= 100000; n++) print "999; 0 0 COMMENT public filler-" n }'; elif f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
   *"run --rm"*"tar"*) f tar_fail && exit 1; printf 'docs' | gzip ;;
   *wget*) case "$a" in *" -S "*) f smoke_fail || echo "  HTTP/1.1 200 OK" >&2 ;; *) if f health_json; then cat "$FAKE_DIR/health_json"; else rev="$(cat "$FAKE_DIR/health_stuck" 2>/dev/null || cat "$FAKE_DIR/served_rev" 2>/dev/null || cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev"; fi ;; esac ;;
   *"run --rm --no-deps migrator"*) echo "ENV MIGRATOR RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f migrate_fail && exit 1 ;;

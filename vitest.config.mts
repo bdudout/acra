@@ -10,6 +10,9 @@ export default defineConfig({
     // Vitest 5 vide les mocks avant chaque test par défaut : on garde le comportement de Vitest 4
     // (des appels enregistrés dans un beforeAll restent visibles dans les tests).
     clearMocks: false,
+    // Les bancs des scripts de mise à jour créent des dépôts Git et des exécutables
+    // simulés. Leur parallélisation rend le résultat dépendant de la charge CI.
+    fileParallelism: false,
     setupFiles: ['./src/__tests__/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     // Tests d'intégration sur vraie base : config dédiée (vitest.db.config.mts, job CI db-integration).

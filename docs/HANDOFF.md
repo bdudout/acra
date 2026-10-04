@@ -6,6 +6,28 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-04 (64) — Codex : correctifs finaux de la PR #215
+
+- **Snapshot réel** : `pg_restore --list | grep -q` échouait à tort avec `pipefail`
+  dès qu’un catalogue PostgreSQL était suffisamment long : `grep -q` fermait le
+  tube, provoquant un SIGPIPE du producteur. La vérification écrit désormais le
+  catalogue temporaire, vérifie explicitement son code de sortie puis recherche
+  `TABLE DATA` dans ce fichier.
+- **Régression TDD** : le faux `pg_restore` produit un catalogue long au moyen
+  d’un processus remplacé (`exec awk`) afin de reproduire le SIGPIPE. Le test est
+  rouge sur l’ancienne implémentation (`21` au lieu de `0`) et vert après le
+  correctif. L’échec réel de `pg_restore` reste couvert (`21`, point `.invalid`).
+- **CI déterministe et e2e Projet 360** : les bancs de scripts Vitest sont
+  sérialisés (`fileParallelism: false`) car ils créent des dépôts Git/exécutables
+  simulés ; les labels des deux sélecteurs secteur sont associés à leurs champs
+  (`projet-secteur`, `analyse-secteur`) et les sélecteurs Playwright distinguent
+  le pattern exact `SI standard`.
+- **Vérifié avant push** : snapshot 32/32 ; suites Projet 360 ciblées 29/29 ;
+  `tsc --noEmit` 0 erreur ; `git diff --check` propre. La CI GitHub de #215 doit
+  être recontrôlée après le commit de ce lot.
+
+---
+
 ## 2026-10-04 (63) — Codex : correction CI et continuité de cadrage Projet 360 → cyber
 
 - **CI réparée** : le script de point de restauration utilisait `$db…` sous Bash `set -u` ; l’ellipse était lue comme partie du nom de variable. `${db}…` restaure la création de point. Le lien d’export du réseau est un `Link` Next.js (erreur ESLint CI).

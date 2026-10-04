@@ -64,8 +64,8 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
           <label className="block text-xs text-gray-600 dark:text-gray-300">{p.description}
             <textarea aria-label={p.description} rows={3} maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} className={field} />
           </label>
-          <label className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>
-            <select aria-label={t.newAnalysis.sector} required value={secteur} onChange={e => setSecteur(e.target.value)} className={field}>
+          <label htmlFor="projet-secteur" className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>
+            <select id="projet-secteur" required value={secteur} onChange={e => setSecteur(e.target.value)} className={field}>
               <option value="">{t.newAnalysis.sectorPh}</option>
               {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
             </select>

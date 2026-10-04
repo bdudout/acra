@@ -159,7 +159,19 @@ verify_quick() { # dossier
   local d="$1" dump="$1/database.dump"
   check_sums "$d" || return 1
   if [ -f "$dump" ]; then
-    pg_list_cmd < "$dump" 2>/dev/null | grep -q 'TABLE DATA' || return 1
+    # Ne pas relier directement pg_restore à grep -q : ce dernier ferme le pipe
+    # après la première correspondance et peut provoquer un SIGPIPE de pg_restore
+    # avec `pipefail`, malgré un dump parfaitement lisible.
+    local catalog status
+    catalog="$(mktemp "${TMPDIR:-/tmp}/acra-snapshot-pg-list.XXXXXX")" || return 1
+    if ! pg_list_cmd < "$dump" > "$catalog" 2>/dev/null; then
+      rm -f "$catalog"
+      return 1
+    fi
+    grep -q 'TABLE DATA' "$catalog"
+    status=$?
+    rm -f "$catalog"
+    [ "$status" -eq 0 ] || return 1
   fi
   if [ -f "$d/documents.tar.gz" ]; then gzip -t "$d/documents.tar.gz" 2>/dev/null || return 1; fi
   return 0

@@ -186,8 +186,8 @@ export default function NewAnalysePage() {
           </div>
 
           <div>
-            <label className="label">{t.newAnalysis.sector} <span className="text-red-500">*</span></label>
-            <select value={form.secteur} required
+            <label className="label" htmlFor="analyse-secteur">{t.newAnalysis.sector} <span className="text-red-500">*</span></label>
+            <select id="analyse-secteur" value={form.secteur} required
               onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteurs: normalizeSousSecteurs(e.target.value, form.sousSecteurs) })}
               className="input">
               <option value="">{t.newAnalysis.sectorPh}</option>

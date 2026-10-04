@@ -81,6 +81,12 @@ describe('acra-snapshot create', () => {
     expect(!inst.exists('.acra-update/snapshots.json') || JSON.parse(inst.read('.acra-update/snapshots.json')).snapshots.length === 0).toBe(true)
   })
 
+  it('accepte un catalogue pg_restore long et valide sans masquer son code de sortie', () => {
+    inst = make(); inst.fakeFile('restore_list_many')
+    const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'])
+    expect(r.status, r.stderr).toBe(0)
+  })
+
   it('le manifeste est écrit en dernier : un échec après le dump ne laisse pas de manifeste', () => {
     inst = make()
     const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'], { ACRA_BACKUP_AGE_RECIPIENT: 'age1xxx', PATH: `${inst.bin}:/usr/bin:/bin` })
