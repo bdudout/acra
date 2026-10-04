@@ -16,8 +16,13 @@ vérifié l'est avec la commande et son résultat.
   étaient exclus de l'artefact. Les statuts/journaux sont maintenant collectés
   explicitement, sans fichiers de sauvegarde. Un mode `ACRA_UPDATE_VERBOSE=1`
   réservé au banc permet d'afficher l'erreur exacte du migrateur ; le comportement
-  de production reste silencieux et inchangé. La prochaine exécution doit donner
-  la cause SQL ou Compose précise.
+  de production reste silencieux et inchangé. Cette exécution a révélé
+  `EACCES: permission denied, open '/app/prisma.config.ts'` : Git crée les
+  nouveaux fichiers avec le `umask 077` du lanceur, puis Docker les copie avec
+  le propriétaire root tandis que Prisma tourne sous `nextjs`. Le Dockerfile
+  attribue désormais `public`, `prisma` et `prisma.config.ts` à `nextjs` ; un test
+  de non-régression est rouge avant puis vert après la correction. La recette
+  Docker complète reste à reconfirmer après ce commit.
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.
