@@ -30,6 +30,14 @@ vérifié l'est avec la commande et son résultat.
   Docker créait le bind mount absent en root et empêchait ensuite la publication
   de `snapshots.json` par le script hôte. `bash -n` est vert ; le scénario réel
   est relancé par la CI.
+- **Suite des échecs CI et Node** : la dernière exécution a validé Vitest
+  (4 030 tests), mais a exposé deux défauts : le sélecteur e2e devait cibler le
+  code technique du pattern plutôt que son libellé enrichi par l’aide ; et un
+  échec de restitution de documents ne peut plus être ignoré — il déclenche un
+  rollback. Tous les workflows passent de `actions/checkout@v4` (runtime Node
+  20 dépréciée) à `v5.0.0` épinglé, runtime Node 24. Node 24 reste la version
+  explicitement installée en CI ; l’image applicative et le poste de travail
+  utilisent Node 26.
 
 ---
 

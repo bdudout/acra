@@ -254,8 +254,12 @@ if [ "$INSTANCE_UP" -eq 1 ]; then
     # Cible sans update-steps.sh : ce lanceur exécute lui-même les étapes.
     run_steps && RC=0 || RC=$?
   fi
-  if [ "$RESCUED" -eq 1 ] && [ "$RC" -eq 0 ]; then
-    "${COMPOSE[@]}" cp "$SNAP_DIR/documents-rescue/." app:/app/.data/documents/ >/dev/null 2>&1 || echo "⚠ Copie des documents sauvés impossible : fichiers conservés dans $SNAP_DIR/documents-rescue" >&2
+  if [ -d "$SNAP_DIR/documents-rescue" ] && [ "$RC" -eq 0 ]; then
+    if ! "${COMPOSE[@]}" cp "$SNAP_DIR/documents-rescue/." app:/app/.data/documents/ >/dev/null 2>&1; then
+      echo "✗ Copie des documents sauvés impossible : retour arrière déclenché pour éviter toute perte." >&2
+      do_rollback documents_restore_failed 1 || exit 1
+      exit 1
+    fi
     "${COMPOSE[@]}" exec -T -u 0 app chown -R 1001:1001 /app/.data/documents >/dev/null 2>&1 || true
   fi
   [ "$RC" -eq 0 ] && echo "✓ ACRA $TO opérationnel." || echo "✗ Mise à jour échouée : voir le statut (retour arrière tenté)." >&2

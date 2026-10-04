@@ -12,7 +12,7 @@ describe('PatternsArchiPicker', () => {
   it('affiche les 25 patterns regroupés par famille, dont le repli SI standard', () => {
     render(<PatternsArchiPicker value={[]} onChange={() => {}} max={12} />)
     expect(screen.getAllByRole('checkbox')).toHaveLength(25)
-    expect(screen.getByRole('checkbox', { name: /SI standard/ })).toBeTruthy()
+    expect(screen.getByRole('checkbox', { name: /SI standard/ })).toHaveAttribute('data-pattern-code', 'SI_STANDARD')
     expect(screen.getByText('Exposition et zones de sécurité')).toBeTruthy()
     expect(screen.getByText('Interconnexions, tiers et externalisation')).toBeTruthy()
     expect(screen.getByText(/Frontaux, reverse proxy, relais et filtrage/)).toBeTruthy()

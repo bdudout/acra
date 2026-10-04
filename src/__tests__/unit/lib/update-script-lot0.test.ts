@@ -30,6 +30,13 @@ describe('update.sh — documents persistants (C1)', () => {
     expect(r.status, r.stderr).toBe(0)
     expect(inst.calls().some(x => /^cp /.test(x))).toBe(false)
   })
+  it('si la restitution des documents sauvés échoue, annule la mise à jour plutôt que de confirmer une perte', () => {
+    inst = makeInstance(); inst.fakeFile('mounts', '/app/.acra-update\n'); inst.fakeFile('rescue_copy_fail')
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', '.acra-update/status.json'])
+    expect(r.status).not.toBe(0)
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+    expect(JSON.parse(inst.read('.acra-update/status.json'))).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'documents_restore_failed' })
+  })
 })
 
 describe('update.sh — sauvegarde vérifiée, application arrêtée, droits (C2, C3, C10)', () => {

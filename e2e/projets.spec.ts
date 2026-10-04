@@ -12,7 +12,7 @@ test.describe('Projets 360', () => {
     const sector = page.locator('#projet-secteur')
     await sector.selectOption({ index: 1 })
     const chosenSector = await sector.inputValue()
-    await page.getByRole('checkbox', { name: 'SI standard', exact: true }).check()
+    await page.locator('input[data-pattern-code="SI_STANDARD"]').check()
     await page.getByRole('button', { name: 'Créer le projet' }).click()
     // Le questionnaire de qualification s'ouvre directement.
     await expect(page).toHaveURL(/\/atelier\/1\?phase=qualification/)
@@ -25,6 +25,6 @@ test.describe('Projets 360', () => {
     await expect(page.locator('#projet-source')).not.toHaveValue('')
     await expect(page.locator('#analyse-nom')).toHaveValue('Analyse cyber — e2e_Projet portail')
     await expect(page.locator('#analyse-secteur')).toHaveValue(chosenSector)
-    await expect(page.getByRole('checkbox', { name: 'SI standard', exact: true })).toBeChecked()
+    await expect(page.locator('input[data-pattern-code="SI_STANDARD"]')).toBeChecked()
   })
 })
