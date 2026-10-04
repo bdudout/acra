@@ -130,6 +130,9 @@ wait_health() { # sha
     fi
     sleep "${ACRA_HEALTH_INTERVAL:-5}"
   done
+  # La réponse est l'endpoint public de santé (sans secret) ; l'exposer évite
+  # qu'un échec de déploiement reste muet pendant toute la fenêtre de retry.
+  echo "✗ Santé cible absente ou non conforme (révision attendue : $sha ; dernière réponse : ${out:0:500})" >&2
   return 1
 }
 smoke_ok() {

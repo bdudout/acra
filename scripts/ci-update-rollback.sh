@@ -41,6 +41,7 @@ run_target_update() { # dossier, arguments du lanceur cible
     ACRA_UPDATE_REEXEC=1 ACRA_ROOT="$PWD" \
     ACRA_UPDATE_LIB_PATH="$SCRIPTS_DIR/update-lib.sh" \
     ACRA_SNAPSHOT_SCRIPT="$SCRIPTS_DIR/acra-snapshot.sh" \
+    ACRA_HEALTH_RETRIES=6 ACRA_HEALTH_INTERVAL=1 \
     bash "$SCRIPTS_DIR/update.sh" "${@:2}" )
 }
 count() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T db psql -U acra -d acra_ci -tA -c "SELECT (SELECT count(*) FROM \"User\")||'/'||(SELECT count(*) FROM \"_prisma_migrations\")" ); }
