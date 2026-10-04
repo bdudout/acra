@@ -83,6 +83,13 @@ describe('update.sh v2 — échecs avant toute modification du code', () => {
 })
 
 describe('update.sh v2 — retour arrière automatique', () => {
+  it('affiche la cause du migrateur uniquement en mode diagnostic CI', () => {
+    inst = makeInstance(); inst.fakeFile('migrate_fail')
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', STATUS], { ACRA_UPDATE_VERBOSE: '1' })
+    expect(r.status).not.toBe(0)
+    expect(r.stderr).toContain('CI_MIGRATOR_FAILURE_DETAIL')
+    expect(status()).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'migrate_failed' })
+  })
   it('échec de migration : reset --hard FROM_SHA, restauration du point, up, santé sur FROM_SHA, statut rolledBack', () => {
     inst = makeInstance(); inst.fakeFile('migrate_fail')
     const r = update()

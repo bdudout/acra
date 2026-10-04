@@ -12,6 +12,11 @@ EVENTS=".acra-update/events.log"
 # shellcheck disable=SC2206
 COMPOSE=(docker compose ${ACRA_COMPOSE_FILES:-})
 git() { command git -c safe.directory="$PWD" "$@"; }
+update_command() {
+  if [ "${ACRA_UPDATE_VERBOSE:-0}" = "1" ]; then "$@"
+  else "$@" >/dev/null 2>&1
+  fi
+}
 
 iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 jesc() { printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'; }
@@ -202,7 +207,7 @@ run_steps() {
   export ACRA_VERSION="v$TO" ACRA_REVISION="$TO_SHA" ACRA_MIGRATE_AUTO_RESOLVE=0
   if nodocker; then
     npx prisma migrate deploy >/dev/null 2>&1 || migrate_fail=1
-  elif ! { "${COMPOSE[@]}" build app migrator >/dev/null 2>&1 || "${COMPOSE[@]}" build >/dev/null 2>&1; } || ! "${COMPOSE[@]}" run --rm --no-deps migrator >/dev/null 2>&1; then migrate_fail=1; fi
+  elif ! { update_command "${COMPOSE[@]}" build app migrator || update_command "${COMPOSE[@]}" build; } || ! update_command "${COMPOSE[@]}" run --rm --no-deps migrator; then migrate_fail=1; fi
   if [ "$migrate_fail" -eq 1 ]; then step_ko MIGRATE migrate_failed; do_rollback migrate_failed 1; return 1; fi
   step_ok MIGRATE
 

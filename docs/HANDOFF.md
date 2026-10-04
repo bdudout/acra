@@ -8,6 +8,17 @@ vérifié l'est avec la commande et son résultat.
 
 ## 2026-10-04 (64) — Codex : correctifs finaux de la PR #215
 
+- **Suivi après correction de la révision stable** : toutes les vérifications
+  hors Docker sont vertes (dont Vitest et E2E). Le banc Docker atteint désormais
+  la cible, mais l'étape `MIGRATE` échoue puis le rollback se termine correctement
+  (`rolledBack: true`, journal `run/last.json` de la CI). Le workflow conservait
+  seulement les manifestes de sauvegarde : les fichiers cachés de diagnostic
+  étaient exclus de l'artefact. Les statuts/journaux sont maintenant collectés
+  explicitement, sans fichiers de sauvegarde. Un mode `ACRA_UPDATE_VERBOSE=1`
+  réservé au banc permet d'afficher l'erreur exacte du migrateur ; le comportement
+  de production reste silencieux et inchangé. La prochaine exécution doit donner
+  la cause SQL ou Compose précise.
+
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.
   Lors du rollback, cette image servait `revision: "unknown"` ; le contrôle
