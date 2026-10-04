@@ -142,7 +142,7 @@ wait_health() { # sha
 }
 smoke_ok() {
   local p out status_line
-  for p in / /login /api/health; do
+  for p in / /auth/signin /api/health; do
     if nodocker; then out="HTTP/1.1 $(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${ACRA_PORT:-3000}$p" 2>/dev/null || echo 000)"
     else out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null "http://127.0.0.1:3000$p" 2>&1 || true)"; fi
     status_line="$(printf '%s\n' "$out" | sed -n '/HTTP\/[0-9.]\+ [0-9][0-9][0-9]/p' | tail -1)"

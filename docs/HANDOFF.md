@@ -37,6 +37,11 @@ vérifié l'est avec la commande et son résultat.
   compatible BusyBox et vérifie le dernier code HTTP après redirection. Un test
   ciblé était rouge avant correction et passe après (2 fichiers, 2 tests avec
   le test de permissions Docker).
+- **URL du smoke** : le script interrogeait également `/login`, qui n'est pas
+  une route App Router de l'application. La page publique effective est
+  `/auth/signin` (`src/app/auth/signin/page.tsx`, lien de la landing page). Le
+  contrôle utilise maintenant cette route ; test rouge puis vert. Aucun écran
+  applicatif n'a été modifié.
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.

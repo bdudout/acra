@@ -7,5 +7,6 @@ describe('Smoke HTTP dans le conteneur Alpine', () => {
     const script = readFileSync(path.join(process.cwd(), 'scripts/update-lib.sh'), 'utf8')
     expect(script).not.toContain('--max-redirect=0')
     expect(script).toContain("wget -S -q -O /dev/null")
+    expect(script).toContain('for p in / /auth/signin /api/health')
   })
 })
