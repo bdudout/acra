@@ -42,6 +42,16 @@ vérifié l'est avec la commande et son résultat.
   `/auth/signin` (`src/app/auth/signin/page.tsx`, lien de la landing page). Le
   contrôle utilise maintenant cette route ; test rouge puis vert. Aucun écran
   applicatif n'a été modifié.
+- **Scénario 4 réel** : la mise à jour complète et son smoke passent. L'injection
+  d'une migration `SELECT 1/0` provoque bien `P3018` et le rollback revient à la
+  stable, mais le document de recette manque ensuite. Dans la stable, le volume
+  documentaire est anonyme : la restauration par `compose run` touche un volume
+  éphémère distinct de celui du conteneur `app` recréé. Le secours hôte déjà
+  réalisé avant mise à jour est maintenant copié explicitement dans le vrai
+  conteneur applicatif lors du rollback, puis réattribué à l'UID 1001. Un échec
+  de cette copie marque le rollback en échec au lieu de prétendre que les données
+  sont restaurées. Une assertion de non-régression est ajoutée au test de
+  migration fautive ; la recette Docker complète doit encore confirmer.
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.

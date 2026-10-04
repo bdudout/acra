@@ -184,6 +184,13 @@ do_rollback() {
     local list; list="$(existing_services app scheduler backup cron | tr '\n' ' ')"
     # shellcheck disable=SC2086
     "${COMPOSE[@]}" up -d --build --no-deps $list >/dev/null 2>&1 || { rollback_failed "$cause"; return 1; }
+    # La stable peut stocker les documents dans un volume anonyme. Une
+    # restauration via `compose run` utilise alors un autre volume éphémère :
+    # recopier le secours hôte dans le conteneur app effectivement redémarré.
+    if [ -d .acra-update/rescue/documents-rescue ]; then
+      "${COMPOSE[@]}" cp .acra-update/rescue/documents-rescue/. app:/app/.data/documents/ >/dev/null 2>&1 || { rollback_failed "$cause"; return 1; }
+      "${COMPOSE[@]}" exec -T -u 0 app chown -R 1001:1001 /app/.data/documents >/dev/null 2>&1 || { rollback_failed "$cause"; return 1; }
+    fi
   fi
   wait_health "$FROM_SHA" || { rollback_failed "$cause"; return 1; }
   STATE="ROLLED_BACK"; ROLLED_BACK=true; step_ok ROLLED_BACK

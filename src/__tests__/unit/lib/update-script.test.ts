@@ -110,6 +110,7 @@ describe('update.sh v2 — retour arrière automatique', () => {
     const upAfter = c.findIndex((x, i) => i > rename && x.startsWith('ENV ACRA_VERSION=v1.0.4'))
     expect(upAfter).toBeGreaterThan(rename)
     expect(c[upAfter]).toContain(`ACRA_REVISION=${inst.shaA}`)
+    expect(c.some(x => x.includes('cp .acra-update/rescue/documents-rescue/. app:/app/.data/documents/'))).toBe(true)
     expect(status()).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'migrate_failed', from: '1.0.4', to: '1.0.5' })
     expect(inst.read('.acra-update/events.log')).toMatch(/^ROLLED_BACK 1\.0\.5 1\.0\.4 migrate_failed /m)
     expect(inst.exists('.acra-update/run/current.json')).toBe(false)
