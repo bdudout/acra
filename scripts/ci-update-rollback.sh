@@ -43,7 +43,10 @@ install_update_launcher() { # dossier — le lanceur cible doit pouvoir protége
       # Le pré-contrôle refuse les éditions locales. Ces seules copies sont le
       # lanceur livré par la cible, volontairement injecté par le banc de CI.
       # L'index reste sur la révision stable et le merge écrase ensuite les fichiers.
-      git update-index --assume-unchanged "scripts/$script"
+      # Certaines révisions stables ne suivent pas encore les bibliothèques
+      # séparées : un fichier alors non suivi n'est pas vu par `git diff`.
+      git ls-files --error-unmatch "scripts/$script" >/dev/null 2>&1 && \
+        git update-index --assume-unchanged "scripts/$script"
     done )
 }
 count() { ( cd "$1"; export COMPOSE_PROJECT_NAME="acraci$(basename "$1")"; docker compose exec -T db psql -U acra -d acra_ci -tA -c "SELECT (SELECT count(*) FROM \"User\")||'/'||(SELECT count(*) FROM \"_prisma_migrations\")" ); }
