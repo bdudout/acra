@@ -27,7 +27,11 @@ jobs:
         with:
           name: update-rollback-logs
           path: |
-            /tmp/acra-ci/**/.acra-update/**
+            /tmp/acra-ci/**/.acra-update/status.json
+            /tmp/acra-ci/**/.acra-update/events.log
+            /tmp/acra-ci/**/.acra-update/run/current.json
+            /tmp/acra-ci/**/.acra-update/run/last.json
             /tmp/acra-ci/**/backups/*/manifest.json
             /tmp/acra-ci/*.log
+          include-hidden-files: true
           if-no-files-found: ignore
