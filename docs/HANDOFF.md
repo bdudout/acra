@@ -23,6 +23,12 @@ vérifié l'est avec la commande et son résultat.
   attribue désormais `public`, `prisma` et `prisma.config.ts` à `nextjs` ; un test
   de non-régression est rouge avant puis vert après la correction. La recette
   Docker complète reste à reconfirmer après ce commit.
+- **CI après ownership** : les 182 migrations sont appliquées avec succès ;
+  `START` et `HEALTH` sont également verts. Le scénario 3 échoue désormais au
+  `SMOKE` et revient correctement à la stable. La sortie HTTP du chemin fautif
+  était supprimée ; le mode diagnostic CI l'affiche maintenant pour identifier
+  le code de réponse ou l'option `wget` non reconnue, sans changer les critères
+  de santé ni le comportement en production.
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.

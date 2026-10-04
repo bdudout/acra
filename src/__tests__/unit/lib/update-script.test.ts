@@ -83,6 +83,14 @@ describe('update.sh v2 — échecs avant toute modification du code', () => {
 })
 
 describe('update.sh v2 — retour arrière automatique', () => {
+  it('affiche le chemin et la réponse HTTP en échec uniquement en mode diagnostic CI', () => {
+    inst = makeInstance(); inst.fakeFile('smoke_fail')
+    const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', STATUS], { ACRA_UPDATE_VERBOSE: '1' })
+    expect(r.status).not.toBe(0)
+    expect(r.stderr).toContain('CI_SMOKE_FAILURE_DETAIL')
+    expect(r.stderr).toContain('Fumée /')
+    expect(status()).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'smoke_failed' })
+  })
   it('affiche la cause du migrateur uniquement en mode diagnostic CI', () => {
     inst = makeInstance(); inst.fakeFile('migrate_fail')
     const r = inst.run('scripts/update.sh', ['stable', '--yes', '--status-file', STATUS], { ACRA_UPDATE_VERBOSE: '1' })
