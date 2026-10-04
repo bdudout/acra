@@ -20,6 +20,9 @@ step() { echo; echo "── $*"; }
 setup_instance() { # dossier
   rm -rf "$1"; git clone -q "$ORIGIN" "$1"; git -C "$1" checkout -q stable
   ( cd "$1"
+    # Créer le bind mount côté hôte avant Compose : sinon Docker le crée en root
+    # et le script de snapshot ne peut plus publier snapshots.json après arrêt de l'app.
+    mkdir -p .acra-update; chmod 700 .acra-update
     cat > .env <<EOF
 POSTGRES_USER=acra
 POSTGRES_PASSWORD=ci-password

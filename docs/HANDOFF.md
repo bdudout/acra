@@ -25,6 +25,11 @@ vérifié l'est avec la commande et son résultat.
 - **Vérifié avant push** : snapshot 32/32 ; suites Projet 360 ciblées 29/29 ;
   `tsc --noEmit` 0 erreur ; `git diff --check` propre. La CI GitHub de #215 doit
   être recontrôlée après le commit de ce lot.
+- **Correctif CI ultérieur** : le scénario Docker instancie désormais
+  `.acra-update` avec les droits du runner avant `docker compose up`. Sans cela,
+  Docker créait le bind mount absent en root et empêchait ensuite la publication
+  de `snapshots.json` par le script hôte. `bash -n` est vert ; le scénario réel
+  est relancé par la CI.
 
 ---
 
