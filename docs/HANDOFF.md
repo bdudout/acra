@@ -38,6 +38,11 @@ vérifié l'est avec la commande et son résultat.
   20 dépréciée) à `v5.0.0` épinglé, runtime Node 24. Node 24 reste la version
   explicitement installée en CI ; l’image applicative et le poste de travail
   utilisent Node 26.
+- **Correction documents (CI Docker)** : détecter seulement un montage ne suffit
+  pas : un volume Docker anonyme est monté mais disparaît quand le compose cible
+  introduit un volume nommé. La copie hôte est maintenant systématique avant
+  toute mise à jour et son échec annule l’opération ; elle est recopiée après le
+  démarrage cible. Le scénario Docker réel doit confirmer ce cas.
 
 ---
 

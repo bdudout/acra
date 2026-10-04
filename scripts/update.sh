@@ -199,10 +199,11 @@ RESCUED=0; SNAP_DIR=".acra-update/rescue"
 rescue_documents() {
   local cid; cid="$("${COMPOSE[@]}" ps -q app 2>/dev/null || true)"
   [ -n "$cid" ] || return 0
-  # shellcheck disable=SC2016
-  if docker inspect -f '{{range .Mounts}}{{.Destination}}{{"\n"}}{{end}}' "$cid" 2>/dev/null | grep -qx /app/.data/documents; then return 0; fi
+  # Même un montage présent peut être un volume anonyme : le compose de la
+  # version cible peut alors le remplacer par un volume nommé et perdre son contenu.
+  # Le point hôte est donc systématique juste avant tout changement de code.
   mkdir -p "$SNAP_DIR"; rm -rf "$SNAP_DIR/documents-rescue"
-  docker cp "$cid:/app/.data/documents" "$SNAP_DIR/documents-rescue" >/dev/null 2>&1 || return 0
+  docker cp "$cid:/app/.data/documents" "$SNAP_DIR/documents-rescue" >/dev/null 2>&1 || return 1
   echo "Documents sauvés hors du conteneur : $SNAP_DIR/documents-rescue"
   RESCUED=1
 }
@@ -210,7 +211,7 @@ INSTANCE_UP=0
 "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx db && INSTANCE_UP=1
 
 if [ "$INSTANCE_UP" -eq 1 ]; then
-  rescue_documents
+  rescue_documents || fail documents_rescue_failed "Sauvegarde des documents impossible : mise à jour annulée avant toute modification."
   step_enter QUIESCE "Arrêt de l'application"
   stop_services || fail quiesce_failed "Arrêt de l'application impossible."
   step_ok QUIESCE

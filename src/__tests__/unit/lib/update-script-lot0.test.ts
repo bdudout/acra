@@ -24,11 +24,11 @@ describe('update.sh — documents persistants (C1)', () => {
     expect(up).toBeGreaterThan(cp)
     expect(back).toBeGreaterThan(up)
   })
-  it('avec un montage déjà présent : aucun docker cp', () => {
+  it('avec un montage déjà présent : sauvegarde aussi les documents, car un volume anonyme peut disparaître au changement de compose', () => {
     inst = makeInstance(); inst.fakeFile('mounts', '/app/.acra-update\n/app/.data/documents\n')
     const r = inst.run('scripts/update.sh', ['stable', '--yes'])
     expect(r.status, r.stderr).toBe(0)
-    expect(inst.calls().some(x => /^cp /.test(x))).toBe(false)
+    expect(inst.calls().some(x => /^cp cid123:\/app\/\.data\/documents/.test(x))).toBe(true)
   })
   it('si la restitution des documents sauvés échoue, annule la mise à jour plutôt que de confirmer une perte', () => {
     inst = makeInstance(); inst.fakeFile('mounts', '/app/.acra-update\n'); inst.fakeFile('rescue_copy_fail')
