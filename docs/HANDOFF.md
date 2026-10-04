@@ -8,6 +8,20 @@ vérifié l'est avec la commande et son résultat.
 
 ## 2026-10-04 (64) — Codex : correctifs finaux de la PR #215
 
+- **Diagnostic des relances CI successives** : le scénario Docker part de la
+  branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.
+  Lors du rollback, cette image servait `revision: "unknown"` ; le contrôle
+  strict attendait le SHA stable et échouait après ses 60 essais, même quand
+  l’application et la base étaient saines. Les autres relances avaient exposé
+  des défauts distincts du banc inter-version (script absent, injection de
+  fichiers locaux bloquée par Git) et une vraie perte possible de documents sur
+  passage volume anonyme → volume nommé. Le dernier défaut de santé est corrigé
+  **dans le banc seul** : une surcouche Compose ignorée par Git injecte le SHA
+  stable dans l’ancien conteneur ; les valeurs exportées par le lanceur gardent
+  la priorité pour la cible et le rollback. Le test du générateur est rouge avant
+  ajout du script, puis 2/2 vert ; `docker compose config` confirme les deux
+  résolutions de SHA. La CI Docker réelle doit encore confirmer la séquence.
+
 - **Snapshot réel** : `pg_restore --list | grep -q` échouait à tort avec `pipefail`
   dès qu’un catalogue PostgreSQL était suffisamment long : `grep -q` fermait le
   tube, provoquant un SIGPIPE du producteur. La vérification écrit désormais le

@@ -9,6 +9,9 @@ WORK=/tmp/acra-ci; rm -rf "$WORK"; mkdir -p "$WORK"
 PR_SHA="$(git rev-parse HEAD)"
 SNAPSHOT_SCRIPT="$(cd "$(dirname "$0")" && pwd)/acra-snapshot.sh"
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Appliquée à toutes les commandes compose du banc, y compris celles du lanceur
+# et de l'agent de reprise. La cible peut surcharger l'identité via ACRA_REVISION.
+export COMPOSE_FILE="docker-compose.yml:.acra-update/ci-identity.yml"
 ORIGIN="$WORK/origin.git"
 git clone -q --bare . "$ORIGIN"
 git -C "$ORIGIN" update-ref refs/heads/main "$PR_SHA"
@@ -24,6 +27,7 @@ setup_instance() { # dossier
     # Créer le bind mount côté hôte avant Compose : sinon Docker le crée en root
     # et le script de snapshot ne peut plus publier snapshots.json après arrêt de l'app.
     mkdir -p .acra-update; chmod 700 .acra-update
+    bash "$SCRIPTS_DIR/ci-update-identity.sh" "$PREV" > .acra-update/ci-identity.yml
     cat > .env <<EOF
 POSTGRES_USER=acra
 POSTGRES_PASSWORD=ci-password
