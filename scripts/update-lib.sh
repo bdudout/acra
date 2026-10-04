@@ -141,11 +141,12 @@ wait_health() { # sha
   return 1
 }
 smoke_ok() {
-  local p out
+  local p out status_line
   for p in / /login /api/health; do
     if nodocker; then out="HTTP/1.1 $(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${ACRA_PORT:-3000}$p" 2>/dev/null || echo 000)"
-    else out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null --max-redirect=0 "http://127.0.0.1:3000$p" 2>&1 || true)"; fi
-    if ! printf '%s' "$out" | grep -Eq 'HTTP/[0-9.]+ (200|307)'; then
+    else out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null "http://127.0.0.1:3000$p" 2>&1 || true)"; fi
+    status_line="$(printf '%s\n' "$out" | sed -n '/HTTP\/[0-9.]\+ [0-9][0-9][0-9]/p' | tail -1)"
+    if ! printf '%s' "$status_line" | grep -Eq 'HTTP/[0-9.]+ (200|307)'; then
       [ "${ACRA_UPDATE_VERBOSE:-0}" != "1" ] || echo "✗ Fumée $p : ${out:0:500}" >&2
       return 1
     fi

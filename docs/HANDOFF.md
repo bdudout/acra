@@ -29,6 +29,14 @@ vérifié l'est avec la commande et son résultat.
   était supprimée ; le mode diagnostic CI l'affiche maintenant pour identifier
   le code de réponse ou l'option `wget` non reconnue, sans changer les critères
   de santé ni le comportement en production.
+- **Cause du SMOKE confirmée sans attendre un autre build** : le conteneur
+  `node:26-alpine` utilise BusyBox `wget`, dont l'aide ne répertorie pas
+  `--max-redirect=0` (reproduit avec l'image locale `alpine:latest`). Cette
+  option faisait échouer systématiquement le test de fumée malgré `MIGRATE`,
+  `START` et `HEALTH` verts. Le contrôle utilise maintenant `wget -S -q -O`
+  compatible BusyBox et vérifie le dernier code HTTP après redirection. Un test
+  ciblé était rouge avant correction et passe après (2 fichiers, 2 tests avec
+  le test de permissions Docker).
 
 - **Diagnostic des relances CI successives** : le scénario Docker part de la
   branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.
