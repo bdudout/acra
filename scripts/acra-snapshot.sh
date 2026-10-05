@@ -8,7 +8,7 @@
 #   scripts/acra-snapshot.sh verify  <id> [--full]
 #   scripts/acra-snapshot.sh list    [--json]
 #   scripts/acra-snapshot.sh restore <id> [--yes] [--keep-current]     # base + documents ; ne touche pas au code
-#   scripts/acra-snapshot.sh prune   [--keep N] [--dry-run] [--include-manual]
+#   scripts/acra-snapshot.sh prune   [--keep N] [--dry-run] [--include-manual] [--ids id1,id2]   (--ids : liste exacte, sans règle de rétention)
 #   scripts/acra-snapshot.sh index                                       # régénère .acra-update/snapshots.json
 #
 # Codes de sortie : 0 succès · 2 usage · 10 prérequis · 11 espace insuffisant · 20 dump en échec ·
@@ -512,16 +512,28 @@ cmd_restore() {
 
 # ── prune ─────────────────────────────────────────────────────────────────────────────────────────
 cmd_prune() {
-  local dry=0 includeManual=0
+  local dry=0 includeManual=0 ids=""
   while [ $# -gt 0 ]; do
-    case "$1" in --keep) KEEP="${2:-3}"; shift ;; --dry-run) dry=1 ;; --include-manual) includeManual=1 ;; *) die 2 "Option inconnue : $1" ;; esac; shift
+    case "$1" in --keep) KEEP="${2:-3}"; shift ;; --dry-run) dry=1 ;; --include-manual) includeManual=1 ;; --ids) ids="${2:-}"; shift ;; *) die 2 "Option inconnue : $1" ;; esac; shift
   done
+  # --ids : liste EXACTE (libération d'espace) — chaque identifiant est validé AVANT tout appel à docker.
+  if [ "${ids+x}" = x ] && [ -n "$ids" ]; then
+    local one; for one in ${ids//,/ }; do is_id "$one" || die 31 "Identifiant de point invalide : $one"; done
+  fi
   init_db
   take_lock; trap 'release_lock' EXIT
   local protect=""
   [ -f "$UPDATE_DIR/run/current.json" ] && protect="$(sed -n 's/.*"snapshotId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$UPDATE_DIR/run/current.json" | head -1)"
   act() { if [ "$dry" -eq 1 ]; then echo "[dry-run] supprimerait : $1"; else eval "$2"; echo "supprimé : $1"; fi; }
   local d id n=0 now_s; now_s="$(date +%s)"
+  if [ -n "$ids" ]; then
+    # Suppression ciblée : seuls les identifiants donnés, existants, complets et non protégés ; jamais de règle de rétention.
+    for id in ${ids//,/ }; do
+      d="$BACKUP_DIR/$id"; [ -f "$d/manifest.json" ] || continue
+      [ "$id" != "$protect" ] || { note "Point protégé (mise à jour en cours) conservé : $id"; continue; }
+      act "$id" "rm -rf '$d'"
+    done
+  else
   # .invalid et dossiers incomplets de plus de 24 h
   for d in "$BACKUP_DIR"/*/; do
     [ -d "$d" ] || continue; id="$(basename "$d")"
@@ -563,6 +575,7 @@ $id" ;; esac
       *-manual-*) [ "$includeManual" -eq 1 ] && act "$id" "rm -rf '$d'" ;;
     esac
   done
+  fi
   # Bases techniques : clones orphelins, __failed_ trop anciens, __verify_ orphelines.
   local db; db="$(db_name 2>/dev/null || true)"
   if [ -n "$db" ]; then

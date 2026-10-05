@@ -95,3 +95,25 @@ describe('update-agent.sh — sauvegardes planifiées (lot S-plan)', () => {
     expect(updateCalls()).toEqual([])
   })
 })
+
+describe('update-agent.sh — demande backup-prune', () => {
+  const stubSnap = () => writeFileSync(path.join(inst.work, 'scripts/acra-snapshot.sh'), '#!/usr/bin/env bash\necho "SNAP $*" >> "$AUDIT_LOG"\n', { mode: 0o755 })
+  const snapCalls = () => inst.calls().filter(c => c.startsWith('SNAP'))
+  const ID2 = '20261001T101500Z-manual-1.0.3'
+  const withIndex = () => writeFileSync(path.join(inst.work, '.acra-update/snapshots.json'), JSON.stringify({ schema: 1, snapshots: [ID, ID2].map(id => ({ id, reason: 'manual', createdAt: '2026-10-03T10:15:00Z', version: '1.0.4', verified: 'full', clone: false, documents: true, encrypted: false, sizeBytes: 1 })) }))
+  const prune = (ids: string[]) => request({ id: 'r', action: 'backup-prune', ids, requestedBy: 'u', requestedAt: '2026-10-05T00:00:00.000Z' })
+
+  it('ids présents dans l’index de l’agent : prune --ids, puis rien d’autre (update.sh jamais appelé)', () => {
+    setup(); stubSnap(); withIndex(); prune([ID, ID2])
+    agent()
+    expect(snapCalls()).toEqual([`SNAP prune --ids ${ID},${ID2}`])
+    expect(updateCalls()).toEqual([])
+  })
+  it('identifiant hors index ou piégé : demande ignorée, rien n’est supprimé', () => {
+    setup(); stubSnap(); withIndex()
+    prune([ID, '20250101T000000Z-manual-9']); agent()
+    prune([`${ID}"; rm -rf / #`]); agent()
+    prune([]); agent()
+    expect(snapCalls()).toEqual([])
+  })
+})

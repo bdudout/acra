@@ -16,6 +16,7 @@ import type { UpdateStatus as FullUpdateStatus } from '@/lib/update-request'
 import type { SnapshotEntry } from '@/lib/snapshot'
 import type { OffsiteState } from '@/lib/offsite-status'
 import BackupSchedulePanel from '@/components/BackupSchedulePanel'
+import BackupPrunePanel from '@/components/BackupPrunePanel'
 import type { BackupPolicy, BackupStats } from '@/lib/backup-policy'
 import type { RunSummary } from '@/lib/update-request.server'
 
@@ -168,6 +169,7 @@ export default function VersionCard() {
       {info && !info.deployConfigured && info.backup && (info.agentAvailable || info.backup.stats) && (
         <div className="mt-4 border-t border-gray-100 pt-4">
           <BackupSchedulePanel key={JSON.stringify(info.backup.policy)} policy={info.backup.policy} stats={info.backup.stats} agentAvailable={info.agentAvailable} offsiteConfigured={Boolean(info.offsite)} onChanged={load} />
+          <BackupPrunePanel policy={info.backup.policy} agentAvailable={info.agentAvailable} onChanged={load} />
         </div>
       )}
 

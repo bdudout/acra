@@ -53,3 +53,31 @@ export function parseSnapshotIndex(raw: unknown): SnapshotIndex {
   const generatedAt = text(o.generatedAt, 40)
   return { ...(generatedAt ? { generatedAt } : {}), snapshots }
 }
+
+// ─── Libération d'espace : suppression des points au-delà des N plus récents ───
+
+export interface PruneOptions { keepScheduled: number; keepPreUpdate: number; keepManual: number; includeManual: boolean; protectedIds: string[] }
+export interface PruneSelection { toDelete: SnapshotEntry[]; toKeep: SnapshotEntry[]; reclaimedBytes: number }
+export const PRUNE_KEEP_MAX = 60
+
+/**
+ * Miroir de `acra-snapshot.sh prune` pour l'aperçu : N plus récents gardés par type (les points manuels ne sont concernés
+ * qu'avec `includeManual`), point protégé (mise à jour en cours) jamais supprimé, et au moins un point vérifié « full »
+ * toujours conservé. Lève `keep_min_1` si un N n'est pas un entier de 1 à 60.
+ */
+export function selectBackupsToPrune(index: SnapshotIndex, o: PruneOptions): PruneSelection {
+  for (const n of [o.keepScheduled, o.keepPreUpdate, o.keepManual]) if (!Number.isInteger(n) || n < 1 || n > PRUNE_KEEP_MAX) throw new Error('keep_min_1')
+  const sorted = [...index.snapshots].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+  const limits: Record<SnapshotReason, number> = { scheduled: o.keepScheduled, 'pre-update': o.keepPreUpdate, manual: o.includeManual ? o.keepManual : Infinity }
+  const seen: Record<SnapshotReason, number> = { scheduled: 0, 'pre-update': 0, manual: 0 }
+  let toDelete: SnapshotEntry[] = []; const toKeep: SnapshotEntry[] = []
+  for (const e of sorted) {
+    seen[e.reason] += 1
+    if (o.protectedIds.includes(e.id) || seen[e.reason] <= limits[e.reason]) toKeep.push(e); else toDelete.push(e)
+  }
+  if (!toKeep.some(e => e.verified === 'full')) {
+    const rescue = toDelete.find(e => e.verified === 'full')
+    if (rescue) { toDelete = toDelete.filter(e => e !== rescue); toKeep.push(rescue) }
+  }
+  return { toDelete, toKeep, reclaimedBytes: toDelete.reduce((n, e) => n + e.sizeBytes, 0) }
+}

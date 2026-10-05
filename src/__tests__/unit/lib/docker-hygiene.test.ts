@@ -2,33 +2,37 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import yaml from 'js-yaml'
-
 const read = (f: string) => readFileSync(path.join(process.cwd(), f), 'utf8')
-const parse = (f: string) => yaml.load(read(f).replace(/!reset|!override/g, '')) as { services: Record<string, Record<string, unknown>> }
+/** Services déclarés au premier niveau (2 espaces) sous `services:` : nom → texte du bloc. */
+function services(f: string): Record<string, string> {
+  const body = read(f).split(/^services:\n/m)[1].split(/^\S/m)[0]
+  const out: Record<string, string> = {}
+  for (const part of body.split(/^  (?=[a-z_-]+:\s*$)/m)) { const m = part.match(/^([a-z_-]+):/); if (m) out[m[1]] = part }
+  return out
+}
 
 describe('journaux des conteneurs bornés', () => {
   for (const file of ['docker-compose.yml', 'docker-compose.demo.yml']) {
     it(`${file} : tous les services (hors surcharges) plafonnent leurs journaux`, () => {
-      const { services } = parse(file)
-      const own = Object.entries(services).filter(([, s]) => file === 'docker-compose.yml' || s.image)
+      const own = Object.entries(services(file)).filter(([, b]) => file === 'docker-compose.yml' || /^    image:/m.test(b))
       expect(own.length).toBeGreaterThan(0)
-      for (const [name, s] of own) {
-        const l = s.logging as { driver?: string; options?: Record<string, string> } | undefined
-        expect(l, name).toBeDefined()
-        expect(l!.driver).toBe('json-file')
-        expect(l!.options).toMatchObject({ 'max-size': '10m', 'max-file': '3' })
-      }
+      for (const [name, b] of own) expect(b, name).toMatch(/^    logging: \*logging$/m)
+      const anchor = read(file).match(/^x-logging: &logging\n(  .*\n)+/m)?.[0] ?? ''
+      expect(anchor).toContain('driver: json-file')
+      expect(anchor).toContain('max-size: "10m"')
+      expect(anchor).toContain('max-file: "3"')
     })
   }
 })
 
 describe('image applicative unique', () => {
-  it('app et migrator partagent le même tag et les mêmes arguments de construction', () => {
-    const { services } = parse('docker-compose.yml')
-    expect(services.app.image).toBe('acra-app:${ACRA_VERSION:-dev}')
-    expect(services.migrator.image).toBe(services.app.image)
-    expect(services.migrator.build).toEqual(services.app.build)
+  it('app et migrator partagent le même tag et la même construction', () => {
+    const s = services('docker-compose.yml')
+    for (const n of ['app', 'migrator']) {
+      expect(s[n], n).toMatch(/^    image: acra-app:\$\{ACRA_VERSION:-dev\}$/m)
+      expect(s[n], n).toMatch(/^    build: \*app-build$/m)
+    }
+    expect(read('docker-compose.yml')).toMatch(/^x-app-build: &app-build\n(  .*\n)+/m)
   })
 })
 

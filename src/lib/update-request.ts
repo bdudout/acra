@@ -15,7 +15,8 @@ export const AGENT_MAX_AGE_MS = 5 * 60 * 1000
 export type UpdateRequestUpdate = { id: string; action: 'update'; channel: UpdateChannel; requestedBy: string; requestedAt: string }
 export type UpdateRequestRollback = { id: string; action: 'rollback'; snapshotId: string; confirmVersion: string; requestedBy: string; requestedAt: string }
 export type UpdateRequestBackupPolicy = { id: string; action: 'backup-policy'; policy: BackupPolicy; requestedBy: string; requestedAt: string }
-export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback | UpdateRequestBackupPolicy
+export type UpdateRequestBackupPrune = { id: string; action: 'backup-prune'; ids: string[]; requestedBy: string; requestedAt: string }
+export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback | UpdateRequestBackupPolicy | UpdateRequestBackupPrune
 export type UpdateState = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
 export interface UpdateStatusStep { step: string; ok: boolean; at: string }
 export interface UpdateStatus {
@@ -50,6 +51,27 @@ export function buildBackupPolicyRequest(a: { policy: unknown; userId: string; n
     hour: p.hour,
   }
   return { id: a.id, action: 'backup-policy', policy, requestedBy: a.userId, requestedAt: a.now.toISOString() }
+}
+
+export const PRUNE_MAX_IDS = 50
+
+/**
+ * Demande de suppression de points : liste EXACTE d'identifiants (validés dans l'aperçu), tous présents dans l'index publié,
+ * jamais le point protégé, et jamais le dernier point vérifié complet. Lève invalid_snapshot, no_ids, too_many,
+ * unknown_snapshot, protected_snapshot ou last_verified_point.
+ */
+export function buildBackupPruneRequest(a: { ids: string[]; index: SnapshotIndex; protectedIds: string[]; userId: string; now: Date; id: string }): UpdateRequestBackupPrune {
+  if (!Array.isArray(a.ids) || a.ids.length === 0) throw new Error('no_ids')
+  if (!a.ids.every(isSnapshotId)) throw new Error('invalid_snapshot')
+  const ids = [...new Set(a.ids)]
+  if (ids.length > PRUNE_MAX_IDS) throw new Error('too_many')
+  const byId = new Map(a.index.snapshots.map(e => [e.id, e]))
+  for (const id of ids) {
+    if (!byId.has(id)) throw new Error('unknown_snapshot')
+    if (a.protectedIds.includes(id)) throw new Error('protected_snapshot')
+  }
+  if (!a.index.snapshots.some(e => e.verified === 'full' && !ids.includes(e.id))) throw new Error('last_verified_point')
+  return { id: a.id, action: 'backup-prune', ids, requestedBy: a.userId, requestedAt: a.now.toISOString() }
 }
 
 /** L'agent hôte a-t-il publié une pulsation récente ? */

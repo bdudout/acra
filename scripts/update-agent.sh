@@ -151,5 +151,20 @@ case "$ACTION" in
     chmod 644 "$DIR/backup-policy.json.tmp"; mv "$DIR/backup-policy.json.tmp" "$DIR/backup-policy.json"
     echo "[$(now)] politique de sauvegarde mise à jour"
     run_schedule ;;
+  backup-prune)
+    # Liste exacte d'identifiants : chacun validé (format) ET présent dans l'index de l'AGENT ; la rétention n'est pas recalculée ici.
+    ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'
+    IDS="$(printf '%s' "$BODY" | sed -n 's/.*"ids":\[\([^]]*\)\].*/\1/p' | head -1 | tr -d '"' | tr ',' ' ')"
+    [ -n "$IDS" ] || invalid
+    LIST=""
+    for ONE in $IDS; do
+      printf '%s' "$ONE" | grep -Eq "$ID_RE" || invalid
+      ONE_RE="$(printf '%s' "$ONE" | sed 's/[.+]/\\&/g')"
+      { [ -f "$DIR/snapshots.json" ] && grep -Eq "\"id\"[[:space:]]*:[[:space:]]*\"$ONE_RE\"" "$DIR/snapshots.json"; } || invalid
+      LIST="${LIST:+$LIST,}$ONE"
+    done
+    echo "[$(now)] suppression de points de restauration demandée : $LIST"
+    scripts/acra-snapshot.sh prune --ids "$LIST" >> "$DIR/prune.log" 2>&1 || echo "[$(now)] suppression en échec (voir prune.log)" >&2
+    scripts/acra-schedule.sh stats >> "$DIR/schedule.log" 2>&1 || true ;;
   *) invalid ;;
 esac

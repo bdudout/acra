@@ -327,3 +327,37 @@ describe('points planifiés et rétention grand-père / père / fils', () => {
     expect(left).toEqual(['20260801T000000Z-manual-1.0.0', '20261003T020000Z-scheduled-1.0.4', '20261004T020000Z-scheduled-1.0.4', '20261005T020000Z-scheduled-1.0.4'])
   })
 })
+
+describe('acra-snapshot prune --ids (libération d’espace, liste exacte)', () => {
+  const seedPt = (id: string, reason: string) => {
+    const d = path.join(backups(), id); mkdirSync(d, { recursive: true })
+    writeFileSync(path.join(d, 'manifest.json'), `{\n  "schema": 1,\n  "id": "${id}",\n  "reason": "${reason}",\n  "createdAt": "2026-10-01T02:00:00Z",\n  "acra": {\n    "version": "1.0.4"\n  }\n}\n`)
+  }
+  const A = '20261001T020000Z-scheduled-1.0.4', B = '20261002T020000Z-scheduled-1.0.4', C = '20261003T020000Z-manual-1.0.4', P = '20261004T020000Z-pre-update-1.0.4'
+  const left = () => listDir(backups()).filter(x => !x.startsWith('.')).sort()
+
+  it('ne supprime que les identifiants donnés (y compris un manuel), jamais le point protégé de current.json', () => {
+    inst = make(); seedPt(A, 'scheduled'); seedPt(B, 'scheduled'); seedPt(C, 'manual'); seedPt(P, 'pre-update')
+    mkdirSync(path.join(inst.work, '.acra-update/run'), { recursive: true })
+    writeFileSync(path.join(inst.work, '.acra-update/run/current.json'), JSON.stringify({ snapshotId: P }))
+    const r = snap(['prune', '--ids', `${A},${C},${P}`])
+    expect(r.status, r.stderr).toBe(0)
+    expect(left()).toEqual([B, P])
+  })
+  it('identifiant invalide : code 31 sans appel docker ni suppression', () => {
+    inst = make(); seedPt(A, 'scheduled')
+    const before = inst.calls().length
+    expect(snap(['prune', '--ids', `${A},../etc`]).status).toBe(31)
+    expect(left()).toEqual([A]); expect(inst.calls().length).toBe(before)
+  })
+  it('identifiant inexistant : ignoré sans erreur', () => {
+    inst = make(); seedPt(A, 'scheduled')
+    expect(snap(['prune', '--ids', '20250101T000000Z-manual-9']).status).toBe(0)
+    expect(left()).toEqual([A])
+  })
+  it('--dry-run n’efface rien', () => {
+    inst = make(); seedPt(A, 'scheduled')
+    expect(snap(['prune', '--ids', A, '--dry-run']).stdout).toMatch(/dry-run/)
+    expect(left()).toEqual([A])
+  })
+})
