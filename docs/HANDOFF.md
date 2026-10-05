@@ -6,6 +6,30 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (69) — Claude : incidents multi-risques, validation des suppressions, plans par priorité, recette
+
+- **Fait** (`1e29f65`, `dc537f6`, `dce9f9d` + ce commit) : incident ↔ plusieurs risques du registre (table
+  `IncidentRisque`, reprise des liens existants ; `riskItemId` = risque principal ; calibrage par la liaison ;
+  export Excel) ; tableau des incidents lisible ; projet 360 : suppression d'un risque soumise à validation (RM, RSSI si
+  cyber ; `OrganizationConfig.projetSuppressionValidation`, activée par défaut ; garde `guardValidationSuppression`,
+  relance `SUPPRESSION_RISQUE` dans l'e-mail de synthèse, marqueur `Risque.suppressionRappelLe`) ; phase Traitement :
+  plans d'action par priorité (`lib/plans-priorite.ts`, `GET /api/analyses/[id]/plans-projet`) ; « Vue globale des
+  risques projets » ; registre : suggestions = risques seulement, « Importer aussi » processus / contrôles / KRI / audits
+  associés (`lib/suggestions-associees.ts`) ; menu Registres : Processus pour tous ceux qui voient les registres.
+- **Recette fonctionnelle** (navigateur, base Docker locale, compte de recette `recette-claude@acra.test`, ADMIN de
+  `global` — mot de passe aléatoire hors dépôt ; **à supprimer** quand la recette est terminée) : liste et création de
+  projet (objectifs repris en phase 1), 13 risques en phase 3 (8 par défaut + 5 proposés), ordre des colonnes, libellés,
+  légende, plans par priorité en phase 5, incidents (association de 2 risques), vue globale, menu Registres, suggestions
+  du registre (43 risques, option « Importer aussi »), Configuration › Projets / Tiers, badges « architecture » en
+  atelier 1. Correctifs issus de la recette : colonne Traitement, alerte limitée aux risques à traiter, largeur de la
+  ligne (tient à 1 024 px), en-tête « Risques liés », panneau d'association à l'écran, export incidents, relance.
+- **Non vérifié en navigateur** : demande de suppression par un non-validateur (pas de 2ᵉ compte), e-mail de relance
+  réel, OV en atelier 2 (couvert par les tests unitaires).
+- **Piège** : chaque `prisma generate` impose de redémarrer le serveur de dev (sinon 500 sur toutes les pages qui lisent
+  la configuration).
+
+---
+
 ## 2026-10-06 (68) — Claude : risques projet par défaut, ligne de risque lisible et contrôlée
 
 - **Fait** : risques présents par défaut dans tout projet 360 (`lib/projet360-socle.ts`, créés par

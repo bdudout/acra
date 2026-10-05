@@ -227,7 +227,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
 
   // Cellule responsive : tableau sur écran large ; sous md, ligne libellé / valeur.
   const cell = (label: string, content: React.ReactNode) => (
-    <td className="flex items-start justify-between gap-3 px-3 py-1.5 md:table-cell md:py-2 md:align-top">
+    <td className="flex items-start justify-between gap-3 px-3 py-1.5 md:table-cell md:px-2 md:py-2 md:align-top">
       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 md:hidden">{label}</span>
       {content}
     </td>
@@ -250,7 +250,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const L = LEVELS[level]
     const c = cotations(r)[level]
     const borne = bornesCotation(r)[level]
-    const sel = 'max-w-[9.5rem] px-1 py-1 rounded border border-gray-300 text-xs dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
+    const sel = 'w-[7.75rem] px-1 py-1 rounded border border-gray-300 text-xs dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
     // Valeur saisie avant un passage de l'échelle de 5 à 4 niveaux : conservée affichable.
     const opts = (cur: number) => (echelle.includes(cur) ? echelle : [...echelle, cur])
     const option = (n: number, max: number, lib: string | undefined) => (
@@ -279,13 +279,16 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     )
   }
   // Traitement : stratégie, mesures et plans (compteurs + ouverture du détail), alertes de cohérence.
+  const countsText = (r: RisqueRow) => (showMesuresSection && showPlansSection
+    ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
+    : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0)) : m.plansCount.replace('{count}', String(r.plansCount ?? 0)))
   const detailsButton = (r: RisqueRow) => hasDetails && (
     <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
-      aria-label={treatmentLabel} title={treatmentLabel}
+      aria-label={treatmentLabel} title={`${treatmentLabel} — ${countsText(r)}`}
       className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
       {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
       {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
-      <span className="text-[10px] text-gray-500">{showMesuresSection && showPlansSection
+      <span className="sr-only">{showMesuresSection && showPlansSection
         ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
         : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
           : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
@@ -444,13 +447,13 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 (libellés affichés dans les cellules) — même markup, pas de duplication. */}
             <table className="block w-full text-sm md:table">
               <thead className="hidden md:table-header-group"><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2 min-w-[14rem]">{m.colNom}</th>
+                <th className="px-3 py-2 min-w-[12rem]">{m.colNom}</th>
                 {col.brut && <th className="px-3 py-2">{m.colBrutSansMesure}</th>}
                 {col.actuel && <th className="px-3 py-2">{m.colActuelMesures}</th>}
                 {col.strategie && <th className="px-3 py-2">{m.colTraitement}</th>}
                 {col.residuel && <th className="px-3 py-2">{m.colResiduel}</th>}
-                {col.decision && <th className="px-3 py-2">{m.colDecision}</th>}
-                <th className="px-3 py-2" />
+                {col.decision && <th className="px-2 py-2">{m.colDecision}</th>}
+                <th className="px-1 py-2" />
               </tr></thead>
               <tbody className="block space-y-3 md:table-row-group md:space-y-0">
                 {shownRows.map(r => [
@@ -490,7 +493,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       {/* Sans colonne Traitement (phase de cotation) : les mesures existantes se gèrent ici. */}
                       {!col.strategie && detailsButton(r)}
                     </div>)}
-                    {col.strategie && cell(m.colTraitement, <div className="flex min-w-[11rem] flex-col items-start gap-1">
+                    {col.strategie && cell(m.colTraitement, <div className="flex flex-col items-start gap-1">
                       <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
                       </select>
@@ -499,7 +502,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                     </div>)}
                     {col.residuel && cell(m.colResiduel, etape(r, 'residuel'))}
                     {col.decision && cell(m.colDecision, (() => { const e = evaluateRisk(r, evalCtx); return <span title={basisText(e)}>{decisionBadge(e.decision)}</span> })())}
-                    <td className="hidden px-3 py-2 text-right whitespace-nowrap md:table-cell">
+                    <td className="hidden px-1 py-2 text-right whitespace-nowrap md:table-cell">
                       {editable && !r.suppressionDemandeeLe && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete} title={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
                   </tr>,
