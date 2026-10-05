@@ -19,7 +19,9 @@
 #   /backups/ebios_YYYY-MM-DD_HH-MM-SS.sql.gz  → dump compressé
 #   Seuls les BACKUP_KEEP dumps les plus récents sont conservés (ou, à défaut, ceux de moins de BACKUP_RETENTION jours).
 # =============================================================================
-set -euo pipefail
+set -eu
+# pipefail n'existe pas dans tous les sh (dash) : activé seulement s'il est supporté.
+(set -o pipefail) 2>/dev/null && set -o pipefail
 
 # --- Configuration -----------------------------------------------------------
 POSTGRES_HOST="${POSTGRES_HOST:-db}"
