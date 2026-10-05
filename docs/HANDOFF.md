@@ -6,6 +6,22 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-05 (66) — Claude : reprise du travail de Codex et finitions stockage
+
+- **Fait (commits `d43a988`, `5cfa15c`)** : page `/admin/storage` (panneau Stockage + gestion des sauvegardes,
+  retirée de `/admin` et de `VersionCard`) ; chaque alerte cite sa mesure et sa règle (`storageAlertCauses`) ; bouton
+  « Lancer VACUUM » (`POST /api/admin/storage/vacuum` : `VACUUM (ANALYZE)` simple, tables candidates relues en base,
+  SUPER_ADMIN, audit `INSTANCE_VACUUM_RUN`, jamais `VACUUM FULL`) ; `/api/health` vérifie toujours le schéma
+  (`schema: ok|outdated|unknown`) ; overrides `vite/postcss/esbuild` liés aux dépendances directes ; ESLint 10 différé.
+  (Corrige l'entrée 65 : le panneau n'est plus sur `/admin` mais sur `/admin/storage`.)
+- **Vérifié** : `tsc` propre ; `npm test` 507 fichiers / 4180 tests verts ; `npm run i18n:check` ok ; `npm run build` ok ;
+  `prisma migrate deploy` : 184 migrations, aucune en attente ; `/api/health?deep=1` → `ok`, `schema: ok`.
+  **Non vérifié** : panneau authentifié dans le navigateur, VACUUM réel, Docker/agent hôte réels.
+- **Prochain pas** : relancer le dev (`npm run dev -- -p 3005`, `DATABASE_URL` en `localhost`), ouvrir `/admin/storage`,
+  tester aperçu/nettoyage/VACUUM ; `make docker-usage` puis `make docker-clean` ; B9 (documents orphelins).
+
+---
+
 ## 2026-10-05 (65) — Claude : stockage, supervision et nettoyage (spec `stockage-supervision-nettoyage.md`)
 
 - **Fait (lots D, C, B, A, tous commités, rien poussé)** :
