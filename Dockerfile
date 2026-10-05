@@ -78,7 +78,7 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Health check — vérifie que l'app répond et que la DB est joignable
+# Health check — vérifie l'app, la DB et les migrations livrées
 # Démarre après 30s (temps de migration Prisma), puis toutes les 30s
 # 127.0.0.1 (et non localhost) : dans le conteneur, localhost résout en IPv6 ::1,
 # sur lequel le serveur Next standalone n'écoute pas → connection refused.

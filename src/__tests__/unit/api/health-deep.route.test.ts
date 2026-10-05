@@ -15,10 +15,17 @@ const row = (n: string, f: string | null = '2026-10-01T00:00:00Z', r: string | n
 beforeEach(() => { vi.clearAllMocks(); queryRaw.mockResolvedValue([{ '?column?': 1 }]); expected.mockReturnValue(['001_a', '002_b']) })
 
 describe('/api/health', () => {
-  it('sans deep : aucune liste de migrations, aucune lecture de _prisma_migrations', async () => {
+  it('sans deep : vérifie les migrations sans publier leur liste', async () => {
+    queryRaw.mockResolvedValueOnce([{ x: 1 }]).mockResolvedValueOnce([row('001_a'), row('002_b')])
     const res = await GET(req())
     const body = await res.json()
-    expect(res.status).toBe(200); expect(body.migrations).toBeUndefined(); expect(queryRaw).toHaveBeenCalledTimes(1)
+    expect(res.status).toBe(200); expect(body.migrations).toBeUndefined(); expect(body.schema).toBe('ok'); expect(queryRaw).toHaveBeenCalledTimes(2)
+  })
+  it('sans deep : une migration en attente dégrade le healthcheck Docker', async () => {
+    queryRaw.mockResolvedValueOnce([{ x: 1 }]).mockResolvedValueOnce([row('001_a')])
+    const res = await GET(req())
+    expect(res.status).toBe(503)
+    expect((await res.json()).schema).toBe('outdated')
   })
   it('deep : migrations à jour ⇒ 200 ok avec comptes', async () => {
     queryRaw.mockResolvedValueOnce([{ x: 1 }]).mockResolvedValueOnce([row('001_a'), row('002_b')])
@@ -37,10 +44,15 @@ describe('/api/health', () => {
     const res = await GET(req('?deep=1'))
     expect(res.status).toBe(503); expect((await res.json()).migrations.failed).toEqual(['002_b'])
   })
-  it('deep sans dossier de migrations dans l’image : pas de verdict (200, migrations omis)', async () => {
+  it('sans dossier de migrations dans l’image : 503, car le schéma ne peut pas être validé', async () => {
     expected.mockReturnValue(null)
     const res = await GET(req('?deep=1'))
-    expect(res.status).toBe(200); expect((await res.json()).migrations).toBeUndefined()
+    expect(res.status).toBe(503); expect((await res.json()).schema).toBe('unknown')
+  })
+  it('lecture de l’historique des migrations en échec : 503 même si SELECT 1 réussit', async () => {
+    queryRaw.mockResolvedValueOnce([{ x: 1 }]).mockRejectedValueOnce(new Error('missing table'))
+    const res = await GET(req())
+    expect(res.status).toBe(503); expect((await res.json()).schema).toBe('unknown')
   })
   it('base injoignable ⇒ 503 db error', async () => {
     queryRaw.mockReset().mockRejectedValue(new Error('down'))

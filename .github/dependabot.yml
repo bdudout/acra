@@ -5,6 +5,11 @@ updates:
     directory: /
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
+    # ESLint 10 déclenche une erreur d'API dans eslint-plugin-react utilisé
+    # par eslint-config-next. Garder les correctifs 9.x, réévaluer avec le plugin.
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /
     schedule: { interval: weekly }

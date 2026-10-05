@@ -27,6 +27,6 @@ export default defineConfig([
   globalIgnores([
     '.next/**', 'out/**', 'build/**', 'next-env.d.ts',
     '.pdf-runtime/**', 'coverage/**', 'playwright-report/**', 'test-results/**',
-    'public/**', 'rapports/**', 'docs/**', '.agents/**', '.acra-test-memory/**',
+    'public/**', 'rapports/**', 'docs/**', '.agents/**', '.acra-test-memory/**', '.local-fixtures/**',
   ]),
 ])
