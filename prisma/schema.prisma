@@ -2402,6 +2402,15 @@ model Configuration {
   //    SOUVERAIN). OFF ⇒ MCP indisponible. Cf. docs/mcp-cadrage.md.
   apiEnabled Boolean @default(false)
   mcpEnabled Boolean @default(false)
+
+  // Nettoyage du cache « sans impact » (docs/specs/stockage-supervision-nettoyage.md, lot B) : niveau INSTANCE uniquement
+  // (ressources partagées, pas de bascule par organisation). Catégories B1–B8 ; null ⇒ défaut (lib/cache-cleanup.ts).
+  autoCleanup        Boolean   @default(true)
+  cleanupCategories  Json?
+  lastCleanupAt      DateTime?
+  lastCleanupCounts  Json?
+  // Bail d'exécution (une seule exécution à la fois, expire seul) — un verrou consultatif de session fuirait avec le pool de connexions.
+  cleanupLockUntil   DateTime?
   // Méthodes d'analyse activées au niveau instance (SUPER_ADMIN). Défaut : EBIOS RM
   // seul ; les autres méthodes câblées se débloquent ici. Cf. lib/methodes.ts et
   // docs/methodes-analyse-cadrage.md.
