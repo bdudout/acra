@@ -1,6 +1,6 @@
 // Lot A de docs/specs/stockage-supervision-nettoyage.md : fonctions pures de supervision du stockage.
 import { describe, it, expect } from 'vitest'
-import { classifyUsage, deadTupleRatio, needsVacuum, projectFullDate, topTables, parseHostStats, parseDockerSize, validateThresholds, DEFAULT_THRESHOLDS } from '@/lib/storage-usage'
+import { classifyUsage, deadTupleRatio, needsVacuum, projectFullDate, topTables, parseHostStats, parseDockerSize, validateThresholds, storageAlertCauses, selectVacuumTargets, DEFAULT_THRESHOLDS } from '@/lib/storage-usage'
 
 const GB = 1024 ** 3
 
@@ -89,5 +89,40 @@ describe('validateThresholds', () => {
   })
   it.each([[{ warnPercent: 90, criticalPercent: 90 }], [{ warnPercent: 49, criticalPercent: 90 }], [{ warnPercent: 80, criticalPercent: 100 }], [{ warnPercent: 80.5, criticalPercent: 90 }], [{}], [null]])('refuse %j', v => {
     expect(validateThresholds(v).ok).toBe(false)
+  })
+})
+
+describe('origines des alertes de stockage', () => {
+  it('distingue le disque partagé des seuls octets des documents ACRA', () => {
+    const alerts = storageAlertCauses({
+      thresholds: DEFAULT_THRESHOLDS,
+      db: { status: 'OK', tables: [] },
+      documents: { status: 'CRITICAL', totalBytes: 19_000_000, volume: { percent: 91, freeBytes: 21 * GB, totalBytes: 228 * GB } },
+      backups: null, host: null,
+    })
+    expect(alerts).toEqual([{ kind: 'documents', status: 'CRITICAL', percent: 91, threshold: 90, freeBytes: 21 * GB, totalBytes: 228 * GB, acraBytes: 19_000_000 }])
+  })
+
+  it('nomme séparément capacité des sauvegardes, VACUUM et espace Docker récupérable', () => {
+    const alerts = storageAlertCauses({
+      thresholds: DEFAULT_THRESHOLDS,
+      db: { status: 'WARN', tables: [{ vacuum: true }] },
+      documents: { status: 'OK', totalBytes: 0, volume: null },
+      backups: { status: 'CRITICAL', freeBytes: 2 * GB },
+      host: { status: 'WARN', reclaimableBytes: 7 * GB },
+    })
+    expect(alerts.map(a => a.kind)).toEqual(['backups', 'db', 'host'])
+    expect(alerts[0]).toMatchObject({ freeBytes: 2 * GB })
+  })
+})
+
+describe('selectVacuumTargets', () => {
+  const cand = ['AuditLog', 'Risque']
+  it('ne retient que les tables candidates (liste blanche issue de la base), sans doublon', () => {
+    expect(selectVacuumTargets(['AuditLog', 'AuditLog', 'User', 'x"; DROP TABLE "User";'], cand)).toEqual({ targets: ['AuditLog'], skipped: ['User', 'x"; DROP TABLE "User";'] })
+  })
+  it('sans demande explicite : toutes les candidates ; valeur non-tableau : rien', () => {
+    expect(selectVacuumTargets(undefined, cand).targets).toEqual(cand)
+    expect(selectVacuumTargets('AuditLog', cand)).toEqual({ targets: [], skipped: [] })
   })
 })

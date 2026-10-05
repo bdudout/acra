@@ -6,14 +6,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, HardDrive, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { formatBytes, validateThresholds, type Thresholds } from '@/lib/storage-usage'
+import { formatBytes, validateThresholds, storageAlertCauses, type Thresholds } from '@/lib/storage-usage'
 import { defaultAutoCategories, CLEANUP_CATEGORIES, type CleanupId } from '@/lib/cache-cleanup'
 import type { StorageReport } from '@/lib/storage-usage.server'
 
 type Status = 'OK' | 'WARN' | 'CRITICAL' | 'UNKNOWN'
 type Payload = { scope: 'instance'; report: StorageReport } | { scope: 'organization'; documents: { count: number; totalBytes: number } }
 const fill = (s: string, vars: Record<string, string>) => Object.entries(vars).reduce((a, [k, v]) => a.replaceAll(`{${k}}`, v), s)
-const RANK: Record<Status, number> = { UNKNOWN: 0, OK: 1, WARN: 2, CRITICAL: 3 }
 const COLOR: Record<Status, string> = { OK: 'bg-green-100 text-green-800', WARN: 'bg-amber-100 text-amber-800', CRITICAL: 'bg-red-100 text-red-800', UNKNOWN: 'bg-gray-100 text-gray-600' }
 
 export default function StorageUsagePanel() {
@@ -29,6 +28,7 @@ export default function StorageUsagePanel() {
   const [selected, setSelected] = useState<CleanupId[]>(defaultAutoCategories())
   const [preview, setPreview] = useState<Array<{ id: string; count: number; bytes: number }>>([])
   const [clMessage, setClMessage] = useState<string | null>(null)
+  const [vacMessage, setVacMessage] = useState<string | null>(null)
 
   const size = (n: number) => formatBytes(n, locale)
   const load = useCallback(async (fresh = false) => {
@@ -64,6 +64,16 @@ export default function StorageUsagePanel() {
     } catch { setClMessage(fill(s.clError, { error: '—' })) } finally { setBusy(false) }
   }
 
+  async function runVacuum(tables: string[]) {
+    setBusy(true); setVacMessage(null)
+    try {
+      const r = await fetch('/api/admin/storage/vacuum', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tables }) })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) { setVacMessage(fill(s.vacuumDone, { tables: (d.vacuumed as string[]).join(', ') })); await load(true) }
+      else setVacMessage(fill(s.vacuumError, { error: String(d.error ?? r.status) }))
+    } catch { setVacMessage(fill(s.vacuumError, { error: '—' })) } finally { setBusy(false) }
+  }
+
   async function saveThresholds() {
     const v: { ok: boolean; value?: Thresholds } = validateThresholds({ warnPercent: warn, criticalPercent: crit })
     if (!v.ok) { setThMessage(s.thInvalid); return }
@@ -89,8 +99,12 @@ export default function StorageUsagePanel() {
   }
 
   const r = data.report
-  const statuses: Status[] = [r.db.status, r.documents.status, r.backups?.status ?? 'UNKNOWN', r.host?.status ?? 'UNKNOWN']
-  const worst = statuses.reduce<Status>((a, b) => (RANK[b] > RANK[a] ? b : a), 'UNKNOWN')
+  const alerts = storageAlertCauses(r)
+  const alertText = (a: ReturnType<typeof storageAlertCauses>[number]) =>
+    a.kind === 'documents' ? fill(s.alertDocs, { percent: String(a.percent), threshold: String(a.threshold), free: size(a.freeBytes), total: size(a.totalBytes), acra: size(a.acraBytes) })
+    : a.kind === 'backups' ? fill(s.alertBackups, { free: a.freeBytes === null ? '—' : size(a.freeBytes) })
+    : a.kind === 'db' ? fill(s.alertDb, { n: String(a.vacuumTables) })
+    : fill(s.alertHost, { size: size(a.reclaimableBytes) })
   const days = r.trend.fullDate ? Math.max(0, Math.ceil((Date.parse(r.trend.fullDate) - Date.now()) / 86400_000)) : null
   const when = (iso: string) => new Date(iso).toLocaleString(locale)
   const cats = s.cats as Record<string, string>
@@ -105,9 +119,9 @@ export default function StorageUsagePanel() {
         <button type="button" className="btn-secondary flex items-center gap-1 text-xs disabled:opacity-50" disabled={busy} onClick={() => void load(true)}><RefreshCw size={12} aria-hidden="true" /> {s.refresh}</button>
       </div>
       <p className="text-xs text-gray-500">{s.intro} {fill(s.measured, { when: when(r.measuredAt) })}</p>
-      {(worst === 'WARN' || worst === 'CRITICAL') && (
-        <p role="alert" className={`flex items-center gap-1.5 rounded px-3 py-2 text-sm ${COLOR[worst]}`}><AlertTriangle size={15} aria-hidden="true" /> {s.banner[worst]}</p>
-      )}
+      {alerts.map(a => (
+        <p key={a.kind} role="alert" className={`flex items-center gap-1.5 rounded px-3 py-2 text-sm ${COLOR[a.status]}`}><AlertTriangle size={15} aria-hidden="true" /> {alertText(a)}</p>
+      ))}
 
       <div className="grid gap-3 md:grid-cols-2">
         <div data-testid="block-db" className={blockCls}>
@@ -119,6 +133,13 @@ export default function StorageUsagePanel() {
               <li key={tb.name}>{tb.name} · {size(tb.totalBytes)} · {tb.live} {s.live} · {tb.dead} {s.dead} {tb.vacuum && <strong className="text-amber-700">{s.vacuum}</strong>}</li>
             ))}
           </ul>
+          {r.db.tables.some(tb => tb.vacuum) && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">{s.vacuumNote}</p>
+              <button type="button" className="btn-secondary text-sm disabled:opacity-50" disabled={busy} onClick={() => void runVacuum(r.db.tables.filter(tb => tb.vacuum).map(tb => tb.name))}>{s.vacuumButton}</button>
+              {vacMessage && <p className="text-xs text-ebios-700">{vacMessage}</p>}
+            </div>
+          )}
         </div>
 
         <div data-testid="block-documents" className={blockCls}>
@@ -154,7 +175,9 @@ export default function StorageUsagePanel() {
         <p className="font-medium">{s.clTitle}</p>
         <p>{fill(s.clLine, { count: String(r.cleanable.count), size: size(r.cleanable.bytes) })}</p>
         <p className="text-xs text-gray-600">{r.cleanup.autoCleanup ? s.clAuto : '—'} · {r.cleanup.lastCleanupAt ? fill(s.clLast, { when: when(r.cleanup.lastCleanupAt) }) : s.clNever}</p>
-        <button type="button" className="btn-secondary text-sm" onClick={() => { setClMessage(null); setOpen(o => !o) }}>{s.clButton}</button>
+        <button type="button" className="btn-secondary text-sm disabled:opacity-50" disabled={r.cleanable.count === 0} onClick={() => { setClMessage(null); setOpen(o => !o) }}>{s.clButton}</button>
+        <button type="button" className="btn-secondary ml-2 text-sm disabled:opacity-50" disabled>{s.reportsButton}</button>
+        <p className="text-xs text-gray-500">{s.reportsNone}</p>
         {open && (
           <div role="dialog" aria-label={s.clModal} className="mt-2 space-y-2 rounded-md border border-gray-200 p-3">
             <p className="text-xs text-gray-500">{s.clIntro}</p>

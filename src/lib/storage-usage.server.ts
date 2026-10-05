@@ -6,7 +6,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { prisma } from '@/lib/prisma'
 import { backupOverview, type DiskStatus } from '@/lib/backup-policy'
-import { classifyUsage, projectFullDate, topTables, parseHostStats, DEFAULT_THRESHOLDS, type HostStats, type Thresholds } from '@/lib/storage-usage'
+import { classifyUsage, projectFullDate, topTables, parseHostStats, selectVacuumTargets, needsVacuum, DEFAULT_THRESHOLDS, type HostStats, type Thresholds } from '@/lib/storage-usage'
 import { readUpdateAgent, updateDir } from '@/lib/update-request.server'
 import { defaultAutoCategories } from '@/lib/cache-cleanup'
 import { previewInstanceCleanup, getCleanupSettings, type CleanupSettings } from '@/lib/cache-cleanup.instance.server'
@@ -128,4 +128,24 @@ export async function recordDailyStorageSnapshot(): Promise<{ recorded: boolean;
 export async function orgDocumentsUsage(scope: { all: boolean; ids: string[] }): Promise<{ count: number; totalBytes: number }> {
   const agg = await prisma.document.aggregate({ where: scope.all ? {} : { organizationId: { in: scope.ids } }, _count: { _all: true }, _sum: { taille: true } })
   return { count: agg._count._all, totalBytes: agg._sum.taille ?? 0 }
+}
+
+let vacuumRunning = false
+
+/**
+ * `VACUUM (ANALYZE)` sur les tables demandées ∩ candidates mesurées en base (> 20 % de lignes mortes). Exécuté hors transaction,
+ * séquentiellement ; identifiant toujours issu de la base (jamais du client) et guillemeté. Un seul VACUUM à la fois.
+ */
+export async function vacuumTables(requested: unknown): Promise<{ ok: true; vacuumed: string[]; skipped: string[] } | { ok: false; error: 'already_running' }> {
+  if (vacuumRunning) return { ok: false, error: 'already_running' }
+  vacuumRunning = true
+  try {
+    const rows = await prisma.$queryRaw<Array<{ name: string; live: number; dead: number }>>`
+      SELECT relname AS name, n_live_tup::float8 AS live, n_dead_tup::float8 AS dead FROM pg_stat_user_tables`
+    const candidates = rows.filter(r => needsVacuum(r.live, r.dead) && /^[A-Za-z_][A-Za-z0-9_]*$/.test(r.name)).map(r => r.name)
+    const { targets, skipped } = selectVacuumTargets(requested, candidates)
+    for (const t of targets) await prisma.$executeRawUnsafe(`VACUUM (ANALYZE) "${t}"`)
+    resetStorageCache()
+    return { ok: true, vacuumed: targets, skipped }
+  } finally { vacuumRunning = false }
 }

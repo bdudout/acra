@@ -37,9 +37,20 @@ describe('StorageUsagePanel', () => {
     expect(screen.getByTestId('trend').textContent).toMatch(/12 jour/)
     expect(screen.getByTestId('block-cleanable').textContent).toContain('42')
   })
-  it('bandeau d’alerte au statut le plus grave', async () => {
+  it('indique chaque origine et explique le seuil du volume partagé sans attribuer son occupation à ACRA', async () => {
     load(); render(<StorageUsagePanel />)
-    expect((await screen.findByRole('alert')).textContent).toContain('seuil critique')
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.map(a => a.textContent).join(' ')).toMatch(/volume.*98.*90/i)
+    expect(alerts.map(a => a.textContent).join(' ')).toMatch(/documents ACRA.*1 Go/i)
+    expect(alerts.map(a => a.textContent).join(' ')).toMatch(/VACUUM/i)
+    expect(alerts.map(a => a.textContent).join(' ')).toMatch(/Docker/i)
+  })
+  it('désactive les nettoyages sans données ou sans mécanisme sûr', async () => {
+    load(report({ cleanable: { count: 0, bytes: 0, rows: [] } })); render(<StorageUsagePanel />)
+    await screen.findByText('Base de données')
+    expect(screen.getByRole('button', { name: 'Nettoyer le cache (sans impact)' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Nettoyer les rapports générés' })).toBeDisabled()
+    expect(screen.getByText(/aucun rapport temporaire identifié/i)).toBeInTheDocument()
   })
   it('sans projection (moins de 7 mesures) : message dédié ; hôte absent : bloc explicatif', async () => {
     load(report({ trend: { series: [], fullDate: null }, host: null })); render(<StorageUsagePanel />)
@@ -88,5 +99,15 @@ describe('StorageUsagePanel', () => {
     render(<StorageUsagePanel />)
     await screen.findByText('3 document(s)')
     expect(screen.queryByText('Base de données')).toBeNull()
+  })
+  it('VACUUM : bouton sur la table signalée, explication, puis exécution simple', async () => {
+    load(); render(<StorageUsagePanel />)
+    await screen.findByText('Base de données')
+    expect(screen.getByText(/ne rend pas toujours l’espace/)).toBeTruthy()
+    fetchMock.mockResolvedValueOnce(ok({ vacuumed: ['AuditLog'], skipped: [] })).mockResolvedValueOnce(ok({ scope: 'instance', report: report() }))
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer VACUUM' }))
+    await screen.findByText('VACUUM terminé : AuditLog.')
+    const call = fetchMock.mock.calls.find(c => String(c[0]).endsWith('/vacuum'))!
+    expect(JSON.parse(call[1].body)).toEqual({ tables: ['AuditLog'] })
   })
 })

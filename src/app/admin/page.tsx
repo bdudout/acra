@@ -8,7 +8,6 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import VersionCard from '@/components/VersionCard'
-import StorageUsagePanel from '@/components/StorageUsagePanel'
 import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
@@ -110,7 +109,6 @@ export default function AdminDashboardPage() {
 
         {/* Version & mises à jour (super-admin) */}
         {currentRole === 'SUPER_ADMIN' && <VersionCard />}
-        {isAdminRole(currentRole) && <div className="card mt-6"><StorageUsagePanel /></div>}
 
         {/* KPIs principaux */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">

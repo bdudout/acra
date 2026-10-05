@@ -5,6 +5,37 @@ export { formatBytes } from '@/lib/backup-policy'
 export interface Thresholds { warnPercent: number; criticalPercent: number }
 export const DEFAULT_THRESHOLDS: Thresholds = { warnPercent: 80, criticalPercent: 90 }
 
+type AlertStatus = 'WARN' | 'CRITICAL'
+export type StorageAlert =
+  | { kind: 'documents'; status: AlertStatus; percent: number; threshold: number; freeBytes: number; totalBytes: number; acraBytes: number }
+  | { kind: 'backups'; status: AlertStatus; freeBytes: number | null }
+  | { kind: 'db'; status: 'WARN'; vacuumTables: number }
+  | { kind: 'host'; status: 'WARN'; reclaimableBytes: number }
+
+/** Chaque alerte cite sa mesure et sa règle, sans confondre les octets ACRA avec le disque partagé. */
+export function storageAlertCauses(report: {
+  thresholds: Thresholds
+  db: { status: DiskStatus; tables: readonly { vacuum: boolean }[] }
+  documents: { status: DiskStatus; totalBytes: number; volume: { percent: number; freeBytes: number; totalBytes: number } | null }
+  backups: { status: DiskStatus; freeBytes: number | null } | null
+  host: { status: DiskStatus; reclaimableBytes: number } | null
+}): StorageAlert[] {
+  const alerts: StorageAlert[] = []
+  const v = report.documents.volume
+  if (v && (report.documents.status === 'WARN' || report.documents.status === 'CRITICAL')) {
+    alerts.push({ kind: 'documents', status: report.documents.status, percent: v.percent,
+      threshold: report.documents.status === 'CRITICAL' ? report.thresholds.criticalPercent : report.thresholds.warnPercent,
+      freeBytes: v.freeBytes, totalBytes: v.totalBytes, acraBytes: report.documents.totalBytes })
+  }
+  if (report.backups && (report.backups.status === 'WARN' || report.backups.status === 'CRITICAL')) {
+    alerts.push({ kind: 'backups', status: report.backups.status, freeBytes: report.backups.freeBytes })
+  }
+  const vacuumTables = report.db.tables.filter(t => t.vacuum).length
+  if (report.db.status === 'WARN' && vacuumTables > 0) alerts.push({ kind: 'db', status: 'WARN', vacuumTables })
+  if (report.host?.status === 'WARN') alerts.push({ kind: 'host', status: 'WARN', reclaimableBytes: report.host.reclaimableBytes })
+  return alerts.sort((a, b) => (b.status === 'CRITICAL' ? 1 : 0) - (a.status === 'CRITICAL' ? 1 : 0))
+}
+
 /** Statut d'occupation : ≥ critique → CRITICAL, ≥ attention → WARN. Seuils incohérents → défauts. Total inconnu → UNKNOWN. */
 export function classifyUsage(used: number, total: number | null, thresholds: Thresholds = DEFAULT_THRESHOLDS): { percent: number; status: DiskStatus } {
   if (total === null || !Number.isFinite(total) || total <= 0 || !Number.isFinite(used)) return { percent: 0, status: 'UNKNOWN' }
@@ -84,4 +115,19 @@ export function parseHostStats(raw: unknown): HostStats | null {
   // Les volumes ne sont jamais « récupérables » : on ne les compte pas, même si Docker les signale.
   out.reclaimableBytes = out.images.reclaimableBytes + out.buildCache.reclaimableBytes + out.containers.reclaimableBytes
   return out
+}
+
+/**
+ * Tables à passer en `VACUUM (ANALYZE)` : intersection de la demande et des candidates mesurées en base (> 20 % de lignes
+ * mortes). Aucun nom fourni par le client n'est jamais exécuté tel quel. Sans demande : toutes les candidates.
+ */
+export function selectVacuumTargets(requested: unknown, candidates: readonly string[]): { targets: string[]; skipped: string[] } {
+  if (requested === undefined) return { targets: [...candidates], skipped: [] }
+  if (!Array.isArray(requested)) return { targets: [], skipped: [] }
+  const targets: string[] = [], skipped: string[] = []
+  for (const r of requested) {
+    if (typeof r !== 'string') continue
+    if (candidates.includes(r)) { if (!targets.includes(r)) targets.push(r) } else if (!skipped.includes(r)) skipped.push(r)
+  }
+  return { targets, skipped }
 }
