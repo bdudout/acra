@@ -92,3 +92,43 @@ describe('SectorSuggestionsPanel', () => {
     expect(rows[3]).toHaveTextContent('Gérer les accès et les identités') // processus concerné par le risque
   })
 })
+
+describe('SectorSuggestionsPanel — registre : risques seulement, éléments associés sur option', () => {
+  const avecAssocies = [
+    ...items,
+    { key: 'sante.process.records', title: 'Tenir le dossier patient', kind: 'PROCESS', sector: 'SANTE', status: 'NEW', packVersion: '1.0' },
+    { key: 'sante.kri.access', title: 'Accès anormaux au dossier patient', kind: 'KRI', sector: 'SANTE', processKey: 'sante.process.records', status: 'NEW', packVersion: '1.0' },
+    { key: 'sante.control.review', title: 'Revue des habilitations au dossier patient', kind: 'CONTROL', sector: 'SANTE', processKey: 'sante.process.records', riskKeys: ['sante.risk.patient-data'], status: 'NEW', packVersion: '1.0' },
+  ]
+  beforeEach(() => {
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => init?.method === 'POST'
+      ? ok({ status: 201, created: [{ key: 'x' }], alreadyImported: [], unlinked: [] }, 201)
+      : ok({ sector: 'SANTE', configuredSectors: ['SANTE'], sectors: ['SANTE'], locale: 'fr', version: '1.0', items: avecAssocies }))
+  })
+  it('ne liste que des risques ; sans option, importe les risques seuls (sans seconde confirmation)', async () => {
+    render(<SectorSuggestionsPanel canCreateProcesses kinds={['RISK']} associer onImported={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions par secteur/ }))
+    expect(await screen.findByText('Des données de santé de patients sont divulguées')).toBeInTheDocument()
+    expect(screen.queryByText('Tenir le dossier patient')).toBeNull()
+    expect(screen.queryByText('Accès anormaux au dossier patient')).toBeNull()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Des données de santé/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Importer la sélection/ }))
+    await waitFor(() => expect(fetchMock.mock.calls.some(call => call[1]?.method === 'POST')).toBe(true))
+    const body = JSON.parse(String(fetchMock.mock.calls.find(call => call[1]?.method === 'POST')![1].body))
+    expect(body).toMatchObject({ selectedKeys: ['sante.risk.patient-data'], acceptUnlinked: true })
+  })
+  it('« Importer aussi » : processus, contrôles et KRI associés ajoutés à la sélection', async () => {
+    render(<SectorSuggestionsPanel canCreateProcesses kinds={['RISK']} associer onImported={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions par secteur/ }))
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Des données de santé/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'les processus' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'les contrôles' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'les indicateurs (KRI)' }))
+    expect(screen.getByText('+ 3 élément(s) associé(s)')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Importer la sélection/ }))
+    await waitFor(() => expect(fetchMock.mock.calls.some(call => call[1]?.method === 'POST')).toBe(true))
+    const body = JSON.parse(String(fetchMock.mock.calls.find(call => call[1]?.method === 'POST')![1].body))
+    expect([...body.selectedKeys].sort()).toEqual(['sante.control.review', 'sante.kri.access', 'sante.process.records', 'sante.risk.patient-data'])
+    expect(body.acceptUnlinked).toBe(false)
+  })
+})

@@ -19,6 +19,7 @@ import Questionnaire360 from '@/components/projet360/Questionnaire360'
 import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
 import Dashboard360 from '@/components/projet360/Dashboard360'
 import ProjectTiers from '@/components/projet360/ProjectTiers'
+import PlansParPriorite from '@/components/projet360/PlansParPriorite'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -148,6 +149,7 @@ export default function PhasedRiskWorkshop({
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
+          {projet360 && phase.key === 'traitement' && <PlansParPriorite analyseId={analyseId} reloadKey={registryKey} />}
           <RisquesDirects key={`${phase.key}-${registryKey}`} suppression={projet360?.suppression} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}

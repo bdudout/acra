@@ -1,15 +1,20 @@
 'use client'
 
+import { elementsAssocies, type OptionsAssocies } from '@/lib/suggestions-associees'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { SectorCode } from '@/lib/sector-suggestions'
 
-type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string; references?: string[] }
+type Item = { key: string; title: string; kind: 'PROCESS' | 'RISK' | 'CONTROL' | 'KRI' | 'AUDIT' | 'RESILIENCE_TEST'; sector: string; status: 'NEW' | 'ALREADY_IMPORTED'; processKey?: string; parentKey?: string; references?: string[]; riskKeys?: string[] }
 type Choice = SectorCode | 'ALL' | null
 type Preview = { sector: Choice; configuredSectors: SectorCode[]; effectiveSectors?: SectorCode[]; inheritedSectors?: boolean; sectors: SectorCode[]; items: Item[]; version: string; whatsNew?: { since: string | null; keys: string[] }; reviewPending?: SectorCode[] }
 
 /** Sélection volontaire, jamais de création automatique à l'ouverture d'un module. */
-export default function SectorSuggestionsPanel({ canCreateProcesses, onImported, kinds }: { canCreateProcesses: boolean; onImported: () => void; kinds?: Item['kind'][] }) {
+/**
+ * `associer` (registre des risques) : la liste ne montre que des risques ; « Importer aussi » ajoute, sur option, les
+ * processus, contrôles, KRI et audits associés aux risques choisis (lib/suggestions-associees).
+ */
+export default function SectorSuggestionsPanel({ canCreateProcesses, onImported, kinds, associer = false }: { canCreateProcesses: boolean; onImported: () => void; kinds?: Item['kind'][]; associer?: boolean }) {
   const { t, locale } = useTranslation()
   const s = t.sectorSuggestions
   const prefs = t.sectorSuggestionPrefs
@@ -24,6 +29,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
   const [sectorSaved, setSectorSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [aussi, setAussi] = useState<OptionsAssocies>({})
 
   async function load(chosen?: Choice) {
     setBusy(true); setError(null)
@@ -54,13 +60,17 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
     finally { setBusy(false) }
   }
 
+  // Éléments associés aux risques choisis (option « Importer aussi »), hors déjà importés.
+  const associes = associer && preview ? elementsAssocies(preview.items, selected, { ...aussi, processus: aussi.processus && canCreateProcesses }, new Set(preview.items.filter(i => i.status === 'ALREADY_IMPORTED').map(i => i.key))) : []
   async function submit(acceptUnlinked = false) {
     if (!selected.length) return
     setBusy(true); setError(null)
     try {
       const res = await fetch('/api/catalogue-suggestions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sector, locale, selectedKeys: selected, acceptUnlinked }),
+        // Registre : un risque sans son processus est normal (cartographie) — pas de seconde confirmation sauf si
+        // l'on a demandé les processus associés.
+        body: JSON.stringify({ sector, locale, selectedKeys: [...selected, ...associes], acceptUnlinked: acceptUnlinked || (associer && !aussi.processus) }),
       })
       const data = await res.json()
       if (res.status === 409 && data.error === 'unlinked_dependencies') {
@@ -94,7 +104,7 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
     <button type="button" className="btn-secondary text-sm" onClick={() => { setOpen(true); setReport(null); void load() }}>{s.title}</button>
     {open && <section role="dialog" aria-label={s.title} className="card mt-3 p-4 space-y-4 border border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between gap-3">
-        <div><h2 className="font-semibold text-gray-900 dark:text-gray-100">{s.title}</h2><p className="text-sm text-gray-600 dark:text-gray-300">{s.hint}</p></div>
+        <div><h2 className="font-semibold text-gray-900 dark:text-gray-100">{s.title}</h2><p className="text-sm text-gray-600 dark:text-gray-300">{associer ? s.risksOnlyHint : s.hint}</p></div>
         <button type="button" className="btn-secondary text-sm" onClick={() => setOpen(false)}>{s.close}</button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -130,6 +140,17 @@ export default function SectorSuggestionsPanel({ canCreateProcesses, onImported,
         <p>{s.unlinkedWarning}</p><ul className="mt-1 list-disc pl-5">{unlinked.map(item => <li key={item.key}>{preview?.items.find(i => i.key === item.key)?.title ?? item.key}</li>)}</ul>
         <button type="button" disabled={busy} className="btn-secondary mt-2" onClick={() => void submit(true)}>{s.importUnlinked}</button>
       </div>}
+      {associer && <fieldset className="rounded border border-gray-200 p-3 text-sm dark:border-gray-700">
+        <legend className="px-1 text-gray-700 dark:text-gray-200">{s.alsoImport}</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {([['processus', s.alsoProcess], ['controles', s.alsoControls], ['kri', s.alsoKri], ['audits', s.alsoAudits]] as const).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+              <input type="checkbox" checked={!!aussi[k]} disabled={k === 'processus' && !canCreateProcesses} onChange={e => setAussi(o => ({ ...o, [k]: e.target.checked }))} />{label}
+            </label>
+          ))}
+        </div>
+        {associes.length > 0 && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{s.alsoCount.replace('{n}', String(associes.length))}</p>}
+      </fieldset>}
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-gray-600 dark:text-gray-300">{s.selected.replace('{n}', String(selected.length))}</span>
         <button type="button" disabled={busy || !selected.length} className="btn-primary disabled:opacity-50" onClick={() => void submit()}>{s.importSelected}</button>

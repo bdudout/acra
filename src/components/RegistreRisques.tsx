@@ -201,7 +201,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
         </div>
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
-      {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} onImported={() => { void reload() }} />}
+      {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} kinds={['RISK']} associer onImported={() => { void reload() }} />}
 
       {canEdit && showForm && (
         <div className="card p-4 mb-5 space-y-3">

@@ -83,8 +83,6 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const firstLineOnly = role === 'LECTEUR' || role === 'METIER'
   const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
   const canDerog = canGovern || role === 'DIRECTION_METIER'
-  // Processus (données de cartographie) = gouvernance.
-  const canGererProcessus = canGovern || role === 'DIRECTION_METIER'
   // Pilotage (cockpit de lecture consolidée) : tous les rôles à lecture globale du
   // dispositif — dont CONTROLEUR et AUDITEUR, que l'API /grc/rollup sert déjà (#126).
   const canPilotage = hasGlobalReadDispositif(role)
@@ -153,8 +151,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
     const registres: NavKey[] = []
     if (modules.registre) {
       // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
-      registres.push('registre', 'campagnes')
-      if (canGererProcessus) registres.push('processus')
+      // Processus : visibles par tous ceux qui voient les registres (page en lecture ; modification réservée à l'ADMIN).
+      registres.push('registre', 'campagnes', 'processus')
     }
     if (modules.reglementaire) registres.push('registreTic')
     entries.push(groupOrLink('registre', registres))

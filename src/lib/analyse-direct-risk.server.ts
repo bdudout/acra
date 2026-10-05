@@ -66,3 +66,10 @@ export async function guardValidationSuppression(analyseId: string, userId: stri
   return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId, methode: analyse.methode }, role, petiteStructure: orgConfig.petiteStructure, projetSuppressionValidation: orgConfig.projetSuppressionValidation }
 }
 
+/** Garde de LECTURE d'un projet 360 (vue des plans par priorité) : accès à l'analyse, sans droit d'édition requis. */
+export async function guardLectureProjet360(analyseId: string, userId: string, instanceRole: UserRole): Promise<{ ok: true; analyse: { id: string; organizationId: string | null } } | { ok: false; status: number; error: string }> {
+  const analyse = await prisma.analyse.findFirst({ where: await analyseAccessWhere(userId, instanceRole, analyseId), select: { id: true, organizationId: true, methode: true, deletedAt: true } })
+  if (!analyse || analyse.deletedAt || analyse.methode !== 'PROJET_360') return { ok: false, status: 404, error: 'Analyse introuvable' }
+  return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId } }
+}
+

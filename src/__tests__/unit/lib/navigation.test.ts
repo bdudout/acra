@@ -137,10 +137,10 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     // Pilotage = cockpit de LECTURE consolidée : désormais exposé (l'API /grc/rollup
     // le sert déjà) — cohérent avec la lecture globale du dispositif (#126).
     expect(keys).toContain('pilotage')
-    // Mais pas la gouvernance-écriture ni les données de cartographie.
+    // Mais pas la gouvernance-écriture ; les processus restent consultables (registres, lecture seule).
     expect(keys).not.toContain('conformite')
     expect(keys).not.toContain('derogations')
-    expect(keys).not.toContain('processus')
+    expect(keys).toContain('processus')
   })
 
   it('METIER (1ʳᵉ ligne) : cyber + incidents seulement, aucun module de gestion', () => {
