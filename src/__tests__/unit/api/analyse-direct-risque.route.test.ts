@@ -115,6 +115,20 @@ describe('PATCH/DELETE /risques/[riskId]', () => {
     expect(argOf(risqueUpdate).data).toMatchObject({ gravite: 4, niveauRisque: 8 })
   })
 
+  it('PATCH : cotation incohérente refusée (actuel au-dessus du brut, résiduel au-dessus de l’actuel)', async () => {
+    // existant g=2,v=2
+    const res = await PATCH(req({ graviteActuelle: 4 }), PI)
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: 'cotation_incoherente', violations: ['ACTUEL_SUP_BRUT'] })
+    expect(risqueUpdate).not.toHaveBeenCalled()
+    expect((await PATCH(req({ graviteResiduelle: 3 }), PI)).status).toBe(400)
+  })
+
+  it('PATCH sans toucher la cotation : jamais bloqué, même si l’existant est incohérent', async () => {
+    risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2, graviteActuelle: 4, vraisemblanceActuelle: null, graviteResiduelle: null, vraisemblanceResiduelle: null })
+    expect((await PATCH(req({ strategie: 'ACCEPTER' }), PI)).status).toBe(200)
+  })
+
   it('PATCH d\'un risque n\'appartenant pas à l\'analyse → 404', async () => {
     risqueFindFirst.mockResolvedValue(null)
     const res = await PATCH(req({ gravite: 3 }), PI)
@@ -139,8 +153,8 @@ describe('PATCH/DELETE /risques/[riskId]', () => {
     nbNiveaux.value = 5
     await POST(req({ nom: 'Arrêt de production', gravite: 5, vraisemblance: 5 }), P)
     expect(argOf(risqueCreate).data).toMatchObject({ gravite: 5, vraisemblance: 5, niveauRisque: 25 })
-    await PATCH(req({ graviteActuelle: 5 }), PI)
-    expect(argOf(risqueUpdate).data).toMatchObject({ graviteActuelle: 5 })
+    await PATCH(req({ gravite: 5, graviteActuelle: 5 }), PI)
+    expect(argOf(risqueUpdate).data).toMatchObject({ gravite: 5, graviteActuelle: 5 })
   })
 
   it('P1 — échelle à 4 niveaux (défaut) : une cotation 5 est ramenée à 4', async () => {

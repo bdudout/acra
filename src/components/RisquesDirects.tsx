@@ -18,6 +18,9 @@ import RiskVulnerabilites from '@/components/RiskVulnerabilites'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import { filterByOwner, ownerFilterOptions, OWNER_NONE } from '@/lib/risque-proprietaire'
 import { DOMAINES_360 } from '@/lib/projet360'
+import { alertesCotation, bornesCotation, cascadeCotation, cotations, violationsCotation } from '@/lib/cotation-risque'
+import { estRisqueSocle } from '@/lib/projet360-socle'
+import EchelleLegende from '@/components/EchelleLegende'
 
 interface RisqueRow {
   id: string; nom: string; description?: string | null
@@ -31,6 +34,8 @@ interface RisqueRow {
   /** Domaine (analyse projet 360) et analyse cyber d'origine en cas d'import. */
   domaine?: string | null
   sourceAnalyseId?: string | null
+  /** Règle d'origine (risque proposé par la qualification ou présent par défaut : « socle:… »). */
+  qualificationRuleId?: string | null
   mesuresCount?: number
   plansCount?: number
 }
@@ -87,18 +92,22 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   // traitement. Le niveau est masqué tant qu'on n'a pas coté (identification).
   const showAdd = mode === 'full' || mode === 'identify'
   const showAddScoring = mode === 'full' // pas de G/V dans l'ajout en identification
+  // Ordre de lecture d'un risque : brut (sans mesure) → actuel (mesures existantes) → traitement → résiduel (cible)
+  // → décision. Chaque étape affiche son niveau en mots (palier de l'échelle) sous sa cotation.
   const col = {
     // Cotation BRUTE (gravité × vraisemblance) : analyse + écran complet.
     brut: mode === 'full' || mode === 'rate',
-    niveau: mode !== 'identify',
+    // Cotation ACTUELLE (avec mesures de sécurité existantes) : analyse + écran complet ; rappel en lecture au traitement.
+    actuel: mode === 'full' || mode === 'rate' || mode === 'treat',
+    actuelEditable: mode === 'full' || mode === 'rate',
     strategie: mode === 'full' || mode === 'treat',
     // Cotation RÉSIDUELLE (cible après traitement) : phase traitement + écran complet.
     residuel: mode === 'full' || mode === 'treat',
-    // Cotation ACTUELLE (avec mesures de sécurité existantes) : analyse + écran complet.
-    actuel: mode === 'full' || mode === 'rate',
+    // Décision au regard de l'appétit (écran complet ; la phase « Évaluation » a son propre écran).
+    decision: mode === 'full',
   }
   // Nombre de colonnes du tableau standard (pour le colSpan de la sous-ligne mesures).
-  const colCount = 1 + [col.brut, col.niveau, col.actuel, col.residuel, col.strategie].filter(Boolean).length + 1
+  const colCount = 1 + [col.brut, col.actuel, col.strategie, col.residuel, col.decision].filter(Boolean).length + 1
   const [rows, setRows] = useState<RisqueRow[]>([])
   const [loading, setLoading] = useState(true)
   const [nom, setNom] = useState('')
@@ -112,6 +121,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   // Domaine (mode 360) : filtre ('' = tous) et domaine du risque à ajouter.
   const [domaineFilter, setDomaineFilter] = useState('')
   const [newDomaine, setNewDomaine] = useState('')
+  const [erreur, setErreur] = useState<string | null>(null)
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -131,10 +141,15 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   }
 
   async function maj(id: string, patch: Partial<RisqueRow>) {
+    // Cotation : une baisse se propage aux étapes suivantes (actuel ≤ brut, résiduel ≤ actuel).
+    const row = rows.find(r => r.id === id)
+    const body = row ? cascadeCotation(row, patch as Record<string, unknown>) : patch
+    setErreur(null)
     const res = await fetch(`/api/analyses/${analyseId}/risques/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     }).catch(() => null)
     if (res && res.ok) { const d = await res.json(); setRows(prev => prev.map(r => r.id === id ? { ...r, ...d.risque } : r)) }
+    else if (res && res.status === 400) setErreur(m.cotationRefusee)
   }
 
   async function supprimer(id: string) {
@@ -176,14 +191,6 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const hex = /^#?[0-9a-fA-F]{6}$/.test(couleur) ? (couleur.startsWith('#') ? couleur : `#${couleur}`) : '#9ca3af'
     return <span aria-hidden="true" className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: hex }} />
   }
-  // Badge d'un niveau préfixé par son libellé (Brut / Actuel / Résiduel), coloré
-  // selon le palier de l'échelle de l'organisation (matrice qualitative incluse).
-  const niveauTag = (label: string, g: number, v: number, n: number) => {
-    const seuil = scaleSeuil(g, v, scaleCfg)
-    return <span title={seuil.label} className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
-      {seuilDot(seuil.couleur)}<span className="opacity-70">{label}</span> {n}<span className="sr-only"> — {seuil.label}</span>
-    </span>
-  }
   const decisionBadge = (d: Decision) => (
     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${d === 'treat' ? TIER_CLASS.critique : TIER_CLASS.faible}`}>
       {d === 'treat' ? m.decisionTreat : m.decisionAccept}
@@ -194,61 +201,84 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     ? m.basisAppetit.replace('{seuil}', String(e.seuilAppetit))
     : m.basisEchelle.replace('{palier}', e.seuil.label)
 
-  // Cellule « niveaux » : BRUT toujours ; ACTUEL/RÉSIDUEL seulement s'ils sont
-  // RÉDUITS (mesures existantes / plans d'action) — pas de bruit quand tout est égal.
-  const niveauxCell = (r: RisqueRow) => {
-    const brut = r.niveauRisque
-    const actuel = r.niveauActuel ?? brut
-    const residuel = r.niveauResiduel ?? actuel
-    const gA = r.graviteActuelle ?? r.gravite, vA = r.vraisemblanceActuelle ?? r.vraisemblance
-    const gR = r.graviteResiduelle ?? gA, vR = r.vraisemblanceResiduelle ?? vA
-    // Écran complet (ISO 31000, NIST) : la décision d'évaluation est affichée ici
-    // (pas de phase « Évaluation » dédiée) — P2 de l'audit.
-    const evaluation = mode === 'full' ? evaluateRisk(r, evalCtx) : null
-    return (
-      <div role="group" aria-label={m.colNiveau} className="flex flex-wrap items-center gap-1.5">
-        {niveauTag(m.niveauBrut, r.gravite, r.vraisemblance, brut)}
-        {actuel < brut && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauActuel, gA, vA, actuel)}</>}
-        {residuel < actuel && <><span className="text-gray-400" aria-hidden="true">→</span>{niveauTag(m.niveauResiduel, gR, vR, residuel)}</>}
-        {evaluation && <span title={basisText(evaluation)}>{decisionBadge(evaluation.decision)}</span>}
-      </div>
-    )
-  }
   // Niveaux sélectionnables : échelle de l'organisation (1..4 ou 1..5).
   const echelle = scaleLevels(scaleCfg)
+  const labelG = (n: number) => scaleCfg.echelleGravite.find(x => x.niveau === n)?.label
+  const labelV = (n: number) => scaleCfg.echelleVraisemblance.find(x => x.niveau === n)?.label
 
   // Cellule responsive : tableau sur écran large ; sous md, ligne libellé / valeur.
   const cell = (label: string, content: React.ReactNode) => (
-    <td className="flex items-center justify-between gap-3 px-3 py-1.5 md:table-cell md:py-2">
+    <td className="flex items-start justify-between gap-3 px-3 py-1.5 md:table-cell md:py-2 md:align-top">
       <span className="text-xs font-medium text-gray-500 dark:text-gray-400 md:hidden">{label}</span>
       {content}
     </td>
   )
-  // Paire gravité × vraisemblance d'un niveau (brut / actuel / résiduel), avec
-  // abréviations traduites et libellés accessibles. Actuel ← brut, résiduel ← brut par défaut.
   const LEVELS = {
-    brut:     { g: 'gravite', v: 'vraisemblance', label: m.niveauBrut },
-    actuel:   { g: 'graviteActuelle', v: 'vraisemblanceActuelle', label: m.colActuelAvecMesures },
-    residuel: { g: 'graviteResiduelle', v: 'vraisemblanceResiduelle', label: m.colResiduelCible },
+    brut:     { g: 'gravite', v: 'vraisemblance', label: m.colBrutSansMesure },
+    actuel:   { g: 'graviteActuelle', v: 'vraisemblanceActuelle', label: m.colActuelMesures },
+    residuel: { g: 'graviteResiduelle', v: 'vraisemblanceResiduelle', label: m.colResiduel },
   } as const
-  const gvPair = (r: RisqueRow, level: keyof typeof LEVELS) => {
+  // Niveau d'une étape en mots (palier de l'échelle de l'organisation) + score, couleur du palier.
+  const niveauBadge = (label: string, g: number, v: number) => {
+    const seuil = scaleSeuil(g, v, scaleCfg)
+    return <span role="status" aria-label={`${label} : ${seuil.label} (${g * v})`} className="mt-1 inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+      {seuilDot(seuil.couleur)}{seuil.label}<span className="font-normal text-gray-400 tabular-nums">· {g * v}</span>
+    </span>
+  }
+  // Étape de cotation (brut / actuel / résiduel) : G et V avec libellé du niveau, bornés par l'étape précédente ;
+  // le niveau obtenu s'affiche dessous.
+  const etape = (r: RisqueRow, level: keyof typeof LEVELS, editableStep = true) => {
     const L = LEVELS[level]
-    const gv = (r[L.g] as number | null | undefined) ?? r.gravite
-    const vv = (r[L.v] as number | null | undefined) ?? r.vraisemblance
-    const sel = 'px-1 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
+    const c = cotations(r)[level]
+    const borne = bornesCotation(r)[level]
+    const sel = 'max-w-[9.5rem] px-1 py-1 rounded border border-gray-300 text-xs dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
     // Valeur saisie avant un passage de l'échelle de 5 à 4 niveaux : conservée affichable.
     const opts = (cur: number) => (echelle.includes(cur) ? echelle : [...echelle, cur])
+    const option = (n: number, max: number, lib: string | undefined) => (
+      <option key={n} value={n} disabled={n > max} title={n > max ? m.borneHint : undefined}>{lib ? `${n} · ${lib}` : n}</option>
+    )
     return (
-      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-        <span aria-hidden="true" title={m.colGravite}>{m.abbrGravite}</span>
-        <select aria-label={`${L.label} — ${m.colGravite}`} disabled={!editable} value={gv} onChange={e => maj(r.id, { [L.g]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
-          {opts(gv).map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <span aria-hidden="true" title={m.colVraisemblance}>{m.abbrVraisemblance}</span>
-        <select aria-label={`${L.label} — ${m.colVraisemblance}`} disabled={!editable} value={vv} onChange={e => maj(r.id, { [L.v]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
-          {opts(vv).map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
+      <div className="flex flex-col items-start">
+        {editable && editableStep ? (
+          <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex items-center gap-1"><span aria-hidden="true" title={m.colGravite} className="w-3">{m.abbrGravite}</span>
+              <select aria-label={`${L.label} — ${m.colGravite}`} value={c.g} onChange={e => maj(r.id, { [L.g]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
+                {opts(c.g).map(n => option(n, borne.g, labelG(n)))}
+              </select>
+            </label>
+            <label className="flex items-center gap-1"><span aria-hidden="true" title={m.colVraisemblance} className="w-3">{m.abbrVraisemblance}</span>
+              <select aria-label={`${L.label} — ${m.colVraisemblance}`} value={c.v} onChange={e => maj(r.id, { [L.v]: Number(e.target.value) } as Partial<RisqueRow>)} className={sel}>
+                {opts(c.v).map(n => option(n, borne.v, labelV(n)))}
+              </select>
+            </label>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-500 dark:text-gray-400">{m.abbrGravite} {c.g}{labelG(c.g) ? ` · ${labelG(c.g)}` : ''} — {m.abbrVraisemblance} {c.v}{labelV(c.v) ? ` · ${labelV(c.v)}` : ''}</span>
+        )}
+        {niveauBadge(L.label, c.g, c.v)}
       </div>
+    )
+  }
+  // Traitement : stratégie, mesures et plans (compteurs + ouverture du détail), alertes de cohérence.
+  const detailsButton = (r: RisqueRow) => hasDetails && (
+    <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
+      aria-label={treatmentLabel} title={treatmentLabel}
+      className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+      {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
+      {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
+      <span className="text-[10px] text-gray-500">{showMesuresSection && showPlansSection
+        ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
+        : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
+          : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
+    </button>
+  )
+  const alertes = (r: RisqueRow) => {
+    const codes = [...violationsCotation(r), ...alertesCotation(r, { decision: evaluateRisk(r, evalCtx).decision })]
+    const textes = m.alertes as Record<string, string>
+    return codes.length > 0 && (
+      <ul className="mt-1 space-y-0.5">
+        {codes.map(c => <li key={c} className="text-[11px] leading-snug text-amber-700 dark:text-amber-300">⚠ {textes[c]}</li>)}
+      </ul>
     )
   }
 
@@ -388,16 +418,18 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
         : rows.length === 0 ? <p className="text-xs text-gray-400 italic">{m.empty}</p>
         : (
           <div className="md:overflow-x-auto">
+            {(col.brut || col.actuel || col.residuel) && <EchelleLegende scale={scaleCfg} />}
+            {erreur && <p role="alert" className="mb-2 text-xs text-red-700 dark:text-red-300">{erreur}</p>}
             {/* Tableau sur écran large ; sous md, chaque ligne devient une carte
                 (libellés affichés dans les cellules) — même markup, pas de duplication. */}
             <table className="block w-full text-sm md:table">
               <thead className="hidden md:table-header-group"><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                 <th className="px-3 py-2 min-w-[14rem]">{m.colNom}</th>
-                {col.brut && <th className="px-3 py-2 whitespace-nowrap">{m.niveauBrut} <span className="normal-case font-normal">({m.abbrGravite}×{m.abbrVraisemblance})</span></th>}
-                {col.niveau && <th className="px-3 py-2">{m.colNiveau}</th>}
-                {col.actuel && <th className="px-3 py-2">{m.colActuelAvecMesures}</th>}
-                {col.residuel && <th className="px-3 py-2">{m.colResiduelCible}</th>}
-                {col.strategie && <th className="px-3 py-2">{m.colStrategie}</th>}
+                {col.brut && <th className="px-3 py-2">{m.colBrutSansMesure}</th>}
+                {col.actuel && <th className="px-3 py-2">{m.colActuelMesures}</th>}
+                {col.strategie && <th className="px-3 py-2">{m.colTraitement}</th>}
+                {col.residuel && <th className="px-3 py-2">{m.colResiduel}</th>}
+                {col.decision && <th className="px-3 py-2">{m.colDecision}</th>}
                 <th className="px-3 py-2" />
               </tr></thead>
               <tbody className="block space-y-3 md:table-row-group md:space-y-0">
@@ -405,18 +437,9 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                   <tr key={r.id} className={`block rounded-lg border border-gray-200 dark:border-gray-700 md:table-row md:rounded-none md:border-0 md:border-b md:border-gray-100 md:dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
                     <td className="block px-3 py-2 font-medium text-gray-800 dark:text-gray-100 md:table-cell">
                       <div className="flex items-center gap-2">
-                        {hasDetails && <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
-                          aria-label={treatmentLabel} title={treatmentLabel}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                          {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
-                          {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
-                          <span className="hidden xl:inline text-[10px] text-gray-500">{showMesuresSection && showPlansSection
-                            ? m.treatmentCounts.replace('{mesures}', String(r.mesuresCount ?? 0)).replace('{plans}', String(r.plansCount ?? 0))
-                            : showMesuresSection ? m.mesuresCount.replace('{count}', String(r.mesuresCount ?? 0))
-                              : m.plansCount.replace('{count}', String(r.plansCount ?? 0))}</span>
-                        </button>}
                         <span className="min-w-0 flex-1 break-words">{r.nom}
                           {p360 && r.sourceAnalyseId && <span className="ml-2 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{p360.importedBadge}</span>}
+                          {estRisqueSocle(r.qualificationRuleId) && <span title={m.socleTitle} className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">{m.socleBadge}</span>}
                           {ownerField(r)}
                           {p360 && (editable
                             ? <select aria-label={`${p360.colDomaine} — ${r.nom}`} value={r.domaine ?? ''} onChange={e => maj(r.id, { domaine: e.target.value || null })}
@@ -432,14 +455,21 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                         <button onClick={() => undoAdd(r.id)} className="ml-2 text-xs font-normal text-ebios-600 hover:text-ebios-800 underline">{m.undo}</button>
                       )}
                     </td>
-                    {col.brut && cell(m.niveauBrut, gvPair(r, 'brut'))}
-                    {col.niveau && cell(m.colNiveau, niveauxCell(r))}
-                    {col.actuel && cell(m.colActuelAvecMesures, gvPair(r, 'actuel'))}
-                    {col.residuel && cell(m.colResiduelCible, gvPair(r, 'residuel'))}
-                    {col.strategie && cell(m.colStrategie,
+                    {col.brut && cell(m.colBrutSansMesure, etape(r, 'brut'))}
+                    {col.actuel && cell(m.colActuelMesures, <div className="flex flex-col items-start gap-1">
+                      {etape(r, 'actuel', col.actuelEditable)}
+                      {/* Sans colonne Traitement (phase de cotation) : les mesures existantes se gèrent ici. */}
+                      {!col.strategie && detailsButton(r)}
+                    </div>)}
+                    {col.strategie && cell(m.colTraitement, <div className="flex flex-col items-start gap-1">
                       <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
-                      </select>)}
+                      </select>
+                      {detailsButton(r)}
+                      {alertes(r)}
+                    </div>)}
+                    {col.residuel && cell(m.colResiduel, etape(r, 'residuel'))}
+                    {col.decision && cell(m.colDecision, (() => { const e = evaluateRisk(r, evalCtx); return <span title={basisText(e)}>{decisionBadge(e.decision)}</span> })())}
                     <td className="hidden px-3 py-2 text-right whitespace-nowrap md:table-cell">
                       {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>

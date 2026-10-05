@@ -31,10 +31,16 @@ describe('populateProjet360', () => {
     const q = db.analyse.update.mock.calls[0][0].data.qualification
     expect(q).toMatchObject({ externalisation: true, 'p360.ext.prestataireCritique': true, 'p360.ext.cloud': true, 'p360.cyber.donneesSensibles': true })
     expect(q['p360._sources']).toEqual({ 'p360.ext.prestataireCritique': 'tic', 'p360.ext.cloud': 'cloud', 'p360.cyber.donneesSensibles': 'ropa' })
-    const rows = db.risque.createMany.mock.calls[0][0].data as { nom: string; domaine: string; qualificationRuleId: string }[]
+    const all = db.risque.createMany.mock.calls.flatMap(c => c[0].data as { nom: string; domaine: string; qualificationRuleId: string }[])
+    const rows = all.filter(x => !x.qualificationRuleId.startsWith('socle:'))
     // « Défaillance d'un prestataire critique » existe déjà dans l'analyse : pas recréé.
     expect(rows.map(x => x.qualificationRuleId).sort()).toEqual(['p360-fuiteDonnees', 'p360-maitriseDonneesCloud'])
     expect(rows.every(x => x.domaine)).toBe(true)
-    expect(r).toEqual({ answers: 3, risks: 2 })
+    // Risques présents par défaut dans tout projet (configuration par défaut : les 8 du catalogue), avec domaine.
+    const socle = all.filter(x => x.qualificationRuleId.startsWith('socle:'))
+    expect(socle).toHaveLength(8)
+    expect(socle.every(x => x.domaine)).toBe(true)
+    expect(new Set(all.map(x => x.nom.toLowerCase())).size).toBe(all.length)
+    expect(r).toEqual({ answers: 3, risks: 10 })
   })
 })

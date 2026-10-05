@@ -4,6 +4,7 @@
 // Mêmes gardes que la collection (accès, méthode à saisie directe, édition, gel)
 // + le risque doit appartenir à l'analyse ciblée (sinon 404, sans divulgation).
 
+import { violationsCotation } from '@/lib/cotation-risque'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -51,6 +52,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const patch = sanitizeDirectRisquePatch(await req.json().catch(() => ({})), nbNiveaux)
   if (patch.nom !== undefined && patch.nom.trim() === '') {
     return NextResponse.json({ error: 'intitule_requis' }, { status: 400 })
+  }
+  // Cohérence de la cotation (actuel ≤ brut, résiduel ≤ actuel), contrôlée seulement si la requête la modifie.
+  const COTATION = ['gravite', 'vraisemblance', 'graviteActuelle', 'vraisemblanceActuelle', 'graviteResiduelle', 'vraisemblanceResiduelle'] as const
+  if (COTATION.some(k => (patch as Record<string, unknown>)[k] !== undefined)) {
+    const violations = violationsCotation({ ...existing, ...patch } as Parameters<typeof violationsCotation>[0])
+    if (violations.length) return NextResponse.json({ error: 'cotation_incoherente', violations }, { status: 400 })
   }
   // Recalcule les niveaux (brut/actuel/résiduel) touchés, valeurs FUSIONNÉES (existant ⊕ patch).
   const data: Record<string, unknown> = { ...patch, ...recomputeDirectNiveaux(patch, existing) }

@@ -1,7 +1,7 @@
 import { cadrageInitial } from '@/lib/cadrage-initial'
 import { populateProjet360 } from '@/lib/projet360.server'
 import { resolveProjetSource } from '@/lib/projet360'
-import { getServerT } from '@/lib/i18n'
+import { getServerLocale, getServerT } from '@/lib/i18n'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     // proposés créés sans doublon (lib/projet360.server).
     let population: { answers: number; risks: number } | null = null
     if (methode === 'PROJET_360' && orgId) {
-      population = await populateProjet360(analyse.id, orgId, await getServerT())
+      population = await populateProjet360(analyse.id, orgId, await getServerT(), await getServerLocale())
     }
 
     await auditLog('ANALYSE_CREATED', {

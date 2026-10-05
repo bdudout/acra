@@ -38,6 +38,7 @@ export const CONFIG_SELECT = {
   archivageMissionsAnnees: true,
   patternsArchiMax: true,
   patternsArchiMasques: true,
+  risquesProjetDefaut: true,
   derogationWorkflow: true,
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,

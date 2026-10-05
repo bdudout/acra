@@ -1,6 +1,7 @@
 'use client'
 
 import TierIdentityPanel from '@/components/TierIdentityPanel'
+import RisquesProjetDefautEditor from '@/components/RisquesProjetDefautEditor'
 import SectorSettings from '@/components/SectorSettings'
 import { resolveIsAdmin } from '@/lib/effective-admin'
 import { Lock, Palette, X } from 'lucide-react'
@@ -130,9 +131,9 @@ export default function ConfigurationPage() {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'gravite' | 'vraisemblance' | 'matrice' | 'apercu'>('gravite')
   // Onglet principal de la configuration (4 sections)
-  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme' | 'tiers'>('echelles')
+  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme' | 'tiers' | 'projets'>('echelles')
   // Lien direct vers un onglet (ex. /configuration?section=tiers depuis la page Tiers), lu après le montage.
-  useEffect(() => { if (new URLSearchParams(window.location.search).get('section') === 'tiers') setSection('tiers') }, [])
+  useEffect(() => { { const sec = new URLSearchParams(window.location.search).get('section'); if (sec === 'tiers' || sec === 'projets') setSection(sec) } }, [])
 
   const [config, setConfig] = useState<Config>(DEFAUT_4)
 
@@ -829,6 +830,7 @@ export default function ConfigurationPage() {
             ['exemples', t.config.tabExamples],
             ['ecosysteme', t.config.tabEcosysteme],
             ['tiers', t.config.tabTiers],
+            ['projets', t.config.tabProjets],
             ...(isAdmin ? [['options', t.config.tabOptions] as const] : []),
           ] as const).map(([key, label]) => (
             <button
@@ -1933,6 +1935,9 @@ export default function ConfigurationPage() {
 
         {/* ═══ Section 5 — Tiers (identités de tiers : référentiel des personnes morales) ═══ */}
         {section === 'tiers' && <TierIdentityPanel />}
+
+        {/* ═══ Section 6 — Projets (risques présents par défaut dans chaque projet 360) ═══ */}
+        {section === 'projets' && <RisquesProjetDefautEditor isAdmin={isAdmin} />}
       </main>
 
       {pendingConfirm && (

@@ -61,6 +61,24 @@ Par domaine : nombre de risques, niveau maximal et moyen (brut / résiduel), ris
 dessus de l'appétit, part traitée, trois risques principaux ; carte de chaleur par
 domaine ; progression du questionnaire par domaine.
 
+## 7 bis. Risques présents par défaut, lancement et registre (2026-10-06)
+
+- **Lancement** : page dédiée `/projets/nouveau` (nom, périmètre, **objectifs** repris dans le cadrage, secteur,
+  patterns). Liste `/projets` : recherche, filtre par statut, tri par colonne ; portefeuille en export Excel.
+- **Risques par défaut** (`lib/projet360-socle.ts`) : 8 risques présents dans tout projet (délais, budget, ressources,
+  adhésion, RGPD, prestataire, sécurité, mise en service), créés à la création du projet avec
+  `qualificationRuleId = "socle:<code>"` (badge « Par défaut », supprimables, jamais recréés en double).
+  Configuration › Projets (ADMIN) : désactiver des risques du catalogue, en ajouter (30 au plus) —
+  `OrganizationConfig.risquesProjetDefaut` (JSON, `null` = hérité dans l'arbre multi-organisation).
+- **Import cyber** : recherche d'analyse (liste légère), tiers de la source importés avec les risques (oui par défaut).
+- **Registre (toutes méthodes à saisie directe)** : Risque → Brut (sans mesure) → Actuel (mesures existantes) →
+  Traitement (stratégie, mesures et plans, alertes) → Résiduel (cible) → Décision. Chaque étape affiche son niveau en
+  mots. Contrôles (`lib/cotation-risque.ts`) : actuel ≤ brut et résiduel ≤ actuel (options au-delà désactivées,
+  cascade à la baisse, refus serveur `cotation_incoherente`) ; alertes « Réduire » sans mesure, résiduel non réduit,
+  acceptation au-dessus de l'appétit. Légende G/V dépliable (libellés de l'échelle de l'organisation + impacts
+  indicatifs opérationnel / financier / juridique / image, `lib/echelle-legende.ts`). Mesures d'un projet sans
+  cotation d'efficacité.
+
 ## 8. Hors périmètre (lot suivant)
 
 Quantification, agrégation multi-projets, synchronisation continue avec l'analyse

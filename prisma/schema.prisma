@@ -2110,6 +2110,8 @@ model OrganizationConfig {
   patternsArchiMax           Int?
   // Patterns non pertinents masqués à la saisie pour cette organisation ([] = hérite / aucun au défaut).
   patternsArchiMasques       Json          @default("[]")
+  // Risques présents par défaut dans tout projet 360 : { desactives: codes[], ajoutes: [...] } (null = hérité).
+  risquesProjetDefaut        Json?
   // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
   // (validation RSSI, défaut), "RSSI_METIER" (RSSI puis Direction métier).
   derogationWorkflow         String        @default("RSSI")

@@ -53,7 +53,9 @@ export async function getEffectiveScaleConfig(orgId?: string | null): Promise<Sc
     return resolveScaleConfig(config as unknown as Partial<ScaleConfig> | null)
   }
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
-  const idsRootToSelf = org?.path ? org.path.split('/').filter(Boolean) : [orgId]
+  // Chemin absent ou dégénéré (« / ») : l'organisation seule (même règle que getOrgConfig).
+  const fromPath = org?.path ? org.path.split('/').filter(Boolean) : []
+  const idsRootToSelf = fromPath.length ? fromPath : [orgId]
   const rows = await prisma.configuration.findMany({ where: { id: { in: idsRootToSelf } } })
   const byId = new Map(rows.map(r => [r.id, r]))
   for (const id of idsRootToSelf.slice().reverse()) {

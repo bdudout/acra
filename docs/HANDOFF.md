@@ -6,6 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (68) — Claude : risques projet par défaut, ligne de risque lisible et contrôlée
+
+- **Fait** : risques présents par défaut dans tout projet 360 (`lib/projet360-socle.ts`, créés par
+  `populateProjet360`, marqués `socle:<code>`), configurables dans Configuration › Projets
+  (`RisquesProjetDefautEditor`, `OrganizationConfig.risquesProjetDefaut`, migration `20261006090000`) ; refonte de la
+  ligne du registre à saisie directe (`RisquesDirects`) : ordre brut → actuel → traitement → résiduel → décision,
+  niveau en mots par étape, libellés dans les sélecteurs, bornes + cascade (`lib/cotation-risque.ts`), refus serveur
+  `cotation_incoherente` (route PATCH, seulement si la cotation est modifiée), alertes de cohérence, légende G/V
+  (`EchelleLegende`, `lib/echelle-legende.ts`) ; `getEffectiveScaleConfig` : même correctif de chemin « / » que
+  `getOrgConfig`.
+- **Vérifié** : voir la réponse du tour (tsc, i18n, suite complète, build sur export de l'arbre).
+  **Non vérifié** : rendu navigateur (poste en swap, pas de compte sur la base Docker).
+- **Piège** : la base Docker locale montre un écart de schéma préexistant (index `Controle_referentielCode_idx`
+  déclaré mais absent) — sans lien avec ce tour, non corrigé.
+
+---
+
 ## 2026-10-05 (67) — Claude : pertinence des exemples, patterns, projets 360, tiers
 
 - **Fait** :
