@@ -126,6 +126,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const [domaineFilter, setDomaineFilter] = useState('')
   const [newDomaine, setNewDomaine] = useState('')
   const [erreur, setErreur] = useState<string | null>(null)
+  // Suggestions repliables ; repliées d'office dès que le registre contient des risques (projet existant).
+  const [suggestionsOuvertes, setSuggestionsOuvertes] = useState<boolean | null>(null)
 
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
@@ -359,10 +361,11 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
       {/* Suggestions sectorielles (R3) : pré-remplissent le formulaire, modifiables avant ajout. */}
       {editable && showAdd && shownSuggestions.length > 0 && (
         <div className="mb-5">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-            <Lightbulb size={14} aria-hidden="true" />{m.suggestionsLabel}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
+          <button type="button" aria-expanded={suggestionsOuvertes ?? rows.length === 0} onClick={() => setSuggestionsOuvertes(!(suggestionsOuvertes ?? (!loading && rows.length === 0)))}
+            className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+            <Lightbulb size={14} aria-hidden="true" />{m.suggestionsLabel} ({shownSuggestions.length}) {(suggestionsOuvertes ?? (!loading && rows.length === 0)) ? '▾' : '▸'}
+          </button>
+          {(suggestionsOuvertes ?? (!loading && rows.length === 0)) && <div className="flex flex-wrap gap-1.5">
             {shownSuggestions.map((ex, i) => (
               <button key={i} type="button" onClick={() => addSuggestion(ex)} disabled={busy}
                 title={m.suggestionsHint}
@@ -374,7 +377,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       )}
 

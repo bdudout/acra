@@ -48,6 +48,8 @@ describe('RisquesDirects — domaine (analyse projet 360)', () => {
 
   it('suggestion issue du registre : badge et domaine transmis à l’ajout', async () => {
     render(<RisquesDirects analyseId="a1" editable withDomaine suggestions={[{ intitule: 'Panne du SI de paiement', gravite: 3, vraisemblance: 2, pertinent: true, source: 'REGISTRE', domaine: 'IT' }]} />)
+    const toggle = await screen.findByRole('button', { name: /Suggestions/ })
+    if (toggle.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle)
     const chip = await screen.findByRole('button', { name: /Panne du SI de paiement/ })
     expect(chip.textContent).toContain('Depuis le registre')
     fireEvent.click(chip)

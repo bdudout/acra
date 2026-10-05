@@ -205,6 +205,8 @@ describe('RisquesDirects', () => {
     ]
     render(<RisquesDirects analyseId="an1" editable suggestions={suggestions} />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument() // ligne du registre
+    // Registre non vide : suggestions repliées d'office, on les déplie.
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions pour votre secteur/ }))
     // La suggestion « Fuite de données » est proposée ; « Panne SI » ne l'est pas (déjà ajoutée).
     expect(screen.getByRole('button', { name: /Fuite de données/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Panne SI/ })).toBeNull()
