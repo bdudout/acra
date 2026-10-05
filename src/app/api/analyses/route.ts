@@ -1,3 +1,4 @@
+import { cadrageInitial } from '@/lib/cadrage-initial'
 import { populateProjet360 } from '@/lib/projet360.server'
 import { resolveProjetSource } from '@/lib/projet360'
 import { getServerT } from '@/lib/i18n'
@@ -36,6 +37,7 @@ const createSchema = z.object({
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
   qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
+  objectifsEtude: z.string().max(2000).optional(), // objectifs de l'étude saisis dès la création (projet 360)
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
@@ -165,21 +167,9 @@ export async function POST(req: NextRequest) {
         methode,
         qualification,
         // Cadrage : copier du socle ou créer vide
-        cadrage: {
-          create: methode === 'PROJET_360' && !socleData.cadrage
-            ? { perimetre: data.description ?? null }
-            : socleData.cadrage
-            ? {
-                perimetre:      socleData.cadrage.perimetre,
-                objectifsEtude: socleData.cadrage.objectifsEtude,
-                missions:       socleData.cadrage.missions,
-                valeursMetier:  socleData.cadrage.valeursMetier,
-                biensSupports:  socleData.cadrage.biensSupports,
-                // NB: events redoutés et socle de sécurité NE sont PAS hérités —
-                // ils dépendent du contexte de chaque analyse.
-              }
-            : {},
-        },
+        // Cadrage : hérité du socle, ou initialisé (projet 360 : périmètre + objectifs saisis à la création).
+        // NB : événements redoutés et socle de sécurité ne sont jamais hérités (propres à chaque analyse).
+        cadrage: { create: cadrageInitial({ methode, description: data.description, objectifsEtude: data.objectifsEtude }, socleData.cadrage) as never },
       },
     })
 

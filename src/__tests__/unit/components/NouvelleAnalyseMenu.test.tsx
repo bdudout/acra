@@ -11,7 +11,7 @@ describe('NouvelleAnalyseMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: /Nouvelle analyse/ }))
     const items = screen.getAllByRole('menuitem')
     expect(items.map(i => i.textContent)).toEqual(['Nouvelle analyse', 'Nouveau projet 360', 'Importer une analyse'])
-    expect(items.map(i => i.getAttribute('href'))).toEqual(['/analyses/new', '/projets?nouveau=1', '/analyses?import=1'])
+    expect(items.map(i => i.getAttribute('href'))).toEqual(['/analyses/new', '/projets/nouveau', '/analyses?import=1'])
   })
   it('sans module Projets 360 actif : l’entrée projet est absente', () => {
     render(<NouvelleAnalyseMenu labels={labels} projet360={false} />)

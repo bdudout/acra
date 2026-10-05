@@ -131,7 +131,7 @@ export default function PhasedRiskWorkshop({
       ) : phase.type === 'qualification' && projet360 ? (
         <>
           <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} sources={projet360.sources} onRisksCreated={() => setRegistryKey(k => k + 1)} />
-          {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} />}
+          {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} onVoirRisques={() => { const i = phases.findIndex(ph => ph.key === 'appreciation'); if (i >= 0) setActive(i) }} />}
           <ProjectTiers analyseId={analyseId} initial={projet360.tiers} editable={editable} />
         </>
       ) : phase.type === 'note' ? (

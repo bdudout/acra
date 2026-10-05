@@ -449,7 +449,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       <td className="block px-3 pb-3 md:table-cell" colSpan={colCount}>
                         <div className="space-y-2">
                           {showVulnSection && <RiskVulnerabilites analyseId={analyseId} riskId={r.id} editable={editable} initial={r.vulnerabilites ?? []} />}
-                          {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} />}
+                          {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} withEfficacite={!withDomaine} />}
                           {showPlansSection && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} />}
                         </div>
                       </td>

@@ -10,14 +10,15 @@ import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permi
 import { getServerT } from '@/lib/i18n'
 import Navbar from '@/components/Navbar'
 import ProjetsManager from '@/components/ProjetsManager'
-import ProjetsPortefeuille from '@/components/ProjetsPortefeuille'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // Onglet Projets (module « Projets 360 ») : analyses projet 360 de l'organisation
 // active, visibles selon le périmètre de l'utilisateur ; lancement d'un projet.
-export default async function ProjetsPage() {
+export default async function ProjetsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // Ancien lien « ?nouveau=1 » (menu, favoris) : le lancement a désormais sa page dédiée.
+  if ((await searchParams).nouveau === '1') redirect('/projets/nouveau')
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
@@ -45,7 +46,6 @@ export default async function ProjetsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100"><Briefcase size={24} className="inline align-[-0.16em] mr-2 text-ebios-600" aria-hidden="true" />{t.projets.title}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.projets.subtitle}</p>
         </header>
-        <ProjetsPortefeuille />
         <ProjetsManager projets={projets} canCreate={Boolean(scope.activeOrgId) && canCreateAnalyse({ id: userId, role: scope.role }, await optionsStructure(scope.activeOrgId))} />
       </main>
     </div>

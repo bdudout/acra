@@ -117,6 +117,7 @@ export const es: Translations = {
 
   // ─── Página Terceros (ecosistema agregado) ────────────────────────────────
   tiers: {
+    identitesLink: "Identidades de terceros (registro de personas jurídicas): Configuración › Terceros →",
     cartoLink: 'Mapa del ecosistema',
     title:        'Terceros',
     subtitle:     'Partes interesadas (ecosistema) identificadas en sus análisis de riesgo',
@@ -1580,7 +1581,8 @@ export const es: Translations = {
     saveError: 'No se pudo guardar.',
     proposalsButton: 'Ver los riesgos propuestos ({n})',
     proposalsNone: 'Sus respuestas no proponen ningún riesgo nuevo.',
-    importTitle: 'Importar riesgos ciber',
+    importTitle: "Importar riesgos ciber o terceros de un análisis ciber",
+    importSearch: "Buscar un análisis ciber", importSearchPlaceholder: "Nombre del análisis…", importNoMatch: "Ningún análisis coincide.", importSourceCounts: "{r} riesgo(s) · {t} tercero(s)", importTiers: "Importar también los terceros del análisis ({n})", importDone: "{n} riesgo(s) y {t} tercero(s) importado(s).", importVoirRisques: "Ver los riesgos importados",
     importIntro: 'Reutilice los riesgos de un análisis ciber existente (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) de su organización. La copia queda trazada y no se importará dos veces.',
     importSource: 'Análisis de origen',
     importChoose: 'Elegir un análisis…',
@@ -2015,6 +2017,7 @@ export const es: Translations = {
       { nom: 'Nuevo servicio de pago', description: 'Lanzamiento de un servicio de pago en línea con un proveedor de pagos: flujos financieros, lucha contra el fraude, disponibilidad 24 h.' },
       { nom: 'Externalización de las nóminas', description: 'Traspaso del tratamiento de las nóminas a un proveedor: datos personales de los empleados, continuidad del servicio, reversibilidad.' },
     ],
+    objectifs: "Objetivos del proyecto", objectifsPlaceholder: "P. ej., asegurar la migración, cumplir el plazo reglamentario, controlar el coste de explotación", objectifsHint: "Se trasladan al contexto del proyecto (fase 1): podrá completarlos después.", newTitle: "Iniciar un proyecto 360", newSubtitle: "Dé nombre al proyecto, describa su alcance y objetivos, y elija después su sector y su arquitectura.", back: "← Volver a los proyectos", search: "Buscar un proyecto", searchPlaceholder: "Nombre del proyecto…", statutFilter: "Estado", allStatuts: "Todos los estados", noMatch: "Ningún proyecto corresponde a la búsqueda.", exportPortefeuille: "Exportar la cartera (Excel)", sortBy: "Ordenar por {col}",
     startCyber: 'Iniciar un análisis cibernético', colAnalyses: 'Análisis cibernéticos', startCyberTitle: 'Crea un análisis cibernético vinculado a este proyecto',
     title: 'Proyectos',
     subtitle: 'Análisis de proyecto 360: todo el riesgo operacional de un proyecto, preparado a partir de los datos existentes de la organización.',
@@ -2990,6 +2993,7 @@ export const es: Translations = {
     tabOptions:        'Referenciales y opciones',
     tabExamples:       'Ejemplos de talleres',
     tabEcosysteme:     'Ecosistema',
+    tabTiers: "Terceros",
     ecoScalesTitle:    'Escalas de peligrosidad de las partes interesadas',
     ecoScalesDesc:     'Valoración de los 4 subcriterios del taller 3: exposición = dependencia × penetración, fiabilidad cibernética = madurez × confianza. Nombre cada nivel; puede añadir o quitar niveles (mín. 2).',
     ecoLevelName:      'Nombre del nivel',

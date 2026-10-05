@@ -118,6 +118,7 @@ export const fr = {
 
   // ─── Page Tiers (écosystème agrégé) ───────────────────────────────────────
   tiers: {
+    identitesLink: "Identités de tiers (référentiel des personnes morales) : Configuration › Tiers →",
     cartoLink: 'Cartographie de l’écosystème',
     title:        'Tiers',
     subtitle:     'Parties prenantes (écosystème) identifiées dans vos analyses de risque',
@@ -1604,7 +1605,8 @@ export const fr = {
     saveError: 'Enregistrement impossible.',
     proposalsButton: 'Voir les risques proposés ({n})',
     proposalsNone: 'Aucun nouveau risque proposé par vos réponses.',
-    importTitle: 'Importer des risques cyber',
+    importTitle: "Importer des risques cyber ou des tiers d’une analyse cyber",
+    importSearch: "Rechercher une analyse cyber", importSearchPlaceholder: "Nom de l’analyse…", importNoMatch: "Aucune analyse ne correspond.", importSourceCounts: "{r} risque(s) · {t} tiers", importTiers: "Importer aussi les tiers de l’analyse ({n})", importDone: "{n} risque(s) et {t} tiers importé(s).", importVoirRisques: "Voir les risques importés",
     importIntro: 'Reprenez les risques d’une analyse cyber existante (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) de votre organisation. La copie est tracée et ne sera pas importée deux fois.',
     importSource: 'Analyse source',
     importChoose: 'Choisir une analyse…',
@@ -2039,6 +2041,7 @@ export const fr = {
       { nom: 'Nouveau service de paiement', description: 'Lancement d’un service de paiement en ligne avec un prestataire de paiement : flux financiers, lutte contre la fraude, disponibilité 24 h/24.' },
       { nom: 'Externalisation de la paie', description: 'Transfert du traitement de la paie à un prestataire : données personnelles des salariés, continuité de service, réversibilité.' },
     ],
+    objectifs: "Objectifs du projet", objectifsPlaceholder: "Ex. sécuriser la bascule, respecter le délai réglementaire, maîtriser le coût d’exploitation", objectifsHint: "Repris dans le contexte du projet (phase 1) : vous pourrez les compléter ensuite.", newTitle: "Lancer un projet 360", newSubtitle: "Nommez le projet, décrivez son périmètre et ses objectifs, puis choisissez son secteur et son architecture.", back: "← Retour aux projets", search: "Rechercher un projet", searchPlaceholder: "Nom du projet…", statutFilter: "Statut", allStatuts: "Tous les statuts", noMatch: "Aucun projet ne correspond à la recherche.", exportPortefeuille: "Exporter le portefeuille (Excel)", sortBy: "Trier par {col}",
     startCyber: 'Lancer une analyse cyber', colAnalyses: 'Analyses cyber', startCyberTitle: 'Crée une analyse cyber rattachée à ce projet',
     title: 'Projets',
     subtitle: 'Analyses projet 360 : tout le risque opérationnel d’un projet, préparé à partir des données existantes de l’organisation.',
@@ -3029,6 +3032,7 @@ export const fr = {
     tabOptions:        'Référentiels et options',
     tabExamples:       'Exemples des ateliers',
     tabEcosysteme:     'Écosystème',
+    tabTiers: "Tiers",
     ecoScalesTitle:    'Échelles de dangerosité des parties prenantes',
     ecoScalesDesc:     'Cotation des 4 sous-critères de l\'atelier 3 : exposition = dépendance × pénétration, fiabilité cyber = maturité × confiance. Nommez chaque niveau ; vous pouvez en ajouter ou en retirer (min. 2).',
     ecoLevelName:      'Nom du niveau',

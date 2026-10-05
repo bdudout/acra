@@ -117,6 +117,7 @@ export const de: Translations = {
 
   // ─── Seite Dritte (aggregiertes Ökosystem) ────────────────────────────────
   tiers: {
+    identitesLink: "Identitäten von Dritten (Verzeichnis der juristischen Personen): Konfiguration › Dritte →",
     cartoLink: 'Ökosystem-Karte',
     title:        'Dritte',
     subtitle:     'In Ihren Risikoanalysen identifizierte Stakeholder (Ökosystem)',
@@ -1579,7 +1580,8 @@ export const de: Translations = {
     saveError: 'Speichern nicht möglich.',
     proposalsButton: 'Vorgeschlagene Risiken anzeigen ({n})',
     proposalsNone: 'Ihre Antworten schlagen kein neues Risiko vor.',
-    importTitle: 'Cyber-Risiken importieren',
+    importTitle: "Cyber-Risiken oder Dritte aus einer Cyber-Analyse importieren",
+    importSearch: "Cyber-Analyse suchen", importSearchPlaceholder: "Name der Analyse…", importNoMatch: "Keine Analyse entspricht der Suche.", importSourceCounts: "{r} Risiko/Risiken · {t} Dritte", importTiers: "Auch die Dritten der Analyse importieren ({n})", importDone: "{n} Risiko/Risiken und {t} Dritte importiert.", importVoirRisques: "Importierte Risiken anzeigen",
     importIntro: 'Übernehmen Sie die Risiken einer bestehenden Cyber-Analyse (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) Ihrer Organisation. Die Kopie ist nachvollziehbar und wird nicht doppelt importiert.',
     importSource: 'Quellanalyse',
     importChoose: 'Analyse auswählen…',
@@ -2014,6 +2016,7 @@ export const de: Translations = {
       { nom: 'Neuer Zahlungsdienst', description: 'Einführung eines Online-Zahlungsdienstes mit einem Zahlungsdienstleister: Geldflüsse, Betrugsbekämpfung, Verfügbarkeit rund um die Uhr.' },
       { nom: 'Auslagerung der Lohnabrechnung', description: 'Übertragung der Lohnabrechnung an einen Dienstleister: personenbezogene Daten der Beschäftigten, Betriebskontinuität, Rückführbarkeit.' },
     ],
+    objectifs: "Projektziele", objectifsPlaceholder: "Z. B. die Umstellung absichern, die regulatorische Frist einhalten, die Betriebskosten beherrschen", objectifsHint: "Werden in den Projektkontext (Phase 1) übernommen: Sie können sie später ergänzen.", newTitle: "360-Projekt starten", newSubtitle: "Benennen Sie das Projekt, beschreiben Sie Umfang und Ziele und wählen Sie dann Branche und Architektur.", back: "← Zurück zu den Projekten", search: "Projekt suchen", searchPlaceholder: "Projektname…", statutFilter: "Status", allStatuts: "Alle Status", noMatch: "Kein Projekt entspricht der Suche.", exportPortefeuille: "Portfolio exportieren (Excel)", sortBy: "Nach {col} sortieren",
     startCyber: 'Cyber-Analyse starten', colAnalyses: 'Cyber-Analysen', startCyberTitle: 'Erstellt eine mit diesem Projekt verknüpfte Cyber-Analyse',
     title: 'Projekte',
     subtitle: 'Projektanalysen 360: das gesamte operationelle Risiko eines Projekts, vorbereitet aus den vorhandenen Daten der Organisation.',
@@ -2989,6 +2992,7 @@ export const de: Translations = {
     tabOptions:        'Referenziale & Optionen',
     tabExamples:       'Workshop-Beispiele',
     tabEcosysteme:     'Ökosystem',
+    tabTiers: "Dritte",
     ecoScalesTitle:    'Gefährdungsskalen der Beteiligten',
     ecoScalesDesc:     'Bewertung der 4 Teilkriterien aus Workshop 3: Exposition = Abhängigkeit × Durchdringung, Cyber-Zuverlässigkeit = Reife × Vertrauen. Benennen Sie jede Stufe; Stufen können hinzugefügt/entfernt werden (min. 2).',
     ecoLevelName:      'Name der Stufe',

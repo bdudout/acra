@@ -117,6 +117,7 @@ export const en: Translations = {
 
   // ─── Third parties page (aggregated ecosystem) ────────────────────────────
   tiers: {
+    identitesLink: "Third-party identities (legal entity register): Configuration › Third parties →",
     cartoLink: 'Ecosystem map',
     title:        'Third parties',
     subtitle:     'Stakeholders (ecosystem) identified across your risk analyses',
@@ -1580,7 +1581,8 @@ export const en: Translations = {
     saveError: 'Could not save.',
     proposalsButton: 'View proposed risks ({n})',
     proposalsNone: 'Your answers propose no new risk.',
-    importTitle: 'Import cyber risks',
+    importTitle: "Import cyber risks or third parties from a cyber analysis",
+    importSearch: "Search for a cyber analysis", importSearchPlaceholder: "Analysis name…", importNoMatch: "No analysis matches.", importSourceCounts: "{r} risk(s) · {t} third part(y/ies)", importTiers: "Also import the analysis’s third parties ({n})", importDone: "{n} risk(s) and {t} third part(y/ies) imported.", importVoirRisques: "See the imported risks",
     importIntro: 'Reuse the risks of an existing cyber analysis (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) of your organisation. The copy is traced and will not be imported twice.',
     importSource: 'Source analysis',
     importChoose: 'Choose an analysis…',
@@ -2015,6 +2017,7 @@ export const en: Translations = {
       { nom: 'New payment service', description: 'Launch of an online payment service with a payment provider: financial flows, fraud prevention, 24/7 availability.' },
       { nom: 'Payroll outsourcing', description: 'Transfer of payroll processing to a provider: employee personal data, service continuity, reversibility.' },
     ],
+    objectifs: "Project objectives", objectifsPlaceholder: "E.g. secure the cut-over, meet the regulatory deadline, control running costs", objectifsHint: "Carried over to the project context (phase 1): you can complete them later.", newTitle: "Start a 360 project", newSubtitle: "Name the project, describe its scope and objectives, then choose its sector and architecture.", back: "← Back to projects", search: "Search for a project", searchPlaceholder: "Project name…", statutFilter: "Status", allStatuts: "All statuses", noMatch: "No project matches the search.", exportPortefeuille: "Export the portfolio (Excel)", sortBy: "Sort by {col}",
     startCyber: 'Start a cyber analysis', colAnalyses: 'Cyber analyses', startCyberTitle: 'Creates a cyber analysis linked to this project',
     title: 'Projects',
     subtitle: 'Project 360 analyses: the full operational risk of a project, prepared from the organisation’s existing data.',
@@ -2990,6 +2993,7 @@ export const en: Translations = {
     tabOptions:        'Frameworks & options',
     tabExamples:       'Workshop examples',
     tabEcosysteme:     'Ecosystem',
+    tabTiers: "Third parties",
     ecoScalesTitle:    'Stakeholder threat scales',
     ecoScalesDesc:     'Rating of the 4 sub-criteria of workshop 3: exposure = dependency × penetration, cyber reliability = maturity × trust. Name each level; you can add or remove levels (min. 2).',
     ecoLevelName:      'Level name',

@@ -433,3 +433,33 @@ export function isGrcActive(c: {
 }): boolean {
   return Boolean(c.registreRisquesActive || c.controlePermanentActive || c.auditInterneActive || c.kriActive || c.reglementaireActive || c.profilsOperationnelsActive)
 }
+
+// ─── Import des tiers avec les risques cyber ──────────────────────────────────
+const TYPES_PP = ['FOURNISSEUR', 'CLIENT', 'PARTENAIRE', 'PRESTATAIRE', 'ORGANISME_REGULATION', 'AUTRE'] as const
+export interface SourceTiers {
+  nom: string; type: string; description: string | null; tierId: string | null
+  dependance: number; penetration: number; maturite: number; confiance: number; critique: boolean; rang: number
+}
+
+/**
+ * Tiers de l'analyse cyber source à recopier dans le projet 360 : identité, type, cotation et criticité repris, en
+ * rang 1 (le projet ne reprend pas l'arborescence des tiers connexes) ; sans doublon avec les tiers déjà présents
+ * (même identité de tiers ou même nom). Pur → testé (projet360-import-tiers.test.ts).
+ */
+export function planTiersImport(args: { analyseId: string; source: readonly SourceTiers[]; existants: readonly { nom: string; tierId: string | null }[] }) {
+  const cle = (s: string) => s.trim().toLocaleLowerCase()
+  const noms = new Set(args.existants.map(e => cle(e.nom)))
+  const ids = new Set(args.existants.flatMap(e => (e.tierId ? [e.tierId] : [])))
+  const out: (Omit<SourceTiers, 'type'> & { analyseId: string; type: (typeof TYPES_PP)[number]; exposition: number; fiabilite: number; parentCle: null; cle: null })[] = []
+  for (const s of args.source) {
+    const nom = s.nom.trim()
+    if (!nom || noms.has(cle(nom)) || (s.tierId && ids.has(s.tierId))) continue
+    noms.add(cle(nom)); if (s.tierId) ids.add(s.tierId)
+    out.push({
+      analyseId: args.analyseId, nom, type: (TYPES_PP as readonly string[]).includes(s.type) ? s.type as (typeof TYPES_PP)[number] : 'PRESTATAIRE',
+      description: s.description, tierId: s.tierId, dependance: s.dependance, penetration: s.penetration, maturite: s.maturite, confiance: s.confiance,
+      exposition: s.dependance * s.penetration, fiabilite: s.maturite * s.confiance, critique: s.critique, rang: 1, parentCle: null, cle: null,
+    })
+  }
+  return out
+}

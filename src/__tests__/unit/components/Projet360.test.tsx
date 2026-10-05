@@ -50,24 +50,41 @@ describe('Questionnaire360 — pré-remplissage', () => {
 })
 
 describe('ImportCyberRisks', () => {
-  it('liste les analyses cyber, importe la sélection (sans les déjà importés)', async () => {
-    fetchMock.mockImplementation((_url: string, init?: RequestInit) => init?.method === 'POST'
-      ? ok({ imported: 1 }, 201)
-      : ok({ sources: [{ id: 'c1', nom: 'EBIOS SI paie', methode: 'EBIOS_RM', risques: [
-        { id: 's1', nom: 'Rançongiciel', niveauRisque: 12, alreadyImported: false },
-        { id: 's2', nom: 'Fuite', niveauRisque: 6, alreadyImported: true },
-      ] }] }))
-    const onImported = vi.fn()
-    render(<ImportCyberRisks analyseId="a1" onImported={onImported} />)
+  const sources = { sources: [{ id: 'c1', nom: 'EBIOS SI paie', methode: 'EBIOS_RM', nbRisques: 2, nbTiers: 3 }] }
+  const detail = { source: { id: 'c1', nom: 'EBIOS SI paie', methode: 'EBIOS_RM', nbTiers: 3, risques: [
+    { id: 's1', nom: 'Rançongiciel', niveauRisque: 12, alreadyImported: false },
+    { id: 's2', nom: 'Fuite', niveauRisque: 6, alreadyImported: true },
+  ] } }
+  const route = (body: unknown) => (url: string, init?: RequestInit) => init?.method === 'POST' ? ok(body, 201) : ok(url.includes('source=') ? detail : sources)
+
+  it('recherche une analyse, importe la sélection et ses tiers, puis propose de voir les risques', async () => {
+    fetchMock.mockImplementation(route({ imported: 1, tiers: 3 }))
+    const onImported = vi.fn(); const onVoirRisques = vi.fn()
+    render(<ImportCyberRisks analyseId="a1" onImported={onImported} onVoirRisques={onVoirRisques} />)
+    expect(screen.getByRole('heading', { name: 'Importer des risques cyber ou des tiers d’une analyse cyber' })).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Rechercher une analyse cyber'), { target: { value: 'paie' } })
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => String(c[0]).includes('q=paie'))).toBe(true))
     fireEvent.change(await screen.findByLabelText('Analyse source'), { target: { value: 'c1' } })
-    expect((screen.getByRole('checkbox', { name: /Fuite/ }) as HTMLInputElement).disabled).toBe(true)
+    expect(((await screen.findByRole('checkbox', { name: /Fuite/ })) as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByRole('checkbox', { name: 'Importer aussi les tiers de l’analyse (3)' }) as HTMLInputElement).checked).toBe(true)
     fireEvent.click(screen.getByRole('checkbox', { name: /Rançongiciel/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Importer la sélection' }))
     await waitFor(() => expect(onImported).toHaveBeenCalled())
     const post = fetchMock.mock.calls.find(c => c[1]?.method === 'POST')!
-    expect(post[0]).toBe('/api/analyses/a1/import-cyber')
-    expect(JSON.parse(post[1].body)).toEqual({ sourceAnalyseId: 'c1', risqueIds: ['s1'] })
-    expect(await screen.findByText('1 risque(s) importé(s).')).toBeTruthy()
+    expect(JSON.parse(post[1].body)).toEqual({ sourceAnalyseId: 'c1', risqueIds: ['s1'], importerTiers: true })
+    expect(await screen.findByText('1 risque(s) et 3 tiers importé(s).')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Voir les risques importés' }))
+    expect(onVoirRisques).toHaveBeenCalled()
+  })
+  it('import des tiers seuls possible ; décocher les tiers les exclut', async () => {
+    fetchMock.mockImplementation(route({ imported: 0, tiers: 3 }))
+    render(<ImportCyberRisks analyseId="a1" />)
+    fireEvent.change(await screen.findByLabelText('Analyse source'), { target: { value: 'c1' } })
+    await screen.findByRole('checkbox', { name: /Rançongiciel/ })
+    const btn = screen.getByRole('button', { name: 'Importer la sélection' }) as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(screen.getByRole('checkbox', { name: /Importer aussi les tiers/ }))
+    expect(btn.disabled).toBe(true)
   })
 })
 

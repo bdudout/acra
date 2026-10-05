@@ -1,5 +1,6 @@
 'use client'
 
+import TierIdentityPanel from '@/components/TierIdentityPanel'
 import SectorSettings from '@/components/SectorSettings'
 import { resolveIsAdmin } from '@/lib/effective-admin'
 import { Lock, Palette, X } from 'lucide-react'
@@ -129,7 +130,9 @@ export default function ConfigurationPage() {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'gravite' | 'vraisemblance' | 'matrice' | 'apercu'>('gravite')
   // Onglet principal de la configuration (4 sections)
-  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme'>('echelles')
+  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme' | 'tiers'>('echelles')
+  // Lien direct vers un onglet (ex. /configuration?section=tiers depuis la page Tiers), lu après le montage.
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('section') === 'tiers') setSection('tiers') }, [])
 
   const [config, setConfig] = useState<Config>(DEFAUT_4)
 
@@ -825,6 +828,7 @@ export default function ConfigurationPage() {
             ['echelles', t.config.tabScales],
             ['exemples', t.config.tabExamples],
             ['ecosysteme', t.config.tabEcosysteme],
+            ['tiers', t.config.tabTiers],
             ...(isAdmin ? [['options', t.config.tabOptions] as const] : []),
           ] as const).map(([key, label]) => (
             <button
@@ -1926,6 +1930,9 @@ export default function ConfigurationPage() {
         <div className={section === 'ecosysteme' ? '' : 'hidden'}>
           <EchellesEcosystemeEditor isAdmin={isAdmin} />
         </div>
+
+        {/* ═══ Section 5 — Tiers (identités de tiers : référentiel des personnes morales) ═══ */}
+        {section === 'tiers' && <TierIdentityPanel />}
       </main>
 
       {pendingConfirm && (

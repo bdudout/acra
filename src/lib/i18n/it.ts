@@ -117,6 +117,7 @@ export const it: Translations = {
 
   // ─── Pagina Terze parti (ecosistema aggregato) ────────────────────────────
   tiers: {
+    identitesLink: "Identità delle terze parti (registro delle persone giuridiche): Configurazione › Terze parti →",
     cartoLink: 'Mappa dell’ecosistema',
     title:        'Terze parti',
     subtitle:     'Parti interessate (ecosistema) identificate nelle tue analisi del rischio',
@@ -1580,7 +1581,8 @@ export const it: Translations = {
     saveError: 'Impossibile salvare.',
     proposalsButton: 'Vedi i rischi proposti ({n})',
     proposalsNone: 'Le vostre risposte non propongono nuovi rischi.',
-    importTitle: 'Importa rischi cyber',
+    importTitle: "Importa rischi cyber o terze parti da un’analisi cyber",
+    importSearch: "Cerca un’analisi cyber", importSearchPlaceholder: "Nome dell’analisi…", importNoMatch: "Nessuna analisi corrisponde.", importSourceCounts: "{r} rischio/i · {t} terza/e parte/i", importTiers: "Importa anche le terze parti dell’analisi ({n})", importDone: "{n} rischio/i e {t} terza/e parte/i importati.", importVoirRisques: "Vedi i rischi importati",
     importIntro: 'Riprendete i rischi di un’analisi cyber esistente (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) della vostra organizzazione. La copia è tracciata e non sarà importata due volte.',
     importSource: 'Analisi di origine',
     importChoose: 'Scegli un’analisi…',
@@ -2015,6 +2017,7 @@ export const it: Translations = {
       { nom: 'Nuovo servizio di pagamento', description: 'Lancio di un servizio di pagamento online con un fornitore di pagamenti: flussi finanziari, contrasto alle frodi, disponibilità 24 ore su 24.' },
       { nom: 'Esternalizzazione delle paghe', description: 'Trasferimento dell’elaborazione delle paghe a un fornitore: dati personali dei dipendenti, continuità del servizio, reversibilità.' },
     ],
+    objectifs: "Obiettivi del progetto", objectifsPlaceholder: "Es. mettere in sicurezza il passaggio, rispettare la scadenza normativa, controllare i costi di esercizio", objectifsHint: "Riportati nel contesto del progetto (fase 1): potrete completarli in seguito.", newTitle: "Avvia un progetto 360", newSubtitle: "Date un nome al progetto, descrivetene perimetro e obiettivi, poi sceglietene settore e architettura.", back: "← Torna ai progetti", search: "Cerca un progetto", searchPlaceholder: "Nome del progetto…", statutFilter: "Stato", allStatuts: "Tutti gli stati", noMatch: "Nessun progetto corrisponde alla ricerca.", exportPortefeuille: "Esporta il portafoglio (Excel)", sortBy: "Ordina per {col}",
     startCyber: 'Avvia un’analisi cyber', colAnalyses: 'Analisi cyber', startCyberTitle: 'Crea un’analisi cyber collegata a questo progetto',
     title: 'Progetti',
     subtitle: 'Analisi di progetto 360: tutto il rischio operativo di un progetto, preparato a partire dai dati esistenti dell’organizzazione.',
@@ -2990,6 +2993,7 @@ export const it: Translations = {
     tabOptions:        'Riferimenti e opzioni',
     tabExamples:       'Esempi dei laboratori',
     tabEcosysteme:     'Ecosistema',
+    tabTiers: "Terze parti",
     ecoScalesTitle:    'Scale di pericolosità delle parti interessate',
     ecoScalesDesc:     'Valutazione dei 4 sotto-criteri del laboratorio 3: esposizione = dipendenza × penetrazione, affidabilità cyber = maturità × fiducia. Dai un nome a ogni livello; puoi aggiungerne o rimuoverne (min. 2).',
     ecoLevelName:      'Nome del livello',

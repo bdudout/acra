@@ -39,14 +39,20 @@ beforeEach(() => {
 
 describe('import-cyber', () => {
   it('les sources sont filtrées : même organisation, méthodes cyber, périmètre visible, hors analyse cible', async () => {
-    db.analyse.findMany.mockResolvedValue([{ id: 'c1', nom: 'EBIOS', methode: 'EBIOS_RM', updatedAt: new Date(), risques: [risque('s1'), risque('s2')] }])
+    // Liste légère (sans les risques) : mêmes filtres d'accès.
+    db.analyse.findMany.mockResolvedValue([{ id: 'c1', nom: 'EBIOS', methode: 'EBIOS_RM', updatedAt: new Date(), _count: { risques: 2, partiesPrenantes: 0 } }])
     const res = await GET(req({}), params)
     const where = db.analyse.findMany.mock.calls[0][0].where
     expect(where).toMatchObject({ organizationId: 'org1', deletedAt: null, NOT: { id: 'p1' }, AND: [{ scope: 'visible' }] })
     expect(where.methode.in).toEqual(expect.arrayContaining(['EBIOS_RM', 'ISO_27005', 'NIST_800_30']))
     expect(where.methode.in).not.toContain('ISO_31000')
-    const d = await res.json()
-    expect(d.sources[0].risques.map((r: { id: string; alreadyImported: boolean }) => [r.id, r.alreadyImported])).toEqual([['s1', true], ['s2', false]])
+    expect((await res.json()).sources[0]).toMatchObject({ id: 'c1', nbRisques: 2 })
+    // Détail d'une source : même filtre, risques marqués « déjà importé ».
+    db.analyse.findFirst.mockResolvedValue({ id: 'c1', nom: 'EBIOS', methode: 'EBIOS_RM', risques: [risque('s1'), risque('s2')], _count: { partiesPrenantes: 0 } })
+    const detail = await GET({ json: async () => ({}), headers: new Headers(), nextUrl: new URL('http://x/?source=c1') } as never, params)
+    expect(db.analyse.findFirst.mock.calls.at(-1)![0].where).toMatchObject({ id: 'c1', organizationId: 'org1', NOT: { id: 'p1' } })
+    const d = await detail.json()
+    expect(d.source.risques.map((r: { id: string; alreadyImported: boolean }) => [r.id, r.alreadyImported])).toEqual([['s1', true], ['s2', false]])
   })
 
   it('utilise le rôle effectif dans l’organisation cible et non celui de la session ou de l’organisation active', async () => {
@@ -67,7 +73,7 @@ describe('import-cyber', () => {
   })
 
   it('import : copie la sélection en CYBER, sans réimporter un risque déjà importé', async () => {
-    db.analyse.findFirst.mockResolvedValue({ id: 'c1', nom: 'EBIOS', risques: [risque('s1'), risque('s2')] })
+    db.analyse.findFirst.mockResolvedValue({ id: 'c1', nom: 'EBIOS', risques: [risque('s1'), risque('s2')], partiesPrenantes: [] })
     const res = await POST(req({ sourceAnalyseId: 'c1', risqueIds: ['s1', 's2'] }), params)
     expect(res.status).toBe(201)
     const rows = db.risque.createMany.mock.calls[0][0].data

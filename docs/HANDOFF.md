@@ -6,6 +6,34 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-05 (67) — Claude : pertinence des exemples, patterns, projets 360, tiers
+
+- **Fait** :
+  - `7f70593` — badges « pertinent pour votre cas d'usage » (sous-secteur choisi) / « … votre architecture : <patterns> »
+    (pattern coché) dans les 5 ateliers (`PertinenceBadge`, `annoterPertinence`, `rankExemples` les met en tête) ;
+    OV : la description de l'exemple était perdue depuis la v1.0 (`ov?.desc`) → `lib/objectifs-vises.ts`.
+  - `d7af12d` — lot 2 des patterns réécrit (fin du gabarit « X — composants… »), compléments du lot 1
+    (`exemples-patterns-complements.ts`), test de cohérence par pattern (`exemples-patterns-coherence.test.ts`) ;
+    affichage : combinaisons d'abord, entrelacement des patterns, ≤ 4 par pattern, ≤ 10 « architecture » par catégorie.
+  - (ce tour, commit suivant) Projets 360 : lancement dans une page dédiée `/projets/nouveau` (objectifs saisis dès
+    la création → `Cadrage.objectifsEtude`, `lib/cadrage-initial.ts`) ; liste `/projets` avec recherche, filtre par
+    statut et tri (`lib/projets-liste.ts`) ; carte de chaleur du portefeuille retirée de la page (export Excel conservé,
+    `ProjetsPortefeuille` supprimé) ; import cyber : recherche d'analyse (plus de chargement de tous les risques),
+    import des tiers de la source (`planTiersImport`, case cochée par défaut, tiers seuls possibles), bouton « Voir
+    les risques importés » ; « Tiers concernés » sans typologie ; mesures d'un projet sans cotation d'efficacité ;
+    « Identités de tiers » déplacé de `/tiers` vers `/configuration` › Tiers (`?section=tiers`).
+- **Diagnostic lenteur** (poste local) : 8 Go de RAM, ~10 Go de swap utilisés, serveur Next quasi entièrement en
+  swap → la lenteur ressentie est d'abord environnementale. Côté code : les 5 dictionnaires i18n (~1,5 Mo minifiés)
+  sont envoyés sur **chaque** page (`lib/i18n/index.ts` importe les 5 langues, `context.tsx` s'en sert) et les données
+  d'exemples (~740 Ko) sur la création d'analyse et les ateliers. **Non fait** : chargement paresseux de la langue
+  active (proposé à l'utilisateur).
+- **Signalé, non vérifié** : « risques importés absents de l'atelier 3 » — en base, le projet « Kangourou » a bien
+  3 risques importés (`sourceRisqueId`) et le registre (phase 3) les lit sans filtre ; hypothèse : chargement en swap.
+- **Pièges** : `<input list>` a le rôle ARIA combobox (tests) ; sur ce poste, lancer tsc/vitest en arrière-plan
+  (> 2 min) et ne jamais en lancer deux à la fois.
+
+---
+
 ## 2026-10-05 (66) — Claude : reprise du travail de Codex et finitions stockage
 
 - **Fait (commits `d43a988`, `5cfa15c`)** : page `/admin/storage` (panneau Stockage + gestion des sauvegardes,
