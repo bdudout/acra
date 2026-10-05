@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId, ...(bornee ? { dateSurvenance: { gte: bornee } } : {}) },
     orderBy: [{ dateSurvenance: 'desc' }, { createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } }, riskItem: { select: { intitule: true } } },
+    include: { processus: { select: { nom: true } }, riskItem: { select: { intitule: true } }, risquesLies: { select: { riskItem: { select: { intitule: true } } }, orderBy: { createdAt: 'asc' } } },
   })
 
   const num = (v: unknown): number | null => (v == null ? null : Number(v as unknown as string))
@@ -93,7 +93,8 @@ export async function GET(req: NextRequest) {
       recuperations: recup ?? '',
       perteNette: perteNette(brut, recup) ?? '',
       statut: r.statut,
-      risqueLie: r.riskItem?.intitule ?? '',
+      // Tous les risques associés (plusieurs) ; repli sur le risque principal pour les données antérieures.
+      risqueLie: r.risquesLies.length ? r.risquesLies.map(l => l.riskItem.intitule).join(' · ') : (r.riskItem?.intitule ?? ''),
       declareLe: jour(r.createdAt),
       qualifieLe: jour(r.qualifieLe),
       clotureLe: jour(r.clotureLe),

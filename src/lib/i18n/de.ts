@@ -2323,7 +2323,7 @@ export const de: Translations = {
     colCategory: 'Kategorie',
     colProcess: 'Prozess',
     colPerte: 'Nettoverlust',
-    colRisque: 'Verknüpftes Risiko',
+    colRisque: 'Verknüpfte Risiken',
     colStatut: 'Status',
     colDora: 'DORA-Meldung',
     doraEnRetard: 'überfällig',

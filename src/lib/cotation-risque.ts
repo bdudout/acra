@@ -62,7 +62,8 @@ export function alertesCotation(r: CotationRow, ctx: { decision: 'treat' | 'acce
   const c = cotations(r)
   const out: AlerteCotation[] = []
   if (r.strategie === 'REDUIRE') {
-    if (!(r.mesuresCount ?? 0) && !(r.plansCount ?? 0)) out.push('REDUIRE_SANS_MESURE')
+    // Signalé seulement pour un risque à traiter (au-delà de l'appétit) : un risque acceptable n'exige rien.
+    if (!(r.mesuresCount ?? 0) && !(r.plansCount ?? 0)) { if (ctx.decision === 'treat') out.push('REDUIRE_SANS_MESURE') }
     else if (c.residuel.g * c.residuel.v >= c.actuel.g * c.actuel.v) out.push('RESIDUEL_NON_REDUIT')
   }
   if (r.strategie === 'ACCEPTER' && ctx.decision === 'treat') out.push('ACCEPTE_HORS_APPETIT')

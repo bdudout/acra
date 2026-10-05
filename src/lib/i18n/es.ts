@@ -2324,7 +2324,7 @@ export const es: Translations = {
     colCategory: 'Categoría',
     colProcess: 'Proceso',
     colPerte: 'Pérdida neta',
-    colRisque: 'Riesgo vinculado',
+    colRisque: 'Riesgos vinculados',
     colStatut: 'Estado',
     colDora: 'Notificación DORA',
     doraEnRetard: 'atrasado',

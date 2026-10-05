@@ -2348,7 +2348,7 @@ export const fr = {
     colCategory: 'Catégorie',
     colProcess: 'Processus',
     colPerte: 'Perte nette',
-    colRisque: 'Risque lié',
+    colRisque: 'Risques liés',
     colStatut: 'Statut',
     colDora: 'Déclaration DORA',
     doraEnRetard: 'en retard',

@@ -115,6 +115,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   // Association d'un incident à des risques du registre (action dédiée, sans requalifier).
   const [assocId, setAssocId] = useState<string | null>(null)
   const [assocIds, setAssocIds] = useState<string[]>([])
+  // À l'ouverture seulement, le panneau d'association est amené à l'écran (il s'affiche sous le tableau).
+  useEffect(() => { if (assocId) document.getElementById('incident-association')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }) }, [assocId])
   const [qual, setQual] = useState<QualForm>(EMPTY_QUAL)
   const [qualPertes, setQualPertes] = useState<{ pertes: LignePerte[]; recups: LigneRecuperation[] }>({ pertes: [], recups: [] })
   const [cfg, setCfg] = useState<IncidentsConfig | null>(null)
@@ -609,7 +611,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         const i = incidents.find(x => x.id === assocId)
         if (!i) return null
         return (
-          <div className="card p-4 mt-5 space-y-3" role="region" aria-label={n.associerTitre}>
+          <div id="incident-association" className="card p-4 mt-5 space-y-3" role="region" aria-label={n.associerTitre}>
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{n.associerTitre} — {i.intitule}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{n.associerHint}</p>
             {error && <p className="text-xs text-red-600">{error}</p>}

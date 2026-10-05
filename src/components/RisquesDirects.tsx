@@ -282,7 +282,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   const detailsButton = (r: RisqueRow) => hasDetails && (
     <button onClick={() => setDetailsOpenId(cur => cur === r.id ? null : r.id)} aria-expanded={detailsOpenId === r.id}
       aria-label={treatmentLabel} title={treatmentLabel}
-      className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-gray-200 bg-white px-1.5 py-1 text-xs font-medium text-gray-600 hover:border-ebios-300 hover:bg-ebios-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
       {showMesuresSection && <span className="inline-flex items-center gap-0.5 text-green-700 dark:text-green-300"><ShieldCheck size={14} aria-hidden="true" />{r.mesuresCount ?? 0}</span>}
       {showPlansSection && <span className="inline-flex items-center gap-0.5 text-blue-700 dark:text-blue-300"><Shield size={14} aria-hidden="true" />{r.plansCount ?? 0}</span>}
       <span className="text-[10px] text-gray-500">{showMesuresSection && showPlansSection
@@ -490,7 +490,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       {/* Sans colonne Traitement (phase de cotation) : les mesures existantes se gèrent ici. */}
                       {!col.strategie && detailsButton(r)}
                     </div>)}
-                    {col.strategie && cell(m.colTraitement, <div className="flex flex-col items-start gap-1">
+                    {col.strategie && cell(m.colTraitement, <div className="flex min-w-[11rem] flex-col items-start gap-1">
                       <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
                       </select>

@@ -38,5 +38,7 @@ describe('contrôles', () => {
     expect(alertesCotation({ ...r, mesuresCount: 1, graviteResiduelle: 4, vraisemblanceResiduelle: 2 }, { decision: 'treat' })).toEqual(['RESIDUEL_NON_REDUIT'])
     expect(alertesCotation({ ...r, strategie: 'ACCEPTER' }, { decision: 'treat' })).toEqual(['ACCEPTE_HORS_APPETIT'])
     expect(alertesCotation({ ...r, strategie: 'ACCEPTER' }, { decision: 'accept' })).toEqual([])
+    // Risque acceptable : « Réduire » sans mesure n'est pas signalé (pas de bruit sur un projet neuf).
+    expect(alertesCotation(r, { decision: 'accept' })).toEqual([])
   })
 })

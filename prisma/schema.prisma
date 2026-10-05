@@ -1953,6 +1953,8 @@ model Risque {
   // Projet 360 : suppression demandée, en attente de validation (RM, ou RSSI si risque cyber).
   suppressionDemandeePar String?
   suppressionDemandeeLe  DateTime?
+  // Anti-doublon de la relance du validateur (e-mail de synthèse).
+  suppressionRappelLe    DateTime?
 
   derogations Derogation[]
 
