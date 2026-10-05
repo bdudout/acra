@@ -821,6 +821,17 @@ Access can also be granted **analysis by analysis** (ad-hoc sharing with any use
 
 ---
 
+## 💾 Disk space (Docker)
+
+```bash
+make docker-usage   # breakdown of the space used by Docker (docker system df -v)
+make docker-clean   # confirmation, then: stopped project containers, dangling images, build cache above 5 GB
+make rebuild        # rebuild without cache (make build uses the cache)
+```
+
+`make docker-clean` **never** removes a volume (database, documents, backups). Container logs are capped at
+3 × 10 MB per service, and a successful update removes ACRA images older than the previous version (kept for a quick rollback).
+
 ## 🛠️ Troubleshooting
 
 ### The application won't start

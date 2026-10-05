@@ -31,6 +31,27 @@ describe('update.sh v2 — mise à jour réussie', () => {
     expect(inst.read('.acra-update/events.log')).toMatch(/^UPDATED 1\.0\.4 1\.0\.5 /m)
     expect(c.some(x => x.includes('ENV MIGRATOR RESOLVE=0'))).toBe(true)
   })
+  it('FINALIZE : supprime les images ACRA antérieures à N-1, puis purge images orphelines et cache de build (jamais de volume)', () => {
+    inst = makeInstance()
+    inst.fakeFile('images', 'v1.0.2\nv1.0.3\nv1.0.4\nv1.0.5\ndev\n')
+    const r = update()
+    expect(r.status, r.stderr).toBe(0)
+    const c = inst.calls()
+    const rmi = c.filter(x => x.startsWith('image rm'))
+    expect(rmi.join('\n')).toMatch(/acra-app:v1\.0\.2/)
+    expect(rmi.join('\n')).toMatch(/acra-app:v1\.0\.3/)
+    expect(rmi.join('\n')).not.toMatch(/v1\.0\.4|v1\.0\.5|:dev/)
+    expect(c).toContain('image prune -f')
+    expect(c).toContain('builder prune -f --keep-storage 5GB')
+    expect(c.some(x => /volume|\s-v\b/.test(x) && /prune|rm/.test(x))).toBe(false)
+    expect(status().state).toBe('SUCCESS')
+  })
+  it('FINALIZE : un échec de purge d’images n’empêche pas le succès', () => {
+    inst = makeInstance(); inst.fakeFile('images', 'v1.0.2\n'); inst.fakeFile('image_rm_fail')
+    const r = update()
+    expect(r.status).toBe(0)
+    expect(status().state).toBe('SUCCESS')
+  })
   it('déjà à jour : rien à faire', () => {
     inst = makeInstance()
     update(); const n = inst.calls().length

@@ -978,6 +978,18 @@ En **multi-organisation**, le rôle est porté **par organisation** (un même co
 
 ---
 
+## 💾 Espace disque (Docker)
+
+```bash
+make docker-usage   # ventilation de l'espace utilisé par Docker (docker system df -v)
+make docker-clean   # confirmation, puis : conteneurs arrêtés du projet, images orphelines, cache de build au-delà de 5 Go
+make rebuild        # reconstruction sans cache (make build utilise le cache)
+```
+
+`make docker-clean` ne supprime **jamais** de volume (base de données, documents, sauvegardes). Les journaux des
+conteneurs sont plafonnés à 3 × 10 Mo par service, et une mise à jour réussie supprime les images ACRA antérieures à
+la version précédente (conservée pour un retour arrière rapide).
+
 ## 🛠️ Dépannage
 
 ### L'application ne démarre pas

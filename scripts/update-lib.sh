@@ -145,12 +145,25 @@ smoke_ok() {
   for p in / /auth/signin /api/health; do
     if nodocker; then out="HTTP/1.1 $(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${ACRA_PORT:-3000}$p" 2>/dev/null || echo 000)"
     else out="$("${COMPOSE[@]}" exec -T app wget -S -q -O /dev/null "http://127.0.0.1:3000$p" 2>&1 || true)"; fi
-    status_line="$(printf '%s\n' "$out" | sed -n '/HTTP\/[0-9.]\+ [0-9][0-9][0-9]/p' | tail -1)"
+    status_line="$(printf '%s\n' "$out" | grep -Eo 'HTTP/[0-9.]+ [0-9]{3}' | tail -1 || true)"
     if ! printf '%s' "$status_line" | grep -Eq 'HTTP/[0-9.]+ (200|307)'; then
       [ "${ACRA_UPDATE_VERBOSE:-0}" != "1" ] || echo "✗ Fumée $p : ${out:0:500}" >&2
       return 1
     fi
   done
+}
+
+# ── Images Docker : garde la version courante et la précédente (retour arrière rapide) ───────────────
+# Jamais de volume : seules les images ACRA plus anciennes, les images orphelines et le cache de build sont purgés.
+prune_docker_images() { # $1 = version précédente, $2 = version courante
+  nodocker && return 0
+  local tag
+  while IFS= read -r tag; do
+    case "$tag" in ''|"<none>"|dev|"v$1"|"v$2") continue ;; esac
+    docker image rm "acra-app:$tag" >/dev/null 2>&1 || true
+  done < <(docker image ls acra-app --format '{{.Tag}}' 2>/dev/null || true)
+  docker image prune -f >/dev/null 2>&1 || true
+  docker builder prune -f --keep-storage 5GB >/dev/null 2>&1 || true
 }
 
 # ── Retour arrière ────────────────────────────────────────────────────────────────────────────────
@@ -246,6 +259,7 @@ run_steps() {
   event "UPDATED $FROM $TO $(iso)"
   local snap="${ACRA_SNAPSHOT_SCRIPT:-scripts/acra-snapshot.sh}"
   ACRA_RUN_OWNER=1 bash "$snap" prune >/dev/null 2>&1 || echo "⚠ Purge des anciens points de restauration en échec (non bloquant)." >&2
+  prune_docker_images "$FROM" "$TO" || echo "⚠ Purge des anciennes images Docker en échec (non bloquant)." >&2
   status SUCCESS "Mise à jour terminée"
   archive_run
   return 0

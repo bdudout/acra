@@ -824,6 +824,17 @@ Zugriffe können auch **analyseweise** gewährt werden (punktuelles Teilen mit j
 
 ---
 
+## 💾 Speicherplatz (Docker)
+
+```bash
+make docker-usage   # Aufschlüsselung des von Docker belegten Speichers (docker system df -v)
+make docker-clean   # nach Bestätigung: gestoppte Projekt-Container, verwaiste Images, Build-Cache über 5 GB
+make rebuild        # Neuaufbau ohne Cache (make build nutzt den Cache)
+```
+
+`make docker-clean` löscht **nie** ein Volume (Datenbank, Dokumente, Sicherungen). Container-Logs sind auf
+3 × 10 MB pro Dienst begrenzt; ein erfolgreiches Update entfernt ACRA-Images, die älter als die Vorversion sind (diese bleibt für einen schnellen Rollback erhalten).
+
 ## 🛠️ Fehlerbehebung
 
 ### Die Anwendung startet nicht

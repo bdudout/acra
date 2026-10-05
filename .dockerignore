@@ -43,3 +43,11 @@ docker-compose*.yml
 test-results
 playwright-report
 .env.*
+
+# Hors contexte de build : rapports, audits, tests E2E, jeux d'essai, documentation
+rapports/
+audit-annotations/
+e2e/
+e2e-public/
+fixtures/
+docs/

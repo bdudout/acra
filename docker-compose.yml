@@ -13,11 +13,26 @@
 x-buildkit: &buildkit
   DOCKER_BUILDKIT: "1"
 
+# Journaux plafonnés à 30 Mo par service (sans cela, json-file grossit sans limite).
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+# Construction déclarée UNE fois : app et migrator partagent la même image (même tag, mêmes arguments).
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  # Identité servie par /api/health (la mise à jour vérifie la révision cible).
+  args:
+    ACRA_VERSION: ${ACRA_VERSION:-development}
+    ACRA_REVISION: ${ACRA_REVISION:-unknown}
+
 services:
   db:
     image: postgres:16-alpine
     container_name: ebios_db
     restart: unless-stopped
+    logging: *logging
     environment:
       # Ces variables sont lues depuis le fichier .env
       # Générez .env avec : ./scripts/setup.sh
@@ -40,11 +55,11 @@ services:
   # Cela élimine la race condition migrate/startup du service app.
   # ---------------------------------------------------------------------------
   migrator:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: acra-app:${ACRA_VERSION:-dev}
+    build: *app-build
     container_name: ebios_migrator
     restart: "no"
+    logging: *logging
     environment:
       DATABASE_URL: ${DATABASE_URL}
       # 0 pendant une mise à jour (scripts/update.sh) : jamais de « migrate resolve » automatique.
@@ -60,15 +75,11 @@ services:
       sh -c "sh scripts/migrate-recover.sh"
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # Identité servie par /api/health (la mise à jour vérifie la révision cible).
-      args:
-        ACRA_VERSION: ${ACRA_VERSION:-development}
-        ACRA_REVISION: ${ACRA_REVISION:-unknown}
+    image: acra-app:${ACRA_VERSION:-dev}
+    build: *app-build
     container_name: ebios_app
     restart: unless-stopped
+    logging: *logging
     environment:
       # Connexion à la base — doit correspondre aux variables du service "db" ci-dessus
       DATABASE_URL: ${DATABASE_URL}
@@ -120,6 +131,7 @@ services:
     image: curlimages/curl:8.11.1
     container_name: ebios_scheduler
     restart: unless-stopped
+    logging: *logging
     environment:
       CRON_SECRET: ${CRON_SECRET:-}
       SCHEDULER_TICK: ${SCHEDULER_TICK:-900}
@@ -143,6 +155,7 @@ services:
     image: postgres:16-alpine
     container_name: ebios_backup
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

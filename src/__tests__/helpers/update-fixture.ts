@@ -19,6 +19,8 @@ case "$a" in
   *"config --services"*) if f services; then cat "$FAKE_DIR/services"; else printf 'db\\napp\\nscheduler\\nbackup\\nmigrator\\n'; fi ;;
   *"ps --status running --services"*) if f running; then cat "$FAKE_DIR/running"; else printf 'db\\napp\\n'; fi ;;
   *"ps -q app"*) f no_app_container || echo cid123 ;;
+  "image ls"*) cat "$FAKE_DIR/images" 2>/dev/null ;;
+  "image rm"*) f image_rm_fail && exit 1 ;;
   inspect*) f mounts && cat "$FAKE_DIR/mounts" ;;
   cp\\ *) dest="\${@: -1}"; mkdir -p "$dest"; echo rescued > "$dest/doc1.txt" ;;
   *"compose"*" cp "*) if f rescue_copy_fail_once; then rm "$FAKE_DIR/rescue_copy_fail_once"; exit 1; fi; f rescue_copy_fail && exit 1 ;;

@@ -16,6 +16,10 @@
 #   NEXTAUTH_URL=https://<DEMO_DOMAIN>, NEXT_PUBLIC_BASE_URL=https://<DEMO_DOMAIN>.
 # =============================================================================
 
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
 services:
   # PostgreSQL n'est JAMAIS exposé sur Internet (accès interne via le réseau Docker).
   db:
@@ -36,6 +40,7 @@ services:
     image: caddy:2-alpine
     container_name: ebios_caddy
     restart: unless-stopped
+    logging: *logging
     ports:
       - "80:80"
       - "443:443"
@@ -57,6 +62,7 @@ services:
     image: curlimages/curl:8.11.1
     container_name: ebios_democron
     restart: unless-stopped
+    logging: *logging
     environment:
       CRON_SECRET: ${CRON_SECRET}
       CRON_INTERVAL: ${CRON_INTERVAL:-3600}
