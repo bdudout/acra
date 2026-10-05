@@ -137,3 +137,16 @@ describe('update-agent.sh — mesure de l’hôte Docker (host-stats.json)', () 
     expect(existsSync(file())).toBe(false)
   })
 })
+
+describe('update-agent.sh — demande backup-now', () => {
+  it('lance une sauvegarde manuelle immédiate avec la version courante, puis publie les statistiques', () => {
+    setup()
+    writeFileSync(path.join(inst.work, 'scripts/acra-snapshot.sh'), '#!/usr/bin/env bash\necho "SNAP $*" >> "$AUDIT_LOG"\n', { mode: 0o755 })
+    writeFileSync(path.join(inst.work, 'scripts/acra-schedule.sh'), '#!/usr/bin/env bash\necho "SCHEDULE $*" >> "$AUDIT_LOG"\n', { mode: 0o755 })
+    request({ id: 'r', action: 'backup-now', requestedBy: 'u', requestedAt: '2026-10-05T00:00:00.000Z' })
+    agent()
+    expect(inst.calls().filter(c => c.startsWith('SNAP'))).toEqual(['SNAP create --reason manual --from-version 1.0.4'])
+    expect(inst.calls()).toContain('SCHEDULE stats')
+    expect(updateCalls()).toEqual([])
+  })
+})

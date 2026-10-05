@@ -173,6 +173,13 @@ case "$ACTION" in
     chmod 644 "$DIR/backup-policy.json.tmp"; mv "$DIR/backup-policy.json.tmp" "$DIR/backup-policy.json"
     echo "[$(now)] politique de sauvegarde mise à jour"
     run_schedule ;;
+  backup-now)
+    # Sauvegarde manuelle immédiate (point `manual`) : aucun paramètre lu dans la demande ; la version vient du dépôt.
+    CUR_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([0-9A-Za-z.+-]*\)".*/\1/p' package.json | head -1)"
+    CUR_VER="${CUR_VER:-unknown}"
+    echo "[$(now)] sauvegarde manuelle demandée (version $CUR_VER)"
+    ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}" scripts/acra-snapshot.sh create --reason manual --from-version "$CUR_VER" >> "$DIR/backup-now.log" 2>&1 || echo "[$(now)] sauvegarde manuelle en échec (voir backup-now.log)" >&2
+    scripts/acra-schedule.sh stats >> "$DIR/schedule.log" 2>&1 || true ;;
   backup-prune)
     # Liste exacte d'identifiants : chacun validé (format) ET présent dans l'index de l'AGENT ; la rétention n'est pas recalculée ici.
     ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'

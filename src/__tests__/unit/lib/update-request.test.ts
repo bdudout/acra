@@ -1,7 +1,7 @@
 // #185 — bouton « Mettre à jour » d'une instance auto-hébergée : l'application
 // dépose une DEMANDE (canal uniquement), un agent hôte l'exécute. Logique pure.
 import { describe, expect, it } from 'vitest'
-import { buildUpdateRequest, buildRollbackRequest, buildBackupPruneRequest, agentAlive, parseUpdateStatus, AGENT_MAX_AGE_MS } from '@/lib/update-request'
+import { buildUpdateRequest, buildRollbackRequest, buildBackupPruneRequest, buildBackupNowRequest, agentAlive, parseUpdateStatus, AGENT_MAX_AGE_MS } from '@/lib/update-request'
 
 const now = new Date('2026-09-29T10:00:00Z')
 
@@ -93,5 +93,11 @@ describe('buildBackupPruneRequest', () => {
   it('borne à 50 identifiants', () => {
     const many = Array.from({ length: 60 }, (_, i) => mk(1, { id: `20261001T0200${String(i).padStart(2, '0')}Z-manual-v${i}`, reason: 'manual' }))
     expect(() => buildBackupPruneRequest({ ...a, index: { snapshots: [...many, mk(5)] }, ids: many.map(m => m.id) })).toThrow('too_many')
+  })
+})
+
+describe('buildBackupNowRequest', () => {
+  it('demande une sauvegarde manuelle immédiate, sans paramètre', () => {
+    expect(buildBackupNowRequest({ userId: 'u', now: new Date('2026-10-05T00:00:00Z'), id: 'r2' })).toEqual({ id: 'r2', action: 'backup-now', requestedBy: 'u', requestedAt: '2026-10-05T00:00:00.000Z' })
   })
 })

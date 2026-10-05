@@ -16,7 +16,8 @@ export type UpdateRequestUpdate = { id: string; action: 'update'; channel: Updat
 export type UpdateRequestRollback = { id: string; action: 'rollback'; snapshotId: string; confirmVersion: string; requestedBy: string; requestedAt: string }
 export type UpdateRequestBackupPolicy = { id: string; action: 'backup-policy'; policy: BackupPolicy; requestedBy: string; requestedAt: string }
 export type UpdateRequestBackupPrune = { id: string; action: 'backup-prune'; ids: string[]; requestedBy: string; requestedAt: string }
-export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback | UpdateRequestBackupPolicy | UpdateRequestBackupPrune
+export type UpdateRequestBackupNow = { id: string; action: 'backup-now'; requestedBy: string; requestedAt: string }
+export type UpdateRequest = UpdateRequestUpdate | UpdateRequestRollback | UpdateRequestBackupPolicy | UpdateRequestBackupPrune | UpdateRequestBackupNow
 export type UpdateState = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
 export interface UpdateStatusStep { step: string; ok: boolean; at: string }
 export interface UpdateStatus {
@@ -51,6 +52,11 @@ export function buildBackupPolicyRequest(a: { policy: unknown; userId: string; n
     hour: p.hour,
   }
   return { id: a.id, action: 'backup-policy', policy, requestedBy: a.userId, requestedAt: a.now.toISOString() }
+}
+
+/** Demande de sauvegarde manuelle immédiate (point `manual`) : aucun paramètre, l'agent connaît la version courante. */
+export function buildBackupNowRequest(a: { userId: string; now: Date; id: string }): UpdateRequestBackupNow {
+  return { id: a.id, action: 'backup-now', requestedBy: a.userId, requestedAt: a.now.toISOString() }
 }
 
 export const PRUNE_MAX_IDS = 50
