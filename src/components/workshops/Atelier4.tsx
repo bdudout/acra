@@ -35,6 +35,7 @@ import { resolveExemples } from '@/lib/exemples-ateliers'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import { pertinenceText } from '@/components/workshops/PertinenceBadge'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { OPERATEURS_AE, normalizeOperateur } from '@/lib/operateur-ae'
@@ -387,7 +388,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                           const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                           return (
                             <button key={i} onClick={() => addAction(s.id, a)}
-                              title={a.pertinent ? t.workshop.relevantLabel : undefined}
+                              title={pertinenceText(a, t.workshop, locale) ?? undefined}
                               className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color} hover:opacity-80 transition-opacity ${a.pertinent ? 'ring-1 ring-ebios-400' : ''}`}>
                               {a.pertinent && <span aria-hidden><Star size={18} aria-hidden="true" /></span>}+ {a.nom}
                             </button>

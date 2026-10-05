@@ -3421,6 +3421,8 @@ export const it: Translations = {
     showExamples: 'Mostra esempi',
     addedLabel:        '✓ Aggiunto',
     relevantLabel:     'Rilevante per il tuo settore',
+    relevantCasUsage: "Rilevante per il tuo caso d'uso",
+    relevantArchi: "Rilevante per la tua architettura: {patterns}",
     progressAriaLabel: 'Avanzamento workshop EBIOS RM',
     statusInProgress:  'Workshop in corso',
     statusDone:        'Workshop completato',

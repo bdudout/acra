@@ -14,8 +14,27 @@ export { selectPatternItems, localizePatternItem, type PatternItem, type Pattern
 
 export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS, ...LOT2_ITEMS]
 
+/**
+ * Plafond d'exemples proposés par pattern et par catégorie (les combinaisons, rares et ciblées, s'ajoutent) : le
+ * contenu est rangé du plus utile au moins utile, on ne garde que la tête pour ne pas surcharger l'atelier.
+ */
+export const MAX_EXEMPLES_PAR_PATTERN = 4
+
+/** Exemples des patterns cochés, localisés, avec les patterns qui les justifient (badge « votre architecture »). */
+export function patternExemplesTagged(patterns: readonly string[] | null | undefined, category: PatternCategory, locale: Locale = 'fr', famille: SecteurFamille | null = null): { item: Record<string, unknown>; patterns: readonly string[] }[] {
+  if (!patterns?.length) return []
+  const parPattern = new Map<string, number>()
+  return selectPatternItems(PATTERN_ITEMS, patterns, category, famille)
+    .filter(i => {
+      if (i.patterns.length > 1) return true
+      const n = (parPattern.get(i.patterns[0]) ?? 0) + 1
+      parPattern.set(i.patterns[0], n)
+      return n <= MAX_EXEMPLES_PAR_PATTERN
+    })
+    .map(i => ({ item: localizePatternItem(i, locale), patterns: i.patterns }))
+}
+
 /** Exemples localisés des patterns cochés pour une catégorie d'atelier. */
 export function patternExemplesFor(patterns: readonly string[] | null | undefined, category: PatternCategory, locale: Locale = 'fr', famille: SecteurFamille | null = null): Record<string, unknown>[] {
-  if (!patterns?.length) return []
-  return selectPatternItems(PATTERN_ITEMS, patterns, category, famille).map(i => localizePatternItem(i, locale))
+  return patternExemplesTagged(patterns, category, locale, famille).map(t => t.item)
 }

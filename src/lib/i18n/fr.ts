@@ -3463,6 +3463,8 @@ export const fr = {
     showExamples: 'Afficher les exemples',
     addedLabel:   '✓ Ajouté',
     relevantLabel: 'Pertinent pour votre secteur',
+    relevantCasUsage: "Pertinent pour votre cas d'usage",
+    relevantArchi: "Pertinent pour votre architecture : {patterns}",
     progressAriaLabel: 'Progression des ateliers EBIOS RM',
     statusInProgress: 'Atelier en cours',
     statusDone:       'Atelier terminé',

@@ -46,7 +46,9 @@ describe('exemples : union des sous-secteurs choisis, uniquement ce qui est coh�
     expect(m).toMatch(/coordonnées bancaires/i); expect(m).toMatch(/complétude/i)
     for (const b of noms(base)) expect(noms(comb)).toContain(b)
     expect(new Set(noms(comb)).size).toBe(noms(comb).length)
-    expect(patternExemplesFor(['EXTERNALISATION_DONNEES'], 'mesures', 'fr').length).toBeGreaterThan(5)
+    // Plafond par pattern (pas de surcharge), jamais vide.
+    expect(patternExemplesFor(['EXTERNALISATION_DONNEES'], 'mesures', 'fr').length).toBeGreaterThan(0)
+    expect(patternExemplesFor(['EXTERNALISATION_DONNEES'], 'mesures', 'fr').length).toBeLessThanOrEqual(4)
   })
   it('les éléments propres à chacun des sous-secteurs choisis passent avant le socle commun', () => {
     const noms = sectorExemplesFor('Protection sociale / Sécurité sociale', 'mesures', 'fr', ['protsoc-caisse-locale', 'protsoc-services-usagers']).map(x => String(x.nom))

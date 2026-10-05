@@ -37,6 +37,7 @@ import { rankExemples } from '@/lib/exemples-context'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import PertinenceBadge from '@/components/workshops/PertinenceBadge'
 import { PRIORITES_MESURE, comparePriorite, measuresApplyingTo } from '@/lib/ecosystem-measures'
 import { CONTRACTUAL_CLAUSE_KEYS, contractualClauseMeasure, isContractualMeasure, groupMeasuresByPartiePrenante } from '@/lib/ecosystem-contractual-clauses'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
@@ -602,6 +603,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                           : 'border-dashed border-gray-300 hover:border-ebios-300 hover:bg-ebios-50'
                       }`}>
                       {added && <div className="text-xs text-green-600 font-semibold mb-1">{t.workshop.addedLabel}</div>}
+                      {!added && <PertinenceBadge ex={p} className="text-xs mb-1" />}
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-gray-700">{p.nom}</span>
                         <span className={`text-xs font-bold ${color}`}>{label}</span>
@@ -787,7 +789,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                                   : 'border-dashed border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 hover:border-ebios-400 hover:bg-ebios-50 dark:hover:border-ebios-400 dark:hover:bg-ebios-500/20 cursor-pointer'
                               }`}
                             >
-                              {!alreadyAdded && ex.pertinent && <div className="text-[11px] text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
+                              {!alreadyAdded && <PertinenceBadge ex={ex} className="text-[11px] mb-0.5" />}
                               <div className="font-medium text-gray-700 dark:text-gray-100 mb-1 leading-tight">{ex.nom}</div>
                               <div className="text-gray-500 dark:text-gray-400 leading-tight">{ex.description.slice(0, 80)}…</div>
                               <div className="flex gap-2 mt-1.5">
@@ -998,6 +1000,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                                         : 'bg-white border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                                     }`}>
                                     {added && <div className="text-xs text-green-600 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
+                                    {!added && <PertinenceBadge ex={ex} className="text-[11px] mb-0.5" />}
                                     <div className="flex items-center gap-1.5 mb-0.5">
                                       <span className={`text-xs px-1 py-0.5 rounded font-medium ${
                                         ex.type === 'TECHNIQUE' ? 'bg-blue-100 text-blue-700' :

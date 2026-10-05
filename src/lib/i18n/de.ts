@@ -3420,6 +3420,8 @@ export const de: Translations = {
     showExamples: 'Beispiele anzeigen',
     addedLabel:        '✓ Hinzugefügt',
     relevantLabel:     'Relevant für Ihre Branche',
+    relevantCasUsage: "Relevant für Ihren Anwendungsfall",
+    relevantArchi: "Relevant für Ihre Architektur: {patterns}",
     progressAriaLabel: 'Fortschritt der EBIOS RM Workshops',
     statusInProgress:  'Workshop läuft',
     statusDone:        'Workshop abgeschlossen',

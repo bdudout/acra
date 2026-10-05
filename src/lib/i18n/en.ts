@@ -3421,6 +3421,8 @@ export const en: Translations = {
     showExamples: 'Show examples',
     addedLabel:        '✓ Added',
     relevantLabel:     'Relevant to your sector',
+    relevantCasUsage: "Relevant to your use case",
+    relevantArchi: "Relevant to your architecture: {patterns}",
     progressAriaLabel: 'EBIOS RM workshop progress',
     statusInProgress:  'Workshop in progress',
     statusDone:        'Workshop completed',

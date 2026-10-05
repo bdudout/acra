@@ -6,6 +6,7 @@
 
 import { Lightbulb } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import PertinenceBadge from '@/components/workshops/PertinenceBadge'
 
 export interface SectorMeasure {
   nom?: unknown
@@ -14,6 +15,8 @@ export interface SectorMeasure {
   categorieEbios?: unknown
   prioriteDefaut?: unknown
   references?: unknown
+  pertinence?: unknown
+  patternsPertinents?: unknown
 }
 
 const norm = (s: unknown) => String(s ?? '').trim().toLowerCase()
@@ -41,6 +44,7 @@ export default function SectorMeasuresPanel({ items, existingNames, onAdd }: {
           return (
             <li key={`${norm(m.nom)}-${i}`} className="flex items-start justify-between gap-3">
               <div className="text-sm text-gray-700 min-w-0">
+                {!done && <PertinenceBadge ex={m} className="text-[11px] mb-0.5" />}
                 <span className="text-xs font-semibold text-indigo-700 mr-1.5">P{Number(m.prioriteDefaut) || 2}</span>
                 <span className="font-medium">{String(m.nom ?? '')}</span>
                 <span className="ml-1.5 text-xs text-gray-400">

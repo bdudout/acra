@@ -37,6 +37,7 @@ import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import PertinenceBadge from '@/components/workshops/PertinenceBadge'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import { CLASSIFICATIONS, isClassified } from '@/lib/classification'
 import { bienValeurMetierIds, normalizeBienVmLinks } from '@/lib/biens-supports'
@@ -644,7 +645,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && vm.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
+                    {!added && <PertinenceBadge ex={vm} className="text-xs mb-1" />}
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                         vm.type === 'PROCESSUS' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200' : 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-200'
@@ -873,7 +874,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                             }`}
                           >
                             {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
-                            {!added && b.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-0.5"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
+                            {!added && <PertinenceBadge ex={b} className="text-xs mb-0.5" />}
                             <div className="text-xs font-medium">{b.nom}</div>
                             <div className="text-xs opacity-60 mt-0.5 line-clamp-1">{b.description}</div>
                           </button>
@@ -988,7 +989,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                     }`}
                   >
                     {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                    {!added && er.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
+                    {!added && <PertinenceBadge ex={er} className="text-xs mb-1" />}
                     <div className="text-xs font-medium text-gray-700">{er.description}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${

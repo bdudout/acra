@@ -59,7 +59,9 @@ describe('read_sector_examples', () => {
     expect(all.categories).toEqual(expect.arrayContaining(['actionsElementaires', 'mesuresEcosysteme', 'mesures']))
     expect(all.famillesDisponibles.some((f: { key: string }) => f.key === 'technique')).toBe(false)
     const out = parse(await readSectorExamplesTool.handler({ patterns: ['EXTERNALISATION_DONNEES'] }, ctx))
-    expect(out.exemples.mesures.length).toBeGreaterThan(5)
+    // Plafonné pour ne pas surcharger (MAX_EXEMPLES_PAR_PATTERN), mais jamais vide.
+    expect(out.exemples.mesures.length).toBeGreaterThan(0)
+    expect(out.exemples.mesures.length).toBeLessThanOrEqual(4)
     const sante = parse(await readSectorExamplesTool.handler({ secteur: 'santé' }, ctx))
     expect(sante.sousSecteursDisponibles).toContain('sante-portail')
   })

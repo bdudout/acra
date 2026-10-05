@@ -21,7 +21,7 @@ import { extItemsFor, localizeExt } from '@/lib/exemples-sectoriels-ext'
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 import { secteurFamily, selectableSousSecteurIds } from '@/lib/sous-secteurs'
 import { isPatternCode } from '@/lib/patterns-archi'
-import { patternExemplesFor } from '@/lib/exemples-patterns'
+import { patternExemplesFor, patternExemplesTagged } from '@/lib/exemples-patterns'
 
 /** Catégorie d'exemples sectoriels (sous-ensemble des catégories d'atelier proposées par secteur). */
 export type SectorExempleCategory =
@@ -979,6 +979,44 @@ function withPatterns(secteur: string | null | undefined, category: SectorExempl
  * L'interconnexion avec un tiers, les API exposées, etc. relèvent des patterns d'architecture, pas des sous-secteurs.
  */
 export function sectorExemplesFor(
+  secteur: string | null | undefined,
+  category: SectorExempleCategory,
+  locale: Locale = 'fr',
+  sousSecteur?: string | readonly string[] | null,
+  patterns?: readonly string[] | null,
+): Record<string, unknown>[] {
+  return annoterPertinence(exemplesSansOrigine(secteur, category, locale, sousSecteur, patterns), secteur, category, locale, sousSecteur, patterns)
+}
+
+/** Pourquoi un exemple est proposé : élément propre à un sous-secteur choisi (cas d'usage) ou à un pattern coché (architecture). */
+export type Pertinence = 'CAS_USAGE' | 'ARCHITECTURE'
+
+/**
+ * Marque chaque exemple par son origine (`pertinence`, `patternsPertinents`) pour le badge et le classement ; le socle
+ * commun du secteur n'est pas marqué. Le cas d'usage l'emporte quand un élément relève des deux.
+ */
+function annoterPertinence(
+  out: Record<string, unknown>[], secteur: string | null | undefined, category: SectorExempleCategory, locale: Locale,
+  sousSecteur?: string | readonly string[] | null, patterns?: readonly string[] | null,
+): Record<string, unknown>[] {
+  const ids = (Array.isArray(sousSecteur) ? sousSecteur : sousSecteur ? [sousSecteur] : []).filter((x): x is string => typeof x === 'string' && KNOWN_IDS.has(x))
+  const selectable = new Set(selectableSousSecteurIds(secteur))
+  const casUsage = new Set(ids.filter(id => selectable.has(id)).flatMap(id => exemplesTagged(secteur, category, locale, id).filter(t => t.specific).map(t => exempleKey(t.item))))
+  const archi = new Map<string, readonly string[]>()
+  for (const t of patternExemplesTagged((patterns ?? []).filter(isPatternCode), category, locale, secteurFamily(secteur))) {
+    const k = exempleKey(t.item)
+    if (!archi.has(k)) archi.set(k, t.patterns)
+  }
+  if (!casUsage.size && !archi.size) return out
+  return out.map(x => {
+    const k = exempleKey(x)
+    if (casUsage.has(k)) return { ...x, pertinence: 'CAS_USAGE' satisfies Pertinence }
+    const p = archi.get(k)
+    return p ? { ...x, pertinence: 'ARCHITECTURE' satisfies Pertinence, patternsPertinents: [...p] } : x
+  })
+}
+
+function exemplesSansOrigine(
   secteur: string | null | undefined,
   category: SectorExempleCategory,
   locale: Locale = 'fr',
