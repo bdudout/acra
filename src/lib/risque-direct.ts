@@ -162,6 +162,7 @@ export const DIRECT_RISK_SELECT = {
   graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true,
   graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true,
   vulnerabilites: true, domaine: true, sourceAnalyseId: true, qualificationRuleId: true,
+  suppressionDemandeePar: true, suppressionDemandeeLe: true,
 } as const
 
 /**

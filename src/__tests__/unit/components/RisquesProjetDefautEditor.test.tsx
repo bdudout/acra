@@ -27,6 +27,7 @@ describe('Configuration › Projets : risques par défaut', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PUT')).toBe(true))
     const body = JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PUT')![1].body)
     expect(body.risquesProjetDefaut.desactives.sort()).toEqual(['PROJ_BUDGET', 'PROJ_DELAIS'])
+    expect(body.projetSuppressionValidation).toBe(true)
     expect(body.risquesProjetDefaut.ajoutes).toEqual([expect.objectContaining({ intitule: 'Indisponibilité du site pilote', gravite: 2, vraisemblance: 2 })])
     expect(await screen.findByText('Risques par défaut enregistrés.')).toBeTruthy()
   })

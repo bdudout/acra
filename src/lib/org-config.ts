@@ -73,6 +73,7 @@ export interface RawOrgConfig {
   profilsOperationnelsActive?: boolean
   projets360Active?: boolean
   homologationsActive?: boolean
+  projetSuppressionValidation?: boolean
   recertificationActive?: boolean
   registreIaActive?: boolean
   mcpActive?: boolean
@@ -140,6 +141,8 @@ export interface OrgConfigResolved {
   projets360Active: boolean
   /** Module « Homologations » (décisions d'homologation de sécurité des SI), désactivé par défaut. */
   homologationsActive: boolean
+  /** Projet 360 : suppression d'un risque validée par le RM (le RSSI si risque cyber). */
+  projetSuppressionValidation: boolean
   /** Module « Revues d'habilitations » (campagnes de recertification), désactivé par défaut. */
   recertificationActive: boolean
   /** Module « Registre IA » (algorithmes et systèmes d'IA), désactivé par défaut. */
@@ -205,6 +208,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   profilsOperationnelsActive: false,
   projets360Active: true,
   homologationsActive: false,
+  projetSuppressionValidation: true,
   recertificationActive: false,
   registreIaActive: false,
   mcpActive: false,
@@ -229,7 +233,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive'
+type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'projetSuppressionValidation'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
 
@@ -306,6 +310,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
     homologationsActive: pickBool('homologationsActive', defaults.homologationsActive),
+    projetSuppressionValidation: pickBool('projetSuppressionValidation', defaults.projetSuppressionValidation),
     recertificationActive: pickBool('recertificationActive', defaults.recertificationActive),
     registreIaActive: pickBool('registreIaActive', defaults.registreIaActive),
     mcpActive: pickBool('mcpActive', defaults.mcpActive),

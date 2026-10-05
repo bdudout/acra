@@ -1,3 +1,4 @@
+import { incidentsParRisque } from '@/lib/incident-risques'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -45,16 +46,17 @@ export async function GET() {
   // pour proposer une vraisemblance résiduelle (SUGGESTION, jamais appliquée).
   let incidentsLies: IncidentLite[] = []
   if (orgConfig.incidentsActive) {
+    // Un incident associé à plusieurs risques compte pour chacun (table IncidentRisque ; repli sur le principal).
     const inc = await prisma.incident.findMany({
-      where: { organizationId: orgId, riskItemId: { not: null }, statut: { in: ['QUALIFIE', 'CLOTURE'] } },
-      select: { riskItemId: true, dateSurvenance: true, montantBrut: true, recuperations: true },
+      where: { organizationId: orgId, statut: { in: ['QUALIFIE', 'CLOTURE'] }, OR: [{ riskItemId: { not: null } }, { risquesLies: { some: {} } }] },
+      select: { riskItemId: true, dateSurvenance: true, montantBrut: true, recuperations: true, risquesLies: { select: { riskItemId: true } } },
     })
-    incidentsLies = inc.map(i => ({
-      riskItemId: i.riskItemId,
+    incidentsLies = incidentsParRisque(inc.map(i => ({
+      riskItemIds: i.risquesLies.length ? i.risquesLies.map(l => l.riskItemId) : (i.riskItemId ? [i.riskItemId] : []),
       dateSurvenance: i.dateSurvenance,
       montantBrut: i.montantBrut == null ? null : Number(i.montantBrut as unknown as string),
       recuperations: i.recuperations == null ? null : Number(i.recuperations as unknown as string),
-    }))
+    })))
   }
 
   // Boucle M3 : efficacité des contrôles rattachés au risque → suggestion de

@@ -38,7 +38,8 @@ vi.mock('@/lib/org-context.server', () => ({
   analyseAccessWhere: vi.fn(async () => ({})),
   getEffectiveRoleForOrg: vi.fn(async () => effRole.value),
 }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false })) }))
+const orgCfg = { value: {} as Record<string, unknown> }
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false, ...orgCfg.value })) }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 const nbNiveaux = { value: 4 }
 vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: nbNiveaux.value })) }))
@@ -53,7 +54,7 @@ const PI = { params: Promise.resolve({ id: 'an1', riskId: 'r1' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; nbNiveaux.value = 4
+  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; nbNiveaux.value = 4; orgCfg.value = {}
   analyseFindFirst.mockResolvedValue({ ...ISO })
   risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2 })
   risqueFindMany.mockResolvedValue([])
@@ -167,5 +168,40 @@ describe('PATCH/DELETE /risques/[riskId]', () => {
     expect(argOf(risqueCreate).data).toMatchObject({ proprietaire: 'DSI' })
     await PATCH(req({ proprietaire: '' }), PI)
     expect(argOf(risqueUpdate).data).toMatchObject({ proprietaire: null })
+  })
+})
+
+describe('projet 360 : suppression d’un risque soumise à validation', () => {
+  const P360 = { ...ISO, methode: 'PROJET_360', userId: 'reviewer' }
+  beforeEach(() => {
+    analyseFindFirst.mockResolvedValue({ ...P360 })
+    orgCfg.value = { projetSuppressionValidation: true }
+    risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2, domaine: 'CYBER', suppressionDemandeeLe: null })
+  })
+  it('un analyste qui retire un risque cyber crée une DEMANDE (202), le risque reste', async () => {
+    effRole.value = 'ANALYSTE'
+    const res = await DELETE(req({}), PI)
+    expect(res.status).toBe(202)
+    expect(await res.json()).toMatchObject({ pending: true, validateur: 'RSSI' })
+    expect(risqueDelete).not.toHaveBeenCalled()
+    expect(argOf(risqueUpdate).data).toMatchObject({ suppressionDemandeePar: 'reviewer' })
+  })
+  it('le RSSI, sans droit d’édition, valide une demande de suppression d’un risque cyber ; le RM refuse une demande sur un risque projet', async () => {
+    effRole.value = 'RSSI'
+    analyseFindFirst.mockResolvedValue({ ...P360, userId: 'owner' })
+    expect((await DELETE(req({}), PI)).status).toBe(403) // pas de demande en attente : pas d'édition
+    risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2, domaine: 'CYBER', suppressionDemandeeLe: new Date() })
+    expect((await DELETE(req({}), PI)).status).toBe(200)
+    expect(risqueDelete).toHaveBeenCalledTimes(1)
+    effRole.value = 'RISK_MANAGER'
+    risqueFindFirst.mockResolvedValue({ id: 'r1', gravite: 2, vraisemblance: 2, domaine: 'PROJECT', suppressionDemandeeLe: new Date() })
+    expect((await PATCH(req({ refuserSuppression: true }), PI)).status).toBe(200)
+    expect(risqueUpdate.mock.calls.at(-1)![0]).toMatchObject({ data: { suppressionDemandeePar: null, suppressionDemandeeLe: null } })
+  })
+  it('refuser une demande sans être le validateur → 403 ; validation désactivée → suppression directe', async () => {
+    effRole.value = 'ANALYSTE'
+    expect((await PATCH(req({ refuserSuppression: true }), PI)).status).toBe(403)
+    orgCfg.value = { projetSuppressionValidation: false }
+    expect((await DELETE(req({}), PI)).status).toBe(200)
   })
 })

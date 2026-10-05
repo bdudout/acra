@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
@@ -155,6 +155,8 @@ export default async function AtelierPage({
     const directOrgId = (analyse as { organizationId?: string | null }).organizationId ?? null
     const directOrgConfig = await getOrgConfig(directOrgId)
     const directAppetit = directOrgConfig.appetitRisque
+    // Rôle EFFECTIF dans l'organisation de l'analyse (validation des demandes de suppression d'un projet 360).
+    const suppressionRole = directOrgId ? ((await getEffectiveRoleForOrg(userId, userRole, directOrgId)) ?? userRole) : userRole
     // Propriétaires suggérés (P3) : NOMS des membres de l'organisation (pas les e-mails) + entités.
     const directMembers = directOrgId
       ? await prisma.orgMembership.findMany({ where: { organizationId: directOrgId }, select: { user: { select: { name: true } } }, take: 500 })
@@ -199,6 +201,7 @@ export default async function AtelierPage({
               sources: sanitizeSources360((analyse as { qualification?: unknown }).qualification),
               appetitSeuil: directAppetit.seuilGlobal ?? null,
               tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
+              suppression: { role: suppressionRole, validationActive: directOrgConfig.projetSuppressionValidation, petiteStructure: directOrgConfig.petiteStructure },
             } : undefined}
           />
         </main>

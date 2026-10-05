@@ -478,6 +478,7 @@ model RiskItem {
 
   // Plan d'action : PlanAction porteur d'un lien RISQUE (targetId = id de ce risque).
   incidents     Incident[]
+  incidentsLies IncidentRisque[]
   controles     Controle[]
   evaluations   CampagneEvaluation[]
   auditConstats AuditConstat[]
@@ -721,6 +722,8 @@ model Incident {
   // Rattachement au registre canonique (boucle incident → risque).
   riskItemId String?
   riskItem   RiskItem? @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+  // Risques du registre associés (plusieurs) ; riskItemId = le premier (risque principal).
+  risquesLies IncidentRisque[]
 
   // Cycle de vie : DECLARE → QUALIFIE → CLOTURE (ou REJETE).
   statut             String    @default("DECLARE")
@@ -1947,6 +1950,9 @@ model Risque {
   // idempotente par risque source dans une même analyse).
   sourceRisqueId  String?
   sourceAnalyseId String?
+  // Projet 360 : suppression demandée, en attente de validation (RM, ou RSSI si risque cyber).
+  suppressionDemandeePar String?
+  suppressionDemandeeLe  DateTime?
 
   derogations Derogation[]
 
@@ -2143,6 +2149,8 @@ model OrganizationConfig {
   // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
   projets360Active           Boolean       @default(true)
   homologationsActive        Boolean       @default(false)
+  // Projet 360 : retirer un risque exige la validation du gestionnaire des risques (RSSI si risque cyber).
+  projetSuppressionValidation Boolean      @default(true)
   recertificationActive      Boolean       @default(false)
   registreIaActive           Boolean       @default(false)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
@@ -2657,4 +2665,16 @@ model StorageSnapshot {
   hostReclaimableBytes Float?
 
   @@index([mesureLe])
+}
+
+// Association incident ↔ risque du registre (plusieurs risques par incident).
+model IncidentRisque {
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  riskItemId String
+  riskItem   RiskItem @relation(fields: [riskItemId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([incidentId, riskItemId])
+  @@index([riskItemId])
 }

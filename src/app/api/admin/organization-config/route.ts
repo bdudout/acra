@@ -104,6 +104,7 @@ export async function GET(_req: NextRequest) {
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     projets360Active: cfg.projets360Active,
     homologationsActive: cfg.homologationsActive,
+    projetSuppressionValidation: cfg.projetSuppressionValidation,
     recertificationActive: cfg.recertificationActive,
     registreIaActive: cfg.registreIaActive,
     mcpActive: cfg.mcpActive,
@@ -256,6 +257,7 @@ export async function PUT(req: NextRequest) {
   if (typeof body.profilsOperationnelsActive === 'boolean') data.profilsOperationnelsActive = body.profilsOperationnelsActive
   if (typeof body.projets360Active === 'boolean') data.projets360Active = body.projets360Active
   if (typeof body.homologationsActive === 'boolean') data.homologationsActive = body.homologationsActive
+  if (typeof body.projetSuppressionValidation === 'boolean') data.projetSuppressionValidation = body.projetSuppressionValidation
   if (typeof body.recertificationActive === 'boolean') data.recertificationActive = body.recertificationActive
   if (typeof body.registreIaActive === 'boolean') data.registreIaActive = body.registreIaActive
   if (typeof body.mcpActive === 'boolean') data.mcpActive = body.mcpActive

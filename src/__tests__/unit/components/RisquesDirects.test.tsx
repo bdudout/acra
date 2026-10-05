@@ -340,3 +340,27 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Fuite')).toBeInTheDocument()
   })
 })
+
+describe('RisquesDirects — projet 360 : suppression soumise à validation', () => {
+  const cyber = { id: 'r1', nom: 'Fuite de données', gravite: 3, vraisemblance: 2, niveauRisque: 6, strategie: 'REDUIRE', domaine: 'CYBER' }
+  it('un analyste DEMANDE la suppression (envoyée au RSSI) ; le risque reste, marqué', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [cyber] }))
+    render(<RisquesDirects analyseId="an1" editable withDomaine suppression={{ role: 'ANALYSTE', validationActive: true }} />)
+    expect(await screen.findByText('Fuite de données')).toBeInTheDocument()
+    fetchMock.mockReturnValueOnce(Promise.resolve({ ok: true, status: 202, json: async () => ({ pending: true, risque: { ...cyber, suppressionDemandeeLe: '2026-10-06T10:00:00Z' } }) } as Response))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Demander la suppression' })[0])
+    expect(await screen.findByText('Demande de suppression envoyée, à valider par le RSSI.')).toBeInTheDocument()
+    expect(screen.getByText('Suppression demandée — à valider par le RSSI')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Valider la suppression' })).toBeNull()
+  })
+  it('le RSSI voit « Valider la suppression » et « Refuser » sur une demande en attente', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [{ ...cyber, suppressionDemandeeLe: '2026-10-06T10:00:00Z' }] }))
+    render(<RisquesDirects analyseId="an1" editable withDomaine suppression={{ role: 'RSSI', validationActive: true }} />)
+    expect(await screen.findByRole('button', { name: 'Valider la suppression' })).toBeInTheDocument()
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { ...cyber, suppressionDemandeeLe: null } }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refuser' }))
+    await waitFor(() => expect(screen.queryByText(/Suppression demandée/)).toBeNull())
+    expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')![1].body)).toEqual({ refuserSuppression: true })
+  })
+})

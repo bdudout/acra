@@ -24,10 +24,11 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
   const [vraisemblance, setVraisemblance] = useState(2)
   const [msg, setMsg] = useState<string | null>(null)
   const [moduleInactif, setModuleInactif] = useState(false)
+  const [validationSuppression, setValidationSuppression] = useState(true)
 
   useEffect(() => {
     fetch('/api/admin/organization-config', { cache: 'no-store' }).then(res => (res.ok ? res.json() : null))
-      .then(d => { setCfg(sanitizeSocleConfig(d?.risquesProjetDefaut)); setModuleInactif(d?.projets360Active === false) }).catch(() => setCfg(sanitizeSocleConfig(null)))
+      .then(d => { setCfg(sanitizeSocleConfig(d?.risquesProjetDefaut)); setModuleInactif(d?.projets360Active === false); setValidationSuppression(d?.projetSuppressionValidation !== false) }).catch(() => setCfg(sanitizeSocleConfig(null)))
   }, [])
   if (!cfg) return null
 
@@ -40,7 +41,7 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
   }
   async function enregistrer() {
     setMsg(null)
-    const res = await fetch('/api/admin/organization-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ risquesProjetDefaut: cfg }) }).catch(() => null)
+    const res = await fetch('/api/admin/organization-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ risquesProjetDefaut: cfg, projetSuppressionValidation: validationSuppression }) }).catch(() => null)
     setMsg(res?.ok ? r.saved : r.error)
   }
 
@@ -52,6 +53,10 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
         {moduleInactif && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{r.inactive}</p>}
         {!isAdmin && <p className="mt-1 text-xs text-gray-500">{r.readOnly}</p>}
       </div>
+      <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
+        <input type="checkbox" className="mt-0.5" disabled={!isAdmin} checked={validationSuppression} onChange={e => setValidationSuppression(e.target.checked)} />
+        <span><span className="font-medium">{r.validationSuppression}</span><span className="block text-xs text-gray-500 dark:text-gray-400">{r.validationSuppressionHint}</span></span>
+      </label>
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">{r.catalogue}</legend>
         <ul className="space-y-1.5">

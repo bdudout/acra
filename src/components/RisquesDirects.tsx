@@ -20,6 +20,7 @@ import { filterByOwner, ownerFilterOptions, OWNER_NONE } from '@/lib/risque-prop
 import { DOMAINES_360 } from '@/lib/projet360'
 import { alertesCotation, bornesCotation, cascadeCotation, cotations, violationsCotation } from '@/lib/cotation-risque'
 import { estRisqueSocle } from '@/lib/projet360-socle'
+import { decisionSuppression, peutValiderSuppression, validateurSuppression } from '@/lib/projet360-suppression'
 import EchelleLegende from '@/components/EchelleLegende'
 
 interface RisqueRow {
@@ -36,6 +37,7 @@ interface RisqueRow {
   sourceAnalyseId?: string | null
   /** Règle d'origine (risque proposé par la qualification ou présent par défaut : « socle:… »). */
   qualificationRuleId?: string | null
+  suppressionDemandeeLe?: string | null
   mesuresCount?: number
   plansCount?: number
 }
@@ -58,7 +60,7 @@ const TIER_CLASS: Record<string, string> = {
 export type RisquesMode = 'full' | 'identify' | 'rate' | 'treat' | 'review'
 export type TreatmentSections = 'mesures' | 'plans' | 'both'
 
-export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit, ownerSuggestions = [], withDomaine = false }: {
+export default function RisquesDirects({ analyseId, editable, suggestions, mode = 'full', withVulnerabilites = false, treatmentSections, scale, appetit, ownerSuggestions = [], withDomaine = false, suppression }: {
   analyseId: string; editable: boolean; suggestions?: RisqueExemple[]; mode?: RisquesMode; withVulnerabilites?: boolean; treatmentSections?: TreatmentSections
   /** Échelle de l'organisation (4 ou 5 niveaux, paliers, matrice) — défaut EBIOS RM 4 niveaux. */
   scale?: Partial<ScaleConfig> | null
@@ -68,6 +70,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   ownerSuggestions?: string[]
   /** Analyse projet 360 : domaine par risque (ajout, ligne, filtre, colonne d'évaluation). */
   withDomaine?: boolean
+  /** Projet 360 : suppression soumise à validation (RM, ou RSSI si risque cyber). */
+  suppression?: { role: string; validationActive: boolean; petiteStructure?: boolean }
 }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
@@ -152,10 +156,25 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     else if (res && res.status === 400) setErreur(m.cotationRefusee)
   }
 
+  // Projet 360 : hors validateur, retirer un risque crée une demande (RM, ou RSSI si risque cyber).
+  const decision = (r: RisqueRow) => (suppression ? decisionSuppression({ methode: 'PROJET_360', validationActive: suppression.validationActive, role: suppression.role, domaine: r.domaine, petiteStructure: suppression.petiteStructure }) : 'SUPPRIMER')
+  const validateurLabel = (r: RisqueRow) => (m.validateurs as Record<string, string>)[validateurSuppression(r.domaine)]
+  const [info, setInfo] = useState<string | null>(null)
   async function supprimer(id: string) {
-    if (!confirm(m.deleteConfirm)) return
+    const r = rows.find(x => x.id === id)
+    const demande = r && decision(r) === 'DEMANDER'
+    if (!confirm(demande && r ? m.demandeConfirm.replace('{validateur}', validateurLabel(r)) : m.deleteConfirm)) return
+    setInfo(null)
     const res = await fetch(`/api/analyses/${analyseId}/risques/${id}`, { method: 'DELETE' }).catch(() => null)
-    if (res && res.ok) setRows(prev => prev.filter(r => r.id !== id))
+    if (res && res.status === 202) {
+      const d = await res.json().catch(() => ({}))
+      if (d.risque) setRows(prev => prev.map(x => x.id === id ? { ...x, ...d.risque } : x))
+      if (r) setInfo(m.demandeEnvoyee.replace('{validateur}', validateurLabel(r)))
+    } else if (res && res.ok) setRows(prev => prev.filter(x => x.id !== id))
+  }
+  async function refuserSuppression(id: string) {
+    const res = await fetch(`/api/analyses/${analyseId}/risques/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refuserSuppression: true }) }).catch(() => null)
+    if (res && res.ok) { const d = await res.json(); setRows(prev => prev.map(x => x.id === id ? { ...x, ...d.risque } : x)) }
   }
 
   // Clic sur une suggestion = AJOUT DIRECT au registre (le plus simple possible),
@@ -420,6 +439,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
           <div className="md:overflow-x-auto">
             {(col.brut || col.actuel || col.residuel) && <EchelleLegende scale={scaleCfg} />}
             {erreur && <p role="alert" className="mb-2 text-xs text-red-700 dark:text-red-300">{erreur}</p>}
+            {info && <p role="status" className="mb-2 text-xs text-gray-600 dark:text-gray-300">{info}</p>}
             {/* Tableau sur écran large ; sous md, chaque ligne devient une carte
                 (libellés affichés dans les cellules) — même markup, pas de duplication. */}
             <table className="block w-full text-sm md:table">
@@ -439,6 +459,15 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       <div className="flex items-center gap-2">
                         <span className="min-w-0 flex-1 break-words">{r.nom}
                           {p360 && r.sourceAnalyseId && <span className="ml-2 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{p360.importedBadge}</span>}
+                          {r.suppressionDemandeeLe && (
+                            <span className="mt-1 block text-xs font-normal">
+                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">{m.suppressionDemandee.replace('{validateur}', validateurLabel(r))}</span>
+                              {suppression && peutValiderSuppression(suppression.role, r.domaine, { petiteStructure: suppression.petiteStructure }) && <>
+                                <button type="button" onClick={() => supprimer(r.id)} className="ml-2 text-[11px] font-medium text-red-600 hover:underline">{m.validerSuppression}</button>
+                                <button type="button" onClick={() => refuserSuppression(r.id)} className="ml-2 text-[11px] font-medium text-gray-600 hover:underline dark:text-gray-300">{m.refuserSuppression}</button>
+                              </>}
+                            </span>
+                          )}
                           {estRisqueSocle(r.qualificationRuleId) && <span title={m.socleTitle} className="ml-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">{m.socleBadge}</span>}
                           {ownerField(r)}
                           {p360 && (editable
@@ -449,7 +478,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                               </select>
                             : <span className="mt-0.5 block text-xs font-normal text-gray-500">{domaineLabel(r.domaine)}</span>)}
                         </span>
-                        {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1 md:hidden" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
+                        {editable && !r.suppressionDemandeeLe && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1 md:hidden" aria-label={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete} title={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                       </div>
                       {r.id === justAddedId && (
                         <button onClick={() => undoAdd(r.id)} className="ml-2 text-xs font-normal text-ebios-600 hover:text-ebios-800 underline">{m.undo}</button>
@@ -471,7 +500,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                     {col.residuel && cell(m.colResiduel, etape(r, 'residuel'))}
                     {col.decision && cell(m.colDecision, (() => { const e = evaluateRisk(r, evalCtx); return <span title={basisText(e)}>{decisionBadge(e.decision)}</span> })())}
                     <td className="hidden px-3 py-2 text-right whitespace-nowrap md:table-cell">
-                      {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
+                      {editable && !r.suppressionDemandeeLe && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete} title={decision(r) === 'DEMANDER' ? m.demanderSuppression : m.delete}><Trash2 size={15} aria-hidden="true" /></button>}
                     </td>
                   </tr>,
                   hasDetails && detailsOpenId === r.id && (

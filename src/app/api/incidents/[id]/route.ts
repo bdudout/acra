@@ -1,3 +1,4 @@
+import { risquesDepuisCorps } from '@/lib/incident-risques'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -70,6 +71,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const r = await prisma.riskItem.findFirst({ where: { id: data.riskItemId, organizationId: orgId }, select: { id: true } })
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
+  // Risques du registre associés (plusieurs, même organisation) : remplacent les liaisons ; le premier = principal.
+  const risques = risquesDepuisCorps(body)
+  if (risques && risques.length) {
+    const n = await prisma.riskItem.count({ where: { id: { in: risques }, organizationId: orgId } })
+    if (n !== risques.length) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
+  }
 
   // PATCH = mise à jour PARTIELLE : on n'écrit que les champs réellement présents
   // dans le corps. Sans ce filtre, un PATCH de qualification écraserait à null les
@@ -88,9 +95,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     ...champsJson,
   }
   const now = new Date()
-  const updated = await prisma.incident.update({
+  const majIncident = prisma.incident.update({
     where: { id },
     data: {
+      ...(risques ? { riskItemId: risques[0] ?? null } : {}),
       ...partielScalaires,
       ...json,
       // Horodatages posés à la transition, jamais réécrits ensuite.
@@ -99,6 +107,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(typeof body.clotureCommentaire === 'string' ? { clotureCommentaire: body.clotureCommentaire.trim() || null } : {}),
     },
   })
+  const updated = risques
+    ? (await prisma.$transaction([
+      majIncident,
+      prisma.incidentRisque.deleteMany({ where: { incidentId: id } }),
+      ...(risques.length ? [prisma.incidentRisque.createMany({ data: risques.map(riskItemId => ({ incidentId: id, riskItemId })) })] : []),
+    ]))[0] as Awaited<typeof majIncident>
+    : await majIncident
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: changeEtat ? `transition:${depuis}->${vers}` : 'update', id },

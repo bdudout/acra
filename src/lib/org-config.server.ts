@@ -53,6 +53,7 @@ export const CONFIG_SELECT = {
   profilsOperationnelsActive: true,
   projets360Active: true,
   homologationsActive: true,
+  projetSuppressionValidation: true,
   recertificationActive: true,
   registreIaActive: true,
   mcpActive: true,
