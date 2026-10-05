@@ -50,3 +50,33 @@ describe('sans surcharge', () => {
     expect(patternExemplesFor(['INTERCO_TIERS'], 'mesures', 'fr').length).toBeLessThanOrEqual(MAX_EXEMPLES_PAR_PATTERN)
   })
 })
+
+describe('pas de doublon avec les exemples génériques', () => {
+  it('la partie prenante d’un pattern qui existe déjà en générique n’apparaît qu’une fois, avec le badge architecture', async () => {
+    const { withSectorExemples } = await import('@/lib/exemples-sectoriels')
+    const { defaultExemplesFor } = await import('@/lib/exemples-defaults')
+    const I = await import('@/lib/i18n')
+    for (const l of ['fr', 'en', 'de', 'es', 'it'] as const) {
+      const generic = defaultExemplesFor('partiesPrenantes', I[l] as never, l) as Ex[]
+      const out = withSectorExemples(generic, null, 'partiesPrenantes', l, [], ['CLOUD_SAAS', 'CLOUD_IAAS_PAAS'])
+      for (const code of ['CLOUD_SAAS', 'CLOUD_IAAS_PAAS']) {
+        const tagged = out.filter(x => (x.patternsPertinents as string[] | undefined)?.includes(code))
+        expect(tagged, `${l} ${code}`).toHaveLength(1)
+        expect(out.filter(x => String(x.nom) === String(tagged[0].nom)), `${l} ${code}`).toHaveLength(1)
+        expect(generic.some(g => g.nom === tagged[0].nom), `${l} ${code} reprend le libellé générique`).toBe(true)
+      }
+    }
+  })
+})
+
+describe('plusieurs patterns cochés : plafond global, chaque pattern représenté', () => {
+  it('au plus MAX_EXEMPLES_ARCHITECTURE par catégorie ; le premier exemple de chaque pattern est présent ; combinaisons en tête', async () => {
+    const { MAX_EXEMPLES_ARCHITECTURE, patternExemplesTagged } = await import('@/lib/exemples-patterns')
+    const codes = ['EXPOSITION_INTERNET', 'DMZ', 'TELEMAINTENANCE', 'SI_INDUSTRIEL', 'SI_ADMINISTRATION', 'SAUVEGARDE', 'CLOUD_SAAS', 'BUREAUTIQUE']
+    const r = patternExemplesTagged(codes, 'mesures', 'fr')
+    expect(MAX_EXEMPLES_ARCHITECTURE).toBeLessThanOrEqual(12)
+    expect(r.length).toBeLessThanOrEqual(MAX_EXEMPLES_ARCHITECTURE)
+    expect(r[0].patterns).toEqual(['TELEMAINTENANCE', 'SI_INDUSTRIEL'])
+    for (const c of codes) expect(r.some(x => x.patterns.length === 1 && x.patterns[0] === c), c).toBe(true)
+  })
+})

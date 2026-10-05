@@ -8,30 +8,34 @@ import { localizePatternItem, selectPatternItems, type PatternCategory, type Pat
 import { EXPOSITION_ITEMS } from '@/lib/exemples-patterns-exposition'
 import { INTERCO_ITEMS } from '@/lib/exemples-patterns-interco'
 import { ADMIN_POSTES_ITEMS } from '@/lib/exemples-patterns-admin-postes'
+import { COMPLEMENT_ITEMS } from '@/lib/exemples-patterns-complements'
 import { LOT2_ITEMS } from '@/lib/exemples-patterns-lot2'
 
 export { selectPatternItems, localizePatternItem, type PatternItem, type PatternCategory } from '@/lib/exemples-patterns-core'
 
-export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS, ...LOT2_ITEMS]
+export const PATTERN_ITEMS: readonly PatternItem[] = [...EXPOSITION_ITEMS, ...INTERCO_ITEMS, ...ADMIN_POSTES_ITEMS, ...COMPLEMENT_ITEMS, ...LOT2_ITEMS]
 
 /**
  * Plafond d'exemples proposés par pattern et par catégorie (les combinaisons, rares et ciblées, s'ajoutent) : le
  * contenu est rangé du plus utile au moins utile, on ne garde que la tête pour ne pas surcharger l'atelier.
  */
 export const MAX_EXEMPLES_PAR_PATTERN = 4
+/** Plafond global d'exemples « architecture » par catégorie, quel que soit le nombre de patterns cochés. */
+export const MAX_EXEMPLES_ARCHITECTURE = 10
 
-/** Exemples des patterns cochés, localisés, avec les patterns qui les justifient (badge « votre architecture »). */
+/**
+ * Exemples des patterns cochés, localisés, avec les patterns qui les justifient (badge « votre architecture »).
+ * Ordre : combinaisons (les plus ciblées), puis entrelacement — le 1er exemple de chaque pattern, puis le 2e… — pour
+ * que chaque pattern coché soit représenté avant le plafond global.
+ */
 export function patternExemplesTagged(patterns: readonly string[] | null | undefined, category: PatternCategory, locale: Locale = 'fr', famille: SecteurFamille | null = null): { item: Record<string, unknown>; patterns: readonly string[] }[] {
   if (!patterns?.length) return []
-  const parPattern = new Map<string, number>()
-  return selectPatternItems(PATTERN_ITEMS, patterns, category, famille)
-    .filter(i => {
-      if (i.patterns.length > 1) return true
-      const n = (parPattern.get(i.patterns[0]) ?? 0) + 1
-      parPattern.set(i.patterns[0], n)
-      return n <= MAX_EXEMPLES_PAR_PATTERN
-    })
-    .map(i => ({ item: localizePatternItem(i, locale), patterns: i.patterns }))
+  const selected = selectPatternItems(PATTERN_ITEMS, patterns, category, famille)
+  const combos = selected.filter(i => i.patterns.length > 1)
+  const files = patterns.map(code => selected.filter(i => i.patterns.length === 1 && i.patterns[0] === code).slice(0, MAX_EXEMPLES_PAR_PATTERN))
+  const ordered: PatternItem[] = [...combos]
+  for (let rang = 0; rang < MAX_EXEMPLES_PAR_PATTERN; rang++) for (const f of files) if (f[rang]) ordered.push(f[rang])
+  return ordered.slice(0, MAX_EXEMPLES_ARCHITECTURE).map(i => ({ item: localizePatternItem(i, locale), patterns: i.patterns }))
 }
 
 /** Exemples localisés des patterns cochés pour une catégorie d'atelier. */
