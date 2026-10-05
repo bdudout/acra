@@ -52,8 +52,9 @@ describe('backup-scheduler.sh — dump au démarrage', () => {
   const sched = (extra: Record<string, string> = {}) => run('backup-scheduler.sh', { BACKUP_SCRIPT: path.join(process.cwd(), 'scripts/backup.sh'), BACKUP_SCHED_ONCE: '1', ...extra })
   it('aucun dump : sauvegarde immédiate', () => {
     setup([])
-    expect(sched().status).toBe(0)
-    expect(dumps()).toHaveLength(1)
+    const r = sched()
+    expect(r.status).toBe(0)
+    expect(dumps(), `${r.stdout}\n${r.stderr}`).toHaveLength(1)
   })
   it('dump de moins de 20 h : pas de nouveau dump au démarrage', () => {
     setup([old(1, 5)])
@@ -64,7 +65,7 @@ describe('backup-scheduler.sh — dump au démarrage', () => {
   })
   it('dump de plus de 20 h : nouvelle sauvegarde', () => {
     setup([old(1, 21)])
-    sched()
-    expect(dumps()).toHaveLength(2)
+    const r = sched()
+    expect(dumps(), `${r.stdout}\n${r.stderr}`).toHaveLength(2)
   })
 })
