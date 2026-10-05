@@ -6,6 +6,37 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-05 (65) — Claude : stockage, supervision et nettoyage (spec `stockage-supervision-nettoyage.md`)
+
+- **Fait (lots D, C, B, A, tous commités, rien poussé)** :
+  D — journaux plafonnés (ancre `x-logging`), image unique `acra-app:${ACRA_VERSION:-dev}` pour `app`/`migrator`,
+  `make docker-usage|docker-clean|rebuild`, purge des images ACRA < N-1 + `image prune` + `builder prune` après une
+  mise à jour réussie (jamais de volume), `.dockerignore` élargi, README ×5. C — « Libérer de l'espace » : aperçu,
+  confirmation par saisie du nombre, `selectBackupsToPrune` (point protégé, au moins un point vérifié, N de 1 à 60),
+  route `POST /api/admin/backup/prune`, demande `backup-prune` (liste exacte, revalidée par l'agent contre SON index),
+  `acra-snapshot.sh prune --ids` (code 31 si identifiant invalide) ; service `backup` historique : `BACKUP_KEEP`,
+  pas de dump au démarrage si dump < 20 h. B — règles B1–B7 automatiques (B8 manuel) en lib pure, suppression par
+  lots de 1 000, bail d'exécution, routes GET/POST/PUT, cron `/api/cron/cleanup` (03:00 via `scheduler.sh`).
+  A — `StorageUsagePanel` sur `/admin` (SUPER_ADMIN : 5 blocs + bandeau + projection ; ADMIN : documents de son
+  périmètre), seuils réglables, `StorageSnapshot` quotidien (écrit par le cron de nettoyage, purge > 400 j = B10),
+  `host-stats.json` publié par l'agent (1×/h, types connus, valeurs assainies).
+- **Correctif au passage** : `update-lib.sh` `smoke_ok` utilisait `sed '\+'` (non portable BSD/macOS) → le test
+  « enchaîne … FINALIZE » était rouge sur Mac avant mes changements ; remplacé par `grep -Eo`.
+- **Écarts assumés vs spec** : B8 (accusés d'import) hors nettoyage automatique car `GET /api/v2/analysis-imports/{id}`
+  les relit ; B9 (fichiers de documents orphelins) non fait (demande `list()` sur `DocumentStorage` local + S3) ;
+  `prune` n'a pas d'options `--keep-*` (l'app envoie une liste exacte, donc pas de test de parité de règles) ;
+  pas de MFA de ré-authentification sur la purge ; pas de ligne d'alerte dans l'e-mail quotidien ; service `backup`
+  non placé derrière un profil compose (dépend du flux d'installation de l'agent) ; dumps du volume `backup_data`
+  non exposés dans `backup-stats.json`.
+- **Vérifié** : `npx tsc --noEmit` propre ; `npm test` 503 fichiers / 4159 tests verts ; `npm run i18n:check` ok.
+  **Non vérifié** : Docker réel (journaux, image unique, `docker-clean`, purge d'images), agent hôte réel
+  (`host-stats.json`, `backup-prune`), migrations `20261005100000` et `20261005110000` sur une vraie base,
+  rendu navigateur du panneau. À faire : `docker system df` avant/après sur le poste, puis recette navigateur.
+- **Prochain pas** : appliquer les migrations (`prisma migrate deploy`) et **redémarrer le dev** ; lancer
+  `make docker-usage` puis `make docker-clean` pour récupérer de l'espace ; B9 ; alerte e-mail.
+
+---
+
 ## 2026-10-04 (64) — Codex : correctifs finaux de la PR #215
 
 - **Suivi après correction de la révision stable** : toutes les vérifications

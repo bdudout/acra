@@ -2411,6 +2411,9 @@ model Configuration {
   lastCleanupCounts  Json?
   // Bail d'exécution (une seule exécution à la fois, expire seul) — un verrou consultatif de session fuirait avec le pool de connexions.
   cleanupLockUntil   DateTime?
+  // Seuils d'alerte de stockage (%, niveau instance) — lot A.
+  storageWarnPercent     Int @default(80)
+  storageCriticalPercent Int @default(90)
   // Méthodes d'analyse activées au niveau instance (SUPER_ADMIN). Défaut : EBIOS RM
   // seul ; les autres méthodes câblées se débloquent ici. Cf. lib/methodes.ts et
   // docs/methodes-analyse-cadrage.md.
@@ -2638,4 +2641,18 @@ model Homologation {
   @@index([organizationId, statut])
   @@index([analyseId])
   @@index([dateFin])
+}
+
+// Mesure quotidienne du stockage (docs/specs/stockage-supervision-nettoyage.md, lot A) : tendance et projection « plein dans N jours ».
+// Octets en Float (double, exact jusqu'à 2^53). Une ligne par jour, écrite par le cron de nettoyage ; purgée au-delà de 400 jours.
+model StorageSnapshot {
+  id                   String   @id @default(cuid())
+  mesureLe             DateTime @default(now())
+  dbBytes              Float
+  documentsBytes       Float
+  backupsBytes         Float
+  freeBytes            Float?
+  hostReclaimableBytes Float?
+
+  @@index([mesureLe])
 }

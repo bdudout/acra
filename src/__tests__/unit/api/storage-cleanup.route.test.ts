@@ -11,6 +11,7 @@ const inst = vi.hoisted(() => ({
   getCleanupSettings: vi.fn(), saveCleanupSettings: vi.fn(), previewInstanceCleanup: vi.fn(), executeInstanceCleanup: vi.fn(),
 }))
 vi.mock('@/lib/cache-cleanup.instance.server', () => inst)
+vi.mock('@/lib/storage-usage.server', () => ({ recordDailyStorageSnapshot: vi.fn(async () => ({ recorded: true, purged: 0 })) }))
 
 import { GET, POST, PUT } from '@/app/api/admin/storage/cleanup/route'
 import { POST as CRON } from '@/app/api/cron/cleanup/route'
@@ -66,7 +67,7 @@ describe('/api/cron/cleanup', () => {
   it('désactivé : ne supprime rien', async () => {
     inst.getCleanupSettings.mockResolvedValue({ ...settings, autoCleanup: false })
     const res = await CRON(req({}, auth))
-    expect(await res.json()).toEqual({ skipped: true }); expect(inst.executeInstanceCleanup).not.toHaveBeenCalled()
+    expect(await res.json()).toMatchObject({ skipped: true }); expect(inst.executeInstanceCleanup).not.toHaveBeenCalled()
   })
   it('actif : exécute les catégories configurées et journalise (trigger cron)', async () => {
     const res = await CRON(req({}, auth))

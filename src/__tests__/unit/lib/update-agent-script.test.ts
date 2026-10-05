@@ -117,3 +117,23 @@ describe('update-agent.sh — demande backup-prune', () => {
     expect(snapCalls()).toEqual([])
   })
 })
+
+describe('update-agent.sh — mesure de l’hôte Docker (host-stats.json)', () => {
+  const file = () => path.join(inst.work, '.acra-update/host-stats.json')
+  it('publie docker system df assaini (types connus, sans noms d’image) à chaque passage au plus une fois par heure', () => {
+    setup(); agent()
+    const j = JSON.parse(readFileSync(file(), 'utf8'))
+    expect(j.schema).toBe(1); expect(typeof j.at).toBe('string')
+    expect(j.rows).toEqual([
+      { type: 'Images', size: '12.3GB', reclaimable: '4.1GB (33%)' }, { type: 'Containers', size: '1MB', reclaimable: '0B (0%)' },
+      { type: 'Local Volumes', size: '8GB', reclaimable: '0B (0%)' }, { type: 'Build Cache', size: '3GB', reclaimable: '3GB' },
+    ])
+    expect(statSync(file()).mode & 0o777).toBe(0o644)
+    const n = inst.calls().filter(c => c.startsWith('system df')).length
+    agent(); expect(inst.calls().filter(c => c.startsWith('system df')).length).toBe(n)
+  })
+  it('docker system df en échec : pas de fichier, l’agent continue', () => {
+    setup(); inst.fakeFile('no_system_df'); expect(agent().status).toBe(0)
+    expect(existsSync(file())).toBe(false)
+  })
+})

@@ -94,6 +94,28 @@ run_schedule() {
   scripts/acra-schedule.sh tick >> "$DIR/schedule.log" 2>&1 || true
 }
 
+# Mesure de l'hôte Docker (`docker system df`), publiée au plus une fois par heure pour la supervision du stockage.
+# Seuls les 4 types connus sont retenus ; les valeurs sont réduites à [A-Za-z0-9.%() ] (aucun nom d'image ni chemin).
+publish_host_stats() {
+  local f="$DIR/host-stats.json"
+  [ -z "$(find "$DIR" -maxdepth 1 -name host-stats.json -mmin -60 2>/dev/null | head -1)" ] || return 0
+  command -v docker >/dev/null 2>&1 || return 0
+  local out rows="" line t sz rc first=1
+  out="$(docker system df --format '{{.Type}}|{{.Size}}|{{.Reclaimable}}' 2>/dev/null)" || return 0
+  while IFS= read -r line; do
+    t="${line%%|*}"; line="${line#*|}"; sz="${line%%|*}"; rc="${line#*|}"
+    case "$t" in Images|Containers|"Local Volumes"|"Build Cache") ;; *) continue ;; esac
+    sz="$(printf '%s' "$sz" | tr -cd 'A-Za-z0-9.%() ')"; rc="$(printf '%s' "$rc" | tr -cd 'A-Za-z0-9.%() ')"
+    [ "$first" -eq 1 ] || rows="$rows,"; first=0
+    rows="$rows{\"type\":\"$t\",\"size\":\"$sz\",\"reclaimable\":\"$rc\"}"
+  done <<EOF_ROWS
+$out
+EOF_ROWS
+  [ -n "$rows" ] || return 0
+  printf '{"schema":1,"at":"%s","rows":[%s]}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$rows" > "$f.tmp" && chmod 644 "$f.tmp" && mv "$f.tmp" "$f"
+}
+publish_host_stats
+
 REQ="$INBOX/request.json"
 [ -f "$REQ" ] || { run_schedule; exit 0; }
 

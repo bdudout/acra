@@ -19,6 +19,7 @@ case "$a" in
   *"config --services"*) if f services; then cat "$FAKE_DIR/services"; else printf 'db\\napp\\nscheduler\\nbackup\\nmigrator\\n'; fi ;;
   *"ps --status running --services"*) if f running; then cat "$FAKE_DIR/running"; else printf 'db\\napp\\n'; fi ;;
   *"ps -q app"*) f no_app_container || echo cid123 ;;
+  "system df"*) f no_system_df && exit 1; printf 'Images|12.3GB|4.1GB (33%%)\nContainers|1MB|0B (0%%)\nLocal Volumes|8GB|0B (0%%)\nBuild Cache|3GB|3GB\nEvil$(touch /tmp/pwned)|1GB|1GB\n' ;;
   "image ls"*) cat "$FAKE_DIR/images" 2>/dev/null ;;
   "image rm"*) f image_rm_fail && exit 1 ;;
   inspect*) f mounts && cat "$FAKE_DIR/mounts" ;;
