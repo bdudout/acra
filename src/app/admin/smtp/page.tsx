@@ -43,7 +43,7 @@ export default function SmtpConfigPage() {
   const userRole = (session?.user as any)?.role
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/auth/login')
+    if (status === 'unauthenticated') router.push('/auth/signin')
     if (status === 'authenticated' && !(userRole === 'SUPER_ADMIN')) router.push('/dashboard')
   }, [status, userRole, router])
 

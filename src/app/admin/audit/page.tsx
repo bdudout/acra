@@ -83,7 +83,7 @@ export default function AuditLogPage() {
   const userRole = (session?.user as any)?.role
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/auth/login')
+    if (status === 'unauthenticated') router.push('/auth/signin')
     if (status === 'authenticated' && !isAdminRole(userRole)) router.push('/dashboard')
   }, [status, userRole, router])
 
