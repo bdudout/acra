@@ -49,3 +49,16 @@ describe('validateNewMigration', () => {
     expect(validateNewMigration('UPDATE "A" SET x = 1;').ok).toBe(true)
   })
 })
+
+describe('classifyMigration — table temporaire', () => {
+  it('supprimer une table temporaire créée dans la même migration n’est pas destructif', async () => {
+    const { classifyMigration } = await import('@/lib/migration-policy')
+    const sql = 'CREATE TEMP TABLE "_tmp" AS SELECT "id" FROM "Risque";\nUPDATE "Risque" SET "x" = 1 WHERE "id" IN (SELECT "id" FROM "_tmp");\nDROP TABLE "_tmp";'
+    expect(classifyMigration(sql)).toMatchObject({ class: 'data', reasons: ['UPDATE'] })
+    expect(classifyMigration('CREATE TEMPORARY TABLE t AS SELECT 1;\nDROP TABLE IF EXISTS t;').class).toBe('additive')
+  })
+  it('supprimer une vraie table reste destructif, même à côté d’une table temporaire', async () => {
+    const { classifyMigration } = await import('@/lib/migration-policy')
+    expect(classifyMigration('CREATE TEMP TABLE "_tmp" AS SELECT 1;\nDROP TABLE "_tmp";\nDROP TABLE "Risque";').class).toBe('destructive')
+  })
+})

@@ -32,9 +32,17 @@ const DATA: Array<[RegExp, string]> = [
   [/(^|;)\s*DELETE\s+FROM\b/i, 'DELETE'],
 ]
 
+/** Retire les `DROP TABLE` des tables TEMPORAIRES créées dans la même migration (rien de persistant n'est perdu). */
+function sansDropTemporaires(body: string): string {
+  const nom = (n: string) => n.replace(/"/g, '').toLowerCase()
+  const temporaires = new Set([...body.matchAll(/\bCREATE\s+TEMP(?:ORARY)?\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?("[^"]+"|\w+)/gi)].map(m => nom(m[1])))
+  if (!temporaires.size) return body
+  return body.replace(/\bDROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?("[^"]+"|\w+)\s*(?=;|$)/gi, (stmt, n: string) => (temporaires.has(nom(n)) ? ' ' : stmt))
+}
+
 export function classifyMigration(sql: string): MigrationClassification {
   const header = HEADER.exec(sql)
-  const body = strip(sql)
+  const body = sansDropTemporaires(strip(sql))
   const reasons: string[] = []
   for (const [re, label] of DESTRUCTIVE) if (re.test(body)) reasons.push(label)
   // ADD COLUMN … NOT NULL sans DEFAULT : échoue sur une table non vide.
