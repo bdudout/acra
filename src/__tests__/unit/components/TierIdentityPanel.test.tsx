@@ -32,7 +32,7 @@ beforeEach(() => {
 describe('TierIdentityPanel — identités de tiers', () => {
   it('liste les tiers avec leur couverture : cyber seulement, TIC seulement, cyber + TIC', async () => {
     render(<TierIdentityPanel />)
-    const table = await screen.findByRole('table', { name: 'Identités de tiers' })
+    const table = await screen.findByRole('table', { name: 'Entités de tiers' })
     expect(within(table).getByText('Cyber + TIC')).toBeInTheDocument()
     expect(within(table).getByText('TIC seulement')).toBeInTheDocument()
     expect(within(table).getByText('Cyber seulement')).toBeInTheDocument()
@@ -74,7 +74,7 @@ describe('TierIdentityPanel — identités de tiers', () => {
   it('lecture seule : ni formulaire de création ni boutons d’action', async () => {
     fetchMock.mockImplementation(() => ok({ ...data, canManage: false }))
     render(<TierIdentityPanel />)
-    await screen.findByRole('table', { name: 'Identités de tiers' })
+    await screen.findByRole('table', { name: 'Entités de tiers' })
     expect(screen.queryByRole('button', { name: /Lier à/ })).toBeNull()
     expect(screen.queryByLabelText('Nom du tiers')).toBeNull()
   })
@@ -87,7 +87,7 @@ describe('TierIdentityPanel — identités de tiers', () => {
 
   it('fiche d’un tiers : « Offres et usages » déplie la fiche (offres, couverture, usages) du tiers choisi', async () => {
     render(<TierIdentityPanel />)
-    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[0] as HTMLElement
+    const row = (await screen.findByRole('table', { name: 'Entités de tiers' })).querySelectorAll('tbody tr')[0] as HTMLElement
     expect(screen.queryByTestId('detail-t1')).toBeNull()
     const toggle = within(row).getByRole('button', { name: /Offres et usages/ })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -124,7 +124,7 @@ describe('TierIdentityPanel — identités de tiers', () => {
       return ok(data)
     })
     render(<TierIdentityPanel />)
-    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
+    const row = (await screen.findByRole('table', { name: 'Entités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: /Fusionner — Fournisseur cyber/ }))
     fireEvent.change(screen.getByLabelText('Fusionner dans'), { target: { value: 't1' } })
     const box = await screen.findByTestId('merge-preview')
@@ -137,7 +137,7 @@ describe('TierIdentityPanel — identités de tiers', () => {
   it('fusion bloquée (données d’une autre organisation) : raison affichée, pas de bouton de confirmation', async () => {
     fetchMock.mockImplementation((url: string) => (url.startsWith('/api/tier-registry/merge?') ? ok({ ok: false, error: 'shared_with_other_organizations', source: { id: 't3', nom: 'x' }, target: { id: 't1', nom: 'y' }, counts: { arrangements: 0, parties: 0, services: 0, usages: 0 } }) : ok(data)))
     render(<TierIdentityPanel />)
-    const row = (await screen.findByRole('table', { name: 'Identités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
+    const row = (await screen.findByRole('table', { name: 'Entités de tiers' })).querySelectorAll('tbody tr')[2] as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: /Fusionner — Fournisseur cyber/ }))
     fireEvent.change(screen.getByLabelText('Fusionner dans'), { target: { value: 't1' } })
     expect(await screen.findByTestId('merge-preview')).toHaveTextContent('administrateur du groupe')

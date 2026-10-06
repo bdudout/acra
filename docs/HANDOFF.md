@@ -6,6 +6,29 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (77) — Claude : services tiers et entités de tiers
+
+- Vocabulaire (×5) : **service tiers** = partie prenante étudiée dans une analyse (service rendu, adhérence) ;
+  **entité de tiers** = personne morale (`Tier`, ex-« identité »). Menu et page `/tiers` → « Services tiers », encadré
+  explicatif, bouton « Entités de tiers » (même style que « Cartographie de l'écosystème ») → nouvelle page
+  `/tiers/entites` (même `TierIdentityPanel` que Configuration › Tiers).
+- `lib/services-tiers` (pur, testé) : regroupement des parties prenantes par nom comparable (entités rattachées,
+  occurrences à rattacher, candidates nom/alias jamais appliquées) + disposition du graphe d'une entité.
+- `GET/POST /api/tier-registry/services-tiers` : liste ; rattacher/détacher des parties prenantes à une entité (ADMIN ou
+  2ᵉ ligne, entité autorisée pour l'org, analyses visibles de l'org active, **hors analyse gelée**, ignorés comptés).
+  `POST /api/tier-registry` accepte `linkPartieIds` (créer l'entité depuis un service tiers).
+- UI : `tiers/ImportServicesTiers` (import depuis les services tiers), `tiers/EntiteLiens` (clic sur une entité :
+  graphe services ↔ entité ↔ contrats, rattacher/détacher services et contrats via `/api/tier-registry/link`).
+- **Vérifié** : `tsc` 0 · `npm test` (568 fichiers, 8 échecs de libellés corrigés → 24/24 sur les fichiers touchés) ·
+  `i18n:check` · navigateur : `/tiers` (encadré, bouton), `/tiers/entites` (32 services tiers proposés), POST hors
+  périmètre → ignoré, entité inconnue → 404.
+- **Non vérifié** : création d'entité / rattachement réels dans le navigateur (aucune donnée de recette isolée : pas
+  d'écriture dans les analyses de l'utilisateur) ; `npm run build`.
+- **À décider** : l'import propose toutes les parties prenantes, y compris des rôles internes ou des clients
+  (« Assurés », « Administrateur Système ») ; filtrer par type (prestataire, fournisseur, partenaire) ?
+
+---
+
 ## 2026-10-08 (76) — Claude : retours de recette projet (plans, sous-secteurs, secteurs masqués, risques types)
 
 - `956be03` références R1, R2… stables des risques d'un projet (`lib/risque-refs`, cotation actuelle) : plans

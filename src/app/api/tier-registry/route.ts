@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { partiesRattachables } from '@/lib/tier-registry.server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -75,6 +76,8 @@ export async function POST(req: NextRequest) {
   if (!cleaned.ok) return NextResponse.json({ error: cleaned.error }, { status: 400 })
   const { nom, lei, pays, aliases } = cleaned.value
   const linkArrangementIds: string[] = Array.isArray(body.linkArrangementIds) ? body.linkArrangementIds.filter((x: unknown): x is string => typeof x === 'string').slice(0, 50) : []
+  // Services tiers (parties prenantes) à rattacher à la nouvelle entité : seulement ceux du périmètre, hors analyse gelée.
+  const linkPartieIds: string[] = Array.isArray(body.linkPartieIds) ? body.linkPartieIds.filter((x: unknown): x is string => typeof x === 'string').slice(0, 500) : []
 
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
   const rootId = rootOrganizationIdOf(org?.path, orgId)
@@ -92,12 +95,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'possible_duplicate', candidates: candidates.map(c => ({ ...c, nom: known.find(t => t.id === c.tierId)?.nom ?? '' })) }, { status: 409 })
   }
 
+  const partiesALier = linkPartieIds.length ? await partiesRattachables({ userId: ctx.userId, orgId, role: ctx.scope.role, canManage: true, isAdmin: isAdminRole(ctx.scope.role), scope: ctx.scope.scope }, linkPartieIds) : []
   const tier = await prisma.$transaction(async tx => {
     const created = await tx.tier.create({ data: { rootOrganizationId: rootId, nom, lei, pays, aliases } })
     await tx.tierOrganization.create({ data: { tierId: created.id, organizationId: orgId } })
     if (linkArrangementIds.length) await tx.arrangementTic.updateMany({ where: { id: { in: linkArrangementIds }, organizationId: orgId, tierId: null }, data: { tierId: created.id } })
+    if (partiesALier.length) await tx.partiePrenante.updateMany({ where: { id: { in: partiesALier }, tierId: null }, data: { tierId: created.id } })
     return created
   })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.scope.role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'create', tierId: tier.id, nom, linked: linkArrangementIds.length } })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.scope.role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'create', tierId: tier.id, nom, linked: linkArrangementIds.length, linkedParties: partiesALier.length } })
   return NextResponse.json({ id: tier.id, nom, lei, pays }, { status: 201 })
 }
