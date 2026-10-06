@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { RISK_ACTION_STATUTS, ACTION_PRIORITES, DEFAULT_ACTION_DELAIS_MOIS, defaultEcheanceForPriorite, type ActionDelaisMois } from '@/lib/risk-action'
+import { RISK_ACTION_STATUTS, ACTION_PRIORITES, DEFAULT_ACTION_DELAIS_MOIS, defaultEcheanceForPriorite, ACTION_PRIORITE_BADGE as PRIORITE_BADGE, type ActionDelaisMois } from '@/lib/risk-action'
 import { suggestionsFromValues } from '@/lib/form-defaults'
 
 export interface ActionsSummary {
@@ -14,12 +14,6 @@ interface Action {
 }
 type Form = { intitule: string; responsable: string; echeance: string; statut: string; priorite: string }
 const EMPTY: Form = { intitule: '', responsable: '', echeance: '', statut: 'A_FAIRE', priorite: 'MAJEUR' }
-
-const PRIORITE_BADGE: Record<string, string> = {
-  CRITIQUE: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
-  MAJEUR: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
-  MODERE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-}
 
 const STATUT_BADGE: Record<string, string> = {
   A_FAIRE: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',

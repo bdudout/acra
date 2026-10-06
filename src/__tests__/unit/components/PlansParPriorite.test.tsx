@@ -12,7 +12,7 @@ beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock) })
 describe('PlansParPriorite', () => {
   it('liste les plans dans l’ordre reçu, risque visé et niveau, retard signalé', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ plans: [
-      { id: 'b', titre: 'Chiffrer les sauvegardes', statut: 'EN_COURS', priorite: 'CRITIQUE', echeance: '2026-09-01T00:00:00Z', porteur: 'DSI', risques: [{ id: 'r1', nom: 'Fuite de données', niveau: 12 }], niveauMax: 12, enRetard: true },
+      { id: 'b', titre: 'Chiffrer les sauvegardes', statut: 'EN_COURS', priorite: 'CRITIQUE', echeance: '2026-09-01T00:00:00Z', porteur: 'DSI', risques: [{ id: 'r1', ref: 'R1', nom: 'Fuite de données', niveau: 12 }], niveauMax: 12, enRetard: true },
       { id: 'a', titre: 'Former l’équipe', statut: 'A_FAIRE', priorite: 'MAJEUR', echeance: null, porteur: null, risques: [{ id: 'r2', nom: 'Retard', niveau: 4 }], niveauMax: 4, enRetard: false },
     ] }) })
     render(<PlansParPriorite analyseId="p1" />)
@@ -20,7 +20,9 @@ describe('PlansParPriorite', () => {
     expect(within(rows[0]).getByText('Chiffrer les sauvegardes')).toBeTruthy()
     expect(within(rows[0]).getByText(/Fuite de données/)).toBeTruthy()
     expect(within(rows[0]).getByText('En retard')).toBeTruthy()
-    expect(within(rows[0]).getByText('Critique')).toBeTruthy()
+    expect(within(rows[0]).getByText('R1')).toBeTruthy()
+    expect(within(rows[0]).getByText('Critique').className).toMatch(/bg-red-100/)
+    expect(within(rows[1]).getByText('Majeur').className).toMatch(/bg-amber-100/)
     expect(within(rows[1]).getByText('Former l’équipe')).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledWith('/api/analyses/p1/plans-projet', expect.anything())
   })

@@ -9,7 +9,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import type { ScaleConfig } from '@/lib/risk-scale'
 
 type GV = { g: number; v: number }
-export interface RisqueMatrice { id: string; nom: string; domaine: string | null; brut: GV; actuel: GV; residuel: GV }
+export interface RisqueMatrice { id: string; ref?: string; nom: string; domaine: string | null; brut: GV; actuel: GV; residuel: GV }
 type Etape = 'brut' | 'actuel' | 'residuel'
 const ETAPES: Etape[] = ['brut', 'actuel', 'residuel']
 const SANS = '__sans__'
@@ -27,7 +27,7 @@ export default function MatriceProjet({ risques, scale }: { risques: RisqueMatri
     return [...m.entries()].sort((a, b) => b[1] - a[1])
   }, [risques])
   const visibles = categorie == null ? risques : risques.filter(r => (r.domaine ?? SANS) === categorie)
-  const points = visibles.map(r => ({ nom: r.nom, gravite: r[etape].g, vraisemblance: r[etape].v }))
+  const points = visibles.map(r => ({ ref: r.ref, nom: r.nom, gravite: r[etape].g, vraisemblance: r[etape].v }))
   const chip = (actif: boolean) => `rounded-full border px-2.5 py-1 text-xs ${actif ? 'border-ebios-600 bg-ebios-50 font-medium text-ebios-800 dark:bg-ebios-900/30 dark:text-ebios-200' : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'}`
 
   return (

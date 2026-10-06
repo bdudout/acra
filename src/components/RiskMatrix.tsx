@@ -8,6 +8,8 @@ interface RiskItem {
   nom: string
   vraisemblance: number
   gravite: number
+  /** Référence stable (ex. numérotation d'un projet : lib/risque-refs) ; à défaut, R1, R2… calculés ici. */
+  ref?: string
 }
 
 /** Ajoute un canal alpha (hex 2 caractères) à une couleur hex #rrggbb. */
@@ -56,10 +58,12 @@ export default function RiskMatrix({
     allCells.find(c => c.vraisemblance === v && c.gravite === g)?.couleur ?? '#9ca3af'
 
   // Numérotation R1, R2… des risques, du plus critique au moins critique (score = G×V)
+  // Une référence fournie est conservée (légende dans l'ordre des références).
+  const numero = (ref?: string) => Number(ref?.replace(/\D/g, '')) || 0
   const numbered = risks
     .map((r, idx) => ({ ...r, idx }))
-    .sort((a, b) => (b.gravite * b.vraisemblance) - (a.gravite * a.vraisemblance) || a.idx - b.idx)
-    .map((r, i) => ({ ...r, ref: `R${i + 1}`, couleur: cellColor(r.vraisemblance, r.gravite) }))
+    .sort((a, b) => (a.ref && b.ref ? numero(a.ref) - numero(b.ref) : (b.gravite * b.vraisemblance) - (a.gravite * a.vraisemblance)) || a.idx - b.idx)
+    .map((r, i) => ({ ...r, ref: r.ref ?? `R${i + 1}`, couleur: cellColor(r.vraisemblance, r.gravite) }))
 
   // Légende : seuils distincts, ordonnés du moins grave au plus grave
   const legend = [...resolveScaleConfig(config).seuilsMatrice]

@@ -2,15 +2,16 @@
 // ─── Projet 360, phase Traitement : plans d'action par priorité ───────────────
 // Les plans qui réduisent les risques les plus élevés d'abord (ordre calculé côté serveur : lib/plans-priorite).
 // Éditable (chef de projet) : porteur, échéance et statut, enregistrés sur le plan via son risque
-// (PATCH /api/analyses/[id]/risques/[riskId]/plans/[planId]) ; plan prévu après la mise en service signalé.
+// (PATCH /api/analyses/[id]/risques/[riskId]/plans/[planId]) ; plan prévu après la mise en service signalé. Risques
+// visés repérés par leur référence R1, R2… (lib/risque-refs, même numérotation que la matrice) ; priorité en couleur.
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { RISK_ACTION_STATUTS } from '@/lib/risk-action'
+import { ACTION_PRIORITE_BADGE, RISK_ACTION_STATUTS } from '@/lib/risk-action'
 
 interface Plan {
   id: string; titre: string; statut: string; priorite: string; echeance: string | null; porteur: string | null
-  risques: { id: string; nom: string; niveau: number }[]; niveauMax: number; enRetard: boolean
+  risques: { id: string; ref?: string; nom: string; niveau: number }[]; niveauMax: number; enRetard: boolean
 }
 
 const field = 'rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs dark:border-gray-600 dark:bg-gray-800'
@@ -58,9 +59,16 @@ export default function PlansParPriorite({ analyseId, reloadKey = 0, editable = 
                   <td className="px-3 py-2 tabular-nums text-gray-400">{i + 1}</td>
                   <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{pl.titre}</td>
                   <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
-                    {pl.risques.map(r => <span key={r.id} className="block">{r.nom} <span className="tabular-nums text-gray-400">· {r.niveau}</span></span>)}
+                    {pl.risques.map(r => (
+                      <span key={r.id} className="block">
+                        {r.ref && <span className="mr-1 font-mono font-semibold text-ebios-700 dark:text-ebios-300">{r.ref}</span>}
+                        {r.nom} <span className="tabular-nums text-gray-400">· {r.niveau}</span>
+                      </span>
+                    ))}
                   </td>
-                  <td className="px-3 py-2 text-xs">{(rd.plansPriorites as Record<string, string>)[pl.priorite] ?? pl.priorite}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 font-medium ${ACTION_PRIORITE_BADGE[pl.priorite] ?? 'bg-gray-100 text-gray-600'}`}>{(rd.plansPriorites as Record<string, string>)[pl.priorite] ?? pl.priorite}</span>
+                  </td>
                   <td className="px-3 py-2 text-xs whitespace-nowrap">
                     {editable
                       ? <input type="date" aria-label={`${p.modifEcheance} — ${pl.titre}`} defaultValue={pl.echeance ? pl.echeance.slice(0, 10) : ''} onChange={e => maj(pl, { echeance: e.target.value || null })} className={field} />

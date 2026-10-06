@@ -16,6 +16,7 @@ import { indicateursProjet } from '@/lib/projet-indicateurs'
 import { cyberLiesNonImportes } from '@/lib/projet-cyber-lies'
 import { trierPlansParPriorite } from '@/lib/plans-priorite'
 import { cotations } from '@/lib/cotation-risque'
+import { refsRisquesCotes } from '@/lib/risque-refs'
 import { burndownPlans } from '@/lib/projet-burndown'
 import { sanitizeApprobations } from '@/lib/projet360'
 import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
@@ -35,7 +36,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
       risquesResiduelsStatut: true, risquesResiduelsLe: true, risquesResiduelsCommentaire: true,
       user: { select: { name: true, email: true } },
       cadrage: { select: { perimetre: true, objectifsEtude: true } },
-      risques: { select: { ...RISQUE_SELECT, sourceRisqueId: true } },
+      risques: { select: { ...RISQUE_SELECT, sourceRisqueId: true }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
     },
   })
   if (!analyse || analyse.deletedAt || analyse.methode !== 'PROJET_360') return null
@@ -54,9 +55,10 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
     take: 500,
   }) : []
   const risqueParId = new Map(analyse.risques.map(r => [r.id, r]))
+  const refs = refsRisquesCotes(analyse.risques)
   const plans = trierPlansParPriorite(plansBruts.map(pl => ({
     id: pl.id, titre: pl.titre, statut: pl.statut, priorite: pl.priorite, porteur: pl.porteur, echeance: pl.echeance ? pl.echeance.toISOString() : null,
-    risques: pl.liens.flatMap(l => { const r = risqueParId.get(l.targetId); return r ? [{ id: r.id, nom: r.nom, niveau: r.niveauActuel ?? r.niveauRisque }] : [] }),
+    risques: pl.liens.flatMap(l => { const r = risqueParId.get(l.targetId); return r ? [{ id: r.id, ref: refs.get(r.id), nom: r.nom, niveau: r.niveauActuel ?? r.niveauRisque }] : [] }),
   })), now)
   const indicateurs = indicateursProjet({
     risques: analyse.risques, ctx, now, miseEnService: analyse.dateEcheance,
@@ -120,7 +122,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
       perimetre: analyse.cadrage?.perimetre ?? null, objectifs: analyse.cadrage?.objectifsEtude ?? null,
       analyses,
       synthese: { ...synthese, principaux: synthese.principaux.map(r => ({ ...r, palier: { label: r.palier.label, couleur: r.palier.couleur } })) },
-      matrice: analyse.risques.map(r => ({ id: r.id, nom: r.nom, domaine: r.domaine, ...cotations(r) })),
+      matrice: analyse.risques.map(r => ({ id: r.id, ref: refs.get(r.id), nom: r.nom, domaine: r.domaine, ...cotations(r) })),
       scale, indicateurs,
       miseEnService: analyse.dateEcheance ? analyse.dateEcheance.toISOString().slice(0, 10) : null,
       cyberLies, restants,

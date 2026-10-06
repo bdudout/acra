@@ -252,7 +252,7 @@ interface VueSource {
   meteo?: { valeur: string | null; le: string | null }
   restants?: { total: number; fin: string; prevu: { date: string; restants: number }[]; cible: { date: string; restants: number }[]; aujourdhui: { date: string; restants: number } } | null
 }
-interface PlanSource { titre: string; statut: string; priorite: string; echeance: string | null; porteur: string | null; risques: { id?: string; nom: string; niveau?: number }[]; enRetard: boolean }
+interface PlanSource { titre: string; statut: string; priorite: string; echeance: string | null; porteur: string | null; risques: { id?: string; ref?: string; nom: string; niveau?: number }[]; enRetard: boolean }
 
 export function donneesProjetPptx({ vue, plans, parDomaine, t, locale, now }: {
   vue: VueSource; plans: readonly PlanSource[]; parDomaine: readonly { domaine: string | null; total: number }[]; t: T; locale: string; now: Date
@@ -290,7 +290,7 @@ export function donneesProjetPptx({ vue, plans, parDomaine, t, locale, now }: {
   }
 
   const listePlans = plans.map(p => ({
-    titre: p.titre, risque: p.risques.map(r => r.nom).join(', ') || '—', priorite: prio[p.priorite] ?? p.priorite,
+    titre: p.titre, risque: p.risques.map(r => (r.ref ? `${r.ref} · ${r.nom}` : r.nom)).join(', ') || '—', priorite: prio[p.priorite] ?? p.priorite,
     echeance: p.echeance ? date(p.echeance) : '—', statut: st[p.statut] ?? p.statut, porteur: p.porteur?.trim() || '—', enRetard: p.enRetard,
     apresMes: limite != null && p.statut !== 'FAIT' && !!p.echeance && new Date(p.echeance).getTime() > limite,
   }))
