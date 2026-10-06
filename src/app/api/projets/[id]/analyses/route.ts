@@ -12,6 +12,7 @@ import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sourcesCyberWhere } from '@/lib/projet360-sources.server'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { getOrgConfig } from '@/lib/org-config.server'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const orgId = g.analyse.organizationId
   if (g.analyse.methode !== 'PROJET_360' || !orgId) return NextResponse.json({ error: 'methode_non_360' }, { status: 400 })
+  // Module Projets 360 désactivé : aucun lien possible (les boutons sont déjà masqués, l'API ne doit pas le permettre).
+  if (!(await getOrgConfig(orgId)).projets360Active) return NextResponse.json({ error: 'module_inactif' }, { status: 404 })
 
   const body = await req.json().catch(() => ({})) as { analyseId?: unknown }
   const analyseId = typeof body.analyseId === 'string' ? body.analyseId : ''
