@@ -6,7 +6,7 @@
 // une source, que l'utilisateur voit et confirme.
 
 import { createAnalyseRiskPlanAction } from '@/lib/plan-action.server'
-import { planSocle, risquesSocle, sanitizeSocleConfig } from '@/lib/projet360-socle'
+import { planSocle, reglesEquivalentesSocle, risquesSocle, sanitizeSocleConfig } from '@/lib/projet360-socle'
 import type { Locale } from '@/lib/i18n'
 import { prisma } from './prisma'
 import { getOrgConfig } from './org-config.server'
@@ -49,17 +49,19 @@ export async function populateProjet360(analyseId: string, orgId: string, t: Tra
     ...((t as { qualification?: { riskCatalog?: Record<string, { title: string; description?: string }> } }).qualification?.riskCatalog ?? {}),
     ...(t.projet360.riskCatalog as Record<string, { title: string; description?: string }>),
   }
-  const plan = planPopulation360({
-    answers, orgRules: cfg.qualificationQuestionnaire.riskRules ?? [], catalog,
-    existingRuleIds: analyse.risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : [])),
-    existingTitles: analyse.risques.map(r => r.nom),
-  })
-  // Risques présents par défaut dans tout projet (configuration de l'organisation), sans doublon.
+  // Risques présents par défaut dans tout projet (configuration de l'organisation), sans doublon ; ils priment sur les
+  // risques équivalents du questionnaire (qui ne sont alors pas créés en double).
+  const existingRuleIds = analyse.risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : []))
   const socle = planSocle(
     risquesSocle(sanitizeSocleConfig(cfg.risquesProjetDefaut), locale, scale.nbNiveaux),
-    analyse.risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : [])),
-    [...analyse.risques.map(r => r.nom), ...plan.map(p => p.title)],
+    existingRuleIds,
+    analyse.risques.map(r => r.nom),
   )
+  const plan = planPopulation360({
+    answers, orgRules: cfg.qualificationQuestionnaire.riskRules ?? [], catalog,
+    existingRuleIds: [...existingRuleIds, ...reglesEquivalentesSocle([...existingRuleIds, ...socle.map(s => s.ruleId)])],
+    existingTitles: [...analyse.risques.map(r => r.nom), ...socle.map(s => s.nom)],
+  })
   const socleCount = socle.length === 0 ? 0 : (await prisma.risque.createMany({
     skipDuplicates: true,
     data: socle.map(s => {
@@ -69,12 +71,18 @@ export async function populateProjet360(analyseId: string, orgId: string, t: Tra
       return { ...row, description: null, analyseId, qualificationRuleId: s.ruleId, ...(s.domaine ? { domaine: s.domaine } : {}) }
     }),
   })).count
-  // Plan d'action par défaut de chaque risque par défaut : la démarche à mener avec l'expert compétent.
-  const avecPlan = socle.filter(s => s.plan)
-  if (socleCount && avecPlan.length) {
-    const crees = await prisma.risque.findMany({ where: { analyseId, qualificationRuleId: { in: avecPlan.map(s => s.ruleId) } }, select: { id: true, nom: true, qualificationRuleId: true } })
+  // Mesure (à mettre en œuvre) et plan d'action par défaut de chaque risque par défaut : le dispositif attendu et la
+  // démarche à mener avec l'expert compétent.
+  const outilles = socle.filter(s => s.plan || s.mesure)
+  if (socleCount && outilles.length) {
+    const crees = await prisma.risque.findMany({ where: { analyseId, qualificationRuleId: { in: outilles.map(s => s.ruleId) } }, select: { id: true, nom: true, qualificationRuleId: true } })
+    const mesures = crees.flatMap(r => {
+      const m = outilles.find(s => s.ruleId === r.qualificationRuleId)?.mesure
+      return m ? [{ analyseId, risqueId: r.id, nom: m.nom, type: m.type, statut: 'A_FAIRE' as const }] : []
+    })
+    if (mesures.length) await prisma.mesure.createMany({ data: mesures })
     for (const r of crees) {
-      const p = avecPlan.find(s => s.ruleId === r.qualificationRuleId)?.plan
+      const p = outilles.find(s => s.ruleId === r.qualificationRuleId)?.plan
       if (p) await createAnalyseRiskPlanAction(prisma, { organizationId: orgId, analyseId, risqueId: r.id, riskLabel: r.nom, titre: p.titre, description: p.description, statut: 'A_FAIRE', priorite: 'MAJEUR' })
     }
   }

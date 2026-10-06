@@ -154,3 +154,14 @@ describe('Dashboard360', () => {
     expect(screen.getByText('1 risque(s) sans domaine')).toBeTruthy()
   })
 })
+
+describe('QualificationRiskProposal — nombreuses propositions', () => {
+  it('en fenêtre : tient dans la hauteur de l’écran, la liste défile et les boutons restent visibles', async () => {
+    const { default: QualificationRiskProposal } = await import('@/components/QualificationRiskProposal')
+    const risks = Array.from({ length: 15 }, (_, i) => ({ id: `r${i}`, title: `Risque ${i}`, mandatory: false, category: 'IT' as const, gravity: 2, likelihood: 2, strategy: 'REDUIRE' as const }))
+    render(<QualificationRiskProposal risks={risks} labels={{ title: 'Risques proposés', explanation: '', confirm: 'Créer', cancel: 'Plus tard', gravity: 'G', likelihood: 'V', strategy: 'T', mandatory: '', mandatoryHint: '', categories: {} }} strategies={{}} onConfirm={() => {}} onCancel={() => {}} />)
+    const section = screen.getByRole('dialog').querySelector('section')!
+    expect(section.className).toMatch(/max-h-\[calc\(100vh-2rem\)\]/)
+    expect(screen.getByRole('group', { name: 'Risques proposés' }).className).toMatch(/overflow-y-auto/)
+  })
+})

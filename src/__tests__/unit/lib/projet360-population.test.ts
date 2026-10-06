@@ -8,6 +8,7 @@ const db = vi.hoisted(() => ({
   traitement: { count: vi.fn() },
   risque: { createMany: vi.fn(), findMany: vi.fn() },
   planAction: { create: vi.fn() },
+  mesure: { createMany: vi.fn() },
 }))
 vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ reglementaireActive: false, qualificationQuestionnaire: { riskRules: [] } })) }))
@@ -27,6 +28,7 @@ beforeEach(() => {
   // Risques par défaut relus après création (pour leur rattacher un plan d'action).
   db.risque.findMany.mockImplementation(async (a: { where: { qualificationRuleId: { in: string[] } } }) => a.where.qualificationRuleId.in.map((ruleId, i) => ({ id: `rs${i}`, nom: ruleId, qualificationRuleId: ruleId })))
   db.planAction.create.mockImplementation(async (a: unknown) => a)
+  db.mesure.createMany.mockImplementation(async (a: { data: unknown[] }) => ({ count: a.data.length }))
 })
 
 describe('populateProjet360', () => {
@@ -51,5 +53,10 @@ describe('populateProjet360', () => {
     const plan = db.planAction.create.mock.calls[0][0].data
     expect(plan).toMatchObject({ organizationId: 'org1', statut: 'A_FAIRE', liens: { create: [expect.objectContaining({ type: 'RISQUE_ANALYSE', targetId: 'rs0', ref: 'a1' })] } })
     expect(db.planAction.create.mock.calls.map(c => c[0].data.titre).join(' | ')).toMatch(/DPO/)
+    // Une mesure par défaut par risque par défaut, à mettre en œuvre (statut « à faire »), rattachée au risque du projet.
+    const mesures = db.mesure.createMany.mock.calls.flatMap(c => c[0].data as { analyseId: string; risqueId: string; statut: string; nom: string }[])
+    expect(mesures).toHaveLength(8)
+    expect(mesures.every(m => m.analyseId === 'a1' && m.statut === 'A_FAIRE' && m.nom)).toBe(true)
+    expect(new Set(mesures.map(m => m.risqueId)).size).toBe(8)
   })
 })

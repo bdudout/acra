@@ -1,7 +1,8 @@
 /** Risques présents par défaut dans tout projet 360 (configurables par l'organisation). */
 import { describe, expect, it } from 'vitest'
-import { RISQUES_PROJET_SOCLE, sanitizeSocleConfig, risquesSocle, planSocle, SOCLE_RULE_PREFIX } from '@/lib/projet360-socle'
+import { RISQUES_PROJET_SOCLE, sanitizeSocleConfig, risquesSocle, planSocle, reglesEquivalentesSocle, SOCLE_RULE_PREFIX } from '@/lib/projet360-socle'
 import { DOMAINES_360 } from '@/lib/projet360'
+import { MESURE_TYPES } from '@/lib/risque-mesure'
 
 describe('catalogue des risques projet par défaut', () => {
   it('couvre gestion de projet, RGPD, externalisation, sécurité, mise en service ; codes uniques ; textes ×5', () => {
@@ -72,5 +73,31 @@ describe('plans d’action par défaut des risques par défaut', () => {
     expect(r.find(x => x.ruleId.endsWith('PROJ_RGPD'))!.plan).toMatchObject({ titre: expect.stringMatching(/DPO/) })
     expect(r.find(x => x.ruleId.endsWith('custom:a1'))!.plan).toEqual({ titre: 'Valider le site de repli avec la direction des opérations', description: null })
     expect(r.find(x => x.ruleId.endsWith('custom:a2'))!.plan).toBeNull()
+  })
+})
+
+describe('mesures par défaut des risques par défaut', () => {
+  it('chaque risque du catalogue porte une mesure (5 langues, type de mesure connu), distincte du plan', () => {
+    for (const r of RISQUES_PROJET_SOCLE) {
+      expect(r.mesure.nom.every(s => s.trim().length > 0), r.code).toBe(true)
+      expect(MESURE_TYPES).toContain(r.mesure.type)
+      expect(r.mesure.nom[0]).not.toBe(r.plan.titre[0])
+    }
+  })
+  it('la mesure est résolue dans la langue ; un risque ajouté peut porter une mesure (facultative, bornée)', () => {
+    const cfg = sanitizeSocleConfig({ ajoutes: [{ id: 'a1', intitule: 'Site pilote indisponible', gravite: 3, vraisemblance: 2, mesure: `  Site de repli équipé ${'x'.repeat(300)}` }, { id: 'a2', intitule: 'Sans mesure', gravite: 2, vraisemblance: 2 }] })
+    expect(cfg.ajoutes[0].mesure).toMatch(/^Site de repli équipé/)
+    expect(cfg.ajoutes[0].mesure!.length).toBe(200)
+    expect(cfg.ajoutes[1].mesure).toBeUndefined()
+    const r = risquesSocle(cfg, 'en', 4)
+    expect(r.find(x => x.ruleId.endsWith('PROJ_SECURITE'))!.mesure).toMatchObject({ nom: expect.stringMatching(/security test/i), type: 'TECHNIQUE' })
+    expect(r.find(x => x.ruleId.endsWith('custom:a1'))!.mesure).toEqual({ nom: cfg.ajoutes[0].mesure, type: 'ORGANISATIONNELLE' })
+    expect(r.find(x => x.ruleId.endsWith('custom:a2'))!.mesure).toBeNull()
+  })
+})
+
+describe('règles du questionnaire équivalentes aux risques par défaut', () => {
+  it('donne les règles 360 couvertes par les risques par défaut créés (pas de doublon à la création du projet)', () => {
+    expect(reglesEquivalentesSocle([`${SOCLE_RULE_PREFIX}PROJ_DELAIS`, `${SOCLE_RULE_PREFIX}PROJ_RGPD`, `${SOCLE_RULE_PREFIX}custom:a1`]).sort()).toEqual(['p360-derivePlanning'])
   })
 })

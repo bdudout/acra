@@ -7,7 +7,8 @@ import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { canCreateAnalyse, canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { syntheseProjet } from '@/lib/projet-synthese'
-import { evaluateRisk } from '@/lib/risque-priorisation'
+import { indicateursProjet } from '@/lib/projet-indicateurs'
+import { cotations } from '@/lib/cotation-risque'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 import Navbar from '@/components/Navbar'
 import ProjetPresentation from '@/components/projet360/ProjetPresentation'
@@ -40,18 +41,14 @@ export default async function ProjetPage({ params }: { params: Promise<{ id: str
   const scale = await getEffectiveScaleConfig(analyse.organizationId)
   const ctx = { scale, appetit: orgConfig.appetitRisque }
   const synthese = syntheseProjet(analyse.risques, ctx)
-  const domaines = new Map<string, { total: number; aTraiter: number }>()
-  for (const r of analyse.risques) {
-    if (!r.domaine) continue
-    const d = domaines.get(r.domaine) ?? { total: 0, aTraiter: 0 }
-    d.total++; if (evaluateRisk(r, ctx).decision === 'treat') d.aTraiter++
-    domaines.set(r.domaine, d)
-  }
   const now = new Date()
+  // Tous les plans rattachés aux risques du projet (terminés compris : avancement), avec le risque couvert.
   const plans = analyse.organizationId ? await prisma.planAction.findMany({
-    where: { organizationId: analyse.organizationId, statut: { not: 'FAIT' }, liens: { some: { type: 'RISQUE_ANALYSE', ref: analyse.id } } },
-    select: { echeance: true },
+    where: { organizationId: analyse.organizationId, liens: { some: { type: 'RISQUE_ANALYSE', ref: analyse.id } } },
+    select: { statut: true, echeance: true, porteur: true, liens: { where: { type: 'RISQUE_ANALYSE', ref: analyse.id }, select: { targetId: true } } },
   }) : []
+  const indicateurs = indicateursProjet({ risques: analyse.risques, ctx, now, plans: plans.map(pl => ({ statut: pl.statut, echeance: pl.echeance, porteur: pl.porteur, risqueIds: pl.liens.map(x => x.targetId) })) })
+  const matrice = analyse.risques.map(r => ({ id: r.id, nom: r.nom, domaine: r.domaine, ...cotations(r) }))
 
   const role = resolveAnalyseRole(instanceRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, instanceRole, analyse.organizationId) : null)
   const canEdit = canEditAnalyse({ id: userId, role }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
@@ -67,8 +64,7 @@ export default async function ProjetPage({ params }: { params: Promise<{ id: str
           perimetre: analyse.cadrage?.perimetre ?? null, objectifs: analyse.cadrage?.objectifsEtude ?? null,
           analyses: analyse.analysesDuProjet,
           synthese: { ...synthese, principaux: synthese.principaux.map(r => ({ ...r, palier: { label: r.palier.label, couleur: r.palier.couleur } })) },
-          parDomaine: [...domaines.entries()].map(([domaine, d]) => ({ domaine, ...d })).sort((a, b) => b.total - a.total),
-          plans: { ouverts: plans.length, enRetard: plans.filter(x => x.echeance && x.echeance < now).length },
+          matrice, scale, indicateurs,
         }} />
       </main>
     </div>

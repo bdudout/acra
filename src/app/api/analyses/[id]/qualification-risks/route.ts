@@ -20,7 +20,7 @@ import { getServerT } from '@/lib/i18n'
 import { sanitizeQualification, suggestedQualificationRisks } from '@/lib/qualification'
 import { RISK_RULES_360, sanitizeAnswers360, isDomaine360 } from '@/lib/projet360'
 import {
-  localizeQualificationRisks, planQualificationRiskCreation, qualificationRiskChannel, type QualificationRiskCatalogTexts,
+  localizeQualificationRisks, planQualificationRiskCreation, propositionsDejaPresentes, qualificationRiskChannel, type QualificationRiskCatalogTexts,
 } from '@/lib/qualification-risks'
 import { sanitizeDirectRisque } from '@/lib/risque-direct'
 
@@ -35,7 +35,7 @@ async function load(id: string) {
   const role = (user.role ?? 'ANALYSTE') as UserRole
   const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(user.id, role, id),
-    include: { accesUtilisateurs: true, risques: { select: { qualificationRuleId: true } } },
+    include: { accesUtilisateurs: true, risques: { select: { nom: true, qualificationRuleId: true } } },
   })
   if (!analyse || analyse.deletedAt) return { ok: false as const, res: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
   const config = await getOrgConfig(analyse.organizationId)
@@ -50,7 +50,8 @@ async function load(id: string) {
   const answers = { ...sanitizeQualification(analyse.qualification, questionnaire), ...(is360 ? sanitizeAnswers360(analyse.qualification) : {}) }
   const rules = [...(questionnaire.riskRules ?? []), ...(is360 ? RISK_RULES_360 : [])]
   const proposals = localizeQualificationRisks(suggestedQualificationRisks(answers, rules, analyse.methode), catalog)
-  const existingRuleIds = analyse.risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : []))
+  // Déjà présentes : même règle, même intitulé ou risque par défaut équivalent → ni reproposées, ni recréées.
+  const existingRuleIds = [...propositionsDejaPresentes(proposals, analyse.risques)]
   return { ok: true as const, userId: user.id, role, analyse, config, proposals, existingRuleIds }
 }
 

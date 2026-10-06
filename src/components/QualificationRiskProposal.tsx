@@ -34,10 +34,11 @@ export default function QualificationRiskProposal({ risks, labels, strategies, o
   const chosen = () => risks.filter(r => r.mandatory || selected.has(r.id)).map(r => r.id)
 
   const body = (
-    <section className={`card w-full ${inline ? 'p-4' : 'max-w-2xl p-5'} dark:bg-slate-900`} aria-label={inline ? labels.title : undefined}>
+    <section className={`card w-full ${inline ? 'p-4' : 'flex max-h-[calc(100vh-2rem)] max-w-2xl flex-col p-5'} dark:bg-slate-900`} aria-label={inline ? labels.title : undefined}>
       <h2 className="text-lg font-bold text-gray-900 dark:text-slate-50">{labels.title}</h2>
       <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">{labels.explanation}</p>
-      <div className="mt-4 space-y-2">
+      {/* En fenêtre, seule la liste défile : titre et boutons restent visibles quel que soit le nombre de propositions. */}
+      <div role="group" aria-label={labels.title} className={`mt-4 space-y-2 ${inline ? '' : 'min-h-0 flex-1 overflow-y-auto pr-1'}`}>
         {risks.map(risk => {
           const checked = risk.mandatory || selected.has(risk.id)
           return (

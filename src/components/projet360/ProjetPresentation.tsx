@@ -1,7 +1,8 @@
 'use client'
 // ─── Page de présentation d'un projet 360 (/projets/[id]) ─────────────────────
-// Description (secteur, architecture, périmètre, objectifs), indicateurs, répartition des risques par niveau aux trois
-// étapes (brut / actuel / résiduel), risques par domaine, principaux risques, plans d'action par priorité ; « Modifier »
+// Description (secteur, architecture, périmètre, objectifs), indicateurs (risques et plans d'action — lib/projet-indicateurs),
+// matrice brut / actuel / résiduel filtrable par catégorie, répartition par niveau, principaux risques, plans d'action
+// par priorité ; « Modifier »
 // ouvre le mode édition (phases du projet). Données calculées côté serveur (lib/projet-synthese) : lecture seule.
 
 import Link from 'next/link'
@@ -9,15 +10,19 @@ import { Pencil } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { patternLabel } from '@/lib/patterns-archi'
 import PlansParPriorite from '@/components/projet360/PlansParPriorite'
+import MatriceProjet, { type RisqueMatrice } from '@/components/projet360/MatriceProjet'
 import type { PalierSynthese } from '@/lib/projet-synthese'
+import type { IndicateursProjet } from '@/lib/projet-indicateurs'
+import type { ScaleConfig } from '@/lib/risk-scale'
 
 export interface ProjetVue {
   id: string; nom: string; statut: string; secteur: string | null; patterns: string[]
   perimetre: string | null; objectifs: string | null; analyses: { id: string; nom: string }[]
   synthese: { total: number; aTraiter: number; acceptables: number; paliers: PalierSynthese[]
     principaux: { id: string; nom: string; niveau: number; domaine: string | null; palier: { label: string; couleur: string } }[] }
-  parDomaine: { domaine: string; total: number; aTraiter: number }[]
-  plans: { ouverts: number; enRetard: number }
+  matrice: RisqueMatrice[]
+  scale: Partial<ScaleConfig> | null
+  indicateurs: IndicateursProjet
 }
 
 export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber }: { projet: ProjetVue; canEdit: boolean; canCreateCyber: boolean }) {
@@ -27,8 +32,14 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber 
   const statuts = t.statusLabels as Record<string, string>
   const max = Math.max(1, ...p.synthese.paliers.flatMap(x => [x.brut, x.actuel, x.residuel]))
   const etapes = [['brut', l.brut, 1], ['actuel', l.actuel, 0.7], ['residuel', l.residuel, 0.4]] as const
-  const kpi = (label: string, valeur: React.ReactNode, sous?: React.ReactNode) => (
-    <div className="card p-4"><p className="text-xs text-gray-500 dark:text-gray-400">{label}</p><p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{valeur}</p>{sous && <p className="text-xs text-gray-500 dark:text-gray-400">{sous}</p>}</div>
+  const ind = p.indicateurs
+  // Indicateur : valeur mise en avant (ambre si elle appelle une action) et précision facultative.
+  const kpi = (label: string, valeur: React.ReactNode, o: { sous?: React.ReactNode; alerte?: boolean } = {}) => (
+    <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+      <p className={`text-2xl font-semibold tabular-nums ${o.alerte ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-gray-100'}`}>{valeur}</p>
+      {o.sous && <p className="text-xs text-gray-500 dark:text-gray-400">{o.sous}</p>}
+    </div>
   )
   return (
     <div className="space-y-6">
@@ -55,12 +66,32 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber 
           <ul className="text-sm">{p.analyses.map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="text-ebios-700 hover:underline">{a.nom}</Link></li>)}</ul></div>}
       </section>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpi(l.risques, p.synthese.total)}
-        {kpi(l.aTraiter, p.synthese.aTraiter)}
-        {kpi(l.acceptables, p.synthese.acceptables)}
-        {kpi(l.plansOuverts, p.plans.ouverts, `${l.plansEnRetard} ${p.plans.enRetard}`)}
-      </div>
+      <section className="card p-5" aria-label={l.indicateurs}>
+        <h2 className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">{l.indicateurs}</h2>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{l.indRisques}</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {kpi(l.risques, p.synthese.total)}
+          {kpi(l.aTraiter, p.synthese.aTraiter, { sous: `${l.acceptables} ${p.synthese.acceptables}` })}
+          {kpi(l.sansPlan, ind.risquesATraiterSansPlan, { alerte: ind.risquesATraiterSansPlan > 0 })}
+          {kpi(l.reduction, ind.reductionPct == null ? l.nd : ind.reductionPct > 0 ? `-${ind.reductionPct} %` : `${ind.reductionPct} %`)}
+          {kpi(l.horsAppetit, ind.residuelsHorsAppetit, { alerte: ind.residuelsHorsAppetit > 0 })}
+        </div>
+        <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{l.indPlans}</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{l.avancement}</p>
+            <p className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">{ind.plans.avancement == null ? l.nd : `${ind.plans.avancement} %`}</p>
+            {ind.plans.avancement != null && <div className="mt-1 h-1.5 rounded bg-gray-100 dark:bg-gray-800" aria-hidden="true"><div className="h-1.5 rounded bg-ebios-600" style={{ width: `${ind.plans.avancement}%` }} /></div>}
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{l.avancementSous.replace('{faits}', String(ind.plans.faits)).replace('{total}', String(ind.plans.total))}</p>
+          </div>
+          {kpi(l.enRetard, ind.plans.enRetard, { alerte: ind.plans.enRetard > 0 })}
+          {kpi(l.echeanceProche, ind.plans.echeanceProche)}
+          {kpi(l.sansPorteur, ind.plans.sansPorteur, { alerte: ind.plans.sansPorteur > 0 })}
+          {kpi(l.sansEcheance, ind.plans.sansEcheance, { alerte: ind.plans.sansEcheance > 0 })}
+        </div>
+      </section>
+
+      {p.matrice.length > 0 && <MatriceProjet risques={p.matrice} scale={p.scale} />}
 
       {p.synthese.total === 0 ? <p className="card p-5 text-sm italic text-gray-500">{l.aucunRisque}</p> : (
         <div className="grid gap-5 lg:grid-cols-2">
@@ -96,12 +127,6 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber 
                 ))}
               </ul>
             </section>
-            {p.parDomaine.length > 0 && <section className="card p-5" aria-label={l.parDomaine}>
-              <h2 className="mb-2 text-base font-semibold text-gray-900 dark:text-gray-100">{l.parDomaine}</h2>
-              <ul className="space-y-1 text-sm">
-                {p.parDomaine.map(d => <li key={d.domaine} className="flex justify-between gap-2"><span className="text-gray-700 dark:text-gray-200">{domaines[d.domaine] ?? d.domaine}</span><span className="tabular-nums text-gray-500">{d.total}{d.aTraiter ? ` · ${l.aTraiter.toLowerCase()} ${d.aTraiter}` : ''}</span></li>)}
-              </ul>
-            </section>}
           </div>
         </div>
       )}
