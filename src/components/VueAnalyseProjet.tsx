@@ -21,9 +21,9 @@ export default function VueAnalyseProjet({ active, projet, analyses }: { active:
         ? <span aria-current="page" className={actif}>{v.projet} · {projet.nom}</span>
         : <Link href={`/projets/${projet.id}`} className={inactif}>{v.projet} · {projet.nom}</Link>}
       {active === 'analyse'
-        ? <span aria-current="page" className={actif}>{v.analyse}</span>
+        ? <span aria-current="page" className={actif}>{v.analyse}{analyses[0] ? ` · ${analyses[0].nom}` : ''}</span>
         : analyses.length === 1
-          ? <Link href={`/analyses/${analyses[0].id}`} className={inactif}>{v.analyse}</Link>
+          ? <Link href={`/analyses/${analyses[0].id}`} className={inactif}>{v.analyse} · {analyses[0].nom}</Link>
           : (
             <details className="relative">
               <summary className={`${inactif} cursor-pointer list-none`}>{v.analyse} ({analyses.length})</summary>

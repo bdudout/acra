@@ -8,7 +8,12 @@
 
 import { useState, type ComponentProps } from 'react'
 import Link from 'next/link'
-import { Download, Pencil } from 'lucide-react'
+import { Cloud, CloudLightning, CloudSun, Download, Pencil, Sun, type LucideIcon } from 'lucide-react'
+import { METEOS, type Meteo } from '@/lib/projet-meteo'
+import PlansRestantsGraphique, { type DonneesRestants } from '@/components/projet360/PlansRestantsGraphique'
+import { useRouter } from 'next/navigation'
+import AssocierAnalyseCyber from '@/components/projet360/AssocierAnalyseCyber'
+import TitreEditable from '@/components/TitreEditable'
 import AccessPanel from '@/components/AccessPanel'
 import ResidualRisksPanel from '@/components/ResidualRisksPanel'
 import type { CyberLie } from '@/lib/projet-cyber-lies'
@@ -33,7 +38,14 @@ export interface ProjetVue {
   miseEnService?: string | null
   /** Analyses cyber liées accessibles : risques à traiter non importés. */
   cyberLies?: CyberLie[]
+  /** Météo réglée par le chef de projet (lib/projet-meteo) et date du réglage. */
+  meteo?: { valeur: string | null; le: string | null }
+  /** Plans d'action restants : prévu par jalons, cible, aujourd'hui (lib/projet-burndown). */
+  restants?: DonneesRestants | null
 }
+
+const METEO_ICONE: Record<Meteo, LucideIcon> = { SOLEIL: Sun, SOLEIL_NUAGE: CloudSun, NUAGE: Cloud, ORAGE: CloudLightning }
+const METEO_COULEUR: Record<Meteo, string> = { SOLEIL: 'text-amber-500', SOLEIL_NUAGE: 'text-amber-400', NUAGE: 'text-gray-500', ORAGE: 'text-red-600' }
 
 export interface ValidationProjet { access: ComponentProps<typeof AccessPanel>; residuels?: ComponentProps<typeof ResidualRisksPanel> }
 
@@ -45,6 +57,15 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
   const max = Math.max(1, ...p.synthese.paliers.flatMap(x => [x.brut, x.actuel, x.residuel]))
   const etapes = [['brut', l.brut, 1], ['actuel', l.actuel, 0.7], ['residuel', l.residuel, 0.4]] as const
   const ind = p.indicateurs
+  const router = useRouter()
+  const [nom, setNom] = useState(p.nom)
+  const meteos = l.meteo as Record<string, string>
+  const [meteo, setMeteo] = useState<Meteo | null>((p.meteo?.valeur as Meteo | null) ?? null)
+  const [meteoLe, setMeteoLe] = useState<string | null>(p.meteo?.le ?? null)
+  async function changerMeteo(v: string) {
+    const res = await fetch(`/api/analyses/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meteoProjet: v || null }) }).catch(() => null)
+    if (res?.ok) { setMeteo((v || null) as Meteo | null); setMeteoLe(v ? new Date().toISOString() : null) }
+  }
   const [mes, setMes] = useState(p.miseEnService ?? '')
   const [mesMsg, setMesMsg] = useState<string | null>(null)
   async function enregistrerMiseEnService(v: string) {
@@ -62,16 +83,18 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
   )
   return (
     <div className="space-y-6">
-      <VueAnalyseProjet active="projet" projet={{ id: p.id, nom: p.nom }} analyses={p.analyses} />
+      <VueAnalyseProjet active="projet" projet={{ id: p.id, nom }} analyses={p.analyses} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/projets" className="text-sm text-ebios-700 hover:underline">{l.retour}</Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{p.nom}</h1>
+          <div className="mt-2"><TitreEditable analyseId={p.id} nom={nom} canEdit={canEdit} onRenamed={setNom}
+            labels={{ renommer: l.renommer, nom: l.nomProjet, enregistrer: l.enregistrerNom, annuler: l.annuler, erreur: l.nomErreur }} /></div>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{statuts[p.statut] ?? p.statut}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <a href={`/api/projets/${p.id}/export?lang=${locale}`} className="btn-secondary text-sm inline-flex items-center gap-1.5"><Download size={14} aria-hidden="true" />{l.exportPptx}</a>
-          {canCreateCyber && <Link href={`/analyses/new?projet=${p.id}`} className="btn-secondary text-sm">{l.lancerCyber}</Link>}
+          {/* Tant qu'aucune analyse cyber n'est liée : créer une nouvelle analyse ou lier une existante. */}
+          {canEdit && p.analyses.length === 0 && <AssocierAnalyseCyber projetId={p.id} canCreate={canCreateCyber} onLinked={() => router.refresh()} />}
           {canEdit && <Link href={`/analyses/${p.id}/atelier/1?phase=contexte`} className="btn-primary text-sm inline-flex items-center gap-1.5"><Pencil size={14} aria-hidden="true" />{l.modifier}</Link>}
         </div>
       </div>
@@ -95,62 +118,68 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
           <ul className="text-sm">{p.analyses.map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="text-ebios-700 hover:underline">{a.nom}</Link></li>)}</ul></div>}
       </section>
 
+      {/* Indicateurs resserrés : météo (chef de projet), mise en service, avancement et retards des plans, risques. */}
       <section className="card p-5" aria-label={l.indicateurs}>
         <h2 className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">{l.indicateurs}</h2>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{l.indRisques}</h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {kpi(l.risques, p.synthese.total)}
-          {kpi(l.aTraiter, p.synthese.aTraiter, { sous: `${l.acceptables} ${p.synthese.acceptables}` })}
-          {kpi(l.sansPlan, ind.risquesATraiterSansPlan, { alerte: ind.risquesATraiterSansPlan > 0 })}
-          {kpi(l.reduction, ind.reductionPct == null ? l.nd : ind.reductionPct > 0 ? `-${ind.reductionPct} %` : `${ind.reductionPct} %`)}
-          {kpi(l.horsAppetit, ind.residuelsHorsAppetit, { alerte: ind.residuelsHorsAppetit > 0 })}
-        </div>
-        <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{l.indPlans}</h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+            <p className="text-xs text-gray-500 dark:text-gray-400">{l.meteoTitre}</p>
+            <div className="mt-1 flex items-center gap-2">
+              {meteo && (() => { const M = METEO_ICONE[meteo]; return <M size={28} aria-hidden="true" className={METEO_COULEUR[meteo]} /> })()}
+              {canEdit
+                ? <select aria-label={l.meteoChoisir} value={meteo ?? ''} onChange={e => changerMeteo(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1 py-1 text-xs dark:border-gray-600 dark:bg-gray-800">
+                    <option value="">{l.meteoNonRenseignee}</option>
+                    {METEOS.map(m => <option key={m} value={m}>{meteos[m]}</option>)}
+                  </select>
+                : <span className="text-xs font-medium text-gray-800 dark:text-gray-100">{meteo ? meteos[meteo] : l.meteoNonRenseignee}</span>}
+            </div>
+            {meteoLe && <p className="mt-1 text-[11px] text-gray-400">{l.meteoLe.replace('{date}', new Date(meteoLe).toLocaleDateString(locale))}</p>}
+          </div>
+          {ind.miseEnService
+            ? kpi(l.indMiseEnService, (ind.miseEnService.joursRestants >= 0 ? l.jours : l.joursPasses).replace('{n}', String(Math.abs(ind.miseEnService.joursRestants))), { sous: ind.miseEnService.plansApres ? l.plansApres.replace('{n}', String(ind.miseEnService.plansApres)) : undefined, alerte: ind.miseEnService.plansApres > 0 || ind.miseEnService.joursRestants < 0 })
+            : kpi(l.indMiseEnService, l.nonDefinie)}
           <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
             <p className="text-xs text-gray-500 dark:text-gray-400">{l.avancement}</p>
             <p className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">{ind.plans.avancement == null ? l.nd : `${ind.plans.avancement} %`}</p>
             {ind.plans.avancement != null && <div className="mt-1 h-1.5 rounded bg-gray-100 dark:bg-gray-800" aria-hidden="true"><div className="h-1.5 rounded bg-ebios-600" style={{ width: `${ind.plans.avancement}%` }} /></div>}
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{l.avancementSous.replace('{faits}', String(ind.plans.faits)).replace('{total}', String(ind.plans.total))}</p>
           </div>
-          {kpi(l.enRetard, ind.plans.enRetard, { alerte: ind.plans.enRetard > 0 })}
-          {kpi(l.echeanceProche, ind.plans.echeanceProche)}
-          {kpi(l.sansPorteur, ind.plans.sansPorteur, { alerte: ind.plans.sansPorteur > 0 })}
-          {kpi(l.sansEcheance, ind.plans.sansEcheance, { alerte: ind.plans.sansEcheance > 0 })}
-          {ind.miseEnService && kpi(l.indMiseEnService, (ind.miseEnService.joursRestants >= 0 ? l.jours : l.joursPasses).replace('{n}', String(Math.abs(ind.miseEnService.joursRestants))), { sous: ind.miseEnService.plansApres ? l.plansApres.replace('{n}', String(ind.miseEnService.plansApres)) : undefined, alerte: ind.miseEnService.plansApres > 0 })}
+          {kpi(l.enRetard, ind.plans.enRetard, { alerte: ind.plans.enRetard > 0, sous: (ind.plans.sansPorteur || ind.plans.sansEcheance) ? l.sansPorteurEcheance.replace('{p}', String(ind.plans.sansPorteur)).replace('{e}', String(ind.plans.sansEcheance)) : undefined })}
+          {kpi(l.sansPlan, ind.risquesATraiterSansPlan, { alerte: ind.risquesATraiterSansPlan > 0, sous: `${l.aTraiter} ${p.synthese.aTraiter} / ${p.synthese.total}` })}
+          {kpi(l.horsAppetit, ind.residuelsHorsAppetit, { alerte: ind.residuelsHorsAppetit > 0 })}
         </div>
       </section>
 
-      {(validation || (p.cyberLies?.length ?? 0) > 0) && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          {validation && (
-            <section className="space-y-3" aria-label={l.validation}>
-              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{l.validation}</h2>
-              <AccessPanel {...validation.access} />
-              {validation.residuels && <ResidualRisksPanel {...validation.residuels} />}
-            </section>
-          )}
+      {/* Matrice des risques puis bandeau des analyses cyber liées à gauche ; validation et partage à droite. */}
+      <div className={validation ? 'grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]' : ''}>
+        <div className="min-w-0 space-y-3">
+          {p.matrice.length > 0 && <MatriceProjet risques={p.matrice} scale={p.scale} />}
           {(p.cyberLies?.length ?? 0) > 0 && (
-            <section className="card p-5" aria-label={l.cyberLies}>
-              <h2 className="mb-2 text-base font-semibold text-gray-900 dark:text-gray-100">{l.cyberLies}</h2>
-              <ul className="space-y-2 text-sm">
-                {p.cyberLies!.map(a => (
-                  <li key={a.id}>
-                    <Link href={`/analyses/${a.id}`} className="font-medium text-ebios-700 hover:underline">{a.nom}</Link>
-                    {a.aImporter > 0
-                      ? <p className="text-xs text-amber-700 dark:text-amber-300"><span>{l.aImporter.replace('{n}', String(a.aImporter))}</span>{a.exemples.length > 0 && <span className="text-gray-500"> — {a.exemples.join(' · ')}</span>}</p>
-                      : <p className="text-xs text-gray-500">{l.aJour}</p>}
-                  </li>
-                ))}
-              </ul>
-              {canEdit && p.cyberLies!.some(a => a.aImporter > 0) && <Link href={`/analyses/${p.id}/atelier/1?phase=qualification`} className="btn-secondary mt-3 inline-block text-sm">{l.importer}</Link>}
+            <section aria-label={l.cyberLies} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{l.cyberLies}</span>
+              {p.cyberLies!.map(a => (
+                <span key={a.id} className="inline-flex flex-wrap items-center gap-1.5">
+                  <Link href={`/analyses/${a.id}`} className="font-medium text-ebios-700 hover:underline">{a.nom}</Link>
+                  {a.aImporter > 0
+                    ? <span className="text-xs text-amber-700 dark:text-amber-300" title={a.exemples.join(' · ')}>{l.aImporter.replace('{n}', String(a.aImporter))}</span>
+                    : <span className="text-xs text-gray-500">{l.aJour}</span>}
+                </span>
+              ))}
+              {canEdit && p.cyberLies!.some(a => a.aImporter > 0) && <Link href={`/analyses/${p.id}/atelier/1?phase=qualification`} className="ml-auto text-xs font-medium text-ebios-700 hover:underline">{l.importer}</Link>}
             </section>
           )}
         </div>
-      )}
+        {validation && (
+          <aside className="space-y-3" aria-label={l.validation} role="region">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{l.validation}</h2>
+            <AccessPanel {...validation.access} />
+            {validation.residuels && <ResidualRisksPanel {...validation.residuels} />}
+          </aside>
+        )}
+      </div>
 
-      {p.matrice.length > 0 && <MatriceProjet risques={p.matrice} scale={p.scale} />}
-
+      {p.restants && <PlansRestantsGraphique data={p.restants} />}
+      <PlansParPriorite analyseId={p.id} editable={canEdit} miseEnService={mes || null} />
       {p.synthese.total === 0 ? <p className="card p-5 text-sm italic text-gray-500">{l.aucunRisque}</p> : (
         <div className="grid gap-5 lg:grid-cols-2">
           <figure className="card p-5" aria-label={l.repartition} role="figure">
@@ -188,7 +217,6 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
           </div>
         </div>
       )}
-      <PlansParPriorite analyseId={p.id} editable={canEdit} miseEnService={mes || null} />
     </div>
   )
 }

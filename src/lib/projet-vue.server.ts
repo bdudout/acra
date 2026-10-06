@@ -16,6 +16,7 @@ import { indicateursProjet } from '@/lib/projet-indicateurs'
 import { cyberLiesNonImportes } from '@/lib/projet-cyber-lies'
 import { trierPlansParPriorite } from '@/lib/plans-priorite'
 import { cotations } from '@/lib/cotation-risque'
+import { burndownPlans } from '@/lib/projet-burndown'
 import { sanitizeApprobations } from '@/lib/projet360'
 import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
@@ -30,7 +31,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
     where: await analyseAccessWhere(userId, instanceRole, id),
     select: {
       id: true, nom: true, statut: true, secteur: true, patternsArchi: true, methode: true, deletedAt: true, userId: true, organizationId: true,
-      dateEcheance: true, accesUtilisateurs: true, approbations: true, commentaireApprobation: true, approuveLe: true, approbateurId: true,
+      dateEcheance: true, meteoProjet: true, meteoProjetLe: true, createdAt: true, accesUtilisateurs: true, approbations: true, commentaireApprobation: true, approuveLe: true, approbateurId: true,
       risquesResiduelsStatut: true, risquesResiduelsLe: true, risquesResiduelsCommentaire: true,
       user: { select: { name: true, email: true } },
       cadrage: { select: { perimetre: true, objectifsEtude: true } },
@@ -100,6 +101,14 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
     } : undefined,
   }
 
+  // Plans restants : prévu par jalons depuis la création du projet, cible jusqu'à la mise en service.
+  const bd = burndownPlans({ plans: plansBruts.map(pl => ({ statut: pl.statut, echeance: pl.echeance })), debut: analyse.createdAt, miseEnService: analyse.dateEcheance, now })
+  const iso = (d: Date) => d.toISOString()
+  const restants = bd ? {
+    total: bd.total, fin: iso(bd.fin), aujourdhui: { date: iso(bd.aujourdhui.date), restants: bd.aujourdhui.restants },
+    prevu: bd.prevu.map(x => ({ date: iso(x.date), restants: x.restants })), cible: bd.cible.map(x => ({ date: iso(x.date), restants: x.restants })),
+  } : null
+
   const parDomaine = new Map<string, number>()
   for (const r of analyse.risques) parDomaine.set(r.domaine ?? '', (parDomaine.get(r.domaine ?? '') ?? 0) + 1)
 
@@ -114,7 +123,8 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
       matrice: analyse.risques.map(r => ({ id: r.id, nom: r.nom, domaine: r.domaine, ...cotations(r) })),
       scale, indicateurs,
       miseEnService: analyse.dateEcheance ? analyse.dateEcheance.toISOString().slice(0, 10) : null,
-      cyberLies,
+      cyberLies, restants,
+      meteo: { valeur: analyse.meteoProjet ?? null, le: analyse.meteoProjetLe ? analyse.meteoProjetLe.toISOString() : null },
     },
     parDomaine: [...parDomaine.entries()].map(([domaine, total]) => ({ domaine: domaine || null, total })).sort((a, b) => b.total - a.total),
   }

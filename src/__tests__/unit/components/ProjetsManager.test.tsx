@@ -42,9 +42,14 @@ describe('ProjetsManager — liste des projets 360', () => {
     fireEvent.change(screen.getByLabelText('Rechercher un projet'), { target: { value: 'zzz' } })
     expect(screen.getByText('Aucun projet ne correspond à la recherche.')).toBeTruthy()
   })
-  it('propose de lancer une analyse cyber depuis le projet et liste les analyses déjà rattachées', () => {
+  it('« Associer une analyse cyber » seulement pour les projets sans analyse liée ; liste les analyses déjà rattachées', () => {
     render(<ProjetsManager projets={projets} canCreate />)
-    expect(screen.getAllByRole('link', { name: 'Lancer une analyse cyber' })[0].getAttribute('href')).toMatch(/^\/analyses\/new\?projet=p/)
+    const lignes = within(screen.getByRole('table')).getAllByRole('row').slice(1)
+    const avec = lignes.find(r => within(r).queryByRole('link', { name: 'Cyber — portail' }))!
+    expect(within(avec).queryByText('Associer une analyse cyber', { selector: 'summary' })).toBeNull()
+    const sans = lignes.find(r => r !== avec)!
+    expect(within(sans).getByText('Associer une analyse cyber', { selector: 'summary' })).toBeTruthy()
+    expect(within(sans).getByRole('link', { name: 'Créer une nouvelle analyse' }).getAttribute('href')).toMatch(/^\/analyses\/new\?projet=p/)
     expect(screen.getByRole('link', { name: 'Cyber — portail' }).getAttribute('href')).toBe('/analyses/c1')
   })
   it('export du portefeuille disponible ; sans droit de création : ni lancement ni analyse cyber', () => {

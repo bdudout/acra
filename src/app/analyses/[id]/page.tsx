@@ -1,5 +1,6 @@
 import { sanitizeApprobations, completerQualification, qualificationDepuisProjet } from '@/lib/projet360'
 import VueAnalyseProjet from '@/components/VueAnalyseProjet'
+import TitreEditable from '@/components/TitreEditable'
 import { projetLieAccessible } from '@/lib/projet360-sources.server'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
@@ -181,7 +182,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             <div className="flex items-center gap-2 mb-2">
               <Link href="/analyses" className="text-gray-500 hover:text-gray-600 text-sm">{t.analysis.backToList}</Link>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">{analyse.nom}</h1>
+            <TitreEditable analyseId={analyse.id} nom={analyse.nom} canEdit={editable && !locked} labels={t.titreAnalyse} className="text-2xl font-bold text-gray-900" />
             <p className="text-gray-500 mt-1 flex items-center gap-1.5">
               <span>{[analyse.organisation, analyse.secteur].filter(Boolean).join(' · ') || t.analysis.metaMissing}</span>
               <AnalyseMetaEditor

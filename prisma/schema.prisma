@@ -1556,6 +1556,9 @@ model Analyse {
   tags                 Json          @default("[]")
   dateDebut            DateTime      @default(now())
   dateEcheance         DateTime?
+  // Météo d'un projet 360, réglée à la main par le chef de projet (lib/projet-meteo) et date du dernier réglage.
+  meteoProjet          String?
+  meteoProjetLe        DateTime?
   statut               StatutAnalyse @default(EN_COURS)
   atelierCourant       Int           @default(1)
   referentielMesures   String?       @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM

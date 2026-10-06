@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { ArrowDown, ArrowUp, Download, Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ModuleGuide from '@/components/ModuleGuide'
+import AssocierAnalyseCyber from '@/components/projet360/AssocierAnalyseCyber'
 import { filtrerTrierProjets, type TriProjets } from '@/lib/projets-liste'
 
 export interface ProjetRow { id: string; nom: string; statut: string; risques: number; updatedAt: string; analyses?: { id: string; nom: string }[] }
@@ -23,8 +24,11 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
   const [statut, setStatut] = useState('')
   const [tri, setTri] = useState<TriProjets>('updatedAt')
   const [sens, setSens] = useState<'asc' | 'desc'>('desc')
-  const statuts = useMemo(() => [...new Set(projets.map(pr => pr.statut))], [projets])
-  const visibles = useMemo(() => filtrerTrierProjets(projets, { q, statut, tri, sens }), [projets, q, statut, tri, sens])
+  // Analyses liées depuis cette page (le bouton « Associer une analyse cyber » disparaît une fois l'association faite).
+  const [liees, setLiees] = useState<Record<string, { id: string; nom: string }[]>>({})
+  const lignes = useMemo(() => projets.map(pr => (liees[pr.id] ? { ...pr, analyses: [...(pr.analyses ?? []), ...liees[pr.id]] } : pr)), [projets, liees])
+  const statuts = useMemo(() => [...new Set(lignes.map(pr => pr.statut))], [lignes])
+  const visibles = useMemo(() => filtrerTrierProjets(lignes, { q, statut, tri, sens }), [lignes, q, statut, tri, sens])
 
   // Premier clic : sens naturel de la colonne (texte croissant, nombres et dates décroissants) ; clic suivant : inverse.
   function trierPar(col: TriProjets) {
@@ -75,7 +79,10 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
                     <ul className="space-y-0.5">
                       {(pr.analyses ?? []).map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="text-ebios-700 hover:underline">{a.nom}</Link></li>)}
                     </ul>
-                    {canCreate && <Link href={`/analyses/new?projet=${pr.id}`} title={p.startCyberTitle} className="mt-1 inline-flex items-center gap-1 rounded border border-ebios-300 px-2 py-0.5 font-medium text-ebios-700 hover:bg-ebios-50 dark:border-ebios-700 dark:hover:bg-gray-800">{p.startCyber}</Link>}
+                    {canCreate && (pr.analyses ?? []).length === 0 && (
+                      <AssocierAnalyseCyber compact projetId={pr.id} canCreate={canCreate}
+                        onLinked={a => setLiees(m => ({ ...m, [pr.id]: [...(m[pr.id] ?? []), a] }))} />
+                    )}
                   </td>
                   <td className="px-4 py-2 text-xs text-gray-500">{new Date(pr.updatedAt).toLocaleDateString(locale)}</td>
                 </tr>

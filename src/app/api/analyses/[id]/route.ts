@@ -1,5 +1,6 @@
 import { sanitizeAnswers360 } from '@/lib/projet360'
 import { dateSaisie } from '@/lib/date-saisie'
+import { sanitizeMeteo } from '@/lib/projet-meteo'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -97,6 +98,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const data: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) data[key] = body[key]
+  }
+  // Météo d'un projet 360 (chef de projet) : valeur connue ou effacement ; horodatée.
+  if ('meteoProjet' in body) {
+    const m = sanitizeMeteo(body.meteoProjet)
+    if (m === undefined) return NextResponse.json({ error: 'meteo_inconnue' }, { status: 400 })
+    data.meteoProjet = m
+    data.meteoProjetLe = m ? new Date() : null
   }
   // Date d'échéance (mise en service d'un projet 360) : champ date normalisé, valeur illisible ignorée.
   if ('dateEcheance' in data) {

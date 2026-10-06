@@ -12,12 +12,12 @@ describe('VueAnalyseProjet', () => {
   it('depuis une analyse : vue analyse active, lien vers le projet', () => {
     render(<VueAnalyseProjet active="analyse" projet={{ id: 'p', nom: 'Migration paie' }} analyses={[{ id: 'a', nom: 'Cyber — paie' }]} />)
     const nav = screen.getByRole('navigation', { name: 'Vue' })
-    expect(within(nav).getByText('Analyse cyber').closest('[aria-current]')?.getAttribute('aria-current')).toBe('page')
+    expect(within(nav).getByText('Analyse cyber · Cyber — paie').closest('[aria-current]')?.getAttribute('aria-current')).toBe('page')
     expect(within(nav).getByRole('link', { name: /Projet/ }).getAttribute('href')).toBe('/projets/p')
   })
   it('depuis un projet avec une analyse : lien direct ; avec plusieurs : choix de l’analyse', () => {
     const { unmount } = render(<VueAnalyseProjet active="projet" projet={{ id: 'p', nom: 'P' }} analyses={[{ id: 'a', nom: 'Cyber A' }]} />)
-    expect(screen.getByRole('link', { name: /Analyse cyber/ }).getAttribute('href')).toBe('/analyses/a')
+    expect(screen.getByRole('link', { name: 'Analyse cyber · Cyber A' }).getAttribute('href')).toBe('/analyses/a')
     unmount()
     render(<VueAnalyseProjet active="projet" projet={{ id: 'p', nom: 'P' }} analyses={[{ id: 'a', nom: 'Cyber A' }, { id: 'b', nom: 'Cyber B' }]} />)
     expect(screen.getByRole('link', { name: 'Cyber B' }).getAttribute('href')).toBe('/analyses/b')
