@@ -18,7 +18,7 @@ import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
 
-export const FICHIER_SELECT = { id: true, titre: true, type: true, fichierNom: true, mime: true, taille: true, createdAt: true } as const
+const FICHIER_SELECT = { id: true, titre: true, type: true, fichierNom: true, mime: true, taille: true, createdAt: true } as const
 
 async function utilisateur() {
   const u = (await getServerSession(authOptions))?.user as { id?: string; role?: string } | undefined
