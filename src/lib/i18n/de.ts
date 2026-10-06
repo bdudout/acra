@@ -1487,6 +1487,10 @@ export const de: Translations = {
     revokeConfirm: 'Diesen API-Schlüssel widerrufen? Integrationen, die ihn nutzen, funktionieren nicht mehr.',
   },
   mcpProposals: {
+    typeProjet360: 'Vorgeschlagenes 360-Projekt',
+    miseEnService: 'Inbetriebnahme',
+    domaine: 'Bereich',
+    enfants: '{m} Maßnahme(n) · {p} Aktionsplan/-pläne',
     pageTitle: 'Zu prüfende MCP-Vorschläge',
     pageSubtitle: 'Von einem MCP-Agenten eingereichte Vorschläge. Prüfen und annehmen (Objekt wird erstellt) oder ablehnen.',
     empty: 'Keine ausstehenden Vorschläge.',

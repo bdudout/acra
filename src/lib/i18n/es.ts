@@ -1488,6 +1488,10 @@ export const es: Translations = {
     revokeConfirm: '¿Revocar esta clave de API? Las integraciones que la usan dejarán de funcionar.',
   },
   mcpProposals: {
+    typeProjet360: 'Proyecto 360 propuesto',
+    miseEnService: 'Puesta en servicio',
+    domaine: 'Ámbito',
+    enfants: '{m} medida(s) · {p} plan(es) de acción',
     pageTitle: 'Propuestas MCP por validar',
     pageSubtitle: 'Propuestas enviadas por un agente MCP. Revíselas y acepte para crear el elemento, o rechace.',
     empty: 'No hay propuestas pendientes.',

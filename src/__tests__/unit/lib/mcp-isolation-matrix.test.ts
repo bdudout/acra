@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildMcpTools } from '@/lib/mcp/tools.server'
 
-type Kind = 'LECTURE_ORG' | 'LECTURE_METHODE' | 'PROPOSITION_ANCREE'
+type Kind = 'LECTURE_ORG' | 'LECTURE_METHODE' | 'PROPOSITION_ANCREE' | 'PROPOSITION_ORGANISATION'
 const MATRICE: Record<string, { kind: Kind; preuve: string }> = {
   read_referentiels: { kind: 'LECTURE_ORG', preuve: 'mcp-tools.test.ts' },
   read_taxonomie: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-context.test.ts' },
@@ -18,6 +18,9 @@ const MATRICE: Record<string, { kind: Kind; preuve: string }> = {
   read_dora_fields: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   read_resilience_tests: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
   read_catalogue: { kind: 'LECTURE_METHODE', preuve: 'mcp-tools-knowledge.test.ts' },
+  read_analyses: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-projet.test.ts' },
+  read_projet: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-projet.test.ts' },
+  propose_projet360: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
   propose_risk: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
   propose_measure: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
   propose_plan_action: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
@@ -37,6 +40,8 @@ describe('matrice d’isolation MCP', () => {
       const props = Object.keys((t.inputSchema as { properties?: Record<string, unknown> }).properties ?? {})
       expect(props, `${t.name} ne doit pas accepter organizationId`).not.toContain('organizationId')
       if (kind === 'PROPOSITION_ANCREE') expect(props.some(p => /analyseId|targetId|targetType/.test(p)), t.name).toBe(true)
+      // Ancre = l'organisation de la clé, implicite : aucun identifiant d'ancre accepté, donc aucune autre organisation visable.
+      if (kind === 'PROPOSITION_ORGANISATION') expect(props.some(p => /analyseId|targetId|targetType/.test(p)), t.name).toBe(false)
     }
   })
 })

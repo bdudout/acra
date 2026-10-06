@@ -14,6 +14,8 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
 } }))
 vi.mock('@/lib/sector-context.server', () => ({ orgSectors: (...a: unknown[]) => sectors(...a) }))
 vi.mock('@/lib/mcp/anchors.server', () => ({ anchorExistsInOrg: (...a: unknown[]) => anchor(...a) }))
+const typesProjet = vi.fn()
+vi.mock('@/lib/risques-types.server', () => ({ catalogueRisquesTypesAnalyse: (...a: unknown[]) => typesProjet(...a) }))
 
 import { recommendRisksScenariosTool } from '@/lib/mcp/tools-recommend.server'
 import { buildMcpTools } from '@/lib/mcp/tools.server'
@@ -82,5 +84,22 @@ describe('recommend_control_plan', () => {
     const r = await recommendControlPlanTool.handler({ profile: 'XYZ' }, ctx)
     expect(r.isError).toBe(true)
     expect(r.content[0].text).toContain('MUTUELLE_SANTE')
+  })
+})
+
+describe('recommend_risks_scenarios — projet 360 (catalogue complet des risques types)', () => {
+  it('projet 360 : risques types non présents, avec origine, domaine et cotation ; analyse classique : aucun', async () => {
+    anchor.mockResolvedValue(true); sectors.mockResolvedValue({ effective: [] }); riskItemFindMany.mockResolvedValue([]); risqueFindMany.mockResolvedValue([])
+    typesProjet.mockResolvedValue([
+      { groupe: 'SOUS_SECTEUR', intitule: 'Fraude au justificatif', gravite: 3, vraisemblance: 3, domaine: 'FRAUD', present: false },
+      { groupe: 'SECTEUR', intitule: 'Déjà là', gravite: 2, vraisemblance: 2, present: true },
+    ])
+    analyseFindFirst.mockResolvedValue({ secteur: 'Santé / Médico-social', patternsArchi: [], sousSecteur: null, sousSecteurs: ['sante-amc'], methode: 'PROJET_360' })
+    const d = JSON.parse((await recommendRisksScenariosTool.handler({ analyseId: 'p1', kinds: ['SCENARIO'] }, { organizationId: 'orgA', keyId: 'k' })).content[0].text)
+    expect(d.projectRiskTypes).toEqual([{ origine: 'SOUS_SECTEUR', intitule: 'Fraude au justificatif', domaine: 'FRAUD', gravite: 3, vraisemblance: 3 }])
+    expect(typesProjet.mock.calls[0][1]).toBe('orgA')
+    analyseFindFirst.mockResolvedValue({ secteur: 'Santé / Médico-social', patternsArchi: [], sousSecteur: null, sousSecteurs: [], methode: 'EBIOS_RM' })
+    const e = JSON.parse((await recommendRisksScenariosTool.handler({ analyseId: 'a1', kinds: ['SCENARIO'] }, { organizationId: 'orgA', keyId: 'k' })).content[0].text)
+    expect(e.projectRiskTypes).toBeUndefined()
   })
 })

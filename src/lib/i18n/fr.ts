@@ -1512,6 +1512,10 @@ export const fr = {
     revokeConfirm: 'Révoquer cette clé d’API ? Les intégrations qui l’utilisent cesseront de fonctionner.',
   },
   mcpProposals: {
+    typeProjet360: 'Projet 360 proposé',
+    miseEnService: 'Mise en service',
+    domaine: 'Domaine',
+    enfants: '{m} mesure(s) · {p} plan(s) d’action',
     pageTitle: 'Propositions MCP à valider',
     pageSubtitle: 'Propositions déposées par un agent MCP. Vérifiez-les puis acceptez pour créer l’objet, ou rejetez.',
     empty: 'Aucune proposition en attente.',

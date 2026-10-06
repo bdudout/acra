@@ -11,10 +11,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockConformite } from '@/lib/row-lock.server'
-import { canEditAnalyse, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, canEditAnalyse, peutGererConformite, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { createAnalyseRiskPlanAction } from '@/lib/plan-action.server'
+import { isProjet360ProposalValid, sanitizeProjet360Proposal } from '@/lib/mcp/projet360-proposal'
+import { creerProjet360 } from '@/lib/projet360-creation.server'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { anchorExistsInOrg } from '@/lib/mcp/anchors.server'
 import {
@@ -36,9 +40,8 @@ function canManagePlanAction(role: UserRole): boolean {
 }
 
 /** Rôles autorisés à gérer la conformité d'une organisation (cf. /organizations/[orgId]/conformite). */
-function canManageOrgConformite(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
-}
+/** Gestion de la conformité : même règle que l'écran (gouvernance, dont CONFORMITE et DPO). */
+const canManageOrgConformite = (role: UserRole): boolean => peutGererConformite(role)
 
 type ApplyResult = { ok: true; appliedId: string } | { ok: false; error: string; status?: number }
 type Gate =
@@ -125,6 +128,19 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     return { ok: true, validatorRole: effRole, apply: (uid, note) => proposal.type === 'analysis_import' ? applyAnalysisImportProposal(proposal, analyse.id, uid, note) : applyAnalyseChild(proposal, analyse.id, uid, note) }
   }
 
+  // ── Projet 360 : ancre = l'organisation ; RBAC = droit de créer une analyse (comme le formulaire) ──
+  if (proposal.type === 'projet360') {
+    if (proposal.targetType !== 'ORGANISATION' || !(await anchorExistsInOrg('ORGANISATION', proposal.targetId, proposal.organizationId))) {
+      return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
+    }
+    const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
+    if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
+    if (!canCreateAnalyse({ id: userId, role }, await optionsStructure(proposal.organizationId))) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    const cfg = await getOrgConfig(proposal.organizationId)
+    if (!cfg.projets360Active) return { ok: false, status: 403, error: 'Module Projets 360 désactivé' }
+    return { ok: true, validatorRole: role, apply: (uid, note) => applyProjet360(proposal, cfg.patternsArchiMax, uid, note) }
+  }
+
   // ── Plan d'action : ancre org-scopée, RBAC = gouvernance de l'organisation ──
   if (proposal.type === 'plan_action') {
     if (!(await anchorExistsInOrg(proposal.targetType, proposal.targetId, proposal.organizationId))) {
@@ -151,6 +167,15 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
   return { ok: false, status: 400, error: 'Type de proposition non supporté' }
 }
 
+/** Crée le projet 360 proposé (mêmes briques que le formulaire) puis marque la proposition acceptée. */
+async function applyProjet360(proposal: ProposalRow, patternsMax: number, userId: string, note?: string): Promise<ApplyResult> {
+  const payload = sanitizeProjet360Proposal(proposal.payload, { patternsMax })
+  if (!isProjet360ProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+  const { id } = await creerProjet360(payload, { userId, organizationId: proposal.organizationId })
+  await prisma.mcpProposal.update({ where: { id: proposal.id }, data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId: id, reviewNote: (note ?? '').slice(0, 2000) || null } })
+  return { ok: true, appliedId: id }
+}
+
 /** Applique atomiquement le paquet MCP après l'accord explicite du relecteur. */
 async function applyAnalysisImportProposal(proposal: ProposalRow, analyseId: string, userId: string, note?: string): Promise<ApplyResult> {
   try {
@@ -174,10 +199,22 @@ function markAccepted(
 /** Applique un enfant d'analyse (risque ou mesure) à l'acceptation. */
 async function applyAnalyseChild(proposal: ProposalRow, analyseId: string, userId: string, note?: string): Promise<ApplyResult> {
   if (proposal.type === 'risk') {
-    const payload = sanitizeRiskProposal(proposal.payload)
+    // Ré-assaini à l'acceptation sur l'échelle ACTUELLE de l'organisation (elle a pu changer depuis le dépôt).
+    const { nbNiveaux } = await getEffectiveScaleConfig(proposal.organizationId)
+    const payload = sanitizeRiskProposal(proposal.payload, nbNiveaux)
     if (!isRiskProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
     const appliedId = await prisma.$transaction(async tx => {
-      const r = await tx.risque.create({ data: riskProposalToCreate(payload, analyseId), select: { id: true } })
+      const r = await tx.risque.create({ data: riskProposalToCreate(payload, analyseId), select: { id: true, nom: true } })
+      // Mesures et plans proposés avec le risque : créés dans la même transaction (plans liés RISQUE_ANALYSE).
+      if (payload.mesures?.length) {
+        await tx.mesure.createMany({ data: payload.mesures.map(m => ({ analyseId, risqueId: r.id, nom: m.nom, type: m.type, statut: 'A_FAIRE' as const })) })
+      }
+      for (const pl of payload.plans ?? []) {
+        await createAnalyseRiskPlanAction(tx, {
+          organizationId: proposal.organizationId, risqueId: r.id, analyseId, titre: pl.titre, porteur: pl.porteur ?? null,
+          echeance: pl.echeance ? new Date(pl.echeance) : null, priorite: pl.priorite, createdById: userId, riskLabel: r.nom,
+        })
+      }
       await markAccepted(tx, proposal.id, r.id, userId, note)
       return r.id
     })

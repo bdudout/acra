@@ -19,6 +19,9 @@ const risqueCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'risk-new' }))
 const mesureCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'mesure-new' }))
 const planActionCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'plan-new' }))
 const riskItemCount = vi.fn(async (..._a: unknown[]) => 1)
+const mesureCreateMany = vi.fn(async (..._a: unknown[]) => ({ count: 1 }))
+const orgCount = vi.fn(async (..._a: unknown[]) => 1)
+const creerProjet360 = vi.fn(async (..._a: unknown[]) => ({ id: 'projet-new', population: { answers: 0, risks: 0 } }))
 // Accès typé au 1er argument d'un appel de mock (Prisma { where?, data }).
 const argOf = (fn: { mock: { calls: unknown[][] } }, i = 0) => fn.mock.calls[i][0] as { where?: unknown; data: Record<string, unknown> }
 vi.mock('@/lib/prisma', () => ({
@@ -26,11 +29,12 @@ vi.mock('@/lib/prisma', () => ({
     mcpProposal: { findUnique: (...a: unknown[]) => proposalFindUnique(...a), update: (...a: unknown[]) => proposalUpdate(...a) },
     analyse: { findFirst: (...a: unknown[]) => analyseFindFirst(...a) },
     riskItem: { count: (...a: unknown[]) => riskItemCount(...a) },
+    organization: { count: (...a: unknown[]) => orgCount(...a) },
     risque: { create: (...a: unknown[]) => risqueCreate(...a) },
     mesure: { create: (...a: unknown[]) => mesureCreate(...a) },
     planAction: { create: (...a: unknown[]) => planActionCreate(...a) },
     $transaction: vi.fn(async (cb: (tx: unknown) => unknown) =>
-      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate }, planAction: { create: planActionCreate }, mcpProposal: { update: proposalUpdate } })),
+      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate, createMany: mesureCreateMany }, planAction: { create: planActionCreate }, mcpProposal: { update: proposalUpdate } })),
   },
 }))
 const effRole = { value: 'ADMIN' as string | null }
@@ -40,7 +44,12 @@ vi.mock('@/lib/org-context.server', () => ({
 }))
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 const gel = { value: false }
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: gel.value })) }))
+vi.mock('@/lib/org-config.server', () => ({
+  getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: gel.value, projets360Active: true, patternsArchiMax: 12 })),
+  optionsStructure: vi.fn(async () => ({ petiteStructure: false })),
+}))
+vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: 4 })) }))
+vi.mock('@/lib/projet360-creation.server', () => ({ creerProjet360: (...a: unknown[]) => creerProjet360(...a) }))
 
 import { PATCH } from '@/app/api/mcp-proposals/[id]/route'
 
@@ -168,5 +177,26 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     const res = await PATCH(req({ action: 'accept' }), params)
     expect(res.status).toBe(404)
     expect(planActionCreate).not.toHaveBeenCalled()
+  })
+  it('risque proposé avec mesures et plans : tout est créé dans la même transaction, plans rattachés au risque (RISQUE_ANALYSE)', async () => {
+    proposalFindUnique.mockResolvedValue({ ...PENDING, payload: { nom: 'Fuite', gravite: 4, vraisemblance: 3, domaine: 'CYBER', mesures: [{ nom: 'Chiffrement', type: 'TECHNIQUE' }], plans: [{ titre: 'AIPD', priorite: 'CRITIQUE', echeance: '2027-01-15' }] } })
+    risqueCreate.mockResolvedValueOnce({ id: 'risk-new', nom: 'Fuite' } as never)
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).toBe(200)
+    expect(argOf(risqueCreate).data).toMatchObject({ domaine: 'CYBER', graviteActuelle: 4, niveauResiduel: 12 })
+    expect(argOf(mesureCreateMany).data).toEqual([{ analyseId: 'an1', risqueId: 'risk-new', nom: 'Chiffrement', type: 'TECHNIQUE', statut: 'A_FAIRE' }])
+    expect(argOf(planActionCreate).data).toMatchObject({ organizationId: 'orgA', titre: 'AIPD', priorite: 'CRITIQUE', liens: { create: [{ type: 'RISQUE_ANALYSE', targetId: 'risk-new', ref: 'an1' }] } })
+  })
+
+  it('projet 360 proposé : accepté par un rôle qui crée des analyses (créateur = relecteur) ; refusé en lecture seule', async () => {
+    const PROJET = { ...PENDING, type: 'projet360', targetType: 'ORGANISATION', targetId: 'orgA', payload: { nom: 'Espace adhérent 2027', secteur: 'Santé / Médico-social', patternsArchi: ['EXPOSITION_INTERNET'] } }
+    proposalFindUnique.mockResolvedValue({ ...PROJET })
+    const ok = await PATCH(req({ action: 'accept' }), params)
+    expect(ok.status).toBe(200)
+    expect(creerProjet360.mock.calls[0][1]).toMatchObject({ userId: 'reviewer', organizationId: 'orgA' })
+    expect(argOf(proposalUpdate).data).toMatchObject({ statut: 'ACCEPTEE', appliedId: 'projet-new' })
+    vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...PROJET }); effRole.value = 'LECTEUR'
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
+    expect(creerProjet360).not.toHaveBeenCalled()
   })
 })

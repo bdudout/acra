@@ -3,6 +3,8 @@
 // catalogue sectoriel et des exemples livrés — AUCUN LLM, AUCUNE écriture. Strictement borné à l'organisation de la clé ;
 // ce qui existe déjà (registre, analyse) est écarté. L'agent peut ensuite déposer une proposition ancrée (`propose_*`).
 
+import { catalogueRisquesTypesAnalyse } from '@/lib/risques-types.server'
+import { getT } from '@/lib/i18n'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { patternsOf } from '@/lib/patterns-archi'
 import { prisma } from '@/lib/prisma'
@@ -24,7 +26,9 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
   description:
     "Recommande des risques (catalogue sectoriel des secteurs de l'organisation, hors ceux déjà au registre) et, si `analyseId` est fourni, " +
     "des scénarios et événements redoutés propres au secteur / sous-secteur de l'analyse (hors risques déjà saisis). Recommandations " +
-    "calculées par ACRA (aucun LLM), en lecture seule : à qualifier, puis à déposer via un outil `propose_*` ancré.",
+    "calculées par ACRA (aucun LLM), en lecture seule : à qualifier, puis à déposer via un outil `propose_*` ancré. Pour un projet 360, " +
+    "`projectRiskTypes` donne en plus le catalogue complet des risques types du projet (registre, sous-secteurs, architecture, secteur, " +
+    "communs), avec domaine et cotation suggérée, hors risques déjà présents.",
   inputSchema: {
     type: 'object',
     properties: {
@@ -45,7 +49,7 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
       return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
     }
 
-    const out: { organisationSectors: string[]; catalogueRisks: unknown[]; analysisScenarios: unknown[]; note: string } = {
+    const out: { organisationSectors: string[]; catalogueRisks: unknown[]; analysisScenarios: unknown[]; projectRiskTypes?: unknown[]; note: string } = {
       organisationSectors: [], catalogueRisks: [], analysisScenarios: [],
       note: 'Recommandations calculées par ACRA (aucun LLM) à partir du catalogue sectoriel : à qualifier par l’organisation, jamais des risques évalués.',
     }
@@ -68,9 +72,21 @@ export const recommendRisksScenariosTool: McpTool<McpContext> = {
         .slice(0, limit)
         .map(s => ({ intitule: s.intitule, gravite: s.gravite, vraisemblance: s.vraisemblance }))
     }
+    // Projet 360 : catalogue complet des risques types, comme l'import en phase d'identification (lib/risques-types.server).
+    if (kinds.includes('SCENARIO') && analyseId) {
+      const projet = await prisma.analyse.findFirst({ where: { id: analyseId, organizationId: ctx.organizationId, deletedAt: null }, select: { methode: true } })
+      if (projet?.methode === 'PROJET_360') {
+        const types = await catalogueRisquesTypesAnalyse(analyseId, ctx.organizationId, getT(locale).risquesDirects.risquesTransverses, locale)
+        out.projectRiskTypes = types.filter(t => !t.present).slice(0, MAX_TYPES)
+          .map(t => ({ origine: t.groupe, intitule: t.intitule, ...(t.description ? { description: t.description } : {}), ...(t.domaine ? { domaine: t.domaine } : {}), gravite: t.gravite, vraisemblance: t.vraisemblance }))
+      }
+    }
     return toolText(out)
   },
 }
+
+/** Plafond des risques types d'un projet renvoyés en une fois. */
+const MAX_TYPES = 80
 
 export const recommendControlPlanTool: McpTool<McpContext> = {
   name: 'recommend_control_plan',

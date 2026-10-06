@@ -23,6 +23,8 @@ export async function anchorExistsInOrg(targetType: string, targetId: string, or
     case 'INCIDENT':   return (await prisma.incident.count({ where })) > 0
     case 'AUDIT':      return (await prisma.auditConstat.count({ where })) > 0
     case 'CONFORMITE': return (await prisma.conformite.count({ where })) > 0
+    // Création d'un objet de premier niveau (projet 360) : l'ancre est l'organisation de la clé elle-même.
+    case 'ORGANISATION': return targetId === organizationId && (await prisma.organization.count({ where: { id: organizationId } })) > 0
     default:           return false
   }
 }

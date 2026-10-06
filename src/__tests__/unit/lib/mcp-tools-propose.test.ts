@@ -15,9 +15,17 @@ vi.mock('@/lib/prisma', () => ({
     conformite: { count: (...a: unknown[]) => conformiteCount(...a) },
     mcpProposal: { create: (...a: unknown[]) => proposalCreate(...a) },
     risque: { create: (...a: unknown[]) => risqueCreate(...a) },
+    organization: { count: (...a: unknown[]) => orgCount(...a) },
   },
 }))
 
+const scale = vi.hoisted(() => ({ nbNiveaux: 4 }))
+const orgCfg = vi.hoisted(() => ({ projets360Active: true, patternsArchiMax: 12 }))
+const orgCount = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => scale) }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => orgCfg) }))
+
+import { proposeProjet360Tool } from '@/lib/mcp/tools-propose.server'
 import { previewAnalysisImportTool, proposeAnalysisImportTool, proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool } from '@/lib/mcp/tools-propose.server'
 
 const ctx = { organizationId: 'orgA', keyId: 'key1' }
@@ -170,5 +178,32 @@ describe('import historique MCP', () => {
       organizationId: 'orgA', type: 'analysis_import', targetType: 'ANALYSE', targetId: 'an1', statut: 'EN_ATTENTE',
     })
     expect(risqueCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('propose_risk — échelle de l’organisation', () => {
+  it('5 niveaux acceptés si l’échelle de l’organisation en a 5 ; domaine, mesures et plans déposés avec le risque', async () => {
+    analyseCount.mockResolvedValue(1); proposalCreate.mockResolvedValue({ id: 'p', statut: 'EN_ATTENTE' }); scale.nbNiveaux = 5
+    await proposeRiskTool.handler({ analyseId: 'an1', risque: { nom: 'Fuite', gravite: 5, vraisemblance: 4, domaine: 'CYBER', plans: [{ titre: 'AIPD', priorite: 'CRITIQUE' }] } }, ctx)
+    expect(proposalCreate.mock.calls[0][0].data.payload).toMatchObject({ gravite: 5, niveauRisque: 20, domaine: 'CYBER', plans: [{ titre: 'AIPD', priorite: 'CRITIQUE', echeance: null }] })
+    scale.nbNiveaux = 4
+  })
+})
+
+describe('propose_projet360', () => {
+  const projet = { nom: 'Espace adhérent 2027', secteur: 'Santé / Médico-social', sousSecteurs: ['sante-amc'], patternsArchi: ['EXPOSITION_INTERNET'], miseEnService: '2027-03-01' }
+  it('dépose une proposition ancrée à l’organisation de la clé (jamais une autre), sans rien créer', async () => {
+    proposalCreate.mockResolvedValue({ id: 'pp', statut: 'EN_ATTENTE' })
+    const res = await proposeProjet360Tool.handler({ projet }, ctx)
+    expect(res.isError).toBeUndefined()
+    expect(proposalCreate.mock.calls[0][0].data).toMatchObject({ organizationId: 'orgA', type: 'projet360', targetType: 'ORGANISATION', targetId: 'orgA', statut: 'EN_ATTENTE' })
+    expect(proposalCreate.mock.calls[0][0].data.payload).toMatchObject({ nom: 'Espace adhérent 2027', sousSecteurs: ['sante-amc'], miseEnService: '2027-03-01' })
+  })
+  it('sans pattern d’architecture, ou module Projets 360 désactivé : erreur, rien n’est déposé', async () => {
+    expect((await proposeProjet360Tool.handler({ projet: { ...projet, patternsArchi: [] } }, ctx)).isError).toBe(true)
+    orgCfg.projets360Active = false
+    expect((await proposeProjet360Tool.handler({ projet }, ctx)).isError).toBe(true)
+    orgCfg.projets360Active = true
+    expect(proposalCreate).not.toHaveBeenCalled()
   })
 })

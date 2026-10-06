@@ -1488,6 +1488,10 @@ export const en: Translations = {
     revokeConfirm: 'Revoke this API key? Integrations using it will stop working.',
   },
   mcpProposals: {
+    typeProjet360: 'Proposed 360 project',
+    miseEnService: 'Go-live',
+    domaine: 'Domain',
+    enfants: '{m} safeguard(s) · {p} action plan(s)',
     pageTitle: 'MCP proposals to review',
     pageSubtitle: 'Proposals submitted by an MCP agent. Review them, then accept to create the item, or reject.',
     empty: 'No pending proposals.',

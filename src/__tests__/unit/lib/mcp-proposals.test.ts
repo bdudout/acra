@@ -44,18 +44,22 @@ describe('isRiskProposalValid', () => {
 
 describe('riskProposalToCreate', () => {
   it('mappe vers les données Prisma Risque avec l\'analyseId cible', () => {
+    // Cotations complètes comme une saisie directe : actuel ← brut, résiduel ← actuel par défaut ; un niveau résiduel
+    // fourni seul (ancien format) est ignoré, faute de gravité et de vraisemblance résiduelles.
     const payload = sanitizeRiskProposal({ nom: 'Fuite', gravite: 3, vraisemblance: 2, strategie: 'REDUIRE', description: 'd', niveauResiduel: 2 })
     const data = riskProposalToCreate(payload, 'an1')
     expect(data).toEqual({
       analyseId: 'an1', nom: 'Fuite', gravite: 3, vraisemblance: 2, niveauRisque: 6,
-      strategie: 'REDUIRE', description: 'd', niveauResiduel: 2,
+      graviteActuelle: 3, vraisemblanceActuelle: 2, niveauActuel: 6,
+      graviteResiduelle: 3, vraisemblanceResiduelle: 2, niveauResiduel: 6,
+      strategie: 'REDUIRE', description: 'd',
     })
   })
 
   it('omet les champs optionnels absents', () => {
     const data = riskProposalToCreate(sanitizeRiskProposal({ nom: 'Min' }), 'an2')
     expect(data).not.toHaveProperty('description')
-    expect(data).not.toHaveProperty('niveauResiduel')
+    expect(data).not.toHaveProperty('domaine')
   })
 })
 

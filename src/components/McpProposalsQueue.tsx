@@ -21,6 +21,8 @@ interface Payload {
   // conformité
   ref?: string; commentaire?: string
   description?: string
+  // projet 360 et risque enrichi
+  secteur?: string; miseEnService?: string | null; domaine?: string; mesures?: unknown[]; plans?: unknown[]
 }
 interface Proposal {
   id: string; type: string; targetType: string; targetId: string; ancreNom: string | null
@@ -57,7 +59,7 @@ export default function McpProposalsQueue() {
   return (
     <ul className="space-y-3">
       {items.map(p => {
-        const kind = p.type === 'analysis_import' ? m.typeAnalysisImport : p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : p.type === 'conformite' ? m.typeConformite : m.typeRisk
+        const kind = p.type === 'projet360' ? m.typeProjet360 : p.type === 'analysis_import' ? m.typeAnalysisImport : p.type === 'measure' ? m.typeMesure : p.type === 'plan_action' ? m.typePlanAction : p.type === 'conformite' ? m.typeConformite : m.typeRisk
         const label = p.payload.titre || p.payload.nom || p.payload.ref || '—'
         const detail = p.type === 'measure'
           ? `${m.type} ${p.payload.type ?? '—'} · ${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.responsable ? ` · ${m.responsable} ${p.payload.responsable}` : ''}`
@@ -65,7 +67,11 @@ export default function McpProposalsQueue() {
           ? `${m.priorite} ${p.payload.priorite ?? '—'} · ${m.statut} ${p.payload.statut ?? '—'}${p.payload.porteur ? ` · ${m.responsable} ${p.payload.porteur}` : ''}`
           : p.type === 'conformite'
           ? `${m.statut} ${(m.conformiteStatuts as Record<string, string>)?.[String(p.payload.statut)] ?? p.payload.statut ?? '—'}${p.payload.commentaire ? ` · ${p.payload.commentaire}` : ''}`
+          : p.type === 'projet360'
+          ? `${p.payload.secteur ?? '—'}${p.payload.miseEnService ? ` · ${m.miseEnService} ${new Date(`${p.payload.miseEnService}T00:00:00`).toLocaleDateString(locale)}` : ''}`
           : `${m.gravite} ${p.payload.gravite ?? '—'} · ${m.vraisemblance} ${p.payload.vraisemblance ?? '—'} · ${m.niveau} ${p.payload.niveauRisque ?? '—'} · ${m.strategie} ${p.payload.strategie ?? '—'}`
+            + (p.payload.domaine ? ` · ${m.domaine} ${(t.projet360.domaines as Record<string, string>)[p.payload.domaine] ?? p.payload.domaine}` : '')
+            + (p.payload.mesures?.length || p.payload.plans?.length ? ` · ${m.enfants.replace('{m}', String(p.payload.mesures?.length ?? 0)).replace('{p}', String(p.payload.plans?.length ?? 0))}` : '')
         return (
           <li key={p.id} className="card p-4">
             <div className="flex items-start justify-between gap-3 flex-wrap">

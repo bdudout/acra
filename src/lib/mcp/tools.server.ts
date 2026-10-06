@@ -5,6 +5,7 @@
 // (lecture, contexte) ; les `propose_*` (écritures validées) viendront en phases
 // ultérieures (cf. docs/mcp-cadrage.md §10).
 
+import { buildProjetTools } from './tools-projet.server'
 import { prisma } from '@/lib/prisma'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import { buildContextTools } from './tools-context.server'
@@ -81,13 +82,13 @@ export const readReferentielsTool: McpTool<McpContext> = {
  * (cf. `tools-context.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
+  return [readReferentielsTool, ...buildContextTools(), ...buildProjetTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
 }
 
 /** Titres lisibles affichés par les clients MCP (Claude, Codex, Mistral Vibe…). */
 const TITRES: Record<string, string> = {
   read_referentiels: 'Référentiels et exigences', read_taxonomie: 'Taxonomie des risques', read_sector_examples: 'Exemples par secteur et architecture',
-  read_risk_posture: 'Posture de risque', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
+  read_risk_posture: 'Posture de risque', read_analyses: 'Analyses et projets', read_projet: 'Contexte d’un projet 360', propose_projet360: 'Proposer un projet 360', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
   read_notification_regimes: 'Régimes de déclaration', read_incident_types: 'Incidents types', read_dora_fields: 'Champs de déclaration DORA',
   read_catalogue: 'Catalogue sectoriel', read_resilience_tests: 'Tests de résilience', propose_risk: 'Proposer un risque', propose_measure: 'Proposer une mesure',
   propose_plan_action: 'Proposer un plan d’action', propose_conformite: 'Proposer une évaluation de conformité',
