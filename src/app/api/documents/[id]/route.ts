@@ -26,7 +26,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
   if (!peutGererDocuments(scope.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
-  const doc = await prisma.document.findFirst({ where: { id, organizationId: orgId }, select: { id: true, storageKey: true } })
+  const doc = await prisma.document.findFirst({ where: { id, organizationId: orgId, analyseId: null }, select: { id: true, storageKey: true } })
   if (!doc) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
 
   await prisma.document.delete({ where: { id } })

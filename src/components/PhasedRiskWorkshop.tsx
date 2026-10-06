@@ -8,7 +8,8 @@
 // page. Chaque phase se rend selon son `type` :
 //   context = périmètre/objectifs · appreciation = registre éditable ·
 //   review = registre lecture seule (priorisation) · note = conseils seuls ·
-//   qualification = questionnaire 360 + import cyber (analyse projet 360).
+//   qualification = données et services, questionnaire 360 + import cyber (analyse projet 360) ;
+//   projet 360 : documents du projet sous le contexte.
 // L'appréciation réutilise RisquesDirects (saisie directe gravité × vraisemblance).
 
 import { useState } from 'react'
@@ -20,6 +21,8 @@ import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
 import Dashboard360 from '@/components/projet360/Dashboard360'
 import ProjectTiers from '@/components/projet360/ProjectTiers'
 import PlansParPriorite from '@/components/projet360/PlansParPriorite'
+import FichiersProjet from '@/components/projet360/FichiersProjet'
+import ActifsProjet from '@/components/projet360/ActifsProjet'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -111,6 +114,7 @@ export default function PhasedRiskWorkshop({
       )}
 
       {phase.type === 'context' ? (
+        <>
         <section className="card p-6">
           <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{phase.label}</h2>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{phase.desc}</p>}
@@ -135,8 +139,12 @@ export default function PhasedRiskWorkshop({
             </dl>
           )}
         </section>
+        {/* Projet 360 : documents du projet (schémas, architecture, dossiers projet). */}
+        {projet360 && <FichiersProjet analyseId={analyseId} editable={editable} />}
+        </>
       ) : phase.type === 'qualification' && projet360 ? (
         <>
+          <ActifsProjet analyseId={analyseId} editable={editable} />
           <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={answers360} sources={sources360} onSaved={a => { setAnswers360(a); setSources360(undefined) }} onRisksCreated={() => setRegistryKey(k => k + 1)} />
           {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} onVoirRisques={() => { const i = phases.findIndex(ph => ph.key === 'appreciation'); if (i >= 0) setActive(i) }} />}
           <ProjectTiers analyseId={analyseId} initial={projet360.tiers} editable={editable} />

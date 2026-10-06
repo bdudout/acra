@@ -194,7 +194,7 @@ export default async function AtelierPage({
             withVulnerabilites={methode === 'ISO_27005'}
             scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
-            perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
+            perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={methode === 'PROJET_360' ? t.projet360.objectifsPlaceholder : t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
             projet360={methode === 'PROJET_360' ? {
               answers: sanitizeAnswers360((analyse as { qualification?: unknown }).qualification) as Record<string, boolean>,

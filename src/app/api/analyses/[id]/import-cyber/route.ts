@@ -11,10 +11,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import type { UserRole } from '@/lib/permissions'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
-import { analyseWhereClause } from '@/lib/permissions'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { sourcesCyberWhere } from '@/lib/projet360-sources.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
-import { RISK_METHODS, METHOD_META } from '@/lib/methodes'
 import { planCyberImport, planTiersImport } from '@/lib/projet360'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
@@ -22,7 +20,6 @@ import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
 
-const CYBER_METHODS = RISK_METHODS.filter(m => METHOD_META[m].cyber)
 const SOURCE_RISK_SELECT = {
   id: true, nom: true, description: true, gravite: true, vraisemblance: true,
   graviteActuelle: true, vraisemblanceActuelle: true, graviteResiduelle: true, vraisemblanceResiduelle: true,
@@ -43,20 +40,8 @@ async function context(params: Params['params']) {
   if (g.analyse.methode !== 'PROJET_360') return { ok: false as const, res: NextResponse.json({ error: 'methode_non_360' }, { status: 400 }) }
   const organizationId = g.analyse.organizationId
   if (!organizationId) return { ok: false as const, res: NextResponse.json({ error: 'organisation_absente' }, { status: 400 }) }
-  // La cible peut être dans une autre organisation que l'organisation active.
-  // Une appartenance directe moins privilégiée y prime sur le rôle de session
-  // ou sur une appartenance ancêtre. Sans appartenance, seules les analyses
-  // explicitement possédées/partagées restent visibles.
-  const targetRole = await getEffectiveRoleForOrg(user.id, role, organizationId)
-  const where = {
-    AND: [analyseWhereClause(user.id, targetRole ?? 'LECTEUR', {
-      visibleOrgIds: [organizationId], isSuperAdmin: false,
-    })],
-    organizationId,
-    methode: { in: CYBER_METHODS as string[] },
-    deletedAt: null,
-    NOT: { id },
-  }
+  // La cible peut être dans une autre organisation que l'organisation active (filtre commun : lib/projet360-sources).
+  const where = await sourcesCyberWhere(user.id, role, { id, organizationId })
   return { ok: true as const, userId: user.id, role, analyse: g.analyse, where }
 }
 

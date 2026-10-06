@@ -6,6 +6,26 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (72) — Claude : projets — mesures par défaut, propositions sans doublon, tableau de bord, documents, données et services
+
+- `33927ca` : mesure par défaut (à faire) pour chaque risque par défaut (`RisqueSocle.mesure`, ×5 langues ; mesure
+  facultative des risques ajoutés en configuration) ; propositions de la qualification ni proposées ni créées si le
+  risque est déjà en phase 3 (`propositionsDejaPresentes` : même règle, même intitulé normalisé, risque par défaut
+  équivalent — `SOCLE_EQUIVALENTS`) ; fenêtre des propositions défilante ; page du projet : matrice brut / actuel /
+  résiduel + filtre par catégorie (`MatriceProjet`), indicateurs (`lib/projet-indicateurs` : avancement des plans,
+  retards, sans porteur / échéance, risques à traiter sans plan, réduction, résiduels hors appétit).
+- Phase 1 : « Objectifs du projet » (plus de critères d'acceptation) ; **documents du projet** (`Document.analyseId`,
+  migration `20261006130000_document_analyse`, routes `/api/analyses/[id]/fichiers[/docId]`, accès = accès au projet ;
+  la GED exclut désormais `analyseId` non nul en liste / téléchargement / suppression).
+- Phase 2 : **données et services** avec criticité 1–4 (`lib/actifs-projet`, stockés dans `Cadrage.valeursMetier` du
+  projet, route `/api/analyses/[id]/actifs-projet`), import des valeurs métier d'une analyse cyber (filtre commun
+  `lib/projet360-sources.server`, aussi utilisé par l'import de risques).
+- **Vérifié en navigateur** : dépôt / téléchargement d'un schéma, absent de la GED ; import de 4 valeurs métier.
+- **Hors périmètre, constaté** : `prisma migrate diff` signale 2 index du schéma sans migration (AuditConstat et
+  Controle `referentielCode`), préexistants.
+
+---
+
 ## 2026-10-06 (71) — Claude : qualification 360, réponses conservées et risques proposés
 
 - **Diagnostic** : les réponses étaient bien enregistrées en base, mais `Questionnaire360` est démonté au changement

@@ -871,6 +871,9 @@ model Document {
   portee          String  @default("ORG")
   referentielCode String? // code du référentiel (builtin ou custom) si portée REFERENTIEL
   risqueId        String? // identifiant de risque si portée RISQUE
+  // Fichier d'un projet 360 (schéma, document d'architecture, document projet) : rattaché à l'analyse projet,
+  // visible des seules personnes qui y accèdent, exclu de la bibliothèque documentaire (cf. lib/fichiers-projet).
+  analyseId       String?
 
   version      String?
   description  String?   @db.Text
@@ -896,6 +899,7 @@ model Document {
   @@index([organizationId])
   @@index([organizationId, portee])
   @@index([referentielCode])
+  @@index([analyseId])
 }
 
 // ─── Registre d'information des prestataires tiers TIC (DORA art. 28) ─────────

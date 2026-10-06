@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   // Lecture ouverte à tout membre du périmètre : les documents de gouvernance sont
   // consultables ; seule leur GESTION (dépôt/suppression) est réservée.
 
-  const doc = await prisma.document.findFirst({ where: { id, organizationId: orgId } })
+  const doc = await prisma.document.findFirst({ where: { id, organizationId: orgId, analyseId: null } })
   if (!doc) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
 
   const storage = await getDocumentStorage()
