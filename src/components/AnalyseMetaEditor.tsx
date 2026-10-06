@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
+import { secteursVisibles } from '@/lib/secteurs-masques'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
 import PatternsArchiPicker from '@/components/PatternsArchiPicker'
@@ -35,6 +36,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   const initialPatterns = patternsArchi ?? []
   const [patternsMax, setPatternsMax] = useState(12)
   const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
+  const [hiddenSecteurs, setHiddenSecteurs] = useState<string[]>([])
   const [form, setForm] = useState({ nom, organisation: organisation ?? '', secteur: secteur ?? '', sousSecteurs: initialSS, patternsArchi: initialPatterns })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -42,7 +44,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
   // Plafond de sélection de l'organisation (lu à l'ouverture du formulaire).
   useEffect(() => {
     if (!open) return
-    fetch('/api/admin/organization-config', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (typeof d?.patternsArchiMax === 'number') setPatternsMax(d.patternsArchiMax); if (Array.isArray(d?.patternsArchiMasques)) setHiddenPatterns(d.patternsArchiMasques) }).catch(() => {})
+    fetch('/api/admin/organization-config', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (typeof d?.patternsArchiMax === 'number') setPatternsMax(d.patternsArchiMax); if (Array.isArray(d?.patternsArchiMasques)) setHiddenPatterns(d.patternsArchiMasques); if (Array.isArray(d?.secteursMasques)) setHiddenSecteurs(d.secteursMasques) }).catch(() => {})
   }, [open])
 
   if (!canEdit) return null
@@ -99,7 +101,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
               <select className={`mt-1 ${inputCls}`} value={form.secteur} required
                 onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteurs: normalizeSousSecteurs(e.target.value, form.sousSecteurs) })}>
                 <option value="">{t.newAnalysis.sectorPh}</option>
-                {SECTEURS_ACTIVITE.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                {secteursVisibles(SECTEURS_ACTIVITE, hiddenSecteurs, secteur).map((s: string) => <option key={s} value={s}>{s}</option>)}
               </select>
             </label>
 

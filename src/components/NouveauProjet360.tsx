@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
+import { secteursVisibles } from '@/lib/secteurs-masques'
 import ExampleChips from '@/components/ExampleChips'
 import ModuleGuide from '@/components/ModuleGuide'
 import PatternsArchiPicker from '@/components/PatternsArchiPicker'
@@ -18,8 +19,10 @@ import SousSecteursPicker from '@/components/SousSecteursPicker'
 const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
 const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
-export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseSourceId }: {
+export default function NouveauProjet360({ maxPatterns, hiddenPatterns, hiddenSecteurs = [], analyseSourceId }: {
   maxPatterns: number; hiddenPatterns?: readonly string[]
+  /** Secteurs masqués par l'organisation (libellés canoniques, lib/secteurs-masques). */
+  hiddenSecteurs?: readonly string[]
   /** Analyse cyber d'où part le projet (« Associer un projet » › créer) : liée au projet après sa création. */
   analyseSourceId?: string
 }) {
@@ -84,7 +87,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseS
         <label htmlFor="projet-secteur" className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>
           <select id="projet-secteur" required value={secteur} onChange={e => { setSecteur(e.target.value); setSousSecteurs([]) }} className={field}>
             <option value="">{t.newAnalysis.sectorPh}</option>
-            {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
+            {secteursVisibles(SECTEURS_ACTIVITE, hiddenSecteurs).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
         {/* Sous-secteurs cohérents avec le secteur : affinent les risques types proposés au projet. */}

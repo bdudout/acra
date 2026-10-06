@@ -25,7 +25,7 @@ export default async function NouveauProjetPage({ searchParams }: { searchParams
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
-        <NouveauProjet360 maxPatterns={cfg.patternsArchiMax} hiddenPatterns={cfg.patternsArchiMasques} analyseSourceId={analyseSource} />
+        <NouveauProjet360 maxPatterns={cfg.patternsArchiMax} hiddenPatterns={cfg.patternsArchiMasques} hiddenSecteurs={cfg.secteursMasques} analyseSourceId={analyseSource} />
       </main>
     </div>
   )

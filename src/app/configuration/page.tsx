@@ -1,5 +1,6 @@
 'use client'
 
+import SecteursMasquesEditor from '@/components/SecteursMasquesEditor'
 import TierIdentityPanel from '@/components/TierIdentityPanel'
 import RisquesProjetDefautEditor from '@/components/RisquesProjetDefautEditor'
 import SectorSettings from '@/components/SectorSettings'
@@ -177,6 +178,7 @@ export default function ConfigurationPage() {
   const [archivageAnnees, setArchivageAnnees] = useState(5)
   const [patternsMax, setPatternsMax] = useState(12)
   const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
+  const [secteursMasques, setSecteursMasques] = useState<string[] | null>(null)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -250,6 +252,7 @@ export default function ConfigurationPage() {
         if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
         if (typeof data.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
         if (Array.isArray(data.patternsArchiMasques)) setHiddenPatterns(normalizePatterns(data.patternsArchiMasques, { max: PATTERNS_MAX_MAX }))
+        setSecteursMasques(Array.isArray(data.secteursMasques) ? data.secteursMasques : [])
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -1506,6 +1509,13 @@ export default function ConfigurationPage() {
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>
+          </section>
+        )}
+
+        {/* ── Secteurs d'activité proposés à la saisie (les autres sont masqués) ── */}
+        {isAdmin && secteursMasques !== null && (
+          <section className="mt-8 card p-6">
+            <SecteursMasquesEditor initial={secteursMasques} />
           </section>
         )}
 

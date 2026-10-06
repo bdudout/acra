@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
+import { secteursVisibles } from '@/lib/secteurs-masques'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
 import PatternsArchiPicker from '@/components/PatternsArchiPicker'
@@ -30,6 +31,7 @@ export default function NewAnalysePage() {
   const { SECTEURS_ACTIVITE } = useEbiosData()
   const [patternsMax, setPatternsMax] = useState(12)
   const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
+  const [hiddenSecteurs, setHiddenSecteurs] = useState<string[]>([])
   const [form, setForm] = useState({ nom: '', description: '', organisation: '', secteur: '', sousSecteurs: [] as string[], patternsArchi: [] as string[], mentionProtection: 'NON_PROTEGEE', tags: '' })
   // Sous-secteurs proposés pour le secteur choisi (taxonomie, issue #25).
   const [socleId, setSocleId] = useState('')
@@ -102,6 +104,7 @@ export default function NewAnalysePage() {
         if (data?.qualificationQuestionnaire) setQualificationConfig(data.qualificationQuestionnaire)
         if (typeof data?.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
         if (Array.isArray(data?.patternsArchiMasques)) setHiddenPatterns(data.patternsArchiMasques)
+        if (Array.isArray(data?.secteursMasques)) setHiddenSecteurs(data.secteursMasques)
       })
       .catch(() => {})
   }, [])
@@ -199,7 +202,7 @@ export default function NewAnalysePage() {
               onChange={e => setForm({ ...form, secteur: e.target.value, sousSecteurs: normalizeSousSecteurs(e.target.value, form.sousSecteurs) })}
               className="input">
               <option value="">{t.newAnalysis.sectorPh}</option>
-              {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
+              {secteursVisibles(SECTEURS_ACTIVITE, hiddenSecteurs, form.secteur).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <p className="text-xs text-gray-500 mt-1">{t.newAnalysis.sectorHint}</p>
             {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}

@@ -1,4 +1,5 @@
 import { sanitizeSocleConfig } from '@/lib/projet360-socle'
+import { normalizeSecteursMasques } from '@/lib/secteurs-masques'
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeTaxonomie } from '@/lib/taxonomie'
 import { cleanActionDelais } from '@/lib/risk-action'
@@ -88,6 +89,7 @@ export async function GET(_req: NextRequest) {
     archivageMissionsAnnees: cfg.archivageMissionsAnnees,
     patternsArchiMax: cfg.patternsArchiMax,
     patternsArchiMasques: cfg.patternsArchiMasques,
+    secteursMasques: cfg.secteursMasques,
     risquesProjetDefaut: cfg.risquesProjetDefaut,
     derogationWorkflow: cfg.derogationWorkflow,
     derogationDoubleRegard: cfg.derogationDoubleRegard,
@@ -235,6 +237,7 @@ export async function PUT(req: NextRequest) {
     data.patternsArchiMax = Math.max(1, Math.min(PATTERNS_MAX_MAX, Math.floor(body.patternsArchiMax)))
   }
   if (Array.isArray(body.patternsArchiMasques)) data.patternsArchiMasques = normalizePatterns(body.patternsArchiMasques, { max: PATTERNS_MAX_MAX })
+  if (Array.isArray(body.secteursMasques)) data.secteursMasques = normalizeSecteursMasques(body.secteursMasques)
   if (body.risquesProjetDefaut && typeof body.risquesProjetDefaut === 'object') data.risquesProjetDefaut = sanitizeSocleConfig(body.risquesProjetDefaut)
   if (typeof body.derogationDureeMaxJours === 'number' && Number.isFinite(body.derogationDureeMaxJours)) {
     data.derogationDureeMaxJours = Math.max(1, Math.min(3650, Math.round(body.derogationDureeMaxJours)))

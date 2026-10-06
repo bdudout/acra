@@ -11,6 +11,7 @@
  *  - sinon → valeur par défaut.
  */
 
+import { normalizeSecteursMasques } from '@/lib/secteurs-masques'
 import { sanitizeSocleConfig, type SocleConfig } from '@/lib/projet360-socle'
 import {
   DEFAULT_TYPES_IMPACTS,
@@ -57,6 +58,7 @@ export interface RawOrgConfig {
   /** Plafond de patterns d'architecture cochés par analyse (lot A1) : null = hérité, défaut 12. */
   patternsArchiMax?: number | null
   patternsArchiMasques?: unknown
+  secteursMasques?: unknown
   risquesProjetDefaut?: unknown
   derogationWorkflow: string
   derogationDoubleRegard: boolean
@@ -121,6 +123,8 @@ export interface OrgConfigResolved {
   patternsArchiMax: number
   /** Patterns masqués dans les sélecteurs de l'organisation (les données existantes restent lues). */
   patternsArchiMasques: string[]
+  /** Secteurs d'activité masqués à la saisie (libellés français canoniques, lib/secteurs-masques). */
+  secteursMasques: string[]
   /** Risques présents par défaut dans tout projet 360 (désactivés / ajoutés par l'organisation). */
   risquesProjetDefaut: SocleConfig
   derogationWorkflow: string
@@ -193,6 +197,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   archivageMissionsAnnees: 5,
   patternsArchiMax: 12,
   patternsArchiMasques: [],
+  secteursMasques: [],
   risquesProjetDefaut: { desactives: [], ajoutes: [] },
   derogationWorkflow: 'RSSI',
   derogationDoubleRegard: true,
@@ -232,7 +237,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
+type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
 type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'projetSuppressionValidation'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
@@ -295,6 +300,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     archivageMissionsAnnees: pickInt('archivageMissionsAnnees', defaults.archivageMissionsAnnees),
     patternsArchiMax: Math.min(PATTERNS_MAX_MAX, Math.max(1, pickInt('patternsArchiMax', defaults.patternsArchiMax))),
     patternsArchiMasques: normalizePatterns(pickJson('patternsArchiMasques', defaults.patternsArchiMasques), { max: PATTERNS_MAX_MAX }),
+    secteursMasques: normalizeSecteursMasques(pickJson('secteursMasques', defaults.secteursMasques)),
     risquesProjetDefaut: sanitizeSocleConfig(pickJson('risquesProjetDefaut', defaults.risquesProjetDefaut)),
     derogationWorkflow: pickStr('derogationWorkflow', defaults.derogationWorkflow),
     derogationDoubleRegard: pickBool('derogationDoubleRegard', defaults.derogationDoubleRegard),
