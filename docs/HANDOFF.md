@@ -6,6 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (81) — Claude : décisions de droits appliquées
+
+- `53388ea` conformité : `peutGererConformite` (ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO) remplace les gardes locales
+  des 4 routes `/api/organizations/[orgId]/conformite/*` et le socle ; `peutLireConformite` (+ ANALYSTE) pour le
+  tableau de bord et le menu (liens vers le socle masqués à l'analyste).
+- `1989c8b` résultats d'audit et de contrôle : `lib/acces-resultats` (`voitTousLesResultats` = lecture globale du
+  dispositif ; `estConcerne` = responsable texte libre ↔ nom / e-mail ; `visibiliteMission`) appliqué à
+  `/api/audit/missions`, `/api/audit/missions/[id]`, rapports de mission, `/api/controles`, plan, campagnes, rapports de
+  campagne, vue réseau, volets audit / contrôle du cockpit (`/api/grc/rollup`). Plan et univers d'audit restent ouverts
+  (planification, pas des résultats) ; papiers de travail déjà réservés à l'audit.
+- **Vérifié** : `tsc` 0 · `npm test` 574 fichiers / 4489 tests · `next build` OK · recette navigateur 8 rôles (conformité,
+  socle, contrôles, missions, campagnes, cockpit) conforme.
+- **Piège** : les responsables sont souvent des équipes (« Contrôle permanent ») ; la 1re ligne ne voit alors rien —
+  saisir le nom ou l'e-mail de la personne pour qu'elle voie ses contrôles et recommandations.
+
+---
+
 ## 2026-10-08 (80) — Claude : recette par rôle dans le navigateur, points mineurs
 
 - `cdafb89` revues d'habilitations masquées (menu, configuration, politique d'instance) ; `14dbe5a` import des
