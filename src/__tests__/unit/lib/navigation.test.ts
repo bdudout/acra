@@ -292,4 +292,9 @@ describe('questionnaires de contrôle', () => {
     for (const r of ['CONTROLEUR', 'AUDITEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, registreIa: true }))).toContain('registreIa')
     for (const r of ['ANALYSTE', 'METIER', 'LECTEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, registreIa: true }))).not.toContain('registreIa')
   })
+  it('conformité : visible pour la gouvernance (dont CONFORMITE, DPO) et l’analyste ; pas pour la 1re ligne', () => {
+    for (const r of ['RSSI', 'CONFORMITE', 'DPO', 'ANALYSTE'] as const) expect(allKeys(buildNav(r, ALL_ON)), r).toContain('conformite')
+    for (const r of ['METIER', 'LECTEUR'] as const) expect(allKeys(buildNav(r, ALL_ON)), r).not.toContain('conformite')
+    expect(allKeys(buildNav('ANALYSTE', ALL_ON))).not.toContain('referentiels')
+  })
 })

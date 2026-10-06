@@ -1,5 +1,5 @@
 import { missingExclusionJustifications } from '@/lib/conformite'
-import { canReadOrgResource } from '@/lib/permissions'
+import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -18,10 +18,8 @@ import { getExigencesFor } from '@/lib/referentiel.server'
 import { getServerLocale } from '@/lib/i18n'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
-/** Rôles de gouvernance autorisés à gérer la conformité au niveau organisation. */
-function canManageOrgConformite(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
-}
+/** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
+const canManageOrgConformite = (role: UserRole): boolean => peutGererConformite(role)
 
 /** Discriminant de suivi : "" = suivi org-wide ; sinon libellé d'entité/socle. */
 function cleanEntite(v: unknown): string {

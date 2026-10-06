@@ -448,6 +448,16 @@ export function peutLireRegistreIa(role: UserRole): boolean {
   return peutGererRegistreIa(role) || role === 'CONTROLEUR' || role === 'AUDITEUR'
 }
 
+/** Peut gérer la conformité (tableau de bord, socle, traitements, import) : gouvernance, dont CONFORMITE et DPO. */
+export function peutGererConformite(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
+}
+
+/** Peut consulter le tableau de bord de conformité : gestionnaires, plus l'analyste. */
+export function peutLireConformite(role: UserRole): boolean {
+  return peutGererConformite(role) || role === 'ANALYSTE'
+}
+
 /** Peut gérer la bibliothèque documentaire : admin, RSSI, RISK_MANAGER, CONFORMITE ou DPO. */
 export function peutGererDocuments(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'

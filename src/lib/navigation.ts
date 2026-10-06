@@ -15,7 +15,7 @@
  * ⚠️ Règle d'or : le GATING (qui voit quoi) reste identique au comportement
  * historique — on ne change que la DISPOSITION selon le mode, jamais les droits.
  */
-import { isAdminRole, hasGlobalReadDispositif, canManageRopa, peutLireRegistreIa, type UserRole } from './permissions'
+import { isAdminRole, hasGlobalReadDispositif, canManageRopa, peutLireConformite, peutLireRegistreIa, type UserRole } from './permissions'
 
 /** État effectif des modules GRC optionnels (renvoyé par /api/modules). */
 export interface NavModules {
@@ -89,7 +89,9 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
 
   // Gouvernance (disponible dans les deux modes).
   const gouvernance: NavKey[] = []
-  if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
+  // Conformité : gouvernance et analyste (lecture du tableau de bord) ; référentiels et documents : gouvernance.
+  if (peutLireConformite(role)) gouvernance.push('conformite')
+  if (canGovern) gouvernance.push('referentiels', 'documents')
   if (modules.profilsOperationnels && canGovern) gouvernance.push('profilsOperationnels')
   if (canDerog) gouvernance.push('derogations')
   // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).

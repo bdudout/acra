@@ -428,3 +428,13 @@ describe('peutLireRegistreIa — lecture du registre IA', () => {
     expect(peutGererRegistreIa('AUDITEUR')).toBe(false)
   })
 })
+
+describe('conformité — gestion et lecture', () => {
+  it('gérer : ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO ; lire : + ANALYSTE', async () => {
+    const { peutGererConformite, peutLireConformite } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO'] as const) expect(peutGererConformite(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'CONTROLEUR', 'AUDITEUR', 'METIER', 'LECTEUR', 'DIRECTION_METIER'] as const) expect(peutGererConformite(r), r).toBe(false)
+    expect(peutLireConformite('ANALYSTE')).toBe(true)
+    for (const r of ['METIER', 'LECTEUR'] as const) expect(peutLireConformite(r), r).toBe(false)
+  })
+})

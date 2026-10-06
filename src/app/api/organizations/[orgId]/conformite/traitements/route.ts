@@ -1,4 +1,4 @@
-import { canReadOrgResource } from '@/lib/permissions'
+import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
 /**
  * Traitements RÉELS des écarts de conformité (plan d'action / dérogation /
  * acceptation de risque), au niveau du socle d'organisation.
@@ -19,9 +19,8 @@ import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
 
-function canManage(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
-}
+/** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
+const canManage = (role: UserRole): boolean => peutGererConformite(role)
 const cleanEntite = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 80) : '')
 
 // GET /api/organizations/[orgId]/conformite/traitements — liste les traitements d'écarts de conformité de l'org.
