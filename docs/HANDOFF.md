@@ -6,6 +6,19 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (71) — Claude : qualification 360, réponses conservées et risques proposés
+
+- **Diagnostic** : les réponses étaient bien enregistrées en base, mais `Questionnaire360` est démonté au changement
+  de phase et repartait des réponses chargées avec la page (`projet360.answers`) → réponses « perdues » à l'écran.
+  Les risques proposés n'étaient créés qu'après ouverture manuelle de « Voir les risques proposés » + confirmation.
+- **Corrigé** : `PhasedRiskWorkshop` conserve les réponses enregistrées (`onSaved` → `answers360`, aussi passées au
+  tableau de bord) ; après enregistrement, la proposition des risques s'ouvre d'office s'il y a des risques à créer ;
+  le bilan « non retenus » ne compte plus les risques déjà créés (seulement `NOT_SELECTED`).
+- **Vérifié** : tests `Projet360.test.tsx` (rouge puis vert) ; navigateur : enregistrement → dialogue ouvert →
+  risques créés visibles en phase 3 → retour en qualification, réponses intactes.
+
+---
+
 ## 2026-10-06 (70) — Claude : présentation d'un projet, plans par défaut, suggestions repliables
 
 - **Fait** : `51ec3cd` suggestions de risques repliables (repliées d'office si le registre contient des risques) ;

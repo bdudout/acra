@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Questionnaire360 from '@/components/projet360/Questionnaire360'
 import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
 import Dashboard360 from '@/components/projet360/Dashboard360'
+import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
+import { QualificationRisksDialog } from '@/components/QualificationRisksFlow'
 
 vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
@@ -35,6 +37,54 @@ describe('Questionnaire360', () => {
     render(<Questionnaire360 analyseId="a1" editable={false} initialAnswers={{}} />)
     expect(screen.queryByRole('button', { name: 'Enregistrer les réponses' })).toBeNull()
     expect((screen.getAllByRole('radio')[0] as HTMLInputElement).disabled).toBe(true)
+  })
+})
+
+describe('Questionnaire360 — persistance et risques proposés', () => {
+  const proposal = { id: 'p360-compromissionExpose', title: 'Compromission', mandatory: false, category: 'CYBER', gravity: 3, likelihood: 3, strategy: 'REDUIRE', alreadyCreated: false }
+  it('après enregistrement, ouvre d’office la proposition des risques et remonte les réponses enregistrées', async () => {
+    let saved = false
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/qualification-360')) { saved = true; return ok({ answers: JSON.parse(String(init?.body)).answers }) }
+      return ok({ channel: 'DIRECT', proposals: saved ? [proposal] : [] })
+    })
+    const onSaved = vi.fn()
+    render(<Questionnaire360 analyseId="a1" editable initialAnswers={{}} onSaved={onSaved} />)
+    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Le projet expose-t-il un service sur Internet ?' })).getByRole('radio', { name: 'Oui' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les réponses' }))
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ 'p360.cyber.exposeInternet': true }))
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect(screen.getByText('Compromission')).toBeTruthy()
+  })
+
+  it('les réponses enregistrées survivent au changement de phase du projet', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.endsWith('/qualification-360')) return ok({ answers: JSON.parse(String(init?.body)).answers })
+      if (url.includes('/qualification-risks')) return ok({ channel: 'DIRECT', proposals: [] })
+      return ok({ risques: [], sources: [], tiers: [] })
+    })
+    const phases = [
+      { key: 'qualification', type: 'qualification' as const, label: 'Qualification 360' },
+      { key: 'appreciation', type: 'appreciation' as const, label: 'Appréciation' },
+    ]
+    render(<PhasedRiskWorkshop analyseId="a1" editable phases={phases} projet360={{ answers: {}, appetitSeuil: null, tiers: [] }} />)
+    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Le projet expose-t-il un service sur Internet ?' })).getByRole('radio', { name: 'Oui' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les réponses' }))
+    expect(await screen.findByText('Réponses enregistrées')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Appréciation/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Qualification 360/ }))
+    const oui = within(screen.getByRole('radiogroup', { name: 'Le projet expose-t-il un service sur Internet ?' })).getByRole('radio', { name: 'Oui' }) as HTMLInputElement
+    expect(oui.checked).toBe(true)
+  })
+})
+
+describe('QualificationRisksDialog — bilan', () => {
+  it('ne compte comme « non retenus » que les risques décochés (pas ceux déjà créés)', async () => {
+    fetchMock.mockReturnValue(ok({ created: 2, skipped: [{ id: 'x', reason: 'ALREADY_CREATED' }, { id: 'y', reason: 'ALREADY_CREATED' }] }, 201))
+    const onDone = vi.fn()
+    render(<QualificationRisksDialog analyseId="a1" risks={[{ id: 'p1', title: 'R1', mandatory: false, category: 'CYBER', gravity: 2, likelihood: 2, strategy: 'REDUIRE' }]} onClose={() => {}} onDone={onDone} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Créer les risques sélectionnés' }))
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith('2 risque(s) créé(s), 0 non retenu(s).'))
   })
 })
 

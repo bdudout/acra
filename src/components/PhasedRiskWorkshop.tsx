@@ -83,6 +83,10 @@ export default function PhasedRiskWorkshop({
   const multi = phases.length > 1
   // Rechargement du registre après création de risques proposés ou import cyber.
   const [registryKey, setRegistryKey] = useState(0)
+  // Réponses du questionnaire 360 enregistrées pendant la session (le questionnaire est démonté au changement de phase :
+  // sans cela, il repartirait des réponses chargées avec la page).
+  const [answers360, setAnswers360] = useState(projet360?.answers ?? {})
+  const [sources360, setSources360] = useState(projet360?.sources)
 
   return (
     <div>
@@ -133,7 +137,7 @@ export default function PhasedRiskWorkshop({
         </section>
       ) : phase.type === 'qualification' && projet360 ? (
         <>
-          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} sources={projet360.sources} onRisksCreated={() => setRegistryKey(k => k + 1)} />
+          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={answers360} sources={sources360} onSaved={a => { setAnswers360(a); setSources360(undefined) }} onRisksCreated={() => setRegistryKey(k => k + 1)} />
           {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} onVoirRisques={() => { const i = phases.findIndex(ph => ph.key === 'appreciation'); if (i >= 0) setActive(i) }} />}
           <ProjectTiers analyseId={analyseId} initial={projet360.tiers} editable={editable} />
         </>
@@ -145,7 +149,7 @@ export default function PhasedRiskWorkshop({
       ) : (
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
-          {projet360 && phase.type === 'review' && <Dashboard360 key={registryKey} analyseId={analyseId} appetitSeuil={projet360.appetitSeuil} answers={projet360.answers} />}
+          {projet360 && phase.type === 'review' && <Dashboard360 key={registryKey} analyseId={analyseId} appetitSeuil={projet360.appetitSeuil} answers={answers360} />}
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
