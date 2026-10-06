@@ -28,6 +28,8 @@ import type { ScaleConfig } from '@/lib/risk-scale'
 
 export interface ProjetVue {
   id: string; nom: string; statut: string; secteur: string | null; patterns: string[]
+  /** Libellés des sous-secteurs (le premier est le principal). */
+  sousSecteurs?: string[]
   perimetre: string | null; objectifs: string | null; analyses: { id: string; nom: string }[]
   synthese: { total: number; aTraiter: number; acceptables: number; paliers: PalierSynthese[]
     principaux: { id: string; nom: string; niveau: number; domaine: string | null; palier: { label: string; couleur: string } }[] }
@@ -100,7 +102,15 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
       </div>
 
       <section className="card p-5 grid gap-4 sm:grid-cols-2">
-        <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400">{l.secteur}</p><p className="text-sm text-gray-800 dark:text-gray-100">{p.secteur ?? l.nonRenseigne}</p></div>
+        <div>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{l.secteur}</p>
+          <p className="text-sm text-gray-800 dark:text-gray-100">{p.secteur ?? l.nonRenseigne}</p>
+          {(p.sousSecteurs?.length ?? 0) > 0 && (
+            <ul aria-label={t.newAnalysis.subSector} className="mt-1 flex flex-wrap gap-1">
+              {p.sousSecteurs!.map(s => <li key={s} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">{s}</li>)}
+            </ul>
+          )}
+        </div>
         <div>
           {canEdit
             ? <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{l.miseEnService}

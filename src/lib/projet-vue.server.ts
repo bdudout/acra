@@ -17,6 +17,9 @@ import { cyberLiesNonImportes } from '@/lib/projet-cyber-lies'
 import { trierPlansParPriorite } from '@/lib/plans-priorite'
 import { cotations } from '@/lib/cotation-risque'
 import { refsRisquesCotes } from '@/lib/risque-refs'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { getEbiosData } from '@/lib/ebios-data-i18n'
+import type { Locale } from '@/lib/i18n'
 import { burndownPlans } from '@/lib/projet-burndown'
 import { sanitizeApprobations } from '@/lib/projet360'
 import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
@@ -27,11 +30,11 @@ const RISQUE_SELECT = {
   niveauActuel: true, graviteResiduelle: true, vraisemblanceResiduelle: true, taxonomieCode: true, domaine: true,
 } as const
 
-export async function chargerVueProjet(id: string, userId: string, instanceRole: UserRole, locale: string) {
+export async function chargerVueProjet(id: string, userId: string, instanceRole: UserRole, locale: Locale) {
   const analyse = await prisma.analyse.findFirst({
     where: await analyseAccessWhere(userId, instanceRole, id),
     select: {
-      id: true, nom: true, statut: true, secteur: true, patternsArchi: true, methode: true, deletedAt: true, userId: true, organizationId: true,
+      id: true, nom: true, statut: true, secteur: true, sousSecteur: true, sousSecteurs: true, patternsArchi: true, methode: true, deletedAt: true, userId: true, organizationId: true,
       dateEcheance: true, meteoProjet: true, meteoProjetLe: true, createdAt: true, accesUtilisateurs: true, approbations: true, commentaireApprobation: true, approuveLe: true, approbateurId: true,
       risquesResiduelsStatut: true, risquesResiduelsLe: true, risquesResiduelsCommentaire: true,
       user: { select: { name: true, email: true } },
@@ -111,6 +114,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
     prevu: bd.prevu.map(x => ({ date: iso(x.date), restants: x.restants })), cible: bd.cible.map(x => ({ date: iso(x.date), restants: x.restants })),
   } : null
 
+  const libelleSousSecteur = new Map((getEbiosData(locale).SOUS_SECTEURS as { id: string; label: string }[]).map(x => [x.id, x.label]))
   const parDomaine = new Map<string, number>()
   for (const r of analyse.risques) parDomaine.set(r.domaine ?? '', (parDomaine.get(r.domaine ?? '') ?? 0) + 1)
 
@@ -118,6 +122,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
     canEdit, canCreateCyber, validation, plans, scale,
     vue: {
       id: analyse.id, nom: analyse.nom, statut: analyse.statut, secteur: analyse.secteur,
+      sousSecteurs: sousSecteursOf(analyse).map(id => libelleSousSecteur.get(id) ?? id),
       patterns: normalizePatterns(analyse.patternsArchi, { max: PATTERNS_MAX_MAX }),
       perimetre: analyse.cadrage?.perimetre ?? null, objectifs: analyse.cadrage?.objectifsEtude ?? null,
       analyses,

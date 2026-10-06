@@ -1,8 +1,8 @@
 'use client'
 
 // ─── Lancement d'un projet 360 (page dédiée /projets/nouveau) ────────────────
-// Comme « Nouvelle analyse » : nom, périmètre, OBJECTIFS (repris dans le contexte du projet, phase 1), secteur et
-// patterns d'architecture ; l'analyse PROJET_360 est créée puis peuplée côté serveur (questionnaire pré-rempli, risques
+// Comme « Nouvelle analyse » : nom, périmètre, OBJECTIFS (repris dans le contexte du projet, phase 1), secteur,
+// sous-secteurs et patterns d'architecture ; l'analyse PROJET_360 est créée puis peuplée côté serveur (questionnaire pré-rempli, risques
 // proposés sans doublon) et l'utilisateur est conduit à la qualification pour confirmer.
 
 import { useState } from 'react'
@@ -13,6 +13,7 @@ import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import ExampleChips from '@/components/ExampleChips'
 import ModuleGuide from '@/components/ModuleGuide'
 import PatternsArchiPicker from '@/components/PatternsArchiPicker'
+import SousSecteursPicker from '@/components/SousSecteursPicker'
 
 const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
 const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
@@ -31,6 +32,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseS
   const [objectifs, setObjectifs] = useState('')
   const [miseEnService, setMiseEnService] = useState('')
   const [secteur, setSecteur] = useState('')
+  const [sousSecteurs, setSousSecteurs] = useState<string[]>([])
   const [patternsArchi, setPatternsArchi] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -44,7 +46,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseS
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(objectifs.trim() ? { objectifsEtude: objectifs.trim() } : {}),
         ...(miseEnService ? { dateEcheance: miseEnService } : {}),
-        secteur, patternsArchi, methode: 'PROJET_360',
+        secteur, ...(sousSecteurs.length ? { sousSecteurs } : {}), patternsArchi, methode: 'PROJET_360',
       }),
     }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
@@ -80,11 +82,13 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseS
           <span className="mt-0.5 block text-[11px] text-gray-400">{p.miseEnServiceHint}</span>
         </label>
         <label htmlFor="projet-secteur" className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>
-          <select id="projet-secteur" required value={secteur} onChange={e => setSecteur(e.target.value)} className={field}>
+          <select id="projet-secteur" required value={secteur} onChange={e => { setSecteur(e.target.value); setSousSecteurs([]) }} className={field}>
             <option value="">{t.newAnalysis.sectorPh}</option>
             {SECTEURS_ACTIVITE.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
+        {/* Sous-secteurs cohérents avec le secteur : affinent les risques types proposés au projet. */}
+        <SousSecteursPicker secteur={secteur} value={sousSecteurs} onChange={setSousSecteurs} />
         <PatternsArchiPicker value={patternsArchi} onChange={setPatternsArchi} max={maxPatterns} hiddenCodes={hiddenPatterns ? [...hiddenPatterns] : []} required />
         <p className="text-xs text-gray-500">{p.createHint}</p>
         <div className="flex items-center gap-2">

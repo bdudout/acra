@@ -6,7 +6,10 @@ vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
-vi.mock('@/lib/i18n/use-ebios-data', () => ({ useEbiosData: () => ({ SECTEURS_ACTIVITE: ['Santé', 'Autre'] }) }))
+vi.mock('@/lib/i18n/use-ebios-data', async () => {
+  const { getEbiosData } = await import('@/lib/ebios-data-i18n')
+  return { useEbiosData: () => ({ ...getEbiosData('fr'), SECTEURS_ACTIVITE: ['Santé', 'Autre'] }) }
+})
 const push = vi.fn()
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }))
 vi.mock('next/link', () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a> }))
@@ -52,5 +55,16 @@ describe('NouveauProjet360 — depuis une analyse cyber', () => {
     await waitFor(() => expect(push).toHaveBeenCalled())
     const lien = fetchMock.mock.calls.find(c => c[0] === '/api/projets/n1/analyses')!
     expect(JSON.parse(lien[1].body)).toEqual({ analyseId: 'a9' })
+  })
+  it('sous-secteurs proposés selon le secteur et transmis à la création', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ analyse: { id: 'n2' } }) })
+    render(<NouveauProjet360 maxPatterns={12} />)
+    fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Dossier patient' } })
+    fireEvent.change(screen.getByRole('combobox', { name: /secteur/i }), { target: { value: 'Santé' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /Clinique privée/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /SI standard/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le projet' }))
+    await waitFor(() => expect(push).toHaveBeenCalled())
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).sousSecteurs).toEqual(['sante-clinique'])
   })
 })

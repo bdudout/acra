@@ -13,7 +13,7 @@ vi.mock('next/link', () => ({ default: ({ children, href, className }: { childre
 beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ plans: [] }) }))) })
 
 const base = {
-  id: 'p1', nom: 'Migration paie', statut: 'EN_COURS', secteur: 'Banque / Finance', patterns: ['CLOUD_IAAS_PAAS'],
+  id: 'p1', nom: 'Migration paie', statut: 'EN_COURS', secteur: 'Banque / Finance', sousSecteurs: ['Banque de détail'], patterns: ['CLOUD_IAAS_PAAS'],
   perimetre: 'Paie et RH', objectifs: 'Bascule sans perte', analyses: [{ id: 'c1', nom: 'Cyber — paie' }],
   synthese: {
     total: 3, aTraiter: 1, acceptables: 2,
@@ -39,6 +39,7 @@ describe('ProjetPresentation', () => {
     render(<ProjetPresentation projet={base} canEdit canCreateCyber />)
     expect(screen.getByRole('heading', { name: 'Migration paie' })).toBeTruthy()
     expect(screen.getByText('Bascule sans perte')).toBeTruthy()
+    expect(screen.getByText('Banque de détail')).toBeTruthy()
     expect(screen.getByText('Hébergement en nuage (IaaS / PaaS)')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Modifier le projet' }).getAttribute('href')).toBe('/analyses/p1/atelier/1?phase=contexte')
     const graphe = screen.getByRole('figure', { name: 'Répartition des risques par niveau' })
