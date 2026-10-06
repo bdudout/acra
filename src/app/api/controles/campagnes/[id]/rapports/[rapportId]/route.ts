@@ -2,6 +2,7 @@
  * GET    /api/controles/campagnes/[id]/rapports/[rapportId] — télécharger un rapport.
  * DELETE /api/controles/campagnes/[id]/rapports/[rapportId] — supprimer un rapport.
  */
+import { accesResultats } from '@/lib/acces-resultats.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -37,6 +38,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id, rapportId } = await params
   const c = await load(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
+  // Rapport de campagne : lecture globale du dispositif seulement.
+  if (!(await accesResultats(c.userId, c.userRole as UserRole)).tout) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
   const rapports = (Array.isArray(c.campagne.rapports) ? c.campagne.rapports : []) as unknown as RapportMeta[]
   const r = rapports.find(x => x.id === rapportId)
   if (!r) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })

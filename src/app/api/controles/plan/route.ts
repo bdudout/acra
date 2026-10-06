@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { accesResultats } from '@/lib/acces-resultats.server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -28,9 +29,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     prisma.controle.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: { createdAt: 'asc' }, select: { id: true, intitule: true, periodicite: true, responsable: true, niveau: true, actif: true, cle: true, modeControle: true, createdAt: true } }),
     prisma.controleExecution.findMany({ where: { organizationId: scope.activeOrgId, dateRealisation: { gte: debut, lt: fin } }, select: { controleId: true, dateRealisation: true, resultat: true } }),
   ])
-  const plan = planAnnuel(controles.map(c => ({ ...c, creeLe: c.createdAt })), executions, annee, now)
+  // Résultats réservés aux interlocuteurs concernés (lib/acces-resultats).
+  const acces = await accesResultats(userId, scope.role as UserRole)
+  const miens = acces.tout ? controles : controles.filter(c => acces.concerne(c.responsable))
+  const plan = planAnnuel(miens.map(c => ({ ...c, creeLe: c.createdAt })), executions, annee, now)
   return NextResponse.json({
     active: true, annee, plan,
-    controles: controles.filter(c => c.actif).map(c => ({ id: c.id, intitule: c.intitule, periodicite: c.periodicite, responsable: c.responsable, niveau: c.niveau, cle: c.cle, modeControle: c.modeControle })),
+    controles: miens.filter(c => c.actif).map(c => ({ id: c.id, intitule: c.intitule, periodicite: c.periodicite, responsable: c.responsable, niveau: c.niveau, cle: c.cle, modeControle: c.modeControle })),
   })
 }

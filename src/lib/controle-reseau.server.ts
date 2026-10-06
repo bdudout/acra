@@ -1,5 +1,6 @@
 // Chargement de la consolidation des contrôles de référence (organisation active → entités descendantes visibles).
 // Partagé par GET /api/controles/reseau et son export Excel. Spec P3.
+import { voitTousLesResultats } from '@/lib/acces-resultats'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -12,6 +13,8 @@ export async function chargerReseau(userId: string, instanceRole: UserRole) {
   if (!orgId) return null
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return null
+  // Consolidation des résultats de contrôle par entité : lecture globale du dispositif seulement.
+  if (!voitTousLesResultats(scope.role as UserRole)) return null
 
   const mere = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true, nom: true } })
   const visibles = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
