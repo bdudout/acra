@@ -1,5 +1,5 @@
 import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
-import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
+import { analysesCyberDuProjet, projetLieAccessible } from '@/lib/projet360-sources.server'
 import VueAnalyseProjet from '@/components/VueAnalyseProjet'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
@@ -83,6 +83,8 @@ export default async function AtelierPage({
   const sessionUser = { id: userId, role: userRole }
   if (!canViewAnalyse(sessionUser, ownership)) notFound()
   const editable = canEditAnalyse(sessionUser, ownership)
+  // Analyse cyber rattachée à un projet 360 accessible : bascule de vue vers le projet.
+  const projetLie = await projetLieAccessible(userId, userRole, analyse.projetSourceId)
 
   // ── Méthodes à parcours PAR PHASES (ISO 31000 / ISO 27005 / NIST 800-30) : un
   // composant générique piloté par le registre (lib/methodes.ts), distinct des
@@ -171,7 +173,9 @@ export default async function AtelierPage({
         <Navbar />
         {/* Méthodes à saisie directe : largeur étendue (tableau brut / actuel / résiduel). */}
         <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
-          {methode === 'PROJET_360' && <VueAnalyseProjet active="projet" projet={{ id: analyse.id, nom: analyse.nom }} analyses={analysesProjet} />}
+          {methode === 'PROJET_360'
+            ? <VueAnalyseProjet active="projet" projet={{ id: analyse.id, nom: analyse.nom }} analyses={analysesProjet} />
+            : <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />}
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
@@ -335,6 +339,7 @@ export default async function AtelierPage({
       />
 
       <main id="main-content" className={`${conseilsActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 py-8`}>
+        <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
         {/* Header atelier */}
         <header className="mb-8">
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">

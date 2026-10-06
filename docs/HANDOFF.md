@@ -8,8 +8,9 @@ vérifié l'est avec la commande et son résultat.
 
 ## 2026-10-06 (73) — Claude : bascule analyse ⇄ projet, qualification reprise du 360, cotations incohérentes
 
-- **Bascule de vue** (`VueAnalyseProjet`) en haut de l'analyse (`/analyses/[id]`), de la présentation du projet et
-  des phases du projet ; liens analyse ↔ projet via `Analyse.projetSourceId`.
+- **Bascule de vue** (`VueAnalyseProjet`) en haut de l'analyse (`/analyses/[id]`) et de ses ateliers (EBIOS RM et
+  méthodes par phases), de la présentation du projet et des phases du projet ; projet lié résolu par
+  `projetLieAccessible` (lib/projet360-sources.server, accès vérifié) ; liens analyse ↔ projet via `Analyse.projetSourceId`.
 - **Correctif d'accès** : la liste `/projets` et la présentation d'un projet listaient ses analyses cyber sans filtre
   de droits (noms visibles) → filtre `analyseWhereClause` / `analysesCyberDuProjet` (lib/projet360-sources.server).
 - **Qualification d'analyse reprise du 360** (`qualificationDepuisProjet`, `completerQualification` dans

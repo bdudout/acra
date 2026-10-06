@@ -1,5 +1,6 @@
 import { sanitizeApprobations, completerQualification, qualificationDepuisProjet } from '@/lib/projet360'
 import VueAnalyseProjet from '@/components/VueAnalyseProjet'
+import { projetLieAccessible } from '@/lib/projet360-sources.server'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -153,10 +154,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
 
   // Projet 360 de rattachement (s'il reste accessible) : bascule de vue analyse ⇄ projet, et qualification complétée
   // par les réponses équivalentes de la qualification 360 (jamais à la place d'une réponse saisie).
-  const projet = analyse.projetSourceId ? await prisma.analyse.findFirst({
-    where: { ...(await analyseAccessWhere(userId, userRole, analyse.projetSourceId)), methode: 'PROJET_360', deletedAt: null },
-    select: { id: true, nom: true, qualification: true },
-  }) : null
+  const projet = await projetLieAccessible(userId, userRole, analyse.projetSourceId, { qualification: true })
   const qualificationSaisie = (analyse.qualification && typeof analyse.qualification === 'object' && !Array.isArray(analyse.qualification) ? analyse.qualification : {}) as QualificationAnswers
   const qualif = projet && editable && !locked
     ? completerQualification(qualificationSaisie, qualificationDepuisProjet(projet.qualification))

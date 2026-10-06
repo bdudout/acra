@@ -5,7 +5,7 @@
 // possédées / partagées restent visibles.
 import { prisma } from '@/lib/prisma'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { RISK_METHODS, METHOD_META } from '@/lib/methodes'
 
 export const CYBER_METHODS = RISK_METHODS.filter(m => METHOD_META[m].cyber)
@@ -27,5 +27,19 @@ export async function analysesCyberDuProjet(userId: string, role: UserRole, proj
   return prisma.analyse.findMany({
     where: { ...(await sourcesCyberWhere(userId, role, { id: projet.id, organizationId: projet.organizationId })), projetSourceId: projet.id },
     select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take,
+  })
+}
+
+/**
+ * Projet 360 de rattachement d'une analyse (Analyse.projetSourceId), seulement s'il reste accessible à l'utilisateur
+ * (bascule de vue analyse ⇄ projet). `qualification` : réponses 360 en plus (qualification de l'analyse reprise).
+ */
+export async function projetLieAccessible(userId: string, role: UserRole, projetSourceId: string | null | undefined): Promise<{ id: string; nom: string } | null>
+export async function projetLieAccessible(userId: string, role: UserRole, projetSourceId: string | null | undefined, opts: { qualification: true }): Promise<{ id: string; nom: string; qualification: unknown } | null>
+export async function projetLieAccessible(userId: string, role: UserRole, projetSourceId: string | null | undefined, opts?: { qualification: true }) {
+  if (!projetSourceId) return null
+  return prisma.analyse.findFirst({
+    where: { ...(await analyseAccessWhere(userId, role, projetSourceId)), methode: 'PROJET_360', deletedAt: null },
+    select: { id: true, nom: true, ...(opts?.qualification ? { qualification: true } : {}) },
   })
 }
