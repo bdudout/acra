@@ -167,19 +167,17 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Questionnaires de contrôle : les métiers (1ʳᵉ ligne) y répondent, la 2ᵉ ligne les gère.
   if (modules.controles && role !== 'LECTEUR') controleAudit.push('questionnaires')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
-  // Suivi régulateur (plans d'action régulateurs) : rattaché au contrôle & audit
-  // (constats du superviseur + remédiation), aux côtés des 3 lignes de défense.
-  if (modules.reglementaire && !firstLineOnly) controleAudit.push('suiviRegulateur')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
   // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations, recertification.
   // 6. Réglementaire : DORA, tests de résilience et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
-  //    Les registres TIC et RGPD sont dans Registres, le suivi régulateur dans Contrôle & audit.
+  //    Les registres TIC et RGPD sont dans Registres.
   const conformite: NavKey[] = gouvernance.filter(k => k !== 'ropa')
   if (conformite.length) entries.push(groupOrLink('conformite', conformite))
   const reglementaire: NavKey[] = []
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
-  if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
+  // Suivi régulateur (constats du superviseur et plans de remédiation) : avec le réglementaire.
+  if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', 'suiviRegulateur', ...(canPilotage ? ['testsResilience' as const] : []))
   if (canPilotage) reglementaire.push('rapports')
   if (reglementaire.length) entries.push(groupOrLink('reglementaire', reglementaire))
 

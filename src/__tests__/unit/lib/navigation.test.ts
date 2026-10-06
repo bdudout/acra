@@ -109,11 +109,11 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     expect(activeNavHref('/controlesX', hrefs)).toBeNull()
   })
 
-  it('suivi régulateur (plans d’action régulateurs) est dans le menu Contrôle & audit', () => {
+  it('suivi régulateur (plans d’action régulateurs) est dans le menu Réglementaire', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
-    const ca = m.entries.find(e => e.kind === 'group' && e.id === 'controleAudit')
-    expect(ca && ca.kind === 'group' && ca.items).toContain('suiviRegulateur')
-    for (const id of ['conformite', 'reglementaire']) {
+    const rg = m.entries.find(e => e.kind === 'group' && e.id === 'reglementaire')
+    expect(rg && rg.kind === 'group' && rg.items).toContain('suiviRegulateur')
+    for (const id of ['conformite', 'controleAudit']) {
       const g = m.entries.find(e => e.kind === 'group' && e.id === id)
       expect(g && g.kind === 'group' && g.items).not.toContain('suiviRegulateur')
     }
@@ -273,7 +273,7 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
     expect(groupIds(m)).not.toContain('conformiteReglementaire')
     expect(items('conformite')).toEqual(['conformite', 'referentiels', 'documents', 'profilsOperationnels', 'derogations', 'homologations', 'recertification'])
-    expect(items('reglementaire')).toEqual(['reglementaire', 'testsResilience', 'rapports'])
+    expect(items('reglementaire')).toEqual(['reglementaire', 'suiviRegulateur', 'testsResilience', 'rapports'])
     expect(items('registre')).toContain('ropa')
   })
 })
