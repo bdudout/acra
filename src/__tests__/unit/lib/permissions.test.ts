@@ -411,3 +411,11 @@ describe('resolveAnalyseRole (#130 — rôle gouvernant les actions sur une anal
     expect(resolveAnalyseRole('ADMIN', 'org1', null)).toBe('LECTEUR')
   })
 })
+
+describe('peutGererRegistreIa — registre des systèmes d’IA', () => {
+  it('gouvernance (ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO) seulement', async () => {
+    const { peutGererRegistreIa } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO'] as const) expect(peutGererRegistreIa(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'LECTEUR', 'METIER', 'CONTROLEUR', 'AUDITEUR', 'DIRECTION_METIER'] as const) expect(peutGererRegistreIa(r), r).toBe(false)
+  })
+})

@@ -139,6 +139,12 @@ contrôles de biais / dérive (texte + date de dernière revue), `analyseId?`, `
 `A_QUALIFIER` | `RISQUE_LIMITE` **toujours marquée « indicative, à vérifier »** (règlement (UE) 2024/1689) ;
 `revueEnRetard(derniereRevue, now)` (12 mois). Module `registreIaActive` (défaut **false**).
 **UI** `/registre-ia` (liste, fiche, lien analyse / AIPD). **Tests** : classement indicatif, revue, routes.
+**Livré (2026-10-08)** : modèle `SystemeIA` (migration `20261008100000_registre_ia`), `lib/registre-ia.ts`,
+catalogue de systèmes types ×5 importable ligne par ligne (`lib/registre-ia-catalogue.ts`, comme le RoPA),
+API `/api/registre-ia` (+ `[id]`, `catalogue`), page `/registre-ia` (`RegistreIaManager`), droits
+`peutGererRegistreIa` (gouvernance). Usages élargis au-delà de la protection sociale : `RECRUTEMENT`,
+`NOTATION_CREDIT`, `BIOMETRIE` (annexe III a priori), `IA_GENERATIVE` (art. 50). `RISQUE_LIMITE` est affiché
+« Obligations de transparence (art. 50) ».
 
 ## P8 — Déclarations propres aux organismes publics (B6)
 

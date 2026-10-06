@@ -6,6 +6,26 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (78) — Claude : navigation réorganisée, registre IA livré
+
+- Navigation (mode GRC, `lib/navigation.ts`) : menu « Tiers » ; **Registres** = risques, campagnes, processus,
+  incidents, TIC, RGPD, IA ; **Conformité** (nouveau groupe `conformite`) = conformité, référentiels, documents,
+  profils, dérogations, homologations, recertification ; **Réglementaire** = DORA, suivi régulateur, tests de
+  résilience, rapports. 1ʳᵉ ligne : « Incidents » en lien direct.
+- `28db151` : `POST /api/projets/[id]/analyses` refusé si le module Projets 360 est désactivé (boutons déjà masqués).
+- **Registre IA** (spec P7, `docs/specs/protection-sociale-specs.md`) : `/registre-ia` répondait 404 (module sans page).
+  Modèle `SystemeIA` (migration `20261008100000_registre_ia`), `lib/registre-ia` (classement indicatif
+  2024/1689, revue 12 mois, champs à compléter), catalogue ×5 (`lib/registre-ia-catalogue`, 9 systèmes types +
+  « propre à l'activité »), API `/api/registre-ia` (+ `[id]`, `catalogue` sous verrou), `RegistreIaManager`,
+  `peutGererRegistreIa`. Module requis (sinon 404).
+- **Vérifié** : `tsc` (hors `.next/dev` généré) · tests ciblés 97/97 · `check-migrations` · migration appliquée ·
+  navigateur : `/registre-ia` (synthèse, avertissement, catalogue de 10 systèmes et classes) — aucun import fait.
+- **Non vérifié** : `npm run build` ; import, création, suppression réels dans le navigateur (laissés à l'utilisateur).
+- **Piège** : `prisma migrate diff` remonte une dérive sans rapport (index `AuditConstat_referentielCode_idx`) — ne
+  pas l'embarquer dans une migration sans vérifier.
+
+---
+
 ## 2026-10-08 (77) — Claude : services tiers et entités de tiers
 
 - Vocabulaire (×5) : **service tiers** = partie prenante étudiée dans une analyse (service rendu, adhérence) ;

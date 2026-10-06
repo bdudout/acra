@@ -197,6 +197,7 @@ model Organization {
   apiKeys           ApiKey[]
   webhooks          Webhook[]
   traitements       Traitement[]
+  systemesIa        SystemeIA[]
   traitementsConformite ConformiteTraitement[]
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
@@ -364,6 +365,37 @@ model Traitement {
 
   @@unique([organizationId, catalogueKey])
   @@index([organizationId])
+}
+
+// Registre des algorithmes et systèmes d'IA (lib/registre-ia) : classement indicatif au regard du règlement (UE)
+// 2024/1689, revue des biais et de la dérive, lien analyse / AIPD. Provenance catalogue : import idempotent.
+model SystemeIA {
+  id                      String       @id @default(cuid())
+  organizationId          String
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nom                     String
+  finalite                String       @db.Text
+  fournisseur             String?
+  donnees                 Json         @default("[]")
+  categoriesParticulieres Boolean      @default(false)
+  typeDecision            String       @default("AIDE") // AIDE | AUTOMATISEE
+  interventionHumaine     String?      @db.Text
+  usage                   String       @default("AUTRE") // cf. USAGES_IA
+  controlesBiais          String?      @db.Text
+  derniereRevue           DateTime?
+  analyseId               String?
+  analyse                 Analyse?     @relation(fields: [analyseId], references: [id], onDelete: SetNull)
+  aipdReference           String?
+  statut                  String       @default("EN_PROJET") // EN_PROJET | EN_SERVICE | RETIRE
+  catalogueKey            String?
+  catalogueVersion        String?
+  createdBy               String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  @@unique([organizationId, catalogueKey])
+  @@index([organizationId])
+  @@index([analyseId])
 }
 
 // Webhook sortant : notifie un SI tiers (URL https) lors d'événements de l'org.
@@ -1655,6 +1687,7 @@ model Analyse {
   @@index([projetSourceId])
   @@index([deletedAt])
   @@index([organizationId])
+  systemesIa SystemeIA[]
 }
 
 // Révision d'une analyse (label EBIOS RM §3.4) — trace le suivi des versions x.y.

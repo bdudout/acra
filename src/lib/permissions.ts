@@ -438,6 +438,11 @@ export function peutGererReferentiels(role: UserRole): boolean {
   return isAdminRole(role)
 }
 
+/** Peut gérer le registre des systèmes d'IA : gouvernance (admin, RSSI, RISK_MANAGER, CONFORMITE, DPO), comme la navigation. */
+export function peutGererRegistreIa(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
+}
+
 /** Peut gérer la bibliothèque documentaire : admin, RSSI, RISK_MANAGER, CONFORMITE ou DPO. */
 export function peutGererDocuments(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
