@@ -21,14 +21,17 @@ describe('Configuration › Projets : risques par défaut', () => {
     expect((screen.getByRole('checkbox', { name: /Dérive du planning/ }) as HTMLInputElement).checked).toBe(true)
     fireEvent.click(screen.getByRole('checkbox', { name: /Dérive du planning/ }))
     fireEvent.change(screen.getByLabelText('Intitulé du risque'), { target: { value: 'Indisponibilité du site pilote' } })
+    fireEvent.change(screen.getByLabelText('Plan d’action par défaut (facultatif)'), { target: { value: 'Valider le site de repli' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter le risque' }))
+    // Le plan par défaut de chaque risque du catalogue est visible (expert à consulter).
+    expect(screen.getByText(/Faire qualifier le traitement de données personnelles par le DPO/)).toBeTruthy()
     expect(screen.getByText('Indisponibilité du site pilote')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PUT')).toBe(true))
     const body = JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PUT')![1].body)
     expect(body.risquesProjetDefaut.desactives.sort()).toEqual(['PROJ_BUDGET', 'PROJ_DELAIS'])
     expect(body.projetSuppressionValidation).toBe(true)
-    expect(body.risquesProjetDefaut.ajoutes).toEqual([expect.objectContaining({ intitule: 'Indisponibilité du site pilote', gravite: 2, vraisemblance: 2 })])
+    expect(body.risquesProjetDefaut.ajoutes).toEqual([expect.objectContaining({ intitule: 'Indisponibilité du site pilote', gravite: 2, vraisemblance: 2, plan: 'Valider le site de repli' })])
     expect(await screen.findByText('Risques par défaut enregistrés.')).toBeTruthy()
   })
   it('lecture seule hors administrateur', async () => {

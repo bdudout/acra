@@ -6,7 +6,8 @@ const db = vi.hoisted(() => ({
   arrangementTic: { count: vi.fn() },
   processus: { count: vi.fn() },
   traitement: { count: vi.fn() },
-  risque: { createMany: vi.fn() },
+  risque: { createMany: vi.fn(), findMany: vi.fn() },
+  planAction: { create: vi.fn() },
 }))
 vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ reglementaireActive: false, qualificationQuestionnaire: { riskRules: [] } })) }))
@@ -23,6 +24,9 @@ beforeEach(() => {
   db.traitement.count.mockResolvedValue(3)
   db.analyse.findUnique.mockResolvedValue({ qualification: { externalisation: true }, risques: [{ nom: 'Défaillance d’un prestataire critique', qualificationRuleId: null }] })
   db.risque.createMany.mockImplementation(async (a: { data: unknown[] }) => ({ count: a.data.length }))
+  // Risques par défaut relus après création (pour leur rattacher un plan d'action).
+  db.risque.findMany.mockImplementation(async (a: { where: { qualificationRuleId: { in: string[] } } }) => a.where.qualificationRuleId.in.map((ruleId, i) => ({ id: `rs${i}`, nom: ruleId, qualificationRuleId: ruleId })))
+  db.planAction.create.mockImplementation(async (a: unknown) => a)
 })
 
 describe('populateProjet360', () => {
@@ -42,5 +46,10 @@ describe('populateProjet360', () => {
     expect(socle.every(x => x.domaine)).toBe(true)
     expect(new Set(all.map(x => x.nom.toLowerCase())).size).toBe(all.length)
     expect(r).toEqual({ answers: 3, risks: 10 })
+    // Un plan d'action par risque par défaut (qualification avec l'expert compétent), rattaché au risque du projet.
+    expect(db.planAction.create).toHaveBeenCalledTimes(8)
+    const plan = db.planAction.create.mock.calls[0][0].data
+    expect(plan).toMatchObject({ organizationId: 'org1', statut: 'A_FAIRE', liens: { create: [expect.objectContaining({ type: 'RISQUE_ANALYSE', targetId: 'rs0', ref: 'a1' })] } })
+    expect(db.planAction.create.mock.calls.map(c => c[0].data.titre).join(' | ')).toMatch(/DPO/)
   })
 })

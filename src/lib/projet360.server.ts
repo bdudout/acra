@@ -5,6 +5,7 @@
 // créée ou intitulé existant). Rien n'est inventé : une réponse « oui » a toujours
 // une source, que l'utilisateur voit et confirme.
 
+import { createAnalyseRiskPlanAction } from '@/lib/plan-action.server'
 import { planSocle, risquesSocle, sanitizeSocleConfig } from '@/lib/projet360-socle'
 import type { Locale } from '@/lib/i18n'
 import { prisma } from './prisma'
@@ -68,6 +69,15 @@ export async function populateProjet360(analyseId: string, orgId: string, t: Tra
       return { ...row, description: null, analyseId, qualificationRuleId: s.ruleId, ...(s.domaine ? { domaine: s.domaine } : {}) }
     }),
   })).count
+  // Plan d'action par défaut de chaque risque par défaut : la démarche à mener avec l'expert compétent.
+  const avecPlan = socle.filter(s => s.plan)
+  if (socleCount && avecPlan.length) {
+    const crees = await prisma.risque.findMany({ where: { analyseId, qualificationRuleId: { in: avecPlan.map(s => s.ruleId) } }, select: { id: true, nom: true, qualificationRuleId: true } })
+    for (const r of crees) {
+      const p = avecPlan.find(s => s.ruleId === r.qualificationRuleId)?.plan
+      if (p) await createAnalyseRiskPlanAction(prisma, { organizationId: orgId, analyseId, risqueId: r.id, riskLabel: r.nom, titre: p.titre, description: p.description, statut: 'A_FAIRE', priorite: 'MAJEUR' })
+    }
+  }
   if (plan.length === 0) return { answers: Object.keys(answers).length, risks: socleCount }
   const res = await prisma.risque.createMany({
     skipDuplicates: true,

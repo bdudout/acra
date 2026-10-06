@@ -53,3 +53,24 @@ describe('risques créés avec le projet', () => {
     expect(plan.length).toBe(r.length - 2)
   })
 })
+
+describe('plans d’action par défaut des risques par défaut', () => {
+  it('chaque risque du catalogue porte un plan (5 langues) qui fait intervenir l’expert compétent', () => {
+    for (const r of RISQUES_PROJET_SOCLE) {
+      expect(r.plan.titre.every(s => s.trim().length > 0), r.code).toBe(true)
+      expect(r.plan.description.every(s => s.trim().length > 0), r.code).toBe(true)
+    }
+    const rgpd = RISQUES_PROJET_SOCLE.find(r => r.code === 'PROJ_RGPD')!
+    expect(rgpd.plan.titre[0]).toMatch(/DPO|délégué à la protection des données/)
+    expect(RISQUES_PROJET_SOCLE.find(r => r.code === 'PROJ_SECURITE')!.plan.titre[0]).toMatch(/RSSI/)
+  })
+  it('le plan est résolu dans la langue ; un risque ajouté peut porter un plan (facultatif, borné)', () => {
+    const cfg = sanitizeSocleConfig({ ajoutes: [{ id: 'a1', intitule: 'Site pilote indisponible', domaine: 'BUSINESS', gravite: 3, vraisemblance: 2, plan: '  Valider le site de repli avec la direction des opérations  ' }, { id: 'a2', intitule: 'Sans plan', gravite: 2, vraisemblance: 2 }] })
+    expect(cfg.ajoutes[0].plan).toBe('Valider le site de repli avec la direction des opérations')
+    expect(cfg.ajoutes[1].plan).toBeUndefined()
+    const r = risquesSocle(cfg, 'en', 4)
+    expect(r.find(x => x.ruleId.endsWith('PROJ_RGPD'))!.plan).toMatchObject({ titre: expect.stringMatching(/DPO/) })
+    expect(r.find(x => x.ruleId.endsWith('custom:a1'))!.plan).toEqual({ titre: 'Valider le site de repli avec la direction des opérations', description: null })
+    expect(r.find(x => x.ruleId.endsWith('custom:a2'))!.plan).toBeNull()
+  })
+})

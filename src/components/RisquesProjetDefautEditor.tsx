@@ -22,6 +22,7 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
   const [domaine, setDomaine] = useState('PROJECT')
   const [gravite, setGravite] = useState(2)
   const [vraisemblance, setVraisemblance] = useState(2)
+  const [planTxt, setPlanTxt] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [moduleInactif, setModuleInactif] = useState(false)
   const [validationSuppression, setValidationSuppression] = useState(true)
@@ -36,8 +37,8 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
   const toggle = (code: string) => setCfg(c => c && ({ ...c, desactives: c.desactives.includes(code) ? c.desactives.filter(x => x !== code) : [...c.desactives, code] }))
   function ajouter() {
     if (!nom.trim()) return
-    setCfg(c => c && ({ ...c, ajoutes: [...c.ajoutes, { id: `a${Date.now().toString(36)}`, intitule: nom.trim(), domaine: domaine as SocleConfig['ajoutes'][number]['domaine'], gravite, vraisemblance }] }))
-    setNom('')
+    setCfg(c => c && ({ ...c, ajoutes: [...c.ajoutes, { id: `a${Date.now().toString(36)}`, intitule: nom.trim(), domaine: domaine as SocleConfig['ajoutes'][number]['domaine'], gravite, vraisemblance, ...(planTxt.trim() ? { plan: planTxt.trim() } : {}) }] }))
+    setNom(''); setPlanTxt('')
   }
   async function enregistrer() {
     setMsg(null)
@@ -64,7 +65,8 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
             <li key={x.code}>
               <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <input type="checkbox" className="mt-0.5" disabled={!isAdmin} checked={!cfg.desactives.includes(x.code)} onChange={() => toggle(x.code)} />
-                <span>{x.intitule[i]} <span className="text-xs text-gray-400">· {domaines[x.domaine]}</span></span>
+                <span>{x.intitule[i]} <span className="text-xs text-gray-400">· {domaines[x.domaine]}</span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">{r.planLabel} {x.plan.titre[i]}</span></span>
               </label>
             </li>
           ))}
@@ -76,7 +78,7 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
           <ul className="mb-3 space-y-1">
             {cfg.ajoutes.map(a => (
               <li key={a.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                <span className="flex-1">{a.intitule}</span>
+                <span className="flex-1">{a.intitule}{a.plan && <span className="block text-xs text-gray-500 dark:text-gray-400">{r.planLabel} {a.plan}</span>}</span>
                 <span className="text-xs text-gray-400">{a.domaine ? domaines[a.domaine] : ''} · G{a.gravite} · V{a.vraisemblance}</span>
                 {isAdmin && <button type="button" aria-label={`${r.remove} — ${a.intitule}`} onClick={() => setCfg(c => c && ({ ...c, ajoutes: c.ajoutes.filter(y => y.id !== a.id) }))} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={14} aria-hidden="true" /></button>}
               </li>
@@ -102,6 +104,9 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
               <select aria-label={r.vraisemblance} value={vraisemblance} onChange={e => setVraisemblance(Number(e.target.value))} className={`${field} mt-1 block`}>
                 {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
+            </label>
+            <label className="w-full text-xs text-gray-600 dark:text-gray-300">{r.planDefaut}
+              <input aria-label={r.planDefaut} value={planTxt} maxLength={200} onChange={e => setPlanTxt(e.target.value)} className={`${field} mt-1 block w-full`} />
             </label>
             <button type="button" onClick={ajouter} disabled={!nom.trim()} className="btn-secondary text-sm inline-flex items-center gap-1 disabled:opacity-50"><Plus size={14} aria-hidden="true" />{r.add}</button>
           </div>
