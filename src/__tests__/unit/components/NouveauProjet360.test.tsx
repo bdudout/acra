@@ -21,11 +21,12 @@ describe('NouveauProjet360 — page dédiée de lancement', () => {
     fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Migration cloud' } })
     fireEvent.change(screen.getByLabelText('Description / périmètre'), { target: { value: 'Paie et RH' } })
     fireEvent.change(screen.getByLabelText('Objectifs du projet'), { target: { value: 'Bascule sans perte de données' } })
+    fireEvent.change(screen.getByLabelText('Date de mise en service (facultative)'), { target: { value: '2027-03-01' } })
     fireEvent.change(screen.getByRole('combobox', { name: /secteur/i }), { target: { value: 'Santé' } })
     fireEvent.click(screen.getByRole('checkbox', { name: /SI standard/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Créer le projet' }))
     await waitFor(() => expect(push).toHaveBeenCalledWith('/analyses/n1/atelier/1?phase=qualification'))
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', objectifsEtude: 'Bascule sans perte de données', secteur: 'Santé', patternsArchi: ['SI_STANDARD'], methode: 'PROJET_360' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', objectifsEtude: 'Bascule sans perte de données', dateEcheance: '2027-03-01', secteur: 'Santé', patternsArchi: ['SI_STANDARD'], methode: 'PROJET_360' })
   })
   it('ne permet pas de créer sans le secteur et le pattern qui cadrent le projet', () => {
     render(<NouveauProjet360 maxPatterns={12} />)

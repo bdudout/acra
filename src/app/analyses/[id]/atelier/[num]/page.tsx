@@ -211,6 +211,7 @@ export default async function AtelierPage({
               appetitSeuil: directAppetit.seuilGlobal ?? null,
               tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
               suppression: { role: suppressionRole, validationActive: directOrgConfig.projetSuppressionValidation, petiteStructure: directOrgConfig.petiteStructure },
+              miseEnService: analyse.dateEcheance ? analyse.dateEcheance.toISOString().slice(0, 10) : null,
             } : undefined}
           />
         </main>

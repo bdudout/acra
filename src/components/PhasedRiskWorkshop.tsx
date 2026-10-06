@@ -78,7 +78,9 @@ export default function PhasedRiskWorkshop({
   /** Analyse projet 360 : réponses du questionnaire et seuil d'appétit global (tableau de bord). */
   projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null; tiers: { id: string; nom: string; type: string }[]
     /** Suppression d'un risque soumise à validation (RM, ou RSSI si cyber) : rôle effectif et configuration. */
-    suppression?: { role: string; validationActive: boolean; petiteStructure?: boolean } }
+    suppression?: { role: string; validationActive: boolean; petiteStructure?: boolean }
+    /** Date de mise en service (AAAA-MM-JJ) : plans prévus après elle signalés en phase de traitement. */
+    miseEnService?: string | null }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
@@ -161,7 +163,7 @@ export default function PhasedRiskWorkshop({
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
-          {projet360 && phase.key === 'traitement' && <PlansParPriorite analyseId={analyseId} reloadKey={registryKey} />}
+          {projet360 && phase.key === 'traitement' && <PlansParPriorite analyseId={analyseId} reloadKey={registryKey} editable={editable} miseEnService={projet360.miseEnService ?? null} />}
           <RisquesDirects key={`${phase.key}-${registryKey}`} suppression={projet360?.suppression} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}

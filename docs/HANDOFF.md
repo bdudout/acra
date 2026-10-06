@@ -6,6 +6,27 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (74) — Claude : projet — validation sur sa page, plans éditables, mise en service, cyber liées, export PowerPoint
+
+- **Page du projet** (`/projets/[id]`, chargement commun `lib/projet-vue.server` avec l'export) : panneaux de
+  validation (soumission / double approbation RM + RSSI, acceptation des résiduels — mêmes droits que la page de
+  l'analyse), date de mise en service modifiable (PATCH `dateEcheance`, normalisée par `lib/date-saisie`),
+  indicateur J-n et plans prévus après la mise en service, encart « Analyses cyber liées » (risques à traiter non
+  importés — `lib/projet-cyber-lies`), bouton « Exporter (PowerPoint) ».
+- **Plans éditables** (porteur, échéance, statut) sur la page du projet et en phase 5 (`PlansParPriorite editable`,
+  via la route plan du risque) ; badge « Après la mise en service ».
+- **Création** : date de mise en service facultative. **Relances** : lien vers l'objet (`lib/relances-chemins` —
+  projet à approuver → `/projets/[id]`, suppression → phase 3 du projet).
+- **Export PPTX** `/api/projets/[id]/export?lang=` (`lib/projet-pptx` : titre, vision, avancement risques, avancement
+  plans, plans par priorité paginés ; libellés i18n ×5).
+- **Sécurité** : la route PATCH/DELETE d'un plan de risque vérifiait le lien plan ↔ risque mais pas risque ↔ analyse
+  éditée (modification possible d'un plan d'une autre analyse de l'org) → corrigé + test ; échéance illisible ignorée.
+- **Vérifié en navigateur** : date enregistrée, porteur / échéance d'un plan persistés, badge, téléchargement PPTX ;
+  rendu des diapositives contrôlé (LibreOffice → PDF).
+- Note : après un redémarrage, le mot de passe du compte local de recette a été régénéré (scratchpad de session).
+
+---
+
 ## 2026-10-06 (73) — Claude : bascule analyse ⇄ projet, qualification reprise du 360, cotations incohérentes
 
 - **Bascule de vue** (`VueAnalyseProjet`) en haut de l'analyse (`/analyses/[id]`) et de ses ateliers (EBIOS RM et

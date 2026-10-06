@@ -1,4 +1,5 @@
 import { sanitizeAnswers360 } from '@/lib/projet360'
+import { dateSaisie } from '@/lib/date-saisie'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -96,6 +97,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const data: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) data[key] = body[key]
+  }
+  // Date d'échéance (mise en service d'un projet 360) : champ date normalisé, valeur illisible ignorée.
+  if ('dateEcheance' in data) {
+    const d = dateSaisie(data.dateEcheance)
+    if (d === undefined) delete data.dateEcheance; else data.dateEcheance = d
   }
   // Mention de protection (label EBIOS RM §3.2) — normalisée vers un niveau connu.
   if ('mentionProtection' in body) {

@@ -95,7 +95,9 @@ export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
   | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
 export type RelanceEmailType = 'ECHEANCE_PROCHE' | 'EN_RETARD' | 'PERIODIQUE' | 'EN_ATTENTE'
 /** Un élément relancé : catégorie, intitulé, type de relance, date (AAAA-MM-JJ) : échéance, ou début d'attente pour EN_ATTENTE. */
-export interface RelanceItem { categorie: RelanceCategorie; intitule: string; type: RelanceEmailType; echeance: string | null }
+export interface RelanceItem { categorie: RelanceCategorie; intitule: string; type: RelanceEmailType; echeance: string | null
+  /** Page de l'objet (chemin interne) ouverte par le lien de l'e-mail quand il est le premier listé (lib/relances-chemins). */
+  chemin?: string }
 /** Éléments d'une personne, toutes organisations confondues (le nom de l'organisation n'est affiché que s'il y en a plusieurs). */
 export interface RelancesParams { items: (RelanceItem & { organisation: string })[]; url: string | null }
 

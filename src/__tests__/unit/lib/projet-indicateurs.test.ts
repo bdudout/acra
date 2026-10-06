@@ -45,3 +45,17 @@ describe('indicateursProjet', () => {
     expect(i.reductionPct).toBeNull()
   })
 })
+
+describe('indicateursProjet — date de mise en service', () => {
+  it('jours restants, plans ouverts dont l’échéance tombe après la mise en service', () => {
+    const i = indicateursProjet({
+      risques: [], ctx, now, miseEnService: j(20),
+      plans: [plan('A_FAIRE', { echeance: j(30) }), plan('FAIT', { echeance: j(40) }), plan('EN_COURS', { echeance: j(10) }), plan('A_FAIRE')],
+    })
+    expect(i.miseEnService).toEqual({ joursRestants: 20, plansApres: 1 })
+  })
+  it('sans date : pas d’indicateur ; date passée : jours négatifs', () => {
+    expect(indicateursProjet({ risques: [], plans: [], ctx, now }).miseEnService).toBeNull()
+    expect(indicateursProjet({ risques: [], plans: [], ctx, now, miseEnService: j(-3) }).miseEnService).toEqual({ joursRestants: -3, plansApres: 0 })
+  })
+})

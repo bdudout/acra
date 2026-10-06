@@ -1,7 +1,8 @@
 // ─── Indicateurs d'un projet 360 (page de présentation) — PUR ────────────────
 // Pilotage du traitement : avancement des plans d'action (terminés / total), retards et échéances proches, plans
 // incomplets (sans porteur, sans échéance), risques à traiter sans aucun plan, réduction du niveau de risque brut →
-// résiduel et risques résiduels encore au-dessus de l'appétit. Testé : projet-indicateurs.test.ts.
+// résiduel et risques résiduels encore au-dessus de l'appétit ; date de mise en service : jours restants et plans
+// ouverts prévus après elle. Testé : projet-indicateurs.test.ts.
 import { cotations } from '@/lib/cotation-risque'
 import { evaluateRisk, type EvaluationContext } from '@/lib/risque-priorisation'
 import type { RisqueSynthese } from '@/lib/projet-synthese'
@@ -14,14 +15,16 @@ export interface IndicateursProjet {
   risquesATraiterSansPlan: number
   reductionPct: number | null
   residuelsHorsAppetit: number
+  /** Date de mise en service du projet (Analyse.dateEcheance) : jours restants (négatif si passée), plans ouverts après. */
+  miseEnService: { joursRestants: number; plansApres: number } | null
 }
 
 const JOUR = 86_400_000
 /** Horizon d'une échéance « proche » (jours). */
 export const ECHEANCE_PROCHE_JOURS = 30
 
-export function indicateursProjet({ risques, plans, ctx, now }: {
-  risques: readonly RisqueSynthese[]; plans: readonly PlanIndicateur[]; ctx: EvaluationContext; now: Date
+export function indicateursProjet({ risques, plans, ctx, now, miseEnService = null }: {
+  risques: readonly RisqueSynthese[]; plans: readonly PlanIndicateur[]; ctx: EvaluationContext; now: Date; miseEnService?: Date | null
 }): IndicateursProjet {
   const ouverts = plans.filter(p => p.statut !== 'FAIT')
   const t = now.getTime()
@@ -53,5 +56,9 @@ export function indicateursProjet({ risques, plans, ctx, now }: {
     risquesATraiterSansPlan: aTraiterSansPlan,
     reductionPct: brut > 0 ? Math.round((1 - residuel / brut) * 100) : null,
     residuelsHorsAppetit: horsAppetit,
+    miseEnService: miseEnService ? {
+      joursRestants: Math.round((miseEnService.getTime() - t) / JOUR),
+      plansApres: ouverts.filter(p => p.echeance && p.echeance.getTime() > miseEnService.getTime()).length,
+    } : null,
   }
 }

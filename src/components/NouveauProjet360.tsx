@@ -25,6 +25,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns }: { maxP
   const [nom, setNom] = useState('')
   const [description, setDescription] = useState('')
   const [objectifs, setObjectifs] = useState('')
+  const [miseEnService, setMiseEnService] = useState('')
   const [secteur, setSecteur] = useState('')
   const [patternsArchi, setPatternsArchi] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
@@ -38,6 +39,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns }: { maxP
         nom: nom.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(objectifs.trim() ? { objectifsEtude: objectifs.trim() } : {}),
+        ...(miseEnService ? { dateEcheance: miseEnService } : {}),
         secteur, patternsArchi, methode: 'PROJET_360',
       }),
     }).catch(() => null)
@@ -66,6 +68,10 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns }: { maxP
         <label className="block text-xs text-gray-600 dark:text-gray-300">{p.objectifs}
           <textarea aria-label={p.objectifs} rows={2} maxLength={2000} value={objectifs} placeholder={p.objectifsPlaceholder} onChange={e => setObjectifs(e.target.value)} className={field} />
           <span className="mt-0.5 block text-[11px] text-gray-400">{p.objectifsHint}</span>
+        </label>
+        <label className="block text-xs text-gray-600 dark:text-gray-300">{p.miseEnService}
+          <input type="date" aria-label={p.miseEnService} value={miseEnService} onChange={e => setMiseEnService(e.target.value)} className={`${field} max-w-[12rem]`} />
+          <span className="mt-0.5 block text-[11px] text-gray-400">{p.miseEnServiceHint}</span>
         </label>
         <label htmlFor="projet-secteur" className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>
           <select id="projet-secteur" required value={secteur} onChange={e => setSecteur(e.target.value)} className={field}>
