@@ -6,6 +6,24 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (82) — Claude : MCP prêt pour les clients, dossier de démo projet 360
+
+- **Bloquant corrigé** `c1152c63` : `/api/mcp` était redirigé vers la connexion par le middleware de session
+  (`lib/public-paths`) — aucun client MCP ne pouvait se connecter. `/api/mcp-proposals` reste protégé.
+- `53d9eee1` : `instructions` et `serverInfo` (titre, version) à `initialize` (`lib/mcp/instructions.ts`) ; `title` et
+  `annotations` d'outils (`readOnlyHint` lectures / recommandations / aperçus ; propositions non destructives) ;
+  `WWW-Authenticate: Bearer` sur 401.
+- Vérifié en local avec curl : initialize (client 2025-11-25 → 2025-06-18 négocié), notification 202, 17 outils,
+  appel d'outil, GET 405, 401 sans clé ou clé invalide. Tests MCP 102/102.
+- **Local** : MCP activé pour « Organisation principale », clé de test `mcp` seule (expire 2026-11-05) dans
+  `.acra-test-memory/mcp-demo.json` (ignoré par git).
+- **Dossier** `docs/demo/mcp-projet-360.md` : expression de besoins fictive (mutuelle, espace adhérent 2027),
+  résultat attendu, scénario, configuration Claude Code / Codex / Mistral Vibe, lots M1–M6.
+- **Prochain pas** : lots M1–M5 (lister les analyses, contexte d'un projet, proposer un projet, `propose_risk`
+  enrichi, recommandations complètes pour un projet) ; installer les clients (aucun n'est présent sur le poste).
+
+---
+
 ## 2026-10-08 (81) — Claude : décisions de droits appliquées
 
 - `53388ea` conformité : `peutGererConformite` (ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO) remplace les gardes locales
