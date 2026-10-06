@@ -67,7 +67,7 @@ export const fr = {
     analyses:       'Analyses',
     analysesReader: 'Analyses',
     risks:          'Risques des analyses',
-    tiers:          'Services tiers',
+    tiers:          'Tiers',
     actions:        'Plans d\'action',
     plansActions:   'Plans d\'action',
     profilsOperationnels: 'Maturité',

@@ -66,7 +66,7 @@ export const de: Translations = {
     analyses:       'Analysen',
     analysesReader: 'Analysen',
     risks:          'Risiken aus Analysen',
-    tiers:          'Drittdienste',
+    tiers:          'Dritte',
     actions:        'Aktionspläne',
     plansActions:   'Aktionspläne',
     profilsOperationnels: 'Reifegrad',
