@@ -206,7 +206,7 @@ describe('buildNav — regroupement KRI et registres', () => {
   it('regroupe les registres de risques et TIC, même si seul le module réglementaire est activé', () => {
     const both = buildNav('RSSI', ALL_ON)
     expect(both.entries.find(e => e.kind === 'group' && e.id === 'registre')).toEqual({
-      kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'registreTic'],
+      kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'incidents', 'registreTic'],
     })
     const confReg = both.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
     expect(confReg && confReg.kind === 'group' && confReg.items).not.toContain('registreTic')
@@ -214,6 +214,21 @@ describe('buildNav — regroupement KRI et registres', () => {
     const regulatoryOnly = buildNav('RSSI', { ...ALL_OFF, reglementaire: true })
     expect(allKeys(regulatoryOnly)).toContain('registreTic')
     expect(allKeys(regulatoryOnly)).not.toContain('registre')
+  })
+
+  it('incidents et registre IA sont dans le menu Registres (plus dans Contrôle & audit ni Conformité)', () => {
+    const m = buildNav('RSSI', { ...ALL_ON, registreIa: true })
+    const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
+    expect(items('registre')).toEqual(['registre', 'campagnes', 'processus', 'incidents', 'registreTic', 'registreIa'])
+    expect(items('controleAudit')).not.toContain('incidents')
+    expect(items('conformiteReglementaire')).not.toContain('registreIa')
+    expect(allKeys(m).filter(k => k === 'incidents' || k === 'registreIa')).toHaveLength(2)
+  })
+
+  it('1ʳᵉ ligne : la déclaration d’incident reste atteignable (lien direct), sans les autres registres', () => {
+    const m = buildNav('METIER', ALL_ON)
+    expect(m.entries).toContainEqual({ kind: 'link', key: 'incidents' })
+    expect(allKeys(m)).not.toContain('registreTic')
   })
 
   it('conserve les droits : aucun KRI ni registre TIC pour la première ligne', () => {

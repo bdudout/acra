@@ -94,7 +94,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (canDerog) gouvernance.push('derogations')
   // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).
   if (modules.homologations && (canGovern || role === 'DIRECTION_METIER')) gouvernance.push('homologations')
-  if (modules.registreIa && canGovern) gouvernance.push('registreIa')
+  // Registre IA : dans « Gouvernance » en mode cyber, dans « Registres » en mode GRC.
+  const registreIa = !!modules.registreIa && canGovern
   // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
   if (modules.recertification && role !== 'LECTEUR') gouvernance.push('recertification')
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
@@ -110,7 +111,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // nombreux (≤ SECONDARY_INLINE_MAX), sinon REGROUPÉS dans le menu « GRC ». Un seul
   // item ne fait donc jamais un menu déroulant pour rien.
   if (!grcMode) {
-    const secondary: NavKey[] = [...gouvernance]
+    const secondary: NavKey[] = [...gouvernance, ...(registreIa ? ['registreIa' as const] : [])]
     if (modules.incidents) secondary.push('incidents')
     // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
     if (modules.incidents && canPilotage) secondary.push('rapports')
@@ -144,24 +145,22 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const analyses: NavKey[] = [...core(modules)]
   entries.push(groupOrLink('analyses', analyses))
 
-  // 3. Registres : risques et arrangements TIC restent des objets distincts,
-  // rapprochés seulement dans la navigation. Le module réglementaire peut être
-  // actif seul : son lien doit rester atteignable sans registre de risques.
-  if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
-    const registres: NavKey[] = []
-    if (modules.registre) {
-      // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
-      // Processus : visibles par tous ceux qui voient les registres (page en lecture ; modification réservée à l'ADMIN).
-      registres.push('registre', 'campagnes', 'processus')
-    }
-    if (modules.reglementaire) registres.push('registreTic')
-    entries.push(groupOrLink('registre', registres))
+  // 3. Registres : risques, incidents, arrangements TIC et systèmes d'IA restent des objets distincts, rapprochés seulement
+  // dans la navigation. Le module réglementaire peut être actif seul : son lien doit rester atteignable sans registre de
+  // risques. Les incidents restent ouverts à tous (déclaration par la 1ʳᵉ ligne : lien direct s'il est seul).
+  const registres: NavKey[] = []
+  if (!firstLineOnly && modules.registre) {
+    // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
+    // Processus : visibles par tous ceux qui voient les registres (page en lecture ; modification réservée à l'ADMIN).
+    registres.push('registre', 'campagnes', 'processus')
   }
+  if (modules.incidents) registres.push('incidents')
+  if (!firstLineOnly && modules.reglementaire) registres.push('registreTic')
+  if (registreIa) registres.push('registreIa')
+  if (registres.length) entries.push(groupOrLink('registre', registres))
 
-  // 4. Contrôle & audit (les 3 lignes de défense) : incidents (1ʳᵉ ligne, ouvert à
-  //    tous), contrôle permanent + campagnes (2ᵉ ligne), audit interne (3ᵉ ligne).
+  // 4. Contrôle & audit (les 3 lignes de défense) : contrôle permanent + campagnes (2ᵉ ligne), audit interne (3ᵉ ligne).
   const controleAudit: NavKey[] = []
-  if (modules.incidents) controleAudit.push('incidents')
   if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
   // Questionnaires de contrôle : les métiers (1ʳᵉ ligne) y répondent, la 2ᵉ ligne les gère.
   if (modules.controles && role !== 'LECTEUR') controleAudit.push('questionnaires')
