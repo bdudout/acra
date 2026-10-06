@@ -6,6 +6,31 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (76) — Claude : retours de recette projet (plans, sous-secteurs, secteurs masqués, risques types)
+
+- `956be03` références R1, R2… stables des risques d'un projet (`lib/risque-refs`, cotation actuelle) : plans
+  d'action (API `plans-projet`, page, PPTX) et matrice (identique quelle que soit l'étape ou la catégorie) ;
+  priorités en couleur (`ACTION_PRIORITE_BADGE` dans `lib/risk-action`, partagé avec `RiskActionsPanel`).
+- `4954ffe` sous-secteurs à la création d'un projet et sur sa page.
+- `6757001` secteurs masqués par organisation (`OrganizationConfig.secteursMasques`, migration
+  `20261008090000_secteurs_masques`, `lib/secteurs-masques` : libellé FR canonique, même ordre dans les 5 langues).
+- Import de risques types en phase Identification (`appreciation`) du projet : `ImportRisquesTypes` (contexte +
+  `AnalyseMetaEditor`, catalogue groupé REGISTRE / SOUS_SECTEUR / ARCHITECTURE / SECTEUR / TRANSVERSE),
+  `GET/POST /api/analyses/[id]/risques-types` (création seulement depuis le catalogue recalculé côté serveur, garde
+  `guardDirectRisk`). Sources : packs EBIOS (≈ 7 par secteur, cotation suggérée) + **catalogue sectoriel GRC**
+  (`listSectorSuggestions`, via `lib/secteur-catalogue` : secteur d'analyse → `SectorCode`, assurance par
+  sous-secteur ; cotation G2·V2 à revoir, domaine depuis la catégorie bâloise). Ex. Santé + clinique + cloud :
+  48 propositions au lieu de 9.
+- **Vérifié** : `tsc` 0 · `npm test` 566 fichiers / 4439 tests · `i18n:check` · `check-migrations` · migration
+  appliquée en local · navigateur :3005 (refs et couleurs sur « Souris chauve », import de 2 risques sur le projet de
+  recette, POST d'un intitulé inventé ou déjà présent → 0 créé, configuration : 21 secteurs affichés).
+- **Non vérifié** : `npm run build` (dev en cours) ; masquage réel d'un secteur dans le navigateur (non modifié pour
+  ne pas toucher la configuration de l'organisation de l'utilisateur ; couvert par tests unitaires).
+- **Piège** : après une migration, le dev doit être redémarré (sinon `Unknown field secteursMasques` partout).
+  Lancement du dev : onglet Terminal (l'aperçu intégré n'a plus accès à ~/Documents).
+
+---
+
 ## 2026-10-06 (75) — Claude : incidents récupérables, page projet réorganisée, météo, PPTX exécutif, listes à deux vues
 
 - `dfc34af` incidents : suppression → corbeille (`ElementSupprime`, migration `20261007090000`, `lib/corbeille`),

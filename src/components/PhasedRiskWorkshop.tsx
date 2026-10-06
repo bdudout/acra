@@ -23,6 +23,7 @@ import ProjectTiers from '@/components/projet360/ProjectTiers'
 import PlansParPriorite from '@/components/projet360/PlansParPriorite'
 import FichiersProjet from '@/components/projet360/FichiersProjet'
 import ActifsProjet from '@/components/projet360/ActifsProjet'
+import ImportRisquesTypes, { type ContexteProjet } from '@/components/projet360/ImportRisquesTypes'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -80,7 +81,9 @@ export default function PhasedRiskWorkshop({
     /** Suppression d'un risque soumise à validation (RM, ou RSSI si cyber) : rôle effectif et configuration. */
     suppression?: { role: string; validationActive: boolean; petiteStructure?: boolean }
     /** Date de mise en service (AAAA-MM-JJ) : plans prévus après elle signalés en phase de traitement. */
-    miseEnService?: string | null }
+    miseEnService?: string | null
+    /** Contexte qui oriente les risques types (secteur, sous-secteurs, architecture), modifiable en phase d'identification. */
+    contexte?: ContexteProjet }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
@@ -163,6 +166,7 @@ export default function PhasedRiskWorkshop({
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
+          {projet360?.contexte && phase.key === 'appreciation' && editable && <ImportRisquesTypes analyseId={analyseId} contexte={projet360.contexte} onImported={() => setRegistryKey(k => k + 1)} />}
           {projet360 && phase.key === 'traitement' && <PlansParPriorite analyseId={analyseId} reloadKey={registryKey} editable={editable} miseEnService={projet360.miseEnService ?? null} />}
           <RisquesDirects key={`${phase.key}-${registryKey}`} suppression={projet360?.suppression} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}

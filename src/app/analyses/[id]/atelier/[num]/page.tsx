@@ -217,6 +217,10 @@ export default async function AtelierPage({
               tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
               suppression: { role: suppressionRole, validationActive: directOrgConfig.projetSuppressionValidation, petiteStructure: directOrgConfig.petiteStructure },
               miseEnService: analyse.dateEcheance ? analyse.dateEcheance.toISOString().slice(0, 10) : null,
+              contexte: {
+                nom: analyse.nom, organisation: analyse.organisation ?? null, secteur: analyse.secteur ?? null, sousSecteur: analyse.sousSecteur ?? null,
+                sousSecteurs: sousSecteursOf(analyse), patternsArchi: patternsOf(analyse),
+              },
             } : undefined}
           />
         </main>
