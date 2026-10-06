@@ -17,7 +17,11 @@ import PatternsArchiPicker from '@/components/PatternsArchiPicker'
 const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
 const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
-export default function NouveauProjet360({ maxPatterns, hiddenPatterns }: { maxPatterns: number; hiddenPatterns?: readonly string[] }) {
+export default function NouveauProjet360({ maxPatterns, hiddenPatterns, analyseSourceId }: {
+  maxPatterns: number; hiddenPatterns?: readonly string[]
+  /** Analyse cyber d'où part le projet (« Associer un projet » › créer) : liée au projet après sa création. */
+  analyseSourceId?: string
+}) {
   const { t } = useTranslation()
   const { SECTEURS_ACTIVITE } = useEbiosData()
   const p = t.projets
@@ -45,6 +49,8 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns }: { maxP
     }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
     if (!res || !res.ok || !d?.analyse?.id) { setBusy(false); setMsg(p.error.replace('{error}', String(d?.error ?? res?.status ?? '—'))); return }
+    // Lien avec l'analyse cyber d'origine (droits vérifiés côté serveur ; un échec n'empêche pas d'ouvrir le projet).
+    if (analyseSourceId) await fetch(`/api/projets/${d.analyse.id}/analyses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ analyseId: analyseSourceId }) }).catch(() => null)
     router.push(qualifHref(d.analyse.id))
   }
 

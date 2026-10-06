@@ -4531,6 +4531,7 @@ export const en: Translations = {
     cellTip: '{evalues} control(s) assessed out of {total}',
   },
   titreAnalyse: {"renommer": "Rename the analysis", "nom": "Analysis name", "enregistrer": "Save the name", "annuler": "Cancel", "erreur": "Renaming failed."},
+  associerProjet: {"bouton": "Link a project", "creer": "Create a new project", "lier": "Link an existing project", "recherche": "Search for a project", "projet": "Project to link", "valider": "Link", "aucun": "No matching project.", "erreur": "Linking failed (rights on the project or the analysis)."},
   vueAnalyseProjet: {"label": "View", "projet": "Project", "analyse": "Cyber analysis", "choisir": "Choose the cyber analysis"},
   qualification: {
     reprisesProjetCreation: "Answers taken from the project’s 360 qualification ({n}): check them before starting the analysis.",

@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // /projets/nouveau — lancement d'un projet 360 dans une page dédiée (comme /analyses/new), pour l'organisation active.
-export default async function NouveauProjetPage() {
+export default async function NouveauProjetPage({ searchParams }: { searchParams: Promise<{ analyse?: string }> }) {
+  // Projet créé depuis une analyse cyber (« Associer un projet » › créer) : l'analyse lui sera liée.
+  const analyseSource = (await searchParams).analyse || undefined
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
@@ -23,7 +25,7 @@ export default async function NouveauProjetPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-8">
-        <NouveauProjet360 maxPatterns={cfg.patternsArchiMax} hiddenPatterns={cfg.patternsArchiMasques} />
+        <NouveauProjet360 maxPatterns={cfg.patternsArchiMax} hiddenPatterns={cfg.patternsArchiMasques} analyseSourceId={analyseSource} />
       </main>
     </div>
   )

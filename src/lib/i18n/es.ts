@@ -4531,6 +4531,7 @@ export const es: Translations = {
     cellTip: '{evalues} control(es) evaluado(s) de {total}',
   },
   titreAnalyse: {"renommer": "Cambiar el nombre del análisis", "nom": "Nombre del análisis", "enregistrer": "Guardar el nombre", "annuler": "Cancelar", "erreur": "No se pudo cambiar el nombre."},
+  associerProjet: {"bouton": "Asociar un proyecto", "creer": "Crear un nuevo proyecto", "lier": "Vincular un proyecto existente", "recherche": "Buscar un proyecto", "projet": "Proyecto que vincular", "valider": "Vincular", "aucun": "Ningún proyecto coincide.", "erreur": "No se pudo vincular (permisos sobre el proyecto o el análisis)."},
   vueAnalyseProjet: {"label": "Vista", "projet": "Proyecto", "analyse": "Análisis ciber", "choisir": "Elegir el análisis ciber"},
   qualification: {
     reprisesProjetCreation: "Respuestas tomadas de la cualificación 360 del proyecto ({n}): revíselas antes de iniciar el análisis.",

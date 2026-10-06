@@ -40,3 +40,17 @@ describe('NouveauProjet360 — page dédiée de lancement', () => {
     expect(screen.getByRole('link', { name: '← Retour aux projets' }).getAttribute('href')).toBe('/projets')
   })
 })
+
+describe('NouveauProjet360 — depuis une analyse cyber', () => {
+  it('le projet créé est lié à l’analyse d’origine', async () => {
+    fetchMock.mockImplementation((url: string) => Promise.resolve({ ok: true, status: 201, json: async () => (url === '/api/analyses' ? { analyse: { id: 'n1' } } : { ok: true }) }))
+    render(<NouveauProjet360 maxPatterns={12} analyseSourceId="a9" />)
+    fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Refonte' } })
+    fireEvent.change(screen.getByRole('combobox', { name: /secteur/i }), { target: { value: 'Santé' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /SI standard/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le projet' }))
+    await waitFor(() => expect(push).toHaveBeenCalled())
+    const lien = fetchMock.mock.calls.find(c => c[0] === '/api/projets/n1/analyses')!
+    expect(JSON.parse(lien[1].body)).toEqual({ analyseId: 'a9' })
+  })
+})

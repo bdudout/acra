@@ -4580,6 +4580,7 @@ export const fr = {
     cellTip: '{evalues} contrôle(s) évalué(s) sur {total}',
   },
   titreAnalyse: {"renommer": "Renommer l’analyse", "nom": "Nom de l’analyse", "enregistrer": "Enregistrer le nom", "annuler": "Annuler", "erreur": "Renommage impossible."},
+  associerProjet: {"bouton": "Associer un projet", "creer": "Créer un nouveau projet", "lier": "Lier un projet existant", "recherche": "Rechercher un projet", "projet": "Projet à lier", "valider": "Lier", "aucun": "Aucun projet ne correspond.", "erreur": "Liaison impossible (droits sur le projet ou l’analyse)."},
   vueAnalyseProjet: {"label": "Vue", "projet": "Projet", "analyse": "Analyse cyber", "choisir": "Choisir l’analyse cyber"},
   qualification: {
     reprisesProjetCreation: "Réponses reprises de la qualification 360 du projet ({n}) : vérifiez-les avant de démarrer l’analyse.",

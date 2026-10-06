@@ -1,6 +1,7 @@
 import { sanitizeApprobations, completerQualification, qualificationDepuisProjet } from '@/lib/projet360'
 import VueAnalyseProjet from '@/components/VueAnalyseProjet'
 import TitreEditable from '@/components/TitreEditable'
+import AssocierProjet from '@/components/AssocierProjet'
 import { projetLieAccessible } from '@/lib/projet360-sources.server'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
@@ -176,6 +177,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
 
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-8">
         <VueAnalyseProjet active="analyse" projet={projet && { id: projet.id, nom: projet.nom }} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+        {/* Analyse cyber sans projet : créer un projet lié ou lier un projet existant. */}
+        {!analyse.projetSourceId && editable && !locked && orgConfig.projets360Active && analyse.methode !== 'PROJET_360' && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>

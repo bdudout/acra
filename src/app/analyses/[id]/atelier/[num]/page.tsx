@@ -1,6 +1,7 @@
 import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
 import { analysesCyberDuProjet, projetLieAccessible } from '@/lib/projet360-sources.server'
 import VueAnalyseProjet from '@/components/VueAnalyseProjet'
+import AssocierProjet from '@/components/AssocierProjet'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
@@ -85,6 +86,8 @@ export default async function AtelierPage({
   const editable = canEditAnalyse(sessionUser, ownership)
   // Analyse cyber rattachée à un projet 360 accessible : bascule de vue vers le projet.
   const projetLie = await projetLieAccessible(userId, userRole, analyse.projetSourceId)
+  // « Associer un projet » proposé sur une analyse cyber sans projet, si le module Projets 360 est actif.
+  const projets360Actif = !analyse.projetSourceId && (await getOrgConfig(analyse.organizationId)).projets360Active
 
   // ── Méthodes à parcours PAR PHASES (ISO 31000 / ISO 27005 / NIST 800-30) : un
   // composant générique piloté par le registre (lib/methodes.ts), distinct des
@@ -175,7 +178,9 @@ export default async function AtelierPage({
         <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
           {methode === 'PROJET_360'
             ? <VueAnalyseProjet active="projet" projet={{ id: analyse.id, nom: analyse.nom }} analyses={analysesProjet} />
-            : <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />}
+            : projetLie
+              ? <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+              : !analyse.projetSourceId && editable && directOrgConfig.projets360Active && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
@@ -341,6 +346,7 @@ export default async function AtelierPage({
 
       <main id="main-content" className={`${conseilsActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 py-8`}>
         <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+        {!projetLie && !analyse.projetSourceId && editable && projets360Actif && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
         {/* Header atelier */}
         <header className="mb-8">
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">

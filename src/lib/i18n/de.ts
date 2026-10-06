@@ -4530,6 +4530,7 @@ export const de: Translations = {
     cellTip: '{evalues} von {total} Kontrolle(n) bewertet',
   },
   titreAnalyse: {"renommer": "Analyse umbenennen", "nom": "Name der Analyse", "enregistrer": "Namen speichern", "annuler": "Abbrechen", "erreur": "Umbenennen nicht möglich."},
+  associerProjet: {"bouton": "Projekt zuordnen", "creer": "Neues Projekt erstellen", "lier": "Bestehendes Projekt verknüpfen", "recherche": "Projekt suchen", "projet": "Zu verknüpfendes Projekt", "valider": "Verknüpfen", "aucun": "Kein passendes Projekt.", "erreur": "Verknüpfung nicht möglich (Rechte am Projekt oder an der Analyse)."},
   vueAnalyseProjet: {"label": "Ansicht", "projet": "Projekt", "analyse": "Cyber-Analyse", "choisir": "Cyber-Analyse auswählen"},
   qualification: {
     reprisesProjetCreation: "Antworten aus der 360-Qualifizierung des Projekts übernommen ({n}): vor dem Start der Analyse prüfen.",
