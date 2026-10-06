@@ -117,10 +117,10 @@ export const es: Translations = {
 
   // ─── Página Terceros (ecosistema agregado) ────────────────────────────────
   tiers: {
-    explication: {"titre": "¿Servicio de terceros o entidad de terceros?", "service": "Un servicio de terceros es un servicio prestado por un tercero, o una dependencia de él, tal como se estudia en un análisis (parte interesada del ecosistema). Un mismo proveedor puede prestar varios servicios de terceros.", "entite": "Una entidad de terceros es la persona jurídica (empresa, organismo) que presta estos servicios. Vincula los servicios de terceros de los análisis con los contratos del registro TIC.", "bouton": "Entidades de terceros", "retour": "← Servicios de terceros"},
+    explication: {"titre": "¿Servicio o actor tercero, o entidad de terceros?", "service": "Un servicio o actor tercero es un servicio prestado por un tercero, una dependencia de él o un actor del ecosistema, tal como se estudia en un análisis (parte interesada). Un mismo proveedor puede prestar varios servicios de terceros.", "entite": "Una entidad de terceros es la persona jurídica (empresa, organismo) que presta estos servicios. Vincula los servicios de terceros de los análisis con los contratos del registro TIC.", "bouton": "Entidades de terceros", "retour": "← Servicios de terceros"},
     identitesLink: "Entidades de terceros",
     cartoLink: 'Mapa del ecosistema',
-    title:        'Servicios de terceros',
+    title:        'Servicios y actores terceros',
     subtitle:     'Servicios prestados por terceros, o relaciones con ellos, tal como se estudian en sus análisis de riesgos (partes interesadas del ecosistema)',
     zoneLabel:    'Zona',
     searchPh:     'Buscar un tercero, un tipo, un análisis…',

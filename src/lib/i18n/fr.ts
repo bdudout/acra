@@ -118,10 +118,10 @@ export const fr = {
 
   // ─── Page Tiers (écosystème agrégé) ───────────────────────────────────────
   tiers: {
-    explication: {"titre": "Service tiers ou entité de tiers ?", "service": "Un service tiers est un service rendu par un tiers, ou une relation d’adhérence avec lui, tel qu’étudié dans une analyse (partie prenante de l’écosystème). Un même prestataire peut fournir plusieurs services tiers.", "entite": "Une entité de tiers est la personne morale (société, organisme) qui fournit ces services. Elle relie les services tiers des analyses aux contrats du registre TIC.", "bouton": "Entités de tiers", "retour": "← Services tiers"},
+    explication: {"titre": "Service ou acteur tiers, ou entité de tiers ?", "service": "Un service ou acteur tiers est un service rendu par un tiers, une relation d’adhérence avec lui ou un acteur de l’écosystème, tel qu’étudié dans une analyse (partie prenante). Un même prestataire peut fournir plusieurs services tiers.", "entite": "Une entité de tiers est la personne morale (société, organisme) qui fournit ces services. Elle relie les services tiers des analyses aux contrats du registre TIC.", "bouton": "Entités de tiers", "retour": "← Services tiers"},
     identitesLink: "Entités de tiers",
     cartoLink: 'Cartographie de l’écosystème',
-    title:        'Services tiers',
+    title:        'Services et acteurs tiers',
     subtitle:     'Services rendus par des tiers, ou relations avec eux, tels qu’étudiés dans vos analyses de risque (parties prenantes de l’écosystème)',
     zoneLabel:    'Zone',
     searchPh:     'Rechercher un tiers, un type, une analyse…',

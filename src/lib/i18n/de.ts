@@ -117,10 +117,10 @@ export const de: Translations = {
 
   // ─── Seite Dritte (aggregiertes Ökosystem) ────────────────────────────────
   tiers: {
-    explication: {"titre": "Drittdienst oder Drittpartei-Entität?", "service": "Ein Drittdienst ist ein von einem Dritten erbrachter Dienst oder eine Abhängigkeit von ihm, wie in einer Analyse untersucht (Stakeholder des Ökosystems). Derselbe Anbieter kann mehrere Drittdienste erbringen.", "entite": "Eine Drittpartei-Entität ist die juristische Person (Unternehmen, Organisation), die diese Dienste erbringt. Sie verbindet die Drittdienste der Analysen mit den Verträgen des IKT-Registers.", "bouton": "Drittpartei-Entitäten", "retour": "← Drittdienste"},
+    explication: {"titre": "Drittdienst oder Drittakteur – oder Drittpartei-Entität?", "service": "Ein Drittdienst oder Drittakteur ist ein von einem Dritten erbrachter Dienst, eine Abhängigkeit von ihm oder ein Akteur des Ökosystems, wie in einer Analyse untersucht (Stakeholder). Derselbe Anbieter kann mehrere Drittdienste erbringen.", "entite": "Eine Drittpartei-Entität ist die juristische Person (Unternehmen, Organisation), die diese Dienste erbringt. Sie verbindet die Drittdienste der Analysen mit den Verträgen des IKT-Registers.", "bouton": "Drittpartei-Entitäten", "retour": "← Drittdienste"},
     identitesLink: "Drittpartei-Entitäten",
     cartoLink: 'Ökosystem-Karte',
-    title:        'Drittdienste',
+    title:        'Drittdienste und Drittakteure',
     subtitle:     'Von Dritten erbrachte Dienste oder Beziehungen zu ihnen, wie in Ihren Risikoanalysen untersucht (Stakeholder des Ökosystems)',
     zoneLabel:    'Zone',
     searchPh:     'Dritte, Typ, Analyse suchen…',

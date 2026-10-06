@@ -117,10 +117,10 @@ export const it: Translations = {
 
   // ─── Pagina Terze parti (ecosistema aggregato) ────────────────────────────
   tiers: {
-    explication: {"titre": "Servizio di terze parti o entità di terze parti?", "service": "Un servizio di terze parti è un servizio reso da una terza parte, o una dipendenza da essa, come studiato in un’analisi (parte interessata dell’ecosistema). Uno stesso fornitore può erogare più servizi di terze parti.", "entite": "Un’entità di terze parti è la persona giuridica (società, organismo) che eroga questi servizi. Collega i servizi di terze parti delle analisi ai contratti del registro ICT.", "bouton": "Entità di terze parti", "retour": "← Servizi di terze parti"},
+    explication: {"titre": "Servizio o attore terzo, o entità di terze parti?", "service": "Un servizio o attore terzo è un servizio reso da una terza parte, una dipendenza da essa o un attore dell’ecosistema, come studiato in un’analisi (parte interessata). Uno stesso fornitore può erogare più servizi di terze parti.", "entite": "Un’entità di terze parti è la persona giuridica (società, organismo) che eroga questi servizi. Collega i servizi di terze parti delle analisi ai contratti del registro ICT.", "bouton": "Entità di terze parti", "retour": "← Servizi di terze parti"},
     identitesLink: "Entità di terze parti",
     cartoLink: 'Mappa dell’ecosistema',
-    title:        'Servizi di terze parti',
+    title:        'Servizi e attori terzi',
     subtitle:     'Servizi resi da terze parti, o relazioni con esse, come studiati nelle vostre analisi dei rischi (parti interessate dell’ecosistema)',
     zoneLabel:    'Zona',
     searchPh:     'Cerca una terza parte, un tipo, un\'analisi…',

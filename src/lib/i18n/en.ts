@@ -117,10 +117,10 @@ export const en: Translations = {
 
   // ─── Third parties page (aggregated ecosystem) ────────────────────────────
   tiers: {
-    explication: {"titre": "Third-party service or third-party entity?", "service": "A third-party service is a service provided by a third party, or a dependency on it, as studied in an analysis (ecosystem stakeholder). The same provider may deliver several third-party services.", "entite": "A third-party entity is the legal entity (company, organisation) providing these services. It links the third-party services of the analyses to the contracts of the ICT register.", "bouton": "Third-party entities", "retour": "← Third-party services"},
+    explication: {"titre": "Third-party service or actor, or third-party entity?", "service": "A third-party service or actor is a service provided by a third party, a dependency on it or an actor of the ecosystem, as studied in an analysis (stakeholder). The same provider may deliver several third-party services.", "entite": "A third-party entity is the legal entity (company, organisation) providing these services. It links the third-party services of the analyses to the contracts of the ICT register.", "bouton": "Third-party entities", "retour": "← Third-party services"},
     identitesLink: "Third-party entities",
     cartoLink: 'Ecosystem map',
-    title:        'Third-party services',
+    title:        'Third-party services and actors',
     subtitle:     'Services provided by third parties, or relationships with them, as studied in your risk analyses (ecosystem stakeholders)',
     zoneLabel:    'Zone',
     searchPh:     'Search a third party, a type, an analysis…',
