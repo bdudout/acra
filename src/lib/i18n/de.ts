@@ -107,6 +107,7 @@ export const de: Translations = {
     grpPilotage: 'Steuerung',
     grpControleAudit: 'Kontrolle & Revision',
     grpConformiteReglementaire: 'Konformität & Regulatorik',
+    grpConformite: 'Konformität',
     configuration:  'Konfiguration',
     admin:          'Admin',
     logout:         'Abmelden',

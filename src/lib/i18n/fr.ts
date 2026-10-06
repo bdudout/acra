@@ -108,6 +108,7 @@ export const fr = {
     grpPilotage: 'Pilotage',
     grpControleAudit: 'Contrôle & audit',
     grpConformiteReglementaire: 'Conformité & réglementaire',
+    grpConformite: 'Conformité',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Déconnexion',

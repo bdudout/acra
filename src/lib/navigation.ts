@@ -47,7 +47,7 @@ export type NavKey =
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
-  | 'analyses' | 'controleAudit' | 'conformiteReglementaire' | 'pilotage'
+  | 'analyses' | 'controleAudit' | 'conformiteReglementaire' | 'conformite' | 'pilotage'
 
 /** Une entrée de barre : soit un lien direct, soit un groupe déroulant. */
 export type NavEntry =
@@ -170,15 +170,17 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.reglementaire && !firstLineOnly) controleAudit.push('suiviRegulateur')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
-  // 5. Conformité & réglementaire : conformité, référentiels, documents,
-  //    dérogations, RGPD et reporting DORA ; le registre TIC est dans Registres.
-  const confReg: NavKey[] = [...gouvernance]
-  // Reporting réglementaire et rapports de gestion (éditions figées, lot L2) : rattaché à la
-  // conformité / au réglementaire, mêmes rôles que le cockpit.
-  if (canPilotage) confReg.push('rapports')
+  // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations, recertification.
+  // 6. Réglementaire : DORA, tests de résilience, RGPD et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
+  //    Le registre TIC est dans Registres, le suivi régulateur dans Contrôle & audit.
+  const conformite: NavKey[] = gouvernance.filter(k => k !== 'ropa')
+  if (conformite.length) entries.push(groupOrLink('conformite', conformite))
+  const reglementaire: NavKey[] = []
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
-  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
-  if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
+  if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
+  if (gouvernance.includes('ropa')) reglementaire.push('ropa')
+  if (canPilotage) reglementaire.push('rapports')
+  if (reglementaire.length) entries.push(groupOrLink('reglementaire', reglementaire))
 
   return { mode: 'grc', entries }
 }

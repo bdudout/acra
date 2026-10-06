@@ -107,6 +107,7 @@ export const en: Translations = {
     grpPilotage: 'Steering',
     grpControleAudit: 'Control & audit',
     grpConformiteReglementaire: 'Compliance & regulatory',
+    grpConformite: 'Compliance',
     configuration:  'Configuration',
     admin:          'Admin',
     logout:         'Sign out',

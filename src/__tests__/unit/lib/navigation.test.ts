@@ -113,8 +113,10 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
     const m = buildNav('RISK_MANAGER', ALL_ON)
     const ca = m.entries.find(e => e.kind === 'group' && e.id === 'controleAudit')
     expect(ca && ca.kind === 'group' && ca.items).toContain('suiviRegulateur')
-    const cr = m.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
-    expect(cr && cr.kind === 'group' && cr.items).not.toContain('suiviRegulateur')
+    for (const id of ['conformite', 'reglementaire']) {
+      const g = m.entries.find(e => e.kind === 'group' && e.id === id)
+      expect(g && g.kind === 'group' && g.items).not.toContain('suiviRegulateur')
+    }
   })
 
   it('RISK_MANAGER (gouvernance) : découpage en ~6 entrées, tous les modules accessibles', () => {
@@ -124,7 +126,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
       expect(keys).toContain(k)
     }
     // Nouveau découpage « pilotage en tête » : 3 menus thématiques.
-    expect(groupIds(m)).toEqual(expect.arrayContaining(['analyses', 'registre', 'controleAudit', 'conformiteReglementaire']))
+    expect(groupIds(m)).toEqual(expect.arrayContaining(['analyses', 'registre', 'controleAudit', 'conformite', 'reglementaire']))
     // Plus de mélange lien isolé / menu au même niveau : audit & incidents sont dans un menu.
     expect(groupIds(m)).not.toContain('cyber')
   })
@@ -208,8 +210,10 @@ describe('buildNav — regroupement KRI et registres', () => {
     expect(both.entries.find(e => e.kind === 'group' && e.id === 'registre')).toEqual({
       kind: 'group', id: 'registre', items: ['registre', 'campagnes', 'processus', 'incidents', 'registreTic'],
     })
-    const confReg = both.entries.find(e => e.kind === 'group' && e.id === 'conformiteReglementaire')
-    expect(confReg && confReg.kind === 'group' && confReg.items).not.toContain('registreTic')
+    for (const id of ['conformite', 'reglementaire']) {
+      const g = both.entries.find(e => e.kind === 'group' && e.id === id)
+      expect(g && g.kind === 'group' && g.items).not.toContain('registreTic')
+    }
 
     const regulatoryOnly = buildNav('RSSI', { ...ALL_OFF, reglementaire: true })
     expect(allKeys(regulatoryOnly)).toContain('registreTic')
@@ -221,7 +225,7 @@ describe('buildNav — regroupement KRI et registres', () => {
     const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
     expect(items('registre')).toEqual(['registre', 'campagnes', 'processus', 'incidents', 'registreTic', 'registreIa'])
     expect(items('controleAudit')).not.toContain('incidents')
-    expect(items('conformiteReglementaire')).not.toContain('registreIa')
+    expect(items('conformite')).not.toContain('registreIa')
     expect(allKeys(m).filter(k => k === 'incidents' || k === 'registreIa')).toHaveLength(2)
   })
 
@@ -254,14 +258,22 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     expect(g && g.kind === 'group' && g.items.slice(0, 2)).toEqual(['analyses', 'projets'])
   })
 
-  it('reporting réglementaire : rattaché au groupe Conformité & réglementaire, pas au Pilotage', () => {
+  it('reporting réglementaire : rattaché au menu Réglementaire, pas au Pilotage', () => {
     const groupe = (role: Parameters<typeof buildNav>[0], id: string) => {
-      const g = buildNav(role, { ...none, registre: true }).entries.find(e => e.kind === 'group' && e.id === id)
+      const g = buildNav(role, { ...none, registre: true, reglementaire: true }).entries.find(e => e.kind === 'group' && e.id === id)
       return g && g.kind === 'group' ? g.items : []
     }
-    expect(groupe('RSSI', 'conformiteReglementaire')).toContain('rapports')
+    expect(groupe('RSSI', 'reglementaire')).toContain('rapports')
     expect(groupe('RSSI', 'pilotage')).not.toContain('rapports')
-    expect(groupe('LECTEUR', 'conformiteReglementaire')).not.toContain('rapports')
+    expect(allKeys(buildNav('LECTEUR', { ...none, registre: true, reglementaire: true }))).not.toContain('rapports')
+  })
+
+  it('« Conformité & réglementaire » coupé en deux menus : Conformité (gouvernance) et Réglementaire (DORA, RGPD, rapports)', () => {
+    const m = buildNav('ADMIN', { ...ALL_ON, homologations: true, recertification: true })
+    const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
+    expect(groupIds(m)).not.toContain('conformiteReglementaire')
+    expect(items('conformite')).toEqual(['conformite', 'referentiels', 'documents', 'profilsOperationnels', 'derogations', 'homologations', 'recertification'])
+    expect(items('reglementaire')).toEqual(['reglementaire', 'testsResilience', 'ropa', 'rapports'])
   })
 })
 

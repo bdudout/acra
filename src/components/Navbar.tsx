@@ -210,6 +210,7 @@ export default function Navbar() {
     analyses:    { Icon: Radar,          label: t.nav.grpAnalyses },
     controleAudit: { Icon: ClipboardCheck, label: t.nav.grpControleAudit },
     conformiteReglementaire: { Icon: ShieldCheck, label: t.nav.grpConformiteReglementaire },
+    conformite:  { Icon: ShieldCheck,    label: t.nav.grpConformite },
   }
 
   const badge = (n: number, label: string) => (
