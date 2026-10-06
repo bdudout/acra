@@ -61,3 +61,16 @@ describe('read_referentiels — code précis', () => {
     expect(parse(res)).toEqual({ referentiel: null, found: false })
   })
 })
+
+describe('buildMcpTools — annotations pour les clients MCP', () => {
+  it('lectures et recommandations en lecture seule ; propositions non destructives (validation humaine) ; titre pour tous', async () => {
+    const { buildMcpTools } = await import('@/lib/mcp/tools.server')
+    const tools = buildMcpTools()
+    for (const t of tools) {
+      expect(t.title, t.name).toBeTruthy()
+      expect(t.annotations?.openWorldHint, t.name).toBe(false)
+      if (/^(read_|recommend_)|_preview$/.test(t.name)) expect(t.annotations?.readOnlyHint, t.name).toBe(true)
+      if (t.name.startsWith('propose_')) expect(t.annotations, t.name).toMatchObject({ readOnlyHint: false, destructiveHint: false })
+    }
+  })
+})

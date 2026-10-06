@@ -17,7 +17,7 @@ export const MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'] 
 export const MCP_DEFAULT_PROTOCOL_VERSION = MCP_PROTOCOL_VERSIONS[0]
 
 /** Identité du serveur MCP renvoyée à `initialize`. */
-export interface McpServerInfo { name: string; version: string }
+export interface McpServerInfo { name: string; version: string; title?: string }
 const DEFAULT_SERVER_INFO: McpServerInfo = { name: 'acra', version: '1' }
 
 /** Résultat normalisé d'un outil MCP (contenu textuel ; `isError` pour un échec métier). */
@@ -37,8 +37,14 @@ export function toolText(payload: unknown): McpToolResult {
  * arguments. `handler` reçoit les arguments (déjà garantis « objet ») et le
  * contexte serveur ; il ne doit jamais laisser fuir une ressource hors périmètre.
  */
+/** Indications de comportement (MCP 2025-06-18) : les clients s'en servent pour approuver d'office ou demander confirmation. */
+export interface McpToolAnnotations { readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean; openWorldHint?: boolean }
+
 export interface McpTool<Ctx> {
   name: string
+  /** Libellé lisible affiché par les clients. */
+  title?: string
+  annotations?: McpToolAnnotations
   description: string
   inputSchema: Record<string, unknown>
   handler: (args: Record<string, unknown>, ctx: Ctx) => Promise<McpToolResult>
@@ -68,7 +74,11 @@ function err(id: JsonRpcId, code: number, message: string, data?: unknown): Json
 export interface McpInvocation { tool: string; ok: boolean }
 
 /** Options de dispatch (identité serveur, versions supportées). */
-export interface DispatchOptions { serverInfo?: McpServerInfo; protocolVersions?: readonly string[] }
+export interface DispatchOptions {
+  serverInfo?: McpServerInfo; protocolVersions?: readonly string[]
+  /** Consignes de serveur renvoyées à `initialize` (démarche commune à tous les clients). */
+  instructions?: string
+}
 
 /** Réponse de dispatch : `response` nul pour une notification (aucune réponse HTTP). */
 export interface DispatchResult { response: JsonRpcResponse | null; invoked?: McpInvocation }
@@ -113,6 +123,7 @@ export async function dispatchMcpMessage<Ctx>(
           protocolVersion,
           capabilities: { tools: { listChanged: false } },
           serverInfo,
+          ...(opts.instructions ? { instructions: opts.instructions } : {}),
         }),
       }
     }
@@ -122,7 +133,10 @@ export async function dispatchMcpMessage<Ctx>(
     case 'tools/list':
       return {
         response: ok(id, {
-          tools: tools.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+          tools: tools.map(t => ({
+            name: t.name, ...(t.title ? { title: t.title } : {}), description: t.description, inputSchema: t.inputSchema,
+            ...(t.annotations ? { annotations: t.annotations } : {}),
+          })),
         }),
       }
 

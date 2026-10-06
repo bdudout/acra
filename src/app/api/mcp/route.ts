@@ -6,6 +6,8 @@
 // clé ; (4) audit `MCP_TOOL_INVOKED` (+ transfert SIEM via auditLog). Aucune
 // mutation directe : la phase 1 n'expose que des lectures.
 
+import { APP_VERSION } from '@/lib/app-version'
+import { MCP_INSTRUCTIONS } from '@/lib/mcp/instructions'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateMcpRequest } from '@/lib/mcp/auth.server'
 import { buildMcpTools, type McpContext } from '@/lib/mcp/tools.server'
@@ -14,6 +16,9 @@ import { rateLimit, rateLimitHeaders, LIMIT_MCP } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+
+/** Identité et consignes communes à tous les clients MCP (Claude, Codex, Mistral Vibe…). */
+const DISPATCH = { serverInfo: { name: 'acra', title: 'ACRA — Augmented Cyber Risk Analysis', version: APP_VERSION }, instructions: MCP_INSTRUCTIONS }
 
 /** Réponse JSON-RPC d'erreur de transport (corps illisible). */
 function parseError() {
@@ -31,7 +36,8 @@ export async function GET() {
 // POST /api/mcp — un message (ou lot) JSON-RPC MCP.
 export async function POST(req: NextRequest) {
   const auth = await authenticateMcpRequest(req)
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+  // 401 : schéma attendu annoncé au client (RFC 6750), comme le prévoit l'autorisation MCP.
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status, ...(auth.status === 401 ? { headers: { 'WWW-Authenticate': 'Bearer realm="acra-mcp"' } } : {}) })
 
   // Rate limiting par clé d'API (indépendant de l'IP — accès machine).
   const rl = await rateLimit(`mcp:${auth.keyId}`, LIMIT_MCP.limit, LIMIT_MCP.windowMs)
@@ -61,7 +67,7 @@ export async function POST(req: NextRequest) {
   if (Array.isArray(body)) {
     const responses: unknown[] = []
     for (const msg of body) {
-      const { response, invoked } = await dispatchMcpMessage(msg, tools, ctx)
+      const { response, invoked } = await dispatchMcpMessage(msg, tools, ctx, DISPATCH)
       if (invoked) await audit(invoked.tool, invoked.ok)
       if (response) responses.push(response)
     }
@@ -69,7 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(responses)
   }
 
-  const { response, invoked } = await dispatchMcpMessage(body, tools, ctx)
+  const { response, invoked } = await dispatchMcpMessage(body, tools, ctx, DISPATCH)
   if (invoked) await audit(invoked.tool, invoked.ok)
   // Notification (aucune réponse) → 202 Accepted, corps vide.
   if (!response) return new NextResponse(null, { status: 202 })

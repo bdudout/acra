@@ -81,5 +81,28 @@ export const readReferentielsTool: McpTool<McpContext> = {
  * (cf. `tools-context.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()]
+  return [readReferentielsTool, ...buildContextTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
+}
+
+/** Titres lisibles affichés par les clients MCP (Claude, Codex, Mistral Vibe…). */
+const TITRES: Record<string, string> = {
+  read_referentiels: 'Référentiels et exigences', read_taxonomie: 'Taxonomie des risques', read_sector_examples: 'Exemples par secteur et architecture',
+  read_risk_posture: 'Posture de risque', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
+  read_notification_regimes: 'Régimes de déclaration', read_incident_types: 'Incidents types', read_dora_fields: 'Champs de déclaration DORA',
+  read_catalogue: 'Catalogue sectoriel', read_resilience_tests: 'Tests de résilience', propose_risk: 'Proposer un risque', propose_measure: 'Proposer une mesure',
+  propose_plan_action: 'Proposer un plan d’action', propose_conformite: 'Proposer une évaluation de conformité',
+  analyse_import_preview: 'Aperçu d’import d’analyse', propose_analysis_import: 'Proposer l’import d’une analyse',
+}
+
+/**
+ * Annotations MCP : lectures, recommandations (calculées par ACRA) et aperçus en lecture seule ; propositions non
+ * destructives (elles créent une proposition en attente de validation humaine, jamais d'écriture directe). Aucun outil
+ * n'accède au monde extérieur.
+ */
+function annoter(t: McpTool<McpContext>): McpTool<McpContext> {
+  const lecture = /^(read_|recommend_)|_preview$/.test(t.name)
+  return {
+    ...t, title: t.title ?? TITRES[t.name] ?? t.name,
+    annotations: { ...(lecture ? { readOnlyHint: true } : { readOnlyHint: false, destructiveHint: false, idempotentHint: false }), openWorldHint: false, ...t.annotations },
+  }
 }
