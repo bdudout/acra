@@ -716,7 +716,7 @@ export const it: Translations = {
     },
   },
 
-  analyses: {
+  analyses: { "colNom": "Analisi", "colStatut": "Stato", "colOrganisation": "Organizzazione · settore",
     title:        'Le mie analisi ACRA',
     totalLabel:   'analisi totali',
     totalLabelSg: 'analisi totale',
@@ -4532,6 +4532,7 @@ export const it: Translations = {
   },
   titreAnalyse: {"renommer": "Rinominare l’analisi", "nom": "Nome dell’analisi", "enregistrer": "Salva il nome", "annuler": "Annulla", "erreur": "Impossibile rinominare."},
   associerProjet: {"bouton": "Associare un progetto", "creer": "Creare un nuovo progetto", "lier": "Collegare un progetto esistente", "recherche": "Cercare un progetto", "projet": "Progetto da collegare", "valider": "Collega", "aucun": "Nessun progetto corrispondente.", "erreur": "Collegamento impossibile (diritti sul progetto o sull’analisi)."},
+  vueListe: {"label": "Presentazione dell’elenco", "detail": "Vista dettagliata", "liste": "Elenco semplice"},
   vueAnalyseProjet: {"label": "Vista", "projet": "Progetto", "analyse": "Analisi cyber", "choisir": "Scegliere l’analisi cyber"},
   qualification: {
     reprisesProjetCreation: "Risposte riprese dalla qualificazione 360 del progetto ({n}): verificatele prima di avviare l’analisi.",

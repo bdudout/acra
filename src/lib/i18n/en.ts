@@ -716,7 +716,7 @@ export const en: Translations = {
     },
   },
 
-  analyses: {
+  analyses: { "colNom": "Analysis", "colStatut": "Status", "colOrganisation": "Organisation · sector",
     title:        'My ACRA analyses',
     totalLabel:   'analyses total',
     totalLabelSg: 'analysis total',
@@ -4532,6 +4532,7 @@ export const en: Translations = {
   },
   titreAnalyse: {"renommer": "Rename the analysis", "nom": "Analysis name", "enregistrer": "Save the name", "annuler": "Cancel", "erreur": "Renaming failed."},
   associerProjet: {"bouton": "Link a project", "creer": "Create a new project", "lier": "Link an existing project", "recherche": "Search for a project", "projet": "Project to link", "valider": "Link", "aucun": "No matching project.", "erreur": "Linking failed (rights on the project or the analysis)."},
+  vueListe: {"label": "List layout", "detail": "Detailed view", "liste": "Simple list"},
   vueAnalyseProjet: {"label": "View", "projet": "Project", "analyse": "Cyber analysis", "choisir": "Choose the cyber analysis"},
   qualification: {
     reprisesProjetCreation: "Answers taken from the project’s 360 qualification ({n}): check them before starting the analysis.",

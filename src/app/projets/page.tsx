@@ -34,11 +34,11 @@ export default async function ProjetsPage({ searchParams }: { searchParams: Prom
   // Analyses cyber du projet : seulement celles que l'utilisateur peut ouvrir (mêmes droits que la liste).
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: { in: enabledOrgIds }, methode: 'PROJET_360' },
-    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null, AND: [analyseWhereClause(userId, scope.role, scope.scope)] }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
+    select: { id: true, nom: true, statut: true, updatedAt: true, meteoProjet: true, dateEcheance: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null, AND: [analyseWhereClause(userId, scope.role, scope.scope)] }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })
-  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString(), analyses: r.analysesDuProjet }))
+  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString(), analyses: r.analysesDuProjet, meteo: r.meteoProjet, miseEnService: r.dateEcheance ? r.dateEcheance.toISOString().slice(0, 10) : null }))
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

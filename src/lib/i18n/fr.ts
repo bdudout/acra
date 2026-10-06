@@ -729,7 +729,7 @@ export const fr = {
   },
 
   // ─── Analyses list ────────────────────────────────────────────────────────
-  analyses: {
+  analyses: { "colNom": "Analyse", "colStatut": "Statut", "colOrganisation": "Organisation · secteur",
     title:        'Mes analyses ACRA',
     totalLabel:   'analyses au total',
     totalLabelSg: 'analyse au total',
@@ -4581,6 +4581,7 @@ export const fr = {
   },
   titreAnalyse: {"renommer": "Renommer l’analyse", "nom": "Nom de l’analyse", "enregistrer": "Enregistrer le nom", "annuler": "Annuler", "erreur": "Renommage impossible."},
   associerProjet: {"bouton": "Associer un projet", "creer": "Créer un nouveau projet", "lier": "Lier un projet existant", "recherche": "Rechercher un projet", "projet": "Projet à lier", "valider": "Lier", "aucun": "Aucun projet ne correspond.", "erreur": "Liaison impossible (droits sur le projet ou l’analyse)."},
+  vueListe: {"label": "Présentation de la liste", "detail": "Vue détaillée", "liste": "Liste simple"},
   vueAnalyseProjet: {"label": "Vue", "projet": "Projet", "analyse": "Analyse cyber", "choisir": "Choisir l’analyse cyber"},
   qualification: {
     reprisesProjetCreation: "Réponses reprises de la qualification 360 du projet ({n}) : vérifiez-les avant de démarrer l’analyse.",

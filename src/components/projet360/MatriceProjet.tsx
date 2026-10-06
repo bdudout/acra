@@ -1,7 +1,7 @@
 'use client'
 // ─── Matrice des risques d'un projet 360 : brut / actuel / résiduel + filtre par catégorie ─
-// Onglets d'étape au-dessus de la matrice (RiskMatrix, échelle de l'organisation) ; sous la matrice, filtre par
-// catégorie (domaine 360) avec le nombre de risques de chacune. Cotations résolues côté serveur (lib/cotation-risque).
+// Onglets d'étape et filtre par catégorie (domaine 360, avec le nombre de risques de chacune) au-dessus de la matrice
+// (RiskMatrix, échelle de l'organisation). Cotations résolues côté serveur (lib/cotation-risque).
 
 import { useMemo, useState } from 'react'
 import RiskMatrix from '@/components/RiskMatrix'
@@ -46,8 +46,7 @@ export default function MatriceProjet({ risques, scale }: { risques: RisqueMatri
           ))}
         </div>
       </div>
-      <RiskMatrix risks={points} config={scale} />
-      <div role="group" aria-label={l.filtreCategorie} className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-3 dark:border-gray-800">
+      <div role="group" aria-label={l.filtreCategorie} className="mb-3 flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-xs text-gray-500 dark:text-gray-400">{l.filtreCategorie}</span>
         <button type="button" aria-pressed={categorie == null} onClick={() => setCategorie(null)} className={chip(categorie == null)}>{l.toutes} ({risques.length})</button>
         {categories.map(([c, n]) => (
@@ -56,6 +55,7 @@ export default function MatriceProjet({ risques, scale }: { risques: RisqueMatri
           </button>
         ))}
       </div>
+      <RiskMatrix risks={points} config={scale} />
     </section>
   )
 }

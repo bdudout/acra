@@ -1,5 +1,6 @@
 'use client'
 
+import VueListeToggle, { useModeVue } from '@/components/VueListeToggle'
 import { useState, useEffect, useRef } from 'react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -74,6 +75,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterValue>(() => urlParamToFilter(searchParams.get('filter')))
   const [tagFilter, setTagFilter] = useState('')
+  // Présentation : cartes détaillées (défaut) ou tableau compact, mémorisée par navigateur.
+  const [modeVue, setModeVue] = useModeVue('acra-vue-analyses', 'detail')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -295,6 +298,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
               </button>
             ))}
           </div>
+          <div className="ml-auto"><VueListeToggle mode={modeVue} onChange={setModeVue} /></div>
           {allTags.length > 0 && (
             <select value={tagFilter} onChange={e => setTagFilter(e.target.value)}
               className="input max-w-[12rem] text-sm" aria-label={t.analyses.tagFilterLabel}>
@@ -316,6 +320,28 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
                 </button>
               )}
             </div>
+          </div>
+        ) : modeVue === 'liste' ? (
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500 dark:border-gray-700">
+                <th className="px-4 py-2">{t.analyses.colNom}</th><th className="px-3 py-2">{t.analyses.colStatut}</th>
+                <th className="hidden px-3 py-2 md:table-cell">{t.analyses.colOrganisation}</th><th className="px-3 py-2">{t.analyses.workshop}</th>
+                <th className="px-3 py-2 text-right">{t.analyses.risks}</th><th className="hidden px-3 py-2 sm:table-cell">{t.analyses.modified}</th>
+              </tr></thead>
+              <tbody>
+                {filtered.map(a => (
+                  <tr key={a.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50">
+                    <td className="px-4 py-2 font-medium"><Link href={`/analyses/${a.id}`} className="text-ebios-700 hover:underline">{a.nom}</Link></td>
+                    <td className="px-3 py-2 text-xs">{(t.statusLabels as Record<string, string>)[a.statut] ?? a.statut}</td>
+                    <td className="hidden px-3 py-2 text-xs text-gray-500 md:table-cell">{[a.organisation, a.secteur].filter(Boolean).join(' · ') || '—'}</td>
+                    <td className="px-3 py-2 text-xs tabular-nums">{a.atelierCourant}/5</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{a._count?.risques ?? 0}</td>
+                    <td className="hidden px-3 py-2 text-xs text-gray-500 sm:table-cell">{formatDate(a.updatedAt, locale)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="space-y-3">

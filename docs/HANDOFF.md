@@ -6,6 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (75) — Claude : incidents récupérables, page projet réorganisée, météo, PPTX exécutif, listes à deux vues
+
+- `dfc34af` incidents : suppression → corbeille (`ElementSupprime`, migration `20261007090000`, `lib/corbeille`),
+  restauration / purge ADMIN dans Récupération, audit `INCIDENT_DELETED/RESTORED/PURGED` (+ SIEM) ; tableau compact.
+- `80e63f9` page projet : matrice à gauche (filtre par catégorie AU-DESSUS), validation à droite, bandeau des analyses
+  cyber liées, répartition après les plans ; indicateurs resserrés (6) ; météo (`Analyse.meteoProjet`, migration
+  `20261007100000`, `lib/projet-meteo`) ; graphique des plans restants (`lib/projet-burndown`) ; « Associer une
+  analyse cyber » (POST `/api/projets/[id]/analyses`) ; `TitreEditable` (renommage en ligne projet et analyse).
+- `ffb5046` « Associer un projet » sur une analyse cyber sans projet (créer avec `?analyse=` ou lier).
+- `d61efec` export PPTX : couverture, synthèse exécutive (2e diapo), cartographies actuel / résiduel, graphiques.
+- Listes : bascule vue détaillée / liste simple (`VueListeToggle`, mémorisée par navigateur) sur `/analyses` et
+  `/projets` (cartes avec météo et mise en service).
+- **Incident machine** : disque plein (cache `.next/dev` du serveur de dev à 16 Go) → `.next/dev` et `.next/cache`
+  supprimés (régénérables). À surveiller : ce cache grossit vite avec les redémarrages répétés.
+
+---
+
 ## 2026-10-06 (74) — Claude : projet — validation sur sa page, plans éditables, mise en service, cyber liées, export PowerPoint
 
 - **Page du projet** (`/projets/[id]`, chargement commun `lib/projet-vue.server` avec l'export) : panneaux de
