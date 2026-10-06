@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (70) — Claude : présentation d'un projet, plans par défaut, suggestions repliables
+
+- **Fait** : `51ec3cd` suggestions de risques repliables (repliées d'office si le registre contient des risques) ;
+  `d4d7a62` plan d'action par défaut pour chaque risque par défaut (`RisqueSocle.plan`, créé par `populateProjet360`
+  via `createAnalyseRiskPlanAction`, lien RISQUE_ANALYSE) + plan facultatif des risques ajoutés (Configuration ›
+  Projets) ; `bf50a1e` page `/projets/[id]` (présentation, indicateurs, répartition brut / actuel / résiduel par palier
+  — `lib/projet-synthese.ts`, risques par domaine, principaux risques, plans par priorité ; « Modifier » →
+  phases du projet) ; la liste `/projets` ouvre cette page.
+- **Vérifié en navigateur** : page de présentation du projet de recette (indicateurs, graphe, Modifier) ; nouveau
+  projet créé par l'API : 8 plans par défaut rattachés à leurs risques, triés par priorité.
+- **Non fait** : mesures par défaut (seuls les plans, jugés suffisants pour la qualification) ; les projets créés
+  avant ce lot n'ont pas de plan par défaut (pas de reprise).
+
+---
+
 ## 2026-10-06 (69) — Claude : incidents multi-risques, validation des suppressions, plans par priorité, recette
 
 - **Fait** (`1e29f65`, `dc537f6`, `dce9f9d` + ce commit) : incident ↔ plusieurs risques du registre (table
