@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const m = vi.hoisted(() => ({
-  session: vi.fn(), guard: vi.fn(), audit: vi.fn(),
+  session: vi.fn(), guard: vi.fn(), audit: vi.fn(), config: vi.fn(),
   analyse: { findFirst: vi.fn(), update: vi.fn() },
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
@@ -12,6 +12,7 @@ vi.mock('@/lib/analyse-direct-risk.server', () => ({ guardDirectRisk: m.guard })
 vi.mock('@/lib/projet360-sources.server', () => ({ sourcesCyberWhere: vi.fn(async () => ({ organizationId: 'o1', methode: { in: ['EBIOS_RM'] }, deletedAt: null, NOT: { id: 'p' } })) }))
 vi.mock('@/lib/org-context.server', () => ({ getEffectiveRoleForOrg: vi.fn(async () => 'ANALYSTE') }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '' }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 
 import { POST } from '@/app/api/projets/[id]/analyses/route'
 
@@ -21,6 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   m.session.mockResolvedValue({ user: { id: 'u', role: 'ANALYSTE' } })
   m.guard.mockResolvedValue({ ok: true, analyse: { id: 'p', organizationId: 'o1', methode: 'PROJET_360' }, role: 'ANALYSTE' })
+  m.config.mockResolvedValue({ projets360Active: true })
 })
 
 describe('POST /api/projets/[id]/analyses', () => {
@@ -39,6 +41,11 @@ describe('POST /api/projets/[id]/analyses', () => {
     expect((await POST(req({ analyseId: 'a1' }), params)).status).toBe(404)
     m.analyse.findFirst.mockResolvedValueOnce({ id: 'a1', nom: 'Cyber', userId: 'autre', accesUtilisateurs: [] })
     expect((await POST(req({ analyseId: 'a1' }), params)).status).toBe(403)
+    expect(m.analyse.update).not.toHaveBeenCalled()
+  })
+  it('module Projets 360 désactivé : aucun lien (404), même par appel direct', async () => {
+    m.config.mockResolvedValueOnce({ projets360Active: false })
+    expect((await POST(req({ analyseId: 'a1' }), params)).status).toBe(404)
     expect(m.analyse.update).not.toHaveBeenCalled()
   })
 })
