@@ -10,6 +10,7 @@ import { Pencil } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { patternLabel } from '@/lib/patterns-archi'
 import PlansParPriorite from '@/components/projet360/PlansParPriorite'
+import VueAnalyseProjet from '@/components/VueAnalyseProjet'
 import MatriceProjet, { type RisqueMatrice } from '@/components/projet360/MatriceProjet'
 import type { PalierSynthese } from '@/lib/projet-synthese'
 import type { IndicateursProjet } from '@/lib/projet-indicateurs'
@@ -43,6 +44,7 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber 
   )
   return (
     <div className="space-y-6">
+      <VueAnalyseProjet active="projet" projet={{ id: p.id, nom: p.nom }} analyses={p.analyses} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/projets" className="text-sm text-ebios-700 hover:underline">{l.retour}</Link>

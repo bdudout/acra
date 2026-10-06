@@ -4523,7 +4523,10 @@ export const en: Translations = {
     donutHint: 'compliant',
     cellTip: '{evalues} control(s) assessed out of {total}',
   },
+  vueAnalyseProjet: {"label": "View", "projet": "Project", "analyse": "Cyber analysis", "choisir": "Choose the cyber analysis"},
   qualification: {
+    reprisesProjetCreation: "Answers taken from the project’s 360 qualification ({n}): check them before starting the analysis.",
+    reprisesProjet: "Answers taken from the project’s 360 qualification ({n}): check them, then save.",
     promptOptionalTitle: 'Qualify your analysis before you start',
     promptOptionalText: 'A few quick questions to frame the analysis and suggest orientations. Recommended before Workshop 1 — you can come back to it later.',
     promptRequiredTitle: 'Qualification required before Workshop 1',

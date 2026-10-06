@@ -463,3 +463,27 @@ export function planTiersImport(args: { analyseId: string; source: readonly Sour
   }
   return out
 }
+
+// ─── Qualification d'une analyse cyber reprise du projet 360 ──────────────────
+// Questions équivalentes : exposition Internet, données personnelles / sensibles, exigence réglementaire,
+// externalisation (prestataire critique ou nuage). Une réponse déjà saisie dans l'analyse n'est jamais remplacée.
+
+/** Réponses de la qualification d'analyse déduites des réponses 360 du projet (questions répondues seulement). */
+export function qualificationDepuisProjet(qualification360: unknown): QualificationAnswers {
+  const q = sanitizeAnswers360(qualification360)
+  const out: QualificationAnswers = {}
+  const reprendre = (cle360: string, cle: string) => { if (typeof q[cle360] === 'boolean') out[cle] = q[cle360] }
+  reprendre('p360.cyber.exposeInternet', 'expositionInternet')
+  reprendre('p360.cyber.donneesSensibles', 'donneesPersonnelles')
+  reprendre('p360.metier.exigenceReglementaire', 'reglementation')
+  const presta = q['p360.ext.prestataireCritique'], cloud = q['p360.ext.cloud']
+  if (presta === true || cloud === true) out.externalisation = true
+  else if (presta === false && cloud === false) out.externalisation = false
+  return out
+}
+
+/** Complète les réponses de l'analyse sans remplacer une réponse saisie ; `reprises` = questions complétées. */
+export function completerQualification(actuelles: QualificationAnswers, depuisProjet: QualificationAnswers): { answers: QualificationAnswers; reprises: string[] } {
+  const reprises = Object.keys(depuisProjet).filter(k => actuelles[k] === undefined || actuelles[k] === '')
+  return { answers: { ...actuelles, ...Object.fromEntries(reprises.map(k => [k, depuisProjet[k]])) }, reprises }
+}

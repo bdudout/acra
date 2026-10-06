@@ -6,6 +6,24 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-06 (73) — Claude : bascule analyse ⇄ projet, qualification reprise du 360, cotations incohérentes
+
+- **Bascule de vue** (`VueAnalyseProjet`) en haut de l'analyse (`/analyses/[id]`), de la présentation du projet et
+  des phases du projet ; liens analyse ↔ projet via `Analyse.projetSourceId`.
+- **Correctif d'accès** : la liste `/projets` et la présentation d'un projet listaient ses analyses cyber sans filtre
+  de droits (noms visibles) → filtre `analyseWhereClause` / `analysesCyberDuProjet` (lib/projet360-sources.server).
+- **Qualification d'analyse reprise du 360** (`qualificationDepuisProjet`, `completerQualification` dans
+  lib/projet360) : exposition Internet, données personnelles, réglementation, externalisation (prestataire critique
+  ou nuage) ; à la création depuis un projet (`/api/projets` expose `qualificationAnalyse`) et sur l'analyse existante
+  (panneau déplié, réponses à vérifier puis enregistrer) ; jamais à la place d'une réponse saisie.
+- **Cotation incohérente signalée** (résiduel V 4 > actuel 3) : risque importé d'une analyse cyber puis modifié le
+  2026-10-05 à 21:23, avant le contrôle actuel ≤ brut / résiduel ≤ actuel (23:44). Reprise des données :
+  migration `20261006140000_risque_cotation_coherente` (`472d351`).
+- **Vérifié en navigateur** : création d'une analyse cyber depuis le projet de recette (3 réponses reprises), bascule
+  dans les deux sens.
+
+---
+
 ## 2026-10-06 (72) — Claude : projets — mesures par défaut, propositions sans doublon, tableau de bord, documents, données et services
 
 - `33927ca` : mesure par défaut (à faire) pour chaque risque par défaut (`RisqueSocle.mesure`, ×5 langues ; mesure

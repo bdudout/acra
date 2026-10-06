@@ -9,6 +9,7 @@ import { canCreateAnalyse, canEditAnalyse, resolveAnalyseRole, type UserRole } f
 import { syntheseProjet } from '@/lib/projet-synthese'
 import { indicateursProjet } from '@/lib/projet-indicateurs'
 import { cotations } from '@/lib/cotation-risque'
+import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 import Navbar from '@/components/Navbar'
 import ProjetPresentation from '@/components/projet360/ProjetPresentation'
@@ -30,7 +31,6 @@ export default async function ProjetPage({ params }: { params: Promise<{ id: str
       id: true, nom: true, statut: true, secteur: true, patternsArchi: true, methode: true, deletedAt: true, userId: true, organizationId: true,
       accesUtilisateurs: true,
       cadrage: { select: { perimetre: true, objectifsEtude: true } },
-      analysesDuProjet: { where: { deletedAt: null }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 },
       risques: { select: { id: true, nom: true, gravite: true, vraisemblance: true, niveauRisque: true, graviteActuelle: true, vraisemblanceActuelle: true, niveauActuel: true, graviteResiduelle: true, vraisemblanceResiduelle: true, taxonomieCode: true, domaine: true } },
     },
   })
@@ -62,7 +62,7 @@ export default async function ProjetPage({ params }: { params: Promise<{ id: str
           id: analyse.id, nom: analyse.nom, statut: analyse.statut, secteur: analyse.secteur,
           patterns: normalizePatterns(analyse.patternsArchi, { max: PATTERNS_MAX_MAX }),
           perimetre: analyse.cadrage?.perimetre ?? null, objectifs: analyse.cadrage?.objectifsEtude ?? null,
-          analyses: analyse.analysesDuProjet,
+          analyses: await analysesCyberDuProjet(userId, instanceRole, analyse),
           synthese: { ...synthese, principaux: synthese.principaux.map(r => ({ ...r, palier: { label: r.palier.label, couleur: r.palier.couleur } })) },
           matrice, scale, indicateurs,
         }} />

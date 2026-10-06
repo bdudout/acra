@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { qualificationDepuisProjet } from '@/lib/projet360'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +21,10 @@ export async function GET() {
   if (!scope.activeOrgId || !(await getOrgConfig(scope.activeOrgId)).projets360Active) return NextResponse.json({ projets: [] })
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: scope.activeOrgId, methode: 'PROJET_360', deletedAt: null },
-    select: { id: true, nom: true, description: true, secteur: true, patternsArchi: true },
+    select: { id: true, nom: true, description: true, secteur: true, patternsArchi: true, qualification: true },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })
-  return NextResponse.json({ projets: rows })
+  // Réponses 360 exposées sous leur seule forme utile à une analyse cyber (questions équivalentes de sa qualification).
+  return NextResponse.json({ projets: rows.map(({ qualification, ...r }) => ({ ...r, qualificationAnalyse: qualificationDepuisProjet(qualification) })) })
 }

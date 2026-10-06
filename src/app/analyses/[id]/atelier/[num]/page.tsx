@@ -1,4 +1,6 @@
 import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
+import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
+import VueAnalyseProjet from '@/components/VueAnalyseProjet'
 import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
@@ -162,11 +164,14 @@ export default async function AtelierPage({
       ? await prisma.orgMembership.findMany({ where: { organizationId: directOrgId }, select: { user: { select: { name: true } } }, take: 500 })
       : []
     const directOwnerSuggestions = ownerSuggestions(directMembers.map(mb => mb.user.name), directOrgConfig.entitesMesures)
+    // Projet 360 : bascule vers la vue projet / ses analyses cyber (celles que l'utilisateur peut ouvrir).
+    const analysesProjet = methode === 'PROJET_360' ? await analysesCyberDuProjet(userId, userRole, { id: analyse.id, organizationId: directOrgId }) : []
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         {/* Méthodes à saisie directe : largeur étendue (tableau brut / actuel / résiduel). */}
         <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
+          {methode === 'PROJET_360' && <VueAnalyseProjet active="projet" projet={{ id: analyse.id, nom: analyse.nom }} analyses={analysesProjet} />}
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">

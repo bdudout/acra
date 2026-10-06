@@ -1,4 +1,5 @@
-import { sanitizeApprobations } from '@/lib/projet360'
+import { sanitizeApprobations, completerQualification, qualificationDepuisProjet } from '@/lib/projet360'
+import VueAnalyseProjet from '@/components/VueAnalyseProjet'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -28,7 +29,7 @@ import AnalyseMetaEditor from '@/components/AnalyseMetaEditor'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
 import ConformitePie from '@/components/ConformitePie'
-import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
+import { isQualificationComplete, sanitizeQualification, type QualificationAnswers } from '@/lib/qualification'
 import { sanitizeConformite, conformiteStats, marquerDerogations } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
 import { derogRefsActives } from '@/lib/derogation.server'
@@ -150,6 +151,17 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const locked = (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') || gelee
   const isOwner = analyse.userId === userId
 
+  // Projet 360 de rattachement (s'il reste accessible) : bascule de vue analyse ⇄ projet, et qualification complétée
+  // par les réponses équivalentes de la qualification 360 (jamais à la place d'une réponse saisie).
+  const projet = analyse.projetSourceId ? await prisma.analyse.findFirst({
+    where: { ...(await analyseAccessWhere(userId, userRole, analyse.projetSourceId)), methode: 'PROJET_360', deletedAt: null },
+    select: { id: true, nom: true, qualification: true },
+  }) : null
+  const qualificationSaisie = (analyse.qualification && typeof analyse.qualification === 'object' && !Array.isArray(analyse.qualification) ? analyse.qualification : {}) as QualificationAnswers
+  const qualif = projet && editable && !locked
+    ? completerQualification(qualificationSaisie, qualificationDepuisProjet(projet.qualification))
+    : { answers: qualificationSaisie, reprises: [] as string[] }
+
   // Mettre la qualification en avant (avant les ateliers) tant qu'elle est incomplète.
   const qualificationPrompt = qualificationActive && editable && !locked && !qualificationComplete
 
@@ -164,6 +176,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
       <Navbar />
 
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-8">
+        <VueAnalyseProjet active="analyse" projet={projet && { id: projet.id, nom: projet.nom }} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
@@ -283,7 +296,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             </div>
             <QualificationPanel
               analyseId={analyse.id}
-              initial={(analyse as any).qualification ?? null}
+              initial={qualif.answers}
+              reprisesProjet={qualif.reprises}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
               methode={analyse.methode}
@@ -333,7 +347,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
           <div className="mb-6">
             <QualificationPanel
               analyseId={analyse.id}
-              initial={(analyse as any).qualification ?? null}
+              initial={qualif.answers}
+              reprisesProjet={qualif.reprises}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
               methode={analyse.methode}

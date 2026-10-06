@@ -18,7 +18,7 @@ beforeEach(() => {
   m.session.mockResolvedValue({ user: { id: 'u1', role: 'ANALYSTE' } })
   m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'ANALYSTE', scope: { visibleOrgIds: ['o1'], isSuperAdmin: false } })
   m.config.mockResolvedValue({ projets360Active: true })
-  m.findMany.mockResolvedValue([{ id: 'p1', nom: 'Refonte', description: null, secteur: 'Santé', patternsArchi: ['SI_STANDARD'] }])
+  m.findMany.mockResolvedValue([{ id: 'p1', nom: 'Refonte', description: null, secteur: 'Santé', patternsArchi: ['SI_STANDARD'], qualification: { 'p360.cyber.exposeInternet': true, 'p360.projet.delaiContraint': true } }])
 })
 
 describe('GET /api/projets', () => {
@@ -34,7 +34,8 @@ describe('GET /api/projets', () => {
   })
   it('renvoie les projets 360 de l’organisation active', async () => {
     const res = await GET()
-    expect(await res.json()).toEqual({ projets: [{ id: 'p1', nom: 'Refonte', description: null, secteur: 'Santé', patternsArchi: ['SI_STANDARD'] }] })
+    // Réponses 360 exposées seulement sous leur forme utile à une analyse cyber (pas les réponses brutes).
+    expect(await res.json()).toEqual({ projets: [{ id: 'p1', nom: 'Refonte', description: null, secteur: 'Santé', patternsArchi: ['SI_STANDARD'], qualificationAnalyse: { expositionInternet: true } }] })
     expect(m.findMany.mock.calls[0][0].where).toMatchObject({ organizationId: 'o1', methode: 'PROJET_360' })
     expect(m.findMany.mock.calls[0][0].select).toMatchObject({ secteur: true, patternsArchi: true })
   })

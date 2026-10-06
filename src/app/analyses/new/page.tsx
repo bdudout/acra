@@ -13,7 +13,7 @@ import { parseTagsInput } from '@/lib/analyse-tags'
 import { MENTIONS_PROTECTION } from '@/lib/mention-protection'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import ProjetSourcePicker, { type ProjetOption } from '@/components/ProjetSourcePicker'
-import { prefillFromProjet } from '@/lib/projet360'
+import { completerQualification, prefillFromProjet } from '@/lib/projet360'
 import QualificationQuestions from '@/components/QualificationQuestions'
 import { QualificationRisksDialog, type QualificationProposal } from '@/components/QualificationRisksFlow'
 import { EMPTY_QUALIFICATION_CONFIG, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
@@ -41,6 +41,12 @@ export default function NewAnalysePage() {
     if (p) setForm(f => ({ ...f, ...prefillFromProjet(p, {
       nom: f.nom, description: f.description, secteur: f.secteur, patternsArchi: f.patternsArchi,
     }) }))
+    // Qualification : reprend les réponses équivalentes de la qualification 360 du projet, sans remplacer une saisie.
+    if (p?.qualificationAnalyse) {
+      const depuisProjet = p.qualificationAnalyse
+      setQualification(q => completerQualification(q, depuisProjet).answers)
+      setReprises(Object.keys(depuisProjet))
+    } else setReprises([])
   }
   const [socles, setSocles] = useState<{ id: string; nom: string; organisation?: string }[]>([])
   const [error, setError] = useState('')
@@ -54,6 +60,8 @@ export default function NewAnalysePage() {
   // mais ne doit jamais passer inaperçue au moment du choix de méthode.
   const [qualificationOpen, setQualificationOpen] = useState(true)
   const [qualification, setQualification] = useState<QualificationAnswers>({})
+  // Questions pré-remplies d'après la qualification 360 du projet choisi.
+  const [reprises, setReprises] = useState<string[]>([])
   const [qualificationConfig, setQualificationConfig] = useState<QualificationConfig>(EMPTY_QUALIFICATION_CONFIG)
   const [createdAnalyseId, setCreatedAnalyseId] = useState<string | null>(null)
   const [pendingProposals, setPendingProposals] = useState<QualificationProposal[]>([])
@@ -285,7 +293,7 @@ export default function NewAnalysePage() {
               <span><span className="block text-sm font-semibold text-ebios-900 dark:text-ebios-100">{t.qualification.promptOptionalTitle} <span className="font-normal">({t.optional})</span></span><span className="mt-1 block text-xs text-ebios-800 dark:text-slate-300">{t.qualification.promptOptionalText}</span></span>
               {qualificationOpen ? <ChevronDown size={18} aria-hidden="true" /> : <ChevronRight size={18} aria-hidden="true" />}
             </button>
-            {qualificationOpen && <div className="border-t border-ebios-200 p-4 dark:border-ebios-800"><QualificationQuestions answers={qualification} onChange={setQualification} config={qualificationConfig} labels={{ questions: t.qualification.questions as Record<string, string>, criticiteOptions: t.qualification.criticiteOptions as Record<string, string>, statutOptions: t.qualification.statutOptions as Record<string, string>, yes: t.qualification.yes, no: t.qualification.no }} /></div>}
+            {qualificationOpen && <div className="border-t border-ebios-200 p-4 dark:border-ebios-800">{reprises.length > 0 && <p className="mb-3 rounded-md bg-white/70 px-3 py-2 text-xs text-ebios-800 dark:bg-ebios-900/20 dark:text-ebios-200">{t.qualification.reprisesProjetCreation.replace('{n}', String(reprises.length))}</p>}<QualificationQuestions answers={qualification} onChange={setQualification} config={qualificationConfig} labels={{ questions: t.qualification.questions as Record<string, string>, criticiteOptions: t.qualification.criticiteOptions as Record<string, string>, statutOptions: t.qualification.statutOptions as Record<string, string>, yes: t.qualification.yes, no: t.qualification.no }} /></div>}
           </div>
 
           <div className="flex gap-3 pt-2">

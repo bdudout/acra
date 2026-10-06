@@ -4572,7 +4572,10 @@ export const fr = {
     donutHint: 'conforme',
     cellTip: '{evalues} contrôle(s) évalué(s) sur {total}',
   },
+  vueAnalyseProjet: {"label": "Vue", "projet": "Projet", "analyse": "Analyse cyber", "choisir": "Choisir l’analyse cyber"},
   qualification: {
+    reprisesProjetCreation: "Réponses reprises de la qualification 360 du projet ({n}) : vérifiez-les avant de démarrer l’analyse.",
+    reprisesProjet: "Réponses reprises de la qualification 360 du projet ({n}) : vérifiez-les puis enregistrez.",
     promptOptionalTitle: 'Qualifiez votre analyse avant de commencer',
     promptOptionalText: 'Quelques questions rapides pour cadrer l\'analyse et suggérer des orientations. Recommandé avant l\'atelier 1 — vous pourrez y revenir plus tard.',
     promptRequiredTitle: 'Qualification requise avant l\'atelier 1',

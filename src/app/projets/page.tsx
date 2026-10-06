@@ -31,9 +31,10 @@ export default async function ProjetsPage({ searchParams }: { searchParams: Prom
   )))).filter((orgId): orgId is string => orgId !== null)
   if (!enabledOrgIds.length) notFound()
   const t = await getServerT()
+  // Analyses cyber du projet : seulement celles que l'utilisateur peut ouvrir (mêmes droits que la liste).
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: { in: enabledOrgIds }, methode: 'PROJET_360' },
-    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
+    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null, AND: [analyseWhereClause(userId, scope.role, scope.scope)] }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })
