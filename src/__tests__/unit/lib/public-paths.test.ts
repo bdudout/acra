@@ -57,3 +57,13 @@ describe('isPublicPath — accès sans authentification', () => {
     expect(isPublicPath('/deployer-secret')).toBe(false)
   })
 })
+
+describe('isPublicPath — serveur MCP', () => {
+  it('/api/mcp exempté de la session (clé d’API Bearer + scope mcp vérifiés dans le handler), sans élargir aux voisins', async () => {
+    const { isPublicPath } = await import('@/lib/public-paths')
+    expect(isPublicPath('/api/mcp')).toBe(true)
+    expect(isPublicPath('/api/mcp/')).toBe(true)
+    expect(isPublicPath('/api/mcp-proposals')).toBe(false)
+    expect(isPublicPath('/api/mcp-proposals/abc')).toBe(false)
+  })
+})
