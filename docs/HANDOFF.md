@@ -6,6 +6,22 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (80) — Claude : recette par rôle dans le navigateur, points mineurs
+
+- `cdafb89` revues d'habilitations masquées (menu, configuration, politique d'instance) ; `14dbe5a` import des
+  entités limité aux fournisseurs / prestataires / partenaires, titre non répété ; `44724b3` registre IA en lecture
+  seule pour CONTROLEUR et AUDITEUR (`peutLireRegistreIa`, `iaContext({ ecriture })`, `canManage` côté UI) ;
+  `c77419b` invitation « Créer ma première analyse » réservée aux rôles qui créent.
+- **Comptes de recette par rôle** : `npx tsx prisma/seed-recette-roles.ts` (10 rôles, « Organisation principale »,
+  identifiants dans `.acra-test-memory/recette-roles.json`, ignoré par git ; `--purge` désactive).
+- **Recette navigateur (10 rôles)** : accès aux 34 pages conforme au menu ; écritures refusées (registre IA, entités,
+  services tiers, configuration) pour LECTEUR, METIER, ANALYSTE, AUDITEUR, CONTROLEUR, DIRECTION_METIER.
+- **Décisions ouvertes** : (1) CONFORMITE et DPO voient « Conformité » dans le menu mais la page et ses API sont
+  réservées à ADMIN / RSSI / RISK_MANAGER ; (2) LECTEUR, METIER, ANALYSTE lisent par URL / API le registre des risques,
+  les missions d'audit, les KRI, le cockpit GRC et le registre TIC (masqués du menu ; antérieur à cette version).
+
+---
+
 ## 2026-10-08 (79) — Claude : audit avant v1.0.5, README ×5, notes de version
 
 - **Bloquants corrigés** : `next build` échouait (`FICHIER_SELECT` exporté par une route) → `6536d8f` + test
