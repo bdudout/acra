@@ -15,7 +15,7 @@
  * ⚠️ Règle d'or : le GATING (qui voit quoi) reste identique au comportement
  * historique — on ne change que la DISPOSITION selon le mode, jamais les droits.
  */
-import { isAdminRole, hasGlobalReadDispositif, canManageRopa, type UserRole } from './permissions'
+import { isAdminRole, hasGlobalReadDispositif, canManageRopa, peutLireRegistreIa, type UserRole } from './permissions'
 
 /** État effectif des modules GRC optionnels (renvoyé par /api/modules). */
 export interface NavModules {
@@ -95,7 +95,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).
   if (modules.homologations && (canGovern || role === 'DIRECTION_METIER')) gouvernance.push('homologations')
   // Registre IA : dans « Gouvernance » en mode cyber, dans « Registres » en mode GRC.
-  const registreIa = !!modules.registreIa && canGovern
+  // Lecture aussi pour le contrôle permanent et l'audit interne (peutLireRegistreIa).
+  const registreIa = !!modules.registreIa && peutLireRegistreIa(role)
   // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
   // Revues d'habilitations (recertification) : masquées tant que le module n'a pas d'écran (lot P5 non livré).
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).

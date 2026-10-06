@@ -16,7 +16,7 @@ const parseLocale = (v: unknown): IaLocale => (LOCALES.includes(v as IaLocale) ?
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
 
 export async function GET(req: NextRequest) {
-  const got = await iaContext(); if ('error' in got) return got.error
+  const got = await iaContext({ ecriture: true }); if ('error' in got) return got.error
   const { ctx } = got
   const locale = parseLocale(new URL(req.url).searchParams.get('locale'))
   const existing = await prisma.systemeIA.findMany({ where: { organizationId: ctx.orgId }, select: { nom: true, catalogueKey: true } })
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const got = await iaContext(); if ('error' in got) return got.error
+  const got = await iaContext({ ecriture: true }); if ('error' in got) return got.error
   const { ctx } = got
   const body = await req.json().catch(() => ({}))
   const locale = parseLocale(body.locale)

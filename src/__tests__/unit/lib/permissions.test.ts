@@ -419,3 +419,12 @@ describe('peutGererRegistreIa — registre des systèmes d’IA', () => {
     for (const r of ['ANALYSTE', 'LECTEUR', 'METIER', 'CONTROLEUR', 'AUDITEUR', 'DIRECTION_METIER'] as const) expect(peutGererRegistreIa(r), r).toBe(false)
   })
 })
+
+describe('peutLireRegistreIa — lecture du registre IA', () => {
+  it('gouvernance + contrôle permanent et audit interne (lecture seule) ; pas la 1re ligne', async () => {
+    const { peutLireRegistreIa, peutGererRegistreIa } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'CONTROLEUR', 'AUDITEUR'] as const) expect(peutLireRegistreIa(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'LECTEUR', 'METIER', 'DIRECTION_METIER'] as const) expect(peutLireRegistreIa(r), r).toBe(false)
+    expect(peutGererRegistreIa('AUDITEUR')).toBe(false)
+  })
+})

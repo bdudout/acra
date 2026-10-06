@@ -288,4 +288,8 @@ describe('questionnaires de contrôle', () => {
   it('revues d’habilitations masquées (module sans écran, lot P5 non livré), même activées', () => {
     for (const r of ['ADMIN', 'METIER', 'CONTROLEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, recertification: true }))).not.toContain('recertification')
   })
+  it('registre IA visible en lecture pour le contrôle permanent et l’audit interne', () => {
+    for (const r of ['CONTROLEUR', 'AUDITEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, registreIa: true }))).toContain('registreIa')
+    for (const r of ['ANALYSTE', 'METIER', 'LECTEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, registreIa: true }))).not.toContain('registreIa')
+  })
 })

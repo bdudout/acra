@@ -2,7 +2,8 @@
 // ─── Registre des algorithmes et systèmes d'IA ────────────────────────────────
 // Liste des systèmes de l'organisation (classement indicatif au regard du règlement (UE) 2024/1689, revue en retard,
 // champs à compléter), synthèse, ajout / modification / suppression, et import de systèmes types du catalogue
-// (sélection ligne par ligne : un système déjà importé n'est pas sélectionnable). API : /api/registre-ia.
+// (sélection ligne par ligne : un système déjà importé n'est pas sélectionnable). Lecture seule (contrôle, audit) :
+// aucune action d'écriture affichée. API : /api/registre-ia.
 
 import { useCallback, useEffect, useState } from 'react'
 import { BrainCircuit } from 'lucide-react'
@@ -16,7 +17,7 @@ interface Systeme {
   derniereRevue: string | null; analyseId: string | null; aipdReference: string | null; statut: string
   classe: Classe; revueEnRetard: boolean; manquants: string[]
 }
-interface Registre { systemes: Systeme[]; analyses: { id: string; nom: string }[]; synthese: { total: number; hautRisque: number; revuesEnRetard: number; aCompleter: number } }
+interface Registre { canManage?: boolean; systemes: Systeme[]; analyses: { id: string; nom: string }[]; synthese: { total: number; hautRisque: number; revuesEnRetard: number; aCompleter: number } }
 interface ItemCatalogue { key: string; nom: string; usage: string; classe: Classe; status: 'NEW' | 'ALREADY_IMPORTED' | 'SIMILAR' }
 type Form = Omit<Systeme, 'id' | 'classe' | 'revueEnRetard' | 'manquants' | 'donnees'> & { donnees: string }
 
@@ -97,10 +98,10 @@ export default function RegistreIaManager() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100"><BrainCircuit size={22} className="mr-2 inline align-[-0.15em]" aria-hidden="true" />{r.title}</h1>
           <p className="mt-1 max-w-3xl text-sm text-gray-500 dark:text-gray-400">{r.intro}</p>
         </div>
-        <div className="flex gap-2">
+        {data?.canManage && <div className="flex gap-2">
           <button type="button" className="btn-secondary text-sm" aria-expanded={!!catalogue} onClick={() => void ouvrirCatalogue()}>{r.importer}</button>
           <button type="button" className="btn-primary text-sm" onClick={() => { setErreur(null); setEdition({ id: null, form: VIDE }) }}>{r.ajouter}</button>
-        </div>
+        </div>}
       </div>
       <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">{r.avertissement}</p>
       {erreur && <p role="alert" className="text-sm text-red-700">{erreur}</p>}
@@ -197,8 +198,10 @@ export default function RegistreIaManager() {
                 </td>
                 <td className="px-3 py-2 text-xs">{s.analyseId ? <a href={`/analyses/${s.analyseId}`} className="text-ebios-700 hover:underline">{nomAnalyse.get(s.analyseId) ?? '—'}</a> : '—'}{s.aipdReference && <span className="block text-gray-500">{s.aipdReference}</span>}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">
-                  <button type="button" className="text-xs text-ebios-700 hover:underline" aria-label={`${r.form.modifier} — ${s.nom}`} onClick={() => modifier(s)}>{r.form.modifier}</button>
-                  <button type="button" className="ml-2 text-xs text-red-700 hover:underline" disabled={busy} aria-label={`${r.form.supprimer} — ${s.nom}`} onClick={() => void supprimer(s)}>{r.form.supprimer}</button>
+                  {data.canManage && <>
+                    <button type="button" className="text-xs text-ebios-700 hover:underline" aria-label={`${r.form.modifier} — ${s.nom}`} onClick={() => modifier(s)}>{r.form.modifier}</button>
+                    <button type="button" className="ml-2 text-xs text-red-700 hover:underline" disabled={busy} aria-label={`${r.form.supprimer} — ${s.nom}`} onClick={() => void supprimer(s)}>{r.form.supprimer}</button>
+                  </>}
                 </td>
               </tr>
             ))}</tbody>

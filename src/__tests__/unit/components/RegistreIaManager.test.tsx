@@ -10,7 +10,7 @@ const fetchMock = vi.fn()
 beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); vi.stubGlobal('confirm', () => true) })
 
 const systeme = { id: 's1', nom: 'Présélection des candidatures', finalite: 'Classer', fournisseur: null, donnees: ['CV'], categoriesParticulieres: false, typeDecision: 'AIDE', interventionHumaine: 'Revue', usage: 'RECRUTEMENT', controlesBiais: null, derniereRevue: null, analyseId: null, aipdReference: null, statut: 'EN_PROJET', classe: 'HAUT_RISQUE_PROBABLE', revueEnRetard: true, manquants: ['fournisseur', 'controlesBiais'] }
-const registre = { systemes: [systeme], analyses: [{ id: 'a1', nom: 'Analyse RH' }], synthese: { total: 1, hautRisque: 1, revuesEnRetard: 1, aCompleter: 1 } }
+const registre = { canManage: true, systemes: [systeme], analyses: [{ id: 'a1', nom: 'Analyse RH' }], synthese: { total: 1, hautRisque: 1, revuesEnRetard: 1, aCompleter: 1 } }
 const catalogue = { items: [
   { key: 'ia.tri-cv', nom: 'Présélection des candidatures', usage: 'RECRUTEMENT', typeDecision: 'AIDE', classe: 'HAUT_RISQUE_PROBABLE', status: 'ALREADY_IMPORTED' },
   { key: 'ia.assistant-generatif', nom: 'Assistant d’IA générative pour les collaborateurs', usage: 'IA_GENERATIVE', typeDecision: 'AIDE', classe: 'RISQUE_LIMITE', status: 'NEW' },
@@ -62,5 +62,13 @@ describe('RegistreIaManager', () => {
     render(<RegistreIaManager />)
     fireEvent.click(await screen.findByRole('button', { name: 'Supprimer — Présélection des candidatures' }))
     await waitFor(() => expect(fetchMock.mock.calls.some(c => c[0] === '/api/registre-ia/s1' && c[1]?.method === 'DELETE')).toBe(true))
+  })
+  it('lecture seule (contrôle, audit) : ni import, ni ajout, ni modification, ni suppression', async () => {
+    fetchMock.mockImplementation((u: string, i?: RequestInit) => Promise.resolve(u === '/api/registre-ia' && !i?.method ? { ok: true, json: async () => ({ ...registre, canManage: false }) } : route(u, i)))
+    render(<RegistreIaManager />)
+    await screen.findByText('Présélection des candidatures')
+    expect(screen.queryByRole('button', { name: 'Importer des systèmes types' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ajouter un système' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Modifier —|Supprimer —/ })).toBeNull()
   })
 })

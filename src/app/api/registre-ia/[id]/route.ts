@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const got = await iaContext(); if ('error' in got) return got.error
+  const got = await iaContext({ ecriture: true }); if ('error' in got) return got.error
   const { ctx } = got
   const { id } = await params
   const existing = await prisma.systemeIA.findFirst({ where: { id, organizationId: ctx.orgId } })
@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  const got = await iaContext(); if ('error' in got) return got.error
+  const got = await iaContext({ ecriture: true }); if ('error' in got) return got.error
   const { ctx } = got
   const { id } = await params
   const existing = await prisma.systemeIA.findFirst({ where: { id, organizationId: ctx.orgId }, select: { id: true, nom: true } })

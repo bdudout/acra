@@ -443,6 +443,11 @@ export function peutGererRegistreIa(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
 }
 
+/** Peut consulter le registre IA : gouvernance, plus le contrôle permanent et l'audit interne en lecture seule. */
+export function peutLireRegistreIa(role: UserRole): boolean {
+  return peutGererRegistreIa(role) || role === 'CONTROLEUR' || role === 'AUDITEUR'
+}
+
 /** Peut gérer la bibliothèque documentaire : admin, RSSI, RISK_MANAGER, CONFORMITE ou DPO. */
 export function peutGererDocuments(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'

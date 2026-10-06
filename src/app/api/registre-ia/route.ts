@@ -1,6 +1,7 @@
 // ─── Registre des systèmes d'IA de l'organisation active ──────────────────────
 // GET  — systèmes avec classe indicative (règlement (UE) 2024/1689, à vérifier), revue en retard et champs à compléter,
-//        synthèse, analyses liables. POST — créer un système. Gouvernance seulement, module registreIaActive requis.
+//        synthèse, analyses liables (lecture : gouvernance, contrôle, audit). POST — créer un système (gouvernance).
+//        Module registreIaActive requis.
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -23,13 +24,13 @@ export async function GET() {
   })
   const actifs = systemes.filter(s => s.statut !== 'RETIRE')
   return NextResponse.json({
-    systemes, analyses,
+    canManage: ctx.canManage, systemes, analyses,
     synthese: { total: systemes.length, hautRisque: actifs.filter(s => s.classe === 'HAUT_RISQUE_PROBABLE').length, revuesEnRetard: actifs.filter(s => s.revueEnRetard).length, aCompleter: systemes.filter(s => s.manquants.length).length },
   })
 }
 
 export async function POST(req: NextRequest) {
-  const got = await iaContext(); if ('error' in got) return got.error
+  const got = await iaContext({ ecriture: true }); if ('error' in got) return got.error
   const { ctx } = got
   const s = sanitizeSystemeIa(await req.json().catch(() => ({})))
   if (!s.nom) return NextResponse.json({ error: 'nom_requis' }, { status: 400 })
