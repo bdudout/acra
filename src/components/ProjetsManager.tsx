@@ -13,7 +13,6 @@ import { filtrerTrierProjets, type TriProjets } from '@/lib/projets-liste'
 
 export interface ProjetRow { id: string; nom: string; statut: string; risques: number; updatedAt: string; analyses?: { id: string; nom: string }[] }
 
-const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
 const field = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function ProjetsManager({ projets, canCreate }: { projets: ProjetRow[]; canCreate: boolean }) {
@@ -69,7 +68,7 @@ export default function ProjetsManager({ projets, canCreate }: { projets: Projet
             <tbody>
               {visibles.map(pr => (
                 <tr key={pr.id} className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="px-4 py-2 font-medium"><Link href={qualifHref(pr.id)} className="text-ebios-700 hover:underline">{pr.nom}</Link></td>
+                  <td className="px-4 py-2 font-medium"><Link href={`/projets/${pr.id}`} className="text-ebios-700 hover:underline">{pr.nom}</Link></td>
                   <td className="px-4 py-2 text-xs">{statusLabels[pr.statut] ?? pr.statut}</td>
                   <td className="px-4 py-2 tabular-nums">{pr.risques}</td>
                   <td className="px-4 py-2 text-xs">

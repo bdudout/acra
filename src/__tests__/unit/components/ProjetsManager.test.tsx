@@ -16,7 +16,7 @@ const noms = () => within(screen.getByRole('table')).getAllByRole('row').slice(1
 describe('ProjetsManager — liste des projets 360', () => {
   it('liste les projets (plus récent d’abord) avec statut et nombre de risques', () => {
     render(<ProjetsManager projets={projets} canCreate />)
-    expect(screen.getByRole('link', { name: 'Refonte portail' }).getAttribute('href')).toBe('/analyses/p1/atelier/1?phase=qualification')
+    expect(screen.getByRole('link', { name: 'Refonte portail' }).getAttribute('href')).toBe('/projets/p1')
     expect(screen.getByText('7')).toBeTruthy()
     expect(noms()).toEqual(['Migration cloud', 'Refonte portail'])
   })
