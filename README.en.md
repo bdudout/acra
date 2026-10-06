@@ -89,7 +89,7 @@ The **analysis method** is configurable at **instance** level (SUPER_ADMIN) and 
 - **Protection marking** of the analysis document (unprotected → confidential), shown on the cover page and exports
 - **x.y versioning** of analyses and **revision history** (operational/strategic cycle)
 - **Ecosystem threat cartography** (Workshop 3, ANSSI method sheet 5): stakeholder dangerousness computed on 4 sub-criteria, polar radar with 3 zones, configurable scales, critical-third-party flagging — [see details](#️-ecosystem-threat-cartography-workshop-3)
-- Cross-cutting **Third parties** view: organization-wide *third-party management*, aggregated across all analyses, filterable by zone and criticality
+- **Third-party services and actors**: stakeholders (*third-party management*) aggregated across all analyses, filterable by zone and criticality — [see details](#-third-parties-services-entities-and-contracts)
 
 ### 🔐 Security & frameworks
 
@@ -125,6 +125,19 @@ Module enabled per organisation (off by default). Maturity is a **layer of compl
 
 Full operational risk of a project, **ISO 31000:2018** approach: a qualification questionnaire over **six domains** (cyber, IT — architecture and maintenance —, project, business, fraud, outsourcing) that proposes the risks to study; risks classified by domain; **import of risks from an existing cyber analysis** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **dashboard by domain**; approval by the **RSSI and the Risk Manager** (two separate opinions). Projects are launched from the **Projects** tab (“Projects 360” module, on by default, set in Configuration → Features); the questionnaire is **pre-filled from existing data** (cyber analyses, ICT register, processes, GDPR register, DORA) and register risks are suggested, never creating duplicates. A project can also **be the starting point of a cyber analysis** (button in the Projects tab or selector at creation), and the **GRC cockpit** tracks progress, deadlines, CISO + Risk Manager sign-off and high risks across all projects.
 
+- **Structured creation**: name, objectives, go-live date, sector, **sub-sectors** and **IS architecture patterns**; risks and action plans present by default in every project (configurable by the organisation).
+- **Typical risks to import** during identification: full catalogue grouped by origin (organisation register, sub-sectors, architecture, sector, risks common to all), context editable in place, checkboxes and bulk import.
+- **Project page**: weather set by the project manager, key indicators, **gross / current / residual** matrix filterable by category, risks numbered **R1, R2…** consistently (matrix, action plans, export), editable action plans by priority (owner, due date, status, colour-coded priority), remaining-plans curve against go-live, validation and acceptance of residual risks on the page.
+- **PowerPoint export** of the project review: cover, executive summary, current and residual risk maps, action plan progress.
+- **Projects and cyber analyses linked** both ways ("Link a cyber analysis", "Link a project"), with view switching; analysis and project lists in **detailed or compact view**.
+
+### 🤝 Third parties: services, entities and contracts
+
+- **Third-party services and actors**: each stakeholder studied in an analysis (service provided, dependency, ecosystem actor), consolidated across all analyses, with its threat level and zone.
+- **Third-party entities**: the legal entity (LEI, country, aliases) providing these services; it links the analyses' third-party services to the **ICT register contracts** and to its offerings and uses. Duplicate-free creation, merge with preview, matches suggested (LEI, name, alias) but never applied without a click.
+- **Import entities from third-party services**, **link graph** of an entity (third-party services ↔ entity ↔ contracts), linking and unlinking of third-party services and contracts.
+- **Register of information on ICT** (DORA, Art. 28(3)): guided contract import (CSV / Excel), group contracts proposed to subsidiaries and confirmed by them, coverage of offerings by contract.
+
 ### 🧭 Risk governance
 
 - **Risk appetite (RAS / RAD)**: risk appetite statement (thresholds by category, target maturity) and dashboard (risks above appetite, maturity gaps, KRIs on alert) with status lights
@@ -143,6 +156,15 @@ Full operational risk of a project, **ISO 31000:2018** approach: a qualification
 
 - **Record of Processing Activities (RoPA — GDPR Art. 30)**: per-organisation register reserved for the **DPO**, with **completeness checks** (purpose, categories of persons/data, recipients, retention period, security measures, non-EU transfer safeguards)
 - **DPIA decision support (Art. 35)**: automatic detection of processing needing an impact assessment (special-category data Art. 9, large-scale systematic monitoring)
+- **Typical processing activities to import** line by line (simplified template register, 5 languages)
+
+### 🤖 AI register — algorithms and artificial intelligence systems
+
+Module enabled per organisation (off by default), restricted to governance roles (ADMIN, CISO, Risk Manager, Compliance, DPO).
+
+- One record per system: purpose, provider, data used (including special categories), decision support or automated decision, human oversight, bias and drift controls, **annual review** (overdue flagged), link to the risk analysis and the DPIA.
+- **Indicative classification** under **Regulation (EU) 2024/1689** (Artificial Intelligence Act) — likely high-risk (Annex III), transparency obligations (Art. 50) or to be assessed — always presented as **to be checked** by legal counsel or the DPO.
+- **Typical systems to import** (generative AI assistant, chatbot, job application screening, fraud detection, creditworthiness assessment…), 5 languages.
 
 ### 🔌 Interoperability & API
 
@@ -187,6 +209,15 @@ Full operational risk of a project, **ISO 31000:2018** approach: a qualification
 
 Beyond risk analysis (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30), ACRA ships a **complete GRC foundation** structured around the **three lines of defense** model, designed for regulated entities (banking, insurance, healthcare) and aligned with **DORA**, **NIS2** and **ISO/IEC 27001/27002**. Each module is enabled per organisation; the navigation automatically switches to "GRC mode" as soon as a 2nd/3rd-line module is active.
 
+Six menus: **Steering**, **Risk management**, **Registers** (risks, campaigns, processes, incidents, ICT, GDPR, AI),
+**Control & audit**, **Compliance** and **Regulatory** (DORA, regulator follow-up, resilience testing, reports).
+
+**Sector content**: catalogues of processes, risks, typical controls, KRIs and audit engagements per sector (banking,
+insurance, mutual insurers, healthcare, social protection, public sector, industry, defence, education, agriculture,
+real estate, media, tourism, non-profits…) and per **IS architecture pattern** (24 patterns: exposure, zones,
+interconnections, administration, workstations), importable line by line with their provenance. Administrators can
+**narrow the list of sectors offered** to their organisation.
+
 > The screenshots below come from the **realistic demo dataset** (banking sector), anchored on public threats (ENISA Threat Landscape). Loadable then purgeable: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
 
 ### 📊 GRC steering — consolidated cockpit
@@ -208,6 +239,10 @@ A framework's **derived coverage**: each requirement's status (compliant / parti
 ### 🚨 Incidents & losses — DORA reporting (Art. 19)
 
 1st-line declaration, 2nd-line qualification, losses in **LDC** logic (gross, recoveries, net). Each incident is **automatically classified under DORA** (minor / significant / major); for major incidents the **Art. 19 notification deadlines** (initial / intermediate / final) are computed and tracked, and the **ITS register** is exportable.
+
+- **Notifications**: a single screen for DORA (fields and value lists from the official glossary, Annex I supplements of Implementing Regulation (EU) 2025/302, Excel and JSON export) and the other enabled regimes — NIS2, GDPR Art. 33 (sections, export), CRA Art. 14, SEC 8-K, NYDFS 500.17, HIPAA, US banking regulators (36 h), FTC — with deadlines in days or business days, an information sheet per regime and reminders; the tool sends nothing to the authority.
+- **Typical incidents** (catalogue of 28 cyber and non-cyber incidents, matched to the organisation's sectors) to prefill a notification; an incident can target **several register risks**.
+- **Recoverable deletion**: a deleted incident can be restored as-is by an administrator for 30 days (audit and SIEM trails).
 
 <img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
 
@@ -418,7 +453,10 @@ docker compose up -d --build
 
 ### Backup and restore
 
-PostgreSQL backups are automated in `docker-compose.yml` (7-day rotation):
+PostgreSQL backups are automated in `docker-compose.yml` (number of copies kept: `BACKUP_KEEP`, 7 by default).
+**Administration → Version** schedules **daily, weekly and monthly backups** (3 copies by default, disk space estimate),
+offers "Back up now" and monitors the **off-site copy** of restore points (directory, command or S3-compatible storage);
+**Administration → Storage** tracks disk usage and frees cache safely. Procedures: `docs/runbook-exploitation.md`.
 
 ```bash
 # Manual backup

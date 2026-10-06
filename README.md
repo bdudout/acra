@@ -92,7 +92,7 @@ ACRA n'est plus limité à EBIOS RM : la **méthode d'analyse** est configurable
 - **Mention de protection** du document d’analyse (non protégée → confidentielle), portée sur la page de garde et les exports
 - **Versionnage x.y** des analyses et **historique des révisions** (cycle opérationnel/stratégique)
 - **Cartographie de menace de l'écosystème** (Atelier 3, fiche méthode 5 ANSSI) : dangerosité des parties prenantes calculée sur 4 sous-critères, radar polaire à 3 zones, échelles configurables, marquage des tiers critiques — [voir le détail](#️-cartographie-de-menace-de-lécosystème-atelier-3)
-- **Vue Tiers** transverse : gestion des parties prenantes (*third-party management*) agrégée sur toutes les analyses, filtrable par zone et criticité
+- **Services et acteurs tiers** : parties prenantes (*third-party management*) agrégées sur toutes les analyses, filtrables par zone et criticité — [voir le détail](#-tiers--services-entités-et-contrats)
 
 ### 🔐 Sécurité & référentiels
 
@@ -128,6 +128,19 @@ Module activable par organisation (désactivé par défaut). La maturité est un
 
 Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questionnaire de qualification sur **six domaines** (cyber, IT — architecture et maintenance —, projet, métier, fraude, externalisation) qui propose les risques à étudier ; risques classés par domaine ; **import des risques d'une analyse cyber existante** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30) ; **tableau de bord par domaine** ; validation par le **RSSI et le Risk Manager** (deux avis distincts). Les projets se lancent depuis l'onglet **Projets** (module « Projets 360 », actif par défaut, réglable dans Configuration → Fonctionnalités) ; le questionnaire est **pré-rempli à partir des données existantes** (analyses cyber, registre TIC, processus, registre RGPD, DORA) et les risques du registre sont proposés, sans jamais créer de doublon. Un projet peut aussi **servir de point de départ à une analyse cyber** (bouton dans l'onglet Projets ou sélecteur à la création), et le **cockpit GRC** suit l'avancement, les échéances, la validation RSSI + Risk Manager et les risques élevés de l'ensemble des projets.
 
+- **Création cadrée** : nom, objectifs, date de mise en service, secteur, **sous-secteurs** et **patterns d'architecture** ; risques et plans d'action présents par défaut dans chaque projet (configurables par l'organisation).
+- **Risques types à importer** en phase d'identification : catalogue complet groupé par origine (registre de l'organisation, sous-secteurs, architecture, secteur, risques communs à tous), contexte modifiable sur place, cases à cocher et import groupé.
+- **Page du projet** : météo réglée par le chef de projet, indicateurs resserrés, matrice **brut / actuel / résiduel** filtrable par catégorie, risques numérotés **R1, R2…** de façon stable (matrice, plans d'action, export), plans d'action par priorité éditables (porteur, échéance, statut, priorité en couleur), courbe des plans restants face à la mise en service, validation et acceptation des résiduels sur la page.
+- **Export PowerPoint** de la revue de projet : couverture, synthèse exécutive, cartographies actuelle et résiduelle, avancement des plans.
+- **Projets et analyses cyber reliés** dans les deux sens (« Associer une analyse cyber », « Associer un projet »), avec bascule de vue ; listes des analyses et des projets en **vue détaillée ou liste simple**.
+
+### 🤝 Tiers : services, entités et contrats
+
+- **Services et acteurs tiers** : chaque partie prenante étudiée dans une analyse (service rendu, relation d'adhérence, acteur de l'écosystème), consolidée sur toutes les analyses, avec sa menace et sa zone.
+- **Entités de tiers** : la personne morale (LEI, pays, alias) qui fournit ces services ; elle relie les services tiers des analyses aux **contrats du registre TIC** et à ses offres et usages. Création sans doublon, fusion avec aperçu, rapprochements proposés (LEI, nom, alias) mais jamais appliqués sans clic.
+- **Import des entités depuis les services tiers**, **graphe des liens** d'une entité (services tiers ↔ entité ↔ contrats), rattachement et détachement des services tiers et des contrats.
+- **Registre d'informations TIC** (DORA, art. 28 § 3) : import guidé de contrats (CSV / Excel), contrats groupe proposés aux filiales et confirmés par elles, couverture des offres par contrat.
+
 ### 🧭 Gouvernance du risque
 
 - **Appétence (RAS / RAD)** : déclaration d'appétence (seuils par catégorie, maturité visée) et tableau de bord (risques hors appétit, écarts de maturité, KRI en alerte) avec voyants
@@ -146,6 +159,15 @@ Risque opérationnel complet d'un projet, démarche **ISO 31000:2018** : questio
 
 - **Registre des activités de traitement (RoPA — RGPD art. 30)** : registre par organisation réservé au **DPO**, avec **contrôle de complétude** (finalité, catégories de personnes/données, destinataires, durée de conservation, mesures de sécurité, garanties de transfert hors UE)
 - **Aide à la décision AIPD / PIA (art. 35)** : détection automatique des traitements nécessitant une analyse d'impact (données sensibles art. 9, surveillance systématique à grande échelle)
+- **Traitements types à importer** ligne par ligne (registre type simplifié, 5 langues)
+
+### 🤖 Registre IA — algorithmes et systèmes d'intelligence artificielle
+
+Module activable par organisation (désactivé par défaut), réservé à la gouvernance (ADMIN, RSSI, Risk Manager, Conformité, DPO).
+
+- Fiche par système : finalité, fournisseur, données utilisées (dont catégories particulières), aide à la décision ou décision automatisée, intervention humaine, contrôles des biais et de la dérive, **revue annuelle** (retard signalé), lien vers l'analyse de risques et l'AIPD.
+- **Classement indicatif** au regard du **règlement (UE) 2024/1689** sur l'intelligence artificielle — haut risque probable (annexe III), obligations de transparence (art. 50) ou à qualifier — toujours présenté comme **à vérifier** par le juriste ou le DPO.
+- **Systèmes types à importer** (assistant d'IA générative, agent conversationnel, présélection des candidatures, détection de fraude, évaluation de la solvabilité…), 5 langues.
 
 ### 🔌 Interopérabilité & API
 
@@ -214,7 +236,15 @@ Au-delà de l'analyse de risques (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 80
 modèle des **trois lignes de défense**, pensé pour les entités régulées (banque, assurance,
 santé) et aligné sur **DORA**, **NIS2** et **ISO/IEC 27001/27002**. Chaque module est
 activable par organisation ; la navigation bascule automatiquement en « mode GRC » dès
-qu'un module de 2ᵉ/3ᵉ ligne est actif.
+qu'un module de 2ᵉ/3ᵉ ligne est actif, avec six menus : **Pilotage**, **Gestion des risques**, **Registres** (risques, campagnes, processus,
+incidents, TIC, RGPD, IA), **Contrôle & audit**, **Conformité** et **Réglementaire** (DORA, suivi régulateur, tests de
+résilience, rapports).
+
+**Contenu sectoriel** : catalogues de processus, risques, contrôles-types, KRI et missions d'audit par secteur
+(banque, assurance, mutuelle, santé, protection sociale, secteur public, industrie, défense, éducation, agricole,
+immobilier, médias, tourisme, associations…) et par **pattern d'architecture de SI** (24 patterns : exposition,
+zones, interconnexions, administration, postes), importables ligne par ligne avec leur provenance. L'administrateur
+peut **réduire la liste des secteurs proposés** à son organisation.
 
 > Les captures ci-dessous sont issues du **jeu de démonstration réaliste** (secteur bancaire),
 > ancré sur des menaces publiques (ENISA Threat Landscape). Chargeable puis purgeable :
@@ -254,6 +284,10 @@ récupérations, net). Chaque incident est **classé automatiquement DORA** (min
 significatif / majeur) ; pour les incidents majeurs, les **échéances de notification
 art. 19** (initiale / intermédiaire / finale) sont calculées et suivies, et le **registre
 ITS** est exportable.
+
+- **Déclarations** : un écran unique pour DORA (champs et listes de valeurs du glossaire officiel, compléments de l'annexe I du règlement d'exécution (UE) 2025/302, export Excel et JSON) et les autres régimes activés — NIS2, RGPD art. 33 (rubriques, export), CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA, régulateurs bancaires américains (36 h), FTC — avec délais en jours ou jours ouvrés, fiches d'information par régime et relances ; l'outil ne transmet rien à l'autorité.
+- **Incidents types** (catalogue de 28 incidents cyber et non cyber, adapté aux secteurs de l'organisation) pour préremplir une déclaration ; un incident peut viser **plusieurs risques** du registre.
+- **Suppression récupérable** : un incident supprimé reste restaurable à l'identique par un administrateur pendant 30 jours (traces d'audit et SIEM).
 
 <img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
 
@@ -543,7 +577,11 @@ docker compose up -d --build
 
 ### Sauvegarde et restauration
 
-Les sauvegardes PostgreSQL sont automatisées dans `docker-compose.yml` (rotation 7 jours) :
+Les sauvegardes PostgreSQL sont automatisées dans `docker-compose.yml` (nombre de copies conservées : `BACKUP_KEEP`, 7 par défaut).
+L'onglet **Administration → Version** planifie des **sauvegardes quotidiennes, hebdomadaires et mensuelles** (3 copies par défaut,
+estimation de l'espace nécessaire), propose « Sauvegarder maintenant » et supervise la **sauvegarde externe** des points de
+restauration (répertoire, commande ou stockage compatible S3) ; **Administration → Stockage** suit l'espace occupé et
+libère le cache sans impact. Procédures : `docs/runbook-exploitation.md`.
 
 ```bash
 # Sauvegarde manuelle

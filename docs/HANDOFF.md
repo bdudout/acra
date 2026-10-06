@@ -6,6 +6,25 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (79) — Claude : audit avant v1.0.5, README ×5, notes de version
+
+- **Bloquants corrigés** : `next build` échouait (`FICHIER_SELECT` exporté par une route) → `6536d8f` + test
+  `route-exports.test.ts` (toute exportation hors handlers dans route/page/layout) ; faux positif de la politique de
+  migrations (DROP d'une table temporaire) qui aurait fait échouer la CI de la PR → `c3e1bb0` ; `/auth/login`
+  inexistant (admin audit, SMTP) → `60e070d`.
+- **Audit par rôle** (navigation × gardes des pages, tous modules actifs) : cohérent ; seul lien mort
+  `/recertification` (module P5 sans page, désactivé partout par défaut). Passage des 39 pages en ADMIN : 200, sans
+  erreur (sauf `/plans-actions` → redirection voulue vers `/actions`).
+- `docs/releases/v1.0.5.md` rédigé (41 migrations : 36 additives, 4 données, 1 destructive auto-réparatrice) ;
+  README ×5 : projets 360, tiers (services / entités / contrats), registre IA, déclarations, navigation, contenu
+  sectoriel, sauvegardes planifiées.
+- **Vérifié** : `tsc` 0 · `npm test` 572 fichiers / 4469 tests · `next build` OK · `check-migrations --ci --base
+  origin/main` conforme.
+- **Reste avant publication** : décision Recertification (masquer ou livrer P5) ; `package.json` → 1.0.5 dans la PR de
+  version ; pousser la branche (38 commits locaux) et ouvrir la PR (≈ 195 commits hors `main`) ; CI du commit exact.
+
+---
+
 ## 2026-10-08 (78) — Claude : navigation réorganisée, registre IA livré
 
 - Navigation (mode GRC, `lib/navigation.ts`) : menu « Tiers » ; **Registres** = risques, campagnes, processus,

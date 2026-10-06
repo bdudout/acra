@@ -126,6 +126,19 @@ Je Organisation aktivierbares Modul (standardmäßig deaktiviert). Der Reifegrad
 
 Gesamtes operationelles Risiko eines Projekts, Vorgehen nach **ISO 31000:2018**: Qualifizierungsfragebogen über **sechs Bereiche** (Cyber, IT — Architektur und Wartung —, Projekt, Fachbereich, Betrug, Auslagerung), der die zu untersuchenden Risiken vorschlägt; Risiken nach Bereich klassifiziert; **Import der Risiken aus einer bestehenden Cyber-Analyse** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **Dashboard je Bereich**; Freigabe durch **RSSI und Risk Manager** (zwei getrennte Stellungnahmen). Projekte werden über die Registerkarte **Projekte** gestartet (Modul „Projekte 360“, standardmäßig aktiv, einstellbar unter Konfiguration → Funktionen); der Fragebogen wird **aus vorhandenen Daten vorausgefüllt** (Cyber-Analysen, IKT-Register, Prozesse, DSGVO-Verzeichnis, DORA) und Registerrisiken werden vorgeschlagen, ohne Dubletten anzulegen. Ein Projekt kann außerdem **Ausgangspunkt einer Cyber-Analyse** sein (Schaltfläche im Register Projekte oder Auswahl bei der Erstellung), und das **GRC-Cockpit** verfolgt Fortschritt, Fristen, Freigabe durch CISO + Risikomanager und hohe Risiken aller Projekte.
 
+- **Strukturierte Anlage**: Name, Ziele, Inbetriebnahmedatum, Branche, **Teilbranchen** und **IS-Architekturmuster**; Risiken und Aktionspläne in jedem Projekt standardmäßig vorhanden (von der Organisation konfigurierbar).
+- **Typische Risiken zum Import** in der Identifikationsphase: vollständiger Katalog nach Herkunft gruppiert (Register der Organisation, Teilbranchen, Architektur, Branche, allen gemeinsame Risiken), Kontext direkt änderbar, Kontrollkästchen und Sammelimport.
+- **Projektseite**: vom Projektleiter gesetztes Projektwetter, Kennzahlen, Matrix **brutto / aktuell / residual** nach Kategorie filterbar, Risiken stabil nummeriert **R1, R2…** (Matrix, Aktionspläne, Export), bearbeitbare Aktionspläne nach Priorität (Verantwortlicher, Frist, Status, farbige Priorität), Kurve der offenen Pläne bis zur Inbetriebnahme, Freigabe und Akzeptanz der Restrisiken auf der Seite.
+- **PowerPoint-Export** der Projektprüfung: Deckblatt, Management-Zusammenfassung, aktuelle und residuale Risikokarten, Fortschritt der Pläne.
+- **Projekte und Cyberanalysen** in beide Richtungen verknüpft („Cyberanalyse zuordnen“, „Projekt zuordnen“), mit Ansichtswechsel; Listen der Analysen und Projekte in **Detail- oder Listenansicht**.
+
+### 🤝 Dritte: Dienste, Entitäten und Verträge
+
+- **Drittdienste und Drittakteure**: jeder in einer Analyse untersuchte Stakeholder (erbrachter Dienst, Abhängigkeit, Akteur des Ökosystems), über alle Analysen konsolidiert, mit Bedrohung und Zone.
+- **Drittpartei-Entitäten**: die juristische Person (LEI, Land, Aliasse), die diese Dienste erbringt; sie verbindet die Drittdienste der Analysen mit den **Verträgen des IKT-Registers** sowie mit ihren Angeboten und Nutzungen. Anlage ohne Dubletten, Zusammenführung mit Vorschau, Zuordnungen vorgeschlagen (LEI, Name, Alias), aber nie ohne Klick angewendet.
+- **Import der Entitäten aus den Drittdiensten**, **Verknüpfungsgraph** einer Entität (Drittdienste ↔ Entität ↔ Verträge), Zuordnen und Lösen von Drittdiensten und Verträgen.
+- **Informationsregister zu IKT** (DORA, Art. 28 Abs. 3): geführter Vertragsimport (CSV / Excel), Gruppenverträge, die Tochtergesellschaften vorgeschlagen und von ihnen bestätigt werden, Abdeckung der Angebote je Vertrag.
+
 ### 🧭 Risiko-Governance
 
 - **Risikoappetit (RAS / RAD)**: Risikoappetit-Erklärung (Schwellen je Kategorie, angestrebter Reifegrad) und Dashboard (Risiken über dem Appetit, Reifegradlücken, KRI in Warnung) mit Ampeln
@@ -144,6 +157,15 @@ Gesamtes operationelles Risiko eines Projekts, Vorgehen nach **ISO 31000:2018**:
 
 - **Verzeichnis von Verarbeitungstätigkeiten (VVT — DSGVO Art. 30)**: organisationsbezogenes, dem **DSB** vorbehaltenes Register mit **Vollständigkeitsprüfung** (Zweck, Kategorien betroffener Personen/Daten, Empfänger, Speicherdauer, Sicherheitsmaßnahmen, Garantien bei Drittlandtransfer)
 - **DSFA-Entscheidungshilfe (Art. 35)**: automatische Erkennung von Verarbeitungen, die eine Folgenabschätzung erfordern (besondere Datenkategorien Art. 9, systematische Überwachung in großem Umfang)
+- **Typische Verarbeitungstätigkeiten zum Import** Zeile für Zeile (vereinfachtes Musterverzeichnis, 5 Sprachen)
+
+### 🤖 KI-Register — Algorithmen und Systeme künstlicher Intelligenz
+
+Modul pro Organisation aktivierbar (standardmäßig aus), der Governance vorbehalten (ADMIN, CISO, Risk Manager, Compliance, DSB).
+
+- Ein Datensatz pro System: Zweck, Anbieter, verwendete Daten (einschließlich besonderer Kategorien), Entscheidungsunterstützung oder automatisierte Entscheidung, menschliche Aufsicht, Kontrollen von Verzerrungen und Drift, **jährliche Überprüfung** (Verzug gekennzeichnet), Verknüpfung mit der Risikoanalyse und der DSFA.
+- **Indikative Einstufung** nach der **Verordnung (EU) 2024/1689** (Verordnung über künstliche Intelligenz) — wahrscheinlich Hochrisiko (Anhang III), Transparenzpflichten (Art. 50) oder einzustufen — stets als **von der Rechtsabteilung oder dem DSB zu prüfen** dargestellt.
+- **Typische Systeme zum Import** (generativer KI-Assistent, Chatbot, Vorauswahl von Bewerbungen, Betrugserkennung, Bonitätsbewertung…), 5 Sprachen.
 
 ### 🔌 Interoperabilität & API
 
@@ -188,6 +210,15 @@ Gesamtes operationelles Risiko eines Projekts, Vorgehen nach **ISO 31000:2018**:
 
 Über die Risikoanalyse (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30) hinaus bringt ACRA eine **vollständige GRC-Basis** mit, die nach dem Modell der **drei Verteidigungslinien** strukturiert ist, für regulierte Einheiten (Banken, Versicherungen, Gesundheitswesen) konzipiert und an **DORA**, **NIS2** und **ISO/IEC 27001/27002** ausgerichtet. Jedes Modul ist pro Organisation aktivierbar; die Navigation wechselt automatisch in den „GRC-Modus", sobald ein Modul der 2./3. Linie aktiv ist.
 
+Sechs Menüs: **Steuerung**, **Risikomanagement**, **Register** (Risiken, Kampagnen, Prozesse, Vorfälle, IKT, DSGVO, KI),
+**Kontrolle & Revision**, **Konformität** und **Regulatorisch** (DORA, Aufsichtsverfolgung, Resilienztests, Berichte).
+
+**Branchenspezifische Inhalte**: Kataloge von Prozessen, Risiken, Musterkontrollen, KRI und Prüfungsaufträgen je Branche
+(Bank, Versicherung, Versicherungsvereine, Gesundheit, Sozialschutz, öffentlicher Sektor, Industrie, Verteidigung, Bildung,
+Landwirtschaft, Immobilien, Medien, Tourismus, Vereine…) und je **IS-Architekturmuster** (24 Muster: Exposition, Zonen,
+Verbindungen, Administration, Arbeitsplätze), Zeile für Zeile mit Herkunft importierbar. Administratoren können **die
+Liste der angebotenen Branchen** für ihre Organisation **einschränken**.
+
 > Die folgenden Screenshots stammen aus dem **realistischen Demo-Datensatz** (Bankensektor), verankert an öffentlichen Bedrohungen (ENISA Threat Landscape). Ladbar und wieder löschbar: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
 
 ### 📊 GRC-Steuerung — konsolidiertes Cockpit
@@ -209,6 +240,10 @@ Die **abgeleitete Abdeckung** eines Frameworks: der Status jeder Anforderung (ko
 ### 🚨 Vorfälle & Verluste — DORA-Meldung (Art. 19)
 
 Meldung in der 1. Linie, Qualifizierung in der 2. Linie, Verluste in **LDC**-Logik (brutto, Rückflüsse, netto). Jeder Vorfall wird **automatisch nach DORA klassifiziert** (gering / erheblich / schwer); für schwere Vorfälle werden die **Meldefristen nach Art. 19** (erste / Zwischen- / Abschlussmeldung) berechnet und verfolgt, und das **ITS-Register** ist exportierbar.
+
+- **Meldungen**: ein einziger Bildschirm für DORA (Felder und Wertelisten des offiziellen Glossars, Ergänzungen aus Anhang I der Durchführungsverordnung (EU) 2025/302, Excel- und JSON-Export) und die anderen aktivierten Regime — NIS2, DSGVO Art. 33 (Rubriken, Export), CRA Art. 14, SEC 8-K, NYDFS 500.17, HIPAA, US-Bankaufsicht (36 Std.), FTC — mit Fristen in Tagen oder Arbeitstagen, Informationsblatt je Regime und Erinnerungen; das Werkzeug übermittelt nichts an die Behörde.
+- **Typische Vorfälle** (Katalog von 28 Cyber- und Nicht-Cyber-Vorfällen, passend zu den Branchen der Organisation) zum Vorbefüllen einer Meldung; ein Vorfall kann **mehrere Registerrisiken** betreffen.
+- **Wiederherstellbares Löschen**: ein gelöschter Vorfall kann 30 Tage lang von einem Administrator unverändert wiederhergestellt werden (Audit- und SIEM-Spuren).
 
 <img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
 
@@ -420,7 +455,11 @@ docker compose up -d --build
 
 ### Sicherung und Wiederherstellung
 
-PostgreSQL-Sicherungen sind in `docker-compose.yml` automatisiert (7-Tage-Rotation):
+PostgreSQL-Sicherungen sind in `docker-compose.yml` automatisiert (Anzahl aufbewahrter Kopien: `BACKUP_KEEP`, standardmäßig 7).
+**Administration → Version** plant **tägliche, wöchentliche und monatliche Sicherungen** (standardmäßig 3 Kopien, Schätzung
+des Speicherbedarfs), bietet „Jetzt sichern“ und überwacht die **externe Kopie** der Wiederherstellungspunkte (Verzeichnis,
+Befehl oder S3-kompatibler Speicher); **Administration → Speicher** verfolgt die Belegung und gibt Cache gefahrlos frei.
+Verfahren: `docs/runbook-exploitation.md`.
 
 ```bash
 # Manuelle Sicherung

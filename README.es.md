@@ -90,7 +90,7 @@ El **método de análisis** se configura a nivel de **instancia** (SUPER_ADMIN) 
 - **Mención de protección** del documento de análisis (no protegida → confidencial), en la portada y las exportaciones
 - **Versionado x.y** de los análisis e **historial de revisiones** (ciclo operativo/estratégico)
 - **Cartografía de amenaza del ecosistema** (Taller 3, ficha de método 5 de ANSSI): peligrosidad de las partes interesadas calculada con 4 subcriterios, radar polar de 3 zonas, escalas configurables, marcado de terceros críticos — [ver detalle](#️-cartografía-de-amenaza-del-ecosistema-taller-3)
-- Vista transversal de **Terceros**: gestión de terceros (*third-party management*) a escala de la organización, agregada sobre todos los análisis, filtrable por zona y criticidad
+- **Servicios y actores terceros**: partes interesadas (*third-party management*) agregadas sobre todos los análisis, filtrables por zona y criticidad — [ver el detalle](#-terceros-servicios-entidades-y-contratos)
 
 ### 🔐 Seguridad y marcos
 
@@ -126,6 +126,19 @@ Módulo activable por organización (desactivado por defecto). La madurez es una
 
 Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestionario de cualificación sobre **seis dominios** (ciber, TI — arquitectura y mantenimiento —, proyecto, negocio, fraude, externalización) que propone los riesgos que estudiar; riesgos clasificados por dominio; **importación de los riesgos de un análisis ciber existente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cuadro de mando por dominio**; aprobación por el **RSSI y el Risk Manager** (dos dictámenes distintos). Los proyectos se lanzan desde la pestaña **Proyectos** (módulo «Proyectos 360», activo por defecto, ajustable en Configuración → Funcionalidades); el cuestionario se **rellena previamente con los datos existentes** (análisis ciber, registro TIC, procesos, registro RGPD, DORA) y se proponen los riesgos del registro, sin crear duplicados. Un proyecto puede además **servir de punto de partida de un análisis cibernético** (botón en la pestaña Proyectos o selector al crear), y el **cuadro de mando GRC** sigue el avance, los plazos, la validación CISO + Risk Manager y los riesgos altos de todos los proyectos.
 
+- **Creación estructurada**: nombre, objetivos, fecha de puesta en servicio, sector, **subsectores** y **patrones de arquitectura del SI**; riesgos y planes de acción presentes por defecto en cada proyecto (configurables por la organización).
+- **Riesgos tipo para importar** en la fase de identificación: catálogo completo agrupado por origen (registro de la organización, subsectores, arquitectura, sector, riesgos comunes a todos), contexto modificable en el sitio, casillas e importación agrupada.
+- **Página del proyecto**: meteorología fijada por el jefe de proyecto, indicadores, matriz **bruto / actual / residual** filtrable por categoría, riesgos numerados **R1, R2…** de forma estable (matriz, planes de acción, exportación), planes de acción por prioridad editables (responsable, plazo, estado, prioridad en color), curva de los planes pendientes frente a la puesta en servicio, validación y aceptación de los residuales en la página.
+- **Exportación PowerPoint** de la revisión del proyecto: portada, síntesis ejecutiva, cartografías actual y residual, avance de los planes.
+- **Proyectos y análisis cyber vinculados** en ambos sentidos («Asociar un análisis cyber», «Asociar un proyecto»), con cambio de vista; listas de análisis y de proyectos en **vista detallada o lista simple**.
+
+### 🤝 Terceros: servicios, entidades y contratos
+
+- **Servicios y actores terceros**: cada parte interesada estudiada en un análisis (servicio prestado, dependencia, actor del ecosistema), consolidada en todos los análisis, con su amenaza y su zona.
+- **Entidades de terceros**: la persona jurídica (LEI, país, alias) que presta estos servicios; vincula los servicios de terceros de los análisis con los **contratos del registro TIC** y con sus ofertas y usos. Creación sin duplicados, fusión con vista previa, coincidencias propuestas (LEI, nombre, alias) pero nunca aplicadas sin un clic.
+- **Importación de entidades desde los servicios de terceros**, **grafo de vínculos** de una entidad (servicios de terceros ↔ entidad ↔ contratos), vinculación y desvinculación de servicios de terceros y contratos.
+- **Registro de información sobre TIC** (DORA, art. 28, apartado 3): importación guiada de contratos (CSV / Excel), contratos de grupo propuestos a las filiales y confirmados por ellas, cobertura de las ofertas por contrato.
+
 ### 🧭 Gobernanza del riesgo
 
 - **Apetito de riesgo (RAS / RAD)**: declaración de apetito (umbrales por categoría, madurez objetivo) y cuadro de mando (riesgos por encima del apetito, brechas de madurez, KRI en alerta) con indicadores de estado
@@ -144,6 +157,15 @@ Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestion
 
 - **Registro de actividades de tratamiento (RAT — RGPD art. 30)**: registro por organización reservado al **DPD**, con **control de exhaustividad** (finalidad, categorías de personas/datos, destinatarios, plazo de conservación, medidas de seguridad, garantías de transferencia fuera de la UE)
 - **Ayuda a la decisión EIPD (art. 35)**: detección automática de tratamientos que requieren una evaluación de impacto (datos de categorías especiales art. 9, observación sistemática a gran escala)
+- **Tratamientos tipo para importar** línea por línea (registro modelo simplificado, 5 idiomas)
+
+### 🤖 Registro de IA — algoritmos y sistemas de inteligencia artificial
+
+Módulo activable por organización (desactivado por defecto), reservado a la gobernanza (ADMIN, RSSI, Risk Manager, Cumplimiento, DPD).
+
+- Ficha por sistema: finalidad, proveedor, datos utilizados (incluidas categorías especiales), ayuda a la decisión o decisión automatizada, supervisión humana, controles de sesgos y deriva, **revisión anual** (retraso señalado), vínculo con el análisis de riesgos y la EIPD.
+- **Clasificación indicativa** con arreglo al **Reglamento (UE) 2024/1689** (Reglamento de Inteligencia Artificial) — probable alto riesgo (anexo III), obligaciones de transparencia (art. 50) o por calificar — siempre presentada como **por verificar** por el asesor jurídico o el DPD.
+- **Sistemas tipo para importar** (asistente de IA generativa, agente conversacional, preselección de candidaturas, detección de fraude, evaluación de la solvencia…), 5 idiomas.
 
 ### 🔌 Interoperabilidad y API
 
@@ -188,6 +210,15 @@ Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestion
 
 Más allá del análisis de riesgos (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30), ACRA incorpora una **base GRC completa** estructurada según el modelo de las **tres líneas de defensa**, pensada para entidades reguladas (banca, seguros, salud) y alineada con **DORA**, **NIS2** e **ISO/IEC 27001/27002**. Cada módulo se activa por organización; la navegación cambia automáticamente al «modo GRC» en cuanto un módulo de 2.ª/3.ª línea está activo.
 
+Seis menús: **Pilotaje**, **Gestión de riesgos**, **Registros** (riesgos, campañas, procesos, incidentes, TIC, RGPD, IA),
+**Control y auditoría**, **Cumplimiento** y **Regulatorio** (DORA, seguimiento del regulador, pruebas de resiliencia, informes).
+
+**Contenido sectorial**: catálogos de procesos, riesgos, controles tipo, KRI y misiones de auditoría por sector (banca,
+seguros, mutualidades, sanidad, protección social, sector público, industria, defensa, educación, agricultura,
+inmobiliario, medios, turismo, asociaciones…) y por **patrón de arquitectura del SI** (24 patrones: exposición, zonas,
+interconexiones, administración, puestos), importables línea por línea con su procedencia. El administrador puede
+**reducir la lista de sectores propuestos** a su organización.
+
 > Las capturas siguientes proceden del **conjunto de demostración realista** (sector bancario), anclado en amenazas públicas (ENISA Threat Landscape). Cargable y purgable: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
 
 ### 📊 Pilotaje GRC — cuadro de mando consolidado
@@ -209,6 +240,10 @@ La **cobertura derivada** de un marco: el estado de cada requisito (conforme / p
 ### 🚨 Incidentes y pérdidas — reporting DORA (art. 19)
 
 Declaración en 1.ª línea, calificación en 2.ª línea, pérdidas en lógica **LDC** (bruto, recuperaciones, neto). Cada incidente se **clasifica automáticamente según DORA** (menor / significativo / mayor); para los incidentes mayores, los **plazos de notificación del art. 19** (inicial / intermedio / final) se calculan y se siguen, y el **registro ITS** es exportable.
+
+- **Notificaciones**: una pantalla única para DORA (campos y listas de valores del glosario oficial, complementos del anexo I del Reglamento de Ejecución (UE) 2025/302, exportación Excel y JSON) y los demás regímenes activados — NIS2, RGPD art. 33 (rúbricas, exportación), CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA, reguladores bancarios estadounidenses (36 h), FTC — con plazos en días o días hábiles, ficha informativa por régimen y recordatorios; la herramienta no transmite nada a la autoridad.
+- **Incidentes tipo** (catálogo de 28 incidentes cyber y no cyber, adaptado a los sectores de la organización) para rellenar una notificación; un incidente puede afectar a **varios riesgos** del registro.
+- **Eliminación recuperable**: un incidente eliminado puede ser restaurado tal cual por un administrador durante 30 días (trazas de auditoría y SIEM).
 
 <img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
 
@@ -420,7 +455,11 @@ docker compose up -d --build
 
 ### Copia de seguridad y restauración
 
-Las copias de PostgreSQL están automatizadas en `docker-compose.yml` (rotación de 7 días):
+Las copias de PostgreSQL están automatizadas en `docker-compose.yml` (número de copias conservadas: `BACKUP_KEEP`, 7 por defecto).
+**Administración → Versión** programa **copias diarias, semanales y mensuales** (3 copias por defecto, estimación del espacio
+necesario), ofrece «Hacer copia ahora» y supervisa la **copia externa** de los puntos de restauración (directorio, comando o
+almacenamiento compatible S3); **Administración → Almacenamiento** sigue el espacio ocupado y libera la caché sin impacto.
+Procedimientos: `docs/runbook-exploitation.md`.
 
 ```bash
 # Copia manual
