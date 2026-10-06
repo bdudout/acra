@@ -124,7 +124,6 @@ export default function AdminInstancePage() {
     { key: 'profilsOperationnels', label: t.features.profilsOperationnelsTitle },
     { key: 'projets360', label: t.features.projets360Title },
     { key: 'homologations', label: t.features.homologationsTitle },
-    { key: 'recertification', label: t.features.recertificationTitle },
     { key: 'registreIa', label: t.features.registreIaTitle },
   ]
 

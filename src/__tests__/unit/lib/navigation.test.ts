@@ -272,7 +272,7 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     const m = buildNav('ADMIN', { ...ALL_ON, homologations: true, recertification: true })
     const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
     expect(groupIds(m)).not.toContain('conformiteReglementaire')
-    expect(items('conformite')).toEqual(['conformite', 'referentiels', 'documents', 'profilsOperationnels', 'derogations', 'homologations', 'recertification'])
+    expect(items('conformite')).toEqual(['conformite', 'referentiels', 'documents', 'profilsOperationnels', 'derogations', 'homologations'])
     expect(items('reglementaire')).toEqual(['reglementaire', 'suiviRegulateur', 'testsResilience', 'rapports'])
     expect(items('registre')).toContain('ropa')
   })
@@ -284,5 +284,8 @@ describe('questionnaires de contrôle', () => {
     expect(allKeys(buildNav('RISK_MANAGER', ALL_ON))).toContain('questionnaires')
     expect(allKeys(buildNav('LECTEUR', ALL_ON))).not.toContain('questionnaires')
     expect(allKeys(buildNav('RISK_MANAGER', { ...ALL_ON, controles: false }))).not.toContain('questionnaires')
+  })
+  it('revues d’habilitations masquées (module sans écran, lot P5 non livré), même activées', () => {
+    for (const r of ['ADMIN', 'METIER', 'CONTROLEUR'] as const) expect(allKeys(buildNav(r, { ...ALL_ON, recertification: true }))).not.toContain('recertification')
   })
 })

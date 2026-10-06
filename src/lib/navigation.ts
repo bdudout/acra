@@ -97,7 +97,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Registre IA : dans « Gouvernance » en mode cyber, dans « Registres » en mode GRC.
   const registreIa = !!modules.registreIa && canGovern
   // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
-  if (modules.recertification && role !== 'LECTEUR') gouvernance.push('recertification')
+  // Revues d'habilitations (recertification) : masquées tant que le module n'a pas d'écran (lot P5 non livré).
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
   if (canManageRopa(role)) gouvernance.push('ropa')
 
@@ -169,7 +169,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
-  // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations, recertification.
+  // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations.
   // 6. Réglementaire : DORA, tests de résilience et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
   //    Les registres TIC et RGPD sont dans Registres.
   const conformite: NavKey[] = gouvernance.filter(k => k !== 'ropa')
