@@ -25,7 +25,8 @@ type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; l
 const send = (url: string, method: string, body: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 const post = (url: string, body: object) => send(url, 'POST', body)
 
-export default function TierIdentityPanel() {
+/** `sansTitre` : sur la page dédiée (/tiers/entites), qui porte déjà le titre et l'explication. */
+export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: boolean } = {}) {
   const { t } = useTranslation()
   const c = t.tierIdentity
   const [data, setData] = useState<Registry | null>(null)
@@ -128,10 +129,12 @@ export default function TierIdentityPanel() {
 
   return (
     <section className="card mb-6 space-y-4 p-4" aria-label={c.title}>
-      <div>
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{c.title}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
-      </div>
+      {!sansTitre && (
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{c.title}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
+        </div>
+      )}
       {info && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{info}</p>}
       {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
       {duplicate && (

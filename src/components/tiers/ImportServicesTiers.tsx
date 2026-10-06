@@ -1,10 +1,10 @@
 'use client'
 // ─── Entités de tiers : import depuis les services tiers des analyses ─────────
-// Services tiers (parties prenantes regroupées par nom) sans entité : rattacher à une entité candidate (nom ou alias,
+// Services tiers (parties prenantes regroupées par nom) sans entité, de type fournisseur, prestataire ou partenaire : rattacher à une entité candidate (nom ou alias,
 // proposée, jamais appliquée sans clic) ou créer l'entité correspondante, qui reprend alors ces occurrences.
 
 import { useTranslation } from '@/lib/i18n/context'
-import type { ServiceTiers } from '@/lib/services-tiers'
+import { TYPES_ENTITE_PROBABLE, type ServiceTiers } from '@/lib/services-tiers'
 
 export default function ImportServicesTiers({ services, canManage, busy, onRattacher, onCreer }: {
   services: readonly ServiceTiers[]; canManage: boolean; busy: boolean
@@ -13,7 +13,8 @@ export default function ImportServicesTiers({ services, canManage, busy, onRatta
 }) {
   const { t } = useTranslation()
   const c = t.tierIdentity
-  const libres = services.filter(s => s.aRattacher.length > 0)
+  // Fournisseurs, prestataires et partenaires seulement : clients et acteurs internes ne sont pas des entités à créer.
+  const libres = services.filter(s => s.aRattacher.length > 0 && TYPES_ENTITE_PROBABLE.has(s.type))
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.importTitre}</h3>

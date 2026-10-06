@@ -42,6 +42,9 @@ export function regrouperServicesTiers(parties: readonly PartieLite[], tiers: re
   }).sort((a, b) => a.nom.localeCompare(b.nom))
 }
 
+/** Types de partie prenante qui désignent a priori une personne morale externe (proposés à l'import des entités). */
+export const TYPES_ENTITE_PROBABLE: ReadonlySet<string> = new Set(['FOURNISSEUR', 'PRESTATAIRE', 'PARTENAIRE'])
+
 export type NoeudType = 'ENTITE' | 'SERVICE' | 'CONTRAT'
 export interface Noeud { id: string; type: NoeudType; label: string; x: number; y: number }
 export interface Graphe { largeur: number; hauteur: number; noeuds: Noeud[]; liens: { de: string; vers: string }[] }

@@ -21,8 +21,8 @@ export default async function EntitesTiersPage() {
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/tiers" className="text-sm text-ebios-700 hover:underline">{t.tiers.explication.retour}</Link>
         <h1 className="mt-2 mb-1 text-2xl font-bold text-gray-900"><Building2 size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" />{t.tiers.explication.bouton}</h1>
-        <p className="mb-5 text-sm text-gray-500">{t.tiers.explication.entite}</p>
-        <TierIdentityPanel />
+        <p className="mb-5 text-sm text-gray-500">{t.tierIdentity.hint}</p>
+        <TierIdentityPanel sansTitre />
       </main>
     </div>
   )

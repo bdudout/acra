@@ -30,6 +30,15 @@ beforeEach(() => {
 })
 
 describe('TierIdentityPanel — identités de tiers', () => {
+  it('titre affiché par défaut (Configuration), masqué sur la page dédiée qui a le sien', async () => {
+    const { unmount } = render(<TierIdentityPanel />)
+    expect(await screen.findByRole('heading', { name: 'Entités de tiers' })).toBeInTheDocument()
+    unmount()
+    render(<TierIdentityPanel sansTitre />)
+    await screen.findByRole('table', { name: 'Entités de tiers' })
+    expect(screen.queryByRole('heading', { name: 'Entités de tiers' })).toBeNull()
+  })
+
   it('liste les tiers avec leur couverture : cyber seulement, TIC seulement, cyber + TIC', async () => {
     render(<TierIdentityPanel />)
     const table = await screen.findByRole('table', { name: 'Entités de tiers' })

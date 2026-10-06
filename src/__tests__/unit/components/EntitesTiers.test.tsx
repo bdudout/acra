@@ -26,6 +26,14 @@ describe('ImportServicesTiers', () => {
     fireEvent.click(within(acme).getByRole('button', { name: 'Créer l’entité' }))
     expect(onCreer).toHaveBeenCalledWith(expect.objectContaining({ key: 'acme' }))
   })
+  it('ne propose que les fournisseurs, prestataires et partenaires (pas les clients ni les acteurs internes)', () => {
+    render(<ImportServicesTiers services={[sv('assures', 'Assurés', { type: 'CLIENT' }), sv('acpr', 'ACPR', { type: 'ORGANISME_REGULATION' }), sv('ovh', 'OVH', { type: 'FOURNISSEUR' }), sv('p', 'Partenaire X', { type: 'PARTENAIRE' })]} canManage busy={false} onRattacher={vi.fn()} onCreer={vi.fn()} />)
+    expect(screen.queryByText('Assurés')).toBeNull()
+    expect(screen.queryByText('ACPR')).toBeNull()
+    expect(screen.getByText('OVH')).toBeTruthy()
+    expect(screen.getByText('Partenaire X')).toBeTruthy()
+    expect(screen.getByText(/2 service\(s\) tiers/)).toBeTruthy()
+  })
 })
 
 describe('EntiteLiens', () => {
