@@ -156,6 +156,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   }
   if (modules.incidents) registres.push('incidents')
   if (!firstLineOnly && modules.reglementaire) registres.push('registreTic')
+  // Registre des traitements (RGPD art. 30) : DPO et ADMIN.
+  if (gouvernance.includes('ropa')) registres.push('ropa')
   if (registreIa) registres.push('registreIa')
   if (registres.length) entries.push(groupOrLink('registre', registres))
 
@@ -171,14 +173,13 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
   // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations, recertification.
-  // 6. Réglementaire : DORA, tests de résilience, RGPD et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
-  //    Le registre TIC est dans Registres, le suivi régulateur dans Contrôle & audit.
+  // 6. Réglementaire : DORA, tests de résilience et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
+  //    Les registres TIC et RGPD sont dans Registres, le suivi régulateur dans Contrôle & audit.
   const conformite: NavKey[] = gouvernance.filter(k => k !== 'ropa')
   if (conformite.length) entries.push(groupOrLink('conformite', conformite))
   const reglementaire: NavKey[] = []
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
   if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
-  if (gouvernance.includes('ropa')) reglementaire.push('ropa')
   if (canPilotage) reglementaire.push('rapports')
   if (reglementaire.length) entries.push(groupOrLink('reglementaire', reglementaire))
 

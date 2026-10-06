@@ -268,12 +268,13 @@ describe('buildNav — onglet Projets (module Projets 360)', () => {
     expect(allKeys(buildNav('LECTEUR', { ...none, registre: true, reglementaire: true }))).not.toContain('rapports')
   })
 
-  it('« Conformité & réglementaire » coupé en deux menus : Conformité (gouvernance) et Réglementaire (DORA, RGPD, rapports)', () => {
+  it('« Conformité & réglementaire » coupé en deux menus : Conformité (gouvernance) et Réglementaire (DORA, rapports) ; RGPD dans Registres', () => {
     const m = buildNav('ADMIN', { ...ALL_ON, homologations: true, recertification: true })
     const items = (id: string) => { const g = m.entries.find(e => e.kind === 'group' && e.id === id); return g && g.kind === 'group' ? g.items : [] }
     expect(groupIds(m)).not.toContain('conformiteReglementaire')
     expect(items('conformite')).toEqual(['conformite', 'referentiels', 'documents', 'profilsOperationnels', 'derogations', 'homologations', 'recertification'])
-    expect(items('reglementaire')).toEqual(['reglementaire', 'testsResilience', 'ropa', 'rapports'])
+    expect(items('reglementaire')).toEqual(['reglementaire', 'testsResilience', 'rapports'])
+    expect(items('registre')).toContain('ropa')
   })
 })
 
