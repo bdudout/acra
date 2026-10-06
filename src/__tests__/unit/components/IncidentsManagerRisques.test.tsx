@@ -36,6 +36,9 @@ describe('IncidentsManager — risques associés', () => {
     expect(await screen.findByText('Déni de service distribué (DDoS) : service indisponible')).toBeTruthy()
     const row = screen.getByText('Déni de service distribué (DDoS) : service indisponible').closest('tr')!
     expect(within(row).getByText('Déni de service sur les services en ligne')).toBeTruthy()
+    // Tableau compact : le processus est repris sous l'intitulé ; les actions sont regroupées dans un menu.
+    expect(within(row.querySelector('td')!).getByText(/Service bancaire/)).toBeTruthy()
+    expect(within(row).getByText('Actions', { selector: 'summary' })).toBeTruthy()
     // Déjà rattaché : « Créer le risque » n'est plus proposé.
     expect(within(row).queryByRole('button', { name: 'Créer le risque' })).toBeNull()
     fireEvent.click(within(row).getByRole('button', { name: 'Associer des risques' }))

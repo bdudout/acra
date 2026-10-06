@@ -6,7 +6,7 @@ import { canAdmin } from '@/lib/permissions'
 import { getAdminOrgIds } from '@/lib/org-context.server'
 import { purgeThreshold, daysRemaining, RECOVERY_RETENTION_DAYS } from '@/lib/recovery'
 
-// GET /api/admin/recovery — corbeille des analyses (ADMIN). Purge paresseuse > 30 j.
+// GET /api/admin/recovery — corbeille des analyses et des éléments supprimés (incidents) (ADMIN). Purge paresseuse > 30 j.
 export async function GET(_req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -40,5 +40,11 @@ export async function GET(_req: NextRequest) {
     daysRemaining: a.deletedAt ? daysRemaining(a.deletedAt, now) : 0,
   }))
 
-  return NextResponse.json({ analyses, retentionDays: RECOVERY_RETENTION_DAYS })
+  // Éléments supprimés (incidents) : même rétention, même périmètre ; purge paresseuse au-delà.
+  await prisma.elementSupprime.deleteMany({ where: { supprimeLe: { lte: purgeThreshold(now) } } })
+  const elements = (await prisma.elementSupprime.findMany({
+    where: orgFilter, select: { id: true, type: true, intitule: true, supprimeLe: true, supprimeParId: true, organizationId: true },
+    orderBy: { supprimeLe: 'desc' }, take: 500,
+  })).map(e => ({ ...e, daysRemaining: daysRemaining(e.supprimeLe, now) }))
+  return NextResponse.json({ analyses, elements, retentionDays: RECOVERY_RETENTION_DAYS })
 }

@@ -10,6 +10,7 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
 import { RotateCcw, Trash2 } from 'lucide-react'
+import CorbeilleElements, { type ElementCorbeille } from '@/components/CorbeilleElements'
 
 interface DeletedAnalyse {
   id: string
@@ -30,6 +31,7 @@ export default function RecoveryPage() {
   const currentRole = (session?.user as any)?.role ?? 'ANALYSTE'
 
   const [analyses, setAnalyses] = useState<DeletedAnalyse[]>([])
+  const [elements, setElements] = useState<ElementCorbeille[]>([])
   const [retentionDays, setRetentionDays] = useState(30)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
@@ -45,6 +47,7 @@ export default function RecoveryPage() {
       .then(r => (r.ok ? r.json() : { analyses: [] }))
       .then(d => {
         setAnalyses(d.analyses ?? [])
+        setElements(d.elements ?? [])
         if (d.retentionDays) setRetentionDays(d.retentionDays)
       })
       .finally(() => setLoading(false))
@@ -141,6 +144,8 @@ export default function RecoveryPage() {
             </table>
           </div>
         )}
+        {/* Incidents supprimés (corbeille commune, même rétention). */}
+        <CorbeilleElements initial={elements} />
       </main>
 
       {confirm && (

@@ -520,9 +520,9 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
               <ColumnMenu label={n.colIncident} sortKey="incident" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
-              <ColumnMenu label={n.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 xl:table-cell"
+              <ColumnMenu label={n.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 2xl:table-cell"
                 values={distinctInc('category')} allowed={colFilters.category} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
-              <ColumnMenu label={n.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 xl:table-cell"
+              <ColumnMenu label={n.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 2xl:table-cell"
                 values={distinctInc('process')} allowed={colFilters.process} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
               <ColumnMenu label={n.colPerte} sortKey="perte" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="right" className="px-4 py-3" />
               <ColumnMenu label={n.colRisque} sortKey="risque" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
@@ -539,7 +539,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
               : visibleIncidents.length === 0 ? <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
               : visibleIncidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
-                  <td className="min-w-[16rem] max-w-[28rem] px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
+                  <td className="min-w-[14rem] max-w-[24rem] px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {i.intitule}
                     {i.doublons && i.doublons.length > 0 && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-px text-[10px] font-medium align-middle"
@@ -555,9 +555,11 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                       {i.delaiDetection != null && ` · ${n.detectedIn.replace('{n}', String(i.delaiDetection))}`}
                       {i.entite && ` · ${i.entite}`}
                     </span>
+                    {/* Catégorie et processus sous l'intitulé tant que leurs colonnes sont masquées (écrans < 2xl). */}
+                    {(i.taxonomieCode || i.processusNom) && <span className="block text-xs text-gray-400 2xl:hidden">{[i.taxonomieCode ? taxoLabel(i.taxonomieCode) : null, i.processusNom].filter(Boolean).join(' · ')}</span>}
                   </td>
-                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 xl:table-cell">{taxoLabel(i.taxonomieCode)}</td>
-                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 xl:table-cell">{i.processusNom ?? '—'}</td>
+                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{taxoLabel(i.taxonomieCode)}</td>
+                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{i.processusNom ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-200 whitespace-nowrap">{euros(i.perteNette)}</td>
                   <td className="min-w-[10rem] px-3 py-3 text-xs text-gray-500 dark:text-gray-400">
                     {(i.risques ?? []).length === 0 ? '—' : (
@@ -587,7 +589,9 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                       {qualId === i.id ? (
                         <span className="text-xs text-gray-400">…</span>
                       ) : (
-                        <div className="flex flex-col items-end gap-1">
+                        <details className="relative inline-block text-left">
+                          <summary className="cursor-pointer list-none rounded border border-gray-200 px-2 py-1 text-xs font-medium text-ebios-700 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">{n.actionsMenu}</summary>
+                        <div className="absolute right-0 z-20 mt-1 flex min-w-[12rem] flex-col items-start gap-1.5 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
                           <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline">{n.qualify}</button>
                           <button onClick={() => { setAssocId(i.id); setAssocIds((i.risques ?? []).map(r => r.id)); setError(null) }} className="text-xs text-ebios-600 hover:underline">{n.associer}</button>
                           {!i.riskItemId && (i.risques ?? []).length === 0 && (
@@ -597,6 +601,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                           <button onClick={() => setDeclId(i.id)} className="text-xs text-ebios-600 hover:underline">{n.decl.button}</button>
                           <button onClick={() => supprimer(i.id)} className="text-xs text-red-500 hover:underline">{n.delete}</button>
                         </div>
+                        </details>
                       )}
                     </td>
                   )}

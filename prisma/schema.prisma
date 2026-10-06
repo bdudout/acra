@@ -2673,6 +2673,22 @@ model StorageSnapshot {
   @@index([mesureLe])
 }
 
+// Corbeille des éléments supprimés (incidents) : instantané JSON restaurable par un administrateur pendant la
+// rétention (lib/corbeille, lib/recovery) ; purgé au-delà. Pas de FK vers l'objet (il n'existe plus).
+model ElementSupprime {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String // INCIDENT
+  objetId        String
+  intitule       String
+  donnees        Json
+  supprimeParId  String?
+  supprimeLe     DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([supprimeLe])
+}
+
 // Association incident ↔ risque du registre (plusieurs risques par incident).
 model IncidentRisque {
   incidentId String

@@ -1,4 +1,5 @@
 import { risquesDepuisCorps } from '@/lib/incident-risques'
+import { instantaneIncident } from '@/lib/corbeille'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -132,10 +133,25 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { userId, userRole, incident } = c
   if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
-  await prisma.incident.delete({ where: { id } })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-    userId, userRole, organizationId: incident.organizationId, ip: getClientIp(req),
-    details: { scope: 'incident', action: 'delete', id },
+  // Suppression récupérable : instantané (fiche + risques associés) en corbeille, puis suppression, en une transaction.
+  const corbeille = await prisma.$transaction(async tx => {
+    const complet = await tx.incident.findUnique({ where: { id } })
+    if (!complet) return null
+    const liens = await tx.incidentRisque.findMany({ where: { incidentId: id }, select: { riskItemId: true } })
+    const c = await tx.elementSupprime.create({
+      data: {
+        organizationId: incident.organizationId, type: 'INCIDENT', objetId: id, intitule: incident.intitule, supprimeParId: userId,
+        donnees: instantaneIncident(complet, liens.map(l => l.riskItemId)) as unknown as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    })
+    await tx.incident.delete({ where: { id } })
+    return c
   })
-  return NextResponse.json({ ok: true })
+  if (!corbeille) return NextResponse.json({ error: 'Incident introuvable' }, { status: 404 })
+  await auditLog('INCIDENT_DELETED', {
+    userId, userRole, organizationId: incident.organizationId, targetId: id, targetType: 'incident', ip: getClientIp(req),
+    details: { intitule: incident.intitule, corbeilleId: corbeille.id },
+  })
+  return NextResponse.json({ ok: true, corbeilleId: corbeille.id })
 }
