@@ -50,6 +50,8 @@ vi.mock('@/lib/org-config.server', () => ({
 }))
 vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: 4 })) }))
 vi.mock('@/lib/projet360-creation.server', () => ({ creerProjet360: (...a: unknown[]) => creerProjet360(...a) }))
+const plafondDemo = vi.hoisted(() => ({ value: false }))
+vi.mock('@/lib/analyse-create-guard.server', () => ({ plafondDemoAtteint: vi.fn(async () => plafondDemo.value) }))
 const executeAnalysisImport = vi.hoisted(() => vi.fn(async (..._a: unknown[]) => ({ replayed: false, analyseId: 'analyse-new' })))
 vi.mock('@/lib/analysis-import', async (orig) => ({ ...(await orig<object>()), executeAnalysisImport: (...a: unknown[]) => executeAnalysisImport(...a) }))
 const importerPssi = vi.hoisted(() => vi.fn(async (..._a: unknown[]) => ({ ok: true, referentielId: 'ref-new', documentId: 'doc-new' })))
@@ -65,7 +67,7 @@ const params = { params: Promise.resolve({ id: 'p1' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
-  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; gel.value = false
+  sessionRole.value = 'ADMIN'; effRole.value = 'ADMIN'; gel.value = false; plafondDemo.value = false
   proposalFindUnique.mockResolvedValue({ ...PENDING })
   analyseFindFirst.mockResolvedValue({ ...ANALYSE })
 })
@@ -229,5 +231,17 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...PSSI }); effRole.value = 'RSSI'
     expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
     expect(importerPssi).not.toHaveBeenCalled()
+  })
+
+  it('instance de démonstration : plafond d’analyses atteint → création refusée (projet 360 et nouvelle analyse), comme depuis l’interface', async () => {
+    plafondDemo.value = true
+    proposalFindUnique.mockResolvedValue({ ...PENDING, type: 'analysis_create', targetType: 'ORGANISATION', targetId: 'orgA', payload: { idempotencyKey: 'mcp-new-123456', analysis: { title: 'X' } } })
+    const r1 = await PATCH(req({ action: 'accept' }), params)
+    expect(r1.status).toBe(403); expect(await r1.json()).toEqual({ error: 'DEMO_CAP' })
+    proposalFindUnique.mockResolvedValue({ ...PENDING, type: 'projet360', targetType: 'ORGANISATION', targetId: 'orgA', payload: { nom: 'P', secteur: 'Santé / Médico-social', patternsArchi: ['EXPOSITION_INTERNET'] } })
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
+    expect(executeAnalysisImport).not.toHaveBeenCalled(); expect(creerProjet360).not.toHaveBeenCalled()
+    // Le rejet reste possible.
+    expect((await PATCH(req({ action: 'reject' }), params)).status).toBe(200)
   })
 })

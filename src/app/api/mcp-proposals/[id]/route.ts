@@ -19,6 +19,7 @@ import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { createAnalyseRiskPlanAction } from '@/lib/plan-action.server'
 import { isProjet360ProposalValid, sanitizeProjet360Proposal } from '@/lib/mcp/projet360-proposal'
 import { creerProjet360 } from '@/lib/projet360-creation.server'
+import { plafondDemoAtteint } from '@/lib/analyse-create-guard.server'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { anchorExistsInOrg } from '@/lib/mcp/anchors.server'
 import {
@@ -141,6 +142,8 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     if (!canCreateAnalyse({ id: userId, role }, await optionsStructure(proposal.organizationId))) return { ok: false, status: 403, error: 'Validation non autorisée' }
     const cfg = await getOrgConfig(proposal.organizationId)
     if (!cfg.projets360Active) return { ok: false, status: 403, error: 'Module Projets 360 désactivé' }
+    // Plafond d'analyses de l'instance de démonstration (comme le formulaire) ; le rejet reste possible.
+    if (await plafondDemoAtteint(proposal.organizationId)) return { ok: true, validatorRole: role, apply: async () => ({ ok: false, status: 403, error: 'DEMO_CAP' }) }
     return { ok: true, validatorRole: role, apply: (uid, note) => applyProjet360(proposal, cfg.patternsArchiMax, uid, note) }
   }
 
@@ -152,6 +155,7 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
     if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
     if (!canCreateAnalyse({ id: userId, role }, await optionsStructure(proposal.organizationId))) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    if (await plafondDemoAtteint(proposal.organizationId)) return { ok: true, validatorRole: role, apply: async () => ({ ok: false, status: 403, error: 'DEMO_CAP' }) }
     return { ok: true, validatorRole: role, apply: (uid, note) => applyNouvelleAnalyse(proposal, uid, note) }
   }
 

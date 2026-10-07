@@ -116,6 +116,7 @@ activables (cf. `ara-grc-spec.md`). Les concepts à connaître :
 | **Sécurité / accès** | `auth`, `auth-cookies`, `permissions` (RBAC), `mfa*`, `sso*`, `saml*`, `scim*`, `login-lockout`, `password-policy`, `password-reset`, `rate-limit`, `secret-crypto`, `recovery`, `api-auth.server`, `api-key`, `cron-auth`, `csp` |
 | **Multi-org / config** | `org-*`, `module-policy`, `configuration-*`, `nav-modules-cache`, `navigation`, `branding*` |
 | **Interop** | `api-import`, `import-sanitize`, `webhook*`, `siem*`, `suggestions` |
+| **Serveur MCP** | `lib/mcp/` : `protocol` (JSON-RPC, pur), `auth.server` (clé `mcp`, interrupteurs instance `mcpEnabled` / org `mcpActive`), `instructions` (consignes `initialize`), outils `tools*.server` (`read_*`, `recommend_*`, `propose_*`), `proposals` / `projet360-proposal` / `pssi-proposal` (assainissement pur), `anchors.server` (ancre dans l'org de la clé), `pssi-import.server`, `activity` (synthèse pure) ; routes `api/mcp` (public, clé), `api/mcp-proposals/**` (validation humaine, RBAC de l'ancre), `api/mcp-activity` ; UI `McpProposalsQueue` (`/mcp-propositions`), `McpActivity` (`/mcp-activite`) ; test `mcp-isolation-matrix` (chaque outil classé). Guide client : `docs/mcp-clients.md`, cadrage : `docs/mcp-cadrage.md` |
 | **Exports** | `export-pdf`, `pdf-*`, `*-pdf-template.tsx`, `analyse-docx`, `analyse-pptx`, `markdown-docx`, `*-pptx`, `carto-export`, `ras-export`, `comite-pack`, `soa-export` |
 | **Cockpits** | `grc-cockpit`, `comite-pack`, `ras-export`, `donut`, `sr-ov-radar`, `most-frequent` |
 | **UI transverse** | `table-sort`, `table-filter` (tri/filtre « façon tableur »), `format`, `form-defaults`, `contrast-color`, `theme*`, `i18n/`, `useAutoSave`, `useAddedFeedback` |
@@ -133,6 +134,9 @@ Deux familles, **ne pas les mélanger** :
    `lib/permissions`. La plupart des routes sous `/api/**`.
 2. **Clé d'API** (machine, API publique v1, `/api/v1/**`) : `lib/api-auth.server`
    (Bearer), scopes `read | write | provision`. Import en masse via `lib/api-import`.
+3. **Clé d'API au scope `mcp`** (assistants IA, `/api/mcp`) : `lib/mcp/auth.server` ; les outils ne
+   lisent que l'organisation de la clé et n'écrivent jamais : ils déposent des `McpProposal`
+   acceptées par un humain (`/api/mcp-proposals/[id]`, mêmes gardes que l'UI, dont le plafond démo).
 
 **Gardes communes (audit 2026-09-30/10-01, ne pas recopier de garde locale)** :
 - réglage ou vue d'**instance** → `requireInstanceAdmin()` (`lib/route-guard.server`) ;
